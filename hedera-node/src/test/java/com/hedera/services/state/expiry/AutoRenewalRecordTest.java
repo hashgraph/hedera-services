@@ -40,7 +40,7 @@ public class AutoRenewalRecordTest {
 		long newExpirationTime = 2_345_678L;
 		var feeCollector = IdUtils.asAccount("7.8.9");
 		var renewedAt = Instant.ofEpochSecond(consensusSeconds).plusNanos(consensusNanos);
-		var record = AutoRenewalRecord.generatedFor(accountRenewed, renewedAt, autoRenewAccount,
+		var record = AutoRenewalRecord.generatedForCrypto(accountRenewed, renewedAt, autoRenewAccount,
 				fee, newExpirationTime, feeCollector);
 
 		assertEquals(accountRenewed, record.getReceipt().getAccountID());

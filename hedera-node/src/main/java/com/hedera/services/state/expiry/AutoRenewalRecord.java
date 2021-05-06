@@ -33,8 +33,14 @@ import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 
 public class AutoRenewalRecord {
-	public static TransactionRecord generatedFor(AccountID accountRenewed, Instant renewedAt,
-			AccountID autoRenewAccount, long fee, long newExpirationTime, AccountID feeCollector) {
+	public static TransactionRecord generatedForCrypto(
+			AccountID accountRenewed,
+			Instant renewedAt,
+			AccountID autoRenewAccount,
+			long fee,
+			long newExpirationTime,
+			AccountID feeCollector
+	) {
 		TransactionReceipt receipt = TransactionReceipt.newBuilder().setAccountID(accountRenewed).build();
 		TransactionID transactionID = TransactionID.newBuilder().setAccountID(autoRenewAccount).build();
 		String memo = String.format("Entity %s was automatically renewed. New expiration time: %d.",

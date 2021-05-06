@@ -20,11 +20,15 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
+import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.ServicesContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
+import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.state.expiry.renewal.RenewalFeeHelper;
+import com.hedera.services.state.expiry.renewal.RenewalHelper;
+import com.hedera.services.state.expiry.renewal.RenewalProcess;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.stream.RecordStreamObject;
-import com.hederahashgraph.api.proto.java.AccountID;
 
 import java.time.Instant;
 
@@ -32,78 +36,85 @@ public class EntityAutoRenewal {
 	private static final com.hederahashgraph.api.proto.java.Transaction EMPTY =
 			com.hederahashgraph.api.proto.java.Transaction.getDefaultInstance();
 
-	private ServicesContext ctx;
+	private final long firstEntityToScan;
+	private final RenewalProcess renewalProcess;
+	private final ServicesContext ctx;
+	private final GlobalDynamicProperties dynamicProps;
 
-	public EntityAutoRenewal(ServicesContext ctx) {
+	public EntityAutoRenewal(
+			HederaNumbers hederaNumbers,
+			RenewalProcess renewalProcess,
+			ServicesContext ctx,
+			GlobalDynamicProperties dynamicProps
+	) {
 		this.ctx = ctx;
+		this.renewalProcess = renewalProcess;
+		this.dynamicProps = dynamicProps;
+
+		this.firstEntityToScan = hederaNumbers.numReservedSystemEntities() + 1;
 	}
 
-	public void execute(Instant consensusTime) {
-		var props = ctx.globalDynamicProperties();
-		if (!props.autoRenewEnabled()) {
+	public void execute(Instant instantNow) {
+		if (!dynamicProps.autoRenewEnabled()) {
 			return;
 		}
-		AccountID feeCollector = props.fundingAccount();
-		AccountID.Builder accountBuilder = feeCollector.toBuilder();
-		var backingAccounts = ctx.backingAccounts();
-		var merkleFeeCollector = backingAccounts.getRef(feeCollector);
-		long feeCollectorBalance = merkleFeeCollector.getBalance();
-		long lastScannedEntity = ctx.lastScannedEntity();
-		long numberOfEntitiesRenewedOrDeleted = 0;
-		for (long i = 1; i <= props.autoRenewNumberOfEntitiesToScan(); i++) {
-			lastScannedEntity++;
-			if (lastScannedEntity >= ctx.seqNo().current()) {
-				lastScannedEntity = ctx.hederaNums().numReservedSystemEntities() + 1;
+
+		final long wrapNum = ctx.seqNo().current();
+		final int maxEntitiesToTouch = (int)dynamicProps.autoRenewMaxNumberOfEntitiesToRenewOrDelete();
+		final int maxEntitiesToScan = (int)dynamicProps.autoRenewNumberOfEntitiesToScan();
+
+		renewalProcess.beginRenewalCycle(instantNow);
+
+		int entitiesTouched = 0;
+		long scanNum = ctx.lastScannedEntity();
+		for (int i = 1; i <= maxEntitiesToScan; i++) {
+			scanNum++;
+			if (scanNum == wrapNum) {
+				scanNum = firstEntityToScan;
 			}
-			AccountID accountID = accountBuilder
-					.setAccountNum(lastScannedEntity)
-					.build();
-			if (backingAccounts.contains(accountID)) {
-				var merkleAccount = backingAccounts.getRef(accountID);
-				long expiry = merkleAccount.getExpiry();
-				if (expiry <= consensusTime.getEpochSecond()) {
-					numberOfEntitiesRenewedOrDeleted++;
-					long balance = merkleAccount.getBalance();
-					long newExpiry = expiry;
-					long fee = 100_000_000L;
-					if (0 == balance) {
-						backingAccounts.remove(accountID);
-					} else {
-						// Check the remaining balance to adjust the extension
-						long autoRenewSecs = merkleAccount.getAutoRenewSecs();
-						newExpiry = expiry + autoRenewSecs;
-						merkleAccount.setExpiry(newExpiry);
-						feeCollectorBalance += fee;
-						balance -= fee;
-						setBalance(merkleAccount, balance);
-					}
-					Instant actionTime = consensusTime.plusNanos(numberOfEntitiesRenewedOrDeleted);
-					var record = (0 == balance)
-							? EntityRemovalRecord.generatedFor(accountID, actionTime, accountID)
-							: AutoRenewalRecord.generatedFor(accountID, actionTime, accountID, fee, newExpiry, feeCollector);
-					var recordStreamObject = new RecordStreamObject(record, EMPTY, actionTime);
-					ctx.updateRecordRunningHash(recordStreamObject.getRunningHash());
-					ctx.recordStreamManager().addRecordStreamObject(recordStreamObject);
-				}
+			if (renewalProcess.process(scanNum)) {
+				entitiesTouched++;
 			}
-			if (numberOfEntitiesRenewedOrDeleted >= props.autoRenewMaxNumberOfEntitiesToRenewOrDelete()) {
+//			final var classification = helper.classify(scanNum, now);
+
+//			AccountID accountID = accountBuilder
+//					.setAccountNum(scanNum)
+//					.build();
+//			if (backingAccounts.contains(accountID)) {
+//				var merkleAccount = backingAccounts.getRef(accountID);
+//				long expiry = merkleAccount.getExpiry();
+//				if (expiry <= consensusTime.getEpochSecond()) {
+//					numberOfEntitiesRenewedOrDeleted++;
+//					long balance = merkleAccount.getBalance();
+//					long newExpiry = expiry;
+//					long fee = 100_000_000L;
+//					if (0 == balance) {
+//						backingAccounts.remove(accountID);
+//					} else {
+//						// Check the remaining balance to adjust the extension
+//						long autoRenewSecs = merkleAccount.getAutoRenewSecs();
+//						newExpiry = expiry + autoRenewSecs;
+//						merkleAccount.setExpiry(newExpiry);
+//						feeCollectorBalance += fee;
+//						balance -= fee;
+//						setBalance(merkleAccount, balance);
+//					}
+//					Instant actionTime = consensusTime.plusNanos(numberOfEntitiesRenewedOrDeleted);
+//					var record = (0 == balance)
+//							? EntityRemovalRecord.generatedFor(accountID, actionTime, accountID)
+//							: AutoRenewalRecord.generatedForCrypto(accountID, actionTime, accountID, fee, newExpiry, feeCollector);
+//					var recordStreamObject = new RecordStreamObject(record, EMPTY, actionTime);
+//					ctx.updateRecordRunningHash(recordStreamObject.getRunningHash());
+//					ctx.recordStreamManager().addRecordStreamObject(recordStreamObject);
+//				}
+//			}
+			if (entitiesTouched >= maxEntitiesToTouch) {
 				break;
 			}
 		}
-		setBalance(merkleFeeCollector, feeCollectorBalance);
-		backingAccounts.flushMutableRefs();
-		ctx.updateLastScannedEntity(lastScannedEntity);
-	}
-
-	/*
-		The NegativeAccountBalanceException is ignored because
-		there are only 2 calls to this function to set balance of:
-			1. the fee collector, which is no less than its original balance
-			2. the auto renew account, which has been checked for the remaining balance to adjust the extension
-	 */
-	private void setBalance(MerkleAccount account, long newBalance) {
-		try {
-			account.setBalance(newBalance);
-		} catch (NegativeAccountBalanceException ignore) { }
+//		setBalance(merkleFeeCollector, feeCollectorBalance);
+//		backingAccounts.flushMutableRefs();
+		renewalProcess.endRenewalCycle();
+		ctx.updateLastScannedEntity(scanNum);
 	}
 }
