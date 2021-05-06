@@ -58,15 +58,15 @@ public interface FeeCalculator {
 			Map<String, Object> queryCtx);
 
 	/**
-	 * Returns a pair whose key is the longest period for which the expired account
-	 * can afford to renew itself, <b>up to</b> the requested period; and whose value
-	 * is the service fee to be charged for renewing the account for that period.
+	 * Assesses the longest period for which the expired account can afford to renew itself,
+	 * <b>up to</b> the requested period; as well as the service fee to be charged for
+	 * renewing the account for that period.
 	 *
-	 * <b>Important:</b> The key will always be a multiple of 3600, because the fee
+	 * <b>Important:</b> The period will always be a multiple of 3600, because the fee
 	 * schedule uses hours as the units to price memory consumption.
 	 *
-	 * Also, unless the expired account's balance is exactly zero, the pair's key
-	 * will always be at least 3600 (representing one hour of renewal).
+	 * Also, unless the expired account's balance is exactly zero, the period will always
+	 * be at least 3600 (representing one hour of renewal).
 	 *
 	 * @param expiredAccount the expired account
 	 * @param requestedRenewal the desired renewal period
