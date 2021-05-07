@@ -69,6 +69,7 @@ public interface UsagePricesProvider {
 	 * function; and after which the rightmost {@code FeeData} prices apply.
 	 *
 	 * @param function the operation of interest
+	 * @return the triple of price sequences
 	 */
 	Triple<FeeData, Instant, FeeData> activePricingSequence(HederaFunctionality function);
 }
