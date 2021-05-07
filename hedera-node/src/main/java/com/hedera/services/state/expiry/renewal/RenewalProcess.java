@@ -89,6 +89,7 @@ public class RenewalProcess {
 		final long renewalFee = usageAssessment.fee();
 
 		helper.renewLastClassifiedWith(renewalFee, effPeriod);
+		feeHelper.recordCharged(renewalFee);
 		recordsHelper.streamCryptoRenewal(accountId, renewalFee, longNow + effPeriod);
 	}
 

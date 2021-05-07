@@ -208,6 +208,7 @@ class RenewalProcessTest {
 		// then:
 		assertTrue(wasTouched);
 		verify(helper).renewLastClassifiedWith(fee, actualRenewalPeriod);
+		verify(feeHelper).recordCharged(fee);
 		verify(recordsHelper).streamCryptoRenewal(key, fee, now + actualRenewalPeriod);
 	}
 }

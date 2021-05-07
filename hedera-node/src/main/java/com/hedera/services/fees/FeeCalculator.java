@@ -31,7 +31,6 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.fee.FeeObject;
 import com.hedera.services.legacy.core.jproto.JKey;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.time.Instant;
 import java.util.Map;

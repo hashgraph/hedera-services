@@ -23,19 +23,11 @@ package com.hedera.services.state.expiry;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.NegativeAccountBalanceException;
-import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.state.expiry.renewal.RenewalFeeHelper;
-import com.hedera.services.state.expiry.renewal.RenewalHelper;
 import com.hedera.services.state.expiry.renewal.RenewalProcess;
-import com.hedera.services.state.merkle.MerkleAccount;
 
 import java.time.Instant;
 
 public class EntityAutoRenewal {
-	private static final com.hederahashgraph.api.proto.java.Transaction EMPTY =
-			com.hederahashgraph.api.proto.java.Transaction.getDefaultInstance();
-
 	private final long firstEntityToScan;
 	private final RenewalProcess renewalProcess;
 	private final ServicesContext ctx;

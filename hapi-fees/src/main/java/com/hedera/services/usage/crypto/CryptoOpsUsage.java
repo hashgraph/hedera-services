@@ -95,7 +95,7 @@ public class CryptoOpsUsage {
 		long newLifetime = ESTIMATOR_UTILS.relativeLifetime(cryptoUpdate, op.getExpirationTime().getSeconds());
 		long oldLifetime = ESTIMATOR_UTILS.relativeLifetime(cryptoUpdate, ctx.currentExpiry());
 		long rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(
-				sharedFixedBytes + ctx.currentNonBaseRb(),
+				cryptoAutoRenewRb(ctx),
 				oldLifetime,
 				sharedFixedBytes + newVariableBytes,
 				newLifetime);
