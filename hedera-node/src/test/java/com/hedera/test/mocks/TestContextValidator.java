@@ -68,6 +68,11 @@ public enum TestContextValidator implements OptionValidator {
 	}
 
 	@Override
+	public boolean isAfterConsensusSecond(long now) {
+		return true;
+	}
+
+	@Override
 	public boolean isValidAutoRenewPeriod(Duration autoRenewPeriod) {
 		long duration = autoRenewPeriod.getSeconds();
 		long minDuration = 1L;
@@ -108,6 +113,4 @@ public enum TestContextValidator implements OptionValidator {
 	public ResponseCodeEnum memoCheck(String cand) {
 		return cand.length() <= 100 ? OK : MEMO_TOO_LONG;
 	}
-
-
 }

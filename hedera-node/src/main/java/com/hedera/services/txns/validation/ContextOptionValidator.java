@@ -210,4 +210,9 @@ public class ContextOptionValidator implements OptionValidator {
 				merkleTopic.getExpirationTimestamp().getNanos());
 		return txnCtx.consensusTime().isAfter(expiry);
 	}
+
+	@Override
+	public boolean isAfterConsensusSecond(long now) {
+		return now > txnCtx.consensusTime().getEpochSecond();
+	}
 }

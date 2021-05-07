@@ -22,6 +22,7 @@ package com.hedera.services.queries.validation;
 
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -37,6 +38,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -51,11 +53,14 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 class QueryFeeCheckTest {
+	private final long payerExpiry = 1_234_567L;
+
 	AccountID aMissing = asAccount("1.2.3");
 	AccountID aRich = asAccount("0.0.2");
 	AccountID aNode = asAccount("0.0.3");
 	AccountID anotherNode = asAccount("0.0.4");
 	AccountID aBroke = asAccount("0.0.13257");
+	AccountID aDetached = asAccount("0.0.75231");
 	AccountID aQueryPayer = asAccount("0.0.13258");
 	AccountID aTestPayer = asAccount("0.0.13259");
 
@@ -63,7 +68,7 @@ class QueryFeeCheckTest {
 	long feeRequired = 1234L;
 
 	long aLittle = 2L, aLot = Long.MAX_VALUE - 1L, aFew = 100L;
-	MerkleAccount broke, rich, testPayer, queryPayer;
+	MerkleAccount detached, broke, rich, testPayer, queryPayer;
 	MerkleEntityId missingKey = MerkleEntityId.fromAccountId(aMissing);
 	MerkleEntityId richKey = MerkleEntityId.fromAccountId(aRich);
 	MerkleEntityId brokeKey = MerkleEntityId.fromAccountId(aBroke);
@@ -73,20 +78,18 @@ class QueryFeeCheckTest {
 	MerkleEntityId queryPayerKey = MerkleEntityId.fromAccountId(aQueryPayer);
 	MerkleEntityId testPayerKey = MerkleEntityId.fromAccountId(aTestPayer);
 
+	private OptionValidator validator;
 	FCMap<MerkleEntityId, MerkleAccount> accounts;
 
 	QueryFeeCheck subject;
 
 	@BeforeEach
 	private void setup() {
+		detached = mock(MerkleAccount.class);
+		given(detached.getBalance()).willReturn(0L);
 		broke = mock(MerkleAccount.class);
 		given(broke.getBalance()).willReturn(aLittle);
-		rich = mock(MerkleAccount.class);
-		given(rich.getBalance()).willReturn(aLot);
-
-
-		broke = mock(MerkleAccount.class);
-		given(broke.getBalance()).willReturn(aLittle);
+		given(broke.getExpiry()).willReturn(payerExpiry);
 		rich = mock(MerkleAccount.class);
 		given(rich.getBalance()).willReturn(aLot);
 
@@ -101,6 +104,7 @@ class QueryFeeCheckTest {
 		given(accounts.get(argThat(brokeKey::equals))).willReturn(broke);
 		given(accounts.get(argThat(testPayerKey::equals))).willReturn(testPayer);
 		given(accounts.get(argThat(queryPayerKey::equals))).willReturn(queryPayer);
+		given(accounts.get(MerkleEntityId.fromAccountId(aDetached))).willReturn(detached);
 
 		given(accounts.containsKey(argThat(missingKey::equals))).willReturn(false);
 		given(accounts.containsKey(argThat(richKey::equals))).willReturn(true);
@@ -110,7 +114,9 @@ class QueryFeeCheckTest {
 		given(accounts.containsKey(argThat(testPayerKey::equals))).willReturn(true);
 		given(accounts.containsKey(argThat(testPayerKey::equals))).willReturn(true);
 
-		subject = new QueryFeeCheck(() -> accounts);
+		validator = mock(OptionValidator.class);
+
+		subject = new QueryFeeCheck(validator, () -> accounts);
 	}
 
 	@Test
@@ -261,12 +267,12 @@ class QueryFeeCheckTest {
 		var status = subject.adjustmentPlausibility(adjustment);
 
 		// then:
-		assertEquals(INSUFFICIENT_PAYER_BALANCE, status);
+		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, status);
 	}
 
 	@Test
 	public void brokePayerRejected() {
-		// given:
+		// setup:
 		var adjustment = adjustmentWith(aBroke, -aLot);
 
 		// when:
@@ -274,6 +280,20 @@ class QueryFeeCheckTest {
 
 		// then:
 		assertEquals(INSUFFICIENT_PAYER_BALANCE, status);
+	}
+
+	@Test
+	public void detachedPayerRejectedWithRefinement() {
+		given(validator.isAfterConsensusSecond(payerExpiry)).willReturn(false);
+
+		// given:
+		var adjustment = adjustmentWith(aDetached, -aLot);
+
+		// when:
+		var status = subject.adjustmentPlausibility(adjustment);
+
+		// then:
+		assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, status);
 	}
 
 	@Test

@@ -169,6 +169,14 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
+	void understandsBeforeAfterConsensusTime() {
+		// expect:
+		assertTrue(subject.isAfterConsensusSecond(now.getEpochSecond() + 1));
+		assertFalse(subject.isAfterConsensusSecond(now.getEpochSecond()));
+		assertFalse(subject.isAfterConsensusSecond(now.getEpochSecond() - 1));
+	}
+
+	@Test
 	void recognizesCurrentNodeAccount() {
 		// expect:
 		assertTrue(subject.isThisNodeAccount(thisNodeAccount));

@@ -52,6 +52,7 @@ public interface OptionValidator {
 	boolean isValidExpiry(Timestamp expiry);
 	boolean isThisNodeAccount(AccountID id);
 	boolean isValidTxnDuration(long duration);
+	boolean isAfterConsensusSecond(long now);
 	boolean isValidAutoRenewPeriod(Duration autoRenewPeriod);
 	boolean isAcceptableTransfersLength(TransferList accountAmounts);
 

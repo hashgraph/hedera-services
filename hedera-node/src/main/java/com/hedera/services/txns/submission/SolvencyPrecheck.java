@@ -29,6 +29,7 @@ import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.fee.FeeObject;
@@ -37,6 +38,7 @@ import com.swirlds.fcmap.FCMap;
 import java.util.function.Supplier;
 
 import static com.hedera.services.txns.validation.PureValidation.queryableAccountStatus;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -58,6 +60,7 @@ public class SolvencyPrecheck {
 
 	private final FeeExemptions feeExemptions;
 	private final FeeCalculator feeCalculator;
+	private final OptionValidator validator;
 	private final PrecheckVerifier precheckVerifier;
 	private final Supplier<StateView> stateView;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
@@ -65,11 +68,13 @@ public class SolvencyPrecheck {
 	public SolvencyPrecheck(
 			FeeExemptions feeExemptions,
 			FeeCalculator feeCalculator,
+			OptionValidator validator,
 			PrecheckVerifier precheckVerifier,
 			Supplier<StateView> stateView,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
 	) {
 		this.accounts = accounts;
+		this.validator = validator;
 		this.stateView = stateView;
 		this.feeExemptions = feeExemptions;
 		this.feeCalculator = feeCalculator;
@@ -118,12 +123,17 @@ public class SolvencyPrecheck {
 
 			final var estimatedAdj = Math.min(0L, feeCalculator.estimatedNonFeePayerAdjustments(accessor, now));
 			final var requiredPayerBalance = estimatedReqFee - estimatedAdj;
-			if (payerAccount.getBalance() < requiredPayerBalance) {
-				return new TxnValidityAndFeeReq(INSUFFICIENT_PAYER_BALANCE, estimatedReqFee);
+			final var payerBalance = payerAccount.getBalance();
+			ResponseCodeEnum finalStatus = OK;
+			if (payerBalance < requiredPayerBalance) {
+				finalStatus = (payerBalance > 0 || validator.isAfterConsensusSecond(payerAccount.getExpiry()))
+						? INSUFFICIENT_PAYER_BALANCE
+						: ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 			}
 
-			return new TxnValidityAndFeeReq(OK, estimatedReqFee);
+			return new TxnValidityAndFeeReq(finalStatus, estimatedReqFee);
 		} catch (Exception race) {
+			race.printStackTrace();
 			return LOST_PAYER_EXPIRATION_RACE;
 		}
 	}
