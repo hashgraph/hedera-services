@@ -54,7 +54,7 @@ public final class ScheduleExecutor {
 			@NotNull  ScheduleStore store,
 			@NotNull  TransactionContext context
 	) throws
-			InvalidProtocolBufferException, NullPointerException {
+			InvalidProtocolBufferException, IllegalArgumentException {
 		final var executionStatus = store.markAsExecuted(id);
 		if (executionStatus != OK) {
 			return executionStatus;

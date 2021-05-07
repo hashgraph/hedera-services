@@ -37,7 +37,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -62,7 +61,7 @@ class ScheduleExecutorTest {
 	}
 
 	@Test
-	void triggersIfCanMarkAsExecuted() throws InvalidProtocolBufferException, NullPointerException {
+	void triggersIfCanMarkAsExecuted() throws InvalidProtocolBufferException {
 		given(store.markAsExecuted(id)).willReturn(OK);
 		given(store.get(id)).willReturn(schedule);
 		given(schedule.asSignedTxn()).willReturn(Transaction.getDefaultInstance());
@@ -78,15 +77,17 @@ class ScheduleExecutorTest {
 	}
 
 	@Test
-	public void nullArgumentsThrowNullPointerException() throws InvalidProtocolBufferException, NullPointerException {
+	public void nullArgumentsThrowIllegalArgumentException() throws InvalidProtocolBufferException {
+		given(store.markAsExecuted(any()))
+				.willThrow(IllegalArgumentException.class);
 		Assertions.assertThrows(
-				NullPointerException.class, () ->
-				subject.processExecution(null, null, null)
+				IllegalArgumentException.class, () ->
+				subject.processExecution(null, store, txnCtx)
 		);
 	}
 
 	@Test
-	void doesntTriggerUnlessAbleToMarkScheduleExecuted() throws InvalidProtocolBufferException, NullPointerException {
+	void doesntTriggerUnlessAbleToMarkScheduleExecuted() throws InvalidProtocolBufferException {
 		given(store.markAsExecuted(id)).willReturn(SCHEDULE_ALREADY_EXECUTED);
 
 		// when:
