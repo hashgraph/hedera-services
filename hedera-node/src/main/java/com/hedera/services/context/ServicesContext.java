@@ -1484,13 +1484,14 @@ public class ServicesContext {
 	public EntityAutoRenewal entityAutoRenewal() {
 		if (entityAutoRenewal == null) {
 			final var helper = new RenewalHelper(
-					hederaNums(), this::accounts);
+					tokenStore(), hederaNums(), globalDynamicProperties(),
+					this::tokens, this::accounts, this::tokenAssociations);
 			final var feeHelper = new RenewalFeeHelper(
 					globalDynamicProperties(), this::accounts);
 			final var recordHelper = new RenewalRecordsHelper(
 					this, recordStreamManager(), globalDynamicProperties());
 			final var renewalProcess = new RenewalProcess(
-					fees(), hederaNums(), helper, feeHelper, recordHelper, globalDynamicProperties());
+					fees(), hederaNums(), helper, feeHelper, recordHelper);
 			entityAutoRenewal = new EntityAutoRenewal(
 					hederaNums(), renewalProcess, this, globalDynamicProperties());
 		}

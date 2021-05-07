@@ -9,9 +9,9 @@ package com.hedera.services.state.expiry.renewal;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,7 +21,6 @@ package com.hedera.services.state.expiry.renewal;
  */
 
 import com.hedera.services.config.HederaNumbers;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.state.merkle.MerkleEntityId;
 
@@ -34,7 +33,6 @@ public class RenewalProcess {
 	private final RenewalHelper helper;
 	private final RenewalFeeHelper feeHelper;
 	private final RenewalRecordsHelper recordsHelper;
-	private final GlobalDynamicProperties dynamicProperties;
 
 	private long longNow;
 	private Instant cycleTime = null;
@@ -44,14 +42,12 @@ public class RenewalProcess {
 			HederaNumbers hederaNums,
 			RenewalHelper helper,
 			RenewalFeeHelper feeHelper,
-			RenewalRecordsHelper recordsHelper,
-			GlobalDynamicProperties dynamicProperties
+			RenewalRecordsHelper recordsHelper
 	) {
 		this.fees = fees;
 		this.helper = helper;
 		this.feeHelper = feeHelper;
 		this.recordsHelper = recordsHelper;
-		this.dynamicProperties = dynamicProperties;
 
 		this.realm = hederaNums.realm();
 		this.shard = hederaNums.shard();
@@ -72,18 +68,20 @@ public class RenewalProcess {
 		final var classification = helper.classify(entityNum, longNow);
 		switch (classification) {
 			case OTHER:
+			case DETACHED_ACCOUNT:
+			case DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN:
 				break;
-			case ACCOUNT_EXPIRED_ZERO_BALANCE:
-				processExpiredAccountZeroBalance(new MerkleEntityId(shard, realm, entityNum));
+			case DETACHED_ACCOUNT_GRACE_PERIOD_OVER:
+				processDetachedAccountGracePeriodOver(new MerkleEntityId(shard, realm, entityNum));
 				return true;
-			case ACCOUNT_EXPIRED_NONZERO_BALANCE:
-				processExpiredAccountNonzeroBalance(new MerkleEntityId(shard, realm, entityNum));
+			case EXPIRED_ACCOUNT_READY_TO_RENEW:
+				processExpiredAccountReadyToRenew(new MerkleEntityId(shard, realm, entityNum));
 				return true;
 		}
 		return false;
 	}
 
-	private void processExpiredAccountNonzeroBalance(MerkleEntityId accountId) {
+	private void processExpiredAccountReadyToRenew(MerkleEntityId accountId) {
 		final var lastClassified = helper.getLastClassifiedAccount();
 		final long reqPeriod = lastClassified.getAutoRenewSecs();
 		final var usageAssessment = fees.assessCryptoAutoRenewal(lastClassified, reqPeriod, cycleTime);
@@ -94,15 +92,9 @@ public class RenewalProcess {
 		recordsHelper.streamCryptoRenewal(accountId, renewalFee, longNow + effPeriod);
 	}
 
-	private void processExpiredAccountZeroBalance(MerkleEntityId accountId) {
-		final long gracePeriod = dynamicProperties.autoRenewGracePeriod();
-		if (gracePeriod == 0L) {
-			helper.removeLastClassifiedEntity();
-			recordsHelper.streamCryptoRemoval(accountId);
-		} else {
-			helper.renewLastClassifiedWith(0L, gracePeriod);
-			recordsHelper.streamCryptoRenewal(accountId, 0L, longNow + gracePeriod);
-		}
+	private void processDetachedAccountGracePeriodOver(MerkleEntityId accountId) {
+		final var tokensDisplaced = helper.removeLastClassifiedAccount();
+		recordsHelper.streamCryptoRemoval(accountId, tokensDisplaced);
 	}
 
 	public void endRenewalCycle() {

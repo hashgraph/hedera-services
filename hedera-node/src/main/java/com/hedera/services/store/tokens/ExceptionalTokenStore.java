@@ -79,6 +79,11 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
+	public List<TokenID> listOfTokensServed(AccountID treasury) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public boolean associationExists(AccountID aId, TokenID tId) {
 		throw new UnsupportedOperationException();
 	}

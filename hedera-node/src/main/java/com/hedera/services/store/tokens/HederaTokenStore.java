@@ -46,6 +46,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -58,6 +59,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
@@ -95,6 +97,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+import static java.util.stream.Collectors.toList;
 
 /**
  * Provides a managing store for arbitrary tokens.
@@ -144,6 +147,17 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	private void rebuildViewOfKnownTreasuries() {
 		tokens.get().forEach((key, value) ->
 				addKnownTreasury(value.treasury().toGrpcAccountId(), key.toTokenId()));
+	}
+
+	@Override
+	public List<TokenID> listOfTokensServed(AccountID treasury) {
+		if (!isKnownTreasury(treasury)) {
+			return Collections.emptyList();
+		} else {
+			return knownTreasuries.get(treasury).stream()
+					.sorted(HederaLedger.TOKEN_ID_COMPARATOR)
+					.collect(toList());
+		}
 	}
 
 	@Override

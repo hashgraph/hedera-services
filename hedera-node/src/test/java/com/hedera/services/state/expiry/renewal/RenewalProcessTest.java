@@ -20,14 +20,13 @@ package com.hedera.services.state.expiry.renewal;
  * ‍
  */
 
-import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.config.MockHederaNumbers;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.AutoRenewCalcs;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
-import org.apache.commons.lang3.tuple.Pair;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,11 +35,18 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
 
-import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.ACCOUNT_EXPIRED_NONZERO_BALANCE;
-import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.ACCOUNT_EXPIRED_ZERO_BALANCE;
+import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_ACCOUNT;
+import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
+import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
+import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.EXPIRED_ACCOUNT_READY_TO_RENEW;
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.OTHER;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -69,13 +75,11 @@ class RenewalProcessTest {
 	@Mock
 	private RenewalRecordsHelper recordsHelper;
 
-	private MockGlobalDynamicProps dynamicProps = new MockGlobalDynamicProps();
-
 	private RenewalProcess subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new RenewalProcess(fees, new MockHederaNumbers(), helper, feeHelper, recordsHelper, dynamicProps);
+		subject = new RenewalProcess(fees, new MockHederaNumbers(), helper, feeHelper, recordsHelper);
 	}
 
 	@Test
@@ -98,6 +102,15 @@ class RenewalProcessTest {
 	void throwsIfEndingButNotStarted() {
 		// expect:
 		Assertions.assertThrows(IllegalStateException.class, subject::endRenewalCycle);
+	}
+
+	@Test
+	void throwsIfStartingButNotEnded() {
+		// when:
+		subject.beginRenewalCycle(instantNow);
+
+		// expect:
+		Assertions.assertThrows(IllegalStateException.class, () -> subject.beginRenewalCycle(instantNow));
 	}
 
 	@Test
@@ -129,30 +142,40 @@ class RenewalProcessTest {
 	}
 
 	@Test
-	void removesExpiredBrokeAccountIfNoGracePeriod() {
-		// setup:
-		dynamicProps.endGracePeriod();
-
-		given(helper.classify(brokeExpiredAccountNum, now)).willReturn(ACCOUNT_EXPIRED_ZERO_BALANCE);
+	void doesNothingDuringGracePeriod() {
+		given(helper.classify(nonExpiredAccountNum, now)).willReturn(DETACHED_ACCOUNT);
 
 		// when:
 		subject.beginRenewalCycle(instantNow);
 		// and:
-		var wasTouched = subject.process(brokeExpiredAccountNum);
+		var wasTouched = subject.process(nonExpiredAccountNum);
 
 		// then:
-		assertTrue(wasTouched);
-		verify(helper).removeLastClassifiedEntity();
-		verify(recordsHelper).streamCryptoRemoval(new MerkleEntityId(0, 0, brokeExpiredAccountNum));
+		assertFalse(wasTouched);
+		verifyNoMoreInteractions(helper);
 	}
 
 	@Test
-	void renewsNoFeesDuringGracePeriod() {
-		// setup:
-		long gracePeriod = dynamicProps.autoRenewGracePeriod();
-		var key = new MerkleEntityId(0, 0, brokeExpiredAccountNum);
+	void doesNothingForTreasuryWithTokenStillLive() {
+		given(helper.classify(nonExpiredAccountNum, now)).willReturn(DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN);
 
-		given(helper.classify(brokeExpiredAccountNum, now)).willReturn(ACCOUNT_EXPIRED_ZERO_BALANCE);
+		// when:
+		subject.beginRenewalCycle(instantNow);
+		// and:
+		var wasTouched = subject.process(nonExpiredAccountNum);
+
+		// then:
+		assertFalse(wasTouched);
+		verifyNoMoreInteractions(helper);
+	}
+
+	@Test
+	void removesExpiredBrokeAccount() {
+		// setup:
+		final List<TokenTransferList> displacements = Collections.emptyList();
+
+		given(helper.classify(brokeExpiredAccountNum, now)).willReturn(DETACHED_ACCOUNT_GRACE_PERIOD_OVER);
+		given(helper.removeLastClassifiedAccount()).willReturn(displacements);
 
 		// when:
 		subject.beginRenewalCycle(instantNow);
@@ -161,23 +184,18 @@ class RenewalProcessTest {
 
 		// then:
 		assertTrue(wasTouched);
-		verify(helper).renewLastClassifiedWith(0L, gracePeriod);
-		verify(recordsHelper).streamCryptoRenewal(key, 0L, now + gracePeriod);
-
-		// and when:
-		subject.endRenewalCycle();
-
-		// then:
-		assertNull(subject.getCycleTime());
+		verify(helper).removeLastClassifiedAccount();
+		verify(recordsHelper).streamCryptoRemoval(
+				new MerkleEntityId(0, 0, brokeExpiredAccountNum),
+				displacements);
 	}
 
 	@Test
 	void renewsAtExpectedFee() {
 		// setup:
-		long gracePeriod = dynamicProps.autoRenewGracePeriod();
 		var key = new MerkleEntityId(0, 0, fundedExpiredAccountNum);
 
-		given(helper.classify(fundedExpiredAccountNum, now)).willReturn(ACCOUNT_EXPIRED_NONZERO_BALANCE);
+		given(helper.classify(fundedExpiredAccountNum, now)).willReturn(EXPIRED_ACCOUNT_READY_TO_RENEW);
 		given(helper.getLastClassifiedAccount()).willReturn(expiredAccountNonZeroBalance);
 		given(fees.assessCryptoAutoRenewal(expiredAccountNonZeroBalance, requestedRenewalPeriod, instantNow))
 				.willReturn(new AutoRenewCalcs.RenewAssessment(fee, actualRenewalPeriod));

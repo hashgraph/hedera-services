@@ -46,6 +46,7 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 	boolean isKnownTreasury(AccountID id);
 	boolean associationExists(AccountID aId, TokenID tId);
 	boolean isTreasuryForToken(AccountID aId, TokenID tId);
+	List<TokenID> listOfTokensServed(AccountID treasury);
 
 	ResponseCodeEnum burn(TokenID tId, long amount);
 	ResponseCodeEnum mint(TokenID tId, long amount);

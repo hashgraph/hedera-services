@@ -9,9 +9,9 @@ package com.hedera.services.state.expiry.renewal;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,13 +22,14 @@ package com.hedera.services.state.expiry.renewal;
 
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.ServicesContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
@@ -41,6 +42,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.List;
 
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
@@ -78,13 +80,23 @@ class RenewalRecordsHelperTest {
 	@Test
 	void streamsExpectedRemovalRecord() {
 		// setup:
+		final var aToken = TokenID.newBuilder().setTokenNum(1_234L).build();
+		final var bToken = TokenID.newBuilder().setTokenNum(2_345L).build();
+		final var from = AccountID.newBuilder().setAccountNum(3_456L).build();
+		final var firstTo = AccountID.newBuilder().setAccountNum(5_678L).build();
+		final var secondTo = AccountID.newBuilder().setAccountNum(4_567L).build();
+		final long aBalance = 100L, bBalance = 200L;
 		final var removalTime = instantNow.plusNanos(1);
-		final var rso = expectedRso(cryptoRemovalRecord(removedId, removalTime, removedId), 1);
+		final List<TokenTransferList> displacements = List.of(
+				RenewalHelperTest.ttlOf(aToken, from, firstTo, aBalance),
+				RenewalHelperTest.ttlOf(bToken, from, secondTo, bBalance));
+		final var rso = expectedRso(
+				cryptoRemovalRecord(removedId, removalTime, removedId, displacements), 1);
 
 		// when:
 		subject.beginRenewalCycle(instantNow);
 		// and:
-		subject.streamCryptoRemoval(keyId);
+		subject.streamCryptoRemoval(keyId, displacements);
 
 		// then:
 		verify(ctx).updateRecordRunningHash(any());
@@ -126,7 +138,12 @@ class RenewalRecordsHelperTest {
 		return new RecordStreamObject(record, Transaction.getDefaultInstance(), instantNow.plusNanos(nanosOffset));
 	}
 
-	private TransactionRecord cryptoRemovalRecord(AccountID accountRemoved, Instant removedAt, AccountID autoRenewAccount) {
+	private TransactionRecord cryptoRemovalRecord(
+			AccountID accountRemoved,
+			Instant removedAt,
+			AccountID autoRenewAccount,
+			List<TokenTransferList> displacements
+	) {
 		TransactionReceipt receipt = TransactionReceipt.newBuilder()
 				.setAccountID(accountRemoved)
 				.build();
@@ -141,6 +158,7 @@ class RenewalRecordsHelperTest {
 				.setTransactionID(transactionID)
 				.setMemo(String.format("Entity %s was automatically deleted.", asLiteralString(accountRemoved)))
 				.setTransactionFee(0L)
+				.addAllTokenTransferLists(displacements)
 				.build();
 	}
 

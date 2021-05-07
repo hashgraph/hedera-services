@@ -27,6 +27,7 @@ import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
@@ -34,6 +35,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 
 import java.time.Instant;
+import java.util.List;
 
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 
@@ -64,7 +66,7 @@ public class RenewalRecordsHelper {
 		funding = dynamicProperties.fundingAccount();
 	}
 
-	public void streamCryptoRemoval(MerkleEntityId id) {
+	public void streamCryptoRemoval(MerkleEntityId id, List<TokenTransferList> tokensDisplaced) {
 		assertInCycle();
 
 		final var eventTime = cycleStart.plusNanos(consensusNanosIncr++);
@@ -74,7 +76,10 @@ public class RenewalRecordsHelper {
 				.append(" was automatically deleted.")
 				.toString();
 
-		final var record = forCrypto(grpcId, eventTime).setMemo(memo).build();
+		final var record = forCrypto(grpcId, eventTime)
+				.setMemo(memo)
+				.addAllTokenTransferLists(tokensDisplaced)
+				.build();
 		stream(record, eventTime);
 	}
 

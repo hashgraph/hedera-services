@@ -21,31 +21,62 @@ package com.hedera.services.state.expiry.renewal;
  */
 
 import com.hedera.services.config.HederaNumbers;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.store.tokens.TokenStore;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.swirlds.fcmap.FCMap;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Supplier;
 
-import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.ACCOUNT_EXPIRED_NONZERO_BALANCE;
-import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.ACCOUNT_EXPIRED_ZERO_BALANCE;
+import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
+import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_ACCOUNT;
+import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
+import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.EXPIRED_ACCOUNT_READY_TO_RENEW;
+import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.OTHER;
+import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 
 /**
  * Helper for renewing and removing expired entities. Only crypto accounts are supported in this implementation.
  */
 public class RenewalHelper {
 	private final long shard, realm;
+	private final TokenStore tokenStore;
+	private final GlobalDynamicProperties dynamicProperties;
+	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels;
 
 	private MerkleAccount lastClassifiedAccount = null;
 	private MerkleEntityId lastClassifiedEntityId;
 
-	public RenewalHelper(HederaNumbers hederaNumbers, Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts) {
+	public RenewalHelper(
+			TokenStore tokenStore,
+			HederaNumbers hederaNumbers,
+			GlobalDynamicProperties dynamicProperties,
+			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels
+	) {
 		this.shard = hederaNumbers.shard();
 		this.realm = hederaNumbers.realm();
+		this.tokens = tokens;
+		this.tokenStore = tokenStore;
 		this.accounts = accounts;
+		this.tokenRels = tokenRels;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	public ExpiredEntityClassification classify(long candidateNum, long now) {
@@ -56,21 +87,51 @@ public class RenewalHelper {
 			return OTHER;
 		} else {
 			lastClassifiedAccount = currentAccounts.get(lastClassifiedEntityId);
-			if (lastClassifiedAccount.getExpiry() > now) {
+
+			final long expiry = lastClassifiedAccount.getExpiry();
+			if (expiry > now) {
 				return OTHER;
 			}
-			return lastClassifiedAccount.getBalance() > 0
-					? ACCOUNT_EXPIRED_NONZERO_BALANCE
-					: ACCOUNT_EXPIRED_ZERO_BALANCE;
+			if (lastClassifiedAccount.getBalance() > 0) {
+				return EXPIRED_ACCOUNT_READY_TO_RENEW;
+			}
+
+			final long gracePeriodEnd = expiry + dynamicProperties.autoRenewGracePeriod();
+			if (gracePeriodEnd > now) {
+				return DETACHED_ACCOUNT;
+			}
+
+			final var grpcId = lastClassifiedEntityId.toAccountId();
+			if (tokenStore.isKnownTreasury(grpcId)) {
+				return DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
+			}
+
+			return DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
 		}
 	}
 
-	public void removeLastClassifiedEntity() {
+	public List<TokenTransferList> removeLastClassifiedAccount() {
 		assertHasLastClassifiedAccount();
 		if (lastClassifiedAccount.getBalance() > 0) {
 			throw new IllegalStateException("Cannot remove the last classified account, has non-zero balance!");
 		}
-		accounts.get().remove(lastClassifiedEntityId);
+
+		List<TokenTransferList> tokensDisplaced = Collections.emptyList();
+		final var lastClassifiedTokens = lastClassifiedAccount.tokens();
+		if (lastClassifiedTokens.numAssociations() > 0) {
+			final var grpcId = lastClassifiedEntityId.toAccountId();
+			final var currentTokens = tokens.get();
+			final List<TokenTransferList> displacements = new ArrayList<>();
+			for (var tId : lastClassifiedTokens.asIds()) {
+				doReturnToTreasury(grpcId, tId, displacements, currentTokens);
+			}
+			tokensDisplaced = displacements;
+		}
+
+		final var currentAccounts = accounts.get();
+		currentAccounts.remove(lastClassifiedEntityId);
+
+		return tokensDisplaced;
 	}
 
 	public void renewLastClassifiedWith(long fee, long renewalPeriod) {
@@ -92,6 +153,52 @@ public class RenewalHelper {
 
 	public MerkleAccount getLastClassifiedAccount() {
 		return lastClassifiedAccount;
+	}
+
+	private void doReturnToTreasury(
+			AccountID expired,
+			TokenID scopedToken,
+			List<TokenTransferList> displacements,
+			FCMap<MerkleEntityId, MerkleToken> currentTokens
+	) {
+		final var currentTokenRels = tokenRels.get();
+		final var expiredRel = fromAccountTokenRel(expired, scopedToken);
+		final var relStatus = currentTokenRels.get(expiredRel);
+		final long balance = relStatus.getBalance();
+
+		currentTokenRels.remove(expiredRel);
+
+		final var tKey = MerkleEntityId.fromTokenId(scopedToken);
+		if (!currentTokens.containsKey(tKey)) {
+			return;
+		}
+
+		final var token = currentTokens.get(tKey);
+		if (token.isDeleted()) {
+			return;
+		}
+
+		if (balance == 0L) {
+			return;
+		}
+
+		final var treasury = token.treasury().toGrpcAccountId();
+		final boolean expiredFirst = ACCOUNT_ID_COMPARATOR.compare(expired, treasury) < 0;
+		displacements.add(TokenTransferList.newBuilder()
+				.setToken(scopedToken)
+				.addTransfers(AccountAmount.newBuilder()
+						.setAccountID(expiredFirst ? expired : treasury)
+						.setAmount(expiredFirst ? -balance : balance))
+				.addTransfers(AccountAmount.newBuilder()
+						.setAccountID(expiredFirst ? treasury : expired)
+						.setAmount(expiredFirst ? balance : -balance))
+				.build());
+
+		final var treasuryRel = fromAccountTokenRel(treasury, scopedToken);
+		final var mutableTreasuryRelStatus = currentTokenRels.getForModify(treasuryRel);
+		final long newTreasuryBalance = mutableTreasuryRelStatus.getBalance() + balance;
+		mutableTreasuryRelStatus.setBalance(newTreasuryBalance);
+		currentTokenRels.replace(treasuryRel, mutableTreasuryRelStatus);
 	}
 
 	private void assertHasLastClassifiedAccount() {

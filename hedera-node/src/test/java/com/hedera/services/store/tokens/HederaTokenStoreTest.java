@@ -54,6 +54,7 @@ import org.mockito.InOrder;
 import org.mockito.Mockito;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -1049,6 +1050,22 @@ class HederaTokenStoreTest {
 
 		// expect:
 		assertTrue(subject.isKnownTreasury(treasury));
+	}
+
+	@Test
+	public void treasuriesServeWorks() {
+		Set<TokenID> tokenSet = new HashSet<>(List.of(anotherMisc, misc));
+
+		subject.knownTreasuries.put(treasury, tokenSet);
+
+		// expect:
+		assertEquals(List.of(misc, anotherMisc), subject.listOfTokensServed(treasury));
+
+		// and when:
+		subject.knownTreasuries.remove(treasury);
+
+		// then:
+		assertSame(Collections.emptyList(), subject.listOfTokensServed(treasury));
 	}
 
 	@Test
