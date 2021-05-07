@@ -20,7 +20,6 @@ package com.hedera.services.fees.calculation;
  * ‍
  */
 
-import com.hedera.services.context.domain.security.HapiOpPermissions;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
