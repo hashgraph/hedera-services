@@ -25,6 +25,7 @@ import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -124,6 +125,36 @@ public class CryptoDeleteTransitionLogicTest {
 		// then:
 		verify(ledger).delete(target, payer);
 		verify(txnCtx).setStatus(SUCCESS);
+	}
+
+	@Test
+	public void rejectsDetachedAccountAsTarget() {
+		// setup:
+		givenValidTxnCtx();
+		given(ledger.isDetached(target)).willReturn(true);
+
+		// when:
+		subject.doStateTransition();
+
+		// when:
+		verify(ledger, never()).delete(target, payer);
+		verify(txnCtx).setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+	}
+
+	@Test
+	public void rejectsDetachedAccountAsReceiver() {
+		// setup:
+		var receiver = IdUtils.asAccount("0.0.7676");
+
+		givenValidTxnCtx(receiver);
+		given(ledger.isDetached(receiver)).willReturn(true);
+
+		// when:
+		subject.doStateTransition();
+
+		// when:
+		verify(ledger, never()).delete(target, receiver);
+		verify(txnCtx).setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 	}
 
 	@Test
