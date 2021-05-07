@@ -35,6 +35,8 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -55,12 +57,15 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CON
 import static com.hedera.services.ledger.properties.AccountProperty.RECORDS;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
+import static com.hedera.test.mocks.TestContextValidator.TEST_VALIDATOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class BaseHederaLedgerTest {
+	protected final OptionValidator validator = TEST_VALIDATOR;
+
 	protected long GENESIS_BALANCE = 50_000_000_000L;
 	protected long NEXT_ID = 1_000_000L;
 	protected AccountID genesis = AccountID.newBuilder().setAccountNum(2).build();
@@ -87,6 +92,7 @@ public class BaseHederaLedgerTest {
 	protected AccountID deletable = AccountID.newBuilder().setAccountNum(666).build();
 	protected AccountID rand = AccountID.newBuilder().setAccountNum(2_345).build();
 	protected AccountID deleted = AccountID.newBuilder().setAccountNum(3_456).build();
+	protected AccountID detached = AccountID.newBuilder().setAccountNum(4_567).build();
 
 	protected void commonSetup() {
 		creator = mock(ExpiringCreations.class);
@@ -141,7 +147,6 @@ public class BaseHederaLedgerTest {
 	protected void addToLedger(
 			AccountID id,
 			long balance,
-			HederaAccountCustomizer customizer,
 			Map<TokenID, TokenInfo> tokenInfo
 	) {
 		when(accountsLedger.get(id, EXPIRY)).thenReturn(1_234_567_890L);
@@ -160,7 +165,7 @@ public class BaseHederaLedgerTest {
 		}
 	}
 
-	protected void addDeletedAccountToLedger(AccountID id, HederaAccountCustomizer customizer) {
+	protected void addDeletedAccountToLedger(AccountID id) {
 		when(accountsLedger.get(id, BALANCE)).thenReturn(0L);
 		when(accountsLedger.get(id, IS_DELETED)).thenReturn(true);
 	}
@@ -170,7 +175,7 @@ public class BaseHederaLedgerTest {
 			long balance,
 			HederaAccountCustomizer customizer
 	) {
-		addToLedger(id, balance, customizer, Collections.emptyMap());
+		addToLedger(id, balance, Collections.emptyMap());
 	}
 
 	protected void setupWithMockLedger() {
@@ -186,15 +191,16 @@ public class BaseHederaLedgerTest {
 
 		accountsLedger = mock(TransactionalLedger.class);
 		tokenRelsLedger = mock(TransactionalLedger.class);
-		addToLedger(misc, MISC_BALANCE, noopCustomizer, Map.of(
+		addToLedger(misc, MISC_BALANCE, Map.of(
 				frozenId,
 				new TokenInfo(miscFrozenTokenBalance, frozenToken)));
-		addToLedger(deletable, MISC_BALANCE, noopCustomizer, Map.of(
+		addToLedger(deletable, MISC_BALANCE, Map.of(
 				frozenId,
 				new TokenInfo(0, frozenToken)));
 		addToLedger(rand, RAND_BALANCE, noopCustomizer);
 		addToLedger(genesis, GENESIS_BALANCE, noopCustomizer);
-		addDeletedAccountToLedger(deleted, noopCustomizer);
+		addToLedger(detached, 0L, new HederaAccountCustomizer().expiry(1_234_567L));
+		addDeletedAccountToLedger(deleted);
 		given(tokenRelsLedger.isInTransaction()).willReturn(true);
 
 		tokenStore = mock(HederaTokenStore.class);
@@ -209,7 +215,7 @@ public class BaseHederaLedgerTest {
 				.willReturn(tokenId);
 		given(tokenStore.get(frozenId)).willReturn(frozenToken);
 
-		subject = new HederaLedger(tokenStore, ids, creator, historian, accountsLedger);
+		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, accountsLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 	}
 

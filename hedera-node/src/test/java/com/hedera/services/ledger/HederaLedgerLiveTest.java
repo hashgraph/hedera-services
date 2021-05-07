@@ -84,7 +84,7 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 				new MockGlobalDynamicProps(),
 				() -> tokens,
 				tokenRelsLedger);
-		subject = new HederaLedger(tokenStore, ids, creator, historian, accountsLedger);
+		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, accountsLedger);
 	}
 
 	@Test

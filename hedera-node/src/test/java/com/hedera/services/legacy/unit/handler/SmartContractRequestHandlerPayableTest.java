@@ -49,6 +49,7 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.SolidityLifecycleFactory;
 import com.hedera.test.mocks.StorageSourceFactory;
+import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.mocks.TestUsagePricesProvider;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
@@ -145,6 +146,7 @@ public class SmartContractRequestHandlerPayableTest {
             mock(TokenStore.class),
             mock(EntityIdSource.class),
             mock(ExpiringCreations.class),
+            TestContextValidator.TEST_VALIDATOR,
             mock(AccountRecordsHistorian.class),
             delegate);
     ledgerSource = new LedgerAccountsSource(ledger, new MockGlobalDynamicProps());

@@ -22,6 +22,7 @@ package com.hedera.services.txns.crypto;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.DeletedAccountException;
+import com.hedera.services.exceptions.DetachedAccountException;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.HederaLedger;
@@ -142,6 +143,15 @@ public class CryptoTransferTransitionLogicTest {
 
 		// expect:
 		assertEquals(INVALID_ACCOUNT_ID, tryTransfers(ledger, xfers.getTransfers()));
+	}
+
+	@Test
+	public void translatesDetachedAccountException() {
+		givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
+		willThrow(DetachedAccountException.class).given(ledger).doTransfers(any());
+
+		// expect:
+		assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, tryTransfers(ledger, xfers.getTransfers()));
 	}
 
 	@Test

@@ -21,6 +21,7 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.exceptions.DeletedAccountException;
+import com.hedera.services.exceptions.DetachedAccountException;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.exceptions.NonZeroNetTransfersException;
@@ -35,6 +36,8 @@ import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.txns.validation.ContextOptionValidator;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -123,6 +126,7 @@ public class HederaLedger {
 
 	private final TokenStore tokenStore;
 	private final EntityIdSource ids;
+	private OptionValidator validator;
 	private final TransferList.Builder netTransfers = TransferList.newBuilder();
 	private final AccountRecordsHistorian historian;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
@@ -139,10 +143,12 @@ public class HederaLedger {
 			TokenStore tokenStore,
 			EntityIdSource ids,
 			EntityCreator creator,
+			OptionValidator validator,
 			AccountRecordsHistorian historian,
 			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger
 	) {
 		this.ids = ids;
+		this.validator = validator;
 		this.historian = historian;
 		this.tokenStore = tokenStore;
 		this.accountsLedger = accountsLedger;
@@ -523,6 +529,9 @@ public class HederaLedger {
 		if ((boolean) accountsLedger.get(id, IS_DELETED)) {
 			throw new DeletedAccountException(id);
 		}
+		if (!validator.isAfterConsensusSecond((long) accountsLedger.get(id, EXPIRY))) {
+			throw new DetachedAccountException(id);
+		}
 		long balance = getBalance(id);
 		if (!isLegalToAdjust(balance, adjustment)) {
 			throw new InsufficientFundsException(id, adjustment);
@@ -656,4 +665,6 @@ public class HederaLedger {
 			recordsPurged += n;
 		}
 	}
+
+
 }

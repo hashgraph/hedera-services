@@ -1473,6 +1473,7 @@ public class ServicesContext {
 					tokenStore(),
 					ids(),
 					creator(),
+					validator(),
 					recordsHistorian(),
 					accountsLedger);
 			scheduleStore().setAccountsLedger(accountsLedger);
@@ -1795,6 +1796,7 @@ public class ServicesContext {
 					NOOP_TOKEN_STORE,
 					NOOP_ID_SOURCE,
 					NOOP_EXPIRING_CREATIONS,
+					validator(),
 					NOOP_RECORDS_HISTORIAN,
 					pureDelegate);
 			Source<byte[], AccountState> pureAccountSource = new LedgerAccountsSource(
