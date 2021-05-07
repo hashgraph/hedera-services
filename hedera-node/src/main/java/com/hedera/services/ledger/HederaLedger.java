@@ -126,7 +126,7 @@ public class HederaLedger {
 
 	private final TokenStore tokenStore;
 	private final EntityIdSource ids;
-	private OptionValidator validator;
+	private final OptionValidator validator;
 	private final TransferList.Builder netTransfers = TransferList.newBuilder();
 	private final AccountRecordsHistorian historian;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
@@ -460,6 +460,10 @@ public class HederaLedger {
 		return (boolean) accountsLedger.get(id, IS_DELETED);
 	}
 
+	public boolean isDetached(AccountID id) {
+		return !validator.isAfterConsensusSecond((long) accountsLedger.get(id, EXPIRY));
+	}
+
 	public boolean isPendingCreation(AccountID id) {
 		return accountsLedger.existsPending(id);
 	}
@@ -529,10 +533,10 @@ public class HederaLedger {
 		if ((boolean) accountsLedger.get(id, IS_DELETED)) {
 			throw new DeletedAccountException(id);
 		}
-		if (!validator.isAfterConsensusSecond((long) accountsLedger.get(id, EXPIRY))) {
+		long balance = getBalance(id);
+		if (balance == 0 && isDetached(id)) {
 			throw new DetachedAccountException(id);
 		}
-		long balance = getBalance(id);
 		if (!isLegalToAdjust(balance, adjustment)) {
 			throw new InsufficientFundsException(id, adjustment);
 		}

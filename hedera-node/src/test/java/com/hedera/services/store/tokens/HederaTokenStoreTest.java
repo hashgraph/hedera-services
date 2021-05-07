@@ -78,6 +78,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_TREA
 import static com.hedera.test.mocks.TestContextValidator.CONSENSUS_NOW;
 import static com.hedera.test.mocks.TestContextValidator.TEST_VALIDATOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
@@ -713,6 +714,18 @@ class HederaTokenStoreTest {
 
 		// expect:
 		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, status);
+	}
+
+	@Test
+	public void grantingKycRejectsDetachedAccount() {
+		given(accountsLedger.exists(sponsor)).willReturn(true);
+		given(hederaLedger.isDetached(sponsor)).willReturn(true);
+
+		// when:
+		var status = subject.grantKyc(sponsor, misc);
+
+		// expect:
+		assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, status);
 	}
 
 	@Test

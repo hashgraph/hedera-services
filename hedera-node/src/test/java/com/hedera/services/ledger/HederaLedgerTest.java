@@ -149,6 +149,16 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
+	public void delegatesToCorrectExpiry() {
+		// when:
+		var result = subject.isDetached(genesis);
+
+		// then:
+		verify(accountsLedger).get(genesis, EXPIRY);
+		assertFalse(result);
+	}
+
+	@Test
 	public void delegatesToCorrectExpiryProperty() {
 		// when:
 		subject.expiry(genesis);

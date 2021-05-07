@@ -29,6 +29,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -69,8 +70,14 @@ public abstract class HederaStore {
     }
 
     protected ResponseCodeEnum checkAccountExistence(AccountID aId) {
-        return accountsLedger.exists(aId)
-                ? (hederaLedger.isDeleted(aId) ? ACCOUNT_DELETED : OK)
-                : INVALID_ACCOUNT_ID;
+        if (!accountsLedger.exists(aId)) {
+            return INVALID_ACCOUNT_ID;
+        } else if (hederaLedger.isDeleted(aId)) {
+            return ACCOUNT_DELETED;
+        } else if (hederaLedger.isDetached(aId)) {
+            return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+        } else {
+            return OK;
+        }
     }
 }
