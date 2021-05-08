@@ -31,16 +31,28 @@ import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
@@ -78,54 +90,179 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 		return List.of(new HapiApiSpec[] {
 //						gracePeriodRestrictionsSuiteSetup(),
 
-//						restrictionsEnforced(),
-						mustReattachTreasuryBeforeUpdating(),
+						payerRestrictionsEnforced(),
+//						cryptoTransferRestrictionsEnforced(),
+//						tokenMgmtRestrictionsEnforced(),
+//						cryptoDeleteRestrictionsEnforced(),
+//						treasuryOpsRestrictionEnforced(),
+//						tokenAutoRenewOpsEnforced(),
+//						topicAutoRenewOpsEnforced(),
 
 //						gracePeriodRestrictionsSuiteCleanup(),
 				}
 		);
 	}
 
-	private HapiApiSpec mustReattachTreasuryBeforeUpdating() {
-		final var tokenAlreadyAssociated = "c";
+	private HapiApiSpec payerRestrictionsEnforced() {
 		final var detachedAccount = "gone";
-		final var tokenAdminKey = "tak";
-		final var civilian = "misc";
 
-		return defaultHapiSpec("PermissibleToChangeTreasuryIfDetached")
+		return defaultHapiSpec("PayerRestrictionsEnforced")
 				.given(
-						newKeyNamed(tokenAdminKey),
+						cryptoCreate(detachedAccount)
+								.balance(0L)
+								.autoRenewSecs(1)
+				).when(
+						sleepFor(1_500L),
+						cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L))
+				).then(
+						cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
+								.payingWith(detachedAccount)
+								.hasPrecheck(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+						getAccountInfo("0.0.2")
+								.payingWith(detachedAccount)
+								.hasCostAnswerPrecheck(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+						getAccountInfo("0.0.2")
+								.payingWith(detachedAccount)
+								.nodePayment(666L)
+								.hasAnswerOnlyPrecheck(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL)
+				);
+	}
+
+	private HapiApiSpec topicAutoRenewOpsEnforced() {
+		final var topicWithDetachedAsAutoRenew = "c";
+		final var topicSansDetachedAsAutoRenew = "d";
+		final var detachedAccount = "gone";
+		final var adminKey = "tak";
+		final var civilian = "misc";
+		final var notToBe = "nope";
+
+		return defaultHapiSpec("TopicAutoRenewOpsEnforced")
+				.given(
+						newKeyNamed(adminKey),
 						cryptoCreate(civilian)
 				).when(
 						cryptoCreate(detachedAccount)
 								.balance(0L)
 								.autoRenewSecs(2),
-						tokenCreate(tokenAlreadyAssociated)
-								.adminKey(tokenAdminKey)
-								.treasury(detachedAccount),
+						createTopic(topicWithDetachedAsAutoRenew)
+								.adminKeyName(adminKey)
+								.autoRenewAccountId(detachedAccount),
+						createTopic(topicSansDetachedAsAutoRenew)
+								.adminKeyName(adminKey)
+								.autoRenewAccountId(civilian),
 						sleepFor(1_500L)
 				).then(
-						tokenAssociate(civilian, tokenAlreadyAssociated),
-						tokenUpdate(tokenAlreadyAssociated)
-								.treasury(civilian)
+						createTopic(notToBe)
+								.adminKeyName(adminKey)
+								.autoRenewAccountId(detachedAccount)
+								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+						updateTopic(topicWithDetachedAsAutoRenew)
+								.autoRenewAccountId(civilian)
+								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+						updateTopic(topicSansDetachedAsAutoRenew)
+								.autoRenewAccountId(detachedAccount)
+								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+						getTopicInfo(topicSansDetachedAsAutoRenew)
+								.hasAutoRenewAccount(civilian),
+						getTopicInfo(topicWithDetachedAsAutoRenew)
+								.hasAutoRenewAccount(detachedAccount)
 				);
 	}
 
-	private HapiApiSpec restrictionsEnforced() {
+	private HapiApiSpec tokenAutoRenewOpsEnforced() {
+		final var tokenWithDetachedAsAutoRenew = "c";
+		final var tokenSansDetachedAsAutoRenew = "d";
+		final var detachedAccount = "gone";
+		final var adminKey = "tak";
+		final var civilian = "misc";
+		final var notToBe = "nope";
+
+		return defaultHapiSpec("TokenAutoRenewOpsEnforced")
+				.given(
+						newKeyNamed(adminKey),
+						cryptoCreate(civilian)
+				).when(
+						cryptoCreate(detachedAccount)
+								.balance(0L)
+								.autoRenewSecs(2),
+						tokenCreate(tokenWithDetachedAsAutoRenew)
+								.adminKey(adminKey)
+								.autoRenewAccount(detachedAccount),
+						tokenCreate(tokenSansDetachedAsAutoRenew)
+								.autoRenewAccount(civilian)
+								.adminKey(adminKey),
+						sleepFor(1_500L)
+				).then(
+						tokenCreate(notToBe)
+								.autoRenewAccount(detachedAccount)
+								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+						tokenUpdate(tokenWithDetachedAsAutoRenew)
+								.autoRenewAccount(civilian)
+								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+						tokenUpdate(tokenSansDetachedAsAutoRenew)
+								.autoRenewAccount(detachedAccount)
+								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+						getTokenInfo(tokenSansDetachedAsAutoRenew)
+								.hasAutoRenewAccount(civilian),
+						getTokenInfo(tokenWithDetachedAsAutoRenew)
+								.hasAutoRenewAccount(detachedAccount)
+				);
+	}
+
+	private HapiApiSpec treasuryOpsRestrictionEnforced() {
+		final var aToken = "c";
+		final var detachedAccount = "gone";
+		final var tokenMultiKey = "tak";
+		final var civilian = "misc";
+		final long expectedSupply = 1_234L;
+
+		return defaultHapiSpec("MustReattachTreasuryBeforeUpdating")
+				.given(
+						newKeyNamed(tokenMultiKey),
+						cryptoCreate(civilian)
+				).when(
+						cryptoCreate(detachedAccount)
+								.balance(0L)
+								.autoRenewSecs(2),
+						tokenCreate(aToken)
+								.adminKey(tokenMultiKey)
+								.supplyKey(tokenMultiKey)
+								.initialSupply(expectedSupply)
+								.treasury(detachedAccount),
+						tokenAssociate(civilian, aToken),
+						sleepFor(1_500L)
+				).then(
+						tokenUpdate(aToken)
+								.treasury(civilian)
+								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+						mintToken(aToken, 1L)
+								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+						burnToken(aToken, 1L)
+								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+						getTokenInfo(aToken)
+								.hasTreasury(detachedAccount),
+						getAccountBalance(detachedAccount)
+								.hasTokenBalance(aToken, expectedSupply)
+				);
+	}
+
+	private HapiApiSpec tokenMgmtRestrictionsEnforced() {
 		final var notToBe = "a";
 		final var tokenNotYetAssociated = "b";
 		final var tokenAlreadyAssociated = "c";
 		final var detachedAccount = "gone";
-		final var tokenAdminKey = "tak";
+		final var tokenMultiKey = "tak";
 		final var civilian = "misc";
 
-		return defaultHapiSpec("RestrictionsEnforced")
+		return defaultHapiSpec("TokenMgmtRestrictionsEnforced")
 				.given(
-						newKeyNamed(tokenAdminKey),
+						newKeyNamed(tokenMultiKey),
 						cryptoCreate(civilian),
 						tokenCreate(tokenNotYetAssociated)
-								.adminKey(tokenAdminKey),
+								.adminKey(tokenMultiKey),
 						tokenCreate(tokenAlreadyAssociated)
+								.freezeKey(tokenMultiKey)
+								.kycKey(tokenMultiKey)
 				).when(
 						cryptoCreate(detachedAccount)
 								.balance(0L)
@@ -136,12 +273,13 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 						tokenCreate(notToBe)
 								.treasury(detachedAccount)
 								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-						cryptoTransfer(tinyBarsFromTo(GENESIS, detachedAccount, ONE_MILLION_HBARS))
+						tokenUnfreeze(tokenAlreadyAssociated, detachedAccount)
 								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-						cryptoDelete(detachedAccount)
+						tokenFreeze(tokenAlreadyAssociated, detachedAccount)
 								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-						cryptoDelete(civilian)
-								.transfer(detachedAccount)
+						grantTokenKyc(tokenAlreadyAssociated, detachedAccount)
+								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+						revokeTokenKyc(tokenAlreadyAssociated, detachedAccount)
 								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
 						tokenAssociate(detachedAccount, tokenNotYetAssociated)
 								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
@@ -149,6 +287,51 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 								.treasury(detachedAccount)
 								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
 						tokenDissociate(detachedAccount, tokenAlreadyAssociated)
+								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL)
+				);
+	}
+
+	private HapiApiSpec cryptoDeleteRestrictionsEnforced() {
+		final var detachedAccount = "gone";
+		final var civilian = "misc";
+
+		return defaultHapiSpec("CryptoDeleteRestrictionsEnforced")
+				.given(
+						cryptoCreate(civilian),
+						cryptoCreate(detachedAccount)
+								.balance(0L)
+								.autoRenewSecs(2)
+				).when(
+						sleepFor(1_500L)
+				).then(
+						cryptoDelete(detachedAccount)
+								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+						cryptoDelete(civilian)
+								.transfer(detachedAccount)
+								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL)
+				);
+	}
+
+	private HapiApiSpec cryptoTransferRestrictionsEnforced() {
+		final var aToken = "c";
+		final var detachedAccount = "gone";
+		final var civilian = "misc";
+
+		return defaultHapiSpec("CryptoTransferRestrictionsEnforced")
+				.given(
+						cryptoCreate(civilian),
+						cryptoCreate(detachedAccount)
+								.balance(0L)
+								.autoRenewSecs(2),
+						tokenCreate(aToken)
+								.treasury(detachedAccount),
+						tokenAssociate(civilian, aToken)
+				).when(
+						sleepFor(1_500L)
+				).then(
+						cryptoTransfer(tinyBarsFromTo(GENESIS, detachedAccount, ONE_MILLION_HBARS))
+								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+						cryptoTransfer(moving(1, aToken).between(detachedAccount, civilian))
 								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL)
 				);
 	}

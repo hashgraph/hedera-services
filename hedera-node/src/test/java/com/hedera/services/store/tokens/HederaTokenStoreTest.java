@@ -792,7 +792,6 @@ class HederaTokenStoreTest {
 	@Test
 	public void wipingWithoutTokenRelationshipFails() {
 		// setup:
-		long balance = 1_234L;
 		given(token.hasWipeKey()).willReturn(false);
 		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
 		// and:
@@ -1403,6 +1402,18 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	public void mintingRejectsDetachedTreasury() {
+		given(token.hasSupplyKey()).willReturn(true);
+		given(hederaLedger.isDetached(treasury)).willReturn(true);
+
+		// when:
+		var status = subject.mint(misc, 1L);
+
+		// then:
+		assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, status);
+	}
+
+	@Test
 	public void burningRejectsInvalidToken() {
 		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
 
@@ -1433,6 +1444,19 @@ class HederaTokenStoreTest {
 
 		// then:
 		assertEquals(ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY, status);
+	}
+
+	@Test
+	public void burningRejectsDetachedTreasury() {
+		given(token.hasSupplyKey()).willReturn(true);
+		given(token.totalSupply()).willReturn(treasuryBalance);
+		given(hederaLedger.isDetached(treasury)).willReturn(true);
+
+		// when:
+		var status = subject.burn(misc, 1L);
+
+		// then:
+		assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, status);
 	}
 
 	@Test
@@ -1803,7 +1827,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	public void rejectsDeletedTreasuryAccount() {
-		given(accountsLedger.get(treasury, IS_DELETED)).willReturn(true);
+		given(hederaLedger.isDeleted(treasury)).willReturn(true);
 
 		// and:
 		var req = fullyValidAttempt()

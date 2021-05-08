@@ -383,7 +383,10 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			}
 
 			var aId = token.treasury().toGrpcAccountId();
-			var validity = tryAdjustment(aId, tId, change);
+			var validity = checkAccountUsability(aId);
+			if (validity == OK) {
+				validity = tryAdjustment(aId, tId, change);
+			}
 			if (validity != OK) {
 				return validity;
 			}
@@ -400,12 +403,12 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			AccountID sponsor,
 			long now
 	) {
-		var validity = accountCheck(request.getTreasury(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+		var validity = usableOrElse(request.getTreasury(), INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 		if (validity != OK) {
 			return failure(validity);
 		}
 		if (request.hasAutoRenewAccount()) {
-			validity = accountCheck(request.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
+			validity = usableOrElse(request.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
 			if (validity != OK) {
 				return failure(validity);
 			}
@@ -537,7 +540,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		var hasNewTokenName = changes.getName().length() > 0;
 		var hasAutoRenewAccount = changes.hasAutoRenewAccount();
 		if (hasAutoRenewAccount) {
-			validity = accountCheck(changes.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
+			validity = usableOrElse(changes.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
 			if (validity != OK) {
 				return validity;
 			}
@@ -652,7 +655,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			List<TokenID> tokens,
 			BiFunction<AccountID, List<TokenID>, ResponseCodeEnum> action
 	) {
-		var validity = checkAccountExistence(aId);
+		var validity = checkAccountUsability(aId);
 		if (validity != OK) {
 			return validity;
 		}
@@ -761,7 +764,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	private ResponseCodeEnum checkExistence(AccountID aId, TokenID tId) {
-		var validity = checkAccountExistence(aId);
+		var validity = checkAccountUsability(aId);
 		if (validity != OK) {
 			return validity;
 		}

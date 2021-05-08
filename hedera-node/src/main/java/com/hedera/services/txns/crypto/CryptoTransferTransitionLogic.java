@@ -128,7 +128,7 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 			return validity;
 		}
 
-		validity = validator.isAcceptableTokenTransfersLength(op.getTokenTransfersList());
+		validity = validator.tokenTransfersLengthCheck(op.getTokenTransfersList());
 		if (validity != OK) {
 			return validity;
 		}

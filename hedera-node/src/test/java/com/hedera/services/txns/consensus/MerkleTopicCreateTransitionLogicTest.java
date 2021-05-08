@@ -22,6 +22,7 @@ package com.hedera.services.txns.consensus;
 
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -47,6 +48,7 @@ import java.time.Instant;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
@@ -86,6 +88,7 @@ class MerkleTopicCreateTransitionLogicTest {
 	private FCMap<MerkleEntityId, MerkleAccount> accounts = new FCMap<>();
 	private FCMap<MerkleEntityId, MerkleTopic> topics = new FCMap<>();
 	private EntityIdSource entityIdSource;
+	private HederaLedger ledger;
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(2_345L).build();
 
 	@BeforeEach
@@ -108,8 +111,10 @@ class MerkleTopicCreateTransitionLogicTest {
 		accounts.clear();
 		topics.clear();
 
+		ledger = mock(HederaLedger.class);
+
 		subject = new TopicCreateTransitionLogic(
-				() -> accounts, () -> topics, entityIdSource, validator, transactionContext);
+				() -> accounts, () -> topics, entityIdSource, validator, transactionContext, ledger);
 	}
 
 	@Test
@@ -229,6 +234,19 @@ class MerkleTopicCreateTransitionLogicTest {
 	}
 
 	@Test
+	public void detachedAutoRenewAccountId() throws Throwable {
+		// given:
+		givenTransactionWithDetachedAutoRenewAccountId();
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		assertTrue(topics.isEmpty());
+		verify(transactionContext).setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+	}
+
+	@Test
 	public void autoRenewAccountNotAllowed() throws Throwable {
 		// given:
 		givenTransactionWithAutoRenewAccountWithoutAdminKey();
@@ -303,6 +321,15 @@ class MerkleTopicCreateTransitionLogicTest {
 						.setAutoRenewAccount(MISC_ACCOUNT)
 		);
 		given(validator.queryableAccountStatus(MISC_ACCOUNT, accounts)).willReturn(INVALID_ACCOUNT_ID);
+	}
+
+	private void givenTransactionWithDetachedAutoRenewAccountId() {
+		givenTransaction(
+				getBasicValidTransactionBodyBuilder()
+						.setAutoRenewAccount(MISC_ACCOUNT)
+		);
+		given(validator.queryableAccountStatus(MISC_ACCOUNT, accounts)).willReturn(OK);
+		given(ledger.isDetached(MISC_ACCOUNT)).willReturn(true);
 	}
 
 	private void givenTransactionWithAutoRenewAccountWithoutAdminKey() {

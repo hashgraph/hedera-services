@@ -61,9 +61,9 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
-	private final OptionValidator validator;
 	private final TokenStore store;
 	private final HederaLedger ledger;
+	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
 	private final Predicate<TokenUpdateTransactionBody> affectsExpiryOnly;
 
@@ -111,6 +111,12 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 			return;
 		}
 
+		outcome = autoRenewAttachmentCheck(op, token);
+		if (outcome != OK) {
+			txnCtx.setStatus(outcome);
+			return;
+		}
+
 		Optional<AccountID> replacedTreasury = Optional.empty();
 		if (op.hasTreasury()) {
 			var newTreasury = op.getTreasury();
@@ -124,6 +130,10 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 			}
 			var existingTreasury = token.treasury().toGrpcAccountId();
 			if (!newTreasury.equals(existingTreasury)) {
+				if (ledger.isDetached(existingTreasury)) {
+					txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+					return;
+				}
 				outcome = prepNewTreasury(id, token, newTreasury);
 				if (outcome != OK) {
 					abortWith(outcome);
@@ -151,22 +161,6 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 		}
 
 		txnCtx.setStatus(SUCCESS);
-	}
-
-	private ResponseCodeEnum prepNewTreasury(TokenID id, MerkleToken token, AccountID newTreasury) {
-		var status = OK;
-		if (token.hasFreezeKey()) {
-			status = ledger.unfreeze(newTreasury, id);
-		}
-		if (status == OK && token.hasKycKey()) {
-			status = ledger.grantKyc(newTreasury, id);
-		}
-		return status;
-	}
-
-	private void abortWith(ResponseCodeEnum cause) {
-		ledger.dropPendingTokenChanges();
-		txnCtx.setStatus(cause);
 	}
 
 	@Override
@@ -219,5 +213,37 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 		}
 
 		return validity;
+	}
+
+	private ResponseCodeEnum autoRenewAttachmentCheck(TokenUpdateTransactionBody op, MerkleToken token) {
+		if (op.hasAutoRenewAccount()) {
+			final var newAutoRenew = op.getAutoRenewAccount();
+			if (ledger.isDetached(newAutoRenew)) {
+				return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+			}
+			if (token.hasAutoRenewAccount()) {
+				final var existingAutoRenew = token.autoRenewAccount().toGrpcAccountId();
+				if (ledger.isDetached(existingAutoRenew)) {
+					return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+				}
+			}
+		}
+		return OK;
+	}
+
+	private ResponseCodeEnum prepNewTreasury(TokenID id, MerkleToken token, AccountID newTreasury) {
+		var status = OK;
+		if (token.hasFreezeKey()) {
+			status = ledger.unfreeze(newTreasury, id);
+		}
+		if (status == OK && token.hasKycKey()) {
+			status = ledger.grantKyc(newTreasury, id);
+		}
+		return status;
+	}
+
+	private void abortWith(ResponseCodeEnum cause) {
+		ledger.dropPendingTokenChanges();
+		txnCtx.setStatus(cause);
 	}
 }

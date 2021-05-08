@@ -1272,10 +1272,10 @@ public class ServicesContext {
 				/* Consensus */
 				entry(ConsensusCreateTopic,
 						List.of(new TopicCreateTransitionLogic(
-								this::accounts, this::topics, ids(), validator(), txnCtx()))),
+								this::accounts, this::topics, ids(), validator(), txnCtx(), ledger()))),
 				entry(ConsensusUpdateTopic,
 						List.of(new TopicUpdateTransitionLogic(
-								this::accounts, this::topics, validator(), txnCtx()))),
+								this::accounts, this::topics, validator(), txnCtx(), ledger()))),
 				entry(ConsensusDeleteTopic,
 						List.of(new TopicDeleteTransitionLogic(
 								this::topics, validator(), txnCtx()))),
