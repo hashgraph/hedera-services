@@ -76,6 +76,9 @@ class RenewalHelperTest {
 	private final MerkleAccount renewedExpiredAccount = MerkleAccountFactory.newAccount()
 			.balance(0).expirationTime(now + renewalPeriod - 1)
 			.get();
+	private final MerkleAccount fundingAccount = MerkleAccountFactory.newAccount()
+			.balance(0)
+			.get();
 	private final long nonExpiredAccountNum = 1L, brokeExpiredAccountNum = 2L, fundedExpiredAccountNum = 3L;
 	private final EntityId expiredTreasuryId = new EntityId(0, 0, brokeExpiredAccountNum);
 	private final EntityId treasuryId = new EntityId(0, 0, 666L);
@@ -255,8 +258,10 @@ class RenewalHelperTest {
 	void renewsLastClassifiedAsRequested() {
 		// setup:
 		var key = new MerkleEntityId(0, 0, fundedExpiredAccountNum);
+		var fundingKey = new MerkleEntityId(0, 0, 98);
 
 		givenPresent(fundedExpiredAccountNum, expiredAccountNonZeroBalance, true);
+		givenPresent(98, fundingAccount, true);
 
 		// when:
 		subject.classify(fundedExpiredAccountNum, now);
@@ -265,7 +270,9 @@ class RenewalHelperTest {
 
 		// then:
 		verify(accounts).getForModify(key);
+		verify(accounts).getForModify(fundingKey);
 		verify(accounts).replace(key, renewedExpiredAccount);
+		verify(accounts).replace(fundingKey, fundingAccount);
 	}
 
 	@Test
@@ -315,8 +322,10 @@ class RenewalHelperTest {
 
 	private void givenPresent(long num, MerkleAccount account, boolean modifiable) {
 		var key = new MerkleEntityId(0, 0, num);
-		given(accounts.containsKey(key)).willReturn(true);
-		given(accounts.get(key)).willReturn(account);
+		if (num != 98) {
+			given(accounts.containsKey(key)).willReturn(true);
+			given(accounts.get(key)).willReturn(account);
+		}
 		if (modifiable) {
 			given(accounts.getForModify(key)).willReturn(account);
 		}

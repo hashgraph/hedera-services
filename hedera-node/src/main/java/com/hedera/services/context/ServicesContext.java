@@ -197,7 +197,6 @@ import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.expiry.EntityAutoRenewal;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
-import com.hedera.services.state.expiry.renewal.RenewalFeeHelper;
 import com.hedera.services.state.expiry.renewal.RenewalHelper;
 import com.hedera.services.state.expiry.renewal.RenewalProcess;
 import com.hedera.services.state.expiry.renewal.RenewalRecordsHelper;
@@ -1487,12 +1486,10 @@ public class ServicesContext {
 			final var helper = new RenewalHelper(
 					tokenStore(), hederaNums(), globalDynamicProperties(),
 					this::tokens, this::accounts, this::tokenAssociations);
-			final var feeHelper = new RenewalFeeHelper(
-					globalDynamicProperties(), this::accounts);
 			final var recordHelper = new RenewalRecordsHelper(
 					this, recordStreamManager(), globalDynamicProperties());
 			final var renewalProcess = new RenewalProcess(
-					fees(), hederaNums(), helper, feeHelper, recordHelper);
+					fees(), hederaNums(), helper, recordHelper);
 			entityAutoRenewal = new EntityAutoRenewal(
 					hederaNums(), renewalProcess, this, globalDynamicProperties());
 		}

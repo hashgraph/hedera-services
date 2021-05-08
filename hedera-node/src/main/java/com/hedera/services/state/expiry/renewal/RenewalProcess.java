@@ -31,7 +31,6 @@ public class RenewalProcess {
 
 	private final FeeCalculator fees;
 	private final RenewalHelper helper;
-	private final RenewalFeeHelper feeHelper;
 	private final RenewalRecordsHelper recordsHelper;
 
 	private long longNow;
@@ -41,12 +40,10 @@ public class RenewalProcess {
 			FeeCalculator fees,
 			HederaNumbers hederaNums,
 			RenewalHelper helper,
-			RenewalFeeHelper feeHelper,
 			RenewalRecordsHelper recordsHelper
 	) {
 		this.fees = fees;
 		this.helper = helper;
-		this.feeHelper = feeHelper;
 		this.recordsHelper = recordsHelper;
 
 		this.realm = hederaNums.realm();
@@ -57,7 +54,6 @@ public class RenewalProcess {
 		assertNotInCycle();
 
 		cycleTime = now;
-		feeHelper.beginChargingCycle();
 		recordsHelper.beginRenewalCycle(now);
 	}
 
@@ -89,7 +85,6 @@ public class RenewalProcess {
 		final long renewalFee = usageAssessment.fee();
 
 		helper.renewLastClassifiedWith(renewalFee, effPeriod);
-		feeHelper.recordCharged(renewalFee);
 		recordsHelper.streamCryptoRenewal(accountId, renewalFee, longNow + effPeriod);
 	}
 
@@ -102,7 +97,6 @@ public class RenewalProcess {
 		assertInCycle();
 
 		cycleTime = null;
-		feeHelper.endChargingCycle();
 		recordsHelper.endRenewalCycle();
 	}
 

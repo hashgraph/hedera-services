@@ -47,6 +47,7 @@ import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassificati
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.OTHER;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
+import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 
 /**
  * Helper for renewing and removing expired entities. Only crypto accounts are supported in this implementation.
@@ -147,8 +148,15 @@ public class RenewalHelper {
 		try {
 			mutableLastClassified.setBalance(newBalance);
 		} catch (NegativeAccountBalanceException impossible) { }
-
 		currentAccounts.replace(lastClassifiedEntityId, mutableLastClassified);
+
+		final var fundingId = fromAccountId(dynamicProperties.fundingAccount());
+		final var mutableFundingAccount = currentAccounts.getForModify(fundingId);
+		final long newFundingBalance = mutableFundingAccount.getBalance() + fee;
+		try {
+			mutableFundingAccount.setBalance(newFundingBalance);
+		} catch (NegativeAccountBalanceException impossible) { }
+		currentAccounts.replace(fundingId, mutableFundingAccount);
 	}
 
 	public MerkleAccount getLastClassifiedAccount() {

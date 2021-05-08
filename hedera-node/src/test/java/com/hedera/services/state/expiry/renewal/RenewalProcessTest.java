@@ -71,15 +71,13 @@ class RenewalProcessTest {
 	@Mock
 	private RenewalHelper helper;
 	@Mock
-	private RenewalFeeHelper feeHelper;
-	@Mock
 	private RenewalRecordsHelper recordsHelper;
 
 	private RenewalProcess subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new RenewalProcess(fees, new MockHederaNumbers(), helper, feeHelper, recordsHelper);
+		subject = new RenewalProcess(fees, new MockHederaNumbers(), helper, recordsHelper);
 	}
 
 	@Test
@@ -94,7 +92,6 @@ class RenewalProcessTest {
 		subject.beginRenewalCycle(instantNow);
 
 		// then:
-		verify(feeHelper).beginChargingCycle();
 		verify(recordsHelper).beginRenewalCycle(instantNow);
 	}
 
@@ -122,7 +119,6 @@ class RenewalProcessTest {
 		subject.endRenewalCycle();
 
 		// then:
-		verify(feeHelper).endChargingCycle();
 		verify(recordsHelper).endRenewalCycle();
 		assertNull(subject.getCycleTime());
 	}
@@ -208,7 +204,6 @@ class RenewalProcessTest {
 		// then:
 		assertTrue(wasTouched);
 		verify(helper).renewLastClassifiedWith(fee, actualRenewalPeriod);
-		verify(feeHelper).recordCharged(fee);
 		verify(recordsHelper).streamCryptoRenewal(key, fee, now + actualRenewalPeriod);
 	}
 }
