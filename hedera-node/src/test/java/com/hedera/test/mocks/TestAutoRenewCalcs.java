@@ -36,7 +36,7 @@ public class TestAutoRenewCalcs extends AutoRenewCalcs {
 	@Override
 	public AutoRenewCalcs.RenewAssessment maxRenewalAndFeeFor(
 			MerkleAccount expiredAccount,
-			long requestedPeriod,
+			long reqPeriod,
 			Instant at,
 			ExchangeRate active
 	) {

@@ -461,7 +461,8 @@ public class HederaLedger {
 	}
 
 	public boolean isDetached(AccountID id) {
-		return !validator.isAfterConsensusSecond((long) accountsLedger.get(id, EXPIRY));
+		return !validator.isAfterConsensusSecond((long) accountsLedger.get(id, EXPIRY)) &&
+				(long)accountsLedger.get(id, BALANCE) == 0L;
 	}
 
 	public boolean isPendingCreation(AccountID id) {
@@ -533,10 +534,10 @@ public class HederaLedger {
 		if ((boolean) accountsLedger.get(id, IS_DELETED)) {
 			throw new DeletedAccountException(id);
 		}
-		long balance = getBalance(id);
-		if (balance == 0 && isDetached(id)) {
+		if (isDetached(id)) {
 			throw new DetachedAccountException(id);
 		}
+		final long balance = getBalance(id);
 		if (!isLegalToAdjust(balance, adjustment)) {
 			throw new InsufficientFundsException(id, adjustment);
 		}

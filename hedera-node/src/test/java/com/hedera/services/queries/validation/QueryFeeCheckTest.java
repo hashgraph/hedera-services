@@ -297,6 +297,21 @@ class QueryFeeCheckTest {
 	}
 
 	@Test
+	public void noLongerDetachedWithNonzeroBalance() {
+		given(validator.isAfterConsensusSecond(payerExpiry)).willReturn(false);
+		given(detached.getBalance()).willReturn(1L);
+
+		// given:
+		var adjustment = adjustmentWith(aDetached, -aLot);
+
+		// when:
+		var status = subject.adjustmentPlausibility(adjustment);
+
+		// then:
+		assertEquals(INSUFFICIENT_PAYER_BALANCE, status);
+	}
+
+	@Test
 	public void missingReceiverRejected() {
 		// given:
 		var adjustment = adjustmentWith(aMissing, aLot);

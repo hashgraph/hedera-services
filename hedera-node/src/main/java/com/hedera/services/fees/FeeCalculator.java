@@ -9,9 +9,9 @@ package com.hedera.services.fees;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -44,11 +44,17 @@ public interface FeeCalculator {
 	void init();
 
 	long activeGasPriceInTinybars();
+
 	long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at);
+
 	long estimatedNonFeePayerAdjustments(TxnAccessor accessor, Timestamp at);
+
 	FeeObject computeFee(TxnAccessor accessor, JKey payerKey, StateView view);
+
 	FeeObject estimateFee(TxnAccessor accessor, JKey payerKey, StateView view, Timestamp at);
+
 	FeeObject estimatePayment(Query query, FeeData usagePrices, StateView view, Timestamp at, ResponseType type);
+
 	FeeObject computePayment(
 			Query query,
 			FeeData usagePrices,
@@ -58,21 +64,25 @@ public interface FeeCalculator {
 
 	/**
 	 * Assesses the longest period for which the expired account can afford to renew itself,
-	 * <b>up to</b> the requested period; as well as the service fee to be charged for
+	 * up to the requested period; as well as the service fee to be charged for
 	 * renewing the account for that period.
 	 *
-	 * <b>Important:</b> The period will always be a multiple of 3600, because the fee
-	 * schedule uses hours as the units to price memory consumption.
+	 * <b>Important:</b> The fee charged will always be <i>calculated</i> for a period that is
+	 * a multiple of 3600 seconds, because the fee schedule uses hours as the units to price
+	 * memory consumption.
 	 *
-	 * Also, unless the expired account's balance is exactly zero, the period will always
-	 * be at least 3600 (representing one hour of renewal).
+	 * However, the assessed renewal period will still be (up to) the requested renewal, even if
+	 * it is not an exact multiple of 3600. Fees are rounded <i>up</i> to the nearest hour.
 	 *
-	 * @param expiredAccount the expired account
-	 * @param requestedRenewal the desired renewal period
-	 * @param now the consensus time of expiration
+	 * @param expiredAccount
+	 * 		the expired account
+	 * @param requestedRenewal
+	 * 		the desired renewal period
+	 * @param now
+	 * 		the consensus time of expiration
 	 */
-	 AutoRenewCalcs.RenewAssessment assessCryptoAutoRenewal(
-	 		MerkleAccount expiredAccount,
-			 long requestedRenewal,
-			 Instant now);
+	AutoRenewCalcs.RenewAssessment assessCryptoAutoRenewal(
+			MerkleAccount expiredAccount,
+			long requestedRenewal,
+			Instant now);
 }

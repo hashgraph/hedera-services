@@ -76,13 +76,39 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						gracePeriodRestrictionsSuiteSetup(),
+//						gracePeriodRestrictionsSuiteSetup(),
 
-						restrictionsEnforced(),
+//						restrictionsEnforced(),
+						mustReattachTreasuryBeforeUpdating(),
 
 //						gracePeriodRestrictionsSuiteCleanup(),
 				}
 		);
+	}
+
+	private HapiApiSpec mustReattachTreasuryBeforeUpdating() {
+		final var tokenAlreadyAssociated = "c";
+		final var detachedAccount = "gone";
+		final var tokenAdminKey = "tak";
+		final var civilian = "misc";
+
+		return defaultHapiSpec("PermissibleToChangeTreasuryIfDetached")
+				.given(
+						newKeyNamed(tokenAdminKey),
+						cryptoCreate(civilian)
+				).when(
+						cryptoCreate(detachedAccount)
+								.balance(0L)
+								.autoRenewSecs(2),
+						tokenCreate(tokenAlreadyAssociated)
+								.adminKey(tokenAdminKey)
+								.treasury(detachedAccount),
+						sleepFor(1_500L)
+				).then(
+						tokenAssociate(civilian, tokenAlreadyAssociated),
+						tokenUpdate(tokenAlreadyAssociated)
+								.treasury(civilian)
+				);
 	}
 
 	private HapiApiSpec restrictionsEnforced() {
@@ -119,9 +145,9 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
 						tokenAssociate(detachedAccount, tokenNotYetAssociated)
 								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-//						tokenUpdate(tokenNotYetAssociated)
-//								.treasury(detachedAccount)
-//								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL)
+						tokenUpdate(tokenNotYetAssociated)
+								.treasury(detachedAccount)
+								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
 						tokenDissociate(detachedAccount, tokenAlreadyAssociated)
 								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL)
 				);

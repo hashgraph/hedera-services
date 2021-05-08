@@ -22,6 +22,7 @@ package com.hedera.services.txns.token;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;
@@ -40,6 +41,7 @@ import java.util.function.Predicate;
 
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.txns.validation.TokenListChecks.checkKeys;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
@@ -112,6 +114,10 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 		Optional<AccountID> replacedTreasury = Optional.empty();
 		if (op.hasTreasury()) {
 			var newTreasury = op.getTreasury();
+			if (ledger.isDetached(newTreasury)) {
+				txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+				return;
+			}
 			if (!store.associationExists(newTreasury, id)) {
 				txnCtx.setStatus(INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 				return;
@@ -129,12 +135,15 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 
 		outcome = store.update(op, txnCtx.consensusTime().getEpochSecond());
 		if (outcome == OK && replacedTreasury.isPresent()) {
-			long replacedTreasuryBalance = ledger.getTokenBalance(replacedTreasury.get(), id);
-			outcome = ledger.doTokenTransfer(
-					id,
-					replacedTreasury.get(),
-					op.getTreasury(),
-					replacedTreasuryBalance);
+			final var oldTreasury = replacedTreasury.get();
+			long replacedTreasuryBalance = ledger.getTokenBalance(oldTreasury, id);
+			if (replacedTreasuryBalance > 0) {
+				outcome = ledger.doTokenTransfer(
+						id,
+						oldTreasury,
+						op.getTreasury(),
+						replacedTreasuryBalance);
+			}
 		}
 		if (outcome != OK) {
 			abortWith(outcome);

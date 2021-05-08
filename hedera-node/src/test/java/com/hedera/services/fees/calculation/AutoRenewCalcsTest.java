@@ -122,6 +122,27 @@ class AutoRenewCalcsTest {
 	}
 
 	@Test
+	void computesExpectedUsdPriceForSlightlyMoreThanThreeMonthRenewal() {
+		// setup:
+		long expectedFeeInTinycents = 2200000L;
+		long expectedFeeInTinybars = getTinybarsFromTinyCents(activeRates, expectedFeeInTinycents);
+		long threeMonthsInSeconds = 7776001L;
+		// and:
+		setupSuperStandardAccountWith(Long.MAX_VALUE);
+
+		// when:
+		var maxRenewalAndFee = subject.maxRenewalAndFeeFor(expiredAccount, threeMonthsInSeconds, preCutoff, activeRates);
+		// and:
+		var percentageOfExpected = (1.0 * maxRenewalAndFee.fee()) / expectedFeeInTinybars * 100.0;
+
+		// then:
+		assertEquals(threeMonthsInSeconds, maxRenewalAndFee.renewalPeriod());
+		// and:
+
+		assertEquals(100.0, percentageOfExpected, 5.0);
+	}
+
+	@Test
 	void throwsIseIfUsedWithoutInitializedPrices() {
 		// given:
 		subject = new AutoRenewCalcs(cryptoOpsUsage);

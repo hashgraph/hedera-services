@@ -27,16 +27,16 @@ import com.hedera.services.exceptions.NonZeroNetTransfersException;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.TransferList;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.BDDMockito;
 
 import static com.hedera.services.exceptions.InsufficientFundsException.messageFor;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.doThrow;
 import static org.mockito.BDDMockito.given;
@@ -121,6 +121,7 @@ public class HederaLedgerXfersTest extends BaseHederaLedgerTest {
 		var mockValidator = mock(OptionValidator.class);
 
 		when(accountsLedger.get(detached, EXPIRY)).thenReturn(666L);
+		when(accountsLedger.get(detached, BALANCE)).thenReturn(0L);
 		given(mockValidator.isAfterConsensusSecond(1_234_567_890L)).willReturn(true);
 		given(mockValidator.isAfterConsensusSecond(666L)).willReturn(false);
 
@@ -137,6 +138,25 @@ public class HederaLedgerXfersTest extends BaseHederaLedgerTest {
 		// then:
 		assertEquals("0.0.4567", e.getMessage());
 		verify(accountsLedger, never()).set(any(), any(), any());
+	}
+
+	@Test
+	public void notDetachedUntilGivenChanceToRenew() {
+		// setup:
+		TransferList accountAmounts = TxnUtils.withAdjustments(misc, -2, detached, 4, genesis, -2);
+		DetachedAccountException e = null;
+		var mockValidator = mock(OptionValidator.class);
+
+		when(accountsLedger.get(detached, EXPIRY)).thenReturn(666L);
+		when(accountsLedger.get(detached, BALANCE)).thenReturn(1L);
+		given(mockValidator.isAfterConsensusSecond(1_234_567_890L)).willReturn(true);
+		given(mockValidator.isAfterConsensusSecond(666L)).willReturn(false);
+
+		subject = new HederaLedger(tokenStore, ids, creator, mockValidator, historian, accountsLedger);
+		subject.setTokenRelsLedger(tokenRelsLedger);
+
+		// expect:
+		Assertions.assertDoesNotThrow(() -> subject.doTransfers(accountAmounts));
 	}
 
 	@Test

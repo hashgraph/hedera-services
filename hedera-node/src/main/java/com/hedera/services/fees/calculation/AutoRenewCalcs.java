@@ -71,7 +71,7 @@ public class AutoRenewCalcs {
 
 	public RenewAssessment maxRenewalAndFeeFor(
 			MerkleAccount expiredAccount,
-			long requestedPeriod,
+			long reqPeriod,
 			Instant at,
 			ExchangeRate rate
 	) {
@@ -88,17 +88,15 @@ public class AutoRenewCalcs {
 		final long nominalFixed = isBeforeSwitch ? firstConstantCryptoAutoRenewFee : secondConstantCryptoAutoRenewFee;
 		final long serviceRbhPrice = isBeforeSwitch ? firstServiceRbhPrice : secondServiceRbhPrice;
 
-		final long fixedTinybarFee = inTinybars(nominalFixed, rate);
+		final long fixedFee = inTinybars(nominalFixed, rate);
 		final long rbUsage = rbUsedBy(expiredAccount);
-		final long tinybarPerHour = inTinybars(serviceRbhPrice * rbUsage, rate);
-		final long maxRenewableRbh = Math.max(
-				1L,
-				maxRenewableRbhGiven(fixedTinybarFee, tinybarPerHour, requestedPeriod, expiredAccount.getBalance()));
+		final long hourlyFee = inTinybars(serviceRbhPrice * rbUsage, rate);
+		final long maxRenewableRbh = Math.max(1L, maxRenewableRbhGiven(fixedFee, hourlyFee, reqPeriod, balance));
 
 		final long maxRenewablePeriod = maxRenewableRbh * HRS_DIVISOR;
-		final long feeForMaxRenewal = Math.min(fixedTinybarFee + maxRenewableRbh * tinybarPerHour, balance);
+		final long feeForMaxRenewal = Math.min(fixedFee + maxRenewableRbh * hourlyFee, balance);
 
-		return new RenewAssessment(feeForMaxRenewal, maxRenewablePeriod);
+		return new RenewAssessment(feeForMaxRenewal, Math.min(reqPeriod, maxRenewablePeriod));
 	}
 
 	private long maxRenewableRbhGiven(
@@ -109,7 +107,7 @@ public class AutoRenewCalcs {
 	) {
 		final long remainingBalance = Math.max(0, balance - fixedTinybarFee);
 		final long affordableHours = remainingBalance / tinybarPerHour;
-		final long requestedHours = requestedPeriod / HRS_DIVISOR;
+		final long requestedHours = requestedPeriod / HRS_DIVISOR + (requestedPeriod % HRS_DIVISOR > 0 ? 1 : 0);
 		return Math.min(affordableHours, requestedHours);
 	}
 
