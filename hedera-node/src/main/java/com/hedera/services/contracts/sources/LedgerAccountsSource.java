@@ -20,6 +20,7 @@ package com.hedera.services.contracts.sources;
  * ‍
  */
 
+import com.hedera.services.context.SingletonContextsManager;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
@@ -63,7 +64,7 @@ public class LedgerAccountsSource implements Source<byte[], AccountState> {
 	public AccountState get(byte[] key) {
 		try (ALock ignored = rLock.lock()) {
 			var id = accountParsedFromSolidityAddress(key);
-			if (!ledger.exists(id)) {
+			if (!ledger.exists(id) || ledger.isDetached(id)) {
 				return null;
 			}
 

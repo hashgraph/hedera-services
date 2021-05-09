@@ -4,6 +4,8 @@ crypto.cpuVerifierThreadRatio, 1
 csvAppend, 0
 csvFileName, MainNetStats
 doUpnp, 0
+dbRestore.active, 0
+dbBackup.active, 0
 freezeSettings.active, 0
 maxOutgoingSyncs, 2
 reconnect.active, 0
