@@ -358,7 +358,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	public void failsOnDetachedNewAutoRenewAccount() throws Throwable {
 		// given:
 		givenExistingTopicWithAdminKey();
-		givenTransactionWithAutoRenewAccountClearingAdminKey();
+		givenTransactionWithAutoRenewAccountNotClearingAdminKey();
 		given(ledger.isDetached(MISC_ACCOUNT)).willReturn(true);
 
 		// when:
@@ -467,6 +467,15 @@ class MerkleTopicUpdateTransitionLogicTest {
 		givenTransaction(
 				getBasicValidTransactionBodyBuilder()
 						.setAdminKey(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()))
+						.setAutoRenewAccount(MISC_ACCOUNT)
+		);
+		given(validator.queryableAccountStatus(MISC_ACCOUNT, accounts)).willReturn(OK);
+		given(validator.hasGoodEncoding(any())).willReturn(true);
+	}
+
+	private void givenTransactionWithAutoRenewAccountNotClearingAdminKey() {
+		givenTransaction(
+				getBasicValidTransactionBodyBuilder()
 						.setAutoRenewAccount(MISC_ACCOUNT)
 		);
 		given(validator.queryableAccountStatus(MISC_ACCOUNT, accounts)).willReturn(OK);
