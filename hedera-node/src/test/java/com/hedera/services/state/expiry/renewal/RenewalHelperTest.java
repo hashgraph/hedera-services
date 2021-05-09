@@ -70,6 +70,11 @@ class RenewalHelperTest {
 	private final MerkleAccount expiredAccountZeroBalance = MerkleAccountFactory.newAccount()
 			.balance(0).expirationTime(now - 1)
 			.get();
+	private final MerkleAccount expiredDeletedAccount = MerkleAccountFactory.newAccount()
+			.balance(0)
+			.deleted(true)
+			.expirationTime(now - 1)
+			.get();
 	private final MerkleAccount expiredAccountNonZeroBalance = MerkleAccountFactory.newAccount()
 			.balance(nonZeroBalance).expirationTime(now - 1)
 			.get();
@@ -78,6 +83,10 @@ class RenewalHelperTest {
 			.get();
 	private final MerkleAccount fundingAccount = MerkleAccountFactory.newAccount()
 			.balance(0)
+			.get();
+	private final MerkleAccount contractAccount = MerkleAccountFactory.newAccount()
+			.isSmartContract(true)
+			.balance(0).expirationTime(now - 1)
 			.get();
 	private final long nonExpiredAccountNum = 1L, brokeExpiredAccountNum = 2L, fundedExpiredAccountNum = 3L;
 	private final EntityId expiredTreasuryId = new EntityId(0, 0, brokeExpiredAccountNum);
@@ -135,6 +144,24 @@ class RenewalHelperTest {
 
 		// expect:
 		assertEquals(OTHER, subject.classify(nonExpiredAccountNum, now));
+	}
+
+	@Test
+	void classifiesContractAccount() {
+		givenPresent(nonExpiredAccountNum, contractAccount);
+
+		// expect:
+		assertEquals(OTHER, subject.classify(nonExpiredAccountNum, now));
+	}
+
+	@Test
+	void classifiesDeletedAccountAfterExpiration() {
+		givenPresent(brokeExpiredAccountNum, expiredDeletedAccount);
+
+		// expect:
+		assertEquals(
+				DETACHED_ACCOUNT_GRACE_PERIOD_OVER,
+				subject.classify(brokeExpiredAccountNum, now));
 	}
 
 	@Test

@@ -52,8 +52,8 @@ public class EntityAutoRenewal {
 		}
 
 		final long wrapNum = ctx.seqNo().current();
-		final int maxEntitiesToTouch = (int)dynamicProps.autoRenewMaxNumberOfEntitiesToRenewOrDelete();
-		final int maxEntitiesToScan = (int)dynamicProps.autoRenewNumberOfEntitiesToScan();
+		final int maxEntitiesToTouch = dynamicProps.autoRenewMaxNumberOfEntitiesToRenewOrDelete();
+		final int maxEntitiesToScan = dynamicProps.autoRenewNumberOfEntitiesToScan();
 
 		renewalProcess.beginRenewalCycle(instantNow);
 

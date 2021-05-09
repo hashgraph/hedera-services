@@ -199,12 +199,12 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	}
 
 	@Override
-	public long autoRenewNumberOfEntitiesToScan() {
+	public int autoRenewNumberOfEntitiesToScan() {
 		return 100;
 	}
 
 	@Override
-	public long autoRenewMaxNumberOfEntitiesToRenewOrDelete() {
+	public int autoRenewMaxNumberOfEntitiesToRenewOrDelete() {
 		return 2;
 	}
 

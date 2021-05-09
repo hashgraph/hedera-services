@@ -22,10 +22,12 @@ package com.hedera.services.bdd.suites.autorenew;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -36,14 +38,18 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
@@ -56,6 +62,8 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 
 public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(GracePeriodRestrictionsSuite.class);
@@ -88,19 +96,74 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						gracePeriodRestrictionsSuiteSetup(),
+						gracePeriodRestrictionsSuiteSetup(),
 
-						payerRestrictionsEnforced(),
+
+//						payerRestrictionsEnforced(),
 //						cryptoTransferRestrictionsEnforced(),
 //						tokenMgmtRestrictionsEnforced(),
 //						cryptoDeleteRestrictionsEnforced(),
 //						treasuryOpsRestrictionEnforced(),
 //						tokenAutoRenewOpsEnforced(),
 //						topicAutoRenewOpsEnforced(),
+						cryptoUpdateRestrictionsEnforced(),
 
 //						gracePeriodRestrictionsSuiteCleanup(),
 				}
 		);
+	}
+
+	private HapiApiSpec cryptoUpdateRestrictionsEnforced() {
+		final var detachedAccount = "gone";
+		final long certainlyPast = Instant.now().getEpochSecond() - THREE_MONTHS_IN_SECONDS;
+		final long certainlyDistant = Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS;
+
+		return defaultHapiSpec("CryptoUpdateRestrictionsEnforced")
+				.given(
+						newKeyNamed("ntb"),
+						cryptoCreate(detachedAccount)
+								.balance(0L)
+								.autoRenewSecs(1),
+						sleepFor(1_500L),
+						cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L))
+				).when(
+						cryptoUpdate(detachedAccount)
+								.memo("Can't update receiverSigRequired")
+								.receiverSigRequired(true)
+								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+						cryptoUpdate(detachedAccount)
+								.memo("Can't update key")
+								.key("ntb")
+								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+						cryptoUpdate(detachedAccount)
+								.memo("Can't update auto-renew period")
+								.autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+						cryptoUpdate(detachedAccount)
+								.memo("Can't update memo")
+								.entityMemo("NOPE")
+								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+						cryptoUpdate(detachedAccount)
+								.memo("Can't pass precheck with past expiry")
+								.expiring(certainlyPast)
+								.hasPrecheck(INVALID_EXPIRATION_TIME),
+						cryptoUpdate(detachedAccount)
+								.memo("CAN extend expiry")
+								.expiring(certainlyDistant)
+				).then(
+						cryptoUpdate(detachedAccount)
+								.memo("Should work now!")
+								.receiverSigRequired(true),
+						cryptoUpdate(detachedAccount)
+								.key("ntb"),
+						cryptoUpdate(detachedAccount)
+								.autoRenewPeriod(THREE_MONTHS_IN_SECONDS),
+						cryptoUpdate(detachedAccount)
+								.entityMemo("NOPE"),
+						cryptoUpdate(detachedAccount)
+								.expiring(certainlyDistant - 1_234L)
+								.hasKnownStatus(EXPIRATION_REDUCTION_NOT_ALLOWED)
+				);
 	}
 
 	private HapiApiSpec payerRestrictionsEnforced() {
@@ -124,7 +187,13 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 						getAccountInfo("0.0.2")
 								.payingWith(detachedAccount)
 								.nodePayment(666L)
-								.hasAnswerOnlyPrecheck(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL)
+								.hasAnswerOnlyPrecheck(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+						scheduleCreate("notToBe",
+								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1))
+						)
+								.designatingPayer(detachedAccount)
+								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL)
+
 				);
 	}
 

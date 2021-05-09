@@ -88,20 +88,26 @@ public class RenewalHelper {
 			return OTHER;
 		} else {
 			lastClassifiedAccount = currentAccounts.get(lastClassifiedEntityId);
+			if (lastClassifiedAccount.isSmartContract()) {
+				return OTHER;
+			}
 
 			final long expiry = lastClassifiedAccount.getExpiry();
 			if (expiry > now) {
 				return OTHER;
 			}
+
 			if (lastClassifiedAccount.getBalance() > 0) {
 				return EXPIRED_ACCOUNT_READY_TO_RENEW;
+			}
+			if (lastClassifiedAccount.isDeleted()) {
+				return DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
 			}
 
 			final long gracePeriodEnd = expiry + dynamicProperties.autoRenewGracePeriod();
 			if (gracePeriodEnd > now) {
 				return DETACHED_ACCOUNT;
 			}
-
 			final var grpcId = lastClassifiedEntityId.toAccountId();
 			if (tokenStore.isKnownTreasury(grpcId)) {
 				return DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;

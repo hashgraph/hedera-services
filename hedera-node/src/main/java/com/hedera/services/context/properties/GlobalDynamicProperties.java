@@ -56,8 +56,8 @@ public class GlobalDynamicProperties {
 	private long defaultContractLifetime;
 	private int feesTokenTransferUsageMultiplier;
 	private boolean autoRenewEnabled;
-	private long autoRenewNumberOfEntitiesToScan;
-	private long autoRenewMaxNumberOfEntitiesToRenewOrDelete;
+	private int autoRenewNumberOfEntitiesToScan;
+	private int autoRenewMaxNumberOfEntitiesToRenewOrDelete;
 	private long autoRenewGracePeriod;
 	private long maxAutoRenewDuration;
 	private long minAutoRenewDuration;
@@ -108,9 +108,9 @@ public class GlobalDynamicProperties {
 		defaultContractLifetime = properties.getLongProperty("contracts.defaultLifetime");
 		feesTokenTransferUsageMultiplier = properties.getIntProperty("fees.tokenTransferUsageMultiplier");
 		autoRenewEnabled = properties.getBooleanProperty("autorenew.isEnabled");
-		autoRenewNumberOfEntitiesToScan = properties.getLongProperty("autorenew.numberOfEntitiesToScan");
+		autoRenewNumberOfEntitiesToScan = properties.getIntProperty("autorenew.numberOfEntitiesToScan");
 		autoRenewMaxNumberOfEntitiesToRenewOrDelete =
-				properties.getLongProperty("autorenew.maxNumberOfEntitiesToRenewOrDelete");
+				properties.getIntProperty("autorenew.maxNumberOfEntitiesToRenewOrDelete");
 		autoRenewGracePeriod = properties.getLongProperty("autorenew.gracePeriod");
 		maxAutoRenewDuration = properties.getLongProperty("ledger.autoRenewPeriod.maxDuration");
 		minAutoRenewDuration = properties.getLongProperty("ledger.autoRenewPeriod.minDuration");
@@ -222,11 +222,11 @@ public class GlobalDynamicProperties {
 		return autoRenewEnabled;
 	}
 
-	public long autoRenewNumberOfEntitiesToScan() {
+	public int autoRenewNumberOfEntitiesToScan() {
 		return autoRenewNumberOfEntitiesToScan;
 	}
 
-	public long autoRenewMaxNumberOfEntitiesToRenewOrDelete() {
+	public int autoRenewMaxNumberOfEntitiesToRenewOrDelete() {
 		return autoRenewMaxNumberOfEntitiesToRenewOrDelete;
 	}
 

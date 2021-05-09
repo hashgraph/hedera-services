@@ -328,8 +328,7 @@ public class TxnFactory {
 	}
 
 	public Consumer<CryptoUpdateTransactionBody.Builder> defaultDef_CryptoUpdateTransactionBody() {
-		return builder -> builder
-				.setAutoRenewPeriod(setup.defaultAutoRenewPeriod());
+		return builder -> {};
 	}
 
 	public Consumer<CryptoTransferTransactionBody.Builder> defaultDef_CryptoTransferTransactionBody() {
