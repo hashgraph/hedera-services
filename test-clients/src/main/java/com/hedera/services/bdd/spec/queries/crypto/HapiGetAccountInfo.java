@@ -33,11 +33,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.LongConsumer;
 
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
@@ -54,6 +56,8 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	private List<ExpectedTokenRel> relationships = new ArrayList<>();
 	Optional<AccountInfoAsserts> expectations = Optional.empty();
 	Optional<BiConsumer<AccountInfo, Logger>> customLog = Optional.empty();
+	Optional<LongConsumer> exposingExpiryTo = Optional.empty();
+	Optional<LongConsumer> exposingBalanceTo = Optional.empty();
 
 	public HapiGetAccountInfo(String account) {
 		this.account = account;
@@ -73,10 +77,21 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 		return this;
 	}
 
+	public HapiGetAccountInfo exposingExpiry(LongConsumer obs) {
+		this.exposingExpiryTo = Optional.of(obs);
+		return this;
+	}
+
+	public HapiGetAccountInfo exposingBalance(LongConsumer obs) {
+		this.exposingBalanceTo = Optional.of(obs);
+		return this;
+	}
+
 	public HapiGetAccountInfo saveToRegistry(String registryEntry) {
 		this.registryEntry = Optional.of(registryEntry);
 		return this;
 	}
+
 	public HapiGetAccountInfo hasToken(ExpectedTokenRel relationship) {
 		relationships.add(relationship);
 		return this;
@@ -110,6 +125,11 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	protected void submitWith(HapiApiSpec spec, Transaction payment) throws Throwable {
 		Query query = getAccountInfoQuery(spec, payment, false);
 		response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getAccountInfo(query);
+		final var infoResponse = response.getCryptoGetInfo();
+		if (infoResponse.getHeader().getNodeTransactionPrecheckCode() == OK) {
+			exposingExpiryTo.ifPresent(cb -> cb.accept(infoResponse.getAccountInfo().getExpirationTime().getSeconds()));
+			exposingBalanceTo.ifPresent(cb -> cb.accept(infoResponse.getAccountInfo().getBalance()));
+		}
 		if (verboseLoggingOn) {
 			log.info("Info for '" + account + "': " + response.getCryptoGetInfo().getAccountInfo());
 		}

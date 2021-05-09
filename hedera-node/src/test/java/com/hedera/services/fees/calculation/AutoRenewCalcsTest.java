@@ -179,8 +179,7 @@ class AutoRenewCalcsTest {
 				.build();
 
 		// expect:
-		assertEquals(FeeBuilder.BASIC_ACCOUNT_SIZE +
-				cryptoOpsUsage.cryptoAutoRenewRb(expectedCtx), subject.rbUsedBy(expiredAccount));
+		assertEquals(cryptoOpsUsage.cryptoAutoRenewRb(expectedCtx), subject.rbUsedBy(expiredAccount));
 	}
 
 	private Triple<FeeData, Instant, FeeData> frozenPricesFrom(

@@ -56,6 +56,11 @@ public class EntityAutoRenewal {
 		}
 
 		final long wrapNum = ctx.seqNo().current();
+		if (wrapNum == firstEntityToScan) {
+			/* No non-system entities in the system, can abort */
+			return;
+		}
+
 		final int maxEntitiesToTouch = dynamicProps.autoRenewMaxNumberOfEntitiesToRenewOrDelete();
 		final int maxEntitiesToScan = dynamicProps.autoRenewNumberOfEntitiesToScan();
 
@@ -63,6 +68,10 @@ public class EntityAutoRenewal {
 
 		int i = 1, entitiesTouched = 0;
 		long scanNum = ctx.lastScannedEntity();
+
+		log.debug("Auto-renew scan beginning at {}, wrapping at {}", scanNum, wrapNum);
+		log.debug("	- BEFORE #'s are (accounts={}, tokenRels={})",
+				() -> ctx.accounts().size(), () -> ctx.tokenAssociations().size());
 		for (; i <= maxEntitiesToScan; i++) {
 			scanNum++;
 			if (scanNum == wrapNum) {
@@ -75,10 +84,11 @@ public class EntityAutoRenewal {
 				break;
 			}
 		}
+		log.debug("Finished auto-renew scan of {} entities ({} touched) -> {} was last", i, entitiesTouched, scanNum);
+		log.debug("	- AFTER #'s are (accounts={}, tokenRels={})",
+				() -> ctx.accounts().size(), () -> ctx.tokenAssociations().size());
 
 		renewalProcess.endRenewalCycle();
 		ctx.updateLastScannedEntity(scanNum);
-
-		log.debug("Finished auto-renew scan of {} entities ({} touched) -> {} was last", i, entitiesTouched, scanNum);
 	}
 }

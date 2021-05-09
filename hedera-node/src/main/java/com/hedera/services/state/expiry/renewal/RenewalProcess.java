@@ -27,9 +27,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
+import java.util.EnumSet;
+
+import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
 
 public class RenewalProcess {
 	private static final Logger log = LogManager.getLogger(RenewalProcess.class);
+
+	private static final EnumSet<ExpiredEntityClassification> TERMINAL_CLASSIFICATIONS = EnumSet.of(
+			DETACHED_ACCOUNT_GRACE_PERIOD_OVER
+	);
 
 	private final long shard, realm;
 
@@ -66,7 +73,9 @@ public class RenewalProcess {
 
 		longNow = cycleTime.getEpochSecond();
 		final var classification = helper.classify(entityNum, longNow);
-		log.debug("Classified entity num {} as {}", entityNum, classification);
+		if (TERMINAL_CLASSIFICATIONS.contains(classification)) {
+			log.debug("Terminal classification entity num {} ({})", entityNum, classification);
+		}
 		switch (classification) {
 			case OTHER:
 			case DETACHED_ACCOUNT:

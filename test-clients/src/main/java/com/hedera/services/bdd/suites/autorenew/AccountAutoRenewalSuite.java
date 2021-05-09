@@ -58,13 +58,14 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
-				accountAutoRemoval(),
-				accountAutoRenewal()
-//				maxNumberOfEntitiesToRenewOrDeleteWorks(),
-//				numberOfEntitiesToScanWorks(),
-//				autoDeleteAfterGracePeriod(),
-//				updateExpiration()
+		return List.of(new HapiApiSpec[] {
+						accountAutoRemoval(),
+						accountAutoRenewal(),
+						maxNumberOfEntitiesToRenewOrDeleteWorks(),
+						numberOfEntitiesToScanWorks(),
+						autoDeleteAfterGracePeriod(),
+						updateExpiration(),
+				}
 		);
 	}
 
@@ -77,11 +78,11 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 										"autorenew.isEnabled", "true",
 										"autorenew.gracePeriod", "0"))
 								.erasingProps(Set.of("minimumAutoRenewDuration")),
-						cryptoCreate(autoRemovedAccount).autoRenewSecs(10).balance(0L),
+						cryptoCreate(autoRemovedAccount).autoRenewSecs(1).balance(0L),
 						getAccountInfo(autoRemovedAccount).logged()
 				)
 				.when(
-						sleepFor(15 * 1000),
+						sleepFor(1_500L),
 						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)).via("triggeringTransaction"),
 						getTxnRecord("triggeringTransaction").logged()
 				)
@@ -234,7 +235,8 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 
 	/**
 	 * A Hedera entity can have its expiration time extended by anyone, not just by the owner or admin account.
-	 * The expiration time is the only field that can be changed in an update without being signed by the owner or the admin.
+	 * The expiration time is the only field that can be changed in an update without being signed by the owner or the
+	 * admin.
 	 * It is also the only field that can be changed while expired (during the grace period).
 	 */
 	private HapiApiSpec updateExpiration() {
@@ -261,7 +263,8 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 						// handle transaction to trigger cleanup and autoRenewAccount will be in grace period
 						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)).via("triggeringTransaction1"),
 						getAccountBalance(autoRenewAccount).logged(),
-						// when in grace period we can not update anything on autoRenewAccount except for expiration time
+						// when in grace period we can not update anything on autoRenewAccount except for expiration
+						// time
 						cryptoUpdate(autoRenewAccount)
 								.entityMemo("dont"),
 						// anyone can extend the expiration time on autoRenewAccount

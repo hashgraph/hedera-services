@@ -185,10 +185,6 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 		if (designatesAccountRemoval(newAutoRenewAccount)) {
 			return true;
 		}
-		if (ledger.isDetached(newAutoRenewAccount)) {
-			transactionContext.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-			return false;
-		}
 		if (topic.hasAutoRenewAccountId() && ledger.isDetached(topic.getAutoRenewAccountId().toGrpcAccountId())) {
 			transactionContext.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 			return false;
@@ -199,6 +195,10 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 		}
 		if (OK != validator.queryableAccountStatus(newAutoRenewAccount, accounts.get())) {
 			transactionContext.setStatus(INVALID_AUTORENEW_ACCOUNT);
+			return false;
+		}
+		if (ledger.isDetached(newAutoRenewAccount)) {
+			transactionContext.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 			return false;
 		}
 		return true;

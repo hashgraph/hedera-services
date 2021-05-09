@@ -75,10 +75,7 @@ public class RenewalRecordsHelper {
 
 		final var eventTime = cycleStart.plusNanos(consensusNanosIncr++);
 		final var grpcId = id.toAccountId();
-		final var memo = new StringBuilder("Entity ")
-				.append(id.toAbbrevString())
-				.append(" was automatically deleted.")
-				.toString();
+		final var memo = "Entity " + id.toAbbrevString() + " was automatically deleted.";
 
 		final var record = forCrypto(grpcId, eventTime)
 				.setMemo(memo)
@@ -86,7 +83,7 @@ public class RenewalRecordsHelper {
 				.build();
 		stream(record, eventTime);
 
-		log.debug("Streamed crypto removal record {} @ {}", record, eventTime);
+		log.debug("Streamed crypto removal record {}", record);
 	}
 
 	public void streamCryptoRenewal(MerkleEntityId id, long fee, long newExpiry) {
@@ -94,12 +91,11 @@ public class RenewalRecordsHelper {
 
 		final var eventTime = cycleStart.plusNanos(consensusNanosIncr++);
 		final var grpcId = id.toAccountId();
-		final var memo = new StringBuilder("Entity ")
-				.append(id.toAbbrevString())
-				.append(" was automatically renewed. New expiration time: ")
-				.append(newExpiry)
-				.append(".")
-				.toString();
+		final var memo = "Entity " +
+				id.toAbbrevString() +
+				" was automatically renewed. New expiration time: " +
+				newExpiry +
+				".";
 
 		final var record = forCrypto(grpcId, eventTime)
 				.setMemo(memo)
@@ -108,7 +104,7 @@ public class RenewalRecordsHelper {
 				.build();
 		stream(record, eventTime);
 
-		log.debug("Streamed crypto renewal record {} @ {}", record, eventTime);
+		log.debug("Streamed crypto renewal record {}", record);
 	}
 
 	private void stream(TransactionRecord record, Instant at) {

@@ -20,10 +20,8 @@ package com.hedera.services.fees.charging;
  * ‍
  */
 
-import com.hedera.services.context.SingletonContextsManager;
 import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.fees.TxnFeeType;
-import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 

@@ -87,6 +87,9 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 			txnCtx.setStatus(INVALID_ACCOUNT_ID);
 		} catch (DeletedAccountException dae) {
 			txnCtx.setStatus(ACCOUNT_DELETED);
+		} catch (Exception e) {
+			log.warn("Avoidable exception!", e);
+			txnCtx.setStatus(FAIL_INVALID);
 		}
 	}
 

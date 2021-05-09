@@ -1266,7 +1266,7 @@ public class ServicesContext {
 								ledger(), validator(), txnCtx(), new UpdateCustomizerFactory(), this::accounts))),
 				entry(ContractDelete,
 						List.of(new ContractDeleteTransitionLogic(
-								contracts()::deleteContract, validator(), txnCtx(), this::accounts))),
+								ledger(), contracts()::deleteContract, validator(), txnCtx(), this::accounts))),
 				entry(ContractCall,
 						List.of(new ContractCallTransitionLogic(
 								contracts()::contractCall, validator(), txnCtx(), this::seqNo, this::accounts))),

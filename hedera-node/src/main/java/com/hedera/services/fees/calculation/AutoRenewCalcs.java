@@ -123,7 +123,7 @@ public class AutoRenewCalcs {
 				.setCurrentMemo(account.getMemo())
 				.setCurrentNumTokenRels(account.tokens().numAssociations())
 				.build();
-		return(BASIC_ACCOUNT_SIZE + cryptoOpsUsage.cryptoAutoRenewRb(extantCtx));
+		return cryptoOpsUsage.cryptoAutoRenewRb(extantCtx);
 	}
 
 	private long constantFeeFrom(FeeData prices) {

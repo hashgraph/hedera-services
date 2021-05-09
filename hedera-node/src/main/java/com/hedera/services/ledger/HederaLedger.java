@@ -466,7 +466,8 @@ public class HederaLedger {
 
 	public boolean isDetached(AccountID id) {
 		return dynamicProperties.autoRenewEnabled()
-				&& (long)accountsLedger.get(id, BALANCE) == 0L
+				&& !(boolean) accountsLedger.get(id, IS_SMART_CONTRACT)
+				&& (long) accountsLedger.get(id, BALANCE) == 0L
 				&& !validator.isAfterConsensusSecond((long) accountsLedger.get(id, EXPIRY));
 	}
 

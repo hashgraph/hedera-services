@@ -9,12 +9,15 @@ public class AutoRenewConfigChoices {
 			HapiSpecSetup.getDefaultNodeProps().get("ledger.autoRenewPeriod.minDuration");
 	static final String defaultGracePeriod =
 			HapiSpecSetup.getDefaultNodeProps().get("autorenew.gracePeriod");
+	static final String defaultNumToScan =
+			HapiSpecSetup.getDefaultNodeProps().get("autorenew.numberOfEntitiesToScan");
 
 	static Map<String, String> enablingAutoRenewWith(long minAutoRenewPeriod, long gracePeriod) {
 		return Map.of(
 				"ledger.autoRenewPeriod.minDuration", "" + minAutoRenewPeriod,
 				"autorenew.isEnabled", "true",
-				"autorenew.gracePeriod", "" + gracePeriod
+				"autorenew.gracePeriod", "" + gracePeriod,
+				"autorenew.numberOfEntitiesToScan", "" + 10_000L
 		);
 	}
 
@@ -28,7 +31,8 @@ public class AutoRenewConfigChoices {
 		return Map.of(
 				"ledger.autoRenewPeriod.minDuration", defaultMinAutoRenewPeriod,
 				"autorenew.isEnabled", "false",
-				"autorenew.gracePeriod", defaultGracePeriod
+				"autorenew.gracePeriod", defaultGracePeriod,
+				"autorenew.numberOfEntitiesToScan", defaultNumToScan
 		);
 	}
 }

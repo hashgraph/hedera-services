@@ -77,6 +77,18 @@ class EntityAutoRenewalTest {
 	}
 
 	@Test
+	void abortsIfNoNonSystemEntities() {
+		// setup:
+		givenWrapNum(mockHederaNums.numReservedSystemEntities() + 1);
+
+		// when:
+		subject.execute(instantNow);
+
+		// then:
+		verifyNoInteractions(renewalProcess);
+	}
+
+	@Test
 	void scansToExpectedNumWithNothingToTouch() {
 		// setup:
 		long numToScan = properties.autoRenewNumberOfEntitiesToScan();

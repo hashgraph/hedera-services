@@ -40,6 +40,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
@@ -83,17 +84,17 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 		return List.of(new HapiApiSpec[] {
 						gracePeriodRestrictionsSuiteSetup(),
 
-						contractCallRestrictionsEnforced(),
-						payerRestrictionsEnforced(),
-						cryptoTransferRestrictionsEnforced(),
-						tokenMgmtRestrictionsEnforced(),
-						cryptoDeleteRestrictionsEnforced(),
-						treasuryOpsRestrictionEnforced(),
-						tokenAutoRenewOpsEnforced(),
-						topicAutoRenewOpsEnforced(),
-						cryptoUpdateRestrictionsEnforced(),
-
-						gracePeriodRestrictionsSuiteCleanup(),
+//						contractCallRestrictionsEnforced(),
+//						payerRestrictionsEnforced(),
+//						cryptoTransferRestrictionsEnforced(),
+//						tokenMgmtRestrictionsEnforced(),
+						cryptoAndContractDeleteRestrictionsEnforced(),
+//						treasuryOpsRestrictionEnforced(),
+//						tokenAutoRenewOpsEnforced(),
+//						topicAutoRenewOpsEnforced(),
+//						cryptoUpdateRestrictionsEnforced(),
+//
+//						gracePeriodRestrictionsSuiteCleanup(),
 				}
 		);
 	}
@@ -388,12 +389,16 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec cryptoDeleteRestrictionsEnforced() {
+	private HapiApiSpec cryptoAndContractDeleteRestrictionsEnforced() {
 		final var detachedAccount = "gone";
 		final var civilian = "misc";
+		final var tbd = "contract";
+		final var adminKey = "tac";
 
 		return defaultHapiSpec("CryptoDeleteRestrictionsEnforced")
 				.given(
+						newKeyNamed(adminKey),
+						contractCreate(tbd).adminKey(adminKey),
 						cryptoCreate(civilian),
 						cryptoCreate(detachedAccount)
 								.balance(0L)
@@ -405,7 +410,9 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
 						cryptoDelete(civilian)
 								.transfer(detachedAccount)
-								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL)
+								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+						contractDelete(tbd)
+								.transferAccount(detachedAccount)
 				);
 	}
 

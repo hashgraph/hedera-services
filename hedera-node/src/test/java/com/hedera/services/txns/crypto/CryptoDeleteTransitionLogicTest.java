@@ -25,6 +25,9 @@ import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
@@ -34,6 +37,10 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import javax.inject.Inject;
+
 import static com.hedera.test.utils.IdUtils.asAccount;
 
 import java.time.Instant;
@@ -43,7 +50,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 
+@ExtendWith(LogCaptureExtension.class)
 public class CryptoDeleteTransitionLogicTest {
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private AccountID target = AccountID.newBuilder().setAccountNum(9_999L).build();
@@ -53,6 +64,10 @@ public class CryptoDeleteTransitionLogicTest {
 	private TransactionBody cryptoDeleteTxn;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
+
+	@Inject
+	private LogCaptor logCaptor;
+	@LoggingSubject
 	private CryptoDeleteTransitionLogic subject;
 
 	@BeforeEach
@@ -67,7 +82,7 @@ public class CryptoDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void hasCorrectApplicability() {
+	void hasCorrectApplicability() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -76,7 +91,7 @@ public class CryptoDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsTargetAsBeneficiary() {
+	void rejectsTargetAsBeneficiary() {
 		givenValidTxnCtx(target);
 
 		// expect:
@@ -84,7 +99,7 @@ public class CryptoDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void acceptsValidTxn() {
+	void acceptsValidTxn() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -92,7 +107,7 @@ public class CryptoDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void translatesMissingAccount() {
+	void translatesMissingAccount() {
 		givenValidTxnCtx();
 		willThrow(MissingAccountException.class).given(ledger).delete(any(), any());
 
@@ -104,7 +119,7 @@ public class CryptoDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void translatesDeletedAccount() {
+	void translatesDeletedAccount() {
 		givenValidTxnCtx();
 		willThrow(DeletedAccountException.class).given(ledger).delete(any(), any());
 
@@ -116,7 +131,7 @@ public class CryptoDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void followsHappyPath() {
+	void followsHappyPath() {
 		givenValidTxnCtx();
 
 		// when:
@@ -128,7 +143,7 @@ public class CryptoDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsDetachedAccountAsTarget() {
+	void rejectsDetachedAccountAsTarget() {
 		// setup:
 		givenValidTxnCtx();
 		given(ledger.isDetached(target)).willReturn(true);
@@ -142,7 +157,7 @@ public class CryptoDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsDetachedAccountAsReceiver() {
+	void rejectsDetachedAccountAsReceiver() {
 		// setup:
 		var receiver = IdUtils.asAccount("0.0.7676");
 
@@ -158,7 +173,23 @@ public class CryptoDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsDeletionOfKnownTreasury() {
+	void capturesFailInvalid() {
+		// setup:
+		givenValidTxnCtx();
+		given(ledger.isKnownTreasury(target)).willThrow(RuntimeException.class);
+		// and:
+		var desired = "Avoidable exception! java.lang.RuntimeException: null";
+
+		// when:
+		subject.doStateTransition();
+
+		// when:
+		verify(txnCtx).setStatus(FAIL_INVALID);
+		assertThat(logCaptor.warnLogs(), contains(desired));
+	}
+
+	@Test
+	void rejectsDeletionOfKnownTreasury() {
 		// setup:
 		givenValidTxnCtx();
 		given(ledger.isKnownTreasury(target)).willReturn(withKnownTreasury);
@@ -172,7 +203,7 @@ public class CryptoDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsIfTargetHasNonZeroTokenBalances() {
+	void rejectsIfTargetHasNonZeroTokenBalances() {
 		givenValidTxnCtx();
 		given(ledger.allTokenBalancesVanish(target)).willReturn(false);
 
@@ -185,7 +216,7 @@ public class CryptoDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsIfTargetMissing() {
+	void rejectsIfTargetMissing() {
 		givenDeleteTxnMissingTarget();
 
 		// when:
@@ -196,7 +227,7 @@ public class CryptoDeleteTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsIfTransferMissing() {
+	void rejectsIfTransferMissing() {
 		givenDeleteTxnMissingTransfer();
 
 		// when:
