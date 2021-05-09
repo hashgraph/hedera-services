@@ -20,6 +20,7 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -64,7 +65,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class BaseHederaLedgerTest {
-	protected final OptionValidator validator = TEST_VALIDATOR;
+	protected OptionValidator validator = TEST_VALIDATOR;
+	protected MockGlobalDynamicProps dynamicProps = new MockGlobalDynamicProps();
 
 	protected long GENESIS_BALANCE = 50_000_000_000L;
 	protected long NEXT_ID = 1_000_000L;
@@ -215,7 +217,7 @@ public class BaseHederaLedgerTest {
 				.willReturn(tokenId);
 		given(tokenStore.get(frozenId)).willReturn(frozenToken);
 
-		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, accountsLedger);
+		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 	}
 

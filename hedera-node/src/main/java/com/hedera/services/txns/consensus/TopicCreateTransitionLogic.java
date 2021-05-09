@@ -164,7 +164,7 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 			final var reqAutoRenew = op.getAutoRenewAccount();
 			final var sanityCheck = validator.queryableAccountStatus(reqAutoRenew, accounts.get());
 			if (sanityCheck != OK) {
-				return sanityCheck;
+				return INVALID_AUTORENEW_ACCOUNT;
 			}
 			if (ledger.isDetached(reqAutoRenew)) {
 				validationResult = ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;

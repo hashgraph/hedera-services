@@ -23,6 +23,8 @@ package com.hedera.services.txns.schedule;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.store.schedule.ScheduleStore;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.TriggeredTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -44,15 +46,18 @@ public final class ScheduleExecutor {
 	 * triggering the underlying transaction. A ResponseEnumCode of OK is returned upon successful trigger of the
 	 * inner transaction. The arguments cannot be null, the return type would always be a proper ResponseEnumCode.
 	 *
-	 * @param id The non null id of the scheduled transaction.
-	 * @param store A non null object to handle scheduled entity type.
-	 * @param context A non null object to handle inner transaction specific context on a node.
+	 * @param id
+	 * 		The non null id of the scheduled transaction.
+	 * @param store
+	 * 		A non null object to handle scheduled entity type.
+	 * @param context
+	 * 		A non null object to handle inner transaction specific context on a node.
 	 * @return the response code {@link ResponseCodeEnum} from executing the inner scheduled transaction
 	 */
 	ResponseCodeEnum processExecution(
 			@NotNull ScheduleID id,
-			@NotNull  ScheduleStore store,
-			@NotNull  TransactionContext context
+			@NotNull ScheduleStore store,
+			@NotNull TransactionContext context
 	) throws
 			InvalidProtocolBufferException, NullPointerException {
 		final var executionStatus = store.markAsExecuted(id);
@@ -62,6 +67,7 @@ public final class ScheduleExecutor {
 
 		final var schedule = store.get(id);
 		final var transaction = schedule.asSignedTxn();
+		System.out.println("Effective payer is " + EntityIdUtils.readableId(schedule.effectivePayer().toGrpcAccountId()));
 		context.trigger(
 				new TriggeredTxnAccessor(
 						transaction.toByteArray(),

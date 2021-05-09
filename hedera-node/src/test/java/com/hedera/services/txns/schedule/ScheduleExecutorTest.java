@@ -78,9 +78,9 @@ class ScheduleExecutorTest {
 	}
 
 	@Test
-	public void nullArgumentsThrowNullPointerException() throws InvalidProtocolBufferException, NullPointerException {
+	public void nullArgumentsThrowNullPointerException() throws NullPointerException {
 		Assertions.assertThrows(
-				NullPointerException.class, () ->
+				Exception.class, () ->
 				subject.processExecution(null, null, null)
 		);
 	}

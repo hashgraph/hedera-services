@@ -20,6 +20,7 @@ package com.hedera.services.fees.charging;
  * ‍
  */
 
+import com.hedera.services.context.SingletonContextsManager;
 import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.fees.TxnFeeType;
 import com.hedera.services.utils.SignedTxnAccessor;
@@ -63,6 +64,11 @@ public class FieldSourcedFeeScreening implements TxnScopedFeeScreening {
 
 	@Override
 	public boolean canPayerAfford(EnumSet<TxnFeeType> fees) {
+		if (SingletonContextsManager.CONTEXTS.lookup(0L).charging() == this) {
+			System.out.println(" -> Total amount: " + totalAmountOf(fees));
+			System.out.println(" -> is payer exempt? " + isPayerExempt());
+			System.out.println(" -> can afford? " + check.canAfford(accessor.getPayer(), totalAmountOf(fees)));
+		}
 		return isPayerExempt() || check.canAfford(accessor.getPayer(), totalAmountOf(fees));
 	}
 

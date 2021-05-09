@@ -24,6 +24,7 @@ import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
@@ -149,12 +151,36 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void delegatesToCorrectExpiry() {
+	public void recognizesDetached() {
+		// setup:
+		validator = mock(OptionValidator.class);
+		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
+		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
+		// and:
+		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);
+
 		// when:
 		var result = subject.isDetached(genesis);
 
 		// then:
-		verify(accountsLedger).get(genesis, EXPIRY);
+		assertTrue(result);
+	}
+
+	@Test
+	public void recognizesCannotBeDetachedIfAutoRenewDisabled() {
+		// setup:
+		validator = mock(OptionValidator.class);
+		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
+		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
+		// and:
+		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);
+		// and:
+		dynamicProps.disableAutoRenew();
+
+		// when:
+		var result = subject.isDetached(genesis);
+
+		// then:
 		assertFalse(result);
 	}
 

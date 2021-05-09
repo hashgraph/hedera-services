@@ -1475,6 +1475,7 @@ public class ServicesContext {
 					creator(),
 					validator(),
 					recordsHistorian(),
+					globalDynamicProperties(),
 					accountsLedger);
 			scheduleStore().setAccountsLedger(accountsLedger);
 			scheduleStore().setHederaLedger(ledger);
@@ -1796,10 +1797,9 @@ public class ServicesContext {
 					NOOP_EXPIRING_CREATIONS,
 					validator(),
 					NOOP_RECORDS_HISTORIAN,
+					globalDynamicProperties(),
 					pureDelegate);
-			Source<byte[], AccountState> pureAccountSource = new LedgerAccountsSource(
-					pureLedger,
-					globalDynamicProperties());
+			Source<byte[], AccountState> pureAccountSource = new LedgerAccountsSource(pureLedger);
 			newPureRepo = () -> {
 				var pureRepository = new ServicesRepositoryRoot(pureAccountSource, bytecodeDb());
 				pureRepository.setStoragePersistence(storagePersistence());
@@ -1818,7 +1818,7 @@ public class ServicesContext {
 
 	public LedgerAccountsSource accountSource() {
 		if (accountSource == null) {
-			accountSource = new LedgerAccountsSource(ledger(), globalDynamicProperties());
+			accountSource = new LedgerAccountsSource(ledger());
 		}
 		return accountSource;
 	}

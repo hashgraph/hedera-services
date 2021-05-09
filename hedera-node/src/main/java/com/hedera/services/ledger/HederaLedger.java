@@ -20,6 +20,7 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.DetachedAccountException;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
@@ -127,6 +128,7 @@ public class HederaLedger {
 	private final TokenStore tokenStore;
 	private final EntityIdSource ids;
 	private final OptionValidator validator;
+	private final GlobalDynamicProperties dynamicProperties;
 	private final TransferList.Builder netTransfers = TransferList.newBuilder();
 	private final AccountRecordsHistorian historian;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
@@ -145,6 +147,7 @@ public class HederaLedger {
 			EntityCreator creator,
 			OptionValidator validator,
 			AccountRecordsHistorian historian,
+			GlobalDynamicProperties dynamicProperties,
 			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger
 	) {
 		this.ids = ids;
@@ -152,6 +155,7 @@ public class HederaLedger {
 		this.historian = historian;
 		this.tokenStore = tokenStore;
 		this.accountsLedger = accountsLedger;
+		this.dynamicProperties = dynamicProperties;
 
 		creator.setLedger(this);
 		historian.setLedger(this);
@@ -461,8 +465,9 @@ public class HederaLedger {
 	}
 
 	public boolean isDetached(AccountID id) {
-		return !validator.isAfterConsensusSecond((long) accountsLedger.get(id, EXPIRY)) &&
-				(long)accountsLedger.get(id, BALANCE) == 0L;
+		return dynamicProperties.autoRenewEnabled()
+				&& (long)accountsLedger.get(id, BALANCE) == 0L
+				&& !validator.isAfterConsensusSecond((long) accountsLedger.get(id, EXPIRY));
 	}
 
 	public boolean isPendingCreation(AccountID id) {

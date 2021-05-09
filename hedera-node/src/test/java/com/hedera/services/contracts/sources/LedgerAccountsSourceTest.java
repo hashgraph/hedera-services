@@ -73,10 +73,9 @@ class LedgerAccountsSourceTest {
 
 	@BeforeEach
 	void setup() {
-		var props = mock(GlobalDynamicProperties.class);
 		ledger = mock(HederaLedger.class);
 
-		subject = new LedgerAccountsSource(ledger, props);
+		subject = new LedgerAccountsSource(ledger);
 	}
 
 	@Test

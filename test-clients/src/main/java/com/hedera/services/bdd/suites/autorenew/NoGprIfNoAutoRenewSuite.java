@@ -2,6 +2,7 @@ package com.hedera.services.bdd.suites.autorenew;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -11,6 +12,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SEND_TO_TWO_ABI;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -46,7 +48,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.disablingAutoRenewWithDefaults;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.leavingAutoRenewDisabledWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -65,29 +68,29 @@ public class NoGprIfNoAutoRenewSuite extends HapiApiSuite {
 						noGracePeriodRestrictionsIfNoAutoRenewSuiteSetup(),
 
 						payerRestrictionsNotEnforced(),
-//						cryptoTransferRestrictionsEnforced(),
-//						tokenMgmtRestrictionsEnforced(),
-//						cryptoDeleteRestrictionsEnforced(),
-//						treasuryOpsRestrictionEnforced(),
-//						tokenAutoRenewOpsEnforced(),
-//						topicAutoRenewOpsEnforced(),
-//						cryptoUpdateRestrictionsEnforced(),
-//						contractCallRestrictionsEnforced(),
+						cryptoTransferRestrictionsNotEnforced(),
+						tokenMgmtRestrictionsNotEnforced(),
+						cryptoDeleteRestrictionsNotEnforced(),
+						treasuryOpsRestrictionNotEnforced(),
+						tokenAutoRenewOpsNotEnforced(),
+						topicAutoRenewOpsNotEnforced(),
+						cryptoUpdateRestrictionsNotEnforced(),
+						contractCallRestrictionsNotEnforced(),
 
-//						noGracePeriodRestrictionsIfNoAutoRenewSuiteCleanup(),
+						noGracePeriodRestrictionsIfNoAutoRenewSuiteCleanup(),
 				}
 		);
 	}
 
-	private HapiApiSpec contractCallRestrictionsEnforced() {
+	private HapiApiSpec contractCallRestrictionsNotEnforced() {
 		final var civilian = "misc";
-		final var detachedAccount = "gone";
+		final var notDetachedAccount = "gone";
 		final var bytecode = "bytecode";
 		final var contract = "doubleSend";
 		final AtomicInteger detachedNum = new AtomicInteger();
 		final AtomicInteger civilianNum = new AtomicInteger();
 
-		return defaultHapiSpec("ContractCallRestrictionsEnforced")
+		return defaultHapiSpec("ContractCallRestrictionsNotEnforced")
 				.given(
 						fileCreate(bytecode).path(ContractResources.DOUBLE_SEND_BYTECODE_PATH),
 						contractCreate(contract)
@@ -95,81 +98,60 @@ public class NoGprIfNoAutoRenewSuite extends HapiApiSuite {
 								.bytecode(bytecode),
 						cryptoCreate(civilian)
 								.balance(0L),
-						cryptoCreate(detachedAccount)
+						cryptoCreate(notDetachedAccount)
 								.balance(0L)
 								.autoRenewSecs(1)
 				).when(
 						sleepFor(1_500L),
 						cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)),
 						withOpContext((spec, opLog) -> {
-							detachedNum.set((int) spec.registry().getAccountID(detachedAccount).getAccountNum());
+							detachedNum.set((int) spec.registry().getAccountID(notDetachedAccount).getAccountNum());
 							civilianNum.set((int) spec.registry().getAccountID(civilian).getAccountNum());
 						}),
 						sourcing(() -> contractCall(contract, SEND_TO_TWO_ABI, new Object[] {
 								civilianNum.get(), detachedNum.get()
-						})
-								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
-						getAccountBalance(civilian).hasTinyBars(0L),
-						getAccountBalance(detachedAccount).hasTinyBars(0L)
+						}))
 				).then(
-						cryptoUpdate(detachedAccount)
-								.expiring(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS),
-						sourcing(() -> contractCall(contract, SEND_TO_TWO_ABI, new Object[] {
-								civilianNum.get(), detachedNum.get()
-						})),
-						getAccountBalance(civilian).hasTinyBars(1L),
-						getAccountBalance(detachedAccount).hasTinyBars(1L)
+								getAccountBalance(civilian).hasTinyBars(1L),
+								getAccountBalance(notDetachedAccount).hasTinyBars(1L)
 				);
 	}
 
-	private HapiApiSpec cryptoUpdateRestrictionsEnforced() {
-		final var detachedAccount = "gone";
+	private HapiApiSpec cryptoUpdateRestrictionsNotEnforced() {
+		final var notDetachedAccount = "gone";
 		final long certainlyPast = Instant.now().getEpochSecond() - THREE_MONTHS_IN_SECONDS;
 		final long certainlyDistant = Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS;
 
-		return defaultHapiSpec("CryptoUpdateRestrictionsEnforced")
+		return defaultHapiSpec("CryptoUpdateRestrictionsNotEnforced")
 				.given(
 						newKeyNamed("ntb"),
-						cryptoCreate(detachedAccount)
+						cryptoCreate(notDetachedAccount)
 								.balance(0L)
 								.autoRenewSecs(1),
 						sleepFor(1_500L),
 						cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L))
 				).when(
-						cryptoUpdate(detachedAccount)
-								.memo("Can't update receiverSigRequired")
-								.receiverSigRequired(true)
-								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-						cryptoUpdate(detachedAccount)
-								.memo("Can't update key")
-								.key("ntb")
-								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-						cryptoUpdate(detachedAccount)
-								.memo("Can't update auto-renew period")
-								.autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-						cryptoUpdate(detachedAccount)
-								.memo("Can't update memo")
-								.entityMemo("NOPE")
-								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-						cryptoUpdate(detachedAccount)
+						cryptoUpdate(notDetachedAccount)
+								.memo("Can update receiverSigRequired")
+								.receiverSigRequired(true),
+						cryptoUpdate(notDetachedAccount)
+								.memo("Can update key")
+								.key("ntb"),
+						cryptoUpdate(notDetachedAccount)
+								.memo("Can update auto-renew period")
+								.autoRenewPeriod(THREE_MONTHS_IN_SECONDS),
+						cryptoUpdate(notDetachedAccount)
+								.memo("Can update memo")
+								.entityMemo("NOPE"),
+						cryptoUpdate(notDetachedAccount)
 								.memo("Can't pass precheck with past expiry")
 								.expiring(certainlyPast)
-								.hasPrecheck(INVALID_EXPIRATION_TIME),
-						cryptoUpdate(detachedAccount)
-								.memo("CAN extend expiry")
-								.expiring(certainlyDistant)
+								.hasPrecheck(INVALID_EXPIRATION_TIME)
 				).then(
-						cryptoUpdate(detachedAccount)
-								.memo("Should work now!")
-								.receiverSigRequired(true),
-						cryptoUpdate(detachedAccount)
-								.key("ntb"),
-						cryptoUpdate(detachedAccount)
-								.autoRenewPeriod(THREE_MONTHS_IN_SECONDS),
-						cryptoUpdate(detachedAccount)
-								.entityMemo("NOPE"),
-						cryptoUpdate(detachedAccount)
+						cryptoUpdate(notDetachedAccount)
+								.memo("CAN extend expiry")
+								.expiring(certainlyDistant),
+						cryptoUpdate(notDetachedAccount)
 								.expiring(certainlyDistant - 1_234L)
 								.hasKnownStatus(EXPIRATION_REDUCTION_NOT_ALLOWED)
 				);
@@ -197,142 +179,134 @@ public class NoGprIfNoAutoRenewSuite extends HapiApiSuite {
 								.payingWith(notDetachedAccount)
 								.nodePayment(666L)
 								.hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE),
-						scheduleCreate("notToBe",
+						scheduleCreate("notEnoughMoney",
 								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1))
+										.memo(TxnUtils.randomUppercase(32))
 						)
+								.via("creation")
 								.designatingPayer(notDetachedAccount)
-								.hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)
-
+								.alsoSigningWith(notDetachedAccount),
+						getTxnRecord("creation").scheduled()
+								.hasPriority(recordWith().status(INSUFFICIENT_PAYER_BALANCE))
 				);
 	}
 
-	private HapiApiSpec topicAutoRenewOpsEnforced() {
+	private HapiApiSpec topicAutoRenewOpsNotEnforced() {
 		final var topicWithDetachedAsAutoRenew = "c";
 		final var topicSansDetachedAsAutoRenew = "d";
-		final var detachedAccount = "gone";
+		final var notDetachedAccount = "gone";
 		final var adminKey = "tak";
 		final var civilian = "misc";
-		final var notToBe = "nope";
+		final var onTheFly = "nope";
 
-		return defaultHapiSpec("TopicAutoRenewOpsEnforced")
+		return defaultHapiSpec("TopicAutoRenewOpsNotEnforced")
 				.given(
 						newKeyNamed(adminKey),
 						cryptoCreate(civilian)
 				).when(
-						cryptoCreate(detachedAccount)
+						cryptoCreate(notDetachedAccount)
 								.balance(0L)
 								.autoRenewSecs(2),
 						createTopic(topicWithDetachedAsAutoRenew)
 								.adminKeyName(adminKey)
-								.autoRenewAccountId(detachedAccount),
+								.autoRenewAccountId(notDetachedAccount),
 						createTopic(topicSansDetachedAsAutoRenew)
 								.adminKeyName(adminKey)
 								.autoRenewAccountId(civilian),
 						sleepFor(1_500L)
 				).then(
-						createTopic(notToBe)
+						createTopic(onTheFly)
 								.adminKeyName(adminKey)
-								.autoRenewAccountId(detachedAccount)
-								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+								.autoRenewAccountId(notDetachedAccount),
 						updateTopic(topicWithDetachedAsAutoRenew)
-								.autoRenewAccountId(civilian)
-								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+								.autoRenewAccountId(civilian),
 						updateTopic(topicSansDetachedAsAutoRenew)
-								.autoRenewAccountId(detachedAccount)
-								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+								.autoRenewAccountId(notDetachedAccount),
 						getTopicInfo(topicSansDetachedAsAutoRenew)
-								.hasAutoRenewAccount(civilian),
+								.hasAutoRenewAccount(notDetachedAccount),
 						getTopicInfo(topicWithDetachedAsAutoRenew)
-								.hasAutoRenewAccount(detachedAccount)
+								.hasAutoRenewAccount(civilian)
 				);
 	}
 
-	private HapiApiSpec tokenAutoRenewOpsEnforced() {
+	private HapiApiSpec tokenAutoRenewOpsNotEnforced() {
 		final var tokenWithDetachedAsAutoRenew = "c";
 		final var tokenSansDetachedAsAutoRenew = "d";
-		final var detachedAccount = "gone";
+		final var notDetachedAccount = "gone";
 		final var adminKey = "tak";
 		final var civilian = "misc";
 		final var notToBe = "nope";
 
-		return defaultHapiSpec("TokenAutoRenewOpsEnforced")
+		return defaultHapiSpec("TokenAutoRenewOpsNotEnforced")
 				.given(
 						newKeyNamed(adminKey),
 						cryptoCreate(civilian)
 				).when(
-						cryptoCreate(detachedAccount)
+						cryptoCreate(notDetachedAccount)
 								.balance(0L)
 								.autoRenewSecs(2),
 						tokenCreate(tokenWithDetachedAsAutoRenew)
 								.adminKey(adminKey)
-								.autoRenewAccount(detachedAccount),
+								.autoRenewAccount(notDetachedAccount),
 						tokenCreate(tokenSansDetachedAsAutoRenew)
 								.autoRenewAccount(civilian)
 								.adminKey(adminKey),
 						sleepFor(1_500L)
 				).then(
 						tokenCreate(notToBe)
-								.autoRenewAccount(detachedAccount)
-								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+								.autoRenewAccount(notDetachedAccount),
 						tokenUpdate(tokenWithDetachedAsAutoRenew)
-								.autoRenewAccount(civilian)
-								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+								.autoRenewAccount(civilian),
 						tokenUpdate(tokenSansDetachedAsAutoRenew)
-								.autoRenewAccount(detachedAccount)
-								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+								.autoRenewAccount(notDetachedAccount),
 						getTokenInfo(tokenSansDetachedAsAutoRenew)
-								.hasAutoRenewAccount(civilian),
+								.hasAutoRenewAccount(notDetachedAccount),
 						getTokenInfo(tokenWithDetachedAsAutoRenew)
-								.hasAutoRenewAccount(detachedAccount)
+								.hasAutoRenewAccount(civilian)
 				);
 	}
 
-	private HapiApiSpec treasuryOpsRestrictionEnforced() {
+	private HapiApiSpec treasuryOpsRestrictionNotEnforced() {
 		final var aToken = "c";
-		final var detachedAccount = "gone";
+		final var notDetachedAccount = "gone";
 		final var tokenMultiKey = "tak";
 		final var civilian = "misc";
 		final long expectedSupply = 1_234L;
 
-		return defaultHapiSpec("MustReattachTreasuryBeforeUpdating")
+		return defaultHapiSpec("TreasuryOpsRestrictionNotEnforced")
 				.given(
 						newKeyNamed(tokenMultiKey),
 						cryptoCreate(civilian)
 				).when(
-						cryptoCreate(detachedAccount)
+						cryptoCreate(notDetachedAccount)
 								.balance(0L)
 								.autoRenewSecs(2),
 						tokenCreate(aToken)
 								.adminKey(tokenMultiKey)
 								.supplyKey(tokenMultiKey)
 								.initialSupply(expectedSupply)
-								.treasury(detachedAccount),
+								.treasury(notDetachedAccount),
 						tokenAssociate(civilian, aToken),
 						sleepFor(1_500L)
 				).then(
 						tokenUpdate(aToken)
-								.treasury(civilian)
-								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-						mintToken(aToken, 1L)
-								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-						burnToken(aToken, 1L)
-								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-						getTokenInfo(aToken)
-								.hasTreasury(detachedAccount),
-						getAccountBalance(detachedAccount)
-								.hasTokenBalance(aToken, expectedSupply)
+								.treasury(civilian),
+						mintToken(aToken, 1L),
+						burnToken(aToken, 1L),
+						getTokenInfo(aToken).hasTreasury(civilian),
+						getAccountBalance(notDetachedAccount).hasTokenBalance(aToken, 0L)
 				);
 	}
 
-	private HapiApiSpec tokenMgmtRestrictionsEnforced() {
-		final var notToBe = "a";
+	private HapiApiSpec tokenMgmtRestrictionsNotEnforced() {
+		final var onTheFly = "a";
 		final var tokenNotYetAssociated = "b";
 		final var tokenAlreadyAssociated = "c";
-		final var detachedAccount = "gone";
+		final var notDetachedAccount = "gone";
 		final var tokenMultiKey = "tak";
 		final var civilian = "misc";
 
-		return defaultHapiSpec("TokenMgmtRestrictionsEnforced")
+		return defaultHapiSpec("TokenMgmtRestrictionsNotEnforced")
 				.given(
 						newKeyNamed(tokenMultiKey),
 						cryptoCreate(civilian),
@@ -342,75 +316,65 @@ public class NoGprIfNoAutoRenewSuite extends HapiApiSuite {
 								.freezeKey(tokenMultiKey)
 								.kycKey(tokenMultiKey)
 				).when(
-						cryptoCreate(detachedAccount)
+						cryptoCreate(notDetachedAccount)
 								.balance(0L)
 								.autoRenewSecs(2),
-						tokenAssociate(detachedAccount, tokenAlreadyAssociated),
+						tokenAssociate(notDetachedAccount, tokenAlreadyAssociated),
 						sleepFor(1_500L)
 				).then(
-						tokenCreate(notToBe)
-								.treasury(detachedAccount)
-								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-						tokenUnfreeze(tokenAlreadyAssociated, detachedAccount)
-								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-						tokenFreeze(tokenAlreadyAssociated, detachedAccount)
-								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-						grantTokenKyc(tokenAlreadyAssociated, detachedAccount)
-								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-						revokeTokenKyc(tokenAlreadyAssociated, detachedAccount)
-								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-						tokenAssociate(detachedAccount, tokenNotYetAssociated)
-								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+						tokenCreate(onTheFly)
+								.treasury(notDetachedAccount),
+						tokenUnfreeze(tokenAlreadyAssociated, notDetachedAccount),
+						tokenFreeze(tokenAlreadyAssociated, notDetachedAccount),
+						grantTokenKyc(tokenAlreadyAssociated, notDetachedAccount),
+						revokeTokenKyc(tokenAlreadyAssociated, notDetachedAccount),
+						tokenAssociate(notDetachedAccount, tokenNotYetAssociated),
 						tokenUpdate(tokenNotYetAssociated)
-								.treasury(detachedAccount)
-								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-						tokenDissociate(detachedAccount, tokenAlreadyAssociated)
-								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL)
+								.treasury(notDetachedAccount),
+						tokenDissociate(notDetachedAccount, tokenAlreadyAssociated)
+								.hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN)
 				);
 	}
 
-	private HapiApiSpec cryptoDeleteRestrictionsEnforced() {
-		final var detachedAccount = "gone";
+	private HapiApiSpec cryptoDeleteRestrictionsNotEnforced() {
+		final var notDetachedAccount = "gone";
 		final var civilian = "misc";
 
-		return defaultHapiSpec("CryptoDeleteRestrictionsEnforced")
+		return defaultHapiSpec("CryptoDeleteRestrictionsNotEnforced")
 				.given(
 						cryptoCreate(civilian),
-						cryptoCreate(detachedAccount)
+						cryptoCreate(notDetachedAccount)
 								.balance(0L)
 								.autoRenewSecs(2)
 				).when(
 						sleepFor(1_500L)
 				).then(
-						cryptoDelete(detachedAccount)
-								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+						cryptoDelete(notDetachedAccount),
 						cryptoDelete(civilian)
-								.transfer(detachedAccount)
-								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL)
+								.transfer(notDetachedAccount)
+								.hasKnownStatus(ACCOUNT_DELETED)
 				);
 	}
 
-	private HapiApiSpec cryptoTransferRestrictionsEnforced() {
+	private HapiApiSpec cryptoTransferRestrictionsNotEnforced() {
 		final var aToken = "c";
-		final var detachedAccount = "gone";
+		final var notDetachedAccount = "gone";
 		final var civilian = "misc";
 
-		return defaultHapiSpec("CryptoTransferRestrictionsEnforced")
+		return defaultHapiSpec("CryptoTransferRestrictionsNotEnforced")
 				.given(
 						cryptoCreate(civilian),
-						cryptoCreate(detachedAccount)
+						cryptoCreate(notDetachedAccount)
 								.balance(0L)
 								.autoRenewSecs(2),
 						tokenCreate(aToken)
-								.treasury(detachedAccount),
+								.treasury(notDetachedAccount),
 						tokenAssociate(civilian, aToken)
 				).when(
 						sleepFor(1_500L)
 				).then(
-						cryptoTransfer(tinyBarsFromTo(GENESIS, detachedAccount, ONE_MILLION_HBARS))
-								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
-						cryptoTransfer(moving(1, aToken).between(detachedAccount, civilian))
-								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL)
+						cryptoTransfer(tinyBarsFromTo(GENESIS, notDetachedAccount, ONE_HBAR)),
+						cryptoTransfer(moving(1, aToken).between(notDetachedAccount, civilian))
 				);
 	}
 

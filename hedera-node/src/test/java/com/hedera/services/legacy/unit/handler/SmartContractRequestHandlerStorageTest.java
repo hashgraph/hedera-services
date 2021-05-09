@@ -156,8 +156,9 @@ public class SmartContractRequestHandlerStorageTest {
             mock(ExpiringCreations.class),
             TestContextValidator.TEST_VALIDATOR,
             mock(AccountRecordsHistorian.class),
+            new MockGlobalDynamicProps(),
             delegate);
-    ledgerSource = new LedgerAccountsSource(ledger, new MockGlobalDynamicProps());
+    ledgerSource = new LedgerAccountsSource(ledger);
     Source<byte[], AccountState> repDatabase = ledgerSource;
     ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
     repository.setStoragePersistence(new StoragePersistenceImpl(storageMap));

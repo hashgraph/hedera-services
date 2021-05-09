@@ -313,7 +313,7 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 		final var civilian = "misc";
 		final long expectedSupply = 1_234L;
 
-		return defaultHapiSpec("MustReattachTreasuryBeforeUpdating")
+		return defaultHapiSpec("TreasuryOpsRestrictionEnforced")
 				.given(
 						newKeyNamed(tokenMultiKey),
 						cryptoCreate(civilian)
