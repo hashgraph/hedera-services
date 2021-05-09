@@ -33,6 +33,8 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
@@ -40,6 +42,8 @@ import java.util.List;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 
 public class RenewalRecordsHelper {
+	private static final Logger log = LogManager.getLogger(RenewalRecordsHelper.class);
+
 	private static final Transaction EMPTY_SIGNED_TXN = Transaction.getDefaultInstance();
 
 	private final ServicesContext ctx;
@@ -81,6 +85,8 @@ public class RenewalRecordsHelper {
 				.addAllTokenTransferLists(tokensDisplaced)
 				.build();
 		stream(record, eventTime);
+
+		log.debug("Streamed crypto removal record {} @ {}", record, eventTime);
 	}
 
 	public void streamCryptoRenewal(MerkleEntityId id, long fee, long newExpiry) {
@@ -101,6 +107,8 @@ public class RenewalRecordsHelper {
 				.setTransactionFee(fee)
 				.build();
 		stream(record, eventTime);
+
+		log.debug("Streamed crypto renewal record {} @ {}", record, eventTime);
 	}
 
 	private void stream(TransactionRecord record, Instant at) {

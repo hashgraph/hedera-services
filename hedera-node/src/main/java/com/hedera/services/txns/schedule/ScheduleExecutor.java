@@ -67,7 +67,6 @@ public final class ScheduleExecutor {
 
 		final var schedule = store.get(id);
 		final var transaction = schedule.asSignedTxn();
-		System.out.println("Effective payer is " + EntityIdUtils.readableId(schedule.effectivePayer().toGrpcAccountId()));
 		context.trigger(
 				new TriggeredTxnAccessor(
 						transaction.toByteArray(),

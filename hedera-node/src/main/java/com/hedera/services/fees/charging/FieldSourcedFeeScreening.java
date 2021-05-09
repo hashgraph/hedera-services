@@ -64,11 +64,6 @@ public class FieldSourcedFeeScreening implements TxnScopedFeeScreening {
 
 	@Override
 	public boolean canPayerAfford(EnumSet<TxnFeeType> fees) {
-		if (SingletonContextsManager.CONTEXTS.lookup(0L).charging() == this) {
-			System.out.println(" -> Total amount: " + totalAmountOf(fees));
-			System.out.println(" -> is payer exempt? " + isPayerExempt());
-			System.out.println(" -> can afford? " + check.canAfford(accessor.getPayer(), totalAmountOf(fees)));
-		}
 		return isPayerExempt() || check.canAfford(accessor.getPayer(), totalAmountOf(fees));
 	}
 

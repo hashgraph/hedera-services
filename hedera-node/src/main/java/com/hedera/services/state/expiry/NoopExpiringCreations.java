@@ -31,10 +31,14 @@ public enum NoopExpiringCreations implements EntityCreator {
 	NOOP_EXPIRING_CREATIONS;
 
 	@Override
-	public void setLedger(HederaLedger ledger) { }
+	public void setLedger(HederaLedger ledger) {
+		/* No-op */
+	}
 
 	@Override
-	public void setRecordCache(RecordCache recordCache) { }
+	public void setRecordCache(RecordCache recordCache) {
+		/* No-op */
+	}
 
 	@Override
 	public ExpirableTxnRecord createExpiringRecord(

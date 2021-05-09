@@ -166,9 +166,6 @@ public class AwareProcessLogic implements ProcessLogic {
 
 		FeeObject fee = ctx.fees().computeFee(accessor, ctx.txnCtx().activePayerKey(), ctx.currentView());
 		var chargingOutcome = ctx.txnChargingPolicy().applyForTriggered(ctx.charging(), fee);
-		if (SingletonContextsManager.CONTEXTS.lookup(0L).logic() == this) {
-			log.error(" - Fee is {}, charging outcome is {}", fee, chargingOutcome);
-		}
 		if (chargingOutcome != OK) {
 			ctx.txnCtx().setStatus(chargingOutcome);
 			return;

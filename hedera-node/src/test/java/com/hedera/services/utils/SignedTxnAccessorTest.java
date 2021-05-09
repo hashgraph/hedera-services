@@ -115,6 +115,7 @@ public class SignedTxnAccessorTest {
 
 	@Test
 	void whatHappensNext() throws Exception {
+		// setup:
 		var xferWithTopLevelBodyBytes = RequestBuilder.getCryptoTransferRequest(
 				1234l, 0l, 0l,
 				3l, 0l, 0l,
@@ -126,13 +127,15 @@ public class SignedTxnAccessorTest {
 				5678l, -70000l,
 				5679l, 70000l);
 
+		// given:
 		var body = TransactionBody.parseFrom(xferWithTopLevelBodyBytes.getBodyBytes());
 		var confusedTxn = Transaction.parseFrom(body.toByteArray());
 
+		// when:
 		var confusedAccessor = SignedTxnAccessor.uncheckedFrom(confusedTxn);
-		Timestamp hmm = confusedAccessor.getTxnId().getTransactionValidStart();
-		System.out.println(hmm);
-		System.out.println(confusedAccessor.getFunction());
+
+		// then:
+		assertEquals(HederaFunctionality.NONE, confusedAccessor.getFunction());
 	}
 
 	@Test

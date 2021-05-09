@@ -26,7 +26,10 @@ import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.*;
 import static com.hedera.test.utils.IdUtils.*;
 
@@ -81,5 +84,19 @@ class SeqNoEntityIdSourceTest {
 
 		// then:
 		verify(seqNo).decrement();
+	}
+
+	@Test
+	void exceptionalSourceAlwaysThrows() {
+		// expect:
+		assertThrows(UnsupportedOperationException.class,
+				() -> NOOP_ID_SOURCE.newAccountId(AccountID.getDefaultInstance()));
+		assertThrows(UnsupportedOperationException.class,
+				() -> NOOP_ID_SOURCE.newFileId(AccountID.getDefaultInstance()));
+		assertThrows(UnsupportedOperationException.class,
+				() -> NOOP_ID_SOURCE.newTokenId(AccountID.getDefaultInstance()));
+		assertThrows(UnsupportedOperationException.class,
+				() -> NOOP_ID_SOURCE.newScheduleId(AccountID.getDefaultInstance()));
+		assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::reclaimLastId);
 	}
 }

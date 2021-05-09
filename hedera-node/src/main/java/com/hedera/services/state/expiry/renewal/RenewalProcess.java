@@ -23,10 +23,14 @@ package com.hedera.services.state.expiry.renewal;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 
 public class RenewalProcess {
+	private static final Logger log = LogManager.getLogger(RenewalProcess.class);
+
 	private final long shard, realm;
 
 	private final FeeCalculator fees;
@@ -62,6 +66,7 @@ public class RenewalProcess {
 
 		longNow = cycleTime.getEpochSecond();
 		final var classification = helper.classify(entityNum, longNow);
+		log.debug("Classified entity num {} as {}", entityNum, classification);
 		switch (classification) {
 			case OTHER:
 			case DETACHED_ACCOUNT:

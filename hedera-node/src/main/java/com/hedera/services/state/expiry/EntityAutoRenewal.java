@@ -24,10 +24,14 @@ import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.expiry.renewal.RenewalProcess;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 
 public class EntityAutoRenewal {
+	private static final Logger log = LogManager.getLogger(EntityAutoRenewal.class);
+
 	private final long firstEntityToScan;
 	private final RenewalProcess renewalProcess;
 	private final ServicesContext ctx;
@@ -57,9 +61,9 @@ public class EntityAutoRenewal {
 
 		renewalProcess.beginRenewalCycle(instantNow);
 
-		int entitiesTouched = 0;
+		int i = 1, entitiesTouched = 0;
 		long scanNum = ctx.lastScannedEntity();
-		for (int i = 1; i <= maxEntitiesToScan; i++) {
+		for (; i <= maxEntitiesToScan; i++) {
 			scanNum++;
 			if (scanNum == wrapNum) {
 				scanNum = firstEntityToScan;
@@ -74,5 +78,7 @@ public class EntityAutoRenewal {
 
 		renewalProcess.endRenewalCycle();
 		ctx.updateLastScannedEntity(scanNum);
+
+		log.debug("Finished auto-renew scan of {} entities ({} touched) -> {} was last", i, entitiesTouched, scanNum);
 	}
 }

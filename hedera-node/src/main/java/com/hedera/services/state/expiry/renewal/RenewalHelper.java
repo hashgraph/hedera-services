@@ -34,6 +34,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.swirlds.fcmap.FCMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -53,6 +55,8 @@ import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
  * Helper for renewing and removing expired entities. Only crypto accounts are supported in this implementation.
  */
 public class RenewalHelper {
+	private static final Logger log = LogManager.getLogger(RenewalHelper.class);
+
 	private final long shard, realm;
 	private final TokenStore tokenStore;
 	private final GlobalDynamicProperties dynamicProperties;
@@ -138,6 +142,8 @@ public class RenewalHelper {
 		final var currentAccounts = accounts.get();
 		currentAccounts.remove(lastClassifiedEntityId);
 
+		log.debug("Removed {}, displacing tokens {}", lastClassifiedEntityId, tokensDisplaced);
+
 		return tokensDisplaced;
 	}
 
@@ -163,6 +169,8 @@ public class RenewalHelper {
 			mutableFundingAccount.setBalance(newFundingBalance);
 		} catch (NegativeAccountBalanceException impossible) { }
 		currentAccounts.replace(fundingId, mutableFundingAccount);
+		
+		log.debug("Renewed {} at a price of {}tb", lastClassifiedEntityId, fee);
 	}
 
 	public MerkleAccount getLastClassifiedAccount() {
