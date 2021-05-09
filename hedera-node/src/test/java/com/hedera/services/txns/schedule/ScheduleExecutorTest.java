@@ -77,13 +77,16 @@ class ScheduleExecutorTest {
 	}
 
 	@Test
-	public void nullArgumentsThrowIllegalArgumentException() throws InvalidProtocolBufferException {
-		given(store.markAsExecuted(any()))
-				.willThrow(IllegalArgumentException.class);
+	void nullArgumentsThrow() {
 		Assertions.assertThrows(
-				IllegalArgumentException.class, () ->
-				subject.processExecution(null, store, txnCtx)
-		);
+				RuntimeException.class, () ->
+						subject.processExecution(null, store, txnCtx));
+		Assertions.assertThrows(
+				RuntimeException.class, () ->
+						subject.processExecution(id, null, txnCtx));
+		Assertions.assertThrows(
+				RuntimeException.class, () ->
+						subject.processExecution(id, store, null));
 	}
 
 	@Test
