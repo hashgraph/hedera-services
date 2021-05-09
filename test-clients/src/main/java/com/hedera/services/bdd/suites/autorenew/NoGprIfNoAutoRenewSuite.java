@@ -1,25 +1,5 @@
 package com.hedera.services.bdd.suites.autorenew;
 
-/*-
- * ‌
- * Hedera Services Test Clients
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- */
-
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -65,35 +45,36 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.disablingAutoRenewWithDefaults;
-import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enablingAutoRenewWith;
+import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.leavingAutoRenewDisabledWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 
-public class GracePeriodRestrictionsSuite extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(GracePeriodRestrictionsSuite.class);
+public class NoGprIfNoAutoRenewSuite extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(NoGprIfNoAutoRenewSuite.class);
 
 	public static void main(String... args) {
-		new GracePeriodRestrictionsSuite().runSuiteSync();
+		new NoGprIfNoAutoRenewSuite().runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						gracePeriodRestrictionsSuiteSetup(),
+						noGracePeriodRestrictionsIfNoAutoRenewSuiteSetup(),
 
-						contractCallRestrictionsEnforced(),
-						payerRestrictionsEnforced(),
-						cryptoTransferRestrictionsEnforced(),
-						tokenMgmtRestrictionsEnforced(),
-						cryptoDeleteRestrictionsEnforced(),
-						treasuryOpsRestrictionEnforced(),
-						tokenAutoRenewOpsEnforced(),
-						topicAutoRenewOpsEnforced(),
-						cryptoUpdateRestrictionsEnforced(),
+						payerRestrictionsNotEnforced(),
+//						cryptoTransferRestrictionsEnforced(),
+//						tokenMgmtRestrictionsEnforced(),
+//						cryptoDeleteRestrictionsEnforced(),
+//						treasuryOpsRestrictionEnforced(),
+//						tokenAutoRenewOpsEnforced(),
+//						topicAutoRenewOpsEnforced(),
+//						cryptoUpdateRestrictionsEnforced(),
+//						contractCallRestrictionsEnforced(),
 
-						gracePeriodRestrictionsSuiteCleanup(),
+//						noGracePeriodRestrictionsIfNoAutoRenewSuiteCleanup(),
 				}
 		);
 	}
@@ -194,12 +175,12 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec payerRestrictionsEnforced() {
-		final var detachedAccount = "gone";
+	private HapiApiSpec payerRestrictionsNotEnforced() {
+		final var notDetachedAccount = "gone";
 
 		return defaultHapiSpec("PayerRestrictionsEnforced")
 				.given(
-						cryptoCreate(detachedAccount)
+						cryptoCreate(notDetachedAccount)
 								.balance(0L)
 								.autoRenewSecs(1)
 				).when(
@@ -207,20 +188,20 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 						cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L))
 				).then(
 						cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
-								.payingWith(detachedAccount)
-								.hasPrecheck(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+								.payingWith(notDetachedAccount)
+								.hasPrecheck(INSUFFICIENT_PAYER_BALANCE),
 						getAccountInfo("0.0.2")
-								.payingWith(detachedAccount)
-								.hasCostAnswerPrecheck(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+								.payingWith(notDetachedAccount)
+								.hasCostAnswerPrecheck(INSUFFICIENT_PAYER_BALANCE),
 						getAccountInfo("0.0.2")
-								.payingWith(detachedAccount)
+								.payingWith(notDetachedAccount)
 								.nodePayment(666L)
-								.hasAnswerOnlyPrecheck(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
+								.hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE),
 						scheduleCreate("notToBe",
 								cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1))
 						)
-								.designatingPayer(detachedAccount)
-								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL)
+								.designatingPayer(notDetachedAccount)
+								.hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)
 
 				);
 	}
@@ -433,17 +414,17 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec gracePeriodRestrictionsSuiteSetup() {
-		return defaultHapiSpec("GracePeriodRestrictionsSuiteSetup")
+	private HapiApiSpec noGracePeriodRestrictionsIfNoAutoRenewSuiteSetup() {
+		return defaultHapiSpec("NoGracePeriodRestrictionsIfNoAutoRenewSuiteSetup")
 				.given().when().then(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
-								.overridingProps(enablingAutoRenewWith(1, 3600))
+								.overridingProps(leavingAutoRenewDisabledWith(1))
 				);
 	}
 
-	private HapiApiSpec gracePeriodRestrictionsSuiteCleanup() {
-		return defaultHapiSpec("GracePeriodRestrictionsSuiteCleanup")
+	private HapiApiSpec noGracePeriodRestrictionsIfNoAutoRenewSuiteCleanup() {
+		return defaultHapiSpec("NoGracePeriodRestrictionsIfNoAutoRenewSuiteCleanup")
 				.given().when().then(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)

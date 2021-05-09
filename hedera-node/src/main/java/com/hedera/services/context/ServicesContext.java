@@ -641,7 +641,8 @@ public class ServicesContext {
 			final var semantics = new SemanticPrecheck(
 					transitionLogic());
 			final var solvency = new SolvencyPrecheck(
-					exemptions(), fees(), validator(), precheckVerifier(), stateViews(), this::accounts);
+					exemptions(), fees(), validator(),
+					precheckVerifier(), stateViews(), globalDynamicProperties(), this::accounts);
 			final var system = new SystemPrecheck(
 					systemOpPolicies(), hapiOpPermissions(), txnThrottling());
 			final var stagedChecks = new StagedPrechecks(
@@ -937,7 +938,7 @@ public class ServicesContext {
 
 	public QueryFeeCheck queryFeeCheck() {
 		if (queryFeeCheck == null) {
-			queryFeeCheck = new QueryFeeCheck(validator(), this::accounts);
+			queryFeeCheck = new QueryFeeCheck(validator(), globalDynamicProperties(), this::accounts);
 		}
 		return queryFeeCheck;
 	}

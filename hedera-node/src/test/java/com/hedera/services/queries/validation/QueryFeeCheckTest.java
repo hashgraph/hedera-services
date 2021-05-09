@@ -20,6 +20,7 @@ package com.hedera.services.queries.validation;
  * ‍
  */
 
+import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -79,6 +80,7 @@ class QueryFeeCheckTest {
 	MerkleEntityId testPayerKey = MerkleEntityId.fromAccountId(aTestPayer);
 
 	private OptionValidator validator;
+	private final MockGlobalDynamicProps dynamicProps = new MockGlobalDynamicProps();
 	FCMap<MerkleEntityId, MerkleAccount> accounts;
 
 	QueryFeeCheck subject;
@@ -116,7 +118,7 @@ class QueryFeeCheckTest {
 
 		validator = mock(OptionValidator.class);
 
-		subject = new QueryFeeCheck(validator, () -> accounts);
+		subject = new QueryFeeCheck(validator, dynamicProps, () -> accounts);
 	}
 
 	@Test
@@ -294,6 +296,21 @@ class QueryFeeCheckTest {
 
 		// then:
 		assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, status);
+	}
+
+	@Test
+	public void cannotBeDetachedIfNoAutoRenew() {
+		given(validator.isAfterConsensusSecond(payerExpiry)).willReturn(false);
+		dynamicProps.disableAutoRenew();
+
+		// given:
+		var adjustment = adjustmentWith(aDetached, -aLot);
+
+		// when:
+		var status = subject.adjustmentPlausibility(adjustment);
+
+		// then:
+		assertEquals(INSUFFICIENT_PAYER_BALANCE, status);
 	}
 
 	@Test

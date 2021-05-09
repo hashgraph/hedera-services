@@ -20,6 +20,7 @@ package com.hedera.services.queries.validation;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -41,11 +42,17 @@ import java.util.function.Supplier;
 
 public class QueryFeeCheck {
 	private final OptionValidator validator;
+	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
-	public QueryFeeCheck(OptionValidator validator, Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts) {
+	public QueryFeeCheck(
+			OptionValidator validator,
+			GlobalDynamicProperties dynamicProperties,
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
+	) {
 		this.accounts = accounts;
 		this.validator = validator;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	public ResponseCodeEnum nodePaymentValidity(List<AccountAmount> transfers, long queryFee, AccountID node) {
@@ -163,9 +170,10 @@ public class QueryFeeCheck {
 		if (balance >= req) {
 			return OK;
 		} else {
-			return (balance > 0 || validator.isAfterConsensusSecond(payingAccount.getExpiry()))
-					? INSUFFICIENT_PAYER_BALANCE
-					: ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+			final var isDetached = balance == 0
+					&& dynamicProperties.autoRenewEnabled()
+					&& !validator.isAfterConsensusSecond(payingAccount.getExpiry());
+			return isDetached ? ACCOUNT_EXPIRED_AND_PENDING_REMOVAL : INSUFFICIENT_PAYER_BALANCE;
 		}
 	}
 }

@@ -20,6 +20,7 @@ package com.hedera.services.txns.submission;
  * ‍
  */
 
+import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
@@ -104,6 +105,8 @@ class SolvencyPrecheckTest {
 			.build());
 
 
+	private MockGlobalDynamicProps dynamicProperties = new MockGlobalDynamicProps();
+
 	@Mock
 	private OptionValidator validator;
 	@Mock
@@ -122,7 +125,8 @@ class SolvencyPrecheckTest {
 	@BeforeEach
 	void setUp() {
 		subject = new SolvencyPrecheck(
-				feeExemptions, feeCalculator, validator, precheckVerifier, () -> stateView, () -> accounts);
+				feeExemptions, feeCalculator, validator, precheckVerifier,
+				() -> stateView, dynamicProperties, () -> accounts);
 	}
 
 	@Test
@@ -137,7 +141,8 @@ class SolvencyPrecheckTest {
 	@Test
 	void preservesRespForPrefixMismatch() throws Exception {
 		givenSolventPayer();
-		given(precheckVerifier.hasNecessarySignatures(accessorCoveringAllFees)).willThrow(KeyPrefixMismatchException.class);
+		given(precheckVerifier.hasNecessarySignatures(accessorCoveringAllFees))
+				.willThrow(KeyPrefixMismatchException.class);
 
 		// when:
 		var result = subject.assessWithSvcFees(accessorCoveringAllFees);
@@ -149,7 +154,8 @@ class SolvencyPrecheckTest {
 	@Test
 	void preservesRespForInvalidAccountId() throws Exception {
 		givenSolventPayer();
-		given(precheckVerifier.hasNecessarySignatures(accessorCoveringAllFees)).willThrow(InvalidAccountIDException.class);
+		given(precheckVerifier.hasNecessarySignatures(accessorCoveringAllFees))
+				.willThrow(InvalidAccountIDException.class);
 
 		// when:
 		var result = subject.assessWithSvcFees(accessorCoveringAllFees);
@@ -199,7 +205,8 @@ class SolvencyPrecheckTest {
 	void translatesFeeCalcFailure() {
 		givenSolventPayer();
 		givenValidSigs();
-		given(feeCalculator.estimateFee(accessorCoveringAllFees, payerKey, stateView, now)).willThrow(IllegalStateException.class);
+		given(feeCalculator.estimateFee(accessorCoveringAllFees, payerKey, stateView, now))
+				.willThrow(IllegalStateException.class);
 
 		// when:
 		var result = subject.assessWithSvcFees(accessorCoveringAllFees);
@@ -249,6 +256,22 @@ class SolvencyPrecheckTest {
 
 		// then:
 		assertBothValidityAndReqFee(result, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, acceptableRequiredFee);
+	}
+
+	@Test
+	void cannotBeDetachedIfAutorenewDisabled() {
+		givenInsolventPayer();
+		givenValidSigs();
+		givenAcceptableFees();
+		given(feeCalculator.estimatedNonFeePayerAdjustments(accessorCoveringAllFees, now)).willReturn(+payerBalance);
+		// and:
+		dynamicProperties.disableAutoRenew();
+
+		// when:
+		var result = subject.assessWithSvcFees(accessorCoveringAllFees);
+
+		// then:
+		assertBothValidityAndReqFee(result, INSUFFICIENT_PAYER_BALANCE, acceptableRequiredFee);
 	}
 
 	@Test
