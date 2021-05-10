@@ -23,12 +23,12 @@ package com.hedera.services.txns.schedule;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.TriggeredTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Objects;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -47,19 +47,22 @@ public final class ScheduleExecutor {
 	 * inner transaction. The arguments cannot be null, the return type would always be a proper ResponseEnumCode.
 	 *
 	 * @param id
-	 * 		The non null id of the scheduled transaction.
+	 * 		the id of the scheduled transaction
 	 * @param store
-	 * 		A non null object to handle scheduled entity type.
+	 * 		the relevant store of schedule entities
 	 * @param context
-	 * 		A non null object to handle inner transaction specific context on a node.
-	 * @return the response code {@link ResponseCodeEnum} from executing the inner scheduled transaction
+	 * 		the active (parent) transaction context
+	 * @return the result {@link ResponseCodeEnum} of triggering the scheduled entity
 	 */
 	ResponseCodeEnum processExecution(
 			@NotNull ScheduleID id,
 			@NotNull ScheduleStore store,
 			@NotNull TransactionContext context
-	) throws
-			InvalidProtocolBufferException, NullPointerException {
+	) throws InvalidProtocolBufferException {
+		Objects.requireNonNull(id, "The id of the scheduled transaction cannot be null");
+		Objects.requireNonNull(store, "The schedule entity store cannot be null");
+		Objects.requireNonNull(context, "The active transaction context cannot be null");
+
 		final var executionStatus = store.markAsExecuted(id);
 		if (executionStatus != OK) {
 			return executionStatus;
@@ -75,3 +78,4 @@ public final class ScheduleExecutor {
 		return OK;
 	}
 }
+
