@@ -22,32 +22,37 @@ package com.hedera.services.bdd.suites.autorenew;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
+import com.hedera.services.bdd.spec.queries.HapiQueryOp;
+import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
 
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.function.IntFunction;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultFailingHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.DEFAULT_HIGH_SPIN_SCAN_COUNT;
+import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.DEFAULT_HIGH_TOUCH_COUNT;
+import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.disablingAutoRenewWithDefaults;
+import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enablingAutoRenewWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class AccountAutoRenewalSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(AccountAutoRenewalSuite.class);
@@ -64,7 +69,8 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 						maxNumberOfEntitiesToRenewOrDeleteWorks(),
 						numberOfEntitiesToScanWorks(),
 						autoDeleteAfterGracePeriod(),
-						updateExpiration(),
+
+						accountAutoRenewalSuiteCleanup(),
 				}
 		);
 	}
@@ -73,212 +79,181 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 		String autoRemovedAccount = "autoRemovedAccount";
 		return defaultHapiSpec("AccountAutoRemoval")
 				.given(
-						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
-								.overridingProps(Map.of("ledger.autoRenewPeriod.minDuration", "10",
-										"autorenew.isEnabled", "true",
-										"autorenew.gracePeriod", "0"))
-								.erasingProps(Set.of("minimumAutoRenewDuration")),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(GENESIS)
+								.overridingProps(enablingAutoRenewWith(1, 0)),
 						cryptoCreate(autoRemovedAccount).autoRenewSecs(1).balance(0L),
 						getAccountInfo(autoRemovedAccount).logged()
-				)
-				.when(
+				).when(
 						sleepFor(1_500L),
-						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)).via("triggeringTransaction"),
-						getTxnRecord("triggeringTransaction").logged()
-				)
-				.then(
+						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L))
+								.via("triggeringTransaction")
+				).then(
 						getAccountBalance(autoRemovedAccount).hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID)
 				);
 	}
 
 	private HapiApiSpec accountAutoRenewal() {
-		String autoRenewedAccount = "autoRenewedAccount";
-		long autoRenewSecs = 10;
+		final var briefAutoRenew = 3L;
+		final var autoRenewedAccount = "autoRenewedAccount";
+
 		long initialBalance = ONE_HUNDRED_HBARS;
 		return defaultHapiSpec("AccountAutoRenewal")
 				.given(
-						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
-								.overridingProps(Map.of(
-										"ledger.autoRenewPeriod.minDuration", String.valueOf(autoRenewSecs),
-										"autorenew.isEnabled", "true",
-										"autorenew.gracePeriod", "0"))
-								.erasingProps(Set.of("minimumAutoRenewDuration")),
-						cryptoCreate(autoRenewedAccount).autoRenewSecs(autoRenewSecs).balance(initialBalance),
-						getAccountInfo(autoRenewedAccount).logged().saveToRegistry(autoRenewedAccount)
-				)
-				.when(
-						sleepFor(15 * 1000),
-						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)).via("triggeringTransaction"),
-						getTxnRecord("triggeringTransaction").logged()
-				)
-				.then(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(GENESIS)
+								.overridingProps(enablingAutoRenewWith(
+										briefAutoRenew,
+										0,
+										DEFAULT_HIGH_SPIN_SCAN_COUNT,
+										DEFAULT_HIGH_TOUCH_COUNT)),
+						cryptoCreate(autoRenewedAccount)
+								.autoRenewSecs(briefAutoRenew)
+								.balance(initialBalance),
+						getAccountInfo(autoRenewedAccount)
+								.saveToRegistry(autoRenewedAccount)
+				).when(
+						sleepFor(briefAutoRenew * 1_000L + 500L),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L))
+								.via("triggeringTransaction")
+				).then(
 						getAccountInfo(autoRenewedAccount)
 								.has(accountWith()
-										.expiry(autoRenewedAccount, autoRenewSecs)
-										.balanceLessThan(initialBalance)
-								).logged()
-				);
-	}
-
-	private HapiApiSpec maxNumberOfEntitiesToRenewOrDeleteWorks() {
-		long autoRenewSecs = 10;
-		long initialExpirationTime = Instant.now().getEpochSecond() + autoRenewSecs;
-		long newExpirationTime = initialExpirationTime + autoRenewSecs;
-		long initialBalance = ONE_HUNDRED_HBARS;
-		return defaultFailingHapiSpec("MaxNumberOfEntitiesToRenewOrDeleteWorks")
-				.given(
-						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
-								.overridingProps(Map.of(
-										"ledger.autoRenewPeriod.minDuration", String.valueOf(autoRenewSecs),
-										"autorenew.isEnabled", "true",
-										"autorenew.gracePeriod", "0",
-										"autorenew.numberOfEntitiesToScan", "100",
-										"autorenew.maxNumberOfEntitiesToRenewOrDelete", "2"))
-								.erasingProps(Set.of("minimumAutoRenewDuration")),
-						cryptoCreate("account1").autoRenewSecs(autoRenewSecs).balance(0L),
-						cryptoCreate("account2").autoRenewSecs(autoRenewSecs).balance(0L),
-						cryptoCreate("account3").autoRenewSecs(autoRenewSecs).balance(0L),
-						cryptoCreate("account4").autoRenewSecs(autoRenewSecs).balance(initialBalance),
-						getAccountInfo("account4").logged()
-				)
-				.when(
-						sleepFor(15 * 1000),
-						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)).via("triggeringTransaction1"),
-						getAccountBalance("account1").hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID),
-						getAccountBalance("account2").hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID),
-						getAccountBalance("account3").hasTinyBars(0L),
-						getAccountBalance("account4").hasTinyBars(initialBalance),
-						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)).via("triggeringTransaction2")
-				)
-				.then(
-						getAccountBalance("account3").hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID),
-						getAccountInfo("account4")
-								.has(accountWith()
-										.expiry(newExpirationTime, 5L)
-										.balanceLessThan(initialBalance)
-								).logged()
-				);
-	}
-
-	private HapiApiSpec numberOfEntitiesToScanWorks() {
-		String autoRemovedAccount = "autoRemovedAccount";
-		String autoRenewedAccount = "autoRenewedAccount";
-		long autoRenewSecs = 10;
-		long longAutoRenewSecs = 8000001;
-		long numberOfEntitiesToScan = 100;
-		long initialExpirationTime = Instant.now().getEpochSecond() + autoRenewSecs;
-		long newExpirationTime = initialExpirationTime + autoRenewSecs;
-		long initialBalance = ONE_HUNDRED_HBARS;
-		return defaultFailingHapiSpec("NumberOfEntitiesToScanWorks")
-				.given(
-						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
-								.overridingProps(Map.of(
-										"ledger.autoRenewPeriod.minDuration", String.valueOf(autoRenewSecs),
-										"autorenew.isEnabled", "true",
-										"autorenew.gracePeriod", "0",
-										"autorenew.numberOfEntitiesToScan", String.valueOf(numberOfEntitiesToScan),
-										"autorenew.maxNumberOfEntitiesToRenewOrDelete", "2"))
-								.erasingProps(Set.of("minimumAutoRenewDuration")),
-						withOpContext((spec, ctxLog) -> {
-							List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
-							for (int i = 0; i < numberOfEntitiesToScan; i++) {
-								opsList.add(cryptoCreate("account" + i).autoRenewSecs(longAutoRenewSecs).balance(0L));
-							}
-							CustomSpecAssert.allRunFor(spec, opsList);
-						}),
-						cryptoCreate(autoRemovedAccount).autoRenewSecs(autoRenewSecs).balance(0L),
-						cryptoCreate(autoRenewedAccount).autoRenewSecs(autoRenewSecs).balance(initialBalance),
-						getAccountInfo(autoRenewedAccount).logged()
-				)
-				.when(
-						sleepFor(15 * 1000),
-						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)).via("triggeringTransaction1"),
-						getAccountBalance(autoRemovedAccount).hasTinyBars(0L),
-						getAccountBalance(autoRenewedAccount).hasTinyBars(initialBalance),
-						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)).via("triggeringTransaction2")
-				)
-				.then(
-						getAccountBalance("account3").hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID),
-						getAccountInfo("account4")
-								.has(accountWith()
-										.expiry(newExpirationTime, 5L)
-										.balanceLessThan(initialBalance)
-								).logged()
-				);
-	}
-
-	private HapiApiSpec autoDeleteAfterGracePeriod() {
-		String autoDeleteAccount = "autoDeleteAccount";
-		int autoRenewSecs = 10;
-		int gracePeriod = 120;
-		return defaultHapiSpec("AutoDeleteAfterGracePeriod")
-				.given(
-						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
-								.overridingProps(Map.of(
-										"ledger.autoRenewPeriod.minDuration", String.valueOf(autoRenewSecs),
-										"autorenew.isEnabled", "true",
-										"autorenew.gracePeriod", String.valueOf(gracePeriod),
-										"autorenew.numberOfEntitiesToScan", "100",
-										"autorenew.maxNumberOfEntitiesToRenewOrDelete", "2"))
-								.erasingProps(Set.of("minimumAutoRenewDuration")),
-						cryptoCreate(autoDeleteAccount).autoRenewSecs(autoRenewSecs).balance(0L)
-				).when(
-						sleepFor(15 * 1000),
-						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)).via("triggeringTransaction1"),
-						getAccountBalance(autoDeleteAccount),
-						sleepFor(120 * 1000),
-						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)).via("triggeringTransaction2")
-				).then(
-						getAccountBalance(autoDeleteAccount).hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID)
+										.expiry(autoRenewedAccount, briefAutoRenew)
+										.balanceLessThan(initialBalance)),
+						cryptoDelete(autoRenewedAccount)
 				);
 	}
 
 	/**
-	 * A Hedera entity can have its expiration time extended by anyone, not just by the owner or admin account.
-	 * The expiration time is the only field that can be changed in an update without being signed by the owner or the
-	 * admin.
-	 * It is also the only field that can be changed while expired (during the grace period).
+	 * Mostly useful to run from a blank state where the only three accounts
+	 * that exist are those created in the "given" clause of this spec.
+	 *
+	 * If run against a network that has existing funded accounts with very
+	 * low auto-renew periods, this test is just a minimal sanity check.
 	 */
-	private HapiApiSpec updateExpiration() {
-		String autoRenewAccount = "autoRenewAccount";
-		int autoRenewSecs = 10;
-		int gracePeriod = 120;
-		long initialExpirationTime = Instant.now().getEpochSecond() + autoRenewSecs;
-		long newExpirationTime = initialExpirationTime + autoRenewSecs;
-		return defaultHapiSpec("UpdateExpirationTime")
+	private HapiApiSpec maxNumberOfEntitiesToRenewOrDeleteWorks() {
+		final var briefAutoRenew = 3L;
+		final var firstTouchable = "a";
+		final var secondTouchable = "b";
+		final var untouchable = "c";
+
+		return defaultHapiSpec("MaxNumberOfEntitiesToRenewOrDeleteWorks")
 				.given(
-						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
-								.overridingProps(Map.of(
-										"ledger.autoRenewPeriod.minDuration", String.valueOf(autoRenewSecs),
-										"autorenew.isEnabled", "true",
-										"autorenew.gracePeriod", String.valueOf(gracePeriod),
-										"autorenew.numberOfEntitiesToScan", "100",
-										"autorenew.maxNumberOfEntitiesToRenewOrDelete", "2"))
-								.erasingProps(Set.of("minimumAutoRenewDuration")),
-						cryptoCreate(autoRenewAccount).autoRenewSecs(autoRenewSecs).balance(0L),
-						cryptoCreate("payer").balance(ONE_HUNDRED_HBARS)
-				)
-				.when(
-						sleepFor(15 * 1000), // autoRenewAccount would have been expired by now
-						// handle transaction to trigger cleanup and autoRenewAccount will be in grace period
-						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)).via("triggeringTransaction1"),
-						getAccountBalance(autoRenewAccount).logged(),
-						// when in grace period we can not update anything on autoRenewAccount except for expiration
-						// time
-						cryptoUpdate(autoRenewAccount)
-								.entityMemo("dont"),
-						// anyone can extend the expiration time on autoRenewAccount
-						contractUpdate(autoRenewAccount)
-								.newExpirySecs(autoRenewSecs)
-								.payingWith("payer")
-				)
-				.then(
-						getAccountInfo(autoRenewAccount).has(
-								accountWith().expiry(newExpirationTime, 5L)
-						).logged(),
-						getAccountInfo("payer").has(
-								accountWith().balanceLessThan(ONE_HUNDRED_HBARS)
-						).logged()
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(GENESIS)
+								.overridingProps(enablingAutoRenewWith(
+										briefAutoRenew, 0, DEFAULT_HIGH_SPIN_SCAN_COUNT, 2)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
+						cryptoCreate(firstTouchable)
+								.autoRenewSecs(briefAutoRenew).balance(0L),
+						cryptoCreate(secondTouchable)
+								.autoRenewSecs(briefAutoRenew).balance(0L),
+						cryptoCreate(untouchable)
+								.autoRenewSecs(briefAutoRenew).balance(0L)
+				).when(
+						sleepFor(briefAutoRenew * 1_000L + 500L),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L))
+								.via("triggeringTransaction")
+				).then(
+						assertionsHold((spec, opLog) -> {
+							var subOpA = getAccountBalance(firstTouchable)
+									.hasAnswerOnlyPrecheckFrom(OK, INVALID_ACCOUNT_ID);
+							var subOpB = getAccountBalance(secondTouchable)
+									.hasAnswerOnlyPrecheckFrom(OK, INVALID_ACCOUNT_ID);
+							var subOpC = getAccountBalance(untouchable)
+									.hasAnswerOnlyPrecheckFrom(OK, INVALID_ACCOUNT_ID);
+							allRunFor(spec, subOpA, subOpB, subOpC);
+							final var aStatus = subOpA.getResponse().getCryptogetAccountBalance()
+											.getHeader().getNodeTransactionPrecheckCode();
+							final var bStatus = subOpB.getResponse().getCryptogetAccountBalance()
+									.getHeader().getNodeTransactionPrecheckCode();
+							final var cStatus = subOpC.getResponse().getCryptogetAccountBalance()
+									.getHeader().getNodeTransactionPrecheckCode();
+							opLog.info("Results: {}, {}, {}", aStatus, bStatus, cStatus);
+							final long numRemoved = Stream.of(aStatus, bStatus, cStatus)
+									.filter(INVALID_ACCOUNT_ID::equals)
+									.count();
+							Assert.assertTrue("More than 2 entities were touched!", numRemoved <= 2L);
+						})
+				);
+	}
+
+	/**
+	 * Mostly useful to run from a blank state where the only accounts
+	 * that exist are those created in the "given" clause of this spec.
+	 *
+	 * If run against a network that has existing funded accounts with very
+	 * low auto-renew periods, this test is just a minimal sanity check.
+	 */
+	private HapiApiSpec numberOfEntitiesToScanWorks() {
+		final var briefAutoRenew = 3L;
+		final int abbrevMaxToScan = 10;
+		final IntFunction<String> accountName = i -> "fastExpiring" + i;
+
+		return defaultHapiSpec("NumberOfEntitiesToScanWorks")
+				.given(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(GENESIS)
+								.overridingProps(enablingAutoRenewWith(
+										briefAutoRenew, 0, abbrevMaxToScan, DEFAULT_HIGH_TOUCH_COUNT)),
+						inParallel(IntStream.range(0, abbrevMaxToScan + 1)
+								.mapToObj(i -> cryptoCreate(accountName.apply(i))
+										.autoRenewSecs(briefAutoRenew)
+										.balance(0L))
+								.toArray(HapiSpecOperation[]::new))
+				).when(
+						sleepFor(briefAutoRenew * 1_000L + 500L),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L))
+				).then(
+						assertionsHold((spec, opLog) -> {
+							final HapiSpecOperation[] subOps = IntStream.range(0, abbrevMaxToScan + 1)
+									.mapToObj(i -> getAccountBalance(accountName.apply(i))
+											.hasAnswerOnlyPrecheckFrom(INVALID_ACCOUNT_ID, OK))
+									.toArray(HapiSpecOperation[]::new);
+							allRunFor(spec, subOps);
+							final long numRemoved = Stream.of(subOps)
+									.map(op -> ((HapiQueryOp<HapiGetAccountBalance>)op).getResponse()
+											.getCryptogetAccountBalance().getHeader().getNodeTransactionPrecheckCode())
+									.peek(opLog::info)
+									.filter(INVALID_ACCOUNT_ID::equals)
+									.count();
+							Assert.assertTrue(
+									"More than " + abbrevMaxToScan + " entities were touched!",
+									numRemoved <= abbrevMaxToScan);
+						})
+				);
+	}
+
+	private HapiApiSpec autoDeleteAfterGracePeriod() {
+		final var briefAutoRenew = 3L;
+		String autoDeleteAccount = "autoDeleteAccount";
+		return defaultHapiSpec("AutoDeleteAfterGracePeriod")
+				.given(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(GENESIS)
+								.overridingProps(enablingAutoRenewWith(briefAutoRenew, 2 * briefAutoRenew)),
+						cryptoCreate(autoDeleteAccount)
+								.autoRenewSecs(briefAutoRenew)
+								.balance(0L)
+				).when(
+						sleepFor(briefAutoRenew * 1_000L + 500L),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
+						getAccountBalance(autoDeleteAccount),
+						sleepFor(2 * briefAutoRenew * 1_000L + 500L),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L))
+				).then(
+						getAccountBalance(autoDeleteAccount)
+								.hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID)
+				);
+	}
+
+	private HapiApiSpec accountAutoRenewalSuiteCleanup() {
+		return defaultHapiSpec("accountAutoRenewalSuiteCleanup")
+				.given().when().then(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(GENESIS)
+								.overridingProps(disablingAutoRenewWithDefaults())
 				);
 	}
 

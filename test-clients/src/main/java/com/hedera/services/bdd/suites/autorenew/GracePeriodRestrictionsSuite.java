@@ -36,7 +36,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -84,17 +83,17 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 		return List.of(new HapiApiSpec[] {
 						gracePeriodRestrictionsSuiteSetup(),
 
-//						contractCallRestrictionsEnforced(),
-//						payerRestrictionsEnforced(),
-//						cryptoTransferRestrictionsEnforced(),
-//						tokenMgmtRestrictionsEnforced(),
+						contractCallRestrictionsEnforced(),
+						payerRestrictionsEnforced(),
+						cryptoTransferRestrictionsEnforced(),
+						tokenMgmtRestrictionsEnforced(),
 						cryptoAndContractDeleteRestrictionsEnforced(),
-//						treasuryOpsRestrictionEnforced(),
-//						tokenAutoRenewOpsEnforced(),
-//						topicAutoRenewOpsEnforced(),
-//						cryptoUpdateRestrictionsEnforced(),
-//
-//						gracePeriodRestrictionsSuiteCleanup(),
+						treasuryOpsRestrictionEnforced(),
+						tokenAutoRenewOpsEnforced(),
+						topicAutoRenewOpsEnforced(),
+						cryptoUpdateRestrictionsEnforced(),
+
+						gracePeriodRestrictionsSuiteCleanup(),
 				}
 		);
 	}
@@ -395,7 +394,7 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 		final var tbd = "contract";
 		final var adminKey = "tac";
 
-		return defaultHapiSpec("CryptoDeleteRestrictionsEnforced")
+		return defaultHapiSpec("CryptoAndContractDeleteRestrictionsEnforced")
 				.given(
 						newKeyNamed(adminKey),
 						contractCreate(tbd).adminKey(adminKey),
@@ -413,6 +412,7 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
 								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
 						contractDelete(tbd)
 								.transferAccount(detachedAccount)
+								.hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL)
 				);
 	}
 

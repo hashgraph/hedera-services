@@ -23,6 +23,10 @@ package com.hedera.services.bdd.suites;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.autorenew.AccountAutoRenewalSuite;
+import com.hedera.services.bdd.suites.autorenew.AutoRemovalCasesSuite;
+import com.hedera.services.bdd.suites.autorenew.GracePeriodRestrictionsSuite;
+import com.hedera.services.bdd.suites.autorenew.MacroFeesChargedSanityCheckSuite;
+import com.hedera.services.bdd.suites.autorenew.NoGprIfNoAutoRenewSuite;
 import com.hedera.services.bdd.suites.consensus.ChunkingSuite;
 import com.hedera.services.bdd.suites.consensus.SubmitMessageSuite;
 import com.hedera.services.bdd.suites.consensus.TopicCreateSuite;
@@ -285,6 +289,12 @@ public class SuiteRunner {
 		put("SchedulesExpiryDuringReconnect", aof(new SchedulesExpiryDuringReconnect()));
 		put("ValidateTokensStateAfterReconnect", aof(new ValidateTokensStateAfterReconnect()));
 		put("ValidateCongestionPricingAfterReconnect", aof(new ValidateCongestionPricingAfterReconnect()));
+		/* Functional tests - AUTORENEW */
+		put("AutoRemovalCasesSuite", aof(new AutoRemovalCasesSuite()));
+		put("AccountAutoRenewalSuite", aof(new AccountAutoRenewalSuite()));
+		put("GracePeriodRestrictionsSuite", aof(new GracePeriodRestrictionsSuite()));
+		put("MacroFeesChargedSanityCheckSuite", aof(new MacroFeesChargedSanityCheckSuite()));
+		put("NoGprIfNoAutoRenewSuite", aof(new NoGprIfNoAutoRenewSuite()));
 		/* Functional tests - CONSENSUS */
 		put("TopicCreateSpecs", aof(new TopicCreateSuite()));
 		put("TopicDeleteSpecs", aof(new TopicDeleteSuite()));
