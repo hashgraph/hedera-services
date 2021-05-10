@@ -24,6 +24,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -45,6 +46,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.DEFAULT_HIGH_SPIN_SCAN_COUNT;
@@ -71,6 +73,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 						autoDeleteAfterGracePeriod(),
 
 						accountAutoRenewalSuiteCleanup(),
+						freezeAtTheEnd()
 				}
 		);
 	}
@@ -254,6 +257,18 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
 								.overridingProps(disablingAutoRenewWithDefaults())
+				);
+	}
+
+	private HapiApiSpec freezeAtTheEnd() {
+		return defaultHapiSpec("freezeAtTheEnd")
+				.given()
+				.when(
+						freeze().startingIn(0).minutes().andLasting(2).minutes().payingWith(GENESIS)
+				)
+				.then(
+						// sleep for a while to wait for this freeze transaction be handled
+						UtilVerbs.sleepFor(75_000)
 				);
 	}
 
