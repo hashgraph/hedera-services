@@ -73,7 +73,7 @@ After permanently deleting an entity from the ledger due to the zero balance of 
 | contractCallResult | ContractFunctionResult | | empty |
 | contractCreateResult | ContractFunctionResult | | empty |
 | transferList | TransferList | | empty |
-| tokenTransferLists | TokenTransferList | repeated | empty |
+| tokenTransferLists | TokenTransferList | repeated | empty unless the removed entity was an account that owned units of a non-deleted token, in which case this will record those units being returned to the token's treasury |
 | scheduleRef | ScheduleID | | empty |
 
 An entity removal record will be very similar to an autorenewal record. The `memo` will reflect that the entity was automatically deleted. Due to the zero balance of the `autoRenewAccount`, the `transactionFee` is zero and the `transferList` is empty.
