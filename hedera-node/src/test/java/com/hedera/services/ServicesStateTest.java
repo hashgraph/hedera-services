@@ -450,7 +450,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	public void invokesDiskFsAsApropos() {
+	public void invokesMigrationsAsApropos() {
 		// setup:
 		given(ctx.nodeAccount()).willReturn(IdUtils.asAccount("0.0.3"));
 		CONTEXTS.store(ctx);
@@ -479,6 +479,8 @@ class ServicesStateTest {
 		verify(diskFs, times(1)).migrateLegacyDiskFsFromV13LocFor(
 				MerkleDiskFs.DISK_FS_ROOT_DIR,
 				"0.0.3");
+		// and:
+		verify(networkCtx).updateLastScannedEntity(1000L);
 	}
 
 	@Test

@@ -74,7 +74,7 @@ public class EntityAutoRenewal {
 				() -> ctx.accounts().size(), () -> ctx.tokenAssociations().size());
 		for (; i <= maxEntitiesToScan; i++) {
 			scanNum++;
-			if (scanNum == wrapNum) {
+			if (scanNum >= wrapNum) {
 				scanNum = firstEntityToScan;
 			}
 			if (renewalProcess.process(scanNum)) {

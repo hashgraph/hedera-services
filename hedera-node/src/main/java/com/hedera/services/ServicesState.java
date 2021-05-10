@@ -242,6 +242,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 			var restoredDiskFs = diskFs();
 			if (networkCtx().getStateVersion() < RELEASE_0140_VERSION) {
+				final long defaultLastScanned = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities");
+				networkCtx().updateLastScannedEntity(defaultLastScanned);
 				try {
 					restoredDiskFs.migrateLegacyDiskFsFromV13LocFor(
 							MerkleDiskFs.DISK_FS_ROOT_DIR,
