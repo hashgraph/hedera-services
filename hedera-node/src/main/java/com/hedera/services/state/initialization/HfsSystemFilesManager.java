@@ -22,6 +22,7 @@ package com.hedera.services.state.initialization;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.TextFormat;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.files.HFileMeta;
@@ -60,6 +61,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.LongStream;
 
+import static com.google.protobuf.TextFormat.escapeBytes;
 import static com.hedera.services.fees.bootstrap.JsonToProtoSerde.loadFeeScheduleFromJson;
 import static com.swirlds.common.Address.ipString;
 
@@ -198,10 +200,11 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	}
 
 	private <T> T loadFrom(FileID disFid, String resource, GrpcParser<T> parser) {
+		final byte[] contents = hfs.cat(disFid);
 		try {
 			return parser.parseFrom(hfs.cat(disFid));
 		} catch (InvalidProtocolBufferException e) {
-			log.error("Corrupt {} in saved state, unable to continue!", resource);
+			log.error("Corrupt {} in saved state ({}), unable to continue!", resource, escapeBytes(contents));
 			throw new IllegalStateException(e);
 		}
 	}

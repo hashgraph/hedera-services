@@ -49,6 +49,8 @@ import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -194,7 +196,8 @@ class HfsSystemFilesManagerTest {
 		given(properties.getIntProperty("bootstrap.rates.nextCentEquiv")).willReturn(nxtCentEquiv);
 		given(properties.getLongProperty("bootstrap.rates.nextExpiry")).willReturn(nextExpiry);
 		given(properties.getStringProperty("bootstrap.feeSchedulesJson.resource")).willReturn("R4FeeSchedule.json");
-		given(properties.getStringProperty("bootstrap.throttleDefsJson.resource")).willReturn("bootstrap/throttles.json");
+		given(properties.getStringProperty("bootstrap.throttleDefsJson.resource")).willReturn(
+				"bootstrap/throttles.json");
 
 		ratesCb = mock(Consumer.class);
 		schedulesCb = mock(Consumer.class);
@@ -443,6 +446,24 @@ class HfsSystemFilesManagerTest {
 	}
 
 	@Test
+	void logsSchedulesIfCorrupt() throws IOException {
+		// setup:
+		byte[] corruptSchedules = "NONSENSE".getBytes();
+		// and:
+		var desired = "Corrupt fee schedules in saved state (NONSENSE), unable to continue!";
+
+		given(hfs.exists(schedulesId)).willReturn(false);
+		given(hfs.cat(schedulesId)).willReturn(corruptSchedules);
+
+		// when:
+		Assertions.assertThrows(IllegalStateException.class, subject::loadFeeSchedules);
+
+		// then:
+		verify(hfs).exists(schedulesId);
+		assertThat(logCaptor.errorLogs(), contains(desired));
+	}
+
+	@Test
 	void createsSchedulesFromResourcesIfMissing() throws IOException {
 		// setup:
 		byte[] schedules = Files.readAllBytes(Paths.get(R4_FEE_SCHEDULE_REPR_PATH));
@@ -657,7 +678,8 @@ class HfsSystemFilesManagerTest {
 		try {
 			var id = EntityIdUtils.accountParsedFromString(entry.getMemo());
 			builder.setNodeAccountId(id);
-		} catch (Exception ignore) { }
+		} catch (Exception ignore) {
+		}
 	}
 
 	private ExchangeRateSet expectedDefaultRates() {
