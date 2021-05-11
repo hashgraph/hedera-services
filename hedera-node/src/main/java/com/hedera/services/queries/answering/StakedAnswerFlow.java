@@ -123,7 +123,7 @@ public class StakedAnswerFlow implements AnswerFlow {
 				.map(a -> a.getTxnId().getTransactionValidStart())
 				.orElse(asTimestamp(now.get()));
 		final var usagePrices = resourceCosts.pricesGiven(service.canonicalFunction(), bestGuessNow);
-		
+
 		long fee = 0L;
 		final Map<String, Object> queryCtx = new HashMap<>();
 		if (isPaymentRequired) {
