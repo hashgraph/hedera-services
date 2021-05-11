@@ -160,6 +160,7 @@ class StakedAnswerFlowTest {
 
 		givenValidHeader();
 		givenExtractablePayment();
+		givenPaymentIsRequired();
 		given(transactionPrecheck.performForQueryPayment(paymentAccessor.getBackwardCompatibleSignedTxn()))
 				.willReturn(Pair.of(new TxnValidityAndFeeReq(INSUFFICIENT_PAYER_BALANCE), Optional.empty()));
 

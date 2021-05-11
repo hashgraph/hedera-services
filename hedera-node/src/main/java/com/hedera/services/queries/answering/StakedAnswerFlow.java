@@ -126,7 +126,7 @@ public class StakedAnswerFlow implements AnswerFlow {
 		
 		long fee = 0L;
 		final Map<String, Object> queryCtx = new HashMap<>();
-		if (service.requiresNodePayment(query)) {
+		if (isPaymentRequired) {
 			/* The hygiene check would have aborted if we were missing a payment. */
 			final var payment = optionalPayment.get();
 			fee = totalOf(fees.computePayment(query, usagePrices, view, bestGuessNow, queryCtx));
