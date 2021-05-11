@@ -24,7 +24,9 @@ import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.exceptions.HapiQueryCheckStateException;
 import com.hedera.services.bdd.spec.exceptions.HapiQueryPrecheckStateException;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
+import com.hedera.services.usage.crypto.CryptoTransferUsage;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Response;
@@ -39,6 +41,7 @@ import com.hedera.services.bdd.spec.fees.Payment;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
 import com.hedera.services.bdd.spec.stats.QueryObs;
+import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
@@ -207,8 +210,15 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		return spec.fees().forActivityBasedOp(
 				HederaFunctionality.CryptoTransfer,
-				cryptoFees::getCryptoTransferTxFeeMatrices,
-				txn, numPayerKeys);
+				(_txn, _svo) -> usageEstimate(_txn, _svo, spec.fees().tokenTransferUsageMultiplier()),
+				txn,
+				numPayerKeys);
+	}
+
+	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo, int multiplier) {
+		return CryptoTransferUsage.newEstimate(txn, suFrom(svo))
+				.givenTokenMultiplier(multiplier)
+				.get();
 	}
 
 	private Transaction fittedPayment(HapiApiSpec spec) throws Throwable {

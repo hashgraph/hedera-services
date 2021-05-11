@@ -70,7 +70,7 @@ public class QueryFeeCheck {
 		}
 		// number of beneficiaries in query transfer transaction can be greater than one.
 		// validate if node gets the required query payment
-		if (transfers.stream().noneMatch(adj -> adj.getAmount() > 0 && adj.getAccountID().equals(node))) {
+		if (transfers.stream().noneMatch(adj -> adj.getAmount() >= 0 && adj.getAccountID().equals(node))) {
 			return INVALID_RECEIVING_NODE_ACCOUNT;
 		}
 		if (transfers.stream().anyMatch(adj -> adj.getAccountID().equals(node) && adj.getAmount() < queryFee)) {
