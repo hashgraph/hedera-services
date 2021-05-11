@@ -337,7 +337,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 			lookupSubmissionRecord(spec);
 		}
 		if (!memo.get().equals(recordOfSubmission.getMemo())) {
-			log.error("{} {} Memo didn't come from submitted transaction! actual memo {}, recorded {}."
+			log.warn("{} {} Memo didn't come from submitted transaction! actual memo {}, recorded {}."
 					, spec.logPrefix(), this, memo.get(), recordOfSubmission.getMemo());
 			throw new HapiTxnCheckStateException(
 					String.format("%s Memo didn't come from submitted transaction! actual memo %s, recorded %s."
