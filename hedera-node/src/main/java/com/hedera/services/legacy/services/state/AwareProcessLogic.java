@@ -103,9 +103,7 @@ public class AwareProcessLogic implements ProcessLogic {
 				TxnAccessor scopedAccessor = ctx.txnCtx().triggeredTxn();
 				txnManager.process(scopedAccessor, consensusTime, submittingMember, ctx);
 			}
-			if (accessor.getFunction().equals(CryptoTransfer)) {
-				ctx.entityAutoRenewal().execute(consensusTime);
-			}
+			ctx.entityAutoRenewal().execute(consensusTime);
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Consensus platform txn was not gRPC!", e);
 		}
