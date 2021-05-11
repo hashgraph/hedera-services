@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -136,10 +137,11 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 						tokenOpsEnablement(),
 						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
 						logIt(ignore -> settings.toString()),
-						fileUpdate(APP_PROPERTIES)
+						sourcing(() -> fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
 								.overridingProps(Map.of("balances.exportPeriodSecs",
-										String.format("%d", settings.getBalancesExportPeriodSecs()))),
+										String.format("%d",settings.getBalancesExportPeriodSecs()) ))
+								.erasingProps(Set.of("accountBalanceExportPeriodMinutes"))),
 						fileUpdate(THROTTLE_DEFS)
 								.payingWith(EXCHANGE_RATE_CONTROL)
 								.contents(throttlesForJRS.toByteArray())
