@@ -102,7 +102,8 @@ public class StakedAnswerFlow implements AnswerFlow {
 
 		Optional<SignedTxnAccessor> optionalPayment = Optional.empty();
 		final var allegedPayment = service.extractPaymentFrom(query);
-		if (allegedPayment.isPresent()) {
+		final var isPaymentRequired = service.requiresNodePayment(query);
+		if (isPaymentRequired && allegedPayment.isPresent()) {
 			final var signedTxn = allegedPayment.get().getBackwardCompatibleSignedTxn();
 			final var paymentCheck = transactionPrecheck.performForQueryPayment(signedTxn);
 			final var paymentStatus = paymentCheck.getLeft().getValidity();

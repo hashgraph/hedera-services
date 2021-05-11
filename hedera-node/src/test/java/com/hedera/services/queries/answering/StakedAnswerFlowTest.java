@@ -67,6 +67,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class StakedAnswerFlowTest {
@@ -307,6 +309,29 @@ class StakedAnswerFlowTest {
 
 		// then:
 		assertEquals(response, actual);
+	}
+
+	@Test
+	void returnsCostToCostAnswerEvenIfBadPayment() {
+		setupCostAwareSuccessServiceResponse();
+		subject.setNow(() -> Instant.ofEpochSecond(now.getSeconds()));
+
+		givenValidHeader();
+		givenExtractablePayment();
+		givenAvailFunction();
+		givenCapacity();
+		givenHappyService();
+		givenAvailableResourcePrices();
+		givenEstimableCost();
+		givenCostEstimateIsRequired();
+
+		// when:
+		Response actual = subject.satisfyUsing(service, query);
+
+		// then:
+		assertEquals(response, actual);
+		// and:
+		verify(transactionPrecheck, never()).performForQueryPayment(any());
 	}
 
 	@Test
