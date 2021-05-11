@@ -1980,7 +1980,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - X-dont-run
     jobs:
       - aws-summary:
           context: Slack
