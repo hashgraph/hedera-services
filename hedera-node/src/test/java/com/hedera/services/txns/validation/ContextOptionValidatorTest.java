@@ -50,8 +50,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
-import org.apache.commons.codec.binary.Hex;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -166,6 +164,14 @@ public class ContextOptionValidatorTest {
 				.setDeleted(meta.isDeleted())
 				.setKeys(JKey.mapJKey(meta.getWacl()).getKeyList())
 				.build();
+	}
+
+	@Test
+	void understandsBeforeAfterConsensusTime() {
+		// expect:
+		assertTrue(subject.isAfterConsensusSecond(now.getEpochSecond() + 1));
+		assertFalse(subject.isAfterConsensusSecond(now.getEpochSecond()));
+		assertFalse(subject.isAfterConsensusSecond(now.getEpochSecond() - 1));
 	}
 
 	@Test
@@ -582,7 +588,7 @@ public class ContextOptionValidatorTest {
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(4);
 
 		// expect:
-		assertEquals(OK, subject.isAcceptableTokenTransfersLength(wrapper));
+		assertEquals(OK, subject.tokenTransfersLengthCheck(wrapper));
 	}
 
 	@Test
@@ -593,7 +599,7 @@ public class ContextOptionValidatorTest {
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(2);
 
 		// expect:
-		assertEquals(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, subject.isAcceptableTokenTransfersLength(wrapper));
+		assertEquals(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, subject.tokenTransfersLengthCheck(wrapper));
 	}
 
 	@Test
@@ -604,7 +610,7 @@ public class ContextOptionValidatorTest {
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(4);
 
 		// expect:
-		assertEquals(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, subject.isAcceptableTokenTransfersLength(wrapper));
+		assertEquals(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, subject.tokenTransfersLengthCheck(wrapper));
 	}
 
 	@Test

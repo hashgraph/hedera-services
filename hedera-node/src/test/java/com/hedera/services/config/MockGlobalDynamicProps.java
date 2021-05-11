@@ -32,8 +32,10 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	private final CongestionMultipliers defaultMultipliers = CongestionMultipliers.from("90,10x,95,25x,99,100x");
 	private final CongestionMultipliers differentMultipliers = CongestionMultipliers.from("90,11x,95,26x,99,101x");
 
-	int minCongestionPeriod = 2;
-	CongestionMultipliers currentMultipliers = defaultMultipliers;
+	private int minCongestionPeriod = 2;
+	private long gracePeriod = 604800;
+	private boolean useAutoRenew = true;
+	private CongestionMultipliers currentMultipliers = defaultMultipliers;
 
 	public MockGlobalDynamicProps() {
 		super(null, null);
@@ -180,6 +182,39 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	@Override
 	public CongestionMultipliers congestionMultipliers() {
 		return currentMultipliers;
+	}
+
+
+	@Override
+	public boolean autoRenewEnabled() {
+		return useAutoRenew;
+	}
+
+	public void disableAutoRenew() {
+		useAutoRenew = false;
+	}
+
+	public void enableAutoRenew() {
+		useAutoRenew = true;
+	}
+
+	@Override
+	public int autoRenewNumberOfEntitiesToScan() {
+		return 100;
+	}
+
+	@Override
+	public int autoRenewMaxNumberOfEntitiesToRenewOrDelete() {
+		return 2;
+	}
+
+	@Override
+	public long autoRenewGracePeriod() {
+		return gracePeriod;
+	}
+
+	public void endGracePeriod() {
+		gracePeriod = 0L;
 	}
 
 	public void useDifferentMultipliers() {

@@ -64,6 +64,12 @@ public class CryptoOpsUsage {
 		return estimate.get();
 	}
 
+	public long cryptoAutoRenewRb(ExtantCryptoContext ctx) {
+		return CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
+				+ ctx.currentNonBaseRb()
+				+ ctx.currentNumTokenRels() * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
+	}
+
 	public FeeData cryptoUpdateUsage(TransactionBody cryptoUpdate, SigUsage sigUsage, ExtantCryptoContext ctx) {
 		var op = cryptoUpdate.getCryptoUpdateAccount();
 
@@ -84,10 +90,15 @@ public class CryptoOpsUsage {
 		newVariableBytes += !op.hasKey() ? getAccountKeyStorageSize(ctx.currentKey()) : keyBytesUsed;
 		newVariableBytes += (op.hasProxyAccountID() || ctx.currentlyHasProxy()) ? BASIC_ENTITY_ID_SIZE : 0;
 
-		long oldVariableBytes = ctx.currentNonBaseRb();
+		long tokenRelBytes = ctx.currentNumTokenRels() * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
+		long sharedFixedBytes = CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + tokenRelBytes;
 		long newLifetime = ESTIMATOR_UTILS.relativeLifetime(cryptoUpdate, op.getExpirationTime().getSeconds());
 		long oldLifetime = ESTIMATOR_UTILS.relativeLifetime(cryptoUpdate, ctx.currentExpiry());
-		long rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(oldVariableBytes, oldLifetime, newVariableBytes, newLifetime);
+		long rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(
+				cryptoAutoRenewRb(ctx),
+				oldLifetime,
+				sharedFixedBytes + newVariableBytes,
+				newLifetime);
 		if (rbsDelta > 0) {
 			estimate.addRbs(rbsDelta);
 		}

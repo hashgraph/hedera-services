@@ -111,6 +111,7 @@ public enum TestFeesFactory {
 				new HashMap<>());
 
 		return new UsageBasedFeeCalculator(
+				new TestAutoRenewCalcs(),
 				exchange,
 				TEST_USAGE_PRICES,
 				MULTIPLIER_SOURCE,

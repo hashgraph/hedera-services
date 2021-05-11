@@ -392,7 +392,7 @@ public class HederaScheduleStoreTest {
 	@Test
 	public void rejectsCreateProvisionallyDeletedPayer() {
 		// given:
-		given(accountsLedger.get(payerId, IS_DELETED)).willReturn(true);
+		given(hederaLedger.isDeleted(payerId)).willReturn(true);
 
 		var parentTxn = MerkleScheduleTest.scheduleCreateTxnWith(
 				asKeyUnchecked(adminJKey),
@@ -414,7 +414,7 @@ public class HederaScheduleStoreTest {
 
 	@Test
 	public void rejectsCreateProvisionallyDeletedScheduler() {
-		given(accountsLedger.get(schedulingAccount, IS_DELETED)).willReturn(true);
+		given(hederaLedger.isDeleted(schedulingAccount)).willReturn(true);
 
 		var parentTxn = MerkleScheduleTest.scheduleCreateTxnWith(
 				asKeyUnchecked(adminJKey),

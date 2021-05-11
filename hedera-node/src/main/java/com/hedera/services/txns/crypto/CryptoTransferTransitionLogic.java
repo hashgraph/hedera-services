@@ -22,6 +22,7 @@ package com.hedera.services.txns.crypto;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.DeletedAccountException;
+import com.hedera.services.exceptions.DetachedAccountException;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.HederaLedger;
@@ -93,6 +94,8 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 			return ACCOUNT_DELETED;
 		} catch (InsufficientFundsException ife) {
 			return INSUFFICIENT_ACCOUNT_BALANCE;
+		} catch (DetachedAccountException dae) {
+			return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 		}
 		return OK;
 	}
@@ -125,7 +128,7 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 			return validity;
 		}
 
-		validity = validator.isAcceptableTokenTransfersLength(op.getTokenTransfersList());
+		validity = validator.tokenTransfersLengthCheck(op.getTokenTransfersList());
 		if (validity != OK) {
 			return validity;
 		}

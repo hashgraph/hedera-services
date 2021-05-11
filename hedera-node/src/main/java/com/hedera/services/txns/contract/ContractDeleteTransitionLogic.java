@@ -21,6 +21,7 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.txns.TransitionLogic;
@@ -37,11 +38,13 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 public class ContractDeleteTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(ContractDeleteTransitionLogic.class);
 
+	private final HederaLedger ledger;
 	private final LegacyDeleter delegate;
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
@@ -50,11 +53,13 @@ public class ContractDeleteTransitionLogic implements TransitionLogic {
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	public ContractDeleteTransitionLogic(
+			HederaLedger ledger,
 			LegacyDeleter delegate,
 			OptionValidator validator,
 			TransactionContext txnCtx,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> contracts
 	) {
+		this.ledger = ledger;
 		this.delegate = delegate;
 		this.validator = validator;
 		this.txnCtx = txnCtx;
@@ -69,7 +74,16 @@ public class ContractDeleteTransitionLogic implements TransitionLogic {
 	@Override
 	public void doStateTransition() {
 		try {
-			var contractDeleteTxn = txnCtx.accessor().getTxn();
+			final var contractDeleteTxn = txnCtx.accessor().getTxn();
+			final var op = contractDeleteTxn.getContractDeleteInstance();
+
+			if (op.hasTransferAccountID()) {
+				final var receiver = op.getTransferAccountID();
+				if (ledger.exists(receiver) && ledger.isDetached(receiver)) {
+					txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+					return;
+				}
+			}
 
 			var legacyRecord = delegate.perform(contractDeleteTxn, txnCtx.consensusTime());
 

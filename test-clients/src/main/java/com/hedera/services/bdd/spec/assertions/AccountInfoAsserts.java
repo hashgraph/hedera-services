@@ -93,6 +93,15 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		return this;
 	}
 
+	public AccountInfoAsserts balanceLessThan(long amount) {
+		registerProvider((spec, o) -> {
+			long actual = ((AccountInfo)o).getBalance();
+			String errorMessage = String.format("Bad balance! %s is not less than %s", actual, amount);
+			Assert.assertTrue(errorMessage, actual < amount);
+		});
+		return this;
+	}
+
 	public AccountInfoAsserts memo(String memo) {
 		registerProvider((spec, o) -> {
 			Assert.assertEquals("Bad memo!", memo, ((AccountInfo)o).getMemo());
@@ -174,6 +183,15 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 			Assert.assertTrue(
 					String.format("Expiry %d not in [%d, %d]!", approxTime, expiry - epsilon, expiry + epsilon),
 					Math.abs(approxTime - expiry) <= epsilon);
+		});
+		return this;
+	}
+
+	public AccountInfoAsserts expiry(String registryEntry, long delta) {
+		registerProvider((spec, o) -> {
+			long expiry = ((AccountInfo)o).getExpirationTime().getSeconds();
+			long expected = spec.registry().getAccountInfo(registryEntry).getExpirationTime().getSeconds() + delta;
+			Assert.assertEquals("Bad expiry!", expected, expiry);
 		});
 		return this;
 	}

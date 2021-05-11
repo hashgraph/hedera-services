@@ -31,6 +31,7 @@ import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -57,6 +58,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asDebits;
 import static com.hedera.services.bdd.suites.crypto.CryptoTransferSuite.sdec;
 import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.correspondingScheduledTxnId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
@@ -74,6 +76,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	boolean assertOnlyPriority = false;
 	boolean assertNothingAboutHashes = false;
 	boolean lookupScheduledFromRegistryId = false;
+	boolean omitPaymentHeaderOnCostAnswer = false;
 	Optional<TransactionID> explicitTxnId = Optional.empty();
 	Optional<TransactionRecordAsserts> priorityExpectations = Optional.empty();
 	Optional<BiConsumer<TransactionRecord, Logger>> format = Optional.empty();
@@ -111,6 +114,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	public HapiGetTxnRecord assertingOnlyPriority() {
 		assertOnlyPriority = true;
+		return this;
+	}
+
+	public HapiGetTxnRecord omittingAnyPaymentForCostAnswer() {
+		omitPaymentHeaderOnCostAnswer = true;
 		return this;
 	}
 
@@ -335,8 +343,14 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 						.build();
 			}
 		}
+		QueryHeader header;
+		if (costOnly && omitPaymentHeaderOnCostAnswer) {
+			header = QueryHeader.newBuilder().setResponseType(COST_ANSWER).build();
+		} else  {
+			header = costOnly ? answerCostHeader(payment) : answerHeader(payment);
+		}
 		TransactionGetRecordQuery getRecordQuery = TransactionGetRecordQuery.newBuilder()
-				.setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
+				.setHeader(header)
 				.setTransactionID(txnId)
 				.setIncludeDuplicates(requestDuplicates)
 				.build();

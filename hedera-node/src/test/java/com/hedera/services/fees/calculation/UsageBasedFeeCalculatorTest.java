@@ -9,9 +9,9 @@ package com.hedera.services.fees.calculation;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,6 +24,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -40,6 +41,8 @@ import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.FeeBuilder;
 import com.hederahashgraph.fee.FeeObject;
 import com.hederahashgraph.fee.SigValueObj;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
@@ -61,12 +64,15 @@ import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 import static com.hedera.test.utils.IdUtils.asAccountString;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAccountAutoRenew;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
@@ -75,40 +81,42 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
 
 class UsageBasedFeeCalculatorTest {
-	FeeComponents mockFees = FeeComponents.newBuilder()
+	private FeeComponents mockFees = FeeComponents.newBuilder()
 			.setMax(1_234_567L)
 			.setGas(5_000_000L)
 			.setBpr(1_000_000L)
 			.setBpt(2_000_000L)
 			.setRbh(3_000_000L)
 			.setSbh(4_000_000L).build();
-	FeeData mockFeeData = FeeData.newBuilder()
+	private FeeData mockFeeData = FeeData.newBuilder()
 			.setNetworkdata(mockFees).setNodedata(mockFees).setServicedata(mockFees).build();
-	FeeData currentPrices = mockFeeData;
-	FeeData resourceUsage = mockFeeData;
-	ExchangeRate currentRate = ExchangeRate.newBuilder().setCentEquiv(22).setHbarEquiv(1).build();
-	Query query;
-	StateView view;
-	Timestamp at = Timestamp.newBuilder().setSeconds(1_234_567L).build();
-	HbarCentExchange exchange;
-	UsagePricesProvider usagePrices;
-	TxnResourceUsageEstimator correctOpEstimator;
-	TxnResourceUsageEstimator incorrectOpEstimator;
-	QueryResourceUsageEstimator correctQueryEstimator;
-	QueryResourceUsageEstimator incorrectQueryEstimator;
-	Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators;
-
-	long balance = 1_234_567L;
-	AccountID payer = IdUtils.asAccount("0.0.75231");
-	AccountID receiver = IdUtils.asAccount("0.0.86342");
-	UsageBasedFeeCalculator subject;
+	private FeeData currentPrices = mockFeeData;
+	private FeeData resourceUsage = mockFeeData;
+	private ExchangeRate currentRate = ExchangeRate.newBuilder().setCentEquiv(22).setHbarEquiv(1).build();
+	private Query query;
+	private StateView view;
+	private Timestamp at = Timestamp.newBuilder().setSeconds(1_234_567L).build();
+	private HbarCentExchange exchange;
+	private UsagePricesProvider usagePrices;
+	private TxnResourceUsageEstimator correctOpEstimator;
+	private TxnResourceUsageEstimator incorrectOpEstimator;
+	private QueryResourceUsageEstimator correctQueryEstimator;
+	private QueryResourceUsageEstimator incorrectQueryEstimator;
+	private Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators;
+	private long balance = 1_234_567L;
+	private AccountID payer = IdUtils.asAccount("0.0.75231");
+	private AccountID receiver = IdUtils.asAccount("0.0.86342");
+	
 	/* Has nine simple keys. */
-	KeyTree complexKey = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
-	JKey payerKey;
-	Transaction signedTxn;
-	SignedTxnAccessor accessor;
-
-	AtomicLong suggestedMultiplier = new AtomicLong(1L);
+	private KeyTree complexKey = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
+	private JKey payerKey;
+	private Transaction signedTxn;
+	private SignedTxnAccessor accessor;
+	private AutoRenewCalcs autoRenewCalcs;
+	
+	private AtomicLong suggestedMultiplier = new AtomicLong(1L);
+	
+	private UsageBasedFeeCalculator subject;
 
 	@BeforeEach
 	private void setup() throws Throwable {
@@ -128,10 +136,12 @@ class UsageBasedFeeCalculatorTest {
 		incorrectOpEstimator = mock(TxnResourceUsageEstimator.class);
 		correctQueryEstimator = mock(QueryResourceUsageEstimator.class);
 		incorrectQueryEstimator = mock(QueryResourceUsageEstimator.class);
+		autoRenewCalcs = mock(AutoRenewCalcs.class);
 
-		txnUsageEstimators = (Function<HederaFunctionality, List<TxnResourceUsageEstimator>>)mock(Function.class);
+		txnUsageEstimators = (Function<HederaFunctionality, List<TxnResourceUsageEstimator>>) mock(Function.class);
 
 		subject = new UsageBasedFeeCalculator(
+				autoRenewCalcs,
 				exchange,
 				usagePrices,
 				new NestedMultiplierSource(),
@@ -140,7 +150,21 @@ class UsageBasedFeeCalculatorTest {
 	}
 
 	@Test
-	public void estimatesContractCallPayerBalanceChanges() throws Throwable {
+	void delegatesAutoRenewCalcs() {
+		// setup:
+		final var expected = new AutoRenewCalcs.RenewAssessment(456L, 123L);
+
+		given(autoRenewCalcs.maxRenewalAndFeeFor(any(), anyLong(), any(), any())).willReturn(expected);
+
+		// when:
+		var actual = subject.assessCryptoAutoRenewal(new MerkleAccount(), 1L, Instant.ofEpochSecond(2L));
+
+		// then:
+		assertSame(expected, actual);
+	}
+
+	@Test
+	void estimatesContractCallPayerBalanceChanges() throws Throwable {
 		// setup:
 		long gas = 1_234L, sent = 5_432L;
 		signedTxn = newSignedContractCall()
@@ -162,13 +186,13 @@ class UsageBasedFeeCalculatorTest {
 	}
 
 	@Test
-	public void estimatesCryptoCreatePayerBalanceChanges() throws Throwable {
+	void estimatesCryptoCreatePayerBalanceChanges() throws Throwable {
 		// expect:
 		assertEquals(-balance, subject.estimatedNonFeePayerAdjustments(accessor, at));
 	}
 
 	@Test
-	public void estimatesContractCreatePayerBalanceChanges() throws Throwable {
+	void estimatesContractCreatePayerBalanceChanges() throws Throwable {
 		// setup:
 		long gas = 1_234L, initialBalance = 5_432L;
 		signedTxn = newSignedContractCreate()
@@ -190,7 +214,7 @@ class UsageBasedFeeCalculatorTest {
 	}
 
 	@Test
-	public void estimatesMiscNoNetChange() throws Throwable {
+	void estimatesMiscNoNetChange() throws Throwable {
 		// setup:
 		signedTxn = newSignedFileCreate()
 				.payer(asAccountString(payer))
@@ -203,7 +227,7 @@ class UsageBasedFeeCalculatorTest {
 	}
 
 	@Test
-	public void estimatesCryptoTransferPayerBalanceChanges() throws Throwable {
+	void estimatesCryptoTransferPayerBalanceChanges() throws Throwable {
 		// setup:
 		long sent = 1_234L;
 		signedTxn = newSignedCryptoTransfer()
@@ -218,7 +242,7 @@ class UsageBasedFeeCalculatorTest {
 	}
 
 	@Test
-	public void estimatesFutureGasPriceInTinybars() {
+	void estimatesFutureGasPriceInTinybars() {
 		given(exchange.rate(at)).willReturn(currentRate);
 		given(usagePrices.pricesGiven(CryptoCreate, at)).willReturn(currentPrices);
 		// and:
@@ -232,7 +256,7 @@ class UsageBasedFeeCalculatorTest {
 	}
 
 	@Test
-	public void computesActiveGasPriceInTinybars() {
+	void computesActiveGasPriceInTinybars() {
 		given(exchange.activeRate()).willReturn(currentRate);
 		// and:
 		long expected = getTinybarsFromTinyCents(currentRate, mockFees.getGas() / FEE_DIVISOR_FACTOR);
@@ -245,16 +269,22 @@ class UsageBasedFeeCalculatorTest {
 	}
 
 	@Test
-	public void loadPriceSchedulesOnInit() throws Exception {
+	void loadPriceSchedulesOnInit() {
+		// setup:
+		final var seq = Triple.of(FeeData.getDefaultInstance(), Instant.now(), FeeData.getDefaultInstance());
+
+		given(usagePrices.activePricingSequence(CryptoAccountAutoRenew)).willReturn(seq);
+
 		// when:
 		subject.init();
 
 		// expect:
 		verify(usagePrices).loadPriceSchedules();
+		verify(autoRenewCalcs).setCryptoAutoRenewPriceSeq(seq);
 	}
 
 	@Test
-	public void throwsIseOnBadScheduleInFcfs() {
+	void throwsIseOnBadScheduleInFcfs() {
 		willThrow(IllegalStateException.class).given(usagePrices).loadPriceSchedules();
 
 		// expect:
@@ -262,7 +292,7 @@ class UsageBasedFeeCalculatorTest {
 	}
 
 	@Test
-	public void failsWithIseGivenApplicableButUnusableCalculator() throws InvalidTxBodyException {
+	void failsWithIseGivenApplicableButUnusableCalculator() throws InvalidTxBodyException {
 		// setup:
 		SigValueObj expectedSigUsage = new SigValueObj(
 				FeeBuilder.getSignatureCount(signedTxn),
@@ -281,7 +311,7 @@ class UsageBasedFeeCalculatorTest {
 	}
 
 	@Test
-	public void failsWithNseeSansApplicableUsageCalculator() {
+	void failsWithNseeSansApplicableUsageCalculator() {
 		// expect:
 		assertThrows(NoSuchElementException.class, () -> subject.computeFee(accessor, payerKey, view));
 		assertThrows(NoSuchElementException.class,
@@ -289,7 +319,7 @@ class UsageBasedFeeCalculatorTest {
 	}
 
 	@Test
-	public void invokesQueryDelegateAsExpected() {
+	void invokesQueryDelegateAsExpected() {
 		// setup:
 		FeeObject expectedFees = FeeBuilder.getFeeObject(currentPrices, resourceUsage, currentRate);
 
@@ -312,7 +342,7 @@ class UsageBasedFeeCalculatorTest {
 	}
 
 	@Test
-	public void invokesQueryDelegateByTypeAsExpected() {
+	void invokesQueryDelegateByTypeAsExpected() {
 		// setup:
 		FeeObject expectedFees = FeeBuilder.getFeeObject(currentPrices, resourceUsage, currentRate);
 
@@ -332,7 +362,7 @@ class UsageBasedFeeCalculatorTest {
 	}
 
 	@Test
-	public void usesMultiplierAsExpected() throws Exception {
+	void usesMultiplierAsExpected() throws Exception {
 		// setup:
 		long multiplier = 5L;
 		SigValueObj expectedSigUsage = new SigValueObj(
@@ -360,7 +390,7 @@ class UsageBasedFeeCalculatorTest {
 	}
 
 	@Test
-	public void invokesOpDelegateAsExpectedWithOneOption() throws Exception {
+	void invokesOpDelegateAsExpectedWithOneOption() throws Exception {
 		// setup:
 		SigValueObj expectedSigUsage = new SigValueObj(
 				FeeBuilder.getSignatureCount(signedTxn),
@@ -386,7 +416,7 @@ class UsageBasedFeeCalculatorTest {
 	}
 
 	@Test
-	public void invokesOpDelegateAsExpectedWithTwoOptions() throws Exception {
+	void invokesOpDelegateAsExpectedWithTwoOptions() throws Exception {
 		// setup:
 		SigValueObj expectedSigUsage = new SigValueObj(
 				FeeBuilder.getSignatureCount(signedTxn),
@@ -417,7 +447,7 @@ class UsageBasedFeeCalculatorTest {
 
 
 	@Test
-	public void invokesOpDelegateAsExpectedForEstimateOfUnrecognizable() throws Exception {
+	void invokesOpDelegateAsExpectedForEstimateOfUnrecognizable() throws Exception {
 		// setup:
 		SigValueObj expectedSigUsage = new SigValueObj(
 				FeeBuilder.getSignatureCount(signedTxn),

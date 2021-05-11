@@ -244,6 +244,7 @@ public class SmartContractRequestHandler {
 					sbhInTinybars,
 					true);
 		} catch (Exception e) {
+			log.warn("Unhandled exception during EVM transaction", e);
 			result = getFailureTransactionRecord(transaction, consensusTime, CONTRACT_EXECUTION_EXCEPTION);
 		}
 		if (result.getReceipt().getStatus() == SUCCESS) {
@@ -496,6 +497,7 @@ public class SmartContractRequestHandler {
 						record.getContractCallResult().getCreatedContractIDsList());
 				return record;
 			} catch (Exception e) {
+				log.warn("Unhandled exception during EVM transaction", e);
 				return getFailureTransactionRecord(transaction, consensusTime, CONTRACT_EXECUTION_EXCEPTION);
 			}
 		} else {

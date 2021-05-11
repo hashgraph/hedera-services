@@ -22,10 +22,13 @@ package com.hedera.services.contracts.execution;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hedera.services.legacy.evm.SolidityExecutor;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.db.ServicesRepositoryRoot;
 import static com.hedera.services.contracts.execution.DomainUtils.asHapiResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
@@ -39,6 +42,8 @@ import java.util.Map;
 import java.util.Optional;
 
 public class SolidityLifecycle {
+	private static final Logger log = LogManager.getLogger(SolidityLifecycle.class);
+
 	private final GlobalDynamicProperties properties;
 
 	public static final String OVERSIZE_RESULT_ERROR_MSG_TPL =
@@ -57,6 +62,7 @@ public class SolidityLifecycle {
 		var status = SUCCESS;
 		var result = asHapiResult(executor.getReceipt(), executor.getCreatedContracts());
 
+		log.debug("Cycle completed with error message {}", result::getErrorMessage);
 		var succeededSoFar = StringUtils.isEmpty(result.getErrorMessage());
 		if (succeededSoFar) {
 			if (!root.flushStorageCacheIfTotalSizeLessThan(properties.maxContractStorageKb())) {

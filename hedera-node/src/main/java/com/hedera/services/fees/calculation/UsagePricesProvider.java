@@ -23,6 +23,9 @@ package com.hedera.services.fees.calculation;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import org.apache.commons.lang3.tuple.Triple;
+
+import java.time.Instant;
 
 /**
  * Defines a type able to provide the prices (in tinyCents) that must
@@ -59,4 +62,14 @@ public interface UsagePricesProvider {
 	 * @return the estimated prices
 	 */
 	FeeData pricesGiven(HederaFunctionality function, Timestamp at);
+
+	/**
+	 * Returns a triple whose middle value is a "rollover consensus time"
+	 * before which the leftmost {@code FeeData} prices apply to the given
+	 * function; and after which the rightmost {@code FeeData} prices apply.
+	 *
+	 * @param function the operation of interest
+	 * @return the triple of price sequences
+	 */
+	Triple<FeeData, Instant, FeeData> activePricingSequence(HederaFunctionality function);
 }

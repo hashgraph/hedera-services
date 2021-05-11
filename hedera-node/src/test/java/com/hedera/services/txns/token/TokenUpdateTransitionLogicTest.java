@@ -43,6 +43,7 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.function.Predicate;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
@@ -76,6 +77,8 @@ class TokenUpdateTransitionLogicTest {
 	private TokenID target = IdUtils.asToken("1.2.666");
 	private AccountID oldTreasury = IdUtils.asAccount("1.2.4");
 	private AccountID newTreasury = IdUtils.asAccount("1.2.5");
+	private AccountID newAutoRenew = IdUtils.asAccount("5.2.1");
+	private AccountID oldAutoRenew = IdUtils.asAccount("4.2.1");
 	private String symbol = "SYMBOL";
 	private String name = "Name";
 	private JKey adminKey = new JEd25519Key("w/e".getBytes());
@@ -101,6 +104,8 @@ class TokenUpdateTransitionLogicTest {
 		token = mock(MerkleToken.class);
 		given(token.adminKey()).willReturn(Optional.of(adminKey));
 		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(oldTreasury));
+		given(token.autoRenewAccount()).willReturn(EntityId.fromGrpcAccountId(oldAutoRenew));
+		given(token.hasAutoRenewAccount()).willReturn(true);
 		given(store.resolve(target)).willReturn(target);
 		given(store.get(target)).willReturn(token);
 		given(store.associationExists(newTreasury, target)).willReturn(true);
@@ -216,6 +221,70 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
+	public void abortsOnDetachedNewTreasury() {
+		givenValidTxnCtx(true);
+		givenToken(true, true);
+		// and:
+		given(ledger.isDetached(newTreasury)).willReturn(true);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(store, never()).update(any(), anyLong());
+		verify(txnCtx).setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong());
+	}
+
+	@Test
+	public void abortsOnDetachedOldTreasury() {
+		givenValidTxnCtx(true);
+		givenToken(true, true);
+		// and:
+		given(ledger.isDetached(oldTreasury)).willReturn(true);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(store, never()).update(any(), anyLong());
+		verify(txnCtx).setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong());
+	}
+
+	@Test
+	public void abortsOnDetachedOldAutoRenew() {
+		givenValidTxnCtx(true);
+		givenToken(true, true);
+		// and:
+		given(ledger.isDetached(oldAutoRenew)).willReturn(true);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(store, never()).update(any(), anyLong());
+		verify(txnCtx).setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong());
+	}
+
+	@Test
+	public void abortsOnDetachedNewAutoRenew() {
+		givenValidTxnCtx(true);
+		givenToken(true, true);
+		// and:
+		given(ledger.isDetached(newAutoRenew)).willReturn(true);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(store, never()).update(any(), anyLong());
+		verify(txnCtx).setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+		verify(ledger, never()).doTokenTransfer(any(), any(), any(), anyLong());
+	}
+
+	@Test
 	public void permitsExtendingExpiry() {
 		givenValidTxnCtx(false);
 		// and:
@@ -294,6 +363,30 @@ class TokenUpdateTransitionLogicTest {
 		verify(ledger).grantKyc(newTreasury, target);
 		verify(ledger).getTokenBalance(oldTreasury, target);
 		verify(ledger).doTokenTransfer(target, oldTreasury, newTreasury, oldTreasuryBalance);
+		// and:
+		verify(txnCtx).setStatus(SUCCESS);
+	}
+
+	@Test
+	public void followsHappyPathWithNewTreasuryAndZeroBalanceOldTreasury() {
+		// setup:
+		long oldTreasuryBalance = 0;
+		givenValidTxnCtx(true);
+		givenToken(true, true);
+		// and:
+		given(ledger.unfreeze(newTreasury, target)).willReturn(OK);
+		given(ledger.grantKyc(newTreasury, target)).willReturn(OK);
+		given(store.update(any(), anyLong())).willReturn(OK);
+		given(ledger.getTokenBalance(oldTreasury, target)).willReturn(oldTreasuryBalance);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(ledger).unfreeze(newTreasury, target);
+		verify(ledger).grantKyc(newTreasury, target);
+		verify(ledger).getTokenBalance(oldTreasury, target);
+		verify(ledger, never()).doTokenTransfer(target, oldTreasury, newTreasury, oldTreasuryBalance);
 		// and:
 		verify(txnCtx).setStatus(SUCCESS);
 	}
@@ -443,6 +536,7 @@ class TokenUpdateTransitionLogicTest {
 		var builder = TransactionBody.newBuilder()
 				.setTokenUpdate(TokenUpdateTransactionBody.newBuilder()
 						.setSymbol(symbol)
+						.setAutoRenewAccount(newAutoRenew)
 						.setName(name)
 						.setMemo(StringValue.newBuilder().setValue("FATALITY").build())
 						.setToken(target));
@@ -455,9 +549,11 @@ class TokenUpdateTransitionLogicTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(now);
 		given(ledger.exists(newTreasury)).willReturn(true);
+		given(ledger.exists(newAutoRenew)).willReturn(true);
 		given(ledger.isDeleted(newTreasury)).willReturn(false);
 		given(ledger.exists(oldTreasury)).willReturn(true);
 		given(ledger.isDeleted(oldTreasury)).willReturn(false);
+		given(ledger.isDetached(newTreasury)).willReturn(false);
 	}
 
 	private void givenMissingToken() {

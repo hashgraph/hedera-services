@@ -66,6 +66,7 @@ import static org.mockito.Mockito.times;
 @ExtendWith(LogCaptureExtension.class)
 class MerkleNetworkContextTest {
 	private int stateVersion = 13;
+	private long lastScannedEntity = 1000L;
 	private RichInstant consensusTimeOfLastHandledTxn;
 	private SequenceNumber seqNo;
 	private SequenceNumber seqNoCopy;
@@ -115,6 +116,7 @@ class MerkleNetworkContextTest {
 		subject = new MerkleNetworkContext(
 				consensusTimeOfLastHandledTxn,
 				seqNo,
+				lastScannedEntity,
 				midnightRateSet,
 				usageSnapshots,
 				richCongestionStarts(),
@@ -133,10 +135,12 @@ class MerkleNetworkContextTest {
 
 		// expect:
 		assertSame(subjectCopy.getConsensusTimeOfLastHandledTxn(), subject.getConsensusTimeOfLastHandledTxn());
-		assertEquals(seqNoCopy, subjectCopy.getSeqNo());
+		assertEquals(seqNoCopy, subjectCopy.seqNo());
+		assertEquals(subjectCopy.lastScannedEntity(), subject.lastScannedEntity());
 		assertEquals(midnightRateSetCopy, subjectCopy.getMidnightRates());
 		assertSame(subjectCopy.getUsageSnapshots(), subject.getUsageSnapshots());
 		assertSame(subjectCopy.getCongestionLevelStarts(), subject.getCongestionLevelStarts());
+		assertEquals(subjectCopy.getStateVersion(), stateVersion);
 	}
 
 	@Test
@@ -152,6 +156,7 @@ class MerkleNetworkContextTest {
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
 				"  Next entity number                         :: 1234\n" +
+				"  Last scanned entity                        :: 1000\n" +
 				"  Throttle usage snapshots are               ::\n" +
 				"    100 used (last decision time 1970-01-01T00:00:01.000000100Z)\n" +
 				"    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n" +
@@ -163,6 +168,7 @@ class MerkleNetworkContextTest {
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
 				"  Next entity number                         :: 1234\n" +
+				"  Last scanned entity                        :: 1000\n" +
 				"  Throttle usage snapshots are               ::\n" +
 				"    100 used (last decision time 1970-01-01T00:00:01.000000100Z)\n" +
 				"    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n" +
@@ -439,7 +445,8 @@ class MerkleNetworkContextTest {
 				.willReturn(stateVersion);
 		given(in.readLong())
 				.willReturn(usageSnapshots[0].used())
-				.willReturn(usageSnapshots[1].used());
+				.willReturn(usageSnapshots[1].used())
+				.willReturn(lastScannedEntity);
 		given(serdes.readNullableInstant(in))
 				.willReturn(consensusTimeOfLastHandledTxn)
 				.willReturn(RichInstant.fromJava(usageSnapshots[0].lastDecisionTime()))
@@ -458,6 +465,7 @@ class MerkleNetworkContextTest {
 		inOrder.verify(seqNo).deserialize(in);
 		inOrder.verify(in).readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class));
 		// and:
+		assertEquals(lastScannedEntity, subject.lastScannedEntity());
 		assertEquals(stateVersion, subject.getStateVersion());
 	}
 
@@ -492,6 +500,7 @@ class MerkleNetworkContextTest {
 		for (int i = 0; i < 2; i++) {
 			inOrder.verify(serdes).writeNullableInstant(richCongestionStarts()[i], out);
 		}
+		inOrder.verify(out).writeLong(lastScannedEntity);
 		inOrder.verify(out).writeInt(stateVersion);
 	}
 
@@ -507,6 +516,12 @@ class MerkleNetworkContextTest {
 			Instant.ofEpochSecond(2L, 200),
 			Instant.ofEpochSecond(3L, 300)
 	};
+
+	@Test
+	void updateLastScannedEntityWorks() {
+		subject.updateLastScannedEntity(2000L);
+		assertEquals(2000L, subject.lastScannedEntity());
+	}
 
 	private List<DeterministicThrottle> activeThrottles() {
 		var snapshots = snapshots();

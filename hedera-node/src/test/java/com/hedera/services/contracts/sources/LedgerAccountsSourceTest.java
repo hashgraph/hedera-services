@@ -73,26 +73,25 @@ class LedgerAccountsSourceTest {
 
 	@BeforeEach
 	void setup() {
-		var props = mock(GlobalDynamicProperties.class);
 		ledger = mock(HederaLedger.class);
 
-		subject = new LedgerAccountsSource(ledger, props);
+		subject = new LedgerAccountsSource(ledger);
 	}
 
 	@Test
-	public void deleteIsntSupported() {
+	void deleteIsntSupported() {
 		// expect:
 		assertThrows(UnsupportedOperationException.class, () -> subject.delete(new byte[0]));
 	}
 
 	@Test
-	public void flushesIsFalse() {
+	void flushesIsFalse() {
 		// expect:
 		assertFalse(subject.flush());
 	}
 
 	@Test
-	public void logsExpectedForNullAccount() {
+	void logsExpectedForNullAccount() {
 		// setup:
 		byte[] key = EntityIdUtils.asSolidityAddress(0, 0, 2);
 
@@ -103,7 +102,7 @@ class LedgerAccountsSourceTest {
 	}
 
 	@Test
-	public void getsNullForMissingKey() {
+	void getsNullForMissingKey() {
 		given(ledger.exists(target)).willReturn(false);
 
 		// then:
@@ -111,7 +110,16 @@ class LedgerAccountsSourceTest {
 	}
 
 	@Test
-	public void getsExpectedForPresentKey() {
+	void getsNullForDetachedAccount() {
+		given(ledger.exists(target)).willReturn(true);
+		given(ledger.isDetached(target)).willReturn(true);
+
+		// then:
+		assertNull(subject.get(key));
+	}
+
+	@Test
+	void getsExpectedForPresentKey() {
 		// setup:
 		boolean deleted = true;
 		boolean smartContract = true;
@@ -146,7 +154,7 @@ class LedgerAccountsSourceTest {
 	}
 
 	@Test
-	public void updatesExtantAccountOnPut() {
+	void updatesExtantAccountOnPut() {
 		// setup:
 		long newExpiry = 1_234_567L;
 		boolean newDeleted = true;
@@ -177,7 +185,7 @@ class LedgerAccountsSourceTest {
 	}
 
 	@Test
-	public void createsNewAccountWithDefaultThresholds() throws DecoderException {
+	void createsNewAccountWithDefaultThresholds() throws DecoderException {
 		// setup:
 		long newBalance = 1_234;
 		Key legacyPlaceholder = Key.newBuilder().setContractID(EntityIdUtils.asContract(target)).build();
@@ -216,7 +224,7 @@ class LedgerAccountsSourceTest {
 	}
 
 	@Test
-	public void createsNewAccountWithGivenThresholds() throws DecoderException {
+	void createsNewAccountWithGivenThresholds() throws DecoderException {
 		// setup:
 		long newBalance = 1_234;
 		Key legacyPlaceholder = Key.newBuilder().setContractID(EntityIdUtils.asContract(target)).build();

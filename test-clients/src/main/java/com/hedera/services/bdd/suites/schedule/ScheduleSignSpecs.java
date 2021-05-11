@@ -30,6 +30,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
@@ -45,6 +46,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUppercase
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
@@ -69,6 +71,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 	private static final int SCHEDULE_EXPIRY_TIME_SECS = 10;
 	private static final int SCHEDULE_EXPIRY_TIME_MS = SCHEDULE_EXPIRY_TIME_SECS * 1000;
 
+	private static final String suiteWhitelist = "CryptoCreate,ConsensusSubmitMessage,CryptoTransfer";
 	private static final String defaultTxExpiry =
 			HapiSpecSetup.getDefaultNodeProps().get("ledger.schedule.txExpiryTimeSecs");
 	private static final String defaultWhitelist =
@@ -110,14 +113,24 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 	private HapiApiSpec suiteCleanup() {
 		return defaultHapiSpec("suiteCleanup")
 				.given().when().then(
-						overriding("ledger.schedule.txExpiryTimeSecs", defaultTxExpiry)
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+										"ledger.schedule.txExpiryTimeSecs", defaultTxExpiry,
+										"scheduling.whitelist", defaultWhitelist
+								))
 				);
 	}
 
 	private HapiApiSpec suiteSetup() {
 		return defaultHapiSpec("suiteSetup")
 				.given().when().then(
-						overriding("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS)
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+										"ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS,
+										"scheduling.whitelist", suiteWhitelist
+								))
 				);
 	}
 
@@ -498,7 +511,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 								 * only use .hasKnownStatus(NO_NEW_VALID_SIGNATURES) and it will pass
 								 * >99.99% of the time. */
 								.hasKnownStatusFrom(NO_NEW_VALID_SIGNATURES, NO_NEW_VALID_SIGNATURES),
-						overriding("scheduling.whitelist", defaultWhitelist)
+						overriding("scheduling.whitelist", suiteWhitelist)
 				);
 	}
 

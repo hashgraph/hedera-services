@@ -40,7 +40,6 @@ import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
@@ -328,8 +327,7 @@ public class TxnFactory {
 	}
 
 	public Consumer<CryptoUpdateTransactionBody.Builder> defaultDef_CryptoUpdateTransactionBody() {
-		return builder -> builder
-				.setAutoRenewPeriod(setup.defaultAutoRenewPeriod());
+		return builder -> {};
 	}
 
 	public Consumer<CryptoTransferTransactionBody.Builder> defaultDef_CryptoTransferTransactionBody() {

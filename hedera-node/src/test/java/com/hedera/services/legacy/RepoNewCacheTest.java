@@ -40,6 +40,7 @@ import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.StorageSourceFactory;
+import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.fcmap.FCMap;
@@ -76,9 +77,11 @@ public class RepoNewCacheTest {
 				mock(TokenStore.class),
 				mock(EntityIdSource.class),
 				mock(ExpiringCreations.class),
+				TestContextValidator.TEST_VALIDATOR,
 				mock(AccountRecordsHistorian.class),
+				new MockGlobalDynamicProps(),
 				delegate);
-		Source<byte[], AccountState> repDatabase = new LedgerAccountsSource(ledger, new MockGlobalDynamicProps());
+		Source<byte[], AccountState> repDatabase = new LedgerAccountsSource(ledger);
 		ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
 		String key = Hex.toHexString(EntityIdUtils.asSolidityAddress(0, 0, 1));
 		byte[] keyByte = null;
@@ -137,7 +140,6 @@ public class RepoNewCacheTest {
 		repository.commit();
 
 		code = repository.getCode(keyByte);
-		codeStr = new String(code);
 	}
 
 	@Test
@@ -172,9 +174,11 @@ public class RepoNewCacheTest {
 				mock(TokenStore.class),
 				mock(EntityIdSource.class),
 				mock(ExpiringCreations.class),
+				TestContextValidator.TEST_VALIDATOR,
 				mock(AccountRecordsHistorian.class),
+				new MockGlobalDynamicProps(),
 				delegate);
-		Source<byte[], AccountState> accountSource = new LedgerAccountsSource(ledger, new MockGlobalDynamicProps());
+		Source<byte[], AccountState> accountSource = new LedgerAccountsSource(ledger);
 		ServicesRepositoryRoot repository = new ServicesRepositoryRoot(accountSource, repDBFile);
 
 		String someKey = Hex.toHexString(EntityIdUtils.asSolidityAddress(0, 0, 1));
@@ -188,10 +192,6 @@ public class RepoNewCacheTest {
 		repository.increaseNonce(someKeyBytes);
 		ServicesRepositoryImpl track1 = repository.startTracking();
 		track1.addBalance(someKeyBytes, BigInteger.TEN.negate());
-
-		// To show under debug that the two AccountStates are the same object.
-		AccountState info1 = track1.getAccount(someKeyBytes);
-		AccountState info2 = repository.getAccount(someKeyBytes);
 
 		assertEquals(99_999_990L, track1.getBalance(someKeyBytes).longValue());
 		assertEquals(100_000_000L, repository.getBalance(someKeyBytes).longValue());

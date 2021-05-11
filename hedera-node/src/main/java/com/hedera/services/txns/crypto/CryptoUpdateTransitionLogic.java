@@ -20,16 +20,19 @@ package com.hedera.services.txns.crypto;
  * ‍
  */
 
+import com.hedera.services.context.SingletonContextsManager;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -38,22 +41,26 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
+import java.util.EnumSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
  * Implements the {@link TransitionLogic} for a HAPI CryptoUpdate transaction,
- * and the conditions under which such logic is syntactically correct. (It is
- * possible that the <i>semantics</i> of the transaction will still be wrong;
- * for example, if the target account was deleted before this transaction
- * reached consensus.)
+ * and the conditions under which such logic has valid semantics. (It is
+ * possible that the transaction will still resolve to a status other than
+ * success; for example if the target account has been deleted when the
+ * update is handled.)
  *
  * @author Michael Tinker
  */
 public class CryptoUpdateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(CryptoUpdateTransitionLogic.class);
+
+	private static final EnumSet<AccountProperty> EXPIRY_ONLY = EnumSet.of(AccountProperty.EXPIRY);
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
@@ -74,18 +81,50 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 	@Override
 	public void doStateTransition() {
 		try {
-			CryptoUpdateTransactionBody op = txnCtx.accessor().getTxn().getCryptoUpdateAccount();
-			AccountID target = op.getAccountIDToUpdate();
+			final var op = txnCtx.accessor().getTxn().getCryptoUpdateAccount();
+			final var target = op.getAccountIDToUpdate();
+			final var customizer = asCustomizer(op);
 
-			ledger.customize(target, asCustomizer(op));
+			final var validity = sanityCheck(target, customizer);
+			if (validity != OK) {
+				txnCtx.setStatus(validity);
+				return;
+			}
+
+			ledger.customize(target, customizer);
 			txnCtx.setStatus(SUCCESS);
 		} catch (MissingAccountException mae) {
 			txnCtx.setStatus(INVALID_ACCOUNT_ID);
 		} catch (DeletedAccountException aide) {
 			txnCtx.setStatus(ACCOUNT_DELETED);
 		} catch (Exception e) {
+			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
+	}
+
+	private ResponseCodeEnum sanityCheck(AccountID target, HederaAccountCustomizer customizer) {
+		if (!ledger.exists(target) || ledger.isSmartContract(target)) {
+			return INVALID_ACCOUNT_ID;
+		}
+
+		final var changes = customizer.getChanges();
+		final var keyChanges = customizer.getChanges().keySet();
+
+		if (ledger.isDetached(target)) {
+			if (!keyChanges.equals(EXPIRY_ONLY)) {
+				return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+			}
+		}
+
+		if (keyChanges.contains(AccountProperty.EXPIRY)) {
+			final long newExpiry = (long)changes.get(AccountProperty.EXPIRY);
+			if (newExpiry < ledger.expiry(target)) {
+				return EXPIRATION_REDUCTION_NOT_ALLOWED;
+			}
+		}
+
+		return OK;
 	}
 
 	private HederaAccountCustomizer asCustomizer(CryptoUpdateTransactionBody op) {

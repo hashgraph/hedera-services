@@ -96,6 +96,10 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(Set.of(HederaFunctionality.CryptoTransfer), subject.schedulingWhitelist());
 		assertEquals(oddCongestion, subject.congestionMultipliers());
 		assertEquals(29, subject.feesMinCongestionPeriod());
+		assertTrue(subject.autoRenewEnabled());
+		assertEquals(31, subject.autoRenewNumberOfEntitiesToScan());
+		assertEquals(32, subject.autoRenewMaxNumberOfEntitiesToRenewOrDelete());
+		assertEquals(33L, subject.autoRenewGracePeriod());
 	}
 
 	@Test
@@ -137,6 +141,10 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(Set.of(HederaFunctionality.CryptoCreate), subject.schedulingWhitelist());
 		assertEquals(evenCongestion, subject.congestionMultipliers());
 		assertEquals(30, subject.feesMinCongestionPeriod());
+		assertFalse(subject.autoRenewEnabled());
+		assertEquals(32, subject.autoRenewNumberOfEntitiesToScan());
+		assertEquals(33, subject.autoRenewMaxNumberOfEntitiesToRenewOrDelete());
+		assertEquals(34L, subject.autoRenewGracePeriod());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -174,6 +182,10 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getCongestionMultiplierProperty("fees.percentCongestionMultipliers"))
 				.willReturn(i % 2 == 0 ? evenCongestion : oddCongestion);
 		given(properties.getIntProperty("fees.minCongestionPeriod")).willReturn(i + 28);
+		given(properties.getBooleanProperty("autorenew.isEnabled")).willReturn((i + 29) % 2 == 0);
+		given(properties.getIntProperty("autorenew.numberOfEntitiesToScan")).willReturn(i + 30);
+		given(properties.getIntProperty("autorenew.maxNumberOfEntitiesToRenewOrDelete")).willReturn(i + 31);
+		given(properties.getLongProperty("autorenew.gracePeriod")).willReturn(i + 32L);
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {

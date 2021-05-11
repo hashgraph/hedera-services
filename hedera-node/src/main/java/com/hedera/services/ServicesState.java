@@ -225,8 +225,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		if (getNumberOfChildren() < ChildIndices.NUM_0130_CHILDREN) {
 			log.info("Init called on Services node {} WITHOUT Merkle saved state", nodeId);
 			long seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
-			setChild(ChildIndices.NETWORK_CTX,
-					new MerkleNetworkContext(UNKNOWN_CONSENSUS_TIME, new SequenceNumber(seqStart), new ExchangeRates()));
+			setChild(ChildIndices.NETWORK_CTX, new MerkleNetworkContext(
+					UNKNOWN_CONSENSUS_TIME,
+					new SequenceNumber(seqStart),
+					seqStart - 1,
+					new ExchangeRates()));
 			setChild(ChildIndices.TOPICS, new FCMap<>());
 			setChild(ChildIndices.STORAGE, new FCMap<>());
 			setChild(ChildIndices.ACCOUNTS, new FCMap<>());
@@ -239,6 +242,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 			var restoredDiskFs = diskFs();
 			if (networkCtx().getStateVersion() < RELEASE_0140_VERSION) {
+				final long defaultLastScanned = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities");
+				networkCtx().updateLastScannedEntity(defaultLastScanned);
 				try {
 					restoredDiskFs.migrateLegacyDiskFsFromV13LocFor(
 							MerkleDiskFs.DISK_FS_ROOT_DIR,

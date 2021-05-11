@@ -22,6 +22,7 @@ package com.hedera.services.txns.crypto;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.DeletedAccountException;
+import com.hedera.services.exceptions.DetachedAccountException;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.HederaLedger;
@@ -111,7 +112,7 @@ public class CryptoTransferTransitionLogicTest {
 
 		givenValidTxnCtx();
 		// and:
-		given(validator.isAcceptableTokenTransfersLength(any())).willReturn(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
+		given(validator.tokenTransfersLengthCheck(any())).willReturn(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
 
 		// expect:
 		assertEquals(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS, subject.semanticCheck().apply(cryptoTransferTxn));
@@ -120,7 +121,7 @@ public class CryptoTransferTransitionLogicTest {
 	@Test
 	public void rejectsExceedingTransfersLength() {
 		givenValidTxnCtx();
-		given(validator.isAcceptableTokenTransfersLength(any())).willReturn(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
+		given(validator.tokenTransfersLengthCheck(any())).willReturn(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
 
 		// expect:
 		assertEquals(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, subject.semanticCheck().apply(cryptoTransferTxn));
@@ -129,7 +130,7 @@ public class CryptoTransferTransitionLogicTest {
 	@Test
 	public void rejectsEmptyTokenTransferAccountAmounts() {
 		givenValidTxnCtx();
-		given(validator.isAcceptableTokenTransfersLength(any())).willReturn(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS);
+		given(validator.tokenTransfersLengthCheck(any())).willReturn(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS);
 
 		// expect:
 		assertEquals(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS, subject.semanticCheck().apply(cryptoTransferTxn));
@@ -142,6 +143,15 @@ public class CryptoTransferTransitionLogicTest {
 
 		// expect:
 		assertEquals(INVALID_ACCOUNT_ID, tryTransfers(ledger, xfers.getTransfers()));
+	}
+
+	@Test
+	public void translatesDetachedAccountException() {
+		givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
+		willThrow(DetachedAccountException.class).given(ledger).doTransfers(any());
+
+		// expect:
+		assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, tryTransfers(ledger, xfers.getTransfers()));
 	}
 
 	@Test
@@ -319,7 +329,7 @@ public class CryptoTransferTransitionLogicTest {
 
 	private void withRubberstampingValidator() {
 		given(validator.isAcceptableTransfersLength(any())).willReturn(true);
-		given(validator.isAcceptableTokenTransfersLength(any())).willReturn(OK);
+		given(validator.tokenTransfersLengthCheck(any())).willReturn(OK);
 	}
 
 	CryptoTransferTransactionBody xfers = CryptoTransferTransactionBody.newBuilder()

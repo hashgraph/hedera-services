@@ -55,6 +55,10 @@ public class GlobalDynamicProperties {
 	private int maxGas;
 	private long defaultContractLifetime;
 	private int feesTokenTransferUsageMultiplier;
+	private boolean autoRenewEnabled;
+	private int autoRenewNumberOfEntitiesToScan;
+	private int autoRenewMaxNumberOfEntitiesToRenewOrDelete;
+	private long autoRenewGracePeriod;
 	private long maxAutoRenewDuration;
 	private long minAutoRenewDuration;
 	private int localCallEstRetBytes;
@@ -103,6 +107,11 @@ public class GlobalDynamicProperties {
 		maxGas = properties.getIntProperty("contracts.maxGas");
 		defaultContractLifetime = properties.getLongProperty("contracts.defaultLifetime");
 		feesTokenTransferUsageMultiplier = properties.getIntProperty("fees.tokenTransferUsageMultiplier");
+		autoRenewEnabled = properties.getBooleanProperty("autorenew.isEnabled");
+		autoRenewNumberOfEntitiesToScan = properties.getIntProperty("autorenew.numberOfEntitiesToScan");
+		autoRenewMaxNumberOfEntitiesToRenewOrDelete =
+				properties.getIntProperty("autorenew.maxNumberOfEntitiesToRenewOrDelete");
+		autoRenewGracePeriod = properties.getLongProperty("autorenew.gracePeriod");
 		maxAutoRenewDuration = properties.getLongProperty("ledger.autoRenewPeriod.maxDuration");
 		minAutoRenewDuration = properties.getLongProperty("ledger.autoRenewPeriod.minDuration");
 		localCallEstRetBytes = properties.getIntProperty("contracts.localCall.estRetBytes");
@@ -207,6 +216,22 @@ public class GlobalDynamicProperties {
 
 	public int feesTokenTransferUsageMultiplier() {
 		return feesTokenTransferUsageMultiplier;
+	}
+
+	public boolean autoRenewEnabled() {
+		return autoRenewEnabled;
+	}
+
+	public int autoRenewNumberOfEntitiesToScan() {
+		return autoRenewNumberOfEntitiesToScan;
+	}
+
+	public int autoRenewMaxNumberOfEntitiesToRenewOrDelete() {
+		return autoRenewMaxNumberOfEntitiesToRenewOrDelete;
+	}
+
+	public long autoRenewGracePeriod() {
+		return autoRenewGracePeriod;
 	}
 
 	public long maxAutoRenewDuration() {

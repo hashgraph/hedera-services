@@ -49,6 +49,7 @@ import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.TxnRateFeeMultiplierSource;
+import com.hedera.services.fees.calculation.AutoRenewCalcs;
 import com.hedera.services.fees.calculation.AwareFcfsUsagePrices;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
@@ -193,8 +194,12 @@ import com.hedera.services.sigs.sourcing.DefaultSigBytesProvider;
 import com.hedera.services.sigs.verification.PrecheckKeyReqs;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.sigs.verification.SyncVerifier;
+import com.hedera.services.state.expiry.EntityAutoRenewal;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
+import com.hedera.services.state.expiry.renewal.RenewalHelper;
+import com.hedera.services.state.expiry.renewal.RenewalProcess;
+import com.hedera.services.state.expiry.renewal.RenewalRecordsHelper;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.exports.BalancesExporter;
 import com.hedera.services.state.exports.SignedStateBalancesExporter;
@@ -448,6 +453,7 @@ public class ServicesContext {
 	private ProcessLogic logic;
 	private QueryFeeCheck queryFeeCheck;
 	private HederaNumbers hederaNums;
+	private EntityAutoRenewal entityAutoRenewal;
 	private ExpiryManager expiries;
 	private FeeCalculator fees;
 	private FeeExemptions exemptions;
@@ -635,7 +641,8 @@ public class ServicesContext {
 			final var semantics = new SemanticPrecheck(
 					transitionLogic());
 			final var solvency = new SolvencyPrecheck(
-					exemptions(), fees(), precheckVerifier(), stateViews(), this::accounts);
+					exemptions(), fees(), validator(),
+					precheckVerifier(), stateViews(), globalDynamicProperties(), this::accounts);
 			final var system = new SystemPrecheck(
 					systemOpPolicies(), hapiOpPermissions(), txnThrottling());
 			final var stagedChecks = new StagedPrechecks(
@@ -931,7 +938,7 @@ public class ServicesContext {
 
 	public QueryFeeCheck queryFeeCheck() {
 		if (queryFeeCheck == null) {
-			queryFeeCheck = new QueryFeeCheck(this::accounts);
+			queryFeeCheck = new QueryFeeCheck(validator(), globalDynamicProperties(), this::accounts);
 		}
 		return queryFeeCheck;
 	}
@@ -946,6 +953,7 @@ public class ServicesContext {
 			SmartContractFeeBuilder contractFees = new SmartContractFeeBuilder();
 
 			fees = new UsageBasedFeeCalculator(
+					new AutoRenewCalcs(cryptoOpsUsage),
 					exchange(),
 					usagePrices(),
 					feeMultiplierSource(),
@@ -1258,17 +1266,17 @@ public class ServicesContext {
 								ledger(), validator(), txnCtx(), new UpdateCustomizerFactory(), this::accounts))),
 				entry(ContractDelete,
 						List.of(new ContractDeleteTransitionLogic(
-								contracts()::deleteContract, validator(), txnCtx(), this::accounts))),
+								ledger(), contracts()::deleteContract, validator(), txnCtx(), this::accounts))),
 				entry(ContractCall,
 						List.of(new ContractCallTransitionLogic(
 								contracts()::contractCall, validator(), txnCtx(), this::seqNo, this::accounts))),
 				/* Consensus */
 				entry(ConsensusCreateTopic,
 						List.of(new TopicCreateTransitionLogic(
-								this::accounts, this::topics, ids(), validator(), txnCtx()))),
+								this::accounts, this::topics, ids(), validator(), txnCtx(), ledger()))),
 				entry(ConsensusUpdateTopic,
 						List.of(new TopicUpdateTransitionLogic(
-								this::accounts, this::topics, validator(), txnCtx()))),
+								this::accounts, this::topics, validator(), txnCtx(), ledger()))),
 				entry(ConsensusDeleteTopic,
 						List.of(new TopicDeleteTransitionLogic(
 								this::topics, validator(), txnCtx()))),
@@ -1465,12 +1473,29 @@ public class ServicesContext {
 					tokenStore(),
 					ids(),
 					creator(),
+					validator(),
 					recordsHistorian(),
+					globalDynamicProperties(),
 					accountsLedger);
 			scheduleStore().setAccountsLedger(accountsLedger);
 			scheduleStore().setHederaLedger(ledger);
 		}
 		return ledger;
+	}
+
+	public EntityAutoRenewal entityAutoRenewal() {
+		if (entityAutoRenewal == null) {
+			final var helper = new RenewalHelper(
+					tokenStore(), hederaNums(), globalDynamicProperties(),
+					this::tokens, this::accounts, this::tokenAssociations);
+			final var recordHelper = new RenewalRecordsHelper(
+					this, recordStreamManager(), globalDynamicProperties());
+			final var renewalProcess = new RenewalProcess(
+					fees(), hederaNums(), helper, recordHelper);
+			entityAutoRenewal = new EntityAutoRenewal(
+					hederaNums(), renewalProcess, this, globalDynamicProperties());
+		}
+		return entityAutoRenewal;
 	}
 
 	public ExpiryManager expiries() {
@@ -1770,11 +1795,11 @@ public class ServicesContext {
 					NOOP_TOKEN_STORE,
 					NOOP_ID_SOURCE,
 					NOOP_EXPIRING_CREATIONS,
+					validator(),
 					NOOP_RECORDS_HISTORIAN,
+					globalDynamicProperties(),
 					pureDelegate);
-			Source<byte[], AccountState> pureAccountSource = new LedgerAccountsSource(
-					pureLedger,
-					globalDynamicProperties());
+			Source<byte[], AccountState> pureAccountSource = new LedgerAccountsSource(pureLedger);
 			newPureRepo = () -> {
 				var pureRepository = new ServicesRepositoryRoot(pureAccountSource, bytecodeDb());
 				pureRepository.setStoragePersistence(storagePersistence());
@@ -1793,7 +1818,7 @@ public class ServicesContext {
 
 	public LedgerAccountsSource accountSource() {
 		if (accountSource == null) {
-			accountSource = new LedgerAccountsSource(ledger(), globalDynamicProperties());
+			accountSource = new LedgerAccountsSource(ledger());
 		}
 		return accountSource;
 	}
@@ -1950,6 +1975,14 @@ public class ServicesContext {
 
 	public SequenceNumber seqNo() {
 		return state.networkCtx().seqNo();
+	}
+
+	public long lastScannedEntity() {
+		return state.networkCtx().lastScannedEntity();
+	}
+
+	public void updateLastScannedEntity(long lastScannedEntity) {
+		state.networkCtx().updateLastScannedEntity(lastScannedEntity);
 	}
 
 	public ExchangeRates midnightRates() {
