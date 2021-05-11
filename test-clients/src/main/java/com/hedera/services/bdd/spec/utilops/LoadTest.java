@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runLoadTest;
@@ -66,6 +67,8 @@ public class LoadTest extends HapiApiSuite {
 	public static OptionalInt totalScheduled = OptionalInt.empty();
 	public static OptionalInt totalTestTokenAccounts = OptionalInt.empty();
 	public static OptionalInt memoLength = OptionalInt.of(DEFAULT_MEMO_LENGTH);
+	public static OptionalInt balancesExportPeriodSecs = OptionalInt.empty();
+	public static Optional<Boolean> clientToExportBalances = Optional.empty();
 
 	protected final ResponseCodeEnum[] standardPermissiblePrechecks = new ResponseCodeEnum[] {
 			OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED
@@ -156,6 +159,10 @@ public class LoadTest extends HapiApiSuite {
 						? hcsSubmitMessage::getAsInt : settings::getHcsSubmitMessageSize)
 				.setHCSSubmitMessageSizeVar(hcsSubmitMessageSizeVar.isPresent()
 						? hcsSubmitMessageSizeVar::getAsInt	: settings::getHcsSubmitMessageSizeVar)
+				.setBalancesExportPeriodSecs(balancesExportPeriodSecs.isPresent()
+						? balancesExportPeriodSecs::getAsInt : settings::getBalancesExportPeriodSecs)
+				.setClientToExportBalances(clientToExportBalances.isPresent()
+								? clientToExportBalances::get : settings::getClientToExportBalances)
 				.setInitialBalance(settings::getInitialBalance)
 				.lasting(
 						(testDurationMinutes.isPresent() ?

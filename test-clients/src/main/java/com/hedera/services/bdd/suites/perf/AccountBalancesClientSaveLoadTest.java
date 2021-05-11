@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -54,6 +55,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.exportAccountBalances;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
@@ -134,13 +136,17 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 				.given(
 						tokenOpsEnablement(),
 						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
-						fileUpdate(APP_PROPERTIES)
+						logIt(ignore -> settings.toString()),
+						sourcing(() -> fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
-								.overridingProps(Map.of("balances.exportPeriodSecs", "60")),
+								.overridingProps(Map.of("balances.exportPeriodSecs",
+										String.format("%d",settings.getBalancesExportPeriodSecs()) ))
+								.erasingProps(Set.of("accountBalanceExportPeriodMinutes"))),
 						fileUpdate(THROTTLE_DEFS)
 								.payingWith(EXCHANGE_RATE_CONTROL)
 								.contents(throttlesForJRS.toByteArray())
 				).when(
+
 						sourcing(() -> runWithProvider(accountsCreate(settings))
 								.lasting(() -> totalAccounts / ESTIMATED_CRYPTO_CREATION_RATE + 10,
 										() -> TimeUnit.SECONDS)
@@ -173,22 +179,27 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 				).then(
 						sleepFor(10 * SECOND),
 						withOpContext( (spec, log) -> {
-							log.info("Now get all {} accounts created and save them", totalAccounts);
-							AccountID acctID = AccountID.getDefaultInstance();
-							for(int i = 1; i <= totalAccounts; i++ ) {
-								String acctName = ACCT_NAME_PREFIX + i;
-								// Make sure the named account was created before query its balances.
-								try {
-									acctID = spec.registry().getAccountID(acctName);
-								} catch (RegistryNotFound e) {
-									log.info(acctName + " was not created successfully.");
-									continue;
+							if(settings.getBooleanProperty("clientToExportBalances", false)) {
+								log.info("Now get all {} accounts created and save them", totalAccounts);
+								AccountID acctID = AccountID.getDefaultInstance();
+								for (int i = 1; i <= totalAccounts; i++) {
+									String acctName = ACCT_NAME_PREFIX + i;
+									// Make sure the named account was created before query its balances.
+									try {
+										acctID = spec.registry().getAccountID(acctName);
+									} catch (RegistryNotFound e) {
+										log.info(acctName + " was not created successfully.");
+										continue;
+									}
+									var op = getAccountBalance(HapiPropertySource.asAccountString(acctID))
+											.hasAnswerOnlyPrecheckFrom(permissiblePrechecks)
+											.persists(true)
+											.noLogging();
+									allRunFor(spec, op);
 								}
-								var op = getAccountBalance(HapiPropertySource.asAccountString(acctID))
-										.hasAnswerOnlyPrecheckFrom(permissiblePrechecks)
-										.persists(true)
-										.noLogging();
-								allRunFor(spec, op);
+							}
+							else { // debug
+								log.info("Don't dump account balances from client side.");
 							}
 						}),
 						sleepFor(10 * SECOND),
