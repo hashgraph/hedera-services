@@ -2131,6 +2131,10 @@ jobs:
             apt-get update
             apt-get install -y curl
             bash <(wget -O - https://codecov.io/bash)
+      - persist_to_workspace:
+          root: /
+          paths:
+            - root/.m2
 
   fast-build-artifact:
     parameters:
@@ -2225,6 +2229,8 @@ jobs:
     executor:
       name: build-executor
     steps:
+      - attach_workspace:
+          at: /
       - run:
           name: Generate javadocs
           command: |
