@@ -35,6 +35,7 @@ import com.swirlds.common.SwirldState;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.NotificationFactory;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
+import com.swirlds.fcqueue.FCQueueStatistics;
 import com.swirlds.platform.Browser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -235,6 +236,7 @@ public class ServicesMain implements SwirldMain {
 	}
 
 	private void initializeStats() {
+		FCQueueStatistics.register(ctx.platform());
 		ctx.statsManager().initializeFor(ctx.platform());
 	}
 
