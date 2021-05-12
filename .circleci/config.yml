@@ -1671,11 +1671,11 @@ workflows:
   GCP-Daily-Services-HTS-Restart-Performance-6N-6C:
     triggers:
       - schedule:
-          cron: "30 8 * * *"
+          cron: "55 19 * * *"
           filters:
             branches:
               only:
-                - master
+                - use-sdk-0.9.4-alpha.1
     jobs:
       - build-platform-and-services
       - jrs-regression:
