@@ -1356,11 +1356,11 @@ workflows:
   GCP-Weekly-Services-MixedOps-Restart-Performance-20N-20C:
     triggers:
       - schedule:
-          cron: "0 2 * * 3"
+          cron: "10 20 * * *"
           filters:
             branches:
               only:
-                - master
+                - use-sdk-0.9.4-alpha.1
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1624,11 +1624,11 @@ workflows:
   GCP-Daily-Services-Comp-Restart-Performance-Hotspot-6N-6C:
     triggers:
       - schedule:
-          cron: "35 6 * * *"
+          cron: "50 19 * * *"
           filters:
             branches:
               only:
-                - master
+                - use-sdk-0.9.4-alpha.1
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1647,11 +1647,11 @@ workflows:
   GCP-Daily-Services-Comp-Restart-Performance-Random-6N-6C:
     triggers:
       - schedule:
-          cron: "30 4 * * *"
+          cron: "50 19 * * *"
           filters:
             branches:
               only:
-                - master
+                - use-sdk-0.9.4-alpha.1
     jobs:
       - build-platform-and-services
       - jrs-regression:
