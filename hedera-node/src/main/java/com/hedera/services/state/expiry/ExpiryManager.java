@@ -131,19 +131,19 @@ public class ExpiryManager {
 	}
 
 	public void purgeExpiredRecordsAt(long now) {
+		final var currentAccounts = accounts.get();
 		while (payerExpiries.hasExpiringAt(now)) {
 			final var numWithExpiring = payerExpiries.expireNextAt(now);
 			final var key = new MerkleEntityId(0, 0, numWithExpiring);
-			final var currentAccounts = accounts.get();
 			final var mutableAccount = currentAccounts.getForModify(key);
 			final var mutableFcq = mutableAccount.records();
-			purgeForNewEarliestExpiry(mutableFcq, now);
+			purgeRecordsFrom(mutableFcq, now);
 			currentAccounts.replace(key, mutableAccount);
 		}
 		recordCache.forgetAnyOtherExpiredHistory(now);
 	}
 
-	private void purgeForNewEarliestExpiry(FCQueue<ExpirableTxnRecord> records, long now) {
+	private void purgeRecordsFrom(FCQueue<ExpirableTxnRecord> records, long now) {
 		while (!records.isEmpty() && records.peek().getExpiry() <= now) {
 			updateHistory(records.poll(), now);
 		}

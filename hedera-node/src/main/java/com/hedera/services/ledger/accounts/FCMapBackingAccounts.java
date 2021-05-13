@@ -37,12 +37,10 @@ import java.util.stream.Collectors;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 
 public class FCMapBackingAccounts implements BackingStore<AccountID, MerkleAccount> {
-	private static final int MAX_TOUCHED = 12_000;
+	private static final int MAX_ACCOUNTS_LIKELY_TOUCHED_IN_LEDGER_TXN = 12;
 
-	List<AccountID> touchedIds = new ArrayList<>(MAX_TOUCHED);
-
-	Map<AccountID, MerkleAccount> cache = new HashMap<>();
-
+	private final List<AccountID> touchedIds = new ArrayList<>(MAX_ACCOUNTS_LIKELY_TOUCHED_IN_LEDGER_TXN);
+	private final Map<AccountID, MerkleAccount> cache = new HashMap<>();
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> delegate;
 
 	public FCMapBackingAccounts(Supplier<FCMap<MerkleEntityId, MerkleAccount>> delegate) {
@@ -50,7 +48,9 @@ public class FCMapBackingAccounts implements BackingStore<AccountID, MerkleAccou
 	}
 
 	@Override
-	public void rebuildFromSources() { }
+	public void rebuildFromSources() {
+		/* No-op */
+	}
 
 	@Override
 	public void flushMutableRefs() {

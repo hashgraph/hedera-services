@@ -87,7 +87,7 @@ class ExpiryManagerTest {
 	ExpiryManager subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		accounts = new FCMap<>();
 		schedules = new FCMap<>();
 		txnHistories = new HashMap<>();
@@ -106,7 +106,7 @@ class ExpiryManagerTest {
 	}
 
 	@Test
-	public void purgesEntitiesAsExpected() {
+	void purgesEntitiesAsExpected() {
 		// given:
 		givenSchedule(schedule.getScheduleNum());
 		// and:
@@ -151,7 +151,7 @@ class ExpiryManagerTest {
 	}
 
 	@Test
-	public void restartsTrackingAsExpected() {
+	void restartsTrackingAsExpected() {
 		givenAccount(a, aPayer);
 		givenAccount(b, bPayer);
 
@@ -178,7 +178,7 @@ class ExpiryManagerTest {
 	}
 
 	@Test
-	public void restartsEntitiesTrackingAsExpected() {
+	void restartsEntitiesTrackingAsExpected() {
 		givenSchedule(schedule.getScheduleNum());
 
 		// when:
@@ -209,7 +209,7 @@ class ExpiryManagerTest {
 	}
 
 	@Test
-	public void usesBestGuessSubmittingMember() {
+	void usesBestGuessSubmittingMember() {
 		// setup:
 		long givenPayerNum = 75231;
 		var rec = withPayer(givenPayerNum);
@@ -267,7 +267,7 @@ class ExpiryManagerTest {
 	}
 
 	@Test
-	public void addsExpectedExpiryForPayer() {
+	void addsExpectedExpiryForPayer() {
 		// setup:
 		subject.payerExpiries = (MonotonicFullQueueExpiries<Long>) mock(MonotonicFullQueueExpiries.class);
 
@@ -279,7 +279,7 @@ class ExpiryManagerTest {
 	}
 
 	@Test
-	public void addsExpectedExpiringEntity() {
+	void addsExpectedExpiringEntity() {
 		// setup:
 		subject.entityExpiries = (MonotonicFullQueueExpiries<Pair<Long, Consumer<EntityId>>>) mock(MonotonicFullQueueExpiries.class);
 

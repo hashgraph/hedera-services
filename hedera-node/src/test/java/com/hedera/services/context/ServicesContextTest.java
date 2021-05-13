@@ -20,6 +20,7 @@ package com.hedera.services.context;
  * ‍
  */
 
+import com.google.common.cache.Cache;
 import com.hedera.services.ServicesState;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.EntityNumbers;
@@ -537,6 +538,7 @@ public class ServicesContextTest {
 		assertThat(ctx.transactionPrecheck(), instanceOf(TransactionPrecheck.class));
 		assertThat(ctx.queryHeaderValidity(), instanceOf(QueryHeaderValidity.class));
 		assertThat(ctx.entityAutoRenewal(), instanceOf(EntityAutoRenewal.class));
+		assertThat(ctx.accessorCache(), instanceOf(Cache.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

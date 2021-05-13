@@ -37,7 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -62,7 +61,7 @@ import static java.util.stream.Collectors.joining;
  * @author Michael Tinker
  */
 public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> implements Ledger<K, P, A> {
-	private static final int MAX_TOUCHED = 12_000;
+	private static final int MAX_ENTITIES_LIKELY_TOUCHED_IN_LEDGER_TXN = 12;
 
 	private static final Logger log = LogManager.getLogger(TransactionalLedger.class);
 
@@ -73,7 +72,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	private final ChangeSummaryManager<A, P> changeManager;
 	private final Function<K, EnumMap<P, Object>> changeFactory;
 
-	private List<K> changedKeys = new ArrayList<>(MAX_TOUCHED);
+	private List<K> changedKeys = new ArrayList<>(MAX_ENTITIES_LIKELY_TOUCHED_IN_LEDGER_TXN);
 	final Map<K, EnumMap<P, Object>> changes = new HashMap<>();
 
 	private boolean isInTransaction = false;

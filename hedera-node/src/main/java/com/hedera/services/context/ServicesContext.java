@@ -424,6 +424,8 @@ import static java.util.Map.entry;
  * @author Michael Tinker
  */
 public class ServicesContext {
+	private static final long MAX_REASONABLE_C2C = 15L;
+
 	private static final Logger log = LogManager.getLogger(ServicesContext.class);
 
 	private SystemExits systemExits = new JvmSystemExits();
@@ -582,7 +584,7 @@ public class ServicesContext {
 		this.propertySources = propertySources;
 	}
 
-	public synchronized void update(ServicesState state) {
+	public void update(ServicesState state) {
 		this.state = state;
 
 		queryableAccounts().set(accounts());
@@ -1366,7 +1368,7 @@ public class ServicesContext {
 	public Cache<Transaction, PlatformTxnAccessor> accessorCache() {
 		if (accessorCache == null)	 {
 			accessorCache = CacheBuilder.newBuilder()
-					.expireAfterWrite(10, TimeUnit.SECONDS)
+					.expireAfterWrite(MAX_REASONABLE_C2C, TimeUnit.SECONDS)
 					.build();
 		}
 		return accessorCache;

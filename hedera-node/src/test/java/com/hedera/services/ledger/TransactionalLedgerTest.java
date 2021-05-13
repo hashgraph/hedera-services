@@ -194,9 +194,11 @@ public class TransactionalLedgerTest {
 		// when:
 		subject.begin();
 		subject.destroy(1L);
+		subject.create(2L);
+		subject.destroy(2L);
 
 		// then:
-		assertEquals("{*DEAD* 1}", subject.changeSetSoFar());
+		assertEquals("{*NEW -> DEAD* 2: [], *DEAD* 1}", subject.changeSetSoFar());
 	}
 
 	@Test

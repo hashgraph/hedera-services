@@ -20,6 +20,7 @@ package com.hedera.services;
  * ‍
  */
 
+import com.google.common.cache.Cache;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
@@ -52,6 +53,7 @@ import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.txns.ProcessLogic;
+import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.SystemExits;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -118,6 +120,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
@@ -767,10 +770,12 @@ class ServicesStateTest {
 		SigningOrderResult<SignatureStatus> payerOrderResult = new SigningOrderResult<>(List.of(key));
 		SigningOrderResult<SignatureStatus> otherOrderResult = new SigningOrderResult<>(EMPTY_LIST);
 		HederaSigningOrder keyOrderer = mock(HederaSigningOrder.class);
+		Cache<Transaction, PlatformTxnAccessor> accessorCache = mock(Cache.class);
 
 		given(keyOrderer.keysForPayer(any(), any())).willReturn((SigningOrderResult) payerOrderResult);
 		given(keyOrderer.keysForOtherParties(any(), any())).willReturn((SigningOrderResult) otherOrderResult);
 		given(ctx.lookupRetryingKeyOrder()).willReturn(keyOrderer);
+		given(ctx.accessorCache()).willReturn(accessorCache);
 
 		// and:
 		subject.ctx = ctx;
@@ -782,10 +787,11 @@ class ServicesStateTest {
 		assertEquals(1, platformTxn.getSignatures().size());
 		assertEquals(mockPk, ByteString.copyFrom(platformTxn.getSignatures().get(0).getExpandedPublicKeyDirect()));
 		verify(ctx).sigFactoryCreator();
+		verify(accessorCache).put(eq(platformTxn), any());
 	}
 
 	@Test
-	public void expandsSigsWithSignedTransactionBytes() throws InvalidProtocolBufferException {
+	public void expandsSigsWithSignedTransactionBytes() {
 		// setup:
 		ByteString mockPk = ByteString.copyFrom("not-a-real-pkPrefix".getBytes());
 		ByteString mockSig = ByteString.copyFrom("not-a-real-sig".getBytes());
