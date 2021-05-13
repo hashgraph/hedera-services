@@ -31,6 +31,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
+
 import static com.hedera.services.exceptions.InsufficientFundsException.messageFor;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
@@ -125,7 +127,7 @@ public class HederaLedgerXfersTest extends BaseHederaLedgerTest {
 		given(mockValidator.isAfterConsensusSecond(1_234_567_890L)).willReturn(true);
 		given(mockValidator.isAfterConsensusSecond(666L)).willReturn(false);
 
-		subject = new HederaLedger(tokenStore, ids, creator, mockValidator, historian, dynamicProps, accountsLedger);
+		subject = new HederaLedger(tokenStore, ids, creator, mockValidator, historian, dynamicProps, accountsLedger, new HashMap<>());
 		subject.setTokenRelsLedger(tokenRelsLedger);
 
 		// expect:
@@ -152,7 +154,7 @@ public class HederaLedgerXfersTest extends BaseHederaLedgerTest {
 		given(mockValidator.isAfterConsensusSecond(1_234_567_890L)).willReturn(true);
 		given(mockValidator.isAfterConsensusSecond(666L)).willReturn(false);
 
-		subject = new HederaLedger(tokenStore, ids, creator, mockValidator, historian, dynamicProps, accountsLedger);
+		subject = new HederaLedger(tokenStore, ids, creator, mockValidator, historian, dynamicProps, accountsLedger, new HashMap<>());
 		subject.setTokenRelsLedger(tokenRelsLedger);
 
 		// expect:

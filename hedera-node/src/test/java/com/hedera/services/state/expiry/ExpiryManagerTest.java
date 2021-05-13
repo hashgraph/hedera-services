@@ -106,28 +106,6 @@ class ExpiryManagerTest {
 	}
 
 	@Test
-	public void purgesRecordsAsExpected() {
-		// setup:
-		InOrder inOrder = inOrder(ledger);
-
-		givenAccount(a, aPayer);
-		givenAccount(b, bPayer);
-		// given:
-		subject.restartTrackingFrom(accounts);
-
-		// when:
-		subject.purgeExpiredRecordsAt(33, ledger);
-
-		// then:
-		inOrder.verify(ledger).purgeExpiredRecords(
-				argThat(asAccount(b)::equals),
-				longThat(l -> l == 33),
-				any());
-		// and:
-		verify(recordCache).forgetAnyOtherExpiredHistory(33);
-	}
-
-	@Test
 	public void purgesEntitiesAsExpected() {
 		// given:
 		givenSchedule(schedule.getScheduleNum());
@@ -141,10 +119,6 @@ class ExpiryManagerTest {
 		verify(scheduleStore).expire(entityId);
 		// and:
 		assertTrue(subject.entityExpiries.allExpiries.isEmpty());
-	}
-
-	private AccountID asAccount(long num) {
-		return IdUtils.asAccount(String.format("0.0.%d", num));
 	}
 
 	@Test

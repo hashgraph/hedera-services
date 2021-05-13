@@ -129,10 +129,7 @@ public class ExpiryManager {
 
 	public void purgeExpiredRecordsAt(long now, HederaLedger ledger) {
 		while (payerExpiries.hasExpiringAt(now)) {
-			ledger.purgeExpiredRecords(
-					accountWith(payerExpiries.expireNextAt(now)),
-					now,
-					record -> this.updateHistory(record, now));
+			ledger.purgeExpiredRecords(accountWith(payerExpiries.expireNextAt(now)), now);
 		}
 		recordCache.forgetAnyOtherExpiredHistory(now);
 	}
@@ -152,17 +149,6 @@ public class ExpiryManager {
 
 	public void trackEntity(Pair<Long, Consumer<EntityId>> entity, long expiry) {
 		entityExpiries.track(entity, expiry);
-	}
-
-	void updateHistory(ExpirableTxnRecord record, long now) {
-		var txnId = record.getTxnId().toGrpc();
-		var history = txnHistories.get(txnId);
-		if (history != null) {
-			history.forgetExpiredAt(now);
-			if (history.isForgotten()) {
-				txnHistories.remove(txnId);
-			}
-		}
 	}
 
 	AccountID accountWith(long num) {

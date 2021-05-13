@@ -31,6 +31,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
+import java.util.HashMap;
+
 import static com.hedera.services.exceptions.InsufficientFundsException.messageFor;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
@@ -157,7 +159,7 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
 		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
 		// and:
-		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);
+		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger, new HashMap<>());
 
 		// when:
 		var result = subject.isDetached(genesis);
@@ -174,7 +176,7 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
 		given(accountsLedger.get(genesis, IS_SMART_CONTRACT)).willReturn(true);
 		// and:
-		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);
+		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger, new HashMap<>());
 
 		// when:
 		var result = subject.isDetached(genesis);
@@ -190,7 +192,7 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
 		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
 		// and:
-		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);
+		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger, new HashMap<>());
 		// and:
 		dynamicProps.disableAutoRenew();
 

@@ -48,6 +48,7 @@ import com.swirlds.fcqueue.FCQueue;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -217,7 +218,8 @@ public class BaseHederaLedgerTest {
 				.willReturn(tokenId);
 		given(tokenStore.get(frozenId)).willReturn(frozenToken);
 
-		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);
+		subject = new HederaLedger(
+				tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger, new HashMap<>());
 		subject.setTokenRelsLedger(tokenRelsLedger);
 	}
 

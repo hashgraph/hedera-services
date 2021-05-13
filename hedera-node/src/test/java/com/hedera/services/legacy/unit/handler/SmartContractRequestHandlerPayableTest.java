@@ -91,6 +91,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -150,7 +151,8 @@ public class SmartContractRequestHandlerPayableTest {
             TestContextValidator.TEST_VALIDATOR,
             mock(AccountRecordsHistorian.class),
             new MockGlobalDynamicProps(),
-            delegate);
+            delegate,
+            new HashMap<>());
     ledgerSource = new LedgerAccountsSource(ledger);
     Source<byte[], AccountState> repDatabase = ledgerSource;
     ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);

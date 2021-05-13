@@ -31,6 +31,7 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
@@ -46,6 +47,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.commons.lang3.tuple.Pair;
@@ -131,6 +133,7 @@ public class HederaLedger {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final TransferList.Builder netTransfers = TransferList.newBuilder();
 	private final AccountRecordsHistorian historian;
+	private final Map<TransactionID, TxnIdRecentHistory> txnHistories;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
 	int numTouches = 0;
@@ -148,13 +151,15 @@ public class HederaLedger {
 			OptionValidator validator,
 			AccountRecordsHistorian historian,
 			GlobalDynamicProperties dynamicProperties,
-			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger
+			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+			Map<TransactionID, TxnIdRecentHistory> txnHistories
 	) {
 		this.ids = ids;
 		this.validator = validator;
 		this.historian = historian;
 		this.tokenStore = tokenStore;
 		this.accountsLedger = accountsLedger;
+		this.txnHistories = txnHistories;
 		this.dynamicProperties = dynamicProperties;
 
 		creator.setLedger(this);
@@ -491,33 +496,33 @@ public class HederaLedger {
 		return records.peek().getExpiry();
 	}
 
-	public long purgeExpiredRecords(AccountID id, long now, Consumer<ExpirableTxnRecord> cb) {
-		return purge(id, RECORDS, now, cb);
-	}
-
-	private long purge(
-			AccountID id,
-			AccountProperty recordsProp,
-			long now,
-			Consumer<ExpirableTxnRecord> cb
-	) {
-		FCQueue<ExpirableTxnRecord> records = (FCQueue<ExpirableTxnRecord>) accountsLedger.get(id, recordsProp);
-		long newEarliestExpiry = purgeForNewEarliestExpiry(records, now, cb);
-		accountsLedger.set(id, recordsProp, records);
+	public long purgeExpiredRecords(AccountID id, long now) {
+		FCQueue<ExpirableTxnRecord> records = (FCQueue<ExpirableTxnRecord>) accountsLedger.get(id, RECORDS);
+		long newEarliestExpiry = purgeForNewEarliestExpiry(records, now);
+		accountsLedger.set(id, RECORDS, records);
 		return newEarliestExpiry;
 	}
 
-	private long purgeForNewEarliestExpiry(
-			FCQueue<ExpirableTxnRecord> records, long now, Consumer<ExpirableTxnRecord> cb
-	) {
+	private long purgeForNewEarliestExpiry(FCQueue<ExpirableTxnRecord> records, long now ) {
 		long newEarliestExpiry = -1;
 		while (!records.isEmpty() && records.peek().getExpiry() <= now) {
-			cb.accept(records.poll());
+			updateHistory(records.poll(), now);
 		}
 		if (!records.isEmpty()) {
 			newEarliestExpiry = records.peek().getExpiry();
 		}
 		return newEarliestExpiry;
+	}
+
+	private void updateHistory(ExpirableTxnRecord record, long now) {
+		var txnId = record.getTxnId().toGrpc();
+		var history = txnHistories.get(txnId);
+		if (history != null) {
+			history.forgetExpiredAt(now);
+			if (history.isForgotten()) {
+				txnHistories.remove(txnId);
+			}
+		}
 	}
 
 	/* -- HELPERS -- */
@@ -640,31 +645,5 @@ public class HederaLedger {
 	public boolean isKnownTreasury(AccountID aId) {
 		return tokenStore.isKnownTreasury(aId);
 	}
-
-	public enum LedgerTxnEvictionStats {
-		INSTANCE;
-
-		private int recordsPurged = 0;
-		private int accountsTouched = 0;
-
-		public int recordsPurged() {
-			return recordsPurged;
-		}
-
-		public int accountsTouched() {
-			return accountsTouched;
-		}
-
-		public void reset() {
-			accountsTouched = 0;
-			recordsPurged = 0;
-		}
-
-		public void recordPurgedFromAnAccount(int n) {
-			accountsTouched++;
-			recordsPurged += n;
-		}
-	}
-
 
 }
