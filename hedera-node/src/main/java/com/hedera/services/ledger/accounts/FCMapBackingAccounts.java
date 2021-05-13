@@ -21,22 +21,24 @@ package com.hedera.services.ledger.accounts;
  */
 
 import com.hedera.services.ledger.HederaLedger;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.fcmap.FCMap;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
-import static com.hedera.services.utils.EntityIdUtils.readableId;
 
 public class FCMapBackingAccounts implements BackingStore<AccountID, MerkleAccount> {
+	SortedSet<AccountID> touchedIds = new TreeSet<>(HederaLedger.ACCOUNT_ID_COMPARATOR);
+
 	Map<AccountID, MerkleAccount> cache = new HashMap<>();
 
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> delegate;
@@ -51,29 +53,27 @@ public class FCMapBackingAccounts implements BackingStore<AccountID, MerkleAccou
 	@Override
 	public void flushMutableRefs() {
 		final var currentDelegate = delegate.get();
-
-		cache.keySet()
-				.stream()
-				.sorted(HederaLedger.ACCOUNT_ID_COMPARATOR)
-				.forEach(id -> currentDelegate.replace(fromAccountId(id), cache.get(id)));
+		for (AccountID id : touchedIds) {
+			currentDelegate.replace(fromAccountId(id), cache.get(id));
+		}
 		cache.clear();
+		touchedIds.clear();
 	}
 
 	@Override
 	public MerkleAccount getRef(AccountID id) {
-		return cache.computeIfAbsent(id, ignore -> delegate.get().getForModify(fromAccountId(id)));
+		return cache.computeIfAbsent(id, ignore -> {
+			touchedIds.add(id);
+			return delegate.get().getForModify(fromAccountId(id));
+		});
 	}
 
 	@Override
 	public void put(AccountID id, MerkleAccount account) {
 		final var curDelegate = delegate.get();
-		MerkleEntityId delegateId = fromAccountId(id);
+		final var delegateId = fromAccountId(id);
 		if (!curDelegate.containsKey(delegateId)) {
-			delegate.get().put(delegateId, account);
-		} else if (!cache.containsKey(id) || (cache.get(id) != account)) {
-			throw new IllegalArgumentException(String.format(
-					"Argument 'id=%s' does not map to a mutable ref!",
-					readableId(id)));
+			curDelegate.put(delegateId, account);
 		}
 	}
 
