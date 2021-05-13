@@ -130,7 +130,6 @@ public class HederaLedger {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final TransferList.Builder netTransfers = TransferList.newBuilder();
 	private final AccountRecordsHistorian historian;
-	private final Map<TransactionID, TxnIdRecentHistory> txnHistories;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
 	int numTouches = 0;
@@ -148,15 +147,13 @@ public class HederaLedger {
 			OptionValidator validator,
 			AccountRecordsHistorian historian,
 			GlobalDynamicProperties dynamicProperties,
-			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
-			Map<TransactionID, TxnIdRecentHistory> txnHistories
+			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger
 	) {
 		this.ids = ids;
 		this.validator = validator;
 		this.historian = historian;
 		this.tokenStore = tokenStore;
 		this.accountsLedger = accountsLedger;
-		this.txnHistories = txnHistories;
 		this.dynamicProperties = dynamicProperties;
 
 		creator.setLedger(this);

@@ -158,8 +158,7 @@ public class SmartContractRequestHandlerStorageTest {
             TestContextValidator.TEST_VALIDATOR,
             mock(AccountRecordsHistorian.class),
             new MockGlobalDynamicProps(),
-            delegate,
-            new HashMap<>());
+            delegate);
     ledgerSource = new LedgerAccountsSource(ledger);
     Source<byte[], AccountState> repDatabase = ledgerSource;
     ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);

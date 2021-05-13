@@ -127,7 +127,7 @@ public class HederaLedgerXfersTest extends BaseHederaLedgerTest {
 		given(mockValidator.isAfterConsensusSecond(1_234_567_890L)).willReturn(true);
 		given(mockValidator.isAfterConsensusSecond(666L)).willReturn(false);
 
-		subject = new HederaLedger(tokenStore, ids, creator, mockValidator, historian, dynamicProps, accountsLedger, new HashMap<>());
+		subject = new HederaLedger(tokenStore, ids, creator, mockValidator, historian, dynamicProps, accountsLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 
 		// expect:
@@ -154,7 +154,7 @@ public class HederaLedgerXfersTest extends BaseHederaLedgerTest {
 		given(mockValidator.isAfterConsensusSecond(1_234_567_890L)).willReturn(true);
 		given(mockValidator.isAfterConsensusSecond(666L)).willReturn(false);
 
-		subject = new HederaLedger(tokenStore, ids, creator, mockValidator, historian, dynamicProps, accountsLedger, new HashMap<>());
+		subject = new HederaLedger(tokenStore, ids, creator, mockValidator, historian, dynamicProps, accountsLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 
 		// expect:

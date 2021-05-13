@@ -81,8 +81,7 @@ public class RepoNewCacheTest {
 				TestContextValidator.TEST_VALIDATOR,
 				mock(AccountRecordsHistorian.class),
 				new MockGlobalDynamicProps(),
-				delegate,
-				new HashMap<>());
+				delegate);
 		Source<byte[], AccountState> repDatabase = new LedgerAccountsSource(ledger);
 		ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
 		String key = Hex.toHexString(EntityIdUtils.asSolidityAddress(0, 0, 1));
@@ -179,8 +178,7 @@ public class RepoNewCacheTest {
 				TestContextValidator.TEST_VALIDATOR,
 				mock(AccountRecordsHistorian.class),
 				new MockGlobalDynamicProps(),
-				delegate,
-				new HashMap<>());
+				delegate);
 		Source<byte[], AccountState> accountSource = new LedgerAccountsSource(ledger);
 		ServicesRepositoryRoot repository = new ServicesRepositoryRoot(accountSource, repDBFile);
 
