@@ -32,6 +32,8 @@ import com.hedera.services.state.submerkle.EntityId;
 import org.spongycastle.util.encoders.Hex;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -39,6 +41,7 @@ import static java.lang.System.arraycopy;
 
 public class EntityIdUtils {
 	private static long[] NO_PARTS = {};
+	private static final Map<String, AccountID> parsedNodeAccounts = new HashMap<>();
 
 	public static String readableId(Object o) {
 		if (o instanceof AccountID) {
@@ -69,6 +72,10 @@ public class EntityIdUtils {
 	 * @throws IllegalArgumentException if the literal is not formatted correctly
 	 */
 	public static AccountID accountParsedFromString(String repr) {
+		return parsedNodeAccounts.computeIfAbsent(repr, EntityIdUtils::accountFrom);
+	}
+
+	private static AccountID accountFrom(String repr) {
 		var parts = NO_PARTS;
 
 		try {
