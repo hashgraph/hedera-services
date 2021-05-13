@@ -11,7 +11,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Set;
@@ -24,8 +23,11 @@ class FCMapBackingAccountsTest {
 	private final MerkleEntityId aKey = MerkleEntityId.fromAccountId(a);
 	private final AccountID b = IdUtils.asAccount("0.0.3");
 	private final MerkleEntityId bKey = MerkleEntityId.fromAccountId(b);
+	private final AccountID c = IdUtils.asAccount("0.0.4");
+	private final MerkleEntityId cKey = MerkleEntityId.fromAccountId(c);
 
 	private final MerkleAccount aAccount = MerkleAccountFactory.newAccount().balance(Long.MAX_VALUE).get();
+	private final MerkleAccount cAccount = MerkleAccountFactory.newAccount().balance(Long.MAX_VALUE).get();
 
 	@Mock
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
@@ -34,15 +36,9 @@ class FCMapBackingAccountsTest {
 
 	@BeforeEach
 	void setUp() {
+		given(accounts.keySet()).willReturn(Set.of(aKey, bKey));
+
 		subject = new FCMapBackingAccounts(() -> accounts);
-	}
-
-	@Test
-	void rebuildIsNoop() {
-		// when:
-		subject.rebuildFromSources();
-
-		Mockito.verifyNoInteractions(accounts);
 	}
 
 	@Test
@@ -70,16 +66,15 @@ class FCMapBackingAccountsTest {
 	@Test
 	void putsIfNotAlreadyContained() {
 		// when:
-		subject.put(a, aAccount);
+		subject.put(c, cAccount);
 
 		// then:
-		verify(accounts).put(aKey, aAccount);
+		verify(accounts).put(cKey, cAccount);
+		Assertions.assertEquals(Set.of(a, b, c), subject.idSet());
 	}
 
 	@Test
 	void doesntPutIfAlreadyContained() {
-		given(accounts.containsKey(aKey)).willReturn(true);
-
 		// when:
 		subject.put(a, aAccount);
 
@@ -88,9 +83,7 @@ class FCMapBackingAccountsTest {
 	}
 
 	@Test
-	void delegatesContains() {
-		given(accounts.containsKey(aKey)).willReturn(true);
-
+	void usesIdSetForContains() {
 		// then:
 		Assertions.assertTrue(subject.contains(a));
 	}
@@ -102,16 +95,13 @@ class FCMapBackingAccountsTest {
 
 		// then:
 		verify(accounts).remove(aKey);
+		// and:
+		Assertions.assertEquals(Set.of(b), subject.idSet());
 	}
 
 	@Test
 	void createsKeySet() {
-		given(accounts.keySet()).willReturn(Set.of(aKey, bKey));
-
-		// when:
-		var keys = subject.idSet();
-
-		// then:
-		Assertions.assertEquals(Set.of(a, b), keys);
+		// expect:
+		Assertions.assertEquals(Set.of(a, b), subject.idSet());
 	}
 }

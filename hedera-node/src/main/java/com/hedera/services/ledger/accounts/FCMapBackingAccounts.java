@@ -28,16 +28,18 @@ import com.swirlds.fcmap.FCMap;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 
 public class FCMapBackingAccounts implements BackingStore<AccountID, MerkleAccount> {
 	private static final int MAX_ACCOUNTS_LIKELY_TOUCHED_IN_LEDGER_TXN = 12;
+
+	private final Set<AccountID> extantAccounts = new HashSet<>();
 
 	private final List<AccountID> touchedIds = new ArrayList<>(MAX_ACCOUNTS_LIKELY_TOUCHED_IN_LEDGER_TXN);
 	private final Map<AccountID, MerkleAccount> cache = new HashMap<>();
@@ -45,11 +47,15 @@ public class FCMapBackingAccounts implements BackingStore<AccountID, MerkleAccou
 
 	public FCMapBackingAccounts(Supplier<FCMap<MerkleEntityId, MerkleAccount>> delegate) {
 		this.delegate = delegate;
+		rebuildFromSources();
 	}
 
 	@Override
 	public void rebuildFromSources() {
-		/* No-op */
+		extantAccounts.clear();
+		delegate.get().keySet().stream()
+				.map(MerkleEntityId::toAccountId)
+				.forEach(extantAccounts::add);
 	}
 
 	@Override
@@ -73,26 +79,26 @@ public class FCMapBackingAccounts implements BackingStore<AccountID, MerkleAccou
 
 	@Override
 	public void put(AccountID id, MerkleAccount account) {
-		final var curDelegate = delegate.get();
-		final var delegateId = fromAccountId(id);
-		if (!curDelegate.containsKey(delegateId)) {
-			curDelegate.put(delegateId, account);
+		if (!extantAccounts.contains(id)) {
+			delegate.get().put(fromAccountId(id), account);
+			extantAccounts.add(id);
 		}
 	}
 
 	@Override
 	public boolean contains(AccountID id) {
-		return delegate.get().containsKey(fromAccountId(id));
+		return extantAccounts.contains(id);
 	}
 
 	@Override
 	public void remove(AccountID id) {
+		extantAccounts.remove(id);
 		delegate.get().remove(fromAccountId(id));
 	}
 
 	@Override
 	public Set<AccountID> idSet() {
-		return delegate.get().keySet().stream().map(MerkleEntityId::toAccountId).collect(Collectors.toSet());
+		return extantAccounts;
 	}
 
 	@Override
