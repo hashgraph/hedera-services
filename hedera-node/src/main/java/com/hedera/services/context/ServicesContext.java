@@ -1983,10 +1983,6 @@ public class ServicesContext {
 		return state.networkCtx().consensusTimeOfLastHandledTxn();
 	}
 
-	public void updateConsensusTimeOfLastHandledTxn(Instant dataDrivenNow) {
-		state.networkCtx().setConsensusTimeOfLastHandledTxn(dataDrivenNow);
-	}
-
 	public AddressBook addressBook() {
 		return state.addressBook();
 	}

@@ -32,11 +32,13 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -63,6 +65,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	static Supplier<SequenceNumber> seqNoSupplier = SequenceNumber::new;
 
 	private int stateVersion = UNRECORDED_STATE_VERSION;
+	private Instant jtConsensusTimeOfLastHandledTxn;
 	private RichInstant[] congestionLevelStarts = NO_CONGESTION_STARTS;
 	private ExchangeRates midnightRates;
 	private RichInstant consensusTimeOfLastHandledTxn;
@@ -75,7 +78,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	public MerkleNetworkContext(
-			RichInstant consensusTimeOfLastHandledTxn,
+			@Nullable RichInstant consensusTimeOfLastHandledTxn,
 			SequenceNumber seqNo,
 			long lastScannedEntity,
 			ExchangeRates midnightRates
@@ -84,10 +87,15 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.seqNo = seqNo;
 		this.lastScannedEntity = lastScannedEntity;
 		this.midnightRates = midnightRates;
+
+		this.jtConsensusTimeOfLastHandledTxn = (consensusTimeOfLastHandledTxn == null)
+				? null
+				: consensusTimeOfLastHandledTxn.toJava();
 	}
 
 	public MerkleNetworkContext(
-			RichInstant consensusTimeOfLastHandledTxn,
+			@Nullable Instant jtConsensusTimeOfLastHandledTxn,
+			@Nullable RichInstant consensusTimeOfLastHandledTxn,
 			SequenceNumber seqNo,
 			long lastScannedEntity,
 			ExchangeRates midnightRates,
@@ -96,6 +104,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			int stateVersion
 	) {
 		this.consensusTimeOfLastHandledTxn = consensusTimeOfLastHandledTxn;
+		this.jtConsensusTimeOfLastHandledTxn = jtConsensusTimeOfLastHandledTxn;
 		this.seqNo = seqNo;
 		this.lastScannedEntity = lastScannedEntity;
 		this.midnightRates = midnightRates;
@@ -155,12 +164,15 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		}
 	}
 
-	public void setConsensusTimeOfLastHandledTxn(Instant consensusTimeOfLastHandledTxn) {
-		this.consensusTimeOfLastHandledTxn = fromJava(consensusTimeOfLastHandledTxn);
+	public void setConsensusTimeOfLastHandledTxn(@NotNull Instant consensusNow) {
+		Objects.requireNonNull(consensusNow, "The platform cannot generate a null consensus time!");
+		this.jtConsensusTimeOfLastHandledTxn = consensusNow;
+		this.consensusTimeOfLastHandledTxn = new RichInstant(consensusNow.getEpochSecond(), consensusNow.getNano());
 	}
 
 	public MerkleNetworkContext copy() {
-		return new MerkleNetworkContext(
+		final var other = new MerkleNetworkContext(
+				jtConsensusTimeOfLastHandledTxn,
 				consensusTimeOfLastHandledTxn,
 				seqNo.copy(),
 				lastScannedEntity,
@@ -168,11 +180,16 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				usageSnapshots,
 				congestionLevelStarts,
 				stateVersion);
+		other.jtConsensusTimeOfLastHandledTxn = this.jtConsensusTimeOfLastHandledTxn;
+		return other;
 	}
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		consensusTimeOfLastHandledTxn = serdes.readNullableInstant(in);
+		jtConsensusTimeOfLastHandledTxn = (consensusTimeOfLastHandledTxn == null)
+				? null
+				: consensusTimeOfLastHandledTxn.toJava();
 		seqNo = seqNoSupplier.get();
 		seqNo.deserialize(in);
 		midnightRates = in.readSerializable(true, ratesSupplier);
@@ -225,7 +242,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	public Instant consensusTimeOfLastHandledTxn() {
-		return Optional.ofNullable(consensusTimeOfLastHandledTxn).map(RichInstant::toJava).orElse(null);
+		return jtConsensusTimeOfLastHandledTxn;
 	}
 
 	public SequenceNumber seqNo() {

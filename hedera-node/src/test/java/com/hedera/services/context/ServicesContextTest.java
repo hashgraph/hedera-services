@@ -315,24 +315,6 @@ public class ServicesContextTest {
 	}
 
 	@Test
-	void canOverrideLastHandledConsensusTime() {
-		// given:
-		Instant dataDrivenNow = Instant.now();
-		ServicesContext ctx =
-				new ServicesContext(
-						nodeId,
-						platform,
-						state,
-						propertySources);
-
-		// when:
-		ctx.updateConsensusTimeOfLastHandledTxn(dataDrivenNow);
-
-		// then:
-		assertEquals(dataDrivenNow, ctx.consensusTimeOfLastHandledTxn());
-	}
-
-	@Test
 	void hasExpectedConsole() {
 		// setup:
 		Console console = mock(Console.class);

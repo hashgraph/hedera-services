@@ -114,6 +114,7 @@ class MerkleNetworkContextTest {
 		MerkleNetworkContext.serdes = serdes;
 
 		subject = new MerkleNetworkContext(
+				consensusTimeOfLastHandledTxn.toJava(),
 				consensusTimeOfLastHandledTxn,
 				seqNo,
 				lastScannedEntity,
@@ -123,17 +124,44 @@ class MerkleNetworkContextTest {
 				stateVersion);
 	}
 
+	@Test
+	void setsJtOnUpdate() {
+		// setup:
+		final var jt = consensusTimeOfLastHandledTxn.toJava();
+		// given:
+		subject = new MerkleNetworkContext();
+
+		// when:
+		subject.setConsensusTimeOfLastHandledTxn(jt);
+
+		// then:
+		assertSame(jt, subject.consensusTimeOfLastHandledTxn());
+	}
+
+	@Test
+	void setsJtOnServicesStateConstructor() {
+		// expect:
+		assertEquals(consensusTimeOfLastHandledTxn.toJava(), subject.consensusTimeOfLastHandledTxn());
+
+		// and given:
+		subject = new MerkleNetworkContext(consensusTimeOfLastHandledTxn, seqNo, lastScannedEntity, midnightRateSet);
+
+		// expect:
+		assertEquals(consensusTimeOfLastHandledTxn.toJava(), subject.consensusTimeOfLastHandledTxn());
+	}
+
 	@AfterEach
-	public void cleanup() {
+	void cleanup() {
 		MerkleNetworkContext.serdes = new DomainSerdes();
 	}
 
 	@Test
-	public void copyWorks() {
+	void copyWorks() {
 		// given:
 		var subjectCopy = subject.copy();
 
 		// expect:
+		assertSame(subjectCopy.consensusTimeOfLastHandledTxn(), subject.consensusTimeOfLastHandledTxn());
 		assertSame(subjectCopy.getConsensusTimeOfLastHandledTxn(), subject.getConsensusTimeOfLastHandledTxn());
 		assertEquals(seqNoCopy, subjectCopy.seqNo());
 		assertEquals(subjectCopy.lastScannedEntity(), subject.lastScannedEntity());
@@ -144,7 +172,7 @@ class MerkleNetworkContextTest {
 	}
 
 	@Test
-	public void toStringRendersAsExpected() {
+	void toStringRendersAsExpected() {
 		// setup:
 		throttling = mock(FunctionalityThrottling.class);
 
@@ -274,14 +302,9 @@ class MerkleNetworkContextTest {
 		given(throttling.allActiveThrottles()).willReturn(List.of(aThrottle, bThrottle));
 		// and:
 		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[] { subjectSnapshotA, subjectSnapshotC });
-		// and:
-		var desired = "Saved usage snapshot #2 was not compatible with the corresponding active throttle " +
-				"(Cannot use 20000000000000 units in a bucket of capacity 18000000000000!); not performing a reset!";
 
 		// when:
 		subject.resetWithSavedSnapshots(throttling);
-
-		// then:
 
 		// and:
 		assertNotEquals(subjectSnapshotA.used(), aThrottle.usageSnapshot().used());
@@ -371,7 +394,7 @@ class MerkleNetworkContextTest {
 	}
 
 	@Test
-	public void deserializeWorksForPre0130() throws IOException {
+	void deserializeWorksForPre0130() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 		MerkleNetworkContext.ratesSupplier = () -> midnightRateSet;
@@ -381,12 +404,15 @@ class MerkleNetworkContextTest {
 		given(serdes.readNullableInstant(in)).willReturn(consensusTimeOfLastHandledTxn);
 
 		// when:
+		subject = new MerkleNetworkContext();
+		// and:
 		subject.deserialize(in, MerkleNetworkContext.PRE_RELEASE_0130_VERSION);
 
 		// then:
 		assertEquals(consensusTimeOfLastHandledTxn, subject.getConsensusTimeOfLastHandledTxn());
-		assertSame(usageSnapshots, subject.usageSnapshots());
-		assertArrayEquals(richCongestionStarts(), subject.getCongestionLevelStarts());
+		assertEquals(consensusTimeOfLastHandledTxn.toJava(), subject.consensusTimeOfLastHandledTxn());
+		assertEquals(NO_SNAPSHOTS, subject.usageSnapshots());
+		assertArrayEquals(NO_CONGESTION_STARTS, subject.getCongestionLevelStarts());
 		// and:
 		inOrder.verify(seqNo).deserialize(in);
 		inOrder.verify(in).readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class));
