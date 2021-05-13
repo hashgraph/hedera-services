@@ -174,7 +174,7 @@ public class TxnAwareRecordsHistorianTest {
 		setupForPurge();
 
 		// when:
-		subject.purgeExpiredRecords();
+		subject.purgeExpiredRecords(0);
 
 		// expect:
 		verify(expiries).purgeExpiredRecordsAt(nows);
