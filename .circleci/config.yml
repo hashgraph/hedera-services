@@ -2131,31 +2131,10 @@ jobs:
             apt-get update
             apt-get install -y curl
             bash <(wget -O - https://codecov.io/bash)
-      - run:
-          name: Upload built artifacts to S3 (for Ansible download)
-          command: |
-            /repo/.circleci/scripts/trap-failure-report.sh \
-               '/repo/.circleci/scripts/package-hapi-artifacts.sh hedera-node/data/lib'
-            /repo/.circleci/scripts/trap-failure-report.sh \
-               '/repo/.circleci/scripts/upload-dir-to-s3.sh \
-                hedera-node/data lib SHA-${CIRCLE_SHA1}'
-      - run:
-          name: Reposition config for Ansible scripts
-          command: |
-            /repo/.circleci/scripts/trap-failure-report.sh \
-                'mkdir -p /repo/HapiApp2.0'
-            /repo/.circleci/scripts/trap-failure-report.sh \
-                'cp /repo/hedera-node/log4j2.xml /repo/HapiApp2.0'
       - persist_to_workspace:
           root: /
           paths:
-            - repo/.git
-            - repo/.circleci
-            - repo/hapiProto
-            - repo/test-clients
-            - repo/HapiApp2.0
             - root/.m2
-            - repo/hedera-node
 
   fast-build-artifact:
     parameters:
@@ -2250,6 +2229,8 @@ jobs:
     executor:
       name: build-executor
     steps:
+      - attach_workspace:
+          at: /
       - run:
           name: Generate javadocs
           command: |
