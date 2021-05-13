@@ -143,8 +143,6 @@ public class SmartContractRequestHandlerMiscTest {
   BigInteger gasPrice;
   private long selfID = 9870798L;
   private FCStorageWrapper storageWrapper;
-  private static final Logger log = LogManager.getLogger(SmartContractRequestHandlerMiscTest.class);
-  HbarCentExchange exchange;
   ExchangeRateSet rates;
 
   /**
@@ -162,6 +160,7 @@ public class SmartContractRequestHandlerMiscTest {
             () -> new MerkleAccount(),
             new FCMapBackingAccounts(() -> fcMap),
             new ChangeSummaryManager<>());
+    delegate.setKeyComparator(HederaLedger.ACCOUNT_ID_COMPARATOR);
     ledger = new HederaLedger(
             mock(TokenStore.class),
             mock(EntityIdSource.class),
