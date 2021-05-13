@@ -56,10 +56,11 @@ public class FCMapBackingAccounts implements BackingStore<AccountID, MerkleAccou
 
 	@Override
 	public void flushMutableRefs() {
+		final var currentDelegate = delegate.get();
 		cache.keySet()
 				.stream()
 				.sorted(HederaLedger.ACCOUNT_ID_COMPARATOR)
-				.forEach(id -> delegate.get().replace(fromAccountId(id), cache.get(id)));
+				.forEach(id -> currentDelegate.replace(fromAccountId(id), cache.get(id)));
 		cache.clear();
 	}
 

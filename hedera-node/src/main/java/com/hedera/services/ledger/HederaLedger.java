@@ -38,7 +38,6 @@ import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -61,7 +60,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 
 import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
@@ -74,7 +72,6 @@ import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALAN
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.txns.crypto.CryptoTransferTransitionLogic.tryTransfers;
 import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAdjustment;
-import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
@@ -496,22 +493,16 @@ public class HederaLedger {
 		return records.peek().getExpiry();
 	}
 
-	public long purgeExpiredRecords(AccountID id, long now) {
+	public void purgeExpiredRecords(AccountID id, long now) {
 		FCQueue<ExpirableTxnRecord> records = (FCQueue<ExpirableTxnRecord>) accountsLedger.get(id, RECORDS);
-		long newEarliestExpiry = purgeForNewEarliestExpiry(records, now);
+		purgeForNewEarliestExpiry(records, now);
 		accountsLedger.set(id, RECORDS, records);
-		return newEarliestExpiry;
 	}
 
-	private long purgeForNewEarliestExpiry(FCQueue<ExpirableTxnRecord> records, long now ) {
-		long newEarliestExpiry = -1;
+	private void purgeForNewEarliestExpiry(FCQueue<ExpirableTxnRecord> records, long now ) {
 		while (!records.isEmpty() && records.peek().getExpiry() <= now) {
 			updateHistory(records.poll(), now);
 		}
-		if (!records.isEmpty()) {
-			newEarliestExpiry = records.peek().getExpiry();
-		}
-		return newEarliestExpiry;
 	}
 
 	private void updateHistory(ExpirableTxnRecord record, long now) {
