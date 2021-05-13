@@ -26,18 +26,20 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.fcmap.FCMap;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 
 public class FCMapBackingAccounts implements BackingStore<AccountID, MerkleAccount> {
-	SortedSet<AccountID> touchedIds = new TreeSet<>(HederaLedger.ACCOUNT_ID_COMPARATOR);
+	private static final int MAX_TOUCHED = 12_000;
+
+	List<AccountID> touchedIds = new ArrayList<>(MAX_TOUCHED);
 
 	Map<AccountID, MerkleAccount> cache = new HashMap<>();
 
@@ -53,6 +55,7 @@ public class FCMapBackingAccounts implements BackingStore<AccountID, MerkleAccou
 	@Override
 	public void flushMutableRefs() {
 		final var currentDelegate = delegate.get();
+		touchedIds.sort(HederaLedger.ACCOUNT_ID_COMPARATOR);
 		for (AccountID id : touchedIds) {
 			currentDelegate.replace(fromAccountId(id), cache.get(id));
 		}

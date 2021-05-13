@@ -28,10 +28,12 @@ import com.hedera.services.utils.EntityIdUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -60,6 +62,8 @@ import static java.util.stream.Collectors.joining;
  * @author Michael Tinker
  */
 public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> implements Ledger<K, P, A> {
+	private static final int MAX_TOUCHED = 12_000;
+
 	private static final Logger log = LogManager.getLogger(TransactionalLedger.class);
 
 	private final Set<K> deadEntities = new HashSet<>();
@@ -69,7 +73,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	private final ChangeSummaryManager<A, P> changeManager;
 	private final Function<K, EnumMap<P, Object>> changeFactory;
 
-	private Set<K> changedKeys;
+	private List<K> changedKeys = new ArrayList<>(MAX_TOUCHED);
 	final Map<K, EnumMap<P, Object>> changes = new HashMap<>();
 
 	private boolean isInTransaction = false;
@@ -91,7 +95,6 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 
 	public void setKeyComparator(Comparator<K> keyComparator) {
 		this.keyComparator = keyComparator;
-		this.changedKeys = new TreeSet<>(keyComparator);
 	}
 
 	public void setKeyToString(Function<K, String> keyToString) {
@@ -124,6 +127,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		}
 
 		try {
+			changedKeys.sort(keyComparator);
 			for (K key : changedKeys) {
 				if (!deadEntities.contains(key)) {
 					entities.put(key, get(key));
@@ -151,41 +155,6 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 			log.error("Catastrophic failure during commit of {}!", changeDesc);
 			throw e;
 		}
-	}
-
-	String changeSetSoFar() {
-		StringBuilder desc = new StringBuilder("{");
-		AtomicBoolean isFirstChange = new AtomicBoolean(true);
-		changes.entrySet().forEach(change -> {
-			if (!isFirstChange.get()) {
-				desc.append(", ");
-			}
-			K id = change.getKey();
-			var accountInDeadAccounts = deadEntities.contains(id) ? "*DEAD* " : "";
-			var accountNotInDeadAccounts = deadEntities.contains(id) ? "*NEW -> DEAD* " : "*NEW* ";
-			var prefix = entities.contains(id)
-					? accountInDeadAccounts
-					: accountNotInDeadAccounts;
-			desc.append(prefix)
-					.append(keyToString.orElse(EntityIdUtils::readableId).apply(id))
-					.append(": [");
-			desc.append(
-					change.getValue().entrySet().stream()
-							.map(entry -> String.format("%s -> %s", entry.getKey(), readableProperty(entry.getValue())))
-							.collect(joining(", ")));
-			desc.append("]");
-			isFirstChange.set(false);
-		});
-		deadEntities.stream()
-				.filter(id -> !changes.containsKey(id))
-				.forEach(id -> {
-					if (!isFirstChange.get()) {
-						desc.append(", ");
-					}
-					desc.append("*DEAD* ").append(readableId(id));
-					isFirstChange.set(false);
-				});
-		return desc.append("}").toString();
 	}
 
 	@Override
@@ -293,5 +262,40 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 
 	private boolean isZombie(K id) {
 		return deadEntities.contains(id);
+	}
+
+	String changeSetSoFar() {
+		StringBuilder desc = new StringBuilder("{");
+		AtomicBoolean isFirstChange = new AtomicBoolean(true);
+		changes.entrySet().forEach(change -> {
+			if (!isFirstChange.get()) {
+				desc.append(", ");
+			}
+			K id = change.getKey();
+			var accountInDeadAccounts = deadEntities.contains(id) ? "*DEAD* " : "";
+			var accountNotInDeadAccounts = deadEntities.contains(id) ? "*NEW -> DEAD* " : "*NEW* ";
+			var prefix = entities.contains(id)
+					? accountInDeadAccounts
+					: accountNotInDeadAccounts;
+			desc.append(prefix)
+					.append(keyToString.orElse(EntityIdUtils::readableId).apply(id))
+					.append(": [");
+			desc.append(
+					change.getValue().entrySet().stream()
+							.map(entry -> String.format("%s -> %s", entry.getKey(), readableProperty(entry.getValue())))
+							.collect(joining(", ")));
+			desc.append("]");
+			isFirstChange.set(false);
+		});
+		deadEntities.stream()
+				.filter(id -> !changes.containsKey(id))
+				.forEach(id -> {
+					if (!isFirstChange.get()) {
+						desc.append(", ");
+					}
+					desc.append("*DEAD* ").append(readableId(id));
+					isFirstChange.set(false);
+				});
+		return desc.append("}").toString();
 	}
 }
