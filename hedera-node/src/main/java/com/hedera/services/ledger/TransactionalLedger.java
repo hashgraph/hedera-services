@@ -35,6 +35,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -68,10 +69,11 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	private final ChangeSummaryManager<A, P> changeManager;
 	private final Function<K, EnumMap<P, Object>> changeFactory;
 
+	private Set<K> changedKeys;
 	final Map<K, EnumMap<P, Object>> changes = new HashMap<>();
 
 	private boolean isInTransaction = false;
-	private Optional<Comparator<K>> keyComparator = Optional.empty();
+	private Comparator<K> keyComparator = null;
 	private Optional<Function<K, String>> keyToString = Optional.empty();
 
 	public TransactionalLedger(
@@ -88,7 +90,8 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	}
 
 	public void setKeyComparator(Comparator<K> keyComparator) {
-		this.keyComparator = Optional.of(keyComparator);
+		this.keyComparator = keyComparator;
+		this.changedKeys = new TreeSet<>(keyComparator);
 	}
 
 	public void setKeyToString(Function<K, String> keyToString) {
@@ -109,6 +112,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		entities.flushMutableRefs();
 
 		changes.clear();
+		changedKeys.clear();
 		deadEntities.clear();
 
 		isInTransaction = false;
@@ -119,21 +123,20 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 			throw new IllegalStateException("Cannot perform commit, no transaction is active!");
 		}
 
-		log.debug("Changes to be committed: {}", this::changeSetSoFar);
 		try {
-			Stream<K> changedKeys = keyComparator.isPresent()
-					? changes.keySet().stream().sorted(keyComparator.get())
-					: changes.keySet().stream();
-			changedKeys
-					.filter(id -> !deadEntities.contains(id))
-					.forEach(id -> entities.put(id, get(id)));
+			for (K key : changedKeys) {
+				if (!deadEntities.contains(key)) {
+					entities.put(key, get(key));
+				}
+			}
 			changes.clear();
+			changedKeys.clear();
 
-			Stream<K> deadKeys = keyComparator.isPresent()
-					? deadEntities.stream().sorted(keyComparator.get())
-					: deadEntities.stream();
-			deadKeys.forEach(entities::remove);
-			deadEntities.clear();
+			if (!deadEntities.isEmpty()) {
+				Stream<K> deadKeys = deadEntities.stream().sorted(keyComparator);
+				deadKeys.forEach(entities::remove);
+				deadEntities.clear();
+			}
 
 			entities.flushMutableRefs();
 
@@ -199,7 +202,10 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	public void set(K id, P property, Object value) {
 		assertIsSettable(id);
 
-		changeManager.update(changes.computeIfAbsent(id, changeFactory), property, value);
+		changeManager.update(changes.computeIfAbsent(id, ignore -> {
+			changedKeys.add(id);
+			return changeFactory.apply(id);
+		}), property, value);
 	}
 
 	@Override
@@ -232,6 +238,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	public void create(K id) {
 		assertIsCreatable(id);
 
+		changedKeys.add(id);
 		changes.put(id, new EnumMap<>(propertyType));
 	}
 
