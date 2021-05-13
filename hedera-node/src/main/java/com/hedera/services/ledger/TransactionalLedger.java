@@ -59,7 +59,6 @@ import static java.util.stream.Collectors.joining;
  * @author Michael Tinker
  */
 public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> implements Ledger<K, P, A> {
-
 	private static final Logger log = LogManager.getLogger(TransactionalLedger.class);
 
 	private final Set<K> deadEntities = new HashSet<>();

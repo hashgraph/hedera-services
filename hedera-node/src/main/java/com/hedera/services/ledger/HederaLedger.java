@@ -495,11 +495,11 @@ public class HederaLedger {
 
 	public void purgeExpiredRecords(AccountID id, long now) {
 		FCQueue<ExpirableTxnRecord> records = (FCQueue<ExpirableTxnRecord>) accountsLedger.get(id, RECORDS);
-		purgeForNewEarliestExpiry(records, now);
+		// purgeForNewEarliestExpiry(records, now);
 		accountsLedger.set(id, RECORDS, records);
 	}
 
-	private void purgeForNewEarliestExpiry(FCQueue<ExpirableTxnRecord> records, long now ) {
+	private void purgeForNewEarliestExpiry(FCQueue<ExpirableTxnRecord> records, long now) {
 		while (!records.isEmpty() && records.peek().getExpiry() <= now) {
 			updateHistory(records.poll(), now);
 		}
