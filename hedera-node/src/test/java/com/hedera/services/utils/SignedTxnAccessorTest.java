@@ -21,7 +21,10 @@ package com.hedera.services.utils;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.TextFormat;
+import com.hedera.services.fees.bootstrap.JsonToProtoSerde;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -33,6 +36,9 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.builder.RequestBuilder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -146,4 +152,14 @@ public class SignedTxnAccessorTest {
 		// expect:
 		Assertions.assertThrows(UnsupportedOperationException.class, subject::getScheduleRef);
 	}
+
+//	@Test
+//	void areTheseAFeeSchedule() throws Exception {
+//		String encoded = Files.readString(Paths.get("feeschedule.bytes"));
+//		var bytes = TextFormat.unescapeBytes(encoded);
+//		var fees = CurrentAndNextFeeSchedule.parseFrom(bytes);
+//		System.out.println(fees);
+//
+//		String realFeeSchedule = JsonToProtoSerde.loadFeeScheduleFromJson("");
+//	}
 }

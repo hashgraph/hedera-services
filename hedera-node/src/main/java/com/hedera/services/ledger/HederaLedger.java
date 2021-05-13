@@ -502,24 +502,13 @@ public class HederaLedger {
 			Consumer<ExpirableTxnRecord> cb
 	) {
 		FCQueue<ExpirableTxnRecord> records = (FCQueue<ExpirableTxnRecord>) accountsLedger.get(id, recordsProp);
-		int numBefore = records.size();
-
 		long newEarliestExpiry = purgeForNewEarliestExpiry(records, now, cb);
 		accountsLedger.set(id, recordsProp, records);
-
-		int numPurged = numBefore - records.size();
-		LedgerTxnEvictionStats.INSTANCE.recordPurgedFromAnAccount(numPurged);
-		log.debug("Purged {} records from account {}",
-				() -> numPurged,
-				() -> readableId(id));
-
 		return newEarliestExpiry;
 	}
 
 	private long purgeForNewEarliestExpiry(
-			FCQueue<ExpirableTxnRecord> records,
-			long now,
-			Consumer<ExpirableTxnRecord> cb
+			FCQueue<ExpirableTxnRecord> records, long now, Consumer<ExpirableTxnRecord> cb
 	) {
 		long newEarliestExpiry = -1;
 		while (!records.isEmpty() && records.peek().getExpiry() <= now) {

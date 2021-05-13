@@ -49,7 +49,6 @@ public class ExpiryManager {
 
 	private final ScheduleStore scheduleStore;
 
-	long sharedNow;
 	MonotonicFullQueueExpiries<Long> payerExpiries = new MonotonicFullQueueExpiries<>();
 	MonotonicFullQueueExpiries<Pair<Long, Consumer<EntityId>>> entityExpiries = new MonotonicFullQueueExpiries<>();
 
@@ -129,9 +128,11 @@ public class ExpiryManager {
 	}
 
 	public void purgeExpiredRecordsAt(long now, HederaLedger ledger) {
-		sharedNow = now;
 		while (payerExpiries.hasExpiringAt(now)) {
-			ledger.purgeExpiredRecords(accountWith(payerExpiries.expireNextAt(now)), now, this::updateHistory);
+			ledger.purgeExpiredRecords(
+					accountWith(payerExpiries.expireNextAt(now)),
+					now,
+					record -> this.updateHistory(record, now));
 		}
 		recordCache.forgetAnyOtherExpiredHistory(now);
 	}
@@ -153,11 +154,11 @@ public class ExpiryManager {
 		entityExpiries.track(entity, expiry);
 	}
 
-	void updateHistory(ExpirableTxnRecord record) {
+	void updateHistory(ExpirableTxnRecord record, long now) {
 		var txnId = record.getTxnId().toGrpc();
 		var history = txnHistories.get(txnId);
 		if (history != null) {
-			history.forgetExpiredAt(sharedNow);
+			history.forgetExpiredAt(now);
 			if (history.isForgotten()) {
 				txnHistories.remove(txnId);
 			}

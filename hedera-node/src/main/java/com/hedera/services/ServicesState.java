@@ -331,6 +331,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 					ctx.lookupRetryingKeyOrder(),
 					new ScopedSigBytesProvider(accessor),
 					ctx.sigFactoryCreator()::createScopedFactory);
+			ctx.accessorCache().put(platformTxn, accessor);
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("expandSignatures called with non-gRPC txn!", e);
 		} catch (Exception race) {

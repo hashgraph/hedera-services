@@ -235,62 +235,6 @@ class ExpiryManagerTest {
 	}
 
 	@Test
-	public void expungesAncientHistory() {
-		// given:
-		var c = 13258L;
-		var rec = withExpiry(c);
-		var txnId = txnIdOf(c).toGrpc();
-		// and:
-		subject.sharedNow = c;
-		// and:
-		given(txnHistories.get(txnId).isForgotten()).willReturn(true);
-		// and:
-		var forgottenHistory = txnHistories.get(txnId);
-
-		// when:
-		subject.updateHistory(rec);
-
-		// then:
-		verify(forgottenHistory).forgetExpiredAt(c);
-		// and:
-		assertFalse(txnHistories.containsKey(txnId));
-	}
-
-	@Test
-	public void updatesHistoryAsExpected() {
-		// given:
-		var c = 13258L;
-		var rec = withExpiry(c);
-		var txnId = txnIdOf(c).toGrpc();
-		// and:
-		subject.sharedNow = c;
-		// and:
-		given(txnHistories.get(txnId).isForgotten()).willReturn(false);
-
-		// when:
-		subject.updateHistory(rec);
-
-		// then:
-		verify(txnHistories.get(txnId)).forgetExpiredAt(c);
-		// and:
-		assertTrue(txnHistories.containsKey(txnId));
-	}
-
-	@Test
-	public void safeWhenNoHistoryAvailable() {
-		// given:
-		var c = 13258L;
-		var rec = withExpiry(c);
-		var txnId = txnIdOf(c).toGrpc();
-		// and:
-		subject.sharedNow = c;
-		txnHistories.remove(txnId);
-
-		// expect:
-		assertDoesNotThrow(() -> subject.updateHistory(rec));
-	}
-
-	@Test
 	public void usesBestGuessSubmittingMember() {
 		// setup:
 		long givenPayerNum = 75231;
