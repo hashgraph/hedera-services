@@ -34,10 +34,15 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MerkleEntityId extends AbstractMerkleLeaf implements FCMKey {
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xd5dd2ebaa0bde03L;
+
+	private static final Map<MerkleEntityId, AccountID> GPRC_BY_SELF_SER = new HashMap<>();
+	private static final Map<AccountID, MerkleEntityId> SELF_SER_BY_GRPC = new HashMap<>();
 
 	private long shard;
 	private long realm;
@@ -52,7 +57,8 @@ public class MerkleEntityId extends AbstractMerkleLeaf implements FCMKey {
 	}
 
 	public static MerkleEntityId fromAccountId(AccountID grpc) {
-		return new MerkleEntityId(grpc.getShardNum(), grpc.getRealmNum(), grpc.getAccountNum());
+		return SELF_SER_BY_GRPC.computeIfAbsent(grpc, ignore ->
+				new MerkleEntityId(grpc.getShardNum(), grpc.getRealmNum(), grpc.getAccountNum()));
 	}
 
 	public static MerkleEntityId fromTokenId(TokenID grpc) {
@@ -168,11 +174,11 @@ public class MerkleEntityId extends AbstractMerkleLeaf implements FCMKey {
 	}
 
 	public AccountID toAccountId() {
-		return AccountID.newBuilder()
+		return GPRC_BY_SELF_SER.computeIfAbsent(this, ignore -> AccountID.newBuilder()
 				.setShardNum(shard)
 				.setRealmNum(realm)
 				.setAccountNum(num)
-				.build();
+				.build());
 	}
 
 	public TokenID toTokenId() {

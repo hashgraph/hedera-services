@@ -31,32 +31,27 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 
 public class FCMapBackingAccounts implements BackingStore<AccountID, MerkleAccount> {
-	Set<AccountID> existingAccounts = new HashSet<>();
 	Map<AccountID, MerkleAccount> cache = new HashMap<>();
 
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> delegate;
 
 	public FCMapBackingAccounts(Supplier<FCMap<MerkleEntityId, MerkleAccount>> delegate) {
 		this.delegate = delegate;
-		rebuildFromSources();
 	}
 
 	@Override
-	public void rebuildFromSources() {
-		existingAccounts.clear();
-		delegate.get().keySet().stream()
-				.map(MerkleEntityId::toAccountId)
-				.forEach(existingAccounts::add);
-	}
+	public void rebuildFromSources() { }
 
 	@Override
 	public void flushMutableRefs() {
 		final var currentDelegate = delegate.get();
+
 		cache.keySet()
 				.stream()
 				.sorted(HederaLedger.ACCOUNT_ID_COMPARATOR)
@@ -71,10 +66,10 @@ public class FCMapBackingAccounts implements BackingStore<AccountID, MerkleAccou
 
 	@Override
 	public void put(AccountID id, MerkleAccount account) {
+		final var curDelegate = delegate.get();
 		MerkleEntityId delegateId = fromAccountId(id);
-		if (!existingAccounts.contains(id)) {
+		if (!curDelegate.containsKey(delegateId)) {
 			delegate.get().put(delegateId, account);
-			existingAccounts.add(id);
 		} else if (!cache.containsKey(id) || (cache.get(id) != account)) {
 			throw new IllegalArgumentException(String.format(
 					"Argument 'id=%s' does not map to a mutable ref!",
@@ -84,18 +79,17 @@ public class FCMapBackingAccounts implements BackingStore<AccountID, MerkleAccou
 
 	@Override
 	public boolean contains(AccountID id) {
-		return existingAccounts.contains(id);
+		return delegate.get().containsKey(fromAccountId(id));
 	}
 
 	@Override
 	public void remove(AccountID id) {
-		existingAccounts.remove(id);
 		delegate.get().remove(fromAccountId(id));
 	}
 
 	@Override
 	public Set<AccountID> idSet() {
-		return existingAccounts;
+		return delegate.get().keySet().stream().map(MerkleEntityId::toAccountId).collect(Collectors.toSet());
 	}
 
 	@Override
