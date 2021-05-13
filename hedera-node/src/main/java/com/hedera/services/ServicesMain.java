@@ -236,7 +236,6 @@ public class ServicesMain implements SwirldMain {
 	}
 
 	private void initializeStats() {
-		FCQueueStatistics.register(ctx.platform());
 		ctx.statsManager().initializeFor(ctx.platform());
 	}
 

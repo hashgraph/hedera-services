@@ -49,6 +49,7 @@ public class TxnId implements SelfSerializable {
 
 	static DomainSerdes serdes = new DomainSerdes();
 
+	private TransactionID origin = null;
 	private boolean scheduled = false;
 	private EntityId payerAccount = MISSING_ENTITY_ID;
 	private RichInstant validStart = MISSING_INSTANT;
@@ -72,6 +73,10 @@ public class TxnId implements SelfSerializable {
 
 	public RichInstant getValidStart() {
 		return validStart;
+	}
+
+	private void setOrigin(TransactionID origin) {
+		this.origin = origin;
 	}
 
 	/* --- SelfSerializable --- */
@@ -144,13 +149,19 @@ public class TxnId implements SelfSerializable {
 
 	/* --- Helpers --- */
 	public static TxnId fromGrpc(final TransactionID grpc) {
-		return new TxnId(
+		final var creation = new TxnId(
 				EntityId.fromGrpcAccountId(grpc.getAccountID()),
 				RichInstant.fromGrpc(grpc.getTransactionValidStart()),
 				grpc.getScheduled());
+		creation.setOrigin(grpc);
+		return creation;
 	}
 
 	public TransactionID toGrpc() {
+		if (origin != null) {
+			return origin;
+		}
+
 		var grpc = TransactionID.newBuilder().setAccountID(asAccount(payerAccount));
 
 		if (!validStart.isMissing()) {

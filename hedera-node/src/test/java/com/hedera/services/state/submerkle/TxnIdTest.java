@@ -39,6 +39,7 @@ import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -88,6 +89,18 @@ class TxnIdTest {
 
 		// cleanup:
 		TxnId.serdes = new DomainSerdes();
+	}
+
+	@Test
+	void remembersFactoryOrigin() {
+		// setup:
+		var explicitOrigin = base().setScheduled(true).build();
+
+		// when:
+		subject = TxnId.fromGrpc(explicitOrigin);
+
+		// then:
+		assertSame(explicitOrigin, subject.toGrpc());
 	}
 
 	@Test
