@@ -439,123 +439,123 @@ public class ServicesContext {
 	/** the directory to which we writes .rcd and .rcd_sig files */
 	private String recordStreamDir;
 	/** the initialHash of RecordStreamManager */
-	private volatile Hash recordsInitialHash = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
-	private volatile Address address;
-	private volatile Console console;
-	private volatile HederaFs hfs;
-	private volatile StateView currentView;
-	private volatile AccountID accountId;
-	private volatile AnswerFlow answerFlow;
-	private volatile HcsAnswers hcsAnswers;
-	private volatile FileNumbers fileNums;
-	private volatile FileAnswers fileAnswers;
-	private volatile MetaAnswers metaAnswers;
-	private volatile RecordCache recordCache;
-	private volatile TokenStore tokenStore;
-	private volatile TokenAnswers tokenAnswers;
-	private volatile HederaLedger ledger;
-	private volatile SyncVerifier syncVerifier;
-	private volatile IssEventInfo issEventInfo;
-	private volatile ProcessLogic logic;
-	private volatile QueryFeeCheck queryFeeCheck;
-	private volatile HederaNumbers hederaNums;
-	private volatile EntityAutoRenewal entityAutoRenewal;
-	private volatile ExpiryManager expiries;
-	private volatile FeeCalculator fees;
-	private volatile FeeExemptions exemptions;
-	private volatile EntityNumbers entityNums;
-	private volatile FreezeHandler freeze;
-	private volatile CryptoAnswers cryptoAnswers;
-	private volatile ScheduleStore scheduleStore;
-	private volatile SyntaxPrecheck syntaxPrecheck;
-	private volatile AccountNumbers accountNums;
-	private volatile SubmissionFlow submissionFlow;
-	private volatile PropertySource properties;
-	private volatile EntityIdSource ids;
-	private volatile FileController fileGrpc;
-	private volatile HapiOpCounters opCounters;
-	private volatile AnswerFunctions answerFunctions;
-	private volatile ContractAnswers contractAnswers;
-	private volatile OptionValidator validator;
-	private volatile LedgerValidator ledgerValidator;
-	private volatile TokenController tokenGrpc;
-	private volatile MiscRunningAvgs runningAvgs;
-	private volatile ScheduleAnswers scheduleAnswers;
-	private volatile MiscSpeedometers speedometers;
-	private volatile ScheduleExecutor scheduleExecutor;
-	private volatile ServicesNodeType nodeType;
-	private volatile SystemOpPolicies systemOpPolicies;
-	private volatile CryptoController cryptoGrpc;
-	private volatile HbarCentExchange exchange;
-	private volatile SemanticVersions semVers;
-	private volatile PrecheckVerifier precheckVerifier;
-	private volatile BackingTokenRels backingTokenRels;
-	private volatile FreezeController freezeGrpc;
-	private volatile BalancesExporter balancesExporter;
-	private volatile SysFileCallbacks sysFileCallbacks;
-	private volatile NetworkCtxManager networkCtxManager;
-	private volatile SolidityLifecycle solidityLifecycle;
-	private volatile ExpiringCreations creator;
-	private volatile NetworkController networkGrpc;
-	private volatile GrpcServerManager grpc;
-	private volatile TxnResponseHelper txnResponseHelper;
-	private volatile SigFactoryCreator sigFactoryCreator;
-	private volatile BlobStorageSource bytecodeDb;
-	private volatile HapiOpPermissions hapiOpPermissions;
-	private volatile TransactionContext txnCtx;
-	private volatile ContractController contractsGrpc;
-	private volatile HederaSigningOrder keyOrder;
-	private volatile HederaSigningOrder backedKeyOrder;
-	private volatile HederaSigningOrder lookupRetryingKeyOrder;
-	private volatile StoragePersistence storagePersistence;
-	private volatile ScheduleController scheduleGrpc;
-	private volatile ConsensusController consensusGrpc;
-	private volatile QueryResponseHelper queryResponseHelper;
-	private volatile UsagePricesProvider usagePrices;
-	private volatile Supplier<StateView> stateViews;
-	private volatile FeeSchedulesManager feeSchedulesManager;
-	private volatile RecordStreamManager recordStreamManager;
-	private volatile ThrottleDefsManager throttleDefsManager;
-	private volatile QueryHeaderValidity queryHeaderValidity;
-	private volatile Map<String, byte[]> blobStore;
-	private volatile Map<EntityId, Long> entityExpiries;
-	private volatile TransactionPrecheck transactionPrecheck;
-	private volatile FeeMultiplierSource feeMultiplierSource;
-	private volatile NodeLocalProperties nodeLocalProperties;
-	private volatile TxnFeeChargingPolicy txnChargingPolicy;
-	private volatile TxnAwareRatesManager exchangeRatesManager;
-	private volatile ServicesStatsManager statsManager;
-	private volatile LedgerAccountsSource accountSource;
-	private volatile FCMapBackingAccounts backingAccounts;
-	private volatile TransitionLogicLookup transitionLogic;
-	private volatile TransactionThrottling txnThrottling;
-	private volatile ConsensusStatusCounts statusCounts;
-	private volatile HfsSystemFilesManager systemFilesManager;
-	private volatile CurrentPlatformStatus platformStatus;
-	private volatile SystemAccountsCreator systemAccountsCreator;
-	private volatile ItemizableFeeCharging itemizableFeeCharging;
-	private volatile ServicesRepositoryRoot repository;
-	private volatile CharacteristicsFactory characteristics;
-	private volatile AccountRecordsHistorian recordsHistorian;
-	private volatile GlobalDynamicProperties globalDynamicProperties;
-	private volatile FunctionalityThrottling hapiThrottling;
-	private volatile FunctionalityThrottling handleThrottling;
-	private volatile AwareNodeDiligenceScreen nodeDiligenceScreen;
-	private volatile InHandleActivationHelper activationHelper;
-	private volatile PlatformSubmissionManager submissionManager;
-	private volatile SmartContractRequestHandler contracts;
-	private volatile TxnAwareSoliditySigsVerifier soliditySigsVerifier;
-	private volatile ValidatingCallbackInterceptor apiPermissionsReloading;
-	private volatile ValidatingCallbackInterceptor applicationPropertiesReloading;
-	private volatile Supplier<ServicesRepositoryRoot> newPureRepo;
-	private volatile Map<TransactionID, TxnIdRecentHistory> txnHistories;
-	private volatile Cache<Transaction, PlatformTxnAccessor> accessorCache;
-	private volatile AtomicReference<FCMap<MerkleEntityId, MerkleTopic>> queryableTopics;
-	private volatile AtomicReference<FCMap<MerkleEntityId, MerkleToken>> queryableTokens;
-	private volatile AtomicReference<FCMap<MerkleEntityId, MerkleAccount>> queryableAccounts;
-	private volatile AtomicReference<FCMap<MerkleEntityId, MerkleSchedule>> queryableSchedules;
-	private volatile AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage;
-	private volatile AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations;
+	private Hash recordsInitialHash = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
+	private Address address;
+	private Console console;
+	private HederaFs hfs;
+	private StateView currentView;
+	private AccountID accountId;
+	private AnswerFlow answerFlow;
+	private HcsAnswers hcsAnswers;
+	private FileNumbers fileNums;
+	private FileAnswers fileAnswers;
+	private MetaAnswers metaAnswers;
+	private RecordCache recordCache;
+	private TokenStore tokenStore;
+	private TokenAnswers tokenAnswers;
+	private HederaLedger ledger;
+	private SyncVerifier syncVerifier;
+	private IssEventInfo issEventInfo;
+	private ProcessLogic logic;
+	private QueryFeeCheck queryFeeCheck;
+	private HederaNumbers hederaNums;
+	private EntityAutoRenewal entityAutoRenewal;
+	private ExpiryManager expiries;
+	private FeeCalculator fees;
+	private FeeExemptions exemptions;
+	private EntityNumbers entityNums;
+	private FreezeHandler freeze;
+	private CryptoAnswers cryptoAnswers;
+	private ScheduleStore scheduleStore;
+	private SyntaxPrecheck syntaxPrecheck;
+	private AccountNumbers accountNums;
+	private SubmissionFlow submissionFlow;
+	private PropertySource properties;
+	private EntityIdSource ids;
+	private FileController fileGrpc;
+	private HapiOpCounters opCounters;
+	private AnswerFunctions answerFunctions;
+	private ContractAnswers contractAnswers;
+	private OptionValidator validator;
+	private LedgerValidator ledgerValidator;
+	private TokenController tokenGrpc;
+	private MiscRunningAvgs runningAvgs;
+	private ScheduleAnswers scheduleAnswers;
+	private MiscSpeedometers speedometers;
+	private ScheduleExecutor scheduleExecutor;
+	private ServicesNodeType nodeType;
+	private SystemOpPolicies systemOpPolicies;
+	private CryptoController cryptoGrpc;
+	private HbarCentExchange exchange;
+	private SemanticVersions semVers;
+	private PrecheckVerifier precheckVerifier;
+	private BackingTokenRels backingTokenRels;
+	private FreezeController freezeGrpc;
+	private BalancesExporter balancesExporter;
+	private SysFileCallbacks sysFileCallbacks;
+	private NetworkCtxManager networkCtxManager;
+	private SolidityLifecycle solidityLifecycle;
+	private ExpiringCreations creator;
+	private NetworkController networkGrpc;
+	private GrpcServerManager grpc;
+	private TxnResponseHelper txnResponseHelper;
+	private SigFactoryCreator sigFactoryCreator;
+	private BlobStorageSource bytecodeDb;
+	private HapiOpPermissions hapiOpPermissions;
+	private TransactionContext txnCtx;
+	private ContractController contractsGrpc;
+	private HederaSigningOrder keyOrder;
+	private HederaSigningOrder backedKeyOrder;
+	private HederaSigningOrder lookupRetryingKeyOrder;
+	private StoragePersistence storagePersistence;
+	private ScheduleController scheduleGrpc;
+	private ConsensusController consensusGrpc;
+	private QueryResponseHelper queryResponseHelper;
+	private UsagePricesProvider usagePrices;
+	private Supplier<StateView> stateViews;
+	private FeeSchedulesManager feeSchedulesManager;
+	private RecordStreamManager recordStreamManager;
+	private ThrottleDefsManager throttleDefsManager;
+	private QueryHeaderValidity queryHeaderValidity;
+	private Map<String, byte[]> blobStore;
+	private Map<EntityId, Long> entityExpiries;
+	private TransactionPrecheck transactionPrecheck;
+	private FeeMultiplierSource feeMultiplierSource;
+	private NodeLocalProperties nodeLocalProperties;
+	private TxnFeeChargingPolicy txnChargingPolicy;
+	private TxnAwareRatesManager exchangeRatesManager;
+	private ServicesStatsManager statsManager;
+	private LedgerAccountsSource accountSource;
+	private FCMapBackingAccounts backingAccounts;
+	private TransitionLogicLookup transitionLogic;
+	private TransactionThrottling txnThrottling;
+	private ConsensusStatusCounts statusCounts;
+	private HfsSystemFilesManager systemFilesManager;
+	private CurrentPlatformStatus platformStatus;
+	private SystemAccountsCreator systemAccountsCreator;
+	private ItemizableFeeCharging itemizableFeeCharging;
+	private ServicesRepositoryRoot repository;
+	private CharacteristicsFactory characteristics;
+	private AccountRecordsHistorian recordsHistorian;
+	private GlobalDynamicProperties globalDynamicProperties;
+	private FunctionalityThrottling hapiThrottling;
+	private FunctionalityThrottling handleThrottling;
+	private AwareNodeDiligenceScreen nodeDiligenceScreen;
+	private InHandleActivationHelper activationHelper;
+	private PlatformSubmissionManager submissionManager;
+	private SmartContractRequestHandler contracts;
+	private TxnAwareSoliditySigsVerifier soliditySigsVerifier;
+	private ValidatingCallbackInterceptor apiPermissionsReloading;
+	private ValidatingCallbackInterceptor applicationPropertiesReloading;
+	private Supplier<ServicesRepositoryRoot> newPureRepo;
+	private Map<TransactionID, TxnIdRecentHistory> txnHistories;
+	private Cache<Transaction, PlatformTxnAccessor> accessorCache;
+	private AtomicReference<FCMap<MerkleEntityId, MerkleTopic>> queryableTopics;
+	private AtomicReference<FCMap<MerkleEntityId, MerkleToken>> queryableTokens;
+	private AtomicReference<FCMap<MerkleEntityId, MerkleAccount>> queryableAccounts;
+	private AtomicReference<FCMap<MerkleEntityId, MerkleSchedule>> queryableSchedules;
+	private AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage;
+	private AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations;
 
 	/* Context-free infrastructure. */
 	private static Pause pause;
@@ -593,7 +593,7 @@ public class ServicesContext {
 		queryableSchedules().set(schedules());
 	}
 
-	public synchronized void rebuildBackingStoresIfPresent() {
+	public void rebuildBackingStoresIfPresent() {
 		if (backingTokenRels != null) {
 			backingTokenRels.rebuildFromSources();
 		}
@@ -602,7 +602,7 @@ public class ServicesContext {
 		}
 	}
 
-	public synchronized void rebuildStoreViewsIfPresent() {
+	public void rebuildStoreViewsIfPresent() {
 		if (scheduleStore != null) {
 			scheduleStore.rebuildViews();
 		}
@@ -611,14 +611,14 @@ public class ServicesContext {
 		}
 	}
 
-	public synchronized SigFactoryCreator sigFactoryCreator() {
+	public SigFactoryCreator sigFactoryCreator() {
 		if (sigFactoryCreator == null) {
 			sigFactoryCreator = new SigFactoryCreator();
 		}
 		return sigFactoryCreator;
 	}
 
-	public synchronized HapiOpCounters opCounters() {
+	public HapiOpCounters opCounters() {
 		if (opCounters == null) {
 			opCounters = new HapiOpCounters(new CounterFactory() {
 			}, runningAvgs(), txnCtx(), MiscUtils::baseStatNameOf);
@@ -626,14 +626,14 @@ public class ServicesContext {
 		return opCounters;
 	}
 
-	public synchronized QueryHeaderValidity queryHeaderValidity() {
+	public QueryHeaderValidity queryHeaderValidity() {
 		if (queryHeaderValidity == null) {
 			queryHeaderValidity = new QueryHeaderValidity();
 		}
 		return queryHeaderValidity;
 	}
 
-	public synchronized MiscRunningAvgs runningAvgs() {
+	public MiscRunningAvgs runningAvgs() {
 		if (runningAvgs == null) {
 			runningAvgs = new MiscRunningAvgs(new RunningAvgFactory() {
 			}, nodeLocalProperties());
@@ -641,7 +641,7 @@ public class ServicesContext {
 		return runningAvgs;
 	}
 
-	public synchronized TransactionPrecheck transactionPrecheck() {
+	public TransactionPrecheck transactionPrecheck() {
 		if (transactionPrecheck == null) {
 			final var structure = new StructuralPrecheck(
 					Platform.getTransactionMaxBytes(), HISTORICAL_MAX_PROTO_MESSAGE_DEPTH);
@@ -659,14 +659,14 @@ public class ServicesContext {
 		return transactionPrecheck;
 	}
 
-	public synchronized FeeMultiplierSource feeMultiplierSource() {
+	public FeeMultiplierSource feeMultiplierSource() {
 		if (feeMultiplierSource == null) {
 			feeMultiplierSource = new TxnRateFeeMultiplierSource(globalDynamicProperties(), handleThrottling());
 		}
 		return feeMultiplierSource;
 	}
 
-	public synchronized MiscSpeedometers speedometers() {
+	public MiscSpeedometers speedometers() {
 		if (speedometers == null) {
 			speedometers = new MiscSpeedometers(new SpeedometerFactory() {
 			}, nodeLocalProperties());
@@ -674,35 +674,35 @@ public class ServicesContext {
 		return speedometers;
 	}
 
-	public synchronized FunctionalityThrottling hapiThrottling() {
+	public FunctionalityThrottling hapiThrottling() {
 		if (hapiThrottling == null) {
 			hapiThrottling = new HapiThrottling(new DeterministicThrottling(() -> addressBook().getSize()));
 		}
 		return hapiThrottling;
 	}
 
-	public synchronized FunctionalityThrottling handleThrottling() {
+	public FunctionalityThrottling handleThrottling() {
 		if (handleThrottling == null) {
 			handleThrottling = new TxnAwareHandleThrottling(txnCtx(), new DeterministicThrottling(() -> 1));
 		}
 		return handleThrottling;
 	}
 
-	public synchronized AwareNodeDiligenceScreen nodeDiligenceScreen() {
+	public AwareNodeDiligenceScreen nodeDiligenceScreen() {
 		if (nodeDiligenceScreen == null) {
 			nodeDiligenceScreen = new AwareNodeDiligenceScreen(validator(), txnCtx(), backingAccounts());
 		}
 		return nodeDiligenceScreen;
 	}
 
-	public synchronized SemanticVersions semVers() {
+	public SemanticVersions semVers() {
 		if (semVers == null) {
 			semVers = new SemanticVersions();
 		}
 		return semVers;
 	}
 
-	public synchronized ServicesStatsManager statsManager() {
+	public ServicesStatsManager statsManager() {
 		if (statsManager == null) {
 			var opSpeedometers = new HapiOpSpeedometers(
 					opCounters(),
@@ -720,21 +720,21 @@ public class ServicesContext {
 		return statsManager;
 	}
 
-	public synchronized CurrentPlatformStatus platformStatus() {
+	public CurrentPlatformStatus platformStatus() {
 		if (platformStatus == null) {
 			platformStatus = new ContextPlatformStatus();
 		}
 		return platformStatus;
 	}
 
-	public synchronized LedgerValidator ledgerValidator() {
+	public LedgerValidator ledgerValidator() {
 		if (ledgerValidator == null) {
 			ledgerValidator = new BasedLedgerValidator(hederaNums(), properties(), globalDynamicProperties());
 		}
 		return ledgerValidator;
 	}
 
-	public synchronized InHandleActivationHelper activationHelper() {
+	public InHandleActivationHelper activationHelper() {
 		if (activationHelper == null) {
 			activationHelper = new InHandleActivationHelper(
 					backedKeyOrder(),
@@ -744,28 +744,28 @@ public class ServicesContext {
 		return activationHelper;
 	}
 
-	public synchronized ScheduleExecutor scheduleExecutor() {
+	public ScheduleExecutor scheduleExecutor() {
 		if (scheduleExecutor == null) {
 			scheduleExecutor = new ScheduleExecutor();
 		}
 		return scheduleExecutor;
 	}
 
-	public synchronized IssEventInfo issEventInfo() {
+	public IssEventInfo issEventInfo() {
 		if (issEventInfo == null) {
 			issEventInfo = new IssEventInfo(properties());
 		}
 		return issEventInfo;
 	}
 
-	public synchronized Map<String, byte[]> blobStore() {
+	public Map<String, byte[]> blobStore() {
 		if (blobStore == null) {
 			blobStore = new FcBlobsBytesStore(MerkleOptionalBlob::new, this::storage);
 		}
 		return blobStore;
 	}
 
-	public synchronized Supplier<StateView> stateViews() {
+	public Supplier<StateView> stateViews() {
 		if (stateViews == null) {
 			stateViews = () -> new StateView(
 					tokenStore(),
@@ -780,7 +780,7 @@ public class ServicesContext {
 		return stateViews;
 	}
 
-	public synchronized StateView currentView() {
+	public StateView currentView() {
 		if (currentView == null) {
 			currentView = new StateView(
 					tokenStore(),
@@ -795,42 +795,42 @@ public class ServicesContext {
 		return currentView;
 	}
 
-	public synchronized HederaNumbers hederaNums() {
+	public HederaNumbers hederaNums() {
 		if (hederaNums == null) {
 			hederaNums = new HederaNumbers(properties());
 		}
 		return hederaNums;
 	}
 
-	public synchronized FileNumbers fileNums() {
+	public FileNumbers fileNums() {
 		if (fileNums == null) {
 			fileNums = new FileNumbers(hederaNums(), properties());
 		}
 		return fileNums;
 	}
 
-	public synchronized AccountNumbers accountNums() {
+	public AccountNumbers accountNums() {
 		if (accountNums == null) {
 			accountNums = new AccountNumbers(properties());
 		}
 		return accountNums;
 	}
 
-	public synchronized TxnResponseHelper txnResponseHelper() {
+	public TxnResponseHelper txnResponseHelper() {
 		if (txnResponseHelper == null) {
 			txnResponseHelper = new TxnResponseHelper(submissionFlow(), opCounters());
 		}
 		return txnResponseHelper;
 	}
 
-	public synchronized TransactionThrottling txnThrottling() {
+	public TransactionThrottling txnThrottling() {
 		if (txnThrottling == null) {
 			txnThrottling = new TransactionThrottling(hapiThrottling());
 		}
 		return txnThrottling;
 	}
 
-	public synchronized ItemizableFeeCharging charging() {
+	public ItemizableFeeCharging charging() {
 		if (itemizableFeeCharging == null) {
 			itemizableFeeCharging = new ItemizableFeeCharging(
 					ledger(),
@@ -840,21 +840,21 @@ public class ServicesContext {
 		return itemizableFeeCharging;
 	}
 
-	public synchronized SubmissionFlow submissionFlow() {
+	public SubmissionFlow submissionFlow() {
 		if (submissionFlow == null) {
 			submissionFlow = new BasicSubmissionFlow(nodeType(), transactionPrecheck(), submissionManager());
 		}
 		return submissionFlow;
 	}
 
-	public synchronized QueryResponseHelper queryResponseHelper() {
+	public QueryResponseHelper queryResponseHelper() {
 		if (queryResponseHelper == null) {
 			queryResponseHelper = new QueryResponseHelper(answerFlow(), opCounters());
 		}
 		return queryResponseHelper;
 	}
 
-	public synchronized FileAnswers fileAnswers() {
+	public FileAnswers fileAnswers() {
 		if (fileAnswers == null) {
 			fileAnswers = new FileAnswers(
 					new GetFileInfoAnswer(validator()),
@@ -864,7 +864,7 @@ public class ServicesContext {
 		return fileAnswers;
 	}
 
-	public synchronized ContractAnswers contractAnswers() {
+	public ContractAnswers contractAnswers() {
 		if (contractAnswers == null) {
 			contractAnswers = new ContractAnswers(
 					new GetBytecodeAnswer(validator()),
@@ -877,7 +877,7 @@ public class ServicesContext {
 		return contractAnswers;
 	}
 
-	public synchronized HcsAnswers hcsAnswers() {
+	public HcsAnswers hcsAnswers() {
 		if (hcsAnswers == null) {
 			hcsAnswers = new HcsAnswers(
 					new GetTopicInfoAnswer(validator())
@@ -886,7 +886,7 @@ public class ServicesContext {
 		return hcsAnswers;
 	}
 
-	public synchronized MetaAnswers metaAnswers() {
+	public MetaAnswers metaAnswers() {
 		if (metaAnswers == null) {
 			metaAnswers = new MetaAnswers(
 					new GetTxnRecordAnswer(recordCache(), validator(), answerFunctions()),
@@ -898,14 +898,14 @@ public class ServicesContext {
 		return metaAnswers;
 	}
 
-	public synchronized EntityNumbers entityNums() {
+	public EntityNumbers entityNums() {
 		if (entityNums == null) {
 			entityNums = new EntityNumbers(fileNums(), hederaNums(), accountNums());
 		}
 		return entityNums;
 	}
 
-	public synchronized TokenAnswers tokenAnswers() {
+	public TokenAnswers tokenAnswers() {
 		if (tokenAnswers == null) {
 			tokenAnswers = new TokenAnswers(
 					new GetTokenInfoAnswer()
@@ -914,7 +914,7 @@ public class ServicesContext {
 		return tokenAnswers;
 	}
 
-	public synchronized ScheduleAnswers scheduleAnswers() {
+	public ScheduleAnswers scheduleAnswers() {
 		if (scheduleAnswers == null) {
 			scheduleAnswers = new ScheduleAnswers(
 					new GetScheduleInfoAnswer()
@@ -923,7 +923,7 @@ public class ServicesContext {
 		return scheduleAnswers;
 	}
 
-	public synchronized CryptoAnswers cryptoAnswers() {
+	public CryptoAnswers cryptoAnswers() {
 		if (cryptoAnswers == null) {
 			cryptoAnswers = new CryptoAnswers(
 					new GetLiveHashAnswer(),
@@ -936,21 +936,21 @@ public class ServicesContext {
 		return cryptoAnswers;
 	}
 
-	public synchronized AnswerFunctions answerFunctions() {
+	public AnswerFunctions answerFunctions() {
 		if (answerFunctions == null) {
 			answerFunctions = new AnswerFunctions();
 		}
 		return answerFunctions;
 	}
 
-	public synchronized QueryFeeCheck queryFeeCheck() {
+	public QueryFeeCheck queryFeeCheck() {
 		if (queryFeeCheck == null) {
 			queryFeeCheck = new QueryFeeCheck(validator(), globalDynamicProperties(), this::accounts);
 		}
 		return queryFeeCheck;
 	}
 
-	public synchronized FeeCalculator fees() {
+	public FeeCalculator fees() {
 		if (fees == null) {
 			FileOpsUsage fileOpsUsage = new FileOpsUsage();
 			CryptoOpsUsage cryptoOpsUsage = new CryptoOpsUsage();
@@ -994,7 +994,7 @@ public class ServicesContext {
 		return fees;
 	}
 
-	private synchronized Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators(
+	private Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators(
 			CryptoOpsUsage cryptoOpsUsage,
 			FileOpsUsage fileOpsUsage,
 			FileFeeBuilder fileFees,
@@ -1051,7 +1051,7 @@ public class ServicesContext {
 		return estimatorsMap::get;
 	}
 
-	public synchronized AnswerFlow answerFlow() {
+	public AnswerFlow answerFlow() {
 		if (answerFlow == null) {
 			if (nodeType() == STAKED_NODE) {
 				answerFlow = new StakedAnswerFlow(
@@ -1071,7 +1071,7 @@ public class ServicesContext {
 		return answerFlow;
 	}
 
-	public synchronized HederaSigningOrder keyOrder() {
+	public HederaSigningOrder keyOrder() {
 		if (keyOrder == null) {
 			var lookups = defaultLookupsFor(
 					hfs(),
@@ -1084,7 +1084,7 @@ public class ServicesContext {
 		return keyOrder;
 	}
 
-	public synchronized HederaSigningOrder backedKeyOrder() {
+	public HederaSigningOrder backedKeyOrder() {
 		if (backedKeyOrder == null) {
 			var lookups = backedLookupsFor(
 					hfs(),
@@ -1098,7 +1098,7 @@ public class ServicesContext {
 		return backedKeyOrder;
 	}
 
-	public synchronized HederaSigningOrder lookupRetryingKeyOrder() {
+	public HederaSigningOrder lookupRetryingKeyOrder() {
 		if (lookupRetryingKeyOrder == null) {
 			var lookups = defaultAccountRetryingLookupsFor(
 					hfs(),
@@ -1114,14 +1114,14 @@ public class ServicesContext {
 		return lookupRetryingKeyOrder;
 	}
 
-	public synchronized ServicesNodeType nodeType() {
+	public ServicesNodeType nodeType() {
 		if (nodeType == null) {
 			nodeType = (address().getStake() > 0) ? STAKED_NODE : ZERO_STAKE_NODE;
 		}
 		return nodeType;
 	}
 
-	private synchronized HederaSigningOrder keyOrderWith(DelegatingSigMetadataLookup lookups) {
+	private HederaSigningOrder keyOrderWith(DelegatingSigMetadataLookup lookups) {
 		var policies = systemOpPolicies();
 		var properties = globalDynamicProperties();
 		return new HederaSigningOrder(
@@ -1132,21 +1132,21 @@ public class ServicesContext {
 				properties);
 	}
 
-	public synchronized StoragePersistence storagePersistence() {
+	public StoragePersistence storagePersistence() {
 		if (storagePersistence == null) {
 			storagePersistence = new BlobStoragePersistence(storageMapFrom(blobStore()));
 		}
 		return storagePersistence;
 	}
 
-	public synchronized SyncVerifier syncVerifier() {
+	public SyncVerifier syncVerifier() {
 		if (syncVerifier == null) {
 			syncVerifier = platform().getCryptography()::verifySync;
 		}
 		return syncVerifier;
 	}
 
-	public synchronized PrecheckVerifier precheckVerifier() {
+	public PrecheckVerifier precheckVerifier() {
 		if (precheckVerifier == null) {
 			Predicate<TransactionBody> isQueryPayment = queryPaymentTestFor(nodeAccount());
 			PrecheckKeyReqs reqs = new PrecheckKeyReqs(keyOrder(), lookupRetryingKeyOrder(), isQueryPayment);
@@ -1155,11 +1155,11 @@ public class ServicesContext {
 		return precheckVerifier;
 	}
 
-	public synchronized PrintStream consoleOut() {
+	public PrintStream consoleOut() {
 		return Optional.ofNullable(console()).map(c -> c.out).orElse(null);
 	}
 
-	public synchronized BalancesExporter balancesExporter() {
+	public BalancesExporter balancesExporter() {
 		if (balancesExporter == null) {
 			balancesExporter = new SignedStateBalancesExporter(
 					properties(),
@@ -1169,14 +1169,14 @@ public class ServicesContext {
 		return balancesExporter;
 	}
 
-	public synchronized Map<EntityId, Long> entityExpiries() {
+	public Map<EntityId, Long> entityExpiries() {
 		if (entityExpiries == null) {
 			entityExpiries = EntityExpiryMapFactory.entityExpiryMapFrom(blobStore());
 		}
 		return entityExpiries;
 	}
 
-	public synchronized HederaFs hfs() {
+	public HederaFs hfs() {
 		if (hfs == null) {
 			hfs = new TieredHederaFs(
 					ids(),
@@ -1194,11 +1194,11 @@ public class ServicesContext {
 		return hfs;
 	}
 
-	synchronized MerkleDiskFs getCurrentSpecialFileSystem() {
+	MerkleDiskFs getCurrentSpecialFileSystem() {
 		return this.state.diskFs();
 	}
 
-	public synchronized SoliditySigsVerifier soliditySigsVerifier() {
+	public SoliditySigsVerifier soliditySigsVerifier() {
 		if (soliditySigsVerifier == null) {
 			soliditySigsVerifier = new TxnAwareSoliditySigsVerifier(
 					syncVerifier(),
@@ -1209,7 +1209,7 @@ public class ServicesContext {
 		return soliditySigsVerifier;
 	}
 
-	public synchronized FileUpdateInterceptor applicationPropertiesReloading() {
+	public FileUpdateInterceptor applicationPropertiesReloading() {
 		if (applicationPropertiesReloading == null) {
 			var propertiesCb = sysFileCallbacks().propertiesCb();
 			applicationPropertiesReloading = new ValidatingCallbackInterceptor(
@@ -1223,7 +1223,7 @@ public class ServicesContext {
 		return applicationPropertiesReloading;
 	}
 
-	public synchronized FileUpdateInterceptor apiPermissionsReloading() {
+	public FileUpdateInterceptor apiPermissionsReloading() {
 		if (apiPermissionsReloading == null) {
 			var permissionsCb = sysFileCallbacks().permissionsCb();
 			apiPermissionsReloading = new ValidatingCallbackInterceptor(
@@ -1237,14 +1237,14 @@ public class ServicesContext {
 		return apiPermissionsReloading;
 	}
 
-	public synchronized TransitionLogicLookup transitionLogic() {
+	public TransitionLogicLookup transitionLogic() {
 		if (transitionLogic == null) {
 			transitionLogic = new TransitionLogicLookup(transitions());
 		}
 		return transitionLogic;
 	}
 
-	private synchronized Function<HederaFunctionality, List<TransitionLogic>> transitions() {
+	private Function<HederaFunctionality, List<TransitionLogic>> transitions() {
 		Map<HederaFunctionality, List<TransitionLogic>> transitionsMap = Map.ofEntries(
 				/* Crypto */
 				entry(CryptoCreate,
@@ -1349,21 +1349,21 @@ public class ServicesContext {
 		return transitionsMap::get;
 	}
 
-	public synchronized EntityIdSource ids() {
+	public EntityIdSource ids() {
 		if (ids == null) {
 			ids = new SeqNoEntityIdSource(this::seqNo);
 		}
 		return ids;
 	}
 
-	public synchronized TransactionContext txnCtx() {
+	public TransactionContext txnCtx() {
 		if (txnCtx == null) {
 			txnCtx = new AwareTransactionContext(this);
 		}
 		return txnCtx;
 	}
 
-	public synchronized Cache<Transaction, PlatformTxnAccessor> accessorCache() {
+	public Cache<Transaction, PlatformTxnAccessor> accessorCache() {
 		if (accessorCache == null)	 {
 			accessorCache = CacheBuilder.newBuilder()
 					.expireAfterWrite(10, TimeUnit.SECONDS)
@@ -1372,14 +1372,14 @@ public class ServicesContext {
 		return accessorCache;
 	}
 
-	public synchronized Map<TransactionID, TxnIdRecentHistory> txnHistories() {
+	public Map<TransactionID, TxnIdRecentHistory> txnHistories() {
 		if (txnHistories == null) {
 			txnHistories = new ConcurrentHashMap<>();
 		}
 		return txnHistories;
 	}
 
-	public synchronized RecordCache recordCache() {
+	public RecordCache recordCache() {
 		if (recordCache == null) {
 			recordCache = new RecordCache(
 					this,
@@ -1389,14 +1389,14 @@ public class ServicesContext {
 		return recordCache;
 	}
 
-	public synchronized CharacteristicsFactory characteristics() {
+	public CharacteristicsFactory characteristics() {
 		if (characteristics == null) {
 			characteristics = new CharacteristicsFactory(hfs());
 		}
 		return characteristics;
 	}
 
-	public synchronized AccountRecordsHistorian recordsHistorian() {
+	public AccountRecordsHistorian recordsHistorian() {
 		if (recordsHistorian == null) {
 			recordsHistorian = new TxnAwareRecordsHistorian(
 					recordCache(),
@@ -1407,49 +1407,49 @@ public class ServicesContext {
 		return recordsHistorian;
 	}
 
-	public synchronized FeeExemptions exemptions() {
+	public FeeExemptions exemptions() {
 		if (exemptions == null) {
 			exemptions = new StandardExemptions(accountNums(), systemOpPolicies());
 		}
 		return exemptions;
 	}
 
-	public synchronized HbarCentExchange exchange() {
+	public HbarCentExchange exchange() {
 		if (exchange == null) {
 			exchange = new AwareHbarCentExchange(txnCtx());
 		}
 		return exchange;
 	}
 
-	public synchronized BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels() {
+	public BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels() {
 		if (backingTokenRels == null) {
 			backingTokenRels = new BackingTokenRels(this::tokenAssociations);
 		}
 		return backingTokenRels;
 	}
 
-	public synchronized BackingStore<AccountID, MerkleAccount> backingAccounts() {
+	public BackingStore<AccountID, MerkleAccount> backingAccounts() {
 		if (backingAccounts == null) {
 			backingAccounts = new FCMapBackingAccounts(this::accounts);
 		}
 		return backingAccounts;
 	}
 
-	public synchronized NodeLocalProperties nodeLocalProperties() {
+	public NodeLocalProperties nodeLocalProperties() {
 		if (nodeLocalProperties == null) {
 			nodeLocalProperties = new NodeLocalProperties(properties());
 		}
 		return nodeLocalProperties;
 	}
 
-	public synchronized GlobalDynamicProperties globalDynamicProperties() {
+	public GlobalDynamicProperties globalDynamicProperties() {
 		if (globalDynamicProperties == null) {
 			globalDynamicProperties = new GlobalDynamicProperties(hederaNums(), properties());
 		}
 		return globalDynamicProperties;
 	}
 
-	public synchronized TokenStore tokenStore() {
+	public TokenStore tokenStore() {
 		if (tokenStore == null) {
 			TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger =
 					new TransactionalLedger<>(
@@ -1469,14 +1469,14 @@ public class ServicesContext {
 		return tokenStore;
 	}
 
-	public synchronized ScheduleStore scheduleStore() {
+	public ScheduleStore scheduleStore() {
 		if (scheduleStore == null) {
 			scheduleStore = new HederaScheduleStore(globalDynamicProperties(), ids(), txnCtx(), this::schedules);
 		}
 		return scheduleStore;
 	}
 
-	public synchronized HederaLedger ledger() {
+	public HederaLedger ledger() {
 		if (ledger == null) {
 			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger =
 					new TransactionalLedger<>(
@@ -1500,7 +1500,7 @@ public class ServicesContext {
 		return ledger;
 	}
 
-	public synchronized EntityAutoRenewal entityAutoRenewal() {
+	public EntityAutoRenewal entityAutoRenewal() {
 		if (entityAutoRenewal == null) {
 			final var helper = new RenewalHelper(
 					tokenStore(), hederaNums(), globalDynamicProperties(),
@@ -1515,7 +1515,7 @@ public class ServicesContext {
 		return entityAutoRenewal;
 	}
 
-	public synchronized ExpiryManager expiries() {
+	public ExpiryManager expiries() {
 		if (expiries == null) {
 			var histories = txnHistories();
 			expiries = new ExpiryManager(recordCache(), histories, scheduleStore(), schedules());
@@ -1523,7 +1523,7 @@ public class ServicesContext {
 		return expiries;
 	}
 
-	public synchronized ExpiringCreations creator() {
+	public ExpiringCreations creator() {
 		if (creator == null) {
 			creator = new ExpiringCreations(expiries(), globalDynamicProperties());
 			creator.setRecordCache(recordCache());
@@ -1531,28 +1531,28 @@ public class ServicesContext {
 		return creator;
 	}
 
-	public synchronized OptionValidator validator() {
+	public OptionValidator validator() {
 		if (validator == null) {
 			validator = new ContextOptionValidator(nodeAccount(), txnCtx(), globalDynamicProperties());
 		}
 		return validator;
 	}
 
-	public synchronized ProcessLogic logic() {
+	public ProcessLogic logic() {
 		if (logic == null) {
 			logic = new AwareProcessLogic(this);
 		}
 		return logic;
 	}
 
-	public synchronized FreezeHandler freeze() {
+	public FreezeHandler freeze() {
 		if (freeze == null) {
 			freeze = new FreezeHandler(hfs(), platform(), exchange());
 		}
 		return freeze;
 	}
 
-	public synchronized void updateFeature() {
+	public void updateFeature() {
 		if (freeze != null) {
 			String os = System.getProperty("os.name").toLowerCase();
 			if (os.contains("mac")) {
@@ -1565,7 +1565,7 @@ public class ServicesContext {
 		}
 	}
 
-	public synchronized NetworkCtxManager networkCtxManager() {
+	public NetworkCtxManager networkCtxManager() {
 		if (networkCtxManager == null) {
 			networkCtxManager = new NetworkCtxManager(
 					issEventInfo(),
@@ -1580,7 +1580,7 @@ public class ServicesContext {
 		return networkCtxManager;
 	}
 
-	public synchronized ThrottleDefsManager throttleDefsManager() {
+	public ThrottleDefsManager throttleDefsManager() {
 		if (throttleDefsManager == null) {
 			throttleDefsManager = new ThrottleDefsManager(
 					fileNums(), this::addressBook, sysFileCallbacks().throttlesCb());
@@ -1588,7 +1588,7 @@ public class ServicesContext {
 		return throttleDefsManager;
 	}
 
-	public synchronized RecordStreamManager recordStreamManager() {
+	public RecordStreamManager recordStreamManager() {
 		return recordStreamManager;
 	}
 
@@ -1596,7 +1596,7 @@ public class ServicesContext {
 	 * RecordStreamManager should only be initialized after system files have been loaded,
 	 * which means enableRecordStreaming has been read from file
 	 */
-	public synchronized void initRecordStreamManager() {
+	public void initRecordStreamManager() {
 		try {
 			var nodeLocalProps = nodeLocalProperties();
 			var nodeScopedRecordLogDir = getRecordStreamDirectory(nodeLocalProps);
@@ -1611,7 +1611,7 @@ public class ServicesContext {
 		}
 	}
 
-	public synchronized FileUpdateInterceptor exchangeRatesManager() {
+	public FileUpdateInterceptor exchangeRatesManager() {
 		if (exchangeRatesManager == null) {
 			exchangeRatesManager = new TxnAwareRatesManager(
 					fileNums(),
@@ -1625,56 +1625,56 @@ public class ServicesContext {
 		return exchangeRatesManager;
 	}
 
-	public synchronized FileUpdateInterceptor feeSchedulesManager() {
+	public FileUpdateInterceptor feeSchedulesManager() {
 		if (feeSchedulesManager == null) {
 			feeSchedulesManager = new FeeSchedulesManager(fileNums(), fees());
 		}
 		return feeSchedulesManager;
 	}
 
-	public synchronized FreezeController freezeGrpc() {
+	public FreezeController freezeGrpc() {
 		if (freezeGrpc == null) {
 			freezeGrpc = new FreezeController(txnResponseHelper());
 		}
 		return freezeGrpc;
 	}
 
-	public synchronized NetworkController networkGrpc() {
+	public NetworkController networkGrpc() {
 		if (networkGrpc == null) {
 			networkGrpc = new NetworkController(metaAnswers(), txnResponseHelper(), queryResponseHelper());
 		}
 		return networkGrpc;
 	}
 
-	public synchronized FileController filesGrpc() {
+	public FileController filesGrpc() {
 		if (fileGrpc == null) {
 			fileGrpc = new FileController(fileAnswers(), txnResponseHelper(), queryResponseHelper());
 		}
 		return fileGrpc;
 	}
 
-	public synchronized SystemOpPolicies systemOpPolicies() {
+	public SystemOpPolicies systemOpPolicies() {
 		if (systemOpPolicies == null) {
 			systemOpPolicies = new SystemOpPolicies(entityNums());
 		}
 		return systemOpPolicies;
 	}
 
-	public synchronized TokenController tokenGrpc() {
+	public TokenController tokenGrpc() {
 		if (tokenGrpc == null) {
 			tokenGrpc = new TokenController(tokenAnswers(), txnResponseHelper(), queryResponseHelper());
 		}
 		return tokenGrpc;
 	}
 
-	public synchronized ScheduleController scheduleGrpc() {
+	public ScheduleController scheduleGrpc() {
 		if (scheduleGrpc == null) {
 			scheduleGrpc = new ScheduleController(scheduleAnswers(), txnResponseHelper(), queryResponseHelper());
 		}
 		return scheduleGrpc;
 	}
 
-	public synchronized CryptoController cryptoGrpc() {
+	public CryptoController cryptoGrpc() {
 		if (cryptoGrpc == null) {
 			cryptoGrpc = new CryptoController(
 					metaAnswers(),
@@ -1685,28 +1685,28 @@ public class ServicesContext {
 		return cryptoGrpc;
 	}
 
-	public synchronized ContractController contractsGrpc() {
+	public ContractController contractsGrpc() {
 		if (contractsGrpc == null) {
 			contractsGrpc = new ContractController(contractAnswers(), txnResponseHelper(), queryResponseHelper());
 		}
 		return contractsGrpc;
 	}
 
-	public synchronized PlatformSubmissionManager submissionManager() {
+	public PlatformSubmissionManager submissionManager() {
 		if (submissionManager == null) {
 			submissionManager = new PlatformSubmissionManager(platform(), recordCache(), speedometers());
 		}
 		return submissionManager;
 	}
 
-	public synchronized ConsensusController consensusGrpc() {
+	public ConsensusController consensusGrpc() {
 		if (null == consensusGrpc) {
 			consensusGrpc = new ConsensusController(hcsAnswers(), txnResponseHelper(), queryResponseHelper());
 		}
 		return consensusGrpc;
 	}
 
-	public synchronized GrpcServerManager grpc() {
+	public GrpcServerManager grpc() {
 		if (grpc == null) {
 			grpc = new NettyGrpcServerManager(
 					Runtime.getRuntime()::addShutdownHook,
@@ -1725,7 +1725,7 @@ public class ServicesContext {
 		return grpc;
 	}
 
-	public synchronized SmartContractRequestHandler contracts() {
+	public SmartContractRequestHandler contracts() {
 		if (contracts == null) {
 			contracts = new SmartContractRequestHandler(
 					repository(),
@@ -1743,7 +1743,7 @@ public class ServicesContext {
 		return contracts;
 	}
 
-	public synchronized SysFileCallbacks sysFileCallbacks() {
+	public SysFileCallbacks sysFileCallbacks() {
 		if (sysFileCallbacks == null) {
 			var configCallbacks = new ConfigCallbacks(
 					hapiOpPermissions(),
@@ -1756,21 +1756,21 @@ public class ServicesContext {
 		return sysFileCallbacks;
 	}
 
-	public synchronized SolidityLifecycle solidityLifecycle() {
+	public SolidityLifecycle solidityLifecycle() {
 		if (solidityLifecycle == null) {
 			solidityLifecycle = new SolidityLifecycle(globalDynamicProperties());
 		}
 		return solidityLifecycle;
 	}
 
-	public synchronized PropertySource properties() {
+	public PropertySource properties() {
 		if (properties == null) {
 			properties = propertySources().asResolvingSource();
 		}
 		return properties;
 	}
 
-	public synchronized SystemFilesManager systemFilesManager() {
+	public SystemFilesManager systemFilesManager() {
 		if (systemFilesManager == null) {
 			systemFilesManager = new HfsSystemFilesManager(
 					addressBook(),
@@ -1786,14 +1786,14 @@ public class ServicesContext {
 		return systemFilesManager;
 	}
 
-	public synchronized HapiOpPermissions hapiOpPermissions() {
+	public HapiOpPermissions hapiOpPermissions() {
 		if (hapiOpPermissions == null) {
 			hapiOpPermissions = new HapiOpPermissions(accountNums());
 		}
 		return hapiOpPermissions;
 	}
 
-	public synchronized ServicesRepositoryRoot repository() {
+	public ServicesRepositoryRoot repository() {
 		if (repository == null) {
 			repository = new ServicesRepositoryRoot(accountSource(), bytecodeDb());
 			repository.setStoragePersistence(storagePersistence());
@@ -1801,7 +1801,7 @@ public class ServicesContext {
 		return repository;
 	}
 
-	public synchronized Supplier<ServicesRepositoryRoot> newPureRepo() {
+	public Supplier<ServicesRepositoryRoot> newPureRepo() {
 		if (newPureRepo == null) {
 			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> pureDelegate = new TransactionalLedger<>(
 					AccountProperty.class,
@@ -1827,42 +1827,42 @@ public class ServicesContext {
 		return newPureRepo;
 	}
 
-	public synchronized ConsensusStatusCounts statusCounts() {
+	public ConsensusStatusCounts statusCounts() {
 		if (statusCounts == null) {
 			statusCounts = new ConsensusStatusCounts(new ObjectMapper());
 		}
 		return statusCounts;
 	}
 
-	public synchronized LedgerAccountsSource accountSource() {
+	public LedgerAccountsSource accountSource() {
 		if (accountSource == null) {
 			accountSource = new LedgerAccountsSource(ledger());
 		}
 		return accountSource;
 	}
 
-	public synchronized BlobStorageSource bytecodeDb() {
+	public BlobStorageSource bytecodeDb() {
 		if (bytecodeDb == null) {
 			bytecodeDb = new BlobStorageSource(bytecodeMapFrom(blobStore()));
 		}
 		return bytecodeDb;
 	}
 
-	public synchronized SyntaxPrecheck syntaxPrecheck() {
+	public SyntaxPrecheck syntaxPrecheck() {
 		if (syntaxPrecheck == null) {
 			syntaxPrecheck = new SyntaxPrecheck(recordCache(), validator(), globalDynamicProperties());
 		}
 		return syntaxPrecheck;
 	}
 
-	public synchronized Console console() {
+	public Console console() {
 		if (console == null) {
 			console = platform().createConsole(true);
 		}
 		return console;
 	}
 
-	public synchronized AccountID nodeAccount() {
+	public AccountID nodeAccount() {
 		if (accountId == null) {
 			try {
 				accountId = accountParsedFromString(address().getMemo());
@@ -1874,49 +1874,49 @@ public class ServicesContext {
 		return accountId;
 	}
 
-	public synchronized Address address() {
+	public Address address() {
 		if (address == null) {
 			address = addressBook().getAddress(id.getId());
 		}
 		return address;
 	}
 
-	public synchronized AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage() {
+	public AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage() {
 		if (queryableStorage == null) {
 			queryableStorage = new AtomicReference<>(storage());
 		}
 		return queryableStorage;
 	}
 
-	public synchronized AtomicReference<FCMap<MerkleEntityId, MerkleAccount>> queryableAccounts() {
+	public AtomicReference<FCMap<MerkleEntityId, MerkleAccount>> queryableAccounts() {
 		if (queryableAccounts == null) {
 			queryableAccounts = new AtomicReference<>(accounts());
 		}
 		return queryableAccounts;
 	}
 
-	public synchronized AtomicReference<FCMap<MerkleEntityId, MerkleTopic>> queryableTopics() {
+	public AtomicReference<FCMap<MerkleEntityId, MerkleTopic>> queryableTopics() {
 		if (queryableTopics == null) {
 			queryableTopics = new AtomicReference<>(topics());
 		}
 		return queryableTopics;
 	}
 
-	public synchronized AtomicReference<FCMap<MerkleEntityId, MerkleToken>> queryableTokens() {
+	public AtomicReference<FCMap<MerkleEntityId, MerkleToken>> queryableTokens() {
 		if (queryableTokens == null) {
 			queryableTokens = new AtomicReference<>(tokens());
 		}
 		return queryableTokens;
 	}
 
-	public synchronized AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations() {
+	public AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations() {
 		if (queryableTokenAssociations == null) {
 			queryableTokenAssociations = new AtomicReference<>(tokenAssociations());
 		}
 		return queryableTokenAssociations;
 	}
 
-	public synchronized AtomicReference<FCMap<MerkleEntityId, MerkleSchedule>> queryableSchedules() {
+	public AtomicReference<FCMap<MerkleEntityId, MerkleSchedule>> queryableSchedules() {
 		if (queryableSchedules == null) {
 			queryableSchedules = new AtomicReference<>(schedules());
 		}
@@ -1924,21 +1924,21 @@ public class ServicesContext {
 		return queryableSchedules;
 	}
 
-	public synchronized UsagePricesProvider usagePrices() {
+	public UsagePricesProvider usagePrices() {
 		if (usagePrices == null) {
 			usagePrices = new AwareFcfsUsagePrices(hfs(), fileNums(), txnCtx());
 		}
 		return usagePrices;
 	}
 
-	public synchronized TxnFeeChargingPolicy txnChargingPolicy() {
+	public TxnFeeChargingPolicy txnChargingPolicy() {
 		if (txnChargingPolicy == null) {
 			txnChargingPolicy = new TxnFeeChargingPolicy();
 		}
 		return txnChargingPolicy;
 	}
 
-	public synchronized SystemAccountsCreator systemAccountsCreator() {
+	public SystemAccountsCreator systemAccountsCreator() {
 		if (systemAccountsCreator == null) {
 			systemAccountsCreator = new BackedSystemAccountsCreator(
 					hederaNums(),
@@ -1950,92 +1950,92 @@ public class ServicesContext {
 	}
 
 	/* Context-free infrastructure. */
-	public synchronized LegacyEd25519KeyReader b64KeyReader() {
+	public LegacyEd25519KeyReader b64KeyReader() {
 		return b64KeyReader;
 	}
 
-	public synchronized Pause pause() {
+	public Pause pause() {
 		return pause;
 	}
 
-	public synchronized StateMigrations stateMigrations() {
+	public StateMigrations stateMigrations() {
 		return stateMigrations;
 	}
 
-	public synchronized AccountsExporter accountsExporter() {
+	public AccountsExporter accountsExporter() {
 		return accountsExporter;
 	}
 
 	/* Injected dependencies. */
-	public synchronized NodeId id() {
+	public NodeId id() {
 		return id;
 	}
 
-	public synchronized Platform platform() {
+	public Platform platform() {
 		return platform;
 	}
 
-	public synchronized PropertySources propertySources() {
+	public PropertySources propertySources() {
 		return propertySources;
 	}
 
-	public synchronized Instant consensusTimeOfLastHandledTxn() {
+	public Instant consensusTimeOfLastHandledTxn() {
 		return state.networkCtx().consensusTimeOfLastHandledTxn();
 	}
 
-	public synchronized void updateConsensusTimeOfLastHandledTxn(Instant dataDrivenNow) {
+	public void updateConsensusTimeOfLastHandledTxn(Instant dataDrivenNow) {
 		state.networkCtx().setConsensusTimeOfLastHandledTxn(dataDrivenNow);
 	}
 
-	public synchronized AddressBook addressBook() {
+	public AddressBook addressBook() {
 		return state.addressBook();
 	}
 
-	public synchronized SequenceNumber seqNo() {
+	public SequenceNumber seqNo() {
 		return state.networkCtx().seqNo();
 	}
 
-	public synchronized long lastScannedEntity() {
+	public long lastScannedEntity() {
 		return state.networkCtx().lastScannedEntity();
 	}
 
-	public synchronized void updateLastScannedEntity(long lastScannedEntity) {
+	public void updateLastScannedEntity(long lastScannedEntity) {
 		state.networkCtx().updateLastScannedEntity(lastScannedEntity);
 	}
 
-	public synchronized ExchangeRates midnightRates() {
+	public ExchangeRates midnightRates() {
 		return state.networkCtx().midnightRates();
 	}
 
-	public synchronized FCMap<MerkleEntityId, MerkleAccount> accounts() {
+	public FCMap<MerkleEntityId, MerkleAccount> accounts() {
 		return state.accounts();
 	}
 
-	public synchronized FCMap<MerkleEntityId, MerkleTopic> topics() {
+	public FCMap<MerkleEntityId, MerkleTopic> topics() {
 		return state.topics();
 	}
 
-	public synchronized FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage() {
+	public FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage() {
 		return state.storage();
 	}
 
-	public synchronized FCMap<MerkleEntityId, MerkleToken> tokens() {
+	public FCMap<MerkleEntityId, MerkleToken> tokens() {
 		return state.tokens();
 	}
 
-	public synchronized FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations() {
+	public FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations() {
 		return state.tokenAssociations();
 	}
 
-	public synchronized FCMap<MerkleEntityId, MerkleSchedule> schedules() {
+	public FCMap<MerkleEntityId, MerkleSchedule> schedules() {
 		return state.scheduleTxs();
 	}
 
-	public synchronized MerkleDiskFs diskFs() {
+	public MerkleDiskFs diskFs() {
 		return state.diskFs();
 	}
 
-	public synchronized MerkleNetworkContext networkCtx() {
+	public MerkleNetworkContext networkCtx() {
 		return state.networkCtx();
 	}
 
@@ -2044,7 +2044,7 @@ public class ServicesContext {
 	 *
 	 * @return the direct file folder for writing record stream files
 	 */
-	public synchronized String getRecordStreamDirectory(NodeLocalProperties source) {
+	public String getRecordStreamDirectory(NodeLocalProperties source) {
 		if (recordStreamDir == null) {
 			final String nodeAccountString = EntityIdUtils.asLiteralString(nodeAccount());
 			String parentDir = source.recordLogDir();
@@ -2062,7 +2062,7 @@ public class ServicesContext {
 	 * @param runningHash
 	 * 		new runningHash instance
 	 */
-	public synchronized void updateRecordRunningHash(final RunningHash runningHash) {
+	public void updateRecordRunningHash(final RunningHash runningHash) {
 		state.runningHashLeaf().setRunningHash(runningHash);
 	}
 
@@ -2078,34 +2078,34 @@ public class ServicesContext {
 	 * @param recordsInitialHash
 	 * 		initial running Hash of records
 	 */
-	public synchronized void setRecordsInitialHash(final Hash recordsInitialHash) {
+	public void setRecordsInitialHash(final Hash recordsInitialHash) {
 		this.recordsInitialHash = recordsInitialHash;
 		if (recordStreamManager() != null) {
 			recordStreamManager().setInitialHash(recordsInitialHash);
 		}
 	}
 
-	synchronized Hash getRecordsInitialHash() {
+	Hash getRecordsInitialHash() {
 		return recordsInitialHash;
 	}
 
-	synchronized void setBackingTokenRels(BackingTokenRels backingTokenRels) {
+	void setBackingTokenRels(BackingTokenRels backingTokenRels) {
 		this.backingTokenRels = backingTokenRels;
 	}
 
-	synchronized void setBackingAccounts(FCMapBackingAccounts backingAccounts) {
+	void setBackingAccounts(FCMapBackingAccounts backingAccounts) {
 		this.backingAccounts = backingAccounts;
 	}
 
-	public synchronized void setTokenStore(TokenStore tokenStore) {
+	public void setTokenStore(TokenStore tokenStore) {
 		this.tokenStore = tokenStore;
 	}
 
-	public synchronized void setScheduleStore(ScheduleStore scheduleStore) {
+	public void setScheduleStore(ScheduleStore scheduleStore) {
 		this.scheduleStore = scheduleStore;
 	}
 
-	synchronized void setSystemExits(SystemExits systemExits) {
+	void setSystemExits(SystemExits systemExits) {
 		this.systemExits = systemExits;
 	}
 }
