@@ -72,6 +72,7 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 				() -> new MerkleAccount(),
 				new HashMapBackingAccounts(),
 				new ChangeSummaryManager<>());
+		accountsLedger.setKeyComparator(HederaLedger.ACCOUNT_ID_COMPARATOR);
 		FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
 		tokenRelsLedger = new TransactionalLedger<>(
 				TokenRelProperty.class,
@@ -102,6 +103,7 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 	public void resetsNetTransfersAfterCommit() {
 		// when:
 		subject.begin();
+
 		AccountID a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
 		subject.commit();
 		// and:

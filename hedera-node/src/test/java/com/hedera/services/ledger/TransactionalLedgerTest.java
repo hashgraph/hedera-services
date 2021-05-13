@@ -62,11 +62,9 @@ public class TransactionalLedgerTest {
 	ChangeSummaryManager<TestAccount, TestAccountProperty> changeManager = new ChangeSummaryManager<>();
 	TransactionalLedger<Long, TestAccountProperty, TestAccount> subject;
 
-	TokenID tid = IdUtils.tokenWith(666L);
 	Object[] things = { "a", "b", "c", "d" };
 	MerkleToken token;
 	TestAccount account1 = new TestAccount(1L, things[1], false, 667L);
-	TestAccount account1TokenCopy = new TestAccount(1L, things[1], false, 667L);
 
 	@BeforeEach
 	private void setup() {
@@ -78,6 +76,7 @@ public class TransactionalLedgerTest {
 		newAccountFactory = () -> new TestAccount();
 
 		subject = new TransactionalLedger<>(TestAccountProperty.class, newAccountFactory, backingAccounts, changeManager);
+		subject.setKeyComparator(Long::compareTo);
 	}
 
 	@Test

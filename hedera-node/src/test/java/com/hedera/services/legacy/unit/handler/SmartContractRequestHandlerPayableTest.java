@@ -144,6 +144,7 @@ public class SmartContractRequestHandlerPayableTest {
             () -> new MerkleAccount(),
             backingAccounts,
             new ChangeSummaryManager<>());
+    delegate.setKeyComparator(HederaLedger.ACCOUNT_ID_COMPARATOR);
     ledger = new HederaLedger(
             mock(TokenStore.class),
             mock(EntityIdSource.class),
