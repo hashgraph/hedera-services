@@ -102,7 +102,7 @@ class ExpiryManagerTest {
 		given(expiringEntity.getKey()).willReturn(schedule.getScheduleNum());
 		given(expiringEntity.getValue()).willReturn(entityIdConsumer);
 
-		subject = new ExpiryManager(recordCache, txnHistories, scheduleStore, schedules);
+		subject = new ExpiryManager(recordCache, txnHistories, scheduleStore, schedules, () -> accounts);
 	}
 
 	@Test
@@ -129,7 +129,7 @@ class ExpiryManagerTest {
 		txnHistories = mock(Map.class);
 
 		// given:
-		subject = new ExpiryManager(recordCache, txnHistories, scheduleStore, schedules);
+		subject = new ExpiryManager(recordCache, txnHistories, scheduleStore, schedules, () -> accounts);
 		// and:
 		subject.trackRecord(payer, oldExpiry);
 		// and:

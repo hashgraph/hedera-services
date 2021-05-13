@@ -20,7 +20,6 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -41,11 +40,13 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 public class ExpiryManager {
 	private final RecordCache recordCache;
 	private final Map<TransactionID, TxnIdRecentHistory> txnHistories;
 	private final FCMap<MerkleEntityId, MerkleSchedule> schedules;
+	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
 	private final ScheduleStore scheduleStore;
 
@@ -56,13 +57,15 @@ public class ExpiryManager {
 			RecordCache recordCache,
 			Map<TransactionID, TxnIdRecentHistory> txnHistories,
 			ScheduleStore scheduleStore,
-			FCMap<MerkleEntityId, MerkleSchedule> schedules
+			FCMap<MerkleEntityId, MerkleSchedule> schedules,
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
 	) {
 		this.recordCache = recordCache;
 		this.txnHistories = txnHistories;
 		this.scheduleStore = scheduleStore;
 
 		this.schedules = schedules;
+		this.accounts = accounts;
 	}
 
 	public void trackRecord(AccountID owner, long expiry) {
@@ -127,11 +130,34 @@ public class ExpiryManager {
 		txnHistories.computeIfAbsent(txnId, ignore -> new TxnIdRecentHistory()).stage(record);
 	}
 
-	public void purgeExpiredRecordsAt(long now, HederaLedger ledger) {
+	public void purgeExpiredRecordsAt(long now) {
 		while (payerExpiries.hasExpiringAt(now)) {
-			ledger.purgeExpiredRecords(accountWith(payerExpiries.expireNextAt(now)), now);
+			final var numWithExpiring = payerExpiries.expireNextAt(now);
+			final var key = new MerkleEntityId(0, 0, numWithExpiring);
+			final var currentAccounts = accounts.get();
+			final var mutableAccount = currentAccounts.getForModify(key);
+			final var mutableFcq = mutableAccount.records();
+			purgeForNewEarliestExpiry(mutableFcq, now);
+			currentAccounts.replace(key, mutableAccount);
 		}
 		recordCache.forgetAnyOtherExpiredHistory(now);
+	}
+
+	private void purgeForNewEarliestExpiry(FCQueue<ExpirableTxnRecord> records, long now) {
+		while (!records.isEmpty() && records.peek().getExpiry() <= now) {
+			updateHistory(records.poll(), now);
+		}
+	}
+
+	private void updateHistory(ExpirableTxnRecord record, long now) {
+		var txnId = record.getTxnId().toGrpc();
+		var history = txnHistories.get(txnId);
+		if (history != null) {
+			history.forgetExpiredAt(now);
+			if (history.isForgotten()) {
+				txnHistories.remove(txnId);
+			}
+		}
 	}
 
 	/**
@@ -149,14 +175,6 @@ public class ExpiryManager {
 
 	public void trackEntity(Pair<Long, Consumer<EntityId>> entity, long expiry) {
 		entityExpiries.track(entity, expiry);
-	}
-
-	AccountID accountWith(long num) {
-		return AccountID.newBuilder()
-				.setShardNum(0)
-				.setRealmNum(0)
-				.setAccountNum(num)
-				.build();
 	}
 
 	EntityId entityWith(long num) {

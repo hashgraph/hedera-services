@@ -39,7 +39,7 @@ public enum NoopRecordsHistorian implements AccountRecordsHistorian {
   public void addNewRecords() { }
 
   @Override
-  public void purgeExpiredRecords() { }
+  public void purgeExpiredRecords(long now) { }
 
   @Override
   public void reviewExistingRecords() { }

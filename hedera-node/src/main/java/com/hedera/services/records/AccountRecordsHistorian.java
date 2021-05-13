@@ -74,7 +74,7 @@ public interface AccountRecordsHistorian {
 	 * the opportunity to scan the ledger and build an auxiliary data
 	 * structure of expiration times.
 	 */
-	void purgeExpiredRecords();
+	void purgeExpiredRecords(long now);
 
 	/**
 	 * Invites the historian to build any auxiliary data structures

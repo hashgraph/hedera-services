@@ -100,8 +100,8 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	}
 
 	@Override
-	public void purgeExpiredRecords() {
-		expiries.purgeExpiredRecordsAt(txnCtx.consensusTime().getEpochSecond(), ledger);
+	public void purgeExpiredRecords(long now) {
+		expiries.purgeExpiredRecordsAt(now);
 	}
 
 	@Override

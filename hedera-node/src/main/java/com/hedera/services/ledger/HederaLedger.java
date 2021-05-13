@@ -493,29 +493,6 @@ public class HederaLedger {
 		return records.peek().getExpiry();
 	}
 
-	public void purgeExpiredRecords(AccountID id, long now) {
-		FCQueue<ExpirableTxnRecord> records = (FCQueue<ExpirableTxnRecord>) accountsLedger.get(id, RECORDS);
-		// purgeForNewEarliestExpiry(records, now);
-		accountsLedger.set(id, RECORDS, records);
-	}
-
-	private void purgeForNewEarliestExpiry(FCQueue<ExpirableTxnRecord> records, long now) {
-		while (!records.isEmpty() && records.peek().getExpiry() <= now) {
-			updateHistory(records.poll(), now);
-		}
-	}
-
-	private void updateHistory(ExpirableTxnRecord record, long now) {
-		var txnId = record.getTxnId().toGrpc();
-		var history = txnHistories.get(txnId);
-		if (history != null) {
-			history.forgetExpiredAt(now);
-			if (history.isForgotten()) {
-				txnHistories.remove(txnId);
-			}
-		}
-	}
-
 	/* -- HELPERS -- */
 	private boolean isLegalToAdjust(long balance, long adjustment) {
 		return (balance + adjustment >= 0);

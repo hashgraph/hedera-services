@@ -46,7 +46,6 @@ import static com.hedera.services.sigs.HederaToPlatformSigOps.rationalizeIn;
 import static com.hedera.services.sigs.Rationalization.IN_HANDLE_SUMMARY_FACTORY;
 import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
 import static com.hedera.services.txns.diligence.DuplicateClassification.DUPLICATE;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -100,8 +99,9 @@ public class AwareProcessLogic implements ProcessLogic {
 			if (!txnSanityChecks(accessor, timestamp, submittingMember)) {
 				return;
 			}
-			txnManager.process(accessor, timestamp, submittingMember, ctx);
 
+			ctx.recordsHistorian().purgeExpiredRecords(consensusTime.getEpochSecond());
+			txnManager.process(accessor, timestamp, submittingMember, ctx);
 			if (ctx.txnCtx().triggeredTxn() != null) {
 				TxnAccessor scopedAccessor = ctx.txnCtx().triggeredTxn();
 				txnManager.process(scopedAccessor, consensusTime, submittingMember, ctx);
@@ -176,7 +176,6 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	private void doProcess(TxnAccessor accessor, Instant consensusTime) {
 		ctx.networkCtxManager().advanceConsensusClockTo(consensusTime);
-		ctx.recordsHistorian().purgeExpiredRecords();
 		ctx.expiries().purgeExpiredEntitiesAt(consensusTime.getEpochSecond());
 
 		var sigStatus = rationalizeWithPreConsensusSigs(accessor);
