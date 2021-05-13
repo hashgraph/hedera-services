@@ -130,6 +130,7 @@ public class TxnReceipt implements SelfSerializable {
 	public void serialize(SerializableDataOutputStream out) throws IOException {
 		out.writeNormalisedString(status);
 		out.writeSerializable(exchangeRates, true);
+		//TODO: can use writeSerializable which has support for null
 		serdes.writeNullableSerializable(accountId, out);
 		serdes.writeNullableSerializable(fileId, out);
 		serdes.writeNullableSerializable(contractId, out);
@@ -152,6 +153,7 @@ public class TxnReceipt implements SelfSerializable {
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		status = getNormalisedStringFromBytes(in.readByteArray(MAX_STATUS_BYTES));
 		exchangeRates = in.readSerializable(true, ExchangeRates::new);
+		//can use readSerializable
 		accountId = serdes.readNullableSerializable(in);
 		fileId = serdes.readNullableSerializable(in);
 		contractId = serdes.readNullableSerializable(in);
