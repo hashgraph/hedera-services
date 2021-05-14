@@ -1555,11 +1555,11 @@ workflows:
   GCP-Daily-Services-Reconnect-6N-4C:
     triggers:
       - schedule:
-          cron: "20 20,22,0,2,4 * * *"
+          cron: "30 5 * * *"
           filters:
             branches:
               only:
-                - 01334-D-increase-reconnect-tests-TPS
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1579,11 +1579,11 @@ workflows:
   GCP-Daily-Services-Global-3NReconnect-15N-4C:
     triggers:
       - schedule:
-          cron: "20 20,22,0,2,4 * * *"
+          cron: "30 6 * * *"
           filters:
             branches:
               only:
-                - 01334-D-increase-reconnect-tests-TPS
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1744,12 +1744,11 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-6N-1C:
     triggers:
       - schedule:
-          cron: "20 20,2,6 * * *"
+          cron: "5 7 * * *"
           filters:
             branches:
               only:
-#                - master
-                - 01334-D-increase-reconnect-tests-TPS
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1768,12 +1767,11 @@ workflows:
   GCP-Daily-Services-Comp-3NReconnect-15N-4C:
     triggers:
       - schedule:
-          cron: "20 20,23,2,5,8 * * *"
+          cron: "15 6 * * *"
           filters:
             branches:
               only:
-#                - master
-                - 01334-D-increase-reconnect-tests-TPS
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -2002,18 +2000,6 @@ workflows:
             - attach_workspace:
                 at: /
 
-  daily-aws-summary:
-    triggers:
-      - schedule:
-          cron: "15 14 * * *"
-          filters:
-            branches:
-              only:
-                - master
-    jobs:
-      - aws-summary:
-          context: Slack
-
   nightly-comprehensive-functional-regression:
     triggers:
       - schedule:
@@ -2060,7 +2046,6 @@ workflows:
               branches:
                 ignore:
                   - /.*-PERF/
-                  - 01334-D-increase-reconnect-tests-TPS
             workflow-name: "Continuous-integration"
         - build-platform-and-services:
             context: SonarCloud
@@ -2326,7 +2311,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression; git checkout 01334-D-increase-reconnect-tests-TPS
+            cd regression;
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
@@ -2340,15 +2325,6 @@ jobs:
           paths:
             - repo/
             - swirlds-platform/
-
-  aws-summary:
-    executor: ci-test-executor
-    steps:
-      - checkout
-      - run:
-          name: Summarize all AWS instances currently used by regions
-          command: |
-            /repo/.circleci/scripts/aws-summary.sh
 
   run-accessory-tests:
     parameters:
@@ -2748,10 +2724,10 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "hedera-regression-test"
+        default: "hedera-regression"
       slack_summary_channel:
         type: string
-        default: "hedera-regression-test"
+        default: "hedera-regression-summary"
       workflow-name:
         type: string
         default: ""
