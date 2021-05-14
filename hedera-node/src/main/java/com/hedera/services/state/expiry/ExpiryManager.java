@@ -45,8 +45,8 @@ import java.util.function.Supplier;
 public class ExpiryManager {
 	private final RecordCache recordCache;
 	private final Map<TransactionID, TxnIdRecentHistory> txnHistories;
-	private final FCMap<MerkleEntityId, MerkleSchedule> schedules;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
+	private final Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules;
 
 	private final ScheduleStore scheduleStore;
 
@@ -57,15 +57,15 @@ public class ExpiryManager {
 			RecordCache recordCache,
 			Map<TransactionID, TxnIdRecentHistory> txnHistories,
 			ScheduleStore scheduleStore,
-			FCMap<MerkleEntityId, MerkleSchedule> schedules,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
+			Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules
 	) {
 		this.recordCache = recordCache;
 		this.txnHistories = txnHistories;
 		this.scheduleStore = scheduleStore;
 
-		this.schedules = schedules;
 		this.accounts = accounts;
+		this.schedules = schedules;
 	}
 
 	public void trackRecord(AccountID owner, long expiry) {
@@ -96,7 +96,7 @@ public class ExpiryManager {
 		entityExpiries.reset();
 
 		var expiries = new ArrayList<Map.Entry<Pair<Long, Consumer<EntityId>>, Long>>();
-		schedules.forEach((id, schedule) -> {
+		schedules.get().forEach((id, schedule) -> {
 			Consumer<EntityId> consumer = scheduleStore::expire;
 			var pair = Pair.of(id.getNum(), consumer);
 			expiries.add(new AbstractMap.SimpleImmutableEntry<>(pair, schedule.expiry()));

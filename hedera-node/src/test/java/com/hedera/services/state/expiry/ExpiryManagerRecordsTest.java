@@ -75,7 +75,7 @@ class ExpiryManagerRecordsTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new ExpiryManager(recordCache, txnHistories, scheduleStore, schedules, () -> accounts);
+		subject = new ExpiryManager(recordCache, txnHistories, scheduleStore, () -> accounts, () -> schedules);
 	}
 
 	@Test

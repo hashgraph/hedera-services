@@ -1519,7 +1519,7 @@ public class ServicesContext {
 	public ExpiryManager expiries() {
 		if (expiries == null) {
 			var histories = txnHistories();
-			expiries = new ExpiryManager(recordCache(), histories, scheduleStore(), schedules(), this::accounts);
+			expiries = new ExpiryManager(recordCache(), histories, scheduleStore(), this::accounts, this::schedules);
 		}
 		return expiries;
 	}
