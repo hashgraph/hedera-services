@@ -34,7 +34,7 @@
     </repository>
     <repository>
       <id>sdk-alpha</id>
-      <url>https://oss.sonatype.org/content/repositories/comswirlds-1098</url>
+      <url>https://oss.sonatype.org/content/repositories/comswirlds-1100</url>
       <releases>
         <enabled>true</enabled>
       </releases>

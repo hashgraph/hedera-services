@@ -382,21 +382,13 @@
     </repository>
     <repository>
       <id>sdk-alpha</id>
-      <url>https://oss.sonatype.org/content/repositories/comswirlds-1098</url>
+      <url>https://oss.sonatype.org/content/repositories/comswirlds-1100</url>
       <releases>
         <enabled>true</enabled>
       </releases>
       <snapshots>
         <enabled>true</enabled>
       </snapshots>
-    </repository>
-    <repository>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-      <id>obsolete-central</id>
-      <name>bintray</name>
-      <url>https://jcenter.bintray.com</url>
     </repository>
   </repositories>
   <profiles>
