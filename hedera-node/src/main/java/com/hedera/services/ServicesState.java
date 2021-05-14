@@ -237,6 +237,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			setChild(ChildIndices.TOKEN_ASSOCIATIONS, new FCMap<>());
 			setChild(ChildIndices.DISK_FS, new MerkleDiskFs());
 			setChild(ChildIndices.SCHEDULE_TXS, new FCMap<>());
+
+			/* Initialize the running hash leaf at genesis to an empty hash. */
+			final var firstRunningHash = new RunningHash();
+			firstRunningHash.setHash(emptyHash);
+			setChild(ChildIndices.RECORD_STREAM_RUNNING_HASH, new RecordsRunningHashLeaf(firstRunningHash));
 		} else {
 			log.info("Init called on Services node {} WITH Merkle saved state", nodeId);
 
@@ -258,13 +263,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		}
 
 		networkCtx().setStateVersion(MERKLE_VERSION);
-		if (getNumberOfChildren() < ChildIndices.NUM_0140_CHILDREN || runningHashIsEmpty()) {
-			/* Initialize running hash from the last record stream .rcd_sig file on disk */
-			byte[] lastHash = hashReader.apply(ctx.getRecordStreamDirectory(ctx.nodeLocalProperties()));
-			RunningHash runningHash = new RunningHash();
-			runningHash.setHash(new ImmutableHash(lastHash));
-			setChild(ChildIndices.RECORD_STREAM_RUNNING_HASH, new RecordsRunningHashLeaf(runningHash));
-		}
 		ctx.setRecordsInitialHash(runningHashLeaf().getRunningHash().getHash());
 
 		logSummary();
