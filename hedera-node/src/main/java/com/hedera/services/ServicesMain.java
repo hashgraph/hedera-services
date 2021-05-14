@@ -22,7 +22,6 @@ package com.hedera.services;
 
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.Profile;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.forensics.FcmDump;
 import com.hedera.services.state.forensics.IssListener;
 import com.hedera.services.utils.JvmSystemExits;
@@ -35,7 +34,6 @@ import com.swirlds.common.SwirldState;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.NotificationFactory;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
-import com.swirlds.fcqueue.FCQueueStatistics;
 import com.swirlds.platform.Browser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

@@ -29,8 +29,6 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -41,8 +39,6 @@ import java.util.function.Supplier;
  * @author Michael Tinker
  */
 public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
-	private static final Logger log = LogManager.getLogger(TxnAwareRecordsHistorian.class);
-
 	private HederaLedger ledger;
 	private TransactionRecord lastCreatedRecord;
 

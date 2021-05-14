@@ -34,8 +34,6 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -45,8 +43,6 @@ import java.util.Objects;
 import static com.swirlds.common.CommonUtils.getNormalisedStringFromBytes;
 
 public class TxnReceipt implements SelfSerializable {
-	private static final Logger log = LogManager.getLogger(TxnReceipt.class);
-
 	private static final int MAX_STATUS_BYTES = 128;
 	private static final int MAX_RUNNING_HASH_BYTES = 1024;
 
@@ -130,7 +126,6 @@ public class TxnReceipt implements SelfSerializable {
 	public void serialize(SerializableDataOutputStream out) throws IOException {
 		out.writeNormalisedString(status);
 		out.writeSerializable(exchangeRates, true);
-		//TODO: can use writeSerializable which has support for null
 		serdes.writeNullableSerializable(accountId, out);
 		serdes.writeNullableSerializable(fileId, out);
 		serdes.writeNullableSerializable(contractId, out);
@@ -153,7 +148,6 @@ public class TxnReceipt implements SelfSerializable {
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		status = getNormalisedStringFromBytes(in.readByteArray(MAX_STATUS_BYTES));
 		exchangeRates = in.readSerializable(true, ExchangeRates::new);
-		//can use readSerializable
 		accountId = serdes.readNullableSerializable(in);
 		fileId = serdes.readNullableSerializable(in);
 		contractId = serdes.readNullableSerializable(in);

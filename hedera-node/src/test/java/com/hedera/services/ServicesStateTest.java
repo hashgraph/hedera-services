@@ -127,7 +127,6 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.times;
 
-
 @ExtendWith(LogCaptureExtension.class)
 class ServicesStateTest {
 	Function<String, byte[]> mockHashReader;

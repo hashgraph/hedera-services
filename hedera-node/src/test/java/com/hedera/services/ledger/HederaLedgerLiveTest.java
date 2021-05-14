@@ -47,7 +47,6 @@ import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.HashMap;
 import java.util.List;
 
 import static com.hedera.test.utils.IdUtils.asAccount;

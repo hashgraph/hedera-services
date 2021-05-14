@@ -98,7 +98,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 
 import static com.hedera.services.legacy.util.SCEncoding.GET_MY_VALUE_ABI;

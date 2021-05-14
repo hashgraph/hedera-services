@@ -26,9 +26,6 @@ import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 
 import java.util.Arrays;
-import java.util.List;
-
-import static java.util.stream.Collectors.toList;
 
 /**
  * A source of cryptographic signatures backed by a {@link SignatureMap} instance.
