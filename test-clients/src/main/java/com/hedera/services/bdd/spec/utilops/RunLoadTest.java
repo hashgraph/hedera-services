@@ -28,6 +28,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
@@ -35,8 +36,10 @@ import java.util.function.Supplier;
 
 import static com.google.common.base.Stopwatch.createStarted;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_BALANCES_EXPORT_PERIOD_SECS;
 import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_DURATION_CREATE_TOKEN_ASSOCIATION;
 import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_DURATION_TOKEN_TRANSFER;
+import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_EXPORT_BALANCES_ON_CLIENT_SIDE;
 import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_INITIAL_BALANCE;
 import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_MEMO_LENGTH;
 import static com.hedera.services.bdd.suites.perf.PerfTestLoadSettings.DEFAULT_SUBMIT_MESSAGE_SIZE;
@@ -81,6 +84,8 @@ public class RunLoadTest extends UtilOp {
 	private IntSupplier totalScheduled = () -> DEFAULT_TOTAL_SCHEDULED;
 	private LongSupplier initialBalance = () -> DEFAULT_INITIAL_BALANCE;
 	private IntSupplier testTopicId = () -> DEFAULT_TEST_TOPIC_ID;
+	private IntSupplier balancesExportPeriodSecs = () -> DEFAULT_BALANCES_EXPORT_PERIOD_SECS;
+	private BooleanSupplier clientToExportBalances = () -> DEFAULT_EXPORT_BALANCES_ON_CLIENT_SIDE;
 
 	private final Supplier<HapiSpecOperation[]> opSource;
 
@@ -173,6 +178,16 @@ public class RunLoadTest extends UtilOp {
 
 	public RunLoadTest setTestTopicId(IntSupplier testTopicId) {
 		this.testTopicId = testTopicId;
+		return this;
+	}
+
+	public RunLoadTest setBalancesExportPeriodSecs(IntSupplier balancesExportPeriodSecs) {
+		this.balancesExportPeriodSecs = balancesExportPeriodSecs;
+		return this;
+	}
+
+	public RunLoadTest setClientToExportBalances(BooleanSupplier clientToExportBalances) {
+		this.clientToExportBalances = clientToExportBalances;
 		return this;
 	}
 

@@ -50,6 +50,8 @@ public class PerfTestLoadSettings {
 	public static final int DEFAULT_DURATION_TOKEN_TRANSFER = 60; // in seconds
 	public static final long DEFAULT_INITIAL_BALANCE = ONE_MILLION_HBARS;
 	public static final int DEFAULT_TEST_TOPIC_ID = 30_000;
+	public static final int DEFAULT_BALANCES_EXPORT_PERIOD_SECS = 60;
+	public static final boolean DEFAULT_EXPORT_BALANCES_ON_CLIENT_SIDE = false;
 
 	private int tps = DEFAULT_TPS;
 	private int tolerancePercentage = DEFAULT_TOLERANCE_PERCENTAGE;
@@ -114,6 +116,10 @@ public class PerfTestLoadSettings {
 	 * topic ID for reconnect and other tests;
 	 */
 	private int testTopicId = DEFAULT_TEST_TOPIC_ID;
+	// test client to tell hedera services how long to export account balances.
+	private int balancesExportPeriodSecs = DEFAULT_BALANCES_EXPORT_PERIOD_SECS;
+	// tell EET client whether to dump account balances or not
+	private boolean clientToExportBalances = DEFAULT_EXPORT_BALANCES_ON_CLIENT_SIDE;
 
 	private HapiPropertySource ciProps = null;
 
@@ -185,6 +191,13 @@ public class PerfTestLoadSettings {
 	}
 	public int getTotalScheduled() {
 		return totalScheduled;
+	}
+
+	public int getBalancesExportPeriodSecs() {
+		return balancesExportPeriodSecs;
+	}
+	public boolean getClientToExportBalances() {
+		return clientToExportBalances;
 	}
 
 	public int getTestTreasureStartAccount() { return testTreasureStartAccount; }
@@ -271,6 +284,13 @@ public class PerfTestLoadSettings {
 		if (ciProps.has("testTopicId")) {
 			testTopicId = ciProps.getInteger("testTopicId");
 		}
+
+		if (ciProps.has("balancesExportPeriodSecs")) {
+			balancesExportPeriodSecs = ciProps.getInteger("balancesExportPeriodSecs");
+		}
+		if (ciProps.has("clientToExportBalances")) {
+			clientToExportBalances = ciProps.getBoolean("clientToExportBalances");
+		}
 	}
 
 	@Override
@@ -297,6 +317,8 @@ public class PerfTestLoadSettings {
 				.add("totalScheduledTransactions", totalScheduled)
 				.add("initialBalance", initialBalance)
 				.add("testTopicId", testTopicId)
+				.add("balancesExportPeriodSecs", balancesExportPeriodSecs)
+				.add("clientToExportBalances", clientToExportBalances)
 				.toString();
 	}
 }

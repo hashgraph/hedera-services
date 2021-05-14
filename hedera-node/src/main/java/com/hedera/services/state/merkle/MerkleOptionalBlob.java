@@ -183,7 +183,6 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements FCMValue, 
 
 	/* --- Bean --- */
 	public byte[] getData() {
-		lastAccessedBlob.set(delegate.getId());
 		return (delegate == MISSING_DELEGATE) ? NO_DATA : blobStoreSupplier.get().get(delegate);
 	}
 
