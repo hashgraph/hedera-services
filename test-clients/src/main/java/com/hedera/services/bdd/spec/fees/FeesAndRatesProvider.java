@@ -151,7 +151,6 @@ public class FeesAndRatesProvider {
 		long queryFee = lookupDownloadFee(setup.feeScheduleId());
 		FileGetContentsResponse response = downloadWith(queryFee,false, setup.feeScheduleId());
 		byte[] bytes = response.getFileContents().getContents().toByteArray();
-		log.info("The length of the fee/rates is {}", bytes.length);
 		CurrentAndNextFeeSchedule wrapper = CurrentAndNextFeeSchedule.parseFrom(bytes);
 		feeSchedule = wrapper.getCurrentFeeSchedule();
 		log.info("The fee schedule covers " + feeSchedule.getTransactionFeeScheduleList().size() + " ops.");

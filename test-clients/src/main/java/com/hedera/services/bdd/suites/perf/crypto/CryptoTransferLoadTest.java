@@ -79,7 +79,7 @@ public class CryptoTransferLoadTest extends LoadTest {
 		return true;
 	}
 
-	protected synchronized HapiApiSpec runCryptoTransfers() {
+	protected HapiApiSpec runCryptoTransfers() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 
 		Supplier<HapiSpecOperation[]> transferBurst = () -> {

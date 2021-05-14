@@ -17,20 +17,13 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
 
 
 /**
- * This is a prelude suite for any tests with multiple clients that needs to adjust fee schedules
+ * This is a suite for any reconnect tests with multiple clients that needs to adjust fee schedules
  */
 
 public class AdjustFeeScheduleSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(AdjustFeeScheduleSuite.class);
-	private String nodes;
-	private String defaultNode;
-
-	// Use more initialBalance for this account as it is used as payer for the performance tests
-	private static long initialBalance = 5L * LoadTest.initialBalance.getAsLong();
 
 	public AdjustFeeScheduleSuite() {
-		this.nodes = nodes;
-		this.defaultNode = defaultNode;
 	}
 
 	public static void main(String... args) {

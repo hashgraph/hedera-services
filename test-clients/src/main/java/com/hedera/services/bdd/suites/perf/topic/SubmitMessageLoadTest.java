@@ -121,7 +121,7 @@ public class SubmitMessageLoadTest extends LoadTest {
 		return true;
 	}
 
-	private synchronized static HapiApiSpec runSubmitMessages() {
+	private static HapiApiSpec runSubmitMessages() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 		final AtomicInteger submittedSoFar = new AtomicInteger(0);
 		Supplier<HapiSpecOperation[]> submitBurst = () -> new HapiSpecOperation[] {
@@ -161,7 +161,7 @@ public class SubmitMessageLoadTest extends LoadTest {
 				);
 	}
 
-	private synchronized static Supplier<HapiSpecOperation> opSupplier(PerfTestLoadSettings settings) {
+	private static Supplier<HapiSpecOperation> opSupplier(PerfTestLoadSettings settings) {
 		int msgSize = (r.nextInt(2) == 1 ) ?
 				settings.getIntProperty("messageSize", messageSize)
 						+ r.nextInt(settings.getHcsSubmitMessageSizeVar())
