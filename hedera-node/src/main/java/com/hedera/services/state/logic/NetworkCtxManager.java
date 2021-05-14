@@ -45,6 +45,8 @@ public class NetworkCtxManager {
 
 	private final int issResetPeriod;
 
+	private boolean consensusSecondJustChanged = false;
+
 	private final IssEventInfo issInfo;
 	private final HapiOpCounters opCounters;
 	private final HbarCentExchange exchange;
@@ -96,6 +98,12 @@ public class NetworkCtxManager {
 		if (lastConsensusTime != null && !inSameUtcDay(lastConsensusTime, consensusTime)) {
 			networkCtxNow.midnightRates().replaceWith(exchange.activeRates());
 		}
+		if (lastConsensusTime == null || consensusTime.getEpochSecond() > lastConsensusTime.getEpochSecond()) {
+			consensusSecondJustChanged = true;
+		} else {
+			consensusSecondJustChanged = false;
+		}
+
 		networkCtxNow.setConsensusTimeOfLastHandledTxn(consensusTime);
 
 		if (issInfo.status() == ONGOING_ISS) {
@@ -104,6 +112,10 @@ public class NetworkCtxManager {
 				issInfo.relax();
 			}
 		}
+	}
+
+	public boolean currentTxnIsFirstInConsensusSecond() {
+		return consensusSecondJustChanged;
 	}
 
 	public void prepareForIncorporating(HederaFunctionality op)	 {

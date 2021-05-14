@@ -1511,7 +1511,8 @@ public class ServicesContext {
 			final var renewalProcess = new RenewalProcess(
 					fees(), hederaNums(), helper, recordHelper);
 			entityAutoRenewal = new EntityAutoRenewal(
-					hederaNums(), renewalProcess, this, globalDynamicProperties());
+					hederaNums(), renewalProcess, this,
+					globalDynamicProperties(), networkCtxManager(), networkCtx());
 		}
 		return entityAutoRenewal;
 	}
