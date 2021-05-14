@@ -25,7 +25,6 @@ import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.StandardizedPropertySources;
 import com.hedera.services.exceptions.ContextNotFoundException;
-import com.hedera.services.legacy.stream.RecordStream;
 import com.hedera.services.sigs.sourcing.ScopedSigBytesProvider;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
@@ -59,11 +58,9 @@ import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.File;
 import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.List;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
@@ -90,7 +87,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	static final String UNSUPPORTED_VERSION_MSG_TPL = "Argument 'version=%d' is invalid!";
 
-	static Function<String, byte[]> hashReader = RecordStream::readPrevFileHash;
 	static Supplier<BinaryObjectStore> blobStoreSupplier = BinaryObjectStore::getInstance;
 
 	NodeId nodeId = null;
@@ -271,10 +267,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		CONTEXTS.store(ctx);
 
 		log.info("  --> Context initialized accordingly on Services node {}", nodeId);
-	}
-
-	private boolean runningHashIsEmpty() {
-		return runningHashLeaf().getRunningHash().getHash().equals(emptyHash);
 	}
 
 	private void initializeContext(final ServicesContext ctx) {
