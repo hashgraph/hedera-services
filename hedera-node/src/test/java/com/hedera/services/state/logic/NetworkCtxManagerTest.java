@@ -193,6 +193,45 @@ class NetworkCtxManagerTest {
 	}
 
 	@Test
+	void recognizesWhenTxnStillInSameConsensusSecond() {
+		// setup:
+		final var sometimePlusSomeNanos = sometime.plusNanos(1_234);
+		final var sometimePlusSomeMoreNanos = sometimePlusSomeNanos.plusNanos(1_234);
+
+		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometimePlusSomeNanos);
+
+		// when:
+		subject.advanceConsensusClockTo(sometimePlusSomeMoreNanos);
+
+		// then:
+		assertFalse(subject.currentTxnIsFirstInConsensusSecond());
+	}
+
+	@Test
+	void recognizesWhenTxnSecondChanges() {
+		// setup:
+		final var sometimePlusSomeNanos = sometime.plusNanos(1_234);
+		final var sometimePlusOneSecond = sometime.plusSeconds(1);
+
+		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometimePlusSomeNanos);
+
+		// when:
+		subject.advanceConsensusClockTo(sometimePlusOneSecond);
+
+		// then:
+		assertTrue(subject.currentTxnIsFirstInConsensusSecond());
+	}
+
+	@Test
+	void recognizesFirstTxnMustBeFirstInSecond() {
+		// when:
+		subject.advanceConsensusClockTo(sometimeNextDay);
+
+		// then:
+		assertTrue(subject.currentTxnIsFirstInConsensusSecond());
+	}
+
+	@Test
 	void advancesClockAsExpectedWhenNotPassingMidnight() {
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
 

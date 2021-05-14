@@ -21,9 +21,13 @@ package com.hedera.services.state.expiry;
  */
 
 import com.hedera.services.config.HederaNumbers;
+import com.hedera.services.context.ContextsManager;
 import com.hedera.services.context.ServicesContext;
+import com.hedera.services.context.SingletonContextsManager;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.expiry.renewal.RenewalProcess;
+import com.hedera.services.state.logic.NetworkCtxManager;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -35,15 +39,21 @@ public class EntityAutoRenewal {
 	private final long firstEntityToScan;
 	private final RenewalProcess renewalProcess;
 	private final ServicesContext ctx;
+	private final NetworkCtxManager networkCtxManager;
+	private final MerkleNetworkContext networkCtx;
 	private final GlobalDynamicProperties dynamicProps;
 
 	public EntityAutoRenewal(
 			HederaNumbers hederaNumbers,
 			RenewalProcess renewalProcess,
 			ServicesContext ctx,
-			GlobalDynamicProperties dynamicProps
+			GlobalDynamicProperties dynamicProps,
+			NetworkCtxManager networkCtxManager,
+			MerkleNetworkContext networkCtx
 	) {
 		this.ctx = ctx;
+		this.networkCtx = networkCtx;
+		this.networkCtxManager = networkCtxManager;
 		this.renewalProcess = renewalProcess;
 		this.dynamicProps = dynamicProps;
 
@@ -63,6 +73,9 @@ public class EntityAutoRenewal {
 
 		final int maxEntitiesToTouch = dynamicProps.autoRenewMaxNumberOfEntitiesToRenewOrDelete();
 		final int maxEntitiesToScan = dynamicProps.autoRenewNumberOfEntitiesToScan();
+		if (networkCtxManager.currentTxnIsFirstInConsensusSecond()) {
+			networkCtx.resetAutoRenewSummaryCounts();
+		}
 
 		renewalProcess.beginRenewalCycle(instantNow);
 
@@ -70,7 +83,7 @@ public class EntityAutoRenewal {
 		long scanNum = ctx.lastScannedEntity();
 
 		log.debug("Auto-renew scan beginning at {}, wrapping at {}", scanNum, wrapNum);
-		log.debug("	- BEFORE #'s are (accounts={}, tokenRels={})",
+		log.debug("BEFORE #'s are (accounts={}, tokenRels={})",
 				() -> ctx.accounts().size(), () -> ctx.tokenAssociations().size());
 		for (; i <= maxEntitiesToScan; i++) {
 			scanNum++;
@@ -81,14 +94,20 @@ public class EntityAutoRenewal {
 				entitiesTouched++;
 			}
 			if (entitiesTouched >= maxEntitiesToTouch) {
+				/* Allow consistent calculation of num scanned below. */
+				i++;
 				break;
 			}
 		}
-		log.debug("Finished auto-renew scan of {} entities ({} touched) -> {} was last", i, entitiesTouched, scanNum);
-		log.debug("	- AFTER #'s are (accounts={}, tokenRels={})",
+		renewalProcess.endRenewalCycle();
+		networkCtx.updateAutoRenewSummaryCounts(i - 1, entitiesTouched);
+
+		log.debug("Auto-renew scan finished at {} with {}/{} scanned/touched (Total this second: {}/{})",
+				scanNum, i - 1, entitiesTouched,
+				networkCtx.getEntitiesScannedThisSecond(), networkCtx.getEntitiesTouchedThisSecond());
+		log.debug("AFTER #'s are (accounts={}, tokenRels={})",
 				() -> ctx.accounts().size(), () -> ctx.tokenAssociations().size());
 
-		renewalProcess.endRenewalCycle();
 		ctx.updateLastScannedEntity(scanNum);
 	}
 }

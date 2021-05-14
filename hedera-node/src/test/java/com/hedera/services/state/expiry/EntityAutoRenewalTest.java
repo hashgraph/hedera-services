@@ -25,6 +25,8 @@ import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.config.MockHederaNumbers;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.state.expiry.renewal.RenewalProcess;
+import com.hedera.services.state.logic.NetworkCtxManager;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,12 +55,16 @@ class EntityAutoRenewalTest {
 	private ServicesContext ctx;
 	@Mock
 	private RenewalProcess renewalProcess;
+	@Mock
+	private NetworkCtxManager networkCtxManager;
+	@Mock
+	private MerkleNetworkContext networkCtx;
 
 	private EntityAutoRenewal subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new EntityAutoRenewal(mockHederaNums, renewalProcess, ctx, properties);
+		subject = new EntityAutoRenewal(mockHederaNums, renewalProcess, ctx, properties, networkCtxManager, networkCtx);
 	}
 
 	@Test
@@ -86,6 +92,19 @@ class EntityAutoRenewalTest {
 
 		// then:
 		verifyNoInteractions(renewalProcess);
+	}
+
+	@Test
+	void resetsSummaryCountsIfNewConsensusSecond() {
+		given(networkCtxManager.currentTxnIsFirstInConsensusSecond()).willReturn(true);
+		givenWrapNum(aNum + 123);
+		givenLastScanned(aNum - 1);
+
+		// when:
+		subject.execute(instantNow);
+
+		// then:
+		verify(networkCtx).resetAutoRenewSummaryCounts();
 	}
 
 	@Test
@@ -158,6 +177,8 @@ class EntityAutoRenewalTest {
 		verify(renewalProcess, never()).process(cNum);
 		verify(renewalProcess).endRenewalCycle();
 		verify(ctx).updateLastScannedEntity(bNum);
+		// and:
+		verify(networkCtx).updateAutoRenewSummaryCounts(4, 2);
 	}
 
 
