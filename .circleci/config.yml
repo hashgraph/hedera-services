@@ -1873,18 +1873,6 @@ workflows:
             - attach_workspace:
                 at: /
 
-  daily-aws-summary:
-    triggers:
-      - schedule:
-          cron: "15 14 * * *"
-          filters:
-            branches:
-              only:
-                - release/0.13
-    jobs:
-      - aws-summary:
-          context: Slack
-
   nightly-comprehensive-functional-regression:
     triggers:
       - schedule:
@@ -2221,15 +2209,6 @@ jobs:
           paths:
             - repo/
             - swirlds-platform/
-
-  aws-summary:
-    executor: ci-test-executor
-    steps:
-      - checkout
-      - run:
-          name: Summarize all AWS instances currently used by regions
-          command: |
-            /repo/.circleci/scripts/aws-summary.sh
 
   run-accessory-tests:
     parameters:
