@@ -21,6 +21,8 @@ package com.hedera.services.txns.consensus;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
@@ -51,18 +53,21 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 	private final Function<TransactionBody, ResponseCodeEnum> PRE_SIGNATURE_VALIDATION_SEMANTIC_CHECK =
 			this::validatePreSignatureValidation;
 
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
-	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
+	private final HederaLedger ledger;
 	private final OptionValidator validator;
 	private final TransactionContext transactionContext;
+	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
+	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
 	public TopicUpdateTransitionLogic(
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			OptionValidator validator,
-			TransactionContext transactionContext
+			TransactionContext transactionContext,
+			HederaLedger ledger
 	) {
 		this.accounts = accounts;
+		this.ledger = ledger;
 		this.topics = topics;
 		this.validator = validator;
 		this.transactionContext = transactionContext;
@@ -180,12 +185,20 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 		if (designatesAccountRemoval(newAutoRenewAccount)) {
 			return true;
 		}
+		if (topic.hasAutoRenewAccountId() && ledger.isDetached(topic.getAutoRenewAccountId().toGrpcAccountId())) {
+			transactionContext.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+			return false;
+		}
 		if (!topic.hasAdminKey() || (op.hasAdminKey() && asFcKeyUnchecked(op.getAdminKey()).isEmpty())) {
 			transactionContext.setStatus(AUTORENEW_ACCOUNT_NOT_ALLOWED);
 			return false;
 		}
 		if (OK != validator.queryableAccountStatus(newAutoRenewAccount, accounts.get())) {
 			transactionContext.setStatus(INVALID_AUTORENEW_ACCOUNT);
+			return false;
+		}
+		if (ledger.isDetached(newAutoRenewAccount)) {
+			transactionContext.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 			return false;
 		}
 		return true;

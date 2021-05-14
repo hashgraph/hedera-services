@@ -29,6 +29,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.HederaStore;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.swirlds.fcmap.FCMap;
@@ -44,6 +45,7 @@ import static com.hedera.services.state.merkle.MerkleEntityId.fromScheduleId;
 import static com.hedera.services.store.CreationResult.failure;
 import static com.hedera.services.store.CreationResult.success;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID;
@@ -124,10 +126,10 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 
 		var validity = OK;
 		if (schedule.hasExplicitPayer()) {
-			validity = accountCheck(schedule.payer().toGrpcAccountId(), INVALID_SCHEDULE_PAYER_ID);
+			validity = usableOrElse(schedule.payer().toGrpcAccountId(), INVALID_SCHEDULE_PAYER_ID);
 		}
 		if (validity == OK) {
-			validity = accountCheck(schedule.schedulingAccount().toGrpcAccountId(), INVALID_SCHEDULE_ACCOUNT_ID);
+			validity = usableOrElse(schedule.schedulingAccount().toGrpcAccountId(), INVALID_SCHEDULE_ACCOUNT_ID);
 		}
 		if (validity != OK) {
 			return failure(validity);

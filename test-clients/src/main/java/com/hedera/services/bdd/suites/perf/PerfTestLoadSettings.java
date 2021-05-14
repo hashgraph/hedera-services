@@ -284,7 +284,6 @@ public class PerfTestLoadSettings {
 		if (ciProps.has("testTopicId")) {
 			testTopicId = ciProps.getInteger("testTopicId");
 		}
-
 		if (ciProps.has("balancesExportPeriodSecs")) {
 			balancesExportPeriodSecs = ciProps.getInteger("balancesExportPeriodSecs");
 		}

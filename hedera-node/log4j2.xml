@@ -161,6 +161,10 @@
     <Logger name="com.hedera.services.queries.answering" level="debug" additivity="false">
       <AppenderRef ref="QueriesRollingFile"/>
     </Logger>
+    <Logger name="com.hedera.services.state.expiry" level="warn" additivity="false">
+      <AppenderRef ref="Console"/>
+      <AppenderRef ref="RollingFile"/>
+    </Logger>
 
     <Logger name="com.hedera.services.legacy" level="warn" additivity="false">
       <!-- <AppenderRef ref="Console"/> -->

@@ -151,7 +151,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		}
 	}
 
-	public String changeSetSoFar() {
+	String changeSetSoFar() {
 		StringBuilder desc = new StringBuilder("{");
 		AtomicBoolean isFirstChange = new AtomicBoolean(true);
 		changes.entrySet().forEach(change -> {

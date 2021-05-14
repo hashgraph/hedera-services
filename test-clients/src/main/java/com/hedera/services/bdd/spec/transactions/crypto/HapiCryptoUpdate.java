@@ -33,6 +33,7 @@ import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.services.usage.file.ExtantFileContext;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -69,6 +70,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 	private OptionalLong sendThreshold = OptionalLong.empty();
 	private Optional<Key> updKey = Optional.empty();
 	private OptionalLong newExpiry = OptionalLong.empty();
+	private OptionalLong newAutoRenewPeriod = OptionalLong.empty();
 	private Optional<Long> lifetimeSecs = Optional.empty();
 	private Optional<String> newProxy = Optional.empty();
 	private Optional<String> entityMemo = Optional.empty();
@@ -83,26 +85,37 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 		sendThreshold = OptionalLong.of(v);
 		return this;
 	}
+
 	public HapiCryptoUpdate newProxy(String name) {
 		newProxy = Optional.of(name);
 		return this;
 	}
+
 	public HapiCryptoUpdate expiring(long at) {
 		newExpiry = OptionalLong.of(at);
 		return this;
 	}
+
+	public HapiCryptoUpdate autoRenewPeriod(long p) {
+		newAutoRenewPeriod = OptionalLong.of(p);
+		return this;
+	}
+
 	public HapiCryptoUpdate lifetime(long secs) {
 		lifetimeSecs = Optional.of(secs);
 		return this;
 	}
+
 	public HapiCryptoUpdate entityMemo(String memo) {
 		entityMemo = Optional.of(memo);
 		return this;
 	}
+
 	public HapiCryptoUpdate key(String name) {
 		updKeyName = Optional.of(name);
 		return this;
 	}
+
 	public HapiCryptoUpdate receiverSigRequired(boolean isRequired) {
 		updSigRequired = Optional.of(isRequired);
 		return this;
@@ -148,6 +161,8 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 							} else {
 								updKey.ifPresent(builder::setKey);
 							}
+							newAutoRenewPeriod.ifPresent(p ->
+									builder.setAutoRenewPeriod(Duration.newBuilder().setSeconds(p)));
 							entityMemo.ifPresent(m -> builder.setMemo(StringValue.newBuilder().setValue(m).build()));
 							sendThreshold.ifPresent(v ->
 									builder.setSendRecordThresholdWrapper(

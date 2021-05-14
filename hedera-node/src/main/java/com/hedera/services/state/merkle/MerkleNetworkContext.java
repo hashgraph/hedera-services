@@ -67,6 +67,9 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private ExchangeRates midnightRates;
 	private RichInstant consensusTimeOfLastHandledTxn;
 	private SequenceNumber seqNo;
+	private long lastScannedEntity;
+	private long entitiesScannedThisSecond = 0L;
+	private long entitiesTouchedThisSecond = 0L;
 	private DeterministicThrottle.UsageSnapshot[] usageSnapshots = NO_SNAPSHOTS;
 
 	public MerkleNetworkContext() {
@@ -76,27 +79,35 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	public MerkleNetworkContext(
 			RichInstant consensusTimeOfLastHandledTxn,
 			SequenceNumber seqNo,
+			long lastScannedEntity,
 			ExchangeRates midnightRates
 	) {
 		this.consensusTimeOfLastHandledTxn = consensusTimeOfLastHandledTxn;
 		this.seqNo = seqNo;
+		this.lastScannedEntity = lastScannedEntity;
 		this.midnightRates = midnightRates;
 	}
 
 	public MerkleNetworkContext(
 			RichInstant consensusTimeOfLastHandledTxn,
 			SequenceNumber seqNo,
+			long lastScannedEntity,
 			ExchangeRates midnightRates,
 			DeterministicThrottle.UsageSnapshot[] usageSnapshots,
 			RichInstant[] congestionStartPeriods,
-			int stateVersion
+			int stateVersion,
+			long entitiesScannedThisSecond,
+			long entitiesTouchedThisSecond
 	) {
 		this.consensusTimeOfLastHandledTxn = consensusTimeOfLastHandledTxn;
 		this.seqNo = seqNo;
+		this.lastScannedEntity = lastScannedEntity;
 		this.midnightRates = midnightRates;
 		this.usageSnapshots = usageSnapshots;
 		this.congestionLevelStarts = congestionStartPeriods;
 		this.stateVersion = stateVersion;
+		this.entitiesScannedThisSecond = entitiesScannedThisSecond;
+		this.entitiesTouchedThisSecond = entitiesTouchedThisSecond;
 	}
 
 	public void updateSnapshotsFrom(FunctionalityThrottling throttling) {
@@ -158,10 +169,13 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return new MerkleNetworkContext(
 				consensusTimeOfLastHandledTxn,
 				seqNo.copy(),
+				lastScannedEntity,
 				midnightRates.copy(),
 				usageSnapshots,
 				congestionLevelStarts,
-				stateVersion);
+				stateVersion,
+				entitiesScannedThisSecond,
+				entitiesTouchedThisSecond);
 	}
 
 	@Override
@@ -193,6 +207,9 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			}
 		}
 		if (version >= RELEASE_0140_VERSION) {
+			lastScannedEntity = in.readLong();
+			entitiesScannedThisSecond = in.readLong();
+			entitiesTouchedThisSecond = in.readLong();
 			stateVersion = in.readInt();
 		}
 	}
@@ -213,6 +230,9 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		for (var congestionStart : congestionLevelStarts) {
 			serdes.writeNullableInstant(congestionStart, out);
 		}
+		out.writeLong(lastScannedEntity);
+		out.writeLong(entitiesScannedThisSecond);
+		out.writeLong(entitiesTouchedThisSecond);
 		out.writeInt(stateVersion);
 	}
 
@@ -248,7 +268,13 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				.append("\n  Midnight rate set                          :: ")
 				.append(midnightRates.readableRepr())
 				.append("\n  Next entity number                         :: ")
-				.append(seqNo.current());
+				.append(seqNo.current())
+				.append("\n  Last scanned entity                        :: ")
+				.append(lastScannedEntity)
+				.append("\n  Entities scanned last consensus second     :: ")
+				.append(entitiesScannedThisSecond)
+				.append("\n  Entities touched last consensus second     :: ")
+				.append(entitiesTouchedThisSecond);
 		sb.append("\n  Throttle usage snapshots are               ::");
 		for (var snapshot : usageSnapshots) {
 			sb.append("\n    ").append(snapshot.used())
@@ -322,8 +348,22 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return usageSnapshots;
 	}
 
-	SequenceNumber getSeqNo() {
-		return seqNo;
+	public long lastScannedEntity() {
+		return lastScannedEntity;
+	}
+
+	public void resetAutoRenewSummaryCounts() {
+		entitiesScannedThisSecond = 0L;
+		entitiesTouchedThisSecond = 0L;
+	}
+
+	public void updateAutoRenewSummaryCounts(int numScanned, int numTouched) {
+		entitiesScannedThisSecond += numScanned;
+		entitiesTouchedThisSecond += numTouched;
+	}
+
+	public void updateLastScannedEntity(long lastScannedEntity) {
+		this.lastScannedEntity = lastScannedEntity;
 	}
 
 	public ExchangeRates getMidnightRates() {
@@ -336,5 +376,13 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	public void setStateVersion(int stateVersion) {
 		this.stateVersion = stateVersion;
+	}
+
+	public long getEntitiesScannedThisSecond() {
+		return entitiesScannedThisSecond;
+	}
+
+	public long getEntitiesTouchedThisSecond() {
+		return entitiesTouchedThisSecond;
 	}
 }

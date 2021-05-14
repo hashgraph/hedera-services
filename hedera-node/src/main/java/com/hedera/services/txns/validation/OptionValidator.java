@@ -41,8 +41,7 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * Defines a type able to divine the validity of various options
- * that can appear in HAPI gRPC transactions.
+ * Defines a type able to divine the validity of various options that can appear in HAPI gRPC transactions.
  *
  * @author Michael Tinker
  */
@@ -52,14 +51,16 @@ public interface OptionValidator {
 	boolean isValidExpiry(Timestamp expiry);
 	boolean isThisNodeAccount(AccountID id);
 	boolean isValidTxnDuration(long duration);
+	boolean isAfterConsensusSecond(long now);
 	boolean isValidAutoRenewPeriod(Duration autoRenewPeriod);
 	boolean isAcceptableTransfersLength(TransferList accountAmounts);
 
-	ResponseCodeEnum queryableTopicStatus(TopicID id, FCMap<MerkleEntityId, MerkleTopic> topics);
-	ResponseCodeEnum tokenSymbolCheck(String symbol);
-	ResponseCodeEnum tokenNameCheck(String name);
 	ResponseCodeEnum memoCheck(String cand);
-	ResponseCodeEnum isAcceptableTokenTransfersLength(List<TokenTransferList> tokenTransferLists);
+	ResponseCodeEnum tokenNameCheck(String name);
+	ResponseCodeEnum tokenSymbolCheck(String symbol);
+	ResponseCodeEnum tokenTransfersLengthCheck(List<TokenTransferList> tokenTransferLists);
+
+	ResponseCodeEnum queryableTopicStatus(TopicID id, FCMap<MerkleEntityId, MerkleTopic> topics);
 
 	default ResponseCodeEnum queryableAccountStatus(AccountID id, FCMap<MerkleEntityId, MerkleAccount> accounts) {
 		return PureValidation.queryableAccountStatus(id, accounts);
@@ -97,7 +98,8 @@ public interface OptionValidator {
 	default ResponseCodeEnum chronologyStatusForTxn(
 			Instant validAfter,
 			long forSecs,
-			Instant estimatedConsensusTime) {
+			Instant estimatedConsensusTime
+	) {
 		return PureValidation.chronologyStatus(estimatedConsensusTime, validAfter, forSecs);
 	}
 }

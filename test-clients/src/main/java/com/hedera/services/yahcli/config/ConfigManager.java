@@ -72,7 +72,7 @@ public class ConfigManager {
 
 		var specConfig = targetNet.toSpecProperties();
 		if (useFixedFee()) {
-			specConfig.put("fees.fixedOffer", String.valueOf(useFixedFee()));
+			specConfig.put("fees.fixedOffer", String.valueOf(useFixedFee() ? fixedFee() : "0"));
 			specConfig.put("fees.useFixedOffer", "true");
 		}
 		var payerId = asId(defaultPayer);

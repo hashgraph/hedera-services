@@ -21,6 +21,7 @@ package com.hedera.services.txns.consensus;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -54,6 +55,7 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 	private final Function<TransactionBody, ResponseCodeEnum> PRE_SIGNATURE_VALIDATION_SEMANTIC_CHECK =
 			this::validatePreSignatureValidation;
 
+	private final HederaLedger ledger;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
 	private final EntityIdSource entityIdSource;
@@ -65,10 +67,12 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			EntityIdSource entityIdSource,
 			OptionValidator validator,
-			TransactionContext transactionContext
+			TransactionContext transactionContext,
+			HederaLedger ledger
 	) {
 		this.accounts = accounts;
 		this.topics = topics;
+		this.ledger = ledger;
 		this.entityIdSource = entityIdSource;
 		this.validator = validator;
 		this.transactionContext = transactionContext;
@@ -156,12 +160,17 @@ public class TopicCreateTransitionLogic implements TransitionLogic {
 			validationResult = INVALID_RENEWAL_PERIOD;
 		} else if (!validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod())) {
 			validationResult = AUTORENEW_DURATION_NOT_IN_RANGE;
-		} else if (op.hasAutoRenewAccount() &&
-				(OK != validator.queryableAccountStatus(op.getAutoRenewAccount(), accounts.get()))) {
-			validationResult = INVALID_AUTORENEW_ACCOUNT;
-		} else if (op.hasAutoRenewAccount() && !op.hasAdminKey()) {
-			// If present, the autoRenewAccount's key must have signed transaction (see HederaSigningOrder).
-			validationResult = AUTORENEW_ACCOUNT_NOT_ALLOWED;
+		} else if (op.hasAutoRenewAccount()) {
+			final var reqAutoRenew = op.getAutoRenewAccount();
+			final var sanityCheck = validator.queryableAccountStatus(reqAutoRenew, accounts.get());
+			if (sanityCheck != OK) {
+				return INVALID_AUTORENEW_ACCOUNT;
+			}
+			if (ledger.isDetached(reqAutoRenew)) {
+				validationResult = ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+			} else if (!op.hasAdminKey()) {
+				validationResult = AUTORENEW_ACCOUNT_NOT_ALLOWED;
+			}
 		}
 
 		return validationResult;

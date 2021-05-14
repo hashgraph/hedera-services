@@ -102,7 +102,8 @@ public class StakedAnswerFlow implements AnswerFlow {
 
 		Optional<SignedTxnAccessor> optionalPayment = Optional.empty();
 		final var allegedPayment = service.extractPaymentFrom(query);
-		if (allegedPayment.isPresent()) {
+		final var isPaymentRequired = service.requiresNodePayment(query);
+		if (isPaymentRequired && allegedPayment.isPresent()) {
 			final var signedTxn = allegedPayment.get().getBackwardCompatibleSignedTxn();
 			final var paymentCheck = transactionPrecheck.performForQueryPayment(signedTxn);
 			final var paymentStatus = paymentCheck.getLeft().getValidity();
@@ -122,10 +123,10 @@ public class StakedAnswerFlow implements AnswerFlow {
 				.map(a -> a.getTxnId().getTransactionValidStart())
 				.orElse(asTimestamp(now.get()));
 		final var usagePrices = resourceCosts.pricesGiven(service.canonicalFunction(), bestGuessNow);
-		
+
 		long fee = 0L;
 		final Map<String, Object> queryCtx = new HashMap<>();
-		if (service.requiresNodePayment(query)) {
+		if (isPaymentRequired) {
 			/* The hygiene check would have aborted if we were missing a payment. */
 			final var payment = optionalPayment.get();
 			fee = totalOf(fees.computePayment(query, usagePrices, view, bestGuessNow, queryCtx));

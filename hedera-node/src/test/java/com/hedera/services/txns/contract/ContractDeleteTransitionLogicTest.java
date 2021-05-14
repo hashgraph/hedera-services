@@ -21,6 +21,7 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -39,6 +40,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
@@ -51,12 +53,15 @@ import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 public class ContractDeleteTransitionLogicTest {
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
+	final private AccountID transfer = AccountID.newBuilder().setAccountNum(4_321L).build();
 
 	private Instant consensusTime;
+	private HederaLedger ledger;
 	private OptionValidator validator;
 	private ContractDeleteTransitionLogic.LegacyDeleter delegate;
 	private TransactionBody contractDeleteTxn;
@@ -75,8 +80,9 @@ public class ContractDeleteTransitionLogicTest {
 		accessor = mock(PlatformTxnAccessor.class);
 		validator = mock(OptionValidator.class);
 		withRubberstampingValidator();
+		ledger = mock(HederaLedger.class);
 
-		subject = new ContractDeleteTransitionLogic(delegate, validator, txnCtx, () -> contracts);
+		subject = new ContractDeleteTransitionLogic(ledger, delegate, validator, txnCtx, () -> contracts);
 	}
 
 	@Test
@@ -86,6 +92,20 @@ public class ContractDeleteTransitionLogicTest {
 		// expect:
 		assertTrue(subject.applicability().test(contractDeleteTxn));
 		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
+	}
+
+	@Test
+	public void rejectsDetached() {
+		givenValidTxnCtx();
+		given(ledger.exists(transfer)).willReturn(true);
+		given(ledger.isDetached(transfer)).willReturn(true);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(txnCtx).setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+		verifyNoInteractions(delegate);
 	}
 
 	@Test
@@ -164,6 +184,7 @@ public class ContractDeleteTransitionLogicTest {
 				.setTransactionID(ourTxnId())
 				.setContractDeleteInstance(
 						ContractDeleteTransactionBody.newBuilder()
+								.setTransferAccountID(transfer)
 								.setContractID(target));
 		contractDeleteTxn = op.build();
 		given(accessor.getTxn()).willReturn(contractDeleteTxn);

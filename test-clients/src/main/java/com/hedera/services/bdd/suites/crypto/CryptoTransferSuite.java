@@ -77,9 +77,22 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						specialAccountsBalanceCheck(),
 						transferToTopicReturnsInvalidAccountId(),
 						tokenTransferFeesScaleAsExpected(),
+						okToSetInvalidPaymentHeaderForCostAnswer(),
 				}
 		);
 	}
+
+	private HapiApiSpec okToSetInvalidPaymentHeaderForCostAnswer() {
+		return defaultHapiSpec("OkToSetInvalidPaymentHeaderForCostAnswer")
+				.given(
+						cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L))
+								.via("misc")
+				).when( ).then(
+						getTxnRecord("misc").useEmptyTxnAsCostPayment(),
+						getTxnRecord("misc").omittingAnyPaymentForCostAnswer()
+				);
+	}
+
 
 	private HapiApiSpec tokenTransferFeesScaleAsExpected() {
 		return defaultHapiSpec("TokenTransferFeesScaleAsExpected")

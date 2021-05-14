@@ -120,7 +120,7 @@ public class ContextOptionValidator implements OptionValidator {
 	}
 
 	@Override
-	public ResponseCodeEnum isAcceptableTokenTransfersLength(List<TokenTransferList> tokenTransferLists) {
+	public ResponseCodeEnum tokenTransfersLengthCheck(List<TokenTransferList> tokenTransferLists) {
 		int maxLen = properties.maxTokenTransferListSize();
 		int tokenTransferListsSize = tokenTransferLists.size();
 
@@ -209,5 +209,10 @@ public class ContextOptionValidator implements OptionValidator {
 				merkleTopic.getExpirationTimestamp().getSeconds(),
 				merkleTopic.getExpirationTimestamp().getNanos());
 		return txnCtx.consensusTime().isAfter(expiry);
+	}
+
+	@Override
+	public boolean isAfterConsensusSecond(long now) {
+		return now > txnCtx.consensusTime().getEpochSecond();
 	}
 }

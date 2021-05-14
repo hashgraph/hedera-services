@@ -68,6 +68,7 @@ public class LoadTest extends HapiApiSuite {
 	public static OptionalInt totalTestTokenAccounts = OptionalInt.empty();
 	public static OptionalInt memoLength = OptionalInt.of(DEFAULT_MEMO_LENGTH);
 	public static OptionalInt testTopicId = OptionalInt.empty();
+
 	public static OptionalInt balancesExportPeriodSecs = OptionalInt.empty();
 	public static Optional<Boolean> clientToExportBalances = Optional.empty();
 

@@ -245,7 +245,6 @@ class ScreenedSysFilePropsTest {
 		// then:
 		assertTrue(subject.from121.isEmpty());
 		// and:
-		System.out.println(logCaptor.warnLogs());
 		assertThat(logCaptor.warnLogs(), contains(
 				"Property name 'defaultFeeCollectionAccount' is deprecated, please use 'ledger.fundingAccount' instead!",
 				String.format(

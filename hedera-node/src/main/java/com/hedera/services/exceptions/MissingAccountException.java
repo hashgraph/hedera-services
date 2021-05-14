@@ -20,10 +20,10 @@ package com.hedera.services.exceptions;
  * ‍
  */
 
-import com.hedera.services.utils.EntityIdUtils;
+import static com.hedera.services.utils.EntityIdUtils.readableId;
 
 public class MissingAccountException extends IllegalArgumentException {
 	public MissingAccountException(Object id) {
-		super(EntityIdUtils.readableId(id));
+		super(readableId(id));
 	}
 }

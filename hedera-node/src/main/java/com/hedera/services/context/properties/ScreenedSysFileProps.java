@@ -77,7 +77,9 @@ public class ScreenedSysFileProps implements PropertySource {
 	);
 	@SuppressWarnings("unchecked")
 	private static Map<String, Predicate<Object>> VALUE_SCREENS = Map.ofEntries(
-			entry("rates.intradayChangeLimitPercent", limitPercent -> (int) limitPercent > 0),
+			entry(
+					"rates.intradayChangeLimitPercent",
+					limitPercent -> (int) limitPercent > 0),
 			entry("scheduling.whitelist",
 					whitelist -> ((Set<HederaFunctionality>)whitelist)
 							.stream()

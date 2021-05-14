@@ -64,12 +64,12 @@ public class MonotonicFullQueueExpiries<K> implements KeyedExpirations<K> {
 		private final K id;
 		private final long expiry;
 
-		public ExpiryEvent(K id, long expiry) {
+		ExpiryEvent(K id, long expiry) {
 			this.id = id;
 			this.expiry = expiry;
 		}
 
-		public boolean isExpiredAt(long now) {
+		boolean isExpiredAt(long now) {
 			return expiry <= now;
 		}
 

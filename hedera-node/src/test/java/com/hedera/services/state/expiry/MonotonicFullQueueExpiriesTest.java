@@ -35,12 +35,12 @@ class MonotonicFullQueueExpiriesTest {
 	MonotonicFullQueueExpiries<String> subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		subject = new MonotonicFullQueueExpiries<>();
 	}
 
 	@Test
-	public void throwsOnNonMonotonicClock() {
+	void throwsOnNonMonotonicClock() {
 		// given:
 		subject.track(k1, expiry1);
 
@@ -49,7 +49,7 @@ class MonotonicFullQueueExpiriesTest {
 	}
 
 	@Test
-	public void behavesWithValidOps() {
+	void behavesWithValidOps() {
 		// given:
 		subject.track(k1, expiry1);
 		subject.track(k2, expiry2);
@@ -75,7 +75,7 @@ class MonotonicFullQueueExpiriesTest {
 	}
 
 	@Test
-	public void resetWorks() {
+	void resetWorks() {
 		// given:
 		subject.track(k1, expiry1);
 
@@ -88,7 +88,7 @@ class MonotonicFullQueueExpiriesTest {
 	}
 
 	@Test
-	public void throwsIfNextExpiryIsFuture() {
+	void throwsIfNextExpiryIsFuture() {
 		// given:
 		subject.track(k1, expiry1);
 
@@ -97,14 +97,27 @@ class MonotonicFullQueueExpiriesTest {
 	}
 
 	@Test
-	public void throwsIfNoPossibleExpiries() {
+	void throwsIfNoPossibleExpiries() {
 		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.expireNextAt(expiry1));
 	}
 
 	@Test
-	public void noExpiringIfEmpty() {
+	void noExpiringIfEmpty() {
 		// expect:
 		assertFalse(subject.hasExpiringAt(expiry1));
+	}
+
+	@Test
+	void expiryEventToStringWorks() {
+		// given:
+		var expiryEvent = new MonotonicFullQueueExpiries<String>().new ExpiryEvent("something", 1_234_567L);
+		var desired = "ExpiryEvent{id=something, expiry=1234567}";
+
+		// when:
+		var actual = expiryEvent.toString();
+
+		// then:
+		assertEquals(desired, actual);
 	}
 }

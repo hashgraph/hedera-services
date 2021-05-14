@@ -91,6 +91,7 @@ import com.hedera.services.sigs.factories.SigFactoryCreator;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.sigs.verification.SyncVerifier;
+import com.hedera.services.state.expiry.EntityAutoRenewal;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.exports.SignedStateBalancesExporter;
@@ -203,7 +204,7 @@ public class ServicesContextTest {
 		accounts = mock(FCMap.class);
 		seqNo = mock(SequenceNumber.class);
 		midnightRates = mock(ExchangeRates.class);
-		networkCtx = new MerkleNetworkContext(consensusTimeOfLastHandledTxn, seqNo, midnightRates);
+		networkCtx = new MerkleNetworkContext(consensusTimeOfLastHandledTxn, seqNo, 1000L, midnightRates);
 		state = mock(ServicesState.class);
 		given(state.networkCtx()).willReturn(networkCtx);
 		given(state.accounts()).willReturn(accounts);
@@ -535,6 +536,7 @@ public class ServicesContextTest {
 		assertThat(ctx.syntaxPrecheck(), instanceOf(SyntaxPrecheck.class));
 		assertThat(ctx.transactionPrecheck(), instanceOf(TransactionPrecheck.class));
 		assertThat(ctx.queryHeaderValidity(), instanceOf(QueryHeaderValidity.class));
+		assertThat(ctx.entityAutoRenewal(), instanceOf(EntityAutoRenewal.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

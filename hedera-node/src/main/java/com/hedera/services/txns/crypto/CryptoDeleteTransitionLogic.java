@@ -63,18 +63,23 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		try {
 			CryptoDeleteTransactionBody op = txnCtx.accessor().getTxn().getCryptoDelete();
+
 			AccountID id = op.getDeleteAccountID();
 			if (ledger.isKnownTreasury(id)) {
 				txnCtx.setStatus(ACCOUNT_IS_TREASURY);
 				return;
-			};
+			}
+			AccountID beneficiary = op.getTransferAccountID();
+			if (ledger.isDetached(id) || ledger.isDetached(beneficiary)) {
+				txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+				return;
+			}
 
 			if (!ledger.allTokenBalancesVanish(id)) {
 				txnCtx.setStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
 				return;
 			}
 
-			AccountID beneficiary = op.getTransferAccountID();
 			ledger.delete(id, beneficiary);
 
 			txnCtx.setStatus(SUCCESS);
@@ -82,6 +87,9 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 			txnCtx.setStatus(INVALID_ACCOUNT_ID);
 		} catch (DeletedAccountException dae) {
 			txnCtx.setStatus(ACCOUNT_DELETED);
+		} catch (Exception e) {
+			log.warn("Avoidable exception!", e);
+			txnCtx.setStatus(FAIL_INVALID);
 		}
 	}
 

@@ -48,6 +48,7 @@ public class ContractResources {
 	public static final String JURISDICTIONS_BYTECODE_PATH = bytecodePath("Jurisdictions");
 	public static final String MINTERS_BYTECODE_PATH = bytecodePath("Minters");
 	public static final String PAY_TEST_BYTECODE_PATH = bytecodePath("PayTest");
+	public static final String DOUBLE_SEND_BYTECODE_PATH = bytecodePath("DoubleSend");
 
 	public static final String CREATE_CHILD_ABI = "{\"constant\":false," +
 			"\"inputs\":[],\"name\":\"create\"," +
@@ -330,6 +331,10 @@ public class ContractResources {
 			"\"inputs\":[{\"name\":\"_jurisdictions\",\"type\":\"address\"}],\"name\":\"configureJurisdictionContract\"," +
 			"\"outputs\":[]," +
 			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String SEND_TO_TWO_ABI = "{\"constant\":false,\"inputs\":[{\"internalType\":\"uint32\"," +
+			"\"name\":\"toFirst\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"toSecond\"," +
+			"\"type\":\"uint32\"}],\"name\":\"donate\",\"outputs\":[],\"payable\":true," +
+			"\"stateMutability\":\"payable\",\"type\":\"function\"}";
 
 
 	public static final String bytecodePath(String bytecode) {

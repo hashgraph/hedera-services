@@ -44,12 +44,14 @@ import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.time.Instant;
 
 import static org.mockito.BDDMockito.*;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -140,7 +142,24 @@ class AwareFcfsUsagePricesTest {
 	}
 
 	@Test
-	public void getsActivePrices() throws Exception {
+	void returnsExpectedPriceSequence() {
+		// given:
+		subject.loadPriceSchedules();
+
+		// when:
+		var actual = subject.activePricingSequence(CryptoTransfer);
+
+		// then:
+		assertEquals(
+				Triple.of(
+						currentCryptoTransferUsagePrices,
+						Instant.ofEpochSecond(currentExpiry),
+						nextCryptoTransferUsagePrices),
+				actual);
+	}
+
+	@Test
+	void getsActivePrices() throws Exception {
 		// given:
 		subject.loadPriceSchedules();
 
@@ -152,7 +171,7 @@ class AwareFcfsUsagePricesTest {
 	}
 
 	@Test
-	public void getsDefaultPricesIfActiveTxnInvalid() throws Exception {
+	void getsDefaultPricesIfActiveTxnInvalid() throws Exception {
 		// given:
 		subject.loadPriceSchedules();
 		// and:
@@ -168,7 +187,7 @@ class AwareFcfsUsagePricesTest {
 
 
 	@Test
-	public void getsTransferUsagePricesAtCurrent() throws Exception {
+	void getsTransferUsagePricesAtCurrent() throws Exception {
 		// given:
 		subject.loadPriceSchedules();
 		Timestamp at = Timestamp.newBuilder()
@@ -183,7 +202,7 @@ class AwareFcfsUsagePricesTest {
 	}
 
 	@Test
-	public void returnsDefaultUsagePricesForUnsupported() throws Exception {
+	void returnsDefaultUsagePricesForUnsupported() throws Exception {
 		// setup:
 		MockAppender mockAppender = new MockAppender();
 		var log = (org.apache.logging.log4j.core.Logger) LogManager.getLogger(AwareFcfsUsagePrices.class);
@@ -213,7 +232,7 @@ class AwareFcfsUsagePricesTest {
 	}
 
 	@Test
-	public void getsTransferUsagePricesPastCurrentBeforeNextExpiry() throws Exception {
+	void getsTransferUsagePricesPastCurrentBeforeNextExpiry() throws Exception {
 		// given:
 		subject.loadPriceSchedules();
 		Timestamp at = Timestamp.newBuilder()
@@ -228,7 +247,7 @@ class AwareFcfsUsagePricesTest {
 	}
 
 	@Test
-	public void loadsGoodScheduleUneventfully() throws Exception {
+	void loadsGoodScheduleUneventfully() throws Exception {
 		// setup:
 		byte[] bytes = Files.toByteArray(new File(JsonToProtoSerdeTest.R4_FEE_SCHEDULE_REPR_PATH));
 		CurrentAndNextFeeSchedule expectedFeeSchedules = CurrentAndNextFeeSchedule.parseFrom(bytes);
@@ -244,7 +263,7 @@ class AwareFcfsUsagePricesTest {
 	}
 
 	@Test
-	public void throwsNfseOnMissingScheduleInFcfs() {
+	void throwsNfseOnMissingScheduleInFcfs() {
 		given(hfs.exists(schedules)).willReturn(false);
 
 		// expect:
@@ -252,7 +271,7 @@ class AwareFcfsUsagePricesTest {
 	}
 
 	@Test
-	public void throwsNfseOnBadScheduleInFcfs() {
+	void throwsNfseOnBadScheduleInFcfs() {
 		given(hfs.exists(schedules)).willReturn(true);
 		given(hfs.cat(any())).willReturn("NONSENSE".getBytes());
 
@@ -261,7 +280,7 @@ class AwareFcfsUsagePricesTest {
 	}
 
 	@Test
-	public void usesDefaultPricesForUnexpectedFailure() {
+	void usesDefaultPricesForUnexpectedFailure() {
 		given(accessor.getFunction()).willThrow(IllegalStateException.class);
 
 		// when:

@@ -20,7 +20,6 @@ package com.hedera.services.contracts.sources;
  * ‍
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.submerkle.EntityId;
@@ -44,14 +43,12 @@ public class LedgerAccountsSource implements Source<byte[], AccountState> {
 	private static final Logger log = LogManager.getLogger(LedgerAccountsSource.class);
 
 	private final HederaLedger ledger;
-	private final GlobalDynamicProperties properties;
 	private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
 	private final ALock rLock = new ALock(rwLock.readLock());
 	private final ALock wLock = new ALock(rwLock.writeLock());
 
-	public LedgerAccountsSource(HederaLedger ledger, GlobalDynamicProperties properties) {
+	public LedgerAccountsSource(HederaLedger ledger) {
 		this.ledger = ledger;
-		this.properties = properties;
 	}
 
 	@Override
@@ -63,7 +60,7 @@ public class LedgerAccountsSource implements Source<byte[], AccountState> {
 	public AccountState get(byte[] key) {
 		try (ALock ignored = rLock.lock()) {
 			var id = accountParsedFromSolidityAddress(key);
-			if (!ledger.exists(id)) {
+			if (!ledger.exists(id) || ledger.isDetached(id)) {
 				return null;
 			}
 

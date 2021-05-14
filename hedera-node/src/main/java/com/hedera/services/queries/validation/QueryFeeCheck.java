@@ -20,7 +20,9 @@ package com.hedera.services.queries.validation;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
@@ -33,15 +35,24 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
 
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
 public class QueryFeeCheck {
+	private final OptionValidator validator;
+	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
-	public QueryFeeCheck(Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts) {
+	public QueryFeeCheck(
+			OptionValidator validator,
+			GlobalDynamicProperties dynamicProperties,
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
+	) {
 		this.accounts = accounts;
+		this.validator = validator;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	public ResponseCodeEnum nodePaymentValidity(List<AccountAmount> transfers, long queryFee, AccountID node) {
@@ -59,7 +70,7 @@ public class QueryFeeCheck {
 		}
 		// number of beneficiaries in query transfer transaction can be greater than one.
 		// validate if node gets the required query payment
-		if (transfers.stream().noneMatch(adj -> adj.getAmount() > 0 && adj.getAccountID().equals(node))) {
+		if (transfers.stream().noneMatch(adj -> adj.getAmount() >= 0 && adj.getAccountID().equals(node))) {
 			return INVALID_RECEIVING_NODE_ACCOUNT;
 		}
 		if (transfers.stream().anyMatch(adj -> adj.getAccountID().equals(node) && adj.getAmount() < queryFee)) {
@@ -96,7 +107,7 @@ public class QueryFeeCheck {
 
 	ResponseCodeEnum adjustmentPlausibility(AccountAmount adjustment) {
 		var id = adjustment.getAccountID();
-		var key = MerkleEntityId.fromAccountId(id);
+		var key = fromAccountId(id);
 		long amount = adjustment.getAmount();
 
 		if (amount == Long.MIN_VALUE) {
@@ -104,13 +115,7 @@ public class QueryFeeCheck {
 		}
 
 		if (amount < 0) {
-			var balanceStatus = Optional.ofNullable(accounts.get().get(key))
-					.filter(account -> account.getBalance() >= Math.abs(amount))
-					.map(ignore -> OK)
-					.orElse(INSUFFICIENT_PAYER_BALANCE);
-			if (balanceStatus != OK) {
-				return balanceStatus;
-			}
+			return balanceCheck(accounts.get().get(key), Math.abs(amount));
 		} else {
 			if (!accounts.get().containsKey(key)) {
 				return ACCOUNT_ID_DOES_NOT_EXIST;
@@ -134,6 +139,8 @@ public class QueryFeeCheck {
 		List<AccountAmount> transfers = transferList.getAccountAmountsList();
 		long transactionFee = txn.getTransactionFee();
 
+		final var currentAccounts = accounts.get();
+		ResponseCodeEnum status;
 		for (AccountAmount accountAmount : transfers) {
 			var id = accountAmount.getAccountID();
 			long amount = accountAmount.getAmount();
@@ -147,28 +154,26 @@ public class QueryFeeCheck {
 						return INSUFFICIENT_PAYER_BALANCE;
 					}
 				}
-				if (!hasPayerEnoughBalance(id, amount)) {
-					return INSUFFICIENT_PAYER_BALANCE;
+				if ((status = balanceCheck(currentAccounts.get(fromAccountId(id)), amount)) != OK) {
+					return status;
 				}
 			}
 		}
 		return OK;
 	}
 
-	/**
-	 * Check if each payer in transfer list of query payment transfer transaction has enough balance for transfer
-	 *
-	 * @param payerAccount
-	 * @param amount
-	 * @return
-	 */
-	private boolean hasPayerEnoughBalance(AccountID payerAccount, long amount) {
-		Long payerAccountBalance = Optional.ofNullable(accounts.get().get(fromAccountId(payerAccount)))
-				.map(MerkleAccount::getBalance)
-				.orElse(null);
-		if (payerAccountBalance < amount) {
-			return false;
+	private ResponseCodeEnum balanceCheck(@Nullable MerkleAccount payingAccount, long req) {
+		if (payingAccount == null) {
+			return ACCOUNT_ID_DOES_NOT_EXIST;
 		}
-		return true;
+		final long balance = payingAccount.getBalance();
+		if (balance >= req) {
+			return OK;
+		} else {
+			final var isDetached = balance == 0
+					&& dynamicProperties.autoRenewEnabled()
+					&& !validator.isAfterConsensusSecond(payingAccount.getExpiry());
+			return isDetached ? ACCOUNT_EXPIRED_AND_PENDING_REMOVAL : INSUFFICIENT_PAYER_BALANCE;
+		}
 	}
 }

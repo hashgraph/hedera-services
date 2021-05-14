@@ -66,6 +66,9 @@ import static org.mockito.Mockito.times;
 @ExtendWith(LogCaptureExtension.class)
 class MerkleNetworkContextTest {
 	private int stateVersion = 13;
+	private long lastScannedEntity = 1000L;
+	private long entitiesTouchedThisSecond = 123L;
+	private long entitiesScannedThisSecond = 123_456L;
 	private RichInstant consensusTimeOfLastHandledTxn;
 	private SequenceNumber seqNo;
 	private SequenceNumber seqNoCopy;
@@ -115,10 +118,13 @@ class MerkleNetworkContextTest {
 		subject = new MerkleNetworkContext(
 				consensusTimeOfLastHandledTxn,
 				seqNo,
+				lastScannedEntity,
 				midnightRateSet,
 				usageSnapshots,
 				richCongestionStarts(),
-				stateVersion);
+				stateVersion,
+				entitiesScannedThisSecond,
+				entitiesTouchedThisSecond);
 	}
 
 	@AfterEach
@@ -133,10 +139,14 @@ class MerkleNetworkContextTest {
 
 		// expect:
 		assertSame(subjectCopy.getConsensusTimeOfLastHandledTxn(), subject.getConsensusTimeOfLastHandledTxn());
-		assertEquals(seqNoCopy, subjectCopy.getSeqNo());
+		assertEquals(seqNoCopy, subjectCopy.seqNo());
+		assertEquals(subjectCopy.lastScannedEntity(), subject.lastScannedEntity());
 		assertEquals(midnightRateSetCopy, subjectCopy.getMidnightRates());
 		assertSame(subjectCopy.getUsageSnapshots(), subject.getUsageSnapshots());
 		assertSame(subjectCopy.getCongestionLevelStarts(), subject.getCongestionLevelStarts());
+		assertEquals(subjectCopy.getStateVersion(), stateVersion);
+		assertEquals(subjectCopy.getEntitiesScannedThisSecond(), entitiesScannedThisSecond);
+		assertEquals(subjectCopy.getEntitiesTouchedThisSecond(), entitiesTouchedThisSecond);
 	}
 
 	@Test
@@ -152,6 +162,9 @@ class MerkleNetworkContextTest {
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
 				"  Next entity number                         :: 1234\n" +
+				"  Last scanned entity                        :: 1000\n" +
+				"  Entities scanned last consensus second     :: 123456\n" +
+				"  Entities touched last consensus second     :: 123\n" +
 				"  Throttle usage snapshots are               ::\n" +
 				"    100 used (last decision time 1970-01-01T00:00:01.000000100Z)\n" +
 				"    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n" +
@@ -163,6 +176,9 @@ class MerkleNetworkContextTest {
 				"  Consensus time of last handled transaction :: 1970-01-15T06:56:07.000054321Z\n" +
 				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
 				"  Next entity number                         :: 1234\n" +
+				"  Last scanned entity                        :: 1000\n" +
+				"  Entities scanned last consensus second     :: 123456\n" +
+				"  Entities touched last consensus second     :: 123\n" +
 				"  Throttle usage snapshots are               ::\n" +
 				"    100 used (last decision time 1970-01-01T00:00:01.000000100Z)\n" +
 				"    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n" +
@@ -178,6 +194,26 @@ class MerkleNetworkContextTest {
 		subject.setStateVersion(MerkleNetworkContext.UNRECORDED_STATE_VERSION);
 		// then:
 		assertEquals(desiredWithoutStateVersion, subject.toString());
+	}
+
+	@Test
+	void addsWork() {
+		// when:
+		subject.updateAutoRenewSummaryCounts((int)entitiesScannedThisSecond, (int)entitiesTouchedThisSecond);
+
+		// then:
+		assertEquals(2 * entitiesScannedThisSecond, subject.getEntitiesScannedThisSecond());
+		assertEquals(2 * entitiesTouchedThisSecond, subject.getEntitiesTouchedThisSecond());
+	}
+
+	@Test
+	void resetsWork() {
+		// when:
+		subject.resetAutoRenewSummaryCounts();
+
+		// then:
+		assertEquals(0, subject.getEntitiesTouchedThisSecond());
+		assertEquals(0, subject.getEntitiesScannedThisSecond());
 	}
 
 	@Test
@@ -268,9 +304,6 @@ class MerkleNetworkContextTest {
 		given(throttling.allActiveThrottles()).willReturn(List.of(aThrottle, bThrottle));
 		// and:
 		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[] { subjectSnapshotA, subjectSnapshotC });
-		// and:
-		var desired = "Saved usage snapshot #2 was not compatible with the corresponding active throttle " +
-				"(Cannot use 20000000000000 units in a bucket of capacity 18000000000000!); not performing a reset!";
 
 		// when:
 		subject.resetWithSavedSnapshots(throttling);
@@ -439,7 +472,10 @@ class MerkleNetworkContextTest {
 				.willReturn(stateVersion);
 		given(in.readLong())
 				.willReturn(usageSnapshots[0].used())
-				.willReturn(usageSnapshots[1].used());
+				.willReturn(usageSnapshots[1].used())
+				.willReturn(lastScannedEntity)
+				.willReturn(entitiesScannedThisSecond)
+				.willReturn(entitiesTouchedThisSecond);
 		given(serdes.readNullableInstant(in))
 				.willReturn(consensusTimeOfLastHandledTxn)
 				.willReturn(RichInstant.fromJava(usageSnapshots[0].lastDecisionTime()))
@@ -452,12 +488,15 @@ class MerkleNetworkContextTest {
 
 		// then:
 		assertEquals(consensusTimeOfLastHandledTxn, subject.getConsensusTimeOfLastHandledTxn());
+		assertEquals(entitiesScannedThisSecond, subject.getEntitiesScannedThisSecond());
+		assertEquals(entitiesTouchedThisSecond, subject.getEntitiesTouchedThisSecond());
 		assertArrayEquals(usageSnapshots, subject.usageSnapshots());
 		assertArrayEquals(richCongestionStarts(), subject.getCongestionLevelStarts());
 		// and:
 		inOrder.verify(seqNo).deserialize(in);
 		inOrder.verify(in).readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class));
 		// and:
+		assertEquals(lastScannedEntity, subject.lastScannedEntity());
 		assertEquals(stateVersion, subject.getStateVersion());
 	}
 
@@ -492,6 +531,9 @@ class MerkleNetworkContextTest {
 		for (int i = 0; i < 2; i++) {
 			inOrder.verify(serdes).writeNullableInstant(richCongestionStarts()[i], out);
 		}
+		inOrder.verify(out).writeLong(lastScannedEntity);
+		inOrder.verify(out).writeLong(entitiesScannedThisSecond);
+		inOrder.verify(out).writeLong(entitiesTouchedThisSecond);
 		inOrder.verify(out).writeInt(stateVersion);
 	}
 
@@ -507,6 +549,12 @@ class MerkleNetworkContextTest {
 			Instant.ofEpochSecond(2L, 200),
 			Instant.ofEpochSecond(3L, 300)
 	};
+
+	@Test
+	void updateLastScannedEntityWorks() {
+		subject.updateLastScannedEntity(2000L);
+		assertEquals(2000L, subject.lastScannedEntity());
+	}
 
 	private List<DeterministicThrottle> activeThrottles() {
 		var snapshots = snapshots();

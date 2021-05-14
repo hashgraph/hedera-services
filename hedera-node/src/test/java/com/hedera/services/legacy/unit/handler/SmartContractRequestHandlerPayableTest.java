@@ -49,6 +49,7 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.SolidityLifecycleFactory;
 import com.hedera.test.mocks.StorageSourceFactory;
+import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.mocks.TestUsagePricesProvider;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
@@ -80,6 +81,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -145,9 +147,11 @@ public class SmartContractRequestHandlerPayableTest {
             mock(TokenStore.class),
             mock(EntityIdSource.class),
             mock(ExpiringCreations.class),
+            TestContextValidator.TEST_VALIDATOR,
             mock(AccountRecordsHistorian.class),
+            new MockGlobalDynamicProps(),
             delegate);
-    ledgerSource = new LedgerAccountsSource(ledger, new MockGlobalDynamicProps());
+    ledgerSource = new LedgerAccountsSource(ledger);
     Source<byte[], AccountState> repDatabase = ledgerSource;
     ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
     return repository;

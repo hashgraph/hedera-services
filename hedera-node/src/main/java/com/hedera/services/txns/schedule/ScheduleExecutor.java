@@ -28,6 +28,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Objects;
+
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
@@ -44,17 +46,23 @@ public final class ScheduleExecutor {
 	 * triggering the underlying transaction. A ResponseEnumCode of OK is returned upon successful trigger of the
 	 * inner transaction. The arguments cannot be null, the return type would always be a proper ResponseEnumCode.
 	 *
-	 * @param id The non null id of the scheduled transaction.
-	 * @param store A non null object to handle scheduled entity type.
-	 * @param context A non null object to handle inner transaction specific context on a node.
-	 * @return the response code {@link ResponseCodeEnum} from executing the inner scheduled transaction
+	 * @param id
+	 * 		the id of the scheduled transaction
+	 * @param store
+	 * 		the relevant store of schedule entities
+	 * @param context
+	 * 		the active (parent) transaction context
+	 * @return the result {@link ResponseCodeEnum} of triggering the scheduled entity
 	 */
 	ResponseCodeEnum processExecution(
 			@NotNull ScheduleID id,
-			@NotNull  ScheduleStore store,
-			@NotNull  TransactionContext context
-	) throws
-			InvalidProtocolBufferException, NullPointerException {
+			@NotNull ScheduleStore store,
+			@NotNull TransactionContext context
+	) throws InvalidProtocolBufferException {
+		Objects.requireNonNull(id, "The id of the scheduled transaction cannot be null");
+		Objects.requireNonNull(store, "The schedule entity store cannot be null");
+		Objects.requireNonNull(context, "The active transaction context cannot be null");
+
 		final var executionStatus = store.markAsExecuted(id);
 		if (executionStatus != OK) {
 			return executionStatus;
@@ -70,3 +78,4 @@ public final class ScheduleExecutor {
 		return OK;
 	}
 }
+

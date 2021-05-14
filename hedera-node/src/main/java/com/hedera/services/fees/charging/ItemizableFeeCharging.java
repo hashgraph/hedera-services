@@ -83,11 +83,11 @@ public class ItemizableFeeCharging extends FieldSourcedFeeScreening implements T
 		return payerFeesCharged.values().stream().mapToLong(Long::longValue).sum();
 	}
 
-	public long chargedToPayer(TxnFeeType fee) {
+	long chargedToPayer(TxnFeeType fee) {
 		return Optional.ofNullable(payerFeesCharged.get(fee)).orElse(0L);
 	}
 
-	public long chargedToSubmittingNode(TxnFeeType fee) {
+	long chargedToSubmittingNode(TxnFeeType fee) {
 		return Optional.ofNullable(submittingNodeFeesCharged.get(fee)).orElse(0L);
 	}
 

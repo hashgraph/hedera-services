@@ -20,7 +20,9 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.DeletedAccountException;
+import com.hedera.services.exceptions.DetachedAccountException;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.exceptions.NonZeroNetTransfersException;
@@ -35,6 +37,8 @@ import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.txns.validation.ContextOptionValidator;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -123,6 +127,8 @@ public class HederaLedger {
 
 	private final TokenStore tokenStore;
 	private final EntityIdSource ids;
+	private final OptionValidator validator;
+	private final GlobalDynamicProperties dynamicProperties;
 	private final TransferList.Builder netTransfers = TransferList.newBuilder();
 	private final AccountRecordsHistorian historian;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
@@ -139,13 +145,17 @@ public class HederaLedger {
 			TokenStore tokenStore,
 			EntityIdSource ids,
 			EntityCreator creator,
+			OptionValidator validator,
 			AccountRecordsHistorian historian,
+			GlobalDynamicProperties dynamicProperties,
 			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger
 	) {
 		this.ids = ids;
+		this.validator = validator;
 		this.historian = historian;
 		this.tokenStore = tokenStore;
 		this.accountsLedger = accountsLedger;
+		this.dynamicProperties = dynamicProperties;
 
 		creator.setLedger(this);
 		historian.setLedger(this);
@@ -454,6 +464,13 @@ public class HederaLedger {
 		return (boolean) accountsLedger.get(id, IS_DELETED);
 	}
 
+	public boolean isDetached(AccountID id) {
+		return dynamicProperties.autoRenewEnabled()
+				&& !(boolean) accountsLedger.get(id, IS_SMART_CONTRACT)
+				&& (long) accountsLedger.get(id, BALANCE) == 0L
+				&& !validator.isAfterConsensusSecond((long) accountsLedger.get(id, EXPIRY));
+	}
+
 	public boolean isPendingCreation(AccountID id) {
 		return accountsLedger.existsPending(id);
 	}
@@ -523,7 +540,10 @@ public class HederaLedger {
 		if ((boolean) accountsLedger.get(id, IS_DELETED)) {
 			throw new DeletedAccountException(id);
 		}
-		long balance = getBalance(id);
+		if (isDetached(id)) {
+			throw new DetachedAccountException(id);
+		}
+		final long balance = getBalance(id);
 		if (!isLegalToAdjust(balance, adjustment)) {
 			throw new InsufficientFundsException(id, adjustment);
 		}
@@ -656,4 +676,6 @@ public class HederaLedger {
 			recordsPurged += n;
 		}
 	}
+
+
 }

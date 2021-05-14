@@ -22,6 +22,7 @@ package com.hedera.services.txns.consensus;
 
 import com.google.protobuf.StringValue;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -51,6 +52,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOU
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISSING_ACCOUNT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISSING_TOPIC;
 import static com.hedera.test.utils.IdUtils.asTopic;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
@@ -93,6 +95,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	private Instant updatedExpirationTime;
 	private TransactionBody transactionBody;
 	private TransactionContext transactionContext;
+	private HederaLedger ledger;
 	private PlatformTxnAccessor accessor;
 	private OptionValidator validator;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts = new FCMap<>();
@@ -118,7 +121,8 @@ class MerkleTopicUpdateTransitionLogicTest {
 		given(validator.memoCheck(VALID_MEMO)).willReturn(OK);
 		given(validator.memoCheck(TOO_LONG_MEMO)).willReturn(MEMO_TOO_LONG);
 
-		subject = new TopicUpdateTransitionLogic(() -> accounts, () -> topics, validator, transactionContext);
+		ledger = mock(HederaLedger.class);
+		subject = new TopicUpdateTransitionLogic(() -> accounts, () -> topics, validator, transactionContext, ledger);
 	}
 
 	@Test
@@ -337,6 +341,34 @@ class MerkleTopicUpdateTransitionLogicTest {
 	}
 
 	@Test
+	public void failsOnDetachedExistingAutoRenewAccount() throws Throwable {
+		// given:
+		givenExistingTopicWithAutoRenewAccount();
+		givenValidTransactionWithAllOptions();
+		given(ledger.isDetached(MISC_ACCOUNT)).willReturn(true);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(transactionContext).setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+	}
+
+	@Test
+	public void failsOnDetachedNewAutoRenewAccount() throws Throwable {
+		// given:
+		givenExistingTopicWithAdminKey();
+		givenTransactionWithAutoRenewAccountNotClearingAdminKey();
+		given(ledger.isDetached(MISC_ACCOUNT)).willReturn(true);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(transactionContext).setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+	}
+
+	@Test
 	public void failsOnAutoRenewAccountNotAllowed() throws Throwable {
 		// given:
 		givenExistingTopicWithAdminKey();
@@ -435,6 +467,15 @@ class MerkleTopicUpdateTransitionLogicTest {
 		givenTransaction(
 				getBasicValidTransactionBodyBuilder()
 						.setAdminKey(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()))
+						.setAutoRenewAccount(MISC_ACCOUNT)
+		);
+		given(validator.queryableAccountStatus(MISC_ACCOUNT, accounts)).willReturn(OK);
+		given(validator.hasGoodEncoding(any())).willReturn(true);
+	}
+
+	private void givenTransactionWithAutoRenewAccountNotClearingAdminKey() {
+		givenTransaction(
+				getBasicValidTransactionBodyBuilder()
 						.setAutoRenewAccount(MISC_ACCOUNT)
 		);
 		given(validator.queryableAccountStatus(MISC_ACCOUNT, accounts)).willReturn(OK);

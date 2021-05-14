@@ -26,6 +26,7 @@ import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.keys.HederaKeyTraversal;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -41,6 +42,7 @@ import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +53,7 @@ import java.util.function.Function;
 import static com.hedera.services.fees.calculation.AwareFcfsUsagePrices.DEFAULT_USAGE_PRICES;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAccountAutoRenew;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 
@@ -64,6 +67,7 @@ import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 public class UsageBasedFeeCalculator implements FeeCalculator {
 	private static final Logger log = LogManager.getLogger(UsageBasedFeeCalculator.class);
 
+	private final AutoRenewCalcs autoRenewCalcs;
 	private final HbarCentExchange exchange;
 	private final FeeMultiplierSource feeMultiplierSource;
 	private final UsagePricesProvider usagePrices;
@@ -71,6 +75,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	private final Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators;
 
 	public UsageBasedFeeCalculator(
+			AutoRenewCalcs autoRenewCalcs,
 			HbarCentExchange exchange,
 			UsagePricesProvider usagePrices,
 			FeeMultiplierSource feeMultiplierSource,
@@ -80,6 +85,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 		this.exchange = exchange;
 		this.usagePrices = usagePrices;
 		this.feeMultiplierSource = feeMultiplierSource;
+		this.autoRenewCalcs = autoRenewCalcs;
 		this.queryUsageEstimators = queryUsageEstimators;
 		this.txnUsageEstimators = txnUsageEstimators;
 	}
@@ -87,6 +93,16 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	@Override
 	public void init() {
 		usagePrices.loadPriceSchedules();
+		autoRenewCalcs.setCryptoAutoRenewPriceSeq(usagePrices.activePricingSequence(CryptoAccountAutoRenew));
+	}
+
+	@Override
+	public AutoRenewCalcs.RenewAssessment assessCryptoAutoRenewal(
+			MerkleAccount expiredAccount,
+			long requestedRenewal,
+			Instant now
+	) {
+		return autoRenewCalcs.maxRenewalAndFeeFor(expiredAccount, requestedRenewal, now, exchange.activeRate());
 	}
 
 	@Override
