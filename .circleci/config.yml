@@ -1579,11 +1579,12 @@ workflows:
   GCP-Daily-Services-Global-3NReconnect-15N-4C:
     triggers:
       - schedule:
-          cron: "30 6 * * *"
+          cron: "2 19 * * *"
           filters:
             branches:
               only:
-                - master
+#                - master
+                - 01334-D-increase-reconnect-tests-TPS
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -2046,6 +2047,7 @@ workflows:
               branches:
                 ignore:
                   - /.*-PERF/
+                  - 01334-D-increase-reconnect-tests-TPS
             workflow-name: "Continuous-integration"
         - build-platform-and-services:
             context: SonarCloud
@@ -2292,7 +2294,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression;
+            cd regression; git checkout 01334-D-increase-reconnect-tests-TPS
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
