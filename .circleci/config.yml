@@ -1555,7 +1555,7 @@ workflows:
   GCP-Daily-Services-Reconnect-6N-4C:
     triggers:
       - schedule:
-          cron: "42 19 * * *"
+          cron: "6 1,8 * * *"
           filters:
             branches:
               only:
@@ -1580,7 +1580,7 @@ workflows:
   GCP-Daily-Services-Global-3NReconnect-15N-4C:
     triggers:
       - schedule:
-          cron: "2 19 * * *"
+          cron: "10 1,9 * * *"
           filters:
             branches:
               only:
@@ -1746,11 +1746,12 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-6N-1C:
     triggers:
       - schedule:
-          cron: "5 7 * * *"
+          cron: "10 1,8 * * *"
           filters:
             branches:
               only:
-                - master
+#                - master
+                - 01334-D-increase-reconnect-tests-TPS
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1769,7 +1770,7 @@ workflows:
   GCP-Daily-Services-Comp-3NReconnect-15N-4C:
     triggers:
       - schedule:
-          cron: "45 19 * * *"
+          cron: "6 1,9 * * *"
           filters:
             branches:
               only:
@@ -2296,7 +2297,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression; git checkout 01334-D-increase-reconnect-tests-TPS
+            cd regression; git checkout 01334-D-increase-reconnect-TPS-w-window
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
@@ -2709,10 +2710,10 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "hedera-regression"
+        default: "hedera-regression-test"
       slack_summary_channel:
         type: string
-        default: "hedera-regression-summary"
+        default: "hedera-regression-test"
       workflow-name:
         type: string
         default: ""
