@@ -29,6 +29,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -144,6 +145,7 @@ class HederaTokenStoreTest {
 	long expiry = CONSENSUS_NOW + 1_234_567;
 	long newExpiry = CONSENSUS_NOW + 1_432_765;
 	long totalSupply = 1_000_000;
+	long maxSupply = 1_234_567;
 	long adjustment = 1;
 	int decimals = 10;
 	long treasuryBalance = 50_000, sponsorBalance = 1_000;
@@ -1734,6 +1736,7 @@ class HederaTokenStoreTest {
 				freezeDefault,
 				accountsKycGrantedByDefault,
 				new EntityId(treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
+		expected.setType(TokenType.FUNGIBLE);
 		expected.setAutoRenewAccount(EntityId.fromGrpcAccountId(autoRenewAccount));
 		expected.setAutoRenewPeriod(autoRenewPeriod);
 		expected.setAdminKey(TOKEN_ADMIN_KT.asJKeyUnchecked());
@@ -1742,6 +1745,7 @@ class HederaTokenStoreTest {
 		expected.setWipeKey(MISC_ACCOUNT_KT.asJKeyUnchecked());
 		expected.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked());
 		expected.setMemo(memo);
+		expected.setMaxSupply(maxSupply);
 
 		// given:
 		var req = fullyValidAttempt()
@@ -1773,12 +1777,14 @@ class HederaTokenStoreTest {
 				freezeDefault,
 				accountsKycGrantedByDefault,
 				new EntityId(treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
+		expected.setType(TokenType.FUNGIBLE);
 		expected.setAdminKey(TOKEN_ADMIN_KT.asJKeyUnchecked());
 		expected.setFreezeKey(TOKEN_FREEZE_KT.asJKeyUnchecked());
 		expected.setKycKey(TOKEN_KYC_KT.asJKeyUnchecked());
 		expected.setWipeKey(MISC_ACCOUNT_KT.asJKeyUnchecked());
 		expected.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked());
 		expected.setMemo(memo);
+		expected.setMaxSupply(maxSupply);
 
 		// given:
 		var req = fullyValidAttempt().build();
@@ -1887,6 +1893,7 @@ class HederaTokenStoreTest {
 
 	TokenCreateTransactionBody.Builder fullyValidAttempt() {
 		return TokenCreateTransactionBody.newBuilder()
+				.setTokenType(com.hederahashgraph.api.proto.java.TokenType.Fungible)
 				.setExpiry(Timestamp.newBuilder().setSeconds(expiry))
 				.setMemo(memo)
 				.setAdminKey(adminKey)
@@ -1897,6 +1904,7 @@ class HederaTokenStoreTest {
 				.setSymbol(symbol)
 				.setName(name)
 				.setInitialSupply(totalSupply)
+				.setMaxSupply(maxSupply)
 				.setTreasury(treasury)
 				.setDecimals(decimals)
 				.setFreezeDefault(freezeDefault);

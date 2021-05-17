@@ -453,6 +453,10 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 		return type.ordinal();
 	}
 
+	public void setType(int typeInt) {
+		this.type = TokenType.values()[typeInt];
+	}
+
 	public void setType(TokenType type) {
 		this.type = type;
 	}
