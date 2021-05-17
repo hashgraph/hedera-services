@@ -102,7 +102,7 @@ public class TxnUtils {
 	private static final Logger log = LogManager.getLogger(TxnUtils.class);
 
 	public static final ResponseCodeEnum[] NOISY_RETRY_PRECHECKS = {
-			BUSY, PLATFORM_TRANSACTION_NOT_CREATED, DUPLICATE_TRANSACTION
+			BUSY, PLATFORM_TRANSACTION_NOT_CREATED
 	};
 	public final static ResponseCodeEnum[] NOISY_ALLOWED_STATUSES = {
 			OK, SUCCESS, DUPLICATE_TRANSACTION
