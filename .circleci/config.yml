@@ -1555,12 +1555,11 @@ workflows:
   GCP-Daily-Services-Reconnect-6N-4C:
     triggers:
       - schedule:
-          cron: "10 19 * * *"
+          cron: "30 5 * * *"
           filters:
             branches:
               only:
-#                - master
-                - 01334-D-increase-reconnect-tests-TPS
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1580,12 +1579,11 @@ workflows:
   GCP-Daily-Services-Global-3NReconnect-15N-4C:
     triggers:
       - schedule:
-          cron: "30 3,11 * * *"
+          cron: "30 7 * * *"
           filters:
             branches:
               only:
-#                - master
-                - X-01334-D-increase-reconnect-tests-TPS
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1746,12 +1744,11 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-6N-1C:
     triggers:
       - schedule:
-          cron: "30 3,11 * * *"
+          cron: "5 7 * * *"
           filters:
             branches:
               only:
-#                - master
-                - X-01334-D-increase-reconnect-tests-TPS
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1813,15 +1810,14 @@ workflows:
             - attach_workspace:
                 at: /
 
-  GCP-Daily-Services-Comp-3NReconnect-15N-1C:
+  GCP-Daily-Services-Comp-3NReconnect-15N-4C:
     triggers:
       - schedule:
-          cron: "30 3,11 * * *"
+          cron: "15 8 * * *"
           filters:
             branches:
               only:
-#                - master
-                - X-01334-D-increase-reconnect-tests-TPS
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -2096,7 +2092,6 @@ workflows:
               branches:
                 ignore:
                   - /.*-PERF/
-                  - 01334-D-increase-reconnect-tests-TPS
             workflow-name: "Continuous-integration"
         - build-platform-and-services:
             context: SonarCloud
@@ -2343,7 +2338,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression; git checkout 01334-D-increase-reconnect-TPS-w-window
+            cd regression;
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
@@ -2756,10 +2751,10 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "hedera-regression-test"
+        default: "hedera-regression"
       slack_summary_channel:
         type: string
-        default: "hedera-regression-test"
+        default: "hedera-regression-summary"
       workflow-name:
         type: string
         default: ""

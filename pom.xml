@@ -1,13 +1,12 @@
-<?xml version="1.0" encoding="utf-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <groupId>com.hedera.hashgraph</groupId>
   <artifactId>hedera-services</artifactId>
   <version>0.14.0-SNAPSHOT</version>
-  <description>Hedera Services (crypto, file, contract, consensus)
-  on the Platform</description>
+  <description>
+    Hedera Services (crypto, file, contract, consensus) on the Platform
+  </description>
   <inceptionYear>2018</inceptionYear>
   <modelVersion>4.0.0</modelVersion>
   <name>Hedera Services</name>
@@ -17,14 +16,14 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
     <name>Hedera Hashgraph, LLC</name>
     <url>https://hedera.com</url>
   </organization>
+
   <scm>
     <url>https://github.com/hashgraph/hedera-services</url>
-    <connection>
-    scm:git:git@github.com:hashgraph/hedera-services.git</connection>
-    <developerConnection>
-    scm:git:git@github.com:hashgraph/hedera-services.git</developerConnection>
+    <connection>scm:git:git@github.com:hashgraph/hedera-services.git</connection>
+    <developerConnection>scm:git:git@github.com:hashgraph/hedera-services.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
+
   <developers>
     <developer>
       <name>Abhishek Pandey</name>
@@ -87,14 +86,17 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
       <organizationUrl>https://www.hedera.com</organizationUrl>
     </developer>
   </developers>
+
   <ciManagement>
     <system>CircleCI</system>
     <url>https://circleci.com/gh/hashgraph/hedera-services</url>
   </ciManagement>
+
   <issueManagement>
     <system>GitHub</system>
     <url>https://github.com/hashgraph/hedera-services/issues</url>
   </issueManagement>
+
   <repositories>
     <repository>
       <snapshots>
@@ -106,8 +108,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
     </repository>
     <repository>
       <id>ossrh-snapshots</id>
-      <url>
-      https://oss.sonatype.org/content/repositories/snapshots</url>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
       <releases>
         <enabled>false</enabled>
       </releases>
@@ -119,29 +120,29 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
   <distributionManagement>
     <snapshotRepository>
       <id>ossrh</id>
-      <url>
-      https://oss.sonatype.org/content/repositories/snapshots</url>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
     </snapshotRepository>
     <repository>
       <id>ossrh</id>
-      <url>
-      https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
     </repository>
   </distributionManagement>
-  <licenses>
-    <license>
-      <distribution>repo</distribution>
-      <name>Apache License 2.0</name>
-      <url>
-      https://github.com/hashgraph/hedera-services/blob/master/LICENSE</url>
-    </license>
-  </licenses>
+
+    <licenses>
+      <license>
+        <distribution>repo</distribution>
+        <name>Apache License 2.0</name>
+        <url>https://github.com/hashgraph/hedera-services/blob/master/LICENSE</url>
+      </license>
+    </licenses>
+
   <properties>
-    <project.build.sourceEncoding>
-    UTF-8</project.build.sourceEncoding>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
     <!-- Plugin property overrides -->
     <maven.compiler.source>12</maven.compiler.source>
     <maven.compiler.target>12</maven.compiler.target>
+
     <!-- Plugin custom properties -->
     <maven-jar.version>3.2.0</maven-jar.version>
     <maven-source.version>3.2.0</maven-source.version>
@@ -152,6 +153,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
     <maven-dependency.version>3.1.1</maven-dependency.version>
     <maven-versions.version>2.8.1</maven-versions.version>
     <commons-io.version>2.7</commons-io.version>
+
     <!-- Dependency properties -->
     <commons-io.version>2.1</commons-io.version>
     <commons-codec.version>1.11</commons-codec.version>
@@ -159,8 +161,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
     <ethereum-core.version>1.12.0-v0.5.0</ethereum-core.version>
     <grpc.version>1.33.0</grpc.version>
     <jackson-databind.version>2.9.10.7</jackson-databind.version>
-    <javax.annotation-api.version>
-    1.3.2</javax.annotation-api.version>
+    <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
     <hapi-proto.version>0.14.0-SNAPSHOT</hapi-proto.version>
     <javax-inject.version>1</javax-inject.version>
     <log4j.version>2.13.2</log4j.version>
@@ -171,22 +172,25 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
     <junit.version>4.13.1</junit.version>
     <junit5-bom.version>5.7.0</junit5-bom.version>
     <mockito2.version>3.7.0</mockito2.version>
+
     <!-- SonarCloud properties -->
     <jacoco.version>0.8.6</jacoco.version>
     <sonar.version>3.7.0.1746</sonar.version>
+
     <sonar.organization>hashgraph</sonar.organization>
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     <sonar.language>java</sonar.language>
     <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
-    <project.build.outputTimestamp>
-    2021-03-04T21:40:09Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2021-03-04T21:40:09Z</project.build.outputTimestamp>
   </properties>
+
   <modules>
     <module>hapi-utils</module>
     <module>hapi-fees</module>
     <module>hedera-node</module>
     <module>test-clients</module>
   </modules>
+
   <build>
     <plugins>
       <plugin>
@@ -197,15 +201,27 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
           <releaseProfiles>release</releaseProfiles>
           <autoVersionSubmodules>true</autoVersionSubmodules>
           <tagNameFormat>v@{project.version}</tagNameFormat>
-          <scmDevelopmentCommitComment>@{prefix} Prepare for next
-          dev iteration
-          ${git.signoff}</scmDevelopmentCommitComment>
-          <scmReleaseCommitComment>@{prefix} Prepare release
-          ${git.signoff}</scmReleaseCommitComment>
-          <scmBranchCommitComment>@{prefix} Create release branch
-          ${git.signoff}</scmBranchCommitComment>
-          <preparationGoals>clean license:update-file-header verify
-          exec:exec@stage-changes</preparationGoals>
+          <scmDevelopmentCommitComment>
+            @{prefix} Prepare for next dev iteration
+
+${git.signoff}
+          </scmDevelopmentCommitComment>
+          <scmReleaseCommitComment>
+            @{prefix} Prepare release
+
+${git.signoff}
+          </scmReleaseCommitComment>
+          <scmBranchCommitComment>
+            @{prefix} Create release branch
+
+${git.signoff}
+          </scmBranchCommitComment>
+          <preparationGoals>
+            clean
+            license:update-file-header
+            verify
+            exec:exec@stage-changes
+          </preparationGoals>
         </configuration>
       </plugin>
       <plugin>
@@ -220,8 +236,9 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
             </goals>
             <configuration>
               <executable>/bin/sh</executable>
-              <commandlineArgs>-c 'echo "Nothing to do
-              here."'</commandlineArgs>
+              <commandlineArgs>
+                -c 'echo "Nothing to do here."'
+              </commandlineArgs>
             </configuration>
           </execution>
         </executions>
@@ -279,10 +296,9 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
               <root>src/main/java</root>
               <root>src/test/java</root>
             </roots>
-            <processEndTag>&#226;&#8364;</processEndTag>
-            <processStartTag>&#226;&#8364;&#338;</processStartTag>
-            <sectionDelimiter>
-            &#226;&#8364;&#8249;</sectionDelimiter>
+            <processEndTag>‍</processEndTag>
+            <processStartTag>‌</processStartTag>
+            <sectionDelimiter>​</sectionDelimiter>
           </configuration>
         </plugin>
         <plugin>
@@ -338,6 +354,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
       </plugins>
     </pluginManagement>
   </build>
+
   <dependencies>
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>
@@ -371,6 +388,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
       <version>${commons-io.version}</version>
     </dependency>
   </dependencies>
+
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -506,8 +524,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-javadoc-plugin</artifactId>
             <configuration>
-              <javadocExecutable>
-              ${java.home}/bin/javadoc</javadocExecutable>
+              <javadocExecutable>${java.home}/bin/javadoc</javadocExecutable>
             </configuration>
             <executions>
               <execution>

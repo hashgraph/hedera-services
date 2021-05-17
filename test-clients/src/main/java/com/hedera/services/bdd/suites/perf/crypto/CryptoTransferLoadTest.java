@@ -119,7 +119,6 @@ public class CryptoTransferLoadTest extends LoadTest {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
 								.overridingProps(Map.of("hapi.throttling.buckets.fastOpBucket.capacity", "1300000.0")),
-						//reduceFeeFor(CryptoTransfer, 2L, 3L, 3L),
 						cryptoCreate("sender")
 								.balance(ignore -> settings.getInitialBalance())
 								.withRecharging()
