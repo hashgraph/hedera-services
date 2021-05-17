@@ -41,11 +41,12 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 public class ExpiryManager {
 	private final RecordCache recordCache;
 	private final Map<TransactionID, TxnIdRecentHistory> txnHistories;
-	private final FCMap<MerkleEntityId, MerkleSchedule> schedules;
+	private final Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules;
 
 	private final ScheduleStore scheduleStore;
 
@@ -57,7 +58,7 @@ public class ExpiryManager {
 			RecordCache recordCache,
 			Map<TransactionID, TxnIdRecentHistory> txnHistories,
 			ScheduleStore scheduleStore,
-			FCMap<MerkleEntityId, MerkleSchedule> schedules
+			Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules
 	) {
 		this.recordCache = recordCache;
 		this.txnHistories = txnHistories;
@@ -94,7 +95,7 @@ public class ExpiryManager {
 		entityExpiries.reset();
 
 		var expiries = new ArrayList<Map.Entry<Pair<Long, Consumer<EntityId>>, Long>>();
-		schedules.forEach((id, schedule) -> {
+		schedules.get().forEach((id, schedule) -> {
 			Consumer<EntityId> consumer = scheduleStore::expire;
 			var pair = Pair.of(id.getNum(), consumer);
 			expiries.add(new AbstractMap.SimpleImmutableEntry<>(pair, schedule.expiry()));
