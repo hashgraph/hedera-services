@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -355,6 +356,22 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
+	public void rejectsNonFungibleInitialSupply() {
+		givenNonFungibleInvalidInitialSupply();
+
+		// expect:
+		assertEquals(INVALID_TOKEN_INITIAL_SUPPLY, subject.semanticCheck().apply(tokenCreateTxn));
+	}
+
+	@Test
+	public void rejectsNonFungibleInvalidDecimals() {
+		givenNonFungibleInvalidDecimals();
+
+		// expect:
+		assertEquals(INVALID_TOKEN_DECIMALS, subject.semanticCheck().apply(tokenCreateTxn));
+	}
+
+	@Test
 	public void rejectsInvalidInitialSupply() {
 		givenInvalidInitialSupply();
 
@@ -484,6 +501,22 @@ class TokenCreateTransitionLogicTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(now);
 		given(store.isCreationPending()).willReturn(true);
+	}
+
+	private void givenNonFungibleInvalidInitialSupply() {
+		tokenCreateTxn = TransactionBody.newBuilder()
+				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
+						.setTokenType(TokenType.NonFungible)
+						.setInitialSupply(1))
+				.build();
+	}
+
+	private void givenNonFungibleInvalidDecimals() {
+		tokenCreateTxn = TransactionBody.newBuilder()
+				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
+						.setTokenType(TokenType.NonFungible)
+						.setDecimals(1))
+				.build();
 	}
 
 	private void givenInvalidInitialSupply() {

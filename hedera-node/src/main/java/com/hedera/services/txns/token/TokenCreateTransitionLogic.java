@@ -27,6 +27,7 @@ import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,11 +38,11 @@ import java.util.function.Predicate;
 
 import static com.hedera.services.txns.validation.TokenListChecks.checkKeys;
 import static com.hedera.services.txns.validation.TokenListChecks.initialSupplyAndDecimalsCheck;
+import static com.hedera.services.txns.validation.TokenListChecks.nonFungibleInitialSupplyAndDecimalsCheck;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
@@ -154,7 +155,12 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			return validity;
 		}
 
-		validity = initialSupplyAndDecimalsCheck(op.getInitialSupply(), op.getDecimals());
+		if (op.getTokenType() == TokenType.NonFungible) {
+			validity = nonFungibleInitialSupplyAndDecimalsCheck(op.getInitialSupply(), op.getDecimals());
+		} else {
+			validity = initialSupplyAndDecimalsCheck(op.getInitialSupply(), op.getDecimals());
+		}
+
 		if (validity != OK) {
 			return validity;
 		}
