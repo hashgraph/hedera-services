@@ -1555,7 +1555,7 @@ workflows:
   GCP-Daily-Services-Reconnect-6N-4C:
     triggers:
       - schedule:
-          cron: "30 3,10 * * *"
+          cron: "10 15 * * *"
           filters:
             branches:
               only:
@@ -1585,7 +1585,7 @@ workflows:
             branches:
               only:
 #                - master
-                - 01334-D-increase-reconnect-tests-TPS
+                - X-01334-D-increase-reconnect-tests-TPS
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1751,7 +1751,7 @@ workflows:
             branches:
               only:
 #                - master
-                - 01334-D-increase-reconnect-tests-TPS
+                - X-01334-D-increase-reconnect-tests-TPS
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1775,7 +1775,7 @@ workflows:
             branches:
               only:
 #                - master
-                - 01334-D-increase-reconnect-tests-TPS
+                - X-01334-D-increase-reconnect-tests-TPS
     jobs:
       - build-platform-and-services
       - jrs-regression:
