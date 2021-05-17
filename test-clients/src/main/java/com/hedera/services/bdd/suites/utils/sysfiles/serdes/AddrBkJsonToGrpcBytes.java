@@ -90,7 +90,6 @@ public class AddrBkJsonToGrpcBytes implements SysFileSerde<String> {
 		}
 	}
 
-
 	private AddressBookPojo pojoFrom(String styledFile) {
 		try {
 			return mapper.readValue(styledFile, AddressBookPojo.class);
