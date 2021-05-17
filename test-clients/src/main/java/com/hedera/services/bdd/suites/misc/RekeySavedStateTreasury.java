@@ -22,8 +22,6 @@ package com.hedera.services.bdd.suites.misc;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.logging.log4j.LogManager;
@@ -35,7 +33,6 @@ import java.util.Map;
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromLiteral;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
@@ -46,7 +43,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 public class RekeySavedStateTreasury extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(RekeySavedStateTreasury.class);
 
-	public static void main(String... args) throws Exception {
+	public static void main(String... args) {
 		new RekeySavedStateTreasury().runSuiteSync();
 	}
 
@@ -54,13 +51,12 @@ public class RekeySavedStateTreasury extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						rekeyTreasury(),
-						freezeWithNewTreasuryKey(),
 				}
 		);
 	}
 
-	final String newTreasuryStartUpAccountLoc = "DevStableTestnetStartUpAccount.txt";
-	final String newTreasuryPemLoc = "dev-stabletestnet-account2.pem";
+	static final String newTreasuryStartUpAccountLoc = "DevStableTestnetStartUpAccount.txt";
+	static final String newTreasuryPemLoc = "dev-stabletestnet-account2.pem";
 
 	private HapiApiSpec rekeyTreasury() {
 		final var treasury = HapiPropertySource.asAccount("0.0.2");
@@ -88,18 +84,6 @@ public class RekeySavedStateTreasury extends HapiApiSuite {
 						})
 				).when().then(
 						cryptoUpdate(DEFAULT_PAYER).key(newTreasuryKey)
-				);
-	}
-
-	private HapiApiSpec freezeWithNewTreasuryKey() {
-		return customHapiSpec("FreezeWithNewTreasuryKey")
-				.withProperties(Map.of(
-						"nodes", "localhost",
-						"default.payer", "0.0.2",
-						"startupAccounts.path", newTreasuryStartUpAccountLoc
-				))
-				.given().when().then(
-						freeze().startingIn(60).seconds().andLasting(1).minutes()
 				);
 	}
 
