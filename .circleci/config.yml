@@ -1555,7 +1555,7 @@ workflows:
   GCP-Daily-Services-Reconnect-6N-4C:
     triggers:
       - schedule:
-          cron: "10 15 * * *"
+          cron: "3 17 * * *"
           filters:
             branches:
               only:
