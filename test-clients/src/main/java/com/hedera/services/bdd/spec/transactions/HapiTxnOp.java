@@ -337,11 +337,13 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 			lookupSubmissionRecord(spec);
 		}
 		if (!memo.get().equals(recordOfSubmission.getMemo())) {
-			log.error("{} {} Memo didn't come from submitted transaction! actual memo {}, recorded {}."
+			/*
+			When different clients submit a transaction with same transaction IDs and different memos, They are treated as
+			Duplicate transactions and except for the client that gets its transaction handled first.. rest of the clients
+			will submit a similar transaction again, with new transaction IDs. No need to throw an exception. 
+			 */
+			log.warn("{} {} Memo didn't come from submitted transaction! actual memo {}, recorded {}."
 					, spec.logPrefix(), this, memo.get(), recordOfSubmission.getMemo());
-			throw new HapiTxnCheckStateException(
-					String.format("%s Memo didn't come from submitted transaction! actual memo %s, recorded %s."
-							, this, memo.get(), recordOfSubmission.getMemo()));
 		}
 	}
 
