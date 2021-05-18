@@ -27,6 +27,7 @@ import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
+import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -65,6 +66,8 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
+						creationValidatesNonFungiblePrechecks(),
+						creationValidatesMaxSupply(),
 						creationValidatesMemo(),
 						creationValidatesName(),
 						creationValidatesSymbol(),
@@ -290,6 +293,39 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						tokenCreate("primary")
 								.entityMemo("N\u0000!!!")
 								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING)
+				);
+	}
+
+	public HapiApiSpec creationValidatesNonFungiblePrechecks() {
+		return defaultHapiSpec("CreationValidatesNonFungiblePrechecks")
+				.given()
+				.when()
+				.then(
+						tokenCreate("primary")
+								.tokenType(TokenType.NonFungible)
+								.initialSupply(1)
+								.decimals(0)
+								.hasPrecheck(INVALID_TOKEN_INITIAL_SUPPLY),
+						tokenCreate("primary")
+								.tokenType(TokenType.NonFungible)
+								.initialSupply(0)
+								.decimals(1)
+								.hasPrecheck(INVALID_TOKEN_DECIMALS)
+				);
+	}
+
+	public HapiApiSpec creationValidatesMaxSupply() {
+		return defaultHapiSpec("CreationValidatesMaxSupply")
+				.given()
+				.when()
+				.then(
+						tokenCreate("primary")
+								.maxSupply(-1)
+								.hasPrecheck(INVALID_TOKEN_MAX_SUPPLY),
+						tokenCreate("primary")
+								.initialSupply(2)
+								.maxSupply(1)
+								.hasPrecheck(INVALID_TOKEN_INITIAL_SUPPLY)
 				);
 	}
 
