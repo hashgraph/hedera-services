@@ -166,6 +166,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	public MerkleNetworkContext copy() {
+		setImmutable(true);
 		return new MerkleNetworkContext(
 				consensusTimeOfLastHandledTxn,
 				seqNo.copy(),
@@ -353,16 +354,29 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	public void resetAutoRenewSummaryCounts() {
+		if (isImmutable()) {
+			throw new IllegalStateException("Cannot reset auto-renew summary counts, context is immutable!");
+		}
 		entitiesScannedThisSecond = 0L;
 		entitiesTouchedThisSecond = 0L;
 	}
 
 	public void updateAutoRenewSummaryCounts(int numScanned, int numTouched) {
+		if (isImmutable()) {
+			throw new IllegalStateException(
+					"Cannot update auto-renew summary counts ("
+							+ numScanned + " scanned, "
+							+ numTouched + " touched), context is immutable!");
+		}
 		entitiesScannedThisSecond += numScanned;
 		entitiesTouchedThisSecond += numTouched;
 	}
 
 	public void updateLastScannedEntity(long lastScannedEntity) {
+		if (isImmutable()) {
+			throw new IllegalStateException(
+					"Cannot update last scanned entity (" + lastScannedEntity + "), context is immutable!");
+		}
 		this.lastScannedEntity = lastScannedEntity;
 	}
 

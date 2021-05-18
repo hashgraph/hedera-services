@@ -33,6 +33,7 @@ import com.hedera.test.extensions.LoggingSubject;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,6 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.booleanThat;
 import static org.mockito.BDDMockito.given;
@@ -88,7 +90,7 @@ class MerkleNetworkContextTest {
 	private MerkleNetworkContext subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		congestionStarts = new Instant[] {
 				Instant.ofEpochSecond(1_234_567L, 54321),
 				Instant.ofEpochSecond(1_234_789L, 12345)
@@ -128,12 +130,12 @@ class MerkleNetworkContextTest {
 	}
 
 	@AfterEach
-	public void cleanup() {
+	void cleanup() {
 		MerkleNetworkContext.serdes = new DomainSerdes();
 	}
 
 	@Test
-	public void copyWorks() {
+	void copyWorks() {
 		// given:
 		var subjectCopy = subject.copy();
 
@@ -147,10 +149,24 @@ class MerkleNetworkContextTest {
 		assertEquals(subjectCopy.getStateVersion(), stateVersion);
 		assertEquals(subjectCopy.getEntitiesScannedThisSecond(), entitiesScannedThisSecond);
 		assertEquals(subjectCopy.getEntitiesTouchedThisSecond(), entitiesTouchedThisSecond);
+		// and:
+		Assertions.assertTrue(subject.isImmutable());
+		Assertions.assertFalse(subjectCopy.isImmutable());
 	}
 
 	@Test
-	public void toStringRendersAsExpected() {
+	void autoRenewMutatorsThrowOnImmutableCopy() {
+		// when:
+		subject.copy();
+
+		// then:
+		assertThrows(IllegalStateException.class, () -> subject.updateLastScannedEntity(1L));
+		assertThrows(IllegalStateException.class, () -> subject.updateAutoRenewSummaryCounts(1, 2));
+		assertThrows(IllegalStateException.class, () -> subject.resetAutoRenewSummaryCounts());
+	}
+
+	@Test
+	void toStringRendersAsExpected() {
 		// setup:
 		throttling = mock(FunctionalityThrottling.class);
 
@@ -398,7 +414,7 @@ class MerkleNetworkContextTest {
 	}
 
 	@Test
-	public void deserializeWorksForPre0130() throws IOException {
+	void deserializeWorksForPre0130() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 		MerkleNetworkContext.ratesSupplier = () -> midnightRateSet;

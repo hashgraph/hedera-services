@@ -64,7 +64,8 @@ class EntityAutoRenewalTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new EntityAutoRenewal(mockHederaNums, renewalProcess, ctx, properties, networkCtxManager, networkCtx);
+		subject = new EntityAutoRenewal(
+				mockHederaNums, renewalProcess, ctx, properties, networkCtxManager, () -> networkCtx);
 	}
 
 	@Test

@@ -1494,7 +1494,7 @@ public class ServicesContext {
 					fees(), hederaNums(), helper, recordHelper);
 			entityAutoRenewal = new EntityAutoRenewal(
 					hederaNums(), renewalProcess, this,
-					globalDynamicProperties(), networkCtxManager(), networkCtx());
+					globalDynamicProperties(), networkCtxManager(), this::networkCtx);
 		}
 		return entityAutoRenewal;
 	}
