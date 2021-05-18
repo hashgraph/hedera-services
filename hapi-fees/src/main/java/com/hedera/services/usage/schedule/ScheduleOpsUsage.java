@@ -42,7 +42,7 @@ import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
 public class ScheduleOpsUsage {
 	/* Scheduled transaction ids have the scheduled=true flag set */
-	private static final long SCHEDULED_TXN_ID_SIZE = BASIC_TX_ID_SIZE + BOOL_SIZE;
+	private static final int SCHEDULED_TXN_ID_SIZE = BASIC_TX_ID_SIZE + BOOL_SIZE;
 
 	static EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
 	static Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
@@ -61,7 +61,7 @@ public class ScheduleOpsUsage {
 		var op = scheduleCreate.getScheduleCreate();
 
 		var scheduledTxn = op.getScheduledTransactionBody();
-		long msgBytesUsed = scheduledTxn.getSerializedSize() + op.getMemoBytes().size();
+		long msgBytesUsed = (long) scheduledTxn.getSerializedSize() + op.getMemoBytes().size();
 		if (op.hasPayerAccountID()) {
 			msgBytesUsed += BASIC_ENTITY_ID_SIZE;
 		}
@@ -100,7 +100,7 @@ public class ScheduleOpsUsage {
 		long lifetime = ESTIMATOR_UTILS.relativeLifetime(scheduleSign, scheduleExpiry);
 		estimate.addRbs(SCHEDULE_ENTITY_SIZES.bytesUsedForSigningKeys(estNewSigners) * lifetime);
 
-		estimate.addNetworkRbs(SCHEDULED_TXN_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+		estimate.addNetworkRbs((long) SCHEDULED_TXN_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 
 		return estimate.get();
 	}

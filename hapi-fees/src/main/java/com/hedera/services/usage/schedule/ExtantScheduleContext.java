@@ -58,7 +58,7 @@ public class ExtantScheduleContext {
 	}
 
 	public long nonBaseRb() {
-		return METADATA_SIZE
+		return (long) METADATA_SIZE
 				/* If the schedule has been resolved (i.e. deleted or executed), then
 				we store the resolution timestamp. */
 				+ (resolved ? BASIC_RICH_INSTANT_SIZE : 0)

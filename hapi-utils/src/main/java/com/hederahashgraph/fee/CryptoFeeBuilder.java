@@ -66,7 +66,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
 
     int txBodySize = getCommonTransactionBodyBytes(txBody);
     int cryptoCreateSize = getCryptoCreateAccountBodyTxSize(txBody);
-    bpt = txBodySize + cryptoCreateSize + sigValObj.getSignatureSize();
+    bpt = (long) txBodySize + cryptoCreateSize + sigValObj.getSignatureSize();
     vpt = sigValObj.getTotalSigCount();
     rbs = getCryptoRBS(txBody, cryptoCreateSize)
         + getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC; // TxRecord
@@ -108,10 +108,10 @@ public class CryptoFeeBuilder extends FeeBuilder {
 
     bpr = INT_SIZE;
     txBodySize = getCommonTransactionBodyBytes(txBody);
-    bpt = txBodySize + 2 * BASIC_ENTITY_ID_SIZE + sigValObj.getSignatureSize();
+    bpt = (long) txBodySize + 2 * BASIC_ENTITY_ID_SIZE + sigValObj.getSignatureSize();
     vpt = sigValObj.getTotalSigCount();
     // TxRecord
-    rbs = getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC;
+    rbs = (long) getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC;
     long rbsNetwork = getDefaultRBHNetworkSize();
     FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
         .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
@@ -143,14 +143,14 @@ public class CryptoFeeBuilder extends FeeBuilder {
     txBodySize = getCommonTransactionBodyBytes(txBody);
 
     // bpt - Bytes per Transaction
-    bpt = txBodySize + getCryptoTransferBodyTxSize(txBody) + sigValObj.getSignatureSize();
+    bpt = (long) txBodySize + getCryptoTransferBodyTxSize(txBody) + sigValObj.getSignatureSize();
 
     // vpt - verifications per transactions
     vpt = sigValObj.getTotalSigCount();
 
     bpr = INT_SIZE;
 
-    rbs = getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC;
+    rbs = (long) getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC;
 
     long rbsNetwork = getDefaultRBHNetworkSize();
 
@@ -184,9 +184,9 @@ public class CryptoFeeBuilder extends FeeBuilder {
     txBodySize = getCommonTransactionBodyBytes(txBody);
 
     // bpt - Bytes per Transaction
-    bpt = txBodySize + getCryptoUpdateBodyTxSize(txBody) +  sigValObj.getSignatureSize();
+    bpt = (long) txBodySize + getCryptoUpdateBodyTxSize(txBody) +  sigValObj.getSignatureSize();
 
-    rbs = getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC;
+    rbs = (long) getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC;
 
     // vpt - verifications per transactions
     vpt = sigValObj.getTotalSigCount();
@@ -365,14 +365,14 @@ public class CryptoFeeBuilder extends FeeBuilder {
      * CryptoGetAccountBalanceQuery QueryHeader Transaction - CryptoTransfer - (will be taken care
      * in Transaction processing) ResponseType - INT_SIZE AccountID - BASIC_ENTITY_ID_SIZE
      */
-    bpt = INT_SIZE + BASIC_ENTITY_ID_SIZE;
+    bpt = (long) INT_SIZE + BASIC_ENTITY_ID_SIZE;
 
     /*
      * CryptoGetAccountBalanceResponse Response header NodeTransactionPrecheckCode - 4 bytes
      * ResponseType - 4 bytes AccountID - 24 bytes (consist of 3 long values) balance - 8 bytes (1
      * long value)
      */
-    bpr = BASIC_QUERY_RES_HEADER + BASIC_ENTITY_ID_SIZE + LONG_SIZE + getStateProofSize(responseType);
+    bpr = (long) BASIC_QUERY_RES_HEADER + BASIC_ENTITY_ID_SIZE + LONG_SIZE + getStateProofSize(responseType);
     
     return FeeData.getDefaultInstance();
   }
@@ -398,7 +398,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
      * bytes Timestamp transactionValidStart - (LONG_SIZE + INT_SIZE) bytes
      */
 
-    bpt = INT_SIZE + BASIC_ENTITY_ID_SIZE + LONG_SIZE;
+    bpt = (long) INT_SIZE + BASIC_ENTITY_ID_SIZE + LONG_SIZE;
 
     /*
      * bpr = TransactionRecordResponse Response header NodeTransactionPrecheckCode - 4 bytes
@@ -440,7 +440,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
      * bytes Timestamp transactionValidStart - (LONG_SIZE) bytes
      */
 
-    bpt = BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE + LONG_SIZE;
+    bpt = (long) BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE + LONG_SIZE;
 
     /*
      * bpr = TransactionRecordResponse Response header NodeTransactionPrecheckCode - 4 bytes
@@ -449,7 +449,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
      */
     int txRecordSize = getAccountTransactionRecordSize(transRecord);
 
-    bpr = BASIC_QUERY_RES_HEADER + txRecordSize + getStateProofSize(responseType);
+    bpr = (long) BASIC_QUERY_RES_HEADER + txRecordSize + getStateProofSize(responseType);
 
    FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
         .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
@@ -482,7 +482,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
      *
      */
 
-    bpt = BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
+    bpt = (long) BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
 
     /*
      * bpr = CryptoGetInfoResponse Response header NodeTransactionPrecheckCode - 4 bytes
@@ -491,7 +491,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
      */
     int accountInfoSize = getAccountInfoSize(key, liveHashes);
 
-    bpr = BASIC_QUERY_RES_HEADER + accountInfoSize + getStateProofSize(responseType);
+    bpr = (long) BASIC_QUERY_RES_HEADER + accountInfoSize + getStateProofSize(responseType);
 
    
     FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
@@ -522,7 +522,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
      *
      */
 
-    bpt = BASIC_QUERY_HEADER + BASIC_TX_ID_SIZE;
+    bpt = (long) BASIC_QUERY_HEADER + BASIC_TX_ID_SIZE;
 
     /*
      * bpr = TransactionRecordResponse Response header NodeTransactionPrecheckCode - 4 bytes
@@ -536,7 +536,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
         txRecordListsize = txRecordListsize + getAccountTransactionRecordSize(record);
       }
     }
-    bpr = BASIC_QUERY_RES_HEADER + txRecordListsize + getStateProofSize(responseType);
+    bpr = (long) BASIC_QUERY_RES_HEADER + txRecordListsize + getStateProofSize(responseType);
 
     
     FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
@@ -634,7 +634,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
     // calculate BPT - Total Bytes in Transaction
     int txBodySize = 0;
     txBodySize = getCommonTransactionBodyBytes(txBody);
-    bpt = txBodySize + getCryptoAddLiveHashBodyBodyTxSize(txBody) + (BASIC_ENTITY_ID_SIZE)
+    bpt = (long) txBodySize + getCryptoAddLiveHashBodyBodyTxSize(txBody) + (BASIC_ENTITY_ID_SIZE)
         + sigValObj.getSignatureSize();
 
     // vpt - verifications per transactions
@@ -671,7 +671,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
     // calculate BPT - Total Bytes in Transaction
     int txBodySize = 0;
     txBodySize = getCommonTransactionBodyBytes(txBody);
-    bpt = txBodySize + getCryptoDeleteLiveHashBodyBodyTxSize() + sigValObj.getSignatureSize();
+    bpt = (long) txBodySize + getCryptoDeleteLiveHashBodyBodyTxSize() + sigValObj.getSignatureSize();
 
     // vpt - verifications per transactions
     vpt = sigValObj.getTotalSigCount();
@@ -723,7 +723,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
 
   private long getCryptoLiveHashStorageBytesSec(TransactionBody txBody) {
 
-    long storageSize = (BASIC_ENTITY_ID_SIZE) + TX_HASH_SIZE
+    long storageSize = (long) (BASIC_ENTITY_ID_SIZE) + TX_HASH_SIZE
         + +txBody.getCryptoAddLiveHash().getLiveHash().getKeys().getSerializedSize();
     long seconds = txBody.getCryptoAddLiveHash().getLiveHash().getDuration().getSeconds();
     storageSize = storageSize * seconds;
@@ -743,7 +743,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
     long bpr = 0;
     long sbpr = 0;
 
-    bpt = INT_SIZE + INT_SIZE + getCryptoGetLiveHashBodyTxSize();
+    bpt = (long) INT_SIZE + INT_SIZE + getCryptoGetLiveHashBodyTxSize();
     sbpr = getCryptoGetLiveHashBodyTxSize();
     FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
         .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();

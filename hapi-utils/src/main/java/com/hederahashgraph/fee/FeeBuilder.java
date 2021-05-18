@@ -97,7 +97,7 @@ public class FeeBuilder {
     long ramStorageFee = componentCoefficients.getRbh() * componentMetrics.getRbh();
     long storageFee = componentCoefficients.getSbh() * componentMetrics.getSbh();
     long evmGasFee = componentCoefficients.getGas() * componentMetrics.getGas();
-    long txValueFee = Math.round((componentCoefficients.getTv() * componentMetrics.getTv()) / 1000);
+    long txValueFee = Math.round((float)(componentCoefficients.getTv() * componentMetrics.getTv()) / 1000);
     long bytesResponseFee = componentCoefficients.getBpr() * componentMetrics.getBpr();
     long storageBytesResponseFee = componentCoefficients.getSbpr() * componentMetrics.getSbpr();
     long componentUsage = componentCoefficients.getConstant() * componentMetrics.getConstant();
@@ -238,7 +238,7 @@ public class FeeBuilder {
      *
      */
 
-    bpt = INT_SIZE + BASIC_ENTITY_ID_SIZE;
+    bpt = (long) INT_SIZE + BASIC_ENTITY_ID_SIZE;
 
     /*
      * bpr = Response header NodeTransactionPrecheckCode - 4 bytes ResponseType - 4 bytes uint64
@@ -295,8 +295,8 @@ public class FeeBuilder {
    * @return tinyHbars
    */
   public static long getTinybarsFromTinyCents(ExchangeRate exchangeRate, long tinyCentsFee) {
-    BigInteger hbarMultiplier = BigInteger.valueOf(Long.valueOf(exchangeRate.getHbarEquiv()));
-    BigInteger centsDivisor = BigInteger.valueOf(Long.valueOf(exchangeRate.getCentEquiv()));
+    BigInteger hbarMultiplier = BigInteger.valueOf(exchangeRate.getHbarEquiv());
+    BigInteger centsDivisor = BigInteger.valueOf(exchangeRate.getCentEquiv());
     BigInteger feeInBigInt = BigInteger.valueOf(tinyCentsFee);
     feeInBigInt = feeInBigInt.multiply(hbarMultiplier);
     feeInBigInt = feeInBigInt.divide(centsDivisor);
@@ -354,7 +354,7 @@ public class FeeBuilder {
   }
 
   public static long getDefaultRBHNetworkSize() {
-    return (BASIC_RECEIPT_SIZE) * (RECEIPT_STORAGE_TIME_SEC);
+    return (long) (BASIC_RECEIPT_SIZE) * (RECEIPT_STORAGE_TIME_SEC);
   }
 
   public static int getBaseTransactionRecordSize(TransactionBody txBody) {

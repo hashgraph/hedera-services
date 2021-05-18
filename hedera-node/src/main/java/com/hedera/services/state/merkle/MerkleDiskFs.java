@@ -119,7 +119,10 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 				var f = legacyPath.toFile();
 				byte[] contents = bytesHelper.allBytesFrom(legacyPath);
 				writeHelper.allBytesTo(pathToContentsOf(fid), contents);
-				f.delete();
+				boolean isDeleted = f.delete();
+				if (!isDeleted) {
+					log.warn("File 150 in legacy path could not be deleted !");
+				}
 			} catch (IOException e) {
 				//TODO : Mark this log as an error in 0.15.0 if MerkleDiskFs is used for Update
 				log.warn("Failed to migrate from legacy disk-based file system!", e);
@@ -127,7 +130,10 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 			}
 		}
 		var nowEmptyLegacyDir = fsBaseDir + File.separator + fsNodeScopedDir;
-		new File(nowEmptyLegacyDir).delete();
+		boolean isDeleted = new File(nowEmptyLegacyDir).delete();
+		if (!isDeleted) {
+			log.warn("Empty legacy directory for File 150 could not be deleted !");
+		}
 	}
 
 	public byte[] diskContentHash(FileID fid) {

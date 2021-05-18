@@ -9,9 +9,9 @@ package com.hederahashgraph.fee;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -53,7 +53,7 @@ public class ConsensusServiceFeeBuilder extends FeeBuilder {
                 txBody, sigValObj,
                 variableSize + LONG_SIZE,  // For autoRenewPeriod
                 extraRbsServices,
-                BASIC_ENTITY_ID_SIZE * RECEIPT_STORAGE_TIME_SEC);  // For topicID in receipt
+                (long) BASIC_ENTITY_ID_SIZE * RECEIPT_STORAGE_TIME_SEC);  // For topicID in receipt
     }
 
     /**
@@ -173,7 +173,7 @@ public class ConsensusServiceFeeBuilder extends FeeBuilder {
                 txBody, sigValObj,
                 submitMessageTxBodySize,
                 0,
-                (LONG_SIZE + TX_HASH_SIZE) * RECEIPT_STORAGE_TIME_SEC);  // For topicSequenceNumber, topicRunningHash
+                (long) (LONG_SIZE + TX_HASH_SIZE) * RECEIPT_STORAGE_TIME_SEC);  // For topicSequenceNumber, topicRunningHash
     }
 
     /**
@@ -192,7 +192,7 @@ public class ConsensusServiceFeeBuilder extends FeeBuilder {
                 .setTv(0)
                 .setBpr(INT_SIZE)
                 .setSbpr(0);
-        feeComponentsBuilder.setBpt(getCommonTransactionBodyBytes(txBody)
+        feeComponentsBuilder.setBpt((long) getCommonTransactionBodyBytes(txBody)
                 + txBodyDataSize
                 + sigValObj.getSignatureSize());
         feeComponentsBuilder.setRbh(

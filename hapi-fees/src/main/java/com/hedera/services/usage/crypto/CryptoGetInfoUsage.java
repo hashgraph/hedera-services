@@ -9,9 +9,9 @@ package com.hedera.services.usage.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,7 +30,7 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
 
-public class CryptoGetInfoUsage extends QueryUsage  {
+public class CryptoGetInfoUsage extends QueryUsage {
 	private CryptoGetInfoUsage(Query query) {
 		super(query.getCryptoGetInfo().getHeader().getResponseType());
 		updateTb(BASIC_ENTITY_ID_SIZE);
@@ -52,7 +52,8 @@ public class CryptoGetInfoUsage extends QueryUsage  {
 	}
 
 	public CryptoGetInfoUsage givenCurrentTokenAssocs(int count) {
-		updateRb(count * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr());
+		long amount = count * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
+		updateRb(amount);
 		return this;
 	}
 
