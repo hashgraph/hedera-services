@@ -65,7 +65,7 @@ public class GetTopicInfoResourceUsage implements QueryResourceUsageEstimator {
 				+ BASIC_ENTITY_ID_SIZE
 				+ getTopicInfoSize(merkleTopic);
 		var feeMatrices = FeeComponents.newBuilder()
-				.setBpt(BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE)
+				.setBpt((long) BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE)
 				.setVpt(0)
 				.setRbh(0)
 				.setSbh(0)
@@ -80,9 +80,9 @@ public class GetTopicInfoResourceUsage implements QueryResourceUsageEstimator {
 	private static int getTopicInfoSize(MerkleTopic merkleTopic) {
 		/* Three longs in a topic representation: sequenceNumber, expirationTime, autoRenewPeriod */
 		return TX_HASH_SIZE + 3 * LONG_SIZE + computeVariableSizedFieldsUsage(
-						asKeyUnchecked(merkleTopic.getAdminKey()),
-						asKeyUnchecked(merkleTopic.getSubmitKey()),
-						merkleTopic.getMemo(),
-						merkleTopic.hasAutoRenewAccountId());
+				asKeyUnchecked(merkleTopic.getAdminKey()),
+				asKeyUnchecked(merkleTopic.getSubmitKey()),
+				merkleTopic.getMemo(),
+				merkleTopic.hasAutoRenewAccountId());
 	}
 }

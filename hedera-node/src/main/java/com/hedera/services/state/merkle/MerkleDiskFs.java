@@ -35,6 +35,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -130,8 +131,9 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 			}
 		}
 		var nowEmptyLegacyDir = fsBaseDir + File.separator + fsNodeScopedDir;
-		boolean isDeleted = new File(nowEmptyLegacyDir).delete();
-		if (!isDeleted) {
+		try {
+			Files.delete(Paths.get(nowEmptyLegacyDir));
+		} catch (IOException e) {
 			log.warn("Empty legacy directory for File 150 could not be deleted !");
 		}
 	}

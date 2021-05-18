@@ -55,6 +55,11 @@ public class EarliestRecordExpiry implements Comparable<EarliestRecordExpiry> {
 	}
 
 	@Override
+	public int hashCode() {
+		return Objects.hash(earliestExpiry, id);
+	}
+
+	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
 			return true;

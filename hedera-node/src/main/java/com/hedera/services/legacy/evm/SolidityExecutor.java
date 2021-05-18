@@ -486,7 +486,7 @@ public class SolidityExecutor {
 
 			}
 
-			result.addFutureRefund(result.getDeleteAccounts().size() * config.getBlockchainConfig()
+			result.addFutureRefund((long) result.getDeleteAccounts().size() * config.getBlockchainConfig()
 					.getConfigForBlock(block.getNumber()).getGasCost().getSUICIDE_REFUND());
 			long gasRefund = Math.min(result.getFutureRefund(), getGasUsed() / 2);
 			gasLeft = gasLeft.add(BigInteger.valueOf(gasRefund));

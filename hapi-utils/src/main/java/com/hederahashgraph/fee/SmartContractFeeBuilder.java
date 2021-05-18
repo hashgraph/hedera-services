@@ -9,9 +9,9 @@ package com.hederahashgraph.fee;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -67,7 +67,7 @@ public class SmartContractFeeBuilder extends FeeBuilder {
     // calculate BPT - Total Bytes in Transaction
     int txBodySize = 0;
     txBodySize = getCommonTransactionBodyBytes(txBody);
-    bpt = txBodySize + getContractCreateTransactionBodySize(txBody) + sigValObj.getSignatureSize();
+    bpt = (long) txBodySize + getContractCreateTransactionBodySize(txBody) + sigValObj.getSignatureSize();
 
     // vpt - verifications per transactions
     vpt = sigValObj.getTotalSigCount();
@@ -75,7 +75,7 @@ public class SmartContractFeeBuilder extends FeeBuilder {
 
 
     bpr = INT_SIZE;
-    rbs =  getBaseTransactionRecordSize(txBody) * (RECEIPT_STORAGE_TIME_SEC + THRESHOLD_STORAGE_TIME_SEC);
+    rbs = (long) getBaseTransactionRecordSize(txBody) * (RECEIPT_STORAGE_TIME_SEC + THRESHOLD_STORAGE_TIME_SEC);
     long rbsNetwork = getDefaultRBHNetworkSize() + BASIC_ENTITY_ID_SIZE * (RECEIPT_STORAGE_TIME_SEC);
 
     FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
@@ -126,7 +126,7 @@ public class SmartContractFeeBuilder extends FeeBuilder {
     if (contractCreate.getConstructorParameters() != null) {
       constructParamSize = contractCreate.getConstructorParameters().size();
     }
-    
+
     if (contractCreate.hasProxyAccountID()) {
       proxyAcctID = BASIC_ENTITY_ID_SIZE;
     }
@@ -164,20 +164,20 @@ public class SmartContractFeeBuilder extends FeeBuilder {
     txBodySize = getCommonTransactionBodyBytes(txBody);
 
     // bpt - Bytes per Transaction
-    bpt = txBodySize + getContractUpdateBodyTxSize(txBody) + sigValObj.getSignatureSize();
+    bpt =  (long) txBodySize + getContractUpdateBodyTxSize(txBody) + sigValObj.getSignatureSize();
 
     // vpt - verifications per transactions
     vpt = sigValObj.getTotalSigCount();
 
     bpr = INT_SIZE;
-    
+
     if(contractExpiryTime != null && contractExpiryTime.getSeconds() > 0) {
     	sbs = getContractUpdateStorageBytesSec(txBody, contractExpiryTime);
     }
 
     long rbsNetwork = getDefaultRBHNetworkSize()  ;
-    
-    rbs =  getBaseTransactionRecordSize(txBody) * (RECEIPT_STORAGE_TIME_SEC + THRESHOLD_STORAGE_TIME_SEC);
+
+    rbs = (long) getBaseTransactionRecordSize(txBody) * (RECEIPT_STORAGE_TIME_SEC + THRESHOLD_STORAGE_TIME_SEC);
 
     FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
         .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
@@ -209,14 +209,14 @@ public class SmartContractFeeBuilder extends FeeBuilder {
     txBodySize = getCommonTransactionBodyBytes(txBody);
 
     // bpt - Bytes per Transaction
-    bpt = txBodySize + getContractCallBodyTxSize(txBody) + sigValObj.getSignatureSize();
+    bpt =  (long) txBodySize + getContractCallBodyTxSize(txBody) + sigValObj.getSignatureSize();
 
     // vpt - verifications per transactions
     vpt = sigValObj.getTotalSigCount();
 
     bpr = INT_SIZE;
 
-    rbs =  getBaseTransactionRecordSize(txBody) * (RECEIPT_STORAGE_TIME_SEC + THRESHOLD_STORAGE_TIME_SEC);
+    rbs = (long) getBaseTransactionRecordSize(txBody) * (RECEIPT_STORAGE_TIME_SEC + THRESHOLD_STORAGE_TIME_SEC);
     long rbsNetwork = getDefaultRBHNetworkSize() ;
 
     FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
@@ -250,7 +250,7 @@ public class SmartContractFeeBuilder extends FeeBuilder {
      * LONG_SIZE bytes functionParameters - calculated value int64 maxResultSize - LONG_SIZE
      */
 
-    bpt = BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE + LONG_SIZE + funcParamSize + LONG_SIZE;
+    bpt =  (long) BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE + LONG_SIZE + funcParamSize + LONG_SIZE;
     /*
      *
      * Response header NodeTransactionPrecheckCode - 4 bytes ResponseType - 4 bytes
@@ -261,21 +261,21 @@ public class SmartContractFeeBuilder extends FeeBuilder {
      *
      */
 
-    int errorMessageSize = 0;   
+    int errorMessageSize = 0;
     int contractFuncResultSize = 0;
     if (contractFuncResult != null) {
-      
+
        if (contractFuncResult.getContractCallResult() != null) {
         contractFuncResultSize = contractFuncResult.getContractCallResult().size();
       }
       if (contractFuncResult.getErrorMessage() != null) {
         errorMessageSize = contractFuncResult.getErrorMessage().length();
-      }      
+      }
     }
-    
-    bpr = BASIC_QUERY_RES_HEADER + getStateProofSize(responseType);    
-   
-    sbpr = BASIC_ENTITY_ID_SIZE + errorMessageSize +  LONG_SIZE  +  contractFuncResultSize;
+
+    bpr =  (long) BASIC_QUERY_RES_HEADER + getStateProofSize(responseType);
+
+    sbpr =  (long) BASIC_ENTITY_ID_SIZE + errorMessageSize +  LONG_SIZE  +  contractFuncResultSize;
 
     FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
         .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
@@ -308,13 +308,13 @@ public class SmartContractFeeBuilder extends FeeBuilder {
      * LONG_SIZE
      */
 
-    bpt = INT_SIZE + BASIC_ENTITY_ID_SIZE + LONG_SIZE + funcParamSize + LONG_SIZE;
+    bpt =  (long) INT_SIZE + BASIC_ENTITY_ID_SIZE + LONG_SIZE + funcParamSize + LONG_SIZE;
     /*
      *
      * Response header NodeTransactionPrecheckCode - 4 bytes ResponseType - 4 bytes uint64 cost -
      * LONG_SIZE
      */
-    bpr = BASIC_QUERY_RES_HEADER ;   
+    bpr = BASIC_QUERY_RES_HEADER ;
 
     FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
         .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
@@ -411,7 +411,7 @@ public class SmartContractFeeBuilder extends FeeBuilder {
      * Transaction processing) ResponseType - INT_SIZE ContractID - BASIC_ENTITY_ID_SIZE
      */
 
-    bpt = BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
+    bpt =  (long) BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
     /*
      *
      * Response header NodeTransactionPrecheckCode - 4 bytes ResponseType - 4 bytes
@@ -428,9 +428,9 @@ public class SmartContractFeeBuilder extends FeeBuilder {
         keySize = getAccountKeyStorageSize(key);
     }
 
-    bpr = BASIC_QUERY_RES_HEADER + getStateProofSize(responseType); 
+    bpr =  (long) BASIC_QUERY_RES_HEADER + getStateProofSize(responseType);
 
-    sbpr = BASIC_CONTRACT_INFO_SIZE + keySize ;
+    sbpr =  (long) BASIC_CONTRACT_INFO_SIZE + keySize ;
 
     FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
         .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
@@ -461,7 +461,7 @@ public class SmartContractFeeBuilder extends FeeBuilder {
      * Transaction processing) ResponseType - INT_SIZE ContractID - BASIC_ENTITY_ID_SIZE
      */
 
-    bpt = BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
+    bpt =  (long) BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
     /*
      *
      * Response header NodeTransactionPrecheckCode - 4 bytes ResponseType - 4 bytes
@@ -470,7 +470,7 @@ public class SmartContractFeeBuilder extends FeeBuilder {
      *
      */
 
-    bpr = BASIC_QUERY_RES_HEADER + getStateProofSize(responseType); 
+    bpr = (long) BASIC_QUERY_RES_HEADER + getStateProofSize(responseType);
 
     sbpr = byteCodeSize;
 
@@ -502,7 +502,7 @@ public class SmartContractFeeBuilder extends FeeBuilder {
      * Transaction processing) ResponseType - INT_SIZE string solidityID - SOLIDITY_ADDRESS
      */
 
-    bpt = BASIC_QUERY_HEADER + SOLIDITY_ADDRESS;
+    bpt = (long) BASIC_QUERY_HEADER + SOLIDITY_ADDRESS;
     /*
      *
      * Response header NodeTransactionPrecheckCode - 4 bytes ResponseType - 4 bytes
@@ -513,7 +513,7 @@ public class SmartContractFeeBuilder extends FeeBuilder {
      *
      */
 
-    bpr = BASIC_QUERY_RES_HEADER + getStateProofSize(responseType) + BASIC_ENTITY_ID_SIZE;
+    bpr = (long) BASIC_QUERY_RES_HEADER + getStateProofSize(responseType) + BASIC_ENTITY_ID_SIZE;
 
 
     FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
@@ -540,7 +540,7 @@ public class SmartContractFeeBuilder extends FeeBuilder {
      *
      */
 
-    bpt = BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
+    bpt = (long) BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
 
     /*
      *
@@ -559,16 +559,16 @@ public class SmartContractFeeBuilder extends FeeBuilder {
         txRecordListsize = txRecordListsize + getTransactionRecordSize(record);
       }
     }
-    bpr = BASIC_QUERY_RES_HEADER + txRecordListsize + getStateProofSize(responseType);
+    bpr = (long) BASIC_QUERY_RES_HEADER + txRecordListsize + getStateProofSize(responseType);
 
-   
+
     FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
         .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
 
     return getQueryFeeDataMatrices(feeMatrices);
   }
 
-  
+
 
   /**
    * Renewal Fee Metrics for SmartContract
@@ -595,8 +595,8 @@ public class SmartContractFeeBuilder extends FeeBuilder {
 
     // sbs - Storage bytes seconds
     sbs = storageBytes * autoRenewal;
-    
-  
+
+
     FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
         .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
 
@@ -647,14 +647,14 @@ public class SmartContractFeeBuilder extends FeeBuilder {
      * ContractID transferContractID = BASIC_ENTITY_ID_SIZE }
      */
 
-    bpt = txBodySize + BASIC_ENTITY_ID_SIZE + BASIC_ENTITY_ID_SIZE + sigValObj.getSignatureSize();
+    bpt = (long) txBodySize + BASIC_ENTITY_ID_SIZE + BASIC_ENTITY_ID_SIZE + sigValObj.getSignatureSize();
 
     // vpt - verifications per transactions
     vpt = sigValObj.getTotalSigCount();
 
     bpr = INT_SIZE;
 
-    rbs =  getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC;
+    rbs = (long) getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC;
     long rbsNetwork = getDefaultRBHNetworkSize() + BASIC_ENTITY_ID_SIZE * (RECEIPT_STORAGE_TIME_SEC);
 
     FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)

@@ -85,7 +85,7 @@ public class ScheduleOpsUsage {
 
 		/* The receipt of a schedule create includes both the id of the created schedule
 		and the transaction id to use for querying the record of the scheduled txn. */
-		estimate.addNetworkRbs((BASIC_ENTITY_ID_SIZE + SCHEDULED_TXN_ID_SIZE)
+		estimate.addNetworkRbs(((long) BASIC_ENTITY_ID_SIZE + SCHEDULED_TXN_ID_SIZE)
 				* USAGE_PROPERTIES.legacyReceiptStorageSecs());
 
 		return estimate.get();
