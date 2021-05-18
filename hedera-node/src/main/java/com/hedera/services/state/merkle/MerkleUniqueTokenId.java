@@ -33,6 +33,9 @@ import java.util.Objects;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 
+/**
+ * Represents the ID of {@link MerkleUniqueToken}
+ */
 public class MerkleUniqueTokenId extends AbstractMerkleLeaf implements FCMKey {
 
 	static final int MERKLE_VERSION = 1;
@@ -47,6 +50,11 @@ public class MerkleUniqueTokenId extends AbstractMerkleLeaf implements FCMKey {
 		/* No-op. */
 	}
 
+	/**
+	 *
+	 * @param tokenId The underlying token id.
+	 * @param serialNumber Represents the serial num of the token.
+	 */
 	public MerkleUniqueTokenId(
 			EntityId tokenId,
 			int serialNumber

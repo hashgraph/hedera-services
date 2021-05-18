@@ -34,6 +34,9 @@ import java.util.Objects;
 
 import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 
+/**
+ * Represents an uniqueToken entity. Part of the nft implementation.
+ */
 public class MerkleUniqueToken extends AbstractMerkleLeaf implements FCMValue {
 
 	public static final int UPPER_BOUND_MEMO_UTF8_BYTES = 1024;
@@ -45,6 +48,12 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements FCMValue {
 	private RichInstant creationTime;
 	private String memo = DEFAULT_MEMO;
 
+	/**
+	 *
+	 * @param owner The entity which owns the unique token.
+	 * @param memo Metadata about the token.
+	 * @param creationTime The consensus time at which the token was created.
+	 */
 	public MerkleUniqueToken(
 			EntityId owner,
 			String memo,
