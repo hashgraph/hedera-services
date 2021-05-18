@@ -121,7 +121,6 @@ class SolidityFnResultTest {
 		assertNotEquals(one, new Object());
 		assertNotEquals(two, one);
 		assertEquals(three, one);
-		assertEquals(one, one);
 		// and:
 		assertEquals(one.hashCode(), three.hashCode());
 		assertNotEquals(one.hashCode(), two.hashCode());

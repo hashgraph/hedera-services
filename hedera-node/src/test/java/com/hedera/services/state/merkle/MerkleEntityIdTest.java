@@ -76,7 +76,6 @@ class MerkleEntityIdTest {
 		// then:
 		assertNotEquals(null, one);
 		assertNotEquals(two, one);
-		assertEquals(one, one);
 		assertEquals(two, three);
 		// and:
 		assertNotEquals(one.hashCode(), two.hashCode());
