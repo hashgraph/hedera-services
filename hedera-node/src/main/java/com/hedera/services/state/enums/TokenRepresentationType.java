@@ -21,15 +21,17 @@ package com.hedera.services.state.enums;
  */
 
 /**
- * Token Types of {@link com.hedera.services.state.merkle.MerkleToken}
+ * Token Representation Types of {@link com.hedera.services.state.merkle.MerkleToken}
+ * Tokens can have either a common or unique representation. This distinction might seem subtle,
+ * but it is important when considering how tokens can be traced and if they can have isolated and unique properties.
  */
-public enum TokenType {
-    /**
-     * Interchangeable value with one another, where any quantity of them has the same value as another equal quantity if they are in the same class.
-     */
-    FUNGIBLE,
-    /**
-     * Not interchangeable with one another, as they typically have different values.
-     */
-    NON_FUNGIBLE
+public enum TokenRepresentationType {
+	/**
+	 * Share a single set of properties, not distinct from one another. Simply represented as a balance or quantity.
+	 */
+	COMMON,
+	/**
+	 * Carry a unique identifier and can be individually traced.
+	 */
+	UNIQUE
 }
