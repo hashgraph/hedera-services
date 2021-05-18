@@ -121,7 +121,6 @@ public class MerkleUniqueTokenId extends AbstractMerkleLeaf implements FCMKey {
 	}
 
 	/* --- FastCopyable --- */
-
 	@Override
 	public MerkleUniqueTokenId copy() {
 		return new MerkleUniqueTokenId(tokenId, serialNumber);
