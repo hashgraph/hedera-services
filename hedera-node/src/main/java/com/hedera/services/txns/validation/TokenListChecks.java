@@ -44,6 +44,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SUPPLY
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DECIMALS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_INITIAL_SUPPLY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
@@ -112,6 +113,18 @@ public class TokenListChecks {
             return INVALID_TOKEN_INITIAL_SUPPLY;
         }
         return decimals < 0 ? INVALID_TOKEN_DECIMALS : OK;
+    }
+
+    public static ResponseCodeEnum initialSupplyAndMaxSupplyCheck(long initialSupply, long maxSupply) {
+        if (maxSupply < 0) {
+            return INVALID_TOKEN_MAX_SUPPLY;
+        }
+
+        if (maxSupply != 0 && initialSupply > maxSupply) {
+            return INVALID_TOKEN_INITIAL_SUPPLY;
+        }
+
+        return OK;
     }
 
     public static ResponseCodeEnum checkKeys(

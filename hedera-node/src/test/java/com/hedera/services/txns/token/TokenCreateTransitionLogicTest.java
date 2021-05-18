@@ -52,6 +52,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DECIMALS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_INITIAL_SUPPLY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_KEY;
@@ -388,6 +389,22 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
+	public void rejectsInvalidMaxSupply() {
+		givenInvalidMaxSupply();
+
+		// expect:
+		assertEquals(INVALID_TOKEN_MAX_SUPPLY, subject.semanticCheck().apply(tokenCreateTxn));
+	}
+
+	@Test
+	public void rejectsInvalidInitialSupplyWithMaxSupply() {
+		givenInvalidInitialSupplyWithMaxSupply();
+
+		// expect:
+		assertEquals(INVALID_TOKEN_INITIAL_SUPPLY, subject.semanticCheck().apply(tokenCreateTxn));
+	}
+
+	@Test
 	public void rejectsMissingTreasury() {
 		givenMissingTreasury();
 
@@ -531,6 +548,21 @@ class TokenCreateTransitionLogicTest {
 				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
 						.setInitialSupply(0)
 						.setDecimals(-1))
+				.build();
+	}
+
+	private void givenInvalidMaxSupply() {
+		tokenCreateTxn = TransactionBody.newBuilder()
+				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
+						.setMaxSupply(-1))
+				.build();
+	}
+
+	private void givenInvalidInitialSupplyWithMaxSupply() {
+		tokenCreateTxn = TransactionBody.newBuilder()
+				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
+						.setInitialSupply(initialSupply)
+						.setMaxSupply(initialSupply - 1))
 				.build();
 	}
 
