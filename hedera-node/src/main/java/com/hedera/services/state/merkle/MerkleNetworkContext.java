@@ -353,30 +353,28 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return lastScannedEntity;
 	}
 
-	public void resetAutoRenewSummaryCounts() {
+	private void throwOnImmutable(final String message) {
 		if (isImmutable()) {
-			throw new IllegalStateException("Cannot reset auto-renew summary counts, context is immutable!");
+			throw new IllegalStateException(message);
 		}
+	}
+
+	public void resetAutoRenewSummaryCounts() {
+		throwOnImmutable("Cannot reset auto-renew summary counts, context is immutable!");
 		entitiesScannedThisSecond = 0L;
 		entitiesTouchedThisSecond = 0L;
 	}
 
 	public void updateAutoRenewSummaryCounts(int numScanned, int numTouched) {
-		if (isImmutable()) {
-			throw new IllegalStateException(
-					"Cannot update auto-renew summary counts ("
-							+ numScanned + " scanned, "
-							+ numTouched + " touched), context is immutable!");
-		}
+		throwOnImmutable("Cannot update auto-renew summary counts ("
+				+ numScanned + " scanned, "
+				+ numTouched + " touched), context is immutable!");
 		entitiesScannedThisSecond += numScanned;
 		entitiesTouchedThisSecond += numTouched;
 	}
 
 	public void updateLastScannedEntity(long lastScannedEntity) {
-		if (isImmutable()) {
-			throw new IllegalStateException(
-					"Cannot update last scanned entity (" + lastScannedEntity + "), context is immutable!");
-		}
+		throwOnImmutable("Cannot update last scanned entity (" + lastScannedEntity + "), context is immutable!");
 		this.lastScannedEntity = lastScannedEntity;
 	}
 
