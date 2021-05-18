@@ -36,11 +36,9 @@ import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 
 public class MerkleUniqueToken extends AbstractMerkleLeaf implements FCMValue {
 
+	public static final int UPPER_BOUND_MEMO_UTF8_BYTES = 1024;
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x899641dafcc39164L;
-
-	public static final int UPPER_BOUND_MEMO_UTF8_BYTES = 1024;
-
 	static DomainSerdes serdes = new DomainSerdes();
 
 	private EntityId owner;
@@ -95,7 +93,6 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements FCMValue {
 	}
 
 	/* --- MerkleLeaf --- */
-
 	@Override
 	public long getClassId() {
 		return RUNTIME_CONSTRUCTABLE_ID;
@@ -121,7 +118,6 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements FCMValue {
 	}
 
 	/* --- FastCopyable --- */
-
 	@Override
 	public MerkleUniqueToken copy() {
 		return new MerkleUniqueToken(owner, memo, creationTime);
