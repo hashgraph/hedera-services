@@ -22,6 +22,7 @@ package com.hedera.services.state.merkle;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.enums.TokenRepresentationType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
@@ -55,7 +56,8 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 	public static final int UPPER_BOUND_SYMBOL_UTF8_BYTES = 1024;
 	public static final int UPPER_BOUND_TOKEN_NAME_UTF8_BYTES = 1024;
 
-	private TokenType type;
+	private TokenType tokenType;
+	private TokenRepresentationType tokenRepresentationType;
 	private int decimals;
 	private long expiry;
 	private long maxSupply;
@@ -110,7 +112,8 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 		}
 
 		var that = (MerkleToken) o;
-		return this.type == that.type &&
+		return this.tokenType == that.tokenType &&
+				this.tokenRepresentationType == that.tokenRepresentationType &&
 				this.expiry == that.expiry &&
 				this.autoRenewPeriod == that.autoRenewPeriod &&
 				this.deleted == that.deleted &&
@@ -134,7 +137,8 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 	@Override
 	public int hashCode() {
 		return Objects.hash(
-				type,
+				tokenType,
+				tokenRepresentationType,
 				expiry,
 				deleted,
 				maxSupply,
@@ -159,7 +163,8 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(MerkleToken.class)
-				.add("type", type)
+				.add("tokenType", tokenType)
+				.add("tokenRepresentationType", tokenRepresentationType)
 				.add("deleted", deleted)
 				.add("expiry", expiry)
 				.add("symbol", symbol)
@@ -218,11 +223,15 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 			memo = in.readNormalisedString(UPPER_BOUND_MEMO_UTF8_BYTES);
 		}
 		if (version >= RELEASE_0140_VERSION) {
-			type = TokenType.values()[in.readInt()];
+			tokenType = TokenType.values()[in.readInt()];
+			tokenRepresentationType = TokenRepresentationType.values()[in.readInt()];
 			maxSupply = in.readLong();
 		}
-		if (type == null) {
-			type = TokenType.FUNGIBLE;
+		if (tokenType == null) {
+			tokenType = TokenType.FUNGIBLE;
+		}
+		if (tokenRepresentationType == null) {
+			tokenRepresentationType = TokenRepresentationType.COMMON;
 		}
 	}
 
@@ -245,7 +254,8 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 		serdes.writeNullable(supplyKey, out, serdes::serializeKey);
 		serdes.writeNullable(wipeKey, out, serdes::serializeKey);
 		out.writeNormalisedString(memo);
-		out.writeInt(type.ordinal());
+		out.writeInt(tokenType.ordinal());
+		out.writeInt(tokenRepresentationType.ordinal());
 		out.writeLong(maxSupply);
 	}
 
@@ -265,7 +275,8 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 		fc.setDeleted(deleted);
 		fc.setAutoRenewPeriod(autoRenewPeriod);
 		fc.setAutoRenewAccount(autoRenewAccount);
-		fc.setType(type);
+		fc.setTokenType(tokenType);
+		fc.setTokenRepresentationType(tokenRepresentationType);
 		fc.setMaxSupply(maxSupply);
 		if (adminKey != UNUSED_KEY) {
 			fc.setAdminKey(adminKey);
@@ -445,20 +456,24 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 		this.memo = memo;
 	}
 
-	public TokenType type() {
-		return type;
+	public TokenType tokenType() {
+		return tokenType;
 	}
 
-	public int typeInt() {
-		return type.ordinal();
+	public void setTokenType(TokenType tokenType) {
+		this.tokenType = tokenType;
 	}
 
-	public void setType(int typeInt) {
-		this.type = TokenType.values()[typeInt];
+	public void setTokenType(int tokenTypeInt) {
+		this.tokenType = TokenType.values()[tokenTypeInt];
 	}
 
-	public void setType(TokenType type) {
-		this.type = type;
+	public TokenRepresentationType tokenRepresentationType() { return tokenRepresentationType; }
+
+	public void setTokenRepresentationType(TokenRepresentationType tokenRepresentationType) { this.tokenRepresentationType = tokenRepresentationType; }
+
+	public void setTokenRepresentationType(int tokenRepresentationTypeInt) {
+		this.tokenRepresentationType = TokenRepresentationType.values()[tokenRepresentationTypeInt];
 	}
 
 	public long maxSupply() {
