@@ -16,7 +16,6 @@ package com.hedera.services.state.merkle;
 
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.RichInstant;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.AfterEach;
@@ -25,65 +24,58 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import java.io.IOException;
-import java.time.Instant;
 
 import static com.hedera.services.state.merkle.MerkleTopic.serdes;
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
 
-public class MerkleNftTest {
+public class MerkleUniqueTokenIdTest {
 
-	private MerkleNft subject;
+	private MerkleUniqueTokenId subject;
 
-	private EntityId owner;
-	private EntityId otherOwner;
-	private String memo;
-	private String otherMemo;
-	private Instant timestamp;
-	private Instant otherTimestamp;
+	private EntityId tokenId = MISSING_ENTITY_ID;
+	private EntityId otherTokenId = MISSING_ENTITY_ID;
+	private int serialNumber;
+	private int otherSerialNumber;
 
 	@BeforeEach
 	public void setup() {
-		owner = new EntityId(1, 2, 3);
-		otherOwner = new EntityId(1, 2, 4);
-		memo = "Test NFT";
-		otherMemo = "Test NFT2";
-		timestamp = Instant.ofEpochSecond(1_234_567L);
-		otherTimestamp = Instant.ofEpochSecond(1_234_568L);
+		tokenId = new EntityId(1, 2, 3);
+		otherTokenId = new EntityId(1, 2, 4);
+		serialNumber = 1;
+		otherSerialNumber = 2;
 
-		subject = new MerkleNft(owner, memo, RichInstant.fromJava(timestamp));
+		subject = new MerkleUniqueTokenId(tokenId, serialNumber);
 
 		serdes = mock(DomainSerdes.class);
-		MerkleNft.serdes = serdes;
+		MerkleUniqueTokenId.serdes = serdes;
 	}
 
 	@AfterEach
 	public void cleanup() {
-		MerkleToken.serdes = new DomainSerdes();
 	}
 
 	@Test
 	public void equalsContractWorks() {
 		// given
-		var other = new MerkleNft(owner, memo, RichInstant.fromJava(otherTimestamp));
-		var other2 = new MerkleNft(owner, otherMemo, RichInstant.fromJava(timestamp));
-		var other3 = new MerkleNft(otherOwner, memo, RichInstant.fromJava(timestamp));
-		var identical = new MerkleNft(owner, memo, RichInstant.fromJava(timestamp));
+		var other = new MerkleUniqueTokenId(otherTokenId, serialNumber);
+		var other2 = new MerkleUniqueTokenId(tokenId, otherSerialNumber);
+		var identical = new MerkleUniqueTokenId(tokenId, serialNumber);
 
 		// expect
 		assertNotEquals(subject, other);
 		assertNotEquals(subject, other2);
-		assertNotEquals(subject, other3);
 		assertEquals(subject, identical);
 	}
 
 	@Test
 	public void hashCodeWorks() {
 		// given:
-		var identical = new MerkleNft(owner, memo, RichInstant.fromJava(timestamp));
-		var other = new MerkleNft(otherOwner, otherMemo, RichInstant.fromJava(otherTimestamp));
+		var identical = new MerkleUniqueTokenId(tokenId, serialNumber);
+		var other = new MerkleUniqueTokenId(otherTokenId, otherSerialNumber);
 
 		// expect:
 		assertNotEquals(subject.hashCode(), other.hashCode());
@@ -93,22 +85,21 @@ public class MerkleNftTest {
 	@Test
 	public void toStringWorks() {
 		// given:
-		assertEquals("MerkleNft{" +
-						"owner=" + owner + ", " +
-						"creationTime=" + RichInstant.fromJava(timestamp) + ", " +
-						"memo=" + memo + "}",
+		assertEquals("MerkleUniqueTokenId{" +
+						"tokenId=" + tokenId + ", " +
+						"serialNumber=" + serialNumber + "}",
 				subject.toString());
 	}
 
 	@Test
 	public void copyWorks() {
 		// given:
-		var copyNft = subject.copy();
+		var copyNftId = subject.copy();
 		var other = new Object();
 
 		// expect:
-		assertNotSame(copyNft, subject);
-		assertEquals(subject, copyNft);
+		assertNotSame(copyNftId, subject);
+		assertEquals(subject, copyNftId);
 		assertEquals(subject, subject);
 		assertNotEquals(subject, other);
 	}
@@ -124,10 +115,8 @@ public class MerkleNftTest {
 		subject.serialize(out);
 
 		// then:
-		inOrder.verify(out).writeSerializable(owner, true);
-		inOrder.verify(serdes).serializeTimestamp(RichInstant.fromJava(timestamp), out);
-		inOrder.verify(out).writeNormalisedString(memo);
-
+		inOrder.verify(out).writeSerializable(tokenId, true);
+		inOrder.verify(out).writeInt(serialNumber);
 	}
 
 	@Test
@@ -135,15 +124,14 @@ public class MerkleNftTest {
 		// setup:
 		SerializableDataInputStream in = mock(SerializableDataInputStream.class);
 
-		given(in.readSerializable()).willReturn(owner);
-		given(serdes.deserializeTimestamp(in)).willReturn(RichInstant.fromJava(timestamp));
-		given(in.readNormalisedString(anyInt())).willReturn(memo);
+		given(in.readSerializable()).willReturn(tokenId);
+		given(in.readInt()).willReturn(serialNumber);
 
 		// and:
-		var read = new MerkleNft();
+		var read = new MerkleUniqueTokenId();
 
 		// when:
-		read.deserialize(in, MerkleNft.MERKLE_VERSION);
+		read.deserialize(in, MerkleUniqueTokenId.MERKLE_VERSION);
 
 		// then:
 		assertEquals(subject, read);
@@ -152,8 +140,8 @@ public class MerkleNftTest {
 	@Test
 	public void merkleMethodsWork() {
 		// expect;
-		assertEquals(MerkleNft.MERKLE_VERSION, subject.getVersion());
-		assertEquals(MerkleNft.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
+		assertEquals(MerkleUniqueTokenId.MERKLE_VERSION, subject.getVersion());
+		assertEquals(MerkleUniqueTokenId.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 		assertTrue(subject.isLeaf());
 	}
 }

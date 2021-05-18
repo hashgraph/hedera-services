@@ -23,77 +23,75 @@ package com.hedera.services.state.merkle;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
-import com.swirlds.common.FCMKey;
+import com.hedera.services.state.submerkle.RichInstant;
+import com.swirlds.common.FCMValue;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 
-import java.util.Objects;
 import java.io.IOException;
+import java.util.Objects;
 
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 
-public class MerkleNftId extends AbstractMerkleLeaf implements FCMKey {
+public class MerkleUniqueToken extends AbstractMerkleLeaf implements FCMValue {
 
 	static final int MERKLE_VERSION = 1;
-	static final long RUNTIME_CONSTRUCTABLE_ID = 0x52dd6afda193e8bcL;
+	static final long RUNTIME_CONSTRUCTABLE_ID = 0x899641dafcc39164L;
+
+	public static final int UPPER_BOUND_MEMO_UTF8_BYTES = 1024;
 
 	static DomainSerdes serdes = new DomainSerdes();
 
-	private EntityId tokenId = MISSING_ENTITY_ID;
-	private int serialNumber;
+	private EntityId owner;
+	private RichInstant creationTime;
+	private String memo = DEFAULT_MEMO;
 
-	public MerkleNftId() {
+	public MerkleUniqueToken(
+			EntityId owner,
+			String memo,
+			RichInstant creationTime
+	) {
+		this.owner = owner;
+		this.memo = memo;
+		this.creationTime = creationTime;
+	}
+
+	public MerkleUniqueToken() {
 		/* No-op. */
 	}
 
-	public MerkleNftId(
-			EntityId tokenId,
-			int serialNumber
-	) {
-		this.tokenId = tokenId;
-		this.serialNumber = serialNumber;
-	}
-
-	/* --- Object --- */
-
+	/* Object */
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || MerkleNftId.class != o.getClass()) {
+		if (o == null || MerkleUniqueToken.class != o.getClass()) {
 			return false;
 		}
 
-		var that = (MerkleNftId) o;
-
-		return Objects.equals(tokenId, that.tokenId) &&
-				Objects.equals(this.serialNumber, that.serialNumber);
+		var that = (MerkleUniqueToken) o;
+		return this.owner.equals(that.owner) &&
+				Objects.equals(this.memo, that.memo) &&
+				Objects.equals(creationTime, that.creationTime);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(
-				tokenId,
-				serialNumber);
+				owner,
+				creationTime,
+				memo);
 	}
 
-	/* --- Bean --- */
 	@Override
 	public String toString() {
-		return MoreObjects.toStringHelper(MerkleNftId.class)
-				.add("tokenId", tokenId)
-				.add("serialNumber", serialNumber)
+		return MoreObjects.toStringHelper(MerkleUniqueToken.class)
+				.add("owner", owner)
+				.add("creationTime", creationTime)
+				.add("memo", memo)
 				.toString();
-	}
-
-	public EntityId tokenId() {
-		return tokenId;
-	}
-
-	public int serialNumber() {
-		return serialNumber;
 	}
 
 	/* --- MerkleLeaf --- */
@@ -110,21 +108,34 @@ public class MerkleNftId extends AbstractMerkleLeaf implements FCMKey {
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int i) throws IOException {
-		tokenId = in.readSerializable();
-		serialNumber = in.readInt();
+		owner = in.readSerializable();
+		creationTime = serdes.deserializeTimestamp(in);
+		memo = in.readNormalisedString(UPPER_BOUND_MEMO_UTF8_BYTES);
 	}
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
-		out.writeSerializable(tokenId, true);
-		out.writeInt(serialNumber);
+		out.writeSerializable(owner, true);
+		serdes.serializeTimestamp(creationTime, out);
+		out.writeNormalisedString(memo);
 	}
 
 	/* --- FastCopyable --- */
 
 	@Override
-	public MerkleNftId copy() {
-		return new MerkleNftId(tokenId, serialNumber);
+	public MerkleUniqueToken copy() {
+		return new MerkleUniqueToken(owner, memo, creationTime);
 	}
 
+	public EntityId getOwner() {
+		return owner;
+	}
+
+	public String getMemo() {
+		return memo;
+	}
+
+	public RichInstant getCreationTime() {
+		return creationTime;
+	}
 }
