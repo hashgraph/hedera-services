@@ -16,7 +16,12 @@ and key, without any security concerns.)
      server, since it's almost always more convenient to use a 
      dockerized PostgreSQL locally.)
 
-Also note that at the time of writing, stable testnet has five nodes;
+:warning:&nbsp; Always follow these steps **on the tag** matching 
+the version of testnet state that DevOps provided. For example, if
+DevOps provided a 0.14.0 state, do everything that follows on the
+`v0.14.0` tag! 
+
+Also, note that at the time of writing, stable testnet has five nodes;
 this number appears below in a couple places which should be easy to 
 adapt if needed.
 
@@ -88,12 +93,19 @@ final var passphraseForOriginalPemLoc = "<SECRET>";
 ...
 ```
 
-Now just run the `RekeySavedStateTreasury` suite. It should end with 
-logs like,
+Now run the `RekeySavedStateTreasury` suite. The new treasury key
+will be saved at,
+ 1. _test-clients/DevStableTestnetStartUpAccount.txt_
+ 2. _test-clients/dev-stabletestnet-account2.pem_
+
+...where the first is a legacy Base64-encoded "startup account"; and
+the PEM file has a passphrase of "swirlds".
+
+Next, run the `FreezeRekeyedState` EET suite. It should end with logs like,
 ```
 ...
-2021-05-04 09:47:26.187 INFO   311  HapiApiSpec - 'FreezeWithNewTreasuryKey' finished initial execution of HapiFreeze{sigs=1, node=0.0.3, start=14:48, end=14:49}
-2021-05-04 09:47:26.691 INFO   330  HapiApiSpec - 'FreezeWithNewTreasuryKey' - final status: PASSED!
+2021-05-04 09:47:26.187 INFO   311  HapiApiSpec - 'FreezeRekeyedState' finished initial execution of HapiFreeze{sigs=1, node=0.0.3, start=14:48, end=14:49}
+2021-05-04 09:47:26.691 INFO   330  HapiApiSpec - 'FreezeRekeyedState' - final status: PASSED!
 ```
 
 ## Capturing the new state
@@ -107,9 +119,6 @@ stop Services and archive the state with the new treasury key,
 $ tar -cvf rekeyed-testnet-round65464591.tar.gz \
 > hedera-node/data/saved/com.hedera.services.ServicesMain/0/123/65464591
 ```
-(Here 65464591 was the round state saved by the `Freeze`.)  
+(Here 65464591 was the round of state saved by the `Freeze`.)  
 
-You're done! Your shiny new treasury key is at 
-_test-clients/dev-stabletestnet-account2.pem_ with a passphrase of "swirlds".
-There is also a legacy Base64-encoded "startup account" at
-_test-clients/DevStableTestnetStartUpAccount.txt_.
+You're done! Enjoy your shiny new treasury key.

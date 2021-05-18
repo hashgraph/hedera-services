@@ -32,6 +32,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
+import java.util.function.Supplier;
 
 public class EntityAutoRenewal {
 	private static final Logger log = LogManager.getLogger(EntityAutoRenewal.class);
@@ -40,8 +41,8 @@ public class EntityAutoRenewal {
 	private final RenewalProcess renewalProcess;
 	private final ServicesContext ctx;
 	private final NetworkCtxManager networkCtxManager;
-	private final MerkleNetworkContext networkCtx;
 	private final GlobalDynamicProperties dynamicProps;
+	private final Supplier<MerkleNetworkContext> networkCtx;
 
 	public EntityAutoRenewal(
 			HederaNumbers hederaNumbers,
@@ -49,7 +50,7 @@ public class EntityAutoRenewal {
 			ServicesContext ctx,
 			GlobalDynamicProperties dynamicProps,
 			NetworkCtxManager networkCtxManager,
-			MerkleNetworkContext networkCtx
+			Supplier<MerkleNetworkContext> networkCtx
 	) {
 		this.ctx = ctx;
 		this.networkCtx = networkCtx;
@@ -71,10 +72,11 @@ public class EntityAutoRenewal {
 			return;
 		}
 
+		final var curNetworkCtx = networkCtx.get();
 		final int maxEntitiesToTouch = dynamicProps.autoRenewMaxNumberOfEntitiesToRenewOrDelete();
 		final int maxEntitiesToScan = dynamicProps.autoRenewNumberOfEntitiesToScan();
 		if (networkCtxManager.currentTxnIsFirstInConsensusSecond()) {
-			networkCtx.resetAutoRenewSummaryCounts();
+			curNetworkCtx.resetAutoRenewSummaryCounts();
 		}
 
 		renewalProcess.beginRenewalCycle(instantNow);
@@ -100,11 +102,11 @@ public class EntityAutoRenewal {
 			}
 		}
 		renewalProcess.endRenewalCycle();
-		networkCtx.updateAutoRenewSummaryCounts(i - 1, entitiesTouched);
+		curNetworkCtx.updateAutoRenewSummaryCounts(i - 1, entitiesTouched);
 
 		log.debug("Auto-renew scan finished at {} with {}/{} scanned/touched (Total this second: {}/{})",
 				scanNum, i - 1, entitiesTouched,
-				networkCtx.getEntitiesScannedThisSecond(), networkCtx.getEntitiesTouchedThisSecond());
+				curNetworkCtx.getEntitiesScannedThisSecond(), curNetworkCtx.getEntitiesTouchedThisSecond());
 		log.debug("AFTER #'s are (accounts={}, tokenRels={})",
 				() -> ctx.accounts().size(), () -> ctx.tokenAssociations().size());
 

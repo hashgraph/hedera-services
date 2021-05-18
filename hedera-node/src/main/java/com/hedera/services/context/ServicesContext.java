@@ -1494,7 +1494,7 @@ public class ServicesContext {
 					fees(), hederaNums(), helper, recordHelper);
 			entityAutoRenewal = new EntityAutoRenewal(
 					hederaNums(), renewalProcess, this,
-					globalDynamicProperties(), networkCtxManager(), networkCtx());
+					globalDynamicProperties(), networkCtxManager(), this::networkCtx);
 		}
 		return entityAutoRenewal;
 	}
@@ -1502,7 +1502,7 @@ public class ServicesContext {
 	public ExpiryManager expiries() {
 		if (expiries == null) {
 			var histories = txnHistories();
-			expiries = new ExpiryManager(recordCache(), histories, scheduleStore(), schedules());
+			expiries = new ExpiryManager(recordCache(), histories, scheduleStore(), this::schedules);
 		}
 		return expiries;
 	}
