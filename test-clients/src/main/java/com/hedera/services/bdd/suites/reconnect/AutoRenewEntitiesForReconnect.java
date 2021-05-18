@@ -79,7 +79,7 @@ public class AutoRenewEntitiesForReconnect extends HapiApiSuite {
 						}),
 
 						withLiveNode("0.0.8")
-								.within(60, TimeUnit.SECONDS)
+								.within(120, TimeUnit.SECONDS)
 								.loggingAvailabilityEvery(10)
 								.sleepingBetweenRetriesFor(10)
 				)
