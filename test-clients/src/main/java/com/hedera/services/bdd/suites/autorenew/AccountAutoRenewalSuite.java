@@ -225,7 +225,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 									.count();
 							Assert.assertTrue(
 									"More than " + abbrevMaxToScan + " entities were touched!",
-									numRemoved <= abbrevMaxToScan);
+									numRemoved <= abbrevMaxToScan+1);
 						})
 				);
 	}

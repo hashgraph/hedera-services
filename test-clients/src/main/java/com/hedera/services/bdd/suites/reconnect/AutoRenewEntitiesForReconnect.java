@@ -41,6 +41,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -60,23 +61,18 @@ public class AutoRenewEntitiesForReconnect extends HapiApiSuite {
 
 	private HapiApiSpec autoRenewAccountGetsDeletedOnReconnectingNodeAsWell() {
 		String autoDeleteAccount = "autoDeleteAccount";
-		int autoRenewSecs = 10;
+		int autoRenewSecs = 1;
 		return defaultHapiSpec("AutoRenewAccountGetsDeletedOnReconnectingNodeAsWell")
 				.given(
 						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
-								.overridingProps(Map.of(
-										"ledger.autoRenewPeriod.minDuration", String.valueOf(autoRenewSecs),
-										"autorenew.gracePeriod", "0",
-										"autorenew.numberOfEntitiesToScan", "100",
-										"autorenew.maxNumberOfEntitiesToRenewOrDelete", "2"))
-								.erasingProps(Set.of("minimumAutoRenewDuration")),
+								.overridingProps(enablingAutoRenewWith(autoRenewSecs, 0, 100, 2)),
 						cryptoCreate(autoDeleteAccount).autoRenewSecs(autoRenewSecs).balance(0L)
 				)
 				.when(
 						// do some transfers so that we pass autoRenewSecs
 						withOpContext((spec, ctxLog) -> {
 							List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
-							for (int i = 0; i < 25; i++) {
+							for (int i = 0; i < 50; i++) {
 								opsList.add(cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)).logged());
 							}
 							CustomSpecAssert.allRunFor(spec, opsList);
@@ -91,6 +87,15 @@ public class AutoRenewEntitiesForReconnect extends HapiApiSuite {
 						getAccountBalance(autoDeleteAccount)
 								.setNode("0.0.8")
 								.hasAnswerOnlyPrecheckFrom(INVALID_ACCOUNT_ID)
+				);
+	}
+
+	private HapiApiSpec accountAutoRenewalSuiteCleanup() {
+		return defaultHapiSpec("accountAutoRenewalSuiteCleanup")
+				.given().when().then(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(GENESIS)
+								.overridingProps(disablingAutoRenewWithDefaults())
 				);
 	}
 
