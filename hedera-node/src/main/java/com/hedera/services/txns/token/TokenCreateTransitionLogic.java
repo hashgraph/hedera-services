@@ -27,6 +27,7 @@ import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -90,7 +91,15 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			return;
 		}
 
-		var created = result.getCreated().get();
+		TokenID created = null;
+		if(result.getCreated().isPresent()) {
+			created = result.getCreated().get();
+		} else {
+			log.warn("tokenId not present in the token create transaction !!");
+			abortWith(FAIL_INVALID);
+			return;
+		}
+
 		var treasury = op.getTreasury();
 		var status = OK;
 		status = store.associate(treasury, List.of(created));
