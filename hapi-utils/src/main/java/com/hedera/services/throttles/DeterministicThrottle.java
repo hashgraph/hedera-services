@@ -145,6 +145,12 @@ public class DeterministicThrottle {
 
 	@Override
 	public boolean equals(Object obj) {
+		if (obj == null)
+			return false;
+
+		if (this.getClass() != obj.getClass())
+			return false;
+
 		var that = (DeterministicThrottle)obj;
 
 		return this.delegate.bucket().totalCapacity() == that.delegate.bucket().totalCapacity()

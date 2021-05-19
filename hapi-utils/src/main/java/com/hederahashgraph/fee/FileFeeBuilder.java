@@ -108,7 +108,7 @@ public class FileFeeBuilder extends FeeBuilder {
     txBodySize = getCommonTransactionBodyBytes(txBody);
 
     // bpt - Bytes per Transaction
-    bpt = txBodySize + getFileUpdateBodyTxSize(txBody) + sigValObj.getSignatureSize();
+    bpt = (long) txBodySize + getFileUpdateBodyTxSize(txBody) + sigValObj.getSignatureSize();
 
     // vpt - verifications per transactions
     vpt = sigValObj.getTotalSigCount();

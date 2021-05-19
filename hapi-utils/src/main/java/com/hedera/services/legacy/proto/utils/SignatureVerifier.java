@@ -21,6 +21,16 @@ package com.hedera.services.legacy.proto.utils;
  */
 
 
+import net.i2p.crypto.eddsa.EdDSAEngine;
+import net.i2p.crypto.eddsa.EdDSAPublicKey;
+import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
+import net.i2p.crypto.eddsa.spec.EdDSAParameterSpec;
+import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -37,15 +47,6 @@ import java.security.interfaces.ECPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.InvalidParameterSpecException;
 import java.security.spec.X509EncodedKeySpec;
-import net.i2p.crypto.eddsa.EdDSAEngine;
-import net.i2p.crypto.eddsa.EdDSAPublicKey;
-import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
-import net.i2p.crypto.eddsa.spec.EdDSAParameterSpec;
-import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class SignatureVerifier {
   private static final Logger log = LogManager.getLogger(SignatureVerifier.class);
@@ -238,7 +239,7 @@ public class SignatureVerifier {
     byte[] encKey = null;
     try (FileInputStream  keyfis = new FileInputStream(args[0])) {
         encKey = new byte[keyfis.available()];
-        keyfis.read(encKey);
+        int bytesRead = keyfis.read(encKey);
     } catch (IOException e) {
       System.err.println("Caught IOException when reading public key file " + e.toString());
       log.error("Caught IOException when reading public key file ", e );
@@ -259,7 +260,7 @@ public class SignatureVerifier {
     byte[] sigToVerify = null;
     try(FileInputStream sigfis = new FileInputStream(args[1])) {
       sigToVerify = new byte[sigfis.available()];
-      sigfis.read(sigToVerify);
+      int bytesRead = sigfis.read(sigToVerify);
     } catch (IOException e) {
       System.err.println("Caught IOException when reading public key file " + e.toString());
       log.error("Caught IOException when reading public key file", e );
