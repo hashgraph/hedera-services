@@ -145,11 +145,13 @@ public class DeterministicThrottle {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (obj == null)
+		if (obj == null){
 			return false;
+		}
 
-		if (this.getClass() != obj.getClass())
+		if (this.getClass() != obj.getClass()){
 			return false;
+		}
 
 		var that = (DeterministicThrottle)obj;
 
