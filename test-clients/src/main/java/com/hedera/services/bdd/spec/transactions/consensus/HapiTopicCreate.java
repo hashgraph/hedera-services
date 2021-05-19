@@ -22,17 +22,16 @@ package com.hedera.services.bdd.spec.transactions.consensus;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
-import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.fee.ConsensusServiceFeeBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -45,11 +44,11 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asDuration;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.netOf;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
 	static final Logger log = LogManager.getLogger(HapiTopicCreate.class);

@@ -20,10 +20,10 @@ package com.hedera.services.legacy.regression.umbrella;
  * ‍
  */
 
+import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 
 /**
  * A runnable object that executes a fixed Hedera service API.

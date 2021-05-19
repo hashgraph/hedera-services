@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.builder.RequestBuilder;
+import org.junit.Assert;
 
 import java.io.IOException;
 import java.nio.file.FileSystems;
@@ -40,8 +41,6 @@ import java.security.PrivateKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import org.junit.Assert;
 
 /**
  * Integration tests for upload a large file.

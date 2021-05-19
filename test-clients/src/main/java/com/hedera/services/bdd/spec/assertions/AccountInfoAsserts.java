@@ -20,16 +20,16 @@ package com.hedera.services.bdd.spec.assertions;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hederahashgraph.api.proto.java.AccountID;
 import org.junit.Assert;
 
 import java.util.Optional;
 import java.util.function.Function;
 
-import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import static com.hedera.services.legacy.core.CommonUtils.calculateSolidityAddress;
+import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 
 public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo> {
 	public static AccountInfoAsserts accountWith() {

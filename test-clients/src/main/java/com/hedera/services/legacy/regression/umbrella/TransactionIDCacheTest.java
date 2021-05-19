@@ -20,15 +20,16 @@ package com.hedera.services.legacy.regression.umbrella;
  * ‍
  */
 
+import com.hedera.services.legacy.core.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.builder.RequestBuilder;
-import com.hedera.services.legacy.core.CommonUtils;
-import java.time.Instant;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.time.Instant;
 
 /**
  * @author Akshay

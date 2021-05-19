@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.utils.sysfiles;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.hederahashgraph.api.proto.java.FeeComponents;
-import com.hederahashgraph.api.proto.java.FeeData;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ResourcePricesPojo {

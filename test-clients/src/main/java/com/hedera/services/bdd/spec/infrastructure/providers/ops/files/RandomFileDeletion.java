@@ -23,24 +23,17 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.files;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 
 public class RandomFileDeletion implements OpProvider {
 	private final RegistrySourcedNameProvider<FileID> files;

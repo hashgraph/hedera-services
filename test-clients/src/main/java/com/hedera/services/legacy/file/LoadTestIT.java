@@ -20,9 +20,9 @@ package com.hedera.services.legacy.file;
  * ‍
  */
 
+import com.hedera.services.legacy.core.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc.CryptoServiceBlockingStub;
-import com.hedera.services.legacy.core.CommonUtils;
 import org.junit.Ignore;
 
 @Ignore

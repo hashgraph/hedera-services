@@ -21,13 +21,24 @@ package com.hedera.services.bdd.spec.queries.contract;
  */
 
 import com.google.common.base.MoreObjects;
-import com.google.common.io.*;
-import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
-import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hederahashgraph.api.proto.java.*;
+import com.google.common.io.ByteSink;
+import com.google.common.io.ByteSource;
+import com.google.common.io.Files;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
+import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
+import com.hedera.services.bdd.spec.queries.HapiQueryOp;
+import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.ContractGetInfoQuery;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.Transaction;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -41,12 +52,6 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.assertExpectedRels;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.assertNoUnexpectedRels;
 import static com.hederahashgraph.api.proto.java.ContractGetInfoResponse.ContractInfo;
-
-import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
-import com.hedera.services.bdd.spec.queries.HapiQueryOp;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
 
 public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
 	private static final Logger log = LogManager.getLogger(HapiGetContractInfo.class);

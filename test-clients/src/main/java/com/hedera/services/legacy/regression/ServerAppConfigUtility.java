@@ -20,6 +20,9 @@ package com.hedera.services.legacy.regression;
  * ‍
  */
 
+import com.hedera.services.legacy.core.AccountKeyListObj;
+import com.hedera.services.legacy.core.KeyPairObj;
+import com.hedera.services.legacy.core.TestHelper;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
@@ -28,11 +31,9 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.service.proto.java.FileServiceGrpc;
 import com.hederahashgraph.service.proto.java.FileServiceGrpc.FileServiceBlockingStub;
-import com.hedera.services.legacy.core.AccountKeyListObj;
-import com.hedera.services.legacy.core.KeyPairObj;
-import com.hedera.services.legacy.core.TestHelper;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.util.ArrayList;

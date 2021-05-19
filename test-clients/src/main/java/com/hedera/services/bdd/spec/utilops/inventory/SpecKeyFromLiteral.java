@@ -21,15 +21,8 @@ package com.hedera.services.bdd.spec.utilops.inventory;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.spec.keys.deterministic.Bip0032;
-import com.hedera.services.bdd.spec.keys.deterministic.Ed25519Factory;
-import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import net.i2p.crypto.eddsa.EdDSAPrivateKey;
-import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
-import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
+import com.hedera.services.bdd.spec.utilops.UtilOp;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

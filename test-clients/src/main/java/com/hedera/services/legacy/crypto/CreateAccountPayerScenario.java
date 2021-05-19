@@ -20,6 +20,10 @@ package com.hedera.services.legacy.crypto;
  * ‍
  */
 
+import com.hedera.services.legacy.core.AccountKeyListObj;
+import com.hedera.services.legacy.core.CommonUtils;
+import com.hedera.services.legacy.core.TestHelper;
+import com.hedera.services.legacy.regression.Utilities;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -29,12 +33,12 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
-import com.hedera.services.legacy.core.AccountKeyListObj;
-import com.hedera.services.legacy.core.CommonUtils;
-import com.hedera.services.legacy.core.TestHelper;
-import com.hedera.services.legacy.regression.Utilities;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import net.i2p.crypto.eddsa.KeyPairGenerator;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import org.junit.Assert;
 
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -42,10 +46,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import net.i2p.crypto.eddsa.KeyPairGenerator;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-import org.junit.Assert;
 
 /**
  * This test create account by genesis with 1000 hbars as initial balance and create one more

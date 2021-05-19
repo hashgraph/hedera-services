@@ -33,8 +33,6 @@ import java.nio.file.Paths;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
-
 public class ZipUtil {
 	private static final Logger log = LogManager.getLogger(ZipUtil.class);
 	private static final int BUFFER_SIZE = 4096;

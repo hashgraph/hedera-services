@@ -21,6 +21,8 @@ package com.hedera.services.legacy.CI;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.core.TestHelper;
+import com.hedera.services.legacy.proto.utils.KeyExpansion;
 import com.hedera.services.legacy.regression.BaseFeeTests;
 import com.hedera.services.legacy.regression.umbrella.CryptoServiceTest;
 import com.hedera.services.legacy.regression.umbrella.TestHelperComplex;
@@ -40,16 +42,14 @@ import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.builder.TransactionSigner;
-import com.hedera.services.legacy.core.TestHelper;
-import com.hedera.services.legacy.proto.utils.KeyExpansion;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
 
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
 
 /**
  * Test Client for Crypto fee tests

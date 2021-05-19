@@ -22,15 +22,15 @@ package com.hedera.services.bdd.spec.utilops.inventory;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hedera.services.bdd.suites.utils.keypairs.SpecUtils;
+import com.hedera.services.legacy.core.KeyPairObj;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
-import com.hedera.services.legacy.core.KeyPairObj;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.keys.SigControl;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.logging.log4j.LogManager;

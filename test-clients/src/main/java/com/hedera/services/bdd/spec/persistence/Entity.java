@@ -27,8 +27,6 @@ import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 
 import java.util.Optional;
 
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
-
 public class Entity implements Comparable<Entity> {
 	enum Type {
 		ACCOUNT, TOKEN, SCHEDULE, TOPIC, FILE, CONTRACT, UNKNOWN

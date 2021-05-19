@@ -35,7 +35,6 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static java.util.Collections.binarySearch;
-
 import static java.util.stream.Collectors.toList;
 
 public class BiasedDelegatingProvider implements OpProvider {

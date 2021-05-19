@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.utils.sysfiles;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
