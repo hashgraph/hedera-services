@@ -41,7 +41,6 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
 
 /**
  * This class provides utilities to expand keys.
@@ -502,7 +501,7 @@ public class KeyExpansion {
 
       //verify the size
       int size = KeyExpansion.computeNumOfExpandedKeys(rv, 1, new AtomicCounter());
-      Assert.assertEquals(1, size);
+      assert size == 1;
     } else if (depth == 2) {
       List<Key> keys = new ArrayList<>();
       keys.add(KeyExpansion.genSingleEd25519Key(pubKey2privKeyMap));
@@ -512,7 +511,7 @@ public class KeyExpansion {
 
       //verify the size
       int size = KeyExpansion.computeNumOfExpandedKeys(rv, 1, new AtomicCounter());
-      Assert.assertEquals(1 + numKeys * 2, size);
+      assert size == (1 + numKeys * 2);
     } else {
       throw new Exception("Not implemented yet.");
     }
