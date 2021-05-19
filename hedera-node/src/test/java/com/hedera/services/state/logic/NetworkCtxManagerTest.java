@@ -149,6 +149,18 @@ class NetworkCtxManagerTest {
 	}
 
 	@Test
+	void relaxesIssInfoIfConsensusTimeOfRecentAlertIsEmpty() {
+		given(issInfo.status()).willReturn(IssEventStatus.ONGOING_ISS);
+		given(issInfo.consensusTimeOfRecentAlert()).willReturn(Optional.empty());
+
+		// when:
+		subject.advanceConsensusClockTo(sometimeSameDay);
+
+		// then:
+		verify(issInfo).relax();
+	}
+
+	@Test
 	void doesNothingWithIssInfoIfNotOngoing() {
 		// when:
 		subject.advanceConsensusClockTo(sometime);

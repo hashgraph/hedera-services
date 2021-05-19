@@ -107,8 +107,11 @@ public class NetworkCtxManager {
 		networkCtxNow.setConsensusTimeOfLastHandledTxn(consensusTime);
 
 		if (issInfo.status() == ONGOING_ISS) {
-			var resetTime = issInfo.consensusTimeOfRecentAlert().get().plus(issResetPeriod, SECONDS);
-			if (consensusTime.isAfter(resetTime)) {
+
+			if(issInfo.consensusTimeOfRecentAlert().isEmpty() ||
+					consensusTime.isAfter(
+							issInfo.consensusTimeOfRecentAlert().get().plus(issResetPeriod, SECONDS)
+					)) {
 				issInfo.relax();
 			}
 		}
