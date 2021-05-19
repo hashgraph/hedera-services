@@ -241,7 +241,7 @@ public class SignatureVerifier {
         encKey = new byte[keyfis.available()];
         int bytesRead = keyfis.read(encKey);
     } catch (IOException e) {
-      System.err.println("Caught IOException when reading public key file " + e.toString());
+      System.err.println("Caught IOException when reading public key file " + e);
       log.error("Caught IOException when reading public key file ", e );
     }
 
@@ -252,7 +252,7 @@ public class SignatureVerifier {
       KeyFactory keyFactory = KeyFactory.getInstance("DSA", "SUN");
       pubKey = keyFactory.generatePublic(pubKeySpec);
     } catch ( NoSuchAlgorithmException | NoSuchProviderException |InvalidKeySpecException e) {
-      System.err.println("Caught exception when generating public key " + e.toString());
+      System.err.println("Caught exception when generating public key " + e);
       log.error("Caught Exception when generating public key", e);
     }
 
@@ -262,7 +262,7 @@ public class SignatureVerifier {
       sigToVerify = new byte[sigfis.available()];
       int bytesRead = sigfis.read(sigToVerify);
     } catch (IOException e) {
-      System.err.println("Caught IOException when reading public key file " + e.toString());
+      System.err.println("Caught IOException when reading public key file " + e);
       log.error("Caught IOException when reading public key file", e );
     }
 
@@ -272,7 +272,7 @@ public class SignatureVerifier {
       sig = Signature.getInstance("SHA1withDSA", "SUN");
       sig.initVerify(pubKey);
     } catch ( InvalidKeyException | NoSuchAlgorithmException | NoSuchProviderException  e) {
-      System.err.println("Caught exception when initializing verifying signature " + e.toString());
+      System.err.println("Caught exception when initializing verifying signature " + e);
       log.error("Caught Exception when initializing verifying signature", e);
     }
       /* Update and verify the data */
@@ -286,7 +286,7 @@ public class SignatureVerifier {
         sig.update(buffer, 0, len);
       }
     } catch (IOException | SignatureException e) {
-      System.err.println("Caught exception when reading data file " + e.toString());
+      System.err.println("Caught exception when reading data file " + e);
       log.error("Caught Exception when reading data file", e);
     }
 
@@ -294,7 +294,7 @@ public class SignatureVerifier {
     try {
       verifies = sig.verify(sigToVerify);
     } catch (SignatureException e) {
-      System.err.println("Caught exception when verifying signature " + e.toString());
+      System.err.println("Caught exception when verifying signature " + e);
       log.error("Caught Exception when verifying signature", e);
     }
     System.out.println("signature verifies: " + verifies);
@@ -319,7 +319,7 @@ public class SignatureVerifier {
   }
 
   public static boolean verifyED25519(byte[] pubKeyBytes, byte[] msgBytes, byte[] sigBytes)
-      throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, UnsupportedEncodingException, DecoderException {
+      throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
 
     EdDSAParameterSpec spec = EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.ED_25519);
     EdDSAPublicKeySpec pubKey = new EdDSAPublicKeySpec(pubKeyBytes, spec);
