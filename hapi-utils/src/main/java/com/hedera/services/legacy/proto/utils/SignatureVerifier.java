@@ -238,7 +238,7 @@ public class SignatureVerifier {
     byte[] encKey = null;
     try (FileInputStream  keyfis = new FileInputStream(args[0])) {
         encKey = new byte[keyfis.available()];
-        keyfis.read(encKey);
+        int bytesRead = keyfis.read(encKey);
     } catch (IOException e) {
       System.err.println("Caught IOException when reading public key file " + e.toString());
       log.error("Caught IOException when reading public key file ", e );
@@ -259,7 +259,7 @@ public class SignatureVerifier {
     byte[] sigToVerify = null;
     try(FileInputStream sigfis = new FileInputStream(args[1])) {
       sigToVerify = new byte[sigfis.available()];
-      sigfis.read(sigToVerify);
+      int bytesRead = sigfis.read(sigToVerify);
     } catch (IOException e) {
       System.err.println("Caught IOException when reading public key file " + e.toString());
       log.error("Caught IOException when reading public key file", e );
