@@ -273,7 +273,7 @@ public class SmartContractFeeBuilder extends FeeBuilder {
       }
     }
 
-    bpr =  (long) BASIC_QUERY_RES_HEADER + getStateProofSize(responseType);
+    bpr =  calculateBPR(responseType);
 
     sbpr =  (long) BASIC_ENTITY_ID_SIZE + errorMessageSize +  LONG_SIZE  +  contractFuncResultSize;
 
@@ -428,7 +428,7 @@ public class SmartContractFeeBuilder extends FeeBuilder {
         keySize = getAccountKeyStorageSize(key);
     }
 
-    bpr =  (long) BASIC_QUERY_RES_HEADER + getStateProofSize(responseType);
+    bpr =  calculateBPR(responseType);
 
     sbpr =  (long) BASIC_CONTRACT_INFO_SIZE + keySize ;
 
@@ -470,7 +470,7 @@ public class SmartContractFeeBuilder extends FeeBuilder {
      *
      */
 
-    bpr = (long) BASIC_QUERY_RES_HEADER + getStateProofSize(responseType);
+    bpr = calculateBPR(responseType);
 
     sbpr = byteCodeSize;
 
@@ -513,7 +513,7 @@ public class SmartContractFeeBuilder extends FeeBuilder {
      *
      */
 
-    bpr = (long) BASIC_QUERY_RES_HEADER + getStateProofSize(responseType) + BASIC_ENTITY_ID_SIZE;
+    bpr = calculateBPR(responseType) + BASIC_ENTITY_ID_SIZE;
 
 
     FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
@@ -663,5 +663,7 @@ public class SmartContractFeeBuilder extends FeeBuilder {
     return getFeeDataMatrices(feeMatricesForTx, sigValObj.getPayerAcctSigCount(),rbsNetwork);
   }
 
-
+  private long calculateBPR(ResponseType responseType) {
+    return (long) BASIC_QUERY_RES_HEADER + getStateProofSize(responseType);
+  }
 }
