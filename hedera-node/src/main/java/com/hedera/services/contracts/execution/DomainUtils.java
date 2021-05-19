@@ -113,7 +113,7 @@ public class DomainUtils {
 
 		result.setGasUsed(ByteUtil.byteArrayToLong(receipt.getGasUsed()));
 		result.setErrorMessage(receipt.getError());
-		result = created.map(result::addAllCreatedContractIDs).get();
+		created.map(result::addAllCreatedContractIDs);
 
 		if (!isFailed(receipt)) {
 			if (isCreation(receipt)) {
