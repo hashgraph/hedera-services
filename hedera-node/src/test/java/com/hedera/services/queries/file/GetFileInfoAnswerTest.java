@@ -158,6 +158,22 @@ class GetFileInfoAnswerTest {
 	}
 
 	@Test
+	public void failsWhenMissingInfo() throws Throwable {
+		// setup:
+		Query query = validQuery(ANSWER_ONLY, fee, target);
+		given(view.infoForFile(asFile(target))).willReturn(Optional.empty());
+
+		// when:
+		Response response = subject.responseGiven(query, view, OK, fee);
+
+		// then:
+		assertTrue(response.hasFileGetInfo());
+		assertEquals(FAIL_INVALID, response.getFileGetInfo().getHeader().getNodeTransactionPrecheckCode());
+		assertEquals(ANSWER_ONLY, response.getFileGetInfo().getHeader().getResponseType());
+		assertFalse(response.getFileGetInfo().hasFileInfo());
+	}
+
+	@Test
 	public void getsCostAnswerResponse() throws Throwable {
 		// setup:
 		Query query = validQuery(COST_ANSWER, fee, target);

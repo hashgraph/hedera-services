@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
@@ -76,8 +77,12 @@ public class GetFileInfoAnswer implements AnswerService {
 			} else {
 				var info = view.infoForFile(op.getFileID());
 				/* Include cost here to satisfy legacy regression tests. */
-				response.setHeader(answerOnlyHeader(OK, cost));
-				response.setFileInfo(info.get());
+				if(info.isPresent()) {
+					response.setHeader(answerOnlyHeader(OK, cost));
+					response.setFileInfo(info.get());
+				} else {
+					response.setHeader(answerOnlyHeader(FAIL_INVALID));
+				}
 			}
 		}
 		return Response.newBuilder()
