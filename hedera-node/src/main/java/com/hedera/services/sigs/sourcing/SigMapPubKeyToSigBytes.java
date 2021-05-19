@@ -21,11 +21,13 @@ package com.hedera.services.sigs.sourcing;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
-import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
+
 import java.util.Arrays;
 import java.util.List;
+
 import static java.util.stream.Collectors.toList;
 
 /**

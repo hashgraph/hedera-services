@@ -26,7 +26,7 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-import static com.hedera.test.factories.keys.NodeFactory.*;
+import static com.hedera.test.factories.keys.NodeFactory.ed25519;
 import static com.hedera.test.utils.IdUtils.asAccount;
 
 public class ConsensusCreateTopicFactory extends SignedTxnFactory<ConsensusCreateTopicFactory> {

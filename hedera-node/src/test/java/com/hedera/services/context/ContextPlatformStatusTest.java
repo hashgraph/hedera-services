@@ -20,7 +20,6 @@ package com.hedera.services.context;
  * ‍
  */
 
-import com.hedera.services.context.ContextPlatformStatus;
 import org.junit.jupiter.api.Test;
 
 import static com.swirlds.common.PlatformStatus.MAINTENANCE;

@@ -20,12 +20,12 @@ package com.hedera.services.ledger.accounts;
  * ‍
  */
 
-import java.util.Map;
-
-import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hederahashgraph.api.proto.java.AccountID;
+
+import java.util.Map;
 
 public class HederaAccountCustomizer extends
 		AccountCustomizer<AccountID, MerkleAccount, AccountProperty, HederaAccountCustomizer> {

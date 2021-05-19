@@ -22,7 +22,6 @@ package com.hedera.services.fees.calculation.crypto.queries;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
-import com.hedera.services.usage.crypto.CryptoGetInfoUsage;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -30,11 +29,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.util.function.Function;
-
-import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
-import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 
 public class GetAccountInfoResourceUsage implements QueryResourceUsageEstimator {
 	private static final Logger log = LogManager.getLogger(GetAccountInfoResourceUsage.class);

@@ -20,17 +20,18 @@ package com.hedera.services.sigs.verification;
  * ‍
  */
 
-import com.hedera.services.sigs.order.HederaSigningOrder;
-import com.hedera.services.sigs.order.SigningOrderResult;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.legacy.exception.InvalidAccountIDException;
+import com.hedera.services.sigs.order.HederaSigningOrder;
+import com.hedera.services.sigs.order.SigningOrderResult;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
-import static com.hedera.services.sigs.HederaToPlatformSigOps.*;
+
+import static com.hedera.services.sigs.HederaToPlatformSigOps.PRE_HANDLE_SUMMARY_FACTORY;
 
 /**
  * Encapsulates logic to determine which Hedera keys need to have valid

@@ -30,7 +30,6 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.swirlds.common.io.SerializableDataInputStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -40,8 +39,6 @@ import java.time.Instant;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
 
 class MerkleTopicTest {
 	String[] memos = new String[] {

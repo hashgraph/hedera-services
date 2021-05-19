@@ -23,9 +23,10 @@ package com.hedera.services.legacy.unit;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.builder.RequestBuilder;
-import java.time.Instant;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.time.Instant;
 
 /**
  * @author Akshay

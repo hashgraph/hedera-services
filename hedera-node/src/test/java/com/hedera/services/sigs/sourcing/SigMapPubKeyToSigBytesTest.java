@@ -21,6 +21,7 @@ package com.hedera.services.sigs.sourcing;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
@@ -30,15 +31,17 @@ import com.hedera.test.factories.sigs.SigFactory;
 import com.hedera.test.factories.sigs.SigMapGenerator;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.swirlds.common.crypto.SignatureType;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.hedera.test.factories.keys.NodeFactory.*;
-import static com.hedera.test.factories.txns.SystemDeleteFactory.*;
+import static com.hedera.test.factories.keys.NodeFactory.ecdsa384;
+import static com.hedera.test.factories.keys.NodeFactory.ed25519;
+import static com.hedera.test.factories.keys.NodeFactory.list;
+import static com.hedera.test.factories.keys.NodeFactory.rsa3072;
+import static com.hedera.test.factories.txns.SystemDeleteFactory.newSignedSystemDelete;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertThrows;

@@ -20,16 +20,18 @@ package com.hedera.services.fees.calculation.file.txns;
  * ‍
  */
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.fee.FileFeeBuilder;
 import com.hederahashgraph.fee.SigValueObj;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import static org.mockito.BDDMockito.*;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
 class FileCreateResourceUsageTest {
 	int numSigs = 10, sigsSize = 100, numPayerKeys = 3;

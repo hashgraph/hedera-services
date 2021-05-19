@@ -20,9 +20,9 @@ package com.hedera.services.keys;
  * ‍
  */
 
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.core.jproto.JThresholdKey;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

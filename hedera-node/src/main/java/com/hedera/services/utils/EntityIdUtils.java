@@ -22,18 +22,17 @@ package com.hedera.services.utils;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.hedera.services.state.submerkle.EntityId;
 import org.spongycastle.util.encoders.Hex;
 
 import java.util.Arrays;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 import static java.lang.System.arraycopy;
 

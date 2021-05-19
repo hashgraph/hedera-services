@@ -27,8 +27,6 @@ import com.hedera.services.state.merkle.MerkleOptionalBlob;
 
 import java.util.Map;
 
-import static com.hedera.test.forensics.domain.PojoRecord.asString;
-
 @JsonPropertyOrder({
 		"path",
 		"blobId",

@@ -34,7 +34,6 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.fee.FeeBuilder;
 import org.apache.commons.lang3.tuple.Triple;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
@@ -49,9 +48,9 @@ import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAccountAutoRenew;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(LogCaptureExtension.class)
 class AutoRenewCalcsTest {

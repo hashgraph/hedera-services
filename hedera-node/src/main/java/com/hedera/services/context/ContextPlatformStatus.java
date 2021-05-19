@@ -21,7 +21,8 @@ package com.hedera.services.context;
  */
 
 import com.swirlds.common.PlatformStatus;
-import static com.swirlds.common.PlatformStatus.*;
+
+import static com.swirlds.common.PlatformStatus.STARTING_UP;
 
 public class ContextPlatformStatus implements CurrentPlatformStatus {
 	private PlatformStatus current = STARTING_UP;

@@ -26,7 +26,7 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class HFileMetaTest {
 	private long expiry = 1_234_567L;

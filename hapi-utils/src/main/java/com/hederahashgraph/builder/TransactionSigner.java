@@ -20,6 +20,22 @@ package com.hederahashgraph.builder;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.legacy.proto.utils.KeyExpansion;
+import com.hedera.services.legacy.proto.utils.SignatureGenerator;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignaturePair;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionOrBuilder;
+import net.i2p.crypto.eddsa.EdDSAEngine;
+import net.i2p.crypto.eddsa.EdDSAPrivateKey;
+import net.i2p.crypto.eddsa.EdDSAPublicKey;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
+
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -32,22 +48,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import com.hedera.services.legacy.proto.utils.CommonUtils;
-import com.hederahashgraph.api.proto.java.TransactionOrBuilder;
-import org.apache.commons.codec.DecoderException;
-import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignaturePair;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hedera.services.legacy.proto.utils.KeyExpansion;
-import com.hedera.services.legacy.proto.utils.SignatureGenerator;
-import net.i2p.crypto.eddsa.EdDSAEngine;
-import net.i2p.crypto.eddsa.EdDSAPrivateKey;
-import net.i2p.crypto.eddsa.EdDSAPublicKey;
-import org.apache.commons.codec.binary.Hex;
 
 /**
  * Transaction Signing utility.

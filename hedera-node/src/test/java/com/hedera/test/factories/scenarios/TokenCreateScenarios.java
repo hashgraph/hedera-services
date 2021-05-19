@@ -22,8 +22,8 @@ package com.hedera.test.factories.scenarios;
 
 import com.hedera.services.utils.PlatformTxnAccessor;
 
-import static com.hedera.test.factories.txns.TokenCreateFactory.*;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
+import static com.hedera.test.factories.txns.TokenCreateFactory.newSignedTokenCreate;
 
 public enum TokenCreateScenarios implements TxnHandlingScenario {
 	TOKEN_CREATE_WITH_ADMIN_ONLY {

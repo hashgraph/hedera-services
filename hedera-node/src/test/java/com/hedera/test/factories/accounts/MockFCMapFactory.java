@@ -20,15 +20,18 @@ package com.hedera.test.factories.accounts;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.fcmap.FCMap;
 
-import static com.hedera.test.utils.IdUtils.asContract;
-import static org.mockito.BDDMockito.*;
-import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.factories.accounts.MerkleAccountFactory.newAccount;
-import static com.hedera.test.factories.txns.SignedTxnFactory.*;
+import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_NODE_ID;
+import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
+import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asContract;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
 
 public class MockFCMapFactory {
 	public static final long NODE_BALANCE = 1_000_000_000L;

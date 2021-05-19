@@ -26,7 +26,10 @@ import static com.hedera.services.throttles.BucketThrottle.CAPACITY_UNITS_PER_NA
 import static com.hedera.services.throttles.BucketThrottle.CAPACITY_UNITS_PER_TXN;
 import static com.hedera.services.throttles.BucketThrottle.MTPS_PER_TPS;
 import static com.hedera.services.throttles.BucketThrottle.NTPS_PER_MTPS;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BucketThrottleTest {
 	static final long NTPS_PER_TPS = 1_000_000_000L;

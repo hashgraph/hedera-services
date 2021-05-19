@@ -20,16 +20,16 @@ package com.hedera.services.queries.answering;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.records.RecordCache;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.TxnId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.submerkle.TxnId;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

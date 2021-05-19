@@ -20,13 +20,13 @@ package com.hedera.test.factories.topics;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.submerkle.RichInstant;
 
 import java.util.Optional;
 import java.util.OptionalLong;

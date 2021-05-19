@@ -20,21 +20,21 @@ package com.hedera.services.context.domain.topic;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.test.utils.AccountIDConverter;
 import com.hedera.test.utils.ByteArrayConverter;
-import com.hedera.test.utils.InstantConverter;
 import com.hedera.test.utils.EntityIdConverter;
+import com.hedera.test.utils.InstantConverter;
 import com.hedera.test.utils.JEd25519KeyConverter;
 import com.hedera.test.utils.RichInstantConverter;
 import com.hedera.test.utils.TopicIDConverter;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.state.submerkle.RichInstant;
 import org.apache.commons.codec.binary.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -44,7 +44,13 @@ import org.junit.jupiter.params.provider.CsvSource;
 import java.io.IOException;
 import java.time.Instant;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MerkleTopicTest {
 	@Test

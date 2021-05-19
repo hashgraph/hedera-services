@@ -20,14 +20,14 @@ package com.hedera.test.factories.accounts;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hederahashgraph.api.proto.java.TokenID;
 
 import java.util.HashSet;

@@ -22,7 +22,9 @@ package com.hedera.test.factories.scenarios;
 
 import com.hedera.services.utils.PlatformTxnAccessor;
 
-import static com.hedera.test.factories.txns.FileAppendFactory.*;
+import static com.hedera.test.factories.txns.FileAppendFactory.MASTER_PAYER_ID;
+import static com.hedera.test.factories.txns.FileAppendFactory.TREASURY_PAYER_ID;
+import static com.hedera.test.factories.txns.FileAppendFactory.newSignedFileAppend;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 
 public enum FileAppendScenarios implements TxnHandlingScenario {

@@ -20,7 +20,6 @@ package com.hedera.test.factories.txns;
  * ‍
  */
 
-import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;

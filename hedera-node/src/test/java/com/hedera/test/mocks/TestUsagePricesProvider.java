@@ -37,8 +37,9 @@ import java.io.File;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
+
+import static com.hedera.services.fees.calculation.AwareFcfsUsagePrices.DEFAULT_USAGE_PRICES;
 import static java.util.stream.Collectors.toMap;
-import static com.hedera.services.fees.calculation.AwareFcfsUsagePrices.*;
 
 public enum TestUsagePricesProvider implements UsagePricesProvider {
 	TEST_USAGE_PRICES;

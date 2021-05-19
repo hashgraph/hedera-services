@@ -20,8 +20,8 @@ package com.hedera.services.keys;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleAccount;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

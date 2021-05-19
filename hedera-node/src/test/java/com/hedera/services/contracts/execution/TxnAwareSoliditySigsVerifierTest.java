@@ -21,15 +21,15 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.keys.SyncActivationCheck;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.verification.SyncVerifier;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,7 +38,11 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Set;
 
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.argThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
 class TxnAwareSoliditySigsVerifierTest {
 	AccountID payer = IdUtils.asAccount("0.0.2");

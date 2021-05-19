@@ -23,10 +23,10 @@ package com.hedera.services.legacy.unit.handler;
 
 import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
 import com.hedera.services.legacy.unit.FCStorageWrapper;
-import com.hedera.services.utils.EntityIdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.fcmap.FCMap;
 import org.ethereum.datasource.StoragePersistence;
 

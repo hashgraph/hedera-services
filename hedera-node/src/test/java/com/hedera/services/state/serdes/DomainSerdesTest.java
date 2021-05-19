@@ -21,9 +21,9 @@ package com.hedera.services.state.serdes;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
@@ -41,8 +41,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;

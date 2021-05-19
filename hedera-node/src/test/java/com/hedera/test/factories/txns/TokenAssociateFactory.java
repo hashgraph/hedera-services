@@ -20,7 +20,6 @@ package com.hedera.test.factories.txns;
  * ‍
  */
 
-import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
@@ -32,8 +31,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static java.util.stream.Collectors.toList;
 
 public class TokenAssociateFactory extends SignedTxnFactory<TokenAssociateFactory> {
 	Map<TokenID, List<AccountAmount>> adjustments = new HashMap<>();

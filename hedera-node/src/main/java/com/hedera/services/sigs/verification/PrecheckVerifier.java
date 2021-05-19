@@ -20,23 +20,22 @@ package com.hedera.services.sigs.verification;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.PlatformSigsCreationResult;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytesProvider;
 import com.hedera.services.utils.SignedTxnAccessor;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.swirlds.common.crypto.TransactionSignature;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.function.Function;
+
+import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
+import static com.hedera.services.keys.HederaKeyActivation.isActive;
 import static com.hedera.services.keys.HederaKeyActivation.pkToSigMapFrom;
 import static com.hedera.services.sigs.PlatformSigOps.createEd25519PlatformSigsFrom;
-import static com.hedera.services.keys.HederaKeyActivation.isActive;
-import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 
 /**
  * Encapsulates logic to validate a transaction has the necessary
