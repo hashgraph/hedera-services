@@ -27,6 +27,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 
 import static com.hedera.services.context.ServicesNodeType.ZERO_STAKE_NODE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -59,6 +60,8 @@ public class BasicSubmissionFlow implements SubmissionFlow {
 		final var precheckResultValidity = precheckResultMeta.getValidity();
 		if (precheckResultValidity != OK) {
 			return responseWith(precheckResultValidity, precheckResultMeta.getRequiredFee());
+		} else if(precheckResult.getRight().isEmpty()) {
+			return responseWith(FAIL_INVALID, precheckResultMeta.getRequiredFee());
 		}
 
 		final var accessor = precheckResult.getRight().get();
