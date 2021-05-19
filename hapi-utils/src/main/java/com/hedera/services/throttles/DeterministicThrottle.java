@@ -145,6 +145,11 @@ public class DeterministicThrottle {
 
 	@Override
 	public boolean equals(Object obj) {
+
+		if(obj == null || getClass() != obj.getClass()) {
+			return false;
+		}
+
 		var that = (DeterministicThrottle)obj;
 
 		return this.delegate.bucket().totalCapacity() == that.delegate.bucket().totalCapacity()
@@ -154,7 +159,7 @@ public class DeterministicThrottle {
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder("DeterministicThrottle{");
-		if (name != NO_NAME) {
+		if (name != null) {
 			sb.append("name='").append(name).append("', ");
 		}
 		return sb
