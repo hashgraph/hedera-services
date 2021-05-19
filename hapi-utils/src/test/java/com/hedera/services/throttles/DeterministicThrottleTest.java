@@ -304,9 +304,9 @@ class DeterministicThrottleTest {
 		// and:
 		assertEquals(a.hashCode(), a.hashCode());
 		assertEquals(a.hashCode(), new DeterministicThrottle.UsageSnapshot(aUsed, aLast).hashCode());
-		assertNotEquals(a, new Object().hashCode());
-		assertNotEquals(a, new DeterministicThrottle.UsageSnapshot(bUsed, aLast).hashCode());
-		assertNotEquals(a, new DeterministicThrottle.UsageSnapshot(aUsed, bLast).hashCode());
+		assertNotEquals(a.hashCode(), new Object().hashCode());
+		assertNotEquals(a.hashCode(), new DeterministicThrottle.UsageSnapshot(bUsed, aLast).hashCode());
+		assertNotEquals(a.hashCode(), new DeterministicThrottle.UsageSnapshot(aUsed, bLast).hashCode());
 	}
 
 	@Test
