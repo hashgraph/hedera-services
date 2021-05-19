@@ -60,8 +60,8 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	private String token;
 
 	private boolean advertiseCreation = false;
-	private OptionalInt tokenType = OptionalInt.empty();
-	private OptionalInt tokenRepresentationType = OptionalInt.empty();
+	private Optional<TokenType> tokenType = Optional.empty();
+	private Optional<TokenRepresentationType> tokenRepresentationType = Optional.empty();
 	private OptionalInt decimals = OptionalInt.empty();
 	private OptionalLong expiry = OptionalLong.empty();
 	private OptionalLong initialSupply = OptionalLong.empty();
@@ -100,12 +100,12 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	}
 
 	public HapiTokenCreate tokenType(TokenType tokenType) {
-		this.tokenType = OptionalInt.of(tokenType.getNumber());
+		this.tokenType = Optional.of(tokenType);
 		return this;
 	}
 
 	public HapiTokenCreate tokenRepresentationType(TokenRepresentationType tokenRepresentationType) {
-		this.tokenRepresentationType = OptionalInt.of(tokenRepresentationType.getNumber());
+		this.tokenRepresentationType = Optional.of(tokenRepresentationType);
 		return this;
 	}
 
@@ -226,8 +226,8 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 				.txns()
 				.<TokenCreateTransactionBody, TokenCreateTransactionBody.Builder>body(
 						TokenCreateTransactionBody.class, b -> {
-							tokenType.ifPresent(b::setTokenTypeValue);
-							tokenRepresentationType.ifPresent(b::setTokenRepresentationTypeValue);
+							tokenType.ifPresent(b::setTokenType);
+							tokenRepresentationType.ifPresent(b::setTokenRepresentationType);
 							symbol.ifPresent(b::setSymbol);
 							name.ifPresent(b::setName);
 							entityMemo.ifPresent(s -> b.setMemo(s));
