@@ -61,7 +61,7 @@ public class BasicSubmissionFlow implements SubmissionFlow {
 		if (precheckResultValidity != OK) {
 			return responseWith(precheckResultValidity, precheckResultMeta.getRequiredFee());
 		} else if(precheckResult.getRight().isEmpty()) {
-			return responseWith(FAIL_INVALID, precheckResultMeta.getRequiredFee());
+			return responseWith(FAIL_INVALID);
 		}
 
 		final var accessor = precheckResult.getRight().get();
