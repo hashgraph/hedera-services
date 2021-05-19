@@ -9,9 +9,9 @@ package com.hederahashgraph.fee;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -375,20 +375,20 @@ public class FeeBuilder {
 	if(txRecord == null) {
       return 0;
     }
-	long txRecordSize = getTransactionRecordSize(txRecord);    
+	long txRecordSize = getTransactionRecordSize(txRecord);
     return (txRecordSize) * getHoursFromSec(timeInSeconds);
   }
 
-  public static int getHoursFromSec(int valueInSeconds) {	  
+  public static int getHoursFromSec(int valueInSeconds) {
 	  return valueInSeconds==0 ? 0 : Math.max(1,(valueInSeconds/HRS_DIVISOR));
   }
 
   public static int getTransactionRecordSize(TransactionRecord txRecord) {
-	
+
 	if(txRecord == null) {
       return 0;
     }
-	
+
     int txRecordSize = BASIC_TX_RECORD_SIZE;
 
     if (txRecord.hasContractCallResult()) {
@@ -439,7 +439,7 @@ public class FeeBuilder {
       }
 	  long txRecordUsageRBH = getTxRecordUsageRBH(txRecord, timeInSec);
 	  long rawFee = txRecordUsageRBH * feeCoeffRBH;
-	  return Math.max(rawFee > 0 ? 1 : 0, (rawFee) / FEE_DIVISOR_FACTOR);	  
+	  return Math.max(rawFee > 0 ? 1 : 0, (rawFee) / FEE_DIVISOR_FACTOR);
   }
 
   public static int getQueryTransactionSize() {
@@ -472,4 +472,13 @@ public class FeeBuilder {
     return (responseType == ResponseType.ANSWER_STATE_PROOF
         || responseType == ResponseType.COST_ANSWER_STATE_PROOF) ? STATE_PROOF_SIZE : 0;
   }
+
+  protected long calculateRBS(TransactionBody txBody) {
+    return (long) getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC;
+  }
+
+  protected long calculateBPT(){
+    return (long) BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
+  }
+
 }
