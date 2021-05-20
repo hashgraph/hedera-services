@@ -56,7 +56,7 @@ public abstract class TxnUsage {
 		usageEstimator.addBpt(BASIC_ENTITY_ID_SIZE);
 	}
 
-	protected void addNetworkRecordRb(long rb) {
+	protected void addNetworkRecordRb(int rb) {
 		usageEstimator.addNetworkRbs(rb * usageProperties.legacyReceiptStorageSecs());
 	}
 

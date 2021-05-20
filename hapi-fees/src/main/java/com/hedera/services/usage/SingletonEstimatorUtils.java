@@ -37,7 +37,7 @@ public enum SingletonEstimatorUtils implements EstimatorUtils {
 
 	@Override
 	public long baseNetworkRbs() {
-		return (long) BASIC_RECEIPT_SIZE * RECEIPT_STORAGE_TIME_SEC;
+		return BASIC_RECEIPT_SIZE * RECEIPT_STORAGE_TIME_SEC;
 	}
 
 	@Override
@@ -45,9 +45,9 @@ public enum SingletonEstimatorUtils implements EstimatorUtils {
 		var base = FeeComponents.newBuilder()
 				.setBpr(INT_SIZE)
 				.setVpt(sigUsage.numSigs())
-				.setBpt((long) baseBodyBytes(txn) + sigUsage.sigsSize());
+				.setBpt(baseBodyBytes(txn) + sigUsage.sigsSize());
 		var estimate = new UsageEstimate(base);
-		estimate.addRbs((long) baseRecordBytes(txn) * RECEIPT_STORAGE_TIME_SEC);
+		estimate.addRbs(baseRecordBytes(txn) * RECEIPT_STORAGE_TIME_SEC);
 		return estimate;
 	}
 

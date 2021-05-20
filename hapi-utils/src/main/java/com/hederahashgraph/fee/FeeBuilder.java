@@ -45,7 +45,7 @@ public class FeeBuilder {
   public static final int KEY_SIZE = 32;
   public static final int TX_HASH_SIZE = 48;
   public static final int DEFAULT_PAYER_ACC_SIG_COUNT = 0;
-  public static final int RECEIPT_STORAGE_TIME_SEC = 180;
+  public static final long RECEIPT_STORAGE_TIME_SEC = 180;
   public static final int THRESHOLD_STORAGE_TIME_SEC = 90000;
   public static final int DEFAULT_RBS_NETWORK = 0;
   public static final int FEE_DIVISOR_FACTOR = 1000;
@@ -72,10 +72,10 @@ public class FeeBuilder {
   /**
    * Fields included: nodeTransactionPrecheckCode, responseType, cost
    */
-  public static final int BASIC_QUERY_RES_HEADER = 2 * INT_SIZE + LONG_SIZE;
-  public static final int BASIC_QUERY_HEADER = 212;
+  public static final long BASIC_QUERY_RES_HEADER = 2 * INT_SIZE + LONG_SIZE;
+  public static final long BASIC_QUERY_HEADER = 212;
   public static final int BASIC_CONTRACT_CREATE_SIZE = BASIC_ENTITY_ID_SIZE + 6 * LONG_SIZE;
-  public static final int BASIC_CONTRACT_INFO_SIZE =
+  public static final long BASIC_CONTRACT_INFO_SIZE =
       2 * BASIC_ENTITY_ID_SIZE + SOLIDITY_ADDRESS + BASIC_TX_ID_SIZE;
   /**
    * Fields included in size: receipt (basic size), transactionHash, consensusTimestamp, transactionID
@@ -354,7 +354,7 @@ public class FeeBuilder {
   }
 
   public static long getDefaultRBHNetworkSize() {
-    return (long) (BASIC_RECEIPT_SIZE) * (RECEIPT_STORAGE_TIME_SEC);
+    return (BASIC_RECEIPT_SIZE) * (RECEIPT_STORAGE_TIME_SEC);
   }
 
   public static int getBaseTransactionRecordSize(TransactionBody txBody) {
@@ -474,11 +474,11 @@ public class FeeBuilder {
   }
 
   protected long calculateRBS(TransactionBody txBody) {
-    return (long) getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC;
+    return getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC;
   }
 
   protected long calculateBPT(){
-    return (long) BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
+    return BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
   }
 
 }

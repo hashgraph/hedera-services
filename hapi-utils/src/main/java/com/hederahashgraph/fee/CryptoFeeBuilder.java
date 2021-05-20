@@ -372,7 +372,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
      * ResponseType - 4 bytes AccountID - 24 bytes (consist of 3 long values) balance - 8 bytes (1
      * long value)
      */
-    bpr = (long) BASIC_QUERY_RES_HEADER + BASIC_ENTITY_ID_SIZE + LONG_SIZE + getStateProofSize(responseType);
+    bpr = BASIC_QUERY_RES_HEADER + BASIC_ENTITY_ID_SIZE + LONG_SIZE + getStateProofSize(responseType);
     
     return FeeData.getDefaultInstance();
   }
@@ -440,7 +440,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
      * bytes Timestamp transactionValidStart - (LONG_SIZE) bytes
      */
 
-    bpt = (long) BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE + LONG_SIZE;
+    bpt = BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE + LONG_SIZE;
 
     /*
      * bpr = TransactionRecordResponse Response header NodeTransactionPrecheckCode - 4 bytes
@@ -449,7 +449,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
      */
     int txRecordSize = getAccountTransactionRecordSize(transRecord);
 
-    bpr = (long) BASIC_QUERY_RES_HEADER + txRecordSize + getStateProofSize(responseType);
+    bpr = BASIC_QUERY_RES_HEADER + txRecordSize + getStateProofSize(responseType);
 
    FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
         .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
@@ -491,7 +491,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
      */
     int accountInfoSize = getAccountInfoSize(key, liveHashes);
 
-    bpr = (long) BASIC_QUERY_RES_HEADER + accountInfoSize + getStateProofSize(responseType);
+    bpr = BASIC_QUERY_RES_HEADER + accountInfoSize + getStateProofSize(responseType);
 
    
     FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
@@ -522,7 +522,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
      *
      */
 
-    bpt = (long) BASIC_QUERY_HEADER + BASIC_TX_ID_SIZE;
+    bpt = BASIC_QUERY_HEADER + BASIC_TX_ID_SIZE;
 
     /*
      * bpr = TransactionRecordResponse Response header NodeTransactionPrecheckCode - 4 bytes
@@ -536,7 +536,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
         txRecordListsize = txRecordListsize + getAccountTransactionRecordSize(record);
       }
     }
-    bpr = (long) BASIC_QUERY_RES_HEADER + txRecordListsize + getStateProofSize(responseType);
+    bpr = BASIC_QUERY_RES_HEADER + txRecordListsize + getStateProofSize(responseType);
 
     
     FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)

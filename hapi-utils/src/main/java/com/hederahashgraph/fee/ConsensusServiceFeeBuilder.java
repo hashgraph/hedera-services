@@ -53,7 +53,7 @@ public class ConsensusServiceFeeBuilder extends FeeBuilder {
                 txBody, sigValObj,
                 variableSize + LONG_SIZE,  // For autoRenewPeriod
                 extraRbsServices,
-                (long) BASIC_ENTITY_ID_SIZE * RECEIPT_STORAGE_TIME_SEC);  // For topicID in receipt
+                BASIC_ENTITY_ID_SIZE * RECEIPT_STORAGE_TIME_SEC);  // For topicID in receipt
     }
 
     /**
@@ -173,7 +173,7 @@ public class ConsensusServiceFeeBuilder extends FeeBuilder {
                 txBody, sigValObj,
                 submitMessageTxBodySize,
                 0,
-                (long) (LONG_SIZE + TX_HASH_SIZE) * RECEIPT_STORAGE_TIME_SEC);  // For topicSequenceNumber, topicRunningHash
+                (LONG_SIZE + TX_HASH_SIZE) * RECEIPT_STORAGE_TIME_SEC);  // For topicSequenceNumber, topicRunningHash
     }
 
     /**

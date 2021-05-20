@@ -72,7 +72,7 @@ public class FileOpsUsage {
 		/* Variable bytes plus a long for expiration time */
 		estimate.addBpt((long) customBytes + LONG_SIZE);
 		estimate.addSbs((bytesInBaseRepr() + customBytes) * lifetime);
-		estimate.addNetworkRbs((long) BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+		estimate.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 
 		return estimate.get();
 	}

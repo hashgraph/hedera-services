@@ -35,7 +35,7 @@ public class FixedUsageEstimates {
 	static final FeeComponents GET_VERSION_INFO_NODE_USAGE = FeeComponents.newBuilder()
 			.setConstant(FEE_MATRICES_CONST)
 			.setBpt(BASIC_QUERY_HEADER)
-			.setBpr((long) BASIC_QUERY_RES_HEADER + 2 * BYTES_PER_SEMANTIC_VERSION)
+			.setBpr(BASIC_QUERY_RES_HEADER + 2 * BYTES_PER_SEMANTIC_VERSION)
 			.build();
 
 	public static FeeData getVersionInfoUsage() {

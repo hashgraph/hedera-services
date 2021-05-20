@@ -52,7 +52,7 @@ public class CryptoGetInfoUsage extends QueryUsage {
 	}
 
 	public CryptoGetInfoUsage givenCurrentTokenAssocs(int count) {
-		updateRb((long) count * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr());
+		updateRb(count * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr());
 		return this;
 	}
 

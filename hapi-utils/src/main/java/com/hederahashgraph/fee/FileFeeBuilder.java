@@ -74,7 +74,7 @@ public class FileFeeBuilder extends FeeBuilder {
 
     bpr = INT_SIZE;
     
-    rbs =  (long) (getBaseTransactionRecordSize(txBody) + BASIC_ENTITY_ID_SIZE/* Added for File ID size*/) * RECEIPT_STORAGE_TIME_SEC;
+    rbs = (getBaseTransactionRecordSize(txBody) + BASIC_ENTITY_ID_SIZE/* Added for File ID size*/) * RECEIPT_STORAGE_TIME_SEC;
 
     long rbsNetwork = getDefaultRBHNetworkSize() + BASIC_ENTITY_ID_SIZE * (RECEIPT_STORAGE_TIME_SEC);
 
@@ -248,7 +248,7 @@ public class FileFeeBuilder extends FeeBuilder {
     }
     
     
-    bpr = (long) BASIC_QUERY_RES_HEADER  + getStateProofSize(responseType);
+    bpr = BASIC_QUERY_RES_HEADER + getStateProofSize(responseType);
 
     sbpr = (long) BASE_FILEINFO_SIZE + keySize;
 
@@ -292,7 +292,7 @@ public class FileFeeBuilder extends FeeBuilder {
      *
      */
 
-    bpr =  (long) BASIC_QUERY_RES_HEADER  + getStateProofSize(responseType);
+    bpr =  BASIC_QUERY_RES_HEADER + getStateProofSize(responseType);
 
     sbpr = (long) BASIC_ENTITY_ID_SIZE + contentSize;
 

@@ -53,7 +53,7 @@ public class ContractGetInfoUsage extends QueryUsage {
 	}
 
 	public ContractGetInfoUsage givenCurrentTokenAssocs(int count) {
-		updateRb((long) count * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr());
+		updateRb(count * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr());
 		return this;
 	}
 }
