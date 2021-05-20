@@ -634,7 +634,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
     // calculate BPT - Total Bytes in Transaction
     long txBodySize = 0;
     txBodySize = getCommonTransactionBodyBytes(txBody);
-    bpt = (long) txBodySize + getCryptoAddLiveHashBodyBodyTxSize(txBody) + (BASIC_ENTITY_ID_SIZE)
+    bpt = txBodySize + getCryptoAddLiveHashBodyBodyTxSize(txBody) + (BASIC_ENTITY_ID_SIZE)
         + sigValObj.getSignatureSize();
 
     // vpt - verifications per transactions
@@ -671,7 +671,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
     // calculate BPT - Total Bytes in Transaction
     long txBodySize = 0;
     txBodySize = getCommonTransactionBodyBytes(txBody);
-    bpt = (long) txBodySize + getCryptoDeleteLiveHashBodyBodyTxSize() + sigValObj.getSignatureSize();
+    bpt = txBodySize + getCryptoDeleteLiveHashBodyBodyTxSize() + sigValObj.getSignatureSize();
 
     // vpt - verifications per transactions
     vpt = sigValObj.getTotalSigCount();
@@ -724,7 +724,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
   private long getCryptoLiveHashStorageBytesSec(TransactionBody txBody) {
 
     long storageSize = (long) (BASIC_ENTITY_ID_SIZE) + TX_HASH_SIZE
-        + +txBody.getCryptoAddLiveHash().getLiveHash().getKeys().getSerializedSize();
+        + txBody.getCryptoAddLiveHash().getLiveHash().getKeys().getSerializedSize();
     long seconds = txBody.getCryptoAddLiveHash().getLiveHash().getDuration().getSeconds();
     storageSize = storageSize * seconds;
     return storageSize;

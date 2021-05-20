@@ -32,7 +32,7 @@ public enum CryptoEntitySizes {
 	static int NUM_LONG_FIELDS_IN_BASE_ACCOUNT_REPRESENTATION = 5;
 
 	public long bytesInTokenAssocRepr() {
-		return (long) LONG_SIZE + 2 * BOOL_SIZE;
+		return LONG_SIZE + 2L * BOOL_SIZE;
 	}
 
 	public int fixedBytesInAccountRepr() {

@@ -511,7 +511,7 @@ public class KeyExpansion {
       rv = KeyExpansion.genKeyList(keys);
 
       //verify the size
-      long size = KeyExpansion.computeNumOfExpandedKeys(rv, 1, new AtomicCounter());
+      int size = KeyExpansion.computeNumOfExpandedKeys(rv, 1, new AtomicCounter());
       Assert.assertEquals( 1L + numKeys * 2, size);
     } else {
       throw new Exception("Not implemented yet.");

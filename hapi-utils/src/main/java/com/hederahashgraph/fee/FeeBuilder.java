@@ -73,10 +73,10 @@ public class FeeBuilder {
    * Fields included: nodeTransactionPrecheckCode, responseType, cost
    */
   public static final long BASIC_QUERY_RES_HEADER = 2L * INT_SIZE + LONG_SIZE;
-  public static final long BASIC_QUERY_HEADER = 212;
+  public static final long BASIC_QUERY_HEADER = 212L;
   public static final int BASIC_CONTRACT_CREATE_SIZE = BASIC_ENTITY_ID_SIZE + 6 * LONG_SIZE;
   public static final long BASIC_CONTRACT_INFO_SIZE =
-      2 * BASIC_ENTITY_ID_SIZE + SOLIDITY_ADDRESS + BASIC_TX_ID_SIZE;
+      2L * BASIC_ENTITY_ID_SIZE + SOLIDITY_ADDRESS + BASIC_TX_ID_SIZE;
   /**
    * Fields included in size: receipt (basic size), transactionHash, consensusTimestamp, transactionID
    * transactionFee.
@@ -166,11 +166,11 @@ public class FeeBuilder {
     if (txBody == null) {
       throw new InvalidTxBodyException("Transaction Body not available for Fee Calculation");
     }
-    long memoSize = 0;
+    int memoSize = 0;
     if (txBody.getMemo() != null) {
       memoSize = txBody.getMemoBytes().size();
     }
-    return BASIC_TX_BODY_SIZE + memoSize;
+    return (long) BASIC_TX_BODY_SIZE + memoSize;
   }
 
   /**

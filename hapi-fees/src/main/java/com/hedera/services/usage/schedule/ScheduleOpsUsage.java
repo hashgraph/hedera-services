@@ -42,7 +42,7 @@ import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
 public class ScheduleOpsUsage {
 	/* Scheduled transaction ids have the scheduled=true flag set */
-	private static final long SCHEDULED_TXN_ID_SIZE = (long) BASIC_TX_ID_SIZE + BOOL_SIZE;
+	private static final long SCHEDULED_TXN_ID_SIZE = (1L * BASIC_TX_ID_SIZE) + BOOL_SIZE;
 
 	static EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
 	static Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;

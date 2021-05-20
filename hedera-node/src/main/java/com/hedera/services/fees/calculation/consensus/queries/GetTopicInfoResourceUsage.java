@@ -67,7 +67,7 @@ public class GetTopicInfoResourceUsage implements QueryResourceUsageEstimator {
 				+ BASIC_ENTITY_ID_SIZE
 				+ getTopicInfoSize(merkleTopic);
 		var feeMatrices = FeeComponents.newBuilder()
-				.setBpt((long) BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE)
+				.setBpt(BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE)
 				.setVpt(0)
 				.setRbh(0)
 				.setSbh(0)

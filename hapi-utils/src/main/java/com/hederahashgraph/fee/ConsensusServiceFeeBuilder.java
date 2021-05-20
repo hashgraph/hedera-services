@@ -192,7 +192,7 @@ public class ConsensusServiceFeeBuilder extends FeeBuilder {
                 .setTv(0)
                 .setBpr(INT_SIZE)
                 .setSbpr(0);
-        feeComponentsBuilder.setBpt((long) getCommonTransactionBodyBytes(txBody)
+        feeComponentsBuilder.setBpt(getCommonTransactionBodyBytes(txBody)
                 + txBodyDataSize
                 + sigValObj.getSignatureSize());
         feeComponentsBuilder.setRbh(
