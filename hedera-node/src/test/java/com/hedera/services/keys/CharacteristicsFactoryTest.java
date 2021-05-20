@@ -20,9 +20,9 @@ package com.hedera.services.keys;
  * ‍
  */
 
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -35,12 +35,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
-import static com.hedera.services.keys.DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.mockito.BDDMockito.*;
-
 import java.util.List;
 import java.util.function.Function;
+
+import static com.hedera.services.keys.DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
 
 @RunWith(JUnitPlatform.class)
 class CharacteristicsFactoryTest {

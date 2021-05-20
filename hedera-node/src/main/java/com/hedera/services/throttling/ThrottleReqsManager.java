@@ -21,7 +21,6 @@ package com.hedera.services.throttling;
  */
 
 import com.hedera.services.throttles.DeterministicThrottle;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.time.Instant;

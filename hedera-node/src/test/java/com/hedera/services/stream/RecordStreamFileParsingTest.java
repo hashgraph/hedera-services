@@ -20,7 +20,6 @@ package com.hedera.services.stream;
  * ‍
  */
 
-import com.hedera.services.legacy.stream.RecordStream;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -38,12 +37,10 @@ import org.junit.jupiter.api.Test;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
-import java.util.Arrays;
 import java.util.Iterator;
 
 import static com.hedera.services.stream.RecordStreamType.RECORD;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -65,31 +62,14 @@ public class RecordStreamFileParsingTest {
 	}
 
 	@Test
-	public void parseRCDV5files() throws Exception {
+	void parseRCDV5files() throws Exception {
 		// these files are generated with initial Hash be an empty Hash
 		final String dir = "src/test/resources/recordStreamTest/record0.0.3";
 		parseV5(dir, EMPTY_HASH);
 	}
 
 	@Test
-	public void readHashForV2() {
-		final String recordV2Dir = "src/test/resources/recordStreamTest/recordV2";
-		byte[] hash = RecordStream.readPrevFileHash(recordV2Dir);
-		// the hash read from this directory should not be empty
-		assertFalse(Arrays.equals(new byte[DigestType.SHA_384.digestLength()], hash));
-	}
-
-	@Test
-	public void parseRCDV5AfterV2files() throws Exception {
-		final String v2Dir = "src/test/resources/recordStreamTest/recordV2";
-		// these files are generated with initial Hash whose byte array is the bytes read from recordV2Dir
-		final String v5Dir = "src/test/resources/recordStreamTest/recordV5AfterV2";
-		final Hash expectedStartHash = new Hash(RecordStream.readPrevFileHash(v2Dir));
-		parseV5(v5Dir, expectedStartHash);
-	}
-
-	@Test
-	public void parseSigFileV5() throws Exception {
+	void parseSigFileV5() throws Exception {
 		final String streamFilePath = "src/test/resources/recordStreamTest/record0.0.3/2021-01-12T19_44_30.442332000Z.rcd";
 		final File streamFile = new File(streamFilePath);
 		final File sigFile = new File(streamFilePath + "_sig");
@@ -102,7 +82,7 @@ public class RecordStreamFileParsingTest {
 		assertEquals(expectedMetaHash, metaHashInSig);
 	}
 
-	private void parseV5(final String dir, final Hash expectedStartHash) throws Exception {
+	void parseV5(final String dir, final Hash expectedStartHash) throws Exception {
 		final File out = new File(dir + "/out.log");
 		// these files are generated with initial Hash be an empty Hash
 		final File recordsDir = new File(dir);

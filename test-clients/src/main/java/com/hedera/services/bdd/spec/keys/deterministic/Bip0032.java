@@ -23,7 +23,6 @@ package com.hedera.services.bdd.spec.keys.deterministic;
 import org.spongycastle.crypto.digests.SHA512Digest;
 import org.spongycastle.crypto.generators.PKCS5S2ParametersGenerator;
 import org.spongycastle.crypto.params.KeyParameter;
-import org.spongycastle.util.encoders.Hex;
 
 import javax.crypto.Mac;
 import javax.crypto.ShortBufferException;

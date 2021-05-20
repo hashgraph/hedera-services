@@ -21,9 +21,9 @@ package com.hedera.services.legacy.bip39utils;
  */
 
 
-
 import com.hedera.services.legacy.bip39utils.bip39.Mnemonic;
 import com.hedera.services.legacy.bip39utils.bip39.MnemonicException;
+
 import java.util.List;
 
 

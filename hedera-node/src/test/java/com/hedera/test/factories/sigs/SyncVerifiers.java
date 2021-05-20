@@ -21,7 +21,6 @@ package com.hedera.test.factories.sigs;
  */
 
 import com.hedera.services.sigs.verification.SyncVerifier;
-import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.TransactionSignature;
 
 import java.util.List;

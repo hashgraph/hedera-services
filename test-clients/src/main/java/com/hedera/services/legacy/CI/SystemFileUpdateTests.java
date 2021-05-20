@@ -21,7 +21,13 @@ package com.hedera.services.legacy.CI;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.client.test.ClientBaseThread;
 import com.hedera.services.legacy.client.util.Common;
+import com.hedera.services.legacy.core.KeyPairObj;
+import com.hedera.services.legacy.core.TestHelper;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.legacy.proto.utils.KeyExpansion;
+import com.hedera.services.legacy.proto.utils.ProtoCommonUtils;
 import com.hedera.services.legacy.regression.BaseFeeTests;
 import com.hedera.services.legacy.regression.FeeUtility;
 import com.hedera.services.legacy.regression.umbrella.CryptoServiceTest;
@@ -43,20 +49,14 @@ import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.builder.TransactionSigner;
-import com.hedera.services.legacy.client.test.ClientBaseThread;
-import com.hedera.services.legacy.core.KeyPairObj;
-import com.hedera.services.legacy.core.TestHelper;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
-import com.hedera.services.legacy.proto.utils.KeyExpansion;
-import com.hedera.services.legacy.proto.utils.ProtoCommonUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
 
 /**
  * Class for testing System File Updates

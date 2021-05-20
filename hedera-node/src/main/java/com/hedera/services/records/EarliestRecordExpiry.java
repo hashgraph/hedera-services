@@ -22,9 +22,10 @@ package com.hedera.services.records;
 
 import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.AccountID;
-import static com.hedera.services.utils.EntityIdUtils.readableId;
 
 import java.util.Objects;
+
+import static com.hedera.services.utils.EntityIdUtils.readableId;
 
 /**
  * Provides a process object useful for tracking the time of the

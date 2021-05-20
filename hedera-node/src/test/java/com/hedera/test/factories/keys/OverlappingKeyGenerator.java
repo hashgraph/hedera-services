@@ -21,9 +21,9 @@ package com.hedera.test.factories.keys;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.proto.utils.KeyExpansion;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hedera.services.legacy.proto.utils.KeyExpansion;
 
 import java.security.PrivateKey;
 import java.util.ArrayList;

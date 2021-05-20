@@ -20,11 +20,11 @@ package com.hedera.services.bdd.spec.assertions;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.fees.TinyBarTransfers;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.Assert;
 
 import java.util.AbstractMap;

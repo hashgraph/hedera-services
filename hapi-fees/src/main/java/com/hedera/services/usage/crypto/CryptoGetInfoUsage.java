@@ -26,9 +26,9 @@ import com.hederahashgraph.api.proto.java.Query;
 
 import java.nio.charset.Charset;
 
+import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
-import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
 
 public class CryptoGetInfoUsage extends QueryUsage  {
 	private CryptoGetInfoUsage(Query query) {

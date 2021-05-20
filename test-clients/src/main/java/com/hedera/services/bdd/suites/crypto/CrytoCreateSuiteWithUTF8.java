@@ -29,11 +29,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.UTF8Mode.FALSE;
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.HapiApiSpec.UTF8Mode.*;
 
 public class CrytoCreateSuiteWithUTF8 extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(CrytoCreateSuiteWithUTF8.class);

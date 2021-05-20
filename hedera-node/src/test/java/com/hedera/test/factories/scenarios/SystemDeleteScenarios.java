@@ -25,8 +25,8 @@ import com.hedera.test.factories.sigs.SigMapGenerator;
 
 import java.util.Set;
 
-import static com.hedera.test.factories.txns.SystemDeleteFactory.*;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
+import static com.hedera.test.factories.txns.SystemDeleteFactory.newSignedSystemDelete;
 
 public enum SystemDeleteScenarios implements TxnHandlingScenario {
 	SYSTEM_DELETE_FILE_SCENARIO {

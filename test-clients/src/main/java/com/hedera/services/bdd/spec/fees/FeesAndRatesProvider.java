@@ -20,6 +20,11 @@ package com.hedera.services.bdd.spec.fees;
  * ‍
  */
 
+import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
+import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
+import com.hedera.services.bdd.spec.keys.KeyFactory;
+import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -32,19 +37,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
-import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.keys.KeyFactory;
-import com.hedera.services.bdd.spec.transactions.TxnFactory;
-
-import static com.hedera.services.bdd.spec.HapiPropertySource.asFileString;
-import static com.hedera.services.bdd.spec.queries.QueryUtils.*;
-import static com.hedera.services.legacy.proto.utils.CommonUtils.toReadableString;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransferList;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.tinyBarsFromTo;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -53,6 +45,14 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.util.Arrays;
+
+import static com.hedera.services.bdd.spec.HapiPropertySource.asFileString;
+import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
+import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransferList;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.tinyBarsFromTo;
+import static com.hedera.services.legacy.proto.utils.CommonUtils.toReadableString;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class FeesAndRatesProvider {
 	private static final Logger log = LogManager.getLogger(FeesAndRatesProvider.class);

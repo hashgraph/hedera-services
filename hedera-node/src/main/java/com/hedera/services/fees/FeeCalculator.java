@@ -22,6 +22,7 @@ package com.hedera.services.fees;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.AutoRenewCalcs;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -30,7 +31,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.fee.FeeObject;
-import com.hedera.services.legacy.core.jproto.JKey;
 
 import java.time.Instant;
 import java.util.Map;

@@ -23,11 +23,10 @@ package com.hedera.services.ledger.properties;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import org.junit.jupiter.api.Test;
 
+import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
+import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
+import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static com.hedera.services.ledger.properties.TokenRelProperty.*;
 
 class TokenRelPropertyTest {
 	long balance = 123, newBalance = 321;

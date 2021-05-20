@@ -24,7 +24,8 @@ import com.hedera.services.test.KeyUtils;
 import com.hederahashgraph.api.proto.java.KeyList;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ExtantFileContextTest {
 	String memo = "Currently unavailable";

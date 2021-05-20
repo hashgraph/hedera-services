@@ -36,8 +36,15 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.booleanThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.intThat;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
 class CurrencyAdjustmentsTest {
 	AccountID a = IdUtils.asAccount("0.0.13257");

@@ -23,8 +23,8 @@ package com.hedera.services.files;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
-import java.util.OptionalInt;
 import java.util.Map.Entry;
+import java.util.OptionalInt;
 
 public interface FileUpdateInterceptor {
 	/**

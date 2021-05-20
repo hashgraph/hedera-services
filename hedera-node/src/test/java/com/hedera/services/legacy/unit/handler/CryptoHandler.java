@@ -21,9 +21,9 @@ package com.hedera.services.legacy.unit.handler;
  */
 
 import com.hedera.services.context.primitives.StateView;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.fcmap.FCMap;
 
 public class CryptoHandler {

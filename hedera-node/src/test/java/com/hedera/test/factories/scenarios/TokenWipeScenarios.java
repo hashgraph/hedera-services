@@ -22,8 +22,8 @@ package com.hedera.test.factories.scenarios;
 
 import com.hedera.services.utils.PlatformTxnAccessor;
 
-import static com.hedera.test.factories.txns.TokenWipeFactory.newSignedTokenWipe;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
+import static com.hedera.test.factories.txns.TokenWipeFactory.newSignedTokenWipe;
 
 public enum TokenWipeScenarios implements TxnHandlingScenario {
 	VALID_WIPE_WITH_EXTANT_TOKEN {

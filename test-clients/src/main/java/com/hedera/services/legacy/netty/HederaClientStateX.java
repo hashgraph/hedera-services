@@ -27,10 +27,9 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 
 import java.io.Serializable;
+import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.sql.Timestamp;
-
-import java.security.KeyPair;
 
 /**
  * this is the client state for loading the accounts

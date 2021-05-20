@@ -20,11 +20,11 @@ package com.hedera.services.queries.token;
  * ‍
  */
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import static org.mockito.BDDMockito.*;
+
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.BDDMockito.mock;
 
 class TokenAnswersTest {
 	GetTokenInfoAnswer tokenInfo;

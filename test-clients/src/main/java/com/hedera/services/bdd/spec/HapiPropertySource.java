@@ -20,6 +20,9 @@ package com.hedera.services.bdd.spec;
  * ‍
  */
 
+import com.hedera.services.bdd.spec.keys.KeyFactory;
+import com.hedera.services.bdd.spec.props.JutilPropertySource;
+import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -30,9 +33,6 @@ import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.hedera.services.bdd.spec.keys.KeyFactory;
-import com.hedera.services.bdd.spec.props.JutilPropertySource;
-import com.hedera.services.bdd.spec.props.MapPropertySource;
 
 import java.util.Arrays;
 import java.util.Map;
