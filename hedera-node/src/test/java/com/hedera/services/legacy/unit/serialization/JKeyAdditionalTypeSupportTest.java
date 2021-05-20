@@ -20,16 +20,17 @@ package com.hedera.services.legacy.unit.serialization;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.JKeySerializer;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.Key;
+import org.junit.Assert;
+import org.junit.Test;
+
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.util.Random;
-import org.junit.Assert;
-import org.junit.Test;
-import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JKeySerializer;
 
 /**
  * Unit tests for support of Contract ID and RSA_3072Key in JKey.

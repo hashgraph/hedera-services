@@ -27,12 +27,13 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
+import static com.hedera.services.context.domain.trackers.IssEventStatus.NO_KNOWN_ISS;
+import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING_ISS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static com.hedera.services.context.domain.trackers.IssEventStatus.*;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
 
 class IssEventInfoTest {
 	Instant firstIssTime = Instant.now().minus(30, ChronoUnit.SECONDS);

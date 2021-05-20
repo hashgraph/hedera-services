@@ -20,11 +20,11 @@ package com.hedera.services.bdd.spec.utilops.checks;
  * ‍
  */
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hederahashgraph.api.proto.java.GetBySolidityIDQuery;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import org.junit.Assert;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;

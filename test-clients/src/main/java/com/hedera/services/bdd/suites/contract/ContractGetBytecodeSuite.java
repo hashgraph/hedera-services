@@ -20,24 +20,26 @@ package com.hedera.services.bdd.suites.contract;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
 import java.util.List;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.*;
-import static com.hedera.services.bdd.spec.keys.SigControl.*;
-import static com.hedera.services.bdd.spec.keys.ControlForKey.*;
-import static com.hedera.services.bdd.spec.keys.SigMapGenerator.Nature.*;
-import static com.hedera.services.bdd.spec.keys.KeyGenerator.Nature.*;
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
+import static com.hedera.services.bdd.spec.keys.KeyGenerator.Nature.WITH_OVERLAPPING_PREFIXES;
+import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.keys.SigControl.listSigs;
+import static com.hedera.services.bdd.spec.keys.SigControl.threshSigs;
+import static com.hedera.services.bdd.spec.keys.SigMapGenerator.Nature.UNIQUE;
 
 public class ContractGetBytecodeSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractGetBytecodeSuite.class);

@@ -25,6 +25,7 @@ import com.hedera.services.utils.SignedTxnAccessor;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
 import static com.hedera.services.sigs.factories.PlatformSigFactoryTest.EXPECTED_SIG;
 import static com.hedera.services.sigs.factories.PlatformSigFactoryTest.data;
 import static com.hedera.services.sigs.factories.PlatformSigFactoryTest.pk;

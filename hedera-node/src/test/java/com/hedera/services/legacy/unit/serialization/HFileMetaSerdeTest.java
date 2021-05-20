@@ -20,14 +20,7 @@ package com.hedera.services.legacy.unit.serialization;
  * ‍
  */
 
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.function.Function;
-
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HFileMetaSerde;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
@@ -36,19 +29,26 @@ import com.hedera.services.state.serdes.IoReadingFunction;
 import com.hedera.services.state.serdes.IoWritingConsumer;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.FileGetInfoResponse.FileInfo;
+import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.commons.codec.DecoderException;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hedera.services.files.HFileMeta;
-import com.hederahashgraph.api.proto.java.FileGetInfoResponse.FileInfo;
-import com.hederahashgraph.api.proto.java.FileID;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
+
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.function.Function;
 
 import static com.hedera.services.files.HFileMetaSerde.MAX_CONCEIVABLE_MEMO_UTF8_BYTES;
 import static com.hedera.services.files.HFileMetaSerde.MEMO_VERSION;
@@ -56,7 +56,11 @@ import static com.hedera.services.files.HFileMetaSerde.deserialize;
 import static com.hedera.services.files.HFileMetaSerde.streamContentDiscovery;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.argThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.inOrder;
+import static org.mockito.BDDMockito.mock;
 
 public class HFileMetaSerdeTest {
 	private long expiry = 1_234_567L;

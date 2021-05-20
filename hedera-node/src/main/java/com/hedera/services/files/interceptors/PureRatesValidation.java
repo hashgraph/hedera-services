@@ -20,12 +20,12 @@ package com.hedera.services.files.interceptors;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hedera.services.state.submerkle.ExchangeRates;
-import org.junit.Test;
+import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 
 import java.math.BigInteger;
 import java.util.stream.LongStream;
+
 import static java.math.BigInteger.valueOf;
 
 

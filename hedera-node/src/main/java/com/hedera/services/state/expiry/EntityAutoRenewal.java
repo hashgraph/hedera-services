@@ -21,9 +21,7 @@ package com.hedera.services.state.expiry;
  */
 
 import com.hedera.services.config.HederaNumbers;
-import com.hedera.services.context.ContextsManager;
 import com.hedera.services.context.ServicesContext;
-import com.hedera.services.context.SingletonContextsManager;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.expiry.renewal.RenewalProcess;
 import com.hedera.services.state.logic.NetworkCtxManager;

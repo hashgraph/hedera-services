@@ -29,7 +29,9 @@ import org.junit.Test;
 import java.sql.SQLException;
 import java.util.Random;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class LegacyMerkleOptionalBlobTest {
 	Random random = new Random();

@@ -32,7 +32,8 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
-import static com.hederahashgraph.api.proto.java.ResponseType.*;
+import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
+import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
 public class QueryUtils {
 	public static QueryHeader answerHeader(Transaction txn) {

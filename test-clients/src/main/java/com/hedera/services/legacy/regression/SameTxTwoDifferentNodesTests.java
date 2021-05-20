@@ -20,6 +20,11 @@ package com.hedera.services.legacy.regression;
  * ‍
  */
 
+import com.hedera.services.legacy.core.AccountKeyListObj;
+import com.hedera.services.legacy.core.CustomProperties;
+import com.hedera.services.legacy.core.CustomPropertiesSingleton;
+import com.hedera.services.legacy.core.TestHelper;
+import com.hedera.services.legacy.regression.umbrella.TestHelperComplex;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
@@ -34,19 +39,15 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.builder.TransactionSigner;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
-import com.hedera.services.legacy.core.AccountKeyListObj;
-import com.hedera.services.legacy.core.CustomProperties;
-import com.hedera.services.legacy.core.CustomPropertiesSingleton;
-import com.hedera.services.legacy.core.TestHelper;
-import com.hedera.services.legacy.regression.umbrella.TestHelperComplex;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
+
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
 
 /**
  * Test to create same transaction and submit to two different nodes, and validate only one node process the transaction

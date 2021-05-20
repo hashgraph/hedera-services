@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec;
  */
 
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -29,7 +30,6 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ShardID;
-import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -39,10 +39,10 @@ import java.util.Random;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.CostSnapshotMode;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSources;
 import static com.hedera.services.bdd.spec.HapiPropertySource.inPriorityOrder;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
-import static com.hedera.services.bdd.spec.HapiApiSpec.CostSnapshotMode;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 

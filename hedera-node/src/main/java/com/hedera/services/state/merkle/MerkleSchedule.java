@@ -53,7 +53,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import static com.google.protobuf.ByteString.copyFrom;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.describe;
-import static com.swirlds.common.CommonUtils.hex;
 import static java.util.stream.Collectors.toList;
 
 public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {

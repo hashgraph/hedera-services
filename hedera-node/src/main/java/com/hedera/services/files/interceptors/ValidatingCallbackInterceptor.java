@@ -22,9 +22,9 @@ package com.hedera.services.files.interceptors;
 
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.files.FileUpdateInterceptor;
+import com.hedera.services.files.HFileMeta;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hedera.services.files.HFileMeta;
 
 import java.util.AbstractMap;
 import java.util.Map;

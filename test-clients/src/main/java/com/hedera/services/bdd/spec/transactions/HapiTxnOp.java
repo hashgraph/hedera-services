@@ -20,9 +20,21 @@ package com.hedera.services.bdd.spec.transactions;
  * ‍
  */
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.exceptions.HapiTxnCheckStateException;
 import com.hedera.services.bdd.spec.exceptions.HapiTxnPrecheckStateException;
+import com.hedera.services.bdd.spec.fees.Payment;
+import com.hedera.services.bdd.spec.infrastructure.DelegatingOpFinisher;
+import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
+import com.hedera.services.bdd.spec.keys.ControlForKey;
+import com.hedera.services.bdd.spec.keys.KeyGenerator;
+import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
+import com.hedera.services.bdd.spec.keys.SigMapGenerator;
+import com.hedera.services.bdd.spec.stats.QueryObs;
+import com.hedera.services.bdd.spec.stats.TxnObs;
+import com.hedera.services.legacy.proto.utils.KeyExpansion;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -33,24 +45,9 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionGetReceiptResponse;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.hedera.services.legacy.proto.utils.KeyExpansion;
-import com.hedera.services.bdd.spec.infrastructure.DelegatingOpFinisher;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
-import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
-import static com.hedera.services.bdd.spec.queries.QueryUtils.txnReceiptQueryFor;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.txnToString;
+import io.grpc.StatusRuntimeException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -63,21 +60,22 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
-import com.hedera.services.bdd.spec.fees.Payment;
-import com.hedera.services.bdd.spec.keys.ControlForKey;
-import com.hedera.services.bdd.spec.keys.KeyGenerator;
-import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
-import com.hedera.services.bdd.spec.keys.SigMapGenerator;
-import com.hedera.services.bdd.spec.stats.QueryObs;
-import com.hedera.services.bdd.spec.stats.TxnObs;
-import io.grpc.StatusRuntimeException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
+import static com.hedera.services.bdd.spec.fees.Payment.Reason.TXN_FEE;
+import static com.hedera.services.bdd.spec.queries.QueryUtils.txnReceiptQueryFor;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.txnToString;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
+import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static java.lang.Thread.sleep;
 import static java.util.stream.Collectors.toList;
-import static com.hedera.services.bdd.spec.fees.Payment.Reason.*;
 
 public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperation {
 	private static final Logger log = LogManager.getLogger(HapiTxnOp.class);

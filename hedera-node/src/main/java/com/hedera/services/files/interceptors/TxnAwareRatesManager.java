@@ -26,11 +26,11 @@ import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.files.FileUpdateInterceptor;
+import com.hedera.services.files.HFileMeta;
+import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hedera.services.files.HFileMeta;
-import com.hedera.services.state.submerkle.ExchangeRates;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

@@ -22,7 +22,7 @@ package com.hedera.test.factories.scenarios;
 
 import com.hedera.services.utils.PlatformTxnAccessor;
 
-import static com.hedera.test.factories.txns.CryptoCreateFactory.*;
+import static com.hedera.test.factories.txns.CryptoCreateFactory.newSignedCryptoCreate;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 
 public enum BadPayerScenarios implements TxnHandlingScenario {

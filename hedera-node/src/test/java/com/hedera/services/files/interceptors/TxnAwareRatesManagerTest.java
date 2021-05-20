@@ -24,6 +24,9 @@ import com.hedera.services.config.FileNumbers;
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.files.HFileMeta;
+import com.hedera.services.legacy.core.jproto.JContractIDKey;
+import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -31,9 +34,6 @@ import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hedera.services.legacy.core.jproto.JContractIDKey;
-import com.hedera.services.files.HFileMeta;
-import com.hedera.services.state.submerkle.ExchangeRates;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -42,12 +42,18 @@ import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 
-import static com.hedera.services.files.interceptors.TxnAwareRatesManager.*;
+import static com.hedera.services.files.interceptors.TxnAwareRatesManager.INVALID_VERDICT;
+import static com.hedera.services.files.interceptors.TxnAwareRatesManager.LIMIT_EXCEEDED_VERDICT;
+import static com.hedera.services.files.interceptors.TxnAwareRatesManager.YES_VERDICT;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asFile;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.verify;
 
 class TxnAwareRatesManagerTest {
 	private HFileMeta attr;

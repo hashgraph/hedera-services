@@ -20,9 +20,15 @@ package com.hedera.services.bdd.spec.queries;
  * ‍
  */
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.exceptions.HapiQueryCheckStateException;
 import com.hedera.services.bdd.spec.exceptions.HapiQueryPrecheckStateException;
+import com.hedera.services.bdd.spec.fees.Payment;
+import com.hedera.services.bdd.spec.keys.ControlForKey;
+import com.hedera.services.bdd.spec.keys.SigMapGenerator;
+import com.hedera.services.bdd.spec.stats.QueryObs;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.usage.crypto.CryptoTransferUsage;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -35,16 +41,9 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.fees.Payment;
-import com.hedera.services.bdd.spec.keys.ControlForKey;
-import com.hedera.services.bdd.spec.keys.SigMapGenerator;
-import com.hedera.services.bdd.spec.stats.QueryObs;
 import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
 
 import java.util.EnumSet;
 import java.util.List;
@@ -54,13 +53,18 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.CostSnapshotMode.OFF;
+import static com.hedera.services.bdd.spec.fees.Payment.Reason.ANSWER_ONLY_QUERY_COST;
+import static com.hedera.services.bdd.spec.fees.Payment.Reason.COST_ANSWER_QUERY_COST;
+import static com.hedera.services.bdd.spec.queries.QueryUtils.reflectForCost;
+import static com.hedera.services.bdd.spec.queries.QueryUtils.reflectForPrecheck;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransferList;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.txnToString;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hedera.services.bdd.spec.HapiApiSpec.CostSnapshotMode.OFF;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.*;
-import static com.hedera.services.bdd.spec.queries.QueryUtils.*;
 import static java.util.stream.Collectors.toList;
-import static com.hedera.services.bdd.spec.fees.Payment.Reason.*;
 
 public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOperation {
 	private static final Logger log = LogManager.getLogger(HapiQueryOp.class);

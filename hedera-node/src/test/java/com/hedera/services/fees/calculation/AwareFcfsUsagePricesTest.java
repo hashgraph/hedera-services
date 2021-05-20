@@ -20,10 +20,6 @@ package com.hedera.services.fees.calculation;
  * ‍
  */
 
-import static com.hedera.services.fees.calculation.AwareFcfsUsagePrices.DEFAULT_USAGE_PRICES;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.UNRECOGNIZED;
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.google.common.io.Files;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.bootstrap.JsonToProtoSerdeTest;
@@ -53,8 +49,14 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.time.Instant;
 
-import static org.mockito.BDDMockito.*;
+import static com.hedera.services.fees.calculation.AwareFcfsUsagePrices.DEFAULT_USAGE_PRICES;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.UNRECOGNIZED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
 
 class AwareFcfsUsagePricesTest {
 	FileID schedules = IdUtils.asFile("0.0.111");

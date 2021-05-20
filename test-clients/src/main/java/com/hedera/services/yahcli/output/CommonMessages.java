@@ -21,12 +21,10 @@ package com.hedera.services.yahcli.output;
  */
 
 import com.hedera.services.yahcli.config.ConfigManager;
-import com.hedera.services.yahcli.config.ConfigUtils;
 import com.hedera.services.yahcli.suites.Utils;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.reflectForPrecheck;
 import static com.hedera.services.yahcli.config.ConfigUtils.asId;

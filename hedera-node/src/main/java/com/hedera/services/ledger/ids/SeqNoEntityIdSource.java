@@ -20,9 +20,9 @@ package com.hedera.services.ledger.ids;
  * ‍
  */
 
+import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 

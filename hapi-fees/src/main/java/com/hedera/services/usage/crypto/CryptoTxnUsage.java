@@ -19,8 +19,8 @@ package com.hedera.services.usage.crypto;
  * ‍
  */
 
-import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.TxnUsage;
+import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.token.entities.TokenEntitySizes;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 

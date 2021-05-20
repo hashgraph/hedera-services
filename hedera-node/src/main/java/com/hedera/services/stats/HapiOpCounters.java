@@ -35,11 +35,11 @@ import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_ANSWERED_DES
 import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_ANSWERED_NAME_TPL;
 import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_HANDLED_DESC_TPL;
 import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_HANDLED_NAME_TPL;
-import static com.hedera.services.stats.ServicesStatsConfig.IGNORED_FUNCTIONS;
 import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_RECEIVED_DESC_TPL;
 import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_RECEIVED_NAME_TPL;
 import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_SUBMITTED_DESC_TPL;
 import static com.hedera.services.stats.ServicesStatsConfig.COUNTER_SUBMITTED_NAME_TPL;
+import static com.hedera.services.stats.ServicesStatsConfig.IGNORED_FUNCTIONS;
 import static com.hedera.services.utils.MiscUtils.QUERY_FUNCTIONS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 

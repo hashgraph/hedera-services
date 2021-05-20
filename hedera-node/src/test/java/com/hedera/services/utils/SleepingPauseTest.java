@@ -21,9 +21,11 @@ package com.hedera.services.utils;
  */
 
 import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.atomic.AtomicBoolean;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SleepingPauseTest {
 	final Pause subject = SleepingPause.SLEEPING_PAUSE;

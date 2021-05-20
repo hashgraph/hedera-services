@@ -21,13 +21,13 @@ package com.hedera.services.txns.file;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hedera.services.files.HFileMeta;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;

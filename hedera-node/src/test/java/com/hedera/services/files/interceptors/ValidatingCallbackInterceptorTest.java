@@ -21,9 +21,9 @@ package com.hedera.services.files.interceptors;
  */
 
 import com.hedera.services.context.properties.PropertySource;
-import com.hederahashgraph.api.proto.java.FileID;
-import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.files.HFileMeta;
+import com.hedera.services.legacy.core.jproto.JContractIDKey;
+import com.hederahashgraph.api.proto.java.FileID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +34,12 @@ import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.argThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.verify;
 
 class ValidatingCallbackInterceptorTest {
 	private HFileMeta attr;

@@ -20,10 +20,10 @@ package com.hedera.services.bdd.suites.utils.keypairs;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import org.apache.commons.codec.binary.Hex;
 

@@ -20,7 +20,6 @@ package com.hedera.test.factories.txns;
  * ‍
  */
 
-import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -29,7 +28,9 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import java.util.OptionalLong;
 
-import static com.hedera.test.factories.keys.NodeFactory.*;
+import static com.hedera.test.factories.keys.NodeFactory.ed25519;
+import static com.hedera.test.factories.keys.NodeFactory.list;
+import static com.hedera.test.factories.keys.NodeFactory.threshold;
 
 public class CryptoCreateFactory extends SignedTxnFactory<CryptoCreateFactory> {
 	public static final KeyTree DEFAULT_ACCOUNT_KT =

@@ -38,7 +38,8 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssoci
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ThrottlesJsonToProtoSerdeTest {
 	@Test
