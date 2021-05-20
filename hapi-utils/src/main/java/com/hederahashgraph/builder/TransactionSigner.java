@@ -30,7 +30,6 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionOrBuilder;
-import com.hederahashgraph.exception.MisMatchedPrivateAndPublicKeyListSizesException;
 import net.i2p.crypto.eddsa.EdDSAEngine;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
@@ -243,7 +242,7 @@ public class TransactionSigner {
       byte[] bodyBytes = CommonUtils.extractTransactionBodyBytes(transaction);
 
       if(pubKeysList.size() != privKeysList.size()) {
-        throw new MisMatchedPrivateAndPublicKeyListSizesException(
+        throw new IllegalArgumentException(
                 "public and private keys size mismatch! pubKeysList size = " + pubKeysList.size() +
                         ", privKeysList size = " + privKeysList.size());
       }
