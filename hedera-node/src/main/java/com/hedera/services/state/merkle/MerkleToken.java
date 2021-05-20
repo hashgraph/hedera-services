@@ -411,6 +411,10 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 		totalSupply += amount;
 	}
 
+	public void setTotalSupply(long totalSupply) {
+		this.totalSupply = totalSupply;
+	}
+
 	public String memo() {
 		return memo;
 	}
