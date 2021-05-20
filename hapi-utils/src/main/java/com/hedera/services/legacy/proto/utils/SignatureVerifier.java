@@ -240,6 +240,9 @@ public class SignatureVerifier {
     try (FileInputStream  keyfis = new FileInputStream(args[0])) {
         encKey = new byte[keyfis.available()];
         int bytesRead = keyfis.read(encKey);
+        if (bytesRead != encKey.length) {
+          log.warn("Total bytes read from key file doesn't match expected length");
+        }
     } catch (IOException e) {
       System.err.println("Caught IOException when reading public key file " + e);
       log.error("Caught IOException when reading public key file ", e );
@@ -261,6 +264,9 @@ public class SignatureVerifier {
     try(FileInputStream sigfis = new FileInputStream(args[1])) {
       sigToVerify = new byte[sigfis.available()];
       int bytesRead = sigfis.read(sigToVerify);
+      if (bytesRead != encKey.length) {
+        log.warn("Total bytes read from sig file doesn't match expected length");
+      }
     } catch (IOException e) {
       System.err.println("Caught IOException when reading public key file " + e);
       log.error("Caught IOException when reading public key file", e );
@@ -319,7 +325,7 @@ public class SignatureVerifier {
   }
 
   public static boolean verifyED25519(byte[] pubKeyBytes, byte[] msgBytes, byte[] sigBytes)
-      throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+      throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, DecoderException {
 
     EdDSAParameterSpec spec = EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.ED_25519);
     EdDSAPublicKeySpec pubKey = new EdDSAPublicKeySpec(pubKeyBytes, spec);

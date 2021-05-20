@@ -51,4 +51,15 @@ class AccountBalanceTest {
 		assertEquals(3, a.getNum());
 		assertEquals(6, a.getBalance());
 	}
+
+	@Test
+	public void hashCodeWorks() {
+		// given:
+		AccountBalance acc1 = new AccountBalance(5, 4, 3, 6);
+		AccountBalance acc2 = new AccountBalance(5, 4, 3, 6);
+
+		// expect:
+		assertTrue(acc1.equals(acc2));
+		assertTrue(acc1.hashCode() == acc2.hashCode());
+	}
 }

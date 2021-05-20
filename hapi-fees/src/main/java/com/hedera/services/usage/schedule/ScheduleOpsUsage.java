@@ -61,7 +61,7 @@ public class ScheduleOpsUsage {
 		var op = scheduleCreate.getScheduleCreate();
 
 		var scheduledTxn = op.getScheduledTransactionBody();
-		int msgBytesUsed = scheduledTxn.getSerializedSize() + op.getMemoBytes().size();
+		long msgBytesUsed = (long) scheduledTxn.getSerializedSize() + op.getMemoBytes().size();
 		if (op.hasPayerAccountID()) {
 			msgBytesUsed += BASIC_ENTITY_ID_SIZE;
 		}
