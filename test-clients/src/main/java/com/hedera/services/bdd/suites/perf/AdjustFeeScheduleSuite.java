@@ -37,7 +37,8 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
 
 
 /**
- * This is a suite for any reconnect tests with multiple clients that needs to adjust fee schedules
+ * This is a suite for any tests with high volume requests of CryptoTransfer and ConsensusSubmitMessage
+ * to avoid the potential INSUFFICIENT_PAYER_BALANCE while the test is running.
  */
 
 public class AdjustFeeScheduleSuite extends HapiApiSuite {

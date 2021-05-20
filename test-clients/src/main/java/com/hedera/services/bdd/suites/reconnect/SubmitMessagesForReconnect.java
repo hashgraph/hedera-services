@@ -59,7 +59,7 @@ public class SubmitMessagesForReconnect extends HapiApiSuite {
 		return submitMessageTo(topicToSubmit)
 				.message(randomUtf8Bytes(100))
 				.noLogging()
-				.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
+				.hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED)
 				.deferStatusResolution();
 	}
 
