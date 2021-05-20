@@ -65,7 +65,7 @@ public class CryptoTransferUsage extends CryptoTxnUsage<CryptoTransferUsage> {
 		xferBytes += (hbarXfers + tokenXfers) * usageProperties.accountAmountBytes();
 		usageEstimator.addBpt(xferBytes);
 		if (hbarXfers > 0) {
-			addRecordRb((long) hbarXfers * usageProperties.accountAmountBytes());
+			addRecordRb(hbarXfers * usageProperties.accountAmountBytes());
 		}
 		addTokenTransfersRecordRb(tokenMultiplier * op.getTokenTransfersCount(), tokenXfers);
 
