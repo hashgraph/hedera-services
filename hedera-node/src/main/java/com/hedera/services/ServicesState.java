@@ -25,7 +25,6 @@ import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.StandardizedPropertySources;
 import com.hedera.services.exceptions.ContextNotFoundException;
-import com.hedera.services.legacy.stream.RecordStream;
 import com.hedera.services.sigs.sourcing.ScopedSigBytesProvider;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
@@ -89,7 +88,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	static final String UNSUPPORTED_VERSION_MSG_TPL = "Argument 'version=%d' is invalid!";
 
-	static Function<String, byte[]> hashReader = RecordStream::readPrevFileHash;
 	static Supplier<BinaryObjectStore> blobStoreSupplier = BinaryObjectStore::getInstance;
 
 	NodeId nodeId = null;
@@ -236,6 +234,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			setChild(ChildIndices.TOKEN_ASSOCIATIONS, new FCMap<>());
 			setChild(ChildIndices.DISK_FS, new MerkleDiskFs());
 			setChild(ChildIndices.SCHEDULE_TXS, new FCMap<>());
+
+			/* Initialize the running hash leaf at genesis to an empty hash. */
+			final var firstRunningHash = new RunningHash();
+			firstRunningHash.setHash(emptyHash);
+			setChild(ChildIndices.RECORD_STREAM_RUNNING_HASH, new RecordsRunningHashLeaf(firstRunningHash));
 		} else {
 			log.info("Init called on Services node {} WITH Merkle saved state", nodeId);
 
@@ -257,13 +260,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		}
 
 		networkCtx().setStateVersion(MERKLE_VERSION);
-		if (getNumberOfChildren() < ChildIndices.NUM_0140_CHILDREN || runningHashIsEmpty()) {
-			/* Initialize running hash from the last record stream .rcd_sig file on disk */
-			byte[] lastHash = hashReader.apply(ctx.getRecordStreamDirectory(ctx.nodeLocalProperties()));
-			RunningHash runningHash = new RunningHash();
-			runningHash.setHash(new ImmutableHash(lastHash));
-			setChild(ChildIndices.RECORD_STREAM_RUNNING_HASH, new RecordsRunningHashLeaf(runningHash));
-		}
 		ctx.setRecordsInitialHash(runningHashLeaf().getRunningHash().getHash());
 
 		logSummary();
@@ -272,10 +268,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		CONTEXTS.store(ctx);
 
 		log.info("  --> Context initialized accordingly on Services node {}", nodeId);
-	}
-
-	private boolean runningHashIsEmpty() {
-		return runningHashLeaf().getRunningHash().getHash().equals(emptyHash);
 	}
 
 	private void initializeContext(final ServicesContext ctx) {
