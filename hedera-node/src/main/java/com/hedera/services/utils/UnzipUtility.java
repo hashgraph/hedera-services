@@ -31,7 +31,7 @@ import java.io.IOException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-public class UnzipUtility {
+public final class UnzipUtility {
 
 	private static final Logger log = LogManager.getLogger(UnzipUtility.class);
 
@@ -58,24 +58,28 @@ public class UnzipUtility {
 		}
 	}
 
-	public static void unzip(byte[] bytes, String dstDirectory) throws IOException {
-		File destDir = new File(dstDirectory);
+	public static void unzip(final byte[] bytes, final String dstDirectory) throws IOException {
+		final File destDir = new File(dstDirectory);
 		if (!destDir.exists()) {
 			log.info("create dir " + destDir);
 			destDir.mkdir();
 		}
-		ZipInputStream zipIn = new ZipInputStream(new ByteArrayInputStream(bytes));
+		final ZipInputStream zipIn = new ZipInputStream(new ByteArrayInputStream(bytes));
 		ZipEntry entry = zipIn.getNextEntry();
 		while (entry != null) {
 			String filePath = dstDirectory + File.separator + entry.getName();
+			final File fileOrDir = new File(filePath);
+			filePath = fileOrDir.getCanonicalPath();
+			if(!filePath.startsWith(destDir.getCanonicalPath() + File.separator)) {
+				throw new IllegalArgumentException("Zip file entry has invalid path " + filePath +
+						". Only specify a filePath with correct canonical path name.");
+			}
 			if (!entry.isDirectory()) {
-				File newFile = new File(filePath);
 				log.info("create file {}", filePath);
 				extractSingleFile(zipIn, filePath);
 			} else {
-				File dir = new File(filePath);
-				log.info("create sub dir " + dir);
-				dir.mkdir();
+				log.info("create sub dir " + fileOrDir);
+				fileOrDir.mkdir();
 			}
 			zipIn.closeEntry();
 			entry = zipIn.getNextEntry();
