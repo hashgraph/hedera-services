@@ -45,7 +45,7 @@ public enum SingletonEstimatorUtils implements EstimatorUtils {
 		var base = FeeComponents.newBuilder()
 				.setBpr(INT_SIZE)
 				.setVpt(sigUsage.numSigs())
-				.setBpt(baseBodyBytes(txn) + sigUsage.sigsSize());
+				.setBpt((long) baseBodyBytes(txn) + sigUsage.sigsSize());
 		var estimate = new UsageEstimate(base);
 		estimate.addRbs(baseRecordBytes(txn) * RECEIPT_STORAGE_TIME_SEC);
 		return estimate;

@@ -512,7 +512,7 @@ public class KeyExpansion {
 
       //verify the size
       long size = KeyExpansion.computeNumOfExpandedKeys(rv, 1, new AtomicCounter());
-      Assert.assertEquals( 1 + numKeys * 2, size);
+      Assert.assertEquals( 1L + numKeys * 2, size);
     } else {
       throw new Exception("Not implemented yet.");
     }

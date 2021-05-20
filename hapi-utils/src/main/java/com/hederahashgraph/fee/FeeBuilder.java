@@ -41,7 +41,7 @@ public class FeeBuilder {
   public static final int FEE_MATRICES_CONST = 1;
   public static final int INT_SIZE = 4;
   public static final int BOOL_SIZE = 4;
-  public static final int SOLIDITY_ADDRESS = 20;
+  public static final long SOLIDITY_ADDRESS = 20;
   public static final int KEY_SIZE = 32;
   public static final int TX_HASH_SIZE = 48;
   public static final int DEFAULT_PAYER_ACC_SIG_COUNT = 0;
@@ -52,7 +52,7 @@ public class FeeBuilder {
   public static final int SIGNATURE_SIZE = 64;
   public static final int HRS_DIVISOR = 3600;
   public static final int BASIC_ENTITY_ID_SIZE = (3 * LONG_SIZE);
-  public static final int BASIC_RICH_INSTANT_SIZE = LONG_SIZE + INT_SIZE;
+  public static final long BASIC_RICH_INSTANT_SIZE = LONG_SIZE + INT_SIZE;
   public static final int BASIC_ACCOUNT_AMT_SIZE = BASIC_ENTITY_ID_SIZE + LONG_SIZE;
   public static final int BASIC_TX_ID_SIZE = BASIC_ENTITY_ID_SIZE + LONG_SIZE;
   public static final int EXCHANGE_RATE_SIZE = 2 * INT_SIZE + LONG_SIZE;
@@ -63,7 +63,7 @@ public class FeeBuilder {
   /**
    * Fields included: transactionID, nodeAccountID, transactionFee, transactionValidDuration, generateRecord
    */
-  public static final long BASIC_TX_BODY_SIZE =
+  public static final int BASIC_TX_BODY_SIZE =
       BASIC_ENTITY_ID_SIZE + BASIC_TX_ID_SIZE + LONG_SIZE + (LONG_SIZE) + BOOL_SIZE;
   public static final int STATE_PROOF_SIZE = 2000;
   public static final int BASE_FILEINFO_SIZE =
@@ -72,7 +72,7 @@ public class FeeBuilder {
   /**
    * Fields included: nodeTransactionPrecheckCode, responseType, cost
    */
-  public static final long BASIC_QUERY_RES_HEADER = 2 * INT_SIZE + LONG_SIZE;
+  public static final long BASIC_QUERY_RES_HEADER = 2L * INT_SIZE + LONG_SIZE;
   public static final long BASIC_QUERY_HEADER = 212;
   public static final int BASIC_CONTRACT_CREATE_SIZE = BASIC_ENTITY_ID_SIZE + 6 * LONG_SIZE;
   public static final long BASIC_CONTRACT_INFO_SIZE =
@@ -166,7 +166,7 @@ public class FeeBuilder {
     if (txBody == null) {
       throw new InvalidTxBodyException("Transaction Body not available for Fee Calculation");
     }
-    int memoSize = 0;
+    long memoSize = 0;
     if (txBody.getMemo() != null) {
       memoSize = txBody.getMemoBytes().size();
     }

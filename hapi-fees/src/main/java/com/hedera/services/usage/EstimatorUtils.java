@@ -27,7 +27,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_BODY_SIZE;
 
 public interface EstimatorUtils {
-	default long baseBodyBytes(TransactionBody txn) {
+	default int baseBodyBytes(TransactionBody txn) {
 		return BASIC_TX_BODY_SIZE + txn.getMemoBytes().size();
 	}
 
