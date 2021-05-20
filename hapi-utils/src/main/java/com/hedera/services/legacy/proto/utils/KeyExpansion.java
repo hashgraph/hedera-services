@@ -28,13 +28,6 @@ import com.hederahashgraph.api.proto.java.SignatureList;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.hederahashgraph.api.proto.java.ThresholdSignature;
-import java.security.KeyPair;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.apache.commons.codec.DecoderException;
@@ -42,6 +35,13 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
+
+import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * This class provides utilities to expand keys.
@@ -511,8 +511,8 @@ public class KeyExpansion {
       rv = KeyExpansion.genKeyList(keys);
 
       //verify the size
-      int size = KeyExpansion.computeNumOfExpandedKeys(rv, 1, new AtomicCounter());
-      Assert.assertEquals((long) 1 + numKeys * 2, size);
+      long size = KeyExpansion.computeNumOfExpandedKeys(rv, 1, new AtomicCounter());
+      Assert.assertEquals( 1 + numKeys * 2, size);
     } else {
       throw new Exception("Not implemented yet.");
     }

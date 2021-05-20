@@ -64,9 +64,9 @@ public class CryptoFeeBuilder extends FeeBuilder {
     long bpr = 0;
     long sbpr = 0;
 
-    int txBodySize = getCommonTransactionBodyBytes(txBody);
+    long txBodySize = getCommonTransactionBodyBytes(txBody);
     int cryptoCreateSize = getCryptoCreateAccountBodyTxSize(txBody);
-    bpt = (long) txBodySize + cryptoCreateSize + sigValObj.getSignatureSize();
+    bpt = txBodySize + cryptoCreateSize + sigValObj.getSignatureSize();
     vpt = sigValObj.getTotalSigCount();
     rbs = getCryptoRBS(txBody, cryptoCreateSize)
         + calculateRBS(txBody); // TxRecord
@@ -104,11 +104,11 @@ public class CryptoFeeBuilder extends FeeBuilder {
     long bpr = 0;
     long sbpr = 0;
 
-    int txBodySize = 0;
+    long txBodySize = 0;
 
     bpr = INT_SIZE;
     txBodySize = getCommonTransactionBodyBytes(txBody);
-    bpt = (long) txBodySize + 2 * BASIC_ENTITY_ID_SIZE + sigValObj.getSignatureSize();
+    bpt = txBodySize + 2 * BASIC_ENTITY_ID_SIZE + sigValObj.getSignatureSize();
     vpt = sigValObj.getTotalSigCount();
     // TxRecord
     rbs = calculateRBS(txBody);
@@ -139,11 +139,11 @@ public class CryptoFeeBuilder extends FeeBuilder {
     long bpr = 0;
     long sbpr = 0;
 
-    int txBodySize = 0;
+    long txBodySize = 0;
     txBodySize = getCommonTransactionBodyBytes(txBody);
 
     // bpt - Bytes per Transaction
-    bpt = (long) txBodySize + getCryptoTransferBodyTxSize(txBody) + sigValObj.getSignatureSize();
+    bpt = txBodySize + getCryptoTransferBodyTxSize(txBody) + sigValObj.getSignatureSize();
 
     // vpt - verifications per transactions
     vpt = sigValObj.getTotalSigCount();
@@ -180,11 +180,11 @@ public class CryptoFeeBuilder extends FeeBuilder {
     long sbpr = 0;
 
     CryptoUpdateTransactionBody crUpdateTxBody = txBody.getCryptoUpdateAccount();
-    int txBodySize = 0;
+    long txBodySize = 0;
     txBodySize = getCommonTransactionBodyBytes(txBody);
 
     // bpt - Bytes per Transaction
-    bpt = (long) txBodySize + getCryptoUpdateBodyTxSize(txBody) +  sigValObj.getSignatureSize();
+    bpt = txBodySize + getCryptoUpdateBodyTxSize(txBody) +  sigValObj.getSignatureSize();
 
     rbs = calculateRBS(txBody);
 
@@ -632,7 +632,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
     long sbpr = 0;
 
     // calculate BPT - Total Bytes in Transaction
-    int txBodySize = 0;
+    long txBodySize = 0;
     txBodySize = getCommonTransactionBodyBytes(txBody);
     bpt = (long) txBodySize + getCryptoAddLiveHashBodyBodyTxSize(txBody) + (BASIC_ENTITY_ID_SIZE)
         + sigValObj.getSignatureSize();
@@ -669,7 +669,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
     long sbpr = 0;
 
     // calculate BPT - Total Bytes in Transaction
-    int txBodySize = 0;
+    long txBodySize = 0;
     txBodySize = getCommonTransactionBodyBytes(txBody);
     bpt = (long) txBodySize + getCryptoDeleteLiveHashBodyBodyTxSize() + sigValObj.getSignatureSize();
 

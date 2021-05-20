@@ -62,9 +62,9 @@ public class FileFeeBuilder extends FeeBuilder {
     long sbpr = 0;
 
     // calculate BPT - Total Bytes in Transaction
-    int txBodySize = 0;
+    long txBodySize = 0;
     txBodySize = getCommonTransactionBodyBytes(txBody);
-    bpt = (long) txBodySize + getFileCreateTxSize(txBody) + sigValObj.getSignatureSize();
+    bpt = txBodySize + getFileCreateTxSize(txBody) + sigValObj.getSignatureSize();
     
     // vpt - verifications per transactions
     vpt = sigValObj.getTotalSigCount();
@@ -104,11 +104,11 @@ public class FileFeeBuilder extends FeeBuilder {
     long sbpr = 0;
 
     FileUpdateTransactionBody fileUpdateTxBody = txBody.getFileUpdate();
-    int txBodySize = 0;
+    long txBodySize = 0;
     txBodySize = getCommonTransactionBodyBytes(txBody);
 
     // bpt - Bytes per Transaction
-    bpt = (long) txBodySize + getFileUpdateBodyTxSize(txBody) + sigValObj.getSignatureSize();
+    bpt = txBodySize + getFileUpdateBodyTxSize(txBody) + sigValObj.getSignatureSize();
 
     // vpt - verifications per transactions
     vpt = sigValObj.getTotalSigCount();
@@ -170,11 +170,11 @@ public class FileFeeBuilder extends FeeBuilder {
     long sbpr = 0;
 
     FileAppendTransactionBody fileAppendTxBody = txBody.getFileAppend();
-    int txBodySize = 0;
+    long txBodySize = 0;
     txBodySize = getCommonTransactionBodyBytes(txBody);
 
     // bpt - Bytes per Transaction
-    bpt = (long) txBodySize + sigValObj.getSignatureSize();
+    bpt = txBodySize + sigValObj.getSignatureSize();
     int fileContentSize = 0;
 
     if (fileAppendTxBody.getContents() != null) {
@@ -471,11 +471,11 @@ public class FileFeeBuilder extends FeeBuilder {
     long bpr = 0;
     long sbpr = 0;
 
-    int txBodySize = 0;
+    long txBodySize = 0;
     txBodySize = getCommonTransactionBodyBytes(txBody);
 
     // bpt - Bytes per Transaction
-    bpt = (long) txBodySize + BASIC_ENTITY_ID_SIZE + sigValObj.getSignatureSize();
+    bpt = txBodySize + BASIC_ENTITY_ID_SIZE + sigValObj.getSignatureSize();
 
     // vpt - verifications per transactions
     vpt = sigValObj.getTotalSigCount();

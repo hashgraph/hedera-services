@@ -63,7 +63,7 @@ public class FeeBuilder {
   /**
    * Fields included: transactionID, nodeAccountID, transactionFee, transactionValidDuration, generateRecord
    */
-  public static final int BASIC_TX_BODY_SIZE =
+  public static final long BASIC_TX_BODY_SIZE =
       BASIC_ENTITY_ID_SIZE + BASIC_TX_ID_SIZE + LONG_SIZE + (LONG_SIZE) + BOOL_SIZE;
   public static final int STATE_PROOF_SIZE = 2000;
   public static final int BASE_FILEINFO_SIZE =
@@ -162,7 +162,7 @@ public class FeeBuilder {
    *     <li>bytes string memo - get memo size from transaction</li>
    * </ul>
    */
-  public static int getCommonTransactionBodyBytes(TransactionBody txBody) throws InvalidTxBodyException {
+  public static long getCommonTransactionBodyBytes(TransactionBody txBody) throws InvalidTxBodyException {
     if (txBody == null) {
       throw new InvalidTxBodyException("Transaction Body not available for Fee Calculation");
     }

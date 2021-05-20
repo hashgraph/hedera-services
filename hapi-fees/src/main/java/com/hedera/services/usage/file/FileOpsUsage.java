@@ -61,7 +61,7 @@ public class FileOpsUsage {
 	public FeeData fileCreateUsage(TransactionBody fileCreation, SigUsage sigUsage) {
 		var op = fileCreation.getFileCreate();
 
-		int customBytes = 0;
+		long customBytes = 0;
 		customBytes += op.getContents().size();
 		customBytes += op.getMemoBytes().size();
 		customBytes += keySizeIfPresent(op, FileCreateTransactionBody::hasKeys, body -> asKey(body.getKeys()));
@@ -70,7 +70,7 @@ public class FileOpsUsage {
 
 		var estimate = txnEstimateFactory.get(sigUsage, fileCreation, ESTIMATOR_UTILS);
 		/* Variable bytes plus a long for expiration time */
-		estimate.addBpt((long) customBytes + LONG_SIZE);
+		estimate.addBpt(customBytes + LONG_SIZE);
 		estimate.addSbs((bytesInBaseRepr() + customBytes) * lifetime);
 		estimate.addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 

@@ -20,7 +20,6 @@ package com.hedera.services.usage.schedule;
  * ‍
  */
 
-import com.hedera.services.usage.schedule.entities.ScheduleEntitySizes;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 
@@ -31,11 +30,10 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.KEY_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
 public class ExtantScheduleContext {
-	static final int METADATA_SIZE =
+	static final long METADATA_SIZE =
 			/* The schedule id, the scheduling account, and the responsible payer */
 			3 * BASIC_ENTITY_ID_SIZE +
 					/* The expiration time */
@@ -58,7 +56,7 @@ public class ExtantScheduleContext {
 	}
 
 	public long nonBaseRb() {
-		return (long) METADATA_SIZE
+		return METADATA_SIZE
 				/* If the schedule has been resolved (i.e. deleted or executed), then
 				we store the resolution timestamp. */
 				+ (resolved ? BASIC_RICH_INSTANT_SIZE : 0)
