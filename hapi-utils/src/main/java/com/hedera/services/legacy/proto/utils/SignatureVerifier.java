@@ -264,7 +264,7 @@ public class SignatureVerifier {
     try(FileInputStream sigfis = new FileInputStream(args[1])) {
       sigToVerify = new byte[sigfis.available()];
       int bytesRead = sigfis.read(sigToVerify);
-      if (bytesRead != encKey.length) {
+      if (bytesRead != sigToVerify.length) {
         log.warn("Total bytes read from sig file doesn't match expected length");
       }
     } catch (IOException e) {
