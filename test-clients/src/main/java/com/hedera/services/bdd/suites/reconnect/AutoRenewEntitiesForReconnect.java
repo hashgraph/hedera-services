@@ -29,6 +29,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -64,7 +65,8 @@ public class AutoRenewEntitiesForReconnect extends HapiApiSuite {
 		return defaultHapiSpec("AutoRenewAccountGetsDeletedOnReconnectingNodeAsWell")
 				.given(
 						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
-								.overridingProps(enablingAutoRenewWith(autoRenewSecs, 0, 100, 2)),
+								.overridingProps(enablingAutoRenewWith(autoRenewSecs, 0, 100, 2))
+								.erasingProps(Set.of("minimumAutoRenewDuration")),
 						cryptoCreate(autoDeleteAccount).autoRenewSecs(autoRenewSecs).balance(0L)
 				)
 				.when(
