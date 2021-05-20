@@ -60,6 +60,6 @@ class AccountBalanceTest {
 
 		// expect:
 		assertTrue(acc1.equals(acc2));
-		assertTrue(acc1.hashCode() == acc2.hashCode());
+		assertEquals(acc1.hashCode(), acc2.hashCode());
 	}
 }

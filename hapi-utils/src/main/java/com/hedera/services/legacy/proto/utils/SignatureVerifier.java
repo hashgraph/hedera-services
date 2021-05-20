@@ -240,9 +240,7 @@ public class SignatureVerifier {
     try (FileInputStream  keyfis = new FileInputStream(args[0])) {
         encKey = new byte[keyfis.available()];
         int bytesRead = keyfis.read(encKey);
-        if (bytesRead != encKey.length) {
-          log.warn("Total bytes read from key file doesn't match expected length");
-        }
+        logWarnIfMismatch(bytesRead, encKey.length);
     } catch (IOException e) {
       System.err.println("Caught IOException when reading public key file " + e);
       log.error("Caught IOException when reading public key file ", e );
@@ -264,9 +262,7 @@ public class SignatureVerifier {
     try(FileInputStream sigfis = new FileInputStream(args[1])) {
       sigToVerify = new byte[sigfis.available()];
       int bytesRead = sigfis.read(sigToVerify);
-      if (bytesRead != sigToVerify.length) {
-        log.warn("Total bytes read from sig file doesn't match expected length");
-      }
+      logWarnIfMismatch(bytesRead, sigToVerify.length);
     } catch (IOException e) {
       System.err.println("Caught IOException when reading public key file " + e);
       log.error("Caught IOException when reading public key file", e );
@@ -306,6 +302,11 @@ public class SignatureVerifier {
     System.out.println("signature verifies: " + verifies);
   }
 
+  private static void logWarnIfMismatch(int bytesRead, int expectedBytesLength) {
+    if (bytesRead != expectedBytesLength) {
+      log.warn("Total bytes read from file doesn't match expected length");
+    }
+  }
 
   public static boolean verifyED25519Signature(String pubKeyStr, String message, String signature)
       throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, UnsupportedEncodingException, DecoderException {

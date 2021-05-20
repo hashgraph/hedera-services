@@ -57,6 +57,6 @@ public class EarliestEntryExpiryTest {
 
 		// expect:
 		assertTrue(ere.equals(ere1));
-		assertTrue(ere.hashCode() == ere1.hashCode());
+		assertEquals(ere1.hashCode() ,ere.hashCode());
 	}
 }
