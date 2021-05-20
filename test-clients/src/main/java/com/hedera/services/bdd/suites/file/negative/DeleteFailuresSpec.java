@@ -29,7 +29,8 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 
 public class DeleteFailuresSpec extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(DeleteFailuresSpec.class);

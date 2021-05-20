@@ -21,6 +21,8 @@ package com.hedera.services.bdd.spec.transactions.crypto;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
@@ -29,8 +31,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

@@ -21,33 +21,36 @@ package com.hedera.services.bdd.suites.contract;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-
-import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
-import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
-import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
-import static com.hedera.services.bdd.spec.keys.SigControl.ON;
-import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
-import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
-
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.*;
-
 import java.util.Arrays;
 import java.util.List;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
+import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
+import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
+import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
+import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
+import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
+import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hedera.services.bdd.spec.keys.ControlForKey.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ERROR_DECODING_BYTESTRING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ContractCreateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCreateSuite.class);

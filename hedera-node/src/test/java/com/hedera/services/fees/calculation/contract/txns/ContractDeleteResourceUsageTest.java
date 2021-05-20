@@ -20,14 +20,17 @@ package com.hedera.services.fees.calculation.contract.txns;
  * ‍
  */
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import static org.mockito.BDDMockito.*;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
 class ContractDeleteResourceUsageTest {
 	private SigValueObj sigUsage;

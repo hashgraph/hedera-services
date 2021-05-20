@@ -23,8 +23,8 @@ package com.hedera.services.usage.file;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
 import com.hedera.services.test.KeyUtils;
-import com.hedera.services.usage.QueryUsage;
 import com.hedera.services.usage.EstimatorFactory;
+import com.hedera.services.usage.QueryUsage;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
@@ -52,12 +52,13 @@ import static com.hederahashgraph.fee.FeeBuilder.BASE_FILEINFO_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 class FileOpsUsageTest {
 	byte[] contents = "Pineapple and eggplant and avocado too".getBytes();

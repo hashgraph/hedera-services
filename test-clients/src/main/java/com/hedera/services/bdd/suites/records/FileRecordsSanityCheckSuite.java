@@ -24,14 +24,18 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
 import java.util.List;
+
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.takeBalanceSnapshots;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateRecordTransactionFees;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateTransferListForBalances;
 
 public class FileRecordsSanityCheckSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(FileRecordsSanityCheckSuite.class);

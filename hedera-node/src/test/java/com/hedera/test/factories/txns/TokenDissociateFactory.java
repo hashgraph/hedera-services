@@ -20,7 +20,6 @@ package com.hedera.test.factories.txns;
  * ‍
  */
 
-import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -29,8 +28,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static java.util.stream.Collectors.toList;
 
 public class TokenDissociateFactory extends SignedTxnFactory<TokenDissociateFactory> {
 	private AccountID target;

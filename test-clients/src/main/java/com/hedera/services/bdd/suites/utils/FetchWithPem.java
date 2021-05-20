@@ -22,23 +22,12 @@ package com.hedera.services.bdd.suites.utils;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-
-import static com.hedera.services.bdd.spec.HapiApiSpec.*;
-
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.keypairs.SpecUtils;
-import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 
 import java.io.File;
 import java.io.IOException;
@@ -51,6 +40,11 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 
 public class FetchWithPem extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(FetchWithPem.class);

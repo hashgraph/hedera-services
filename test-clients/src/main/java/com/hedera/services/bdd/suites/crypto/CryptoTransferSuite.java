@@ -21,29 +21,8 @@ package com.hedera.services.bdd.suites.crypto;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-
-import static com.hedera.services.bdd.spec.HapiPropertySource.asTopicString;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
-import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
-
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-
-import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
-import static com.hedera.services.bdd.spec.keys.SigControl.ON;
-import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.*;
-
-import static com.hedera.services.bdd.spec.keys.ControlForKey.*;
-
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -57,9 +36,27 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asTopicString;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
+import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
+import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
+import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
+import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class CryptoTransferSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoTransferSuite.class);

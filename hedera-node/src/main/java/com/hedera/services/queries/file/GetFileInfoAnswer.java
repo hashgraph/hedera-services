@@ -31,6 +31,8 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
 
@@ -38,9 +40,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 public class GetFileInfoAnswer implements AnswerService {

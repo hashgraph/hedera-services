@@ -22,13 +22,12 @@ package com.hedera.services.bdd.spec.queries.crypto;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.exceptions.HapiQueryCheckStateException;
-import com.hedera.services.bdd.spec.queries.contract.HapiGetContractRecords;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
-import org.junit.Assert;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
 
 import java.util.List;
 import java.util.Optional;

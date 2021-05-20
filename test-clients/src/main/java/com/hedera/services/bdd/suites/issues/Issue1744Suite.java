@@ -20,21 +20,22 @@ package com.hedera.services.bdd.suites.issues;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import static com.hedera.services.bdd.spec.HapiApiSpec.*;
-
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.*;
-import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.*;
 
 import java.util.List;
+
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 
 public class Issue1744Suite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(Issue1744Suite.class);

@@ -20,6 +20,9 @@ package com.hedera.services.sigs.order;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.crypto.SignatureStatus;
+import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -29,9 +32,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.crypto.SignatureStatus;
-import com.hedera.services.legacy.crypto.SignatureStatusCode;
+
 import java.util.List;
 
 /**

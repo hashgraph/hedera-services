@@ -47,10 +47,10 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -58,25 +58,26 @@ import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.Transaction;
 import com.swirlds.common.crypto.RunningHash;
-import org.apache.logging.log4j.LogManager;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import javax.inject.Inject;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
 import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
-import static org.mockito.BDDMockito.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.anyLong;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.when;
 
 @ExtendWith(LogCaptureExtension.class)
 class AwareProcessLogicTest {

@@ -20,6 +20,7 @@ package com.hedera.services.legacy.CI;
  * ‍
  */
 
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.legacy.regression.BaseClient;
 import com.hedera.services.legacy.regression.umbrella.CryptoServiceTest;
 import com.hedera.services.legacy.regression.umbrella.TestHelperComplex;
@@ -38,14 +39,13 @@ import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
 
 /**
  * Systematic crypto API integration tests.

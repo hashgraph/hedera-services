@@ -21,7 +21,6 @@ package com.hedera.services.files.interceptors;
  */
 
 import com.hedera.services.config.FileNumbers;
-import com.hedera.services.context.properties.PropertySource;
 import com.hederahashgraph.api.proto.java.FileID;
 
 public class MockFileNumbers extends FileNumbers {

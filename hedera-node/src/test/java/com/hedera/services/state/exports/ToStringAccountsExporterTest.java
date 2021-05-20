@@ -27,7 +27,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;

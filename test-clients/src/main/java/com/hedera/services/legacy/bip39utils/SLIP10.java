@@ -20,13 +20,12 @@ package com.hedera.services.legacy.bip39utils;
  * ‍
  */
 
-import java.nio.charset.Charset;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-
 import javax.crypto.Mac;
 import javax.crypto.ShortBufferException;
 import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.Charset;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 
 public class SLIP10 {
 

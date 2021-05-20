@@ -20,16 +20,15 @@ package com.hedera.test.factories.sigs;
  * ‍
  */
 
-import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
+
+import java.util.List;
+import java.util.Map;
 
 import static com.swirlds.common.crypto.VerificationStatus.INVALID;
 import static com.swirlds.common.crypto.VerificationStatus.VALID;
 import static java.util.stream.Collectors.toList;
-
-import java.util.List;
-import java.util.Map;
 
 public class SigWrappers {
 	public static List<TransactionSignature> asValid(List<TransactionSignature> sigs) {

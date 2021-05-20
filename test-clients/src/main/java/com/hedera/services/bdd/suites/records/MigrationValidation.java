@@ -29,13 +29,13 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 import java.util.stream.IntStream;
 
-/* --------------------------- SPEC STATIC IMPORTS --------------------------- */
-import static com.hedera.services.bdd.spec.HapiApiSpec.*;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.*;
-import static org.junit.Assert.assertEquals;
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 /* --------------------------------------------------------------------------- */
 
 public class MigrationValidation extends HapiApiSuite {

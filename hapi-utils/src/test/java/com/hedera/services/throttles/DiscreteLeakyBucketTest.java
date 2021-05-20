@@ -22,7 +22,8 @@ package com.hedera.services.throttles;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class DiscreteLeakyBucketTest {
 	private long totalCapacity = 64_000L;

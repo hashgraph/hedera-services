@@ -33,17 +33,14 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.willAnswer;
 
 class SolidityLogTest {
 	byte[] data = "hgfedcba".getBytes();

@@ -25,9 +25,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.suites.utils.sysfiles.ExchangeRatesPojo;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
-import org.apache.commons.lang3.NotImplementedException;
 
-import java.io.File;
 import java.io.IOException;
 
 public class XRatesJsonToGrpcBytes implements SysFileSerde<String> {

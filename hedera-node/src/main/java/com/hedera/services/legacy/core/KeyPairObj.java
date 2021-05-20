@@ -21,13 +21,13 @@ package com.hedera.services.legacy.core;
  */
 
 import com.hedera.services.utils.MiscUtils;
+import net.i2p.crypto.eddsa.EdDSAPublicKey;
+import org.apache.commons.codec.DecoderException;
 
 import java.io.Serializable;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
-import net.i2p.crypto.eddsa.EdDSAPublicKey;
-import org.apache.commons.codec.DecoderException;
 
 public class KeyPairObj implements Serializable {
   private static final long serialVersionUID = 9146375644904969927L;

@@ -20,7 +20,6 @@ package com.hedera.services.state.exports;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
@@ -29,11 +28,12 @@ import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.utils.MiscUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hedera.services.stream.proto.TokenUnitBalance;
+import com.hedera.services.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenBalances;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -58,21 +58,21 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.UnaryOperator;
 
+import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
-import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 
 public class SignedStateBalancesExporter implements BalancesExporter {
 	private static final Logger log = LogManager.getLogger(SignedStateBalancesExporter.class);
 
 	private static final String LINE_SEPARATOR = System.getProperty("line.separator");
 	private static final String UNKNOWN_EXPORT_DIR = "";
-	private static final String BAD_EXPORT_ATTEMPT_ERROR_MSG_TPL = "Could not export to '%s'!";
-	private static final String BAD_SIGNING_ATTEMPT_ERROR_MSG_TPL = "Could not sign balance file '%s'!";
-	static final String BAD_EXPORT_DIR_ERROR_MSG_TPL = "Cannot ensure existence of export dir '%s'!";
-	static final String LOW_NODE_BALANCE_WARN_MSG_TPL = "Node '%s' has unacceptably low balance %d!";
-	static final String GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL = "Created balance signature file '%s'.";
+	private static final String BAD_EXPORT_ATTEMPT_ERROR_MSG_TPL = "Could not export to '{}'!";
+	private static final String BAD_SIGNING_ATTEMPT_ERROR_MSG_TPL = "Could not sign balance file '{}'!";
+	static final String BAD_EXPORT_DIR_ERROR_MSG_TPL = "Cannot ensure existence of export dir '{}'!";
+	static final String LOW_NODE_BALANCE_WARN_MSG_TPL = "Node '{}' has unacceptably low balance {}!";
+	static final String GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL = "Created balance signature file '{}'.";
 	static final String CURRENT_VERSION = "version:2";
 
 	private static final String PROTO_FILE_EXTENSION = ".pb";
@@ -121,7 +121,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		}
 		periodBegin = now;
 		if(log.isDebugEnabled()) {
-			log.debug(String.format("Now %s is NOT time to export.", now.toString()));
+			log.debug("Now {} is NOT time to export.", now);
 		}
 		return false;
 	}
@@ -138,7 +138,8 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		if (!expected.equals(summary.getTotalFloat())) {
 			throw new IllegalStateException(String.format(
 					"Signed state @ %s had total balance %d not %d!",
-					when, summary.getTotalFloat(), expectedFloat)); }
+					when, summary.getTotalFloat(), expectedFloat));
+		}
 		log.info("Took {}ms to summarize signed state balances", watch.getTime(TimeUnit.MILLISECONDS));
 
 		// .pb account balances file is our focus, process it first to let its timestamp to stay close to
@@ -185,10 +186,10 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			var sig = signer.apply(hash);
 			var sigFileLoc = sigFileWriter.writeSigFile(csvLoc, sig, hash);
 			if (log.isDebugEnabled()) {
-				log.debug(String.format(GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL, sigFileLoc));
+				log.debug(GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL, sigFileLoc);
 			}
 		} catch (Exception e) {
-			log.error(String.format(BAD_SIGNING_ATTEMPT_ERROR_MSG_TPL, csvLoc), e);
+			log.error(BAD_SIGNING_ATTEMPT_ERROR_MSG_TPL, csvLoc, e);
 		}
 	}
 
@@ -200,15 +201,17 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 				addLegacyHeader(fout, when);
 			}
 			for (SingleAccountBalances singleAccountBalances : summary.getOrderedBalances()) {
-				fout.write(String.format(
-						"%d,%d,%d,%d",
-						singleAccountBalances.getAccountID().getShardNum(),
-						singleAccountBalances.getAccountID().getRealmNum(),
-						singleAccountBalances.getAccountID().getAccountNum(),
-						singleAccountBalances.getHbarBalance()));
+				fout.write(Long.toString(singleAccountBalances.getAccountID().getShardNum()));
+				fout.write(",");
+				fout.write(Long.toString(singleAccountBalances.getAccountID().getRealmNum()));
+				fout.write(",");
+				fout.write(Long.toString(singleAccountBalances.getAccountID().getAccountNum()));
+				fout.write(",");
+				fout.write(Long.toString(singleAccountBalances.getHbarBalance()));
 				if (dynamicProperties.shouldExportTokenBalances()) {
 					if (singleAccountBalances.getTokenUnitBalancesList().size() > 0) {
-						fout.write("," + b64Encode(singleAccountBalances));
+						fout.write(",");
+						fout.write(b64Encode(singleAccountBalances));
 					} else {
 						fout.write(",");
 					}
@@ -216,7 +219,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 				fout.write(LINE_SEPARATOR);
 			}
 		} catch (IOException e) {
-			log.error(String.format(BAD_EXPORT_ATTEMPT_ERROR_MSG_TPL, csvLoc), e);
+			log.error(BAD_EXPORT_ATTEMPT_ERROR_MSG_TPL, csvLoc, e);
 			return false;
 		}
 		return true;
@@ -233,21 +236,29 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		try (FileOutputStream fout = new FileOutputStream(protoLoc)) {
 			allAccountsBuilder.build().writeTo(fout);
 		} catch (IOException e) {
-			log.error(String.format(BAD_EXPORT_ATTEMPT_ERROR_MSG_TPL, protoLoc), e);
+			log.error(BAD_EXPORT_ATTEMPT_ERROR_MSG_TPL, protoLoc, e);
 			return false;
 		}
 		return true;
 	}
 
 	private void addLegacyHeader(Writer writer, Instant at) throws IOException {
-		writer.write(String.format("TimeStamp:%s%s", at, LINE_SEPARATOR));
-		writer.write("shardNum,realmNum,accountNum,balance" + LINE_SEPARATOR);
+		writer.write("TimeStamp:");
+		writer.write(at.toString());
+		writer.write(LINE_SEPARATOR);
+		writer.write("shardNum,realmNum,accountNum,balance");
+		writer.write(LINE_SEPARATOR);
 	}
 
 	private void addRelease090Header(Writer writer, Instant at) throws IOException {
-		writer.write("# " + CURRENT_VERSION + LINE_SEPARATOR);
-		writer.write(String.format("# TimeStamp:%s%s", at, LINE_SEPARATOR));
-		writer.write("shardNum,realmNum,accountNum,balance,tokenBalances" + LINE_SEPARATOR);
+		writer.write("# ");
+		writer.write(CURRENT_VERSION);
+		writer.write(LINE_SEPARATOR);
+		writer.write("# TimeStamp:");
+		writer.write(at.toString());
+		writer.write(LINE_SEPARATOR);
+		writer.write("shardNum,realmNum,accountNum,balance,tokenBalances");
+		writer.write(LINE_SEPARATOR);
 	}
 
 	BalancesSummary summarized(ServicesState signedState) {
@@ -266,10 +277,9 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 				var accountId = id.toAccountId();
 				var balance = account.getBalance();
 				if (nodeIds.contains(accountId) && balance < nodeBalanceWarnThreshold) {
-					log.warn(String.format(
-							LOW_NODE_BALANCE_WARN_MSG_TPL,
+					log.warn(LOW_NODE_BALANCE_WARN_MSG_TPL,
 							readableId(accountId),
-							balance));
+							balance);
 				}
 				totalFloat = totalFloat.add(BigInteger.valueOf(account.getBalance()));
 				SingleAccountBalances.Builder sabBuilder = SingleAccountBalances.newBuilder();
@@ -329,7 +339,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 				directories.ensureExistenceOf(candidateDir);
 				lastUsedExportDir = candidateDir;
 			} catch (IOException e) {
-				log.error(String.format(BAD_EXPORT_DIR_ERROR_MSG_TPL, candidateDir));
+				log.error(BAD_EXPORT_DIR_ERROR_MSG_TPL, candidateDir);
 				return false;
 			}
 		}

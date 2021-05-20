@@ -20,14 +20,14 @@ package com.hedera.services.fees.calculation.crypto.queries;
  * ‍
  */
 
-import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.fees.calculation.FeeCalcUtils;
-import com.hedera.services.queries.meta.GetTxnRecordAnswer;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.fees.calculation.FeeCalcUtils;
 import com.hedera.services.queries.answering.AnswerFunctions;
+import com.hedera.services.queries.meta.GetTxnRecordAnswer;
 import com.hedera.services.records.RecordCache;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
@@ -37,11 +37,9 @@ import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.engine.support.hierarchical.Node;
 
 import java.util.HashMap;
 import java.util.List;
@@ -49,14 +47,15 @@ import java.util.Optional;
 import java.util.function.BinaryOperator;
 
 import static com.hedera.services.fees.calculation.crypto.queries.GetTxnRecordResourceUsage.MISSING_RECORD_STANDIN;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
+import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
-import static com.hedera.test.utils.IdUtils.*;
-import static com.hederahashgraph.api.proto.java.ResponseType.*;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
 
 class GetTxnRecordResourceUsageTest {
 	private TransactionID targetTxnId = TransactionID.newBuilder()

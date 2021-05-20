@@ -28,8 +28,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.LEGACY_BYTECODE_PATH_PATTERN;
+import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.LEGACY_BYTECODE_PATH_TEMPLATE;
+import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.bytecodeMapFrom;
+import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.storageMapFrom;
+import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.toAddressMapping;
+import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.toKeyMapping;
+import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.toRelevancyPredicate;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AddressKeyedMapFactoryTest {
 	@Test

@@ -20,13 +20,13 @@ package com.hedera.services.bdd.spec;
  * ‍
  */
 
+import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ShardID;
-import com.hedera.services.bdd.spec.keys.KeyFactory;
 
 import java.util.stream.Stream;
 

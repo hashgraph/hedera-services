@@ -20,18 +20,22 @@ package com.hedera.services.ledger.ids;
  * ‍
  */
 
+import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asFile;
+import static com.hedera.test.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.BDDMockito.*;
-import static com.hedera.test.utils.IdUtils.*;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
 class SeqNoEntityIdSourceTest {
 	final AccountID sponsor = asAccount("1.2.3");

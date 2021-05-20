@@ -20,7 +20,10 @@ package com.hedera.services.fees.calculation.consensus.txns;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.TopicID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

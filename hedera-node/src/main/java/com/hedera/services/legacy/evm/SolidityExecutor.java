@@ -20,52 +20,16 @@ package com.hedera.services.legacy.evm;
  * ‍
  */
 
-import static com.hedera.services.contracts.execution.DomainUtils.asReceipt;
-import static com.hedera.services.contracts.execution.DomainUtils.newScopedAccountInitializer;
-import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
-import static com.hedera.services.utils.EntityIdUtils.asContract;
-import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
-import static java.math.BigInteger.ZERO;
-import static java.util.Comparator.comparingLong;
-import static org.apache.commons.lang3.ArrayUtils.getLength;
-import static org.apache.commons.lang3.ArrayUtils.isEmpty;
-import static org.ethereum.util.BIUtil.isCovers;
-import static org.ethereum.util.BIUtil.toBI;
-import static org.ethereum.util.BIUtil.transfer;
-import static org.ethereum.util.ByteUtil.EMPTY_BYTE_ARRAY;
-import static org.ethereum.util.ByteUtil.toHexString;
-import static org.ethereum.vm.VMUtils.saveProgramTraceFile;
-import static org.ethereum.vm.VMUtils.zipAndEncode;
-
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.SoliditySigsVerifier;
+import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.builder.RequestBuilder;
-import com.hedera.services.state.submerkle.SequenceNumber;
-
-import java.math.BigInteger;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.log4j.Logger;
@@ -97,6 +61,41 @@ import org.ethereum.vm.program.invoke.ProgramInvokeFactory;
 import org.ethereum.vm.program.invoke.ProgramInvokeFactoryImpl;
 import org.ethereum.vm.program.invoke.ProgramInvokeImpl;
 import org.spongycastle.util.encoders.Hex;
+
+import java.math.BigInteger;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+
+import static com.hedera.services.contracts.execution.DomainUtils.asReceipt;
+import static com.hedera.services.contracts.execution.DomainUtils.newScopedAccountInitializer;
+import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
+import static com.hedera.services.utils.EntityIdUtils.asContract;
+import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
+import static java.math.BigInteger.ZERO;
+import static java.util.Comparator.comparingLong;
+import static org.apache.commons.lang3.ArrayUtils.getLength;
+import static org.apache.commons.lang3.ArrayUtils.isEmpty;
+import static org.ethereum.util.BIUtil.isCovers;
+import static org.ethereum.util.BIUtil.toBI;
+import static org.ethereum.util.BIUtil.transfer;
+import static org.ethereum.util.ByteUtil.EMPTY_BYTE_ARRAY;
+import static org.ethereum.util.ByteUtil.toHexString;
+import static org.ethereum.vm.VMUtils.saveProgramTraceFile;
+import static org.ethereum.vm.VMUtils.zipAndEncode;
 
 public class SolidityExecutor {
 	private static final Logger logger = Logger.getLogger(SolidityExecutor.class);

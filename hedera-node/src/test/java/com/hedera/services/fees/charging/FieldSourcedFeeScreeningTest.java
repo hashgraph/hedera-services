@@ -20,9 +20,8 @@ package com.hedera.services.fees.charging;
  * ‍
  */
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.hedera.services.fees.FeeExemptions;
+import com.hedera.services.fees.TxnFeeType;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -33,9 +32,16 @@ import org.junit.jupiter.api.Test;
 import java.util.EnumMap;
 import java.util.EnumSet;
 
-import static org.mockito.BDDMockito.*;
-import com.hedera.services.fees.TxnFeeType;
-import static com.hedera.services.fees.TxnFeeType.*;
+import static com.hedera.services.fees.TxnFeeType.NETWORK;
+import static com.hedera.services.fees.TxnFeeType.NODE;
+import static com.hedera.services.fees.TxnFeeType.SERVICE;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.anyLong;
+import static org.mockito.BDDMockito.argThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
 class FieldSourcedFeeScreeningTest {
 

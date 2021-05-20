@@ -32,7 +32,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.chunkAFile;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ChunkingSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ChunkingSuite.class);

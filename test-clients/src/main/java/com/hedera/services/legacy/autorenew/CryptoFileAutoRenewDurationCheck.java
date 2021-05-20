@@ -21,6 +21,11 @@ package com.hedera.services.legacy.autorenew;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.core.AccountKeyListObj;
+import com.hedera.services.legacy.core.KeyPairObj;
+import com.hedera.services.legacy.core.TestHelper;
+import com.hedera.services.legacy.proto.utils.ProtoCommonUtils;
+import com.hedera.services.legacy.regression.Utilities;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -40,13 +45,12 @@ import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.builder.TransactionSigner;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
 import com.hederahashgraph.service.proto.java.FileServiceGrpc;
-import com.hedera.services.legacy.core.AccountKeyListObj;
-import com.hedera.services.legacy.core.KeyPairObj;
-import com.hedera.services.legacy.core.TestHelper;
-import com.hedera.services.legacy.proto.utils.ProtoCommonUtils;
-import com.hedera.services.legacy.regression.Utilities;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import net.i2p.crypto.eddsa.EdDSAPublicKey;
+import net.i2p.crypto.eddsa.KeyPairGenerator;
+import org.junit.Assert;
+
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.util.ArrayList;
@@ -54,9 +58,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import net.i2p.crypto.eddsa.EdDSAPublicKey;
-import net.i2p.crypto.eddsa.KeyPairGenerator;
-import org.junit.Assert;
 
 public class CryptoFileAutoRenewDurationCheck {
 

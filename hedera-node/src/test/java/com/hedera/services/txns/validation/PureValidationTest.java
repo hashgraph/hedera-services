@@ -22,12 +22,10 @@ package com.hedera.services.txns.validation;
 
 import com.hedera.test.utils.TxnUtils;
 import org.junit.jupiter.api.Test;
+
 import java.time.Instant;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static com.hedera.test.utils.TxnUtils.withAdjustments;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class PureValidationTest {
 	Instant now = Instant.now();

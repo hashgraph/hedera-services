@@ -22,5 +22,9 @@ package com.hedera.services.state.exports;
 
 @FunctionalInterface
 public interface SigFileWriter {
+
+	byte TYPE_SIGNATURE = 3;       // the file content signature, should not be hashed
+	byte TYPE_FILE_HASH = 4;       // next 48 bytes are hash384 of content of the file to be signed
+
 	String writeSigFile(String signedFile, byte[] sig, byte[] signedFileHash);
 }

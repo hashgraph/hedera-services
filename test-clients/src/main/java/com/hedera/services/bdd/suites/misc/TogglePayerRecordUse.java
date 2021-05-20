@@ -21,25 +21,15 @@ package com.hedera.services.bdd.suites.misc;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.keys.KeyFactory;
-import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromPem;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 public class TogglePayerRecordUse extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TogglePayerRecordUse.class);

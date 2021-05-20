@@ -22,7 +22,6 @@ package com.hedera.services.txns.token;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;
@@ -45,7 +44,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;

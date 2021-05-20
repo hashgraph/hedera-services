@@ -22,10 +22,10 @@ package com.hedera.services.legacy.initialization;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.TextFormat;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.HexUtils;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 

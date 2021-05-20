@@ -24,7 +24,12 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.token.TokenCreateUsage;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.SigValueObj;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,7 +41,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.Mockito.verify;
 
 class TokenCreateResourceUsageTest {
 	long now = 1_000_000L;

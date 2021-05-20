@@ -27,16 +27,12 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.contract.helpers.UpdateCustomizerFactory;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.time.Instant;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;

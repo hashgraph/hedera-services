@@ -41,15 +41,20 @@ import java.util.Arrays;
 import java.util.Optional;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hedera.test.utils.IdUtils.asFile;
+import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
-import static com.hedera.test.utils.IdUtils.*;
-import static com.hedera.test.utils.TxnUtils.*;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
 class GetFileContentsAnswerTest {
 	int size = 1_234;

@@ -21,28 +21,28 @@ package com.hedera.services.bdd.suites.crypto;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-
-import java.util.List;
-
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.List;
+
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECEIPT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
-import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.*;
 
 /* ! WARNING - Requires a RecordCache TTL of 3s to pass ! */
 public class TxnRecordRegression extends HapiApiSuite {

@@ -20,24 +20,14 @@ package com.hedera.services.bdd.suites.fees;
  * ‍
  */
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.queries.QueryVerbs;
+import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
+import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultFailingHapiSpec;
-
-import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.*;
-
-import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-
-import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.*;
-import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -46,9 +36,16 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultFailingHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.from;
+import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.missingPayments;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 
 public class TransferListServiceFeesSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TransferListServiceFeesSuite.class);

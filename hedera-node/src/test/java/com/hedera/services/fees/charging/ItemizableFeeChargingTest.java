@@ -22,6 +22,7 @@ package com.hedera.services.fees.charging;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeExemptions;
+import com.hedera.services.fees.TxnFeeType;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -35,15 +36,21 @@ import org.junit.jupiter.api.Test;
 import java.util.EnumMap;
 import java.util.EnumSet;
 
+import static com.hedera.services.fees.TxnFeeType.NETWORK;
+import static com.hedera.services.fees.TxnFeeType.NODE;
+import static com.hedera.services.fees.TxnFeeType.SERVICE;
+import static com.hedera.services.fees.charging.ItemizableFeeCharging.NETWORK_FEE;
 import static com.hedera.services.fees.charging.ItemizableFeeCharging.NETWORK_NODE_SERVICE_FEES;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static com.hedera.services.fees.charging.ItemizableFeeCharging.NETWORK_FEE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
-import com.hedera.services.fees.TxnFeeType;
-import static com.hedera.services.fees.TxnFeeType.*;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.anyLong;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.verify;
 
 class ItemizableFeeChargingTest {
 	long network = 500L, service = 200L, node = 100L;

@@ -22,7 +22,7 @@ package com.hedera.test.factories.scenarios;
 
 import com.hedera.services.utils.PlatformTxnAccessor;
 
-import static com.hedera.test.factories.txns.FileCreateFactory.*;
+import static com.hedera.test.factories.txns.FileCreateFactory.newSignedFileCreate;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 
 public enum FileCreateScenarios implements TxnHandlingScenario {

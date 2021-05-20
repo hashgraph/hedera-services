@@ -26,7 +26,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.properties.BootstrapProperties.BOOTSTRAP_PROP_NAMES;

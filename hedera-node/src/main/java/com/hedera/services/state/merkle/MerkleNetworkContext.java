@@ -35,7 +35,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -166,6 +165,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	public MerkleNetworkContext copy() {
+		setImmutable(true);
 		return new MerkleNetworkContext(
 				consensusTimeOfLastHandledTxn,
 				seqNo.copy(),
@@ -352,17 +352,28 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return lastScannedEntity;
 	}
 
+	private void throwOnImmutable(final String message) {
+		if (isImmutable()) {
+			throw new IllegalStateException(message);
+		}
+	}
+
 	public void resetAutoRenewSummaryCounts() {
+		throwOnImmutable("Cannot reset auto-renew summary counts, context is immutable!");
 		entitiesScannedThisSecond = 0L;
 		entitiesTouchedThisSecond = 0L;
 	}
 
 	public void updateAutoRenewSummaryCounts(int numScanned, int numTouched) {
+		throwOnImmutable("Cannot update auto-renew summary counts ("
+				+ numScanned + " scanned, "
+				+ numTouched + " touched), context is immutable!");
 		entitiesScannedThisSecond += numScanned;
 		entitiesTouchedThisSecond += numTouched;
 	}
 
 	public void updateLastScannedEntity(long lastScannedEntity) {
+		throwOnImmutable("Cannot update last scanned entity (" + lastScannedEntity + "), context is immutable!");
 		this.lastScannedEntity = lastScannedEntity;
 	}
 

@@ -32,8 +32,8 @@ import io.grpc.stub.StreamObserver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.mockito.BDDMockito.*;
-import static com.hedera.services.grpc.controllers.NetworkController.*;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
 class NetworkControllerTest {
 	Query query = Query.getDefaultInstance();

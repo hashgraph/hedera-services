@@ -24,7 +24,6 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.listeners.TokenAccountRegistryRel;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

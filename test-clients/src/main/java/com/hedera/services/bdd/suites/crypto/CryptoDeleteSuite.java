@@ -21,27 +21,25 @@ package com.hedera.services.bdd.suites.crypto;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-
-import java.util.List;
-
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.List;
+
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.including;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;

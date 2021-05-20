@@ -20,8 +20,8 @@ package com.hedera.services.state.exports;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.fcmap.FCMap;
 
 public interface AccountsExporter {

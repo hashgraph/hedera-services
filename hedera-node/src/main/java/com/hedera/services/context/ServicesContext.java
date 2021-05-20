@@ -277,12 +277,13 @@ import com.hedera.services.txns.schedule.ScheduleCreateTransitionLogic;
 import com.hedera.services.txns.schedule.ScheduleDeleteTransitionLogic;
 import com.hedera.services.txns.schedule.ScheduleExecutor;
 import com.hedera.services.txns.schedule.ScheduleSignTransitionLogic;
-import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.BasicSubmissionFlow;
+import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.SemanticPrecheck;
 import com.hedera.services.txns.submission.SolvencyPrecheck;
 import com.hedera.services.txns.submission.StagedPrechecks;
 import com.hedera.services.txns.submission.StructuralPrecheck;
+import com.hedera.services.txns.submission.SyntaxPrecheck;
 import com.hedera.services.txns.submission.SystemPrecheck;
 import com.hedera.services.txns.submission.TransactionPrecheck;
 import com.hedera.services.txns.submission.TxnResponseHelper;
@@ -298,7 +299,6 @@ import com.hedera.services.txns.token.TokenRevokeKycTransitionLogic;
 import com.hedera.services.txns.token.TokenUnfreezeTransitionLogic;
 import com.hedera.services.txns.token.TokenUpdateTransitionLogic;
 import com.hedera.services.txns.token.TokenWipeTransitionLogic;
-import com.hedera.services.txns.submission.SyntaxPrecheck;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
@@ -1494,7 +1494,7 @@ public class ServicesContext {
 					fees(), hederaNums(), helper, recordHelper);
 			entityAutoRenewal = new EntityAutoRenewal(
 					hederaNums(), renewalProcess, this,
-					globalDynamicProperties(), networkCtxManager(), networkCtx());
+					globalDynamicProperties(), networkCtxManager(), this::networkCtx);
 		}
 		return entityAutoRenewal;
 	}

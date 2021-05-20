@@ -42,7 +42,6 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class AutoRenewEntitiesForReconnect extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(AutoRenewEntitiesForReconnect.class);

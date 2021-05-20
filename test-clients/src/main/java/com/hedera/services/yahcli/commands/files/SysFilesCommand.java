@@ -23,15 +23,11 @@ package com.hedera.services.yahcli.commands.files;
 import com.hedera.services.yahcli.Yahcli;
 import com.hedera.services.yahcli.config.ConfigManager;
 import com.hedera.services.yahcli.config.ConfigUtils;
-import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.ParentCommand;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.concurrent.Callable;
-
-import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 @Command(
 		name = "sysfiles",

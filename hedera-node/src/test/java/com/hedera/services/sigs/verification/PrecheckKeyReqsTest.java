@@ -20,6 +20,9 @@ package com.hedera.services.sigs.verification;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.JKeyList;
+import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigStatusOrderResultFactory;
 import com.hedera.services.sigs.order.SigningOrderResult;
@@ -27,19 +30,22 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import static java.util.stream.Collectors.toList;
-import static org.mockito.BDDMockito.*;
+
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static com.hedera.services.sigs.HederaToPlatformSigOps.PRE_HANDLE_SUMMARY_FACTORY;
-import static org.junit.jupiter.api.Assertions.*;
+import static java.util.stream.Collectors.toList;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.verifyNoInteractions;
+import static org.mockito.BDDMockito.verifyNoMoreInteractions;
 
 public class PrecheckKeyReqsTest {
 	private List<JKey> keys;

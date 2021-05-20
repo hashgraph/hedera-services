@@ -20,10 +20,9 @@ package com.hedera.services.fees.calculation.contract.txns;
  * ‍
  */
 
-import static com.hedera.test.utils.IdUtils.asContract;
-import static org.junit.jupiter.api.Assertions.*;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -31,11 +30,17 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import static org.mockito.BDDMockito.*;
+
+import static com.hedera.test.utils.IdUtils.asContract;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
 class ContractUpdateResourceUsageTest {
 	MerkleEntityId accountKey = new MerkleEntityId(0, 0, 1234);
