@@ -23,10 +23,13 @@ package com.hedera.services.txns;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.utils.TxnAccessor;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -51,7 +54,8 @@ public class TransitionRunner {
 	 */
 	public boolean tryTransition(@NotNull TxnAccessor accessor) {
 		final var txn = accessor.getTxn();
-		final var logic = lookup.lookupFor(accessor.getFunction(), txn);
+		final var function = accessor.getFunction();
+		final var logic = lookup.lookupFor(function, txn);
 		if (logic.isEmpty()) {
 			log.warn("Transaction w/o applicable transition logic at consensus :: {}", accessor::getSignedTxn4Log);
 			txnCtx.setStatus(FAIL_INVALID);
@@ -65,7 +69,10 @@ public class TransitionRunner {
 			}
 			try {
 				transition.doStateTransition();
-				txnCtx.setStatus(SUCCESS);
+				/* Only these two functions are refactored yet. */
+				if (function == TokenMint || function == TokenBurn) {
+					txnCtx.setStatus(SUCCESS);
+				}
 			} catch (InvalidTransactionException ite) {
 				final var code = ite.getResponseCode();
 				txnCtx.setStatus(code);
