@@ -22,7 +22,6 @@ package com.hedera.services.state.merkle;
 
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.enums.TokenRepresentationType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.serdes.IoReadingFunction;
@@ -75,8 +74,7 @@ class MerkleTokenTest {
 	EntityId autoRenewAccount = new EntityId(2, 3, 4),
 			otherAutoRenewAccount = new EntityId(4, 3, 2);
 	boolean isDeleted = true, otherIsDeleted = false;
-	TokenType tokenType = TokenType.FUNGIBLE, otherTokenType = TokenType.NON_FUNGIBLE;
-	TokenRepresentationType tokenRepresentationType = TokenRepresentationType.COMMON, otherTokenRepresentationType = TokenRepresentationType.UNIQUE;
+	TokenType tokenType = TokenType.FUNGIBLE_COMMON, otherTokenType = TokenType.NON_FUNGIBLE_UNIQUE;
 
 	MerkleToken subject;
 	MerkleToken other;
@@ -106,7 +104,6 @@ class MerkleTokenTest {
 		subject.setMemo(memo);
 		subject.setMaxSupply(maxSupply);
 		subject.setTokenType(tokenType);
-		subject.setTokenRepresentationType(tokenRepresentationType);
 
 		serdes = mock(DomainSerdes.class);
 		MerkleToken.serdes = serdes;
@@ -155,7 +152,7 @@ class MerkleTokenTest {
 		inOrder.verify(serdes).writeNullable(
 				argThat(wipeKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
 		inOrder.verify(out).writeNormalisedString(memo);
-		inOrder.verify(out, times(2)).writeInt(tokenType.ordinal());
+		inOrder.verify(out).writeInt(tokenType.ordinal());
 		inOrder.verify(out).writeLong(maxSupply);
 	}
 
@@ -193,8 +190,7 @@ class MerkleTokenTest {
 				.willReturn(subject.maxSupply());
 		given(fin.readInt())
 				.willReturn(subject.decimals())
-				.willReturn(subject.tokenType().ordinal())
-				.willReturn(subject.tokenRepresentationType().ordinal());
+				.willReturn(subject.tokenType().ordinal());
 		given(fin.readBoolean())
 				.willReturn(isDeleted)
 				.willReturn(subject.accountsAreFrozenByDefault());
@@ -290,20 +286,6 @@ class MerkleTokenTest {
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(other);
 		other.setTokenType(otherTokenType);
-
-		// expect:
-		assertNotEquals(subject, other);
-		// and:
-		assertNotEquals(subject.hashCode(), other.hashCode());
-	}
-
-	@Test
-	public void objectContractHoldsForDifferentTokenRepresentationTypes() {
-		// given:
-		other = new MerkleToken(
-				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
-		setOptionalElements(other);
-		other.setTokenRepresentationType(otherTokenRepresentationType);
 
 		// expect:
 		assertNotEquals(subject, other);
@@ -581,7 +563,6 @@ class MerkleTokenTest {
 		token.setAutoRenewPeriod(autoRenewPeriod);
 		token.setMemo(memo);
 		token.setTokenType(tokenType);
-		token.setTokenRepresentationType(tokenRepresentationType);
 		token.setMaxSupply(maxSupply);
 	}
 
@@ -619,7 +600,6 @@ class MerkleTokenTest {
 		// expect:
 		assertEquals("MerkleToken{" +
 						"tokenType=" + tokenType + ", " +
-						"tokenRepresentationType=" + tokenRepresentationType + ", " +
 						"deleted=" + isDeleted + ", " +
 						"expiry=" + expiry + ", " +
 						"symbol=" + symbol + ", " +

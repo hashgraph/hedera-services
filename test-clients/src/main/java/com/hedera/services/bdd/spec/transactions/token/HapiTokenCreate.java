@@ -33,7 +33,6 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenRepresentationType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -61,7 +60,6 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 
 	private boolean advertiseCreation = false;
 	private Optional<TokenType> tokenType = Optional.empty();
-	private Optional<TokenRepresentationType> tokenRepresentationType = Optional.empty();
 	private OptionalInt decimals = OptionalInt.empty();
 	private OptionalLong expiry = OptionalLong.empty();
 	private OptionalLong initialSupply = OptionalLong.empty();
@@ -101,11 +99,6 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 
 	public HapiTokenCreate tokenType(TokenType tokenType) {
 		this.tokenType = Optional.of(tokenType);
-		return this;
-	}
-
-	public HapiTokenCreate tokenRepresentationType(TokenRepresentationType tokenRepresentationType) {
-		this.tokenRepresentationType = Optional.of(tokenRepresentationType);
 		return this;
 	}
 
@@ -227,7 +220,6 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 				.<TokenCreateTransactionBody, TokenCreateTransactionBody.Builder>body(
 						TokenCreateTransactionBody.class, b -> {
 							tokenType.ifPresent(b::setTokenType);
-							tokenRepresentationType.ifPresent(b::setTokenRepresentationType);
 							symbol.ifPresent(b::setSymbol);
 							name.ifPresent(b::setName);
 							entityMemo.ifPresent(s -> b.setMemo(s));

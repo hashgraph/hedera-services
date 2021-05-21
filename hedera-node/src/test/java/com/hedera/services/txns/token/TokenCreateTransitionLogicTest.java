@@ -358,7 +358,7 @@ class TokenCreateTransitionLogicTest {
 
 	@Test
 	public void rejectsNonFungibleInitialSupply() {
-		givenNonFungibleInvalidInitialSupply();
+		givenNonFungibleUniqueInvalidInitialSupply();
 
 		// expect:
 		assertEquals(INVALID_TOKEN_INITIAL_SUPPLY, subject.semanticCheck().apply(tokenCreateTxn));
@@ -366,7 +366,7 @@ class TokenCreateTransitionLogicTest {
 
 	@Test
 	public void rejectsNonFungibleInvalidDecimals() {
-		givenNonFungibleInvalidDecimals();
+		givenNonFungibleUniqueInvalidDecimals();
 
 		// expect:
 		assertEquals(INVALID_TOKEN_DECIMALS, subject.semanticCheck().apply(tokenCreateTxn));
@@ -520,18 +520,18 @@ class TokenCreateTransitionLogicTest {
 		given(store.isCreationPending()).willReturn(true);
 	}
 
-	private void givenNonFungibleInvalidInitialSupply() {
+	private void givenNonFungibleUniqueInvalidInitialSupply() {
 		tokenCreateTxn = TransactionBody.newBuilder()
 				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
-						.setTokenType(TokenType.NonFungible)
+						.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE)
 						.setInitialSupply(1))
 				.build();
 	}
 
-	private void givenNonFungibleInvalidDecimals() {
+	private void givenNonFungibleUniqueInvalidDecimals() {
 		tokenCreateTxn = TransactionBody.newBuilder()
 				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
-						.setTokenType(TokenType.NonFungible)
+						.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE)
 						.setDecimals(1))
 				.build();
 	}

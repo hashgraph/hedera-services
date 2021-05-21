@@ -27,7 +27,6 @@ import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,9 +36,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.txns.validation.TokenListChecks.checkKeys;
-import static com.hedera.services.txns.validation.TokenListChecks.initialSupplyAndDecimalsCheck;
-import static com.hedera.services.txns.validation.TokenListChecks.initialSupplyAndMaxSupplyCheck;
-import static com.hedera.services.txns.validation.TokenListChecks.nonFungibleInitialSupplyAndDecimalsCheck;
+import static com.hedera.services.txns.validation.TokenListChecks.typeAndSuppliesCheck;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
@@ -156,17 +153,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			return validity;
 		}
 
-		if (op.getTokenType() == TokenType.NonFungible) {
-			validity = nonFungibleInitialSupplyAndDecimalsCheck(op.getInitialSupply(), op.getDecimals());
-		} else {
-			validity = initialSupplyAndDecimalsCheck(op.getInitialSupply(), op.getDecimals());
-		}
-
-		if (validity != OK) {
-			return validity;
-		}
-
-		validity = initialSupplyAndMaxSupplyCheck(op.getInitialSupply(), op.getMaxSupply());
+		validity = typeAndSuppliesCheck(op.getTokenType(), op.getInitialSupply(), op.getDecimals(), op.getMaxSupply());
 		if (validity != OK) {
 			return validity;
 		}
