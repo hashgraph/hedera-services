@@ -143,6 +143,10 @@ public class DeterministicThrottle {
 		bucket.resetUsed(usageSnapshot.used());
 	}
 
+	/* NOTE: The Object methods below are only overridden to improve
+	readability of unit tests; Instances of this class are not used
+    in hash-based collections */
+
 	@Override
 	public boolean equals(Object obj) {
 		if (obj == null){
@@ -161,7 +165,7 @@ public class DeterministicThrottle {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(name, delegate, lastDecisionTime);
+		return Objects.hash(delegate.bucket().totalCapacity(), delegate.mtps());
 	}
 
 

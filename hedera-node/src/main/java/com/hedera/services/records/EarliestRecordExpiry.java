@@ -57,7 +57,7 @@ public class EarliestRecordExpiry implements Comparable<EarliestRecordExpiry> {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(earliestExpiry, id);
+		return Objects.hash(earliestExpiry, id.getShardNum(), id.getRealmNum(), id.getAccountNum());
 	}
 
 	@Override
