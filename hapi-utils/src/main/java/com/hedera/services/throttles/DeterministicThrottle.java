@@ -165,9 +165,8 @@ public class DeterministicThrottle {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(delegate.bucket().totalCapacity(), delegate.mtps());
+		return Objects.hash(delegate.bucket().totalCapacity(), delegate.mtps(), name, lastDecisionTime);
 	}
-
 
 	@Override
 	public String toString() {

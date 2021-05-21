@@ -339,7 +339,7 @@ class DeterministicThrottleTest {
 		var throttle = DeterministicThrottle.withTpsAndBurstPeriodNamed(tps, 2, name);
 
 		// expect:
-		var expectedHashCode = -406287708;
+		int expectedHashCode = 403047329;
 		assertEquals(expectedHashCode, throttle.hashCode());
 	}
 

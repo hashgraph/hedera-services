@@ -131,7 +131,7 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 		try {
 			Files.delete(Paths.get(nowEmptyLegacyDir));
 		} catch (IOException e) {
-			log.warn("Empty legacy directory for File 150 could not be deleted!");
+			log.warn("Empty legacy directory for File 150 could not be deleted!", e);
 		}
 	}
 

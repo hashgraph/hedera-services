@@ -187,7 +187,7 @@ public class FreezeHandler {
 				try {
 					Files.delete(Paths.get(deleteTxt.getAbsolutePath()));
 				} catch (IOException ex) {
-					log.warn("{} File could not be deleted", DELETE_FILE);
+					log.warn("{} File could not be deleted {}", DELETE_FILE, ex);
 				}
 			}
 

@@ -58,7 +58,7 @@ class AccountBalanceTest {
 		AccountBalance acc = new AccountBalance(5, 4, 3, 6);
 
 		// expect:
-		var expectedHashCode = 31552699;
+		int expectedHashCode = 31552699;
 		assertEquals(expectedHashCode, acc.hashCode());
 	}
 }
