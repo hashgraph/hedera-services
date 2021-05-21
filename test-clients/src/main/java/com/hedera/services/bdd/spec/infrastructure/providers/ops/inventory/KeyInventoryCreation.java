@@ -22,8 +22,6 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.inventory;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
-import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hederahashgraph.api.proto.java.Key;
 
 import java.util.AbstractMap;
 import java.util.Map;

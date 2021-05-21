@@ -21,6 +21,7 @@ package com.hedera.services.legacy.core;
  */
 
 import com.hederahashgraph.api.proto.java.AccountID;
+
 import java.io.Serializable;
 import java.util.List;
 

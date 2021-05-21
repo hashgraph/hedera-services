@@ -27,7 +27,6 @@ import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.crypto.SignatureStatus;
-import com.hedera.services.legacy.stream.RecordStream;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.sigs.factories.SigFactoryCreator;
@@ -69,7 +68,6 @@ import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.Transaction;
-import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -79,8 +77,6 @@ import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.fcmap.FCMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -109,8 +105,10 @@ import static com.hedera.services.ServicesState.RELEASE_080_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_090_VERSION;
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
 import static java.util.Collections.EMPTY_LIST;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -124,15 +122,12 @@ import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.times;
 
 
 @ExtendWith(LogCaptureExtension.class)
 class ServicesStateTest {
-	Function<String, byte[]> mockHashReader;
 	Consumer<MerkleNode> mockDigest;
 	Supplier<BinaryObjectStore> mockBlobStoreSupplier;
 	BinaryObjectStore blobStore;
@@ -195,9 +190,6 @@ class ServicesStateTest {
 		given(mockBlobStoreSupplier.get()).willReturn(blobStore);
 		ServicesState.blobStoreSupplier = mockBlobStoreSupplier;
 		given(blobStore.isInitializing()).willReturn(false);
-		mockHashReader = (Function<String, byte[]>) mock(Function.class);
-		given(mockHashReader.apply(any())).willReturn(EMPTY_HASH.getValue());
-		ServicesState.hashReader = mockHashReader;
 
 		out = mock(SerializableDataOutputStream.class);
 		in = mock(SerializableDataInputStream.class);
@@ -283,12 +275,6 @@ class ServicesStateTest {
 
 		subject = new ServicesState();
 	}
-
-	@AfterEach
-	public void testCleanup() {
-		ServicesState.hashReader = RecordStream::readPrevFileHash;
-	}
-
 
 	@Test
 	void migratesDiskFsIfLegacySavedState() {

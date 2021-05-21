@@ -20,7 +20,6 @@ package com.hedera.services.contracts.execution;
  * ‍
  */
 
-import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.utils.IdUtils;
@@ -34,6 +33,8 @@ import org.ethereum.vm.DataWord;
 import org.ethereum.vm.LogInfo;
 import org.ethereum.vm.program.ProgramResult;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.spongycastle.util.BigIntegers;
 
 import java.math.BigInteger;
 import java.time.Instant;
@@ -41,18 +42,20 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import static com.hedera.services.contracts.execution.DomainUtils.asHapiLog;
+import static com.hedera.services.contracts.execution.DomainUtils.asHapiResult;
+import static com.hedera.services.contracts.execution.DomainUtils.fakeBlock;
+import static com.hedera.services.contracts.execution.DomainUtils.newScopedAccountInitializer;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
-import org.junit.jupiter.api.Test;
-import org.spongycastle.util.BigIntegers;
-
-import javax.swing.text.html.parser.Entity;
-
-import static com.hedera.services.contracts.execution.DomainUtils.*;
+import static org.mockito.BDDMockito.argThat;
+import static org.mockito.BDDMockito.booleanThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.longThat;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
 class DomainUtilsTest {
 	long gas = 1_234_567L;

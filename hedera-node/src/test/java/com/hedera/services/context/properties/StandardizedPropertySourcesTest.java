@@ -24,16 +24,10 @@ import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.function.Predicate;
-
 import static com.hedera.services.context.properties.BootstrapProperties.BOOTSTRAP_PROP_NAMES;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
 class StandardizedPropertySourcesTest {

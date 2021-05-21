@@ -22,9 +22,7 @@ package com.hedera.services.fees;
 
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.security.ops.SystemOpPolicies;
-import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
-import com.hederahashgraph.api.proto.java.AccountID;
 
 import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
 

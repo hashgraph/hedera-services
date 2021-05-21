@@ -22,7 +22,6 @@ package com.hedera.services;
 
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.Profile;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.forensics.FcmDump;
 import com.hedera.services.state.forensics.IssListener;
 import com.hedera.services.utils.JvmSystemExits;

@@ -21,15 +21,21 @@ package com.hedera.services.legacy.crypto;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.core.AccountKeyListObj;
+import com.hedera.services.legacy.core.KeyPairObj;
+import com.hedera.services.legacy.core.TestHelper;
+import com.hedera.services.legacy.exception.InvalidNodeTransactionPrecheckCode;
+import com.hedera.services.legacy.file.FileServiceIT;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.legacy.regression.Utilities;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.LiveHash;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteLiveHashTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoGetLiveHashQuery;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.LiveHash;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Response;
@@ -44,14 +50,15 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.builder.TransactionSigner;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
-import com.hedera.services.legacy.core.AccountKeyListObj;
-import com.hedera.services.legacy.core.KeyPairObj;
-import com.hedera.services.legacy.core.TestHelper;
-import com.hedera.services.legacy.exception.InvalidNodeTransactionPrecheckCode;
-import com.hedera.services.legacy.file.FileServiceIT;
-import com.hedera.services.legacy.regression.Utilities;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import net.i2p.crypto.eddsa.EdDSAPublicKey;
+import net.i2p.crypto.eddsa.KeyPairGenerator;
+import org.apache.commons.codec.DecoderException;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import org.junit.Assert;
+
 import java.io.IOException;
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -61,12 +68,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import net.i2p.crypto.eddsa.EdDSAPublicKey;
-import net.i2p.crypto.eddsa.KeyPairGenerator;
-import org.apache.commons.codec.DecoderException;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-import org.junit.Assert;
 
 /**
  * Tests CryptoAddClam, CryptoGetCLaim and CryptoDeleteLiveHash functionalities

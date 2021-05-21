@@ -36,7 +36,8 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCr
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
 class ConsensusControllerTest {
 	Query query = Query.getDefaultInstance();

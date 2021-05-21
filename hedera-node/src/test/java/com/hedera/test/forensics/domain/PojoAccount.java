@@ -29,9 +29,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import static com.hedera.test.forensics.domain.PojoRecord.asString;
 import static com.hedera.test.utils.IdUtils.asAccountString;
 import static com.hedera.test.utils.IdUtils.fromKey;
-import static com.hedera.test.forensics.domain.PojoRecord.asString;
 import static java.util.stream.Collectors.toList;
 
 @JsonPropertyOrder({

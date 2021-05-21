@@ -22,7 +22,6 @@ package com.hedera.services.records;
 
 import com.hedera.services.context.properties.PropertySource;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.utils.SleepingPause.SLEEPING_PAUSE;

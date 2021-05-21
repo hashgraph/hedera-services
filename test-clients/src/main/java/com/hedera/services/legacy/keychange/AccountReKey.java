@@ -20,10 +20,10 @@ package com.hedera.services.legacy.keychange;
  * ‍
  */
 
+import com.hedera.services.legacy.regression.umbrella.CryptoServiceTest;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hedera.services.legacy.regression.umbrella.CryptoServiceTest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

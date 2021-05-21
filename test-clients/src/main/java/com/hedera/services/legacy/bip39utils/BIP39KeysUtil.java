@@ -21,26 +21,33 @@ package com.hedera.services.legacy.bip39utils;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
-import com.hederahashgraph.api.proto.java.*;
-
-import com.hederahashgraph.builder.RequestBuilder;
-import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
 import com.hedera.services.legacy.bip39utils.bip39.Mnemonic;
 import com.hedera.services.legacy.core.HexUtils;
 import com.hedera.services.legacy.core.TestHelper;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.legacy.regression.Utilities;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.ResponseType;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignaturePair;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.builder.RequestBuilder;
+import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
-
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
 
 
 /**

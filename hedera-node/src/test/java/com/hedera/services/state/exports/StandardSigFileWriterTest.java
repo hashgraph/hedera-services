@@ -31,10 +31,11 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-import static com.hedera.services.legacy.stream.RecordStream.TYPE_FILE_HASH;
-import static com.hedera.services.legacy.stream.RecordStream.TYPE_SIGNATURE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import static com.hedera.services.state.exports.SigFileWriter.TYPE_FILE_HASH;
+import static com.hedera.services.state.exports.SigFileWriter.TYPE_SIGNATURE;
 
 class StandardSigFileWriterTest {
 	String toSign = "src/test/resources/bootstrap/standard.properties";

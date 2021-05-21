@@ -21,7 +21,6 @@ package com.hedera.services.context.properties;
  */
 
 import com.hedera.services.fees.calculation.CongestionMultipliers;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,8 +36,9 @@ import static java.util.Map.entry;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.argThat;
+import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
-import static org.mockito.BDDMockito.*;
 
 class BootstrapPropertiesTest {
 	BootstrapProperties subject = new BootstrapProperties();

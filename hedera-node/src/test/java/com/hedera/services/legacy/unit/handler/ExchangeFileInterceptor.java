@@ -21,8 +21,8 @@ package com.hedera.services.legacy.unit.handler;
  */
 
 import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
-import com.hederahashgraph.api.proto.java.FileID;
 import com.hedera.services.legacy.unit.FCStorageWrapper;
+import com.hederahashgraph.api.proto.java.FileID;
 
 public class ExchangeFileInterceptor implements GenericInterceptor {
   @Override

@@ -21,7 +21,6 @@ package com.hedera.services.state.logic;
  */
 
 import com.hedera.services.context.ServicesContext;
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.utils.TxnAccessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

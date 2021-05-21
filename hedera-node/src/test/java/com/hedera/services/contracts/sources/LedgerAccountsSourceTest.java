@@ -20,12 +20,13 @@ package com.hedera.services.contracts.sources;
  * ‍
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -33,10 +34,7 @@ import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.legacy.core.jproto.JKey;
 import org.apache.commons.codec.DecoderException;
-import org.apache.logging.log4j.Logger;
 import org.ethereum.core.AccountState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,11 +45,26 @@ import org.mockito.InOrder;
 import javax.inject.Inject;
 import java.math.BigInteger;
 
-import static com.hedera.services.ledger.properties.AccountProperty.*;
-import static org.mockito.BDDMockito.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
+import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
+import static com.hedera.services.ledger.properties.AccountProperty.KEY;
+import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
+import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.argThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.inOrder;
+import static org.mockito.BDDMockito.longThat;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
 @ExtendWith(LogCaptureExtension.class)
 class LedgerAccountsSourceTest {

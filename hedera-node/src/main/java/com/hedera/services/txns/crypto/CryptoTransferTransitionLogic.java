@@ -39,8 +39,19 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.txns.validation.TokenListChecks.checkTokenTransfers;
-import static com.hedera.services.txns.validation.TransferListChecks.*;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hedera.services.txns.validation.TransferListChecks.hasRepeatedAccount;
+import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAdjustment;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 
 /**
  * Implements the {@link TransitionLogic} for a HAPI CryptoTransfer transaction,

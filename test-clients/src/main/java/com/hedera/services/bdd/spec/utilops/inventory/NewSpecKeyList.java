@@ -21,22 +21,16 @@ package com.hedera.services.bdd.spec.utilops.inventory;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hedera.services.legacy.proto.utils.KeyExpansion;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.keys.KeyGenerator;
-import com.hedera.services.bdd.spec.keys.KeyLabel;
-import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hederahashgraph.api.proto.java.KeyList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
-import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
 import static java.util.stream.Collectors.toList;
 
 public class NewSpecKeyList extends UtilOp {

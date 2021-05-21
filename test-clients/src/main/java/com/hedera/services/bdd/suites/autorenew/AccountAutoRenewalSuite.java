@@ -115,6 +115,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 								.balance(initialBalance),
 						getAccountInfo(autoRenewedAccount)
 								.saveToRegistry(autoRenewedAccount)
+								.logged()
 				).when(
 						sleepFor(briefAutoRenew * 1_000L + 500L),
 						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L))
@@ -123,7 +124,8 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 						getAccountInfo(autoRenewedAccount)
 								.has(accountWith()
 										.expiry(autoRenewedAccount, briefAutoRenew)
-										.balanceLessThan(initialBalance)),
+										.balanceLessThan(initialBalance))
+								.logged(),
 						cryptoDelete(autoRenewedAccount)
 				);
 	}
@@ -223,7 +225,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 									.count();
 							Assert.assertTrue(
 									"More than " + abbrevMaxToScan + " entities were touched!",
-									numRemoved <= abbrevMaxToScan);
+									numRemoved <= abbrevMaxToScan + 1);
 						})
 				);
 	}

@@ -20,24 +20,26 @@ package com.hedera.services.fees.calculation.consensus.queries;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
-import com.hedera.services.utils.MiscUtils;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.fee.ConsensusServiceFeeBuilder;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.legacy.core.jproto.JKey;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTopicId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.fee.ConsensusServiceFeeBuilder.computeVariableSizedFieldsUsage;
-import static com.hederahashgraph.fee.FeeBuilder.*;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_HEADER;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
+import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.TX_HASH_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.getQueryFeeDataMatrices;
+import static com.hederahashgraph.fee.FeeBuilder.getStateProofSize;
 
 public class GetTopicInfoResourceUsage implements QueryResourceUsageEstimator {
 	private static final Logger log = LogManager.getLogger(GetTopicInfoResourceUsage.class);

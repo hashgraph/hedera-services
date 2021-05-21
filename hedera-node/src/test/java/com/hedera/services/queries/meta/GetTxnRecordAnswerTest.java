@@ -21,13 +21,14 @@ package com.hedera.services.queries.meta;
  */
 
 
-import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.records.RecordCache;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
@@ -41,8 +42,6 @@ import com.hederahashgraph.api.proto.java.TransactionGetRecordResponse;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,15 +53,26 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
+import static com.hedera.test.utils.TxnUtils.withAdjustments;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
-import static com.hedera.test.utils.IdUtils.*;
-import static com.hedera.test.utils.TxnUtils.*;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.verify;
 
 class GetTxnRecordAnswerTest {
 	private String payer = "0.0.12345";

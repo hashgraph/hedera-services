@@ -21,15 +21,15 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.SyncActivationCheck;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.PlatformSigOps;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.verification.SyncVerifier;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.fcmap.FCMap;
 
 import java.util.Optional;

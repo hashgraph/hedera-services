@@ -22,9 +22,10 @@ package com.hedera.services.fees.calculation.crypto.queries;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.queries.answering.AnswerFunctions;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
@@ -34,8 +35,6 @@ import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.CryptoFeeBuilder;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,14 +42,15 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
-import static com.hedera.test.utils.IdUtils.*;
-import static com.hederahashgraph.api.proto.java.ResponseType.*;
 import static com.hedera.services.state.serdes.DomainSerdesTest.recordOne;
 import static com.hedera.services.state.serdes.DomainSerdesTest.recordTwo;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
+import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
 
 class GetAccountRecordsResourceUsageTest {
 	StateView view;

@@ -20,21 +20,16 @@ package com.hedera.services.bdd.suites.records;
  * ‍
  */
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.queries.QueryVerbs;
+import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
+import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
+import com.hedera.services.bdd.spec.transactions.TxnVerbs;
+import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeBuilder;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultFailingHapiSpec;
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.*;
-import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-
-import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
-import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
@@ -43,10 +38,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiConsumer;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultFailingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.assertions.AssertUtils.*;
-import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.*;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 
 public class CharacterizationSuite extends HapiApiSuite {

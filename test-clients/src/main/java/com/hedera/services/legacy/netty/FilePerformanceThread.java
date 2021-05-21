@@ -20,29 +20,15 @@ package com.hedera.services.legacy.netty;
  * ‍
  */
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.URISyntaxException;
-import java.security.KeyPair;
-import java.security.PrivateKey;
-import java.time.Clock;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Random;
-
+import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.CommonUtils;
 import com.hedera.services.legacy.core.TestHelper;
 import com.hedera.services.legacy.exception.InvalidNodeTransactionPrecheckCode;
+import com.hedera.services.legacy.proto.utils.ProtoCommonUtils;
 import com.hedera.services.legacy.regression.BaseClient;
 import com.hedera.services.legacy.regression.umbrella.CryptoServiceTest;
 import com.hedera.services.legacy.regression.umbrella.FileServiceTest;
 import com.hedera.services.legacy.regression.umbrella.TestHelperComplex;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
-import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
@@ -63,12 +49,26 @@ import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc.CryptoServiceBlockingStub;
 import com.hederahashgraph.service.proto.java.FileServiceGrpc;
 import com.hederahashgraph.service.proto.java.FileServiceGrpc.FileServiceBlockingStub;
-import com.hedera.services.legacy.proto.utils.ProtoCommonUtils;
 import io.grpc.ConnectivityState;
 import io.grpc.ManagedChannel;
 import io.grpc.StatusRuntimeException;
 import io.grpc.netty.NegotiationType;
 import io.grpc.netty.NettyChannelBuilder;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.URISyntaxException;
+import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.time.Clock;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Random;
 
 public class FilePerformanceThread extends BaseClient implements Runnable {
 

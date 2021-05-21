@@ -23,8 +23,10 @@ package com.hedera.services.txns.file;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.TieredHederaFs;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -35,8 +37,6 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hedera.services.files.HFileMeta;
-import com.hedera.services.legacy.core.jproto.JKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -54,7 +54,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.argThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.inOrder;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.willThrow;
 
 class FileAppendTransitionLogicTest {
 	enum TargetType { VALID, MISSING, DELETED, IMMUTABLE }

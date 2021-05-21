@@ -20,13 +20,22 @@ package com.hedera.services.ledger.accounts;
  * ‍
  */
 
-import com.hedera.services.ledger.properties.TestAccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
+import com.hedera.services.ledger.properties.TestAccountProperty;
 
 import java.util.Map;
 
-import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.*;
-import static com.hedera.services.ledger.properties.TestAccountProperty.*;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_PERIOD;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.EXPIRY;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_DELETED;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_RECEIVER_SIG_REQUIRED;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_SMART_CONTRACT;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.KEY;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MEMO;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.PROXY;
+import static com.hedera.services.ledger.properties.TestAccountProperty.FLAG;
+import static com.hedera.services.ledger.properties.TestAccountProperty.LONG;
+import static com.hedera.services.ledger.properties.TestAccountProperty.OBJ;
 
 public class TestAccountCustomizer extends
 		AccountCustomizer<Long, TestAccount, TestAccountProperty, TestAccountCustomizer> {

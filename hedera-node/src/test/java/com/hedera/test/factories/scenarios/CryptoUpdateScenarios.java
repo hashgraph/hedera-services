@@ -22,7 +22,7 @@ package com.hedera.test.factories.scenarios;
 
 import com.hedera.services.utils.PlatformTxnAccessor;
 
-import static com.hedera.test.factories.txns.CryptoUpdateFactory.*;
+import static com.hedera.test.factories.txns.CryptoUpdateFactory.newSignedCryptoUpdate;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 
 public enum CryptoUpdateScenarios implements TxnHandlingScenario {

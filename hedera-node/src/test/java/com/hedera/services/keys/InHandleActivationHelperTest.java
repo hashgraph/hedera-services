@@ -33,7 +33,6 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.Transaction;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.runner.JUnitPlatform;
@@ -47,11 +46,14 @@ import java.util.function.Function;
 
 import static com.hedera.services.keys.DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS;
 import static com.hedera.services.sigs.Rationalization.IN_HANDLE_SUMMARY_FACTORY;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSign;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.times;
+import static org.mockito.BDDMockito.verify;
 
 @RunWith(JUnitPlatform.class)
 class InHandleActivationHelperTest {

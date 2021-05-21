@@ -22,7 +22,6 @@ package com.hedera.services.bdd.spec.persistence;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import org.apache.logging.log4j.LogManager;

@@ -59,7 +59,7 @@
     <!-- Startup/Restart/Reconnect -->
     <MarkerFilter marker="STARTUP"                onMatch="ACCEPT" onMismatch="NEUTRAL"/>
     <MarkerFilter marker="PLATFORM_STATUS"        onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-    <MarkerFilter marker="RECONNECT"              onMatch="DENY"   onMismatch="NEUTRAL"/>
+    <MarkerFilter marker="RECONNECT"              onMatch="ACCEPT" onMismatch="NEUTRAL"/>
     <MarkerFilter marker="FREEZE"                 onMatch="ACCEPT" onMismatch="NEUTRAL"/>
 
     <!-- Saved States -->
@@ -179,7 +179,7 @@
         <!-- Startup/Restart/Reconnect -->
         <MarkerFilter marker="STARTUP"                onMatch="ACCEPT" onMismatch="NEUTRAL"/>
         <MarkerFilter marker="PLATFORM_STATUS"        onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-        <MarkerFilter marker="RECONNECT"              onMatch="DENY"   onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="RECONNECT"              onMatch="ACCEPT" onMismatch="NEUTRAL"/>
         <MarkerFilter marker="FREEZE"                 onMatch="ACCEPT" onMismatch="NEUTRAL"/>
 
         <!-- Saved States -->

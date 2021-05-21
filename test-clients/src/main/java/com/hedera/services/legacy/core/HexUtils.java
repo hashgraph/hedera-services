@@ -20,9 +20,10 @@ package com.hedera.services.legacy.core;
  * ‍
  */
 
-import java.io.UnsupportedEncodingException;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
+
+import java.io.UnsupportedEncodingException;
 
 /**
  * Hex utilities.

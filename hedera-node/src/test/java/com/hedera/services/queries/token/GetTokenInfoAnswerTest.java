@@ -22,14 +22,14 @@ package com.hedera.services.queries.token;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
-import com.hederahashgraph.api.proto.java.TokenGetInfoResponse;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
+import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
+import com.hederahashgraph.api.proto.java.TokenGetInfoResponse;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.Transaction;

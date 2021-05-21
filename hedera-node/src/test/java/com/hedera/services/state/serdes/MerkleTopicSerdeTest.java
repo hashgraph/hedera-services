@@ -20,9 +20,9 @@ package com.hedera.services.state.serdes;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -36,8 +36,10 @@ import java.io.IOException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.inOrder;
+import static org.mockito.BDDMockito.times;
 import static org.mockito.Mockito.mock;
-import static org.mockito.BDDMockito.*;
 
 class MerkleTopicSerdeTest {
 	long autoRenewSecs = 1_234_567L;

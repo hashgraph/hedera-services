@@ -23,8 +23,6 @@ package com.hedera.services.bdd.suites.perf;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 
-import java.util.OptionalLong;
-
 import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_MILLION_HBARS;
 
 public class PerfTestLoadSettings {

@@ -20,16 +20,18 @@ package com.hedera.services.sigs.factories;
  * ‍
  */
 
-import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Assertions;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static com.hedera.services.sigs.factories.PlatformSigFactory.*;
+import static com.hedera.services.sigs.factories.PlatformSigFactory.allVaryingMaterialEquals;
+import static com.hedera.services.sigs.factories.PlatformSigFactory.createEd25519;
+import static com.hedera.services.sigs.factories.PlatformSigFactory.pkSigRepr;
+import static com.hedera.services.sigs.factories.PlatformSigFactory.varyingMaterialEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 

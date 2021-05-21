@@ -20,9 +20,10 @@ package com.hedera.services.bdd.spec.assertions;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.Key;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.Key;
 import org.junit.Assert;
+
 import static com.hederahashgraph.api.proto.java.ContractGetInfoResponse.ContractInfo;
 
 public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInfo> {

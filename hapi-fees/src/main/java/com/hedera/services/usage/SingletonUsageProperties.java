@@ -20,8 +20,6 @@ package com.hedera.services.usage;
  * ‍
  */
 
-import com.hederahashgraph.fee.FeeBuilder;
-
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 

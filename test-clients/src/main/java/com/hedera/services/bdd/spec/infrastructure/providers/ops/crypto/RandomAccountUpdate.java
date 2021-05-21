@@ -23,7 +23,6 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoUpdate;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -32,7 +31,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import java.util.Optional;
 
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;

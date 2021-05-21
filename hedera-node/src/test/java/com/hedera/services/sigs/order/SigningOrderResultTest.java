@@ -25,8 +25,6 @@ import org.junit.jupiter.api.Test;
 import static java.util.Collections.EMPTY_LIST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class SigningOrderResultTest {
 	@Test
 	public void representsErrorsAccurately() {

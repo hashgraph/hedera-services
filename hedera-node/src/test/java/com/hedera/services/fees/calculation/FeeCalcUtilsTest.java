@@ -20,20 +20,18 @@ package com.hedera.services.fees.calculation;
  * ‍
  */
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.google.protobuf.ByteString;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.files.HFileMeta;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.files.HFileMeta;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Test;
 
@@ -41,8 +39,13 @@ import java.text.MessageFormat;
 import java.util.MissingResourceException;
 import java.util.Optional;
 
-import static org.mockito.BDDMockito.*;
-import static com.hedera.services.fees.calculation.FeeCalcUtils.*;
+import static com.hedera.services.fees.calculation.FeeCalcUtils.ZERO_EXPIRY;
+import static com.hedera.services.fees.calculation.FeeCalcUtils.lookupAccountExpiry;
+import static com.hedera.services.fees.calculation.FeeCalcUtils.lookupFileExpiry;
+import static com.hedera.services.fees.calculation.FeeCalcUtils.sumOfUsages;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
 
 public class FeeCalcUtilsTest {
 	public static String ARTIFACTS_PREFIX_FILE_CONTENT = "f";

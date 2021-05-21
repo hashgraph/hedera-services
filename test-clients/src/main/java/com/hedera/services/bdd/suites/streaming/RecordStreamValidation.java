@@ -21,17 +21,17 @@ package com.hedera.services.bdd.suites.streaming;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import static com.hedera.services.bdd.spec.HapiApiSpec.*;
-
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
-
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.verifyRecordStreams;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 public class RecordStreamValidation extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(RecordStreamValidation.class);

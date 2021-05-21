@@ -20,12 +20,10 @@ package com.hedera.services.ledger.accounts;
  * ‍
  */
 
-import static org.junit.jupiter.api.Assertions.*;
-
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,9 +32,19 @@ import org.mockito.InOrder;
 import java.util.Collections;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.*;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.inOrder;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.times;
+import static org.mockito.BDDMockito.verify;
 
 class FCMapBackingAccountsTest {
 	private final AccountID a = asAccount("1.2.3");

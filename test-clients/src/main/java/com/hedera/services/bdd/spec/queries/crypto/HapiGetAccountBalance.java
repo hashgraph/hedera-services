@@ -21,6 +21,9 @@ package com.hedera.services.bdd.spec.queries.crypto;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hedera.services.stream.proto.TokenUnitBalance;
@@ -32,9 +35,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

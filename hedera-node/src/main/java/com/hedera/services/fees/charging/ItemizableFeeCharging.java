@@ -21,11 +21,9 @@ package com.hedera.services.fees.charging;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.fees.TxnFeeType;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -33,13 +31,13 @@ import com.hederahashgraph.api.proto.java.TransferList;
 
 import java.util.EnumMap;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Consumer;
 
-import static com.hedera.services.fees.TxnFeeType.*;
+import static com.hedera.services.fees.TxnFeeType.NETWORK;
+import static com.hedera.services.fees.TxnFeeType.NODE;
+import static com.hedera.services.fees.TxnFeeType.SERVICE;
 
 /**
  * A {@link FieldSourcedFeeScreening} which also implements

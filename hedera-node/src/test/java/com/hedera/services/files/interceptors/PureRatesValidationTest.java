@@ -20,16 +20,17 @@ package com.hedera.services.files.interceptors;
  * ‍
  */
 
+import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
-import com.hedera.services.state.submerkle.ExchangeRates;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
-import static com.hedera.services.files.interceptors.PureRatesValidation.*;
+
+import static com.hedera.services.files.interceptors.PureRatesValidation.isNormalIntradayChange;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class PureRatesValidationTest {

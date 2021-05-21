@@ -19,11 +19,13 @@ package com.hedera.services.config;
  * ‍
  */
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.hedera.test.utils.IdUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EntityNumbersTest {
 	FileNumbers fileNumbers;

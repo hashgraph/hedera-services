@@ -24,14 +24,13 @@ import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import java.io.DataInputStream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class RichInstant {
 	private static final Logger log = LogManager.getLogger(RichInstant.class);

@@ -24,7 +24,6 @@ import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.crypto.CryptoAnswers;
 import com.hedera.services.queries.meta.MetaAnswers;
 import com.hedera.services.txns.submission.TxnResponseHelper;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -47,10 +46,8 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdat
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.BDDMockito.*;
-import static com.hedera.services.grpc.controllers.CryptoController.*;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
 class CryptoControllerTest {
 	Query query = Query.getDefaultInstance();

@@ -37,22 +37,17 @@ import org.mockito.InOrder;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.booleanThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.intThat;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
-import static org.mockito.BDDMockito.willAnswer;
-import static org.mockito.BDDMockito.willThrow;
 
 class SolidityFnResultTest {
 	long gasUsed = 1_234;

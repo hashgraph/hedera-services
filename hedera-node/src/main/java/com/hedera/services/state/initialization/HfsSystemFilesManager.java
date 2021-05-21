@@ -22,14 +22,13 @@ package com.hedera.services.state.initialization;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.TextFormat;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.files.HFileMeta;
+import com.hedera.services.files.SysFileCallbacks;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.files.SysFileCallbacks;
 import com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
@@ -44,9 +43,9 @@ import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.swirlds.common.Address;
+import com.swirlds.common.AddressBook;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import com.swirlds.common.AddressBook;
 
 import java.io.IOException;
 import java.io.InputStream;

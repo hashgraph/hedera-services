@@ -27,7 +27,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.FileFeeBuilder;
 import com.hederahashgraph.fee.SigValueObj;
-import com.hederahashgraph.fee.SmartContractFeeBuilder;
 
 public class SystemDeleteFileResourceUsage implements TxnResourceUsageEstimator {
 	private final FileFeeBuilder usageEstimator;

@@ -21,13 +21,7 @@ package com.hedera.services.yahcli.suites;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.persistence.SpecKey;
-import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
-import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -36,19 +30,12 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
-import static com.hedera.services.bdd.spec.persistence.SpecKey.adminKeyFor;
-import static com.hedera.services.bdd.spec.persistence.SpecKey.freezeKeyFor;
-import static com.hedera.services.bdd.spec.persistence.SpecKey.kycKeyFor;
-import static com.hedera.services.bdd.spec.persistence.SpecKey.supplyKeyFor;
-import static com.hedera.services.bdd.spec.persistence.SpecKey.wipeKeyFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
@@ -57,7 +44,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccoun
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.yahcli.commands.validation.ValidationCommand.MUTABLE_SCHEDULE;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.PAYER;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.RECEIVER;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.TOKEN;
@@ -66,7 +52,6 @@ import static com.hedera.services.yahcli.commands.validation.ValidationCommand.c
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;

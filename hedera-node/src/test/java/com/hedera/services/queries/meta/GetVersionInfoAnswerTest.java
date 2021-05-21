@@ -22,15 +22,12 @@ package com.hedera.services.queries.meta;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.ActiveVersions;
-import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.context.properties.SemanticVersions;
-import com.hedera.services.queries.token.GetTokenInfoAnswer;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoResponse;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Response;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -40,13 +37,16 @@ import org.junit.jupiter.api.Test;
 import java.util.Optional;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.*;
-import static com.hedera.test.utils.TxnUtils.*;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
 
 class GetVersionInfoAnswerTest {
 	private String node = "0.0.3";

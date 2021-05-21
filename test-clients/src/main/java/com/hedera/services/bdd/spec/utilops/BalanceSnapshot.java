@@ -22,11 +22,10 @@ package com.hedera.services.bdd.spec.utilops;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
+import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
 
 import java.util.Optional;
 import java.util.function.Function;

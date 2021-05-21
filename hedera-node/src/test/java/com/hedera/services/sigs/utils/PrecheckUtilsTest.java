@@ -20,9 +20,6 @@ package com.hedera.services.sigs.utils;
  * ‍
  */
 
-import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -31,10 +28,12 @@ import org.junit.jupiter.api.Test;
 
 import java.util.function.Predicate;
 
-import static com.hedera.test.factories.txns.CryptoTransferFactory.*;
-import static com.hedera.test.factories.txns.CryptoUpdateFactory.*;
-import static com.hedera.services.sigs.utils.PrecheckUtils.*;
-import static com.hedera.test.factories.txns.TinyBarsFromTo.*;
+import static com.hedera.services.sigs.utils.PrecheckUtils.queryPaymentTestFor;
+import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
+import static com.hedera.test.factories.txns.CryptoUpdateFactory.newSignedCryptoUpdate;
+import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
+import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class PrecheckUtilsTest {
 	final String nodeId = SignedTxnFactory.DEFAULT_NODE_ID;
