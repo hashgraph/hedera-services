@@ -23,11 +23,35 @@ package com.hedera.services.utils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import java.io.File;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class UnzipUtilityTest {
+
+//  Need to figure out a way to test the private constructor invocation.
+//	@Test
+//	public void privateConstructorShallThrowException() {
+//		try {
+//			Constructor<?> constructor = UnzipUtility.class.getConstructor();
+//			constructor.setAccessible(true);
+//			//try {
+//			constructor.newInstance();
+//			fail("UnzipUtility class's private constructor cannot be called");
+//		} catch (NoSuchMethodException expected ) {
+////			IllegalStateException cause = (IllegalStateException) expected.getCause();
+//			assertEquals("UnzipUtility is an utility class. Shouldn't create any instance!", expected.getMessage());
+//		} catch ( InvocationTargetException | InstantiationException | IllegalAccessException  expected) {
+//			IllegalStateException cause = (IllegalStateException) expected.getCause();
+//			assertEquals("UnzipUtility is an utility class. Shouldn't create any instance!", cause.getMessage());
+//		}
+//	}
 
 	@Test
 	public void unzipAbortWithRiskyFile() throws Exception {
@@ -46,7 +70,7 @@ public class UnzipUtilityTest {
 		final byte[] data = Files.readAllBytes(Paths.get(zipFile));
 		final String dstDir = "./temp";
 
-		UnzipUtility.unzip(data, dstDir);
+		assertDoesNotThrow(() -> UnzipUtility.unzip(data, dstDir));
 
 		final File file3 = new File("./temp/sdk/new3.txt");
 		Assertions.assertTrue(file3.exists());

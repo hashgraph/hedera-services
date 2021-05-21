@@ -37,6 +37,9 @@ public final class UnzipUtility {
 
 	private static final int BUFFER_SIZE = 4096;
 
+	private UnzipUtility() {
+		throw new IllegalStateException("UnzipUtility is an utility class. Shouldn't create any instance!");
+	}
 	/**
 	 * Extracts a zip entry (file entry)
 	 *
