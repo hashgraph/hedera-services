@@ -1,8 +1,6 @@
 package com.hedera.services.store.models;
 
 import com.google.common.base.MoreObjects;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public class Id {
 	private final long shard;
@@ -27,17 +25,24 @@ public class Id {
 		return num;
 	}
 
-	/* NOTE: The object methods below are only overridden to improve
-	readability of unit tests; model objects are not used in hash-based
-	collections, so the performance of these methods doesn't matter. */
 	@Override
 	public boolean equals(Object obj) {
-		return EqualsBuilder.reflectionEquals(this, obj);
+		if (obj == this) {
+			return true;
+		}
+		if (obj == null || !Id.class.equals(obj.getClass())) {
+			return false;
+		}
+		final Id that = (Id) obj;
+
+		return this.shard == that.shard && this.realm == that.realm && this.num == that.num;
 	}
 
 	@Override
 	public int hashCode() {
-		return HashCodeBuilder.reflectionHashCode(this);
+		int result = Long.hashCode(shard);
+		result = 31 * result + Long.hashCode(realm);
+		return 31 * result + Long.hashCode(num);
 	}
 
 	@Override

@@ -184,6 +184,7 @@ import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.records.RecordCacheFactory;
+import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.records.TxnAwareRecordsHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.security.ops.SystemOpPolicies;
@@ -236,6 +237,7 @@ import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.RunningAvgFactory;
 import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stats.SpeedometerFactory;
+import com.hedera.services.store.EntityStore;
 import com.hedera.services.store.schedule.HederaScheduleStore;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
@@ -250,6 +252,7 @@ import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.TransitionLogicLookup;
+import com.hedera.services.txns.TransitionRunner;
 import com.hedera.services.txns.consensus.SubmitMessageTransitionLogic;
 import com.hedera.services.txns.consensus.TopicCreateTransitionLogic;
 import com.hedera.services.txns.consensus.TopicDeleteTransitionLogic;
@@ -444,6 +447,7 @@ public class ServicesContext {
 	private FileNumbers fileNums;
 	private FileAnswers fileAnswers;
 	private MetaAnswers metaAnswers;
+	private EntityStore entityStore;
 	private RecordCache recordCache;
 	private TokenStore tokenStore;
 	private TokenAnswers tokenAnswers;
@@ -481,6 +485,7 @@ public class ServicesContext {
 	private SystemOpPolicies systemOpPolicies;
 	private CryptoController cryptoGrpc;
 	private HbarCentExchange exchange;
+	private TransitionRunner transitionRunner;
 	private SemanticVersions semVers;
 	private PrecheckVerifier precheckVerifier;
 	private BackingTokenRels backingTokenRels;
@@ -602,6 +607,13 @@ public class ServicesContext {
 		if (tokenStore != null) {
 			tokenStore.rebuildViews();
 		}
+	}
+
+	public TransitionRunner transitionRunner() {
+		if (transitionRunner == null) {
+			transitionRunner = new TransitionRunner(txnCtx(), transitionLogic());
+		}
+		return transitionRunner;
 	}
 
 	public SigFactoryCreator sigFactoryCreator() {
@@ -877,6 +889,19 @@ public class ServicesContext {
 			);
 		}
 		return hcsAnswers;
+	}
+
+	public EntityStore entityStore() {
+		if (entityStore == null) {
+			entityStore = new EntityStore(
+					validator(),
+					globalDynamicProperties(),
+					new TransactionRecordService(txnCtx()),
+					this::tokens,
+					this::accounts,
+					this::tokenAssociations);
+		}
+		return entityStore;
 	}
 
 	public MetaAnswers metaAnswers() {
@@ -1300,9 +1325,9 @@ public class ServicesContext {
 				entry(TokenDelete,
 						List.of(new TokenDeleteTransitionLogic(tokenStore(), txnCtx()))),
 				entry(TokenMint,
-						List.of(new TokenMintTransitionLogic(tokenStore(), txnCtx()))),
+						List.of(new TokenMintTransitionLogic(entityStore(), txnCtx()))),
 				entry(TokenBurn,
-						List.of(new TokenBurnTransitionLogic(tokenStore(), txnCtx()))),
+						List.of(new TokenBurnTransitionLogic(entityStore(), txnCtx()))),
 				entry(TokenAccountWipe,
 						List.of(new TokenWipeTransitionLogic(tokenStore(), txnCtx()))),
 				entry(TokenAssociateToAccount,

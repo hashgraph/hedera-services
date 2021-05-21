@@ -9,6 +9,11 @@ public class InvalidTransactionException extends RuntimeException {
 		this.responseCode = responseCode;
 	}
 
+	public InvalidTransactionException(String msg, ResponseCodeEnum responseCode) {
+		super(msg);
+		this.responseCode = responseCode;
+	}
+
 	public ResponseCodeEnum getResponseCode() {
 		return responseCode;
 	}

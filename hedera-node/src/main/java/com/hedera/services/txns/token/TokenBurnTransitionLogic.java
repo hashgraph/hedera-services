@@ -21,6 +21,8 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.store.EntityStore;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -40,19 +42,17 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 /**
  * Provides the state transition for token burning.
- *
- * @author Michael Tinker
  */
 public class TokenBurnTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(TokenBurnTransitionLogic.class);
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
-	private final TokenStore store;
+	private final EntityStore store;
 	private final TransactionContext txnCtx;
 
 	public TokenBurnTransitionLogic(
-			TokenStore store,
+			EntityStore store,
 			TransactionContext txnCtx
 	) {
 		this.store = store;
@@ -61,22 +61,21 @@ public class TokenBurnTransitionLogic implements TransitionLogic {
 
 	@Override
 	public void doStateTransition() {
-		try {
-			var op = txnCtx.accessor().getTxn().getTokenBurn();
-			var id = store.resolve(op.getToken());
-			if (id == TokenStore.MISSING_TOKEN) {
-				txnCtx.setStatus(INVALID_TOKEN_ID);
-			} else {
-				var outcome = store.burn(id, op.getAmount());
-				txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
-				if(outcome == OK) {
-					txnCtx.setNewTotalSupply(store.get(id).totalSupply());
-				}
-			}
-		} catch (Exception e) {
-			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
-			txnCtx.setStatus(FAIL_INVALID);
-		}
+		/* Translate from gRPC types */
+		final var op = txnCtx.accessor().getTxn().getTokenBurn();
+		final var grpcId = op.getToken();
+		final var targetId = new Id(grpcId.getShardNum(), grpcId.getRealmNum(), grpcId.getTokenNum());
+
+		/* Load the model objects */
+		final var token = store.loadToken(targetId);
+		final var treasuryRel = store.loadTokenRelationship(token, token.getTreasury());
+
+		/* Do the business logic */
+		token.burn(treasuryRel, op.getAmount());
+
+		/* Save the updated modes */
+		store.saveToken(token);
+		store.saveTokenRelationship(treasuryRel);
 	}
 
 	@Override

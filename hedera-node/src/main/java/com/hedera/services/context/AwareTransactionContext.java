@@ -36,6 +36,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
@@ -96,6 +97,7 @@ public class AwareTransactionContext implements TransactionContext {
 	private Consumer<TransactionRecord.Builder> recordConfig = noopRecordConfig;
 	private Consumer<TransactionReceipt.Builder> receiptConfig = noopReceiptConfig;
 	private List<ExpiringEntity> expiringEntities;
+	private List<TokenTransferList> explicitTokenTransfers;
 
 	boolean hasComputedRecordSoFar;
 	TransactionRecord.Builder recordSoFar = TransactionRecord.newBuilder();
@@ -120,9 +122,15 @@ public class AwareTransactionContext implements TransactionContext {
 		receiptConfig = noopReceiptConfig;
 		isPayerSigKnownActive = false;
 		hasComputedRecordSoFar = false;
+		explicitTokenTransfers = null;
 
 		ctx.charging().resetFor(accessor, submittingNodeAccount());
 		recordSoFar.clear();
+	}
+
+	@Override
+	public void setTokenTransferLists(List<TokenTransferList> tokenTransfers) {
+		explicitTokenTransfers = tokenTransfers;
 	}
 
 	@Override
@@ -164,6 +172,9 @@ public class AwareTransactionContext implements TransactionContext {
 		if (log.isDebugEnabled()) {
 			logItemized();
 		}
+		final var tokenTransfers = explicitTokenTransfers != null
+				? explicitTokenTransfers
+				: ctx.ledger().netTokenTransfersInTxn();
 		recordSoFar
 				.setMemo(accessor.getTxn().getMemo())
 				.setReceipt(receiptSoFar())
@@ -172,7 +183,7 @@ public class AwareTransactionContext implements TransactionContext {
 				.setTransactionFee(amount)
 				.setTransactionHash(hash)
 				.setConsensusTimestamp(consensusTimestamp)
-				.addAllTokenTransferLists(ctx.ledger().netTokenTransfersInTxn());
+				.addAllTokenTransferLists(tokenTransfers);
 		if (accessor.isTriggeredTxn()) {
 			recordSoFar.setScheduleRef(accessor.getScheduleRef());
 		}
