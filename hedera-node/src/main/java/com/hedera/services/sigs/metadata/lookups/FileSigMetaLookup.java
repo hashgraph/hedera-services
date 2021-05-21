@@ -21,9 +21,7 @@ package com.hedera.services.sigs.metadata.lookups;
  */
 
 import com.hedera.services.sigs.metadata.FileSigningMetadata;
-import com.hedera.services.sigs.metadata.TopicSigningMetadata;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.TopicID;
 
 /**
  * Defines a simple type that is able to recover metadata about signing activity

@@ -31,21 +31,19 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.fee.CryptoFeeBuilder;
 import com.hederahashgraph.fee.FeeBuilder;
-import com.hederahashgraph.fee.FileFeeBuilder;
-import com.hederahashgraph.fee.SmartContractFeeBuilder;
-
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static java.util.Collections.EMPTY_LIST;
-import static com.hedera.test.factories.keys.NodeFactory.*;
-import static java.util.stream.Collectors.toList;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
+
+import static com.hedera.test.factories.keys.NodeFactory.ed25519;
+import static com.hedera.test.factories.keys.NodeFactory.list;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static java.util.Collections.EMPTY_LIST;
+import static java.util.stream.Collectors.toList;
 
 public abstract class SignedTxnFactory<T extends SignedTxnFactory<T>> {
 	public static final String DEFAULT_MEMO = "This is something else.";

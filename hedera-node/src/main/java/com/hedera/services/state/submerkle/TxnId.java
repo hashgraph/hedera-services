@@ -23,15 +23,14 @@ package com.hedera.services.state.submerkle;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hederahashgraph.api.proto.java.TransactionID;
-
-import java.io.IOException;
-import java.util.Objects;
-
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.io.IOException;
+import java.util.Objects;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;

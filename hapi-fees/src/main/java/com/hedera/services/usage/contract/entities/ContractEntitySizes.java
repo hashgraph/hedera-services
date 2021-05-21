@@ -20,9 +20,9 @@ package com.hedera.services.usage.contract.entities;
  * ‍
  */
 
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 
 public enum ContractEntitySizes {
 	CONTRACT_ENTITY_SIZES;

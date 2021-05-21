@@ -37,12 +37,12 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;

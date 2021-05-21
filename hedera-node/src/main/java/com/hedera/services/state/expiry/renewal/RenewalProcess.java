@@ -99,7 +99,7 @@ public class RenewalProcess {
 		final long renewalFee = usageAssessment.fee();
 
 		helper.renewLastClassifiedWith(renewalFee, effPeriod);
-		recordsHelper.streamCryptoRenewal(accountId, renewalFee, longNow + effPeriod);
+		recordsHelper.streamCryptoRenewal(accountId, renewalFee, lastClassified.getExpiry() + effPeriod);
 	}
 
 	private void processDetachedAccountGracePeriodOver(MerkleEntityId accountId) {

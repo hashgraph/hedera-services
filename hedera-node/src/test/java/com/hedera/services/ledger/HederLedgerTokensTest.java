@@ -24,8 +24,6 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;

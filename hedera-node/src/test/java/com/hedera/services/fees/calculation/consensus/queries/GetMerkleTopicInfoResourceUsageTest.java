@@ -20,17 +20,22 @@ package com.hedera.services.fees.calculation.consensus.queries;
  * ‍
  */
 
-import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.test.utils.EntityIdConverter;
 import com.hedera.test.utils.JEd25519KeyConverter;
-import com.hederahashgraph.api.proto.java.*;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.state.submerkle.RichInstant;
+import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
+import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.QueryHeader;
+import com.hederahashgraph.api.proto.java.ResponseType;
+import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,8 +46,12 @@ import org.junit.jupiter.params.provider.CsvSource;
 import static com.hedera.test.utils.IdUtils.asTopic;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
 
 class GetMerkleTopicInfoResourceUsageTest {
 	StateView view;

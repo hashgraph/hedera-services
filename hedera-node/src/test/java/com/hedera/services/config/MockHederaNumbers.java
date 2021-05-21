@@ -20,8 +20,6 @@ package com.hedera.services.config;
  * ‍
  */
 
-import com.hedera.services.context.properties.PropertySource;
-
 public class MockHederaNumbers extends HederaNumbers {
 	public MockHederaNumbers() {
 		super(null);

@@ -21,6 +21,7 @@ package com.hedera.services.legacy.unit;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.TestHelper;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -29,7 +30,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.builder.RequestBuilder;
-import com.hedera.services.legacy.TestHelper;
 
 public class FreezeTestHelper {
 

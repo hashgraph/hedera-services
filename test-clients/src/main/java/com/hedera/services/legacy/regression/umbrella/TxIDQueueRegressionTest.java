@@ -20,8 +20,8 @@ package com.hedera.services.legacy.regression.umbrella;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hedera.services.legacy.core.CommonUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 
 /**
  * Regression test for getting receipts and records with cached transaction IDs.

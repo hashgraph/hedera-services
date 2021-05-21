@@ -20,16 +20,14 @@ package com.hedera.services.bdd.spec.fees;
  * ‍
  */
 
+import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import static com.hederahashgraph.fee.FeeBuilder.*;
-import com.hederahashgraph.fee.FeeBuilder;
 import com.hederahashgraph.fee.SigValueObj;
-import com.hedera.services.legacy	.proto.utils.CommonUtils;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -37,6 +35,10 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+
+import static com.hederahashgraph.fee.FeeBuilder.getSignatureCount;
+import static com.hederahashgraph.fee.FeeBuilder.getSignatureSize;
+import static com.hederahashgraph.fee.FeeBuilder.getTotalFeeforRequest;
 
 public class FeeCalculator {
 	private static final Logger log = LogManager.getLogger(FeeCalculator.class);

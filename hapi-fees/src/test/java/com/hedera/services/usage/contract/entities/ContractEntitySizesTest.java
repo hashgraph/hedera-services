@@ -22,7 +22,6 @@ package com.hedera.services.usage.contract.entities;
 
 import org.junit.jupiter.api.Test;
 
-
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;

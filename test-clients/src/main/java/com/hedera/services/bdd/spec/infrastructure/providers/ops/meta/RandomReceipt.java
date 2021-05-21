@@ -30,7 +30,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECEIPT_NOT_FOUND;
 import static java.util.Collections.EMPTY_LIST;
 
 public class RandomReceipt implements OpProvider {

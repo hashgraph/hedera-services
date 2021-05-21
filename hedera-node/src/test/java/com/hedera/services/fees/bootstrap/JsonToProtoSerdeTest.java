@@ -21,11 +21,11 @@ package com.hedera.services.fees.bootstrap;
  */
 
 import com.google.common.io.Files;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
 import java.io.File;
-import java.io.OutputStream;
 import java.nio.file.Paths;
 
 import static com.hedera.services.fees.bootstrap.JsonToProtoSerde.loadFeeScheduleFromJson;

@@ -20,15 +20,15 @@ package com.hedera.services.sigs.utils;
  * ‍
  */
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.legacy.crypto.SignatureStatusCode;
+import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.Test;
-import static com.hedera.test.factories.txns.SystemDeleteFactory.*;
+
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
+import static com.hedera.test.factories.txns.SystemDeleteFactory.newSignedSystemDelete;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class StatusUtilsTest {
 	@Test

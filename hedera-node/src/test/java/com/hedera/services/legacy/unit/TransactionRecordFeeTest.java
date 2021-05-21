@@ -20,12 +20,6 @@ package com.hedera.services.legacy.unit;
  * ‍
  */
 
-import java.util.Random;
-
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -38,6 +32,11 @@ import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.fee.FeeBuilder;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.util.Random;
 
 public class TransactionRecordFeeTest {
 	

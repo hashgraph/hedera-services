@@ -22,10 +22,10 @@ package com.hedera.services.records;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class EarliestEntryExpiryTest {
 	@Test

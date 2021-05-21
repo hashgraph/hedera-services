@@ -21,9 +21,9 @@ package com.hedera.services.bdd.spec.keys;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.core.HexUtils;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
-import com.hedera.services.legacy.core.HexUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
@@ -34,7 +34,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.function.Function;
 
-import static java.util.stream.Collectors.*;
+import static java.util.stream.Collectors.collectingAndThen;
+import static java.util.stream.Collectors.toList;
 
 public class TrieSigMapGenerator implements SigMapGenerator {
 	private static final Logger log = LogManager.getLogger(TrieSigMapGenerator.class);

@@ -22,8 +22,8 @@ package com.hedera.test.factories.scenarios;
 
 import com.hedera.services.utils.PlatformTxnAccessor;
 
-import static com.hedera.test.factories.txns.SystemUndeleteFactory.*;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
+import static com.hedera.test.factories.txns.SystemUndeleteFactory.newSignedSystemUndelete;
 
 public enum SystemUndeleteScenarios implements TxnHandlingScenario {
 	SYSTEM_UNDELETE_FILE_SCENARIO {

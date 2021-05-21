@@ -25,11 +25,11 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.MiscUtils;
@@ -43,8 +43,6 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import org.apache.commons.codec.DecoderException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,6 +51,8 @@ import javax.inject.Inject;
 import java.time.Instant;
 import java.util.Set;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -60,8 +60,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 
 @ExtendWith(LogCaptureExtension.class)
 class BackedSystemAccountsCreatorTest {

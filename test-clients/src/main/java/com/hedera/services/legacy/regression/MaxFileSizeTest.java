@@ -20,24 +20,15 @@ package com.hedera.services.legacy.regression;
  * ‍
  */
 
-import java.security.KeyPair;
-import java.security.PrivateKey;
-import java.time.Clock;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Random;
-
-import com.hedera.services.legacy.client.util.Common;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-import org.junit.Assert;
-
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.client.util.Common;
+import com.hedera.services.legacy.core.AccountKeyListObj;
+import com.hedera.services.legacy.core.FeeClient;
+import com.hedera.services.legacy.core.HexUtils;
+import com.hedera.services.legacy.core.KeyPairObj;
+import com.hedera.services.legacy.core.TestHelper;
+import com.hedera.services.legacy.proto.utils.KeyExpansion;
+import com.hedera.services.legacy.proto.utils.ProtoCommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -59,18 +50,25 @@ import com.hederahashgraph.builder.TransactionSigner;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
 import com.hederahashgraph.service.proto.java.FileServiceGrpc;
 import com.hederahashgraph.service.proto.java.SmartContractServiceGrpc;
-import com.hedera.services.legacy.core.AccountKeyListObj;
-import com.hedera.services.legacy.core.FeeClient;
-import com.hedera.services.legacy.core.HexUtils;
-import com.hedera.services.legacy.core.KeyPairObj;
-import com.hedera.services.legacy.core.TestHelper;
-import com.hedera.services.legacy.proto.utils.KeyExpansion;
-import com.hedera.services.legacy.proto.utils.ProtoCommonUtils;
-
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import org.junit.Assert;
+
+import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.time.Clock;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Random;
 
 public class MaxFileSizeTest {
 	private final Logger log = LogManager.getLogger(MaxFileSizeTest.class);

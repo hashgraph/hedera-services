@@ -21,18 +21,18 @@ package com.hedera.services.bdd.suites.issues;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import static com.hedera.services.bdd.spec.HapiApiSpec.*;
-
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.*;
-
 import java.util.List;
+
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 
 public class Issue1648Suite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(Issue1648Suite.class);

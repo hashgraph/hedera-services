@@ -21,7 +21,6 @@ package com.hedera.services.ledger.accounts;
  */
 
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;

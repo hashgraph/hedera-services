@@ -23,7 +23,7 @@ package com.hedera.test.factories.keys;
 import com.hederahashgraph.api.proto.java.Key;
 
 import java.util.List;
-import static java.util.stream.Collectors.mapping;
+
 import static java.util.stream.Collectors.toList;
 
 public class KeyTreeThresholdNode extends KeyTreeListNode {

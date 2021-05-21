@@ -41,9 +41,9 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_FROM_ABI;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractRecords;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractRecords;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;

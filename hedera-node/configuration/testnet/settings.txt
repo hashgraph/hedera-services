@@ -15,3 +15,5 @@ state.signedStateDisk, 5
 state.signedStateKeep, 100
 throttle7extra, 0.5
 useLoopbackIp, 0
+reconnect.active, false
+reconnect.reconnectWindowSeconds, 300

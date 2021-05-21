@@ -23,6 +23,7 @@ package com.hedera.services.legacy.unit.utils;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import org.junit.Assert;
 import org.junit.Test;
+
 import java.time.Instant;
 
 public class CommonUtilsTest {

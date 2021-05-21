@@ -20,16 +20,17 @@ package com.hedera.services.fees.calculation.meta.queries;
  * ‍
  */
 
-import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
-import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.hedera.services.fees.calculation.meta.FixedUsageEstimates;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.ResponseType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
+import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class GetVersionInfoResourceUsageTest {
 	private GetVersionInfoResourceUsage subject;

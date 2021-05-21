@@ -32,9 +32,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
-import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
 public abstract class AbstractAnswer implements AnswerService {

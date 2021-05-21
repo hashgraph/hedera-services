@@ -21,8 +21,10 @@ package com.hedera.services.txns.file;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.TieredHederaFs;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -34,8 +36,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hedera.services.files.HFileMeta;
-import com.hedera.services.legacy.core.jproto.JKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -48,7 +48,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.inOrder;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.verify;
 
 class FileSysUndelTransitionLogicTest {
 	enum TargetType { VALID, MISSING, DELETED }

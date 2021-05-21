@@ -30,7 +30,8 @@ import java.util.EnumSet;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static com.hedera.services.bdd.spec.keys.SigControl.Nature.*;
+import static com.hedera.services.bdd.spec.keys.SigControl.Nature.SIG_OFF;
+import static com.hedera.services.bdd.spec.keys.SigControl.Nature.SIG_ON;
 
 public class SigControl implements Serializable {
 	private static final long serialVersionUID = 1L;

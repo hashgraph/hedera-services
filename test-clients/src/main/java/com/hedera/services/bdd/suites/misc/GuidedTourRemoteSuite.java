@@ -34,19 +34,29 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hedera.services.bdd.spec.HapiApiSpec.customFailingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.keys.KeyShape.OFF;
+import static com.hedera.services.bdd.spec.keys.KeyShape.ON;
+import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
+import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.*;
-import static com.hedera.services.bdd.spec.keys.KeyShape.*;
-import static com.hedera.services.bdd.spec.HapiApiSpec.*;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class GuidedTourRemoteSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(GuidedTourRemoteSuite.class);

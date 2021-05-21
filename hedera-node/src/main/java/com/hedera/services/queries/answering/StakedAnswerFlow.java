@@ -48,7 +48,7 @@ import java.util.Optional;
 import java.util.function.LongPredicate;
 import java.util.function.Supplier;
 
-import static com.hedera.services.utils.MiscUtils.*;
+import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;

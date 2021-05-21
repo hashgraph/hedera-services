@@ -22,13 +22,12 @@ package com.hedera.test.factories.scenarios;
 
 import com.hedera.services.utils.PlatformTxnAccessor;
 
-import static com.hedera.test.factories.txns.CryptoTransferFactory.*;
-
+import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
-import static com.hedera.test.factories.txns.TinyBarsFromTo.*;
+import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_NODE_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_NODE_ID;
+import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 
 
 public enum CryptoTransferScenarios implements TxnHandlingScenario {

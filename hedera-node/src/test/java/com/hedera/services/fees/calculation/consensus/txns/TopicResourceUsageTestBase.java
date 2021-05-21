@@ -20,13 +20,14 @@ package com.hedera.services.fees.calculation.consensus.txns;
  * ‍
  */
 
-import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.context.primitives.StateView;
-import com.hederahashgraph.api.proto.java.*;
-import com.hederahashgraph.fee.SigValueObj;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleTopic;
+import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.TopicID;
+import com.hederahashgraph.fee.SigValueObj;
 import com.swirlds.fcmap.FCMap;
 
 import static com.hedera.test.utils.IdUtils.asTopic;

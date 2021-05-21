@@ -20,16 +20,7 @@ package com.hedera.services.legacy.core;
  * ‍
  */
 
-import java.io.Serializable;
-import java.security.KeyPair;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
-
 import com.hedera.services.legacy.client.test.ClientBaseThread;
-import com.hedera.services.legacy.core.HexUtils;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
@@ -38,6 +29,14 @@ import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
 import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
+
+import java.io.Serializable;
+import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 
 
 public class KeyPairObj implements Serializable {

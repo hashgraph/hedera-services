@@ -40,7 +40,10 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
-import static com.hedera.services.files.TieredHederaFs.IllegalArgumentType.*;
+import static com.hedera.services.files.TieredHederaFs.IllegalArgumentType.DELETED_FILE;
+import static com.hedera.services.files.TieredHederaFs.IllegalArgumentType.FILE_WOULD_BE_EXPIRED;
+import static com.hedera.services.files.TieredHederaFs.IllegalArgumentType.OVERSIZE_CONTENTS;
+import static com.hedera.services.files.TieredHederaFs.IllegalArgumentType.UNKNOWN_FILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.Comparator.comparingInt;
 import static java.util.function.Predicate.not;

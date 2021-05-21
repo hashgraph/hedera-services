@@ -35,8 +35,8 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
-import static java.util.stream.Collectors.*;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static java.util.stream.Collectors.toList;
 
 public class CryptoTransferFactory extends SignedTxnFactory<CryptoTransferFactory> {
 	public static final List<TinyBarsFromTo> DEFAULT_TRANSFERS = List.of(

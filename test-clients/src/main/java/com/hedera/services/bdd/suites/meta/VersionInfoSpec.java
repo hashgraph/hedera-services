@@ -21,18 +21,14 @@ package com.hedera.services.bdd.suites.meta;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-
-import static com.hedera.services.bdd.spec.HapiApiSpec.*;
-
-import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.SemanticVersion;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
-
 import java.util.List;
+
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
 
 public class VersionInfoSpec extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(VersionInfoSpec.class);

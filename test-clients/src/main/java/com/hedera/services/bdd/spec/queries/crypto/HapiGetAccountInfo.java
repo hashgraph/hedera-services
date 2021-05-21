@@ -21,13 +21,18 @@ package com.hedera.services.bdd.spec.queries.crypto;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
+import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
+import com.hedera.services.bdd.spec.queries.HapiQueryOp;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,12 +45,6 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-
-import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
-import com.hedera.services.bdd.spec.queries.HapiQueryOp;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	private static final Logger log = LogManager.getLogger(HapiGetAccountInfo.class);

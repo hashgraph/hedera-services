@@ -21,6 +21,8 @@ package com.hedera.services.bdd.spec.queries.meta;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -28,8 +30,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

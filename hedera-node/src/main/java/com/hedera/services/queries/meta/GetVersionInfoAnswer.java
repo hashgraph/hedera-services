@@ -21,23 +21,15 @@ package com.hedera.services.queries.meta;
  */
 
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.ActiveVersions;
 import com.hedera.services.context.properties.SemanticVersions;
 import com.hedera.services.queries.AbstractAnswer;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoResponse;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.SemanticVersion;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.io.InputStream;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;

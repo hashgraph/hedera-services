@@ -26,8 +26,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
-import static com.hedera.services.legacy.stream.RecordStream.TYPE_FILE_HASH;
-import static com.hedera.services.legacy.stream.RecordStream.TYPE_SIGNATURE;
 
 public class StandardSigFileWriter implements SigFileWriter {
 	@Override

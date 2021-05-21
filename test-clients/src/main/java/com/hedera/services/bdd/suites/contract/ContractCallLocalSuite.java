@@ -20,10 +20,10 @@ package com.hedera.services.bdd.suites.contract;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -31,20 +31,20 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED;
 
 public class ContractCallLocalSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCallLocalSuite.class);

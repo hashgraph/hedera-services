@@ -25,6 +25,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcmap.FCMap;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -37,7 +38,6 @@ import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.ledger.HederaLedger.TOKEN_ID_COMPARATOR;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
-import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * A store that provides efficient access to the mutable representations

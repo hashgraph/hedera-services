@@ -29,7 +29,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -41,8 +40,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.disablingAutoRenewWithDefaults;
+import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enablingAutoRenewWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class AutoRenewEntitiesForReconnect extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(AutoRenewEntitiesForReconnect.class);
@@ -54,21 +54,18 @@ public class AutoRenewEntitiesForReconnect extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-				autoRenewAccountGetsDeletedOnReconnectingNodeAsWell()
+				autoRenewAccountGetsDeletedOnReconnectingNodeAsWell(),
+				accountAutoRenewalSuiteCleanup()
 		);
 	}
 
 	private HapiApiSpec autoRenewAccountGetsDeletedOnReconnectingNodeAsWell() {
 		String autoDeleteAccount = "autoDeleteAccount";
-		int autoRenewSecs = 10;
+		int autoRenewSecs = 1;
 		return defaultHapiSpec("AutoRenewAccountGetsDeletedOnReconnectingNodeAsWell")
 				.given(
 						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
-								.overridingProps(Map.of(
-										"ledger.autoRenewPeriod.minDuration", String.valueOf(autoRenewSecs),
-										"autorenew.gracePeriod", "0",
-										"autorenew.numberOfEntitiesToScan", "100",
-										"autorenew.maxNumberOfEntitiesToRenewOrDelete", "2"))
+								.overridingProps(enablingAutoRenewWith(autoRenewSecs, 0, 100, 2))
 								.erasingProps(Set.of("minimumAutoRenewDuration")),
 						cryptoCreate(autoDeleteAccount).autoRenewSecs(autoRenewSecs).balance(0L)
 				)
@@ -76,14 +73,14 @@ public class AutoRenewEntitiesForReconnect extends HapiApiSuite {
 						// do some transfers so that we pass autoRenewSecs
 						withOpContext((spec, ctxLog) -> {
 							List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
-							for (int i = 0; i < 25; i++) {
+							for (int i = 0; i < 50; i++) {
 								opsList.add(cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)).logged());
 							}
 							CustomSpecAssert.allRunFor(spec, opsList);
 						}),
 
 						withLiveNode("0.0.8")
-								.within(60, TimeUnit.SECONDS)
+								.within(120, TimeUnit.SECONDS)
 								.loggingAvailabilityEvery(10)
 								.sleepingBetweenRetriesFor(10)
 				)
@@ -91,6 +88,15 @@ public class AutoRenewEntitiesForReconnect extends HapiApiSuite {
 						getAccountBalance(autoDeleteAccount)
 								.setNode("0.0.8")
 								.hasAnswerOnlyPrecheckFrom(INVALID_ACCOUNT_ID)
+				);
+	}
+
+	private HapiApiSpec accountAutoRenewalSuiteCleanup() {
+		return defaultHapiSpec("accountAutoRenewalSuiteCleanup")
+				.given().when().then(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(GENESIS)
+								.overridingProps(disablingAutoRenewWithDefaults())
 				);
 	}
 

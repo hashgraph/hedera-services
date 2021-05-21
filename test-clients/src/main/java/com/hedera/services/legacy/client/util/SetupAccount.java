@@ -20,10 +20,10 @@ package com.hedera.services.legacy.client.util;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
@@ -41,7 +41,11 @@ import org.bouncycastle.operator.InputDecryptorProvider;
 import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
 import org.bouncycastle.util.Arrays;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.util.ArrayList;

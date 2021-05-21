@@ -21,8 +21,6 @@ package com.hedera.services.bdd.suites.records;
  */
 
 
-import java.io.FileWriter;
-import java.io.IOException;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -40,10 +38,11 @@ import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.TransferList;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;

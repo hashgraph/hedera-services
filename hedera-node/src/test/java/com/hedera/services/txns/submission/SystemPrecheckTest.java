@@ -41,7 +41,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 

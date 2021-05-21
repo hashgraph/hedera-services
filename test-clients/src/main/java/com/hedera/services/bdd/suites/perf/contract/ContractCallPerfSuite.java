@@ -21,10 +21,6 @@ package com.hedera.services.bdd.suites.perf.contract;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -34,12 +30,14 @@ import org.apache.logging.log4j.Logger;
 import java.math.BigInteger;
 import java.util.List;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.*;
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
-import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
-import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 
 public class ContractCallPerfSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCallPerfSuite.class);

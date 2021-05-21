@@ -20,8 +20,9 @@ package com.hedera.services.legacy.util;
  * ‍
  */
 
-import java.math.BigInteger;
 import org.ethereum.core.CallTransaction;
+
+import java.math.BigInteger;
 
 /**
  * @author peter

@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.file.positive;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -35,13 +34,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
-import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static org.junit.Assert.assertEquals;
 
 public class IssDemoSpec extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(IssDemoSpec.class);

@@ -32,7 +32,6 @@ import org.apache.logging.log4j.Logger;
 import java.time.Instant;
 
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_ACCOUNT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;

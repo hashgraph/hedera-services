@@ -21,7 +21,6 @@ package com.hedera.services.bdd.spec.persistence;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoCreate;
@@ -31,7 +30,6 @@ import java.util.Optional;
 import static com.hedera.services.bdd.spec.persistence.Entity.UNUSED_KEY;
 import static com.hedera.services.bdd.spec.persistence.SpecKey.RegistryForms.under;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 
 public class Account {

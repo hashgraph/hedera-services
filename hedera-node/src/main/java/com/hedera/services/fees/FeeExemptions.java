@@ -20,10 +20,7 @@ package com.hedera.services.fees;
  * ‍
  */
 
-import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 
 /**
  * Defines a type able to judge if an account or txn (more specifically,

@@ -21,17 +21,15 @@ package com.hedera.services.bdd.suites.issues;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
-
 import java.util.List;
+
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 
 public class Issue1741Suite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(Issue1741Suite.class);

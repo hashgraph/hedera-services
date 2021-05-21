@@ -20,47 +20,39 @@ package com.hedera.services.fees.calculation.crypto.txns;
  * ‍
  */
 
-import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.google.protobuf.ByteString;
-import com.hedera.services.fees.calculation.file.txns.FileUpdateResourceUsage;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
-import com.hedera.services.usage.file.ExtantFileContext;
-import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
-import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.fee.CryptoFeeBuilder;
 import com.hederahashgraph.fee.SigValueObj;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.swirlds.fcmap.FCMap;
-import org.apache.commons.codec.digest.Crypt;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-
 import java.util.Optional;
 
-import static org.mockito.BDDMockito.*;
-import static com.hedera.test.utils.IdUtils.*;
+import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asToken;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
 
 class CryptoUpdateResourceUsageTest {
 	long expiry = 1_234_567L;

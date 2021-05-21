@@ -22,11 +22,10 @@ package com.hedera.services.legacy.netty;
 
 import com.hedera.services.legacy.core.TestHelper;
 import com.hedera.services.legacy.regression.Utilities;
-
-import java.util.Properties;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.Properties;
 /**
  * Temp util class for inintiating many threads.
  *

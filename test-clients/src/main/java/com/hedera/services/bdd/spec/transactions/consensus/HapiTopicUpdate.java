@@ -22,7 +22,9 @@ package com.hedera.services.bdd.spec.transactions.consensus;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.StringValue;
+import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
+import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
@@ -33,8 +35,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.fee.ConsensusServiceFeeBuilder;
 
 import java.util.ArrayList;
@@ -44,12 +44,12 @@ import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTopicId;
-import static com.hedera.services.bdd.suites.HapiApiSuite.EMPTY_KEY;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asDuration;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTimestamp;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTopicId;
+import static com.hedera.services.bdd.suites.HapiApiSuite.EMPTY_KEY;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
 
 public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
 	private final String topic;

@@ -34,9 +34,18 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.Assert.assertEquals;
 
 public class UpdateFailuresSpec extends HapiApiSuite {

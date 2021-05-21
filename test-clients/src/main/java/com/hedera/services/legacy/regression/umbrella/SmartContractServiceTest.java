@@ -22,6 +22,8 @@ package com.hedera.services.legacy.regression.umbrella;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.legacy.core.CustomPropertiesSingleton;
+import com.hedera.services.legacy.core.TestHelper;
 import com.hedera.services.legacy.exception.InvalidNodeTransactionPrecheckCode;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -46,10 +48,15 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.builder.TransactionSigner;
 import com.hederahashgraph.service.proto.java.SmartContractServiceGrpc;
-import com.hedera.services.legacy.core.CustomPropertiesSingleton;
-import com.hedera.services.legacy.core.TestHelper;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.ethereum.core.CallTransaction;
+import org.ethereum.util.ByteUtil;
+import org.junit.Assert;
+
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URISyntaxException;
@@ -57,12 +64,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.ethereum.core.CallTransaction;
-import org.ethereum.util.ByteUtil;
-import org.junit.Assert;
 
 /**
  * This class contains smart contract tests.

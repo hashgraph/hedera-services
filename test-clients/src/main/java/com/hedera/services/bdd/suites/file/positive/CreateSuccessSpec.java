@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.file.positive;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
-import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -32,7 +31,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
@@ -41,9 +39,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static org.junit.Assert.assertEquals;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 
 public class CreateSuccessSpec extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CreateSuccessSpec.class);

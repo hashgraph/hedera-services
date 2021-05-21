@@ -22,16 +22,6 @@ package com.hedera.services.bdd.suites.contract;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
-import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
-import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.*;
-import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.atLeastOneTransfer;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -40,8 +30,16 @@ import org.apache.logging.log4j.Logger;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.*;
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.atLeastOneTransfer;
+import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 
 public class ContractGetRecordsSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractGetRecordsSuite.class);

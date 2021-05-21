@@ -34,21 +34,22 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.mockito.BDDMockito.*;
-
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.util.List;
 import java.util.function.Function;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static com.hedera.services.utils.PlatformTxnAccessor.uncheckedAccessorFor;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.times;
+import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
 
 public class PlatformTxnAccessorTest {

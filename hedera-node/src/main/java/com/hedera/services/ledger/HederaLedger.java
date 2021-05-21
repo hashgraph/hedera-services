@@ -37,7 +37,6 @@ import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
