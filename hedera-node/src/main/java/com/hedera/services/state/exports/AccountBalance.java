@@ -23,6 +23,7 @@ package com.hedera.services.state.exports;
 import com.google.common.base.MoreObjects;
 
 import java.util.Comparator;
+import java.util.Objects;
 
 public class AccountBalance implements Comparable<AccountBalance> {
 	private static final Comparator<AccountBalance> CANONICAL_ORDER = Comparator
@@ -72,6 +73,11 @@ public class AccountBalance implements Comparable<AccountBalance> {
 				&& this.realm == that.realm
 				&& this.shard == that.shard
 				&& this.b64TokenBalances.equals(that.b64TokenBalances);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(num, shard, realm, balance, b64TokenBalances);
 	}
 
 	@Override

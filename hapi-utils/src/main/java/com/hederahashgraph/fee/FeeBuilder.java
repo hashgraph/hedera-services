@@ -9,9 +9,9 @@ package com.hederahashgraph.fee;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -50,18 +50,18 @@ public class FeeBuilder {
   public static final int FEE_MATRICES_CONST = 1;
   public static final int INT_SIZE = 4;
   public static final int BOOL_SIZE = 4;
-  public static final int SOLIDITY_ADDRESS = 20;
+  public static final long SOLIDITY_ADDRESS = 20;
   public static final int KEY_SIZE = 32;
   public static final int TX_HASH_SIZE = 48;
   public static final int DEFAULT_PAYER_ACC_SIG_COUNT = 0;
-  public static final int RECEIPT_STORAGE_TIME_SEC = 180;
+  public static final long RECEIPT_STORAGE_TIME_SEC = 180;
   public static final int THRESHOLD_STORAGE_TIME_SEC = 90000;
   public static final int DEFAULT_RBS_NETWORK = 0;
   public static final int FEE_DIVISOR_FACTOR = 1000;
   public static final int SIGNATURE_SIZE = 64;
   public static final int HRS_DIVISOR = 3600;
   public static final int BASIC_ENTITY_ID_SIZE = (3 * LONG_SIZE);
-  public static final int BASIC_RICH_INSTANT_SIZE = LONG_SIZE + INT_SIZE;
+  public static final long BASIC_RICH_INSTANT_SIZE = (1L * LONG_SIZE) + INT_SIZE;
   public static final int BASIC_ACCOUNT_AMT_SIZE = BASIC_ENTITY_ID_SIZE + LONG_SIZE;
   public static final int BASIC_TX_ID_SIZE = BASIC_ENTITY_ID_SIZE + LONG_SIZE;
   public static final int EXCHANGE_RATE_SIZE = 2 * INT_SIZE + LONG_SIZE;
@@ -81,11 +81,11 @@ public class FeeBuilder {
   /**
    * Fields included: nodeTransactionPrecheckCode, responseType, cost
    */
-  public static final int BASIC_QUERY_RES_HEADER = 2 * INT_SIZE + LONG_SIZE;
-  public static final int BASIC_QUERY_HEADER = 212;
+  public static final long BASIC_QUERY_RES_HEADER = 2L * INT_SIZE + LONG_SIZE;
+  public static final long BASIC_QUERY_HEADER = 212L;
   public static final int BASIC_CONTRACT_CREATE_SIZE = BASIC_ENTITY_ID_SIZE + 6 * LONG_SIZE;
-  public static final int BASIC_CONTRACT_INFO_SIZE =
-      2 * BASIC_ENTITY_ID_SIZE + SOLIDITY_ADDRESS + BASIC_TX_ID_SIZE;
+  public static final long BASIC_CONTRACT_INFO_SIZE =
+      2L * BASIC_ENTITY_ID_SIZE + SOLIDITY_ADDRESS + BASIC_TX_ID_SIZE;
   /**
    * Fields included in size: receipt (basic size), transactionHash, consensusTimestamp, transactionID
    * transactionFee.
@@ -106,7 +106,7 @@ public class FeeBuilder {
     long ramStorageFee = componentCoefficients.getRbh() * componentMetrics.getRbh();
     long storageFee = componentCoefficients.getSbh() * componentMetrics.getSbh();
     long evmGasFee = componentCoefficients.getGas() * componentMetrics.getGas();
-    long txValueFee = Math.round((componentCoefficients.getTv() * componentMetrics.getTv()) / 1000);
+    long txValueFee = Math.round((float)(componentCoefficients.getTv() * componentMetrics.getTv()) / 1000);
     long bytesResponseFee = componentCoefficients.getBpr() * componentMetrics.getBpr();
     long storageBytesResponseFee = componentCoefficients.getSbpr() * componentMetrics.getSbpr();
     long componentUsage = componentCoefficients.getConstant() * componentMetrics.getConstant();
@@ -171,7 +171,7 @@ public class FeeBuilder {
    *     <li>bytes string memo - get memo size from transaction</li>
    * </ul>
    */
-  public static int getCommonTransactionBodyBytes(TransactionBody txBody) throws InvalidTxBodyException {
+  public static long getCommonTransactionBodyBytes(TransactionBody txBody) throws InvalidTxBodyException {
     if (txBody == null) {
       throw new InvalidTxBodyException("Transaction Body not available for Fee Calculation");
     }
@@ -179,7 +179,7 @@ public class FeeBuilder {
     if (txBody.getMemo() != null) {
       memoSize = txBody.getMemoBytes().size();
     }
-    return BASIC_TX_BODY_SIZE + memoSize;
+    return (long) BASIC_TX_BODY_SIZE + memoSize;
   }
 
   /**
@@ -247,7 +247,7 @@ public class FeeBuilder {
      *
      */
 
-    bpt = INT_SIZE + BASIC_ENTITY_ID_SIZE;
+    bpt = (long) INT_SIZE + BASIC_ENTITY_ID_SIZE;
 
     /*
      * bpr = Response header NodeTransactionPrecheckCode - 4 bytes ResponseType - 4 bytes uint64
@@ -304,8 +304,8 @@ public class FeeBuilder {
    * @return tinyHbars
    */
   public static long getTinybarsFromTinyCents(ExchangeRate exchangeRate, long tinyCentsFee) {
-    BigInteger hbarMultiplier = BigInteger.valueOf(Long.valueOf(exchangeRate.getHbarEquiv()));
-    BigInteger centsDivisor = BigInteger.valueOf(Long.valueOf(exchangeRate.getCentEquiv()));
+    BigInteger hbarMultiplier = BigInteger.valueOf(exchangeRate.getHbarEquiv());
+    BigInteger centsDivisor = BigInteger.valueOf(exchangeRate.getCentEquiv());
     BigInteger feeInBigInt = BigInteger.valueOf(tinyCentsFee);
     feeInBigInt = feeInBigInt.multiply(hbarMultiplier);
     feeInBigInt = feeInBigInt.divide(centsDivisor);
@@ -384,20 +384,20 @@ public class FeeBuilder {
 	if(txRecord == null) {
       return 0;
     }
-	long txRecordSize = getTransactionRecordSize(txRecord);    
+	long txRecordSize = getTransactionRecordSize(txRecord);
     return (txRecordSize) * getHoursFromSec(timeInSeconds);
   }
 
-  public static int getHoursFromSec(int valueInSeconds) {	  
+  public static int getHoursFromSec(int valueInSeconds) {
 	  return valueInSeconds==0 ? 0 : Math.max(1,(valueInSeconds/HRS_DIVISOR));
   }
 
   public static int getTransactionRecordSize(TransactionRecord txRecord) {
-	
+
 	if(txRecord == null) {
       return 0;
     }
-	
+
     int txRecordSize = BASIC_TX_RECORD_SIZE;
 
     if (txRecord.hasContractCallResult()) {
@@ -448,7 +448,7 @@ public class FeeBuilder {
       }
 	  long txRecordUsageRBH = getTxRecordUsageRBH(txRecord, timeInSec);
 	  long rawFee = txRecordUsageRBH * feeCoeffRBH;
-	  return Math.max(rawFee > 0 ? 1 : 0, (rawFee) / FEE_DIVISOR_FACTOR);	  
+	  return Math.max(rawFee > 0 ? 1 : 0, (rawFee) / FEE_DIVISOR_FACTOR);
   }
 
   public static int getQueryTransactionSize() {
@@ -481,4 +481,13 @@ public class FeeBuilder {
     return (responseType == ResponseType.ANSWER_STATE_PROOF
         || responseType == ResponseType.COST_ANSWER_STATE_PROOF) ? STATE_PROOF_SIZE : 0;
   }
+
+  protected long calculateRBS(TransactionBody txBody) {
+    return getBaseTransactionRecordSize(txBody) * RECEIPT_STORAGE_TIME_SEC;
+  }
+
+  protected long calculateBPT(){
+    return BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
+  }
+
 }

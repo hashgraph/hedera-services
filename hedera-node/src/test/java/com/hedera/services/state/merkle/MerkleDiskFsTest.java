@@ -36,6 +36,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 import javax.inject.Inject;
 import java.io.File;
@@ -163,6 +165,28 @@ class MerkleDiskFsTest {
 		assertThat(
 				logCaptor.warnLogs(),
 				contains(Matchers.startsWith("Failed to migrate from legacy disk-based file system!")));
+	}
+
+	@Test
+	void logsWarnWhenLegacyFileNotDeleted() throws IOException {
+		// setup:
+		String legacyBase = MOCK_DISKFS_DIR;
+		String scopedLegacyBase = legacyBase + File.separator + fsNodeScopedDir;
+		Files.createDirectories(Paths.get(scopedLegacyBase));
+		String legacyFile150Loc = legacyBase + File.separator + fsNodeScopedDir + File.separator + "File0.0.150";
+		Files.write(Paths.get(legacyFile150Loc), "NONSENSE".getBytes());
+
+
+		try (MockedStatic<Files> utilities = Mockito.mockStatic(Files.class)) {
+			utilities.when(() -> Files.delete(Paths.get(scopedLegacyBase))).thenThrow(new IOException());
+			// when:
+			subject.migrateLegacyDiskFsFromV13LocFor(legacyBase, fsNodeScopedDir);
+		}
+
+		// expect:
+		assertThat(
+				logCaptor.warnLogs(),
+				contains(Matchers.startsWith("Empty legacy directory for File 150 could not be deleted!")));
 	}
 
 	@Test

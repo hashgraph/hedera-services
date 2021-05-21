@@ -33,7 +33,7 @@ import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
 public class ExtantScheduleContext {
-	static final int METADATA_SIZE =
+	static final long METADATA_SIZE =
 			/* The schedule id, the scheduling account, and the responsible payer */
 			3 * BASIC_ENTITY_ID_SIZE +
 					/* The expiration time */
