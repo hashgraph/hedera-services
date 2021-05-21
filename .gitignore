@@ -45,6 +45,7 @@ hs_err_pid*
 !hedera-node/data/backup/*.sh
 !hedera-node/configuration/compose/init.db/*.sh
 !test-clients/yahcli/run/*.sh
+!test-clients/yahcli/assets/*.sh
 !test-clients/yahcli/run/test/local/*.sh
 *.json
 !hapi-utils/src/test/resources/bootstrap/*.json
