@@ -304,8 +304,8 @@ public class FeeBuilder {
    * @return tinyHbars
    */
   public static long getTinybarsFromTinyCents(ExchangeRate exchangeRate, long tinyCentsFee) {
-    BigInteger hbarMultiplier = BigInteger.valueOf(Long.valueOf(exchangeRate.getHbarEquiv()));
-    BigInteger centsDivisor = BigInteger.valueOf(Long.valueOf(exchangeRate.getCentEquiv()));
+    BigInteger hbarMultiplier = BigInteger.valueOf(exchangeRate.getHbarEquiv());
+    BigInteger centsDivisor = BigInteger.valueOf(exchangeRate.getCentEquiv());
     BigInteger feeInBigInt = BigInteger.valueOf(tinyCentsFee);
     feeInBigInt = feeInBigInt.multiply(hbarMultiplier);
     feeInBigInt = feeInBigInt.divide(centsDivisor);

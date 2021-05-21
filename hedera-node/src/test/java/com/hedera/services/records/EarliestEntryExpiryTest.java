@@ -53,10 +53,9 @@ public class EarliestEntryExpiryTest {
 	public void hashCodeWorks() {
 		// given:
 		EarliestRecordExpiry ere = new EarliestRecordExpiry(5L, asAccount("0.0.5"));
-		EarliestRecordExpiry ere1 = new EarliestRecordExpiry(5L, asAccount("0.0.5"));
 
 		// expect:
-		assertTrue(ere.equals(ere1));
-		assertEquals(ere1.hashCode() ,ere.hashCode());
+		var expectedHashCode = 376766795;
+		assertEquals(expectedHashCode ,ere.hashCode());
 	}
 }

@@ -55,11 +55,10 @@ class AccountBalanceTest {
 	@Test
 	public void hashCodeWorks() {
 		// given:
-		AccountBalance acc1 = new AccountBalance(5, 4, 3, 6);
-		AccountBalance acc2 = new AccountBalance(5, 4, 3, 6);
+		AccountBalance acc = new AccountBalance(5, 4, 3, 6);
 
 		// expect:
-		assertTrue(acc1.equals(acc2));
-		assertEquals(acc1.hashCode(), acc2.hashCode());
+		var expectedHashCode = 31552699;
+		assertEquals(expectedHashCode, acc.hashCode());
 	}
 }
