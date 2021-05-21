@@ -51,9 +51,9 @@ public class SigMapPubKeyToSigBytes implements PubKeyToSigBytes {
 	@Override
 	public byte[] sigBytesFor(byte[] pubKey) throws KeyPrefixMismatchException {
 		byte[] sigBytes = EMPTY_SIG;
-		for (var sigPair : sigMap.getSigPairList()) {
-			final var pubKeyPrefix = sigPair.getPubKeyPrefix().toByteArray();
-			final var length = pubKeyPrefix.length;
+		for (SignaturePair sigPair : sigMap.getSigPairList()) {
+			final byte[] pubKeyPrefix = sigPair.getPubKeyPrefix().toByteArray();
+			final int length = pubKeyPrefix.length;
 			if (Arrays.equals(pubKeyPrefix, 0, length, pubKey, 0, length)) {
 				if (sigBytes != EMPTY_SIG) {
 					throw new KeyPrefixMismatchException("Source signature map is ambiguous for given public key!");
