@@ -41,6 +41,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
@@ -182,8 +184,9 @@ public class FreezeHandler {
 				deleteFileFromList(DELETE_FILE);
 
 				log.info("{} deleting file {}", LOG_PREFIX, DELETE_FILE);
-				boolean isDeleted = deleteTxt.delete();
-				if (!isDeleted) {
+				try {
+					Files.delete(Paths.get(deleteTxt.getAbsolutePath()));
+				} catch (IOException ex) {
 					log.warn("{} File could not be deleted", DELETE_FILE);
 				}
 			}

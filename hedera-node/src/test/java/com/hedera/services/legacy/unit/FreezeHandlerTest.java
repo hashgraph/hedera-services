@@ -38,21 +38,19 @@ import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.internal.SettingsCommon;
 import org.hamcrest.Matchers;
-import org.junit.BeforeClass;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 import javax.inject.Inject;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.Date;
 import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
@@ -60,6 +58,9 @@ import static java.lang.Thread.sleep;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.stringContainsInOrder;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -99,7 +100,7 @@ class FreezeHandlerTest {
 		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, null);
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
 		TransactionRecord record = subject.freeze(txBody, consensusTime);
-		Assertions.assertEquals(record.getReceipt().getStatus(), ResponseCodeEnum.SUCCESS);
+		assertEquals(record.getReceipt().getStatus(), ResponseCodeEnum.SUCCESS);
 	}
 
 	@Test
@@ -108,7 +109,7 @@ class FreezeHandlerTest {
 		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, false, null);
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
 		TransactionRecord record = subject.freeze(txBody, consensusTime);
-		Assertions.assertEquals(INVALID_FREEZE_TRANSACTION_BODY, record.getReceipt().getStatus());
+		assertEquals(INVALID_FREEZE_TRANSACTION_BODY, record.getReceipt().getStatus());
 	}
 
 	@Test
@@ -125,7 +126,7 @@ class FreezeHandlerTest {
 
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
 		TransactionRecord record = subject.freeze(txBody, consensusTime);
-		Assertions.assertEquals(record.getReceipt().getStatus(), ResponseCodeEnum.SUCCESS);
+		assertEquals(record.getReceipt().getStatus(), ResponseCodeEnum.SUCCESS);
 
 		subject.handleUpdateFeature();
 
@@ -144,7 +145,7 @@ class FreezeHandlerTest {
 
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
 		TransactionRecord record = subject.freeze(txBody, consensusTime);
-		Assertions.assertEquals(record.getReceipt().getStatus(), ResponseCodeEnum.SUCCESS);
+		assertEquals(record.getReceipt().getStatus(), ResponseCodeEnum.SUCCESS);
 
 		// when:
 		subject.handleUpdateFeature();
@@ -155,6 +156,35 @@ class FreezeHandlerTest {
 				contains(
 						Matchers.startsWith("Freeze time starts"),
 						stringContainsInOrder(List.of("Update file id is not defined"))));
+	}
+
+	@Test
+	public void freezeUpdateWarnsWhenFileNotDeleted() throws Exception {
+		// setup:
+		String zipFile = "src/test/resources/testfiles/updateFeature/update.zip";
+		byte[] data = Files.readAllBytes(Paths.get(zipFile));
+		byte[] hash = CommonUtils.noThrowSha384HashOf(data);
+		FileID fileID = FileID.newBuilder().setShardNum(0L).setRealmNum(0L).setFileNum(150L).build();
+
+		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, fileID, hash);
+
+		given(hfs.exists(fileID)).willReturn(true);
+		given(hfs.cat(fileID)).willReturn(data);
+
+		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
+		TransactionRecord record = subject.freeze(txBody, consensusTime);
+		assertEquals(record.getReceipt().getStatus(), ResponseCodeEnum.SUCCESS);
+
+		// mockito set up
+		MockedStatic<Files> utilities = Mockito.mockStatic(Files.class);
+		utilities.when(() -> Files.delete(any())).thenThrow(new IOException());
+
+		// when:
+		subject.handleUpdateFeature();
+
+		// then:
+		assertTrue(
+				logCaptor.warnLogs().get(1).contains("File could not be deleted"));
 	}
 
 	@Test
@@ -170,7 +200,7 @@ class FreezeHandlerTest {
 
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
 		TransactionRecord record = subject.freeze(txBody, consensusTime);
-		Assertions.assertEquals(record.getReceipt().getStatus(), ResponseCodeEnum.SUCCESS);
+		assertEquals(record.getReceipt().getStatus(), ResponseCodeEnum.SUCCESS);
 
 		// when:
 		subject.handleUpdateFeature();
@@ -194,7 +224,7 @@ class FreezeHandlerTest {
 
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
 		TransactionRecord record = subject.freeze(txBody, consensusTime);
-		Assertions.assertEquals(record.getReceipt().getStatus(), ResponseCodeEnum.SUCCESS);
+		assertEquals(record.getReceipt().getStatus(), ResponseCodeEnum.SUCCESS);
 
 		// when:
 		subject.handleUpdateFeature();
@@ -219,7 +249,7 @@ class FreezeHandlerTest {
 
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
 		TransactionRecord record = subject.freeze(txBody, consensusTime);
-		Assertions.assertEquals(record.getReceipt().getStatus(), ResponseCodeEnum.SUCCESS);
+		assertEquals(record.getReceipt().getStatus(), ResponseCodeEnum.SUCCESS);
 
 		// when:
 		subject.handleUpdateFeature();
