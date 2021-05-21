@@ -24,6 +24,10 @@ import com.google.common.base.MoreObjects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+
 public class TokenRelationship {
 	private final Token token;
 	private final Account account;
@@ -52,6 +56,9 @@ public class TokenRelationship {
 	}
 
 	public void setBalance(long balance) {
+		validateTrue(!token.hasFreezeKey() || !frozen, ACCOUNT_FROZEN_FOR_TOKEN);
+		validateTrue(!token.hasKycKey() || kycGranted, ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
+
 		balanceChange += (balance - this.balance);
 		this.balance = balance;
 	}
@@ -85,8 +92,9 @@ public class TokenRelationship {
 	}
 
 	/* NOTE: The object methods below are only overridden to improve
-		readability of unit tests; model objects are not used in hash-based
-		collections, so the performance of these methods doesn't matter. */
+	readability of unit tests; model objects are not used in hash-based
+	collections, so the performance of these methods doesn't matter. */
+
 	@Override
 	public boolean equals(Object obj) {
 		return EqualsBuilder.reflectionEquals(this, obj);

@@ -9,9 +9,9 @@ package com.hedera.services.context;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -78,7 +78,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-public class AwareTransactionContextTest {
+class AwareTransactionContextTest {
 	final TransactionID scheduledTxnId = TransactionID.newBuilder()
 			.setAccountID(IdUtils.asAccount("0.0.2"))
 			.build();
@@ -91,7 +91,8 @@ public class AwareTransactionContextTest {
 			.setNanos(now.getNano())
 			.build();
 	private ExchangeRate rateNow = ExchangeRate.newBuilder().setHbarEquiv(1).setCentEquiv(100).build();
-	private ExchangeRateSet ratesNow = ExchangeRateSet.newBuilder().setCurrentRate(rateNow).setNextRate(rateNow).build();
+	private ExchangeRateSet ratesNow =
+			ExchangeRateSet.newBuilder().setCurrentRate(rateNow).setNextRate(rateNow).build();
 	private AccountID payer = asAccount("0.0.2");
 	private AccountID node = asAccount("0.0.3");
 	private AccountID anotherNodeAccount = asAccount("0.0.4");
@@ -126,9 +127,9 @@ public class AwareTransactionContextTest {
 	private String memo = "Hi!";
 	private ByteString hash = ByteString.copyFrom("fake hash".getBytes());
 	private TransactionID txnId = TransactionID.newBuilder()
-					.setTransactionValidStart(Timestamp.newBuilder().setSeconds(txnValidStart))
-					.setAccountID(payer)
-					.build();
+			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(txnValidStart))
+			.setAccountID(payer)
+			.build();
 	private ContractFunctionResult result = ContractFunctionResult.newBuilder().setContractID(contractCreated).build();
 	JKey payerKey;
 
@@ -183,7 +184,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void throwsOnUpdateIfNoRecordSoFar() {
+	void throwsOnUpdateIfNoRecordSoFar() {
 		// expect:
 		assertThrows(
 				IllegalStateException.class,
@@ -191,7 +192,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void updatesAsExpectedIfRecordSoFar() {
+	void updatesAsExpectedIfRecordSoFar() {
 		// setup:
 		subject.recordSoFar = mock(TransactionRecord.Builder.class);
 		subject.hasComputedRecordSoFar = true;
@@ -216,13 +217,31 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void throwsIseIfNoPayerActive() {
+	void canOverrideTokenTransfers() {
+		// given:
+		final var someTokenXfers = List.of(TokenTransferList.newBuilder()
+				.setToken(IdUtils.asToken("1.2.3"))
+				.addAllTransfers(
+						withAdjustments(payer, -100, node, 10, funding, 90).getAccountAmountsList())
+				.build());
+
+		// when:
+		subject.setTokenTransferLists(someTokenXfers);
+		// and:
+		var record = subject.recordSoFar();
+
+		// then:
+		assertEquals(someTokenXfers, record.getTokenTransferListsList());
+	}
+
+	@Test
+	void throwsIseIfNoPayerActive() {
 		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.activePayer());
 	}
 
 	@Test
-	public void returnsPayerIfSigActive() {
+	void returnsPayerIfSigActive() {
 		// given:
 		subject.payerSigIsKnownActive();
 
@@ -231,13 +250,13 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void returnsEmptyKeyIfNoPayerActive() {
+	void returnsEmptyKeyIfNoPayerActive() {
 		// expect:
 		assertEquals(EMPTY_KEY, subject.activePayerKey());
 	}
 
 	@Test
-	public void getsPayerKeyIfSigActive() {
+	void getsPayerKeyIfSigActive() {
 		// given:
 		subject.payerSigIsKnownActive();
 
@@ -246,13 +265,13 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void getsExpectedNodeAccount() {
+	void getsExpectedNodeAccount() {
 		// expect:
 		assertEquals(nodeAccount, subject.submittingNodeAccount());
 	}
 
 	@Test
-	public void failsHardForMissingMemberAccount() {
+	void failsHardForMissingMemberAccount() {
 		given(book.getAddress(memberId)).willReturn(null);
 
 		// expect:
@@ -260,7 +279,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void resetsRecordSoFar() {
+	void resetsRecordSoFar() {
 		// given:
 		subject.recordSoFar = mock(TransactionRecord.Builder.class);
 
@@ -272,7 +291,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void resetsEverythingElse() {
+	void resetsEverythingElse() {
 		// given:
 		subject.addNonThresholdFeeChargedToPayer(1_234L);
 		subject.setCallResult(result);
@@ -304,13 +323,13 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void effectivePayerIsSubmittingNodeIfNotVerified() {
+	void effectivePayerIsSubmittingNodeIfNotVerified() {
 		// expect:
 		assertEquals(nodeAccount, subject.effectivePayer());
 	}
 
 	@Test
-	public void effectivePayerIsActiveIfVerified() {
+	void effectivePayerIsActiveIfVerified() {
 		// given:
 		subject.payerSigIsKnownActive();
 
@@ -319,7 +338,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void getsItemizedRepr() {
+	void getsItemizedRepr() {
 		// setup:
 		TransferList canonicalAdjustments =
 				withAdjustments(payer, -2100, node, 100, funding, 1000, another, 1000);
@@ -343,7 +362,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void usesChargingToSetTransactionFee() {
+	void usesChargingToSetTransactionFee() {
 		long std = 1_234L;
 		long other = 4_321L;
 		given(itemizableFeeCharging.totalFeesChargedToPayer()).willReturn(std);
@@ -357,7 +376,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void usesTokenTransfersToSetApropos() {
+	void usesTokenTransfersToSetApropos() {
 		// when:
 		record = subject.recordSoFar();
 
@@ -366,7 +385,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void configuresCallResult() {
+	void configuresCallResult() {
 		// when:
 		subject.setCallResult(result);
 		record = subject.recordSoFar();
@@ -376,7 +395,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void configuresCreateResult() {
+	void configuresCreateResult() {
 		// when:
 		subject.setCreateResult(result);
 		record = subject.recordSoFar();
@@ -386,13 +405,13 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void hasTransferList() {
+	void hasTransferList() {
 		// expect:
 		assertEquals(transfers, subject.recordSoFar().getTransferList());
 	}
 
 	@Test
-	public void hasExpectedCopyFields() {
+	void hasExpectedCopyFields() {
 		// when:
 		TransactionRecord record = subject.recordSoFar();
 
@@ -404,7 +423,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void hasExpectedPrimitives() {
+	void hasExpectedPrimitives() {
 		// expect:
 		assertEquals(accessor, subject.accessor());
 		assertEquals(now, subject.consensusTime());
@@ -412,7 +431,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void hasExpectedStatus() {
+	void hasExpectedStatus() {
 		// when:
 		subject.setStatus(ResponseCodeEnum.INVALID_PAYER_SIGNATURE);
 
@@ -421,7 +440,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void hasExpectedRecordStatus() {
+	void hasExpectedRecordStatus() {
 		// when:
 		subject.setStatus(ResponseCodeEnum.INVALID_PAYER_SIGNATURE);
 		record = subject.recordSoFar();
@@ -431,7 +450,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void getsExpectedReceiptForAccountCreation() {
+	void getsExpectedReceiptForAccountCreation() {
 		// when:
 		subject.setCreated(created);
 		record = subject.recordSoFar();
@@ -442,7 +461,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void getsExpectedReceiptForTokenCreation() {
+	void getsExpectedReceiptForTokenCreation() {
 		// when:
 		subject.setCreated(tokenCreated);
 		record = subject.recordSoFar();
@@ -453,7 +472,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void getsExpectedReceiptForTokenMintBurnWipe() {
+	void getsExpectedReceiptForTokenMintBurnWipe() {
 		// when:
 		final var newTotalSupply = 1000L;
 		subject.setNewTotalSupply(newTotalSupply);
@@ -465,9 +484,8 @@ public class AwareTransactionContextTest {
 	}
 
 
-
 	@Test
-	public void getsExpectedReceiptForFileCreation() {
+	void getsExpectedReceiptForFileCreation() {
 		// when:
 		subject.setCreated(fileCreated);
 		record = subject.recordSoFar();
@@ -478,7 +496,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void getsExpectedReceiptForContractCreation() {
+	void getsExpectedReceiptForContractCreation() {
 		// when:
 		subject.setCreated(contractCreated);
 		record = subject.recordSoFar();
@@ -489,7 +507,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void getsExpectedReceiptForTopicCreation() {
+	void getsExpectedReceiptForTopicCreation() {
 		// when:
 		subject.setCreated(topicCreated);
 		record = subject.recordSoFar();
@@ -500,7 +518,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void getsExpectedReceiptForSubmitMessage() {
+	void getsExpectedReceiptForSubmitMessage() {
 		var sequenceNumber = 1000L;
 		var runningHash = new byte[11];
 
@@ -516,7 +534,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void getsExpectedReceiptForSuccessfulScheduleOps() {
+	void getsExpectedReceiptForSuccessfulScheduleOps() {
 		// when:
 		subject.setCreated(scheduleCreated);
 		subject.setScheduledTxnId(scheduledTxnId);
@@ -529,13 +547,13 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void startsWithoutKnownValidPayerSig() {
+	void startsWithoutKnownValidPayerSig() {
 		// expect:
 		assertFalse(subject.isPayerSigKnownActive());
 	}
 
 	@Test
-	public void setsSigToKnownValid() {
+	void setsSigToKnownValid() {
 		// given:
 		subject.payerSigIsKnownActive();
 
@@ -544,7 +562,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void triggersTxn() {
+	void triggersTxn() {
 		// when:
 		subject.trigger(accessor);
 		// then:
@@ -552,7 +570,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void getsExpectedRecordForTriggeredTxn() {
+	void getsExpectedRecordForTriggeredTxn() {
 		// given:
 		given(accessor.getScheduleRef()).willReturn(scheduleCreated);
 		given(accessor.isTriggeredTxn()).willReturn(true);
@@ -565,7 +583,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void addsExpiringEntities() {
+	void addsExpiringEntities() {
 		// given:
 		var expected = Collections.singletonList(expiringEntity);
 		// when:
@@ -576,7 +594,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void throwsIfAccessorIsAlreadyTriggered() {
+	void throwsIfAccessorIsAlreadyTriggered() {
 		// given:
 		given(accessor.getScheduleRef()).willReturn(scheduleCreated);
 		given(accessor.isTriggeredTxn()).willReturn(true);

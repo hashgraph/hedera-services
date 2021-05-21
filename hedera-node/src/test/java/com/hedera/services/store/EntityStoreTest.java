@@ -40,6 +40,7 @@ import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.fcmap.FCMap;
+import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -145,6 +146,21 @@ class EntityStoreTest {
 	}
 
 	@Test
+	void loadsExpiredTokenAsLongAsAutoRenewAccountIsSolvent() {
+		givenAccount(autoRenewMerkleId, autoRenewMerkleAccount);
+		givenAccount(treasuryMerkleId, treasuryMerkleAccount);
+		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
+		givenToken(merkleTokenId, merkleToken);
+
+		// when:
+		final var actualToken = subject.loadToken(tokenId);
+
+		// then:
+		/* JKey does not override equals properly, have to compare string representations here */
+		assertEquals(token.toString(), actualToken.toString());
+	}
+
+	@Test
 	void failsLoadingTokenWithDetachedAutoRenewAccount() throws NegativeAccountBalanceException {
 		givenAccount(autoRenewMerkleId, autoRenewMerkleAccount);
 		givenToken(merkleTokenId, merkleToken);
@@ -235,6 +251,11 @@ class EntityStoreTest {
 
 		// then:
 		assertEquals(actualAccount, miscAccount);
+	}
+
+	@Test
+	void saveAccountNotYetImplemented() {
+		assertThrows(NotImplementedException.class, () -> subject.saveAccount(miscAccount));
 	}
 
 	private void givenRelationship(MerkleEntityAssociation anAssoc, MerkleTokenRelStatus aRelationship) {
@@ -336,7 +357,7 @@ class EntityStoreTest {
 	private final Token token = new Token(tokenId);
 
 	private final boolean frozen = false;
-	private final boolean kycGranted = false;
+	private final boolean kycGranted = true;
 	private final MerkleEntityAssociation miscTokenRelId = new MerkleEntityAssociation(
 		0, 0, miscAccountNum,
 		0, 0, tokenNum);

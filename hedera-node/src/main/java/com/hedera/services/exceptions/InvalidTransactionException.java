@@ -22,6 +22,18 @@ package com.hedera.services.exceptions;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
+import java.util.function.Supplier;
+
+/**
+ * Captures a failure in transaction processing to be captured by
+ * the {@link com.hedera.services.txns.TransitionRunner} and used
+ * to set the final resolved status of the transaction.
+ *
+ * Unless the contained {@link ResponseCodeEnum} is exactly {@code FAIL_INVALID},
+ * this represents some form of user error. The {@code FAIL_INVALID} code indicates
+ * an internal system error; and it is usually desirable in that case to include a
+ * detail message in the constructor, as done by {@link ValidationUtils#checkInvariant(boolean, Supplier)}.
+ */
 public class InvalidTransactionException extends RuntimeException {
 	private final ResponseCodeEnum responseCode;
 

@@ -26,6 +26,13 @@ import java.util.function.Supplier;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
+/**
+ * A minimalist collection of helpers to improve readability of code
+ * that throws an {@code InvalidTransactionException}.
+ *
+ * The {@link ValidationUtils#checkInvariant(boolean, Supplier)} helper
+ * should be used to assert system invariants hold.
+ */
 public class ValidationUtils {
 	public static void validateTrue(boolean flag, ResponseCodeEnum code) {
 		if (!flag) {

@@ -35,16 +35,8 @@ public class Account {
 		this.id = id;
 	}
 
-	public long getExpiry() {
-		return expiry;
-	}
-
 	public void setExpiry(long expiry) {
 		this.expiry = expiry;
-	}
-
-	public long getBalance() {
-		return balance;
 	}
 
 	public void setBalance(long balance) {
@@ -56,8 +48,9 @@ public class Account {
 	}
 
 	/* NOTE: The object methods below are only overridden to improve
-		readability of unit tests; model objects are not used in hash-based
-		collections, so the performance of these methods doesn't matter. */
+	readability of unit tests; model objects are not used in hash-based
+	collections, so the performance of these methods doesn't matter. */
+
 	@Override
 	public boolean equals(Object obj) {
 		return EqualsBuilder.reflectionEquals(this, obj);

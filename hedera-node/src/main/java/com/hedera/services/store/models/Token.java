@@ -111,28 +111,24 @@ public class Token {
 		this.totalSupply = totalSupply;
 	}
 
-	public JKey getSupplyKey() {
-		return supplyKey;
-	}
-
 	public void setSupplyKey(JKey supplyKey) {
 		this.supplyKey = supplyKey;
-	}
-
-	public JKey getKycKey() {
-		return kycKey;
 	}
 
 	public void setKycKey(JKey kycKey) {
 		this.kycKey = kycKey;
 	}
 
-	public JKey getFreezeKey() {
-		return freezeKey;
-	}
-
 	public void setFreezeKey(JKey freezeKey) {
 		this.freezeKey = freezeKey;
+	}
+
+	public boolean hasFreezeKey() {
+		return freezeKey != null;
+	}
+
+	public boolean hasKycKey() {
+		return kycKey != null;
 	}
 
 	public boolean hasChangedSupply() {
@@ -141,19 +137,6 @@ public class Token {
 
 	public Id getId() {
 		return id;
-	}
-
-	/* NOTE: The object methods below are only overridden to improve
-	readability of unit tests; model objects are not used in hash-based
-	collections, so the performance of these methods doesn't matter. */
-	@Override
-	public boolean equals(Object obj) {
-		return EqualsBuilder.reflectionEquals(this, obj);
-	}
-
-	@Override
-	public int hashCode() {
-		return HashCodeBuilder.reflectionHashCode(this);
 	}
 
 	@Override
