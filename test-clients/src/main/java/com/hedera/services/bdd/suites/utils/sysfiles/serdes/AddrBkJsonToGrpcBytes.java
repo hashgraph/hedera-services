@@ -56,12 +56,7 @@ public class AddrBkJsonToGrpcBytes implements SysFileSerde<String> {
 	public byte[] toValidatedRawFile(String styledFile) {
 		var pojo = pojoFrom(styledFile);
 		for (var entry : pojo.getEntries()) {
-			try {
-				BookEntryPojo.asOctets(entry.getDeprecatedIp());
-			} catch (Exception e) {
-				throw new IllegalStateException(
-						"Deprecated IP field cannot be set to '" + entry.getDeprecatedIp() + "'", e);
-			}
+			validateIPandPort(entry.getDeprecatedIp(), entry.getDeprecatedPortNo(), "Deprecated");
 
 			try {
 				HapiPropertySource.asAccount(entry.getDeprecatedMemo());
@@ -70,12 +65,29 @@ public class AddrBkJsonToGrpcBytes implements SysFileSerde<String> {
 						"Deprecated memo field cannot be set to '" + entry.getDeprecatedMemo() + "'", e);
 			}
 
-			if (entry.getDeprecatedPortNo() <= 0) {
-				throw new IllegalStateException(
-						"Deprecated portno field cannot be set to '" + entry.getDeprecatedPortNo() + "'");
+			for(BookEntryPojo.EndpointPojo endpointPojo : entry.getEndpoints()) {
+				validateIPandPort(endpointPojo.getIpAddressV4(), endpointPojo.getPort(), "Endpoint");
 			}
 		}
 		return grpcBytesFromPojo(pojo);
+	}
+
+	private void validateIPandPort(String IpV4Address, Integer portNo, String type) {
+		try {
+			BookEntryPojo.asOctets(IpV4Address);
+		} catch (Exception e) {
+			throw new IllegalStateException(
+					type + " IP field cannot be set to '" + IpV4Address + "'", e);
+		}
+
+		try {
+			if (portNo <= 0) {
+				throw new IllegalStateException(
+						type + " portno field cannot be set to '" + portNo + "'");
+			}
+		} catch (NullPointerException e) {
+			throw new IllegalStateException(type + " portno field is not set", e);
+		}
 	}
 
 	private AddressBookPojo pojoFrom(String styledFile) {

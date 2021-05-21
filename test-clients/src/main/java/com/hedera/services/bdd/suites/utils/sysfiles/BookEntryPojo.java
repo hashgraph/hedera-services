@@ -43,7 +43,7 @@ public class BookEntryPojo {
 	private static final String MISSING_CERT_HASH = "<N/A>";
 	private static final String SENTINEL_REPLACEMENT_VALUE = "!";
 
-	static class EndpointPojo {
+	public static class EndpointPojo {
 		private String ipAddressV4;
 		private Integer port;
 
