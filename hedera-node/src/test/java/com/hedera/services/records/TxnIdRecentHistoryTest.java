@@ -129,7 +129,7 @@ class TxnIdRecentHistoryTest {
 
 	@Test
 	public void prioritizesClassifiableRecords() {
-		givenSomeWellKnownHistory();
+		givenSomeWellKnownHistoryV1();
 
 		// when:
 		var priority = subject.priorityRecord();
@@ -169,8 +169,8 @@ class TxnIdRecentHistoryTest {
 	}
 
 	@Test
-	public void forgetsAsExpected() {
-		givenSomeWellKnownHistory();
+	public void forgetsAsExpectedV1() {
+		givenSomeWellKnownHistoryV1();
 
 		// when:
 		subject.forgetExpiredAt(expiryAtOffset(4));
@@ -179,13 +179,29 @@ class TxnIdRecentHistoryTest {
 		assertEquals(
 				List.of(
 						memoIdentifying(3, 5, DUPLICATE_TRANSACTION)
-				), subject.classifiableRecords.stream().map(sr -> sr.getMemo()).collect(toList()));
+				), subject.classifiableRecords.stream().map(ExpirableTxnRecord::getMemo).collect(toList()));
 		// and:
 		assertEquals(
 				List.of(
 						memoIdentifying(1, 6, INVALID_PAYER_SIGNATURE),
 						memoIdentifying(2, 7, INVALID_NODE_ACCOUNT)
-				), subject.unclassifiableRecords.stream().map(sr -> sr.getMemo()).collect(toList()));
+				), subject.unclassifiableRecords.stream().map(ExpirableTxnRecord::getMemo).collect(toList()));
+	}
+
+	@Test
+	public void forgetsAsExpectedV2() {
+		givenSomeWellKnownHistoryV2();
+
+		// when:
+		subject.forgetExpiredAt(expiryAtOffset(4));
+
+		// then:
+		assertEquals(
+				List.of(
+						memoIdentifying(3, 5, DUPLICATE_TRANSACTION)
+				), subject.classifiableRecords.stream().map(ExpirableTxnRecord::getMemo).collect(toList()));
+		// and:
+		assertEquals(0, subject.unclassifiableRecords.size());
 	}
 
 	@Test
@@ -205,12 +221,12 @@ class TxnIdRecentHistoryTest {
 		assertEquals(
 				List.of(
 					memoIdentifying(2, 1, INVALID_NODE_ACCOUNT)
-				), duplicates.stream().map(sr -> sr.getMemo()).collect(toList()));
+				), duplicates.stream().map(ExpirableTxnRecord::getMemo).collect(toList()));
 	}
 
 	@Test
 	public void returnsOrderedDuplicates() {
-		givenSomeWellKnownHistory();
+		givenSomeWellKnownHistoryV1();
 
 		// when:
 		var records = subject.duplicateRecords();
@@ -225,10 +241,10 @@ class TxnIdRecentHistoryTest {
 						memoIdentifying(3, 5, DUPLICATE_TRANSACTION),
 						memoIdentifying(1, 6, INVALID_PAYER_SIGNATURE),
 						memoIdentifying(2, 7, INVALID_NODE_ACCOUNT)
-				), records.stream().map(sr -> sr.getMemo()).collect(toList()));
+				), records.stream().map(ExpirableTxnRecord::getMemo).collect(toList()));
 	}
 
-	private void givenSomeWellKnownHistory() {
+	private void givenSomeWellKnownHistoryV1() {
 		subject.observe(
 				recordOf(1, 0, INVALID_PAYER_SIGNATURE),
 				INVALID_PAYER_SIGNATURE);
@@ -253,6 +269,21 @@ class TxnIdRecentHistoryTest {
 		subject.observe(
 				recordOf(2, 7, INVALID_NODE_ACCOUNT),
 				INVALID_NODE_ACCOUNT);
+	}
+
+	private void givenSomeWellKnownHistoryV2() {
+		subject.observe(
+				recordOf(1, 0, INVALID_PAYER_SIGNATURE),
+				INVALID_PAYER_SIGNATURE);
+		subject.observe(
+				recordOf(1, 1, SUCCESS),
+				SUCCESS);
+		subject.observe(
+				recordOf(1, 2, DUPLICATE_TRANSACTION),
+				DUPLICATE_TRANSACTION);
+		subject.observe(
+				recordOf(3, 5, DUPLICATE_TRANSACTION),
+				DUPLICATE_TRANSACTION);
 	}
 
 	private ExpirableTxnRecord recordOf(
