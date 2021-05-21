@@ -140,7 +140,8 @@ class EntityStoreTest {
 		final var actualToken = subject.loadToken(tokenId);
 
 		// then:
-		assertEquals(token, actualToken);
+		/* JKey does not override equals properly, have to compare string representations here */
+		assertEquals(token.toString(), actualToken.toString());
 	}
 
 	@Test
@@ -178,6 +179,8 @@ class EntityStoreTest {
 						new EntityId(0, 0, autoRenewAccountNum));
 		expectedReplacementToken.setAutoRenewAccount(new EntityId(0, 0, treasuryAccountNum));
 		expectedReplacementToken.setSupplyKey(supplyKey);
+		expectedReplacementToken.setFreezeKey(freezeKey);
+		expectedReplacementToken.setKycKey(kycKey);
 
 		givenToken(merkleTokenId, merkleToken);
 		givenModifiableToken(merkleTokenId, merkleToken);
@@ -301,7 +304,7 @@ class EntityStoreTest {
 
 	private void setupTokenRel() {
 		miscTokenMerkleRel = new MerkleTokenRelStatus(balance, frozen, kycGranted);
-		miscTokenRel.setBalance(balance);
+		miscTokenRel.initBalance(balance);
 		miscTokenRel.setFrozen(frozen);
 		miscTokenRel.setKycGranted(kycGranted);
 	}

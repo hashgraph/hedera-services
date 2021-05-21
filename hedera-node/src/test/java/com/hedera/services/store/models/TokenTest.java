@@ -79,14 +79,10 @@ class TokenTest {
 
 	@Test
 	void cannotChangeTreasuryBalanceToNegative() {
-		// setup:
-		final long overflowMint = Long.MAX_VALUE - initialTreasuryBalance + 1L;
-
 		// given:
 		subject.setSupplyKey(supplyKey);
 
 		assertFailsWith(() -> subject.burn(treasuryRel, initialTreasuryBalance + 1), INSUFFICIENT_TOKEN_BALANCE);
-		assertFailsWith(() -> subject.mint(treasuryRel, overflowMint), INSUFFICIENT_TOKEN_BALANCE);
 	}
 
 	@Test

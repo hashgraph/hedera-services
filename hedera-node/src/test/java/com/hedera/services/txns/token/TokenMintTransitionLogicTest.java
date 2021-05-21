@@ -87,6 +87,8 @@ class TokenMintTransitionLogicTest {
 		treasuryRel = new TokenRelationship(token, treasury);
 
 		givenValidTxnCtx();
+		given(accessor.getTxn()).willReturn(tokenMintTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
 		given(store.loadToken(id)).willReturn(token);
 		given(token.getTreasury()).willReturn(treasury);
 		given(store.loadTokenRelationship(token, treasury)).willReturn(treasuryRel);
@@ -147,8 +149,6 @@ class TokenMintTransitionLogicTest {
 						.setToken(grpcId)
 						.setAmount(amount))
 				.build();
-		given(accessor.getTxn()).willReturn(tokenMintTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
 	}
 
 	private void givenMissingToken() {

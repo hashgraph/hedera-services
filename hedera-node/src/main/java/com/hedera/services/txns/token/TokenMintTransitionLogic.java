@@ -75,7 +75,7 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 		/* Do the business logic */
 		token.mint(treasuryRel, op.getAmount());
 
-		/* Save the updated modes */
+		/* Save the updated models */
 		store.saveToken(token);
 		store.saveTokenRelationship(treasuryRel);
 	}

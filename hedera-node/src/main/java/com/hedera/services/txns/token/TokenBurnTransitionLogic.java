@@ -73,7 +73,7 @@ public class TokenBurnTransitionLogic implements TransitionLogic {
 		/* Do the business logic */
 		token.burn(treasuryRel, op.getAmount());
 
-		/* Save the updated modes */
+		/* Save the updated models */
 		store.saveToken(token);
 		store.saveTokenRelationship(treasuryRel);
 	}
