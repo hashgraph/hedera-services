@@ -67,6 +67,14 @@ public class MerkleAccountPropertyTest {
 	}
 
 	@Test
+	public void cannotConvertNonNumericObjectToBalance() {
+		// expect:
+		assertThrows(
+				IllegalArgumentException.class,
+				() -> BALANCE.setter().accept(new MerkleAccount(), "NotNumeric"));
+	}
+
+	@Test
 	public void gettersAndSettersWork() throws Exception {
 		// given:
 		boolean origIsDeleted = false;
