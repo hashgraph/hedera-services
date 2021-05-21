@@ -21,6 +21,9 @@ package com.hedera.services.legacy.regression;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.core.AccountKeyListObj;
+import com.hedera.services.legacy.core.KeyPairObj;
+import com.hedera.services.legacy.core.TestHelper;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -37,11 +40,12 @@ import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.builder.TransactionSigner;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
 import com.hederahashgraph.service.proto.java.FileServiceGrpc;
-import com.hedera.services.legacy.core.AccountKeyListObj;
-import com.hedera.services.legacy.core.KeyPairObj;
-import com.hedera.services.legacy.core.TestHelper;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import org.junit.Assert;
+
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.security.KeyPair;
@@ -51,9 +55,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-import org.junit.Assert;
 
 /***
  * The system files are controlled by special accounts as follows: 

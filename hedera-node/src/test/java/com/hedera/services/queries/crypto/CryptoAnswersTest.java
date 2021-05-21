@@ -20,11 +20,11 @@ package com.hedera.services.queries.crypto;
  * ‍
  */
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import static org.mockito.BDDMockito.*;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.mock;
 
 class CryptoAnswersTest {
 	GetLiveHashAnswer claim;

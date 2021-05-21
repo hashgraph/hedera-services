@@ -32,7 +32,10 @@ import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import java.util.List;
 import java.util.function.Consumer;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
 /**
  * Defines a type able to manage arbitrary tokens.

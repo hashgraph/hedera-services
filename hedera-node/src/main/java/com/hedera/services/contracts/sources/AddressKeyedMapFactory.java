@@ -21,13 +21,15 @@ package com.hedera.services.contracts.sources;
  */
 
 import com.hedera.services.files.store.BytesStoreAdapter;
-import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
-import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
-import static java.lang.Long.parseLong;
+
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+
+import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
+import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
+import static java.lang.Long.parseLong;
 
 public class AddressKeyedMapFactory {
 	static final String LEGACY_BYTECODE_PATH_TEMPLATE = "/%d/s%d";

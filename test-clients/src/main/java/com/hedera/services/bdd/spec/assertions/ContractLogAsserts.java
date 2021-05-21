@@ -24,9 +24,10 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import org.ethereum.util.ByteUtil;
 import org.junit.Assert;
-import static java.util.Arrays.*;
 
 import java.nio.charset.Charset;
+
+import static java.util.Arrays.copyOfRange;
 
 public class ContractLogAsserts extends BaseErroringAssertsProvider<ContractLoginfo> {
 	 public static ContractLogAsserts logWith() { return new ContractLogAsserts(); }

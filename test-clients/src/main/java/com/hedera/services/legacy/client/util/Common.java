@@ -21,6 +21,10 @@ package com.hedera.services.legacy.client.util;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.client.core.BuildQuery;
+import com.hedera.services.legacy.client.core.BuildTransaction;
+import com.hedera.services.legacy.core.FeeClient;
+import com.hedera.services.legacy.core.TestHelper;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -42,10 +46,6 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.builder.TransactionSigner;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
-import com.hedera.services.legacy.client.core.BuildQuery;
-import com.hedera.services.legacy.client.core.BuildTransaction;
-import com.hedera.services.legacy.core.FeeClient;
-import com.hedera.services.legacy.core.TestHelper;
 import io.grpc.StatusRuntimeException;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;

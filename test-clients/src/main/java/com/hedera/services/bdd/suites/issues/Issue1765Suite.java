@@ -20,25 +20,32 @@ package com.hedera.services.bdd.suites.issues;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import static com.hedera.services.bdd.spec.HapiApiSpec.*;
-
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.List;
+
+import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asFile;
-import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.*;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.*;
-
-import java.util.List;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.takeBalanceSnapshots;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateTransferListForBalances;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 public class Issue1765Suite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(Issue1765Suite.class);

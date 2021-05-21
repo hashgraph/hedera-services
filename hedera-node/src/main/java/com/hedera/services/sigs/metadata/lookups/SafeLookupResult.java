@@ -32,8 +32,8 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_TOPIC;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_AUTORENEW_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_FILE;
-import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_SCHEDULE;
+import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.NONE;
 
 /**

@@ -21,9 +21,9 @@ package com.hedera.services.ledger.accounts;
  */
 
 import com.hedera.services.ledger.HederaLedger;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.fcmap.FCMap;
 
 import java.util.HashMap;

@@ -30,7 +30,6 @@ import java.math.BigInteger;
 import java.util.HashSet;
 
 import static java.math.BigInteger.ZERO;
-import static java.util.stream.Collectors.toSet;
 
 /**
  * Offers a few static helpers to evaluate {@link TransferList} instances

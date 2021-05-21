@@ -20,13 +20,14 @@ package com.hedera.services.legacy.core.jproto;
  * ‍
  */
 
+import org.apache.commons.lang3.SerializationUtils;
+
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
-import org.apache.commons.lang3.SerializationUtils;
 
 /**
  * Custom Serializer for JKey structure.

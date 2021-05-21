@@ -26,8 +26,8 @@ import picocli.CommandLine;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
 import static com.hedera.services.yahcli.commands.files.SysFilesCommand.resolvedDir;
+import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
 
 @CommandLine.Command(
 		name = "upload",

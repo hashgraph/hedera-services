@@ -21,6 +21,14 @@ package com.hedera.services.legacy.file;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.core.AccountKeyListObj;
+import com.hedera.services.legacy.core.CommonUtils;
+import com.hedera.services.legacy.core.CustomProperties;
+import com.hedera.services.legacy.core.FeeClient;
+import com.hedera.services.legacy.core.HexUtils;
+import com.hedera.services.legacy.core.KeyPairObj;
+import com.hedera.services.legacy.core.TestHelper;
+import com.hedera.services.legacy.proto.utils.ProtoCommonUtils;
 import com.hedera.services.legacy.regression.Utilities;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
@@ -47,16 +55,21 @@ import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc.CryptoServiceBlockingStub;
 import com.hederahashgraph.service.proto.java.FileServiceGrpc;
 import com.hederahashgraph.service.proto.java.FileServiceGrpc.FileServiceBlockingStub;
-import com.hedera.services.legacy.core.AccountKeyListObj;
-import com.hedera.services.legacy.core.CommonUtils;
-import com.hedera.services.legacy.core.CustomProperties;
-import com.hedera.services.legacy.core.FeeClient;
-import com.hedera.services.legacy.core.HexUtils;
-import com.hedera.services.legacy.core.KeyPairObj;
-import com.hedera.services.legacy.core.TestHelper;
-import com.hedera.services.legacy.proto.utils.ProtoCommonUtils;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import net.i2p.crypto.eddsa.EdDSAPublicKey;
+import net.i2p.crypto.eddsa.KeyPairGenerator;
+import org.apache.commons.codec.DecoderException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.FixMethodOrder;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runners.MethodSorters;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
@@ -72,19 +85,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
-import net.i2p.crypto.eddsa.EdDSAPublicKey;
-import net.i2p.crypto.eddsa.KeyPairGenerator;
-import org.apache.commons.codec.DecoderException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
 
 /**
  * Integration tests for file APIs.

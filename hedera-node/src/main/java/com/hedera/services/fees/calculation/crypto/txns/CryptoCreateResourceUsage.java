@@ -27,7 +27,6 @@ import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
-import com.hederahashgraph.fee.CryptoFeeBuilder;
 import com.hederahashgraph.fee.SigValueObj;
 
 public class CryptoCreateResourceUsage implements TxnResourceUsageEstimator {

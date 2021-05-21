@@ -20,6 +20,8 @@ package com.hedera.services.sigs.verification;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.sigs.PlatformSigOps;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
@@ -32,26 +34,27 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
-import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static java.util.Collections.EMPTY_LIST;
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
-import static com.hedera.test.factories.sigs.SyncVerifiers.*;
-
-import static org.mockito.BDDMockito.*;
 import static com.hedera.services.utils.PlatformTxnAccessor.uncheckedAccessorFor;
-import static com.hedera.test.factories.keys.NodeFactory.*;
+import static com.hedera.test.factories.keys.NodeFactory.ed25519;
+import static com.hedera.test.factories.keys.NodeFactory.list;
+import static com.hedera.test.factories.sigs.SyncVerifiers.ALWAYS_VALID;
+import static com.hedera.test.factories.sigs.SyncVerifiers.NEVER_VALID;
+import static java.util.Collections.EMPTY_LIST;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
 
 public class PrecheckVerifierTest {
 	private static List<JKey> reqKeys;

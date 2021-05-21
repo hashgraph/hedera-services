@@ -22,6 +22,7 @@ package com.hedera.services.legacy.file;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.TestHelper;
+import com.hedera.services.legacy.proto.utils.ProtoCommonUtils;
 import com.hedera.services.legacy.regression.umbrella.CryptoServiceTest;
 import com.hedera.services.legacy.regression.umbrella.FileServiceTest;
 import com.hedera.services.legacy.regression.umbrella.TestHelperComplex;
@@ -41,13 +42,12 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.builder.TransactionSigner;
 import com.hederahashgraph.service.proto.java.FileServiceGrpc.FileServiceBlockingStub;
-import com.hedera.services.legacy.proto.utils.ProtoCommonUtils;
-
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Regression tests for get file info API post FCFS artifact changes.

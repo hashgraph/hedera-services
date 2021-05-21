@@ -20,13 +20,16 @@ package com.hedera.services.fees.calculation.system.txns;
  * ‍
  */
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import static org.mockito.BDDMockito.*;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
 
 class FreezeResourceUsageTest {
 	private FreezeResourceUsage subject;

@@ -22,18 +22,16 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.meta;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
-import com.hedera.services.bdd.spec.queries.meta.HapiGetReceipt;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
-import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 
 import java.util.List;
 import java.util.Optional;
 
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static java.util.Collections.EMPTY_LIST;
 
 public class RandomRecord implements OpProvider {

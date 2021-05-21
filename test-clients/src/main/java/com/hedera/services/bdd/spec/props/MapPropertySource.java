@@ -21,15 +21,12 @@ package com.hedera.services.bdd.spec.props;
  */
 
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.suites.SuiteRunner;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static java.util.Map.*;
 
 public class MapPropertySource implements HapiPropertySource {
 	private static final Logger log = LogManager.getLogger(MapPropertySource.class);

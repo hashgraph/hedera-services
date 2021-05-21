@@ -20,15 +20,14 @@ package com.hedera.test.factories.txns;
  * ‍
  */
 
-import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
-import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import static com.hedera.test.utils.IdUtils.asFile;
 
 import java.util.Optional;
+
+import static com.hedera.test.utils.IdUtils.asFile;
 
 public class FileUpdateFactory extends SignedTxnFactory<FileUpdateFactory> {
 	private final String file;

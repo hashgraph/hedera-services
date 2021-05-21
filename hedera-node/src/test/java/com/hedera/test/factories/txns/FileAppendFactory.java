@@ -20,16 +20,9 @@ package com.hedera.test.factories.txns;
  * ‍
  */
 
-import com.hedera.test.factories.keys.KeyFactory;
-import com.hedera.test.factories.keys.KeyTree;
-import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
-import java.util.Optional;
 
 import static com.hedera.test.utils.IdUtils.asFile;
 

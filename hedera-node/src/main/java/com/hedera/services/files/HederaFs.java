@@ -20,10 +20,10 @@ package com.hedera.services.files;
  * ‍
  */
 
+import com.hedera.services.files.TieredHederaFs.IllegalArgumentType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hedera.services.files.TieredHederaFs.IllegalArgumentType;
 
 /**
  * A non-hierarchical collection of files managed by {@link FileID} using create/read/update/delete semantics.

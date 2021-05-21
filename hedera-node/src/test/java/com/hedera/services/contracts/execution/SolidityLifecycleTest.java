@@ -21,12 +21,11 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.legacy.evm.SolidityExecutor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hedera.services.legacy.evm.SolidityExecutor;
 import org.ethereum.core.Transaction;
 import org.ethereum.core.TransactionReceipt;
 import org.ethereum.db.ServicesRepositoryRoot;
@@ -43,7 +42,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.anyInt;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.inOrder;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.verify;
 
 class SolidityLifecycleTest {
 	int maxStorageKb = 4321;

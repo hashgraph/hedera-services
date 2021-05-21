@@ -20,6 +20,8 @@ package com.hedera.services.sigs.order;
  * ‍
  */
 
+import com.hedera.services.legacy.crypto.SignatureStatus;
+import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -30,15 +32,16 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hedera.services.legacy.crypto.SignatureStatus;
-import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.ArrayList;
 
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asContract;
+import static com.hedera.test.utils.IdUtils.asFile;
+import static com.hedera.test.utils.IdUtils.asTopic;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static com.hedera.test.utils.IdUtils.*;
 
 public class SigStatusOrderResultFactoryTest {
 	private SigStatusOrderResultFactory subject;

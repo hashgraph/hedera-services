@@ -22,8 +22,6 @@ package com.hedera.services.utils;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
 
 /**
  * Encapsulates access to several commonly referenced parts of a {@link com.swirlds.common.Transaction}

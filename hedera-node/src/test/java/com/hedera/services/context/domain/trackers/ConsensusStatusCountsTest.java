@@ -20,29 +20,23 @@ package com.hedera.services.context.domain.trackers;
  * ‍
  */
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBodyOrBuilder;
-import com.hederahashgraph.api.proto.java.CryptoDelete;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static com.hedera.services.context.domain.trackers.IssEventStatus.*;
-import static org.mockito.BDDMockito.*;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.willThrow;
 
 class ConsensusStatusCountsTest {
 	ConsensusStatusCounts subject;

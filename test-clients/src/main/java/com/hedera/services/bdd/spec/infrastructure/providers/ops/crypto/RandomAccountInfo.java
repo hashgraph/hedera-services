@@ -23,11 +23,13 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+
 import java.util.List;
 import java.util.Optional;
+
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static java.util.Collections.EMPTY_LIST;
 

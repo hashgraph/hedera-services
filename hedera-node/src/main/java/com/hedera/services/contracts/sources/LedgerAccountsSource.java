@@ -22,8 +22,8 @@ package com.hedera.services.contracts.sources;
 
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

@@ -21,14 +21,12 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 
-import java.util.Arrays;
 import java.util.Objects;
 
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;

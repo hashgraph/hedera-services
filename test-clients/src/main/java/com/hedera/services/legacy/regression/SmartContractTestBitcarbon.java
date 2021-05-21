@@ -22,7 +22,13 @@ package com.hedera.services.legacy.regression;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.CommonUtils;
+import com.hedera.services.legacy.core.FeeClient;
+import com.hedera.services.legacy.core.HexUtils;
+import com.hedera.services.legacy.core.KeyPairObj;
+import com.hedera.services.legacy.core.TestHelper;
+import com.hedera.services.legacy.file.LargeFileUploadIT;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -43,14 +49,18 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
 import com.hederahashgraph.service.proto.java.SmartContractServiceGrpc;
-import com.hedera.services.legacy.core.AccountKeyListObj;
-import com.hedera.services.legacy.core.FeeClient;
-import com.hedera.services.legacy.core.HexUtils;
-import com.hedera.services.legacy.core.KeyPairObj;
-import com.hedera.services.legacy.core.TestHelper;
-import com.hedera.services.legacy.file.LargeFileUploadIT;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import net.i2p.crypto.eddsa.KeyPairGenerator;
+import org.apache.commons.collections4.Predicate;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import org.ethereum.core.CallTransaction;
+import org.ethereum.solidity.Abi;
+import org.ethereum.solidity.Abi.Event;
+import org.junit.Assert;
+
 import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -61,15 +71,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import net.i2p.crypto.eddsa.KeyPairGenerator;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-import org.ethereum.core.CallTransaction;
-import org.ethereum.solidity.Abi;
-import org.ethereum.solidity.Abi.Event;
-import org.junit.Assert;
-import org.apache.commons.collections4.Predicate;
 
 /**
  * Test a multi-part smart contract

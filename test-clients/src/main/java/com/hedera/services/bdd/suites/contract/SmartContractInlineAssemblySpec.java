@@ -24,8 +24,12 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.ContractGetInfoResponse.ContractInfo;
+import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ethereum.core.CallTransaction;
+import org.junit.Assert;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -34,15 +38,10 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
-
-import com.hederahashgraph.api.proto.java.ContractGetInfoResponse.ContractInfo;
-import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
-import org.ethereum.core.CallTransaction;
-import org.junit.Assert;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 
 public class SmartContractInlineAssemblySpec extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(SmartContractFailFirstSpec.class);

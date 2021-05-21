@@ -25,14 +25,10 @@ import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
-import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import java.util.Optional;
-
-import static com.google.protobuf.ByteString.copyFrom;
 
 public class ScheduleCreateFactory extends SignedTxnFactory<ScheduleCreateFactory> {
     private boolean omitAdmin = false;

@@ -22,12 +22,20 @@ package com.hederahashgraph.fee;
 
 import com.google.common.base.Charsets;
 import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
+import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 
-import java.time.Instant;
 import java.time.Duration;
+import java.time.Instant;
 
 /**
  * Fee builder for Consensus service transactions.

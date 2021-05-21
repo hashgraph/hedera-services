@@ -22,7 +22,7 @@ package com.hedera.test.factories.scenarios;
 
 import com.hedera.services.utils.PlatformTxnAccessor;
 
-import static com.hedera.test.factories.txns.FileDeleteFactory.*;
+import static com.hedera.test.factories.txns.FileDeleteFactory.newSignedFileDelete;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 
 public enum FileDeleteScenarios implements TxnHandlingScenario {

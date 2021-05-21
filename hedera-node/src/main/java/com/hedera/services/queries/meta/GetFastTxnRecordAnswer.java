@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.TransactionGetFastRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetFastRecordResponse;
 
 import java.util.Optional;
+
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;

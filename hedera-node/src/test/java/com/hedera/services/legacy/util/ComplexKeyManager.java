@@ -20,16 +20,17 @@ package com.hedera.services.legacy.util;
  * ‍
  */
 
+import com.hedera.services.legacy.proto.utils.KeyExpansion;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.Key;
+
 import java.security.PrivateKey;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hedera.services.legacy.proto.utils.KeyExpansion;
 
 public class ComplexKeyManager {
 

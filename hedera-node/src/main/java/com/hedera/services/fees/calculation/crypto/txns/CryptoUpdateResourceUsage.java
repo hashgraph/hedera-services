@@ -25,7 +25,6 @@ import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
-import com.hedera.services.usage.file.ExtantFileContext;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TransactionBody;

@@ -20,9 +20,9 @@ package com.hedera.test.factories.keys;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hedera.services.legacy.core.jproto.JKey;
 
 import java.util.function.Consumer;
 import java.util.function.Predicate;

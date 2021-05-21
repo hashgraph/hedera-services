@@ -20,9 +20,9 @@ package com.hedera.services.ledger.accounts;
  * ‍
  */
 
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hedera.services.state.merkle.MerkleAccount;
 
 import java.util.HashMap;
 import java.util.Map;

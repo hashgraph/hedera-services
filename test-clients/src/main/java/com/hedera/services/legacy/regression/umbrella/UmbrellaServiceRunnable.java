@@ -21,6 +21,8 @@ package com.hedera.services.legacy.regression.umbrella;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.proto.utils.AtomicCounter;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse.ContractInfo;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -30,8 +32,8 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hedera.services.legacy.proto.utils.AtomicCounter;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.nio.file.FileSystems;
@@ -46,8 +48,6 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 
 /**

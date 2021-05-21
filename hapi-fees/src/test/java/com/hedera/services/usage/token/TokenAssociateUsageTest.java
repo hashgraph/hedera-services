@@ -20,14 +20,11 @@ package com.hedera.services.usage.token;
  * ‍
  */
 
+import com.hedera.services.test.IdUtils;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.TxnUsageEstimator;
-
-import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
-
-import com.hedera.services.test.IdUtils;
 import com.hedera.services.usage.TxnUsage;
+import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
@@ -38,6 +35,7 @@ import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
 import static com.hedera.services.usage.token.TokenTxnUsage.tokenEntitySizes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;

@@ -22,7 +22,7 @@ package com.hedera.test.factories.scenarios;
 
 import com.hedera.services.utils.PlatformTxnAccessor;
 
-import static com.hedera.test.factories.txns.ContractCreateFactory.*;
+import static com.hedera.test.factories.txns.ContractCreateFactory.newSignedContractCreate;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 
 public enum ContractCreateScenarios implements TxnHandlingScenario {

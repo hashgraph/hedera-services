@@ -20,10 +20,10 @@ package com.hedera.services.queries.consensus;
  * ‍
  */
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import org.junit.jupiter.api.Test;
-import static org.mockito.BDDMockito.*;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.BDDMockito.mock;
 
 class HcsAnswersTest {
 	GetTopicInfoAnswer getTopicInfo = mock(GetTopicInfoAnswer.class);

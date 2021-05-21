@@ -53,7 +53,6 @@ import javax.inject.Inject;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -64,7 +63,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
 
-import static com.hedera.services.state.exports.SignedStateBalancesExporter.GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL;
 import static com.hedera.services.state.exports.SignedStateBalancesExporter.SINGLE_ACCOUNT_BALANCES_COMPARATOR;
 import static com.hedera.services.state.exports.SignedStateBalancesExporter.b64Encode;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
@@ -244,7 +242,7 @@ class SignedStateBalancesExporterTest {
 		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
 		// and:
 		var loc = expectedExportLoc();
-		var desiredDebugMsg = String.format(GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL, loc + "_sig");
+		var desiredDebugMsg = "Created balance signature file " + "'" + loc + "_sig'.";
 		// and:
 		accounts.clear();
 		accounts.put(
@@ -295,8 +293,8 @@ class SignedStateBalancesExporterTest {
 		// then:
 		var lines = Files.readAllLines(Paths.get(loc));
 		assertEquals(6, lines.size());
-		assertEquals(String.format("# " + SignedStateBalancesExporter.CURRENT_VERSION, now), lines.get(0));
-		assertEquals(String.format("# TimeStamp:%s", now), lines.get(1));
+		assertEquals("# " + SignedStateBalancesExporter.CURRENT_VERSION, lines.get(0));
+		assertEquals("# TimeStamp:" + now, lines.get(1));
 		assertEquals("shardNum,realmNum,accountNum,balance,tokenBalances", lines.get(2));
 		assertEquals("0,0,1,0,", lines.get(3));
 		assertEquals("0,0,2,4999999999999999920,CggKAxjpBxCaBQoICgMY6gcQvAM=", lines.get(4));
@@ -316,7 +314,7 @@ class SignedStateBalancesExporterTest {
 		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
 		// and:
 		var loc = expectedExportLoc();
-		var desiredDebugMsg = String.format(GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL, loc + "_sig");
+		var desiredDebugMsg = "Created balance signature file " + "'" + loc + "_sig'.";
 
 		given(hashReader.readHash(loc)).willReturn(fileHash);
 		given(sigFileWriter.writeSigFile(captor.capture(), any(), any())).willReturn(loc + "_sig");
@@ -329,8 +327,8 @@ class SignedStateBalancesExporterTest {
 		var lines = Files.readAllLines(Paths.get(loc));
 		var expected = theExpectedBalances();
 		assertEquals(expected.size() + 3, lines.size());
-		assertEquals(String.format("# " + SignedStateBalancesExporter.CURRENT_VERSION, now), lines.get(0));
-		assertEquals(String.format("# TimeStamp:%s", now), lines.get(1));
+		assertEquals("# " + SignedStateBalancesExporter.CURRENT_VERSION, lines.get(0));
+		assertEquals("# TimeStamp:" + now, lines.get(1));
 		assertEquals("shardNum,realmNum,accountNum,balance,tokenBalances", lines.get(2));
 		for (int i = 0; i < expected.size(); i++) {
 			var entry = expected.get(i);
@@ -372,7 +370,7 @@ class SignedStateBalancesExporterTest {
 		var lines = Files.readAllLines(Paths.get(expectedExportLoc()));
 		var expected = theExpectedBalances();
 		assertEquals(expected.size() + 2, lines.size());
-		assertEquals(String.format("TimeStamp:%s", now), lines.get(0));
+		assertEquals("TimeStamp:" + now, lines.get(0));
 		assertEquals("shardNum,realmNum,accountNum,balance", lines.get(1));
 		for (int i = 0; i < expected.size(); i++) {
 			var entry = expected.get(i);
@@ -394,7 +392,7 @@ class SignedStateBalancesExporterTest {
 		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
 		// and:
 		var loc = expectedExportLoc(true);
-		var desiredDebugMsg = String.format(GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL, loc + "_sig");
+		var desiredDebugMsg = "Created balance signature file " + "'" + loc + "_sig'.";
 
 		given(hashReader.readHash(loc)).willReturn(fileHash);
 		given(sigFileWriter.writeSigFile(captor.capture(), any(), any())).willReturn(loc + "_sig");
@@ -504,7 +502,7 @@ class SignedStateBalancesExporterTest {
 	public void errorProtoLogsOnIoException() throws IOException {
 		// given:
 		subject.directories = assurance;
-		var desiredMsg = String.format(SignedStateBalancesExporter.BAD_EXPORT_DIR_ERROR_MSG_TPL, expectedExportDir());
+		var desiredMsg = "Cannot ensure existence of export dir " + "'" + expectedExportDir() + "'!";
 		// and:
 		willThrow(IOException.class).given(assurance).ensureExistenceOf(any());
 
@@ -545,8 +543,7 @@ class SignedStateBalancesExporterTest {
 		// given:
 		List<SingleAccountBalances> expectedBalances = theExpectedBalances();
 		// and:
-		var desiredWarning = String.format(
-				SignedStateBalancesExporter.LOW_NODE_BALANCE_WARN_MSG_TPL, "0.0.4", anotherNodeBalance);
+		var desiredWarning = "Node '0.0.4' has unacceptably low balance " + anotherNodeBalance + "!";
 
 		// when:
 		var summary = subject.summarized(state);
@@ -612,7 +609,7 @@ class SignedStateBalancesExporterTest {
 	public void errorLogsOnIoException() throws IOException {
 		// given:
 		subject.directories = assurance;
-		var desiredError = String.format(SignedStateBalancesExporter.BAD_EXPORT_DIR_ERROR_MSG_TPL, expectedExportDir());
+		var desiredError = "Cannot ensure existence of export dir " + "'" + expectedExportDir() + "'!";
 		// and:
 		willThrow(IOException.class).given(assurance).ensureExistenceOf(any());
 

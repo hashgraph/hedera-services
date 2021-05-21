@@ -26,8 +26,10 @@ import org.junit.jupiter.api.Test;
 
 import java.util.EnumMap;
 
+import static com.hedera.services.ledger.properties.TestAccountProperty.FLAG;
+import static com.hedera.services.ledger.properties.TestAccountProperty.LONG;
+import static com.hedera.services.ledger.properties.TestAccountProperty.OBJ;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static com.hedera.services.ledger.properties.TestAccountProperty.*;
 
 public class ChangeSummaryManagerTest {
 	private ChangeSummaryManager<TestAccount, TestAccountProperty> subject = new ChangeSummaryManager<>();

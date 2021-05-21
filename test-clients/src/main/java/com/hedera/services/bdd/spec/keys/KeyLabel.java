@@ -23,7 +23,9 @@ package com.hedera.services.bdd.spec.keys;
 import java.util.EnumSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
-import static com.hedera.services.bdd.spec.keys.SigControl.Nature.*;
+
+import static com.hedera.services.bdd.spec.keys.SigControl.Nature.SIG_OFF;
+import static com.hedera.services.bdd.spec.keys.SigControl.Nature.SIG_ON;
 import static java.util.stream.Collectors.joining;
 
 public class KeyLabel {

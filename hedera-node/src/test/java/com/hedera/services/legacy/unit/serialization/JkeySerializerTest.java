@@ -20,22 +20,27 @@ package com.hedera.services.legacy.unit.serialization;
  * ‍
  */
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import com.google.protobuf.ByteString;
-import com.hedera.services.utils.MiscUtils;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.services.legacy.core.jproto.JThresholdKey;
+import com.hedera.services.legacy.proto.utils.AtomicCounter;
+import com.hedera.services.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.ThresholdKey;
+import net.i2p.crypto.eddsa.EdDSAPublicKey;
+import net.i2p.crypto.eddsa.KeyPairGenerator;
+import org.junit.Assert;
+import org.junit.FixMethodOrder;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.runners.MethodSorters;
+
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.security.KeyPair;
@@ -45,16 +50,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.hedera.services.legacy.proto.utils.AtomicCounter;
-import net.i2p.crypto.eddsa.EdDSAPublicKey;
-import net.i2p.crypto.eddsa.KeyPairGenerator;
-import org.junit.FixMethodOrder;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.runners.MethodSorters;
-import org.junit.Assert;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * @author oc
  * @version Junit5 Tests the JKeySerializer 1) Create a JThreshold Key , sez & desez 2) Create a

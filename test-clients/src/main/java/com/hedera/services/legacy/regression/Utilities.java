@@ -20,6 +20,7 @@ package com.hedera.services.legacy.regression;
  * ‍
  */
 
+import com.hedera.services.legacy.core.TestHelper;
 import com.hedera.services.legacy.exception.InvalidNodeTransactionPrecheckCode;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
@@ -35,17 +36,17 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc.CryptoServiceBlockingStub;
-import com.hedera.services.legacy.core.TestHelper;
 import io.grpc.stub.StreamObserver;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import org.junit.Assert;
+
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Properties;
 import java.util.TimeZone;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-import org.junit.Assert;
 
 public class Utilities {
 

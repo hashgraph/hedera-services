@@ -22,7 +22,10 @@ package com.hedera.services.security.ops;
 
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.services.security.ops.SystemOpAuthorization.*;
+import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
+import static com.hedera.services.security.ops.SystemOpAuthorization.IMPERMISSIBLE;
+import static com.hedera.services.security.ops.SystemOpAuthorization.UNAUTHORIZED;
+import static com.hedera.services.security.ops.SystemOpAuthorization.UNNECESSARY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
