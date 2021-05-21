@@ -152,12 +152,24 @@ public class TxnIdRecentHistory {
 	}
 
 	public void forgetExpiredAt(long now) {
-		Optional.ofNullable(classifiableRecords).ifPresent(l -> forgetFromList(l, now));
-		Optional.ofNullable(unclassifiableRecords).ifPresent(l -> forgetFromList(l, now));
+		if(classifiableRecords != null) {
+			forgetFromList(classifiableRecords, now);
+		}
+		if(unclassifiableRecords != null) {
+			forgetFromList(unclassifiableRecords, now);
+		}
 	}
 
 	private void forgetFromList(List<ExpirableTxnRecord> records, long now) {
-		records.removeIf(record -> record.getExpiry() <= now);
+		final int size = records.size();
+		if (size > 1) {
+			records.removeIf(record -> record.getExpiry() <= now);
+		} else if (size == 1) {
+			final var onlyRecord = records.get(0);
+			if (onlyRecord.getExpiry() <= now) {
+				records.clear();
+			}
+		}
 	}
 
 	public DuplicateClassification currentDuplicityFor(long submittingMember) {
