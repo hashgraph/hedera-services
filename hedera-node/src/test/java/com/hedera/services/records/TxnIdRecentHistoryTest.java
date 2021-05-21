@@ -129,7 +129,7 @@ class TxnIdRecentHistoryTest {
 
 	@Test
 	public void prioritizesClassifiableRecords() {
-		givenSomeWellKnownHistoryV1();
+		givenSomeWellKnownHistoryWithListOfSizeGreaterThanOne();
 
 		// when:
 		var priority = subject.priorityRecord();
@@ -169,8 +169,8 @@ class TxnIdRecentHistoryTest {
 	}
 
 	@Test
-	public void forgetsAsExpectedV1() {
-		givenSomeWellKnownHistoryV1();
+	public void forgetsFromListOfSizeGreaterThanOneAsExpected() {
+		givenSomeWellKnownHistoryWithListOfSizeGreaterThanOne();
 
 		// when:
 		subject.forgetExpiredAt(expiryAtOffset(4));
@@ -189,8 +189,8 @@ class TxnIdRecentHistoryTest {
 	}
 
 	@Test
-	public void forgetsAsExpectedV2() {
-		givenSomeWellKnownHistoryV2();
+	public void forgetsAsExpectedFromListOfSizeOne() {
+		givenSomeWellKnownHistoryWithListOfSizeOne();
 
 		// when:
 		subject.forgetExpiredAt(expiryAtOffset(4));
@@ -226,7 +226,7 @@ class TxnIdRecentHistoryTest {
 
 	@Test
 	public void returnsOrderedDuplicates() {
-		givenSomeWellKnownHistoryV1();
+		givenSomeWellKnownHistoryWithListOfSizeGreaterThanOne();
 
 		// when:
 		var records = subject.duplicateRecords();
@@ -244,7 +244,7 @@ class TxnIdRecentHistoryTest {
 				), records.stream().map(ExpirableTxnRecord::getMemo).collect(toList()));
 	}
 
-	private void givenSomeWellKnownHistoryV1() {
+	private void givenSomeWellKnownHistoryWithListOfSizeGreaterThanOne() {
 		subject.observe(
 				recordOf(1, 0, INVALID_PAYER_SIGNATURE),
 				INVALID_PAYER_SIGNATURE);
@@ -271,7 +271,7 @@ class TxnIdRecentHistoryTest {
 				INVALID_NODE_ACCOUNT);
 	}
 
-	private void givenSomeWellKnownHistoryV2() {
+	private void givenSomeWellKnownHistoryWithListOfSizeOne() {
 		subject.observe(
 				recordOf(1, 0, INVALID_PAYER_SIGNATURE),
 				INVALID_PAYER_SIGNATURE);
