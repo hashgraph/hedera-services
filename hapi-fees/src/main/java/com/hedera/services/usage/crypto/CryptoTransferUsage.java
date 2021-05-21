@@ -55,7 +55,7 @@ public class CryptoTransferUsage extends CryptoTxnUsage<CryptoTransferUsage> {
 	public FeeData get() {
 		var op = this.op.getCryptoTransfer();
 
-		int hbarXfers = op.getTransfers().getAccountAmountsCount();
+		final long hbarXfers = op.getTransfers().getAccountAmountsCount();
 		int tokenXfers = 0;
 		long xferBytes = 0;
 		for (TokenTransferList transfer : op.getTokenTransfersList()) {

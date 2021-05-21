@@ -31,7 +31,7 @@ import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
-public class ContractGetInfoUsage extends QueryUsage  {
+public class ContractGetInfoUsage extends QueryUsage {
 	private ContractGetInfoUsage(Query query) {
 		super(query.getContractGetInfo().getHeader().getResponseType());
 		updateTb(BASIC_ENTITY_ID_SIZE);

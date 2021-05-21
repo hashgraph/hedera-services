@@ -64,7 +64,7 @@ public class CommonUtils {
    * Sleep given seconds.
    */
   public static void nap(int timeInSec)  throws InterruptedException {
-    Thread.sleep(timeInSec * 1000);
+    Thread.sleep(timeInSec * 1000L);
    }
 
   public static void nap(double timeInSec)  throws InterruptedException {
