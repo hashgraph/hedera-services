@@ -64,6 +64,8 @@ public class LoadTest extends HapiApiSuite {
 	public static OptionalInt totalScheduled = OptionalInt.empty();
 	public static OptionalInt totalTestTokenAccounts = OptionalInt.empty();
 	public static OptionalInt memoLength = OptionalInt.of(DEFAULT_MEMO_LENGTH);
+	public static OptionalInt testTopicId = OptionalInt.empty();
+
 	public static OptionalInt balancesExportPeriodSecs = OptionalInt.empty();
 	public static Optional<Boolean> clientToExportBalances = Optional.empty();
 
@@ -124,6 +126,10 @@ public class LoadTest extends HapiApiSuite {
 		return testDurationMinutes.getAsInt();
 	}
 
+	public static int getTestTopicId() {
+		return testTopicId.getAsInt();
+	}
+
 	public static RunLoadTest defaultLoadTest(Supplier<HapiSpecOperation[]> opSource, PerfTestLoadSettings settings) {
 		return runLoadTest(opSource)
 				.tps(targetTPS.isPresent() ? LoadTest::getTargetTPS : settings::getTps)
@@ -152,6 +158,8 @@ public class LoadTest extends HapiApiSuite {
 						? totalTokenAssociations::getAsInt : settings::getTotalTokenAssociations)
 				.setTestTreasureStartAccount(testTreasureStartAccount.isPresent()
 						? testTreasureStartAccount::getAsInt : settings::getTestTreasureStartAccount)
+				.setTestTopicId(testTopicId.isPresent()
+						? testTopicId::getAsInt : settings::getTestTopicId)
 				.setHCSSubmitMessageSize(hcsSubmitMessage.isPresent()
 						? hcsSubmitMessage::getAsInt : settings::getHcsSubmitMessageSize)
 				.setHCSSubmitMessageSizeVar(hcsSubmitMessageSizeVar.isPresent()

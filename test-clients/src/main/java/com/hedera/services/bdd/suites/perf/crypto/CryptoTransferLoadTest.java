@@ -44,6 +44,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -101,7 +102,8 @@ public class CryptoTransferLoadTest extends LoadTest {
 					.suppressStats(true)
 					.fee(100_000_000L)
 					.hasKnownStatusFrom(SUCCESS, OK, INSUFFICIENT_PAYER_BALANCE
-							,UNKNOWN,TRANSACTION_EXPIRED)
+							,UNKNOWN,TRANSACTION_EXPIRED,
+							INSUFFICIENT_ACCOUNT_BALANCE)
 					.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED,
 							INVALID_SIGNATURE,PAYER_ACCOUNT_NOT_FOUND)
 					.deferStatusResolution()
@@ -116,7 +118,6 @@ public class CryptoTransferLoadTest extends LoadTest {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
 								.overridingProps(Map.of("hapi.throttling.buckets.fastOpBucket.capacity", "1300000.0")),
-						reduceFeeFor(CryptoTransfer, 2L, 3L, 3L),
 						cryptoCreate("sender")
 								.balance(ignore -> settings.getInitialBalance())
 								.withRecharging()

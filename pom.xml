@@ -217,8 +217,8 @@ ${git.signoff}
 ${git.signoff}
           </scmBranchCommitComment>
           <preparationGoals>
-            clean 
-            license:update-file-header 
+            clean
+            license:update-file-header
             verify
             exec:exec@stage-changes
           </preparationGoals>
