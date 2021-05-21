@@ -171,7 +171,7 @@
     <hamcrest-all.version>1.3</hamcrest-all.version>
     <junit.version>4.13.1</junit.version>
     <junit5-bom.version>5.7.0</junit5-bom.version>
-    <mockito2.version>3.7.0</mockito2.version>
+    <mockito2.version>3.7.7</mockito2.version>
 
     <!-- SonarCloud properties -->
     <jacoco.version>0.8.6</jacoco.version>

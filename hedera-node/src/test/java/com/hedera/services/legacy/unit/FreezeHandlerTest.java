@@ -38,7 +38,6 @@ import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.internal.SettingsCommon;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -135,7 +134,7 @@ class FreezeHandlerTest {
 
 		//check whether new file has been added as expected
 		File file3 = new File("new3.txt");
-		Assertions.assertTrue(file3.exists());
+		assertTrue(file3.exists());
 		file3.delete();
 	}
 
@@ -175,12 +174,12 @@ class FreezeHandlerTest {
 		TransactionRecord record = subject.freeze(txBody, consensusTime);
 		assertEquals(record.getReceipt().getStatus(), ResponseCodeEnum.SUCCESS);
 
-		// mockito set up
-		MockedStatic<Files> utilities = Mockito.mockStatic(Files.class);
-		utilities.when(() -> Files.delete(any())).thenThrow(new IOException());
-
-		// when:
-		subject.handleUpdateFeature();
+		try (MockedStatic<Files> utilities = Mockito.mockStatic(Files.class)) {
+			// mockito set up
+			utilities.when(() -> Files.delete(any())).thenThrow(new IOException());
+			// when:
+			subject.handleUpdateFeature();
+		}
 
 		// then:
 		assertTrue(

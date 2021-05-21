@@ -176,11 +176,12 @@ class MerkleDiskFsTest {
 		String legacyFile150Loc = legacyBase + File.separator + fsNodeScopedDir + File.separator + "File0.0.150";
 		Files.write(Paths.get(legacyFile150Loc), "NONSENSE".getBytes());
 
-		MockedStatic<Files> utilities = Mockito.mockStatic(Files.class);
-		utilities.when(() -> Files.delete(Paths.get(scopedLegacyBase))).thenThrow(new IOException());
 
-		// when:
-		subject.migrateLegacyDiskFsFromV13LocFor(legacyBase, fsNodeScopedDir);
+		try (MockedStatic<Files> utilities = Mockito.mockStatic(Files.class)) {
+			utilities.when(() -> Files.delete(Paths.get(scopedLegacyBase))).thenThrow(new IOException());
+			// when:
+			subject.migrateLegacyDiskFsFromV13LocFor(legacyBase, fsNodeScopedDir);
+		}
 
 		// expect:
 		assertThat(
