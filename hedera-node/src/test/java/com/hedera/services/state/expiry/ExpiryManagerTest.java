@@ -126,7 +126,7 @@ class ExpiryManagerTest {
 	void rebuildsExpectedRecordsFromState() {
 		// setup:
 		subject = new ExpiryManager(
-				mockRecordCache, mockScheduleStore, nums, liveTxnHistories, () -> mockAccounts, () -> mockSchedules);
+				mockRecordCache, mockScheduleStore, nums, liveTxnHistories, () -> liveAccounts, () -> mockSchedules);
 		final var newTxnId = recordWith(aGrpcId, start).getTransactionID();
 		final var leftoverTxnId = recordWith(bGrpcId, now).getTransactionID();
 		liveTxnHistories.put(leftoverTxnId, new TxnIdRecentHistory());
