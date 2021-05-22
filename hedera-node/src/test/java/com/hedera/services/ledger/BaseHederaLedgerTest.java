@@ -54,7 +54,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
-import static com.hedera.services.ledger.properties.AccountProperty.RECORDS;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.test.mocks.TestContextValidator.TEST_VALIDATOR;
@@ -139,10 +138,6 @@ public class BaseHederaLedgerTest {
 			records.offer(record);
 		}
 		return records;
-	}
-
-	protected void addPayerRecords(AccountID id, FCQueue<ExpirableTxnRecord> records) {
-		when(accountsLedger.get(id, RECORDS)).thenReturn(records);
 	}
 
 	protected void addToLedger(

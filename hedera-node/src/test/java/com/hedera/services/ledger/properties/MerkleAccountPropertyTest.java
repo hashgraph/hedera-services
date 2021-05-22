@@ -35,7 +35,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.fcqueue.FCQueue;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -51,7 +50,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CON
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
-import static com.hedera.services.ledger.properties.AccountProperty.RECORDS;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -81,8 +79,6 @@ public class MerkleAccountPropertyTest {
 		boolean origIsReceiverSigReq = false;
 		boolean origIsContract = false;
 		long origBalance = 1L;
-		long origReceivedRecordThresh = 1L;
-		long origSendRecordThresh = 1L;
 		long origAutoRenew = 1L;
 		long origExpiry = 1L;
 		MerkleAccountTokens origTokens = new MerkleAccountTokens();
@@ -102,8 +98,6 @@ public class MerkleAccountPropertyTest {
 		boolean newIsReceiverSigReq = true;
 		boolean newIsContract = true;
 		long newBalance = 2L;
-		long newReceivedRecordThresh = 2L;
-		long newSendRecordThresh = 2L;
 		long newAutoRenew = 2L;
 		long newExpiry = 2L;
 		MerkleAccountTokens newTokens = origTokens.copy();
@@ -112,10 +106,6 @@ public class MerkleAccountPropertyTest {
 		JKey newKey = new JKeyList();
 		String newMemo = "b";
 		EntityId newProxy = new EntityId(0, 0, 2);
-		FCQueue<ExpirableTxnRecord> newRecords = new FCQueue<>();
-		newRecords.offer(expirableRecord(ResponseCodeEnum.SUCCESS));
-		FCQueue<ExpirableTxnRecord> newPayerRecords = new FCQueue<>();
-		newPayerRecords.offer(expirableRecord(ResponseCodeEnum.INVALID_FILE_ID));
 		// and:
 		MerkleAccount account = new HederaAccountCustomizer()
 				.key(JKey.mapKey(origKey))
@@ -132,9 +122,6 @@ public class MerkleAccountPropertyTest {
 		account.records().offer(origPayerRecords.get(0));
 		account.records().offer(origPayerRecords.get(1));
 		// and:
-		var unfrozenTokenId = IdUtils.tokenWith(123);
-		var frozenTokenId = IdUtils.tokenWith(321);
-		var newTokenBalance = 1_234_567L;
 		var adminKey = TOKEN_ADMIN_KT.asJKeyUnchecked();
 		var unfrozenToken = new MerkleToken(
 				Long.MAX_VALUE, 100, 1,
@@ -161,7 +148,6 @@ public class MerkleAccountPropertyTest {
 		KEY.setter().accept(account, newKey);
 		MEMO.setter().accept(account, newMemo);
 		PROXY.setter().accept(account, newProxy);
-		RECORDS.setter().accept(account, newPayerRecords);
 		// and:
 		TOKENS.setter().accept(account, newTokens);
 
@@ -175,7 +161,6 @@ public class MerkleAccountPropertyTest {
 		assertEquals(newKey, KEY.getter().apply(account));
 		assertEquals(newMemo, MEMO.getter().apply(account));
 		assertEquals(newProxy, PROXY.getter().apply(account));
-		assertEquals(newPayerRecords, RECORDS.getter().apply(account));
 		// and:
 		assertEquals(newTokens, TOKENS.getter().apply(account));
 	}

@@ -35,7 +35,6 @@ import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -46,7 +45,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.fcqueue.FCQueue;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -58,20 +56,17 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 
 import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
-import static com.hedera.services.ledger.properties.AccountProperty.RECORDS;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.txns.crypto.CryptoTransferTransitionLogic.tryTransfers;
 import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAdjustment;
-import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
@@ -156,7 +151,6 @@ public class HederaLedger {
 		this.accountsLedger = accountsLedger;
 		this.dynamicProperties = dynamicProperties;
 
-		historian.setLedger(this);
 		historian.setCreator(creator);
 		tokenStore.setAccountsLedger(accountsLedger);
 		tokenStore.setHederaLedger(this);
@@ -476,47 +470,6 @@ public class HederaLedger {
 
 	public MerkleAccount get(AccountID id) {
 		return accountsLedger.get(id);
-	}
-
-	/* -- TRANSACTION HISTORY MANIPULATION -- */
-	public long purgeExpiredRecords(AccountID id, long now, Consumer<ExpirableTxnRecord> cb) {
-		return purge(id, RECORDS, now, cb);
-	}
-
-	private long purge(
-			AccountID id,
-			AccountProperty recordsProp,
-			long now,
-			Consumer<ExpirableTxnRecord> cb
-	) {
-		FCQueue<ExpirableTxnRecord> records = (FCQueue<ExpirableTxnRecord>) accountsLedger.get(id, recordsProp);
-		int numBefore = records.size();
-
-		long newEarliestExpiry = purgeForNewEarliestExpiry(records, now, cb);
-		accountsLedger.set(id, recordsProp, records);
-
-		int numPurged = numBefore - records.size();
-		LedgerTxnEvictionStats.INSTANCE.recordPurgedFromAnAccount(numPurged);
-		log.debug("Purged {} records from account {}",
-				() -> numPurged,
-				() -> readableId(id));
-
-		return newEarliestExpiry;
-	}
-
-	private long purgeForNewEarliestExpiry(
-			FCQueue<ExpirableTxnRecord> records,
-			long now,
-			Consumer<ExpirableTxnRecord> cb
-	) {
-		long newEarliestExpiry = -1;
-		while (!records.isEmpty() && records.peek().getExpiry() <= now) {
-			cb.accept(records.poll());
-		}
-		if (!records.isEmpty()) {
-			newEarliestExpiry = records.peek().getExpiry();
-		}
-		return newEarliestExpiry;
 	}
 
 	/* -- HELPERS -- */

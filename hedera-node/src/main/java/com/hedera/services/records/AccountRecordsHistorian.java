@@ -45,14 +45,6 @@ import java.util.Optional;
  */
 public interface AccountRecordsHistorian {
 	/**
-	 * Injects the ledger in which accounts pay for the transactions
-	 * whose history is of interest.
-	 *
-	 * @param ledger the ledger to record history for.
-	 */
-	void setLedger(HederaLedger ledger);
-
-	/**
 	 * Injects the expiring entity creator which the historian
 	 * should use to create records.
 	 *
@@ -72,14 +64,6 @@ public interface AccountRecordsHistorian {
 	 * transaction.)
 	 */
 	void saveTransactionRecord();
-
-	/**
-	 * Removes expired records from the relevant ledger. Note that for
-	 * this to be done efficiently, the historian will likely need
-	 * the opportunity to scan the ledger and build an auxiliary data
-	 * structure of expiration times.
-	 */
-	void purgeExpiredRecords();
 
 	/**
 	 * Invites the historian to build any auxiliary data structures

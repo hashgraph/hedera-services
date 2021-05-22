@@ -386,7 +386,6 @@ public class DomainSerdesTest {
 		assertEquals(JKey.mapJKey(keyIn), JKey.mapJKey(keyOut));
 	}
 
-
 	public static ExpirableTxnRecord recordOne() {
 		TransactionRecord record = TransactionRecord.newBuilder()
 				.setReceipt(TransactionReceipt.newBuilder()

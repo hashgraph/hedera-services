@@ -48,7 +48,8 @@ public class TxnIdRecentHistory {
 	private static final Comparator<ExpirableTxnRecord> CONSENSUS_TIME_COMPARATOR =
 			comparing(r -> r.getConsensusTimestamp(), RI_CMP);
 
-	int numDuplicates = 0;
+	private int numDuplicates = 0;
+
 	List<ExpirableTxnRecord> memory = null;
 	List<ExpirableTxnRecord> classifiableRecords = null;
 	List<ExpirableTxnRecord> unclassifiableRecords = null;

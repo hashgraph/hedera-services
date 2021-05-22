@@ -1382,11 +1382,7 @@ public class ServicesContext {
 
 	public AccountRecordsHistorian recordsHistorian() {
 		if (recordsHistorian == null) {
-			recordsHistorian = new TxnAwareRecordsHistorian(
-					recordCache(),
-					txnCtx(),
-					this::accounts,
-					expiries());
+			recordsHistorian = new TxnAwareRecordsHistorian(recordCache(), txnCtx(), expiries());
 		}
 		return recordsHistorian;
 	}
@@ -1502,7 +1498,8 @@ public class ServicesContext {
 	public ExpiryManager expiries() {
 		if (expiries == null) {
 			var histories = txnHistories();
-			expiries = new ExpiryManager(recordCache(), histories, scheduleStore(), this::schedules);
+			expiries = new ExpiryManager(
+					recordCache(), scheduleStore(), hederaNums(), histories, this::accounts, this::schedules);
 		}
 		return expiries;
 	}

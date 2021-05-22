@@ -88,16 +88,16 @@ public class AwareProcessLogic implements ProcessLogic {
 	public void incorporateConsensusTxn(Transaction platformTxn, Instant consensusTime, long submittingMember) {
 		try {
 			PlatformTxnAccessor accessor = new PlatformTxnAccessor(platformTxn);
-			Instant timestamp = consensusTime;
+			Instant parentConsensusTime = consensusTime;
 			if (accessor.canTriggerTxn()) {
-				timestamp = timestamp.minusNanos(1);
+				parentConsensusTime = consensusTime.minusNanos(1);
 			}
-
-			if (!txnSanityChecks(accessor, timestamp, submittingMember)) {
+			if (!txnSanityChecks(accessor, parentConsensusTime, submittingMember)) {
 				return;
 			}
-			txnManager.process(accessor, timestamp, submittingMember, ctx);
 
+			ctx.expiries().purge(parentConsensusTime.getEpochSecond());
+			txnManager.process(accessor, parentConsensusTime, submittingMember, ctx);
 			if (ctx.txnCtx().triggeredTxn() != null) {
 				TxnAccessor scopedAccessor = ctx.txnCtx().triggeredTxn();
 				txnManager.process(scopedAccessor, consensusTime, submittingMember, ctx);
@@ -172,8 +172,6 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	private void doProcess(TxnAccessor accessor, Instant consensusTime) {
 		ctx.networkCtxManager().advanceConsensusClockTo(consensusTime);
-		ctx.recordsHistorian().purgeExpiredRecords();
-		ctx.expiries().purgeExpiredEntitiesAt(consensusTime.getEpochSecond());
 
 		var sigStatus = rationalizeWithPreConsensusSigs(accessor);
 		if (hasActivePayerSig(accessor)) {

@@ -31,9 +31,7 @@ class NoopRecordsHistorianTest {
 	public void nothingMuchHappens() {
 		// expect:
 		assertDoesNotThrow(NOOP_RECORDS_HISTORIAN::finalizeTransactionRecord);
-		assertDoesNotThrow(NOOP_RECORDS_HISTORIAN::purgeExpiredRecords);
 		assertDoesNotThrow(NOOP_RECORDS_HISTORIAN::addNewEntities);
-		assertDoesNotThrow(() -> NOOP_RECORDS_HISTORIAN.setLedger(null));
 		assertDoesNotThrow(() -> NOOP_RECORDS_HISTORIAN.setCreator(null));
 		assertDoesNotThrow(() -> NOOP_RECORDS_HISTORIAN.reviewExistingRecords());
 		assertTrue(NOOP_RECORDS_HISTORIAN.lastCreatedRecord().isEmpty());

@@ -20,7 +20,7 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
-import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -37,78 +37,161 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import static java.util.Comparator.comparing;
+
+/**
+ * Manager of two queues of expiration events---one for payer records, one for schedule entities.
+ *
+ * There are two management responsibilities:
+ * <ol>
+ *    <li>On restart or reconnect, rebuild the expiration queues from state.</li>
+ *    <li>At the first consensus second an entity is expired, remove it from its parent collection.</li>
+ * </ol>
+ */
 public class ExpiryManager {
+	private final long shard, realm;
+
 	private final RecordCache recordCache;
+	private final ScheduleStore scheduleStore;
 	private final Map<TransactionID, TxnIdRecentHistory> txnHistories;
+	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 	private final Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules;
 
-	private final ScheduleStore scheduleStore;
-
-	long sharedNow;
-	MonotonicFullQueueExpiries<Long> payerExpiries = new MonotonicFullQueueExpiries<>();
-	MonotonicFullQueueExpiries<Pair<Long, Consumer<EntityId>>> entityExpiries = new MonotonicFullQueueExpiries<>();
+	private final MonotonicFullQueueExpiries<Long> payerRecordExpiries =
+			new MonotonicFullQueueExpiries<>();
+	private final MonotonicFullQueueExpiries<Pair<Long, Consumer<EntityId>>> shortLivedEntityExpiries =
+			new MonotonicFullQueueExpiries<>();
 
 	public ExpiryManager(
 			RecordCache recordCache,
-			Map<TransactionID, TxnIdRecentHistory> txnHistories,
 			ScheduleStore scheduleStore,
+			HederaNumbers hederaNums,
+			Map<TransactionID, TxnIdRecentHistory> txnHistories,
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules
 	) {
+		this.accounts = accounts;
+		this.schedules = schedules;
 		this.recordCache = recordCache;
 		this.txnHistories = txnHistories;
 		this.scheduleStore = scheduleStore;
 
-		this.schedules = schedules;
+		this.shard = hederaNums.shard();
+		this.realm = hederaNums.realm();
 	}
 
-	public void trackRecordInState(AccountID owner, long expiry) {
-		payerExpiries.track(owner.getAccountNum(), expiry);
+	/**
+	 * Purges any references to expired entities (at this time, records or schedules).
+	 *
+	 * @param now the consensus second
+	 */
+	public void purge(long now) {
+		purgeExpiredRecordsAt(now);
+		purgeExpiredShortLivedEntities(now);
 	}
 
-	public void restartTrackingFrom(FCMap<MerkleEntityId, MerkleAccount> accounts) {
+	/**
+	 * Begins tracking an expiration event.
+	 *
+	 * @param event the expiration event to track
+	 * @param expiry the earliest consensus second at which it should fire
+	 */
+	public void trackExpirationEvent(Pair<Long, Consumer<EntityId>> event, long expiry) {
+		shortLivedEntityExpiries.track(event, expiry);
+	}
+
+	/**
+	 * When payer records are in state (true by default), upon restart or reconnect the
+	 * expiry manager needs to rebuild its expiration queue so it can correctly purge
+	 * these records as their 180s lifetimes expire.
+	 *
+	 * <b>IMPORTANT:</b> As a side-effect, this method re-stages the injected
+	 * {@code txnHistories} map with the recent histories of the {@link TransactionID}s
+	 * from records in state.
+	 */
+	public void reviewExistingPayerRecords() {
 		recordCache.reset();
 		txnHistories.clear();
-		payerExpiries.reset();
+		payerRecordExpiries.reset();
 
-		var _payerExpiries = new ArrayList<Map.Entry<Long, Long>>();
-		accounts.forEach((id, account) -> {
-			addUniqueExpiries(id.getNum(), account.records(), _payerExpiries);
-		});
-
-		var cmp = Comparator.comparing(Map.Entry<Long, Long>::getValue).thenComparing(Map.Entry::getKey);
-		_payerExpiries.sort(cmp);
-		_payerExpiries.forEach(entry -> payerExpiries.track(entry.getKey(), entry.getValue()));
+		final var _payerExpiries = new ArrayList<Map.Entry<Long, Long>>();
+		final var currentAccounts = accounts.get();
+		currentAccounts.forEach((id, account) -> stageExpiringRecords(id.getNum(), account.records(), _payerExpiries));
+		_payerExpiries.sort(comparing(Map.Entry<Long, Long>::getValue).thenComparing(Map.Entry::getKey));
+		_payerExpiries.forEach(entry -> payerRecordExpiries.track(entry.getKey(), entry.getValue()));
 
 		txnHistories.values().forEach(TxnIdRecentHistory::observeStaged);
 	}
 
 	/**
-	 * Invites the expiry manager to build any auxiliary data structures later needed to purge expired entities.
+	 * Entities that typically expire on the order of days or months (topics, accounts, tokens, etc.)
+	 * are monitored and automatically renewed or removed by the {@link EntityAutoRenewal} process.
+	 *
+	 * The only entities that currently qualify as "short-lived" are schedule entities, which have
+	 * a default expiration time of 30 minutes. So this method's only function is to scan the
+	 * current {@code schedules} FCM and enqueue their expiration events.
 	 */
-	public void restartEntitiesTracking() {
-		entityExpiries.reset();
+	public void reviewExistingShortLivedEntities() {
+		shortLivedEntityExpiries.reset();
 
-		var expiries = new ArrayList<Map.Entry<Pair<Long, Consumer<EntityId>>, Long>>();
+		final var _shortLivedEntityExpiries = new ArrayList<Map.Entry<Pair<Long, Consumer<EntityId>>, Long>>();
 		schedules.get().forEach((id, schedule) -> {
 			Consumer<EntityId> consumer = scheduleStore::expire;
 			var pair = Pair.of(id.getNum(), consumer);
-			expiries.add(new AbstractMap.SimpleImmutableEntry<>(pair, schedule.expiry()));
+			_shortLivedEntityExpiries.add(new AbstractMap.SimpleImmutableEntry<>(pair, schedule.expiry()));
 		});
 
-		var cmp = Comparator
-				.comparing(Map.Entry<Pair<Long, Consumer<EntityId>>, Long>::getValue)
-				.thenComparing(entry -> entry.getKey().getKey());
-		expiries.sort(cmp);
-		expiries.forEach(entry -> entityExpiries.track(entry.getKey(), entry.getValue()));
+		_shortLivedEntityExpiries.sort(comparing(Map.Entry<Pair<Long, Consumer<EntityId>>, Long>::getValue).
+				thenComparing(entry -> entry.getKey().getKey()));
+		_shortLivedEntityExpiries.forEach(entry -> shortLivedEntityExpiries.track(entry.getKey(), entry.getValue()));
 	}
 
-	private void addUniqueExpiries(
+	void trackRecordInState(AccountID owner, long expiry) {
+		payerRecordExpiries.track(owner.getAccountNum(), expiry);
+	}
+
+	private void purgeExpiredRecordsAt(long now) {
+		final var currentAccounts = accounts.get();
+		while (payerRecordExpiries.hasExpiringAt(now)) {
+			final var key = new MerkleEntityId(shard, realm, payerRecordExpiries.expireNextAt(now));
+
+			final var mutableAccount = currentAccounts.getForModify(key);
+			final var mutableRecords = mutableAccount.records();
+			purgeExpiredFrom(mutableRecords, now);
+
+			currentAccounts.replace(key, mutableAccount);
+		}
+		recordCache.forgetAnyOtherExpiredHistory(now);
+	}
+
+	private void purgeExpiredFrom(FCQueue<ExpirableTxnRecord> records, long now) {
+		ExpirableTxnRecord nextRecord;
+		while ((nextRecord = records.peek()) != null && nextRecord.getExpiry() <= now) {
+			nextRecord = records.poll();
+			final var txnId = nextRecord.getTxnId().toGrpc();
+			final var history = txnHistories.get(txnId);
+			if (history != null) {
+				history.forgetExpiredAt(now);
+				if (history.isForgotten()) {
+					txnHistories.remove(txnId);
+				}
+			}
+		}
+	}
+
+	private void purgeExpiredShortLivedEntities(long now) {
+		while (shortLivedEntityExpiries.hasExpiringAt(now)) {
+			var current = shortLivedEntityExpiries.expireNextAt(now);
+			current.getValue().accept(entityWith(current.getKey()));
+		}
+	}
+
+	private void stageExpiringRecords(
 			Long num,
 			FCQueue<ExpirableTxnRecord> records,
 			List<Map.Entry<Long, Long>> expiries
@@ -124,56 +207,16 @@ public class ExpiryManager {
 		}
 	}
 
-	void stage(ExpirableTxnRecord record) {
-		var txnId = record.getTxnId().toGrpc();
+	private void stage(ExpirableTxnRecord record) {
+		final var txnId = record.getTxnId().toGrpc();
 		txnHistories.computeIfAbsent(txnId, ignore -> new TxnIdRecentHistory()).stage(record);
 	}
 
-	public void purgeExpiredRecordsAt(long now, HederaLedger ledger) {
-		sharedNow = now;
-		while (payerExpiries.hasExpiringAt(now)) {
-			ledger.purgeExpiredRecords(accountWith(payerExpiries.expireNextAt(now)), now, this::updateHistory);
-		}
-		recordCache.forgetAnyOtherExpiredHistory(now);
+	private EntityId entityWith(long num) {
+		return new EntityId(shard, realm, num);
 	}
 
-	/**
-	 * Marks expired entities as deleted before given timestamp in seconds. Not that for
-	 * this to be done efficiently, the expiry manager will need the opportunity to scan
-	 * the ledger and build an auxiliary data structure of expiration times
-	 * @param now the time in seconds used to expire entities
-	 */
-	public void purgeExpiredEntitiesAt(long now) {
-		while (entityExpiries.hasExpiringAt(now)) {
-			var current = entityExpiries.expireNextAt(now);
-			current.getValue().accept(entityWith(current.getKey()));
-		}
-	}
-
-	public void trackEntity(Pair<Long, Consumer<EntityId>> entity, long expiry) {
-		entityExpiries.track(entity, expiry);
-	}
-
-	void updateHistory(ExpirableTxnRecord record) {
-		var txnId = record.getTxnId().toGrpc();
-		var history = txnHistories.get(txnId);
-		if (history != null) {
-			history.forgetExpiredAt(sharedNow);
-			if (history.isForgotten()) {
-				txnHistories.remove(txnId);
-			}
-		}
-	}
-
-	AccountID accountWith(long num) {
-		return AccountID.newBuilder()
-				.setShardNum(0)
-				.setRealmNum(0)
-				.setAccountNum(num)
-				.build();
-	}
-
-	EntityId entityWith(long num) {
-		return new EntityId(0, 0, num);
+	MonotonicFullQueueExpiries<Pair<Long, Consumer<EntityId>>> getShortLivedEntityExpiries() {
+		return shortLivedEntityExpiries;
 	}
 }
