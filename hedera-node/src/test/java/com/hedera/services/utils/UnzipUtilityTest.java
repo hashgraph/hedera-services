@@ -34,24 +34,19 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class UnzipUtilityTest {
+	@Test
+	public void privateConstructorShallThrowException() {
+		Constructor<?> ctor;
+		try {
+			ctor = UnzipUtility.class.getDeclaredConstructor();
+			ctor.setAccessible(true);
 
-//  Need to figure out a way to test the private constructor invocation.
-//	@Test
-//	public void privateConstructorShallThrowException() {
-//		try {
-//			Constructor<?> constructor = UnzipUtility.class.getConstructor();
-//			constructor.setAccessible(true);
-//			//try {
-//			constructor.newInstance();
-//			fail("UnzipUtility class's private constructor cannot be called");
-//		} catch (NoSuchMethodException expected ) {
-////			IllegalStateException cause = (IllegalStateException) expected.getCause();
-//			assertEquals("UnzipUtility is an utility class. Shouldn't create any instance!", expected.getMessage());
-//		} catch ( InvocationTargetException | InstantiationException | IllegalAccessException  expected) {
-//			IllegalStateException cause = (IllegalStateException) expected.getCause();
-//			assertEquals("UnzipUtility is an utility class. Shouldn't create any instance!", cause.getMessage());
-//		}
-//	}
+			ctor.newInstance();
+		} catch (Exception e) {
+			IllegalStateException cause = (IllegalStateException) e.getCause();
+			assertEquals("UnzipUtility is an utility class. Shouldn't create any instance!", cause.getMessage());
+		}
+	}
 
 	@Test
 	public void unzipAbortWithRiskyFile() throws Exception {
