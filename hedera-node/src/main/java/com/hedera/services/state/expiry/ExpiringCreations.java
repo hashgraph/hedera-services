@@ -24,20 +24,28 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.swirlds.fcmap.FCMap;
+
+import java.util.function.Supplier;
 
 public class ExpiringCreations implements EntityCreator {
 	private RecordCache recordCache;
-	private HederaLedger ledger;
+
 	private final ExpiryManager expiries;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
 	public ExpiringCreations(
 			ExpiryManager expiries,
-			GlobalDynamicProperties dynamicProperties
+			GlobalDynamicProperties dynamicProperties,
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
 	) {
+		this.accounts = accounts;
 		this.expiries = expiries;
 		this.dynamicProperties = dynamicProperties;
 	}
@@ -48,35 +56,37 @@ public class ExpiringCreations implements EntityCreator {
 	}
 
 	@Override
-	public void setLedger(HederaLedger ledger) {
-		this.ledger = ledger;
-	}
-
-	@Override
 	public ExpirableTxnRecord createExpiringRecord(
-			AccountID id,
-			TransactionRecord record,
+			AccountID payer,
+			TransactionRecord grpcRecord,
 			long now,
 			long submittingMember
 	) {
-		var expiringRecord = ExpirableTxnRecord.fromGprc(record);
+		final var record = buildFrom(grpcRecord, now, submittingMember);
 
-		long expiry = now + dynamicProperties.cacheRecordsTtl();
-		expiringRecord.setExpiry(expiry);
-		expiringRecord.setSubmittingMember(submittingMember);
-
-		manageRecord(id, expiringRecord);
-
-		return expiringRecord;
-	}
-
-	private void manageRecord(AccountID owner, ExpirableTxnRecord record) {
 		if (dynamicProperties.shouldKeepRecordsInState()) {
-			ledger.addRecord(owner, record);
-			expiries.trackRecord(owner, record.getExpiry());
+			final var key = MerkleEntityId.fromAccountId(payer);
+			addToState(key, record);
+			expiries.trackRecordInState(payer, record.getExpiry());
 		} else {
 			recordCache.trackForExpiry(record);
 		}
+
+		return record;
 	}
 
+	private void addToState(MerkleEntityId key, ExpirableTxnRecord record) {
+		final var currentAccounts = accounts.get();
+		final var mutableAccount = currentAccounts.getForModify(key);
+		mutableAccount.records().offer(record);
+		currentAccounts.replace(key, mutableAccount);
+	}
+
+	private ExpirableTxnRecord buildFrom(TransactionRecord grpcRecord, long now, long submittingMember) {
+		final var expiringRecord = ExpirableTxnRecord.fromGprc(grpcRecord);
+		long expiry = now + dynamicProperties.cacheRecordsTtl();
+		expiringRecord.setExpiry(expiry);
+		expiringRecord.setSubmittingMember(submittingMember);
+		return expiringRecord;
+	}
 }

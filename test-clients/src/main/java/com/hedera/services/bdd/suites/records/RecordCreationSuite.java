@@ -22,9 +22,16 @@ package com.hedera.services.bdd.suites.records;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.persistence.Account;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
 
 import java.util.List;
 import java.util.Map;
@@ -36,11 +43,16 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractRecords;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
+import static org.junit.Assert.assertEquals;
 
 public class RecordCreationSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(RecordCreationSuite.class);
@@ -53,12 +65,46 @@ public class RecordCreationSuite extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
+						payerRecordCreationSanityChecks(),
 						newlyCreatedContractNoLongerGetsRecord(),
 						accountsGetPayerRecordsIfSoConfigured(),
 						calledContractNoLongerGetsRecord(),
 						thresholdRecordsDontExistAnymore(),
 				}
 		);
+	}
+
+	private HapiApiSpec payerRecordCreationSanityChecks() {
+		return defaultHapiSpec("PayerRecordCreationSanityChecks")
+				.given(
+						cryptoCreate("payer")
+				).when(
+						createTopic("ofGeneralInterest").payingWith("payer"),
+						cryptoTransfer(
+								tinyBarsFromTo(GENESIS, FUNDING, 1_000L)
+						).payingWith("payer"),
+						submitMessageTo("ofGeneralInterest")
+								.message("I say!")
+								.payingWith("payer")
+				).then(
+						assertionsHold((spec, opLog) -> {
+							final var payerId = spec.registry().getAccountID("payer");
+							final var subOp = getAccountRecords("payer").logged();
+							allRunFor(spec, subOp);
+							final var records = subOp.getResponse().getCryptoGetAccountRecords().getRecordsList();
+							assertEquals(3, records.size());
+							for (var record : records) {
+								assertEquals(record.getTransactionFee(), -netChangeIn(record, payerId));
+							}
+						})
+				);
+	}
+
+	private long netChangeIn(TransactionRecord record, AccountID id) {
+		return record.getTransferList().getAccountAmountsList().stream()
+				.filter(aa -> id.equals(aa.getAccountID()))
+				.mapToLong(AccountAmount::getAmount)
+				.sum();
 	}
 
 	private HapiApiSpec accountsGetPayerRecordsIfSoConfigured() {

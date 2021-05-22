@@ -61,12 +61,17 @@ public interface AccountRecordsHistorian {
 	void setCreator(EntityCreator creator);
 
 	/**
-	 * At the moment before committing the active transaction, forms a
-	 * final record by adding a {@link ExpirableTxnRecord} to any
-	 * ledger accounts that qualify for the history of the active
-	 * transaction.
+	 * Called immediately before committing the active transaction
+	 * to finalize the record of the executed business logic.
 	 */
-	void addNewRecords();
+	void finalizeTransactionRecord();
+
+	/**
+	 * Called immediately after committing the active transaction, to
+	 * save the record (e.g. in the payer account of the committed
+	 * transaction.)
+	 */
+	void saveTransactionRecord();
 
 	/**
 	 * Removes expired records from the relevant ledger. Note that for

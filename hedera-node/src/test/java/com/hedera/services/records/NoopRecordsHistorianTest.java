@@ -30,7 +30,7 @@ class NoopRecordsHistorianTest {
 	@Test
 	public void nothingMuchHappens() {
 		// expect:
-		assertDoesNotThrow(NOOP_RECORDS_HISTORIAN::addNewRecords);
+		assertDoesNotThrow(NOOP_RECORDS_HISTORIAN::finalizeTransactionRecord);
 		assertDoesNotThrow(NOOP_RECORDS_HISTORIAN::purgeExpiredRecords);
 		assertDoesNotThrow(NOOP_RECORDS_HISTORIAN::addNewEntities);
 		assertDoesNotThrow(() -> NOOP_RECORDS_HISTORIAN.setLedger(null));

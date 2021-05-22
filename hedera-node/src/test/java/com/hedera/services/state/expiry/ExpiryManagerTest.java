@@ -157,7 +157,7 @@ class ExpiryManagerTest {
 		// given:
 		subject = new ExpiryManager(recordCache, txnHistories, scheduleStore, () -> schedules);
 		// and:
-		subject.trackRecord(payer, oldExpiry);
+		subject.trackRecordInState(payer, oldExpiry);
 		// and:
 		givenAccount(2, new long[] { expiry });
 		// and:
@@ -354,7 +354,7 @@ class ExpiryManagerTest {
 		subject.payerExpiries = (MonotonicFullQueueExpiries<Long>) mock(MonotonicFullQueueExpiries.class);
 
 		// when:
-		subject.trackRecord(payer, expiry);
+		subject.trackRecordInState(payer, expiry);
 
 		// then:
 		verify(subject.payerExpiries).track(Long.valueOf(13257), expiry);

@@ -67,7 +67,7 @@ public class ExpiryManager {
 		this.schedules = schedules;
 	}
 
-	public void trackRecord(AccountID owner, long expiry) {
+	public void trackRecordInState(AccountID owner, long expiry) {
 		payerExpiries.track(owner.getAccountNum(), expiry);
 	}
 

@@ -128,7 +128,6 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 	public void setsSelfOnHistorian() {
 		// expect:
 		verify(historian).setLedger(subject);
-		verify(creator).setLedger(subject);
 		verify(historian).setCreator(creator);
 	}
 

@@ -81,12 +81,14 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	}
 
 	@Override
-	public void addNewRecords() {
+	public void finalizeTransactionRecord() {
 		lastCreatedRecord = txnCtx.recordSoFar();
+	}
 
+	@Override
+	public void saveTransactionRecord() {
 		long now = txnCtx.consensusTime().getEpochSecond();
 		long submittingMember = txnCtx.submittingSwirldsMember();
-
 		var accessor = txnCtx.accessor();
 		var payerRecord = creator.createExpiringRecord(
 				txnCtx.effectivePayer(),

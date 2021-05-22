@@ -156,7 +156,6 @@ public class HederaLedger {
 		this.accountsLedger = accountsLedger;
 		this.dynamicProperties = dynamicProperties;
 
-		creator.setLedger(this);
 		historian.setLedger(this);
 		historian.setCreator(creator);
 		tokenStore.setAccountsLedger(accountsLedger);
@@ -188,9 +187,10 @@ public class HederaLedger {
 
 	public void commit() {
 		throwIfPendingStateIsInconsistent();
-		historian.addNewRecords();
-		historian.addNewEntities();
+		historian.finalizeTransactionRecord();
 		accountsLedger.commit();
+		historian.saveTransactionRecord();
+		historian.addNewEntities();
 		if (tokenRelsLedger != UNUSABLE_TOKEN_RELS_LEDGER && tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.commit();
 		}
@@ -479,17 +479,6 @@ public class HederaLedger {
 	}
 
 	/* -- TRANSACTION HISTORY MANIPULATION -- */
-	public long addRecord(AccountID id, ExpirableTxnRecord record) {
-		return addReturningEarliestExpiry(id, RECORDS, record);
-	}
-
-	private long addReturningEarliestExpiry(AccountID id, AccountProperty property, ExpirableTxnRecord record) {
-		FCQueue<ExpirableTxnRecord> records = (FCQueue<ExpirableTxnRecord>) accountsLedger.get(id, property);
-		records.offer(record);
-		accountsLedger.set(id, property, records);
-		return records.peek().getExpiry();
-	}
-
 	public long purgeExpiredRecords(AccountID id, long now, Consumer<ExpirableTxnRecord> cb) {
 		return purge(id, RECORDS, now, cb);
 	}
