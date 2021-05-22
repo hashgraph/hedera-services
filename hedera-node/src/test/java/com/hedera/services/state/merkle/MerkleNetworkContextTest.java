@@ -50,6 +50,7 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_CONGESTION_STARTS;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_SNAPSHOTS;
+import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -63,6 +64,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.times;
 
 @ExtendWith(LogCaptureExtension.class)
@@ -71,7 +73,7 @@ class MerkleNetworkContextTest {
 	private long lastScannedEntity = 1000L;
 	private long entitiesTouchedThisSecond = 123L;
 	private long entitiesScannedThisSecond = 123_456L;
-	private RichInstant consensusTimeOfLastHandledTxn;
+	private Instant consensusTimeOfLastHandledTxn;
 	private SequenceNumber seqNo;
 	private SequenceNumber seqNoCopy;
 	private ExchangeRates midnightRateSet;
@@ -96,8 +98,7 @@ class MerkleNetworkContextTest {
 				Instant.ofEpochSecond(1_234_789L, 12345)
 		};
 
-		consensusTimeOfLastHandledTxn = RichInstant.fromJava(
-				Instant.ofEpochSecond(1_234_567L, 54321));
+		consensusTimeOfLastHandledTxn = Instant.ofEpochSecond(1_234_567L, 54321);
 
 		seqNo = mock(SequenceNumber.class);
 		given(seqNo.current()).willReturn(1234L);
@@ -109,12 +110,12 @@ class MerkleNetworkContextTest {
 		midnightRateSetCopy = midnightRateSet.copy();
 		usageSnapshots = new DeterministicThrottle.UsageSnapshot[] {
 				new DeterministicThrottle.UsageSnapshot(
-						123L, consensusTimeOfLastHandledTxn.toJava()),
+						123L, consensusTimeOfLastHandledTxn),
 				new DeterministicThrottle.UsageSnapshot(
-						456L, consensusTimeOfLastHandledTxn.toJava().plusSeconds(1L))
+						456L, consensusTimeOfLastHandledTxn.plusSeconds(1L))
 		};
 
-		serdes = mock(DomainSerdes.class);
+		serdes = mock(DomainSerdes.class, RETURNS_DEEP_STUBS);
 		MerkleNetworkContext.serdes = serdes;
 
 		subject = new MerkleNetworkContext(
@@ -421,7 +422,7 @@ class MerkleNetworkContextTest {
 		MerkleNetworkContext.seqNoSupplier = () -> seqNo;
 		InOrder inOrder = inOrder(in, seqNo);
 
-		given(serdes.readNullableInstant(in)).willReturn(consensusTimeOfLastHandledTxn);
+		given(serdes.readNullableInstant(in).toJava()).willReturn(consensusTimeOfLastHandledTxn);
 
 		// when:
 		subject.deserialize(in, MerkleNetworkContext.PRE_RELEASE_0130_VERSION);
@@ -451,12 +452,12 @@ class MerkleNetworkContextTest {
 		given(in.readLong())
 				.willReturn(usageSnapshots[0].used())
 				.willReturn(usageSnapshots[1].used());
-		given(serdes.readNullableInstant(in))
+		given(serdes.readNullableInstant(in).toJava())
 				.willReturn(consensusTimeOfLastHandledTxn)
-				.willReturn(RichInstant.fromJava(usageSnapshots[0].lastDecisionTime()))
-				.willReturn(RichInstant.fromJava(usageSnapshots[1].lastDecisionTime()))
-				.willReturn(RichInstant.fromJava(congestionStarts[0]))
-				.willReturn(RichInstant.fromJava(congestionStarts[1]));
+				.willReturn(usageSnapshots[0].lastDecisionTime())
+				.willReturn(usageSnapshots[1].lastDecisionTime())
+				.willReturn(congestionStarts[0])
+				.willReturn(congestionStarts[1]);
 
 		// when:
 		subject.deserialize(in, MerkleNetworkContext.RELEASE_0130_VERSION);
@@ -492,12 +493,12 @@ class MerkleNetworkContextTest {
 				.willReturn(lastScannedEntity)
 				.willReturn(entitiesScannedThisSecond)
 				.willReturn(entitiesTouchedThisSecond);
-		given(serdes.readNullableInstant(in))
+		given(serdes.readNullableInstant(in).toJava())
 				.willReturn(consensusTimeOfLastHandledTxn)
-				.willReturn(RichInstant.fromJava(usageSnapshots[0].lastDecisionTime()))
-				.willReturn(RichInstant.fromJava(usageSnapshots[1].lastDecisionTime()))
-				.willReturn(RichInstant.fromJava(congestionStarts[0]))
-				.willReturn(RichInstant.fromJava(congestionStarts[1]));
+				.willReturn(usageSnapshots[0].lastDecisionTime())
+				.willReturn(usageSnapshots[1].lastDecisionTime())
+				.willReturn(congestionStarts[0])
+				.willReturn(congestionStarts[1]);
 
 		// when:
 		subject.deserialize(in, MerkleNetworkContext.RELEASE_0140_VERSION);
@@ -533,19 +534,19 @@ class MerkleNetworkContextTest {
 		subject.serialize(out);
 
 		// expect:
-		inOrder.verify(serdes).writeNullableInstant(consensusTimeOfLastHandledTxn, out);
+		inOrder.verify(serdes).writeNullableInstant(fromJava(consensusTimeOfLastHandledTxn), out);
 		inOrder.verify(seqNo).serialize(out);
 		inOrder.verify(out).writeSerializable(midnightRateSet, true);
 		// and:
 		inOrder.verify(out).writeInt(3);
 		for (int i = 0; i < 3; i++) {
 			inOrder.verify(out).writeLong(used[i]);
-			inOrder.verify(serdes).writeNullableInstant(RichInstant.fromJava(lastUseds[i]), out);
+			inOrder.verify(serdes).writeNullableInstant(fromJava(lastUseds[i]), out);
 		}
 		// and:
 		inOrder.verify(out).writeInt(2);
 		for (int i = 0; i < 2; i++) {
-			inOrder.verify(serdes).writeNullableInstant(richCongestionStarts()[i], out);
+			inOrder.verify(serdes).writeNullableInstant(fromJava(richCongestionStarts()[i]), out);
 		}
 		inOrder.verify(out).writeLong(lastScannedEntity);
 		inOrder.verify(out).writeLong(entitiesScannedThisSecond);
@@ -592,7 +593,7 @@ class MerkleNetworkContextTest {
 		return cur;
 	}
 
-	private RichInstant[] richCongestionStarts() {
-		return Arrays.stream(congestionStarts).map(RichInstant::fromJava).toArray(RichInstant[]::new);
+	private Instant[] richCongestionStarts() {
+		return congestionStarts;
 	}
 }

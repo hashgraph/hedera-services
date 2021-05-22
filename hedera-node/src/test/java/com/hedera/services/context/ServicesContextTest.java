@@ -178,7 +178,7 @@ public class ServicesContextTest {
 	private final NodeId nodeId = new NodeId(false, id);
 	private static final String recordStreamDir = "somePath/recordStream";
 
-	RichInstant consensusTimeOfLastHandledTxn = RichInstant.fromJava(Instant.now());
+	Instant consensusTimeOfLastHandledTxn = Instant.now();
 	Platform platform;
 	SequenceNumber seqNo;
 	ExchangeRates midnightRates;
@@ -289,7 +289,7 @@ public class ServicesContextTest {
 		inOrder.verify(state).addressBook();
 		assertEquals(seqNo, actualSeqNo);
 		assertEquals(midnightRates, actualMidnightRates);
-		assertEquals(consensusTimeOfLastHandledTxn.toJava(), actualLastHandleTime);
+		assertEquals(consensusTimeOfLastHandledTxn, actualLastHandleTime);
 		inOrder.verify(state).topics();
 		inOrder.verify(state).storage();
 		inOrder.verify(state).accounts();

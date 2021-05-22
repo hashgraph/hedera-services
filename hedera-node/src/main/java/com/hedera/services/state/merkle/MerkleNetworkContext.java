@@ -52,19 +52,19 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	static final int RELEASE_0140_VERSION = 3;
 	static final int MERKLE_VERSION = RELEASE_0140_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d4aa0f0a968a9f3L;
-	static final RichInstant[] NO_CONGESTION_STARTS = new RichInstant[0];
+	static final Instant[] NO_CONGESTION_STARTS = new Instant[0];
 	static final DeterministicThrottle.UsageSnapshot[] NO_SNAPSHOTS = new DeterministicThrottle.UsageSnapshot[0];
 
-	public static final RichInstant UNKNOWN_CONSENSUS_TIME = null;
+	public static final Instant UNKNOWN_CONSENSUS_TIME = null;
 
 	static DomainSerdes serdes = new DomainSerdes();
 	static Supplier<ExchangeRates> ratesSupplier = ExchangeRates::new;
 	static Supplier<SequenceNumber> seqNoSupplier = SequenceNumber::new;
 
 	private int stateVersion = UNRECORDED_STATE_VERSION;
-	private RichInstant[] congestionLevelStarts = NO_CONGESTION_STARTS;
+	private Instant[] congestionLevelStarts = NO_CONGESTION_STARTS;
 	private ExchangeRates midnightRates;
-	private RichInstant consensusTimeOfLastHandledTxn;
+	private Instant consensusTimeOfLastHandledTxn;
 	private SequenceNumber seqNo;
 	private long lastScannedEntity;
 	private long entitiesScannedThisSecond = 0L;
@@ -76,7 +76,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	public MerkleNetworkContext(
-			RichInstant consensusTimeOfLastHandledTxn,
+			Instant consensusTimeOfLastHandledTxn,
 			SequenceNumber seqNo,
 			long lastScannedEntity,
 			ExchangeRates midnightRates
@@ -88,12 +88,12 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	public MerkleNetworkContext(
-			RichInstant consensusTimeOfLastHandledTxn,
+			Instant consensusTimeOfLastHandledTxn,
 			SequenceNumber seqNo,
 			long lastScannedEntity,
 			ExchangeRates midnightRates,
 			DeterministicThrottle.UsageSnapshot[] usageSnapshots,
-			RichInstant[] congestionStartPeriods,
+			Instant[] congestionStartPeriods,
 			int stateVersion,
 			long entitiesScannedThisSecond,
 			long entitiesTouchedThisSecond
@@ -141,27 +141,18 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		if (congestionStarts.length == 0) {
 			congestionLevelStarts = NO_CONGESTION_STARTS;
 		} else {
-			congestionLevelStarts = new RichInstant[congestionStarts.length];
-			for (int i = 0; i < congestionStarts.length; i++) {
-				congestionLevelStarts[i] = RichInstant.fromJava(congestionStarts[i]);
-			}
+			congestionLevelStarts = congestionStarts;
 		}
 	}
 
 	public void updateWithSavedCongestionStarts(FeeMultiplierSource feeMultiplierSource) {
 		if (congestionLevelStarts.length > 0) {
-			Instant[] congestionStarts = new Instant[congestionLevelStarts.length];
-			for (int i = 0; i < congestionLevelStarts.length; i++) {
-				if (congestionLevelStarts[i] != null) {
-					congestionStarts[i] = congestionLevelStarts[i].toJava();
-				}
-			}
-			feeMultiplierSource.resetCongestionLevelStarts(congestionStarts);
+			feeMultiplierSource.resetCongestionLevelStarts(congestionLevelStarts);
 		}
 	}
 
 	public void setConsensusTimeOfLastHandledTxn(Instant consensusTimeOfLastHandledTxn) {
-		this.consensusTimeOfLastHandledTxn = fromJava(consensusTimeOfLastHandledTxn);
+		this.consensusTimeOfLastHandledTxn = consensusTimeOfLastHandledTxn;
 	}
 
 	public MerkleNetworkContext copy() {
@@ -180,7 +171,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		consensusTimeOfLastHandledTxn = serdes.readNullableInstant(in);
+		consensusTimeOfLastHandledTxn = serdes.readNullableInstant(in).toJava();
+
 		seqNo = seqNoSupplier.get();
 		seqNo.deserialize(in);
 		midnightRates = in.readSerializable(true, ratesSupplier);
@@ -200,9 +192,9 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 			int numCongestionStarts = in.readInt();
 			if (numCongestionStarts > 0) {
-				congestionLevelStarts = new RichInstant[numCongestionStarts];
+				congestionLevelStarts = new Instant[numCongestionStarts];
 				for (int i = 0; i < numCongestionStarts; i++) {
-					congestionLevelStarts[i] = serdes.readNullableInstant(in);
+					congestionLevelStarts[i] = serdes.readNullableInstant(in).toJava(); // ifPresent...
 				}
 			}
 		}
@@ -216,7 +208,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
-		serdes.writeNullableInstant(consensusTimeOfLastHandledTxn, out);
+		serdes.writeNullableInstant(fromJava(consensusTimeOfLastHandledTxn), out);
 		seqNo.serialize(out);
 		out.writeSerializable(midnightRates, true);
 		int n = usageSnapshots.length;
@@ -228,7 +220,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		n = congestionLevelStarts.length;
 		out.writeInt(n);
 		for (var congestionStart : congestionLevelStarts) {
-			serdes.writeNullableInstant(congestionStart, out);
+			serdes.writeNullableInstant(fromJava(congestionStart), out);
 		}
 		out.writeLong(lastScannedEntity);
 		out.writeLong(entitiesScannedThisSecond);
@@ -237,7 +229,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	public Instant consensusTimeOfLastHandledTxn() {
-		return Optional.ofNullable(consensusTimeOfLastHandledTxn).map(RichInstant::toJava).orElse(null);
+		return consensusTimeOfLastHandledTxn;
 	}
 
 	public SequenceNumber seqNo() {
@@ -264,7 +256,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				.append(stateVersion == UNRECORDED_STATE_VERSION ? "<N/A>" : stateVersion)
 				.append(") is,")
 				.append("\n  Consensus time of last handled transaction :: ")
-				.append(reprOf(consensusTimeOfLastHandledTxn))
+				.append(consensusTimeOfLastHandledTxn)
 				.append("\n  Midnight rate set                          :: ")
 				.append(midnightRates.readableRepr())
 				.append("\n  Next entity number                         :: ")
@@ -283,7 +275,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		}
 		sb.append("\n  Congestion level start times are           ::");
 		for (var start : congestionLevelStarts) {
-			sb.append("\n    ").append(reprOf(start));
+			sb.append("\n    ").append(start);
 		}
 		return sb.toString();
 	}
@@ -332,15 +324,15 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				.orElse("<N/A>");
 	}
 
-	void setCongestionLevelStarts(RichInstant[] congestionLevelStarts) {
+	void setCongestionLevelStarts(Instant[] congestionLevelStarts) {
 		this.congestionLevelStarts = congestionLevelStarts;
 	}
 
-	RichInstant[] getCongestionLevelStarts() {
+	Instant[] getCongestionLevelStarts() {
 		return congestionLevelStarts;
 	}
 
-	RichInstant getConsensusTimeOfLastHandledTxn() {
+	Instant getConsensusTimeOfLastHandledTxn() {
 		return consensusTimeOfLastHandledTxn;
 	}
 
