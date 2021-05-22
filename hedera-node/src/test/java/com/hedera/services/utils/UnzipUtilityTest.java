@@ -31,7 +31,6 @@ import java.nio.file.Paths;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class UnzipUtilityTest {
 	@Test
@@ -42,9 +41,10 @@ public class UnzipUtilityTest {
 			ctor.setAccessible(true);
 
 			ctor.newInstance();
-		} catch (Exception e) {
-			IllegalStateException cause = (IllegalStateException) e.getCause();
-			assertEquals("UnzipUtility is an utility class. Shouldn't create any instance!", cause.getMessage());
+		} catch (IllegalStateException e) {
+			assertEquals("UnzipUtility is an utility class. Shouldn't create any instance!", e.getMessage());
+		} catch (NoSuchMethodException | InstantiationException
+				| InvocationTargetException | IllegalAccessException e) {
 		}
 	}
 
