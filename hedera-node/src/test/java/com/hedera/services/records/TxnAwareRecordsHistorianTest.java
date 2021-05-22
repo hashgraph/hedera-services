@@ -129,7 +129,7 @@ public class TxnAwareRecordsHistorianTest {
 		setupForAdd();
 
 		// when:
-		subject.addNewEntities();
+		subject.noteNewExpirationEvents();
 
 		// then:
 		verify(txnCtx).expiringEntities();
@@ -146,7 +146,7 @@ public class TxnAwareRecordsHistorianTest {
 		given(txnCtx.expiringEntities()).willReturn(Collections.EMPTY_LIST);
 
 		// when:
-		subject.addNewEntities();
+		subject.noteNewExpirationEvents();
 
 		// then:
 		verify(txnCtx).expiringEntities();

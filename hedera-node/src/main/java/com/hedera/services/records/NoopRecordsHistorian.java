@@ -44,5 +44,5 @@ public enum NoopRecordsHistorian implements AccountRecordsHistorian {
   public Optional<TransactionRecord> lastCreatedRecord() { return Optional.empty(); }
 
   @Override
-  public void addNewEntities() { }
+  public void noteNewExpirationEvents() { }
 }

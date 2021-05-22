@@ -184,7 +184,7 @@ public class HederaLedger {
 		historian.finalizeTransactionRecord();
 		accountsLedger.commit();
 		historian.saveTransactionRecord();
-		historian.addNewEntities();
+		historian.noteNewExpirationEvents();
 		if (tokenRelsLedger != UNUSABLE_TOKEN_RELS_LEDGER && tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.commit();
 		}

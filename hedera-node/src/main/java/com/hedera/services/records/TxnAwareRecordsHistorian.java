@@ -89,7 +89,7 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	}
 
 	@Override
-	public void addNewEntities() {
+	public void noteNewExpirationEvents() {
 		for (var expiringEntity : txnCtx.expiringEntities()) {
 			expiries.trackExpirationEvent(
 					Pair.of(expiringEntity.id().num(), expiringEntity.consumer()),

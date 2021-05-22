@@ -83,5 +83,5 @@ public interface AccountRecordsHistorian {
 	 * checks if Transaction Context has any existing expiring entities
 	 * and if so, tracks them using {@link com.hedera.services.state.expiry.ExpiryManager}
 	 */
-	void addNewEntities();
+	void noteNewExpirationEvents();
 }
