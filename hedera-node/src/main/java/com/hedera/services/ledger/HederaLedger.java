@@ -592,31 +592,4 @@ public class HederaLedger {
 	public boolean isKnownTreasury(AccountID aId) {
 		return tokenStore.isKnownTreasury(aId);
 	}
-
-	public enum LedgerTxnEvictionStats {
-		INSTANCE;
-
-		private int recordsPurged = 0;
-		private int accountsTouched = 0;
-
-		public int recordsPurged() {
-			return recordsPurged;
-		}
-
-		public int accountsTouched() {
-			return accountsTouched;
-		}
-
-		public void reset() {
-			accountsTouched = 0;
-			recordsPurged = 0;
-		}
-
-		public void recordPurgedFromAnAccount(int n) {
-			accountsTouched++;
-			recordsPurged += n;
-		}
-	}
-
-
 }
