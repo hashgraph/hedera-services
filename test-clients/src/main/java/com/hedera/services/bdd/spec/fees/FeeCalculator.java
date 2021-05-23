@@ -27,6 +27,7 @@ import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.fee.FeeObject;
 import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,7 +36,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
+import static com.hederahashgraph.fee.FeeBuilder.getFeeObject;
 import static com.hederahashgraph.fee.FeeBuilder.getSignatureCount;
 import static com.hederahashgraph.fee.FeeBuilder.getSignatureSize;
 import static com.hederahashgraph.fee.FeeBuilder.getTotalFeeforRequest;
@@ -96,6 +99,17 @@ public class FeeCalculator {
 		return maxFeeTinyBars();
 	}
 
+	public long forOpWithDetails(HederaFunctionality op, FeeData knownActivity, AtomicReference<FeeObject> obs) {
+		try {
+			final var activityPrices = opFeeData.get(op);
+			final var fees = getFeeObject(activityPrices, knownActivity, provider.rates());
+			obs.set(fees);
+			return getTotalFeeforRequest(activityPrices, knownActivity, provider.rates());
+		} catch (Throwable t) {
+			throw new IllegalArgumentException("Calculation not observable!", t);
+		}
+	}
+
 	@FunctionalInterface
 	public interface ActivityMetrics {
 		FeeData compute(TransactionBody body, SigValueObj sigUsage) throws Throwable;
@@ -109,6 +123,17 @@ public class FeeCalculator {
 	) throws Throwable {
 		FeeData activityMetrics = metricsFor(txn, numPayerSigs, metricsCalculator);
 		return forOp(op, activityMetrics);
+	}
+
+	public long forActivityBasedOpWithDetails(
+			HederaFunctionality op,
+			ActivityMetrics metricsCalculator,
+			Transaction txn,
+			int numPayerSigs,
+			AtomicReference<FeeObject> obs
+	) throws Throwable {
+		FeeData activityMetrics = metricsFor(txn, numPayerSigs, metricsCalculator);
+		return forOpWithDetails(op, activityMetrics, obs);
 	}
 
 	private FeeData metricsFor(

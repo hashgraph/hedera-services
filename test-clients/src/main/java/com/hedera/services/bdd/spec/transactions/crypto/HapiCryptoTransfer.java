@@ -39,6 +39,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.api.proto.java.TransferList;
+import com.hederahashgraph.fee.FeeObject;
 import com.hederahashgraph.fee.SigValueObj;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -52,6 +53,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -82,6 +84,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 	private Function<HapiApiSpec, TransferList> hbarOnlyProvider = MISSING_HBAR_ONLY_PROVIDER;
 	private Optional<String> tokenWithEmptyTransferAmounts = Optional.empty();
 	private Optional<Pair<String[], Long>> appendedFromTo = Optional.empty();
+	private Optional<AtomicReference<FeeObject>> feesObserver = Optional.empty();
 
 	@Override
 	public HederaFunctionality type() {
@@ -95,6 +98,11 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 
 	public HapiCryptoTransfer breakingNetZeroInvariant() {
 		breakNetZeroTokenChangeInvariant = true;
+		return this;
+	}
+
+	public HapiCryptoTransfer exposingFeesTo(AtomicReference<FeeObject> obs) {
+		feesObserver = Optional.of(obs);
 		return this;
 	}
 
@@ -258,11 +266,20 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
-		return spec.fees().forActivityBasedOp(
-				HederaFunctionality.CryptoTransfer,
-				(_txn, _svo) -> usageEstimate(_txn, _svo, spec.fees().tokenTransferUsageMultiplier()),
-				txn,
-				numPayerKeys);
+		if (feesObserver.isPresent()) {
+			return spec.fees().forActivityBasedOpWithDetails(
+					HederaFunctionality.CryptoTransfer,
+					(_txn, _svo) -> usageEstimate(_txn, _svo, spec.fees().tokenTransferUsageMultiplier()),
+					txn,
+					numPayerKeys,
+					feesObserver.get());
+		} else {
+			return spec.fees().forActivityBasedOp(
+					HederaFunctionality.CryptoTransfer,
+					(_txn, _svo) -> usageEstimate(_txn, _svo, spec.fees().tokenTransferUsageMultiplier()),
+					txn,
+					numPayerKeys);
+		}
 	}
 
 	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo, int multiplier) {
