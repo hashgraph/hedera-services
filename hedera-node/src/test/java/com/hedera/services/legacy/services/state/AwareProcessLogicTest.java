@@ -43,10 +43,12 @@ import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.txns.TransitionLogicLookup;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -79,6 +81,7 @@ class AwareProcessLogicTest {
 	private InvariantChecks invariantChecks;
 	private ServicesContext ctx;
 	private ExpiryManager expiryManager;
+	private TransactionContext txnCtx;
 
 	private AwareProcessLogic subject;
 
@@ -104,15 +107,9 @@ class AwareProcessLogicTest {
 		invariantChecks = mock(InvariantChecks.class);
 		expiryManager = mock(ExpiryManager.class);
 
-		TransactionContext txnCtx = mock(TransactionContext.class);
+		txnCtx = mock(TransactionContext.class);
 
 		TransactionBody txnBody = mock(TransactionBody.class);
-		TransactionBody nonMockTxnBody = TransactionBody.newBuilder()
-				.setTransactionID(TransactionID.newBuilder()
-						.setAccountID(IdUtils.asAccount("0.0.2"))).build();
-		platformTxn = new Transaction(com.hederahashgraph.api.proto.java.Transaction.newBuilder()
-				.setBodyBytes(nonMockTxnBody.toByteString())
-				.build().toByteArray());
 
 		ctx = mock(ServicesContext.class);
 		given(ctx.ledger()).willReturn(ledger);
@@ -162,7 +159,8 @@ class AwareProcessLogicTest {
 
 	@Test
 	void shortCircuitsOnInvariantFailure() {
-		// setup:
+		setupNonTriggeringTxn();
+
 		given(invariantChecks.holdFor(any(), eq(consensusNow), eq(666L))).willReturn(false);
 
 		// when:
@@ -174,7 +172,8 @@ class AwareProcessLogicTest {
 
 	@Test
 	void purgesExpiredAtNewConsensusTimeIfInvariantsHold() {
-		// setup:
+		setupNonTriggeringTxn();
+
 		given(invariantChecks.holdFor(any(), eq(consensusNow), eq(666L))).willReturn(true);
 
 		// when:
@@ -182,6 +181,23 @@ class AwareProcessLogicTest {
 
 		// then:
 		verify(expiryManager).purge(consensusNow.getEpochSecond());
+	}
+
+	@Test
+	void decrementsParentConsensusTimeIfCanTrigger() {
+		setupTriggeringTxn();
+		// and:
+		final var triggeredTxn = mock(TxnAccessor.class);
+
+		given(txnCtx.triggeredTxn()).willReturn(triggeredTxn);
+		given(invariantChecks.holdFor(any(), eq(consensusNow.minusNanos(1L)), eq(666L))).willReturn(true);
+
+		// when:
+		subject.incorporateConsensusTxn(platformTxn, consensusNow, 666);
+
+		// then:
+		verify(expiryManager).purge(consensusNow.minusNanos(1L).getEpochSecond());
+		verify(triggeredTxn).isTriggeredTxn();
 	}
 
 	@Test
@@ -196,5 +212,27 @@ class AwareProcessLogicTest {
 		//then:
 		verify(ctx).updateRecordRunningHash(any(RunningHash.class));
 		verify(recordStreamManager).addRecordStreamObject(any(RecordStreamObject.class));
+	}
+
+	private void setupNonTriggeringTxn() {
+		TransactionBody nonMockTxnBody = TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setAccountID(IdUtils.asAccount("0.0.2"))).build();
+		platformTxn = new Transaction(com.hederahashgraph.api.proto.java.Transaction.newBuilder()
+				.setBodyBytes(nonMockTxnBody.toByteString())
+				.build().toByteArray());
+	}
+
+	private void setupTriggeringTxn() {
+		TransactionBody nonMockTxnBody = TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setAccountID(IdUtils.asAccount("0.0.2")))
+				.setScheduleSign(ScheduleSignTransactionBody.newBuilder()
+						.setScheduleID(IdUtils.asSchedule("0.0.1234"))
+						.build())
+				.build();
+		platformTxn = new Transaction(com.hederahashgraph.api.proto.java.Transaction.newBuilder()
+				.setBodyBytes(nonMockTxnBody.toByteString())
+				.build().toByteArray());
 	}
 }
