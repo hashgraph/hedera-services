@@ -173,6 +173,28 @@ class ExpiryManagerTest {
 		assertEquals(secondThen, liveTxnHistories.get(newTxnId).priorityRecord().getExpiry());
 	}
 
+	@Test
+	void expiresLoneRecordAsExpected() {
+		// setup:
+		subject = new ExpiryManager(
+				mockRecordCache, mockScheduleStore, nums, liveTxnHistories, () -> liveAccounts, () -> mockSchedules);
+		final var newTxnId = recordWith(aGrpcId, start).getTransactionID();
+		liveAccounts.put(aKey, anAccount);
+
+		// given:
+		final var firstRecord = expiring(recordWith(aGrpcId, start), firstThen);
+		addLiveRecord(aKey, firstRecord);
+		liveTxnHistories.computeIfAbsent(newTxnId, ignore -> new TxnIdRecentHistory()).observe(firstRecord, OK);
+		subject.trackRecordInState(aGrpcId, firstThen);
+
+		// when:
+		subject.purge(now);
+
+		// then:
+		assertEquals(0, liveAccounts.get(aKey).records().size());
+		assertFalse(liveTxnHistories.containsKey(newTxnId));
+	}
+
 	private void addLiveRecord(MerkleEntityId key, ExpirableTxnRecord record) {
 		final var mutableAccount = liveAccounts.getForModify(key);
 		mutableAccount.records().offer(record);

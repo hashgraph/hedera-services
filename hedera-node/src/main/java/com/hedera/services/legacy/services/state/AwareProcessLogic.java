@@ -87,44 +87,28 @@ public class AwareProcessLogic implements ProcessLogic {
 	@Override
 	public void incorporateConsensusTxn(Transaction platformTxn, Instant consensusTime, long submittingMember) {
 		try {
-			PlatformTxnAccessor accessor = new PlatformTxnAccessor(platformTxn);
-			Instant parentConsensusTime = consensusTime;
+			final var accessor = new PlatformTxnAccessor(platformTxn);
+			Instant effectiveConsensusTime = consensusTime;
 			if (accessor.canTriggerTxn()) {
-				parentConsensusTime = consensusTime.minusNanos(1);
+				effectiveConsensusTime = consensusTime.minusNanos(1);
 			}
-			if (!txnSanityChecks(accessor, parentConsensusTime, submittingMember)) {
+
+			if (!ctx.invariants().holdFor(accessor, effectiveConsensusTime, submittingMember)) {
 				return;
 			}
 
-			ctx.expiries().purge(parentConsensusTime.getEpochSecond());
-			txnManager.process(accessor, parentConsensusTime, submittingMember, ctx);
-			if (ctx.txnCtx().triggeredTxn() != null) {
-				TxnAccessor scopedAccessor = ctx.txnCtx().triggeredTxn();
-				txnManager.process(scopedAccessor, consensusTime, submittingMember, ctx);
+			ctx.expiries().purge(effectiveConsensusTime.getEpochSecond());
+
+			txnManager.process(accessor, effectiveConsensusTime, submittingMember, ctx);
+			final var triggeredAccessor = ctx.txnCtx().triggeredTxn();
+			if (triggeredAccessor != null) {
+				txnManager.process(triggeredAccessor, consensusTime, submittingMember, ctx);
 			}
+
 			ctx.entityAutoRenewal().execute(consensusTime);
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Consensus platform txn was not gRPC!", e);
 		}
-	}
-
-	private boolean txnSanityChecks(PlatformTxnAccessor accessor, Instant consensusTime, long submittingMember) {
-		var lastHandled = ctx.consensusTimeOfLastHandledTxn();
-		if (lastHandled != null && !consensusTime.isAfter(lastHandled)) {
-			var msg = String.format(
-					"Catastrophic invariant failure! Non-increasing consensus time %s versus last-handled %s: %s",
-					consensusTime, lastHandled, accessor.getSignedTxn4Log());
-			log.error(msg);
-			return false;
-		}
-		if (ctx.addressBook().getAddress(submittingMember).getStake() == 0L) {
-			var msg = String.format("Ignoring a transaction submitted by zero-stake node %d: %s",
-					submittingMember,
-					accessor.getSignedTxn4Log());
-			log.warn(msg);
-			return false;
-		}
-		return true;
 	}
 
 	private void processTxnInCtx() {

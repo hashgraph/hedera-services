@@ -209,6 +209,7 @@ import com.hedera.services.state.initialization.HfsSystemFilesManager;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.logic.AwareNodeDiligenceScreen;
+import com.hedera.services.state.logic.InvariantChecks;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
@@ -437,6 +438,7 @@ public class ServicesContext {
 	private Address address;
 	private Console console;
 	private HederaFs hfs;
+	private NodeInfo nodeInfo;
 	private StateView currentView;
 	private AccountID accountId;
 	private AnswerFlow answerFlow;
@@ -453,7 +455,6 @@ public class ServicesContext {
 	private ProcessLogic logic;
 	private QueryFeeCheck queryFeeCheck;
 	private HederaNumbers hederaNums;
-	private EntityAutoRenewal entityAutoRenewal;
 	private ExpiryManager expiries;
 	private FeeCalculator fees;
 	private FeeExemptions exemptions;
@@ -475,6 +476,7 @@ public class ServicesContext {
 	private TokenController tokenGrpc;
 	private MiscRunningAvgs runningAvgs;
 	private ScheduleAnswers scheduleAnswers;
+	private InvariantChecks invariantChecks;
 	private MiscSpeedometers speedometers;
 	private ScheduleExecutor scheduleExecutor;
 	private ServicesNodeType nodeType;
@@ -496,6 +498,7 @@ public class ServicesContext {
 	private SigFactoryCreator sigFactoryCreator;
 	private BlobStorageSource bytecodeDb;
 	private HapiOpPermissions hapiOpPermissions;
+	private EntityAutoRenewal entityAutoRenewal;
 	private TransactionContext txnCtx;
 	private ContractController contractsGrpc;
 	private HederaSigningOrder keyOrder;
@@ -735,6 +738,20 @@ public class ServicesContext {
 					txnCtx()::accessor);
 		}
 		return activationHelper;
+	}
+
+	public NodeInfo nodeInfo() {
+		if (nodeInfo == null) {
+			nodeInfo = new NodeInfo(this::addressBook);
+		}
+		return nodeInfo;
+	}
+
+	public InvariantChecks invariants() {
+		if (invariantChecks == null) {
+			invariantChecks = new InvariantChecks(nodeInfo(), this::networkCtx);
+		}
+		return invariantChecks;
 	}
 
 	public ScheduleExecutor scheduleExecutor() {
