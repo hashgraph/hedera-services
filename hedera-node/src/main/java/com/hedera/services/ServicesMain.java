@@ -251,8 +251,8 @@ public class ServicesMain implements SwirldMain {
 			log.error("Unexpected total balance in ledger, nodeId={}!", ctx.id());
 			throw new IllegalStateException("Invalid total tinyBar float!");
 		}
-		if (ctx.nodeAccount() == null) {
-			throw new IllegalStateException("Unknown ledger account!");
+		if (!ctx.nodeInfo().isSelfZeroStake() && !ctx.nodeInfo().hasSelfAccount()) {
+			throw new IllegalStateException("Node is not zero-stake, but has no known account!");
 		}
 	}
 

@@ -37,20 +37,18 @@ import java.util.Optional;
 import static java.lang.System.arraycopy;
 
 public class EntityIdUtils {
-	private static long[] NO_PARTS = {};
-
 	public static String readableId(Object o) {
 		if (o instanceof AccountID) {
-			AccountID id = (AccountID)o;
+			AccountID id = (AccountID) o;
 			return String.format("%d.%d.%d", id.getShardNum(), id.getRealmNum(), id.getAccountNum());
 		} else if (o instanceof FileID) {
-			FileID id = (FileID)o;
+			FileID id = (FileID) o;
 			return String.format("%d.%d.%d", id.getShardNum(), id.getRealmNum(), id.getFileNum());
 		} else if (o instanceof TopicID) {
-			TopicID id = (TopicID)o;
+			TopicID id = (TopicID) o;
 			return String.format("%d.%d.%d", id.getShardNum(), id.getRealmNum(), id.getTopicNum());
 		} else if (o instanceof TokenID) {
-			TokenID id = (TokenID)o;
+			TokenID id = (TokenID) o;
 			return String.format("%d.%d.%d", id.getShardNum(), id.getRealmNum(), id.getTokenNum());
 		} else if (o instanceof ScheduleID) {
 			ScheduleID id = (ScheduleID) o;
@@ -63,32 +61,47 @@ public class EntityIdUtils {
 	/**
 	 * Returns the {@code AccountID} represented by a literal of the form {@code <shard>.<realm>.<num>}.
 	 *
-	 * @param repr the string representation
+	 * @param literal
+	 * 		the account literal
 	 * @return the corresponding id
-	 * @throws IllegalArgumentException if the literal is not formatted correctly
+	 * @throws IllegalArgumentException
+	 * 		if the literal is not formatted correctly
 	 */
-	public static AccountID accountParsedFromString(String repr) {
-		var parts = NO_PARTS;
-
+	public static AccountID parseAccount(String literal) {
 		try {
-			parts = asDotDelimitedLongArray(repr);
+			final long[] parts = parseLongTriple(literal);
 			return AccountID.newBuilder()
 					.setShardNum(parts[0])
 					.setRealmNum(parts[1])
 					.setAccountNum(parts[2])
 					.build();
 		} catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
-			throw new IllegalArgumentException(String.format("Argument 'repr=%s' is not an account!", repr), e);
+			throw new IllegalArgumentException(String.format("Argument 'literal=%s' is not an account", literal), e);
 		}
 	}
 
-	public static long[] asDotDelimitedLongArray(String s) {
-		String[] parts = s.split("[.]");
-		long[] longParts = new long[parts.length];
-		for (int i = 0; i < parts.length; i++) {
-			longParts[i] = Long.parseLong(parts[i]);
+	private static long[] parseLongTriple(String dotDelimited) {
+		final long[] triple = new long[3];
+		int i = 0;
+		long v = 0;
+		for (char c : dotDelimited.toCharArray()) {
+			if (c == '.') {
+				triple[i++] = v;
+				v = 0;
+			} else if (c < '0' || c > '9') {
+				throw new NumberFormatException("Cannot parse '" + dotDelimited + "' due to character '" + c + "'");
+			} else {
+				v = 10 * v + (c - '0');
+				if (v < 0) {
+					throw new IllegalArgumentException("Cannot parse '" + dotDelimited + "' due to overflow");
+				}
+			}
 		}
-		return longParts;
+		if (i < 2) {
+			throw new IllegalArgumentException("Cannot parse '" + dotDelimited + "' due to only " + i + " dots");
+		}
+		triple[i] = v;
+		return triple;
 	}
 
 	public static AccountID asAccount(ContractID cid) {
@@ -128,11 +141,11 @@ public class EntityIdUtils {
 	}
 
 	public static String asSolidityAddressHex(AccountID id) {
-		return Hex.toHexString(asSolidityAddress((int)id.getShardNum(), id.getRealmNum(), id.getAccountNum()));
+		return Hex.toHexString(asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum()));
 	}
 
 	public static byte[] asSolidityAddress(ContractID id) {
-		return asSolidityAddress((int)id.getShardNum(), id.getRealmNum(), id.getContractNum());
+		return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
 	}
 
 	public static byte[] asSolidityAddress(int shard, long realm, long num) {
