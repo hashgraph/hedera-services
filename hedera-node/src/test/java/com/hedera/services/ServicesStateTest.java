@@ -21,7 +21,6 @@ package com.hedera.services;
  */
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.PropertySources;
@@ -166,7 +165,7 @@ class ServicesStateTest {
 	SequenceNumber seqNo;
 	MerkleNetworkContext networkCtx;
 	MerkleNetworkContext networkCtxCopy;
-	NodeId self = new NodeId(false, 1);
+	NodeId self = new NodeId(false, 0);
 	SerializableDataInputStream in;
 	SerializableDataOutputStream out;
 	SystemExits systemExits;
@@ -202,7 +201,7 @@ class ServicesStateTest {
 		bookCopy = mock(AddressBook.class);
 		book = mock(AddressBook.class);
 		given(book.copy()).willReturn(bookCopy);
-		given(book.getAddress(1)).willReturn(address);
+		given(book.getAddress(0)).willReturn(address);
 		given(book.getSize()).willReturn(1);
 
 		logic = mock(ProcessLogic.class);
@@ -340,6 +339,9 @@ class ServicesStateTest {
 
 	@Test
 	void initsWithoutMerkleAsExpected() {
+
+		given(book.getSize()).willReturn(1);
+
 		// when:
 		subject.init(platform, book);
 
@@ -552,10 +554,10 @@ class ServicesStateTest {
 		assertThat(
 				logCaptor.infoLogs(),
 				contains(
-						equalTo("Init called on Services node 1 WITH Merkle saved state"),
+						equalTo("Init called on Services node 0 WITH Merkle saved state"),
 						startsWith("[SwirldState Hashes]"),
 						startsWith("Mock for MerkleNetworkContext"),
-						equalTo("--> Context initialized accordingly on Services node 1")));
+						equalTo("--> Context initialized accordingly on Services node 0")));
 	}
 
 	@Test
