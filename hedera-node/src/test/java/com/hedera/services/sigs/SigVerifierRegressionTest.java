@@ -184,14 +184,14 @@ public class SigVerifierRegressionTest {
 
 	@Test
 	void throwsOnInvalidSigMap() throws Throwable {
-		assumeFalse(isInCircleCi);
-
 		// given:
 		setupFor(AMBIGUOUS_SIG_MAP_SCENARIO);
 
 		// expect:
-		assertThrows(KeyPrefixMismatchException.class,
+		KeyPrefixMismatchException exception = assertThrows(KeyPrefixMismatchException.class,
 				() -> sigVerifies(platformTxn.getBackwardCompatibleSignedTxn()));
+		assertTrue(exception.getMessage().contains("Source signature map with prefix")
+				&& exception.getMessage().contains("is ambiguous for given public key!"));
 	}
 
 	@Test

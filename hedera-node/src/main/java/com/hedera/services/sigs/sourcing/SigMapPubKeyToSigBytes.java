@@ -57,8 +57,8 @@ public class SigMapPubKeyToSigBytes implements PubKeyToSigBytes {
 			if (beginsWith(pubKey, pubKeyPrefix)) {
 				if (sigBytes != EMPTY_SIG) {
 					throw new KeyPrefixMismatchException(
-							"Source signature map is ambiguous for given public key " +
-									Hex.toHexString(pubKey) + " and public key prefix " + Hex.toHexString(pubKeyPrefix));
+							"Source signature map with prefix " + Hex.toHexString(pubKeyPrefix) +
+									" is ambiguous for given public key! (" + Hex.toHexString(pubKey) + ")");
 				}
 				sigBytes = sigBytesFor(sigPair);
 			}

@@ -109,7 +109,8 @@ public class SigMapPubKeyToSigBytesTest {
 			lookupsMatch(payerKt, overlapFactory, CommonUtils.extractTransactionBodyBytes(signedTxn), subject);
 		});
 
-		assertTrue(exception.getMessage().contains("Source signature map is ambiguous for given public key"));
+		assertTrue(exception.getMessage().contains("Source signature map with prefix")
+				&& exception.getMessage().contains("is ambiguous for given public key!"));
 	}
 
 	private void lookupsMatch(KeyTree kt, KeyFactory factory, byte[] data, PubKeyToSigBytes subject) throws Exception {
