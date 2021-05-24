@@ -347,7 +347,13 @@ public class StateView {
 					log.debug("Retrying fetch of {} file meta {} more times", readableId(id), attemptsLeft);
 					try {
 						TimeUnit.MILLISECONDS.sleep(100);
-					} catch (InterruptedException ignore) { }
+					} catch (InterruptedException ex) {
+						log.debug(
+								"Interrupted fetching meta for file {}, {} attempts left",
+								readableId(id),
+								attemptsLeft);
+						Thread.currentThread().interrupt();
+					}
 				}
 			}
 		}

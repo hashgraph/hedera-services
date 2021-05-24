@@ -1166,42 +1166,6 @@ public class CryptoServiceTest extends TestHelperComplex {
 	}
 
 	/**
-	 * Gets an account that is not used as payer. This account is used as a candidate for key update.
-	 *
-	 * @return an random account ID, or null if none available
-	 */
-	public AccountID getRandomNonPayerAccount() {
-		Set<AccountID> originalAccounts = acc2ComplexKeyMap.keySet();
-		Set<AccountID> accounts = new HashSet<>();
-		accounts.addAll(originalAccounts);
-		for (AccountID acc : payerAccounts) {
-			accounts.remove(acc);
-		}
-
-		// we don't consider genesis key here
-		if (accounts.contains(genesisAccountID)) {
-			accounts.remove(genesisAccountID);
-		}
-
-		if (accounts.size() == 0) {
-			return null;
-		}
-
-		AccountID[] candidates = accounts.toArray(new AccountID[0]);
-		AccountID rv = null;
-		for (int i = 0; i < candidates.length; i++) {
-			rv = candidates[rand.nextInt(candidates.length)];
-			synchronized (accountsBeingUpdated) {
-				if (!accountsBeingUpdated.contains(rv)) {
-					accountsBeingUpdated.add(rv);
-					break;
-				}
-			}
-		}
-		return rv;
-	}
-
-	/**
 	 * Generates a complex key up to defined depth.
 	 *
 	 * @param accountKeyType

@@ -34,6 +34,7 @@ public enum SleepingPause implements Pause {
 			Thread.sleep(n);
 			return true;
 		} catch (InterruptedException ignore) {
+			Thread.currentThread().interrupt();
 			return false;
 		}
 	}

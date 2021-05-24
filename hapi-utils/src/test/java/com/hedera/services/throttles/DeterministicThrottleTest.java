@@ -296,7 +296,6 @@ class DeterministicThrottleTest {
 		var a = new DeterministicThrottle.UsageSnapshot(aUsed, aLast);
 
 		// expect:
-		assertEquals(a, a);
 		assertEquals(a, new DeterministicThrottle.UsageSnapshot(aUsed, aLast));
 		assertNotEquals(a, null);
 		assertNotEquals(a, new Object());

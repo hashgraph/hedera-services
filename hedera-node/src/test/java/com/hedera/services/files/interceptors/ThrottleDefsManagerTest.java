@@ -56,6 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -134,6 +135,18 @@ class ThrottleDefsManagerTest {
 
 		// then:
 		verify(postUpdateCb).accept(newDef);
+	}
+
+	@Test
+	void doesntInvokePostUpdateWhenEmptyDefsFromParser() {
+		// given:
+		String invalidThrottleDefs = "thisIsTheWay";
+		// when:
+		subject.postUpdate(throttleDefs, invalidThrottleDefs.getBytes());
+
+		// then:
+		verify(postUpdateCb, never()).accept(any());
+
 	}
 
 	@Test
