@@ -45,6 +45,7 @@ import static com.hedera.test.factories.txns.SystemDeleteFactory.newSignedSystem
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SigMapPubKeyToSigBytesTest {
 	private final byte[] EMPTY_SIG = {};
@@ -104,9 +105,11 @@ public class SigMapPubKeyToSigBytesTest {
 		PubKeyToSigBytes subject = PubKeyToSigBytes.from(signedTxn.getSigMap());
 
 		// expect:
-		assertThrows(KeyPrefixMismatchException.class, () -> {
+		KeyPrefixMismatchException exception  = assertThrows(KeyPrefixMismatchException.class, () -> {
 			lookupsMatch(payerKt, overlapFactory, CommonUtils.extractTransactionBodyBytes(signedTxn), subject);
 		});
+
+		assertTrue(exception.getMessage().contains("Source signature map is ambiguous for given public key"));
 	}
 
 	private void lookupsMatch(KeyTree kt, KeyFactory factory, byte[] data, PubKeyToSigBytes subject) throws Exception {

@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
+import org.spongycastle.util.encoders.Hex;
 
 import java.util.Arrays;
 
@@ -53,10 +54,11 @@ public class SigMapPubKeyToSigBytes implements PubKeyToSigBytes {
 		byte[] sigBytes = EMPTY_SIG;
 		for (SignaturePair sigPair : sigMap.getSigPairList()) {
 			final byte[] pubKeyPrefix = sigPair.getPubKeyPrefix().toByteArray();
-			final int length = pubKeyPrefix.length;
-			if (Arrays.equals(pubKeyPrefix, 0, length, pubKey, 0, length)) {
+			if (beginsWith(pubKey, pubKeyPrefix)) {
 				if (sigBytes != EMPTY_SIG) {
-					throw new KeyPrefixMismatchException("Source signature map is ambiguous for given public key!");
+					throw new KeyPrefixMismatchException(
+							"Source signature map is ambiguous for given public key " +
+									Hex.toHexString(pubKey) + " and public key prefix " + Hex.toHexString(pubKeyPrefix));
 				}
 				sigBytes = sigBytesFor(sigPair);
 			}

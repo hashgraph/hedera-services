@@ -171,8 +171,6 @@ public class SigVerifierRegressionTest {
 
 	@Test
 	void throwsOnInvalidSenderAccount() throws Throwable {
-		assumeFalse(isInCircleCi);
-
 		// given:
 		setupFor(QUERY_PAYMENT_INVALID_SENDER_SCENARIO);
 
