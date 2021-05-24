@@ -55,6 +55,18 @@ class JKeyTest {
 	}
 
 	@Test
+	void negativeConvertJKeyTest() {
+		// given:
+		var jKeyTooDeep = TxnUtils.nestJKeys(JKey.MAX_KEY_DEPTH);
+
+		// expect:
+		assertThrows(
+				DecoderException.class,
+				() -> JKey.convertJKey(jKeyTooDeep, 1),
+				"Exceeding max expansion depth of " + JKey.MAX_KEY_DEPTH);
+	}
+
+	@Test
 	void rejectsEmptyKey() {
 		// expect:
 		assertThrows(DecoderException.class, () -> JKey.convertJKeyBasic(new JKey() {

@@ -164,7 +164,7 @@ public abstract class JKey implements Serializable {
 	 */
 	public static Key convertJKey(JKey jkey, int depth) throws DecoderException {
 		if (depth > MAX_KEY_DEPTH) {
-			log.debug("Exceeding max expansion depth of " + MAX_KEY_DEPTH);
+			throw new DecoderException("Exceeding max expansion depth of " + MAX_KEY_DEPTH);
 		}
 
 		if (!(jkey.hasThresholdKey() || jkey.hasKeyList())) {

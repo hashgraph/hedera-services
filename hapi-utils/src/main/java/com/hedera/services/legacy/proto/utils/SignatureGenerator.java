@@ -25,17 +25,10 @@ import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import org.apache.commons.codec.binary.Hex;
 
 import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
-import java.security.Signature;
 import java.security.SignatureException;
 
 public class SignatureGenerator {
-  /**
-   * Signature algorithm
-   */
-  static final String SIGNATURE_ALGORITHM = "SHA384withECDSA";
-
   /**
    * Signs a message with a private key.
    *
@@ -43,20 +36,14 @@ public class SignatureGenerator {
    * @param priv private key
    * @return signature in hex format
    */
-  public static String signBytes(byte[] msgBytes, PrivateKey priv)
-      throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
-    // Create a Signature object and initialize it with the private key
+  public static String signBytes(byte[] msgBytes, PrivateKey priv) throws InvalidKeyException, SignatureException {
     byte[] sigBytes = null;
     if (priv instanceof EdDSAPrivateKey) {
       EdDSAEngine engine = new EdDSAEngine();
       engine.initSign(priv);
       sigBytes = engine.signOneShot(msgBytes);
     } else {
-      Signature sigInstance = Signature.getInstance(SIGNATURE_ALGORITHM);
-      sigInstance.initSign(priv);
-      // Update and sign the data
-      sigInstance.update(msgBytes, 0, msgBytes.length);
-      sigBytes = sigInstance.sign();
+      throw new IllegalArgumentException("Only Ed25519 signatures are supported at this time!");
     }
 
     String sigHex = Hex.encodeHexString(sigBytes);
