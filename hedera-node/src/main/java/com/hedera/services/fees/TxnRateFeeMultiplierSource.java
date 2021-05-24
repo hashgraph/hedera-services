@@ -160,7 +160,11 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 
 	@Override
 	public Instant[] congestionLevelStarts() {
-		return congestionLevelStarts;
+		/* If the Platform is serializing a fast-copy of the MerkleNetworkContext,
+		and that copy references this object's congestionLevelStarts, we will get
+		a (transient) ISS if the congestion level changes mid-serialization on one
+		node but not others. */
+		return congestionLevelStarts.clone();
 	}
 
 	private boolean ensureConfigUpToDate() {

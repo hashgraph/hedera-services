@@ -45,6 +45,7 @@ import static java.time.Instant.ofEpochSecond;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
 
@@ -67,6 +68,25 @@ class TxnRateFeeMultiplierSourceTest {
 	void setUp() {
 		mockProps = new MockGlobalDynamicProps();
 		subject = new TxnRateFeeMultiplierSource(mockProps, throttling);
+	}
+
+	@Test
+	void makesDefensiveCopyOfCongestionStarts() {
+		// setup:
+		final var someInstants = new Instant[] {
+				Instant.ofEpochSecond(1_234_567),
+				Instant.ofEpochSecond(2_234_567),
+		};
+
+		// given:
+		subject.resetCongestionLevelStarts(someInstants);
+
+		// when:
+		final var equalNotSameInstants = subject.congestionLevelStarts();
+
+		// then:
+		assertEquals(List.of(someInstants), List.of(equalNotSameInstants));
+		assertNotSame(someInstants, equalNotSameInstants);
 	}
 
 	@Test

@@ -65,6 +65,7 @@ import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.times;
 
 @ExtendWith(LogCaptureExtension.class)
@@ -493,12 +494,12 @@ class MerkleNetworkContextTest {
 				.willReturn(lastScannedEntity)
 				.willReturn(entitiesScannedThisSecond)
 				.willReturn(entitiesTouchedThisSecond);
-		given(serdes.readNullableInstant(in).toJava())
-				.willReturn(consensusTimeOfLastHandledTxn)
-				.willReturn(usageSnapshots[0].lastDecisionTime())
-				.willReturn(usageSnapshots[1].lastDecisionTime())
-				.willReturn(congestionStarts[0])
-				.willReturn(congestionStarts[1]);
+		given(serdes.readNullableInstant(in))
+				.willReturn(fromJava(consensusTimeOfLastHandledTxn))
+				.willReturn(fromJava(usageSnapshots[0].lastDecisionTime()))
+				.willReturn(fromJava(usageSnapshots[1].lastDecisionTime()))
+				.willReturn(fromJava(congestionStarts[0]))
+				.willReturn(fromJava(congestionStarts[1]));
 
 		// when:
 		subject.deserialize(in, MerkleNetworkContext.RELEASE_0140_VERSION);
@@ -509,6 +510,48 @@ class MerkleNetworkContextTest {
 		assertEquals(entitiesTouchedThisSecond, subject.getEntitiesTouchedThisSecond());
 		assertArrayEquals(usageSnapshots, subject.usageSnapshots());
 		assertArrayEquals(richCongestionStarts(), subject.getCongestionLevelStarts());
+		// and:
+		inOrder.verify(seqNo).deserialize(in);
+		inOrder.verify(in).readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class));
+		// and:
+		assertEquals(lastScannedEntity, subject.lastScannedEntity());
+		assertEquals(stateVersion, subject.getStateVersion());
+	}
+
+	@Test
+	void deserializeWorksForNullInstants() throws IOException {
+		// setup:
+		var in = mock(SerializableDataInputStream.class);
+		MerkleNetworkContext.ratesSupplier = () -> midnightRateSet;
+		MerkleNetworkContext.seqNoSupplier = () -> seqNo;
+		InOrder inOrder = inOrder(in, seqNo);
+
+		subject = new MerkleNetworkContext();
+
+		given(in.readInt())
+				.willReturn(usageSnapshots.length)
+				.willReturn(congestionStarts.length)
+				.willReturn(stateVersion);
+		given(in.readLong())
+				.willReturn(usageSnapshots[0].used())
+				.willReturn(usageSnapshots[1].used())
+				.willReturn(lastScannedEntity)
+				.willReturn(entitiesScannedThisSecond)
+				.willReturn(entitiesTouchedThisSecond);
+		given(serdes.readNullableInstant(in)).willReturn(null);
+
+		// when:
+		subject.deserialize(in, MerkleNetworkContext.RELEASE_0140_VERSION);
+
+		// then:
+		Assertions.assertNull(subject.getConsensusTimeOfLastHandledTxn());
+		assertEquals(entitiesScannedThisSecond, subject.getEntitiesScannedThisSecond());
+		assertEquals(entitiesTouchedThisSecond, subject.getEntitiesTouchedThisSecond());
+		assertArrayEquals(new DeterministicThrottle.UsageSnapshot[] {
+				new DeterministicThrottle.UsageSnapshot(usageSnapshots[0].used(), null),
+				new DeterministicThrottle.UsageSnapshot(usageSnapshots[1].used(), null)
+		}, subject.usageSnapshots());
+		assertArrayEquals(new Instant[] { null, null }, subject.getCongestionLevelStarts());
 		// and:
 		inOrder.verify(seqNo).deserialize(in);
 		inOrder.verify(in).readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class));
@@ -552,6 +595,20 @@ class MerkleNetworkContextTest {
 		inOrder.verify(out).writeLong(entitiesScannedThisSecond);
 		inOrder.verify(out).writeLong(entitiesTouchedThisSecond);
 		inOrder.verify(out).writeInt(stateVersion);
+	}
+
+	@Test
+	void canSerializeNullCongestionLevelStarts() {
+		// setup:
+		var out = mock(SerializableDataOutputStream.class);
+		feeMultiplierSource = mock(FeeMultiplierSource.class);
+
+		given(feeMultiplierSource.congestionLevelStarts()).willReturn(new Instant[] { null, null });
+
+		// when:
+		subject.updateCongestionStartsFrom(feeMultiplierSource);
+		// and:
+		Assertions.assertDoesNotThrow(() -> subject.serialize(out));
 	}
 
 	@Test

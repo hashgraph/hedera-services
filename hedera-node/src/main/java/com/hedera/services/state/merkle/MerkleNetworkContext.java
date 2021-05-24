@@ -171,7 +171,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		consensusTimeOfLastHandledTxn = serdes.readNullableInstant(in).toJava();
+		final var lastHandleTime = serdes.readNullableInstant(in);
+		consensusTimeOfLastHandledTxn = (lastHandleTime == null) ? null : lastHandleTime.toJava();
 
 		seqNo = seqNoSupplier.get();
 		seqNo.deserialize(in);
@@ -185,8 +186,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 					var used = in.readLong();
 					var lastUsed = serdes.readNullableInstant(in);
 					usageSnapshots[i] = new DeterministicThrottle.UsageSnapshot(
-							used,
-							Optional.ofNullable(lastUsed).map(RichInstant::toJava).orElse(null));
+							used, (lastUsed == null) ? null : lastUsed.toJava());
 				}
 			}
 
@@ -194,7 +194,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			if (numCongestionStarts > 0) {
 				congestionLevelStarts = new Instant[numCongestionStarts];
 				for (int i = 0; i < numCongestionStarts; i++) {
-					congestionLevelStarts[i] = serdes.readNullableInstant(in).toJava(); // ifPresent...
+					final var levelStart = serdes.readNullableInstant(in);
+					congestionLevelStarts[i] = (levelStart == null) ? null : levelStart.toJava();
 				}
 			}
 		}
