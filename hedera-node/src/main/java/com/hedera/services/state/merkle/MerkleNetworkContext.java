@@ -137,12 +137,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	public void updateCongestionStartsFrom(FeeMultiplierSource feeMultiplierSource) {
-		var congestionStarts = feeMultiplierSource.congestionLevelStarts();
-		if (congestionStarts.length == 0) {
-			congestionLevelStarts = NO_CONGESTION_STARTS;
-		} else {
-			congestionLevelStarts = congestionStarts;
-		}
+		congestionLevelStarts = feeMultiplierSource.congestionLevelStarts();
 	}
 
 	public void updateWithSavedCongestionStarts(FeeMultiplierSource feeMultiplierSource) {

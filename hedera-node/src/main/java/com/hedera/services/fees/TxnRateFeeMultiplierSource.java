@@ -155,7 +155,7 @@ public class TxnRateFeeMultiplierSource implements FeeMultiplierSource {
 
 	@Override
 	public void resetCongestionLevelStarts(Instant[] savedStartTimes) {
-		congestionLevelStarts = savedStartTimes;
+		congestionLevelStarts = savedStartTimes.clone();
 	}
 
 	@Override
