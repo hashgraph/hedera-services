@@ -32,6 +32,7 @@ import static com.hedera.services.throttles.BucketThrottle.NTPS_PER_MTPS;
 import static com.hedera.services.throttles.BucketThrottleTest.NTPS_PER_TPS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -303,9 +304,9 @@ class DeterministicThrottleTest {
 		// and:
 		assertEquals(a.hashCode(), a.hashCode());
 		assertEquals(a.hashCode(), new DeterministicThrottle.UsageSnapshot(aUsed, aLast).hashCode());
-		assertNotEquals(a, new Object().hashCode());
-		assertNotEquals(a, new DeterministicThrottle.UsageSnapshot(bUsed, aLast).hashCode());
-		assertNotEquals(a, new DeterministicThrottle.UsageSnapshot(aUsed, bLast).hashCode());
+		assertNotEquals(a.hashCode(), new Object().hashCode());
+		assertNotEquals(a.hashCode(), new DeterministicThrottle.UsageSnapshot(bUsed, aLast).hashCode());
+		assertNotEquals(a.hashCode(), new DeterministicThrottle.UsageSnapshot(aUsed, bLast).hashCode());
 	}
 
 	@Test
@@ -325,5 +326,36 @@ class DeterministicThrottleTest {
 		// expect:
 		assertEquals(desiredWithNoLastDecision, aNoLast.toString());
 		assertEquals(desiredWithLastDecision, aWithLast.toString());
+	}
+
+	@Test
+	void hashCodeWorks() {
+		// setup:
+		int tps = 1_000;
+		String name = "t6e";
+
+		// given:
+		var throttle = DeterministicThrottle.withTpsAndBurstPeriodNamed(tps, 2, name);
+
+		// expect:
+		int expectedHashCode = 403047329;
+		assertEquals(expectedHashCode, throttle.hashCode());
+	}
+
+	@Test
+	void equalsWorks() {
+		// setup:
+		int tps = 1_000;
+		String name = "t6e";
+
+		// given:
+		var throttle = DeterministicThrottle.withTpsAndBurstPeriodNamed(tps, 2, name);
+		var throttle1 = DeterministicThrottle.withTpsAndBurstPeriodNamed(tps, 2, name);
+		var bucketThrottle = BucketThrottle.withTps(tps);
+
+		// expect:
+		assertTrue(throttle.equals(throttle1));
+		assertFalse(throttle.equals(null));
+		assertFalse(throttle.equals(bucketThrottle));
 	}
 }
