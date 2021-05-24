@@ -348,8 +348,11 @@ public class StateView {
 					try {
 						TimeUnit.MILLISECONDS.sleep(100);
 					} catch (InterruptedException ex) {
+						log.debug(
+								"Interrupted fetching meta for file {}, {} attempts left",
+								readableId(id),
+								attemptsLeft);
 						Thread.currentThread().interrupt();
-						log.warn("Interrupted while waiting to fetch file meta", ex);
 					}
 				}
 			}
