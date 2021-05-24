@@ -25,6 +25,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -166,6 +167,12 @@ class TxnIdRecentHistoryTest {
 		assertEquals(
 				memoIdentifying(1, 0, INVALID_PAYER_SIGNATURE),
 				priority.getMemo());
+	}
+
+	@Test
+	void nothingHappensWithNoHistory() {
+		// when:
+		Assertions.assertDoesNotThrow(() -> subject.forgetExpiredAt(expiryAtOffset(1)));
 	}
 
 	@Test

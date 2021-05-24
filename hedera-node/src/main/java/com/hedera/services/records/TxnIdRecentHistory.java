@@ -100,7 +100,7 @@ public class TxnIdRecentHistory {
 		return records == null || records.isEmpty();
 	}
 
-	public void observe(ExpirableTxnRecord record, ResponseCodeEnum status) {
+	void observe(ExpirableTxnRecord record, ResponseCodeEnum status) {
 		if (UNCLASSIFIABLE_STATUSES.contains(status)) {
 			addUnclassifiable(record);
 		} else {
