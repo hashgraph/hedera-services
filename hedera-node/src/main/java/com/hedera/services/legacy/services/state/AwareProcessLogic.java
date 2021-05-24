@@ -150,7 +150,7 @@ public class AwareProcessLogic implements ProcessLogic {
 		}
 	}
 
-	private void addRecordToStream() {
+	void addRecordToStream() {
 		ctx.recordsHistorian().lastCreatedRecord().ifPresent(finalRecord ->
 				addForStreaming(ctx.txnCtx().accessor().getBackwardCompatibleSignedTxn(),
 						finalRecord, ctx.txnCtx().consensusTime()));

@@ -90,11 +90,11 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			return;
 		}
 
-		TokenID created = null;
-		if(result.getCreated().isPresent()) {
+		TokenID created;
+		if (result.getCreated().isPresent()) {
 			created = result.getCreated().get();
 		} else {
-			log.warn("tokenId not present in the token create transaction !!");
+			log.warn("TokenStore#createProvisionally contract broken, no created id for OK response!");
 			abortWith(FAIL_INVALID);
 			return;
 		}

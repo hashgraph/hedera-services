@@ -188,8 +188,8 @@ public class RecordStreamManager {
 			try {
 				multiStream.add(recordStreamObject);
 			} catch (InterruptedException ex) {
+				log.warn("Interrupted while streaming {}!", recordStreamObject);
 				Thread.currentThread().interrupt();
-				log.error("thread interrupted in addRecordStreamObject: ", ex);
 			}
 		}
 		runningAvgs.writeQueueSizeRecordStream(getWriteQueueSize());

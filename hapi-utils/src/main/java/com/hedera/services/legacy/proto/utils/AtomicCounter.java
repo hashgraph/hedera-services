@@ -36,10 +36,6 @@ public class AtomicCounter {
     c.incrementAndGet();
   }
 
-  public void decrement() {
-    c.decrementAndGet();
-  }
-
   public int value() {
     return c.get();
   }
