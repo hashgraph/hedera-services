@@ -152,10 +152,10 @@ public class TxnIdRecentHistory {
 	}
 
 	public void forgetExpiredAt(long now) {
-		if(classifiableRecords != null) {
+		if (classifiableRecords != null) {
 			forgetFromList(classifiableRecords, now);
 		}
-		if(unclassifiableRecords != null) {
+		if (unclassifiableRecords != null) {
 			forgetFromList(unclassifiableRecords, now);
 		}
 	}

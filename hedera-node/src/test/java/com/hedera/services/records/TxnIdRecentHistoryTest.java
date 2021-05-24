@@ -51,12 +51,12 @@ class TxnIdRecentHistoryTest {
 	TxnIdRecentHistory subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		subject = new TxnIdRecentHistory();
 	}
 
 	@Test
-	public void getsMemory() {
+	void getsMemory() {
 		// given:
 		subject.classifiableRecords = List.of(mock(ExpirableTxnRecord.class));
 		// expect:
@@ -75,7 +75,7 @@ class TxnIdRecentHistoryTest {
 	}
 
 	@Test
-	public void classifiesAsExpected() {
+	void classifiesAsExpected() {
 		// given:
 		subject.observe(
 				recordOf(0, 0, INVALID_NODE_ACCOUNT),
@@ -93,7 +93,7 @@ class TxnIdRecentHistoryTest {
 	}
 
 	@Test
-	public void restoresFromStagedAsExpected() {
+	void restoresFromStagedAsExpected() {
 		// given:
 		subject.stage(recordOf(2, 7, INVALID_NODE_ACCOUNT));
 		subject.stage(recordOf(1, 1, SUCCESS));
@@ -128,7 +128,7 @@ class TxnIdRecentHistoryTest {
 	}
 
 	@Test
-	public void prioritizesClassifiableRecords() {
+	void prioritizesClassifiableRecords() {
 		givenSomeWellKnownHistoryWithListOfSizeGreaterThanOne();
 
 		// when:
@@ -141,19 +141,19 @@ class TxnIdRecentHistoryTest {
 	}
 
 	@Test
-	public void returnsEmptyIfForgotten() {
+	void returnsEmptyIfForgotten() {
 		// expect:
 		assertNull(subject.priorityRecord());
 	}
 
 	@Test
-	public void recognizesEmptyDuplicates() {
+	void recognizesEmptyDuplicates() {
 		// expect:
 		assertTrue(subject.duplicateRecords().isEmpty());
 	}
 
 	@Test
-	public void returnsUnclassifiableIfOnlyAvailable() {
+	void returnsUnclassifiableIfOnlyAvailable() {
 		// given:
 		subject.observe(
 				recordOf(1, 0, INVALID_PAYER_SIGNATURE),
@@ -169,7 +169,7 @@ class TxnIdRecentHistoryTest {
 	}
 
 	@Test
-	public void forgetsFromListOfSizeGreaterThanOneAsExpected() {
+	void forgetsFromListOfSizeGreaterThanOneAsExpected() {
 		givenSomeWellKnownHistoryWithListOfSizeGreaterThanOne();
 
 		// when:
@@ -189,7 +189,7 @@ class TxnIdRecentHistoryTest {
 	}
 
 	@Test
-	public void forgetsAsExpectedFromListOfSizeOne() {
+	void forgetsAsExpectedFromListOfSizeOne() {
 		givenSomeWellKnownHistoryWithListOfSizeOne();
 
 		// when:
@@ -205,7 +205,7 @@ class TxnIdRecentHistoryTest {
 	}
 
 	@Test
-	public void omitsPriorityWhenUnclassifiable() {
+	void omitsPriorityWhenUnclassifiable() {
 		// given:
 		subject.observe(
 				recordOf(1, 0, INVALID_PAYER_SIGNATURE),
@@ -225,7 +225,7 @@ class TxnIdRecentHistoryTest {
 	}
 
 	@Test
-	public void returnsOrderedDuplicates() {
+	void returnsOrderedDuplicates() {
 		givenSomeWellKnownHistoryWithListOfSizeGreaterThanOne();
 
 		// when:
