@@ -79,7 +79,7 @@ public final class UnzipUtility {
 	 * @param filePath
 	 * 		Output file name
 	 */
-	private static void extractSingleFile(ZipInputStream inputStream, String filePath) {
+	static void extractSingleFile(ZipInputStream inputStream, String filePath) {
 		try (var bos = new BufferedOutputStream(new FileOutputStream(filePath))) {
 			final var bytesIn = new byte[BUFFER_SIZE];
 			int read;
