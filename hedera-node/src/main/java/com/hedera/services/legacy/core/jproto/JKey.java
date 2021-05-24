@@ -21,8 +21,6 @@ package com.hedera.services.legacy.core.jproto;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.proto.utils.KeyExpansion;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -45,9 +43,11 @@ import java.util.Objects;
  * @author hua Created on 2018-11-02
  */
 public abstract class JKey implements Serializable {
+	static final int MAX_KEY_DEPTH = 15;
+
 	private static final long serialVersionUID = 1L;
+
 	private static final Logger log = LogManager.getLogger(JKey.class);
-	private static boolean USE_HEX_ENCODED_KEY = KeyExpansion.USE_HEX_ENCODED_KEY;
 
 	private boolean forScheduledTxn = false;
 
@@ -72,8 +72,8 @@ public abstract class JKey implements Serializable {
 	 * 		current level that is to be verified. The first level has a value of 1.
 	 */
 	public static JKey convertKey(Key key, int depth) throws DecoderException {
-		if (depth > KeyExpansion.KEY_EXPANSION_DEPTH) {
-			throw new DecoderException("Exceeding max expansion depth of " + KeyExpansion.KEY_EXPANSION_DEPTH);
+		if (depth > MAX_KEY_DEPTH) {
+			throw new DecoderException("Exceeding max expansion depth of " + MAX_KEY_DEPTH);
 		}
 
 		if (!(key.hasThresholdKey() || key.hasKeyList())) {
@@ -111,24 +111,10 @@ public abstract class JKey implements Serializable {
 	private static JKey convertBasic(Key key) throws DecoderException {
 		JKey rv;
 		if (!key.getEd25519().isEmpty()) {
-			byte[] pubKeyBytes = null;
-			if (USE_HEX_ENCODED_KEY) {
-				String pubKeyHex = key.getEd25519().toStringUtf8();
-				pubKeyBytes = MiscUtils.commonsHexToBytes(pubKeyHex);
-			} else {
-				pubKeyBytes = key.getEd25519().toByteArray();
-			}
-
+			byte[] pubKeyBytes = key.getEd25519().toByteArray();
 			rv = new JEd25519Key(pubKeyBytes);
 		} else if (!key.getECDSA384().isEmpty()) {
-			byte[] pubKeyBytes = null;
-			if (USE_HEX_ENCODED_KEY) {
-				String pubKeyHex = key.getECDSA384().toStringUtf8();
-				pubKeyBytes = MiscUtils.commonsHexToBytes(pubKeyHex);
-			} else {
-				pubKeyBytes = key.getECDSA384().toByteArray();
-			}
-
+			byte[] pubKeyBytes = key.getECDSA384().toByteArray();
 			rv = new JECDSA_384Key(pubKeyBytes);
 		} else if (!key.getRSA3072().isEmpty()) {
 			byte[] pubKeyBytes = key.getRSA3072().toByteArray();
@@ -177,8 +163,8 @@ public abstract class JKey implements Serializable {
 	 * @return converted proto Key
 	 */
 	public static Key convertJKey(JKey jkey, int depth) throws DecoderException {
-		if (depth > KeyExpansion.KEY_EXPANSION_DEPTH) {
-			log.debug("Exceeding max expansion depth of " + KeyExpansion.KEY_EXPANSION_DEPTH);
+		if (depth > MAX_KEY_DEPTH) {
+			log.debug("Exceeding max expansion depth of " + MAX_KEY_DEPTH);
 		}
 
 		if (!(jkey.hasThresholdKey() || jkey.hasKeyList())) {
