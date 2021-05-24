@@ -42,6 +42,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANS
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
 public class CreateTokensBeforeReconnect extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CreateTokensBeforeReconnect.class);
@@ -74,7 +75,7 @@ public class CreateTokensBeforeReconnect extends HapiApiSuite {
 				.noLogging()
 				.hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED)
 				.hasKnownStatusFrom(SUCCESS, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT,
-						TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)
+						TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, UNKNOWN)
 				.deferStatusResolution();
 	}
 

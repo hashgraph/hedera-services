@@ -62,7 +62,7 @@ public class GetTopicInfoResourceUsage implements QueryResourceUsageEstimator {
 			return FeeData.getDefaultInstance();
 		}
 
-		int bpr = BASIC_QUERY_RES_HEADER
+		long bpr = BASIC_QUERY_RES_HEADER
 				+ getStateProofSize(responseType)
 				+ BASIC_ENTITY_ID_SIZE
 				+ getTopicInfoSize(merkleTopic);
@@ -82,9 +82,9 @@ public class GetTopicInfoResourceUsage implements QueryResourceUsageEstimator {
 	private static int getTopicInfoSize(MerkleTopic merkleTopic) {
 		/* Three longs in a topic representation: sequenceNumber, expirationTime, autoRenewPeriod */
 		return TX_HASH_SIZE + 3 * LONG_SIZE + computeVariableSizedFieldsUsage(
-						asKeyUnchecked(merkleTopic.getAdminKey()),
-						asKeyUnchecked(merkleTopic.getSubmitKey()),
-						merkleTopic.getMemo(),
-						merkleTopic.hasAutoRenewAccountId());
+				asKeyUnchecked(merkleTopic.getAdminKey()),
+				asKeyUnchecked(merkleTopic.getSubmitKey()),
+				merkleTopic.getMemo(),
+				merkleTopic.hasAutoRenewAccountId());
 	}
 }

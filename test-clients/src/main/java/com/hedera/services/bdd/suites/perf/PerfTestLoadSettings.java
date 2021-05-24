@@ -47,6 +47,7 @@ public class PerfTestLoadSettings {
 	public static final int DEFAULT_DURATION_CREATE_TOKEN_ASSOCIATION = 60; // in seconds
 	public static final int DEFAULT_DURATION_TOKEN_TRANSFER = 60; // in seconds
 	public static final long DEFAULT_INITIAL_BALANCE = ONE_MILLION_HBARS;
+	public static final int DEFAULT_TEST_TOPIC_ID = 30_000;
 	public static final int DEFAULT_BALANCES_EXPORT_PERIOD_SECS = 60;
 	public static final boolean DEFAULT_EXPORT_BALANCES_ON_CLIENT_SIDE = false;
 
@@ -109,6 +110,10 @@ public class PerfTestLoadSettings {
 	 */
 	private long initialBalance = DEFAULT_INITIAL_BALANCE;
 
+	/**
+	 * topic ID for reconnect and other tests;
+	 */
+	private int testTopicId = DEFAULT_TEST_TOPIC_ID;
 	// test client to tell hedera services how long to export account balances.
 	private int balancesExportPeriodSecs = DEFAULT_BALANCES_EXPORT_PERIOD_SECS;
 	// tell EET client whether to dump account balances or not
@@ -194,6 +199,10 @@ public class PerfTestLoadSettings {
 	}
 
 	public int getTestTreasureStartAccount() { return testTreasureStartAccount; }
+
+	public int getTestTopicId() { return testTopicId; }
+
+
 	public int getIntProperty(String property, int defaultValue) {
 		if (null != ciProps && ciProps.has(property)) {
 			return ciProps.getInteger(property);
@@ -270,6 +279,9 @@ public class PerfTestLoadSettings {
 		if (ciProps.has("initialBalance")) {
 			initialBalance = ciProps.getLong("initialBalance");
 		}
+		if (ciProps.has("testTopicId")) {
+			testTopicId = ciProps.getInteger("testTopicId");
+		}
 		if (ciProps.has("balancesExportPeriodSecs")) {
 			balancesExportPeriodSecs = ciProps.getInteger("balancesExportPeriodSecs");
 		}
@@ -301,6 +313,7 @@ public class PerfTestLoadSettings {
 				.add("totalTokenAssociations", totalTokenAssociations)
 				.add("totalScheduledTransactions", totalScheduled)
 				.add("initialBalance", initialBalance)
+				.add("testTopicId", testTopicId)
 				.add("balancesExportPeriodSecs", balancesExportPeriodSecs)
 				.add("clientToExportBalances", clientToExportBalances)
 				.toString();
