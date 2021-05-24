@@ -212,6 +212,17 @@ class TxnIdRecentHistoryTest {
 	}
 
 	@Test
+	void forgetsNothingFromListOfSizeOneWhenNotExpired() {
+		givenJustOneUnclassifiableRecordHistory();
+
+		// when:
+		subject.forgetExpiredAt(expiryAtOffset(-1));
+
+		// then:
+		assertEquals(1, subject.unclassifiableRecords.size());
+	}
+
+	@Test
 	void omitsPriorityWhenUnclassifiable() {
 		// given:
 		subject.observe(
@@ -291,6 +302,12 @@ class TxnIdRecentHistoryTest {
 		subject.observe(
 				recordOf(3, 5, DUPLICATE_TRANSACTION),
 				DUPLICATE_TRANSACTION);
+	}
+
+	private void givenJustOneUnclassifiableRecordHistory() {
+		subject.observe(
+				recordOf(1, 0, INVALID_PAYER_SIGNATURE),
+				INVALID_PAYER_SIGNATURE);
 	}
 
 	private ExpirableTxnRecord recordOf(
