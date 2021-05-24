@@ -95,7 +95,7 @@ class TxnRateFeeMultiplierSourceTest {
 		subject.resetCongestionLevelStarts(congestionStarts);
 
 		// then:
-		Assertions.assertSame(congestionStarts, subject.congestionLevelStarts());
+		Assertions.assertEquals(List.of(congestionStarts), List.of(subject.congestionLevelStarts()));
 	}
 
 	/* MockGlobalDynamicProps has 2 secs for minCongestionPeriod */
