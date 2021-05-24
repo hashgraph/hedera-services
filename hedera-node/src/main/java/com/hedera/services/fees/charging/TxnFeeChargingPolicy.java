@@ -23,15 +23,6 @@ package com.hedera.services.fees.charging;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.fee.FeeObject;
 
-import java.util.function.Consumer;
-
-import static com.hedera.services.fees.TxnFeeType.NETWORK;
-import static com.hedera.services.fees.TxnFeeType.NODE;
-import static com.hedera.services.fees.TxnFeeType.SERVICE;
-import static com.hedera.services.fees.charging.ItemizableFeeCharging.NETWORK_FEE;
-import static com.hedera.services.fees.charging.ItemizableFeeCharging.NETWORK_NODE_SERVICE_FEES;
-import static com.hedera.services.fees.charging.ItemizableFeeCharging.NODE_FEE;
-import static com.hedera.services.fees.charging.ItemizableFeeCharging.SERVICE_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -51,40 +42,26 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * @author Michael Tinker
  */
 public class TxnFeeChargingPolicy {
-	private final Consumer<ItemizableFeeCharging> NO_DISCOUNT = c -> {};
-	private final Consumer<ItemizableFeeCharging> DUPLICATE_TXN_DISCOUNT = c -> c.setFor(SERVICE, 0);
+	private final StagedCharging stagedCharging;
+
+	public TxnFeeChargingPolicy() {
+		stagedCharging = null;
+	}
+
+	public TxnFeeChargingPolicy(StagedCharging stagedCharging) {
+		this.stagedCharging = stagedCharging;
+	}
 
 	/**
 	 * Apply the fee charging policy to a txn that was submitted responsibly, and
 	 * believed unique.
 	 *
 	 * @param charging the charging facility to use
-	 * @param fee the fee to charge
+	 * @param fees the fee to charge
 	 * @return the outcome of applying the policy
 	 */
-	public ResponseCodeEnum apply(ItemizableFeeCharging charging, FeeObject fee) {
-		return applyWithDiscount(charging, fee, NO_DISCOUNT);
-	}
-
-	/**
-	 * Apply the fee charging policy to a txn that was submitted responsibly, but
-	 * is a triggered txn rather than a parent txn requiring node precheck work.
-	 *
-	 * @param charging the charging facility to use
-	 * @param fee the fee to charge
-	 * @return the outcome of applying the policy
-	 */
-	public ResponseCodeEnum applyForTriggered(ItemizableFeeCharging charging, FeeObject fee) {
-		charging.setFor(SERVICE, fee.getServiceFee());
-
-		if (!charging.isPayerWillingToCover(SERVICE_FEE)) {
-			return INSUFFICIENT_TX_FEE;
-		} else if (!charging.canPayerAfford(SERVICE_FEE)) {
-			return INSUFFICIENT_PAYER_BALANCE;
-		} else {
-			charging.chargePayer(SERVICE_FEE);
-			return OK;
-		}
+	public ResponseCodeEnum apply(ItemizableFeeCharging charging, FeeObject fees) {
+		return chargePendingSolvency(fees);
 	}
 
 	/**
@@ -92,11 +69,34 @@ public class TxnFeeChargingPolicy {
 	 * is a duplicate of a txn already submitted by a different node.
 	 *
 	 * @param charging the charging facility to use
-	 * @param fee the fee to charge
+	 * @param fees the fee to charge
 	 * @return the outcome of applying the policy
 	 */
-	public ResponseCodeEnum applyForDuplicate(ItemizableFeeCharging charging, FeeObject fee) {
-		return applyWithDiscount(charging, fee, DUPLICATE_TXN_DISCOUNT);
+	public ResponseCodeEnum applyForDuplicate(ItemizableFeeCharging charging, FeeObject fees) {
+		final var feesForDuplicate = new FeeObject(fees.getNodeFee(), fees.getNetworkFee(), 0L);
+
+		return chargePendingSolvency(feesForDuplicate);
+	}
+
+	/**
+	 * Apply the fee charging policy to a txn that was submitted responsibly, but
+	 * is a triggered txn rather than a parent txn requiring node precheck work.
+	 *
+	 * @param charging the charging facility to use
+	 * @param fees the fee to charge
+	 * @return the outcome of applying the policy
+	 */
+	public ResponseCodeEnum applyForTriggered(ItemizableFeeCharging charging, FeeObject fees) {
+		stagedCharging.setFees(fees);
+
+		if (!stagedCharging.isPayerWillingToCoverServiceFee()) {
+			return INSUFFICIENT_TX_FEE;
+		} else if (!stagedCharging.canPayerAffordServiceFee()) {
+			return INSUFFICIENT_PAYER_BALANCE;
+		} else {
+			stagedCharging.chargePayerServiceFee();
+			return OK;
+		}
 	}
 
 	/**
@@ -104,58 +104,39 @@ public class TxnFeeChargingPolicy {
 	 * submitted without performing basic due diligence.
 	 *
 	 * @param charging the charging facility to use
-	 * @param fee the fee to charge
+	 * @param fees the fee to charge
 	 * @return the outcome of applying the policy
 	 */
-	public ResponseCodeEnum applyForIgnoredDueDiligence(ItemizableFeeCharging charging, FeeObject fee) {
-		charging.setFor(NETWORK, fee.getNetworkFee());
-		charging.chargeSubmittingNodeUpTo(NETWORK_FEE);
+	public ResponseCodeEnum applyForIgnoredDueDiligence(ItemizableFeeCharging charging, FeeObject fees) {
+		stagedCharging.setFees(fees);
+		stagedCharging.chargeSubmittingNodeUpToNetworkFee();
 		return OK;
 	}
 
-	private ResponseCodeEnum applyWithDiscount(
-			ItemizableFeeCharging charging,
-			FeeObject fee,
-			Consumer<ItemizableFeeCharging> discount
-	) {
-		setStandardFees(charging, fee);
+	private ResponseCodeEnum chargePendingSolvency(FeeObject fees) {
+		stagedCharging.setFees(fees);
 
-		if (!charging.isPayerWillingToCover(NETWORK_FEE)) {
-			charging.chargeSubmittingNodeUpTo(NETWORK_FEE);
+		if (!stagedCharging.isPayerWillingToCoverNetworkFee()) {
+			stagedCharging.chargeSubmittingNodeUpToNetworkFee();
 			return INSUFFICIENT_TX_FEE;
-		} else if (!charging.canPayerAfford(NETWORK_FEE)) {
-			charging.chargeSubmittingNodeUpTo(NETWORK_FEE);
+		} else if (!stagedCharging.canPayerAffordNetworkFee()) {
+			stagedCharging.chargeSubmittingNodeUpToNetworkFee();
 			return INSUFFICIENT_PAYER_BALANCE;
 		} else {
-			return applyGivenNodeDueDiligence(charging, discount);
+			return chargeGivenNodeDueDiligence();
 		}
 	}
 
-	private ResponseCodeEnum applyGivenNodeDueDiligence(
-			ItemizableFeeCharging charging,
-			Consumer<ItemizableFeeCharging> discount
-	) {
-		discount.accept(charging);
-		if (!charging.isPayerWillingToCover(NETWORK_NODE_SERVICE_FEES))	{
-			penalizePayer(charging);
+	private ResponseCodeEnum chargeGivenNodeDueDiligence() {
+		if (!stagedCharging.isPayerWillingToCoverAllFees()) {
+			stagedCharging.chargePayerNetworkAndUpToNodeFee();
 			return INSUFFICIENT_TX_FEE;
-		} else if (!charging.canPayerAfford(NETWORK_NODE_SERVICE_FEES)) {
-			penalizePayer(charging);
+		} else if (!stagedCharging.canPayerAffordAllFees()) {
+			stagedCharging.chargePayerNetworkAndUpToNodeFee();
 			return INSUFFICIENT_PAYER_BALANCE;
 		} else {
-			charging.chargePayer(NETWORK_NODE_SERVICE_FEES);
+			stagedCharging.chargePayerAllFees();
 			return OK;
 		}
-	}
-
-	private void penalizePayer(ItemizableFeeCharging charging) {
-		charging.chargePayer(NETWORK_FEE);
-		charging.chargePayerUpTo(NODE_FEE);
-	}
-
-	private void setStandardFees(ItemizableFeeCharging charging, FeeObject fee) {
-		charging.setFor(NODE, fee.getNodeFee());
-		charging.setFor(NETWORK, fee.getNetworkFee());
-		charging.setFor(SERVICE, fee.getServiceFee());
 	}
 }
