@@ -22,8 +22,10 @@ package com.hedera.services.context;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -158,7 +160,7 @@ public class AwareTransactionContext implements TransactionContext {
 	}
 
 	@Override
-	public TransactionRecord recordSoFar() {
+	public ExpirableTxnRecord recordSoFar(EntityCreator creator) {
 		long amount = ctx.charging().totalFeesChargedToPayer() + otherNonThresholdFees;
 
 		if (log.isDebugEnabled()) {
@@ -180,7 +182,11 @@ public class AwareTransactionContext implements TransactionContext {
 		recordConfig.accept(recordSoFar);
 		hasComputedRecordSoFar = true;
 
-		return recordSoFar.build();
+		return creator.createExpiringRecord(
+				this.effectivePayer(),
+				recordSoFar.build(),
+				this.consensusTime.getEpochSecond(),
+				this.submittingMember);
 	}
 
 	@Override

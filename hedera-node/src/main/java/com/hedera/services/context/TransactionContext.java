@@ -21,7 +21,9 @@ package com.hedera.services.context;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiringEntity;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -120,11 +122,12 @@ public interface TransactionContext {
 	 * of processing the current txn up to the time of the call.
 	 *
 	 * @return the historical record of processing the current txn thus far.
+	 * @param creator
 	 */
-	TransactionRecord recordSoFar();
+	ExpirableTxnRecord recordSoFar(EntityCreator creator);
 
 	/**
-	 * Returns the last record created by {@link TransactionContext#recordSoFar()},
+	 * Returns the last record created by {@link TransactionContext#recordSoFar(EntityCreator)},
 	 * with the transfer list and fees updated.
 	 *
 	 * @param listWithNewFees the new transfer list to use in the record.

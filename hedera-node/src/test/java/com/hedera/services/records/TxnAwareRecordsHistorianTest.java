@@ -115,7 +115,7 @@ public class TxnAwareRecordsHistorianTest {
 		subject.addNewRecords();
 
 		// then:
-		verify(txnCtx).recordSoFar();
+		verify(txnCtx).recordSoFar(creator);
 		verify(recordCache).setPostConsensus(
 				txnIdA,
 				finalRecord.getReceipt().getStatus(),
@@ -211,7 +211,7 @@ public class TxnAwareRecordsHistorianTest {
 		given(txnCtx.status()).willReturn(SUCCESS);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(now);
-		given(txnCtx.recordSoFar()).willReturn(finalRecord);
+		given(txnCtx.recordSoFar(creator)).willReturn(jFinalRecord);
 		given(txnCtx.submittingSwirldsMember()).willReturn(submittingMember);
 		given(txnCtx.effectivePayer()).willReturn(effPayer);
 		given(txnCtx.expiringEntities()).willReturn(Collections.singletonList(expiringEntity));

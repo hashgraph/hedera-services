@@ -9,9 +9,9 @@ package com.hedera.services.context;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,10 +25,12 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.charging.ItemizableFeeCharging;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -121,7 +123,7 @@ public class AwareTransactionContextTest {
 	private AwareTransactionContext subject;
 	private Transaction signedTxn;
 	private TransactionBody txn;
-	private TransactionRecord record;
+	private ExpirableTxnRecord record;
 	private ExpiringEntity expiringEntity;
 	private String memo = "Hi!";
 	private ByteString hash = ByteString.copyFrom("fake hash".getBytes());
@@ -131,6 +133,7 @@ public class AwareTransactionContextTest {
 					.build();
 	private ContractFunctionResult result = ContractFunctionResult.newBuilder().setContractID(contractCreated).build();
 	JKey payerKey;
+	private EntityCreator creator;
 
 	@BeforeEach
 	private void setup() {
@@ -180,6 +183,7 @@ public class AwareTransactionContextTest {
 
 		subject = new AwareTransactionContext(ctx);
 		subject.resetFor(accessor, now, memberId);
+		creator = mock(EntityCreator.class);
 	}
 
 	@Test
@@ -288,13 +292,13 @@ public class AwareTransactionContextTest {
 		subject.resetFor(accessor, now, anotherMemberId);
 		assertFalse(subject.hasComputedRecordSoFar);
 		// and:
-		record = subject.recordSoFar();
+		record = subject.recordSoFar(creator);
 
 		// then:
 		assertEquals(ResponseCodeEnum.UNKNOWN, record.getReceipt().getStatus());
-		assertFalse(record.getReceipt().hasContractID());
-		assertEquals(0, record.getTransactionFee());
-		assertFalse(record.hasContractCallResult());
+		assertFalse(record.getReceipt().toGrpc().hasContractID());
+		assertEquals(0, record.asGrpc().getTransactionFee());
+		assertFalse(record.asGrpc().hasContractCallResult());
 		assertFalse(subject.isPayerSigKnownActive());
 		assertTrue(subject.hasComputedRecordSoFar);
 		assertEquals(anotherNodeAccount, subject.submittingNodeAccount());
@@ -350,26 +354,26 @@ public class AwareTransactionContextTest {
 
 		// when:
 		subject.addNonThresholdFeeChargedToPayer(other);
-		record = subject.recordSoFar();
+		record = subject.recordSoFar(creator);
 
 		// then:
-		assertEquals(std + other, record.getTransactionFee());
+		assertEquals(std + other, record.asGrpc().getTransactionFee());
 	}
 
 	@Test
 	public void usesTokenTransfersToSetApropos() {
 		// when:
-		record = subject.recordSoFar();
+		record = subject.recordSoFar(creator);
 
 		// then:
-		assertEquals(tokenTransfers, record.getTokenTransferLists(0));
+		assertEquals(tokenTransfers, record.asGrpc().getTokenTransferLists(0));
 	}
 
 	@Test
 	public void configuresCallResult() {
 		// when:
 		subject.setCallResult(result);
-		record = subject.recordSoFar();
+		record = subject.recordSoFar(creator);
 
 		// expect:
 		assertEquals(result, record.getContractCallResult());
@@ -379,7 +383,7 @@ public class AwareTransactionContextTest {
 	public void configuresCreateResult() {
 		// when:
 		subject.setCreateResult(result);
-		record = subject.recordSoFar();
+		record = subject.recordSoFar(creator);
 
 		// expect:
 		assertEquals(result, record.getContractCreateResult());
@@ -388,18 +392,18 @@ public class AwareTransactionContextTest {
 	@Test
 	public void hasTransferList() {
 		// expect:
-		assertEquals(transfers, subject.recordSoFar().getTransferList());
+		assertEquals(transfers, subject.recordSoFar(creator).asGrpc().getTransferList());
 	}
 
 	@Test
 	public void hasExpectedCopyFields() {
 		// when:
-		TransactionRecord record = subject.recordSoFar();
+		ExpirableTxnRecord record = subject.recordSoFar(creator);
 
 		// expect:
 		assertEquals(memo, record.getMemo());
-		assertEquals(hash, record.getTransactionHash());
-		assertEquals(txnId, record.getTransactionID());
+		assertEquals(hash, record.asGrpc().getTransactionHash());
+		assertEquals(txnId, record.asGrpc().getTransactionID());
 		assertEquals(timeNow, record.getConsensusTimestamp());
 	}
 
@@ -424,7 +428,7 @@ public class AwareTransactionContextTest {
 	public void hasExpectedRecordStatus() {
 		// when:
 		subject.setStatus(ResponseCodeEnum.INVALID_PAYER_SIGNATURE);
-		record = subject.recordSoFar();
+		record = subject.recordSoFar(creator);
 
 		// then:
 		assertEquals(ResponseCodeEnum.INVALID_PAYER_SIGNATURE, record.getReceipt().getStatus());
@@ -434,22 +438,22 @@ public class AwareTransactionContextTest {
 	public void getsExpectedReceiptForAccountCreation() {
 		// when:
 		subject.setCreated(created);
-		record = subject.recordSoFar();
+		record = subject.recordSoFar(creator);
 
 		// then:
-		assertEquals(ratesNow, record.getReceipt().getExchangeRate());
-		assertEquals(created, record.getReceipt().getAccountID());
+		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
+		assertEquals(created, record.getReceipt().toGrpc().getAccountID());
 	}
 
 	@Test
 	public void getsExpectedReceiptForTokenCreation() {
 		// when:
 		subject.setCreated(tokenCreated);
-		record = subject.recordSoFar();
+		record = subject.recordSoFar(creator);
 
 		// then:
-		assertEquals(ratesNow, record.getReceipt().getExchangeRate());
-		assertEquals(tokenCreated, record.getReceipt().getTokenID());
+		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
+		assertEquals(tokenCreated, record.getReceipt().toGrpc().getTokenID());
 	}
 
 	@Test
@@ -457,10 +461,10 @@ public class AwareTransactionContextTest {
 		// when:
 		final var newTotalSupply = 1000L;
 		subject.setNewTotalSupply(newTotalSupply);
-		record = subject.recordSoFar();
+		record = subject.recordSoFar(creator);
 
 		// then:
-		assertEquals(ratesNow, record.getReceipt().getExchangeRate());
+		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
 		assertEquals(newTotalSupply, record.getReceipt().getNewTotalSupply());
 	}
 
@@ -470,33 +474,33 @@ public class AwareTransactionContextTest {
 	public void getsExpectedReceiptForFileCreation() {
 		// when:
 		subject.setCreated(fileCreated);
-		record = subject.recordSoFar();
+		record = subject.recordSoFar(creator);
 
 		// then:
-		assertEquals(ratesNow, record.getReceipt().getExchangeRate());
-		assertEquals(fileCreated, record.getReceipt().getFileID());
+		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
+		assertEquals(fileCreated, record.getReceipt().toGrpc().getFileID());
 	}
 
 	@Test
 	public void getsExpectedReceiptForContractCreation() {
 		// when:
 		subject.setCreated(contractCreated);
-		record = subject.recordSoFar();
+		record = subject.recordSoFar(creator);
 
 		// then:
-		assertEquals(ratesNow, record.getReceipt().getExchangeRate());
-		assertEquals(contractCreated, record.getReceipt().getContractID());
+		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
+		assertEquals(contractCreated, record.getReceipt().toGrpc().getContractID());
 	}
 
 	@Test
 	public void getsExpectedReceiptForTopicCreation() {
 		// when:
 		subject.setCreated(topicCreated);
-		record = subject.recordSoFar();
+		record = subject.recordSoFar(creator);
 
 		// then:
-		assertEquals(ratesNow, record.getReceipt().getExchangeRate());
-		assertEquals(topicCreated, record.getReceipt().getTopicID());
+		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
+		assertEquals(topicCreated, record.getReceipt().toGrpc().getTopicID());
 	}
 
 	@Test
@@ -506,13 +510,13 @@ public class AwareTransactionContextTest {
 
 		// when:
 		subject.setTopicRunningHash(runningHash, sequenceNumber);
-		record = subject.recordSoFar();
+		record = subject.recordSoFar(creator);
 
 		// then:
-		assertEquals(ratesNow, record.getReceipt().getExchangeRate());
-		assertArrayEquals(runningHash, record.getReceipt().getTopicRunningHash().toByteArray());
+		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
+		assertArrayEquals(runningHash, record.getReceipt().toGrpc().getTopicRunningHash().toByteArray());
 		assertEquals(sequenceNumber, record.getReceipt().getTopicSequenceNumber());
-		assertEquals(MerkleTopic.RUNNING_HASH_VERSION, record.getReceipt().getTopicRunningHashVersion());
+		assertEquals(MerkleTopic.RUNNING_HASH_VERSION, record.getReceipt().toGrpc().getTopicRunningHashVersion());
 	}
 
 	@Test
@@ -521,11 +525,11 @@ public class AwareTransactionContextTest {
 		subject.setCreated(scheduleCreated);
 		subject.setScheduledTxnId(scheduledTxnId);
 		// and:
-		record = subject.recordSoFar();
+		record = subject.recordSoFar(creator);
 
 		// then:
-		assertEquals(scheduleCreated, record.getReceipt().getScheduleID());
-		assertEquals(scheduledTxnId, record.getReceipt().getScheduledTransactionID());
+		assertEquals(scheduleCreated, record.getReceipt().toGrpc().getScheduleID());
+		assertEquals(scheduledTxnId, record.getReceipt().toGrpc().getScheduledTransactionID());
 	}
 
 	@Test
@@ -558,7 +562,7 @@ public class AwareTransactionContextTest {
 		given(accessor.isTriggeredTxn()).willReturn(true);
 
 		// when:
-		record = subject.recordSoFar();
+		record = subject.recordSoFar(creator);
 
 		// then:
 		assertEquals(scheduleCreated, record.getScheduleRef());
