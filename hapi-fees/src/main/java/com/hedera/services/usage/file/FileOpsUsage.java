@@ -9,9 +9,9 @@ package com.hedera.services.usage.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -61,7 +61,7 @@ public class FileOpsUsage {
 	public FeeData fileCreateUsage(TransactionBody fileCreation, SigUsage sigUsage) {
 		var op = fileCreation.getFileCreate();
 
-		int customBytes = 0;
+		long customBytes = 0;
 		customBytes += op.getContents().size();
 		customBytes += op.getMemoBytes().size();
 		customBytes += keySizeIfPresent(op, FileCreateTransactionBody::hasKeys, body -> asKey(body.getKeys()));

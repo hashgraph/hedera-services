@@ -41,6 +41,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
@@ -135,7 +137,7 @@ public class FreezeHandler {
 		if (hfs.exists(fileIDtoUse)) {
 			log.info("{} ready to read file content, FileID = {}", LOG_PREFIX, fileIDtoUse);
 			byte[] fileBytes = hfs.cat(fileIDtoUse);
-			if ( fileBytes == null || fileBytes.length == 0) {
+			if (fileBytes == null || fileBytes.length == 0) {
 				log.error(String.format("%s Update file is empty", LOG_PREFIX));
 				log.error("{} {}", LOG_PREFIX, ABORT_UDPATE_MESSAGE);
 				return;
@@ -182,7 +184,11 @@ public class FreezeHandler {
 				deleteFileFromList(DELETE_FILE);
 
 				log.info("{} deleting file {}", LOG_PREFIX, DELETE_FILE);
-				deleteTxt.delete();
+				try {
+					Files.delete(Paths.get(deleteTxt.getAbsolutePath()));
+				} catch (IOException ex) {
+					log.warn("{} File could not be deleted {}", DELETE_FILE, ex);
+				}
 			}
 
 			File script = new File(FULL_SCRIPT_PATH);

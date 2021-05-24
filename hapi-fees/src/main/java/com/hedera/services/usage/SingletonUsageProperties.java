@@ -32,7 +32,7 @@ public enum SingletonUsageProperties implements UsageProperties {
 	}
 
 	@Override
-	public int legacyReceiptStorageSecs() {
+	public long legacyReceiptStorageSecs() {
 		return 180;
 	}
 }

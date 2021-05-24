@@ -35,6 +35,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -116,18 +117,22 @@ public class MerkleDiskFs extends AbstractMerkleLeaf implements MerkleExternalLe
 		for (var fid : fileHashes.keySet()) {
 			try {
 				var legacyPath = pre0130PathToContentsOf(fid, fsBaseDir, fsNodeScopedDir);
-				var f = legacyPath.toFile();
 				byte[] contents = bytesHelper.allBytesFrom(legacyPath);
 				writeHelper.allBytesTo(pathToContentsOf(fid), contents);
-				f.delete();
+				Files.delete(legacyPath);
 			} catch (IOException e) {
 				//TODO : Mark this log as an error in 0.15.0 if MerkleDiskFs is used for Update
 				log.warn("Failed to migrate from legacy disk-based file system!", e);
 				throw new UncheckedIOException(e);
 			}
 		}
+		
 		var nowEmptyLegacyDir = fsBaseDir + File.separator + fsNodeScopedDir;
-		new File(nowEmptyLegacyDir).delete();
+		try {
+			Files.delete(Paths.get(nowEmptyLegacyDir));
+		} catch (IOException e) {
+			log.warn("Empty legacy directory for File 150 could not be deleted!", e);
+		}
 	}
 
 	public byte[] diskContentHash(FileID fid) {
