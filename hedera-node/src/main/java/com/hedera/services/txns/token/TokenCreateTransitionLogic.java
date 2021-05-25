@@ -36,12 +36,13 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.txns.validation.TokenListChecks.checkKeys;
-import static com.hedera.services.txns.validation.TokenListChecks.initialSupplyAndDecimalsCheck;
+import static com.hedera.services.txns.validation.TokenListChecks.suppliesCheck;
+import static com.hedera.services.txns.validation.TokenListChecks.supplyTypeCheck;
+import static com.hedera.services.txns.validation.TokenListChecks.typeCheck;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
@@ -154,7 +155,17 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			return validity;
 		}
 
-		validity = initialSupplyAndDecimalsCheck(op.getInitialSupply(), op.getDecimals());
+		validity = typeCheck(op.getTokenType(), op.getInitialSupply(), op.getDecimals());
+		if (validity != OK) {
+			return validity;
+		}
+
+		validity = supplyTypeCheck(op.getSupplyType(), op.getMaxSupply());
+		if (validity != OK) {
+			return validity;
+		}
+
+		validity = suppliesCheck(op.getInitialSupply(), op.getMaxSupply());
 		if (validity != OK) {
 			return validity;
 		}

@@ -35,6 +35,8 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,6 +53,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DECIMALS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_INITIAL_SUPPLY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_KEY;
@@ -355,6 +358,22 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
+	public void rejectsNonFungibleInitialSupply() {
+		givenNonFungibleUniqueInvalidInitialSupply();
+
+		// expect:
+		assertEquals(INVALID_TOKEN_INITIAL_SUPPLY, subject.semanticCheck().apply(tokenCreateTxn));
+	}
+
+	@Test
+	public void rejectsNonFungibleInvalidDecimals() {
+		givenNonFungibleUniqueInvalidDecimals();
+
+		// expect:
+		assertEquals(INVALID_TOKEN_DECIMALS, subject.semanticCheck().apply(tokenCreateTxn));
+	}
+
+	@Test
 	public void rejectsInvalidInitialSupply() {
 		givenInvalidInitialSupply();
 
@@ -368,6 +387,22 @@ class TokenCreateTransitionLogicTest {
 
 		// expect:
 		assertEquals(INVALID_TOKEN_DECIMALS, subject.semanticCheck().apply(tokenCreateTxn));
+	}
+
+	@Test
+	public void rejectsInvalidMaxSupply() {
+		givenInvalidMaxSupply();
+
+		// expect:
+		assertEquals(INVALID_TOKEN_MAX_SUPPLY, subject.semanticCheck().apply(tokenCreateTxn));
+	}
+
+	@Test
+	public void rejectsInvalidInitialSupplyWithMaxSupply() {
+		givenInvalidInitialSupplyWithMaxSupply();
+
+		// expect:
+		assertEquals(INVALID_TOKEN_INITIAL_SUPPLY, subject.semanticCheck().apply(tokenCreateTxn));
 	}
 
 	@Test
@@ -486,6 +521,22 @@ class TokenCreateTransitionLogicTest {
 		given(store.isCreationPending()).willReturn(true);
 	}
 
+	private void givenNonFungibleUniqueInvalidInitialSupply() {
+		tokenCreateTxn = TransactionBody.newBuilder()
+				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
+						.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+						.setInitialSupply(1))
+				.build();
+	}
+
+	private void givenNonFungibleUniqueInvalidDecimals() {
+		tokenCreateTxn = TransactionBody.newBuilder()
+				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
+						.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+						.setDecimals(1))
+				.build();
+	}
+
 	private void givenInvalidInitialSupply() {
 		tokenCreateTxn = TransactionBody.newBuilder()
 				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
@@ -498,6 +549,22 @@ class TokenCreateTransitionLogicTest {
 				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
 						.setInitialSupply(0)
 						.setDecimals(-1))
+				.build();
+	}
+
+	private void givenInvalidMaxSupply() {
+		tokenCreateTxn = TransactionBody.newBuilder()
+				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
+						.setMaxSupply(-1))
+				.build();
+	}
+
+	private void givenInvalidInitialSupplyWithMaxSupply() {
+		tokenCreateTxn = TransactionBody.newBuilder()
+				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
+						.setSupplyType(TokenSupplyType.FINITE)
+						.setInitialSupply(initialSupply)
+						.setMaxSupply(initialSupply - 1))
 				.build();
 	}
 
