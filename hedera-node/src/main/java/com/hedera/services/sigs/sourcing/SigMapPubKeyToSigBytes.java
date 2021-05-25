@@ -9,9 +9,9 @@ package com.hedera.services.sigs.sourcing;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,11 +24,9 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
+import org.spongycastle.util.encoders.Hex;
 
 import java.util.Arrays;
-import java.util.List;
-
-import static java.util.stream.Collectors.toList;
 
 /**
  * A source of cryptographic signatures backed by a {@link SignatureMap} instance.
@@ -53,15 +51,19 @@ public class SigMapPubKeyToSigBytes implements PubKeyToSigBytes {
 
 	@Override
 	public byte[] sigBytesFor(byte[] pubKey) throws KeyPrefixMismatchException {
-		List<byte[]> matchingSigs = sigMap.getSigPairList()
-				.stream()
-				.filter(sp -> beginsWith(pubKey, sp.getPubKeyPrefix().toByteArray()))
-				.map(this::sigBytesFor)
-				.collect(toList());
-		if (matchingSigs.size() > 1) {
-			throw new KeyPrefixMismatchException("Source signature map is ambiguous for given public key!");
+		byte[] sigBytes = EMPTY_SIG;
+		for (SignaturePair sigPair : sigMap.getSigPairList()) {
+			final byte[] pubKeyPrefix = sigPair.getPubKeyPrefix().toByteArray();
+			if (beginsWith(pubKey, pubKeyPrefix)) {
+				if (sigBytes != EMPTY_SIG) {
+					throw new KeyPrefixMismatchException(
+							"Source signature map with prefix " + Hex.toHexString(pubKeyPrefix) +
+									" is ambiguous for given public key! (" + Hex.toHexString(pubKey) + ")");
+				}
+				sigBytes = sigBytesFor(sigPair);
+			}
 		}
-		return matchingSigs.isEmpty() ? EMPTY_SIG : matchingSigs.get(0);
+		return sigBytes;
 	}
 
 	private byte[] sigBytesFor(SignaturePair sp) {
