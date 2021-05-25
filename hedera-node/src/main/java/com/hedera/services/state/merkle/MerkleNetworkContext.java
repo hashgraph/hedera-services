@@ -214,19 +214,19 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
-		consensusTimeOfLastHandledTxn.serialize(out);
+		RichInstant.serialize(out, consensusTimeOfLastHandledTxn);
 		seqNo.serialize(out);
 		out.writeSerializable(midnightRates, true);
 		int n = usageSnapshots.length;
 		out.writeInt(n);
 		for (var usageSnapshot : usageSnapshots) {
 			out.writeLong(usageSnapshot.used());
-			fromJava(usageSnapshot.lastDecisionTime()).serialize(out);
+			RichInstant.serialize(out, fromJava(usageSnapshot.lastDecisionTime()));
 		}
 		n = congestionLevelStarts.length;
 		out.writeInt(n);
 		for (var congestionStart : congestionLevelStarts) {
-			congestionStart.serialize(out);
+			RichInstant.serialize(out, congestionStart);
 		}
 		out.writeLong(lastScannedEntity);
 		out.writeLong(entitiesScannedThisSecond);

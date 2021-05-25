@@ -164,6 +164,7 @@ public class ExpirableTxnRecordTest {
 				.willReturn(subject.getContractCreateResult());
 		given(fin.readByteArray(ExpirableTxnRecord.MAX_TXN_HASH_BYTES))
 				.willReturn(subject.getTxnHash());
+		given(fin.readBoolean()).willReturn(true);
 		given(fin.readLong()).willReturn(subject.getConsensusTimestamp().getSeconds())
 				.willReturn(subject.getFee())
 				.willReturn(subject.getExpiry())
@@ -202,6 +203,7 @@ public class ExpirableTxnRecordTest {
 						(SelfSerializable) subject.getTokenAdjustments().get(1)));
 		given(fin.readByteArray(ExpirableTxnRecord.MAX_TXN_HASH_BYTES))
 				.willReturn(subject.getTxnHash());
+		given(fin.readBoolean()).willReturn(true);
 		given(fin.readLong()).willReturn(subject.getConsensusTimestamp().getSeconds())
 				.willReturn(subject.getFee())
 				.willReturn(subject.getExpiry())
@@ -240,6 +242,7 @@ public class ExpirableTxnRecordTest {
 						(SelfSerializable) subject.getTokenAdjustments().get(1)));
 		given(fin.readByteArray(ExpirableTxnRecord.MAX_TXN_HASH_BYTES))
 				.willReturn(subject.getTxnHash());
+		given(fin.readBoolean()).willReturn(true);
 		given(fin.readLong()).willReturn(subject.getConsensusTimestamp().getSeconds())
 				.willReturn(subject.getFee())
 				.willReturn(subject.getExpiry())

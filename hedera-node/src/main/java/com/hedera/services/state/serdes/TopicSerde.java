@@ -80,8 +80,7 @@ public class TopicSerde {
 		}
 
 		if (merkleTopic.hasExpirationTimestamp()) {
-			out.writeBoolean(true);
-			merkleTopic.getExpirationTimestamp().serialize(out);
+			RichInstant.serialize(out,merkleTopic.getExpirationTimestamp());
 		} else {
 			out.writeBoolean(false);
 		}

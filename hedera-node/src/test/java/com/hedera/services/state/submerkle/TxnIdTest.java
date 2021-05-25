@@ -92,6 +92,7 @@ class TxnIdTest {
 		din = mock(SerializableDataInputStream.class);
 
 		given(din.readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class))).willReturn(fcPayer);
+		given(din.readBoolean()).willReturn(true);
 		given(din.readLong()).willReturn(fcValidStart.getSeconds());
 		given(din.readInt()).willReturn(fcValidStart.getNanos());
 		// and:
@@ -102,7 +103,7 @@ class TxnIdTest {
 
 		// then:
 		assertEquals(subject, deserializedId);
-		verify(din, never()).readBoolean();
+		verify(din).readBoolean();
 		verify(din, never()).readByteArray(Integer.MAX_VALUE);
 	}
 
@@ -127,7 +128,7 @@ class TxnIdTest {
 		// then:
 		assertEquals(subject, deserializedId);
 		// and:
-		verify(din, times(2)).readBoolean();
+		verify(din, times(3)).readBoolean();
 		verify(din).readByteArray(Integer.MAX_VALUE);
 	}
 
@@ -151,7 +152,7 @@ class TxnIdTest {
 		// then:
 		assertEquals(subject, deserializedId);
 		// and:
-		verify(din, times(1)).readBoolean();
+		verify(din, times(2)).readBoolean();
 	}
 
 	@Test

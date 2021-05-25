@@ -61,15 +61,17 @@ class RichInstantTest {
 		var out = mock(SerializableDataOutputStream.class);
 
 		// when:
-		subject.serialize(out);
+		RichInstant.serialize(out,subject);
 
 		// then:
+		verify(out).writeBoolean(true);
 		verify(out).writeLong(seconds);
 		verify(out).writeInt(nanos);
 	}
 
 	@Test
 	public void factoryWorks() throws IOException {
+		given(in.readBoolean()).willReturn(true);
 		given(in.readLong()).willReturn(seconds);
 		given(in.readInt()).willReturn(nanos);
 

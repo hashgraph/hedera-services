@@ -212,7 +212,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 		out.writeByteArray(bodyBytes);
 		out.writeBoolean(executed);
 		out.writeBoolean(deleted);
-		resolutionTime.serialize(out);
+		RichInstant.serialize(out,resolutionTime);
 		out.writeInt(signatories.size());
 		for (byte[] key : signatories) {
 			out.writeByteArray(key);

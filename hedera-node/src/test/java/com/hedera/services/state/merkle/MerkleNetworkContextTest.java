@@ -414,6 +414,7 @@ class MerkleNetworkContextTest {
 		MerkleNetworkContext.seqNoSupplier = () -> seqNo;
 		InOrder inOrder = inOrder(in, seqNo);
 
+		given(in.readBoolean()).willReturn(true);
 		given(in.readLong()).willReturn(consensusTimeOfLastHandledTxn.getSeconds());
 		given(in.readInt()).willReturn(consensusTimeOfLastHandledTxn.getNanos());
 
@@ -447,6 +448,8 @@ class MerkleNetworkContextTest {
 				.willReturn(congestionStarts.length)
 				.willReturn(congestionStarts[0].getNano())
 				.willReturn(congestionStarts[1].getNano());
+		given(in.readBoolean())
+				.willReturn(true);
 		given(in.readLong())
 				.willReturn(consensusTimeOfLastHandledTxn.getSeconds())
 				.willReturn(usageSnapshots[0].used())
@@ -489,6 +492,8 @@ class MerkleNetworkContextTest {
 				.willReturn(congestionStarts[0].getNano())
 				.willReturn(congestionStarts[1].getNano())
 				.willReturn(stateVersion);
+		given(in.readBoolean())
+				.willReturn(true);
 		given(in.readLong())
 				.willReturn(consensusTimeOfLastHandledTxn.getSeconds())
 				.willReturn(usageSnapshots[0].used())
@@ -535,6 +540,7 @@ class MerkleNetworkContextTest {
 		subject.serialize(out);
 
 		// expect:
+		inOrder.verify(out).writeBoolean(true);
 		inOrder.verify(out).writeLong(consensusTimeOfLastHandledTxn.getSeconds());
 		inOrder.verify(out).writeInt(consensusTimeOfLastHandledTxn.getNanos());
 		inOrder.verify(seqNo).serialize(out);
@@ -544,6 +550,7 @@ class MerkleNetworkContextTest {
 		for (int i = 0; i < 3; i++) {
 			inOrder.verify(out).writeLong(used[i]);
 			RichInstant richInstant = RichInstant.fromJava(lastUseds[i]);
+			inOrder.verify(out).writeBoolean(true);
 			inOrder.verify(out).writeLong(richInstant.getSeconds());
 			inOrder.verify(out).writeInt(richInstant.getNanos());
 		}
@@ -551,6 +558,7 @@ class MerkleNetworkContextTest {
 		inOrder.verify(out).writeInt(2);
 		for (int i = 0; i < 2; i++) {
 			RichInstant richInstant = richCongestionStarts()[i];
+			inOrder.verify(out).writeBoolean(true);
 			inOrder.verify(out).writeLong(richInstant.getSeconds());
 			inOrder.verify(out).writeInt(richInstant.getNanos());
 		}

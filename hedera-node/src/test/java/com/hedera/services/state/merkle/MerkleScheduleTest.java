@@ -66,6 +66,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 
 public class MerkleScheduleTest {
 	byte[] fpk = "firstPretendKey".getBytes();
@@ -224,7 +225,7 @@ public class MerkleScheduleTest {
 		inOrder.verify(out).writeLong(expiry);
 		inOrder.verify(out).writeByteArray(bodyBytes);
 		inOrder.verify(out).writeBoolean(false);
-		inOrder.verify(out).writeBoolean(true);
+		inOrder.verify(out, times(2)).writeBoolean(true);
 		inOrder.verify(out).writeLong(richInstant.getSeconds());
 		inOrder.verify(out).writeInt(richInstant.getNanos());
 		inOrder.verify(out).writeInt(2);
@@ -252,11 +253,10 @@ public class MerkleScheduleTest {
 		given(fin.readByteArray(MerkleSchedule.NUM_ED25519_PUBKEY_BYTES))
 				.willReturn(fpk)
 				.willReturn(spk);
-//		given(fin.readLong()).willReturn(richInstant.getSeconds());
-//		given(fin.readInt()).willReturn(richInstant.getNanos());
 		given(fin.readBoolean())
 				.willReturn(true)
-				.willReturn(false);
+				.willReturn(false)
+				.willReturn(true);
 		// and:
 		var read = new MerkleSchedule();
 

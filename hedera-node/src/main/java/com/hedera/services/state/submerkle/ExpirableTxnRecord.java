@@ -245,7 +245,7 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 		out.writeByteArray(txnHash);
 
 		out.writeSerializable(txnId, true);
-		consensusTimestamp.serialize(out);
+		RichInstant.serialize(out, consensusTimestamp);
 		out.writeNormalisedString(memo);
 
 		out.writeLong(this.fee);

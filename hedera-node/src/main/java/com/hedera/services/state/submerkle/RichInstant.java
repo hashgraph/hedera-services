@@ -48,12 +48,21 @@ public class RichInstant {
 	}
 
 	public static RichInstant from(SerializableDataInputStream in) throws IOException {
-		return new RichInstant(in.readLong(), in.readInt());
+		if(in.readBoolean()) {
+			return new RichInstant(in.readLong(), in.readInt());
+		} else {
+			return null;
+		}
 	}
 
-	public void serialize(SerializableDataOutputStream out) throws IOException {
-		out.writeLong(seconds);
-		out.writeInt(nanos);
+	public static void serialize(SerializableDataOutputStream out, RichInstant instant) throws IOException {
+		if(instant != null) {
+			out.writeBoolean(true);
+			out.writeLong(instant.seconds);
+			out.writeInt(instant.nanos);
+		} else {
+			out.writeBoolean(false);
+		}
 	}
 
 	/* --- Object --- */

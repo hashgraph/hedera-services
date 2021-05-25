@@ -100,7 +100,7 @@ public class TxnId implements SelfSerializable {
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
 		out.writeSerializable(payerAccount, true);
-		validStart.serialize(out);
+		RichInstant.serialize(out, validStart);
 		out.writeBoolean(scheduled);
 	}
 
