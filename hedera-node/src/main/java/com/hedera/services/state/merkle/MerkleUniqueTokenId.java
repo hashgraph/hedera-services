@@ -21,7 +21,6 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.swirlds.common.FCMKey;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -41,10 +40,8 @@ public class MerkleUniqueTokenId extends AbstractMerkleLeaf implements FCMKey {
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x52dd6afda193e8bcL;
 
-	static DomainSerdes serdes = new DomainSerdes();
-
 	private EntityId tokenId = MISSING_ENTITY_ID;
-	private int serialNumber;
+	private long serialNumber;
 
 	public MerkleUniqueTokenId() {
 		/* No-op. */
@@ -57,7 +54,7 @@ public class MerkleUniqueTokenId extends AbstractMerkleLeaf implements FCMKey {
 	 */
 	public MerkleUniqueTokenId(
 			EntityId tokenId,
-			int serialNumber
+			long serialNumber
 	) {
 		this.tokenId = tokenId;
 		this.serialNumber = serialNumber;
@@ -100,7 +97,7 @@ public class MerkleUniqueTokenId extends AbstractMerkleLeaf implements FCMKey {
 		return tokenId;
 	}
 
-	public int serialNumber() {
+	public long serialNumber() {
 		return serialNumber;
 	}
 
@@ -125,7 +122,7 @@ public class MerkleUniqueTokenId extends AbstractMerkleLeaf implements FCMKey {
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
 		out.writeSerializable(tokenId, true);
-		out.writeInt(serialNumber);
+		out.writeLong(serialNumber);
 	}
 
 	/* --- FastCopyable --- */

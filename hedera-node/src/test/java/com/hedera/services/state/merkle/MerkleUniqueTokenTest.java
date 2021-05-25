@@ -14,7 +14,6 @@
 
 package com.hedera.services.state.merkle;
 
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -27,7 +26,6 @@ import org.mockito.InOrder;
 import java.io.IOException;
 import java.time.Instant;
 
-import static com.hedera.services.state.merkle.MerkleTopic.serdes;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
@@ -40,8 +38,10 @@ public class MerkleUniqueTokenTest {
 	private EntityId otherOwner;
 	private String memo;
 	private String otherMemo;
-	private Instant timestamp;
-	private Instant otherTimestamp;
+	private RichInstant timestamp;
+	private RichInstant otherTimestamp;
+
+	private static long timestampL = 1_234_567L;
 
 	@BeforeEach
 	public void setup() {
@@ -49,27 +49,23 @@ public class MerkleUniqueTokenTest {
 		otherOwner = new EntityId(1, 2, 4);
 		memo = "Test NFT";
 		otherMemo = "Test NFT2";
-		timestamp = Instant.ofEpochSecond(1_234_567L);
-		otherTimestamp = Instant.ofEpochSecond(1_234_568L);
+		timestamp = RichInstant.fromJava(Instant.ofEpochSecond(timestampL));
+		otherTimestamp = RichInstant.fromJava(Instant.ofEpochSecond(1_234_568L));
 
-		subject = new MerkleUniqueToken(owner, memo, RichInstant.fromJava(timestamp));
-
-		serdes = mock(DomainSerdes.class);
-		MerkleUniqueToken.serdes = serdes;
+		subject = new MerkleUniqueToken(owner, memo, timestamp);
 	}
 
 	@AfterEach
 	public void cleanup() {
-		MerkleToken.serdes = new DomainSerdes();
 	}
 
 	@Test
 	public void equalsContractWorks() {
 		// given
-		var other = new MerkleUniqueToken(owner, memo, RichInstant.fromJava(otherTimestamp));
-		var other2 = new MerkleUniqueToken(owner, otherMemo, RichInstant.fromJava(timestamp));
-		var other3 = new MerkleUniqueToken(otherOwner, memo, RichInstant.fromJava(timestamp));
-		var identical = new MerkleUniqueToken(owner, memo, RichInstant.fromJava(timestamp));
+		var other = new MerkleUniqueToken(owner, memo, otherTimestamp);
+		var other2 = new MerkleUniqueToken(owner, otherMemo, timestamp);
+		var other3 = new MerkleUniqueToken(otherOwner, memo, timestamp);
+		var identical = new MerkleUniqueToken(owner, memo, timestamp);
 
 		// expect
 		assertNotEquals(subject, other);
@@ -81,8 +77,8 @@ public class MerkleUniqueTokenTest {
 	@Test
 	public void hashCodeWorks() {
 		// given:
-		var identical = new MerkleUniqueToken(owner, memo, RichInstant.fromJava(timestamp));
-		var other = new MerkleUniqueToken(otherOwner, otherMemo, RichInstant.fromJava(otherTimestamp));
+		var identical = new MerkleUniqueToken(owner, memo, timestamp);
+		var other = new MerkleUniqueToken(otherOwner, otherMemo, otherTimestamp);
 
 		// expect:
 		assertNotEquals(subject.hashCode(), other.hashCode());
@@ -94,7 +90,7 @@ public class MerkleUniqueTokenTest {
 		// given:
 		assertEquals("MerkleUniqueToken{" +
 						"owner=" + owner + ", " +
-						"creationTime=" + RichInstant.fromJava(timestamp) + ", " +
+						"creationTime=" + timestamp + ", " +
 						"memo=" + memo + "}",
 				subject.toString());
 	}
@@ -117,14 +113,15 @@ public class MerkleUniqueTokenTest {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 		// and:
-		InOrder inOrder = inOrder(serdes, out);
+		InOrder inOrder = inOrder(out);
 
 		// when:
 		subject.serialize(out);
 
 		// then:
 		inOrder.verify(out).writeSerializable(owner, true);
-		inOrder.verify(serdes).serializeTimestamp(RichInstant.fromJava(timestamp), out);
+		inOrder.verify(out).writeLong(timestamp.getSeconds());
+		inOrder.verify(out).writeInt(timestamp.getNanos());
 		inOrder.verify(out).writeNormalisedString(memo);
 
 	}
@@ -135,8 +132,9 @@ public class MerkleUniqueTokenTest {
 		SerializableDataInputStream in = mock(SerializableDataInputStream.class);
 
 		given(in.readSerializable()).willReturn(owner);
-		given(serdes.deserializeTimestamp(in)).willReturn(RichInstant.fromJava(timestamp));
 		given(in.readNormalisedString(anyInt())).willReturn(memo);
+		given(in.readLong()).willReturn(timestampL);
+		given(in.readInt()).willReturn(0);
 
 		// and:
 		var read = new MerkleUniqueToken();

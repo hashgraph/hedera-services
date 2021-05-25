@@ -49,9 +49,6 @@ public class MerkleUniqueTokenIdTest {
 		otherSerialNumber = 2;
 
 		subject = new MerkleUniqueTokenId(tokenId, serialNumber);
-
-		serdes = mock(DomainSerdes.class);
-		MerkleUniqueTokenId.serdes = serdes;
 	}
 
 	@AfterEach

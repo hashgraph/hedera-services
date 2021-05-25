@@ -21,7 +21,6 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.swirlds.common.FCMValue;
@@ -42,7 +41,6 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements FCMValue {
 	public static final int UPPER_BOUND_MEMO_UTF8_BYTES = 1024;
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x899641dafcc39164L;
-	static DomainSerdes serdes = new DomainSerdes();
 
 	private EntityId owner;
 	private RichInstant creationTime;
@@ -116,14 +114,14 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements FCMValue {
 	@Override
 	public void deserialize(SerializableDataInputStream in, int i) throws IOException {
 		owner = in.readSerializable();
-		creationTime = serdes.deserializeTimestamp(in);
+		creationTime = RichInstant.from(in);
 		memo = in.readNormalisedString(UPPER_BOUND_MEMO_UTF8_BYTES);
 	}
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
 		out.writeSerializable(owner, true);
-		serdes.serializeTimestamp(creationTime, out);
+		creationTime.serialize(out);
 		out.writeNormalisedString(memo);
 	}
 
