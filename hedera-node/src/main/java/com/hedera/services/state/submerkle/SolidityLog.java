@@ -22,7 +22,6 @@ package com.hedera.services.state.submerkle;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -49,8 +48,6 @@ public class SolidityLog implements SelfSerializable {
 	private byte[] bloom = MISSING_BYTES;
 	private EntityId contractId;
 	private List<byte[]> topics = Collections.emptyList();
-
-	static DomainSerdes serdes = new DomainSerdes();
 
 	public static final int MAX_DATA_BYTES = 32 * 1024;
 	public static final int MAX_BLOOM_BYTES = 256;
@@ -86,7 +83,7 @@ public class SolidityLog implements SelfSerializable {
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		data = in.readByteArray(MAX_DATA_BYTES);
 		bloom = in.readByteArray(MAX_BLOOM_BYTES);
-		contractId = serdes.readNullableSerializable(in);
+		contractId = in.readSerializable();
 		int numTopics = in.readInt();
 		if (numTopics > 0) {
 			topics = new LinkedList<>();
@@ -100,7 +97,7 @@ public class SolidityLog implements SelfSerializable {
 	public void serialize(SerializableDataOutputStream out) throws IOException {
 		out.writeByteArray(data);
 		out.writeByteArray(bloom);
-		serdes.writeNullableSerializable(contractId, out);
+		out.writeSerializable(contractId, true);
 		out.writeInt(topics.size());
 		for (byte[] topic : topics) {
 			out.writeByteArray(topic);

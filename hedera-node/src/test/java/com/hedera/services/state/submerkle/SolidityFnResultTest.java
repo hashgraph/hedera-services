@@ -21,7 +21,6 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.serdes.IoReadingFunction;
 import com.hedera.services.state.serdes.IoWritingConsumer;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -60,8 +59,6 @@ class SolidityFnResultTest {
 			new EntityId(2L, 3L, 4L),
 			new EntityId(3L, 4L, 5L));
 	List<SolidityLog> logs = List.of(logFrom(0), logFrom(1));
-
-	DomainSerdes serdes;
 	DataInputStream din;
 	SerializableDataInputStream in;
 
@@ -71,7 +68,6 @@ class SolidityFnResultTest {
 	public void setup() {
 		din = mock(DataInputStream.class);
 		in = mock(SerializableDataInputStream.class);
-		serdes = mock(DomainSerdes.class);
 
 		subject = new SolidityFnResult(
 				contractId,
@@ -81,13 +77,6 @@ class SolidityFnResultTest {
 				gasUsed,
 				logs,
 				createdContractIds);
-
-		SolidityFnResult.serdes = serdes;
-	}
-
-	@AfterEach
-	public void cleanup() {
-		SolidityFnResult.serdes = new DomainSerdes();
 	}
 
 	@Test
@@ -201,8 +190,8 @@ class SolidityFnResultTest {
 		given(in.readLong()).willReturn(gasUsed);
 		given(in.readByteArray(SolidityLog.MAX_BLOOM_BYTES)).willReturn(bloom);
 		given(in.readByteArray(SolidityFnResult.MAX_RESULT_BYTES)).willReturn(result);
-		given(serdes.readNullableString(in, SolidityFnResult.MAX_ERROR_BYTES)).willReturn(error);
-		given(serdes.readNullableSerializable(in)).willReturn(contractId);
+		given(in.readNormalisedString(SolidityFnResult.MAX_ERROR_BYTES)).willReturn(error);
+		given(in.readSerializable()).willReturn(contractId);
 		given(in.readSerializableList(
 				intThat(i -> i == SolidityFnResult.MAX_LOGS),
 				booleanThat(b -> b),
@@ -225,7 +214,7 @@ class SolidityFnResultTest {
 		var out = mock(SerializableDataOutputStream.class);
 		// and:
 		ArgumentCaptor<IoWritingConsumer> captor = ArgumentCaptor.forClass(IoWritingConsumer.class);
-		InOrder inOrder = inOrder(serdes, out);
+		InOrder inOrder = inOrder(out);
 
 		// when:
 		subject.serialize(out);
@@ -234,8 +223,8 @@ class SolidityFnResultTest {
 		inOrder.verify(out).writeLong(gasUsed);
 		inOrder.verify(out).writeByteArray(bloom);
 		inOrder.verify(out).writeByteArray(result);
-		inOrder.verify(serdes).writeNullableString(error, out);
-		inOrder.verify(serdes).writeNullableSerializable(contractId, out);
+		inOrder.verify(out).writeNormalisedString(error);
+		inOrder.verify(out).writeSerializable(contractId, true);
 		inOrder.verify(out).writeSerializableList(logs, true, true);
 		inOrder.verify(out).writeSerializableList(createdContractIds, true, true);
 	}

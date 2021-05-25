@@ -23,7 +23,6 @@ package com.hedera.services.state.submerkle;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.crypto.Hash;
@@ -65,8 +64,6 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 	static final int MAX_TXN_HASH_BYTES = 1_024;
 	static final int MAX_INVOLVED_TOKENS = 10;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8b9ede7ca8d8db93L;
-
-	static DomainSerdes serdes = new DomainSerdes();
 
 	private long expiry;
 	private long submittingMember = UNKNOWN_SUBMITTING_MEMBER;
@@ -243,19 +240,19 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
-		serdes.writeNullableSerializable(receipt, out);
+		out.writeSerializable(receipt, true);
 
 		out.writeByteArray(txnHash);
 
-		serdes.writeNullableSerializable(txnId, out);
-		serdes.writeNullableInstant(consensusTimestamp, out);
-		serdes.writeNullableString(memo, out);
+		out.writeSerializable(txnId, true);
+		consensusTimestamp.serialize(out);
+		out.writeNormalisedString(memo);
 
 		out.writeLong(this.fee);
 
-		serdes.writeNullableSerializable(hbarAdjustments, out);
-		serdes.writeNullableSerializable(contractCallResult, out);
-		serdes.writeNullableSerializable(contractCreateResult, out);
+		out.writeSerializable(hbarAdjustments, true);
+		out.writeSerializable(contractCallResult, true);
+		out.writeSerializable(contractCreateResult, true);
 
 		out.writeLong(expiry);
 		out.writeLong(submittingMember);
@@ -263,20 +260,20 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 		out.writeSerializableList(tokens, true, true);
 		out.writeSerializableList(tokenAdjustments, true, true);
 
-		serdes.writeNullableSerializable(scheduleRef, out);
+		out.writeSerializable(scheduleRef, true);
 	}
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		receipt = serdes.readNullableSerializable(in);
+		receipt = in.readSerializable();
 		txnHash = in.readByteArray(MAX_TXN_HASH_BYTES);
-		txnId = serdes.readNullableSerializable(in);
-		consensusTimestamp = serdes.readNullableInstant(in);
-		memo = serdes.readNullableString(in, MAX_MEMO_BYTES);
+		txnId = in.readSerializable();
+		consensusTimestamp = RichInstant.from(in);
+		memo = in.readNormalisedString(MAX_MEMO_BYTES);
 		fee = in.readLong();
-		hbarAdjustments = serdes.readNullableSerializable(in);
-		contractCallResult = serdes.readNullableSerializable(in);
-		contractCreateResult = serdes.readNullableSerializable(in);
+		hbarAdjustments = in.readSerializable();
+		contractCallResult = in.readSerializable();
+		contractCreateResult = in.readSerializable();
 		expiry = in.readLong();
 		submittingMember = in.readLong();
 		if (version > RELEASE_070_VERSION) {
@@ -284,7 +281,7 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 			tokenAdjustments = in.readSerializableList(MAX_INVOLVED_TOKENS);
 		}
 		if (version > RELEASE_080_VERSION) {
-			scheduleRef = serdes.readNullableSerializable(in);
+			scheduleRef = in.readSerializable();
 		}
 	}
 

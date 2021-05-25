@@ -21,7 +21,6 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -45,8 +44,6 @@ public class TxnId implements SelfSerializable {
 	public static final int MERKLE_VERSION = RELEASE_0130_VERSION;
 
 	public static final long RUNTIME_CONSTRUCTABLE_ID = 0x61a52dfb3a18d9bL;
-
-	static DomainSerdes serdes = new DomainSerdes();
 
 	private boolean scheduled = false;
 	private EntityId payerAccount = MISSING_ENTITY_ID;
@@ -87,7 +84,7 @@ public class TxnId implements SelfSerializable {
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		payerAccount = in.readSerializable(true, EntityId::new);
-		validStart = serdes.deserializeTimestamp(in);
+		validStart = RichInstant.from(in);
 		if (version >= RELEASE_0120_VERSION) {
 			scheduled = in.readBoolean();
 		}
@@ -103,7 +100,7 @@ public class TxnId implements SelfSerializable {
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
 		out.writeSerializable(payerAccount, true);
-		serdes.serializeTimestamp(validStart, out);
+		validStart.serialize(out);
 		out.writeBoolean(scheduled);
 	}
 

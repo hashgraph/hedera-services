@@ -42,8 +42,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static com.hedera.services.state.serdes.DomainSerdesTest.recordOne;
-import static com.hedera.services.state.serdes.DomainSerdesTest.recordTwo;
+import static com.hedera.services.state.submerkle.ExpirableTxnRecordTest.recordOne;
+import static com.hedera.services.state.submerkle.ExpirableTxnRecordTest.recordTwo;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;

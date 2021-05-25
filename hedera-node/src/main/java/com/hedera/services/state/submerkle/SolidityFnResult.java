@@ -22,7 +22,6 @@ package com.hedera.services.state.submerkle;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -47,8 +46,6 @@ public class SolidityFnResult implements SelfSerializable {
 
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x2055c5c03ff84eb4L;
-
-	static DomainSerdes serdes = new DomainSerdes();
 
 	public static final int MAX_LOGS = 1_024;
 	public static final int MAX_CREATED_IDS = 32;
@@ -100,8 +97,8 @@ public class SolidityFnResult implements SelfSerializable {
 		gasUsed = in.readLong();
 		bloom = in.readByteArray(SolidityLog.MAX_BLOOM_BYTES);
 		result = in.readByteArray(MAX_RESULT_BYTES);
-		error = serdes.readNullableString(in, MAX_ERROR_BYTES);
-		contractId = serdes.readNullableSerializable(in);
+		error = in.readNormalisedString(MAX_ERROR_BYTES);
+		contractId = in.readSerializable();
 		logs = in.readSerializableList(MAX_LOGS, true, SolidityLog::new);
 		createdContractIds = in.readSerializableList(MAX_CREATED_IDS, true, EntityId::new);
 	}
@@ -111,8 +108,8 @@ public class SolidityFnResult implements SelfSerializable {
 		out.writeLong(gasUsed);
 		out.writeByteArray(bloom);
 		out.writeByteArray(result);
-		serdes.writeNullableString(error, out);
-		serdes.writeNullableSerializable(contractId, out);
+		out.writeNormalisedString(error);
+		out.writeSerializable(contractId, true);
 		out.writeSerializableList(logs, true, true);
 		out.writeSerializableList(createdContractIds, true, true);
 	}

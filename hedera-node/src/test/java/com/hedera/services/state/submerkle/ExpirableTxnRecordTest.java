@@ -21,18 +21,21 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.state.serdes.DomainSerdes;
-import com.hedera.services.state.serdes.DomainSerdesTest;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -44,7 +47,11 @@ import java.util.List;
 
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MAX_INVOLVED_TOKENS;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.UNKNOWN_SUBMITTING_MEMBER;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -53,13 +60,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-class ExpirableTxnRecordTest {
+public class ExpirableTxnRecordTest {
 	long expiry = 1_234_567L;
 	long submittingMember = 1L;
 
 	DataInputStream din;
-
-	DomainSerdes serdes;
 
 	byte[] pretendHash = "not-really-a-hash".getBytes();
 
@@ -87,17 +92,13 @@ class ExpirableTxnRecordTest {
 		subject = subjectRecordWithTokenTransfersAndScheduleRef();
 
 		din = mock(DataInputStream.class);
-
-		serdes = mock(DomainSerdes.class);
-
-		ExpirableTxnRecord.serdes = serdes;
 	}
 
 	private ExpirableTxnRecord subjectRecord() {
 		var s = ExpirableTxnRecord.fromGprc(
-				DomainSerdesTest.recordOne().asGrpc().toBuilder()
+				recordOne().asGrpc().toBuilder()
 						.setTransactionHash(ByteString.copyFrom(pretendHash))
-						.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
+						.setContractCreateResult(recordTwo().getContractCallResult().toGrpc())
 						.build());
 		s.setExpiry(expiry);
 		s.setSubmittingMember(submittingMember);
@@ -106,9 +107,9 @@ class ExpirableTxnRecordTest {
 
 	private ExpirableTxnRecord subjectRecordWithTokenTransfers() {
 		var s = ExpirableTxnRecord.fromGprc(
-				DomainSerdesTest.recordOne().asGrpc().toBuilder()
+				recordOne().asGrpc().toBuilder()
 						.setTransactionHash(ByteString.copyFrom(pretendHash))
-						.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
+						.setContractCreateResult(recordTwo().getContractCallResult().toGrpc())
 						.addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers))
 						.build());
 		s.setExpiry(expiry);
@@ -118,9 +119,9 @@ class ExpirableTxnRecordTest {
 
 	private ExpirableTxnRecord subjectRecordWithTokenTransfersAndScheduleRef() {
 		var s = ExpirableTxnRecord.fromGprc(
-				DomainSerdesTest.recordOne().asGrpc().toBuilder()
+				recordOne().asGrpc().toBuilder()
 						.setTransactionHash(ByteString.copyFrom(pretendHash))
-						.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
+						.setContractCreateResult(recordTwo().getContractCallResult().toGrpc())
 						.addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers))
 						.setScheduleRef(scheduleID)
 						.build());
@@ -155,7 +156,7 @@ class ExpirableTxnRecordTest {
 		subject = subjectRecord();
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
 
-		given(serdes.readNullableSerializable(fin))
+		given(fin.readSerializable())
 				.willReturn(subject.getReceipt())
 				.willReturn(subject.getTxnId())
 				.willReturn(subject.getHbarAdjustments())
@@ -163,12 +164,12 @@ class ExpirableTxnRecordTest {
 				.willReturn(subject.getContractCreateResult());
 		given(fin.readByteArray(ExpirableTxnRecord.MAX_TXN_HASH_BYTES))
 				.willReturn(subject.getTxnHash());
-		given(serdes.readNullableInstant(fin))
-				.willReturn(subject.getConsensusTimestamp());
-		given(fin.readLong()).willReturn(subject.getFee())
+		given(fin.readLong()).willReturn(subject.getConsensusTimestamp().getSeconds())
+				.willReturn(subject.getFee())
 				.willReturn(subject.getExpiry())
 				.willReturn(subject.getSubmittingMember());
-		given(serdes.readNullableString(fin, ExpirableTxnRecord.MAX_MEMO_BYTES))
+		given(fin.readInt()).willReturn(subject.getConsensusTimestamp().getNanos());
+		given(fin.readNormalisedString(ExpirableTxnRecord.MAX_MEMO_BYTES))
 				.willReturn(subject.getMemo());
 		// and:
 		var deserializedRecord = new ExpirableTxnRecord();
@@ -186,7 +187,7 @@ class ExpirableTxnRecordTest {
 		subject = subjectRecordWithTokenTransfers();
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
 
-		given(serdes.readNullableSerializable(fin))
+		given(fin.readSerializable())
 				.willReturn(subject.getReceipt())
 				.willReturn(subject.getTxnId())
 				.willReturn(subject.getHbarAdjustments())
@@ -201,12 +202,12 @@ class ExpirableTxnRecordTest {
 						(SelfSerializable) subject.getTokenAdjustments().get(1)));
 		given(fin.readByteArray(ExpirableTxnRecord.MAX_TXN_HASH_BYTES))
 				.willReturn(subject.getTxnHash());
-		given(serdes.readNullableInstant(fin))
-				.willReturn(subject.getConsensusTimestamp());
-		given(fin.readLong()).willReturn(subject.getFee())
+		given(fin.readLong()).willReturn(subject.getConsensusTimestamp().getSeconds())
+				.willReturn(subject.getFee())
 				.willReturn(subject.getExpiry())
 				.willReturn(subject.getSubmittingMember());
-		given(serdes.readNullableString(fin, ExpirableTxnRecord.MAX_MEMO_BYTES))
+		given(fin.readInt()).willReturn(subject.getConsensusTimestamp().getNanos());
+		given(fin.readNormalisedString(ExpirableTxnRecord.MAX_MEMO_BYTES))
 				.willReturn(subject.getMemo());
 		// and:
 		var deserializedRecord = new ExpirableTxnRecord();
@@ -223,7 +224,7 @@ class ExpirableTxnRecordTest {
 		// setup:
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
 
-		given(serdes.readNullableSerializable(fin))
+		given(fin.readSerializable())
 				.willReturn(subject.getReceipt())
 				.willReturn(subject.getTxnId())
 				.willReturn(subject.getHbarAdjustments())
@@ -239,12 +240,12 @@ class ExpirableTxnRecordTest {
 						(SelfSerializable) subject.getTokenAdjustments().get(1)));
 		given(fin.readByteArray(ExpirableTxnRecord.MAX_TXN_HASH_BYTES))
 				.willReturn(subject.getTxnHash());
-		given(serdes.readNullableInstant(fin))
-				.willReturn(subject.getConsensusTimestamp());
-		given(fin.readLong()).willReturn(subject.getFee())
+		given(fin.readLong()).willReturn(subject.getConsensusTimestamp().getSeconds())
+				.willReturn(subject.getFee())
 				.willReturn(subject.getExpiry())
 				.willReturn(subject.getSubmittingMember());
-		given(serdes.readNullableString(fin, ExpirableTxnRecord.MAX_MEMO_BYTES))
+		given(fin.readInt()).willReturn(subject.getConsensusTimestamp().getNanos());
+		given(fin.readNormalisedString(ExpirableTxnRecord.MAX_MEMO_BYTES))
 				.willReturn(subject.getMemo());
 		// and:
 		var deserializedRecord = new ExpirableTxnRecord();
@@ -261,28 +262,29 @@ class ExpirableTxnRecordTest {
 		// setup:
 		SerializableDataOutputStream fout = mock(SerializableDataOutputStream.class);
 		// and:
-		InOrder inOrder = Mockito.inOrder(serdes, fout);
+		InOrder inOrder = Mockito.inOrder(fout);
 
 		// when:
 		subject.serialize(fout);
 
 		// then:
-		inOrder.verify(serdes).writeNullableSerializable(subject.getReceipt(), fout);
+		inOrder.verify(fout).writeSerializable(subject.getReceipt(), true);
 		inOrder.verify(fout).writeByteArray(subject.getTxnHash());
-		inOrder.verify(serdes).writeNullableSerializable(subject.getTxnId(), fout);
-		inOrder.verify(serdes).writeNullableInstant(subject.getConsensusTimestamp(), fout);
-		inOrder.verify(serdes).writeNullableString(subject.getMemo(), fout);
+		inOrder.verify(fout).writeSerializable(subject.getTxnId(), true);
+		inOrder.verify(fout).writeLong(subject.getConsensusTimestamp().getSeconds());
+		inOrder.verify(fout).writeInt(subject.getConsensusTimestamp().getNanos());
+		inOrder.verify(fout).writeNormalisedString(subject.getMemo());
 		inOrder.verify(fout).writeLong(subject.getFee());
-		inOrder.verify(serdes).writeNullableSerializable(subject.getHbarAdjustments(), fout);
-		inOrder.verify(serdes).writeNullableSerializable(subject.getContractCallResult(), fout);
-		inOrder.verify(serdes).writeNullableSerializable(subject.getContractCreateResult(), fout);
+		inOrder.verify(fout).writeSerializable(subject.getHbarAdjustments(), true);
+		inOrder.verify(fout).writeSerializable(subject.getContractCallResult(), true);
+		inOrder.verify(fout).writeSerializable(subject.getContractCreateResult(), true);
 		inOrder.verify(fout).writeLong(subject.getExpiry());
 		inOrder.verify(fout).writeLong(subject.getSubmittingMember());
 		inOrder.verify(fout).writeSerializableList(
 				subject.getTokens(), true, true);
 		inOrder.verify(fout).writeSerializableList(
 				subject.getTokenAdjustments(), true, true);
-		inOrder.verify(serdes).writeNullableSerializable(EntityId.fromGrpcScheduleId(scheduleID), fout);
+		inOrder.verify(fout).writeSerializable(EntityId.fromGrpcScheduleId(scheduleID), true);
 	}
 
 	@Test
@@ -306,7 +308,7 @@ class ExpirableTxnRecordTest {
 	public void objectContractWorks() {
 		// given:
 		var one = subject;
-		var two = DomainSerdesTest.recordOne();
+		var two = recordOne();
 		var three = subjectRecordWithTokenTransfersAndScheduleRef();
 
 		// when:
@@ -344,8 +346,53 @@ class ExpirableTxnRecordTest {
 				subject.toString());
 	}
 
-	@AfterEach
-	public void cleanup() {
-		ExpirableTxnRecord.serdes = new DomainSerdes();
+	public static ExpirableTxnRecord recordOne() {
+		TransactionRecord record = TransactionRecord.newBuilder()
+				.setReceipt(TransactionReceipt.newBuilder()
+						.setStatus(INVALID_ACCOUNT_ID)
+						.setAccountID(asAccount("0.0.3")))
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder().setSeconds(9_999_999_999L)))
+				.setMemo("Alpha bravo charlie")
+				.setConsensusTimestamp(Timestamp.newBuilder().setSeconds(9_999_999_999L))
+				.setTransactionFee(555L)
+				.setTransferList(withAdjustments(
+						asAccount("0.0.2"), -4L,
+						asAccount("0.0.1001"), 2L,
+						asAccount("0.0.1002"), 2L))
+				.setContractCallResult(ContractFunctionResult.newBuilder()
+						.setContractID(asContract("1.2.3"))
+						.setErrorMessage("Couldn't figure it out!")
+						.setGasUsed(55L)
+						.addLogInfo(ContractLoginfo.newBuilder()
+								.setData(ByteString.copyFrom("Nonsense!".getBytes()))))
+				.build();
+		ExpirableTxnRecord jRecord = ExpirableTxnRecord.fromGprc(record);
+		return jRecord;
+	}
+
+	public static ExpirableTxnRecord recordTwo() {
+		TransactionRecord record = TransactionRecord.newBuilder()
+				.setReceipt(TransactionReceipt.newBuilder()
+						.setStatus(INVALID_CONTRACT_ID)
+						.setAccountID(asAccount("0.0.4")))
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder().setSeconds(7_777_777_777L)))
+				.setMemo("Alpha bravo charlie")
+				.setConsensusTimestamp(Timestamp.newBuilder().setSeconds(7_777_777_777L))
+				.setTransactionFee(556L)
+				.setTransferList(withAdjustments(
+						asAccount("0.0.2"),-6L,
+						asAccount("0.0.1001"), 3L,
+						asAccount("0.0.1002"), 3L))
+				.setContractCallResult(ContractFunctionResult.newBuilder()
+						.setContractID(asContract("4.3.2"))
+						.setErrorMessage("Couldn't figure it out immediately!")
+						.setGasUsed(55L)
+						.addLogInfo(ContractLoginfo.newBuilder()
+								.setData(ByteString.copyFrom("Nonsensical!".getBytes()))))
+				.build();
+		ExpirableTxnRecord jRecord = ExpirableTxnRecord.fromGprc(record);
+		return jRecord;
 	}
 }

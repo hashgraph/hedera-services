@@ -21,7 +21,6 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -60,7 +59,6 @@ class TxnIdTest {
 	private ByteString nonce = ByteString.copyFrom("THIS_IS_NEW".getBytes());
 	private RichInstant fcValidStart = RichInstant.fromGrpc(validStart);
 
-	DomainSerdes serdes;
 	SerializableDataInputStream din;
 	SerializableDataOutputStream dout;
 
@@ -72,22 +70,18 @@ class TxnIdTest {
 		subject = scheduledSubject();
 		// and:
 		dout = mock(SerializableDataOutputStream.class);
-		serdes = mock(DomainSerdes.class);
-		TxnId.serdes = serdes;
 
 		// given:
-		InOrder inOrder = Mockito.inOrder(serdes, dout);
+		InOrder inOrder = Mockito.inOrder(dout);
 
 		// when:
 		subject.serialize(dout);
 
 		// then:
 		inOrder.verify(dout).writeSerializable(fcPayer, Boolean.TRUE);
-		inOrder.verify(serdes).serializeTimestamp(fcValidStart, dout);
+		inOrder.verify(dout).writeLong(fcValidStart.getSeconds());
+		inOrder.verify(dout).writeInt(fcValidStart.getNanos());
 		inOrder.verify(dout, times(1)).writeBoolean(anyBoolean());
-
-		// cleanup:
-		TxnId.serdes = new DomainSerdes();
 	}
 
 	@Test
@@ -96,11 +90,10 @@ class TxnIdTest {
 		subject = unscheduledSubject();
 		// and:
 		din = mock(SerializableDataInputStream.class);
-		serdes = mock(DomainSerdes.class);
-		TxnId.serdes = serdes;
 
 		given(din.readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class))).willReturn(fcPayer);
-		given(serdes.deserializeTimestamp(din)).willReturn(fcValidStart);
+		given(din.readLong()).willReturn(fcValidStart.getSeconds());
+		given(din.readInt()).willReturn(fcValidStart.getNanos());
 		// and:
 		var deserializedId = new TxnId();
 
@@ -111,9 +104,6 @@ class TxnIdTest {
 		assertEquals(subject, deserializedId);
 		verify(din, never()).readBoolean();
 		verify(din, never()).readByteArray(Integer.MAX_VALUE);
-
-		// cleanup:
-		TxnId.serdes = new DomainSerdes();
 	}
 
 	@Test
@@ -122,11 +112,10 @@ class TxnIdTest {
 		subject = scheduledSubject();
 		// and:
 		din = mock(SerializableDataInputStream.class);
-		serdes = mock(DomainSerdes.class);
-		TxnId.serdes = serdes;
 
 		given(din.readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class))).willReturn(fcPayer);
-		given(serdes.deserializeTimestamp(din)).willReturn(fcValidStart);
+		given(din.readLong()).willReturn(fcValidStart.getSeconds());
+		given(din.readInt()).willReturn(fcValidStart.getNanos());
 		given(din.readBoolean()).willReturn(true).willReturn(true);
 		given(din.readByteArray(anyInt())).willReturn(nonce.toByteArray());
 		// and:
@@ -140,9 +129,6 @@ class TxnIdTest {
 		// and:
 		verify(din, times(2)).readBoolean();
 		verify(din).readByteArray(Integer.MAX_VALUE);
-
-		// cleanup:
-		TxnId.serdes = new DomainSerdes();
 	}
 
 	@Test
@@ -151,11 +137,10 @@ class TxnIdTest {
 		subject = scheduledSubject();
 		// and:
 		din = mock(SerializableDataInputStream.class);
-		serdes = mock(DomainSerdes.class);
-		TxnId.serdes = serdes;
 
 		given(din.readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class))).willReturn(fcPayer);
-		given(serdes.deserializeTimestamp(din)).willReturn(fcValidStart);
+		given(din.readLong()).willReturn(fcValidStart.getSeconds());
+		given(din.readInt()).willReturn(fcValidStart.getNanos());
 		given(din.readBoolean()).willReturn(true);
 		// and:
 		var deserializedId = new TxnId();
@@ -167,9 +152,6 @@ class TxnIdTest {
 		assertEquals(subject, deserializedId);
 		// and:
 		verify(din, times(1)).readBoolean();
-
-		// cleanup:
-		TxnId.serdes = new DomainSerdes();
 	}
 
 	@Test

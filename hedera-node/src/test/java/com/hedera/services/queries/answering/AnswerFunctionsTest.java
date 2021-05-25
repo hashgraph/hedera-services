@@ -39,7 +39,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 
-import static com.hedera.services.state.serdes.DomainSerdesTest.recordOne;
+import static com.hedera.services.state.submerkle.ExpirableTxnRecordTest.recordOne;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;

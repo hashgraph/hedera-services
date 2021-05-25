@@ -24,7 +24,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.records.RecordCache;
-import com.hedera.services.state.serdes.DomainSerdesTest;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -35,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
+import static com.hedera.services.state.submerkle.ExpirableTxnRecordTest.recordOne;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
@@ -49,7 +49,7 @@ class ExpiringCreationsTest {
 	long submittingMember = 1L;
 
 	AccountID effPayer = IdUtils.asAccount("0.0.13257");
-	TransactionRecord record = DomainSerdesTest.recordOne().asGrpc();
+	TransactionRecord record = recordOne().asGrpc();
 
 	RecordCache recordCache;
 	HederaLedger ledger;

@@ -20,11 +20,9 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.commons.codec.binary.Hex;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -49,7 +47,6 @@ class SolidityLogTest {
 	EntityId contractId = new EntityId(1L, 2L, 3L);
 	List<byte[]> topics = List.of("first".getBytes(), "second".getBytes(), "third".getBytes());
 
-	DomainSerdes serdes;
 	DataInputStream din;
 	SerializableDataInputStream in;
 
@@ -59,16 +56,8 @@ class SolidityLogTest {
 	public void setup() {
 		din = mock(DataInputStream.class);
 		in = mock(SerializableDataInputStream.class);
-		serdes = mock(DomainSerdes.class);
 
 		subject = new SolidityLog(contractId, bloom, topics, data);
-
-		SolidityLog.serdes = serdes;
-	}
-
-	@AfterEach
-	public void cleanup() {
-		SolidityLog.serdes = new DomainSerdes();
 	}
 
 	@Test
@@ -125,7 +114,7 @@ class SolidityLogTest {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 		// and:
-		InOrder inOrder = inOrder(serdes, out);
+		InOrder inOrder = inOrder(out);
 
 		// when:
 		subject.serialize(out);
@@ -133,7 +122,7 @@ class SolidityLogTest {
 		// then:
 		inOrder.verify(out).writeByteArray(argThat((byte[] bytes) -> Arrays.equals(bytes, data)));
 		inOrder.verify(out).writeByteArray(argThat((byte[] bytes) -> Arrays.equals(bytes, bloom)));
-		inOrder.verify(serdes).writeNullableSerializable(contractId, out);
+		inOrder.verify(out).writeSerializable(contractId, true);
 		inOrder.verify(out).writeInt(topics.size());
 		inOrder.verify(out).writeByteArray(argThat((byte[] bytes) -> Arrays.equals(bytes, topics.get(0))));
 		inOrder.verify(out).writeByteArray(argThat((byte[] bytes) -> Arrays.equals(bytes, topics.get(1))));
@@ -149,7 +138,7 @@ class SolidityLogTest {
 
 		given(in.readByteArray(SolidityLog.MAX_BLOOM_BYTES)).willReturn(bloom);
 		given(in.readByteArray(SolidityLog.MAX_DATA_BYTES)).willReturn(data);
-		given(serdes.readNullableSerializable(in)).willReturn(contractId);
+		given(in.readSerializable()).willReturn(contractId);
 		given(in.readInt()).willReturn(topics.size());
 		given(in.readByteArray(SolidityLog.MAX_TOPIC_BYTES))
 				.willReturn(topics.get(0))

@@ -40,8 +40,8 @@ import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.services.state.serdes.DomainSerdesTest.recordOne;
-import static com.hedera.services.state.serdes.DomainSerdesTest.recordTwo;
+import static com.hedera.services.state.submerkle.ExpirableTxnRecordTest.recordOne;
+import static com.hedera.services.state.submerkle.ExpirableTxnRecordTest.recordTwo;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
