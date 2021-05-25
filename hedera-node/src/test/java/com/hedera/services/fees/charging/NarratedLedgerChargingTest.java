@@ -18,11 +18,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class NarratedLedgerChargingTest {
+	private final long submittingNodeId = 0L;
 	private final long nodeFee = 2L, networkFee = 4L, serviceFee = 6L;
 	private final FeeObject fees = new FeeObject(nodeFee, networkFee, serviceFee);
 	private final AccountID grpcNodeId = IdUtils.asAccount("0.0.3");
@@ -62,6 +67,7 @@ class NarratedLedgerChargingTest {
 		verify(ledger).adjustBalance(grpcPayerId, -(nodeFee + networkFee + serviceFee));
 		verify(ledger).adjustBalance(grpcNodeId, +nodeFee);
 		verify(ledger).adjustBalance(grpcFundingId, +(networkFee + serviceFee));
+		assertEquals(nodeFee + networkFee + serviceFee, subject.totalFeesChargedToPayer());
 	}
 
 	@Test
@@ -78,6 +84,7 @@ class NarratedLedgerChargingTest {
 		// then:
 		verify(ledger).adjustBalance(grpcPayerId, -serviceFee);
 		verify(ledger).adjustBalance(grpcFundingId, +serviceFee);
+		assertEquals(serviceFee, subject.totalFeesChargedToPayer());
 	}
 
 	@Test
@@ -96,24 +103,38 @@ class NarratedLedgerChargingTest {
 		verify(ledger).adjustBalance(grpcPayerId, -(networkFee + nodeFee / 2));
 		verify(ledger).adjustBalance(grpcFundingId, +networkFee);
 		verify(ledger).adjustBalance(grpcNodeId, nodeFee / 2);
+		assertEquals(networkFee + nodeFee / 2, subject.totalFeesChargedToPayer());
+	}
+
+	@Test
+	void chargesNodeUpToNetworkFeeAsExpected() {
+		givenSetupToChargeNode(networkFee - 1);
+
+		// when:
+		subject.chargeSubmittingNodeUpToNetworkFee();
+
+		// then:
+		verify(ledger).adjustBalance(grpcNodeId, -networkFee + 1);
+		verify(ledger).adjustBalance(grpcFundingId, +networkFee - 1);
+		assertEquals(0, subject.totalFeesChargedToPayer());
 	}
 
 	@Test
 	void throwsIseIfPayerNotActuallyExtant() {
 		// expect:
-		Assertions.assertThrows(IllegalStateException.class, subject::canPayerAffordAllFees);
+		assertThrows(IllegalStateException.class, subject::canPayerAffordAllFees);
 
 		// and given:
-		subject.resetForTxn(payerId, nodeId, 0L);
+		subject.resetForTxn(payerId, submittingNodeId, 0L);
 		subject.setFees(fees);
 
 		// still expect:
-		Assertions.assertThrows(IllegalStateException.class, subject::canPayerAffordAllFees);
+		assertThrows(IllegalStateException.class, subject::canPayerAffordAllFees);
 	}
 
 	@Test
 	void detectsLackOfWillingness() {
-		subject.resetForTxn(payerId, nodeId, 0L);
+		subject.resetForTxn(payerId, submittingNodeId, 0L);
 		subject.setFees(fees);
 
 		// expect:
@@ -123,22 +144,24 @@ class NarratedLedgerChargingTest {
 	}
 
 	private void givenSetupToChargePayer(long payerBalance, long totalOfferedFee) {
-		subject.resetForTxn(payerId, nodeId, totalOfferedFee);
-		subject.setFees(fees);
-
 		final var payerAccount = MerkleAccountFactory.newAccount().balance(payerBalance).get();
 		given(accounts.get(payerId)).willReturn(payerAccount);
 
 		given(dynamicProperties.fundingAccount()).willReturn(grpcFundingId);
+		given(nodeInfo.accountKeyOf(submittingNodeId)).willReturn(nodeId);
+
+		subject.resetForTxn(payerId, submittingNodeId, totalOfferedFee);
+		subject.setFees(fees);
 	}
 
 	private void givenSetupToChargeNode(long nodeBalance) {
-		subject.resetForTxn(payerId, nodeId, 0L);
-		subject.setFees(fees);
-
 		final var nodeAccount = MerkleAccountFactory.newAccount().balance(nodeBalance).get();
 		given(accounts.get(nodeId)).willReturn(nodeAccount);
 
 		given(dynamicProperties.fundingAccount()).willReturn(grpcFundingId);
+		given(nodeInfo.accountKeyOf(submittingNodeId)).willReturn(nodeId);
+
+		subject.resetForTxn(payerId, submittingNodeId, 0L);
+		subject.setFees(fees);
 	}
 }

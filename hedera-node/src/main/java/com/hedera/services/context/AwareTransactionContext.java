@@ -23,9 +23,9 @@ package com.hedera.services.context;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.expiry.ExpiringEntity;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.utils.TxnAccessor;
-import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -40,8 +40,6 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.common.Address;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -54,8 +52,6 @@ import java.util.function.Consumer;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
-import static com.hedera.services.utils.MiscUtils.canonicalDiffRepr;
-import static com.hedera.services.utils.MiscUtils.readableTransferList;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
 /**
@@ -118,7 +114,9 @@ public class AwareTransactionContext implements TransactionContext {
 		isPayerSigKnownActive = false;
 		hasComputedRecordSoFar = false;
 
-		ctx.charging().resetFor(accessor, submittingNodeAccount());
+		final var allegedPayer = MerkleEntityId.fromAccountId(accessor.getPayer());
+		ctx.narratedCharging().resetForTxn(allegedPayer, submittingMember, accessor.getOfferedFee());
+
 		recordSoFar.clear();
 	}
 
@@ -154,17 +152,14 @@ public class AwareTransactionContext implements TransactionContext {
 
 	@Override
 	public TransactionRecord recordSoFar() {
-		long amount = ctx.charging().totalFeesChargedToPayer() + otherNonThresholdFees;
+		final long feesCharged = ctx.narratedCharging().totalFeesChargedToPayer() + otherNonThresholdFees;
 
-		if (log.isDebugEnabled()) {
-			logItemized();
-		}
 		recordSoFar
 				.setMemo(accessor.getTxn().getMemo())
 				.setReceipt(receiptSoFar())
 				.setTransferList(ctx.ledger().netTransfersInTxn())
 				.setTransactionID(accessor.getTxnId())
-				.setTransactionFee(amount)
+				.setTransactionFee(feesCharged)
 				.setTransactionHash(hash)
 				.setConsensusTimestamp(consensusTimestamp)
 				.addAllTokenTransferLists(ctx.ledger().netTokenTransfersInTxn());
@@ -176,39 +171,6 @@ public class AwareTransactionContext implements TransactionContext {
 		hasComputedRecordSoFar = true;
 
 		return recordSoFar.build();
-	}
-
-	@Override
-	public TransactionRecord updatedRecordGiven(TransferList listWithNewFees) {
-		if (!hasComputedRecordSoFar) {
-			throw new IllegalStateException(String.format(
-					"No record exists to be updated with '%s'!",
-					readableTransferList(listWithNewFees)));
-		}
-
-		long amount = ctx.charging().totalFeesChargedToPayer() + otherNonThresholdFees;
-		recordSoFar.setTransferList(listWithNewFees).setTransactionFee(amount);
-
-		return recordSoFar.build();
-	}
-
-	private void logItemized() {
-		String readableTransferList = readableTransferList(itemizedRepresentation());
-		log.debug(
-				"Transfer list with itemized fees for {} is {}",
-				accessor().getSignedTxn4Log(),
-				readableTransferList);
-	}
-
-	TransferList itemizedRepresentation() {
-		TransferList canonicalRepr = ctx.ledger().netTransfersInTxn();
-		TransferList itemizedFees = ctx.charging().itemizedFees();
-
-		List<AccountAmount> nonFeeAdjustments =
-				canonicalDiffRepr(canonicalRepr.getAccountAmountsList(), itemizedFees.getAccountAmountsList());
-		return itemizedFees.toBuilder()
-				.addAllAccountAmounts(nonFeeAdjustments)
-				.build();
 	}
 
 	private TransactionReceipt.Builder receiptSoFar() {

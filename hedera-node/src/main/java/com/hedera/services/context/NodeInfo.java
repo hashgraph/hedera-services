@@ -20,14 +20,13 @@ package com.hedera.services.context;
  * ‍
  */
 
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.swirlds.common.AddressBook;
 
 import java.util.function.Supplier;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.util.function.Supplier;
 
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 
@@ -45,6 +44,7 @@ public class NodeInfo {
 	private int numberOfNodes;
 	private boolean[] isZeroStake;
 	private AccountID[] accounts;
+	private MerkleEntityId[] accountKeys;
 
 	private final long selfId;
 	private final Supplier<AddressBook> book;
@@ -88,6 +88,18 @@ public class NodeInfo {
 	 * @throws IllegalArgumentException if the book did not contain the id, or was missing an account for the id
 	 */
 	public AccountID accountOf(long nodeId) {
+		final int index = validatedIndexFor(nodeId);
+
+		return accounts[index];
+	}
+
+	public MerkleEntityId accountKeyOf(long nodeId) {
+		final int index = validatedIndexFor(nodeId);
+
+		return accountKeys[index];
+	}
+
+	private int validatedIndexFor(long nodeId) {
 		if (!bookIsRead) {
 			readBook();
 		}
@@ -96,11 +108,10 @@ public class NodeInfo {
 		if (index < 0 || index >= numberOfNodes) {
 			throw new IllegalArgumentException("No node with id " + nodeId + " was in the address book!");
 		}
-		final var account = accounts[index];
-		if (account == null) {
+		if (accounts[index] == null) {
 			throw new IllegalArgumentException("The  address book did not have an account for node id " + nodeId + "!");
 		}
-		return account;
+		return index;
 	}
 
 	/**
@@ -129,6 +140,7 @@ public class NodeInfo {
 
 		numberOfNodes = staticBook.getSize();
 		accounts = new AccountID[numberOfNodes];
+		accountKeys = new MerkleEntityId[numberOfNodes];
 		isZeroStake = new boolean[numberOfNodes];
 
 		for (int i = 0; i < numberOfNodes; i++) {
@@ -136,6 +148,7 @@ public class NodeInfo {
 			isZeroStake[i] = address.getStake() <= 0;
 			try {
 				accounts[i] = parseAccount(address.getMemo());
+				accountKeys[i] = MerkleEntityId.fromAccountId(accounts[i]);
 			} catch (IllegalArgumentException e) {
 				if (!isZeroStake[i]) {
 					log.error("Cannot parse account for staked node id {}, potentially fatal!", i, e);

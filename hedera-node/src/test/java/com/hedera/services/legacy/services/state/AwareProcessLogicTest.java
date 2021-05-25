@@ -149,7 +149,7 @@ class AwareProcessLogicTest {
 		given(recentHistory.currentDuplicityFor(anyLong())).willReturn(BELIEVED_UNIQUE);
 
 		given(txnBody.getNodeAccountID()).willReturn(accountID);
-		given(policy.apply(any(), any())).willReturn(ResponseCodeEnum.OK);
+		given(policy.apply(any())).willReturn(ResponseCodeEnum.OK);
 		given(policies.check(any())).willReturn(SystemOpAuthorization.AUTHORIZED);
 		given(lookup.lookupFor(any(), any())).willReturn(Optional.empty());
 		given(ctx.entityAutoRenewal()).willReturn(entityAutoRenewal);

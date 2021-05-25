@@ -44,10 +44,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class TxnFeeChargingPolicy {
 	private final NarratedCharging narratedCharging;
 
-	public TxnFeeChargingPolicy() {
-		narratedCharging = null;
-	}
-
 	public TxnFeeChargingPolicy(NarratedCharging narratedCharging) {
 		this.narratedCharging = narratedCharging;
 	}
@@ -56,11 +52,10 @@ public class TxnFeeChargingPolicy {
 	 * Apply the fee charging policy to a txn that was submitted responsibly, and
 	 * believed unique.
 	 *
-	 * @param charging the charging facility to use
 	 * @param fees the fee to charge
 	 * @return the outcome of applying the policy
 	 */
-	public ResponseCodeEnum apply(ItemizableFeeCharging charging, FeeObject fees) {
+	public ResponseCodeEnum apply(FeeObject fees) {
 		return chargePendingSolvency(fees);
 	}
 
@@ -68,11 +63,10 @@ public class TxnFeeChargingPolicy {
 	 * Apply the fee charging policy to a txn that was submitted responsibly, but
 	 * is a duplicate of a txn already submitted by a different node.
 	 *
-	 * @param charging the charging facility to use
 	 * @param fees the fee to charge
 	 * @return the outcome of applying the policy
 	 */
-	public ResponseCodeEnum applyForDuplicate(ItemizableFeeCharging charging, FeeObject fees) {
+	public ResponseCodeEnum applyForDuplicate(FeeObject fees) {
 		final var feesForDuplicate = new FeeObject(fees.getNodeFee(), fees.getNetworkFee(), 0L);
 
 		return chargePendingSolvency(feesForDuplicate);
@@ -82,11 +76,10 @@ public class TxnFeeChargingPolicy {
 	 * Apply the fee charging policy to a txn that was submitted responsibly, but
 	 * is a triggered txn rather than a parent txn requiring node precheck work.
 	 *
-	 * @param charging the charging facility to use
 	 * @param fees the fee to charge
 	 * @return the outcome of applying the policy
 	 */
-	public ResponseCodeEnum applyForTriggered(ItemizableFeeCharging charging, FeeObject fees) {
+	public ResponseCodeEnum applyForTriggered(FeeObject fees) {
 		narratedCharging.setFees(fees);
 
 		if (!narratedCharging.isPayerWillingToCoverServiceFee()) {
@@ -103,11 +96,10 @@ public class TxnFeeChargingPolicy {
 	 * Apply the fee charging policy to a txn that looks to have been
 	 * submitted without performing basic due diligence.
 	 *
-	 * @param charging the charging facility to use
 	 * @param fees the fee to charge
 	 * @return the outcome of applying the policy
 	 */
-	public ResponseCodeEnum applyForIgnoredDueDiligence(ItemizableFeeCharging charging, FeeObject fees) {
+	public ResponseCodeEnum applyForIgnoredDueDiligence(FeeObject fees) {
 		narratedCharging.setFees(fees);
 		narratedCharging.chargeSubmittingNodeUpToNetworkFee();
 		return OK;

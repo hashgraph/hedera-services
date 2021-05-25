@@ -124,16 +124,6 @@ public interface TransactionContext {
 	TransactionRecord recordSoFar();
 
 	/**
-	 * Returns the last record created by {@link TransactionContext#recordSoFar()},
-	 * with the transfer list and fees updated.
-	 *
-	 * @param listWithNewFees the new transfer list to use in the record.
-	 * @return the updated historical record of processing the current txn thus far.
-	 * @throws IllegalStateException if {@code recordSoFar} has not been called for the active txn.
-	 */
-	TransactionRecord updatedRecordGiven(TransferList listWithNewFees);
-
-	/**
 	 * Gets an accessor to the defined type {@link TxnAccessor}
 	 * currently being processed.
 	 *

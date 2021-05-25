@@ -43,7 +43,7 @@ import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.TxnRateFeeMultiplierSource;
 import com.hedera.services.fees.calculation.AwareFcfsUsagePrices;
 import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
-import com.hedera.services.fees.charging.ItemizableFeeCharging;
+import com.hedera.services.fees.charging.NarratedLedgerCharging;
 import com.hedera.services.fees.charging.TxnFeeChargingPolicy;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.SysFileCallbacks;
@@ -470,7 +470,6 @@ public class ServicesContextTest {
 		assertThat(ctx.systemFilesManager(), instanceOf(HfsSystemFilesManager.class));
 		assertThat(ctx.queryResponseHelper(), instanceOf(QueryResponseHelper.class));
 		assertThat(ctx.solidityLifecycle(), instanceOf(SolidityLifecycle.class));
-		assertThat(ctx.charging(), instanceOf(ItemizableFeeCharging.class));
 		assertThat(ctx.repository(), instanceOf(ServicesRepositoryRoot.class));
 		assertThat(ctx.newPureRepo(), instanceOf(Supplier.class));
 		assertThat(ctx.exchangeRatesManager(), instanceOf(TxnAwareRatesManager.class));
@@ -522,6 +521,7 @@ public class ServicesContextTest {
 		assertThat(ctx.entityAutoRenewal(), instanceOf(EntityAutoRenewal.class));
 		assertThat(ctx.nodeInfo(), instanceOf(NodeInfo.class));
 		assertThat(ctx.invariants(), instanceOf(InvariantChecks.class));
+		assertThat(ctx.narratedCharging(), instanceOf(NarratedLedgerCharging.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

@@ -144,8 +144,8 @@ public class AwareProcessLogic implements ProcessLogic {
 		ctx.networkCtxManager().advanceConsensusClockTo(consensusTime);
 		ctx.networkCtxManager().prepareForIncorporating(accessor.getFunction());
 
-		FeeObject fee = ctx.fees().computeFee(accessor, ctx.txnCtx().activePayerKey(), ctx.currentView());
-		var chargingOutcome = ctx.txnChargingPolicy().applyForTriggered(ctx.charging(), fee);
+		FeeObject fees = ctx.fees().computeFee(accessor, ctx.txnCtx().activePayerKey(), ctx.currentView());
+		var chargingOutcome = ctx.txnChargingPolicy().applyForTriggered(fees);
 		if (chargingOutcome != OK) {
 			ctx.txnCtx().setStatus(chargingOutcome);
 			return;
@@ -163,7 +163,7 @@ public class AwareProcessLogic implements ProcessLogic {
 			ctx.networkCtxManager().prepareForIncorporating(accessor.getFunction());
 		}
 
-		FeeObject fee = ctx.fees().computeFee(accessor, ctx.txnCtx().activePayerKey(), ctx.currentView());
+		FeeObject fees = ctx.fees().computeFee(accessor, ctx.txnCtx().activePayerKey(), ctx.currentView());
 
 		var recentHistory = ctx.txnHistories().get(accessor.getTxnId());
 		var duplicity = (recentHistory == null)
@@ -171,16 +171,16 @@ public class AwareProcessLogic implements ProcessLogic {
 				: recentHistory.currentDuplicityFor(ctx.txnCtx().submittingSwirldsMember());
 
 		if (ctx.nodeDiligenceScreen().nodeIgnoredDueDiligence(duplicity)) {
-			ctx.txnChargingPolicy().applyForIgnoredDueDiligence(ctx.charging(), fee);
+			ctx.txnChargingPolicy().applyForIgnoredDueDiligence(fees);
 			return;
 		}
 		if (duplicity == DUPLICATE) {
-			ctx.txnChargingPolicy().applyForDuplicate(ctx.charging(), fee);
+			ctx.txnChargingPolicy().applyForDuplicate(fees);
 			ctx.txnCtx().setStatus(DUPLICATE_TRANSACTION);
 			return;
 		}
 
-		var chargingOutcome = ctx.txnChargingPolicy().apply(ctx.charging(), fee);
+		var chargingOutcome = ctx.txnChargingPolicy().apply(fees);
 		if (chargingOutcome != OK) {
 			ctx.txnCtx().setStatus(chargingOutcome);
 			return;

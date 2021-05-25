@@ -19,10 +19,11 @@ public class NarratedLedgerCharging implements NarratedCharging {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
-	private long startingPayerBalance = UNKNOWN_ACCOUNT_BALANCE, startingNodeBalance = UNKNOWN_ACCOUNT_BALANCE;
+	private long effPayerStartingBalance = UNKNOWN_ACCOUNT_BALANCE;
 
 	private long nodeFee, networkFee, serviceFee;
 	private long totalOfferedFee;
+	private long totalCharged;
 	private MerkleEntityId nodeId;
 	private MerkleEntityId payerId;
 
@@ -39,13 +40,18 @@ public class NarratedLedgerCharging implements NarratedCharging {
 	}
 
 	@Override
+	public long totalFeesChargedToPayer() {
+		return totalCharged;
+	}
+
+	@Override
 	public void resetForTxn(MerkleEntityId payerId, long submittingNodeId, long totalOfferedFee) {
 		this.payerId = payerId;
 		this.totalOfferedFee = totalOfferedFee;
 
-//		nodeId = nodeInfo.accountOf(submittingNodeId);
-
-		startingNodeBalance = startingPayerBalance = UNKNOWN_ACCOUNT_BALANCE;
+		nodeId = nodeInfo.accountKeyOf(submittingNodeId);
+		totalCharged = 0L;
+		effPayerStartingBalance = UNKNOWN_ACCOUNT_BALANCE;
 	}
 
 	@Override
@@ -57,26 +63,26 @@ public class NarratedLedgerCharging implements NarratedCharging {
 
 	@Override
 	public boolean canPayerAffordAllFees() {
-		if (startingPayerBalance == UNKNOWN_ACCOUNT_BALANCE) {
-			initPayerBalance();
+		if (effPayerStartingBalance == UNKNOWN_ACCOUNT_BALANCE) {
+			initEffPayerBalance(payerId);
 		}
-		return startingPayerBalance >= (nodeFee + networkFee + serviceFee);
+		return effPayerStartingBalance >= (nodeFee + networkFee + serviceFee);
 	}
 
 	@Override
 	public boolean canPayerAffordNetworkFee() {
-		if (startingPayerBalance == UNKNOWN_ACCOUNT_BALANCE) {
-			initPayerBalance();
+		if (effPayerStartingBalance == UNKNOWN_ACCOUNT_BALANCE) {
+			initEffPayerBalance(payerId);
 		}
-		return startingPayerBalance >= networkFee;
+		return effPayerStartingBalance >= networkFee;
 	}
 
 	@Override
 	public boolean canPayerAffordServiceFee() {
-		if (startingPayerBalance == UNKNOWN_ACCOUNT_BALANCE) {
-			initPayerBalance();
+		if (effPayerStartingBalance == UNKNOWN_ACCOUNT_BALANCE) {
+			initEffPayerBalance(payerId);
 		}
-		return startingPayerBalance >= serviceFee;
+		return effPayerStartingBalance >= serviceFee;
 	}
 
 	@Override
@@ -96,40 +102,48 @@ public class NarratedLedgerCharging implements NarratedCharging {
 
 	@Override
 	public void chargePayerAllFees() {
-		ledger.adjustBalance(payerId.toAccountId(), -(nodeFee + networkFee + serviceFee));
 		ledger.adjustBalance(nodeId.toAccountId(), +nodeFee);
 		ledger.adjustBalance(dynamicProperties.fundingAccount(), +(networkFee + serviceFee));
+		totalCharged = nodeFee + networkFee + serviceFee;
+		ledger.adjustBalance(payerId.toAccountId(), -totalCharged);
 	}
 
 	@Override
 	public void chargePayerServiceFee() {
-		ledger.adjustBalance(payerId.toAccountId(), -serviceFee);
 		ledger.adjustBalance(dynamicProperties.fundingAccount(), +serviceFee);
+		totalCharged = serviceFee;
+		ledger.adjustBalance(payerId.toAccountId(), -totalCharged);
 	}
 
 	@Override
 	public void chargePayerNetworkAndUpToNodeFee() {
-		if (startingPayerBalance == UNKNOWN_ACCOUNT_BALANCE) {
-			initPayerBalance();
+		if (effPayerStartingBalance == UNKNOWN_ACCOUNT_BALANCE) {
+			initEffPayerBalance(payerId);
 		}
-		long chargeableNodeFee = Math.min(nodeFee, startingPayerBalance - networkFee);
-		ledger.adjustBalance(payerId.toAccountId(), -(networkFee + chargeableNodeFee));
+		long chargeableNodeFee = Math.min(nodeFee, effPayerStartingBalance - networkFee);
 		ledger.adjustBalance(nodeId.toAccountId(), +chargeableNodeFee);
 		ledger.adjustBalance(dynamicProperties.fundingAccount(), +networkFee);
+		totalCharged = networkFee + chargeableNodeFee;
+		ledger.adjustBalance(payerId.toAccountId(), -totalCharged);
 	}
 
 	@Override
 	public void chargeSubmittingNodeUpToNetworkFee() {
-
+		if (effPayerStartingBalance == UNKNOWN_ACCOUNT_BALANCE) {
+			initEffPayerBalance(nodeId);
+		}
+		long chargeableNetworkFee = Math.min(networkFee, effPayerStartingBalance);
+		ledger.adjustBalance(nodeId.toAccountId(), -chargeableNetworkFee);
+		ledger.adjustBalance(dynamicProperties.fundingAccount(), +chargeableNetworkFee);
 	}
 
-	private void initPayerBalance() {
-		final var payerAccount = accounts.get().get(payerId);
+	private void initEffPayerBalance(MerkleEntityId effPayerId) {
+		final var payerAccount = accounts.get().get(effPayerId);
 		if (payerAccount == null) {
-			throw new IllegalStateException("Invariant failure, payer account "
-					+ Optional.ofNullable(payerId).map(MerkleEntityId::toAbbrevString).orElse("null")
+			throw new IllegalStateException("Invariant failure, effective payer account "
+					+ Optional.ofNullable(effPayerId).map(MerkleEntityId::toAbbrevString).orElse("null")
 					+ " is missing!");
 		}
-		startingPayerBalance = payerAccount.getBalance();
+		effPayerStartingBalance = payerAccount.getBalance();
 	}
 }

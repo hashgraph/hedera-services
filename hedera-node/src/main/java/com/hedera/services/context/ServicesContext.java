@@ -101,7 +101,8 @@ import com.hedera.services.fees.calculation.token.txns.TokenRevokeKycResourceUsa
 import com.hedera.services.fees.calculation.token.txns.TokenUnfreezeResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
-import com.hedera.services.fees.charging.ItemizableFeeCharging;
+import com.hedera.services.fees.charging.NarratedCharging;
+import com.hedera.services.fees.charging.NarratedLedgerCharging;
 import com.hedera.services.fees.charging.TxnFeeChargingPolicy;
 import com.hedera.services.files.DataMapFactory;
 import com.hedera.services.files.EntityExpiryMapFactory;
@@ -489,6 +490,7 @@ public class ServicesContext {
 	private FreezeController freezeGrpc;
 	private BalancesExporter balancesExporter;
 	private SysFileCallbacks sysFileCallbacks;
+	private NarratedCharging narratedCharging;
 	private NetworkCtxManager networkCtxManager;
 	private SolidityLifecycle solidityLifecycle;
 	private ExpiringCreations creator;
@@ -530,7 +532,6 @@ public class ServicesContext {
 	private HfsSystemFilesManager systemFilesManager;
 	private CurrentPlatformStatus platformStatus;
 	private SystemAccountsCreator systemAccountsCreator;
-	private ItemizableFeeCharging itemizableFeeCharging;
 	private ServicesRepositoryRoot repository;
 	private CharacteristicsFactory characteristics;
 	private AccountRecordsHistorian recordsHistorian;
@@ -838,16 +839,6 @@ public class ServicesContext {
 			txnThrottling = new TransactionThrottling(hapiThrottling());
 		}
 		return txnThrottling;
-	}
-
-	public ItemizableFeeCharging charging() {
-		if (itemizableFeeCharging == null) {
-			itemizableFeeCharging = new ItemizableFeeCharging(
-					ledger(),
-					exemptions(),
-					globalDynamicProperties());
-		}
-		return itemizableFeeCharging;
 	}
 
 	public SubmissionFlow submissionFlow() {
@@ -1512,6 +1503,14 @@ public class ServicesContext {
 		return entityAutoRenewal;
 	}
 
+	public NarratedCharging narratedCharging() {
+		if (narratedCharging == null) {
+			narratedCharging = new NarratedLedgerCharging(
+					nodeInfo(), ledger(), globalDynamicProperties(), this::accounts);
+		}
+		return narratedCharging;
+	}
+
 	public ExpiryManager expiries() {
 		if (expiries == null) {
 			var histories = txnHistories();
@@ -1918,7 +1917,7 @@ public class ServicesContext {
 
 	public TxnFeeChargingPolicy txnChargingPolicy() {
 		if (txnChargingPolicy == null) {
-			txnChargingPolicy = new TxnFeeChargingPolicy();
+			txnChargingPolicy = new TxnFeeChargingPolicy(narratedCharging());
 		}
 		return txnChargingPolicy;
 	}
