@@ -82,7 +82,7 @@ class ExpiringCreationsTest {
 		given(dynamicProperties.cacheRecordsTtl()).willReturn(cacheTtl);
 
 		// when:
-		var actual = record;
+		var actual = subject.createExpiringRecord(effPayer, record, now, submittingMember);;
 
 		// then:
 		verify(recordCache).trackForExpiry(expectedRecord);
@@ -103,7 +103,7 @@ class ExpiringCreationsTest {
 		given(dynamicProperties.cacheRecordsTtl()).willReturn(cacheTtl);
 
 		// when:
-		var actual = record;
+		var actual = subject.createExpiringRecord(effPayer, record, now, submittingMember);;
 
 		// then:
 		assertEquals(expectedRecord, actual);
