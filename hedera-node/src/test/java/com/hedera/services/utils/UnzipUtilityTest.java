@@ -43,7 +43,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 
 @ExtendWith({ LogCaptureExtension.class, MockitoExtension.class })
@@ -65,10 +64,11 @@ class UnzipUtilityTest {
 			ctor.setAccessible(true);
 
 			ctor.newInstance();
-		} catch (IllegalStateException e) {
-			assertEquals("UnzipUtility is an utility class. Shouldn't create any instance!", e.getMessage());
 		} catch (Exception e) {
-			Assertions.fail("Should have been an IllegalStateException, was " + e.getClass().getSimpleName());
+			final var cause = e.getCause();
+			assertEquals(
+					"UnzipUtility is an utility class. Shouldn't create any instance!",
+					cause.getMessage());
 		}
 	}
 
