@@ -237,6 +237,8 @@ public class StateView {
 			}
 			var token = tokenStore.get(id);
 			var info = TokenInfo.newBuilder()
+					.setTokenTypeValue(token.tokenType().ordinal())
+					.setSupplyTypeValue(token.supplyType().ordinal())
 					.setTokenId(id)
 					.setDeleted(token.isDeleted())
 					.setSymbol(token.symbol())
@@ -244,6 +246,7 @@ public class StateView {
 					.setMemo(token.memo())
 					.setTreasury(token.treasury().toGrpcAccountId())
 					.setTotalSupply(token.totalSupply())
+					.setMaxSupply(token.maxSupply())
 					.setDecimals(token.decimals())
 					.setExpiry(Timestamp.newBuilder().setSeconds(token.expiry()));
 

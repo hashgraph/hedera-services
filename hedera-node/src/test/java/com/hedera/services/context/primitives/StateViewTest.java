@@ -49,6 +49,8 @@ import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.AfterEach;
@@ -183,6 +185,8 @@ class StateViewTest {
 				Long.MAX_VALUE, 100, 1,
 				"UnfrozenToken", "UnfrozenTokenName", true, true,
 				new EntityId(1, 2, 3));
+		token.setTokenType(TokenType.FUNGIBLE_COMMON_VALUE);
+		token.setSupplyType(TokenSupplyType.INFINITE_VALUE);
 		token.setMemo(tokenMemo);
 		token.setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey());
 		token.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asJKey());
@@ -399,6 +403,8 @@ class StateViewTest {
 		assertEquals(Timestamp.newBuilder().setSeconds(expiry).build(), info.getExpiry());
 		assertEquals(TokenFreezeStatus.Frozen, info.getDefaultFreezeStatus());
 		assertEquals(TokenKycStatus.Granted, info.getDefaultKycStatus());
+		assertEquals(TokenType.FUNGIBLE_COMMON, info.getTokenType());
+		assertEquals(TokenSupplyType.INFINITE, info.getSupplyType());
 	}
 
 	@Test
