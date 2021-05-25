@@ -22,6 +22,7 @@ package com.hedera.services.state.merkle;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
@@ -56,6 +57,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 	public static final int UPPER_BOUND_TOKEN_NAME_UTF8_BYTES = 1024;
 
 	private TokenType tokenType;
+	private TokenSupplyType supplyType;
 	private int decimals;
 	private long expiry;
 	private long maxSupply;
@@ -111,6 +113,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 
 		var that = (MerkleToken) o;
 		return this.tokenType == that.tokenType &&
+				this.supplyType == that.supplyType &&
 				this.expiry == that.expiry &&
 				this.autoRenewPeriod == that.autoRenewPeriod &&
 				this.deleted == that.deleted &&
@@ -135,6 +138,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 	public int hashCode() {
 		return Objects.hash(
 				tokenType,
+				supplyType,
 				expiry,
 				deleted,
 				maxSupply,
@@ -160,6 +164,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 	public String toString() {
 		return MoreObjects.toStringHelper(MerkleToken.class)
 				.add("tokenType", tokenType)
+				.add("supplyType", supplyType)
 				.add("deleted", deleted)
 				.add("expiry", expiry)
 				.add("symbol", symbol)
@@ -219,10 +224,14 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 		}
 		if (version >= RELEASE_0140_VERSION) {
 			tokenType = TokenType.values()[in.readInt()];
+			supplyType = TokenSupplyType.values()[in.readInt()];
 			maxSupply = in.readLong();
 		}
 		if (tokenType == null) {
 			tokenType = TokenType.FUNGIBLE_COMMON;
+		}
+		if (supplyType == null) {
+			supplyType = TokenSupplyType.INFINITE;
 		}
 	}
 
@@ -246,6 +255,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 		serdes.writeNullable(wipeKey, out, serdes::serializeKey);
 		out.writeNormalisedString(memo);
 		out.writeInt(tokenType.ordinal());
+		out.writeInt(supplyType.ordinal());
 		out.writeLong(maxSupply);
 	}
 
@@ -266,6 +276,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 		fc.setAutoRenewPeriod(autoRenewPeriod);
 		fc.setAutoRenewAccount(autoRenewAccount);
 		fc.setTokenType(tokenType);
+		fc.setSupplyType(supplyType);
 		fc.setMaxSupply(maxSupply);
 		if (adminKey != UNUSED_KEY) {
 			fc.setAdminKey(adminKey);
@@ -456,6 +467,12 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 	public void setTokenType(int tokenTypeInt) {
 		this.tokenType = TokenType.values()[tokenTypeInt];
 	}
+
+	public TokenSupplyType supplyType() { return supplyType; }
+
+	public void setSupplyType(TokenSupplyType supplyType) { this.supplyType = supplyType; }
+
+	public void setSupplyType(int supplyTypeInt) { this.supplyType = TokenSupplyType.values()[supplyTypeInt]; }
 
 	public long maxSupply() {
 		return maxSupply;

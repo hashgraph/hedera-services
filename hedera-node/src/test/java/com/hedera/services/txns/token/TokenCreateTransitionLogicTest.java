@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
@@ -561,6 +562,7 @@ class TokenCreateTransitionLogicTest {
 	private void givenInvalidInitialSupplyWithMaxSupply() {
 		tokenCreateTxn = TransactionBody.newBuilder()
 				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
+						.setSupplyType(TokenSupplyType.FINITE)
 						.setInitialSupply(initialSupply)
 						.setMaxSupply(initialSupply - 1))
 				.build();

@@ -29,6 +29,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
+import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
@@ -228,7 +229,9 @@ class HederaTokenStoreTest {
 		subject = new HederaTokenStore(ids, TEST_VALIDATOR, properties, () -> tokens, tokenRelsLedger);
 		subject.setAccountsLedger(accountsLedger);
 		subject.setHederaLedger(hederaLedger);
-		subject.knownTreasuries.put(treasury, new HashSet<>() {{ add(misc); }});
+		subject.knownTreasuries.put(treasury, new HashSet<>() {{
+			add(misc);
+		}});
 	}
 
 	@Test
@@ -244,7 +247,7 @@ class HederaTokenStoreTest {
 		// then:
 		verify(tokens, times(2)).forEach(captor.capture());
 		// and:
-		BiConsumer<MerkleEntityId,  MerkleToken> visitor = captor.getAllValues().get(1);
+		BiConsumer<MerkleEntityId, MerkleToken> visitor = captor.getAllValues().get(1);
 
 		// and when:
 		visitor.accept(fromTokenId(misc), token);
@@ -1096,7 +1099,7 @@ class HederaTokenStoreTest {
 	public void isTreasuryForTokenReturnsFalse() {
 		// setup:
 		subject.knownTreasuries.clear();
-		
+
 		// expect:
 		assertFalse(subject.isTreasuryForToken(treasury, misc));
 	}
@@ -1504,7 +1507,7 @@ class HederaTokenStoreTest {
 		given(token.isDeleted()).willReturn(true);
 
 		// when:
-		var status = subject.wipe(sponsor, misc, adjustment,false);
+		var status = subject.wipe(sponsor, misc, adjustment, false);
 
 		// then:
 		assertEquals(ResponseCodeEnum.TOKEN_WAS_DELETED, status);
@@ -1737,6 +1740,7 @@ class HederaTokenStoreTest {
 				accountsKycGrantedByDefault,
 				new EntityId(treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
 		expected.setTokenType(TokenType.FUNGIBLE_COMMON);
+		expected.setSupplyType(TokenSupplyType.INFINITE);
 		expected.setAutoRenewAccount(EntityId.fromGrpcAccountId(autoRenewAccount));
 		expected.setAutoRenewPeriod(autoRenewPeriod);
 		expected.setAdminKey(TOKEN_ADMIN_KT.asJKeyUnchecked());
@@ -1778,6 +1782,7 @@ class HederaTokenStoreTest {
 				accountsKycGrantedByDefault,
 				new EntityId(treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
 		expected.setTokenType(TokenType.FUNGIBLE_COMMON);
+		expected.setSupplyType(TokenSupplyType.INFINITE);
 		expected.setAdminKey(TOKEN_ADMIN_KT.asJKeyUnchecked());
 		expected.setFreezeKey(TOKEN_FREEZE_KT.asJKeyUnchecked());
 		expected.setKycKey(TOKEN_KYC_KT.asJKeyUnchecked());
@@ -1894,6 +1899,7 @@ class HederaTokenStoreTest {
 	TokenCreateTransactionBody.Builder fullyValidAttempt() {
 		return TokenCreateTransactionBody.newBuilder()
 				.setTokenType(com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON)
+				.setSupplyType(com.hederahashgraph.api.proto.java.TokenSupplyType.INFINITE)
 				.setExpiry(Timestamp.newBuilder().setSeconds(expiry))
 				.setMemo(memo)
 				.setAdminKey(adminKey)

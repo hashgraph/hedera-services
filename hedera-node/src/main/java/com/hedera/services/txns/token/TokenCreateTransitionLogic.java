@@ -36,7 +36,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.txns.validation.TokenListChecks.checkKeys;
-import static com.hedera.services.txns.validation.TokenListChecks.typeAndSuppliesCheck;
+import static com.hedera.services.txns.validation.TokenListChecks.suppliesCheck;
+import static com.hedera.services.txns.validation.TokenListChecks.supplyTypeCheck;
+import static com.hedera.services.txns.validation.TokenListChecks.typeCheck;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
@@ -153,7 +155,17 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			return validity;
 		}
 
-		validity = typeAndSuppliesCheck(op.getTokenType(), op.getInitialSupply(), op.getDecimals(), op.getMaxSupply());
+		validity = typeCheck(op.getTokenType(), op.getInitialSupply(), op.getDecimals());
+		if (validity != OK) {
+			return validity;
+		}
+
+		validity = supplyTypeCheck(op.getSupplyType(), op.getMaxSupply());
+		if (validity != OK) {
+			return validity;
+		}
+
+		validity = suppliesCheck(op.getInitialSupply(), op.getMaxSupply());
 		if (validity != OK) {
 			return validity;
 		}

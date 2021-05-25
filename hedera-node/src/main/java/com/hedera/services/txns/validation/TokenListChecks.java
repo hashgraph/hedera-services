@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
 
 import java.util.HashSet;
 import java.util.List;
@@ -103,18 +104,18 @@ public class TokenListChecks {
 		return OK;
 	}
 
-	public static ResponseCodeEnum typeAndSuppliesCheck(TokenType type, long initialSupply, int decimals, long maxSupply) {
+	public static ResponseCodeEnum typeCheck(TokenType type, long initialSupply, int decimals) {
 		switch (type) {
 			case FUNGIBLE_COMMON:
-				return fungibleCommonTypeCheck(initialSupply, decimals, maxSupply);
+				return fungibleCommonTypeCheck(initialSupply, decimals);
 			case NON_FUNGIBLE_UNIQUE:
-				return nonFungibleUniqueCheck(initialSupply, decimals, maxSupply);
+				return nonFungibleUniqueCheck(initialSupply, decimals);
 			default:
 				return NOT_SUPPORTED;
 		}
 	}
 
-	public static ResponseCodeEnum nonFungibleUniqueCheck(long initialSupply, int decimals, long maxSupply) {
+	public static ResponseCodeEnum nonFungibleUniqueCheck(long initialSupply, int decimals) {
 		if (initialSupply != 0) {
 			return INVALID_TOKEN_INITIAL_SUPPLY;
 		}
@@ -122,27 +123,31 @@ public class TokenListChecks {
 		return decimals != 0 ? INVALID_TOKEN_DECIMALS : OK;
 	}
 
-	public static ResponseCodeEnum fungibleCommonTypeCheck(long initialSupply, int decimals, long maxSupply) {
+	public static ResponseCodeEnum fungibleCommonTypeCheck(long initialSupply, int decimals) {
 		if (initialSupply < 0) {
 			return INVALID_TOKEN_INITIAL_SUPPLY;
 		}
-		if (decimals < 0) {
-			return INVALID_TOKEN_DECIMALS;
-		}
 
-		return initialSupplyAndMaxSupplyCheck(initialSupply, maxSupply);
+		return decimals < 0 ? INVALID_TOKEN_DECIMALS : OK;
 	}
 
-	public static ResponseCodeEnum initialSupplyAndMaxSupplyCheck(long initialSupply, long maxSupply) {
-		if (maxSupply < 0) {
-			return INVALID_TOKEN_MAX_SUPPLY;
-		}
-
+	public static ResponseCodeEnum suppliesCheck(long initialSupply, long maxSupply) {
 		if (maxSupply > 0 && initialSupply > maxSupply) {
 			return INVALID_TOKEN_INITIAL_SUPPLY;
 		}
 
 		return OK;
+	}
+
+	public static ResponseCodeEnum supplyTypeCheck(TokenSupplyType supplyType, long maxSupply) {
+		switch (supplyType) {
+			case INFINITE:
+				return maxSupply != 0 ? INVALID_TOKEN_MAX_SUPPLY : OK;
+			case FINITE:
+				return maxSupply <= 0 ? INVALID_TOKEN_MAX_SUPPLY : OK;
+			default:
+				return NOT_SUPPORTED;
+		}
 	}
 
 	public static ResponseCodeEnum checkKeys(

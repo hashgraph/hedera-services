@@ -432,6 +432,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				kycKey.isEmpty(),
 				fromGrpcAccountId(request.getTreasury()));
 		pendingCreation.setTokenType(request.getTokenTypeValue());
+		pendingCreation.setSupplyType(request.getSupplyTypeValue());
 		pendingCreation.setMemo(request.getMemo());
 		pendingCreation.setMaxSupply(request.getMaxSupply());
 		adminKey.ifPresent(pendingCreation::setAdminKey);

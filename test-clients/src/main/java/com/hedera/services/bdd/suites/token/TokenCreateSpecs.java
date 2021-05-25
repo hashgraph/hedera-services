@@ -27,6 +27,7 @@ import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -323,6 +324,18 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.maxSupply(-1)
 								.hasPrecheck(INVALID_TOKEN_MAX_SUPPLY),
 						tokenCreate("primary")
+								.maxSupply(1)
+								.hasPrecheck(INVALID_TOKEN_MAX_SUPPLY),
+						tokenCreate("primary")
+								.supplyType(TokenSupplyType.FINITE)
+								.maxSupply(0)
+								.hasPrecheck(INVALID_TOKEN_MAX_SUPPLY),
+						tokenCreate("primary")
+								.supplyType(TokenSupplyType.FINITE)
+								.maxSupply(-1)
+								.hasPrecheck(INVALID_TOKEN_MAX_SUPPLY),
+						tokenCreate("primary")
+								.supplyType(TokenSupplyType.FINITE)
 								.initialSupply(2)
 								.maxSupply(1)
 								.hasPrecheck(INVALID_TOKEN_INITIAL_SUPPLY)
