@@ -125,7 +125,7 @@ class MerkleNetworkContextTest {
 				lastScannedEntity,
 				midnightRateSet,
 				usageSnapshots,
-				richCongestionStarts(),
+				congestionStarts(),
 				stateVersion,
 				entitiesScannedThisSecond,
 				entitiesTouchedThisSecond);
@@ -263,6 +263,20 @@ class MerkleNetworkContextTest {
 	}
 
 	@Test
+	void updatesNullCongestionLevelStartsAsExpected() {
+		// setup:
+		feeMultiplierSource = mock(FeeMultiplierSource.class);
+
+		given(feeMultiplierSource.congestionLevelStarts()).willReturn(null);
+
+		// when:
+		subject.updateCongestionStartsFrom(feeMultiplierSource);
+
+		// then:
+		assertEquals(NO_CONGESTION_STARTS, subject.getCongestionLevelStarts());
+	}
+
+	@Test
 	void updatesSnapshotsAsExpected() {
 		// setup:
 		var aThrottle = DeterministicThrottle.withTpsAndBurstPeriod(5, 2);
@@ -300,7 +314,7 @@ class MerkleNetworkContextTest {
 		subject.updateCongestionStartsFrom(feeMultiplierSource);
 
 		// then:
-		assertArrayEquals(richCongestionStarts(), subject.getCongestionLevelStarts());
+		assertArrayEquals(congestionStarts(), subject.getCongestionLevelStarts());
 	}
 
 	@Test
@@ -431,7 +445,7 @@ class MerkleNetworkContextTest {
 		// then:
 		assertEquals(consensusTimeOfLastHandledTxn, subject.getConsensusTimeOfLastHandledTxn());
 		assertSame(usageSnapshots, subject.usageSnapshots());
-		assertArrayEquals(richCongestionStarts(), subject.getCongestionLevelStarts());
+		assertArrayEquals(congestionStarts(), subject.getCongestionLevelStarts());
 		// and:
 		inOrder.verify(seqNo).deserialize(in);
 		inOrder.verify(in).readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class));
@@ -466,7 +480,7 @@ class MerkleNetworkContextTest {
 		// then:
 		assertEquals(consensusTimeOfLastHandledTxn, subject.getConsensusTimeOfLastHandledTxn());
 		assertArrayEquals(usageSnapshots, subject.usageSnapshots());
-		assertArrayEquals(richCongestionStarts(), subject.getCongestionLevelStarts());
+		assertArrayEquals(congestionStarts(), subject.getCongestionLevelStarts());
 		// and:
 		inOrder.verify(seqNo).deserialize(in);
 		inOrder.verify(in).readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class));
@@ -509,7 +523,7 @@ class MerkleNetworkContextTest {
 		assertEquals(entitiesScannedThisSecond, subject.getEntitiesScannedThisSecond());
 		assertEquals(entitiesTouchedThisSecond, subject.getEntitiesTouchedThisSecond());
 		assertArrayEquals(usageSnapshots, subject.usageSnapshots());
-		assertArrayEquals(richCongestionStarts(), subject.getCongestionLevelStarts());
+		assertArrayEquals(congestionStarts(), subject.getCongestionLevelStarts());
 		// and:
 		inOrder.verify(seqNo).deserialize(in);
 		inOrder.verify(in).readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class));
@@ -589,7 +603,7 @@ class MerkleNetworkContextTest {
 		// and:
 		inOrder.verify(out).writeInt(2);
 		for (int i = 0; i < 2; i++) {
-			inOrder.verify(serdes).writeNullableInstant(fromJava(richCongestionStarts()[i]), out);
+			inOrder.verify(serdes).writeNullableInstant(fromJava(congestionStarts()[i]), out);
 		}
 		inOrder.verify(out).writeLong(lastScannedEntity);
 		inOrder.verify(out).writeLong(entitiesScannedThisSecond);
@@ -650,7 +664,7 @@ class MerkleNetworkContextTest {
 		return cur;
 	}
 
-	private Instant[] richCongestionStarts() {
+	private Instant[] congestionStarts() {
 		return congestionStarts;
 	}
 }
