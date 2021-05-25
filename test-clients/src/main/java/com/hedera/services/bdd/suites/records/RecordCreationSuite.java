@@ -82,11 +82,11 @@ public class RecordCreationSuite extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
-//						payerRecordCreationSanityChecks(),
-//						newlyCreatedContractNoLongerGetsRecord(),
-//						accountsGetPayerRecordsIfSoConfigured(),
-//						calledContractNoLongerGetsRecord(),
-//						thresholdRecordsDontExistAnymore(),
+						payerRecordCreationSanityChecks(),
+						newlyCreatedContractNoLongerGetsRecord(),
+						accountsGetPayerRecordsIfSoConfigured(),
+						calledContractNoLongerGetsRecord(),
+						thresholdRecordsDontExistAnymore(),
 						submittingNodeChargedNetworkFeeForLackOfDueDiligence(),
 						submittingNodeChargedNetworkFeeForIgnoringPayerUnwillingness(),
 						submittingNodeStillPaidIfServiceFeesOmitted(),

@@ -2091,7 +2091,6 @@ workflows:
             filters:
               branches:
                 ignore:
-                  - 01461-01459-SimplifyFeeCharging
                   - /.*-PERF/
             workflow-name: "Continuous-integration"
         - build-platform-and-services:

@@ -89,10 +89,6 @@ public class TxnIdRecentHistory {
 		}
 	}
 
-	public boolean isStagePending() {
-		return memory != null;
-	}
-
 	public boolean isForgotten() {
 		return areForgotten(classifiableRecords) && areForgotten(unclassifiableRecords);
 	}
