@@ -21,6 +21,7 @@ package com.hedera.services;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.PropertySources;
@@ -51,6 +52,7 @@ import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.txns.ProcessLogic;
+import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.SystemExits;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -134,6 +136,7 @@ class ServicesStateTest {
 	BinaryObjectStore blobStore;
 	Instant now = Instant.now();
 	Transaction platformTxn;
+	PlatformTxnAccessor txnAccessor;
 	Address address;
 	AddressBook book;
 	AddressBook bookCopy;
@@ -195,6 +198,7 @@ class ServicesStateTest {
 		out = mock(SerializableDataOutputStream.class);
 		in = mock(SerializableDataInputStream.class);
 		platformTxn = mock(Transaction.class);
+		txnAccessor = mock(PlatformTxnAccessor.class);
 
 		address = mock(Address.class);
 		given(address.getMemo()).willReturn("0.0.3");
@@ -724,7 +728,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void doesNothingIfNotConsensus() {
+	public void doesNothingIfNotConsensus() throws InvalidProtocolBufferException {
 		// setup:
 		subject.ctx = ctx;
 
@@ -732,11 +736,11 @@ class ServicesStateTest {
 		subject.handleTransaction(1, false, now, now, platformTxn);
 
 		// then:
-		verify(logic, never()).incorporateConsensusTxn(platformTxn, now, 1);
+		verify(logic, never()).incorporateConsensusTxn(platformTxn, null, now, 1);
 	}
 
 	@Test
-	void incorporatesConsensus() {
+	public void incorporatesConsensus() throws InvalidProtocolBufferException {
 		// setup:
 		subject.ctx = ctx;
 
@@ -744,7 +748,7 @@ class ServicesStateTest {
 		subject.handleTransaction(1, true, now, now, platformTxn);
 
 		// then:
-		verify(logic).incorporateConsensusTxn(platformTxn, now, 1);
+		verify(logic).incorporateConsensusTxn(platformTxn, null, now, 1);
 	}
 
 	@Test

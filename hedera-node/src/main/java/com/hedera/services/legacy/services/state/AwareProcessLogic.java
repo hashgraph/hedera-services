@@ -35,6 +35,7 @@ import com.hederahashgraph.fee.FeeObject;
 import com.swirlds.common.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
 import java.util.EnumSet;
@@ -85,30 +86,31 @@ public class AwareProcessLogic implements ProcessLogic {
 	}
 
 	@Override
-	public void incorporateConsensusTxn(Transaction platformTxn, Instant consensusTime, long submittingMember) {
-		try {
-			final var accessor = new PlatformTxnAccessor(platformTxn);
-			Instant effectiveConsensusTime = consensusTime;
-			if (accessor.canTriggerTxn()) {
-				effectiveConsensusTime = consensusTime.minusNanos(1);
-			}
-
-			if (!ctx.invariants().holdFor(accessor, effectiveConsensusTime, submittingMember)) {
-				return;
-			}
-
-			ctx.expiries().purge(effectiveConsensusTime.getEpochSecond());
-
-			txnManager.process(accessor, effectiveConsensusTime, submittingMember, ctx);
-			final var triggeredAccessor = ctx.txnCtx().triggeredTxn();
-			if (triggeredAccessor != null) {
-				txnManager.process(triggeredAccessor, consensusTime, submittingMember, ctx);
-			}
-
-			ctx.entityAutoRenewal().execute(consensusTime);
-		} catch (InvalidProtocolBufferException e) {
-			log.warn("Consensus platform txn was not gRPC!", e);
+	public void incorporateConsensusTxn(Transaction platformTxn,
+										PlatformTxnAccessor accessor,
+										Instant consensusTime, long submittingMember) throws InvalidProtocolBufferException{
+		if(accessor == null){
+			throw new InvalidProtocolBufferException("The PlatformTxnAccessor is not defined.");
 		}
+
+		Instant effectiveConsensusTime = consensusTime;
+		if (accessor.canTriggerTxn()) {
+			effectiveConsensusTime = consensusTime.minusNanos(1);
+		}
+
+		if (!ctx.invariants().holdFor(accessor, effectiveConsensusTime, submittingMember)) {
+			return;
+		}
+
+		ctx.expiries().purge(effectiveConsensusTime.getEpochSecond());
+
+		txnManager.process(accessor, effectiveConsensusTime, submittingMember, ctx);
+		final var triggeredAccessor = ctx.txnCtx().triggeredTxn();
+		if (triggeredAccessor != null) {
+			txnManager.process(triggeredAccessor, consensusTime, submittingMember, ctx);
+		}
+
+		ctx.entityAutoRenewal().execute(consensusTime);
 	}
 
 	private void processTxnInCtx() {

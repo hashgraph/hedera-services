@@ -20,7 +20,10 @@ package com.hedera.services.txns;
  * ‍
  */
 
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.utils.PlatformTxnAccessor;
 import com.swirlds.common.Transaction;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
 
@@ -42,8 +45,12 @@ public interface ProcessLogic {
 	 * consensus transaction at the specified time.
 	 *
 	 * @param platformTxn the consensus transaction to incorporate.
+	 * @param txnAccessor the accessor to various referenced parts of hedera services gRPC platformTxn
 	 * @param consensusTime the authoritative time of consensus.
 	 * @param submittingMember the id of the member that submitted the txn
 	 */
-	void incorporateConsensusTxn(Transaction platformTxn, Instant consensusTime, long submittingMember);
+	void incorporateConsensusTxn(Transaction platformTxn,
+								 PlatformTxnAccessor txnAccessor,
+								 Instant consensusTime,
+								 long submittingMember) throws InvalidProtocolBufferException;
 }

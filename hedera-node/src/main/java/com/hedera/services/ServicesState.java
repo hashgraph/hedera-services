@@ -115,6 +115,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	ServicesContext ctx;
+	private PlatformTxnAccessor txnAccessor;
 
 	public ServicesState() {
 	}
@@ -294,6 +295,14 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		}
 	}
 
+	protected void setPlatformTxnAccessor(Transaction platformTxn){
+		try{
+			txnAccessor = new PlatformTxnAccessor(platformTxn);
+		} catch (InvalidProtocolBufferException e) {
+			log.warn("expandSignatures called with non-gRPC txn!", e);
+		}
+	}
+
 	@Override
 	public AddressBook getAddressBookCopy() {
 		return addressBook().copy();
@@ -307,22 +316,24 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			Instant consensusTime,
 			com.swirlds.common.Transaction transaction
 	) {
-		if (isConsensus) {
-			ctx.logic().incorporateConsensusTxn(transaction, consensusTime, submittingMember);
+		try{
+			if (isConsensus) {
+				ctx.logic().incorporateConsensusTxn(transaction, txnAccessor, consensusTime, submittingMember);
+			}
+		} catch (InvalidProtocolBufferException exception) {
+			log.warn("Consensus platform txn was not gRPC!");
 		}
 	}
 
 	@Override
 	public void expandSignatures(Transaction platformTxn) {
 		try {
-			var accessor = new PlatformTxnAccessor(platformTxn);
+			setPlatformTxnAccessor(platformTxn);
 			expandIn(
-					accessor,
+					txnAccessor,
 					ctx.lookupRetryingKeyOrder(),
-					new ScopedSigBytesProvider(accessor),
+					new ScopedSigBytesProvider(txnAccessor),
 					ctx.sigFactoryCreator()::createScopedFactory);
-		} catch (InvalidProtocolBufferException e) {
-			log.warn("expandSignatures called with non-gRPC txn!", e);
 		} catch (Exception race) {
 			log.warn("Unexpected problem, signatures will be verified synchronously in handleTransaction!", race);
 		}

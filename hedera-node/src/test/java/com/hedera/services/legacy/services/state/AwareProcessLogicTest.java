@@ -21,6 +21,7 @@ package com.hedera.services.legacy.services.state;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.FeeCalculator;
@@ -54,6 +55,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.Transaction;
 import com.swirlds.common.crypto.RunningHash;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -82,6 +84,7 @@ class AwareProcessLogicTest {
 	private ServicesContext ctx;
 	private ExpiryManager expiryManager;
 	private TransactionContext txnCtx;
+	private PlatformTxnAccessor accessor;
 
 	private AwareProcessLogic subject;
 
@@ -106,6 +109,7 @@ class AwareProcessLogicTest {
 
 		invariantChecks = mock(InvariantChecks.class);
 		expiryManager = mock(ExpiryManager.class);
+		accessor = mock(PlatformTxnAccessor.class);
 
 		txnCtx = mock(TransactionContext.class);
 
@@ -158,34 +162,35 @@ class AwareProcessLogicTest {
 	}
 
 	@Test
-	void shortCircuitsOnInvariantFailure() {
+	void shortCircuitsOnInvariantFailure() throws InvalidProtocolBufferException {
 		setupNonTriggeringTxn();
-
+		given(accessor.canTriggerTxn()).willReturn(false);
 		given(invariantChecks.holdFor(any(), eq(consensusNow), eq(666L))).willReturn(false);
 
 		// when:
-		subject.incorporateConsensusTxn(platformTxn, consensusNow, 666);
+		subject.incorporateConsensusTxn(platformTxn, accessor, consensusNow, 666);
 
 		// then:
 		verify(expiryManager, never()).purge(consensusNow.getEpochSecond());
 	}
 
 	@Test
-	void purgesExpiredAtNewConsensusTimeIfInvariantsHold() {
+	void purgesExpiredAtNewConsensusTimeIfInvariantsHold() throws InvalidProtocolBufferException{
 		setupNonTriggeringTxn();
-
+		given(accessor.canTriggerTxn()).willReturn(false);
 		given(invariantChecks.holdFor(any(), eq(consensusNow), eq(666L))).willReturn(true);
 
 		// when:
-		subject.incorporateConsensusTxn(platformTxn, consensusNow, 666);
+		subject.incorporateConsensusTxn(platformTxn, accessor, consensusNow, 666);
 
 		// then:
 		verify(expiryManager).purge(consensusNow.getEpochSecond());
 	}
 
 	@Test
-	void decrementsParentConsensusTimeIfCanTrigger() {
+	void decrementsParentConsensusTimeIfCanTrigger() throws InvalidProtocolBufferException{
 		setupTriggeringTxn();
+		given(accessor.canTriggerTxn()).willReturn(true);
 		// and:
 		final var triggeredTxn = mock(TxnAccessor.class);
 
@@ -193,11 +198,21 @@ class AwareProcessLogicTest {
 		given(invariantChecks.holdFor(any(), eq(consensusNow.minusNanos(1L)), eq(666L))).willReturn(true);
 
 		// when:
-		subject.incorporateConsensusTxn(platformTxn, consensusNow, 666);
+		subject.incorporateConsensusTxn(platformTxn, accessor, consensusNow, 666);
 
 		// then:
 		verify(expiryManager).purge(consensusNow.minusNanos(1L).getEpochSecond());
 		verify(triggeredTxn).isTriggeredTxn();
+	}
+
+	@Test
+	void invalidPlatformTxnAccessorThrowsException(){
+		setupNonTriggeringTxn();
+
+		//when
+		Assertions.assertThrows(InvalidProtocolBufferException.class,
+				() -> subject.incorporateConsensusTxn(platformTxn, null, consensusNow, 007),
+				"Should throw InvalidProtocolBufferException");
 	}
 
 	@Test
