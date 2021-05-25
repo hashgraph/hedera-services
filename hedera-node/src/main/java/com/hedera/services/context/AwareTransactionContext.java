@@ -131,7 +131,7 @@ public class AwareTransactionContext implements TransactionContext {
 		hasComputedRecordSoFar = false;
 
 		ctx.charging().resetFor(accessor, submittingNodeAccount());
-		recordSoFar.clear();
+		recordSoFar = new ExpirableTxnRecord();
 	}
 
 	@Override
@@ -176,8 +176,8 @@ public class AwareTransactionContext implements TransactionContext {
 			logItemized();
 		}
 
-		List<EntityId> tokens = null;
-		List<CurrencyAdjustments> tokenAdjustments = null;
+		List<EntityId> tokens = new ArrayList<>();
+		List<CurrencyAdjustments> tokenAdjustments = new ArrayList<>();
 		if (tokenTransferList.size() > 0) {
 			for (TokenTransferList tokenTransfers : tokenTransferList) {
 				tokens.add(EntityId.fromGrpcTokenId(tokenTransfers.getToken()));
@@ -185,7 +185,7 @@ public class AwareTransactionContext implements TransactionContext {
 			}
 		}
 
-		ExpirableTxnRecord rec = new ExpirableTxnRecord(
+		recordSoFar = new ExpirableTxnRecord(
 				TxnReceipt.fromGrpc(receiptSoFar().build()),
 				hash.toByteArray(),
 				TxnId.fromGrpc(accessor.getTxnId()),
@@ -201,11 +201,7 @@ public class AwareTransactionContext implements TransactionContext {
 
 		recordConfig.accept(recordSoFar);
 		hasComputedRecordSoFar = true;
-		return rec;
-	}
-
-	private void createExpirableRecord(){
-
+		return recordSoFar;
 	}
 
 	private void logItemized() {

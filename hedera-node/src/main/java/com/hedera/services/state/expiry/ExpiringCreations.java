@@ -58,8 +58,6 @@ public class ExpiringCreations implements EntityCreator {
 			long now,
 			long submittingMember
 	) {
-		//var expiringRecord = ExpirableTxnRecord.fromGprc(record);
-
 		long expiry = now + dynamicProperties.cacheRecordsTtl();
 		expiringRecord.setExpiry(expiry);
 		expiringRecord.setSubmittingMember(submittingMember);

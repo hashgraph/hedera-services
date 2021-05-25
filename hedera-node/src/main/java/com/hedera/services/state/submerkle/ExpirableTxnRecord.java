@@ -119,6 +119,21 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 				NO_SCHEDULE_REF);
 	}
 
+	public ExpirableTxnRecord (Builder builder){
+		this.receipt = builder.receipt;
+		this.txnHash = builder.txnHash;
+		this.txnId = builder.txnId;
+		this.consensusTimestamp = builder.consensusTimestamp;
+		this.memo = builder.memo;
+		this.fee = builder.fee;
+		this.hbarAdjustments = builder.hbarAdjustments;
+		this.contractCallResult = builder.contractCallResult;
+		this.contractCreateResult = builder.contractCreateResult;
+		this.tokens = builder.tokens;
+		this.tokenAdjustments = builder.tokenAdjustments;
+		this.scheduleRef = builder.scheduleRef;
+	}
+
 	public ExpirableTxnRecord(
 			TxnReceipt receipt,
 			byte[] txnHash,
@@ -462,7 +477,124 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 		return grpc.build();
 	}
 
-	public void clear(){
+	public static Builder newBuilder(){
+		return new Builder();
+	}
 
+	public static class Builder {
+		private long expiry;
+		private long submittingMember;
+
+		private long fee;
+		private Hash hash;
+		private TxnId txnId;
+		private byte[] txnHash;
+		private String memo;
+		private TxnReceipt receipt;
+		private RichInstant consensusTimestamp;
+		private CurrencyAdjustments hbarAdjustments;
+		private SolidityFnResult contractCallResult;
+		private SolidityFnResult contractCreateResult;
+		private List<EntityId> tokens;
+		private List<CurrencyAdjustments> tokenAdjustments;
+		private EntityId scheduleRef;
+
+		public Builder setExpiry(long expiry) {
+			this.expiry = expiry;
+			return this;
+		}
+
+		public Builder setSubmittingMember(long submittingMember) {
+			this.submittingMember = submittingMember;
+			return this;
+		}
+
+		public Builder setFee(long fee) {
+			this.fee = fee;
+			return this;
+		}
+
+		public Builder setHash(Hash hash) {
+			this.hash = hash;
+			return this;
+		}
+
+		public Builder setTxnId(TxnId txnId) {
+			this.txnId = txnId;
+			return this;
+		}
+
+		public Builder setTxnHash(byte[] txnHash) {
+			this.txnHash = txnHash;
+			return this;
+		}
+
+		public Builder setMemo(String memo) {
+			this.memo = memo;
+			return this;
+		}
+
+		public Builder setReceipt(TxnReceipt receipt) {
+			this.receipt = receipt;
+			return this;
+		}
+
+		public Builder setConsensusTimestamp(RichInstant consensusTimestamp) {
+			this.consensusTimestamp = consensusTimestamp;
+			return this;
+		}
+
+		public Builder setHbarAdjustments(CurrencyAdjustments hbarAdjustments) {
+			this.hbarAdjustments = hbarAdjustments;
+			return this;
+		}
+
+		public Builder setContractCallResult(SolidityFnResult contractCallResult) {
+			this.contractCallResult = contractCallResult;
+			return this;
+		}
+
+		public Builder setContractCreateResult(SolidityFnResult contractCreateResult) {
+			this.contractCreateResult = contractCreateResult;
+			return this;
+		}
+
+		public Builder setTokens(List<EntityId> tokens) {
+			this.tokens = tokens;
+			return this;
+		}
+
+		public Builder setTokenAdjustments(List<CurrencyAdjustments> tokenAdjustments) {
+			this.tokenAdjustments = tokenAdjustments;
+			return this;
+		}
+
+		public Builder setScheduleRef(EntityId scheduleRef) {
+			this.scheduleRef = scheduleRef;
+			return this;
+		}
+
+		public ExpirableTxnRecord build(){
+			return new ExpirableTxnRecord(this);
+		}
+
+		public Builder clear(){
+			expiry = 0;
+			submittingMember = UNKNOWN_SUBMITTING_MEMBER;
+			fee = 0;
+			hash = new Hash();
+			txnId = null;
+			txnHash = MISSING_TXN_HASH;
+			memo = null;
+			receipt = null;
+			consensusTimestamp = null;
+			hbarAdjustments = null;
+			contractCallResult = null;
+			contractCreateResult = null;
+			tokens = NO_TOKENS;
+			tokenAdjustments = NO_TOKEN_ADJUSTMENTS;
+			scheduleRef = NO_SCHEDULE_REF;
+			return this;
+		}
 	}
 }

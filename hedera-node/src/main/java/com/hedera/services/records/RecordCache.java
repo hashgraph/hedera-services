@@ -36,7 +36,6 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hederahashgraph.api.proto.java.TransferList;
 
 import java.time.Instant;
 import java.util.Collections;
@@ -93,8 +92,6 @@ public class RecordCache {
 			long submittingMember
 	) {
 		var txnId = accessor.getTxnId();
-
-		TransferList list = ctx.ledger().netTransfersInTxn();
 		List<TokenTransferList> tokenTransferList = ctx.ledger().netTokenTransfersInTxn();
 		List<EntityId> tokens = null;
 		List<CurrencyAdjustments> tokenAdjustments = null;
@@ -112,7 +109,7 @@ public class RecordCache {
 				RichInstant.fromGrpc(asTimestamp(consensusTimestamp)),
 				accessor.getTxn().getMemo(),
 				0,
-				!list.getAccountAmountsList().isEmpty() ? CurrencyAdjustments.fromGrpc(list) : null,
+				null,
 				null,
 				null,
 				tokens,
