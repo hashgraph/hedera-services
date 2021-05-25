@@ -93,32 +93,6 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 	public ExpirableTxnRecord() {
 	}
 
-//	public ExpirableTxnRecord(
-//			TxnReceipt receipt,
-//			byte[] txnHash,
-//			TxnId txnId,
-//			RichInstant consensusTimestamp,
-//			String memo,
-//			long fee,
-//			CurrencyAdjustments transferList,
-//			SolidityFnResult contractCallResult,
-//			SolidityFnResult createResult
-//	) {
-//		this(
-//				receipt,
-//				txnHash,
-//				txnId,
-//				consensusTimestamp,
-//				memo,
-//				fee,
-//				transferList,
-//				contractCallResult,
-//				createResult,
-//				NO_TOKENS,
-//				NO_TOKEN_ADJUSTMENTS,
-//				NO_SCHEDULE_REF);
-//	}
-
 	public ExpirableTxnRecord (Builder builder){
 		this.receipt = builder.receipt;
 		this.txnHash = builder.txnHash;
@@ -134,45 +108,25 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 		this.scheduleRef = builder.scheduleRef;
 	}
 
-//	public ExpirableTxnRecord(
-//			TxnReceipt receipt,
-//			byte[] txnHash,
-//			TxnId txnId,
-//			RichInstant consensusTimestamp,
-//			String memo,
-//			long fee,
-//			CurrencyAdjustments transferList,
-//			SolidityFnResult contractCallResult,
-//			SolidityFnResult createResult,
-//			List<EntityId> tokens,
-//			List<CurrencyAdjustments> tokenTransferLists,
-//			EntityId scheduleRef
-//	) {
-//		this.receipt = receipt;
-//		this.txnHash = txnHash;
-//		this.txnId = txnId;
-//		this.consensusTimestamp = consensusTimestamp;
-//		this.memo = memo;
-//		this.fee = fee;
-//		this.hbarAdjustments = transferList;
-//		this.contractCallResult = contractCallResult;
-//		this.contractCreateResult = createResult;
-//		this.tokens = tokens;
-//		this.tokenAdjustments = tokenTransferLists;
-//		this.scheduleRef = scheduleRef;
-//	}
-
 	/* --- Object --- */
 
 	@Override
 	public String toString() {
 		var helper = MoreObjects.toStringHelper(this)
-				.add("receipt", receipt)
-				.add("txnHash", Hex.toHexString(txnHash))
-				.add("txnId", txnId)
-				.add("consensusTimestamp", consensusTimestamp)
 				.add("expiry", expiry)
 				.add("submittingMember", submittingMember);
+		if(txnHash != null){
+			helper.add("txnHash", Hex.toHexString(txnHash));
+		}
+		if(txnId != null){
+			helper.add("txnId", txnId);
+		}
+		if(consensusTimestamp != null){
+			helper.add("consensusTimestamp", consensusTimestamp);
+		}
+		if(receipt != null){
+			helper.add("receipt", receipt);
+		}
 		if (memo != null) {
 			helper.add("memo", memo);
 		}
@@ -355,14 +309,6 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 
 	public SolidityFnResult getContractCreateResult() {
 		return contractCreateResult;
-	}
-
-	public void setContractCallResult(SolidityFnResult result) {
-		this.contractCallResult = result;
-	}
-
-	public void setContractCreateResult(SolidityFnResult result) {
-		this.contractCreateResult = result;
 	}
 
 	public CurrencyAdjustments getHbarAdjustments() {

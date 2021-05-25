@@ -169,7 +169,7 @@ public class AwareTransactionContext implements TransactionContext {
 	@Override
 	public ExpirableTxnRecord recordSoFar(EntityCreator creator) {
 		long amount = ctx.charging().totalFeesChargedToPayer() + otherNonThresholdFees;
-		TransferList list = ctx.ledger().netTransfersInTxn();
+		TransferList transfersList = ctx.ledger().netTransfersInTxn();
 		List<TokenTransferList> tokenTransferList = ctx.ledger().netTokenTransfersInTxn();
 
 		if (log.isDebugEnabled()) {
@@ -192,7 +192,7 @@ public class AwareTransactionContext implements TransactionContext {
 				.setConsensusTimestamp(RichInstant.fromGrpc(consensusTimestamp))
 				.setMemo(accessor.getTxn().getMemo())
 				.setFee(amount)
-				.setTransferList(!list.getAccountAmountsList().isEmpty() ? CurrencyAdjustments.fromGrpc(list) : null)
+				.setTransferList(!transfersList.getAccountAmountsList().isEmpty() ? CurrencyAdjustments.fromGrpc(transfersList) : null)
 				.setTokens(tokens)
 				.setTokenAdjustments(tokenAdjustments)
 				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null);
