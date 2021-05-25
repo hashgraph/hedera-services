@@ -41,6 +41,7 @@ import java.util.Optional;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.IdUtils.asFile;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED;
@@ -160,6 +161,22 @@ class GetFileInfoAnswerTest {
 		// and:
 		var actual = response.getFileGetInfo().getFileInfo();
 		assertEquals(expected, actual);
+	}
+
+	@Test
+	public void failsWhenMissingInfo() throws Throwable {
+		// setup:
+		Query query = validQuery(ANSWER_ONLY, fee, target);
+		given(view.infoForFile(asFile(target))).willReturn(Optional.empty());
+
+		// when:
+		Response response = subject.responseGiven(query, view, OK, fee);
+
+		// then:
+		assertTrue(response.hasFileGetInfo());
+		assertEquals(FAIL_INVALID, response.getFileGetInfo().getHeader().getNodeTransactionPrecheckCode());
+		assertEquals(ANSWER_ONLY, response.getFileGetInfo().getHeader().getResponseType());
+		assertFalse(response.getFileGetInfo().hasFileInfo());
 	}
 
 	@Test

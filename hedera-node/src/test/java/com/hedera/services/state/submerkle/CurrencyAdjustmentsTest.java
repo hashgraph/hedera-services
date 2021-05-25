@@ -85,7 +85,6 @@ class CurrencyAdjustmentsTest {
 		var three = CurrencyAdjustments.fromGrpc(grpcAdjustments);
 
 		// when:
-		assertEquals(one, one);
 		assertNotEquals(one, null);
 		assertNotEquals(one, new Object());
 		assertEquals(one, three);

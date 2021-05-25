@@ -253,13 +253,13 @@ class MerkleNetworkContextTest {
 		// setup:
 		feeMultiplierSource = mock(FeeMultiplierSource.class);
 
-		given(feeMultiplierSource.congestionLevelStarts()).willReturn(new Instant[0]);
+		given(feeMultiplierSource.congestionLevelStarts()).willReturn(NO_CONGESTION_STARTS);
 
 		// when:
 		subject.updateCongestionStartsFrom(feeMultiplierSource);
 
 		// then:
-		assertSame(NO_CONGESTION_STARTS, subject.getCongestionLevelStarts());
+		assertEquals(NO_CONGESTION_STARTS, subject.getCongestionLevelStarts());
 	}
 
 	@Test
