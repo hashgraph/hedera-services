@@ -108,7 +108,7 @@ public class ExpiryManager {
 	/**
 	 * When payer records are in state (true by default), upon restart or reconnect the
 	 * expiry manager needs to rebuild its expiration queue so it can correctly purge
-	 * these records as their 180s lifetimes expire.
+	 * these records as their lifetimes (default 180s) expire.
 	 *
 	 * <b>IMPORTANT:</b> As a side-effect, this method re-stages the injected
 	 * {@code txnHistories} map with the recent histories of the {@link TransactionID}s

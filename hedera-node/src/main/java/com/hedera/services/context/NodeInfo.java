@@ -33,7 +33,7 @@ import java.util.function.Supplier;
 public class NodeInfo {
 	private boolean bookIsRead = false;
 
-	private int n;
+	private int numberOfNodes;
 	private boolean[] isZeroStake;
 
 	private final Supplier<AddressBook> book;
@@ -43,10 +43,11 @@ public class NodeInfo {
 	}
 
 	/**
-	 * Returns true if the given id refers to a missing node, or a
-	 * node in the address book with explicit zero stake.
+	 * Returns true if the node in the address book at the given index (casting
+	 * the argument as an {@code int}) has zero stake.
 	 *
 	 * @param nodeId the id of interest
+	 * @throws IllegalArgumentException if the {@code nodeId} cast to an {@code int} is not a usable index
 	 */
 	public boolean isZeroStake(long nodeId) {
 		if (!bookIsRead) {
@@ -54,8 +55,8 @@ public class NodeInfo {
 		}
 
 		final int index = (int)nodeId;
-		if (index < 0 || index >= n) {
-			return true;
+		if (index < 0 || index >= numberOfNodes) {
+			throw new IllegalArgumentException("The address book does not have a node at index " + index);
 		}
 		return isZeroStake[index];
 	}
@@ -63,9 +64,9 @@ public class NodeInfo {
 	private void readBook() {
 		final var staticBook = book.get();
 
-		n = staticBook.getSize();
-		isZeroStake = new boolean[n];
-		for (int i = 0; i < n; i++) {
+		numberOfNodes = staticBook.getSize();
+		isZeroStake = new boolean[numberOfNodes];
+		for (int i = 0; i < numberOfNodes; i++) {
 			final var address = staticBook.getAddress(i);
 			isZeroStake[i] = address.getStake() <= 0;
 		}

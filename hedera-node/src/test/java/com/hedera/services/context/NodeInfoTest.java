@@ -66,8 +66,8 @@ class NodeInfoTest {
 	@Test
 	void understandsMissing() {
 		// expect:
-		assertTrue(subject.isZeroStake(-1));
-		assertTrue(subject.isZeroStake(1));
+		assertThrows(IllegalArgumentException.class, () -> subject.isZeroStake(-1));
+		assertThrows(IllegalArgumentException.class, () -> subject.isZeroStake(1));
 	}
 
 	private void givenEntry(long id, long stake) {
