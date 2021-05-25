@@ -9,9 +9,9 @@ package com.hedera.services.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,11 +31,45 @@ import java.io.IOException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-public class UnzipUtility {
-
+public final class UnzipUtility {
 	private static final Logger log = LogManager.getLogger(UnzipUtility.class);
 
 	private static final int BUFFER_SIZE = 4096;
+
+	private UnzipUtility() {
+		throw new IllegalStateException("UnzipUtility is an utility class. Shouldn't create any instance!");
+	}
+
+	public static void unzip(final byte[] bytes, final String dstDir) throws IOException {
+		final File destDir = new File(dstDir);
+		if (!destDir.exists()) {
+			destDir.mkdir();
+			log.info("Created directory {} for update assets", destDir);
+		}
+
+		final var zipIn = new ZipInputStream(new ByteArrayInputStream(bytes));
+		ZipEntry entry = zipIn.getNextEntry();
+		while (entry != null) {
+			var filePath = dstDir + File.separator + entry.getName();
+			final var fileOrDir = new File(filePath);
+			filePath = fileOrDir.getCanonicalPath();
+
+			if (!filePath.startsWith(destDir.getCanonicalPath() + File.separator)) {
+				throw new IllegalArgumentException("Zip file entry " + filePath + " has an invalid path prefix!");
+			}
+
+			if (!entry.isDirectory()) {
+				extractSingleFile(zipIn, filePath);
+				log.info(" - Extracted update file {}", filePath);
+			} else {
+				fileOrDir.mkdir();
+				log.info(" - Created assets sub-directory {}", fileOrDir);
+			}
+			zipIn.closeEntry();
+			entry = zipIn.getNextEntry();
+		}
+		zipIn.close();
+	}
 
 	/**
 	 * Extracts a zip entry (file entry)
@@ -45,41 +79,15 @@ public class UnzipUtility {
 	 * @param filePath
 	 * 		Output file name
 	 */
-	private static void extractSingleFile(ZipInputStream inputStream, String filePath) {
-		try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(filePath))) {
-			byte[] bytesIn = new byte[BUFFER_SIZE];
-			int read = 0;
+	static void extractSingleFile(ZipInputStream inputStream, String filePath) {
+		try (var bos = new BufferedOutputStream(new FileOutputStream(filePath))) {
+			final var bytesIn = new byte[BUFFER_SIZE];
+			int read;
 			while ((read = inputStream.read(bytesIn)) != -1) {
 				bos.write(bytesIn, 0, read);
 			}
 		} catch (IOException e) {
-			log.error("Unable to write to file : {}", filePath);
-			log.error(e.getMessage());
+			log.error("Unable to write to file {}", filePath, e);
 		}
-	}
-
-	public static void unzip(byte[] bytes, String dstDirectory) throws IOException {
-		File destDir = new File(dstDirectory);
-		if (!destDir.exists()) {
-			log.info("create dir " + destDir);
-			destDir.mkdir();
-		}
-		ZipInputStream zipIn = new ZipInputStream(new ByteArrayInputStream(bytes));
-		ZipEntry entry = zipIn.getNextEntry();
-		while (entry != null) {
-			String filePath = dstDirectory + File.separator + entry.getName();
-			if (!entry.isDirectory()) {
-				File newFile = new File(filePath);
-				log.info("create file {}", filePath);
-				extractSingleFile(zipIn, filePath);
-			} else {
-				File dir = new File(filePath);
-				log.info("create sub dir " + dir);
-				dir.mkdir();
-			}
-			zipIn.closeEntry();
-			entry = zipIn.getNextEntry();
-		}
-		zipIn.close();
 	}
 }

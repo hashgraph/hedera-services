@@ -41,6 +41,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
@@ -141,6 +142,27 @@ class TokenCreateTransitionLogicTest {
 		verify(txnCtx, never()).setCreated(created);
 		verify(txnCtx).setStatus(INVALID_ADMIN_KEY);
 		// and:
+		verify(store, never()).commitCreation();
+		verify(store).rollbackCreation();
+		verify(ledger).dropPendingTokenChanges();
+	}
+
+	@Test
+	public void abortsIfTokenIdIsMissingInTheResult() {
+		givenValidTxnCtx();
+		CreationResult<TokenID> result = mock(CreationResult.class);
+
+		// and:
+		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
+				.willReturn(result);
+		given(result.getStatus()).willReturn(OK);
+		given(result.getCreated()).willReturn(Optional.empty());
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(txnCtx).setStatus(FAIL_INVALID);
 		verify(store, never()).commitCreation();
 		verify(store).rollbackCreation();
 		verify(ledger).dropPendingTokenChanges();
