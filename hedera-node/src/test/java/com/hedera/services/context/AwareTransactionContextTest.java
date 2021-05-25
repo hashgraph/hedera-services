@@ -237,13 +237,13 @@ public class AwareTransactionContextTest {
 	@Test
 	public void resetsRecordSoFar() {
 		// given:
-		subject.recordSoFar = mock(ExpirableTxnRecord.class);
+		subject.recordSoFar = mock(ExpirableTxnRecord.Builder.class);
 
 		// when:
 		subject.resetFor(accessor, now, anotherMemberId);
 
 		// then:
-		//verify(subject.recordSoFar).clear();
+		verify(subject.recordSoFar).clear();
 	}
 
 	@Test

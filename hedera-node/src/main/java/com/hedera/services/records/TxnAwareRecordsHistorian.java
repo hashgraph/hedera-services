@@ -27,7 +27,7 @@ import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -45,7 +45,6 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	private static final Logger log = LogManager.getLogger(TxnAwareRecordsHistorian.class);
 
 	private HederaLedger ledger;
-	private TransactionRecord lastCreatedRecord;
 	private ExpirableTxnRecord lastExpirableRecord;
 	private EntityCreator creator;
 
@@ -67,8 +66,8 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	}
 
 	@Override
-	public Optional<TransactionRecord> lastCreatedRecord() {
-		return Optional.ofNullable(lastCreatedRecord);
+	public Optional<ExpirableTxnRecord> lastCreatedRecord() {
+		return Optional.ofNullable(lastExpirableRecord);
 	}
 
 	@Override
@@ -84,11 +83,20 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	@Override
 	public void addNewRecords() {
 		lastExpirableRecord = txnCtx.recordSoFar(creator);
+		long now = txnCtx.consensusTime().getEpochSecond();
+		long submittingMember = txnCtx.submittingSwirldsMember();
+
 		var accessor = txnCtx.accessor();
+
+		var payerRecord = creator.createExpiringRecord(
+				txnCtx.effectivePayer(),
+				lastExpirableRecord,
+				now,
+				submittingMember);
 		recordCache.setPostConsensus(
 				accessor.getTxnId(),
-				lastCreatedRecord.getReceipt().getStatus(),
-				lastExpirableRecord);
+				ResponseCodeEnum.valueOf(lastExpirableRecord.getReceipt().getStatus()),
+				payerRecord);
 	}
 
 	@Override

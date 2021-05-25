@@ -20,6 +20,7 @@ package com.hedera.services.stream;
  * ‍
  */
 
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -50,7 +51,7 @@ public class RecordStreamObject extends AbstractSerializableHashable implements 
 	private static final int MAX_RECORD_LENGTH = 64 * 1024;
 	private static final int MAX_TRANSACTION_LENGTH = 64 * 1024;
 
-	/** the {@link TransactionRecord} object to be written to record stream file */
+	/** the {@link ExpirableTxnRecord} object to be written to record stream file */
 	private TransactionRecord transactionRecord;
 
 	/** the {@link Transaction} object to be written to record stream file */

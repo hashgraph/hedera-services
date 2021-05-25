@@ -312,33 +312,47 @@ class ExpiryManagerTest {
 	}
 
 	private ExpirableTxnRecord withPayer(long num) {
-		return new ExpirableTxnRecord(
-				TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(SUCCESS).build()),
-				"NOPE".getBytes(),
-				txnIdOf(num),
-				RichInstant.fromJava(Instant.now()),
-				null,
-				0,
-				null,
-				null,
-				null
-		);
+//		return new ExpirableTxnRecord(
+//				TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(SUCCESS).build()),
+//				"NOPE".getBytes(),
+//				txnIdOf(num),
+//				RichInstant.fromJava(Instant.now()),
+//				null,
+//				0,
+//				null,
+//				null,
+//				null
+//		);
+		return ExpirableTxnRecord.newBuilder()
+				.setReceipt(TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(SUCCESS).build()))
+				.setTxnHash("NOPE".getBytes())
+				.setTxnId(txnIdOf(num))
+				.setConsensusTimestamp(RichInstant.fromJava(Instant.now()))
+				.setFee(0)
+				.build();
 	}
 
 	private ExpirableTxnRecord withExpiry(long t) {
 		var grpcTxn = txnIdOf(t).toGrpc();
 		txnHistories.put(grpcTxn, mock(TxnIdRecentHistory.class));
-		var r = new ExpirableTxnRecord(
-				TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(SUCCESS).build()),
-				"NOPE".getBytes(),
-				txnIdOf(t),
-				RichInstant.fromJava(Instant.now()),
-				null,
-				0,
-				null,
-				null,
-				null
-		);
+//		var r = new ExpirableTxnRecord(
+//				TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(SUCCESS).build()),
+//				"NOPE".getBytes(),
+//				txnIdOf(t),
+//				RichInstant.fromJava(Instant.now()),
+//				null,
+//				0,
+//				null,
+//				null,
+//				null
+//		);
+		var r =  ExpirableTxnRecord.newBuilder()
+				.setReceipt(TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(SUCCESS).build()))
+				.setTxnHash("NOPE".getBytes())
+				.setTxnId(txnIdOf(t))
+				.setConsensusTimestamp(RichInstant.fromJava(Instant.now()))
+				.setFee(0)
+				.build();
 		r.setExpiry(t);
 		return r;
 	}

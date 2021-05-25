@@ -89,7 +89,7 @@ public class AwareTransactionContext implements TransactionContext {
 	private final ServicesContext ctx;
 	private TxnAccessor triggeredTxn = null;
 
-	private final Consumer<ExpirableTxnRecord> noopRecordConfig = ignore -> {
+	private final Consumer<ExpirableTxnRecord.Builder> noopRecordConfig = ignore -> {
 	};
 	private final Consumer<TransactionReceipt.Builder> noopReceiptConfig = ignore -> {
 	};
@@ -102,12 +102,12 @@ public class AwareTransactionContext implements TransactionContext {
 	private ByteString hash;
 	private ResponseCodeEnum statusSoFar;
 	private TxnAccessor accessor;
-	private Consumer<ExpirableTxnRecord> recordConfig = noopRecordConfig;
+	private Consumer<ExpirableTxnRecord.Builder> recordConfig = noopRecordConfig;
 	private Consumer<TransactionReceipt.Builder> receiptConfig = noopReceiptConfig;
 	private List<ExpiringEntity> expiringEntities;
 
 	boolean hasComputedRecordSoFar;
-	ExpirableTxnRecord recordSoFar;
+	ExpirableTxnRecord.Builder recordSoFar = ExpirableTxnRecord.newBuilder();
 
 	public AwareTransactionContext(ServicesContext ctx) {
 		this.ctx = ctx;
@@ -131,7 +131,7 @@ public class AwareTransactionContext implements TransactionContext {
 		hasComputedRecordSoFar = false;
 
 		ctx.charging().resetFor(accessor, submittingNodeAccount());
-		recordSoFar = new ExpirableTxnRecord();
+		recordSoFar.clear();
 	}
 
 	@Override
@@ -185,23 +185,21 @@ public class AwareTransactionContext implements TransactionContext {
 			}
 		}
 
-		recordSoFar = new ExpirableTxnRecord(
-				TxnReceipt.fromGrpc(receiptSoFar().build()),
-				hash.toByteArray(),
-				TxnId.fromGrpc(accessor.getTxnId()),
-				RichInstant.fromGrpc(consensusTimestamp),
-				accessor.getTxn().getMemo(),
-				amount,
-				!list.getAccountAmountsList().isEmpty() ? CurrencyAdjustments.fromGrpc(list) : null,
-				null,
-				null,
-				tokens,
-				tokenAdjustments,
-				accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null);
+		recordSoFar
+				.setReceipt(TxnReceipt.fromGrpc(receiptSoFar().build()))
+				.setTxnHash(hash.toByteArray())
+				.setTxnId(TxnId.fromGrpc(accessor.getTxnId()))
+				.setConsensusTimestamp(RichInstant.fromGrpc(consensusTimestamp))
+				.setMemo(accessor.getTxn().getMemo())
+				.setFee(amount)
+				.setTransferList(!list.getAccountAmountsList().isEmpty() ? CurrencyAdjustments.fromGrpc(list) : null)
+				.setTokens(tokens)
+				.setTokenAdjustments(tokenAdjustments)
+				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null);
 
 		recordConfig.accept(recordSoFar);
 		hasComputedRecordSoFar = true;
-		return recordSoFar;
+		return recordSoFar.build();
 	}
 
 	private void logItemized() {
