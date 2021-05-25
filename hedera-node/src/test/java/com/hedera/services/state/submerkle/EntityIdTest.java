@@ -98,7 +98,6 @@ public class EntityIdTest {
 		var three = subject.copy();
 
 		// expect:
-		assertEquals(one, one);
 		assertNotEquals(one, null);
 		assertNotEquals(one, new Object());
 		assertNotEquals(two, one);

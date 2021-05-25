@@ -61,7 +61,6 @@ import org.apache.logging.log4j.Logger;
 import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.List;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
@@ -283,7 +282,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		 * classifying duplicate transactions. */
 		ctx.recordsHistorian().reviewExistingRecords();
 		/* Use any entities stored in state to rebuild queue of expired entities. */
-		ctx.expiries().restartEntitiesTracking();
+		ctx.expiries().reviewExistingShortLivedEntities();
 		/* Re-initialize the "observable" system files; that is, the files which have
 	 	associated callbacks managed by the SysFilesCallback object. We explicitly
 	 	re-mark the files are not loaded here, in case this is a reconnect. (During a

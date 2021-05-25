@@ -146,7 +146,6 @@ class CongestionMultipliersTest {
 		var a = CongestionMultipliers.from(propA);
 
 		// expect:
-		assertEquals(a, a);
 		assertEquals(a, CongestionMultipliers.from(propA));
 		assertNotEquals(a, null);
 		assertNotEquals(a, new Object());

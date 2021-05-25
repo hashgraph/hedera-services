@@ -22,7 +22,6 @@ package com.hedera.services.records;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.expiry.ExpiryManager;
@@ -90,7 +89,6 @@ public class TxnAwareRecordsHistorianTest {
 	}
 
 	private RecordCache recordCache;
-	private HederaLedger ledger;
 	private ExpiryManager expiries;
 	private GlobalDynamicProperties dynamicProperties;
 	private ExpiringCreations creator;
@@ -114,7 +112,8 @@ public class TxnAwareRecordsHistorianTest {
 		given(dynamicProperties.shouldKeepRecordsInState()).willReturn(true);
 
 		// when:
-		subject.addNewRecords();
+		subject.finalizeTransactionRecord();
+		subject.saveTransactionRecord();
 
 		// then:
 		verify(txnCtx).recordSoFar(creator);
@@ -132,7 +131,7 @@ public class TxnAwareRecordsHistorianTest {
 		setupForAdd();
 
 		// when:
-		subject.addNewEntities();
+		subject.noteNewExpirationEvents();
 
 		// then:
 		verify(txnCtx).expiringEntities();
@@ -140,7 +139,7 @@ public class TxnAwareRecordsHistorianTest {
 		verify(expiringEntity).consumer();
 		verify(expiringEntity).expiry();
 		// and:
-		verify(expiries).trackEntity(any(), eq(nows));
+		verify(expiries).trackExpirationEvent(any(), eq(nows));
 	}
 
 	@Test
@@ -149,7 +148,7 @@ public class TxnAwareRecordsHistorianTest {
 		given(txnCtx.expiringEntities()).willReturn(Collections.EMPTY_LIST);
 
 		// when:
-		subject.addNewEntities();
+		subject.noteNewExpirationEvents();
 
 		// then:
 		verify(txnCtx).expiringEntities();
@@ -157,7 +156,7 @@ public class TxnAwareRecordsHistorianTest {
 		verify(expiringEntity, never()).consumer();
 		verify(expiringEntity, never()).expiry();
 		// and:
-		verify(expiries, never()).trackEntity(any(), eq(nows));
+		verify(expiries, never()).trackExpirationEvent(any(), eq(nows));
 	}
 
 	@Test
@@ -168,18 +167,7 @@ public class TxnAwareRecordsHistorianTest {
 		subject.reviewExistingRecords();
 
 		// then:
-		verify(expiries).restartTrackingFrom(accounts);
-	}
-
-	@Test
-	public void managesExpiredRecordsCorrectly() {
-		setupForPurge();
-
-		// when:
-		subject.purgeExpiredRecords();
-
-		// expect:
-		verify(expiries).purgeExpiredRecordsAt(nows, ledger);
+		verify(expiries).reviewExistingPayerRecords();
 	}
 
 	private void setupForReview() {
@@ -188,10 +176,6 @@ public class TxnAwareRecordsHistorianTest {
 
 	private void setupForAdd() {
 		expiries = mock(ExpiryManager.class);
-
-		ledger = mock(HederaLedger.class);
-		given(ledger.netTransfersInTxn()).willReturn(initialTransfers);
-		given(ledger.isPendingCreation(any())).willReturn(false);
 
 		dynamicProperties = mock(GlobalDynamicProperties.class);
 		given(dynamicProperties.fundingAccount()).willReturn(funding);
@@ -225,25 +209,7 @@ public class TxnAwareRecordsHistorianTest {
 		subject = new TxnAwareRecordsHistorian(
 				recordCache,
 				txnCtx,
-				() -> accounts,
 				expiries);
-		subject.setLedger(ledger);
 		subject.setCreator(creator);
-	}
-
-	private void setupForPurge() {
-		expiries = mock(ExpiryManager.class);
-
-		txnCtx = mock(TransactionContext.class);
-		given(txnCtx.consensusTime()).willReturn(now);
-
-		ledger = mock(HederaLedger.class);
-
-		subject = new TxnAwareRecordsHistorian(
-				recordCache,
-				txnCtx,
-				() -> accounts,
-				expiries);
-		subject.setLedger(ledger);
 	}
 }

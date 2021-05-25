@@ -99,6 +99,7 @@ import com.hedera.services.state.exports.ToStringAccountsExporter;
 import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.services.state.initialization.HfsSystemFilesManager;
 import com.hedera.services.state.logic.AwareNodeDiligenceScreen;
+import com.hedera.services.state.logic.InvariantChecks;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
@@ -537,6 +538,8 @@ public class ServicesContextTest {
 		assertThat(ctx.transactionPrecheck(), instanceOf(TransactionPrecheck.class));
 		assertThat(ctx.queryHeaderValidity(), instanceOf(QueryHeaderValidity.class));
 		assertThat(ctx.entityAutoRenewal(), instanceOf(EntityAutoRenewal.class));
+		assertThat(ctx.nodeInfo(), instanceOf(NodeInfo.class));
+		assertThat(ctx.invariants(), instanceOf(InvariantChecks.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

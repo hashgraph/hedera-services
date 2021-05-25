@@ -48,7 +48,7 @@ public class PermissionedAccountsRange {
 			var supposedTo = Long.valueOf(nonDegenMatch.group(2));
 			if (supposedFrom < supposedTo) {
 				return new PermissionedAccountsRange(supposedFrom, supposedTo);
-			} else if (supposedFrom == supposedTo) {
+			} else if (supposedFrom.equals(supposedTo)) {
 				return new PermissionedAccountsRange(supposedFrom);
 			}
 		}

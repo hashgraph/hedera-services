@@ -91,7 +91,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.hedera.services.ServicesState.MERKLE_VERSION;
@@ -383,7 +382,7 @@ class ServicesStateTest {
 		inOrder.verify(ctx).rebuildBackingStoresIfPresent();
 		inOrder.verify(ctx).rebuildStoreViewsIfPresent();
 		inOrder.verify(historian).reviewExistingRecords();
-		inOrder.verify(expiryManager).restartEntitiesTracking();
+		inOrder.verify(expiryManager).reviewExistingShortLivedEntities();
 		inOrder.verify(networkCtxManager).setObservableFilesNotLoaded();
 		inOrder.verify(networkCtxManager).loadObservableSysFilesIfNeeded();
 		// and:

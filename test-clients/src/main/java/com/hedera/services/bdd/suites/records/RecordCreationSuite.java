@@ -20,30 +20,48 @@ package com.hedera.services.bdd.suites.records;
  * ‍
  */
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
+import com.hederahashgraph.api.proto.java.Setting;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractRecords;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static org.junit.Assert.assertEquals;
 
 public class RecordCreationSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(RecordCreationSuite.class);
+
+	private static final String defaultRecordsTtl = HapiSpecSetup.getDefaultNodeProps().get("cache.records.ttl");
 
 	public static void main(String... args) {
 		new RecordCreationSuite().runSuiteSync();
@@ -53,12 +71,56 @@ public class RecordCreationSuite extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
+						payerRecordCreationSanityChecks(),
 						newlyCreatedContractNoLongerGetsRecord(),
 						accountsGetPayerRecordsIfSoConfigured(),
 						calledContractNoLongerGetsRecord(),
 						thresholdRecordsDontExistAnymore(),
+
+						/* This last spec requires sleeping for the default TTL (180s) so that the
+						expiration queue will be purged of all entries for existing records.
+
+						Especially since we are _very_ unlikely to make a dynamic change to
+						cache.records.ttl in practice, this test is not worth running in CircleCI.
+
+						However, it is a good sanity check to have available locally when making
+						changes to record expiration.  */
+//						recordsTtlChangesAsExpected(),
 				}
 		);
+	}
+
+	private HapiApiSpec payerRecordCreationSanityChecks() {
+		return defaultHapiSpec("PayerRecordCreationSanityChecks")
+				.given(
+						cryptoCreate("payer")
+				).when(
+						createTopic("ofGeneralInterest").payingWith("payer"),
+						cryptoTransfer(
+								tinyBarsFromTo(GENESIS, FUNDING, 1_000L)
+						).payingWith("payer"),
+						submitMessageTo("ofGeneralInterest")
+								.message("I say!")
+								.payingWith("payer")
+				).then(
+						assertionsHold((spec, opLog) -> {
+							final var payerId = spec.registry().getAccountID("payer");
+							final var subOp = getAccountRecords("payer").logged();
+							allRunFor(spec, subOp);
+							final var records = subOp.getResponse().getCryptoGetAccountRecords().getRecordsList();
+							assertEquals(3, records.size());
+							for (var record : records) {
+								assertEquals(record.getTransactionFee(), -netChangeIn(record, payerId));
+							}
+						})
+				);
+	}
+
+	private long netChangeIn(TransactionRecord record, AccountID id) {
+		return record.getTransferList().getAccountAmountsList().stream()
+				.filter(aa -> id.equals(aa.getAccountID()))
+				.mapToLong(AccountAmount::getAmount)
+				.sum();
 	}
 
 	private HapiApiSpec accountsGetPayerRecordsIfSoConfigured() {
@@ -139,6 +201,55 @@ public class RecordCreationSuite extends HapiApiSuite {
 								))
 				);
 	}
+
+	private HapiApiSpec recordsTtlChangesAsExpected() {
+		final int abbrevCacheTtl = 3;
+		final String brieflyAvailMemo = "I can't stay for long...";
+		final AtomicReference<byte[]> origPropContents = new AtomicReference<>();
+
+		return defaultHapiSpec("RecordsTtlChangesAsExpected")
+				.given(
+						getFileContents(APP_PROPERTIES)
+								.consumedBy(origPropContents::set),
+						sleepFor((Long.parseLong(defaultRecordsTtl) + 1) * 1_000L),
+						sourcing(() ->
+								fileUpdate(APP_PROPERTIES)
+										.fee(ONE_HUNDRED_HBARS)
+										.contents(rawConfigPlus(
+												origPropContents.get(),
+												"cache.records.ttl",
+												"" + abbrevCacheTtl))
+										.payingWith(GENESIS)
+						),
+						cryptoCreate("payer")
+				).when(
+						cryptoTransfer(tinyBarsFromTo("payer", ADDRESS_BOOK_CONTROL, 1L))
+								.memo(brieflyAvailMemo)
+								.payingWith("payer"),
+						getAccountRecords("payer").has(inOrder(recordWith().memo(brieflyAvailMemo))),
+						sleepFor(abbrevCacheTtl * 1_000L),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1L))
+								.payingWith(GENESIS),
+						getAccountRecords("payer").has(inOrder())
+				).then(
+						sourcing(() ->
+								fileUpdate(APP_PROPERTIES)
+										.contents(origPropContents.get()))
+				);
+	}
+
+	private byte[] rawConfigPlus(byte[] rawBase, String extraName, String extraValue) {
+		try {
+			final var rawConfig = ServicesConfigurationList.parseFrom(rawBase);
+			return rawConfig.toBuilder().addNameValue(Setting.newBuilder()
+					.setName(extraName)
+					.setValue(extraValue)
+			).build().toByteArray();
+		} catch (InvalidProtocolBufferException e) {
+			throw new IllegalStateException("Existing 0.0.121 wasn't valid protobuf!", e);
+		}
+	}
+
 
 	@Override
 	protected Logger getResultsLogger() {

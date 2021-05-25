@@ -21,20 +21,15 @@ package com.hedera.services.records;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiryManager;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
-import java.util.function.Supplier;
 
 /**
  * Provides a {@link AccountRecordsHistorian} using the natural collaborators.
@@ -44,24 +39,17 @@ import java.util.function.Supplier;
 public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	private static final Logger log = LogManager.getLogger(TxnAwareRecordsHistorian.class);
 
-	private HederaLedger ledger;
 	private ExpirableTxnRecord lastExpirableRecord;
+
 	private EntityCreator creator;
 
 	private final RecordCache recordCache;
 	private final ExpiryManager expiries;
 	private final TransactionContext txnCtx;
-	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
-	public TxnAwareRecordsHistorian(
-			RecordCache recordCache,
-			TransactionContext txnCtx,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
-			ExpiryManager expiries
-	) {
+	public TxnAwareRecordsHistorian(RecordCache recordCache, TransactionContext txnCtx, ExpiryManager expiries) {
 		this.expiries = expiries;
 		this.txnCtx = txnCtx;
-		this.accounts = accounts;
 		this.recordCache = recordCache;
 	}
 
@@ -76,18 +64,15 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	}
 
 	@Override
-	public void setLedger(HederaLedger ledger) {
-		this.ledger = ledger;
+	public void finalizeTransactionRecord() {
+		lastExpirableRecord = txnCtx.recordSoFar(creator);
 	}
 
 	@Override
-	public void addNewRecords() {
-		lastExpirableRecord = txnCtx.recordSoFar(creator);
+	public void saveTransactionRecord() {
 		long now = txnCtx.consensusTime().getEpochSecond();
 		long submittingMember = txnCtx.submittingSwirldsMember();
-
 		var accessor = txnCtx.accessor();
-
 		var payerRecord = creator.createExpiringRecord(
 				txnCtx.effectivePayer(),
 				lastExpirableRecord,
@@ -100,19 +85,14 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	}
 
 	@Override
-	public void purgeExpiredRecords() {
-		expiries.purgeExpiredRecordsAt(txnCtx.consensusTime().getEpochSecond(), ledger);
-	}
-
-	@Override
 	public void reviewExistingRecords() {
-		expiries.restartTrackingFrom(accounts.get());
+		expiries.reviewExistingPayerRecords();
 	}
 
 	@Override
-	public void addNewEntities() {
+	public void noteNewExpirationEvents() {
 		for (var expiringEntity : txnCtx.expiringEntities()) {
-			expiries.trackEntity(
+			expiries.trackExpirationEvent(
 					Pair.of(expiringEntity.id().num(), expiringEntity.consumer()),
 					expiringEntity.expiry());
 		}

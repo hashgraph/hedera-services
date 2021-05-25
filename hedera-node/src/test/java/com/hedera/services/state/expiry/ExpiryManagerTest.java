@@ -20,8 +20,8 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.config.HederaNumbers;
+import com.hedera.services.config.MockHederaNumbers;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -29,338 +29,191 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.longThat;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.inOrder;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
+
+@ExtendWith(MockitoExtension.class)
 class ExpiryManagerTest {
-	long a = 13257, b = 75231;
-	long[] aPayer = { 55 };
-	long[] bPayer = { 33 };
+	private final long now = 1_234_567L;
+	private final long start = now - 180L;
+	private final long firstThen = now - 1;
+	private final long secondThen = now + 1;
+	private final AccountID aGrpcId = IdUtils.asAccount("0.0.2");
+	private final AccountID bGrpcId = IdUtils.asAccount("0.0.4");
+	private final MerkleEntityId aKey = MerkleEntityId.fromAccountId(aGrpcId);
+	private final MerkleEntityId bKey = MerkleEntityId.fromAccountId(bGrpcId);
+	private final MerkleAccount anAccount = new MerkleAccount();
+	private final MerkleSchedule aSchedule = new MerkleSchedule();
+	private final MerkleSchedule bSchedule = new MerkleSchedule();
 
-	long expiry = 1_234_567L;
-	AccountID payer = IdUtils.asAccount("0.0.13257");
-	ScheduleID schedule = IdUtils.asSchedule("0.0.12345");
-	EntityId entityId = EntityId.fromGrpcScheduleId(schedule);
-	Consumer<EntityId> entityIdConsumer;
-	Pair<Long, Consumer<EntityId>> expiringEntity;
+	private FCMap<MerkleEntityId, MerkleAccount> liveAccounts = new FCMap<>();
+	private FCMap<MerkleEntityId, MerkleSchedule> liveSchedules = new FCMap<>();
+	private Map<TransactionID, TxnIdRecentHistory> liveTxnHistories = new HashMap<>();
 
-	RecordCache recordCache;
-	HederaLedger ledger;
-	FCMap<MerkleEntityId, MerkleAccount> accounts;
-	FCMap<MerkleEntityId, MerkleSchedule> schedules;
-	Map<TransactionID, TxnIdRecentHistory> txnHistories;
+	private final HederaNumbers nums = new MockHederaNumbers();
 
-	ScheduleStore scheduleStore;
+	@Mock
+	private RecordCache mockRecordCache;
+	@Mock
+	private ScheduleStore mockScheduleStore;
+	@Mock
+	private Map<TransactionID, TxnIdRecentHistory> mockTxnHistories;
+	@Mock
+	private FCMap<MerkleEntityId, MerkleAccount> mockAccounts;
+	@Mock
+	private FCMap<MerkleEntityId, MerkleSchedule> mockSchedules;
 
-	ExpiryManager subject;
-
-	@BeforeEach
-	public void setup() {
-		accounts = new FCMap<>();
-		schedules = new FCMap<>();
-		txnHistories = new HashMap<>();
-		recordCache = mock(RecordCache.class);
-
-		scheduleStore = mock(ScheduleStore.class);
-
-		ledger = mock(HederaLedger.class);
-
-		entityIdConsumer = mock(Consumer.class);
-		expiringEntity = mock(Pair.class);
-		given(expiringEntity.getKey()).willReturn(schedule.getScheduleNum());
-		given(expiringEntity.getValue()).willReturn(entityIdConsumer);
-
-		subject = new ExpiryManager(recordCache, txnHistories, scheduleStore, () -> schedules);
-	}
+	private ExpiryManager subject;
 
 	@Test
-	public void purgesRecordsAsExpected() {
+	void rebuildsExpectedSchedulesFromState() {
 		// setup:
-		InOrder inOrder = inOrder(ledger);
-
-		givenAccount(a, aPayer);
-		givenAccount(b, bPayer);
-		// given:
-		subject.restartTrackingFrom(accounts);
+		subject = new ExpiryManager(
+				mockRecordCache, mockScheduleStore, nums, mockTxnHistories, () -> mockAccounts, () -> liveSchedules);
+		aSchedule.setExpiry(firstThen);
+		bSchedule.setExpiry(secondThen);
+		liveSchedules.put(aKey, aSchedule);
+		liveSchedules.put(bKey, bSchedule);
 
 		// when:
-		subject.purgeExpiredRecordsAt(33, ledger);
+		subject.reviewExistingShortLivedEntities();
+		// and:
+		final var resultingExpiries = subject.getShortLivedEntityExpiries();
+		final var firstExpiry = resultingExpiries.expireNextAt(now);
 
 		// then:
-		inOrder.verify(ledger).purgeExpiredRecords(
-				argThat(asAccount(b)::equals),
-				longThat(l -> l == 33),
-				any());
-		// and:
-		verify(recordCache).forgetAnyOtherExpiredHistory(33);
+		assertEquals(aKey.getNum(), firstExpiry.getLeft());
+		assertEquals(1, resultingExpiries.getAllExpiries().size());
 	}
 
 	@Test
-	public void purgesEntitiesAsExpected() {
+	void expiresSchedulesAsExpected() {
+		subject = new ExpiryManager(
+				mockRecordCache, mockScheduleStore, nums, mockTxnHistories, () -> mockAccounts, () -> mockSchedules);
+
 		// given:
-		givenSchedule(schedule.getScheduleNum());
-		// and:
-		subject.restartEntitiesTracking();
+		subject.trackExpirationEvent(Pair.of(aKey.getNum(), entityId -> mockScheduleStore.expire(entityId)), firstThen);
+		subject.trackExpirationEvent(Pair.of(bKey.getNum(), entityId -> mockScheduleStore.expire(entityId)), secondThen);
 
 		// when:
-		subject.purgeExpiredEntitiesAt(expiry);
+		subject.purge(now);
 
 		// then:
-		verify(scheduleStore).expire(entityId);
-		// and:
-		assertTrue(subject.entityExpiries.allExpiries.isEmpty());
-	}
-
-	private AccountID asAccount(long num) {
-		return IdUtils.asAccount(String.format("0.0.%d", num));
+		verify(mockScheduleStore).expire(new EntityId(0, 0, aKey.getNum()));
+		assertEquals(1, subject.getShortLivedEntityExpiries().getAllExpiries().size());
 	}
 
 	@Test
-	void restartClearsExistingState() {
+	void rebuildsExpectedRecordsFromState() {
 		// setup:
-		long oldExpiry = 2_345_678L;
-		AccountID payer = IdUtils.asAccount("0.0.2");
-		txnHistories = mock(Map.class);
+		subject = new ExpiryManager(
+				mockRecordCache, mockScheduleStore, nums, liveTxnHistories, () -> liveAccounts, () -> mockSchedules);
+		final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
+		final var leftoverTxnId = recordWith(bGrpcId, now).getTxnId().toGrpc();
+		liveTxnHistories.put(leftoverTxnId, new TxnIdRecentHistory());
 
 		// given:
-		subject = new ExpiryManager(recordCache, txnHistories, scheduleStore, () -> schedules);
-		// and:
-		subject.trackRecord(payer, oldExpiry);
-		// and:
-		givenAccount(2, new long[] { expiry });
-		// and:
-		given(txnHistories.computeIfAbsent(any(), any())).willReturn(new TxnIdRecentHistory());
+		anAccount.records().offer(expiring(recordWith(aGrpcId, start), firstThen));
+		anAccount.records().offer(expiring(recordWith(aGrpcId, start), secondThen));
+		liveAccounts.put(aKey, anAccount);
 
 		// when:
-		subject.restartTrackingFrom(accounts);
+		subject.reviewExistingPayerRecords();
 
 		// then:
-		verify(recordCache).reset();
-		verify(txnHistories).clear();
-		assertEquals(expiry, subject.payerExpiries.now);
-		assertEquals(1, subject.payerExpiries.allExpiries.size());
-		var expiryEvent = subject.payerExpiries.allExpiries.getFirst();
-		assertEquals(2, expiryEvent.getId());
-		assertEquals(expiry, expiryEvent.getExpiry());
+		verify(mockRecordCache).reset();
+		assertFalse(liveTxnHistories.containsKey(leftoverTxnId));
+		assertEquals(firstThen, liveTxnHistories.get(newTxnId).priorityRecord().getExpiry());
+		assertEquals(secondThen, liveTxnHistories.get(newTxnId).duplicateRecords().get(0).getExpiry());
 	}
 
 	@Test
-	public void restartsTrackingAsExpected() {
-		givenAccount(a, aPayer);
-		givenAccount(b, bPayer);
-
-		// when:
-		subject.restartTrackingFrom(accounts);
-
-		// then:
-		var e1 = subject.payerExpiries.allExpiries.poll();
-		assertEquals(b, e1.getId());
-		assertEquals(33, e1.getExpiry());
-		var e2 = subject.payerExpiries.allExpiries.poll();
-		assertEquals(a, e2.getId());
-		assertEquals(55, e2.getExpiry());
-		// and:
-		assertTrue(subject.payerExpiries.allExpiries.isEmpty());
-		// and:
-		long[] allPayerTs = Stream.of(aPayer, bPayer)
-				.flatMap(a -> Arrays.stream(a).boxed())
-				.mapToLong(Long::valueOf)
-				.toArray();
-		assertTrue(Arrays.stream(allPayerTs).mapToObj(t -> txnIdOf(t).toGrpc()).allMatch(txnHistories::containsKey));
-		// and:
-		assertTrue(txnHistories.values().stream().noneMatch(TxnIdRecentHistory::isStagePending));
-	}
-
-	@Test
-	public void restartsEntitiesTrackingAsExpected() {
-		givenSchedule(schedule.getScheduleNum());
-
-		// when:
-		subject.restartEntitiesTracking();
-
-		// then:
-		var e = subject.entityExpiries.allExpiries.poll();
-		assertEquals(schedule.getScheduleNum(), e.getId().getKey());
-		assertEquals(expiry, e.getExpiry());
-		// and:
-		assertTrue(subject.entityExpiries.allExpiries.isEmpty());
-	}
-
-	private void givenAccount(long num, long[] payerExpiries) {
-		var account = new MerkleAccount();
-		for (long t : payerExpiries) {
-			account.records().offer(withExpiry(t));
-		}
-		var id = new MerkleEntityId(0, 0, num);
-		accounts.put(id, account);
-	}
-
-	private void givenSchedule(long num) {
-		var schedule = new MerkleSchedule();
-		schedule.setExpiry(expiry);
-		var id = new MerkleEntityId(0, 0, num);
-		schedules.put(id, schedule);
-	}
-
-	@Test
-	public void expungesAncientHistory() {
-		// given:
-		var c = 13258L;
-		var rec = withExpiry(c);
-		var txnId = txnIdOf(c).toGrpc();
-		// and:
-		subject.sharedNow = c;
-		// and:
-		given(txnHistories.get(txnId).isForgotten()).willReturn(true);
-		// and:
-		var forgottenHistory = txnHistories.get(txnId);
-
-		// when:
-		subject.updateHistory(rec);
-
-		// then:
-		verify(forgottenHistory).forgetExpiredAt(c);
-		// and:
-		assertFalse(txnHistories.containsKey(txnId));
-	}
-
-	@Test
-	public void updatesHistoryAsExpected() {
-		// given:
-		var c = 13258L;
-		var rec = withExpiry(c);
-		var txnId = txnIdOf(c).toGrpc();
-		// and:
-		subject.sharedNow = c;
-		// and:
-		given(txnHistories.get(txnId).isForgotten()).willReturn(false);
-
-		// when:
-		subject.updateHistory(rec);
-
-		// then:
-		verify(txnHistories.get(txnId)).forgetExpiredAt(c);
-		// and:
-		assertTrue(txnHistories.containsKey(txnId));
-	}
-
-	@Test
-	public void safeWhenNoHistoryAvailable() {
-		// given:
-		var c = 13258L;
-		var rec = withExpiry(c);
-		var txnId = txnIdOf(c).toGrpc();
-		// and:
-		subject.sharedNow = c;
-		txnHistories.remove(txnId);
-
-		// expect:
-		assertDoesNotThrow(() -> subject.updateHistory(rec));
-	}
-
-	@Test
-	public void usesBestGuessSubmittingMember() {
+	void expiresRecordsAsExpected() {
 		// setup:
-		long givenPayerNum = 75231;
-		var rec = withPayer(givenPayerNum);
-		// and:
-		var history = mock(TxnIdRecentHistory.class);
+		subject = new ExpiryManager(
+				mockRecordCache, mockScheduleStore, nums, liveTxnHistories, () -> liveAccounts, () -> mockSchedules);
+		final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
+		liveAccounts.put(aKey, anAccount);
 
-		txnHistories.put(txnIdOf(givenPayerNum).toGrpc(), history);
+		// given:
+		final var firstRecord = expiring(recordWith(aGrpcId, start), firstThen);
+		addLiveRecord(aKey, firstRecord);
+		liveTxnHistories.computeIfAbsent(newTxnId, ignore -> new TxnIdRecentHistory()).observe(firstRecord, OK);
+		subject.trackRecordInState(aGrpcId, firstThen);
+		// and:
+		final var secondRecord = expiring(recordWith(aGrpcId, start), secondThen);
+		addLiveRecord(aKey, secondRecord);
+		liveTxnHistories.computeIfAbsent(newTxnId, ignore -> new TxnIdRecentHistory()).observe(secondRecord, OK);
+		subject.trackRecordInState(aGrpcId, secondThen);
 
 		// when:
-		subject.stage(rec);
-		subject.stage(rec);
-		subject.stage(rec);
-		subject.stage(rec);
-		subject.stage(rec);
+		subject.purge(now);
 
 		// then:
-		verify(history, times(5)).stage(rec);
+		assertEquals(1, liveAccounts.get(aKey).records().size());
+		assertEquals(secondThen, liveTxnHistories.get(newTxnId).priorityRecord().getExpiry());
 	}
 
-	private ExpirableTxnRecord withPayer(long num) {
+	@Test
+	void expiresLoneRecordAsExpected() {
+		// setup:
+		subject = new ExpiryManager(
+				mockRecordCache, mockScheduleStore, nums, liveTxnHistories, () -> liveAccounts, () -> mockSchedules);
+		final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
+		liveAccounts.put(aKey, anAccount);
+
+		// given:
+		final var firstRecord = expiring(recordWith(aGrpcId, start), firstThen);
+		addLiveRecord(aKey, firstRecord);
+		liveTxnHistories.computeIfAbsent(newTxnId, ignore -> new TxnIdRecentHistory()).observe(firstRecord, OK);
+		subject.trackRecordInState(aGrpcId, firstThen);
+
+		// when:
+		subject.purge(now);
+
+		// then:
+		assertEquals(0, liveAccounts.get(aKey).records().size());
+		assertFalse(liveTxnHistories.containsKey(newTxnId));
+	}
+
+	private void addLiveRecord(MerkleEntityId key, ExpirableTxnRecord record) {
+		final var mutableAccount = liveAccounts.getForModify(key);
+		mutableAccount.records().offer(record);
+		liveAccounts.replace(aKey, mutableAccount);
+	}
+
+	private ExpirableTxnRecord expiring(ExpirableTxnRecord record, long at) {
+		final var ans = record;
+		ans.setExpiry(at);
+		ans.setSubmittingMember(0L);
+		return ans;
+	}
+
+	private ExpirableTxnRecord recordWith(AccountID payer, long validStartSecs) {
 		return ExpirableTxnRecord.newBuilder()
-				.setReceipt(TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(SUCCESS).build()))
-				.setTxnHash("NOPE".getBytes())
-				.setTxnId(txnIdOf(num))
-				.setConsensusTimestamp(RichInstant.fromJava(Instant.now()))
-				.setFee(0)
+				.setTxnId(TxnId.fromGrpc(TransactionID.newBuilder()
+						.setAccountID(payer)
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(validStartSecs)).build()))
 				.build();
-	}
-
-	private ExpirableTxnRecord withExpiry(long t) {
-		var grpcTxn = txnIdOf(t).toGrpc();
-		txnHistories.put(grpcTxn, mock(TxnIdRecentHistory.class));
-		var r =  ExpirableTxnRecord.newBuilder()
-				.setReceipt(TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(SUCCESS).build()))
-				.setTxnHash("NOPE".getBytes())
-				.setTxnId(txnIdOf(t))
-				.setConsensusTimestamp(RichInstant.fromJava(Instant.now()))
-				.setFee(0)
-				.build();
-		r.setExpiry(t);
-		return r;
-	}
-
-	private TxnId txnIdOf(long t) {
-		return TxnId.fromGrpc(TransactionID.newBuilder().
-						setAccountID(IdUtils.asAccount(String.format("0.0.%d", t))).build());
-	}
-
-	@Test
-	public void addsExpectedExpiryForPayer() {
-		// setup:
-		subject.payerExpiries = (MonotonicFullQueueExpiries<Long>) mock(MonotonicFullQueueExpiries.class);
-
-		// when:
-		subject.trackRecord(payer, expiry);
-
-		// then:
-		verify(subject.payerExpiries).track(Long.valueOf(13257), expiry);
-	}
-
-	@Test
-	public void addsExpectedExpiringEntity() {
-		// setup:
-		subject.entityExpiries = (MonotonicFullQueueExpiries<Pair<Long, Consumer<EntityId>>>) mock(MonotonicFullQueueExpiries.class);
-
-		// when:
-		subject.trackEntity(expiringEntity, expiry);
-
-		// then:
-		verify(subject.entityExpiries).track(expiringEntity, expiry);
 	}
 }

@@ -9,9 +9,9 @@ package com.hedera.services.sigs.sourcing;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,10 +30,13 @@ import com.hedera.test.factories.keys.OverlappingKeyGenerator;
 import com.hedera.test.factories.sigs.SigFactory;
 import com.hedera.test.factories.sigs.SigMapGenerator;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.SignatureType;
 import org.junit.jupiter.api.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -44,10 +47,11 @@ import static com.hedera.test.factories.keys.NodeFactory.rsa3072;
 import static com.hedera.test.factories.txns.SystemDeleteFactory.newSignedSystemDelete;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SigMapPubKeyToSigBytesTest {
-	private final byte[] EMPTY_SIG = {};
+	private final byte[] EMPTY_SIG = { };
 	private final KeyTree payerKt =
 			KeyTree.withRoot(list(ed25519(true), ed25519(true), ed25519(true), ecdsa384(true), rsa3072(true)));
 	private final KeyTree otherKt =
@@ -97,16 +101,22 @@ public class SigMapPubKeyToSigBytesTest {
 	}
 
 	@Test
-	public void rejectsNonUniqueSigBytes() throws Throwable {
+	public void rejectsNonUniqueSigBytes() {
 		// given:
-		Transaction signedTxn =
-				newSignedSystemDelete().sigMapGen(ambigSigMapGen).keyFactory(overlapFactory).payerKt(payerKt).get();
-		PubKeyToSigBytes subject = PubKeyToSigBytes.from(signedTxn.getSigMap());
+		String str = "TEST_STRING";
+		byte[] pubKey = str.getBytes(StandardCharsets.UTF_8);
+		SignaturePair sigPair = SignaturePair.newBuilder().setPubKeyPrefix(ByteString.copyFromUtf8(str)).build();
+		SignatureMap sigMap = SignatureMap.newBuilder().addSigPair(sigPair).addSigPair(sigPair).build();
+		SigMapPubKeyToSigBytes sigMapPubKeyToSigBytes = new SigMapPubKeyToSigBytes(sigMap);
 
 		// expect:
-		assertThrows(KeyPrefixMismatchException.class, () -> {
-			lookupsMatch(payerKt, overlapFactory, CommonUtils.extractTransactionBodyBytes(signedTxn), subject);
+		KeyPrefixMismatchException exception = assertThrows(KeyPrefixMismatchException.class, () -> {
+			sigMapPubKeyToSigBytes.sigBytesFor(pubKey);
 		});
+
+		assertEquals(
+				"Source signature map with prefix 544553545f535452494e47 is ambiguous for given public key! " +
+						"(544553545f535452494e47)", exception.getMessage());
 	}
 
 	private void lookupsMatch(KeyTree kt, KeyFactory factory, byte[] data, PubKeyToSigBytes subject) throws Exception {
@@ -128,6 +138,7 @@ public class SigMapPubKeyToSigBytesTest {
 			throw thrown.get();
 		}
 	}
+
 	private byte[] pubKeyFor(KeyTreeLeaf leaf, KeyFactory factory) {
 		Key key = leaf.asKey(factory);
 		if (key.getEd25519() != ByteString.EMPTY) {
@@ -139,6 +150,7 @@ public class SigMapPubKeyToSigBytesTest {
 		}
 		throw new AssertionError("Impossible leaf type!");
 	}
+
 	private byte[] expectedSigFor(KeyTreeLeaf leaf, KeyFactory factory, byte[] data) {
 		if (!leaf.isUsedToSign()) {
 			return EMPTY_SIG;
