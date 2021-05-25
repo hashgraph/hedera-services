@@ -45,14 +45,6 @@ import java.util.Optional;
  */
 public interface AccountRecordsHistorian {
 	/**
-	 * Injects the ledger in which accounts pay for the transactions
-	 * whose history is of interest.
-	 *
-	 * @param ledger the ledger to record history for.
-	 */
-	void setLedger(HederaLedger ledger);
-
-	/**
 	 * Injects the expiring entity creator which the historian
 	 * should use to create records.
 	 *
@@ -61,20 +53,17 @@ public interface AccountRecordsHistorian {
 	void setCreator(EntityCreator creator);
 
 	/**
-	 * At the moment before committing the active transaction, forms a
-	 * final record by adding a {@link ExpirableTxnRecord} to any
-	 * ledger accounts that qualify for the history of the active
-	 * transaction.
+	 * Called immediately before committing the active transaction
+	 * to finalize the record of the executed business logic.
 	 */
-	void addNewRecords();
+	void finalizeTransactionRecord();
 
 	/**
-	 * Removes expired records from the relevant ledger. Note that for
-	 * this to be done efficiently, the historian will likely need
-	 * the opportunity to scan the ledger and build an auxiliary data
-	 * structure of expiration times.
+	 * Called immediately after committing the active transaction, to
+	 * save the record (e.g. in the payer account of the committed
+	 * transaction.)
 	 */
-	void purgeExpiredRecords();
+	void saveTransactionRecord();
 
 	/**
 	 * Invites the historian to build any auxiliary data structures
@@ -94,5 +83,5 @@ public interface AccountRecordsHistorian {
 	 * checks if Transaction Context has any existing expiring entities
 	 * and if so, tracks them using {@link com.hedera.services.state.expiry.ExpiryManager}
 	 */
-	void addNewEntities();
+	void noteNewExpirationEvents();
 }

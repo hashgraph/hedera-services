@@ -26,8 +26,8 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 
 public class MonotonicFullQueueExpiries<K> implements KeyedExpirations<K> {
-	long now = 0L;
-	Deque<ExpiryEvent> allExpiries = new ArrayDeque<>();
+	private long now = 0L;
+	private Deque<ExpiryEvent> allExpiries = new ArrayDeque<>();
 
 	@Override
 	public void reset() {
@@ -88,5 +88,13 @@ public class MonotonicFullQueueExpiries<K> implements KeyedExpirations<K> {
 					.add("expiry", expiry)
 					.toString();
 		}
+	}
+
+	Deque<ExpiryEvent> getAllExpiries() {
+		return allExpiries;
+	}
+
+	long getNow() {
+		return now;
 	}
 }
