@@ -42,14 +42,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * @author Michael Tinker
  */
 public class TxnFeeChargingPolicy {
-	private final StagedCharging stagedCharging;
+	private final NarratedCharging narratedCharging;
 
 	public TxnFeeChargingPolicy() {
-		stagedCharging = null;
+		narratedCharging = null;
 	}
 
-	public TxnFeeChargingPolicy(StagedCharging stagedCharging) {
-		this.stagedCharging = stagedCharging;
+	public TxnFeeChargingPolicy(NarratedCharging narratedCharging) {
+		this.narratedCharging = narratedCharging;
 	}
 
 	/**
@@ -87,14 +87,14 @@ public class TxnFeeChargingPolicy {
 	 * @return the outcome of applying the policy
 	 */
 	public ResponseCodeEnum applyForTriggered(ItemizableFeeCharging charging, FeeObject fees) {
-		stagedCharging.setFees(fees);
+		narratedCharging.setFees(fees);
 
-		if (!stagedCharging.isPayerWillingToCoverServiceFee()) {
+		if (!narratedCharging.isPayerWillingToCoverServiceFee()) {
 			return INSUFFICIENT_TX_FEE;
-		} else if (!stagedCharging.canPayerAffordServiceFee()) {
+		} else if (!narratedCharging.canPayerAffordServiceFee()) {
 			return INSUFFICIENT_PAYER_BALANCE;
 		} else {
-			stagedCharging.chargePayerServiceFee();
+			narratedCharging.chargePayerServiceFee();
 			return OK;
 		}
 	}
@@ -108,19 +108,19 @@ public class TxnFeeChargingPolicy {
 	 * @return the outcome of applying the policy
 	 */
 	public ResponseCodeEnum applyForIgnoredDueDiligence(ItemizableFeeCharging charging, FeeObject fees) {
-		stagedCharging.setFees(fees);
-		stagedCharging.chargeSubmittingNodeUpToNetworkFee();
+		narratedCharging.setFees(fees);
+		narratedCharging.chargeSubmittingNodeUpToNetworkFee();
 		return OK;
 	}
 
 	private ResponseCodeEnum chargePendingSolvency(FeeObject fees) {
-		stagedCharging.setFees(fees);
+		narratedCharging.setFees(fees);
 
-		if (!stagedCharging.isPayerWillingToCoverNetworkFee()) {
-			stagedCharging.chargeSubmittingNodeUpToNetworkFee();
+		if (!narratedCharging.isPayerWillingToCoverNetworkFee()) {
+			narratedCharging.chargeSubmittingNodeUpToNetworkFee();
 			return INSUFFICIENT_TX_FEE;
-		} else if (!stagedCharging.canPayerAffordNetworkFee()) {
-			stagedCharging.chargeSubmittingNodeUpToNetworkFee();
+		} else if (!narratedCharging.canPayerAffordNetworkFee()) {
+			narratedCharging.chargeSubmittingNodeUpToNetworkFee();
 			return INSUFFICIENT_PAYER_BALANCE;
 		} else {
 			return chargeGivenNodeDueDiligence();
@@ -128,14 +128,14 @@ public class TxnFeeChargingPolicy {
 	}
 
 	private ResponseCodeEnum chargeGivenNodeDueDiligence() {
-		if (!stagedCharging.isPayerWillingToCoverAllFees()) {
-			stagedCharging.chargePayerNetworkAndUpToNodeFee();
+		if (!narratedCharging.isPayerWillingToCoverAllFees()) {
+			narratedCharging.chargePayerNetworkAndUpToNodeFee();
 			return INSUFFICIENT_TX_FEE;
-		} else if (!stagedCharging.canPayerAffordAllFees()) {
-			stagedCharging.chargePayerNetworkAndUpToNodeFee();
+		} else if (!narratedCharging.canPayerAffordAllFees()) {
+			narratedCharging.chargePayerNetworkAndUpToNodeFee();
 			return INSUFFICIENT_PAYER_BALANCE;
 		} else {
-			stagedCharging.chargePayerAllFees();
+			narratedCharging.chargePayerAllFees();
 			return OK;
 		}
 	}

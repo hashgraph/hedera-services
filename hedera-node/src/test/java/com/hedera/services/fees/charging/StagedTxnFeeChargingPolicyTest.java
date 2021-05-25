@@ -9,13 +9,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hedera.services.fees.TxnFeeType.NETWORK;
-import static com.hedera.services.fees.TxnFeeType.NODE;
-import static com.hedera.services.fees.TxnFeeType.SERVICE;
-import static com.hedera.services.fees.charging.ItemizableFeeCharging.NETWORK_FEE;
-import static com.hedera.services.fees.charging.ItemizableFeeCharging.NETWORK_NODE_SERVICE_FEES;
-import static com.hedera.services.fees.charging.ItemizableFeeCharging.NODE_FEE;
-import static com.hedera.services.fees.charging.ItemizableFeeCharging.SERVICE_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -31,13 +24,13 @@ class StagedTxnFeeChargingPolicyTest {
 	private final FeeObject feesForDuplicateTxn = new FeeObject(1L, 2L, 0L);
 
 	@Mock
-	private StagedCharging stagedCharging;
+	private NarratedCharging narratedCharging;
 
 	private TxnFeeChargingPolicy subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new TxnFeeChargingPolicy(stagedCharging);
+		subject = new TxnFeeChargingPolicy(narratedCharging);
 	}
 
 	@Test
@@ -46,39 +39,39 @@ class StagedTxnFeeChargingPolicyTest {
 		subject.applyForIgnoredDueDiligence(null, fees);
 
 		// then:
-		verify(stagedCharging).setFees(fees);
-		verify(stagedCharging).chargeSubmittingNodeUpToNetworkFee();
+		verify(narratedCharging).setFees(fees);
+		verify(narratedCharging).chargeSubmittingNodeUpToNetworkFee();
 	}
 
 	@Test
 	void chargesNonServicePenaltyForUnableToCoverTotal() {
-		given(stagedCharging.isPayerWillingToCoverNetworkFee()).willReturn(true);
-		given(stagedCharging.canPayerAffordNetworkFee()).willReturn(true);
-		given(stagedCharging.isPayerWillingToCoverAllFees()).willReturn(true);
-		given(stagedCharging.canPayerAffordAllFees()).willReturn(false);
+		given(narratedCharging.isPayerWillingToCoverNetworkFee()).willReturn(true);
+		given(narratedCharging.canPayerAffordNetworkFee()).willReturn(true);
+		given(narratedCharging.isPayerWillingToCoverAllFees()).willReturn(true);
+		given(narratedCharging.canPayerAffordAllFees()).willReturn(false);
 
 		// when:
 		ResponseCodeEnum outcome = subject.apply(null, fees);
 
 		// then:
-		verify(stagedCharging).setFees(fees);
-		verify(stagedCharging).chargePayerNetworkAndUpToNodeFee();
+		verify(narratedCharging).setFees(fees);
+		verify(narratedCharging).chargePayerNetworkAndUpToNodeFee();
 		// and:
 		assertEquals(INSUFFICIENT_PAYER_BALANCE, outcome);
 	}
 
 	@Test
 	void chargesNonServicePenaltyForUnwillingToCoverTotal() {
-		given(stagedCharging.isPayerWillingToCoverNetworkFee()).willReturn(true);
-		given(stagedCharging.canPayerAffordNetworkFee()).willReturn(true);
-		given(stagedCharging.isPayerWillingToCoverAllFees()).willReturn(false);
+		given(narratedCharging.isPayerWillingToCoverNetworkFee()).willReturn(true);
+		given(narratedCharging.canPayerAffordNetworkFee()).willReturn(true);
+		given(narratedCharging.isPayerWillingToCoverAllFees()).willReturn(false);
 
 		// when:
 		ResponseCodeEnum outcome = subject.apply(null, fees);
 
 		// then:
-		verify(stagedCharging).setFees(fees);
-		verify(stagedCharging).chargePayerNetworkAndUpToNodeFee();
+		verify(narratedCharging).setFees(fees);
+		verify(narratedCharging).chargePayerNetworkAndUpToNodeFee();
 		// and:
 		assertEquals(INSUFFICIENT_TX_FEE, outcome);
 	}
@@ -94,13 +87,13 @@ class StagedTxnFeeChargingPolicyTest {
 		ResponseCodeEnum outcome = subject.applyForDuplicate(null, fees);
 
 		// then:
-		verify(stagedCharging).setFees(captor.capture());
+		verify(narratedCharging).setFees(captor.capture());
 		// and:
 		assertEquals(feesForDuplicateTxn.getNodeFee(), captor.getValue().getNodeFee());
 		assertEquals(feesForDuplicateTxn.getNetworkFee(), captor.getValue().getNetworkFee());
 		assertEquals(feesForDuplicateTxn.getServiceFee(), captor.getValue().getServiceFee());
 		// and:
-		verify(stagedCharging).chargePayerAllFees();
+		verify(narratedCharging).chargePayerAllFees();
 		// and:
 		assertEquals(OK, outcome);
 	}
@@ -113,89 +106,89 @@ class StagedTxnFeeChargingPolicyTest {
 		ResponseCodeEnum outcome = subject.apply(null, fees);
 
 		// then:
-		verify(stagedCharging).setFees(fees);
-		verify(stagedCharging).chargePayerAllFees();
+		verify(narratedCharging).setFees(fees);
+		verify(narratedCharging).chargePayerAllFees();
 		// and:
 		assertEquals(OK, outcome);
 	}
 
 	@Test
 	void requiresWillingToPayServiceWhenTriggeredTxn() {
-		given(stagedCharging.isPayerWillingToCoverServiceFee()).willReturn(false);
+		given(narratedCharging.isPayerWillingToCoverServiceFee()).willReturn(false);
 
 		// when:
 		ResponseCodeEnum outcome = subject.applyForTriggered(null, fees);
 
 		// then:
-		verify(stagedCharging).setFees(fees);
-		verify(stagedCharging, never()).chargePayerServiceFee();
+		verify(narratedCharging).setFees(fees);
+		verify(narratedCharging, never()).chargePayerServiceFee();
 		// and:
 		assertEquals(INSUFFICIENT_TX_FEE, outcome);
 	}
 
 	@Test
 	void requiresAbleToPayServiceWhenTriggeredTxn() {
-		given(stagedCharging.isPayerWillingToCoverServiceFee()).willReturn(true);
-		given(stagedCharging.canPayerAffordServiceFee()).willReturn(false);
+		given(narratedCharging.isPayerWillingToCoverServiceFee()).willReturn(true);
+		given(narratedCharging.canPayerAffordServiceFee()).willReturn(false);
 
 		// when:
 		ResponseCodeEnum outcome = subject.applyForTriggered(null, fees);
 
 		// then:
-		verify(stagedCharging).setFees(fees);
-		verify(stagedCharging, never()).chargePayerServiceFee();
+		verify(narratedCharging).setFees(fees);
+		verify(narratedCharging, never()).chargePayerServiceFee();
 		// and:
 		assertEquals(INSUFFICIENT_PAYER_BALANCE, outcome);
 	}
 
 	@Test
 	void chargesServiceFeeForTriggeredTxn() {
-		given(stagedCharging.isPayerWillingToCoverServiceFee()).willReturn(true);
-		given(stagedCharging.canPayerAffordServiceFee()).willReturn(true);
+		given(narratedCharging.isPayerWillingToCoverServiceFee()).willReturn(true);
+		given(narratedCharging.canPayerAffordServiceFee()).willReturn(true);
 
 		// when:
 		ResponseCodeEnum outcome = subject.applyForTriggered(null, fees);
 
 		// then:
-		verify(stagedCharging).setFees(fees);
-		verify(stagedCharging).chargePayerServiceFee();
+		verify(narratedCharging).setFees(fees);
+		verify(narratedCharging).chargePayerServiceFee();
 		// and:
 		assertEquals(OK, outcome);
 	}
 
 	@Test
 	void chargesNodePenaltyForPayerUnableToPayNetwork() {
-		given(stagedCharging.isPayerWillingToCoverNetworkFee()).willReturn(true);
-		given(stagedCharging.canPayerAffordNetworkFee()).willReturn(false);
+		given(narratedCharging.isPayerWillingToCoverNetworkFee()).willReturn(true);
+		given(narratedCharging.canPayerAffordNetworkFee()).willReturn(false);
 
 		// when:
 		ResponseCodeEnum outcome = subject.apply(null, fees);
 
 		// then:
-		verify(stagedCharging).setFees(fees);
-		verify(stagedCharging).chargeSubmittingNodeUpToNetworkFee();
+		verify(narratedCharging).setFees(fees);
+		verify(narratedCharging).chargeSubmittingNodeUpToNetworkFee();
 		// and:
 		assertEquals(INSUFFICIENT_PAYER_BALANCE, outcome);
 	}
 
 	@Test
 	void chargesNodePenaltyForPayerUnwillingToPayNetwork() {
-		given(stagedCharging.isPayerWillingToCoverNetworkFee()).willReturn(false);
+		given(narratedCharging.isPayerWillingToCoverNetworkFee()).willReturn(false);
 
 		// when:
 		ResponseCodeEnum outcome = subject.apply(null, fees);
 
 		// then:
-		verify(stagedCharging).setFees(fees);
-		verify(stagedCharging).chargeSubmittingNodeUpToNetworkFee();
+		verify(narratedCharging).setFees(fees);
+		verify(narratedCharging).chargeSubmittingNodeUpToNetworkFee();
 		// and:
 		assertEquals(INSUFFICIENT_TX_FEE, outcome);
 	}
 
 	private void givenPayerWillingAndAbleForAllFees() {
-		given(stagedCharging.isPayerWillingToCoverNetworkFee()).willReturn(true);
-		given(stagedCharging.canPayerAffordNetworkFee()).willReturn(true);
-		given(stagedCharging.isPayerWillingToCoverAllFees()).willReturn(true);
-		given(stagedCharging.canPayerAffordAllFees()).willReturn(true);
+		given(narratedCharging.isPayerWillingToCoverNetworkFee()).willReturn(true);
+		given(narratedCharging.canPayerAffordNetworkFee()).willReturn(true);
+		given(narratedCharging.isPayerWillingToCoverAllFees()).willReturn(true);
+		given(narratedCharging.canPayerAffordAllFees()).willReturn(true);
 	}
 }
