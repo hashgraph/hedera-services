@@ -81,8 +81,8 @@ class NodeInfoTest {
 	@Test
 	void interpretsMissingAsZeroStake() {
 		// expect:
-		assertTrue(subject.isZeroStake(-1));
-		assertTrue(subject.isZeroStake(1));
+		assertThrows(IllegalArgumentException.class, () -> subject.isZeroStake(-1));
+		assertThrows(IllegalArgumentException.class, () -> subject.isZeroStake(1));
 	}
 
 	@Test
