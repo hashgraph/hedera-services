@@ -464,9 +464,15 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 		this.tokenType = tokenType;
 	}
 
+	public void setTokenType(int tokenTypeInt) {
+		this.tokenType = TokenType.values()[tokenTypeInt];
+	}
+
 	public TokenSupplyType supplyType() { return supplyType; }
 
 	public void setSupplyType(TokenSupplyType supplyType) { this.supplyType = supplyType; }
+
+	public void setSupplyType(int supplyTypeInt) { this.supplyType = TokenSupplyType.values()[supplyTypeInt]; }
 
 	public long maxSupply() {
 		return maxSupply;

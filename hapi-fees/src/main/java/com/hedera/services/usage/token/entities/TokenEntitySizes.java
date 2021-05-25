@@ -31,10 +31,10 @@ public enum TokenEntitySizes {
 
 	/* { deleted, accountsFrozenByDefault, accountsKycGrantedByDefault } */
 	static int NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION = 3;
-	/* { decimals } */
-	static int NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 1;
-	/* { expiry, totalSupply, autoRenewPeriod } */
-	static int NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 3;
+	/* { decimals, tokenType, supplyType } */
+	static int NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 3;
+	/* { expiry, maxSupply, totalSupply, autoRenewPeriod } */
+	static int NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 4;
 	/* { treasury } */
 	static int NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 1;
 
