@@ -20,14 +20,15 @@ package com.hedera.services.state.serdes;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 
 import java.io.IOException;
 
 public class TopicSerde {
-	static DomainSerdes serdes = new DomainSerdes();
 
 	public static int MAX_MEMO_BYTES = 4_096;
 
@@ -37,11 +38,11 @@ public class TopicSerde {
 			to.setMemo(in.readNormalisedString(MAX_MEMO_BYTES));
 		}
 
-		to.setAdminKey(in.readBoolean() ? serdes.deserializeKey(in) : null);
-		to.setSubmitKey(in.readBoolean() ? serdes.deserializeKey(in) : null);
+		to.setAdminKey(in.readBoolean() ? JKeySerializer.deserialize(in) : null);
+		to.setSubmitKey(in.readBoolean() ? JKeySerializer.deserialize(in) : null);
 		to.setAutoRenewDurationSeconds(in.readLong());
-		to.setAutoRenewAccountId(in.readBoolean() ? serdes.deserializeId(in) : null);
-		to.setExpirationTimestamp(in.readBoolean() ? serdes.deserializeTimestamp(in) : null);
+		to.setAutoRenewAccountId(in.readBoolean() ? in.readSerializable() : null);
+		to.setExpirationTimestamp(in.readBoolean() ? RichInstant.from(in) : null);
 		to.setDeleted(in.readBoolean());
 		to.setSequenceNumber(in.readLong());
 		to.setRunningHash(in.readBoolean() ? in.readByteArray(MerkleTopic.RUNNING_HASH_BYTE_ARRAY_SIZE) : null);
@@ -57,14 +58,14 @@ public class TopicSerde {
 
 		if (merkleTopic.hasAdminKey()) {
 			out.writeBoolean(true);
-			serdes.serializeKey(merkleTopic.getAdminKey(), out);
+			out.write(merkleTopic.getAdminKey().serialize());
 		} else {
 			out.writeBoolean(false);
 		}
 
 		if (merkleTopic.hasSubmitKey()) {
 			out.writeBoolean(true);
-			serdes.serializeKey(merkleTopic.getSubmitKey(), out);
+			out.write(merkleTopic.getSubmitKey().serialize());
 		} else {
 			out.writeBoolean(false);
 		}
@@ -73,14 +74,14 @@ public class TopicSerde {
 
 		if (merkleTopic.hasAutoRenewAccountId()) {
 			out.writeBoolean(true);
-			serdes.serializeId(merkleTopic.getAutoRenewAccountId(), out);
+			out.writeSerializable(merkleTopic.getAutoRenewAccountId(), true);
 		} else {
 			out.writeBoolean(false);
 		}
 
 		if (merkleTopic.hasExpirationTimestamp()) {
 			out.writeBoolean(true);
-			serdes.serializeTimestamp(merkleTopic.getExpirationTimestamp(), out);
+			merkleTopic.getExpirationTimestamp().serialize(out);
 		} else {
 			out.writeBoolean(false);
 		}

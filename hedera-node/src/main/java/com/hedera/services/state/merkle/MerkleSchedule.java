@@ -24,7 +24,6 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.MiscUtils;
@@ -61,7 +60,6 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 	static final int NUM_ED25519_PUBKEY_BYTES = 32;
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d2b7d9e673285fcL;
-	static DomainSerdes serdes = new DomainSerdes();
 
 	public static final Key UNUSED_GRPC_KEY = null;
 	public static final JKey UNUSED_KEY = null;
@@ -199,7 +197,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 		bodyBytes = in.readByteArray(Integer.MAX_VALUE);
 		executed = in.readBoolean();
 		deleted = in.readBoolean();
-		resolutionTime = serdes.readNullableInstant(in);
+		resolutionTime = RichInstant.from(in);
 		int numSignatories = in.readInt();
 		while (numSignatories-- > 0) {
 			witnessValidEd25519Signature(in.readByteArray(NUM_ED25519_PUBKEY_BYTES));
@@ -214,7 +212,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 		out.writeByteArray(bodyBytes);
 		out.writeBoolean(executed);
 		out.writeBoolean(deleted);
-		serdes.writeNullableInstant(resolutionTime, out);
+		resolutionTime.serialize(out);
 		out.writeInt(signatories.size());
 		for (byte[] key : signatories) {
 			out.writeByteArray(key);

@@ -22,7 +22,6 @@ package com.hedera.services.legacy.core.jproto;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.TxnId;
@@ -63,8 +62,6 @@ public class TxnReceipt implements SelfSerializable {
 	static final int RELEASE_0120_VERSION = 6;
 	static final int MERKLE_VERSION = RELEASE_0120_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x65ef569a77dcf125L;
-
-	static DomainSerdes serdes = new DomainSerdes();
 
 	long runningHashVersion = MISSING_RUNNING_HASH_VERSION;
 	long topicSequenceNumber = MISSING_TOPIC_SEQ_NO;
@@ -130,12 +127,12 @@ public class TxnReceipt implements SelfSerializable {
 	public void serialize(SerializableDataOutputStream out) throws IOException {
 		out.writeNormalisedString(status);
 		out.writeSerializable(exchangeRates, true);
-		serdes.writeNullableSerializable(accountId, out);
-		serdes.writeNullableSerializable(fileId, out);
-		serdes.writeNullableSerializable(contractId, out);
-		serdes.writeNullableSerializable(topicId, out);
-		serdes.writeNullableSerializable(tokenId, out);
-		serdes.writeNullableSerializable(scheduleId, out);
+		out.writeSerializable(accountId, true);
+		out.writeSerializable(fileId, true);
+		out.writeSerializable(contractId, true);
+		out.writeSerializable(topicId, true);
+		out.writeSerializable(tokenId, true);
+		out.writeSerializable(scheduleId, true);
 		if (topicRunningHash == MISSING_RUNNING_HASH) {
 			out.writeBoolean(false);
 		} else {
@@ -145,22 +142,22 @@ public class TxnReceipt implements SelfSerializable {
 			out.writeByteArray(topicRunningHash);
 		}
 		out.writeLong(newTotalSupply);
-		serdes.writeNullableSerializable(scheduledTxnId, out);
+		out.writeSerializable(scheduledTxnId,true);
 	}
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		status = getNormalisedStringFromBytes(in.readByteArray(MAX_STATUS_BYTES));
 		exchangeRates = in.readSerializable(true, ExchangeRates::new);
-		accountId = serdes.readNullableSerializable(in);
-		fileId = serdes.readNullableSerializable(in);
-		contractId = serdes.readNullableSerializable(in);
-		topicId = serdes.readNullableSerializable(in);
+		accountId = in.readSerializable(true, EntityId::new);
+		fileId = in.readSerializable(true, EntityId::new);
+		contractId = in.readSerializable(true, EntityId::new);
+		topicId = in.readSerializable(true, EntityId::new);
 		if (version > RELEASE_070_VERSION) {
-			tokenId = serdes.readNullableSerializable(in);
+			tokenId = in.readSerializable(true, EntityId::new);
 		}
 		if (version >= RELEASE_0110_VERSION) {
-			scheduleId = serdes.readNullableSerializable(in);
+			scheduleId = in.readSerializable(true, EntityId::new);
 		}
 		var isSubmitMessageReceipt = in.readBoolean();
 		if (isSubmitMessageReceipt) {
@@ -172,7 +169,7 @@ public class TxnReceipt implements SelfSerializable {
 			newTotalSupply = in.readLong();
 		}
 		if (version >= RELEASE_0120_VERSION) {
-			scheduledTxnId = serdes.readNullableSerializable(in);
+			scheduledTxnId = in.readSerializable(true, TxnId::new);
 		}
 	}
 

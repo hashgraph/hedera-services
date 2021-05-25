@@ -22,9 +22,8 @@ package com.hedera.services.state.merkle;
 
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.services.state.serdes.DomainSerdes;
-import com.hedera.services.state.serdes.IoReadingFunction;
-import com.hedera.services.state.serdes.IoWritingConsumer;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.MiscUtils;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -33,6 +32,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
+import org.mockito.MockedStatic;
 
 import java.io.IOException;
 
@@ -43,11 +43,11 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyInt;
-import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.times;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -72,11 +72,10 @@ class MerkleAccountStateTest {
 	boolean otherReceiverSigRequired = false;
 	EntityId otherProxy;
 
-	DomainSerdes serdes;
-
 	MerkleAccountState subject;
 	MerkleAccountState release070Subject;
 	MerkleAccountState otherSubject;
+	MockedStatic<JKeySerializer> mockJKeySerializer;
 
 	@BeforeEach
 	public void setup() {
@@ -98,14 +97,12 @@ class MerkleAccountStateTest {
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy);
-
-		serdes = mock(DomainSerdes.class);
-		MerkleAccountState.serdes = serdes;
+		mockJKeySerializer = mockStatic(JKeySerializer.class);
 	}
 
 	@AfterEach
 	public void cleanup() {
-		MerkleAccountState.serdes = new DomainSerdes();
+		mockJKeySerializer.close();
 	}
 
 	@Test
@@ -131,7 +128,7 @@ class MerkleAccountStateTest {
 		// and:
 		var newSubject = new MerkleAccountState();
 
-		given(serdes.readNullable(argThat(in::equals), any(IoReadingFunction.class))).willReturn(key);
+		mockJKeySerializer.when(JKeySerializer.deserialize(in)).thenReturn(key);
 		given(in.readLong())
 				.willReturn(expiry)
 				.willReturn(balance)
@@ -143,7 +140,7 @@ class MerkleAccountStateTest {
 				.willReturn(deleted)
 				.willReturn(smartContract)
 				.willReturn(receiverSigRequired);
-		given(serdes.readNullableSerializable(in)).willReturn(proxy);
+		given(in.readSerializable()).willReturn(proxy);
 
 		// when:
 		newSubject.deserialize(in, MerkleAccountState.RELEASE_070_VERSION);
@@ -159,7 +156,7 @@ class MerkleAccountStateTest {
 		// and:
 		var newSubject = new MerkleAccountState();
 
-		given(serdes.readNullable(argThat(in::equals), any(IoReadingFunction.class))).willReturn(key);
+		mockJKeySerializer.when(JKeySerializer.deserialize(in)).thenReturn(key);
 		given(in.readLong())
 				.willReturn(expiry)
 				.willReturn(balance)
@@ -169,7 +166,7 @@ class MerkleAccountStateTest {
 				.willReturn(deleted)
 				.willReturn(smartContract)
 				.willReturn(receiverSigRequired);
-		given(serdes.readNullableSerializable(in)).willReturn(proxy);
+		given(in.readSerializable()).willReturn(proxy);
 
 		// when:
 		newSubject.deserialize(in, MerkleAccountState.RELEASE_08x_VERSION);
@@ -187,7 +184,7 @@ class MerkleAccountStateTest {
 		// and:
 		var newSubject = new MerkleAccountState();
 
-		given(serdes.readNullable(argThat(in::equals), any(IoReadingFunction.class))).willReturn(key);
+		mockJKeySerializer.when(JKeySerializer.deserialize(in)).thenReturn(key);
 		given(in.readLong())
 				.willReturn(expiry)
 				.willReturn(balance)
@@ -197,7 +194,7 @@ class MerkleAccountStateTest {
 				.willReturn(deleted)
 				.willReturn(smartContract)
 				.willReturn(receiverSigRequired);
-		given(serdes.readNullableSerializable(in)).willReturn(proxy);
+		given(in.readSerializable()).willReturn(proxy);
 
 		// when:
 		newSubject.deserialize(in, MerkleAccountState.RELEASE_090_ALPHA_VERSION);
@@ -215,7 +212,7 @@ class MerkleAccountStateTest {
 		// and:
 		var newSubject = new MerkleAccountState();
 
-		given(serdes.readNullable(argThat(in::equals), any(IoReadingFunction.class))).willReturn(key);
+		mockJKeySerializer.when(JKeySerializer.deserialize(in)).thenReturn(key);
 		given(in.readLong())
 				.willReturn(expiry)
 				.willReturn(balance)
@@ -225,7 +222,7 @@ class MerkleAccountStateTest {
 				.willReturn(deleted)
 				.willReturn(smartContract)
 				.willReturn(receiverSigRequired);
-		given(serdes.readNullableSerializable(in)).willReturn(proxy);
+		given(in.readSerializable()).willReturn(proxy);
 
 		// when:
 		newSubject.deserialize(in, MerkleAccountState.RELEASE_090_VERSION);
@@ -241,20 +238,21 @@ class MerkleAccountStateTest {
 	public void serializeWorks() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
+		var in = mock(SerializableDataInputStream.class);
 		// and:
-		InOrder inOrder = inOrder(serdes, out);
+		InOrder inOrder = inOrder(in, out);
 
 		// when:
 		subject.serialize(out);
 
 		// then:
-		inOrder.verify(serdes).writeNullable(argThat(key::equals), argThat(out::equals), any(IoWritingConsumer.class));
+		inOrder.verify(out).write(JKeySerializer.serialize(key));
 		inOrder.verify(out).writeLong(expiry);
 		inOrder.verify(out).writeLong(balance);
 		inOrder.verify(out).writeLong(autoRenewSecs);
 		inOrder.verify(out).writeNormalisedString(memo);
 		inOrder.verify(out, times(3)).writeBoolean(true);
-		inOrder.verify(serdes).writeNullableSerializable(proxy, out);
+		inOrder.verify(out).writeSerializable(proxy, true);
 		// and:
 		verify(out, never()).writeLongArray(any());
 	}

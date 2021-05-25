@@ -21,7 +21,6 @@ package com.hedera.services.state.merkle;
  */
 
 import com.hedera.services.fees.FeeMultiplierSource;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
@@ -57,7 +56,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	public static final RichInstant UNKNOWN_CONSENSUS_TIME = null;
 
-	static DomainSerdes serdes = new DomainSerdes();
 	static Supplier<ExchangeRates> ratesSupplier = ExchangeRates::new;
 	static Supplier<SequenceNumber> seqNoSupplier = SequenceNumber::new;
 
@@ -180,7 +178,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		consensusTimeOfLastHandledTxn = serdes.readNullableInstant(in);
+		consensusTimeOfLastHandledTxn = RichInstant.from(in);
 		seqNo = seqNoSupplier.get();
 		seqNo.deserialize(in);
 		midnightRates = in.readSerializable(true, ratesSupplier);
@@ -191,7 +189,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				usageSnapshots = new DeterministicThrottle.UsageSnapshot[numUsageSnapshots];
 				for (int i = 0; i < numUsageSnapshots; i++) {
 					var used = in.readLong();
-					var lastUsed = serdes.readNullableInstant(in);
+					var lastUsed = RichInstant.from(in);
 					usageSnapshots[i] = new DeterministicThrottle.UsageSnapshot(
 							used,
 							Optional.ofNullable(lastUsed).map(RichInstant::toJava).orElse(null));
@@ -202,7 +200,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			if (numCongestionStarts > 0) {
 				congestionLevelStarts = new RichInstant[numCongestionStarts];
 				for (int i = 0; i < numCongestionStarts; i++) {
-					congestionLevelStarts[i] = serdes.readNullableInstant(in);
+					congestionLevelStarts[i] = RichInstant.from(in);
 				}
 			}
 		}
@@ -216,19 +214,19 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
-		serdes.writeNullableInstant(consensusTimeOfLastHandledTxn, out);
+		consensusTimeOfLastHandledTxn.serialize(out);
 		seqNo.serialize(out);
 		out.writeSerializable(midnightRates, true);
 		int n = usageSnapshots.length;
 		out.writeInt(n);
 		for (var usageSnapshot : usageSnapshots) {
 			out.writeLong(usageSnapshot.used());
-			serdes.writeNullableInstant(fromJava(usageSnapshot.lastDecisionTime()), out);
+			fromJava(usageSnapshot.lastDecisionTime()).serialize(out);
 		}
 		n = congestionLevelStarts.length;
 		out.writeInt(n);
 		for (var congestionStart : congestionLevelStarts) {
-			serdes.writeNullableInstant(congestionStart, out);
+			congestionStart.serialize(out);
 		}
 		out.writeLong(lastScannedEntity);
 		out.writeLong(entitiesScannedThisSecond);

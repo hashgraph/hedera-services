@@ -22,7 +22,7 @@ package com.hedera.services.state.merkle;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.serdes.DomainSerdes;
+import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.services.state.submerkle.EntityId;
 import com.swirlds.common.FCMValue;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -43,8 +43,6 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 
 	static final int MERKLE_VERSION = RELEASE_0120_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xd23ce8814b35fc2fL;
-
-	static DomainSerdes serdes = new DomainSerdes();
 
 	public static final long UNUSED_AUTO_RENEW_PERIOD = -1L;
 	public static final JKey UNUSED_KEY = null;
@@ -190,7 +188,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		deleted = in.readBoolean();
 		expiry = in.readLong();
-		autoRenewAccount = serdes.readNullableSerializable(in);
+		autoRenewAccount = in.readSerializable();
 		autoRenewPeriod = in.readLong();
 		symbol = in.readNormalisedString(UPPER_BOUND_SYMBOL_UTF8_BYTES);
 		name = in.readNormalisedString(UPPER_BOUND_TOKEN_NAME_UTF8_BYTES);
@@ -199,11 +197,11 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 		decimals = in.readInt();
 		accountsFrozenByDefault = in.readBoolean();
 		accountsKycGrantedByDefault = in.readBoolean();
-		adminKey = serdes.readNullable(in, serdes::deserializeKey);
-		freezeKey = serdes.readNullable(in, serdes::deserializeKey);
-		kycKey = serdes.readNullable(in, serdes::deserializeKey);
-		supplyKey = serdes.readNullable(in, serdes::deserializeKey);
-		wipeKey = serdes.readNullable(in, serdes::deserializeKey);
+		adminKey = JKeySerializer.deserialize(in);
+		freezeKey = JKeySerializer.deserialize(in);
+		kycKey = JKeySerializer.deserialize(in);
+		supplyKey = JKeySerializer.deserialize(in);
+		wipeKey = JKeySerializer.deserialize(in);
 		if (version >= RELEASE_0120_VERSION) {
 			memo = in.readNormalisedString(UPPER_BOUND_MEMO_UTF8_BYTES);
 		}
@@ -213,7 +211,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 	public void serialize(SerializableDataOutputStream out) throws IOException {
 		out.writeBoolean(deleted);
 		out.writeLong(expiry);
-		serdes.writeNullableSerializable(autoRenewAccount, out);
+		out.writeSerializable(autoRenewAccount, true);
 		out.writeLong(autoRenewPeriod);
 		out.writeNormalisedString(symbol);
 		out.writeNormalisedString(name);
@@ -222,11 +220,11 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 		out.writeInt(decimals);
 		out.writeBoolean(accountsFrozenByDefault);
 		out.writeBoolean(accountsKycGrantedByDefault);
-		serdes.writeNullable(adminKey, out, serdes::serializeKey);
-		serdes.writeNullable(freezeKey, out, serdes::serializeKey);
-		serdes.writeNullable(kycKey, out, serdes::serializeKey);
-		serdes.writeNullable(supplyKey, out, serdes::serializeKey);
-		serdes.writeNullable(wipeKey, out, serdes::serializeKey);
+		out.write(adminKey.serialize());
+		out.write(freezeKey.serialize());
+		out.write(kycKey.serialize());
+		out.write(supplyKey.serialize());
+		out.write(wipeKey.serialize());
 		out.writeNormalisedString(memo);
 	}
 

@@ -23,7 +23,6 @@ package com.hedera.services.state.merkle;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.swirlds.common.FCMValue;
@@ -55,8 +54,6 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements FCMValu
 	static final int MERKLE_VERSION = RELEASE_090_VERSION;
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x950bcf7255691908L;
-
-	static DomainSerdes serdes = new DomainSerdes();
 
 	/* Order of Merkle node children */
 	static class ChildIndices {

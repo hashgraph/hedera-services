@@ -22,7 +22,7 @@ package com.hedera.services.state.merkle;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.serdes.DomainSerdes;
+import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.services.state.submerkle.EntityId;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -49,8 +49,6 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	static final int RELEASE_090_VERSION = 4;
 	static final int MERKLE_VERSION = RELEASE_090_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
-
-	static DomainSerdes serdes = new DomainSerdes();
 
 	public static final String DEFAULT_MEMO = "";
 
@@ -101,7 +99,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		key = serdes.readNullable(in, serdes::deserializeKey);
+		key = JKeySerializer.deserialize(in); //serdes.readNullable(in, serdes::deserializeKey);
 		expiry = in.readLong();
 		hbarBalance = in.readLong();
 		autoRenewSecs = in.readLong();
@@ -114,7 +112,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		deleted = in.readBoolean();
 		smartContract = in.readBoolean();
 		receiverSigRequired = in.readBoolean();
-		proxy = serdes.readNullableSerializable(in);
+		proxy = in.readSerializable();
 		if (version == RELEASE_08x_VERSION) {
 			/* Releases v0.8.0 and v0.8.1 included token information in the account state. */
 			in.readLongArray(MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE);
@@ -123,7 +121,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
-		serdes.writeNullable(key, out, serdes::serializeKey);
+		out.write(JKeySerializer.serialize(key));
 		out.writeLong(expiry);
 		out.writeLong(hbarBalance);
 		out.writeLong(autoRenewSecs);
@@ -131,7 +129,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		out.writeBoolean(deleted);
 		out.writeBoolean(smartContract);
 		out.writeBoolean(receiverSigRequired);
-		serdes.writeNullableSerializable(proxy, out);
+		out.writeSerializable(proxy, true);
 	}
 
 	/* --- Copyable --- */

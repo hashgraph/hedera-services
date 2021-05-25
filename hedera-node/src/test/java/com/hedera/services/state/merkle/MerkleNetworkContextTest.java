@@ -21,7 +21,6 @@ package com.hedera.services.state.merkle;
  */
 
 import com.hedera.services.fees.FeeMultiplierSource;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
@@ -78,8 +77,6 @@ class MerkleNetworkContextTest {
 	private ExchangeRates midnightRateSetCopy;
 	private Instant[] congestionStarts;
 	private DeterministicThrottle.UsageSnapshot[] usageSnapshots;
-
-	private DomainSerdes serdes;
 	private FunctionalityThrottling throttling;
 	private FeeMultiplierSource feeMultiplierSource;
 
@@ -114,9 +111,6 @@ class MerkleNetworkContextTest {
 						456L, consensusTimeOfLastHandledTxn.toJava().plusSeconds(1L))
 		};
 
-		serdes = mock(DomainSerdes.class);
-		MerkleNetworkContext.serdes = serdes;
-
 		subject = new MerkleNetworkContext(
 				consensusTimeOfLastHandledTxn,
 				seqNo,
@@ -131,7 +125,6 @@ class MerkleNetworkContextTest {
 
 	@AfterEach
 	void cleanup() {
-		MerkleNetworkContext.serdes = new DomainSerdes();
 	}
 
 	@Test
@@ -421,7 +414,8 @@ class MerkleNetworkContextTest {
 		MerkleNetworkContext.seqNoSupplier = () -> seqNo;
 		InOrder inOrder = inOrder(in, seqNo);
 
-		given(serdes.readNullableInstant(in)).willReturn(consensusTimeOfLastHandledTxn);
+		given(in.readLong()).willReturn(consensusTimeOfLastHandledTxn.getSeconds());
+		given(in.readInt()).willReturn(consensusTimeOfLastHandledTxn.getNanos());
 
 		// when:
 		subject.deserialize(in, MerkleNetworkContext.PRE_RELEASE_0130_VERSION);
@@ -446,17 +440,21 @@ class MerkleNetworkContextTest {
 		subject = new MerkleNetworkContext();
 
 		given(in.readInt())
+				.willReturn(consensusTimeOfLastHandledTxn.getNanos())
 				.willReturn(usageSnapshots.length)
-				.willReturn(congestionStarts.length);
+				.willReturn(usageSnapshots[0].lastDecisionTime().getNano())
+				.willReturn(usageSnapshots[1].lastDecisionTime().getNano())
+				.willReturn(congestionStarts.length)
+				.willReturn(congestionStarts[0].getNano())
+				.willReturn(congestionStarts[1].getNano());
 		given(in.readLong())
+				.willReturn(consensusTimeOfLastHandledTxn.getSeconds())
 				.willReturn(usageSnapshots[0].used())
-				.willReturn(usageSnapshots[1].used());
-		given(serdes.readNullableInstant(in))
-				.willReturn(consensusTimeOfLastHandledTxn)
-				.willReturn(RichInstant.fromJava(usageSnapshots[0].lastDecisionTime()))
-				.willReturn(RichInstant.fromJava(usageSnapshots[1].lastDecisionTime()))
-				.willReturn(RichInstant.fromJava(congestionStarts[0]))
-				.willReturn(RichInstant.fromJava(congestionStarts[1]));
+				.willReturn(usageSnapshots[0].lastDecisionTime().getEpochSecond())
+				.willReturn(usageSnapshots[1].used())
+				.willReturn(usageSnapshots[1].lastDecisionTime().getEpochSecond())
+				.willReturn(congestionStarts[0].getEpochSecond())
+				.willReturn(congestionStarts[1].getEpochSecond());
 
 		// when:
 		subject.deserialize(in, MerkleNetworkContext.RELEASE_0130_VERSION);
@@ -483,21 +481,25 @@ class MerkleNetworkContextTest {
 		subject = new MerkleNetworkContext();
 
 		given(in.readInt())
+				.willReturn(consensusTimeOfLastHandledTxn.getNanos())
 				.willReturn(usageSnapshots.length)
+				.willReturn(usageSnapshots[0].lastDecisionTime().getNano())
+				.willReturn(usageSnapshots[1].lastDecisionTime().getNano())
 				.willReturn(congestionStarts.length)
+				.willReturn(congestionStarts[0].getNano())
+				.willReturn(congestionStarts[1].getNano())
 				.willReturn(stateVersion);
 		given(in.readLong())
+				.willReturn(consensusTimeOfLastHandledTxn.getSeconds())
 				.willReturn(usageSnapshots[0].used())
+				.willReturn(usageSnapshots[0].lastDecisionTime().getEpochSecond())
 				.willReturn(usageSnapshots[1].used())
+				.willReturn(usageSnapshots[1].lastDecisionTime().getEpochSecond())
+				.willReturn(congestionStarts[0].getEpochSecond())
+				.willReturn(congestionStarts[1].getEpochSecond())
 				.willReturn(lastScannedEntity)
 				.willReturn(entitiesScannedThisSecond)
 				.willReturn(entitiesTouchedThisSecond);
-		given(serdes.readNullableInstant(in))
-				.willReturn(consensusTimeOfLastHandledTxn)
-				.willReturn(RichInstant.fromJava(usageSnapshots[0].lastDecisionTime()))
-				.willReturn(RichInstant.fromJava(usageSnapshots[1].lastDecisionTime()))
-				.willReturn(RichInstant.fromJava(congestionStarts[0]))
-				.willReturn(RichInstant.fromJava(congestionStarts[1]));
 
 		// when:
 		subject.deserialize(in, MerkleNetworkContext.RELEASE_0140_VERSION);
@@ -520,7 +522,7 @@ class MerkleNetworkContextTest {
 	void serializeWorks() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
-		InOrder inOrder = inOrder(out, seqNo, serdes);
+		InOrder inOrder = inOrder(out, seqNo);
 		throttling = mock(FunctionalityThrottling.class);
 		// and:
 		var active = activeThrottles();
@@ -533,19 +535,24 @@ class MerkleNetworkContextTest {
 		subject.serialize(out);
 
 		// expect:
-		inOrder.verify(serdes).writeNullableInstant(consensusTimeOfLastHandledTxn, out);
+		inOrder.verify(out).writeLong(consensusTimeOfLastHandledTxn.getSeconds());
+		inOrder.verify(out).writeInt(consensusTimeOfLastHandledTxn.getNanos());
 		inOrder.verify(seqNo).serialize(out);
 		inOrder.verify(out).writeSerializable(midnightRateSet, true);
 		// and:
 		inOrder.verify(out).writeInt(3);
 		for (int i = 0; i < 3; i++) {
 			inOrder.verify(out).writeLong(used[i]);
-			inOrder.verify(serdes).writeNullableInstant(RichInstant.fromJava(lastUseds[i]), out);
+			RichInstant richInstant = RichInstant.fromJava(lastUseds[i]);
+			inOrder.verify(out).writeLong(richInstant.getSeconds());
+			inOrder.verify(out).writeInt(richInstant.getNanos());
 		}
 		// and:
 		inOrder.verify(out).writeInt(2);
 		for (int i = 0; i < 2; i++) {
-			inOrder.verify(serdes).writeNullableInstant(richCongestionStarts()[i], out);
+			RichInstant richInstant = richCongestionStarts()[i];
+			inOrder.verify(out).writeLong(richInstant.getSeconds());
+			inOrder.verify(out).writeInt(richInstant.getNanos());
 		}
 		inOrder.verify(out).writeLong(lastScannedEntity);
 		inOrder.verify(out).writeLong(entitiesScannedThisSecond);

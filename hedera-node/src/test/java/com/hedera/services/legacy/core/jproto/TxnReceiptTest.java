@@ -21,7 +21,6 @@ package com.hedera.services.legacy.core.jproto;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.TxnId;
@@ -60,7 +59,6 @@ public class TxnReceiptTest {
           .setAccountID(IdUtils.asAccount("0.0.2"))
           .build();
 
-  DomainSerdes serdes;
   ExchangeRates mockRates;
   TxnReceipt subject;
 
@@ -82,10 +80,7 @@ public class TxnReceiptTest {
 
   @BeforeEach
   public void setup() {
-    serdes = mock(DomainSerdes.class);
     mockRates = mock(ExchangeRates.class);
-
-    TxnReceipt.serdes = serdes;
   }
 
 
@@ -339,8 +334,9 @@ public class TxnReceiptTest {
   public void serializeWorks() throws IOException {
     // setup:
     SerializableDataOutputStream fout = mock(SerializableDataOutputStream.class);
+    SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
     // and:
-    InOrder inOrder = Mockito.inOrder(serdes, fout);
+    InOrder inOrder = Mockito.inOrder(fin, fout);
 
     subject = new TxnReceipt("SUCCESS", null, null, null,
             null,null,mockRates,
@@ -352,10 +348,10 @@ public class TxnReceiptTest {
     // then:
     inOrder.verify(fout).writeNormalisedString(subject.getStatus());
     inOrder.verify(fout).writeSerializable(mockRates, true);
-    inOrder.verify(serdes, times(6)).writeNullableSerializable(null, fout);
+    inOrder.verify(fout, times(6)).writeSerializable(null, true);
     inOrder.verify(fout).writeBoolean(false);
     inOrder.verify(fout).writeLong(subject.getNewTotalSupply());
-    inOrder.verify(serdes).writeNullableSerializable(subject.getScheduledTxnId(), fout);
+    inOrder.verify(fout).writeSerializable(subject.getScheduledTxnId(), true);
   }
 
   @Test
@@ -368,8 +364,8 @@ public class TxnReceiptTest {
             TxnId.fromGrpc(scheduledTxnId));
 
     given(fin.readByteArray(MAX_STATUS_BYTES)).willReturn(subject.getStatus().getBytes());
-    given(fin.readSerializable(anyBoolean(), any())).willReturn(mockRates);
-    given(serdes.readNullableSerializable(fin))
+    given(fin.readSerializable(anyBoolean(), any()))
+            .willReturn(mockRates)
             .willReturn(subject.getAccountId())
             .willReturn(subject.getFileId())
             .willReturn(subject.getContractId())
@@ -408,8 +404,7 @@ public class TxnReceiptTest {
             TxnReceipt.MISSING_SCHEDULED_TXN_ID);
 
     given(fin.readByteArray(MAX_STATUS_BYTES)).willReturn(subject.getStatus().getBytes());
-    given(fin.readSerializable(anyBoolean(), any())).willReturn(mockRates);
-    given(serdes.readNullableSerializable(fin))
+    given(fin.readSerializable(anyBoolean(), any())).willReturn(mockRates)
             .willReturn(subject.getAccountId())
             .willReturn(subject.getFileId())
             .willReturn(subject.getContractId())

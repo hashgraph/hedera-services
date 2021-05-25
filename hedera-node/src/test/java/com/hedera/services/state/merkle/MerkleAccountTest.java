@@ -23,11 +23,9 @@ package com.hedera.services.state.merkle;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.swirlds.fcqueue.FCQueue;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -98,16 +96,12 @@ public class MerkleAccountTest {
 	MerkleAccountState otherState;
 	FCQueue<ExpirableTxnRecord> payerRecords;
 	MerkleAccountTokens tokens;
-	DomainSerdes serdes;
 
 	MerkleAccount subject;
 	MerkleAccountState delegate;
 
 	@BeforeEach
 	public void setup() {
-		serdes = mock(DomainSerdes.class);
-		MerkleAccount.serdes = serdes;
-
 		payerRecords = mock(FCQueue.class);
 		given(payerRecords.copy()).willReturn(payerRecords);
 		given(payerRecords.isImmutable()).willReturn(false);
@@ -131,11 +125,6 @@ public class MerkleAccountTest {
 				otherProxy);
 
 		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
-	}
-
-	@AfterEach
-	public void cleanup() {
-		MerkleAccount.serdes = new DomainSerdes();
 	}
 
 	@Test

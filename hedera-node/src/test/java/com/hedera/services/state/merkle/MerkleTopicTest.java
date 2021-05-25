@@ -23,7 +23,6 @@ package com.hedera.services.state.merkle;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.serdes.TopicSerde;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -60,7 +59,6 @@ class MerkleTopicTest {
 	@AfterEach
 	public void cleanup() {
 		MerkleTopic.topicSerde = new TopicSerde();
-		MerkleTopic.serdes = new DomainSerdes();
 	}
 
 	@Test

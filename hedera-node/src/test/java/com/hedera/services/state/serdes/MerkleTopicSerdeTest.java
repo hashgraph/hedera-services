@@ -21,15 +21,16 @@ package com.hedera.services.state.serdes;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
+import org.mockito.MockedStatic;
 
 import java.io.IOException;
 
@@ -40,6 +41,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.times;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 
 class MerkleTopicSerdeTest {
 	long autoRenewSecs = 1_234_567L;
@@ -50,27 +52,18 @@ class MerkleTopicSerdeTest {
 	EntityId autoRenewId;
 	RichInstant expiry;
 
-	DomainSerdes serdes;
-
 	TopicSerde subject;
 
 	@BeforeEach
 	public void setup() {
 		adminKey = mock(JKey.class);
 		submitKey = mock(JKey.class);
-		serdes = mock(DomainSerdes.class);
 		autoRenewId = mock(EntityId.class);
 		given(autoRenewId.num()).willReturn(13257L);
 		expiry = mock(RichInstant.class);
 		given(expiry.getSeconds()).willReturn(1_234_567L);
-		TopicSerde.serdes = serdes;
 
 		subject = new TopicSerde();
-	}
-
-	@AfterEach
-	public void cleanup() {
-		TopicSerde.serdes = new DomainSerdes();
 	}
 
 	@Test
@@ -79,7 +72,7 @@ class MerkleTopicSerdeTest {
 		var out = mock(SerializableDataOutputStream.class);
 		var topic = mock(MerkleTopic.class);
 		// and:
-		InOrder inOrder = inOrder(out, serdes);
+		InOrder inOrder = inOrder(out);
 
 		// given:
 		withBasics(topic);
@@ -98,18 +91,19 @@ class MerkleTopicSerdeTest {
 		inOrder.verify(out).writeNormalisedString(memo);
 		// and:
 		inOrder.verify(out).writeBoolean(true);
-		inOrder.verify(serdes).serializeKey(adminKey, out);
+		inOrder.verify(out).write(adminKey.serialize());
 		// and:
 		inOrder.verify(out).writeBoolean(true);
-		inOrder.verify(serdes).serializeKey(submitKey, out);
+		inOrder.verify(out).write(submitKey.serialize());
 		// and:
 		inOrder.verify(out).writeLong(autoRenewSecs);
 		// and:
 		inOrder.verify(out).writeBoolean(true);
-		inOrder.verify(serdes).serializeId(autoRenewId, out);
+		inOrder.verify(out).writeSerializable(autoRenewId, true);
 		// and:
 		inOrder.verify(out).writeBoolean(true);
-		inOrder.verify(serdes).serializeTimestamp(expiry, out);
+		inOrder.verify(out).writeLong(expiry.getSeconds());
+		inOrder.verify(out).writeInt(expiry.getNanos());
 		// and:
 		inOrder.verify(out).writeBoolean(true);
 		inOrder.verify(out).writeLong(seqNo);
@@ -124,7 +118,7 @@ class MerkleTopicSerdeTest {
 		var out = mock(SerializableDataOutputStream.class);
 		var topic = mock(MerkleTopic.class);
 		// and:
-		InOrder inOrder = inOrder(out, serdes);
+		InOrder inOrder = inOrder(out);
 
 		// given:
 		withBasics(topic);
@@ -153,7 +147,7 @@ class MerkleTopicSerdeTest {
 		var topic = new MerkleTopic();
 
 		// given:
-		configureMinimal(in, serdes);
+		configureMinimal(in);
 
 		// when:
 		subject.deserializeV1(in, topic);
@@ -179,7 +173,23 @@ class MerkleTopicSerdeTest {
 		var topic = new MerkleTopic();
 
 		// given:
-		configureFull(in, serdes);
+		given(in.readBoolean())
+				.willReturn(true);
+		given(in.readLong())
+				.willReturn(autoRenewSecs)
+				.willReturn(expiry.getSeconds())
+				.willReturn(seqNo);
+		given(in.readInt()).willReturn(expiry.getNanos());
+		given(in.readNormalisedString(TopicSerde.MAX_MEMO_BYTES))
+				.willReturn(memo);
+		given(in.readByteArray(MerkleTopic.RUNNING_HASH_BYTE_ARRAY_SIZE))
+				.willReturn(hash);
+		given(in.readSerializable())
+				.willReturn(autoRenewId);
+		MockedStatic<JKeySerializer> mockedJkeySerializer = mockStatic(JKeySerializer.class);
+		mockedJkeySerializer.when(() -> JKeySerializer.deserialize(in))
+				.thenReturn(adminKey, submitKey);
+
 
 		// when:
 		subject.deserializeV1(in, topic);
@@ -201,32 +211,14 @@ class MerkleTopicSerdeTest {
 		assertEquals(topic.getRunningHash(), hash);
 		assertEquals(topic.getSequenceNumber(), seqNo);
 		assertEquals(topic.getAutoRenewDurationSeconds(), autoRenewSecs);
+		mockedJkeySerializer.close();
 	}
 
-	private void configureFull(SerializableDataInputStream in, DomainSerdes serdes) throws IOException {
-		given(in.readBoolean())
-				.willReturn(true);
-		given(in.readNormalisedString(TopicSerde.MAX_MEMO_BYTES))
-				.willReturn(memo);
-		given(in.readByteArray(MerkleTopic.RUNNING_HASH_BYTE_ARRAY_SIZE))
-				.willReturn(hash);
-		given(serdes.deserializeKey(in))
-				.willReturn(adminKey)
-				.willReturn(submitKey);
+	private void configureMinimal(SerializableDataInputStream in) throws IOException {
 		given(in.readLong())
 				.willReturn(autoRenewSecs)
 				.willReturn(seqNo);
-		given(serdes.deserializeId(in))
-				.willReturn(autoRenewId);
-		given(serdes.deserializeTimestamp(in))
-				.willReturn(expiry);
-	}
-
-	private void configureMinimal(SerializableDataInputStream in, DomainSerdes serdes) throws IOException {
-		given(in.readLong())
-				.willReturn(autoRenewSecs)
-				.willReturn(seqNo);
-		given(serdes.deserializeId(in))
+		given(in.readSerializable())
 				.willReturn(autoRenewId);
 	}
 

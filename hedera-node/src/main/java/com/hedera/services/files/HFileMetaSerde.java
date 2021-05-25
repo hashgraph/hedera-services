@@ -24,7 +24,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.services.legacy.core.jproto.JKeySerializer.StreamConsumer;
 import com.hedera.services.legacy.core.jproto.JObjectType;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 
@@ -46,7 +45,6 @@ public class HFileMetaSerde {
 		byte[] discoverFor(StreamConsumer<DataOutputStream> streamConsumer) throws IOException;
 	}
 
-	public static DomainSerdes serdes = new DomainSerdes();
 	public static StreamContentDiscovery streamContentDiscovery = JKeySerializer::byteStream;
 	public static Function<InputStream, SerializableDataInputStream> serInFactory = SerializableDataInputStream::new;
 	public static Function<OutputStream, SerializableDataOutputStream> serOutFactory = SerializableDataOutputStream::new;
@@ -58,7 +56,7 @@ public class HFileMetaSerde {
 			serOut.writeBoolean(meta.isDeleted());
 			serOut.writeLong(meta.getExpiry());
 			serOut.writeNormalisedString(meta.getMemo());
-			serdes.writeNullable(meta.getWacl(), serOut, serdes::serializeKey);
+			serOut.write(meta.getWacl().serialize());
 		});
 	}
 
@@ -76,7 +74,7 @@ public class HFileMetaSerde {
 		var isDeleted = serIn.readBoolean();
 		var expiry = serIn.readLong();
 		var memo = serIn.readNormalisedString(MAX_CONCEIVABLE_MEMO_UTF8_BYTES);
-		var wacl = serdes.readNullable(serIn, serdes::deserializeKey);
+		JKey wacl = JKeySerializer.deserialize(serIn);
 		return new HFileMeta(isDeleted, wacl, expiry, memo);
 	}
 

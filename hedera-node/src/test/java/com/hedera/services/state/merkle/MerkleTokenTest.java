@@ -22,7 +22,7 @@ package com.hedera.services.state.merkle;
 
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.serdes.DomainSerdes;
+import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.services.state.serdes.IoReadingFunction;
 import com.hedera.services.state.serdes.IoWritingConsumer;
 import com.hedera.services.state.submerkle.EntityId;
@@ -32,11 +32,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
+import org.mockito.MockedStatic;
 
 import java.io.IOException;
 import java.time.Instant;
 
-import static com.hedera.services.state.merkle.MerkleTopic.serdes;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -50,6 +50,7 @@ import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 
 class MerkleTokenTest {
@@ -99,14 +100,6 @@ class MerkleTokenTest {
 		subject.setSupplyKey(supplyKey);
 		subject.setDeleted(isDeleted);
 		subject.setMemo(memo);
-
-		serdes = mock(DomainSerdes.class);
-		MerkleToken.serdes = serdes;
-	}
-
-	@AfterEach
-	public void cleanup() {
-		MerkleToken.serdes = new DomainSerdes();
 	}
 
 	@Test
@@ -120,7 +113,7 @@ class MerkleTokenTest {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 		// and:
-		InOrder inOrder = inOrder(serdes, out);
+		InOrder inOrder = inOrder(out);
 
 		// when:
 		subject.serialize(out);
@@ -128,7 +121,7 @@ class MerkleTokenTest {
 		// then:
 		inOrder.verify(out).writeBoolean(isDeleted);
 		inOrder.verify(out).writeLong(expiry);
-		inOrder.verify(serdes).writeNullableSerializable(autoRenewAccount, out);
+		inOrder.verify(out).writeSerializable(autoRenewAccount, true);
 		inOrder.verify(out).writeLong(autoRenewPeriod);
 		inOrder.verify(out).writeNormalisedString(symbol);
 		inOrder.verify(out).writeNormalisedString(name);
@@ -136,16 +129,7 @@ class MerkleTokenTest {
 		inOrder.verify(out).writeLong(totalSupply);
 		inOrder.verify(out).writeInt(decimals);
 		inOrder.verify(out, times(2)).writeBoolean(true);
-		inOrder.verify(serdes).writeNullable(
-				argThat(adminKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
-		inOrder.verify(serdes).writeNullable(
-				argThat(freezeKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
-		inOrder.verify(serdes).writeNullable(
-				argThat(kycKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
-		inOrder.verify(serdes).writeNullable(
-				argThat(supplyKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
-		inOrder.verify(serdes).writeNullable(
-				argThat(wipeKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
+		inOrder.verify(out, times(5)).write(any());
 		inOrder.verify(out).writeNormalisedString(memo);
 	}
 
@@ -164,14 +148,13 @@ class MerkleTokenTest {
 		// setup:
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
 
-		given(serdes.readNullableSerializable(any())).willReturn(autoRenewAccount);
-		given(serdes.deserializeKey(fin)).willReturn(adminKey);
-		given(serdes.readNullable(argThat(fin::equals), any(IoReadingFunction.class)))
-				.willReturn(adminKey)
-				.willReturn(freezeKey)
-				.willReturn(kycKey)
-				.willReturn(supplyKey)
-				.willReturn(wipeKey);
+		MockedStatic<JKeySerializer> mockedJkeySerializer = mockStatic(JKeySerializer.class);
+
+		given(fin.readSerializable())
+				.willReturn(autoRenewAccount)
+				.willReturn(subject.treasury());
+		mockedJkeySerializer.when(() -> JKeySerializer.deserialize(fin))
+				.thenReturn(adminKey, freezeKey, kycKey, supplyKey, wipeKey);
 		given(fin.readNormalisedString(anyInt()))
 				.willReturn(symbol)
 				.willReturn(name)
@@ -184,7 +167,6 @@ class MerkleTokenTest {
 		given(fin.readBoolean())
 				.willReturn(isDeleted)
 				.willReturn(subject.accountsAreFrozenByDefault());
-		given(fin.readSerializable()).willReturn(subject.treasury());
 		// and:
 		var read = new MerkleToken();
 
@@ -193,22 +175,21 @@ class MerkleTokenTest {
 
 		// then:
 		assertEquals(subject, read);
+		mockedJkeySerializer.close();
 	}
 
 	@Test
 	public void pre0120DeserializeWorks() throws IOException {
 		// setup:
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
+		MockedStatic<JKeySerializer> mockedJkeySerializer = mockStatic(JKeySerializer.class);
 		subject.setMemo(MerkleAccountState.DEFAULT_MEMO);
 
-		given(serdes.readNullableSerializable(any())).willReturn(autoRenewAccount);
-		given(serdes.deserializeKey(fin)).willReturn(adminKey);
-		given(serdes.readNullable(argThat(fin::equals), any(IoReadingFunction.class)))
-				.willReturn(adminKey)
-				.willReturn(freezeKey)
-				.willReturn(kycKey)
-				.willReturn(supplyKey)
-				.willReturn(wipeKey);
+		given(fin.readSerializable())
+				.willReturn(autoRenewAccount)
+				.willReturn(subject.treasury());
+		mockedJkeySerializer.when(() -> JKeySerializer.deserialize(fin))
+				.thenReturn(adminKey, freezeKey, kycKey, supplyKey, wipeKey);
 		given(fin.readNormalisedString(anyInt()))
 				.willReturn(symbol)
 				.willReturn(name);
@@ -220,7 +201,6 @@ class MerkleTokenTest {
 		given(fin.readBoolean())
 				.willReturn(isDeleted)
 				.willReturn(subject.accountsAreFrozenByDefault());
-		given(fin.readSerializable()).willReturn(subject.treasury());
 		// and:
 		var read = new MerkleToken();
 
@@ -229,6 +209,7 @@ class MerkleTokenTest {
 
 		// then:
 		assertEquals(subject, read);
+		mockedJkeySerializer.close();
 	}
 
 	@Test

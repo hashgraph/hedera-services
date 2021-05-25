@@ -21,7 +21,6 @@ package com.hedera.services.state.merkle;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.MiscUtils;
@@ -52,7 +51,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.hedera.services.state.merkle.MerkleTopic.serdes;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -102,14 +100,6 @@ public class MerkleScheduleTest {
 		signatories.addAll(List.of(fpk, spk, tpk));
 
 		subject = MerkleSchedule.from(bodyBytes, expiry);
-
-		serdes = mock(DomainSerdes.class);
-		MerkleSchedule.serdes = serdes;
-	}
-
-	@AfterEach
-	public void cleanup() {
-		MerkleSchedule.serdes = new DomainSerdes();
 	}
 
 	@Test
@@ -217,9 +207,10 @@ public class MerkleScheduleTest {
 	@Test
 	public void serializeWorks() throws IOException {
 		// setup:
+		RichInstant richInstant = RichInstant.fromJava(resolutionTime);
 		var out = mock(SerializableDataOutputStream.class);
 		// and:
-		InOrder inOrder = inOrder(serdes, out);
+		InOrder inOrder = inOrder(out);
 
 		// given:
 		subject.witnessValidEd25519Signature(fpk);
@@ -234,7 +225,8 @@ public class MerkleScheduleTest {
 		inOrder.verify(out).writeByteArray(bodyBytes);
 		inOrder.verify(out).writeBoolean(false);
 		inOrder.verify(out).writeBoolean(true);
-		inOrder.verify(serdes).writeNullableInstant(RichInstant.fromJava(resolutionTime), out);
+		inOrder.verify(out).writeLong(richInstant.getSeconds());
+		inOrder.verify(out).writeInt(richInstant.getNanos());
 		inOrder.verify(out).writeInt(2);
 		inOrder.verify(out).writeByteArray(argThat((byte[] bytes) -> Arrays.equals(bytes, fpk)));
 		inOrder.verify(out).writeByteArray(argThat((byte[] bytes) -> Arrays.equals(bytes, spk)));
@@ -243,19 +235,25 @@ public class MerkleScheduleTest {
 	@Test
 	public void deserializeWorks() throws IOException {
 		// setup:
+		RichInstant richInstant = RichInstant.fromJava(resolutionTime);
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
 		// and:
 		subject.witnessValidEd25519Signature(fpk);
 		subject.witnessValidEd25519Signature(spk);
 		subject.markExecuted(resolutionTime);
 
-		given(fin.readLong()).willReturn(subject.expiry());
-		given(fin.readInt()).willReturn(2);
+		given(fin.readLong())
+				.willReturn(subject.expiry())
+				.willReturn(richInstant.getSeconds());
+		given(fin.readInt())
+				.willReturn(richInstant.getNanos())
+				.willReturn(2);
 		given(fin.readByteArray(Integer.MAX_VALUE)).willReturn(bodyBytes);
 		given(fin.readByteArray(MerkleSchedule.NUM_ED25519_PUBKEY_BYTES))
 				.willReturn(fpk)
 				.willReturn(spk);
-		given(serdes.readNullableInstant(fin)).willReturn(RichInstant.fromJava(resolutionTime));
+//		given(fin.readLong()).willReturn(richInstant.getSeconds());
+//		given(fin.readInt()).willReturn(richInstant.getNanos());
 		given(fin.readBoolean())
 				.willReturn(true)
 				.willReturn(false);

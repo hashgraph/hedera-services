@@ -24,7 +24,6 @@ import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HFileMetaSerde;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.serdes.IoReadingFunction;
 import com.hedera.services.state.serdes.IoWritingConsumer;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -41,6 +40,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
+import org.mockito.MockedStatic;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -61,6 +61,7 @@ import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
+import static org.mockito.Mockito.mockStatic;
 
 public class HFileMetaSerdeTest {
 	private long expiry = 1_234_567L;
@@ -90,7 +91,6 @@ public class HFileMetaSerdeTest {
 					"00020000000000ecf2ea000000000000002047c8c60779a621d370686f7b8ae2b670e65d67864da" +
 					"b067af7c4407ebeadc7b3";
 
-	DomainSerdes serdes;
 	HFileMetaSerde.StreamContentDiscovery discovery;
 	Function<InputStream, SerializableDataInputStream> serInFactory;
 	Function<OutputStream, SerializableDataOutputStream> serOutFactory;
@@ -106,6 +106,7 @@ public class HFileMetaSerdeTest {
 	public void deserializesNewVersionAsExpected() throws IOException {
 		// setup:
 		doStaticMocking();
+		MockedStatic<JKeySerializer> mockedJkeySerializer = mockStatic(JKeySerializer.class);
 		// and:
 		DataInputStream in = mock(DataInputStream.class);
 		SerializableDataInputStream serIn = mock(SerializableDataInputStream.class);
@@ -116,7 +117,8 @@ public class HFileMetaSerdeTest {
 		given(serIn.readBoolean()).willReturn(known.isDeleted());
 		given(serIn.readLong()).willReturn(known.getExpiry());
 		given(serIn.readNormalisedString(MAX_CONCEIVABLE_MEMO_UTF8_BYTES)).willReturn(known.getMemo());
-		given(serdes.readNullable(argThat(serIn::equals), any(IoReadingFunction.class))).willReturn(known.getWacl());
+		mockedJkeySerializer.when(() -> JKeySerializer.deserialize(serIn))
+				.thenReturn(known.getWacl());
 
 		// when:
 		var replica = deserialize(in);
@@ -126,6 +128,7 @@ public class HFileMetaSerdeTest {
 
 		// cleanup:
 		undoStaticMocking();
+		mockedJkeySerializer.close();
 	}
 
 	@Test
@@ -140,7 +143,7 @@ public class HFileMetaSerdeTest {
 		// and:
 		ArgumentCaptor<JKeySerializer.StreamConsumer<DataOutputStream>> captor =
 				ArgumentCaptor.forClass(JKeySerializer.StreamConsumer.class);
-		InOrder inOrder = inOrder(out, serOut, serOutFactory, serdes);
+		InOrder inOrder = inOrder(out, serOut, serOutFactory);
 
 		given(streamContentDiscovery.discoverFor(captor.capture())).willReturn(pretend);
 		given(serOutFactory.apply(out)).willReturn(serOut);
@@ -159,10 +162,7 @@ public class HFileMetaSerdeTest {
 		inOrder.verify(serOut).writeBoolean(deleted);
 		inOrder.verify(serOut).writeLong(expiry);
 		inOrder.verify(serOut).writeNormalisedString(memo);
-		inOrder.verify(serdes).writeNullable(
-				argThat(wacl::equals),
-				argThat(serOut::equals),
-				any(IoWritingConsumer.class));
+		inOrder.verify(serOut).write(wacl.serialize());
 
 		// cleanup:
 		undoStaticMocking();
@@ -189,20 +189,16 @@ public class HFileMetaSerdeTest {
 
 	@SuppressWarnings("unchecked")
 	void doStaticMocking() {
-		serdes = mock(DomainSerdes.class);
 		discovery = mock(HFileMetaSerde.StreamContentDiscovery.class);
 		serInFactory = mock(Function.class);
 		serOutFactory = mock(Function.class);
 
-		serdes = mock(DomainSerdes.class);
-		HFileMetaSerde.serdes = serdes;
 		HFileMetaSerde.serInFactory = serInFactory;
 		HFileMetaSerde.serOutFactory = serOutFactory;
 		HFileMetaSerde.streamContentDiscovery = discovery;
 	}
 
 	void undoStaticMocking() {
-		HFileMetaSerde.serdes = new DomainSerdes();
 		HFileMetaSerde.serInFactory = SerializableDataInputStream::new;
 		HFileMetaSerde.serOutFactory = SerializableDataOutputStream::new;
 		HFileMetaSerde.streamContentDiscovery = JKeySerializer::byteStream;
