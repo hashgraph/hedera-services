@@ -46,6 +46,8 @@ import static org.mockito.Mockito.mockStatic;
 class MerkleTopicSerdeTest {
 	long autoRenewSecs = 1_234_567L;
 	long seqNo = 7_654_321L;
+	long expirySecs = 1_234_567L;
+	int expiryNanos = 23456;
 	byte[] hash = new byte[MerkleTopic.RUNNING_HASH_BYTE_ARRAY_SIZE];
 	JKey adminKey, submitKey;
 	String memo = "Anything";
@@ -60,8 +62,7 @@ class MerkleTopicSerdeTest {
 		submitKey = mock(JKey.class);
 		autoRenewId = mock(EntityId.class);
 		given(autoRenewId.num()).willReturn(13257L);
-		expiry = mock(RichInstant.class);
-		given(expiry.getSeconds()).willReturn(1_234_567L);
+		expiry = new RichInstant(expirySecs, expiryNanos);
 
 		subject = new TopicSerde();
 	}
@@ -177,9 +178,9 @@ class MerkleTopicSerdeTest {
 				.willReturn(true);
 		given(in.readLong())
 				.willReturn(autoRenewSecs)
-				.willReturn(expiry.getSeconds())
+				.willReturn(expirySecs)
 				.willReturn(seqNo);
-		given(in.readInt()).willReturn(expiry.getNanos());
+		given(in.readInt()).willReturn(expiryNanos);
 		given(in.readNormalisedString(TopicSerde.MAX_MEMO_BYTES))
 				.willReturn(memo);
 		given(in.readByteArray(MerkleTopic.RUNNING_HASH_BYTE_ARRAY_SIZE))
