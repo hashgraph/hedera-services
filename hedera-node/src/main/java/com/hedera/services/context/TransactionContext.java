@@ -35,7 +35,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hederahashgraph.api.proto.java.TransferList;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -125,16 +124,6 @@ public interface TransactionContext {
 	 * @param creator
 	 */
 	ExpirableTxnRecord recordSoFar(EntityCreator creator);
-
-	/**
-	 * Returns the last record created by {@link TransactionContext#recordSoFar(EntityCreator)},
-	 * with the transfer list and fees updated.
-	 *
-	 * @param listWithNewFees the new transfer list to use in the record.
-	 * @return the updated historical record of processing the current txn thus far.
-	 * @throws IllegalStateException if {@code recordSoFar} has not been called for the active txn.
-	 */
-	TransactionRecord updatedRecordGiven(TransferList listWithNewFees);
 
 	/**
 	 * Gets an accessor to the defined type {@link TxnAccessor}

@@ -22,10 +22,16 @@ package com.hedera.services.context;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.submerkle.SolidityFnResult;
+import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -38,10 +44,10 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.Address;
 import org.apache.logging.log4j.LogManager;
@@ -54,6 +60,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
+import static com.hedera.services.state.submerkle.EntityId.fromGrpcScheduleId;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
@@ -82,7 +89,7 @@ public class AwareTransactionContext implements TransactionContext {
 	private final ServicesContext ctx;
 	private TxnAccessor triggeredTxn = null;
 
-	private final Consumer<TransactionRecord.Builder> noopRecordConfig = ignore -> {
+	private final Consumer<ExpirableTxnRecord> noopRecordConfig = ignore -> {
 	};
 	private final Consumer<TransactionReceipt.Builder> noopReceiptConfig = ignore -> {
 	};
@@ -95,12 +102,12 @@ public class AwareTransactionContext implements TransactionContext {
 	private ByteString hash;
 	private ResponseCodeEnum statusSoFar;
 	private TxnAccessor accessor;
-	private Consumer<TransactionRecord.Builder> recordConfig = noopRecordConfig;
+	private Consumer<ExpirableTxnRecord> recordConfig = noopRecordConfig;
 	private Consumer<TransactionReceipt.Builder> receiptConfig = noopReceiptConfig;
 	private List<ExpiringEntity> expiringEntities;
 
 	boolean hasComputedRecordSoFar;
-	TransactionRecord.Builder recordSoFar = TransactionRecord.newBuilder();
+	ExpirableTxnRecord recordSoFar;
 
 	public AwareTransactionContext(ServicesContext ctx) {
 		this.ctx = ctx;
@@ -162,45 +169,43 @@ public class AwareTransactionContext implements TransactionContext {
 	@Override
 	public ExpirableTxnRecord recordSoFar(EntityCreator creator) {
 		long amount = ctx.charging().totalFeesChargedToPayer() + otherNonThresholdFees;
+		TransferList list = ctx.ledger().netTransfersInTxn();
+		List<TokenTransferList> tokenTransferList = ctx.ledger().netTokenTransfersInTxn();
 
 		if (log.isDebugEnabled()) {
 			logItemized();
 		}
-		recordSoFar
-				.setMemo(accessor.getTxn().getMemo())
-				.setReceipt(receiptSoFar())
-				.setTransferList(ctx.ledger().netTransfersInTxn())
-				.setTransactionID(accessor.getTxnId())
-				.setTransactionFee(amount)
-				.setTransactionHash(hash)
-				.setConsensusTimestamp(consensusTimestamp)
-				.addAllTokenTransferLists(ctx.ledger().netTokenTransfersInTxn());
-		if (accessor.isTriggeredTxn()) {
-			recordSoFar.setScheduleRef(accessor.getScheduleRef());
+
+		List<EntityId> tokens = null;
+		List<CurrencyAdjustments> tokenAdjustments = null;
+		if (tokenTransferList.size() > 0) {
+			for (TokenTransferList tokenTransfers : tokenTransferList) {
+				tokens.add(EntityId.fromGrpcTokenId(tokenTransfers.getToken()));
+				tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList()));
+			}
 		}
+
+		ExpirableTxnRecord rec = new ExpirableTxnRecord(
+				TxnReceipt.fromGrpc(receiptSoFar().build()),
+				hash.toByteArray(),
+				TxnId.fromGrpc(accessor.getTxnId()),
+				RichInstant.fromGrpc(consensusTimestamp),
+				accessor.getTxn().getMemo(),
+				amount,
+				!list.getAccountAmountsList().isEmpty() ? CurrencyAdjustments.fromGrpc(list) : null,
+				null,
+				null,
+				tokens,
+				tokenAdjustments,
+				accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null);
 
 		recordConfig.accept(recordSoFar);
 		hasComputedRecordSoFar = true;
-
-		return creator.createExpiringRecord(
-				this.effectivePayer(),
-				recordSoFar.build(),
-				this.consensusTime.getEpochSecond(),
-				this.submittingMember);
+		return rec;
 	}
 
-	@Override
-	public TransactionRecord updatedRecordGiven(TransferList listWithNewFees) {
-		if (!hasComputedRecordSoFar) {
-			throw new IllegalStateException(String.format(
-					"No record exists to be updated with '%s'!",
-					readableTransferList(listWithNewFees)));
-		}
+	private void createExpirableRecord(){
 
-		long amount = ctx.charging().totalFeesChargedToPayer() + otherNonThresholdFees;
-		recordSoFar.setTransferList(listWithNewFees).setTransactionFee(amount);
-
-		return recordSoFar.build();
 	}
 
 	private void logItemized() {
@@ -305,12 +310,12 @@ public class AwareTransactionContext implements TransactionContext {
 
 	@Override
 	public void setCallResult(ContractFunctionResult result) {
-		recordConfig = record -> record.setContractCallResult(result);
+		recordConfig = record -> record.setContractCallResult(SolidityFnResult.fromGrpc(result));
 	}
 
 	@Override
 	public void setCreateResult(ContractFunctionResult result) {
-		recordConfig = record -> record.setContractCreateResult(result);
+		recordConfig = record -> record.setContractCreateResult(SolidityFnResult.fromGrpc(result));
 	}
 
 	@Override

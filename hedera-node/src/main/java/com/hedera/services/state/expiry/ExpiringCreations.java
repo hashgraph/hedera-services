@@ -26,7 +26,6 @@ import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 
 public class ExpiringCreations implements EntityCreator {
 	private RecordCache recordCache;
@@ -55,11 +54,11 @@ public class ExpiringCreations implements EntityCreator {
 	@Override
 	public ExpirableTxnRecord createExpiringRecord(
 			AccountID id,
-			TransactionRecord record,
+			ExpirableTxnRecord expiringRecord,
 			long now,
 			long submittingMember
 	) {
-		var expiringRecord = ExpirableTxnRecord.fromGprc(record);
+		//var expiringRecord = ExpirableTxnRecord.fromGprc(record);
 
 		long expiry = now + dynamicProperties.cacheRecordsTtl();
 		expiringRecord.setExpiry(expiry);

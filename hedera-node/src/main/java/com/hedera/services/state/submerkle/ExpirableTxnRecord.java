@@ -342,6 +342,14 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 		return contractCreateResult;
 	}
 
+	public void setContractCallResult(SolidityFnResult result) {
+		this.contractCallResult = result;
+	}
+
+	public void setContractCreateResult(SolidityFnResult result) {
+		this.contractCreateResult = result;
+	}
+
 	public CurrencyAdjustments getHbarAdjustments() {
 		return hbarAdjustments;
 	}
@@ -452,5 +460,9 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 		}
 
 		return grpc.build();
+	}
+
+	public void clear(){
+
 	}
 }

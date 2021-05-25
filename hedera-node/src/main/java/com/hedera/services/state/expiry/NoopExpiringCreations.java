@@ -25,7 +25,6 @@ import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 
 public enum NoopExpiringCreations implements EntityCreator {
 	NOOP_EXPIRING_CREATIONS;
@@ -43,7 +42,7 @@ public enum NoopExpiringCreations implements EntityCreator {
 	@Override
 	public ExpirableTxnRecord createExpiringRecord(
 			AccountID id,
-			TransactionRecord record,
+			ExpirableTxnRecord record,
 			long now,
 			long submittingMember
 	) {

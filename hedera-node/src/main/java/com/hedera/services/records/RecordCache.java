@@ -24,13 +24,19 @@ import com.google.common.cache.Cache;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.expiry.MonotonicFullQueueExpiries;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hederahashgraph.api.proto.java.TransferList;
 
 import java.time.Instant;
 import java.util.Collections;
@@ -38,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.hedera.services.state.submerkle.EntityId.fromGrpcScheduleId;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
@@ -86,21 +93,38 @@ public class RecordCache {
 			long submittingMember
 	) {
 		var txnId = accessor.getTxnId();
-		var transactionRecord = TransactionRecord.newBuilder()
-				.setTransactionID(txnId)
-				.setReceipt(TransactionReceipt.newBuilder().setStatus(FAIL_INVALID))
-				.setMemo(accessor.getTxn().getMemo())
-				.setTransactionHash(accessor.getHash())
-				.setConsensusTimestamp(asTimestamp(consensusTimestamp));
-		if (accessor.isTriggeredTxn()) {
-			transactionRecord.setScheduleRef(accessor.getScheduleRef());
+
+		TransferList list = ctx.ledger().netTransfersInTxn();
+		List<TokenTransferList> tokenTransferList = ctx.ledger().netTokenTransfersInTxn();
+		List<EntityId> tokens = null;
+		List<CurrencyAdjustments> tokenAdjustments = null;
+		if (tokenTransferList.size() > 0) {
+			for (TokenTransferList tokenTransfers : tokenTransferList) {
+				tokens.add(EntityId.fromGrpcTokenId(tokenTransfers.getToken()));
+				tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList()));
+			}
 		}
-		var grpc = transactionRecord.build();
+
+		var expirableTransactionrecord = new ExpirableTxnRecord(
+				TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(FAIL_INVALID).build()),
+				accessor.getHash().toByteArray(),
+				TxnId.fromGrpc(txnId),
+				RichInstant.fromGrpc(asTimestamp(consensusTimestamp)),
+				accessor.getTxn().getMemo(),
+				0,
+				!list.getAccountAmountsList().isEmpty() ? CurrencyAdjustments.fromGrpc(list) : null,
+				null,
+				null,
+				tokens,
+				tokenAdjustments,
+				accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null);
+
 		var record = ctx.creator().createExpiringRecord(
 				effectivePayer,
-				grpc,
+				expirableTransactionrecord,
 				consensusTimestamp.getEpochSecond(),
 				submittingMember);
+
 		var recentHistory = histories.computeIfAbsent(txnId, ignore -> new TxnIdRecentHistory());
 		recentHistory.observe(record, FAIL_INVALID);
 	}
