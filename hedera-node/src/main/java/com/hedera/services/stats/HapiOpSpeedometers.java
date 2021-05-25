@@ -125,7 +125,7 @@ public class HapiOpSpeedometers {
 			var function = entry.getKey();
 			long last = lastMeasurements.get(function);
 			long curr = currMeasurement.apply(function);
-			entry.getValue().update(curr - last);
+			entry.getValue().update((double) curr - last);
 			lastMeasurements.put(function, curr);
 		}
 	}

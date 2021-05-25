@@ -9,9 +9,9 @@ package com.hedera.services.txns.submission;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -56,26 +56,29 @@ class PresolvencyFlaws {
 	}
 
 	static final EnumMap<ResponseCodeEnum, Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>>> WELL_KNOWN_FLAWS =
-			new EnumMap<>(ResponseCodeEnum.class) {{
-				put(PLATFORM_NOT_ACTIVE, failureWithUnknownFeeReq(PLATFORM_NOT_ACTIVE));
-				/* Structural */
-				put(INVALID_TRANSACTION, failureWithUnknownFeeReq(INVALID_TRANSACTION));
-				put(TRANSACTION_OVERSIZE, failureWithUnknownFeeReq(TRANSACTION_OVERSIZE));
-				put(INVALID_TRANSACTION_BODY, failureWithUnknownFeeReq(INVALID_TRANSACTION_BODY));
-				put(TRANSACTION_TOO_MANY_LAYERS, failureWithUnknownFeeReq(TRANSACTION_TOO_MANY_LAYERS));
-				/* Syntactic */
-				put(INVALID_TRANSACTION_ID, failureWithUnknownFeeReq(INVALID_TRANSACTION_ID));
-				put(TRANSACTION_ID_FIELD_NOT_ALLOWED, failureWithUnknownFeeReq(TRANSACTION_ID_FIELD_NOT_ALLOWED));
-				put(INSUFFICIENT_TX_FEE, failureWithUnknownFeeReq(INSUFFICIENT_TX_FEE));
-				put(PAYER_ACCOUNT_NOT_FOUND, failureWithUnknownFeeReq(PAYER_ACCOUNT_NOT_FOUND));
-				put(INVALID_NODE_ACCOUNT, failureWithUnknownFeeReq(INVALID_NODE_ACCOUNT));
-				put(MEMO_TOO_LONG, failureWithUnknownFeeReq(MEMO_TOO_LONG));
-				put(INVALID_ZERO_BYTE_IN_STRING, failureWithUnknownFeeReq(INVALID_ZERO_BYTE_IN_STRING));
-				put(INVALID_TRANSACTION_DURATION, failureWithUnknownFeeReq(INVALID_TRANSACTION_DURATION));
-				put(INVALID_TRANSACTION_START, failureWithUnknownFeeReq(INVALID_TRANSACTION_START));
-				put(TRANSACTION_EXPIRED, failureWithUnknownFeeReq(TRANSACTION_EXPIRED));
-				put(DUPLICATE_TRANSACTION, failureWithUnknownFeeReq(DUPLICATE_TRANSACTION));
-			}};
+			new EnumMap<>(ResponseCodeEnum.class);
+
+	static {
+		WELL_KNOWN_FLAWS.put(PLATFORM_NOT_ACTIVE, failureWithUnknownFeeReq(PLATFORM_NOT_ACTIVE));
+		/* Structural */
+		WELL_KNOWN_FLAWS.put(INVALID_TRANSACTION, failureWithUnknownFeeReq(INVALID_TRANSACTION));
+		WELL_KNOWN_FLAWS.put(TRANSACTION_OVERSIZE, failureWithUnknownFeeReq(TRANSACTION_OVERSIZE));
+		WELL_KNOWN_FLAWS.put(INVALID_TRANSACTION_BODY, failureWithUnknownFeeReq(INVALID_TRANSACTION_BODY));
+		WELL_KNOWN_FLAWS.put(TRANSACTION_TOO_MANY_LAYERS, failureWithUnknownFeeReq(TRANSACTION_TOO_MANY_LAYERS));
+		/* Syntactic */
+		WELL_KNOWN_FLAWS.put(INVALID_TRANSACTION_ID, failureWithUnknownFeeReq(INVALID_TRANSACTION_ID));
+		WELL_KNOWN_FLAWS.put(TRANSACTION_ID_FIELD_NOT_ALLOWED,
+				failureWithUnknownFeeReq(TRANSACTION_ID_FIELD_NOT_ALLOWED));
+		WELL_KNOWN_FLAWS.put(INSUFFICIENT_TX_FEE, failureWithUnknownFeeReq(INSUFFICIENT_TX_FEE));
+		WELL_KNOWN_FLAWS.put(PAYER_ACCOUNT_NOT_FOUND, failureWithUnknownFeeReq(PAYER_ACCOUNT_NOT_FOUND));
+		WELL_KNOWN_FLAWS.put(INVALID_NODE_ACCOUNT, failureWithUnknownFeeReq(INVALID_NODE_ACCOUNT));
+		WELL_KNOWN_FLAWS.put(MEMO_TOO_LONG, failureWithUnknownFeeReq(MEMO_TOO_LONG));
+		WELL_KNOWN_FLAWS.put(INVALID_ZERO_BYTE_IN_STRING, failureWithUnknownFeeReq(INVALID_ZERO_BYTE_IN_STRING));
+		WELL_KNOWN_FLAWS.put(INVALID_TRANSACTION_DURATION, failureWithUnknownFeeReq(INVALID_TRANSACTION_DURATION));
+		WELL_KNOWN_FLAWS.put(INVALID_TRANSACTION_START, failureWithUnknownFeeReq(INVALID_TRANSACTION_START));
+		WELL_KNOWN_FLAWS.put(TRANSACTION_EXPIRED, failureWithUnknownFeeReq(TRANSACTION_EXPIRED));
+		WELL_KNOWN_FLAWS.put(DUPLICATE_TRANSACTION, failureWithUnknownFeeReq(DUPLICATE_TRANSACTION));
+	}
 
 	static Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> responseForFlawed(ResponseCodeEnum status) {
 		Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> response;

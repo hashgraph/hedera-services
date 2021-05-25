@@ -20,45 +20,54 @@ package com.hedera.services.legacy.core.jproto;
  * ‍
  */
 
-import com.hedera.services.legacy.util.ComplexKeyManager;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.services.legacy.proto.utils.KeyExpansion.KEY_EXPANSION_DEPTH;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class JKeyTest {
+class JKeyTest {
 	@Test
-	public void positiveConvertKeyTest() throws Exception {
-		//given
-		Key accountKey = ComplexKeyManager
-				.genComplexKey(ComplexKeyManager.SUPPORTED_KEY_TYPES.single.name());
+	void positiveConvertKeyTest() {
+		// given:
+		final Key aKey = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey();
 
-		//expect
-		assertDoesNotThrow(() -> JKey.convertKey(accountKey, 1));
+		// expect:
+		assertDoesNotThrow(() -> JKey.convertKey(aKey, 1));
 	}
 
 	@Test
-	public void negativeConvertKeyTest() {
+	void negativeConvertKeyTest() {
 		// given:
-		var keyTooDeep = TxnUtils.nestKeys(Key.newBuilder(), KEY_EXPANSION_DEPTH).build();
+		var keyTooDeep = TxnUtils.nestKeys(Key.newBuilder(), JKey.MAX_KEY_DEPTH).build();
 
 		// expect:
 		assertThrows(
 				DecoderException.class,
 				() -> JKey.convertKey(keyTooDeep, 1),
-				"Exceeding max expansion depth of " + KEY_EXPANSION_DEPTH);
+				"Exceeding max expansion depth of " + JKey.MAX_KEY_DEPTH);
 	}
 
 	@Test
-	public void rejectsEmptyKey() {
+	void negativeConvertJKeyTest() {
+		// given:
+		var jKeyTooDeep = TxnUtils.nestJKeys(JKey.MAX_KEY_DEPTH);
+
+		// expect:
+		assertThrows(
+				DecoderException.class,
+				() -> JKey.convertJKey(jKeyTooDeep, 1),
+				"Exceeding max expansion depth of " + JKey.MAX_KEY_DEPTH);
+	}
+
+	@Test
+	void rejectsEmptyKey() {
 		// expect:
 		assertThrows(DecoderException.class, () -> JKey.convertJKeyBasic(new JKey() {
 			@Override
@@ -88,6 +97,7 @@ public class JKeyTest {
 
 		// when:
 		var dup = orig.duplicate();
+
 		// then:
 		assertNotSame(dup, orig);
 		assertEquals(asKeyUnchecked(orig), asKeyUnchecked(dup));

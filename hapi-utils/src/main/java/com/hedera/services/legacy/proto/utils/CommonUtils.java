@@ -28,8 +28,6 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionOrBuilder;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -37,7 +35,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -64,7 +61,7 @@ public class CommonUtils {
    * Sleep given seconds.
    */
   public static void nap(int timeInSec)  throws InterruptedException {
-    Thread.sleep(timeInSec * 1000);
+    Thread.sleep(timeInSec * 1000L);
    }
 
   public static void nap(double timeInSec)  throws InterruptedException {
@@ -163,34 +160,6 @@ public class CommonUtils {
     return rv;
   }
 
-  public static byte[] hexToBytes(String data) throws DecoderException {
-    byte[] rv = new byte[0];
-    try {
-      rv = Hex.decodeHex(data);
-    } catch (DecoderException e) {
-      throw e;
-    }
-    return rv;
-  }
-
-  /**
-   * Reads the bytes of a small binary file as a resource file.
-   */
-  public static byte[] readBinaryFileAsResource(String filePath)
-      throws IOException, URISyntaxException {
-    if (ClassLoader.getSystemResource("") == null) {
-      return Files.readAllBytes(Paths.get("", filePath));
-
-    } else {
-      URI uri = ClassLoader.getSystemResource("").toURI();
-      String rootPath = Paths.get(uri).toString();
-      Path path = Paths.get(rootPath, filePath);
-
-      return Files.readAllBytes(path);
-    }
-
-  }
-
   /**
    * Reads a resource file.
    *
@@ -201,16 +170,6 @@ public class CommonUtils {
       throws IOException, URISyntaxException {
     Path path = Paths.get(myClass.getClassLoader().getResource(filePath).toURI());
     return Files.readAllBytes(path);
-  }
-
-  public static String[] splitLine(String line) {
-    String[] elms = line.split(",");
-
-    for (int i = 0; i < elms.length; ++i) {
-      elms[i] = elms[i].trim();
-    }
-
-    return elms;
   }
 
   /**

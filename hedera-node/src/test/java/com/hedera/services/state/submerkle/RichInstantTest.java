@@ -126,7 +126,6 @@ class RichInstantTest {
 		// when:
 
 		// then:
-		assertEquals(one, one);
 		assertNotEquals(one, null);
 		assertNotEquals(one, new Object());
 		assertNotEquals(one, two);

@@ -21,6 +21,8 @@ package com.hedera.test.utils;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -35,6 +37,7 @@ import com.hederahashgraph.api.proto.java.TransferList;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
@@ -167,6 +170,15 @@ public class TxnUtils {
 			nestKeys(nestedBuilder, additionalKeysToNest - 1);
 			builder.setKeyList(KeyList.newBuilder().addKeys(nestedBuilder));
 			return builder;
+		}
+	}
+
+	public static JKey nestJKeys(int additionalKeysToNest) {
+		if (additionalKeysToNest == 0) {
+			return TxnHandlingScenario.SIMPLE_NEW_ADMIN_KT.asJKeyUnchecked();
+		} else {
+			final var descendantKeys = nestJKeys(additionalKeysToNest - 1);
+			return new JKeyList(List.of(descendantKeys));
 		}
 	}
 }

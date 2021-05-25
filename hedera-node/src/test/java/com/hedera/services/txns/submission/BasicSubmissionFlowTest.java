@@ -34,6 +34,7 @@ import java.util.Optional;
 
 import static com.hedera.services.context.ServicesNodeType.STAKED_NODE;
 import static com.hedera.services.context.ServicesNodeType.ZERO_STAKE_NODE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -41,6 +42,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANS
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.never;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -95,6 +98,19 @@ class BasicSubmissionFlowTest {
 
 		// then:
 		assertEquals(PLATFORM_TRANSACTION_NOT_CREATED, response.getNodeTransactionPrecheckCode());
+	}
+
+	@Test
+	void rejectsInvalidAccessor() {
+		setupStakedNode();
+		given(precheck.performForTopLevel(someTxn)).willReturn(Pair.of(someSuccess, Optional.empty()));
+
+		// when:
+		var response = subject.submit(someTxn);
+
+		// then:
+		assertEquals(FAIL_INVALID, response.getNodeTransactionPrecheckCode());
+		verify(submissionManager, never()).trySubmission(any());
 	}
 
 	@Test

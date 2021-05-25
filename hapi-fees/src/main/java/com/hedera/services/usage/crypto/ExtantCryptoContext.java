@@ -43,7 +43,7 @@ public class ExtantCryptoContext {
 	}
 
 	public long currentNonBaseRb() {
-		return (currentlyHasProxy ? BASIC_ENTITY_ID_SIZE : 0)
+		return (long) (currentlyHasProxy ? BASIC_ENTITY_ID_SIZE : 0)
 				+ currentMemo.getBytes(StandardCharsets.UTF_8).length
 				+ getAccountKeyStorageSize(currentKey);
 	}
@@ -79,7 +79,8 @@ public class ExtantCryptoContext {
 		private static final int KEY_MASK = 1 << 3;
 		private static final int TOKEN_RELS_MASK = 1 << 4;
 
-		private static final int ALL_FIELDS_MASK = TOKEN_RELS_MASK | EXPIRY_MASK | MEMO_MASK | KEY_MASK | HAS_PROXY_MASK;
+		private static final int ALL_FIELDS_MASK =
+				TOKEN_RELS_MASK | EXPIRY_MASK | MEMO_MASK | KEY_MASK | HAS_PROXY_MASK;
 
 		private int mask = 0;
 
@@ -89,7 +90,8 @@ public class ExtantCryptoContext {
 		private boolean currentlyHasProxy;
 		private long currentExpiry;
 
-		private Builder() {}
+		private Builder() {
+		}
 
 		public ExtantCryptoContext build() {
 			if (mask != ALL_FIELDS_MASK) {

@@ -102,6 +102,7 @@ public class NettyGrpcServerManager implements GrpcServerManager {
 			server.awaitTermination(TIME_TO_AWAIT_TERMINATION, TimeUnit.SECONDS);
 			println.accept(nettyAction("...done terminating", tlsSupport, port, false));
 		} catch (InterruptedException ie) {
+			Thread.currentThread().interrupt();
 			log.warn("Interrupted while waiting for Netty to terminate on port {}!", port, ie);
 		}
 	}

@@ -310,7 +310,6 @@ class ExpirableTxnRecordTest {
 		var three = subjectRecordWithTokenTransfersAndScheduleRef();
 
 		// when:
-		assertEquals(one, one);
 		assertNotEquals(one, null);
 		assertNotEquals(one, new Object());
 		assertEquals(one, three);

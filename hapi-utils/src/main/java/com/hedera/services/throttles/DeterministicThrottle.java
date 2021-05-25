@@ -9,9 +9,9 @@ package com.hedera.services.throttles;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -143,8 +143,15 @@ public class DeterministicThrottle {
 		bucket.resetUsed(usageSnapshot.used());
 	}
 
+	/* NOTE: The Object methods below are only overridden to improve
+	readability of unit tests; Instances of this class are not used
+        in hash-based collections */
 	@Override
 	public boolean equals(Object obj) {
+		if (obj == null || this.getClass() != obj.getClass()) {
+			return false;
+		}
+
 		var that = (DeterministicThrottle)obj;
 
 		return this.delegate.bucket().totalCapacity() == that.delegate.bucket().totalCapacity()
@@ -152,9 +159,14 @@ public class DeterministicThrottle {
 	}
 
 	@Override
+	public int hashCode() {
+		return Objects.hash(delegate.bucket().totalCapacity(), delegate.mtps(), name, lastDecisionTime);
+	}
+
+	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder("DeterministicThrottle{");
-		if (name != NO_NAME) {
+		if (name != null) {
 			sb.append("name='").append(name).append("', ");
 		}
 		return sb

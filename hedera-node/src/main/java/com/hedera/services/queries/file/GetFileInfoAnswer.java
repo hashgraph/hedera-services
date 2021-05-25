@@ -9,9 +9,9 @@ package com.hedera.services.queries.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,6 +37,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
@@ -75,8 +76,12 @@ public class GetFileInfoAnswer implements AnswerService {
 			} else {
 				var info = view.infoForFile(op.getFileID());
 				/* Include cost here to satisfy legacy regression tests. */
-				response.setHeader(answerOnlyHeader(OK, cost));
-				response.setFileInfo(info.get());
+				if (info.isPresent()) {
+					response.setHeader(answerOnlyHeader(OK, cost));
+					response.setFileInfo(info.get());
+				} else {
+					response.setHeader(answerOnlyHeader(FAIL_INVALID));
+				}
 			}
 		}
 		return Response.newBuilder()

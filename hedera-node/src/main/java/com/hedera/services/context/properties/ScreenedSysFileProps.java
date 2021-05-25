@@ -141,12 +141,13 @@ public class ScreenedSysFileProps implements PropertySource {
 	}
 
 	private Setting withStandardizedName(Setting rawProp) {
-		var rawName = rawProp.getName();
-		var standardizedName = STANDARDIZED_NAMES.getOrDefault(rawName, rawName);
-		if (standardizedName != rawName) {
+		/* Note rawName is never null as gRPC object getters return a non-null default value for any missing field */
+		final var rawName = rawProp.getName();
+		final var standardizedName = STANDARDIZED_NAMES.getOrDefault(rawName, rawName);
+		if (!rawName.equals(standardizedName)) {
 			log.warn(String.format(DEPRECATED_PROP_TPL, rawName, standardizedName));
 		}
-		var builder = rawProp.toBuilder().setName(standardizedName);
+		final var builder = rawProp.toBuilder().setName(standardizedName);
 		if (STANDARDIZED_FORMATS.containsKey(rawName)) {
 			try {
 				builder.setValue(STANDARDIZED_FORMATS.get(rawName).apply(rawProp.getValue()));
