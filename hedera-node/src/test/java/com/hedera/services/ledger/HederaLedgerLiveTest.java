@@ -170,8 +170,8 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 		subject.commit();
 
 		// then:
-		verify(historian).addNewRecords();
-		verify(historian).addNewEntities();
+		verify(historian).finalizeTransactionRecord();
+		verify(historian).noteNewExpirationEvents();
 	}
 
 	@Test

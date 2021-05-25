@@ -21,113 +21,109 @@ package com.hedera.services.state.expiry;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.records.RecordCache;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.serdes.DomainSerdesTest;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
+@ExtendWith(MockitoExtension.class)
 class ExpiringCreationsTest {
-	int historyTtl = 90_000, cacheTtl = 180;
-	long now = 1_234_567L;
-	long submittingMember = 1L;
+	private final int cacheTtl = 180;
+	private final long now = 1_234_567L;
+	private final long submittingMember = 1L;
+	private final long expectedExpiry = now + cacheTtl;
 
-	AccountID effPayer = IdUtils.asAccount("0.0.13257");
-	TransactionRecord record = DomainSerdesTest.recordOne().asGrpc();
+	private final AccountID effPayer = IdUtils.asAccount("0.0.75231");
+	private final TransactionRecord record = DomainSerdesTest.recordOne().asGrpc();
 
-	RecordCache recordCache;
-	HederaLedger ledger;
-	ExpiryManager expiries;
-	PropertySource properties;
-	GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private RecordCache recordCache;
+	@Mock
+	private ExpiryManager expiries;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 
-	ExpiringCreations subject;
+	private ExpirableTxnRecord expectedRecord;
+
+	private ExpiringCreations subject;
 
 	@BeforeEach
-	public void setup() {
-		ledger = mock(HederaLedger.class);
-		expiries = mock(ExpiryManager.class);
-		properties = mock(PropertySource.class);
-		recordCache = mock(RecordCache.class);
-		dynamicProperties = mock(GlobalDynamicProperties.class);
+	void setup() {
+		subject = new ExpiringCreations(expiries, dynamicProperties, () -> accounts);
+
+		expectedRecord = ExpirableTxnRecord.fromGprc(record);
+		expectedRecord.setExpiry(expectedExpiry);
+		expectedRecord.setSubmittingMember(submittingMember);
+
+		subject.setRecordCache(recordCache);
+	}
+
+	@Test
+	void ifNotCreatingStatePayerRecordsDirectlyTracksWithCache() {
+		given(dynamicProperties.shouldKeepRecordsInState()).willReturn(false);
+		given(dynamicProperties.cacheRecordsTtl()).willReturn(cacheTtl);
+
+		// when:
+		var actual = subject.createExpiringRecord(effPayer, record, now, submittingMember);
+
+		// then:
+		verify(recordCache).trackForExpiry(expectedRecord);
+		// and:
+		verify(expiries, never()).trackRecordInState(effPayer, expectedExpiry);
+		// and:
+		assertEquals(expectedRecord, actual);
+	}
+
+	@Test
+	void addsToPayerRecordsAndTracks() {
+		// setup:
+		final var key = MerkleEntityId.fromAccountId(effPayer);
+		final var payerAccount = new MerkleAccount();
+
+		given(accounts.getForModify(key)).willReturn(payerAccount);
 		given(dynamicProperties.shouldKeepRecordsInState()).willReturn(true);
 		given(dynamicProperties.cacheRecordsTtl()).willReturn(cacheTtl);
 
-		subject = new ExpiringCreations(expiries, dynamicProperties);
-		subject.setRecordCache(recordCache);
-		subject.setLedger(ledger);
+		// when:
+		var actual = subject.createExpiringRecord(effPayer, record, now, submittingMember);
+
+		// then:
+		assertEquals(expectedRecord, actual);
+		// and:
+		verify(accounts).replace(key, payerAccount);
+		verify(expiries).trackRecordInState(effPayer, expectedExpiry);
+		assertEquals(expectedRecord, payerAccount.records().peek());
 	}
 
 	@Test
-	public void noopFormDoesNothing() {
+	void noopFormDoesNothing() {
 		// expect:
-		Assertions.assertDoesNotThrow(() ->
-				NOOP_EXPIRING_CREATIONS.setLedger(null));
 		Assertions.assertThrows(UnsupportedOperationException.class, () ->
 				NOOP_EXPIRING_CREATIONS.createExpiringRecord(
 						null, null, 0L, submittingMember));
-	}
-
-	@Test
-	public void ifNotCreatingStatePayerRecordsDirectlyTracksWithCache() {
-		given(dynamicProperties.shouldKeepRecordsInState()).willReturn(false);
-
-		// given:
-		long expectedExpiry = now + cacheTtl;
-		// and:
-		var expected = ExpirableTxnRecord.fromGprc(record);
-		expected.setExpiry(expectedExpiry);
-		expected.setSubmittingMember(submittingMember);
-
-		// when:
-		var actual = subject.createExpiringRecord(effPayer, record, now, submittingMember);
-
-		// then:
-		verify(ledger, never()).addRecord(any(), any());
-		verify(recordCache).trackForExpiry(expected);
-		// and:
-		verify(expiries, never()).trackRecord(effPayer, expectedExpiry);
-		// and:
-		Assertions.assertEquals(expected, actual);
-	}
-
-	@Test
-	public void addsToPayerRecordsAndTracks() {
-		// setup:
-		ArgumentCaptor<ExpirableTxnRecord> captor = ArgumentCaptor.forClass(ExpirableTxnRecord.class);
-
-		// given:
-		long expectedExpiry = now + cacheTtl;
-		// and:
-		var expected = ExpirableTxnRecord.fromGprc(record);
-		expected.setExpiry(expectedExpiry);
-		expected.setSubmittingMember(submittingMember);
-
-		// when:
-		var actual = subject.createExpiringRecord(effPayer, record, now, submittingMember);
-
-		// then:
-		verify(ledger).addRecord(argThat(effPayer::equals), captor.capture());
-		// and:
-		assertEquals(expectedExpiry, captor.getValue().getExpiry());
-		Assertions.assertEquals(expected, actual);
-		// and:
-		verify(expiries).trackRecord(effPayer, expectedExpiry);
 	}
 }
