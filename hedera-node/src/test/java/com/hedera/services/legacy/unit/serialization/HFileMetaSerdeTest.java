@@ -24,8 +24,6 @@ import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HFileMetaSerde;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
-import com.hedera.services.state.serdes.IoReadingFunction;
-import com.hedera.services.state.serdes.IoWritingConsumer;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse.FileInfo;
@@ -56,8 +54,6 @@ import static com.hedera.services.files.HFileMetaSerde.deserialize;
 import static com.hedera.services.files.HFileMetaSerde.streamContentDiscovery;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
@@ -114,7 +110,9 @@ public class HFileMetaSerdeTest {
 		given(in.readLong()).willReturn(MEMO_VERSION);
 		// and:
 		given(serInFactory.apply(in)).willReturn(serIn);
-		given(serIn.readBoolean()).willReturn(known.isDeleted());
+		given(serIn.readBoolean())
+				.willReturn(known.isDeleted())
+				.willReturn(true);
 		given(serIn.readLong()).willReturn(known.getExpiry());
 		given(serIn.readNormalisedString(MAX_CONCEIVABLE_MEMO_UTF8_BYTES)).willReturn(known.getMemo());
 		mockedJkeySerializer.when(() -> JKeySerializer.deserialize(serIn))
@@ -162,6 +160,7 @@ public class HFileMetaSerdeTest {
 		inOrder.verify(serOut).writeBoolean(deleted);
 		inOrder.verify(serOut).writeLong(expiry);
 		inOrder.verify(serOut).writeNormalisedString(memo);
+		inOrder.verify(serOut).writeBoolean(true);
 		inOrder.verify(serOut).write(wacl.serialize());
 
 		// cleanup:

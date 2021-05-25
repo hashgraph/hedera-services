@@ -136,6 +136,7 @@ class MerkleAccountStateTest {
 				.willThrow(IllegalStateException.class);
 		given(in.readNormalisedString(anyInt())).willReturn(memo);
 		given(in.readBoolean())
+				.willReturn(true)
 				.willReturn(deleted)
 				.willReturn(smartContract)
 				.willReturn(receiverSigRequired);
@@ -162,6 +163,7 @@ class MerkleAccountStateTest {
 				.willReturn(autoRenewSecs);
 		given(in.readNormalisedString(anyInt())).willReturn(memo);
 		given(in.readBoolean())
+				.willReturn(true)
 				.willReturn(deleted)
 				.willReturn(smartContract)
 				.willReturn(receiverSigRequired);
@@ -190,6 +192,7 @@ class MerkleAccountStateTest {
 				.willReturn(autoRenewSecs);
 		given(in.readNormalisedString(anyInt())).willReturn(memo);
 		given(in.readBoolean())
+				.willReturn(true)
 				.willReturn(deleted)
 				.willReturn(smartContract)
 				.willReturn(receiverSigRequired);
@@ -218,6 +221,7 @@ class MerkleAccountStateTest {
 				.willReturn(autoRenewSecs);
 		given(in.readNormalisedString(anyInt())).willReturn(memo);
 		given(in.readBoolean())
+				.willReturn(true)
 				.willReturn(deleted)
 				.willReturn(smartContract)
 				.willReturn(receiverSigRequired);
@@ -245,6 +249,7 @@ class MerkleAccountStateTest {
 		subject.serialize(out);
 
 		// then:
+		inOrder.verify(out).writeBoolean(true);
 		inOrder.verify(out).write(JKeySerializer.serialize(key));
 		inOrder.verify(out).writeLong(expiry);
 		inOrder.verify(out).writeLong(balance);

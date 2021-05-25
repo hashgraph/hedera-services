@@ -23,12 +23,9 @@ package com.hedera.services.state.merkle;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
-import com.hedera.services.state.serdes.IoReadingFunction;
-import com.hedera.services.state.serdes.IoWritingConsumer;
 import com.hedera.services.state.submerkle.EntityId;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -45,8 +42,6 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.inOrder;
@@ -128,8 +123,16 @@ class MerkleTokenTest {
 		inOrder.verify(out).writeSerializable(treasury, true);
 		inOrder.verify(out).writeLong(totalSupply);
 		inOrder.verify(out).writeInt(decimals);
-		inOrder.verify(out, times(2)).writeBoolean(true);
-		inOrder.verify(out, times(5)).write(any());
+		inOrder.verify(out, times(3)).writeBoolean(true);
+		inOrder.verify(out).write(adminKey.serialize());
+		inOrder.verify(out).writeBoolean(true);
+		inOrder.verify(out).write(freezeKey.serialize());
+		inOrder.verify(out).writeBoolean(true);
+		inOrder.verify(out).write(kycKey.serialize());
+		inOrder.verify(out).writeBoolean(true);
+		inOrder.verify(out).write(supplyKey.serialize());
+		inOrder.verify(out).writeBoolean(true);
+		inOrder.verify(out).write(wipeKey.serialize());
 		inOrder.verify(out).writeNormalisedString(memo);
 	}
 
@@ -165,6 +168,7 @@ class MerkleTokenTest {
 				.willReturn(subject.totalSupply());
 		given(fin.readInt()).willReturn(subject.decimals());
 		given(fin.readBoolean())
+				.willReturn(true)
 				.willReturn(isDeleted)
 				.willReturn(subject.accountsAreFrozenByDefault());
 		// and:
@@ -199,6 +203,7 @@ class MerkleTokenTest {
 				.willReturn(subject.totalSupply());
 		given(fin.readInt()).willReturn(subject.decimals());
 		given(fin.readBoolean())
+				.willReturn(true)
 				.willReturn(isDeleted)
 				.willReturn(subject.accountsAreFrozenByDefault());
 		// and:

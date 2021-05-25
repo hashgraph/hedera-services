@@ -99,7 +99,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		key = JKeySerializer.deserialize(in); //serdes.readNullable(in, serdes::deserializeKey);
+		key = in.readBoolean() ? JKeySerializer.deserialize(in) : null;
 		expiry = in.readLong();
 		hbarBalance = in.readLong();
 		autoRenewSecs = in.readLong();
@@ -121,7 +121,12 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
-		out.write(JKeySerializer.serialize(key));
+		if(key != null) {
+			out.writeBoolean(true);
+			out.write(JKeySerializer.serialize(key));
+		} else {
+			out.writeBoolean(false);
+		}
 		out.writeLong(expiry);
 		out.writeLong(hbarBalance);
 		out.writeLong(autoRenewSecs);

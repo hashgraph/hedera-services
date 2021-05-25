@@ -197,11 +197,11 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 		decimals = in.readInt();
 		accountsFrozenByDefault = in.readBoolean();
 		accountsKycGrantedByDefault = in.readBoolean();
-		adminKey = JKeySerializer.deserialize(in);
-		freezeKey = JKeySerializer.deserialize(in);
-		kycKey = JKeySerializer.deserialize(in);
-		supplyKey = JKeySerializer.deserialize(in);
-		wipeKey = JKeySerializer.deserialize(in);
+		adminKey = in.readBoolean() ? JKeySerializer.deserialize(in) : null;
+		freezeKey = in.readBoolean() ? JKeySerializer.deserialize(in) : null;
+		kycKey = in.readBoolean() ? JKeySerializer.deserialize(in) : null;
+		supplyKey = in.readBoolean() ? JKeySerializer.deserialize(in) : null;
+		wipeKey = in.readBoolean() ? JKeySerializer.deserialize(in) : null;
 		if (version >= RELEASE_0120_VERSION) {
 			memo = in.readNormalisedString(UPPER_BOUND_MEMO_UTF8_BYTES);
 		}
@@ -220,11 +220,11 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 		out.writeInt(decimals);
 		out.writeBoolean(accountsFrozenByDefault);
 		out.writeBoolean(accountsKycGrantedByDefault);
-		out.write(adminKey.serialize());
-		out.write(freezeKey.serialize());
-		out.write(kycKey.serialize());
-		out.write(supplyKey.serialize());
-		out.write(wipeKey.serialize());
+		serializeKey(adminKey, out);
+		serializeKey(freezeKey, out);
+		serializeKey(kycKey, out);
+		serializeKey(supplyKey, out);
+		serializeKey(wipeKey, out);
 		out.writeNormalisedString(memo);
 	}
 
@@ -415,5 +415,14 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 
 	public void setMemo(String memo) {
 		this.memo = memo;
+	}
+
+	private void serializeKey(JKey key, SerializableDataOutputStream out) throws IOException {
+		if(key != null) {
+			out.writeBoolean(true);
+			out.write(JKeySerializer.serialize(key));
+		} else {
+			out.writeBoolean(false);
+		}
 	}
 }

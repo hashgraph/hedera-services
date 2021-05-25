@@ -56,7 +56,12 @@ public class HFileMetaSerde {
 			serOut.writeBoolean(meta.isDeleted());
 			serOut.writeLong(meta.getExpiry());
 			serOut.writeNormalisedString(meta.getMemo());
-			serOut.write(meta.getWacl().serialize());
+			if(meta.getWacl() != null) {
+				serOut.writeBoolean(true);
+				serOut.write(meta.getWacl().serialize());
+			} else {
+				serOut.writeBoolean(false);
+			}
 		});
 	}
 
@@ -74,7 +79,7 @@ public class HFileMetaSerde {
 		var isDeleted = serIn.readBoolean();
 		var expiry = serIn.readLong();
 		var memo = serIn.readNormalisedString(MAX_CONCEIVABLE_MEMO_UTF8_BYTES);
-		JKey wacl = JKeySerializer.deserialize(serIn);
+		JKey wacl = serIn.readBoolean() ? JKeySerializer.deserialize(serIn) : null;
 		return new HFileMeta(isDeleted, wacl, expiry, memo);
 	}
 
