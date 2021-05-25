@@ -89,10 +89,6 @@ public class TxnIdRecentHistory {
 		}
 	}
 
-	public boolean isStagePending() {
-		return memory != null;
-	}
-
 	public boolean isForgotten() {
 		return areForgotten(classifiableRecords) && areForgotten(unclassifiableRecords);
 	}
@@ -101,7 +97,7 @@ public class TxnIdRecentHistory {
 		return records == null || records.isEmpty();
 	}
 
-	void observe(ExpirableTxnRecord record, ResponseCodeEnum status) {
+	public void observe(ExpirableTxnRecord record, ResponseCodeEnum status) {
 		if (UNCLASSIFIABLE_STATUSES.contains(status)) {
 			addUnclassifiable(record);
 		} else {
