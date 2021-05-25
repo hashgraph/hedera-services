@@ -21,7 +21,6 @@ package com.hedera.services.state.expiry;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;

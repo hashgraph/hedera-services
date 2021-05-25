@@ -20,7 +20,6 @@ package com.hedera.services.legacy.proto.utils;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.builder.RequestBuilder;
 
@@ -33,20 +32,6 @@ import java.time.Instant;
  * @author hua Created on 2018-09-29
  */
 public class ProtoCommonUtils {
-
-  /**
-   * Creates a file ID instance with given info.
-   *
-   * @return generated file ID instance
-   */
-  public static FileID createFileID(long fileNum, long realmNum, long shardNum) {
-    FileID fid = FileID.newBuilder()
-        .setFileNum(fileNum)
-        .setRealmNum(realmNum)
-        .setShardNum(shardNum).build();
-    return fid;
-  }
-
   /**
    * Gets current UTC timestamp.
    *

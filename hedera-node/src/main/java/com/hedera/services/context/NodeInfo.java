@@ -1,7 +1,29 @@
 package com.hedera.services.context;
 
-import com.hederahashgraph.api.proto.java.AccountID;
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.swirlds.common.AddressBook;
+
+import java.util.function.Supplier;
+import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -20,7 +42,7 @@ public class NodeInfo {
 
 	private boolean bookIsRead = false;
 
-	private int n;
+	private int numberOfNodes;
 	private boolean[] isZeroStake;
 	private AccountID[] accounts;
 
@@ -33,10 +55,11 @@ public class NodeInfo {
 	}
 
 	/**
-	 * Returns true if the given id refers to a missing node, or a node
-	 * in the address book with explicit zero stake.
+	 * Returns true if the node in the address book at the given index (casting
+	 * the argument as an {@code int}) has zero stake.
 	 *
 	 * @param nodeId the id of interest
+	 * @throws IllegalArgumentException if the {@code nodeId} cast to an {@code int} is not a usable index
 	 */
 	public boolean isZeroStake(long nodeId) {
 		if (!bookIsRead) {
@@ -44,8 +67,8 @@ public class NodeInfo {
 		}
 
 		final int index = (int)nodeId;
-		if (index < 0 || index >= n) {
-			return true;
+		if (index < 0 || index >= numberOfNodes) {
+			throw new IllegalArgumentException("The address book does not have a node at index " + index);
 		}
 		return isZeroStake[index];
 	}
@@ -70,7 +93,7 @@ public class NodeInfo {
 		}
 
 		final int index = (int)nodeId;
-		if (index < 0 || index >= n) {
+		if (index < 0 || index >= numberOfNodes) {
 			throw new IllegalArgumentException("No node with id " + nodeId + " was in the address book!");
 		}
 		final var account = accounts[index];
@@ -104,11 +127,11 @@ public class NodeInfo {
 	void readBook() {
 		final var staticBook = book.get();
 
-		n = staticBook.getSize();
-		accounts = new AccountID[n];
-		isZeroStake = new boolean[n];
+		numberOfNodes = staticBook.getSize();
+		accounts = new AccountID[numberOfNodes];
+		isZeroStake = new boolean[numberOfNodes];
 
-		for (int i = 0; i < n; i++) {
+		for (int i = 0; i < numberOfNodes; i++) {
 			final var address = staticBook.getAddress(i);
 			isZeroStake[i] = address.getStake() <= 0;
 			try {

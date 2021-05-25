@@ -299,7 +299,6 @@ class MerkleOptionalBlobTest {
 		assertNotEquals(null, one);
 		assertNotEquals(four, one);
 		assertNotEquals(two, one);
-		assertEquals(one, one);
 		// and:
 		assertNotEquals(one.hashCode(), two.hashCode());
 		assertEquals(two.hashCode(), three.hashCode());

@@ -45,6 +45,7 @@ import java.util.Optional;
 import static com.hedera.services.txns.submission.PresolvencyFlaws.WELL_KNOWN_FLAWS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -57,6 +58,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class TransactionPrecheckTest {
@@ -116,6 +119,25 @@ class TransactionPrecheckTest {
 		// then:
 		assertFailure(TRANSACTION_TOO_MANY_LAYERS, topLevelResponse);
 		assertFailure(TRANSACTION_TOO_MANY_LAYERS, queryPaymentResponse);
+	}
+
+	@Test
+	void abortsOnStructuralFlawWithBadAccessor() {
+		givenActivePlatform();
+
+		Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> dummyPair =
+				Pair.of(new TxnValidityAndFeeReq(OK), Optional.empty());
+
+		given(structuralPrecheck.assess(any())).willReturn(dummyPair);
+
+		// when:
+		var topLevelResponse = subject.performForTopLevel(Transaction.getDefaultInstance());
+		var queryPaymentResponse = subject.performForQueryPayment(Transaction.getDefaultInstance());
+
+		// then:
+		assertFailure(OK, topLevelResponse);
+		assertFailure(OK, queryPaymentResponse);
+		verify(syntaxPrecheck, never()).validate(any());
 	}
 
 	@ParameterizedTest

@@ -20,17 +20,17 @@ package com.hedera.services.bdd.suites.records;
  * ‍
  */
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
-import com.hedera.services.bdd.spec.assertions.TransferListAsserts;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
-import com.hedera.services.bdd.spec.utilops.BalanceSnapshot;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
+import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeObject;
-import com.swirlds.common.ByteUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -46,6 +46,7 @@ import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.includ
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractRecords;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -65,13 +66,13 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.Assert.assertEquals;
 
 public class RecordCreationSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(RecordCreationSuite.class);
 
 	private static final long SLEEP_MS = 1_000L;
+	private static final String defaultRecordsTtl = HapiSpecSetup.getDefaultNodeProps().get("cache.records.ttl");
 
 	public static void main(String... args) {
 		new RecordCreationSuite().runSuiteSync();
@@ -89,6 +90,16 @@ public class RecordCreationSuite extends HapiApiSuite {
 						submittingNodeChargedNetworkFeeForLackOfDueDiligence(),
 						submittingNodeChargedNetworkFeeForIgnoringPayerUnwillingness(),
 						submittingNodeStillPaidIfServiceFeesOmitted(),
+
+						/* This last spec requires sleeping for the default TTL (180s) so that the
+						expiration queue will be purged of all entries for existing records.
+
+						Especially since we are _very_ unlikely to make a dynamic change to
+						cache.records.ttl in practice, this test is not worth running in CircleCI.
+
+						However, it is a good sanity check to have available locally when making
+						changes to record expiration.  */
+//						recordsTtlChangesAsExpected(),
 				}
 		);
 	}
@@ -356,6 +367,55 @@ public class RecordCreationSuite extends HapiApiSuite {
 								))
 				);
 	}
+
+	private HapiApiSpec recordsTtlChangesAsExpected() {
+		final int abbrevCacheTtl = 3;
+		final String brieflyAvailMemo = "I can't stay for long...";
+		final AtomicReference<byte[]> origPropContents = new AtomicReference<>();
+
+		return defaultHapiSpec("RecordsTtlChangesAsExpected")
+				.given(
+						getFileContents(APP_PROPERTIES)
+								.consumedBy(origPropContents::set),
+						sleepFor((Long.parseLong(defaultRecordsTtl) + 1) * 1_000L),
+						sourcing(() ->
+								fileUpdate(APP_PROPERTIES)
+										.fee(ONE_HUNDRED_HBARS)
+										.contents(rawConfigPlus(
+												origPropContents.get(),
+												"cache.records.ttl",
+												"" + abbrevCacheTtl))
+										.payingWith(GENESIS)
+						),
+						cryptoCreate("payer")
+				).when(
+						cryptoTransfer(tinyBarsFromTo("payer", ADDRESS_BOOK_CONTROL, 1L))
+								.memo(brieflyAvailMemo)
+								.payingWith("payer"),
+						getAccountRecords("payer").has(inOrder(recordWith().memo(brieflyAvailMemo))),
+						sleepFor(abbrevCacheTtl * 1_000L),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1L))
+								.payingWith(GENESIS),
+						getAccountRecords("payer").has(inOrder())
+				).then(
+						sourcing(() ->
+								fileUpdate(APP_PROPERTIES)
+										.contents(origPropContents.get()))
+				);
+	}
+
+	private byte[] rawConfigPlus(byte[] rawBase, String extraName, String extraValue) {
+		try {
+			final var rawConfig = ServicesConfigurationList.parseFrom(rawBase);
+			return rawConfig.toBuilder().addNameValue(Setting.newBuilder()
+					.setName(extraName)
+					.setValue(extraValue)
+			).build().toByteArray();
+		} catch (InvalidProtocolBufferException e) {
+			throw new IllegalStateException("Existing 0.0.121 wasn't valid protobuf!", e);
+		}
+	}
+
 
 	@Override
 	protected Logger getResultsLogger() {
