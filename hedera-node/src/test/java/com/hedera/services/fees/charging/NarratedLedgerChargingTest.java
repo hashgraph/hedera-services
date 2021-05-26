@@ -22,26 +22,27 @@ package com.hedera.services.fees.charging;
 
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.fee.FeeObject;
 import com.swirlds.fcmap.FCMap;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -59,7 +60,11 @@ class NarratedLedgerChargingTest {
 	@Mock
 	private NodeInfo nodeInfo;
 	@Mock
+	private TxnAccessor accessor;
+	@Mock
 	private HederaLedger ledger;
+	@Mock
+	private FeeExemptions feeExemptions;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
@@ -69,7 +74,22 @@ class NarratedLedgerChargingTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new NarratedLedgerCharging(nodeInfo, ledger, dynamicProperties, () -> accounts);
+		subject = new NarratedLedgerCharging(nodeInfo, ledger, feeExemptions, dynamicProperties, () -> accounts);
+	}
+
+	@Test
+	void chargesNoFeesToExemptPayer() {
+		given(feeExemptions.hasExemptPayer(accessor)).willReturn(true);
+		given(accessor.getPayer()).willReturn(grpcPayerId);
+		subject.resetForTxn(accessor, submittingNodeId);
+
+		// when:
+		subject.chargePayerAllFees();
+		subject.chargePayerServiceFee();
+		subject.chargePayerNetworkAndUpToNodeFee();
+
+		// then:
+		verifyNoInteractions(ledger);
 	}
 
 	@Test
@@ -144,8 +164,9 @@ class NarratedLedgerChargingTest {
 		// expect:
 		assertThrows(IllegalStateException.class, subject::canPayerAffordAllFees);
 
+		given(accessor.getPayer()).willReturn(grpcPayerId);
 		// and given:
-		subject.resetForTxn(payerId, submittingNodeId, 0L);
+		subject.resetForTxn(accessor, submittingNodeId);
 		subject.setFees(fees);
 
 		// still expect:
@@ -154,13 +175,43 @@ class NarratedLedgerChargingTest {
 
 	@Test
 	void detectsLackOfWillingness() {
-		subject.resetForTxn(payerId, submittingNodeId, 0L);
+		given(accessor.getPayer()).willReturn(grpcPayerId);
+
+		subject.resetForTxn(accessor, submittingNodeId);
 		subject.setFees(fees);
 
 		// expect:
 		assertFalse(subject.isPayerWillingToCoverAllFees());
 		assertFalse(subject.isPayerWillingToCoverNetworkFee());
 		assertFalse(subject.isPayerWillingToCoverServiceFee());
+	}
+
+	@Test
+	void exemptPayerNeedsNoAbility() {
+		given(accessor.getPayer()).willReturn(grpcPayerId);
+		given(feeExemptions.hasExemptPayer(accessor)).willReturn(true);
+
+		subject.resetForTxn(accessor, submittingNodeId);
+		subject.setFees(fees);
+
+		// expect:
+		assertTrue(subject.canPayerAffordAllFees());
+		assertTrue(subject.canPayerAffordServiceFee());
+		assertTrue(subject.canPayerAffordNetworkFee());
+	}
+
+	@Test
+	void exemptPayerNeedsNoWillingness() {
+		given(accessor.getPayer()).willReturn(grpcPayerId);
+		given(feeExemptions.hasExemptPayer(accessor)).willReturn(true);
+
+		subject.resetForTxn(accessor, submittingNodeId);
+		subject.setFees(fees);
+
+		// expect:
+		assertTrue(subject.isPayerWillingToCoverAllFees());
+		assertTrue(subject.isPayerWillingToCoverNetworkFee());
+		assertTrue(subject.isPayerWillingToCoverServiceFee());
 	}
 
 	private void givenSetupToChargePayer(long payerBalance, long totalOfferedFee) {
@@ -170,7 +221,9 @@ class NarratedLedgerChargingTest {
 		given(dynamicProperties.fundingAccount()).willReturn(grpcFundingId);
 		given(nodeInfo.accountKeyOf(submittingNodeId)).willReturn(nodeId);
 
-		subject.resetForTxn(payerId, submittingNodeId, totalOfferedFee);
+		given(accessor.getPayer()).willReturn(grpcPayerId);
+		given(accessor.getOfferedFee()).willReturn(totalOfferedFee);
+		subject.resetForTxn(accessor, submittingNodeId);
 		subject.setFees(fees);
 	}
 
@@ -181,7 +234,8 @@ class NarratedLedgerChargingTest {
 		given(dynamicProperties.fundingAccount()).willReturn(grpcFundingId);
 		given(nodeInfo.accountKeyOf(submittingNodeId)).willReturn(nodeId);
 
-		subject.resetForTxn(payerId, submittingNodeId, 0L);
+		given(accessor.getPayer()).willReturn(grpcPayerId);
+		subject.resetForTxn(accessor, submittingNodeId);
 		subject.setFees(fees);
 	}
 }

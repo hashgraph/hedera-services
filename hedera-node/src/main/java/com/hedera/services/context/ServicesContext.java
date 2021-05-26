@@ -1506,7 +1506,7 @@ public class ServicesContext {
 	public NarratedCharging narratedCharging() {
 		if (narratedCharging == null) {
 			narratedCharging = new NarratedLedgerCharging(
-					nodeInfo(), ledger(), globalDynamicProperties(), this::accounts);
+					nodeInfo(), ledger(), exemptions(), globalDynamicProperties(), this::accounts);
 		}
 		return narratedCharging;
 	}

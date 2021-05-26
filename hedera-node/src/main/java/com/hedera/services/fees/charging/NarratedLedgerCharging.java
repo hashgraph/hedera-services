@@ -22,9 +22,13 @@ package com.hedera.services.fees.charging;
 
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.fee.FeeObject;
 import com.swirlds.fcmap.FCMap;
 
@@ -40,26 +44,30 @@ public class NarratedLedgerCharging implements NarratedCharging {
 
 	private final NodeInfo nodeInfo;
 	private final HederaLedger ledger;
+	private final FeeExemptions feeExemptions;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
 	private long effPayerStartingBalance = UNKNOWN_ACCOUNT_BALANCE;
-
 	private long nodeFee, networkFee, serviceFee;
 	private long totalOfferedFee;
 	private long totalCharged;
+	private boolean payerExempt;
+	private AccountID grpcPayerId;
 	private MerkleEntityId nodeId;
 	private MerkleEntityId payerId;
 
 	public NarratedLedgerCharging(
 			NodeInfo nodeInfo,
 			HederaLedger ledger,
+			FeeExemptions feeExemptions,
 			GlobalDynamicProperties dynamicProperties,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
 	) {
-		this.nodeInfo = nodeInfo;
 		this.ledger = ledger;
 		this.accounts = accounts;
+		this.nodeInfo = nodeInfo;
+		this.feeExemptions = feeExemptions;
 		this.dynamicProperties = dynamicProperties;
 	}
 
@@ -69,11 +77,13 @@ public class NarratedLedgerCharging implements NarratedCharging {
 	}
 
 	@Override
-	public void resetForTxn(MerkleEntityId payerId, long submittingNodeId, long totalOfferedFee) {
-		this.payerId = payerId;
-		this.totalOfferedFee = totalOfferedFee;
+	public void resetForTxn(TxnAccessor accessor, long submittingNodeId) {
+		this.grpcPayerId = accessor.getPayer();
+		this.payerId = MerkleEntityId.fromAccountId(grpcPayerId);
+		this.totalOfferedFee = accessor.getOfferedFee();
 
 		nodeId = nodeInfo.accountKeyOf(submittingNodeId);
+		payerExempt = feeExemptions.hasExemptPayer(accessor);
 		totalCharged = 0L;
 		effPayerStartingBalance = UNKNOWN_ACCOUNT_BALANCE;
 	}
@@ -87,6 +97,9 @@ public class NarratedLedgerCharging implements NarratedCharging {
 
 	@Override
 	public boolean canPayerAffordAllFees() {
+		if (payerExempt) {
+			return true;
+		}
 		if (effPayerStartingBalance == UNKNOWN_ACCOUNT_BALANCE) {
 			initEffPayerBalance(payerId);
 		}
@@ -95,6 +108,9 @@ public class NarratedLedgerCharging implements NarratedCharging {
 
 	@Override
 	public boolean canPayerAffordNetworkFee() {
+		if (payerExempt) {
+			return true;
+		}
 		if (effPayerStartingBalance == UNKNOWN_ACCOUNT_BALANCE) {
 			initEffPayerBalance(payerId);
 		}
@@ -103,6 +119,9 @@ public class NarratedLedgerCharging implements NarratedCharging {
 
 	@Override
 	public boolean canPayerAffordServiceFee() {
+		if (payerExempt) {
+			return true;
+		}
 		if (effPayerStartingBalance == UNKNOWN_ACCOUNT_BALANCE) {
 			initEffPayerBalance(payerId);
 		}
@@ -111,21 +130,24 @@ public class NarratedLedgerCharging implements NarratedCharging {
 
 	@Override
 	public boolean isPayerWillingToCoverAllFees() {
-		return totalOfferedFee >= (nodeFee + networkFee + serviceFee);
+		return payerExempt || totalOfferedFee >= (nodeFee + networkFee + serviceFee);
 	}
 
 	@Override
 	public boolean isPayerWillingToCoverNetworkFee() {
-		return totalOfferedFee >= networkFee;
+		return payerExempt || totalOfferedFee >= networkFee;
 	}
 
 	@Override
 	public boolean isPayerWillingToCoverServiceFee() {
-		return totalOfferedFee >= serviceFee;
+		return payerExempt || totalOfferedFee >= serviceFee;
 	}
 
 	@Override
 	public void chargePayerAllFees() {
+		if (payerExempt) {
+			return;
+		}
 		ledger.adjustBalance(nodeId.toAccountId(), +nodeFee);
 		ledger.adjustBalance(dynamicProperties.fundingAccount(), +(networkFee + serviceFee));
 		totalCharged = nodeFee + networkFee + serviceFee;
@@ -134,6 +156,9 @@ public class NarratedLedgerCharging implements NarratedCharging {
 
 	@Override
 	public void chargePayerServiceFee() {
+		if (payerExempt) {
+			return;
+		}
 		ledger.adjustBalance(dynamicProperties.fundingAccount(), +serviceFee);
 		totalCharged = serviceFee;
 		ledger.adjustBalance(payerId.toAccountId(), -totalCharged);
@@ -141,6 +166,9 @@ public class NarratedLedgerCharging implements NarratedCharging {
 
 	@Override
 	public void chargePayerNetworkAndUpToNodeFee() {
+		if (payerExempt) {
+			return;
+		}
 		if (effPayerStartingBalance == UNKNOWN_ACCOUNT_BALANCE) {
 			initEffPayerBalance(payerId);
 		}

@@ -270,7 +270,7 @@ class AwareTransactionContextTest {
 		assertEquals(anotherNodeAccount, subject.submittingNodeAccount());
 		assertEquals(anotherMemberId, subject.submittingSwirldsMember());
 		// and:
-		verify(narratedCharging).resetForTxn(MerkleEntityId.fromAccountId(payer), memberId, offeredFee);
+		verify(narratedCharging).resetForTxn(accessor, memberId);
 	}
 
 	@Test

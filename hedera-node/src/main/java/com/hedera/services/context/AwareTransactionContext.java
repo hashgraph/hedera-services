@@ -114,8 +114,7 @@ public class AwareTransactionContext implements TransactionContext {
 		isPayerSigKnownActive = false;
 		hasComputedRecordSoFar = false;
 
-		final var allegedPayer = MerkleEntityId.fromAccountId(accessor.getPayer());
-		ctx.narratedCharging().resetForTxn(allegedPayer, submittingMember, accessor.getOfferedFee());
+		ctx.narratedCharging().resetForTxn(accessor, submittingMember);
 
 		recordSoFar.clear();
 	}

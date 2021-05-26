@@ -20,7 +20,7 @@ package com.hedera.services.fees.charging;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.fee.FeeObject;
 
 /**
@@ -28,7 +28,7 @@ import com.hederahashgraph.fee.FeeObject;
  */
 public interface NarratedCharging {
 	void setFees(FeeObject fees);
-	void resetForTxn(MerkleEntityId payerId, long submittingNodeId, long offeredTotalFee);
+	void resetForTxn(TxnAccessor accessor, long submittingNodeId);
 
 	boolean canPayerAffordAllFees();
 	boolean canPayerAffordNetworkFee();
