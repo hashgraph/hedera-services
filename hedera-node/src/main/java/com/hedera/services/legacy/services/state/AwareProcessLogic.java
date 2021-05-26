@@ -87,44 +87,28 @@ public class AwareProcessLogic implements ProcessLogic {
 	@Override
 	public void incorporateConsensusTxn(Transaction platformTxn, Instant consensusTime, long submittingMember) {
 		try {
-			PlatformTxnAccessor accessor = new PlatformTxnAccessor(platformTxn);
-			Instant timestamp = consensusTime;
+			final var accessor = new PlatformTxnAccessor(platformTxn);
+			Instant effectiveConsensusTime = consensusTime;
 			if (accessor.canTriggerTxn()) {
-				timestamp = timestamp.minusNanos(1);
+				effectiveConsensusTime = consensusTime.minusNanos(1);
 			}
 
-			if (!txnSanityChecks(accessor, timestamp, submittingMember)) {
+			if (!ctx.invariants().holdFor(accessor, effectiveConsensusTime, submittingMember)) {
 				return;
 			}
-			txnManager.process(accessor, timestamp, submittingMember, ctx);
 
-			if (ctx.txnCtx().triggeredTxn() != null) {
-				TxnAccessor scopedAccessor = ctx.txnCtx().triggeredTxn();
-				txnManager.process(scopedAccessor, consensusTime, submittingMember, ctx);
+			ctx.expiries().purge(effectiveConsensusTime.getEpochSecond());
+
+			txnManager.process(accessor, effectiveConsensusTime, submittingMember, ctx);
+			final var triggeredAccessor = ctx.txnCtx().triggeredTxn();
+			if (triggeredAccessor != null) {
+				txnManager.process(triggeredAccessor, consensusTime, submittingMember, ctx);
 			}
+
 			ctx.entityAutoRenewal().execute(consensusTime);
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Consensus platform txn was not gRPC!", e);
 		}
-	}
-
-	private boolean txnSanityChecks(PlatformTxnAccessor accessor, Instant consensusTime, long submittingMember) {
-		var lastHandled = ctx.consensusTimeOfLastHandledTxn();
-		if (lastHandled != null && !consensusTime.isAfter(lastHandled)) {
-			var msg = String.format(
-					"Catastrophic invariant failure! Non-increasing consensus time %s versus last-handled %s: %s",
-					consensusTime, lastHandled, accessor.getSignedTxn4Log());
-			log.error(msg);
-			return false;
-		}
-		if (ctx.addressBook().getAddress(submittingMember).getStake() == 0L) {
-			var msg = String.format("Ignoring a transaction submitted by zero-stake node %d: %s",
-					submittingMember,
-					accessor.getSignedTxn4Log());
-			log.warn(msg);
-			return false;
-		}
-		return true;
 	}
 
 	private void processTxnInCtx() {
@@ -150,10 +134,10 @@ public class AwareProcessLogic implements ProcessLogic {
 		}
 	}
 
-	private void addRecordToStream() {
-		var finalRecord = ctx.recordsHistorian().lastCreatedRecord().get();
-		addForStreaming(ctx.txnCtx().accessor().getBackwardCompatibleSignedTxn(), finalRecord,
-				ctx.txnCtx().consensusTime());
+	void addRecordToStream() {
+		ctx.recordsHistorian().lastCreatedRecord().ifPresent(finalRecord ->
+				addForStreaming(ctx.txnCtx().accessor().getBackwardCompatibleSignedTxn(),
+						finalRecord, ctx.txnCtx().consensusTime()));
 	}
 
 	private void doTriggeredProcess(TxnAccessor accessor, Instant consensusTime) {
@@ -172,8 +156,6 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	private void doProcess(TxnAccessor accessor, Instant consensusTime) {
 		ctx.networkCtxManager().advanceConsensusClockTo(consensusTime);
-		ctx.recordsHistorian().purgeExpiredRecords();
-		ctx.expiries().purgeExpiredEntitiesAt(consensusTime.getEpochSecond());
 
 		var sigStatus = rationalizeWithPreConsensusSigs(accessor);
 		if (hasActivePayerSig(accessor)) {

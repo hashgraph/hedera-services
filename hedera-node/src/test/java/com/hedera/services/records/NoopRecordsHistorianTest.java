@@ -28,12 +28,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class NoopRecordsHistorianTest {
 	@Test
-	public void nothingMuchHappens() {
+	void nothingMuchHappens() {
 		// expect:
-		assertDoesNotThrow(NOOP_RECORDS_HISTORIAN::addNewRecords);
-		assertDoesNotThrow(NOOP_RECORDS_HISTORIAN::purgeExpiredRecords);
-		assertDoesNotThrow(NOOP_RECORDS_HISTORIAN::addNewEntities);
-		assertDoesNotThrow(() -> NOOP_RECORDS_HISTORIAN.setLedger(null));
+		assertDoesNotThrow(NOOP_RECORDS_HISTORIAN::finalizeTransactionRecord);
+		assertDoesNotThrow(NOOP_RECORDS_HISTORIAN::noteNewExpirationEvents);
+		assertDoesNotThrow(NOOP_RECORDS_HISTORIAN::saveTransactionRecord);
 		assertDoesNotThrow(() -> NOOP_RECORDS_HISTORIAN.setCreator(null));
 		assertDoesNotThrow(() -> NOOP_RECORDS_HISTORIAN.reviewExistingRecords());
 		assertTrue(NOOP_RECORDS_HISTORIAN.lastCreatedRecord().isEmpty());

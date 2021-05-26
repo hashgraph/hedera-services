@@ -244,7 +244,6 @@ public class MerkleAccountTest {
 		assertNotEquals(null, one);
 		assertNotEquals(new Object(), one);
 		assertNotEquals(two, one);
-		assertEquals(one, one);
 		assertEquals(two, three);
 		// and:
 		assertNotEquals(one.hashCode(), two.hashCode());

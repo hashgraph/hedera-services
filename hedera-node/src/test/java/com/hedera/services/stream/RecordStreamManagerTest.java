@@ -31,11 +31,16 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.stream.MultiStream;
 import com.swirlds.common.stream.QueueThread;
 import org.apache.commons.lang3.RandomUtils;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 
 import javax.inject.Inject;
 
@@ -45,8 +50,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -114,7 +122,7 @@ public class RecordStreamManagerTest {
 	}
 
 	@Test
-	public void initializeTest() {
+	void initializeTest() {
 		assertNull(disableStreamingInstance.getStreamFileWriter(),
 				"When recordStreaming is disabled, streamFileWriter instance should be null");
 		assertNotNull(disableStreamingInstance.getMultiStream(), INITIALIZE_NOT_NULL);
@@ -131,14 +139,27 @@ public class RecordStreamManagerTest {
 	}
 
 	@Test
-	public void setInitialHashTest() {
+	void setInitialHashTest() {
 		RECORD_STREAM_MANAGER.setInitialHash(INITIAL_RANDOM_HASH);
 		verify(multiStreamMock).setRunningHash(INITIAL_RANDOM_HASH);
 		assertEquals(INITIAL_RANDOM_HASH, RECORD_STREAM_MANAGER.getInitialHash(), "initialHash is not set");
 	}
 
 	@Test
-	public void addRecordStreamObjectTest() throws InterruptedException {
+	void warnsOnInterruptedStreaming() throws InterruptedException {
+		recordStreamManager = new RecordStreamManager(multiStreamMock, writeQueueThreadMock, runningAvgsMock);
+
+		willThrow(InterruptedException.class).given(multiStreamMock).add(any());
+
+		// when:
+		recordStreamManager.addRecordStreamObject(new RecordStreamObject());
+
+		// then:
+		assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith("Interrupted while streaming RecordStreamObject")));
+	}
+
+	@Test
+	void addRecordStreamObjectTest() throws InterruptedException {
 		recordStreamManager = new RecordStreamManager(
 				multiStreamMock, writeQueueThreadMock, runningAvgsMock);
 		assertFalse(recordStreamManager.getInFreeze(),
@@ -175,14 +196,14 @@ public class RecordStreamManagerTest {
 
 	@ParameterizedTest
 	@ValueSource(booleans = { true, false })
-	public void setStartWriteAtCompleteWindowTest(boolean startWriteAtCompleteWindow) {
+	void setStartWriteAtCompleteWindowTest(boolean startWriteAtCompleteWindow) {
 		enableStreamingInstance.setStartWriteAtCompleteWindow(startWriteAtCompleteWindow);
 		assertEquals(startWriteAtCompleteWindow,
 				enableStreamingInstance.getStreamFileWriter().getStartWriteAtCompleteWindow(), UNEXPECTED_VALUE);
 	}
 
 	@Test
-	public void setInFreezeTest() {
+	void setInFreezeTest() {
 		MultiStream<RecordStreamObject> multiStreamMock = mock(MultiStream.class);
 		recordStreamManager = new RecordStreamManager(multiStreamMock, writeQueueThreadMock, runningAvgsMock);
 

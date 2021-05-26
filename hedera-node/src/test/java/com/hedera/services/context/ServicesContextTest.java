@@ -99,6 +99,7 @@ import com.hedera.services.state.exports.ToStringAccountsExporter;
 import com.hedera.services.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.services.state.initialization.HfsSystemFilesManager;
 import com.hedera.services.state.logic.AwareNodeDiligenceScreen;
+import com.hedera.services.state.logic.InvariantChecks;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
@@ -180,7 +181,7 @@ public class ServicesContextTest {
 	private final NodeId nodeId = new NodeId(false, id);
 	private static final String recordStreamDir = "somePath/recordStream";
 
-	RichInstant consensusTimeOfLastHandledTxn = RichInstant.fromJava(Instant.now());
+	Instant consensusTimeOfLastHandledTxn = Instant.now();
 	Platform platform;
 	SequenceNumber seqNo;
 	ExchangeRates midnightRates;
@@ -291,7 +292,7 @@ public class ServicesContextTest {
 		inOrder.verify(state).addressBook();
 		assertEquals(seqNo, actualSeqNo);
 		assertEquals(midnightRates, actualMidnightRates);
-		assertEquals(consensusTimeOfLastHandledTxn.toJava(), actualLastHandleTime);
+		assertEquals(consensusTimeOfLastHandledTxn, actualLastHandleTime);
 		inOrder.verify(state).topics();
 		inOrder.verify(state).storage();
 		inOrder.verify(state).accounts();
@@ -541,6 +542,8 @@ public class ServicesContextTest {
 		assertThat(ctx.entityAutoRenewal(), instanceOf(EntityAutoRenewal.class));
 		assertThat(ctx.entityStore(), instanceOf(EntityStore.class));
 		assertThat(ctx.transitionRunner(), instanceOf(TransitionRunner.class));
+		assertThat(ctx.nodeInfo(), instanceOf(NodeInfo.class));
+		assertThat(ctx.invariants(), instanceOf(InvariantChecks.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

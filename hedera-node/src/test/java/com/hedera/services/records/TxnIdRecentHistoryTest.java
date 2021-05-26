@@ -25,6 +25,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -51,12 +52,12 @@ class TxnIdRecentHistoryTest {
 	TxnIdRecentHistory subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		subject = new TxnIdRecentHistory();
 	}
 
 	@Test
-	public void getsMemory() {
+	void getsMemory() {
 		// given:
 		subject.classifiableRecords = List.of(mock(ExpirableTxnRecord.class));
 		// expect:
@@ -75,7 +76,7 @@ class TxnIdRecentHistoryTest {
 	}
 
 	@Test
-	public void classifiesAsExpected() {
+	void classifiesAsExpected() {
 		// given:
 		subject.observe(
 				recordOf(0, 0, INVALID_NODE_ACCOUNT),
@@ -93,7 +94,7 @@ class TxnIdRecentHistoryTest {
 	}
 
 	@Test
-	public void restoresFromStagedAsExpected() {
+	void restoresFromStagedAsExpected() {
 		// given:
 		subject.stage(recordOf(2, 7, INVALID_NODE_ACCOUNT));
 		subject.stage(recordOf(1, 1, SUCCESS));
@@ -128,8 +129,8 @@ class TxnIdRecentHistoryTest {
 	}
 
 	@Test
-	public void prioritizesClassifiableRecords() {
-		givenSomeWellKnownHistory();
+	void prioritizesClassifiableRecords() {
+		givenSomeWellKnownHistoryWithListOfSizeGreaterThanOne();
 
 		// when:
 		var priority = subject.priorityRecord();
@@ -141,19 +142,19 @@ class TxnIdRecentHistoryTest {
 	}
 
 	@Test
-	public void returnsEmptyIfForgotten() {
+	void returnsEmptyIfForgotten() {
 		// expect:
 		assertNull(subject.priorityRecord());
 	}
 
 	@Test
-	public void recognizesEmptyDuplicates() {
+	void recognizesEmptyDuplicates() {
 		// expect:
 		assertTrue(subject.duplicateRecords().isEmpty());
 	}
 
 	@Test
-	public void returnsUnclassifiableIfOnlyAvailable() {
+	void returnsUnclassifiableIfOnlyAvailable() {
 		// given:
 		subject.observe(
 				recordOf(1, 0, INVALID_PAYER_SIGNATURE),
@@ -169,8 +170,14 @@ class TxnIdRecentHistoryTest {
 	}
 
 	@Test
-	public void forgetsAsExpected() {
-		givenSomeWellKnownHistory();
+	void nothingHappensWithNoHistory() {
+		// when:
+		Assertions.assertDoesNotThrow(() -> subject.forgetExpiredAt(expiryAtOffset(1)));
+	}
+
+	@Test
+	void forgetsFromListOfSizeGreaterThanOneAsExpected() {
+		givenSomeWellKnownHistoryWithListOfSizeGreaterThanOne();
 
 		// when:
 		subject.forgetExpiredAt(expiryAtOffset(4));
@@ -179,17 +186,44 @@ class TxnIdRecentHistoryTest {
 		assertEquals(
 				List.of(
 						memoIdentifying(3, 5, DUPLICATE_TRANSACTION)
-				), subject.classifiableRecords.stream().map(sr -> sr.getMemo()).collect(toList()));
+				), subject.classifiableRecords.stream().map(ExpirableTxnRecord::getMemo).collect(toList()));
 		// and:
 		assertEquals(
 				List.of(
 						memoIdentifying(1, 6, INVALID_PAYER_SIGNATURE),
 						memoIdentifying(2, 7, INVALID_NODE_ACCOUNT)
-				), subject.unclassifiableRecords.stream().map(sr -> sr.getMemo()).collect(toList()));
+				), subject.unclassifiableRecords.stream().map(ExpirableTxnRecord::getMemo).collect(toList()));
 	}
 
 	@Test
-	public void omitsPriorityWhenUnclassifiable() {
+	void forgetsAsExpectedFromListOfSizeOne() {
+		givenSomeWellKnownHistoryWithListOfSizeOne();
+
+		// when:
+		subject.forgetExpiredAt(expiryAtOffset(4));
+
+		// then:
+		assertEquals(
+				List.of(
+						memoIdentifying(3, 5, DUPLICATE_TRANSACTION)
+				), subject.classifiableRecords.stream().map(ExpirableTxnRecord::getMemo).collect(toList()));
+		// and:
+		assertEquals(0, subject.unclassifiableRecords.size());
+	}
+
+	@Test
+	void forgetsNothingFromListOfSizeOneWhenNotExpired() {
+		givenJustOneUnclassifiableRecordHistory();
+
+		// when:
+		subject.forgetExpiredAt(expiryAtOffset(-1));
+
+		// then:
+		assertEquals(1, subject.unclassifiableRecords.size());
+	}
+
+	@Test
+	void omitsPriorityWhenUnclassifiable() {
 		// given:
 		subject.observe(
 				recordOf(1, 0, INVALID_PAYER_SIGNATURE),
@@ -205,12 +239,12 @@ class TxnIdRecentHistoryTest {
 		assertEquals(
 				List.of(
 					memoIdentifying(2, 1, INVALID_NODE_ACCOUNT)
-				), duplicates.stream().map(sr -> sr.getMemo()).collect(toList()));
+				), duplicates.stream().map(ExpirableTxnRecord::getMemo).collect(toList()));
 	}
 
 	@Test
-	public void returnsOrderedDuplicates() {
-		givenSomeWellKnownHistory();
+	void returnsOrderedDuplicates() {
+		givenSomeWellKnownHistoryWithListOfSizeGreaterThanOne();
 
 		// when:
 		var records = subject.duplicateRecords();
@@ -225,10 +259,10 @@ class TxnIdRecentHistoryTest {
 						memoIdentifying(3, 5, DUPLICATE_TRANSACTION),
 						memoIdentifying(1, 6, INVALID_PAYER_SIGNATURE),
 						memoIdentifying(2, 7, INVALID_NODE_ACCOUNT)
-				), records.stream().map(sr -> sr.getMemo()).collect(toList()));
+				), records.stream().map(ExpirableTxnRecord::getMemo).collect(toList()));
 	}
 
-	private void givenSomeWellKnownHistory() {
+	private void givenSomeWellKnownHistoryWithListOfSizeGreaterThanOne() {
 		subject.observe(
 				recordOf(1, 0, INVALID_PAYER_SIGNATURE),
 				INVALID_PAYER_SIGNATURE);
@@ -253,6 +287,27 @@ class TxnIdRecentHistoryTest {
 		subject.observe(
 				recordOf(2, 7, INVALID_NODE_ACCOUNT),
 				INVALID_NODE_ACCOUNT);
+	}
+
+	private void givenSomeWellKnownHistoryWithListOfSizeOne() {
+		subject.observe(
+				recordOf(1, 0, INVALID_PAYER_SIGNATURE),
+				INVALID_PAYER_SIGNATURE);
+		subject.observe(
+				recordOf(1, 1, SUCCESS),
+				SUCCESS);
+		subject.observe(
+				recordOf(1, 2, DUPLICATE_TRANSACTION),
+				DUPLICATE_TRANSACTION);
+		subject.observe(
+				recordOf(3, 5, DUPLICATE_TRANSACTION),
+				DUPLICATE_TRANSACTION);
+	}
+
+	private void givenJustOneUnclassifiableRecordHistory() {
+		subject.observe(
+				recordOf(1, 0, INVALID_PAYER_SIGNATURE),
+				INVALID_PAYER_SIGNATURE);
 	}
 
 	private ExpirableTxnRecord recordOf(

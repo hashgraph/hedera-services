@@ -111,7 +111,7 @@ public class RetryingFCMapAccountLookup extends DefaultFCMapAccountLookup {
 
 		do {
 			int retryNo = maxRetries - retriesRemaining + 1;
-			if (!pause.forMs(retryNo * retryWaitIncrementMs)) {
+			if (!pause.forMs((long) retryNo * retryWaitIncrementMs)) {
 				return SafeLookupResult.failure(MISSING_ACCOUNT);
 			}
 			meta = superLookup(id);

@@ -59,7 +59,7 @@ class MonotonicFullQueueExpiriesTest {
 		assertTrue(subject.hasExpiringAt(expiry1 + 1));
 		assertFalse(subject.hasExpiringAt(expiry1 - 1));
 		// and:
-		assertEquals(expiry3, subject.now);
+		assertEquals(expiry3, subject.getNow());
 
 		// when:
 		var firstExpired = subject.expireNextAt(expiry1);
@@ -69,7 +69,7 @@ class MonotonicFullQueueExpiriesTest {
 		assertEquals(k1, firstExpired);
 		assertEquals(k2, secondExpired);
 		// and:
-		assertEquals(1, subject.allExpiries.size());
+		assertEquals(1, subject.getAllExpiries().size());
 		assertFalse(subject.hasExpiringAt(expiry2));
 		assertTrue(subject.hasExpiringAt(expiry3));
 	}
@@ -83,8 +83,8 @@ class MonotonicFullQueueExpiriesTest {
 		subject.reset();
 
 		// then:
-		assertTrue(subject.allExpiries.isEmpty());
-		assertEquals(0L, subject.now);
+		assertTrue(subject.getAllExpiries().isEmpty());
+		assertEquals(0L, subject.getNow());
 	}
 
 	@Test

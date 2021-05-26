@@ -48,4 +48,14 @@ public class EarliestEntryExpiryTest {
 		// expect:
 		assertEquals("EarliestRecordExpiry{id=0.0.5, earliestExpiry=5}", ere.toString());
 	}
+
+	@Test
+	public void hashCodeWorks() {
+		// given:
+		EarliestRecordExpiry ere = new EarliestRecordExpiry(5L, asAccount("0.0.5"));
+
+		// expect:
+		int expectedHashCode = 1072481;
+		assertEquals(expectedHashCode ,ere.hashCode());
+	}
 }

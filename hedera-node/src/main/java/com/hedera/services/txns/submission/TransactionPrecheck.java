@@ -37,6 +37,7 @@ import static com.hedera.services.txns.submission.PresolvencyFlaws.WELL_KNOWN_FL
 import static com.hedera.services.txns.submission.PresolvencyFlaws.responseForFlawed;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
@@ -75,7 +76,7 @@ public class TransactionPrecheck {
 	public Pair<TxnValidityAndFeeReq, Optional<SignedTxnAccessor>> performForQueryPayment(Transaction signedTxn) {
 		final var prelim = performance(signedTxn, QUERY_PAYMENT_CHARACTERISTICS);
 		final var prelimOutcome = prelim.getLeft();
-		if (prelimOutcome.getValidity() != OK) {
+		if (prelimOutcome.getValidity() != OK || prelim.getRight().isEmpty()) {
 			return prelim;
 		}
 
@@ -96,7 +97,7 @@ public class TransactionPrecheck {
 		}
 
 		final var structuralAssessment = stagedPrechecks.assessStructure(signedTxn);
-		if (structuralAssessment.getLeft().getValidity() != OK) {
+		if (structuralAssessment.getLeft().getValidity() != OK || structuralAssessment.getRight().isEmpty()) {
 			return structuralAssessment;
 		}
 

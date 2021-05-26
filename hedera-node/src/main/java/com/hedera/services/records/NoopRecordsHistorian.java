@@ -20,7 +20,6 @@ package com.hedera.services.records;
  * ‍
  */
 
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.EntityCreator;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 
@@ -30,16 +29,13 @@ public enum NoopRecordsHistorian implements AccountRecordsHistorian {
   NOOP_RECORDS_HISTORIAN;
 
   @Override
-  public void setLedger(HederaLedger ledger) { }
-
-  @Override
   public void setCreator(EntityCreator creator) { }
 
   @Override
-  public void addNewRecords() { }
+  public void finalizeTransactionRecord() { }
 
   @Override
-  public void purgeExpiredRecords() { }
+  public void saveTransactionRecord() { }
 
   @Override
   public void reviewExistingRecords() { }
@@ -48,5 +44,5 @@ public enum NoopRecordsHistorian implements AccountRecordsHistorian {
   public Optional<TransactionRecord> lastCreatedRecord() { return Optional.empty(); }
 
   @Override
-  public void addNewEntities() { }
+  public void noteNewExpirationEvents() { }
 }

@@ -34,7 +34,6 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Assert;
 
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -51,33 +50,8 @@ import java.util.Map;
 public class KeyExpansion {
 
   private static final Logger log = LogManager.getLogger(KeyExpansion.class);
-  public static int KEY_EXPANSION_DEPTH = 15; // recursion level for expansion
+  private static int KEY_EXPANSION_DEPTH = 15; // recursion level for expansion
   public static boolean USE_HEX_ENCODED_KEY = false;
-
-  /**
-   * Expands a key to a given level of depth.
-   */
-  public static void expandKey(Key key, int depth, List<Key> expandedKeys) {
-    if (!(key.hasThresholdKey() || key.hasKeyList())) {
-      expandedKeys.add(key);
-    } else if (key.hasThresholdKey()) {
-      List<Key> tKeys = key.getThresholdKey().getKeys().getKeysList();
-      if (depth <= KEY_EXPANSION_DEPTH) {
-        depth++;
-        for (Key aKey : tKeys) {
-          expandKey(aKey, depth, expandedKeys);
-        }
-      }
-    } else {
-      List<Key> tKeys = key.getKeyList().getKeysList();
-      if (depth <= KEY_EXPANSION_DEPTH) {
-        depth++;
-        for (Key aKey : tKeys) {
-          expandKey(aKey, depth, expandedKeys);
-        }
-      }
-    }
-  }
 
   /**
    * Generates a KeyList key from a list of keys.
@@ -107,88 +81,6 @@ public class KeyExpansion {
   }
 
   /**
-   * Expands a signature to a given level of depth.
-   *
-   * @param depth level of depth to expand, the first level should has a value of 1
-   */
-  public static void expandSignature(Signature signature, int depth,
-      List<Signature> expandedSignatures) {
-    if (!(signature.hasThresholdSignature() || signature.hasSignatureList())) {
-      expandedSignatures.add(signature);
-    } else if (signature.hasThresholdSignature()) {
-      List<Signature> tSignatures = signature.getThresholdSignature().getSigs().getSigsList();
-      if (depth <= KEY_EXPANSION_DEPTH) {
-        depth++;
-        for (Signature aSignature : tSignatures) {
-          expandSignature(aSignature, depth, expandedSignatures);
-        }
-      }
-    } else { // SignatureList object
-      List<Signature> tSignatures = signature.getSignatureList().getSigsList();
-      if (depth <= KEY_EXPANSION_DEPTH) {
-        depth++;
-        for (Signature aSignature : tSignatures) {
-          expandSignature(aSignature, depth, expandedSignatures);
-        }
-      }
-    }
-  }
-
-  /**
-   * Expands a list of key to a given level of depth.
-   *
-   * @param keyList a KeyList object
-   * @return the expanded keys
-   */
-  public static List<Key> expandKeyList(KeyList keyList) {
-    List<Key> expandedKeys = new ArrayList<>();
-    List<Key> keys = keyList.getKeysList();
-    for (Key aKey : keys) {
-      expandKey(aKey, 1, expandedKeys);
-    }
-
-    return expandedKeys;
-  }
-
-  /**
-   * Verifies a list of potentially nested signatures.
-   *
-   * @param signatureList a SignatureList object
-   * @return the expanded signatures
-   */
-  public static List<Boolean> verifySignatureList(SignatureList signatureList, KeyList keyList,
-      byte[] message)
-      throws Exception {
-    List<Signature> signatures = signatureList.getSigsList();
-    List<Key> keys = keyList.getKeysList();
-    List<Boolean> resultList = new ArrayList<>();
-    for (int i = 0; i < signatures.size(); i++) {
-      Signature signature = signatures.get(i);
-      Key key = keys.get(i);
-      boolean result = verifySignature(key, signature, message, 1);
-      resultList.add(result);
-    }
-
-    return resultList;
-  }
-
-  /**
-   * Expands a list of signatures to a given level of depth.
-   *
-   * @param signatureList a SignatureList object
-   * @return the expanded signatures
-   */
-  public static List<Signature> expandSignatureList(SignatureList signatureList) {
-    List<Signature> expandedSignatures = new ArrayList<>();
-    List<Signature> signatures = signatureList.getSigsList();
-    for (Signature aSignature : signatures) {
-      expandSignature(aSignature, 1, expandedSignatures);
-    }
-
-    return expandedSignatures;
-  }
-
-  /**
    * Generates a threshold key from a list of keys.
    *
    * @return generated threshold key
@@ -198,141 +90,6 @@ public class KeyExpansion {
         .setKeys(KeyList.newBuilder().addAllKeys(keys).build())
         .setThreshold(threshold).build();
     Key rv = Key.newBuilder().setThresholdKey(tkey).build();
-    return rv;
-  }
-
-  /**
-   * Computes number of expanded keys by traversing the key recursively.
-   *
-   * @param key the complex key to be computed
-   * @param depth current level that is to be traversed. The first level has a value of 1.
-   * @param counter keeps track the number of keys
-   * @return number of expanded keys
-   */
-  public static int computeNumOfExpandedKeys(Key key, int depth, AtomicCounter counter) {
-    if (!(key.hasThresholdKey() || key.hasKeyList())) {
-      counter.increment();
-      return counter.value();
-    }
-
-    List<Key> tKeys = null;
-    if (key.hasThresholdKey()) {
-      tKeys = key.getThresholdKey().getKeys().getKeysList();
-    } else {
-      tKeys = key.getKeyList().getKeysList();
-    }
-
-    if (depth <= KEY_EXPANSION_DEPTH) {
-      depth++;
-      for (Key aKey : tKeys) {
-        computeNumOfExpandedKeys(aKey, depth, counter);
-      }
-    }
-
-    return counter.value();
-  }
-
-  /**
-   * Verifies a signature given the key and message up to a given level of depth. Both the signature
-   * and the key may be complex with multiple levels.
-   *
-   * @param depth current level that is to be verified. The first level has a value of 1.
-   */
-  public static boolean verifySignature(Key key, Signature signature, byte[] message, int depth)
-      throws Exception {
-    if (depth > KEY_EXPANSION_DEPTH) {
-      log.warn("Exceeding max expansion depth of " + KEY_EXPANSION_DEPTH);
-    }
-
-    if (!(key.hasThresholdKey() || key.hasKeyList())) {
-      boolean result = verifyBasic(key, signature, message);
-      log.debug("depth=" + depth + "; verifyBasic: result=" + result + "; key=" + key);
-      return result;
-    } else if (key.hasThresholdKey()) {
-      List<Key> tKeys = key.getThresholdKey().getKeys().getKeysList();
-      List<Signature> tSignatures = signature.getThresholdSignature().getSigs().getSigsList();
-      int i = 0;
-      int cnt = 0;
-      for (Key aKey : tKeys) {
-        Signature sig = tSignatures.get(i++);
-        boolean res = verifySignature(aKey, sig, message, depth + 1);
-        if (res) {
-          cnt++;
-        }
-      }
-      int thd = key.getThresholdKey().getThreshold();
-      boolean result = (cnt >= thd);
-      log.debug("depth=" + depth + "; hasThresholdKey: result=" + result + "; threshold=" + thd
-          + "; verified=" + cnt);
-      return (result);
-    } else {
-      List<Key> tKeys = key.getKeyList().getKeysList();
-      List<Signature> tSignatures = signature.getSignatureList().getSigsList();
-      int i = 0;
-      int cnt = 0;
-      for (Key aKey : tKeys) {
-        Signature sig = tSignatures.get(i++);
-        boolean res = verifySignature(aKey, sig, message, depth + 1);
-        if (res) {
-          cnt++;
-        }
-      }
-      int thd = tKeys.size();
-      boolean result = (cnt == thd);
-      log.debug(
-          "depth=" + depth + "; hasKeyList: result=" + result + "; size=" + thd + "; verified="
-              + cnt);
-      return (result);
-    }
-  }
-
-  /**
-   * Verifies a basic signature with a basic key.
-   *
-   * @return true if success, false otherwise
-   */
-  private static boolean verifyBasic(Key key, Signature signature, byte[] messageBytes)
-      throws Exception {
-    boolean rv = false;
-    if (key.hasContractID()) {
-      rv = true;
-    } else if (!key.getEd25519().isEmpty()) {
-      byte[] pubKeyBytes = null;
-      if (USE_HEX_ENCODED_KEY) {
-        String pubKeyHex = key.getEd25519().toStringUtf8();
-        pubKeyBytes = Hex.decodeHex(pubKeyHex);
-      } else {
-        pubKeyBytes = key.getEd25519().toByteArray();
-      }
-
-      byte[] sigBytes = signature.getEd25519().toByteArray();
-      if (sigBytes.length == 0) {
-        rv = false;
-      } else {
-        rv = SignatureVerifier.verifyED25519(pubKeyBytes, messageBytes, sigBytes);
-      }
-    } else if (!key.getECDSA384().isEmpty()) {
-      byte[] pubKeyBytes = null;
-      if (USE_HEX_ENCODED_KEY) {
-        String pubKeyHex = key.getECDSA384().toStringUtf8();
-        pubKeyBytes = Hex.decodeHex(pubKeyHex);
-      } else {
-        pubKeyBytes = key.getECDSA384().toByteArray();
-      }
-
-      byte[] sigBytes = signature.getECDSA384().toByteArray();
-      String pubKeyHex = Hex.encodeHexString(pubKeyBytes);
-      String message = new String(messageBytes, SignatureVerifier.CHARACTER_SET_NAME);
-      String sigHex = Hex.encodeHexString(sigBytes);
-      if (sigBytes.length == 0) {
-        rv = false;
-      } else {
-        rv = SignatureVerifier.verifyECDSA(pubKeyHex, message, sigHex);
-      }
-    } else {
-      throw new Exception("Key type not implemented: key=" + key);
-    }
-
     return rv;
   }
 
@@ -486,41 +243,6 @@ public class KeyExpansion {
   }
 
   /**
-   * Generates a complex key of given depth with a mix of basic key, threshold key and key list.
-   *
-   * @param depth of the generated key
-   * @return generated key
-   */
-  public static Key genSampleComplexKey(int depth, Map<String, PrivateKey> pubKey2privKeyMap)
-      throws Exception {
-    Key rv = null;
-    int numKeys = 3;
-    int threshold = 2;
-
-    if (depth == 1) {
-      rv = KeyExpansion.genSingleEd25519Key(pubKey2privKeyMap);
-
-      //verify the size
-      int size = KeyExpansion.computeNumOfExpandedKeys(rv, 1, new AtomicCounter());
-      Assert.assertEquals(1, size);
-    } else if (depth == 2) {
-      List<Key> keys = new ArrayList<>();
-      keys.add(KeyExpansion.genSingleEd25519Key(pubKey2privKeyMap));
-      keys.add(genThresholdKeyInstance(numKeys, threshold, pubKey2privKeyMap));
-      keys.add(genKeyListInstance(numKeys, pubKey2privKeyMap));
-      rv = KeyExpansion.genKeyList(keys);
-
-      //verify the size
-      int size = KeyExpansion.computeNumOfExpandedKeys(rv, 1, new AtomicCounter());
-      Assert.assertEquals(1 + numKeys * 2, size);
-    } else {
-      throw new Exception("Not implemented yet.");
-    }
-
-    return rv;
-  }
-
-  /**
    * Generates a key list instance.
    *
    * @param numKeys number of keys in the generated key
@@ -549,24 +271,6 @@ public class KeyExpansion {
   }
 
   /**
-   * Generates wacl keys
-   *
-   * @param numWaclKeys number of wacl keys, each key is a complex key with depth levels
-   * @param depth depth of the individual wacl key
-   * @return a key list of wacl keys
-   */
-  public static Key genWacl(int numWaclKeys, int depth, Map<String, PrivateKey> pubKey2privKeyMap)
-      throws Exception {
-    List<Key> keys = new ArrayList<>();
-    for (int i = 0; i < numWaclKeys; i++) {
-      Key key = KeyExpansion.genSampleComplexKey(depth, pubKey2privKeyMap);
-      keys.add(key);
-    }
-    Key rv = KeyExpansion.genKeyList(keys);
-    return rv;
-  }
-
-  /**
    * Generates a single Ed25519 key.
    *
    * @param pubKey2privKeyMap map of public key hex string as key and the private key as value
@@ -582,48 +286,6 @@ public class KeyExpansion {
 
     pubKey2privKeyMap.put(pubKeyHex, pair.getPrivate());
     return akey;
-  }
-
-  /**
-   * Signs a basic key and returns a SignaturePair object.
-   *
-   * @param pubKey2privKeyMap map of public key hex string as key and the private key as value
-   * @return the SignaturePair generated
-   */
-  public static SignaturePair signBasicAsSignaturePair(Key key, Map<String, PrivateKey> pubKey2privKeyMap,
-      byte[] msgBytes)
-      throws Exception {
-    SignaturePair rv;
-    if (!key.getEd25519().isEmpty()) {
-      String pubKeyHex = null;
-      if (USE_HEX_ENCODED_KEY) {
-        pubKeyHex = key.getEd25519().toStringUtf8();
-      } else {
-        byte[] pubKeyBytes = key.getEd25519().toByteArray();
-        pubKeyHex = Hex.encodeHexString(pubKeyBytes);
-      }
-      PrivateKey privKey = pubKey2privKeyMap.get(pubKeyHex);
-      String sigHex = SignatureGenerator.signBytes(msgBytes, privKey);
-      rv = SignaturePair.newBuilder().setPubKeyPrefix(ByteString.copyFrom(Hex.decodeHex(pubKeyHex)))
-              .setEd25519(ByteString.copyFrom(Hex.decodeHex(sigHex)))
-          .build();
-    } else if (!key.getECDSA384().isEmpty()) {
-      String pubKeyHex = null;
-      if (USE_HEX_ENCODED_KEY) {
-        pubKeyHex = key.getECDSA384().toStringUtf8();
-      } else {
-        byte[] pubKeyBytes = key.getECDSA384().toByteArray();
-        pubKeyHex = Hex.encodeHexString(pubKeyBytes);
-      }
-      PrivateKey privKey = pubKey2privKeyMap.get(pubKeyHex);
-      String sigHex = SignatureGenerator.signBytes(msgBytes, privKey);
-      rv = SignaturePair.newBuilder().setPubKeyPrefix(ByteString.copyFrom(Hex.decodeHex(pubKeyHex)))
-              .setECDSA384(ByteString.copyFrom(Hex.decodeHex(sigHex)))
-          .build();
-    } else {
-      throw new Exception("Key type not implemented: key=" + key);
-    }
-    return rv;
   }
 
   /**

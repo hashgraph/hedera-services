@@ -34,6 +34,9 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.MiscUtils;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -51,15 +54,23 @@ import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.fcmap.FCMap;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 
+import javax.inject.Inject;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 
 import static com.hedera.services.state.merkle.MerkleScheduleTest.scheduleCreateTxnWith;
@@ -82,58 +93,64 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
+@ExtendWith(LogCaptureExtension.class)
 class StateViewTest {
-	Instant resolutionTime = Instant.ofEpochSecond(123L);
-	RichInstant now = RichInstant.fromGrpc(Timestamp.newBuilder().setNanos(123123213).build());
-	long expiry = 2_000_000L;
-	byte[] data = "SOMETHING".getBytes();
-	byte[] expectedBytecode = "A Supermarket in California".getBytes();
-	byte[] expectedStorage = "The Ecstasy".getBytes();
-	String tokenMemo = "Goodbye and keep cold";
-	HFileMeta metadata;
-	HFileMeta immutableMetadata;
-	FileID target = asFile("0.0.123");
-	TokenID tokenId = asToken("2.4.5");
-	TokenID missingTokenId = asToken("3.4.5");
-	AccountID payerAccountId = asAccount("9.9.9");
-	ScheduleID scheduleId = asSchedule("6.7.8");
-	ScheduleID missingScheduleId = asSchedule("7.8.9");
-	ContractID cid = asContract("3.2.1");
-	byte[] cidAddress = asSolidityAddress((int) cid.getShardNum(), cid.getRealmNum(), cid.getContractNum());
-	ContractID notCid = asContract("1.2.3");
-	AccountID autoRenew = asAccount("2.4.6");
-	AccountID creatorAccountID = asAccount("3.5.7");
-	long autoRenewPeriod = 1_234_567;
-	String fileMemo = "Originally she thought";
-	String scheduleMemo = "For what but eye and ear";
+	private Instant resolutionTime = Instant.ofEpochSecond(123L);
+	private RichInstant now = RichInstant.fromGrpc(Timestamp.newBuilder().setNanos(123123213).build());
+	private long expiry = 2_000_000L;
+	private byte[] data = "SOMETHING".getBytes();
+	private byte[] expectedBytecode = "A Supermarket in California".getBytes();
+	private byte[] expectedStorage = "The Ecstasy".getBytes();
+	private String tokenMemo = "Goodbye and keep cold";
+	private HFileMeta metadata;
+	private HFileMeta immutableMetadata;
+	private FileID target = asFile("0.0.123");
+	private TokenID tokenId = asToken("2.4.5");
+	private TokenID missingTokenId = asToken("3.4.5");
+	private AccountID payerAccountId = asAccount("9.9.9");
+	private ScheduleID scheduleId = asSchedule("6.7.8");
+	private ScheduleID missingScheduleId = asSchedule("7.8.9");
+	private ContractID cid = asContract("3.2.1");
+	private byte[] cidAddress = asSolidityAddress((int) cid.getShardNum(), cid.getRealmNum(), cid.getContractNum());
+	private ContractID notCid = asContract("1.2.3");
+	private AccountID autoRenew = asAccount("2.4.6");
+	private AccountID creatorAccountID = asAccount("3.5.7");
+	private long autoRenewPeriod = 1_234_567;
+	private String fileMemo = "Originally she thought";
+	private String scheduleMemo = "For what but eye and ear";
 
-	FileGetInfoResponse.FileInfo expected;
-	FileGetInfoResponse.FileInfo expectedImmutable;
+	private FileGetInfoResponse.FileInfo expected;
+	private FileGetInfoResponse.FileInfo expectedImmutable;
 
-	Map<byte[], byte[]> storage;
-	Map<byte[], byte[]> bytecode;
-	Map<FileID, byte[]> contents;
-	Map<FileID, HFileMeta> attrs;
-	BiFunction<StateView, AccountID, List<TokenRelationship>> mockTokenRelsFn;
+	private Map<byte[], byte[]> storage;
+	private Map<byte[], byte[]> bytecode;
+	private Map<FileID, byte[]> contents;
+	private Map<FileID, HFileMeta> attrs;
+	private BiFunction<StateView, AccountID, List<TokenRelationship>> mockTokenRelsFn;
 
-	FCMap<MerkleEntityId, MerkleAccount> contracts;
-	TokenStore tokenStore;
-	ScheduleStore scheduleStore;
-	TransactionBody parentScheduleCreate;
+	private FCMap<MerkleEntityId, MerkleAccount> contracts;
+	private TokenStore tokenStore;
+	private ScheduleStore scheduleStore;
+	private TransactionBody parentScheduleCreate;
 
-	MerkleToken token;
-	MerkleSchedule schedule;
-	MerkleAccount contract;
-	MerkleAccount notContract;
-	NodeLocalProperties nodeProps;
-	MerkleDiskFs diskFs;
+	private MerkleToken token;
+	private MerkleSchedule schedule;
+	private MerkleAccount contract;
+	private MerkleAccount notContract;
+	private NodeLocalProperties nodeProps;
+	private MerkleDiskFs diskFs;
 
-	StateView subject;
+	@Inject
+	private LogCaptor logCaptor;
+
+	@LoggingSubject
+	private StateView subject;
 
 	@BeforeEach
 	private void setup() throws Throwable {
@@ -248,21 +265,21 @@ class StateViewTest {
 	}
 
 	@Test
-	public void tokenExistsWorks() {
+	void tokenExistsWorks() {
 		// expect:
 		assertTrue(subject.tokenExists(tokenId));
 		assertFalse(subject.tokenExists(missingTokenId));
 	}
 
 	@Test
-	public void scheduleExistsWorks() {
+	void scheduleExistsWorks() {
 		// expect:
 		assertTrue(subject.scheduleExists(scheduleId));
 		assertFalse(subject.scheduleExists(missingScheduleId));
 	}
 
 	@Test
-	public void tokenWithWorks() {
+	void tokenWithWorks() {
 		given(tokenStore.exists(tokenId)).willReturn(true);
 		given(tokenStore.get(tokenId)).willReturn(token);
 
@@ -271,7 +288,7 @@ class StateViewTest {
 	}
 
 	@Test
-	public void tokenWithWorksForMissing() {
+	void tokenWithWorksForMissing() {
 		given(tokenStore.exists(tokenId)).willReturn(false);
 
 		// expect:
@@ -279,7 +296,7 @@ class StateViewTest {
 	}
 
 	@Test
-	public void recognizesMissingSchedule() {
+	void recognizesMissingSchedule() {
 		// when:
 		var info = subject.infoForSchedule(missingScheduleId);
 
@@ -288,7 +305,7 @@ class StateViewTest {
 	}
 
 	@Test
-	public void infoForScheduleFailsGracefully() {
+	void infoForScheduleFailsGracefully() {
 		given(scheduleStore.get(any())).willThrow(IllegalArgumentException.class);
 
 		// when:
@@ -299,7 +316,7 @@ class StateViewTest {
 	}
 
 	@Test
-	public void getsScheduleInfoForDeleted() {
+	void getsScheduleInfoForDeleted() {
 		// setup:
 		var expectedScheduledTxn = parentScheduleCreate.getScheduleCreate().getScheduledTransactionBody();
 
@@ -326,7 +343,7 @@ class StateViewTest {
 	}
 
 	@Test
-	public void getsScheduleInfoForExecuted() {
+	void getsScheduleInfoForExecuted() {
 		// when:
 		schedule.markExecuted(resolutionTime);
 		var gotten = subject.infoForSchedule(scheduleId);
@@ -337,7 +354,7 @@ class StateViewTest {
 	}
 
 	@Test
-	public void recognizesMissingToken() {
+	void recognizesMissingToken() {
 		// when:
 		var info = subject.infoForToken(missingTokenId);
 
@@ -346,7 +363,7 @@ class StateViewTest {
 	}
 
 	@Test
-	public void infoForTokenFailsGracefully() {
+	void infoForTokenFailsGracefully() {
 		given(tokenStore.get(any())).willThrow(IllegalArgumentException.class);
 
 		// when:
@@ -357,7 +374,7 @@ class StateViewTest {
 	}
 
 	@Test
-	public void getsTokenInfoMinusFreezeIfMissing() {
+	void getsTokenInfoMinusFreezeIfMissing() {
 		// setup:
 		token.setFreezeKey(MerkleToken.UNUSED_KEY);
 
@@ -377,7 +394,7 @@ class StateViewTest {
 	}
 
 	@Test
-	public void getsTokenInfo() {
+	void getsTokenInfo() {
 		// when:
 		var info = subject.infoForToken(tokenId).get();
 
@@ -402,7 +419,7 @@ class StateViewTest {
 	}
 
 	@Test
-	public void getsContractInfo() throws Exception {
+	void getsContractInfo() throws Exception {
 		// setup:
 		List<TokenRelationship> rels = List.of(
 				TokenRelationship.newBuilder()
@@ -432,7 +449,7 @@ class StateViewTest {
 	}
 
 	@Test
-	public void returnsEmptyOptionalIfContractMissing() {
+	void returnsEmptyOptionalIfContractMissing() {
 		given(contracts.get(any())).willReturn(null);
 
 		// expect:
@@ -440,7 +457,7 @@ class StateViewTest {
 	}
 
 	@Test
-	public void handlesNullKey() {
+	void handlesNullKey() {
 		// given:
 		contract.setKey(null);
 
@@ -452,7 +469,7 @@ class StateViewTest {
 	}
 
 	@Test
-	public void getsAttrs() {
+	void getsAttrs() {
 		given(attrs.get(target)).willReturn(metadata);
 
 		// when
@@ -463,7 +480,7 @@ class StateViewTest {
 	}
 
 	@Test
-	public void getsBytecode() {
+	void getsBytecode() {
 		// when:
 		var actual = subject.bytecodeOf(cid);
 
@@ -472,7 +489,7 @@ class StateViewTest {
 	}
 
 	@Test
-	public void getsStorage() {
+	void getsStorage() {
 		// when:
 		var actual = subject.storageOf(cid);
 
@@ -481,7 +498,7 @@ class StateViewTest {
 	}
 
 	@Test
-	public void getsContents() {
+	void getsContents() {
 		given(contents.get(target)).willReturn(data);
 
 		// when
@@ -492,7 +509,7 @@ class StateViewTest {
 	}
 
 	@Test
-	public void assemblesFileInfo() {
+	void assemblesFileInfo() {
 		given(attrs.get(target)).willReturn(metadata);
 		given(contents.get(target)).willReturn(data);
 
@@ -505,7 +522,7 @@ class StateViewTest {
 	}
 
 	@Test
-	public void assemblesFileInfoForImmutable() {
+	void assemblesFileInfoForImmutable() {
 		given(attrs.get(target)).willReturn(immutableMetadata);
 		given(contents.get(target)).willReturn(data);
 
@@ -518,7 +535,7 @@ class StateViewTest {
 	}
 
 	@Test
-	public void assemblesFileInfoForDeleted() {
+	void assemblesFileInfoForDeleted() {
 		// setup:
 		expected = expected.toBuilder()
 				.setDeleted(true)
@@ -537,7 +554,7 @@ class StateViewTest {
 	}
 
 	@Test
-	public void returnEmptyFileInfoForBinaryObjectNotFoundException() {
+	void returnEmptyFileInfoForBinaryObjectNotFoundException() {
 		// setup:
 		given(attrs.get(target)).willThrow(new com.swirlds.blob.BinaryObjectNotFoundException());
 		given(nodeProps.queryBlobLookupRetries()).willReturn(1);
@@ -550,7 +567,33 @@ class StateViewTest {
 	}
 
 	@Test
-	public void returnsEmptyForMissing() {
+	void logsAtDebugWhenInterrupted() throws InterruptedException {
+		// setup:
+		final var finalAnswer = new AtomicReference<Optional<FileGetInfoResponse.FileInfo>>();
+
+		given(attrs.get(target)).willThrow(new com.swirlds.blob.BinaryObjectNotFoundException());
+		given(nodeProps.queryBlobLookupRetries()).willReturn(5);
+
+		// when:
+		final var t = new Thread(() -> finalAnswer.set(subject.infoForFile(target)));
+		// and:
+		t.start();
+		// and:
+		for (int i = 0; i < 5; i++) {
+			t.interrupt();
+		}
+		t.join();
+
+		// then:
+		final var debugLogs = logCaptor.debugLogs();
+		assertTrue(finalAnswer.get().isEmpty());
+		assertTrue(debugLogs.size() >= 2);
+		assertThat(debugLogs.get(0), Matchers.startsWith("Retrying fetch of 0.0.123 file meta"));
+		assertThat(debugLogs.get(1), Matchers.startsWith("Interrupted fetching meta for file 0.0.123"));
+	}
+
+	@Test
+	void returnsEmptyForMissing() {
 		// when:
 		var info = subject.infoForFile(target);
 
@@ -559,7 +602,7 @@ class StateViewTest {
 	}
 
 	@Test
-	public void returnsEmptyForMissingContent() {
+	void returnsEmptyForMissingContent() {
 		// when:
 		var info = subject.contentsOf(target);
 
@@ -568,7 +611,7 @@ class StateViewTest {
 	}
 
 	@Test
-	public void returnsEmptyForMissingAttr() {
+	void returnsEmptyForMissingAttr() {
 		// when:
 		var info = subject.attrOf(target);
 
@@ -577,7 +620,7 @@ class StateViewTest {
 	}
 
 	@Test
-	public void getsSpecialFileContents() {
+	void getsSpecialFileContents() {
 		FileID file150 = asFile("0.0.150");
 
 		given(diskFs.contentsOf(file150)).willReturn(data);

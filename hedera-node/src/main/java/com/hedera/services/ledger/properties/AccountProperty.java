@@ -78,10 +78,15 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 		public BiConsumer<MerkleAccount, Object> setter() {
 			return (a, v) -> {
 				try {
-					a.setBalance((long) v);
+					a.setBalance(((Number) v).longValue());
+				} catch (ClassCastException cce) {
+					throw new IllegalArgumentException(
+							"Wrong argument type! Argument needs to be of type int or long. Actual value: "
+									+ v.toString(), cce);
 				} catch (NegativeAccountBalanceException nabe) {
-					throw new IllegalArgumentException(String.format(
-							"Argument 'v=%d' would cause account 'a=%s' to have a negative balance!", v, a));
+					throw new IllegalArgumentException(
+							"Argument 'v=" + v.toString() + "' would cause account 'a=" + a
+									+ "' to have a negative balance!", nabe);
 				}
 			};
 		}
@@ -155,17 +160,6 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 		@Override
 		public Function<MerkleAccount, Object> getter() {
 			return MerkleAccount::tokens;
-		}
-	},
-	RECORDS {
-		@Override
-		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, r) -> a.setRecords((FCQueue<ExpirableTxnRecord>) r);
-		}
-
-		@Override
-		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::records;
 		}
 	};
 

@@ -54,15 +54,20 @@ public class SubmitMessagesForReconnect extends HapiApiSuite {
 		);
 	}
 
+	private static HapiSpecOperation submitToTestTopic(PerfTestLoadSettings settings) {
+		String topicToSubmit = String.format("0.0.%d",	settings.getTestTopicId());
+		return submitMessageTo(topicToSubmit)
+				.message(randomUtf8Bytes(100))
+				.noLogging()
+				.hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED)
+				.deferStatusResolution();
+	}
+
 	private HapiApiSpec runSubmitMessages() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 
 		Supplier<HapiSpecOperation[]> submitBurst = () -> new HapiSpecOperation[] {
-				submitMessageTo("0.0.30000")
-						.message(randomUtf8Bytes(100))
-						.noLogging()
-						.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
-						.deferStatusResolution()
+				submitToTestTopic(settings)
 		};
 
 		return defaultHapiSpec("RunSubmitMessages")

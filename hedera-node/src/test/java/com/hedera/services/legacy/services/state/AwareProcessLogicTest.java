@@ -25,9 +25,7 @@ import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.charging.TxnFeeChargingPolicy;
-import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
@@ -35,7 +33,9 @@ import com.hedera.services.security.ops.SystemOpAuthorization;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigningOrderResult;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.expiry.EntityAutoRenewal;
+import com.hedera.services.state.expiry.ExpiryManager;
+import com.hedera.services.state.logic.InvariantChecks;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stream.RecordStreamManager;
@@ -43,27 +43,20 @@ import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.txns.TransitionLogicLookup;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.test.extensions.LogCaptor;
-import com.hedera.test.extensions.LogCaptureExtension;
-import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.common.Address;
-import com.swirlds.common.AddressBook;
 import com.swirlds.common.Transaction;
 import com.swirlds.common.crypto.RunningHash;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
-import javax.inject.Inject;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Map;
@@ -72,32 +65,28 @@ import java.util.Optional;
 import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.when;
+import static org.mockito.Mockito.never;
 
-@ExtendWith(LogCaptureExtension.class)
 class AwareProcessLogicTest {
-	Transaction platformTxn;
-	AddressBook book;
-	ServicesContext ctx;
-	TransactionContext txnCtx;
-	TransactionBody txnBody;
-	TransactionBody nonMockTxnBody;
-	SmartContractRequestHandler contracts;
-	HederaFs hfs;
+	private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L);
 
-	@Inject
-	private LogCaptor logCaptor;
+	private Transaction platformTxn;
+	private InvariantChecks invariantChecks;
+	private ServicesContext ctx;
+	private ExpiryManager expiryManager;
+	private TransactionContext txnCtx;
 
-	@LoggingSubject
 	private AwareProcessLogic subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		final Transaction txn = mock(Transaction.class);
 		final PlatformTxnAccessor txnAccessor = mock(PlatformTxnAccessor.class);
 		final HederaLedger ledger = mock(HederaLedger.class);
@@ -109,35 +98,20 @@ class AwareProcessLogicTest {
 		final FeeCalculator fees = mock(FeeCalculator.class);
 		final TxnIdRecentHistory recentHistory = mock(TxnIdRecentHistory.class);
 		final Map<TransactionID, TxnIdRecentHistory> histories = mock(Map.class);
-		final BackingStore<AccountID, MerkleAccount> backingAccounts = mock(BackingStore.class);
 		final AccountID accountID = mock(AccountID.class);
-		final OptionValidator validator = mock(OptionValidator.class);
 		final TxnFeeChargingPolicy policy = mock(TxnFeeChargingPolicy.class);
 		final SystemOpPolicies policies = mock(SystemOpPolicies.class);
 		final TransitionLogicLookup lookup = mock(TransitionLogicLookup.class);
-		hfs = mock(HederaFs.class);
+		final EntityAutoRenewal entityAutoRenewal = mock(EntityAutoRenewal.class);
 
-		given(histories.get(any())).willReturn(recentHistory);
+		invariantChecks = mock(InvariantChecks.class);
+		expiryManager = mock(ExpiryManager.class);
 
 		txnCtx = mock(TransactionContext.class);
-		ctx = mock(ServicesContext.class);
-		txnBody = mock(TransactionBody.class);
-		contracts = mock(SmartContractRequestHandler.class);
-		nonMockTxnBody = TransactionBody.newBuilder()
-				.setTransactionID(TransactionID.newBuilder()
-								.setAccountID(IdUtils.asAccount("0.0.2"))).build();
-		platformTxn = new Transaction(com.hederahashgraph.api.proto.java.Transaction.newBuilder()
-				.setBodyBytes(nonMockTxnBody.toByteString())
-				.build().toByteArray());
 
-		var zeroStakeAddress = mock(Address.class);
-		given(zeroStakeAddress.getStake()).willReturn(0L);
-		var stakedAddress = mock(Address.class);
-		given(stakedAddress.getStake()).willReturn(1L);
-		book = mock(AddressBook.class);
-		given(book.getAddress(1)).willReturn(stakedAddress);
-		given(book.getAddress(666L)).willReturn(zeroStakeAddress);
-		given(ctx.addressBook()).willReturn(book);
+		TransactionBody txnBody = mock(TransactionBody.class);
+
+		ctx = mock(ServicesContext.class);
 		given(ctx.ledger()).willReturn(ledger);
 		given(ctx.txnCtx()).willReturn(txnCtx);
 		given(ctx.recordsHistorian()).willReturn(historian);
@@ -146,13 +120,11 @@ class AwareProcessLogicTest {
 		given(ctx.speedometers()).willReturn(speedometers);
 		given(ctx.fees()).willReturn(fees);
 		given(ctx.txnHistories()).willReturn(histories);
-		given(ctx.backingAccounts()).willReturn(backingAccounts);
-		given(ctx.validator()).willReturn(validator);
 		given(ctx.txnChargingPolicy()).willReturn(policy);
 		given(ctx.systemOpPolicies()).willReturn(policies);
 		given(ctx.transitionLogic()).willReturn(lookup);
-		given(ctx.hfs()).willReturn(hfs);
-		given(ctx.contracts()).willReturn(contracts);
+		given(ctx.invariants()).willReturn(invariantChecks);
+		given(ctx.expiries()).willReturn(expiryManager);
 
 		given(txnCtx.accessor()).willReturn(txnAccessor);
 		given(txnCtx.submittingNodeAccount()).willReturn(accountID);
@@ -162,6 +134,8 @@ class AwareProcessLogicTest {
 		given(txn.getSignatures()).willReturn(Collections.emptyList());
 		given(keyOrder.keysForPayer(any(), any())).willReturn(orderResult);
 		given(keyOrder.keysForOtherParties(any(), any())).willReturn(orderResult);
+
+		given(histories.get(any())).willReturn(recentHistory);
 
 		final com.hederahashgraph.api.proto.java.Transaction signedTxn = mock(com.hederahashgraph.api.proto.java.Transaction.class);
 		final TransactionID txnId = mock(TransactionID.class);
@@ -173,73 +147,61 @@ class AwareProcessLogicTest {
 		given(txnBody.getTransactionValidDuration()).willReturn(Duration.getDefaultInstance());
 
 		given(recentHistory.currentDuplicityFor(anyLong())).willReturn(BELIEVED_UNIQUE);
-		given(backingAccounts.contains(any())).willReturn(true);
-
-		given(validator.isValidTxnDuration(anyLong())).willReturn(true);
-		given(validator.chronologyStatus(any(), any())).willReturn(ResponseCodeEnum.OK);
-		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 
 		given(txnBody.getNodeAccountID()).willReturn(accountID);
 		given(policy.apply(any(), any())).willReturn(ResponseCodeEnum.OK);
 		given(policies.check(any())).willReturn(SystemOpAuthorization.AUTHORIZED);
 		given(lookup.lookupFor(any(), any())).willReturn(Optional.empty());
-		given(hfs.exists(any())).willReturn(true);
+		given(ctx.entityAutoRenewal()).willReturn(entityAutoRenewal);
 
 		subject = new AwareProcessLogic(ctx);
 	}
 
 	@Test
-	public void shortCircuitsWithWarningOnZeroStakeSubmission() {
-		// setup:
-		var now = Instant.now();
-		var then = now.minusMillis(1L);
+	void shortCircuitsOnInvariantFailure() {
+		setupNonTriggeringTxn();
 
-		given(ctx.consensusTimeOfLastHandledTxn()).willReturn(then);
+		given(invariantChecks.holdFor(any(), eq(consensusNow), eq(666L))).willReturn(false);
 
 		// when:
-		subject.incorporateConsensusTxn(platformTxn, now, 666);
+		subject.incorporateConsensusTxn(platformTxn, consensusNow, 666);
 
 		// then:
-		assertThat(logCaptor.warnLogs(),
-				contains(Matchers.startsWith("Ignoring a transaction submitted by zero-stake")));
+		verify(expiryManager, never()).purge(consensusNow.getEpochSecond());
 	}
 
 	@Test
-	public void shortCircuitsWithErrorOnNonIncreasingConsensusTime() {
-		// setup:
-		var now = Instant.now();
+	void purgesExpiredAtNewConsensusTimeIfInvariantsHold() {
+		setupNonTriggeringTxn();
 
-		given(ctx.consensusTimeOfLastHandledTxn()).willReturn(now);
+		given(invariantChecks.holdFor(any(), eq(consensusNow), eq(666L))).willReturn(true);
 
 		// when:
-		subject.incorporateConsensusTxn(platformTxn, now,1);
+		subject.incorporateConsensusTxn(platformTxn, consensusNow, 666);
 
 		// then:
-		assertThat(logCaptor.errorLogs(),
-				contains(Matchers.startsWith("Catastrophic invariant failure!")));
+		verify(expiryManager).purge(consensusNow.getEpochSecond());
 	}
 
 	@Test
-	public void shortCircuitsWithWarningOnZeroStakeSignedTxnSubmission() {
-		// setup:
-		var now = Instant.now();
-		var then = now.minusMillis(1L);
-		SignedTransaction signedTxn = SignedTransaction.newBuilder().setBodyBytes(nonMockTxnBody.toByteString()).build();
-		Transaction platformSignedTxn = new Transaction(com.hederahashgraph.api.proto.java.Transaction.newBuilder().
-				setSignedTransactionBytes(signedTxn.toByteString()).build().toByteArray());
+	void decrementsParentConsensusTimeIfCanTrigger() {
+		setupTriggeringTxn();
+		// and:
+		final var triggeredTxn = mock(TxnAccessor.class);
 
-		given(ctx.consensusTimeOfLastHandledTxn()).willReturn(then);
+		given(txnCtx.triggeredTxn()).willReturn(triggeredTxn);
+		given(invariantChecks.holdFor(any(), eq(consensusNow.minusNanos(1L)), eq(666L))).willReturn(true);
 
 		// when:
-		subject.incorporateConsensusTxn(platformSignedTxn, now, 666);
+		subject.incorporateConsensusTxn(platformTxn, consensusNow, 666);
 
 		// then:
-		assertThat(logCaptor.warnLogs(),
-				contains(Matchers.startsWith("Ignoring a transaction submitted by zero-stake")));
+		verify(expiryManager).purge(consensusNow.minusNanos(1L).getEpochSecond());
+		verify(triggeredTxn).isTriggeredTxn();
 	}
 
 	@Test
-	public void addForStreamingTest() {
+	void addForStreamingTest() {
 		//setup:
 		RecordStreamManager recordStreamManager = mock(RecordStreamManager.class);
 		when(ctx.recordStreamManager()).thenReturn(recordStreamManager);
@@ -250,5 +212,27 @@ class AwareProcessLogicTest {
 		//then:
 		verify(ctx).updateRecordRunningHash(any(RunningHash.class));
 		verify(recordStreamManager).addRecordStreamObject(any(RecordStreamObject.class));
+	}
+
+	private void setupNonTriggeringTxn() {
+		TransactionBody nonMockTxnBody = TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setAccountID(IdUtils.asAccount("0.0.2"))).build();
+		platformTxn = new Transaction(com.hederahashgraph.api.proto.java.Transaction.newBuilder()
+				.setBodyBytes(nonMockTxnBody.toByteString())
+				.build().toByteArray());
+	}
+
+	private void setupTriggeringTxn() {
+		TransactionBody nonMockTxnBody = TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setAccountID(IdUtils.asAccount("0.0.2")))
+				.setScheduleSign(ScheduleSignTransactionBody.newBuilder()
+						.setScheduleID(IdUtils.asSchedule("0.0.1234"))
+						.build())
+				.build();
+		platformTxn = new Transaction(com.hederahashgraph.api.proto.java.Transaction.newBuilder()
+				.setBodyBytes(nonMockTxnBody.toByteString())
+				.build().toByteArray());
 	}
 }

@@ -70,6 +70,7 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 	}
 
 	private HapiApiSpec createAccount() {
+		int maxRetries = 5;
 		return customHapiSpec("CreatePayerAccountForEachClient")
 				.withProperties(Map.of(
 						"nodes", nodes,
@@ -77,7 +78,8 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 				)).given().when().then(
 						withOpContext((spec, log) -> {
 									var createdAuditablePayer = false;
-									while (!createdAuditablePayer) {
+									var retryCount = 0;
+									while (!createdAuditablePayer && retryCount < maxRetries) {
 										try {
 											AccountID id = spec.registry().getAccountID(DEFAULT_PAYER);
 											var cryptoCreateOp = cryptoCreate("payerAccount")
@@ -102,7 +104,9 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
 												} catch (Throwable ignoreAndRetry) { }
 											}
 											createdAuditablePayer = true;
-										} catch (Throwable ignoreAgainAndRetry) { }
+										} catch (Throwable ignoreAgainAndRetry) {
+											retryCount++;
+										}
 									}
 									var status = spec.registry()
 											.getTransactionRecord("savedTxnRcd")

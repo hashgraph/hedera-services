@@ -1551,6 +1551,56 @@ workflows:
             - attach_workspace:
                 at: /
 
+
+  GCP-Daily-Services-Reconnect-6N-4C:
+    triggers:
+      - schedule:
+          cron: "30 5 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/6N_4C/Reconnect
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Reconnect-6N-4C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+
+  GCP-Daily-Services-Global-3NReconnect-15N-4C:
+    triggers:
+      - schedule:
+          cron: "30 7 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/15N_4C/GlobalReconnect
+          config_type: "daily"
+          workflow-name: "GCP-Daily-Services-Global-3NReconnect-15N-4C"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
+
+
   GCP-Weekly-Services-NetDelay-15N-1C:
     triggers:
       - schedule:
@@ -1760,7 +1810,7 @@ workflows:
             - attach_workspace:
                 at: /
 
-  GCP-Daily-Services-Comp-3NReconnect-15N-1C:
+  GCP-Daily-Services-Comp-3NReconnect-15N-4C:
     triggers:
       - schedule:
           cron: "15 8 * * *"
@@ -1773,9 +1823,9 @@ workflows:
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/15N_1C/3NReconnect
+          result_path: results/15N_4C/3NReconnect
           config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Comp-3NReconnect-15N-1C"
+          workflow-name: "GCP-Daily-Services-Comp-3NReconnect-15N-4C"
           requires:
             - build-platform-and-services
           pre-steps:

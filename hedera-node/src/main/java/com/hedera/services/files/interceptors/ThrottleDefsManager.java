@@ -121,7 +121,8 @@ public class ThrottleDefsManager implements FileUpdateInterceptor {
 	public void postUpdate(FileID id, byte[] contents) {
 		/* Note - here we trust the file system to correctly invoke this interceptor
 		only when we returned a priority from {@code priorityForCandidate}. */
-		postUpdateCb.accept(uncheckedParseFrom(contents).get());
+		final Optional<ThrottleDefinitions> throttleDefinitions = uncheckedParseFrom(contents);
+		throttleDefinitions.ifPresent(postUpdateCb);
 	}
 
 	@Override
