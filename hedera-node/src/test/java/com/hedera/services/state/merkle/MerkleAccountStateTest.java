@@ -262,6 +262,35 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
+	public void serializeWithNoKeyWorks() throws IOException {
+		// setup:
+		var out = mock(SerializableDataOutputStream.class);
+		var in = mock(SerializableDataInputStream.class);
+		// and:
+		InOrder inOrder = inOrder(in, out);
+
+		// when:
+		MerkleAccountState subjectWithNoKey = new MerkleAccountState(
+				null,
+				expiry, balance, autoRenewSecs,
+				memo,
+				deleted, smartContract, receiverSigRequired,
+				proxy);
+		subjectWithNoKey.serialize(out);
+
+		// then:
+		inOrder.verify(out).writeBoolean(false);
+		inOrder.verify(out).writeLong(expiry);
+		inOrder.verify(out).writeLong(balance);
+		inOrder.verify(out).writeLong(autoRenewSecs);
+		inOrder.verify(out).writeNormalisedString(memo);
+		inOrder.verify(out, times(3)).writeBoolean(true);
+		inOrder.verify(out).writeSerializable(proxy, true);
+		// and:
+		verify(out, never()).writeLongArray(any());
+	}
+
+	@Test
 	public void copyWorks() {
 		// given:
 		var copySubject = subject.copy();

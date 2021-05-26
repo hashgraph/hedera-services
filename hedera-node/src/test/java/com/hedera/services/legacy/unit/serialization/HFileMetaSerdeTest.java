@@ -168,6 +168,44 @@ public class HFileMetaSerdeTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
+	public void serializeWithNoWaclAsExpected() throws IOException {
+		// setup:
+		doStaticMocking();
+		byte[] pretend = "NOPE".getBytes();
+		// and:
+		DataOutputStream out = mock(DataOutputStream.class);
+		SerializableDataOutputStream serOut = mock(SerializableDataOutputStream.class);
+		// and:
+		ArgumentCaptor<JKeySerializer.StreamConsumer<DataOutputStream>> captor =
+				ArgumentCaptor.forClass(JKeySerializer.StreamConsumer.class);
+		InOrder inOrder = inOrder(out, serOut, serOutFactory);
+
+		given(streamContentDiscovery.discoverFor(captor.capture())).willReturn(pretend);
+		given(serOutFactory.apply(out)).willReturn(serOut);
+
+		// when:
+		HFileMeta knownWithNoWacl = new HFileMeta(deleted, null, expiry, memo);
+		var shouldBePretend = HFileMetaSerde.serialize(knownWithNoWacl);
+		// and:
+		var consumer = captor.getValue();
+		consumer.accept(out);
+
+		// then:
+		assertSame(pretend, shouldBePretend);
+		// and:
+		inOrder.verify(serOutFactory).apply(out);
+		inOrder.verify(serOut).writeLong(HFileMetaSerde.MEMO_VERSION);
+		inOrder.verify(serOut).writeBoolean(deleted);
+		inOrder.verify(serOut).writeLong(expiry);
+		inOrder.verify(serOut).writeNormalisedString(memo);
+		inOrder.verify(serOut).writeBoolean(false);
+
+		// cleanup:
+		undoStaticMocking();
+	}
+
+	@Test
 	public void legacySerdeTest() throws Exception {
 		// setup:
 		var fid = IdUtils.asFile("0.0.1001");

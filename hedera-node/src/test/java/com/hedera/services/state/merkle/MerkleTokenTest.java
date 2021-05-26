@@ -137,6 +137,42 @@ class MerkleTokenTest {
 	}
 
 	@Test
+	public void serializeWithMissingKeysWorks() throws IOException {
+		// setup:
+		var out = mock(SerializableDataOutputStream.class);
+		other = new MerkleToken(
+				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
+		setOptionalElements(other);
+		other.setAdminKey(null);
+		other.setWipeKey(null);
+		InOrder inOrder = inOrder(out);
+
+		// when:
+		other.serialize(out);
+
+		// then:
+		inOrder.verify(out).writeBoolean(isDeleted);
+		inOrder.verify(out).writeLong(expiry);
+		inOrder.verify(out).writeSerializable(autoRenewAccount, true);
+		inOrder.verify(out).writeLong(autoRenewPeriod);
+		inOrder.verify(out).writeNormalisedString(symbol);
+		inOrder.verify(out).writeNormalisedString(name);
+		inOrder.verify(out).writeSerializable(treasury, true);
+		inOrder.verify(out).writeLong(totalSupply);
+		inOrder.verify(out).writeInt(decimals);
+		inOrder.verify(out, times(2)).writeBoolean(true);
+		inOrder.verify(out).writeBoolean(false);
+		inOrder.verify(out).writeBoolean(true);
+		inOrder.verify(out).write(freezeKey.serialize());
+		inOrder.verify(out).writeBoolean(true);
+		inOrder.verify(out).write(kycKey.serialize());
+		inOrder.verify(out).writeBoolean(true);
+		inOrder.verify(out).write(supplyKey.serialize());
+		inOrder.verify(out).writeBoolean(false);
+		inOrder.verify(out).writeNormalisedString(memo);
+	}
+
+	@Test
 	public void copyWorks() {
 		// given:
 		var copySubject = subject.copy();
