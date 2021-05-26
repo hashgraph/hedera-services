@@ -74,8 +74,8 @@ class TxnRateFeeMultiplierSourceTest {
 	void makesDefensiveCopyOfCongestionStarts() {
 		// setup:
 		final var someInstants = new Instant[] {
-				Instant.ofEpochSecond(1_234_567),
-				Instant.ofEpochSecond(2_234_567),
+				Instant.ofEpochSecond(1_234_567L),
+				Instant.ofEpochSecond(2_234_567L),
 		};
 
 		// given:

@@ -23,7 +23,6 @@ package com.hedera.services.state.merkle;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.ExchangeRates;
-import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
@@ -36,7 +35,6 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Supplier;
 
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;

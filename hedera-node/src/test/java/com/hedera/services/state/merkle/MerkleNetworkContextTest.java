@@ -23,7 +23,6 @@ package com.hedera.services.state.merkle;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.ExchangeRates;
-import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
@@ -43,7 +42,6 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
@@ -95,11 +93,11 @@ class MerkleNetworkContextTest {
 	@BeforeEach
 	void setup() {
 		congestionStarts = new Instant[] {
-				Instant.ofEpochSecond(1_234_567L, 54321),
-				Instant.ofEpochSecond(1_234_789L, 12345)
+				Instant.ofEpochSecond(1_234_567L, 54321L),
+				Instant.ofEpochSecond(1_234_789L, 12345L)
 		};
 
-		consensusTimeOfLastHandledTxn = Instant.ofEpochSecond(1_234_567L, 54321);
+		consensusTimeOfLastHandledTxn = Instant.ofEpochSecond(1_234_567L, 54321L);
 
 		seqNo = mock(SequenceNumber.class);
 		given(seqNo.current()).willReturn(1234L);
@@ -205,6 +203,21 @@ class MerkleNetworkContextTest {
 				"    1970-01-15T06:56:07.000054321Z\n" +
 				"    1970-01-15T06:59:49.000012345Z";
 
+		var noStateVersionAndNulConsensusHandledTxn = "The network context (state version <N/A>) is,\n" +
+				"  Consensus time of last handled transaction :: <N/A>\n" +
+				"  Midnight rate set                          :: 1ℏ <-> 14¢ til 1234567 | 1ℏ <-> 15¢ til 2345678\n" +
+				"  Next entity number                         :: 1234\n" +
+				"  Last scanned entity                        :: 1000\n" +
+				"  Entities scanned last consensus second     :: 123456\n" +
+				"  Entities touched last consensus second     :: 123\n" +
+				"  Throttle usage snapshots are               ::\n" +
+				"    100 used (last decision time 1970-01-01T00:00:01.000000100Z)\n" +
+				"    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n" +
+				"    300 used (last decision time 1970-01-01T00:00:03.000000300Z)\n" +
+				"  Congestion level start times are           ::\n" +
+				"    1970-01-15T06:56:07.000054321Z\n" +
+				"    1970-01-15T06:59:49.000012345Z";
+
 		// then:
 		assertEquals(desiredWithStateVersion, subject.toString());
 
@@ -212,6 +225,12 @@ class MerkleNetworkContextTest {
 		subject.setStateVersion(MerkleNetworkContext.UNRECORDED_STATE_VERSION);
 		// then:
 		assertEquals(desiredWithoutStateVersion, subject.toString());
+
+		// and when:
+		subject.setConsensusTimeOfLastHandledTxn(null);
+		// then:
+		assertEquals(noStateVersionAndNulConsensusHandledTxn, subject.toString());
+
 	}
 
 	@Test
