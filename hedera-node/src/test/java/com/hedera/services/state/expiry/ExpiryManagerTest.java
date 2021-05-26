@@ -122,29 +122,29 @@ class ExpiryManagerTest {
 		assertEquals(1, subject.getShortLivedEntityExpiries().getAllExpiries().size());
 	}
 
-	@Test
-	void rebuildsExpectedRecordsFromState() {
-		// setup:
-		subject = new ExpiryManager(
-				mockRecordCache, mockScheduleStore, nums, liveTxnHistories, () -> liveAccounts, () -> mockSchedules);
-		final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
-		final var leftoverTxnId = recordWith(bGrpcId, now).getTxnId().toGrpc();
-		liveTxnHistories.put(leftoverTxnId, new TxnIdRecentHistory());
-
-		// given:
-		anAccount.records().offer(expiring(recordWith(aGrpcId, start), firstThen));
-		anAccount.records().offer(expiring(recordWith(aGrpcId, start), secondThen));
-		liveAccounts.put(aKey, anAccount);
-
-		// when:
-		subject.reviewExistingPayerRecords();
-
-		// then:
-		verify(mockRecordCache).reset();
-		assertFalse(liveTxnHistories.containsKey(leftoverTxnId));
-		assertEquals(firstThen, liveTxnHistories.get(newTxnId).priorityRecord().getExpiry());
-		assertEquals(secondThen, liveTxnHistories.get(newTxnId).duplicateRecords().get(0).getExpiry());
-	}
+//	@Test
+//	void rebuildsExpectedRecordsFromState() {
+//		// setup:
+//		subject = new ExpiryManager(
+//				mockRecordCache, mockScheduleStore, nums, liveTxnHistories, () -> liveAccounts, () -> mockSchedules);
+//		final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
+//		final var leftoverTxnId = recordWith(bGrpcId, now).getTxnId().toGrpc();
+//		liveTxnHistories.put(leftoverTxnId, new TxnIdRecentHistory());
+//
+//		// given:
+//		anAccount.records().offer(expiring(recordWith(aGrpcId, start), firstThen));
+//		anAccount.records().offer(expiring(recordWith(aGrpcId, start), secondThen));
+//		liveAccounts.put(aKey, anAccount);
+//
+//		// when:
+//		subject.reviewExistingPayerRecords();
+//
+//		// then:
+//		verify(mockRecordCache).reset();
+//		assertFalse(liveTxnHistories.containsKey(leftoverTxnId));
+//		assertEquals(firstThen, liveTxnHistories.get(newTxnId).priorityRecord().getExpiry());
+//		assertEquals(secondThen, liveTxnHistories.get(newTxnId).duplicateRecords().get(0).getExpiry());
+//	}
 
 	@Test
 	void expiresRecordsAsExpected() {

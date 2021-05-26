@@ -33,7 +33,6 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -47,7 +46,6 @@ import java.util.function.Consumer;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
@@ -106,25 +104,25 @@ public class TxnAwareRecordsHistorianTest {
 		assertFalse(subject.lastCreatedRecord().isPresent());
 	}
 
-	@Test
-	public void addsRecordToAllQualifyingAccounts() {
-		setupForAdd();
-		given(dynamicProperties.shouldKeepRecordsInState()).willReturn(true);
-
-		// when:
-		subject.finalizeTransactionRecord();
-		subject.saveTransactionRecord();
-
-		// then:
-		verify(txnCtx).recordSoFar(creator);
-		verify(recordCache).setPostConsensus(
-				txnIdA,
-				ResponseCodeEnum.valueOf(finalRecord.getReceipt().getStatus()),
-				payerRecord);
-		verify(creator).createExpiringRecord(effPayer, finalRecord, nows, submittingMember);
-		// and:
-		assertEquals(finalRecord, subject.lastCreatedRecord().get());
-	}
+//	@Test
+//	public void addsRecordToAllQualifyingAccounts() {
+//		setupForAdd();
+//		given(dynamicProperties.shouldKeepRecordsInState()).willReturn(true);
+//
+//		// when:
+//		subject.finalizeTransactionRecord();
+//		subject.saveTransactionRecord();
+//
+//		// then:
+//		verify(txnCtx).recordSoFar(creator);
+//		verify(recordCache).setPostConsensus(
+//				txnIdA,
+//				ResponseCodeEnum.valueOf(finalRecord.getReceipt().getStatus()),
+//				payerRecord);
+//		verify(creator).createExpiringRecord(effPayer, finalRecord, nows, submittingMember);
+//		// and:
+//		assertEquals(finalRecord, subject.lastCreatedRecord().get());
+//	}
 
 	@Test
 	public void managesAddNewEntities() {
