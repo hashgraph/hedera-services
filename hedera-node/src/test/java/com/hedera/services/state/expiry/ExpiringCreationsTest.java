@@ -123,5 +123,10 @@ class ExpiringCreationsTest {
 		Assertions.assertThrows(UnsupportedOperationException.class, () ->
 				NOOP_EXPIRING_CREATIONS.saveExpiringRecord(
 						null, null, 0L, submittingMember));
+		Assertions.assertThrows(UnsupportedOperationException.class, () ->
+				NOOP_EXPIRING_CREATIONS.buildExpiringRecord(
+						0L, null, null, null, null));
+		Assertions.assertThrows(UnsupportedOperationException.class, () ->
+				NOOP_EXPIRING_CREATIONS.buildFailedExpiringRecord(null, null));
 	}
 }
