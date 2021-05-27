@@ -242,7 +242,7 @@ class FcBlobsBytesStoreTest {
 		var replaced = blobs.put(at("path"), new MerkleOptionalBlob("SECOND".getBytes()));
 
 		// then:
-		assertTrue(replaced.getDelegate().isReleased());
+		assertTrue(replaced.isReleased());
 	}
 
 	@Test
@@ -258,7 +258,7 @@ class FcBlobsBytesStoreTest {
 		var replaced = copy.put(at("path"), new MerkleOptionalBlob("SECOND".getBytes()));
 
 		// then:
-		assertFalse(replaced.getDelegate().isReleased());
+		assertFalse(replaced.isReleased());
 	}
 
 	private MerkleBlobMeta at(String key) {
