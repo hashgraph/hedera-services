@@ -67,7 +67,7 @@ public class NodeInfo {
 		}
 
 		final int index = (int)nodeId;
-		if (index < 0 || index >= numberOfNodes) {
+		if (isIndexOutOfBounds(index)) {
 			throw new IllegalArgumentException("The address book does not have a node at index " + index);
 		}
 		return isZeroStake[index];
@@ -133,6 +133,10 @@ public class NodeInfo {
 	 */
 	public AccountID selfAccount() {
 		return accountOf(selfId);
+	}
+
+	private boolean isIndexOutOfBounds(int index) {
+		return index < 0 || index >= numberOfNodes;
 	}
 
 	void readBook() {

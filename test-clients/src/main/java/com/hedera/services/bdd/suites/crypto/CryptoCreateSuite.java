@@ -43,6 +43,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -97,7 +98,8 @@ public class CryptoCreateSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("usdFeeAsExpected")
 				.given(
-						cryptoCreate("civilian")
+						cryptoCreate("civilian").balance(ONE_HUNDRED_HBARS),
+						getAccountBalance("civilian").hasTinyBars(ONE_HUNDRED_HBARS)
 				).when(
 						cryptoCreate("neverToBe")
 								.balance(0L)
@@ -107,6 +109,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
 								.payingWith("civilian")
 								.feeUsd(preV13PriceUsd)
 								.hasPrecheck(INSUFFICIENT_TX_FEE),
+						getAccountBalance("civilian").hasTinyBars(ONE_HUNDRED_HBARS),
 						cryptoCreate("ok")
 								.balance(0L)
 								.via("txn")

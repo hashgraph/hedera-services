@@ -30,6 +30,9 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -51,9 +54,15 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fcmap.FCMap;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 
+import javax.inject.Inject;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -76,6 +85,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
+@ExtendWith(LogCaptureExtension.class)
 class AwareTransactionContextTest {
 	private final long offeredFee = 123_000_000L;
 	private final TransactionID scheduledTxnId = TransactionID.newBuilder()
@@ -115,7 +125,6 @@ class AwareTransactionContextTest {
 	private ServicesContext ctx;
 	private NarratedCharging narratedCharging;
 	private PlatformTxnAccessor accessor;
-	private AwareTransactionContext subject;
 	private Transaction signedTxn;
 	private TransactionBody txn;
 	private TransactionRecord record;
@@ -128,6 +137,12 @@ class AwareTransactionContextTest {
 					.build();
 	private ContractFunctionResult result = ContractFunctionResult.newBuilder().setContractID(contractCreated).build();
 	private JKey payerKey;
+
+	@Inject
+	private LogCaptor logCaptor;
+
+	@LoggingSubject
+	private AwareTransactionContext subject;
 
 	@BeforeEach
 	private void setup() {
@@ -224,8 +239,11 @@ class AwareTransactionContextTest {
 	void failsHardForMissingMemberAccount() {
 		given(nodeInfo.accountOf(memberId)).willThrow(IllegalArgumentException.class);
 
-		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.submittingNodeAccount());
+		// then:
+		var ise = assertThrows(IllegalStateException.class, () -> subject.submittingNodeAccount());
+		// and:
+		assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith("No available Hedera account for member 3!")));
+		assertEquals("Member 3 must have a Hedera account!", ise.getMessage());
 	}
 
 	@Test
