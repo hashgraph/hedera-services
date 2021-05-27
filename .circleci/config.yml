@@ -1765,12 +1765,6 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Comp-Reconnect-Correctness-6N-1C:
-    triggers:
-      - schedule:
-          filters:
-            branches:
-              only:
-                - 01394-M-RemoveDomainSerdes
     jobs:
       - build-platform-and-services
       - jrs-regression:
