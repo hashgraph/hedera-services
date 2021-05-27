@@ -22,15 +22,10 @@ package com.hedera.services.context;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.submerkle.CurrencyAdjustments;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SolidityFnResult;
-import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -43,7 +38,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
@@ -59,7 +53,6 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
-import static com.hedera.services.state.submerkle.EntityId.fromGrpcScheduleId;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
@@ -165,43 +158,27 @@ public class AwareTransactionContext implements TransactionContext {
 		return submittingMember;
 	}
 
+	public long getOtherNonThresholdFees() {
+		return otherNonThresholdFees;
+	}
+
 	@Override
 	public ExpirableTxnRecord recordSoFar() {
-		long amount = ctx.charging().totalFeesChargedToPayer() + otherNonThresholdFees;
-		TransferList transfersList = ctx.ledger().netTransfersInTxn();
+		TransactionReceipt receipt = receiptSoFar().build();
 
 		if (log.isDebugEnabled()) {
 			logItemized();
 		}
 
-		recordSoFar
-				.setReceipt(TxnReceipt.fromGrpc(receiptSoFar().build()))
-				.setTxnHash(hash.toByteArray())
-				.setTxnId(TxnId.fromGrpc(accessor.getTxnId()))
-				.setConsensusTimestamp(RichInstant.fromGrpc(consensusTimestamp))
-				.setMemo(accessor.getTxn().getMemo())
-				.setFee(amount)
-				.setTransferList(!transfersList.getAccountAmountsList().isEmpty() ? CurrencyAdjustments.fromGrpc(transfersList) : null)
-				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null);
+		recordSoFar = ctx.creator().buildExpiringRecord(otherNonThresholdFees,
+				hash,
+				accessor,
+				consensusTimestamp,
+				receipt);
 
-		setTokensAndTokenAdjustments();
 		recordConfig.accept(recordSoFar);
 		hasComputedRecordSoFar = true;
 		return recordSoFar.build();
-	}
-
-	private void setTokensAndTokenAdjustments(){
-		List<TokenTransferList> tokenTransferList = ctx.ledger().netTokenTransfersInTxn();
-		List<EntityId> tokens = new ArrayList<>();
-		List<CurrencyAdjustments> tokenAdjustments = new ArrayList<>();
-		if (tokenTransferList.size() > 0) {
-			for (TokenTransferList tokenTransfers : tokenTransferList) {
-				tokens.add(EntityId.fromGrpcTokenId(tokenTransfers.getToken()));
-				tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList()));
-			}
-		}
-		recordSoFar.setTokens(tokens)
-				.setTokenAdjustments(tokenAdjustments);
 	}
 
 	private void logItemized() {
@@ -223,7 +200,7 @@ public class AwareTransactionContext implements TransactionContext {
 				.build();
 	}
 
-	private TransactionReceipt.Builder receiptSoFar() {
+	public TransactionReceipt.Builder receiptSoFar() {
 		TransactionReceipt.Builder receipt = TransactionReceipt.newBuilder()
 				.setExchangeRate(ctx.exchange().activeRates())
 				.setStatus(statusSoFar);

@@ -25,8 +25,6 @@ import com.hedera.services.context.ServicesContext;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.expiry.MonotonicFullQueueExpiries;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -40,8 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.hedera.services.state.submerkle.EntityId.fromGrpcScheduleId;
-import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import static java.util.stream.Collectors.toList;
@@ -88,23 +84,15 @@ public class RecordCache {
 			Instant consensusTimestamp,
 			long submittingMember
 	) {
-		var txnId = accessor.getTxnId();
-		var expirableTransactionrecord = ExpirableTxnRecord.newBuilder()
-				.setTxnId(TxnId.fromGrpc(txnId))
-				.setReceipt(TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(FAIL_INVALID).build()))
-				.setMemo(accessor.getTxn().getMemo())
-				.setTxnHash(accessor.getHash().toByteArray())
-				.setConsensusTimestamp(RichInstant.fromGrpc(asTimestamp(consensusTimestamp)))
-				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null)
-				.build();
-
+		var recordBuilder = ctx.creator().buildFailedExpiringRecord(accessor,
+				consensusTimestamp);
 		var record = ctx.creator().saveExpiringRecord(
 				effectivePayer,
-				expirableTransactionrecord,
+				recordBuilder.build(),
 				consensusTimestamp.getEpochSecond(),
 				submittingMember);
 
-		var recentHistory = histories.computeIfAbsent(txnId, ignore -> new TxnIdRecentHistory());
+		var recentHistory = histories.computeIfAbsent(accessor.getTxnId(), ignore -> new TxnIdRecentHistory());
 		recentHistory.observe(record, FAIL_INVALID);
 	}
 

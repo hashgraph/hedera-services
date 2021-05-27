@@ -23,9 +23,12 @@ package com.hedera.services.records;
 import com.google.common.cache.Cache;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.MonotonicFullQueueExpiries;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.TriggeredTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
@@ -50,6 +53,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.hedera.services.state.submerkle.EntityId.fromGrpcScheduleId;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.PlatformTxnAccessor.uncheckedAccessorFor;
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -329,17 +333,20 @@ class RecordCacheTest {
 		// given:
 		PlatformTxnAccessor accessor = uncheckedAccessorFor(platformTxn);
 		// and:
-		var grpc = TransactionRecord.newBuilder()
-				.setTransactionID(txnId)
-				.setReceipt(TransactionReceipt.newBuilder().setStatus(FAIL_INVALID))
+
+		var expirableTxnRecordBuilder = ExpirableTxnRecord.newBuilder()
+				.setTxnId(TxnId.fromGrpc(txnId))
+				.setReceipt(TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(FAIL_INVALID).build()))
 				.setMemo(accessor.getTxn().getMemo())
-				.setTransactionHash(accessor.getHash())
-				.setConsensusTimestamp(asTimestamp(consensusTime))
-				.build();
-		var expectedRecord = ExpirableTxnRecord.fromGprc(grpc);
+				.setTxnHash(accessor.getHash().toByteArray())
+				.setConsensusTimestamp(RichInstant.fromGrpc(asTimestamp(consensusTime)));
+		var expectedRecord = expirableTxnRecordBuilder.build();
 		expectedRecord.setExpiry(consensusTime.getEpochSecond() + 180);
 		expectedRecord.setSubmittingMember(submittingMember);
-		given(creator.saveExpiringRecord(any(), any(), anyLong(), anyLong())).willReturn(expectedRecord);
+
+		given(creator.buildFailedExpiringRecord(any(), any())).willReturn(expirableTxnRecordBuilder);
+		given(creator.saveExpiringRecord(any(), any(), anyLong(), anyLong())).willReturn(
+				expectedRecord);
 
 		// when:
 		subject.setFailInvalid(
@@ -376,17 +383,17 @@ class RecordCacheTest {
 		// given:
 		TxnAccessor accessor = new TriggeredTxnAccessor(signedTxn.toByteArray(), effectivePayer, effectiveScheduleID);
 		// and:
-		var grpc = TransactionRecord.newBuilder()
-				.setTransactionID(txnId)
-				.setReceipt(TransactionReceipt.newBuilder().setStatus(FAIL_INVALID))
+		var expirableTxnRecordBuilder = ExpirableTxnRecord.newBuilder()
+				.setTxnId(TxnId.fromGrpc(txnId))
+				.setReceipt(TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(FAIL_INVALID).build()))
 				.setMemo(accessor.getTxn().getMemo())
-				.setTransactionHash(accessor.getHash())
-				.setConsensusTimestamp(asTimestamp(consensusTime))
-				.setScheduleRef(effectiveScheduleID)
-				.build();
-
-		var expectedRecord = ExpirableTxnRecord.fromGprc(grpc);
-		given(creator.saveExpiringRecord(any(), any(), anyLong(), anyLong())).willReturn(expectedRecord);
+				.setTxnHash(accessor.getHash().toByteArray())
+				.setConsensusTimestamp(RichInstant.fromGrpc(asTimestamp(consensusTime)))
+				.setScheduleRef(fromGrpcScheduleId(effectiveScheduleID));
+		var expirableTxnRecord = expirableTxnRecordBuilder.build();
+		given(creator.buildFailedExpiringRecord(any(), any())).willReturn(expirableTxnRecordBuilder);
+		given(creator.saveExpiringRecord(any(), any(), anyLong(), anyLong())).willReturn(
+				expirableTxnRecord);
 
 		// when:
 		subject.setFailInvalid(
@@ -397,7 +404,7 @@ class RecordCacheTest {
 
 		// then:
 		verify(history).observe(
-				argThat(expectedRecord::equals),
+				argThat(expirableTxnRecord::equals),
 				argThat(FAIL_INVALID::equals));
 	}
 

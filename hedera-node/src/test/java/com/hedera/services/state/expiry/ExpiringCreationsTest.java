@@ -20,6 +20,7 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
+import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -65,9 +66,12 @@ class ExpiringCreationsTest {
 
 	private ExpiringCreations subject;
 
+	@Mock
+	private ServicesContext ctx;
+
 	@BeforeEach
 	void setup() {
-		subject = new ExpiringCreations(expiries, dynamicProperties, () -> accounts);
+		subject = new ExpiringCreations(expiries, dynamicProperties, () -> accounts, ctx);
 
 		expectedRecord = record;
 		expectedRecord.setExpiry(expectedExpiry);
