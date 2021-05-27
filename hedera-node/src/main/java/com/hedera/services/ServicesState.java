@@ -55,6 +55,7 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
 import com.swirlds.fcmap.FCMap;
+import com.typesafe.config.ConfigException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -295,8 +296,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		}
 	}
 
-	protected void setPlatformTxnAccessor(Transaction platformTxn){
-		try{
+	private void setPlatformTxnAccessor(Transaction platformTxn){
+		try {
 			txnAccessor = new PlatformTxnAccessor(platformTxn);
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("expandSignatures called with non-gRPC txn!", e);
@@ -316,12 +317,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			Instant consensusTime,
 			com.swirlds.common.Transaction transaction
 	) {
-		try{
-			if (isConsensus) {
-				ctx.logic().incorporateConsensusTxn(transaction, txnAccessor, consensusTime, submittingMember);
-			}
-		} catch (InvalidProtocolBufferException exception) {
-			log.warn("Consensus platform txn was not gRPC!");
+		if (isConsensus) {
+			ctx.logic().incorporateConsensusTxn(transaction, txnAccessor, consensusTime, submittingMember);
 		}
 	}
 
@@ -329,6 +326,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	public void expandSignatures(Transaction platformTxn) {
 		try {
 			setPlatformTxnAccessor(platformTxn);
+			if (txnAccessor == null)
+				return;
+
 			expandIn(
 					txnAccessor,
 					ctx.lookupRetryingKeyOrder(),

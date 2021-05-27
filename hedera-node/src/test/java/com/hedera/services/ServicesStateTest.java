@@ -21,7 +21,6 @@ package com.hedera.services;
  */
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.PropertySources;
@@ -30,6 +29,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
+import com.hedera.services.sigs.HederaToPlatformSigOps;
 import com.hedera.services.sigs.factories.SigFactoryCreator;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigningOrderResult;
@@ -81,13 +81,16 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.fcmap.FCMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
+import org.mockito.Mockito;
 
 import javax.inject.Inject;
 import java.io.UncheckedIOException;
+import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -124,8 +127,8 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.times;
-
+import static org.mockito.Mockito.*;
+import org.mockito.MockedStatic;
 
 @ExtendWith(LogCaptureExtension.class)
 class ServicesStateTest {
@@ -728,7 +731,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	public void doesNothingIfNotConsensus() throws InvalidProtocolBufferException {
+	public void doesNothingIfNotConsensus() throws NullPointerException {
 		// setup:
 		subject.ctx = ctx;
 
@@ -736,11 +739,11 @@ class ServicesStateTest {
 		subject.handleTransaction(1, false, now, now, platformTxn);
 
 		// then:
-		verify(logic, never()).incorporateConsensusTxn(platformTxn, null, now, 1);
+		verify(logic, never()).incorporateConsensusTxn(any(), any(), any(), anyLong());
 	}
 
 	@Test
-	public void incorporatesConsensus() throws InvalidProtocolBufferException {
+	public void incorporatesConsensus() throws NullPointerException {
 		// setup:
 		subject.ctx = ctx;
 
@@ -748,7 +751,18 @@ class ServicesStateTest {
 		subject.handleTransaction(1, true, now, now, platformTxn);
 
 		// then:
-		verify(logic).incorporateConsensusTxn(platformTxn, null, now, 1);
+		verify(logic).incorporateConsensusTxn(any(), any(), any(), anyLong());
+	}
+
+	@Test
+	public void incorporateConsensusThrowsException() throws NullPointerException {
+		// setup
+		subject.ctx = ctx;
+		willThrow(NullPointerException.class).given(logic).incorporateConsensusTxn(any(), any(), any(), anyLong());
+
+		// expect
+		Assertions.assertThrows(NullPointerException.class,
+				() -> subject.handleTransaction(1, true, now, now, platformTxn));
 	}
 
 	@Test
@@ -786,7 +800,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void expandsSigsWithSignedTransactionBytes() {
+	public void expandsSigsWithSignedTransactionBytes() throws NullPointerException {
 		// setup:
 		ByteString mockPk = ByteString.copyFrom("not-a-real-pkPrefix".getBytes());
 		ByteString mockSig = ByteString.copyFrom("not-a-real-sig".getBytes());

@@ -27,7 +27,6 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.charging.TxnFeeChargingPolicy;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.security.ops.SystemOpAuthorization;
@@ -42,7 +41,6 @@ import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.txns.TransitionLogicLookup;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -65,8 +63,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyLong;
@@ -162,7 +158,7 @@ class AwareProcessLogicTest {
 	}
 
 	@Test
-	void shortCircuitsOnInvariantFailure() throws InvalidProtocolBufferException {
+	void shortCircuitsOnInvariantFailure() throws NullPointerException {
 		setupNonTriggeringTxn();
 		given(accessor.canTriggerTxn()).willReturn(false);
 		given(invariantChecks.holdFor(any(), eq(consensusNow), eq(666L))).willReturn(false);
@@ -175,7 +171,7 @@ class AwareProcessLogicTest {
 	}
 
 	@Test
-	void purgesExpiredAtNewConsensusTimeIfInvariantsHold() throws InvalidProtocolBufferException{
+	void purgesExpiredAtNewConsensusTimeIfInvariantsHold() throws NullPointerException{
 		setupNonTriggeringTxn();
 		given(accessor.canTriggerTxn()).willReturn(false);
 		given(invariantChecks.holdFor(any(), eq(consensusNow), eq(666L))).willReturn(true);
@@ -188,7 +184,7 @@ class AwareProcessLogicTest {
 	}
 
 	@Test
-	void decrementsParentConsensusTimeIfCanTrigger() throws InvalidProtocolBufferException{
+	void decrementsParentConsensusTimeIfCanTrigger() throws NullPointerException{
 		setupTriggeringTxn();
 		given(accessor.canTriggerTxn()).willReturn(true);
 		// and:
@@ -210,9 +206,9 @@ class AwareProcessLogicTest {
 		setupNonTriggeringTxn();
 
 		//when
-		Assertions.assertThrows(InvalidProtocolBufferException.class,
-				() -> subject.incorporateConsensusTxn(platformTxn, null, consensusNow, 007),
-				"Should throw InvalidProtocolBufferException");
+		var exception = Assertions.assertThrows(NullPointerException.class,
+				() -> subject.incorporateConsensusTxn(platformTxn, null, consensusNow, 007));
+		Assertions.assertEquals("The PlatformTxnAccessor is not defined.", exception.getMessage());
 	}
 
 	@Test

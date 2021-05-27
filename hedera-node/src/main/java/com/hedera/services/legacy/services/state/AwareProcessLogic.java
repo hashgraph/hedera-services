@@ -35,7 +35,6 @@ import com.hederahashgraph.fee.FeeObject;
 import com.swirlds.common.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
 import java.util.EnumSet;
@@ -88,9 +87,9 @@ public class AwareProcessLogic implements ProcessLogic {
 	@Override
 	public void incorporateConsensusTxn(Transaction platformTxn,
 										PlatformTxnAccessor accessor,
-										Instant consensusTime, long submittingMember) throws InvalidProtocolBufferException{
-		if(accessor == null){
-			throw new InvalidProtocolBufferException("The PlatformTxnAccessor is not defined.");
+										Instant consensusTime, long submittingMember) throws NullPointerException{
+		if (accessor == null) {
+			throw new NullPointerException("The PlatformTxnAccessor is not defined.");
 		}
 
 		Instant effectiveConsensusTime = consensusTime;
