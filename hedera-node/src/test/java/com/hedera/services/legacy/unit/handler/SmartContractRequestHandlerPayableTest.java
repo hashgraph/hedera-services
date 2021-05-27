@@ -46,7 +46,6 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.SolidityLifecycleFactory;
 import com.hedera.test.mocks.StorageSourceFactory;
 import com.hedera.test.mocks.TestContextValidator;
@@ -71,7 +70,6 @@ import com.swirlds.common.CommonUtils;
 import com.swirlds.fcmap.FCMap;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
-import org.apache.commons.codec.DecoderException;
 import org.ethereum.core.AccountState;
 import org.ethereum.datasource.DbSource;
 import org.ethereum.datasource.Source;
@@ -205,8 +203,8 @@ public class SmartContractRequestHandlerPayableTest {
             new ExchangeRates());
     String key = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, payerAccount));
     try {
-      payerKeyBytes = MiscUtils.commonsHexToBytes(key);
-    } catch (DecoderException e) {
+      payerKeyBytes = CommonUtils.unhex(key);
+    } catch (IllegalArgumentException e) {
       Assert.fail("Failure building solidity key for payer account");
     }
     payerMerkleEntityId = new MerkleEntityId();

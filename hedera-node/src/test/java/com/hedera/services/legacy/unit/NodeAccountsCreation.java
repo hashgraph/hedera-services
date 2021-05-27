@@ -27,10 +27,10 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
@@ -50,14 +50,14 @@ public class NodeAccountsCreation {
 			String publicKey,
 			AccountID accountID,
 			FCMap<MerkleEntityId, MerkleAccount> map
-	) throws DecoderException, NegativeAccountBalanceException {
+	) throws DecoderException, NegativeAccountBalanceException, IllegalArgumentException {
 		LocalDate date = LocalDate.parse("2018-09-01");
 		long expiryTime = Long.MAX_VALUE;
 
 		Key accountKeys = Key.newBuilder()
 				.setKeyList(KeyList.newBuilder()
 						.addKeys(Key.newBuilder()
-								.setEd25519(ByteString.copyFrom(MiscUtils.commonsHexToBytes(publicKey))).build())
+								.setEd25519(ByteString.copyFrom(CommonUtils.unhex(publicKey))).build())
 						.build())
 				.build();
 		MerkleEntityId merkleEntityId = MerkleEntityId.fromAccountId(accountID);

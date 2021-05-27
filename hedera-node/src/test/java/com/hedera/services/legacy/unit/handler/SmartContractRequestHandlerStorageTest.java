@@ -48,7 +48,6 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.SolidityLifecycleFactory;
 import com.hedera.test.mocks.StorageSourceFactory;
 import com.hedera.test.mocks.TestContextValidator;
@@ -207,8 +206,8 @@ public class SmartContractRequestHandlerStorageTest {
     fsHandler = new FileServiceHandler(storageWrapper, feeScheduleInterceptor, new ExchangeRates());
     String key = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, payerAccount));
     try {
-      payerKeyBytes = MiscUtils.commonsHexToBytes(key);
-    } catch (DecoderException e) {
+      payerKeyBytes = CommonUtils.unhex(key);
+    } catch (IllegalArgumentException e) {
       Assert.fail("Failure building solidity key for payer account");
     }
     payerMerkleEntityId = new MerkleEntityId();
