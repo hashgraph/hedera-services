@@ -1772,6 +1772,7 @@ workflows:
             branches:
               only:
                 - master
+                - 01394-M-RemoveDomainSerdes
     jobs:
       - build-platform-and-services
       - jrs-regression:
