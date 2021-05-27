@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 
 import static com.hedera.services.context.properties.BootstrapProperties.GLOBAL_DYNAMIC_PROPS;
 import static com.hedera.services.context.properties.BootstrapProperties.transformFor;
-import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
+import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static java.util.Map.entry;
 
 public class ScreenedSysFileProps implements PropertySource {
@@ -72,7 +72,7 @@ public class ScreenedSysFileProps implements PropertySource {
 			entry("localCallEstReturnBytes", "contracts.localCall.estRetBytes")
 	);
 	private static Map<String, UnaryOperator<String>> STANDARDIZED_FORMATS = Map.ofEntries(
-			entry("defaultFeeCollectionAccount", legacy -> "" + accountParsedFromString(legacy).getAccountNum()),
+			entry("defaultFeeCollectionAccount", legacy -> "" + parseAccount(legacy).getAccountNum()),
 			entry("accountBalanceExportPeriodMinutes", legacy -> "" + (60 * Integer.parseInt(legacy)))
 	);
 	@SuppressWarnings("unchecked")

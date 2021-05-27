@@ -31,9 +31,11 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
-import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
+import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
@@ -43,17 +45,18 @@ import static com.hedera.test.utils.IdUtils.asContract;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class MerkleEntityIdUtilsTest {
 	@Test
-	public void correctLiteral() {
+	void correctLiteral() {
 		// expect:
-		assertEquals("1.2.3", asLiteralString(IdUtils.asAccount("1.2.3")));
+		assertEquals("1.2.3", asLiteralString(asAccount("1.2.3")));
 		assertEquals("11.22.33", asLiteralString(IdUtils.asFile("11.22.33")));
 	}
 
 	@Test
-	public void serializesExpectedSolidityAddress() {
+	void serializesExpectedSolidityAddress() {
 		// given:
 		byte[] shardBytes = {
 				(byte)0x00, (byte)0x00, (byte)0x00, (byte)0xAB,
@@ -97,59 +100,30 @@ class MerkleEntityIdUtilsTest {
 		assertEquals(equivContract, contractParsedFromSolidityAddress(actual));
 	}
 
-	@Test
-	public void translatesIndexOutOfBoundsException() {
-		// given:
-		String invalidLiteral = "0.1";
-
-		IllegalArgumentException iae = null;
-
-		// when:
-		try {
-			accountParsedFromString(invalidLiteral);
-		} catch (IllegalArgumentException thrown) {
-			iae = thrown;
-		}
-
-		// then:
-		assertNotNull(iae.getCause());
-		assertEquals(ArrayIndexOutOfBoundsException.class, iae.getCause().getClass());
-	}
-
-	@Test
-	public void translatesNumberFormatException() {
-		// given:
-		String invalidLiteral = "0.0.asdf";
-
-		IllegalArgumentException iae = null;
-
-		// when:
-		try {
-			accountParsedFromString(invalidLiteral);
-		} catch (IllegalArgumentException thrown) {
-			iae = thrown;
-		}
-
-		// then:
-		assertNotNull(iae.getCause());
-		assertEquals(NumberFormatException.class, iae.getCause().getClass());
-	}
-
-	@Test
-	public void parsesValidLiteral() {
-		// given:
-		String[] validLiterals = {
-				"1.0.0", "0.1.0", "0.0.1", "1.2.3"
-		};
-
+	@ParameterizedTest
+	@CsvSource({
+			"0,Cannot parse '0' due to only 0 dots",
+			"0.a.0,Argument 'literal=0.a.0' is not an account",
+			"...,Argument 'literal=...' is not an account",
+			"1.2.3.4,Argument 'literal=1.2.3.4' is not an account",
+			"1.2.three,Argument 'literal=1.2.three' is not an account",
+			"1.2.333333333333333333333,Cannot parse '1.2.333333333333333333333' due to overflow"
+	})
+	void rejectsInvalidAccountLiterals(String badLiteral, String desiredMsg) {
 		// expect:
-		for (String literal : validLiterals) {
-			assertEquals(asAccount(literal), accountParsedFromString(literal));
-		}
+		final var e = assertThrows(IllegalArgumentException.class, () -> parseAccount(badLiteral));
+		assertEquals(desiredMsg, e.getMessage());
+	}
+
+	@ParameterizedTest
+	@CsvSource({"1.0.0", "0.1.0", "0.0.1", "1.2.3"})
+	void parsesValidLiteral(String goodLiteral) {
+		// expect:
+		assertEquals(asAccount(goodLiteral), parseAccount(goodLiteral));
 	}
 
 	@Test
-	public void prettyPrintsScheduleIds() {
+	void prettyPrintsScheduleIds() {
 		// given:
 		ScheduleID id = ScheduleID.newBuilder().setShardNum(1).setRealmNum(2).setScheduleNum(3).build();
 
@@ -158,7 +132,7 @@ class MerkleEntityIdUtilsTest {
 	}
 
 	@Test
-	public void prettyPrintsTokenIds() {
+	void prettyPrintsTokenIds() {
 		// given:
 		TokenID id = TokenID.newBuilder().setShardNum(1).setRealmNum(2).setTokenNum(3).build();
 
@@ -167,7 +141,7 @@ class MerkleEntityIdUtilsTest {
 	}
 
 	@Test
-	public void prettyPrintsTopicIds() {
+	void prettyPrintsTopicIds() {
 		// given:
 		TopicID id = TopicID.newBuilder().setShardNum(1).setRealmNum(2).setTopicNum(3).build();
 
@@ -176,7 +150,7 @@ class MerkleEntityIdUtilsTest {
 	}
 
 	@Test
-	public void prettyPrintsAccountIds() {
+	void prettyPrintsAccountIds() {
 		// given:
 		AccountID id = AccountID.newBuilder().setShardNum(1).setRealmNum(2).setAccountNum(3).build();
 
@@ -185,7 +159,7 @@ class MerkleEntityIdUtilsTest {
 	}
 
 	@Test
-	public void prettyPrintsFileIds() {
+	void prettyPrintsFileIds() {
 		// given:
 		FileID id = FileID.newBuilder().setShardNum(1).setRealmNum(2).setFileNum(3).build();
 
@@ -194,7 +168,7 @@ class MerkleEntityIdUtilsTest {
 	}
 
 	@Test
-	public void givesUpOnNonAccountIds() {
+	void givesUpOnNonAccountIds() {
 		// given:
 		String id = "my-account";
 
@@ -203,7 +177,7 @@ class MerkleEntityIdUtilsTest {
 	}
 
 	@Test
-	public void asContractWorks() {
+	void asContractWorks() {
 		// setup:
 		ContractID expected = ContractID.newBuilder().setShardNum(1).setRealmNum(2).setContractNum(3).build();
 
@@ -218,7 +192,7 @@ class MerkleEntityIdUtilsTest {
 	}
 
 	@Test
-	public void asFileWorks() {
+	void asFileWorks() {
 		// setup:
 		FileID expected = FileID.newBuilder().setShardNum(1).setRealmNum(2).setFileNum(3).build();
 
