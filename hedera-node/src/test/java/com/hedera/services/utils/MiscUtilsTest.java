@@ -311,7 +311,7 @@ public class MiscUtilsTest {
 		assertThrows(IllegalArgumentException.class, () -> lookupInCustomStore(new LegacyEd25519KeyReader() {
 			@Override
 			public String hexedABytesFrom(String b64EncodedKeyPairLoc, String keyPairId) {
-				return "This isn't actually hex!";
+				return "This is not actually hex!";
 			}
 		}, tmpLoc, "START_ACCOUNT"));
 	}
