@@ -27,8 +27,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.function.Supplier;
-
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 
 /**
@@ -67,7 +65,7 @@ public class NodeInfo {
 		}
 
 		final int index = (int)nodeId;
-		if (index < 0 || index >= numberOfNodes) {
+		if (isIndexOutOfBounds(index)) {
 			throw new IllegalArgumentException("The address book does not have a node at index " + index);
 		}
 		return isZeroStake[index];
@@ -93,12 +91,12 @@ public class NodeInfo {
 		}
 
 		final int index = (int)nodeId;
-		if (index < 0 || index >= numberOfNodes) {
+		if (isIndexOutOfBounds(index)) {
 			throw new IllegalArgumentException("No node with id " + nodeId + " was in the address book!");
 		}
 		final var account = accounts[index];
 		if (account == null) {
-			throw new IllegalArgumentException("The  address book did not have an account for node id " + nodeId + "!");
+			throw new IllegalArgumentException("The address book did not have an account for node id " + nodeId + "!");
 		}
 		return account;
 	}
@@ -122,6 +120,10 @@ public class NodeInfo {
 	 */
 	public AccountID selfAccount() {
 		return accountOf(selfId);
+	}
+
+	private boolean isIndexOutOfBounds(int index) {
+		return index < 0 || index >= numberOfNodes;
 	}
 
 	void readBook() {
