@@ -158,10 +158,6 @@ public class AwareTransactionContext implements TransactionContext {
 		return submittingMember;
 	}
 
-	public long getOtherNonThresholdFees() {
-		return otherNonThresholdFees;
-	}
-
 	@Override
 	public ExpirableTxnRecord recordSoFar() {
 		TransactionReceipt receipt = receiptSoFar().build();
@@ -279,6 +275,10 @@ public class AwareTransactionContext implements TransactionContext {
 	@Override
 	public void addNonThresholdFeeChargedToPayer(long amount) {
 		otherNonThresholdFees += amount;
+	}
+
+	public long getNonThresholdFeeChargedToPayer(){
+		return otherNonThresholdFees;
 	}
 
 	@Override
