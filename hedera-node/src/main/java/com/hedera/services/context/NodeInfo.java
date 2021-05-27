@@ -105,7 +105,7 @@ public class NodeInfo {
 		}
 
 		final int index = (int)nodeId;
-		if (index < 0 || index >= numberOfNodes) {
+		if (isIndexOutOfBounds(index)) {
 			throw new IllegalArgumentException("No node with id " + nodeId + " was in the address book!");
 		}
 		if (accounts[index] == null) {
