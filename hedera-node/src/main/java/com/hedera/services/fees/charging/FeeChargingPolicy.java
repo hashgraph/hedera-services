@@ -41,10 +41,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  *
  * @author Michael Tinker
  */
-public class TxnFeeChargingPolicy {
+public class FeeChargingPolicy {
 	private final NarratedCharging narratedCharging;
 
-	public TxnFeeChargingPolicy(NarratedCharging narratedCharging) {
+	public FeeChargingPolicy(NarratedCharging narratedCharging) {
 		this.narratedCharging = narratedCharging;
 	}
 

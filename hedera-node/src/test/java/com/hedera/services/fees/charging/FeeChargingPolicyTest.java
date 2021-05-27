@@ -39,18 +39,18 @@ import static org.mockito.Mockito.verify;
 
 
 @ExtendWith(MockitoExtension.class)
-class TxnFeeChargingPolicyTest {
+class FeeChargingPolicyTest {
 	private final FeeObject fees = new FeeObject(1L, 2L, 3L);
 	private final FeeObject feesForDuplicateTxn = new FeeObject(1L, 2L, 0L);
 
 	@Mock
 	private NarratedCharging narratedCharging;
 
-	private TxnFeeChargingPolicy subject;
+	private FeeChargingPolicy subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new TxnFeeChargingPolicy(narratedCharging);
+		subject = new FeeChargingPolicy(narratedCharging);
 	}
 
 	@Test

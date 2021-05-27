@@ -131,11 +131,6 @@ class NarratedLedgerChargingTest {
 	void chargesNetworkAndUpToNodeFeeToPayerAsExpected() {
 		givenSetupToChargePayer(networkFee + nodeFee / 2, nodeFee + networkFee + serviceFee);
 
-		// expect:
-		assertTrue(subject.isPayerWillingToCoverAllFees());
-		assertTrue(subject.canPayerAffordNetworkFee());
-		assertFalse(subject.canPayerAffordAllFees());
-
 		// when:
 		subject.chargePayerNetworkAndUpToNodeFee();
 

@@ -103,7 +103,7 @@ import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.fees.charging.NarratedLedgerCharging;
-import com.hedera.services.fees.charging.TxnFeeChargingPolicy;
+import com.hedera.services.fees.charging.FeeChargingPolicy;
 import com.hedera.services.files.DataMapFactory;
 import com.hedera.services.files.EntityExpiryMapFactory;
 import com.hedera.services.files.FileUpdateInterceptor;
@@ -306,7 +306,6 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.usage.schedule.ScheduleOpsUsage;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.JvmSystemExits;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.Pause;
@@ -521,7 +520,7 @@ public class ServicesContext {
 	private TransactionPrecheck transactionPrecheck;
 	private FeeMultiplierSource feeMultiplierSource;
 	private NodeLocalProperties nodeLocalProperties;
-	private TxnFeeChargingPolicy txnChargingPolicy;
+	private FeeChargingPolicy txnChargingPolicy;
 	private TxnAwareRatesManager exchangeRatesManager;
 	private ServicesStatsManager statsManager;
 	private LedgerAccountsSource accountSource;
@@ -1915,9 +1914,9 @@ public class ServicesContext {
 		return usagePrices;
 	}
 
-	public TxnFeeChargingPolicy txnChargingPolicy() {
+	public FeeChargingPolicy txnChargingPolicy() {
 		if (txnChargingPolicy == null) {
-			txnChargingPolicy = new TxnFeeChargingPolicy(narratedCharging());
+			txnChargingPolicy = new FeeChargingPolicy(narratedCharging());
 		}
 		return txnChargingPolicy;
 	}
