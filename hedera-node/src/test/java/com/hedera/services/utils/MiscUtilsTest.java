@@ -112,13 +112,12 @@ import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.lang.reflect.Method;
 import java.security.KeyPair;
@@ -1223,9 +1222,9 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void hashCorrectly() throws DecoderException {
+	public void hashCorrectly() throws IllegalArgumentException {
 		byte[] testBytes = "test bytes".getBytes();
-		byte[] expectedHash = Hex.decodeHex(
+		byte[] expectedHash = com.swirlds.common.CommonUtils.unhex(
 				"2ddb907ecf9a8c086521063d6d310d46259437770587b3dbe2814ab17962a4e124a825fdd02cb167ac9fffdd4a5e8120"
 		);
 		Transaction transaction = mock(Transaction.class);
@@ -1280,9 +1279,9 @@ public class MiscUtilsTest {
 		}
 	}
 
-	private static void writeB64EncodedKeyPair(File file, KeyPair keyPair) throws Exception {
-		var hexPublicKey = Hex.encodeHexString(keyPair.getPublic().getEncoded());
-		var hexPrivateKey = Hex.encodeHexString(keyPair.getPrivate().getEncoded());
+	private static void writeB64EncodedKeyPair(File file, KeyPair keyPair) throws IOException {
+		var hexPublicKey = com.swirlds.common.CommonUtils.hex(keyPair.getPublic().getEncoded());
+		var hexPrivateKey = com.swirlds.common.CommonUtils.hex(keyPair.getPrivate().getEncoded());
 		var keyPairObj = new KeyPairObj(hexPublicKey, hexPrivateKey);
 		var keys = new AccountKeyListObj(asAccount("0.0.2"), List.of(keyPairObj));
 
