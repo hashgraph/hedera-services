@@ -65,7 +65,7 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 
 	@Override
 	public void finalizeExpirableTransactionRecord() {
-		lastExpirableRecord = txnCtx.recordSoFar(creator);
+		lastExpirableRecord = txnCtx.recordSoFar();
 	}
 
 	@Override

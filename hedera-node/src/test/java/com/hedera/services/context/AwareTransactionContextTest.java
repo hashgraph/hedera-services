@@ -263,7 +263,7 @@ public class AwareTransactionContextTest {
 		subject.resetFor(accessor, now, anotherMemberId);
 		assertFalse(subject.hasComputedRecordSoFar);
 		// and:
-		record = subject.recordSoFar(creator);
+		record = subject.recordSoFar();
 
 		// then:
 		assertEquals(ResponseCodeEnum.UNKNOWN, ResponseCodeEnum.valueOf(record.getReceipt().getStatus()));
@@ -325,7 +325,7 @@ public class AwareTransactionContextTest {
 
 		// when:
 		subject.addNonThresholdFeeChargedToPayer(other);
-		record = subject.recordSoFar(creator);
+		record = subject.recordSoFar();
 
 		// then:
 		assertEquals(std + other, record.asGrpc().getTransactionFee());
@@ -334,7 +334,7 @@ public class AwareTransactionContextTest {
 	@Test
 	public void usesTokenTransfersToSetApropos() {
 		// when:
-		record = subject.recordSoFar(creator);
+		record = subject.recordSoFar();
 
 		// then:
 		assertEquals(tokenTransfers, record.asGrpc().getTokenTransferLists(0));
@@ -344,7 +344,7 @@ public class AwareTransactionContextTest {
 	public void configuresCallResult() {
 		// when:
 		subject.setCallResult(result);
-		record = subject.recordSoFar(creator);
+		record = subject.recordSoFar();
 
 		// expect:
 		assertEquals(SolidityFnResult.fromGrpc(result), record.getContractCallResult());
@@ -354,7 +354,7 @@ public class AwareTransactionContextTest {
 	public void configuresCreateResult() {
 		// when:
 		subject.setCreateResult(result);
-		record = subject.recordSoFar(creator);
+		record = subject.recordSoFar();
 
 		// expect:
 		assertEquals(SolidityFnResult.fromGrpc(result), record.getContractCreateResult());
@@ -363,13 +363,13 @@ public class AwareTransactionContextTest {
 	@Test
 	public void hasTransferList() {
 		// expect:
-		assertEquals(transfers, subject.recordSoFar(creator).asGrpc().getTransferList());
+		assertEquals(transfers, subject.recordSoFar().asGrpc().getTransferList());
 	}
 
 	@Test
 	public void hasExpectedCopyFields() {
 		// when:
-		ExpirableTxnRecord record = subject.recordSoFar(creator);
+		ExpirableTxnRecord record = subject.recordSoFar();
 
 		// expect:
 		assertEquals(memo, record.getMemo());
@@ -399,7 +399,7 @@ public class AwareTransactionContextTest {
 	public void hasExpectedRecordStatus() {
 		// when:
 		subject.setStatus(ResponseCodeEnum.INVALID_PAYER_SIGNATURE);
-		record = subject.recordSoFar(creator);
+		record = subject.recordSoFar();
 
 		// then:
 		assertEquals(ResponseCodeEnum.INVALID_PAYER_SIGNATURE, ResponseCodeEnum.valueOf(record.getReceipt().getStatus()));
@@ -409,7 +409,7 @@ public class AwareTransactionContextTest {
 	public void getsExpectedReceiptForAccountCreation() {
 		// when:
 		subject.setCreated(created);
-		record = subject.recordSoFar(creator);
+		record = subject.recordSoFar();
 
 		// then:
 		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
@@ -420,7 +420,7 @@ public class AwareTransactionContextTest {
 	public void getsExpectedReceiptForTokenCreation() {
 		// when:
 		subject.setCreated(tokenCreated);
-		record = subject.recordSoFar(creator);
+		record = subject.recordSoFar();
 
 		// then:
 		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
@@ -432,7 +432,7 @@ public class AwareTransactionContextTest {
 		// when:
 		final var newTotalSupply = 1000L;
 		subject.setNewTotalSupply(newTotalSupply);
-		record = subject.recordSoFar(creator);
+		record = subject.recordSoFar();
 
 		// then:
 		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
@@ -445,7 +445,7 @@ public class AwareTransactionContextTest {
 	public void getsExpectedReceiptForFileCreation() {
 		// when:
 		subject.setCreated(fileCreated);
-		record = subject.recordSoFar(creator);
+		record = subject.recordSoFar();
 
 		// then:
 		assertEquals(ratesNow, TxnReceipt.convert(record.getReceipt()).getExchangeRate());
@@ -456,7 +456,7 @@ public class AwareTransactionContextTest {
 	public void getsExpectedReceiptForContractCreation() {
 		// when:
 		subject.setCreated(contractCreated);
-		record = subject.recordSoFar(creator);
+		record = subject.recordSoFar();
 
 		// then:
 		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
@@ -467,7 +467,7 @@ public class AwareTransactionContextTest {
 	public void getsExpectedReceiptForTopicCreation() {
 		// when:
 		subject.setCreated(topicCreated);
-		record = subject.recordSoFar(creator);
+		record = subject.recordSoFar();
 
 		// then:
 		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
@@ -481,7 +481,7 @@ public class AwareTransactionContextTest {
 
 		// when:
 		subject.setTopicRunningHash(runningHash, sequenceNumber);
-		record = subject.recordSoFar(creator);
+		record = subject.recordSoFar();
 
 		// then:
 		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
@@ -496,7 +496,7 @@ public class AwareTransactionContextTest {
 		subject.setCreated(scheduleCreated);
 		subject.setScheduledTxnId(scheduledTxnId);
 		// and:
-		record = subject.recordSoFar(creator);
+		record = subject.recordSoFar();
 
 		// then:
 		assertEquals(scheduleCreated, record.getReceipt().toGrpc().getScheduleID());
@@ -533,7 +533,7 @@ public class AwareTransactionContextTest {
 		given(accessor.isTriggeredTxn()).willReturn(true);
 
 		// when:
-		record = subject.recordSoFar(creator);
+		record = subject.recordSoFar();
 
 		// then:
 		assertEquals(fromGrpcScheduleId(scheduleCreated), record.getScheduleRef());

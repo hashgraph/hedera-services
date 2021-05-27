@@ -21,7 +21,6 @@ package com.hedera.services.context;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.TxnAccessor;
@@ -120,9 +119,8 @@ public interface TransactionContext {
 	 * of processing the current txn up to the time of the call.
 	 *
 	 * @return the historical record of processing the current txn thus far.
-	 * @param creator
 	 */
-	ExpirableTxnRecord recordSoFar(EntityCreator creator);
+	ExpirableTxnRecord recordSoFar();
 
 	/**
 	 * Gets an accessor to the defined type {@link TxnAccessor}

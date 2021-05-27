@@ -23,7 +23,6 @@ package com.hedera.services.context;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
@@ -167,7 +166,7 @@ public class AwareTransactionContext implements TransactionContext {
 	}
 
 	@Override
-	public ExpirableTxnRecord recordSoFar(EntityCreator creator) {
+	public ExpirableTxnRecord recordSoFar() {
 		long amount = ctx.charging().totalFeesChargedToPayer() + otherNonThresholdFees;
 		TransferList transfersList = ctx.ledger().netTransfersInTxn();
 
