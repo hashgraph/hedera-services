@@ -34,7 +34,6 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -43,7 +42,7 @@ import java.util.List;
 /**
  * Defines a type that manages transaction-specific context for a node. (That is,
  * context built while processing a consensus transaction.) Most of this context
- * is ultimately captured by a {@link TransactionRecord}, so the core
+ * is ultimately captured by a {@link ExpirableTxnRecord}, so the core
  * responsibility of this type is to construct an appropriate record in method
  * {@code recordSoFar}.
  *
@@ -117,7 +116,7 @@ public interface TransactionContext {
 	ResponseCodeEnum status();
 
 	/**
-	 * Constructs and gets a {@link TransactionRecord} which captures the history
+	 * Constructs and gets a {@link ExpirableTxnRecord} which captures the history
 	 * of processing the current txn up to the time of the call.
 	 *
 	 * @return the historical record of processing the current txn thus far.

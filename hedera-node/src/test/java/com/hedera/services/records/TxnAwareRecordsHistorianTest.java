@@ -110,8 +110,8 @@ public class TxnAwareRecordsHistorianTest {
 //		given(dynamicProperties.shouldKeepRecordsInState()).willReturn(true);
 //
 //		// when:
-//		subject.finalizeTransactionRecord();
-//		subject.saveTransactionRecord();
+//		subject.finalizeExpirableTransactionRecord();
+//		subject.saveExpirableTransactionRecord();
 //
 //		// then:
 //		verify(txnCtx).recordSoFar(creator);

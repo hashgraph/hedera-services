@@ -32,10 +32,10 @@ public enum NoopRecordsHistorian implements AccountRecordsHistorian {
   public void setCreator(EntityCreator creator) { }
 
   @Override
-  public void finalizeTransactionRecord() { }
+  public void finalizeExpirableTransactionRecord() { }
 
   @Override
-  public void saveTransactionRecord() { }
+  public void saveExpirableTransactionRecord() { }
 
   @Override
   public void reviewExistingRecords() { }
