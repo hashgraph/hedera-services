@@ -1767,11 +1767,9 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-Correctness-6N-1C:
     triggers:
       - schedule:
-          cron: "15 7 * * *"
           filters:
             branches:
               only:
-                - master
                 - 01394-M-RemoveDomainSerdes
     jobs:
       - build-platform-and-services
