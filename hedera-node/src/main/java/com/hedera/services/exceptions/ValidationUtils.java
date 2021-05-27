@@ -29,14 +29,17 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 /**
  * A minimalist collection of helpers to improve readability of code
  * that throws an {@code InvalidTransactionException}.
- *
- * The {@link ValidationUtils#checkInvariant(boolean, Supplier)} helper
- * should be used to assert system invariants hold.
  */
 public class ValidationUtils {
 	public static void validateTrue(boolean flag, ResponseCodeEnum code) {
 		if (!flag) {
 			throw new InvalidTransactionException(code);
+		}
+	}
+
+	public static void validateTrue(boolean flag, ResponseCodeEnum code, Supplier<String> failureMsg) {
+		if (!flag) {
+			throw new InvalidTransactionException(failureMsg.get(), code);
 		}
 	}
 
@@ -46,9 +49,9 @@ public class ValidationUtils {
 		}
 	}
 
-	public static void checkInvariant(boolean flag, Supplier<String> failureMsg) {
-		if (!flag) {
-			throw new InvalidTransactionException(failureMsg.get(), FAIL_INVALID);
+	public static void validateFalse(boolean flag, ResponseCodeEnum code, Supplier<String> failureMsg) {
+		if (flag) {
+			throw new InvalidTransactionException(failureMsg.get(), code);
 		}
 	}
 }

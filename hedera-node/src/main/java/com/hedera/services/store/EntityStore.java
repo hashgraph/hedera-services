@@ -223,7 +223,7 @@ public class EntityStore {
 
 		final var account = new Account(id);
 		account.setExpiry(merkleAccount.getExpiry());
-		account.setBalance(merkleAccount.getBalance());
+		account.initBalance(merkleAccount.getBalance());
 
 		return account;
 	}

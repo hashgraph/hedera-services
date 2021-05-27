@@ -9,9 +9,9 @@ package com.hedera.services.store.models;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,17 +23,27 @@ package com.hedera.services.store.models;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-import static com.hedera.services.exceptions.ValidationUtils.checkInvariant;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.utils.MiscUtils.describe;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 
+/**
+ * Encapsulates the state and operations of a Hedera token.
+ *
+ * Operations are validated, and throw a {@link com.hedera.services.exceptions.InvalidTransactionException}
+ * with response code capturing the failure when one occurs.
+ *
+ * <b>NOTE:</b> Some operations will likely be moved to specializations
+ * of this class as NFTs are fully supported. For example, a
+ * {@link Token#mint(TokenRelationship, long)} signature only makes
+ * sense for a token of type {@code FUNGIBLE_COMMON}; the signature for
+ * a {@code NON_FUNGIBLE_UNIQUE} will likely be {@code mint(TokenRelationship, byte[])}.
+ */
 public class Token {
 	private final Id id;
 
@@ -51,24 +61,22 @@ public class Token {
 	}
 
 	public void burn(TokenRelationship treasuryRel, long amount) {
-		checkInvariant(
-				amount > 0,
-				() -> "Cannot burn " + amount + " units of " + this + " from " + treasuryRel);
+		validateTrue(amount > 0, FAIL_INVALID, () ->
+				"Cannot burn " + amount + " units of " + this + " from " + treasuryRel);
 		changeSupply(treasuryRel, -amount, INVALID_TOKEN_BURN_AMOUNT);
 	}
 
 	public void mint(TokenRelationship treasuryRel, long amount) {
-		checkInvariant(
-				amount > 0,
-				() -> "Cannot mint " + amount + " units of " + this + " from " + treasuryRel);
+		validateTrue(amount > 0, FAIL_INVALID, () ->
+				"Cannot mint " + amount + " units of " + this + " from " + treasuryRel);
 		changeSupply(treasuryRel, +amount, INVALID_TOKEN_MINT_AMOUNT);
 	}
 
 	private void changeSupply(TokenRelationship treasuryRel, long amount, ResponseCodeEnum negSupplyCode) {
-		checkInvariant(treasuryRel != null, () -> "Cannot mint with a null treasuryRel");
-		checkInvariant(
-				treasuryRel.hasInvolvedIds(id, treasury.getId()),
-				() -> "Cannot change " + this + " supply (" + amount + ") with non-treasury rel " + treasuryRel);
+		validateTrue(treasuryRel != null, FAIL_INVALID, () ->
+				"Cannot mint with a null treasuryRel");
+		validateTrue( treasuryRel.hasInvolvedIds(id, treasury.getId()), FAIL_INVALID, () ->
+				"Cannot change " + this + " supply (" + amount + ") with non-treasury rel " + treasuryRel);
 
 		validateTrue(supplyKey != null, TOKEN_HAS_NO_SUPPLY_KEY);
 

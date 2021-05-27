@@ -24,6 +24,16 @@ import com.google.common.base.MoreObjects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+/**
+ * Encapsulates the state and operations of a Hedera account.
+ *
+ * Operations are validated, and throw a {@link com.hedera.services.exceptions.InvalidTransactionException}
+ * with response code capturing the failure when one occurs.
+ *
+ * <b>NOTE:</b> This implementation is incomplete, and includes
+ * only the API needed to support the Hedera Token Service. The
+ * memo field, for example, is not yet present.
+ */
 public class Account {
 	private final Id id;
 
@@ -39,7 +49,7 @@ public class Account {
 		this.expiry = expiry;
 	}
 
-	public void setBalance(long balance) {
+	public void initBalance(long balance) {
 		this.balance = balance;
 	}
 
@@ -50,7 +60,6 @@ public class Account {
 	/* NOTE: The object methods below are only overridden to improve
 	readability of unit tests; model objects are not used in hash-based
 	collections, so the performance of these methods doesn't matter. */
-
 	@Override
 	public boolean equals(Object obj) {
 		return EqualsBuilder.reflectionEquals(this, obj);

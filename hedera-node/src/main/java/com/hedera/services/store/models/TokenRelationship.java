@@ -28,6 +28,20 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 
+/**
+ * Encapsulates the state and operations of a Hedera account-token relationship.
+ *
+ * Operations are validated, and throw a {@link com.hedera.services.exceptions.InvalidTransactionException}
+ * with response code capturing the failure when one occurs.
+ *
+ * <b>NOTE:</b> Some operations will likely be moved to specializations
+ * of this class as NFTs are fully supported. For example, a
+ * {@link TokenRelationship#getBalanceChange()} signature only makes
+ * sense for a token of type {@code FUNGIBLE_COMMON}; the analogous signature
+ * for a {@code NON_FUNGIBLE_UNIQUE} will likely be {@code getOwnershipChanges())},
+ * returning perhaps a type that is structurally equivalent to a
+ * {@code Pair<long[], long[]>} of acquired and relinquished serial numbers.
+ */
 public class TokenRelationship {
 	private final Token token;
 	private final Account account;
@@ -43,18 +57,29 @@ public class TokenRelationship {
 		this.account = account;
 	}
 
-	public boolean hasInvolvedIds(Id tokenId, Id accountId) {
-		return account.getId().equals(accountId) && token.getId().equals(tokenId);
-	}
-
 	public long getBalance() {
 		return balance;
 	}
 
+	/**
+	 * Set the balance of this relationship's ({@code FUNGIBLE_COMMON}) token that
+	 * the account holds at the beginning of a user transaction. (In particular, does
+	 * <b>not</b> change the return value of {@link TokenRelationship#getBalanceChange()}.)
+	 *
+	 * @param balance the initial balance in the relationship
+	 */
 	public void initBalance(long balance) {
 		this.balance = balance;
 	}
 
+	/**
+	 * Update the balance of this relationship's ({@code FUNGIBLE_COMMMON}) token
+	 * held by the account.
+	 *
+	 * This <b>does</b> change the return value of {@link TokenRelationship#getBalanceChange()}.
+	 *
+	 * @param balance the updated balance of the relationship
+	 */
 	public void setBalance(long balance) {
 		validateTrue(!token.hasFreezeKey() || !frozen, ACCOUNT_FROZEN_FOR_TOKEN);
 		validateTrue(!token.hasKycKey() || kycGranted, ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
@@ -89,6 +114,10 @@ public class TokenRelationship {
 
 	public Account getAccount() {
 		return account;
+	}
+
+	boolean hasInvolvedIds(Id tokenId, Id accountId) {
+		return account.getId().equals(accountId) && token.getId().equals(tokenId);
 	}
 
 	/* NOTE: The object methods below are only overridden to improve

@@ -22,6 +22,9 @@ package com.hedera.services.store.models;
 
 import com.google.common.base.MoreObjects;
 
+/**
+ * Represents the id of a Hedera entity (account, topic, token, contract, file, or schedule).
+ */
 public class Id {
 	private final long shard;
 	private final long realm;

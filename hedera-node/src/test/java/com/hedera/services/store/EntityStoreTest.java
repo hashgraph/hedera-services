@@ -299,9 +299,9 @@ class EntityStoreTest {
 		treasuryMerkleAccount = new MerkleAccount();
 
 		miscAccount.setExpiry(expiry);
-		miscAccount.setBalance(balance);
+		miscAccount.initBalance(balance);
 		autoRenewAccount.setExpiry(expiry);
-		autoRenewAccount.setBalance(balance);
+		autoRenewAccount.initBalance(balance);
 	}
 
 	private void setupToken() {

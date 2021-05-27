@@ -327,6 +327,7 @@ import com.swirlds.common.AddressBook;
 import com.swirlds.common.Console;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
+import com.swirlds.common.Transaction;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
@@ -908,6 +909,11 @@ public class ServicesContext {
 		return hcsAnswers;
 	}
 
+	/**
+	 * Returns the singleton {@link EntityStore} used in {@link ServicesState#handleTransaction(long, boolean, Instant, Instant, Transaction)}
+	 * to load, save, and create entities in the Merkle data structures constituting
+	 * the Swirlds application state.
+	 */
 	public EntityStore entityStore() {
 		if (entityStore == null) {
 			entityStore = new EntityStore(
