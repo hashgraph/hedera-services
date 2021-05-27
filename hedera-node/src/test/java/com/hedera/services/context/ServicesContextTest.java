@@ -114,14 +114,14 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.migration.StdStateMigrations;
 import com.hedera.services.state.submerkle.ExchangeRates;
-import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.validation.BasedLedgerValidator;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.ServicesStatsManager;
-import com.hedera.services.store.EntityStore;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
@@ -540,10 +540,11 @@ public class ServicesContextTest {
 		assertThat(ctx.transactionPrecheck(), instanceOf(TransactionPrecheck.class));
 		assertThat(ctx.queryHeaderValidity(), instanceOf(QueryHeaderValidity.class));
 		assertThat(ctx.entityAutoRenewal(), instanceOf(EntityAutoRenewal.class));
-		assertThat(ctx.entityStore(), instanceOf(EntityStore.class));
+		assertThat(ctx.typedTokenStore(), instanceOf(TypedTokenStore.class));
 		assertThat(ctx.transitionRunner(), instanceOf(TransitionRunner.class));
 		assertThat(ctx.nodeInfo(), instanceOf(NodeInfo.class));
 		assertThat(ctx.invariants(), instanceOf(InvariantChecks.class));
+		assertThat(ctx.accountStore(), instanceOf(AccountStore.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

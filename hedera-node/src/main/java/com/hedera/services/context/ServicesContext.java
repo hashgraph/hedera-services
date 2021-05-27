@@ -238,7 +238,8 @@ import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.RunningAvgFactory;
 import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stats.SpeedometerFactory;
-import com.hedera.services.store.EntityStore;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.schedule.HederaScheduleStore;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
@@ -450,9 +451,9 @@ public class ServicesContext {
 	private FileNumbers fileNums;
 	private FileAnswers fileAnswers;
 	private MetaAnswers metaAnswers;
-	private EntityStore entityStore;
 	private RecordCache recordCache;
 	private TokenStore tokenStore;
+	private AccountStore accountStore;
 	private TokenAnswers tokenAnswers;
 	private HederaLedger ledger;
 	private SyncVerifier syncVerifier;
@@ -482,6 +483,7 @@ public class ServicesContext {
 	private MiscRunningAvgs runningAvgs;
 	private ScheduleAnswers scheduleAnswers;
 	private InvariantChecks invariantChecks;
+	private TypedTokenStore typedTokenStore;
 	private MiscSpeedometers speedometers;
 	private ScheduleExecutor scheduleExecutor;
 	private ServicesNodeType nodeType;
@@ -910,21 +912,35 @@ public class ServicesContext {
 	}
 
 	/**
-	 * Returns the singleton {@link EntityStore} used in {@link ServicesState#handleTransaction(long, boolean, Instant, Instant, Transaction)}
-	 * to load, save, and create entities in the Merkle data structures constituting
-	 * the Swirlds application state.
+	 * Returns the singleton {@link TypedTokenStore} used in {@link ServicesState#handleTransaction(long, boolean, Instant,
+	 * Instant, Transaction)} to load, save, and create tokens in the Swirlds application state. It decouples the
+	 * {@code handleTransaction} logic from the details of the Merkle state.
+	 *
+	 * Here "singleton" means that, no matter how many fast-copies are made of the {@link ServicesState}, the mutable
+	 * instance receiving the {@code handleTransaction} call will always use the same {@code typedTokenStore} instance.
+	 *
+	 * Hence we inject the {@code typedTokenStore} with method references to {@link ServicesContext#tokens()} and
+	 * {@link ServicesContext#tokenAssociations()} so it can always access the children of the mutable
+	 * {@link ServicesState}.
 	 */
-	public EntityStore entityStore() {
-		if (entityStore == null) {
-			entityStore = new EntityStore(
-					validator(),
-					globalDynamicProperties(),
-					new TransactionRecordService(txnCtx()),
-					this::tokens,
-					this::accounts,
-					this::tokenAssociations);
+	public TypedTokenStore typedTokenStore() {
+		if (typedTokenStore == null) {
+			typedTokenStore = new TypedTokenStore(
+					accountStore(), new TransactionRecordService(txnCtx()), this::tokens, this::tokenAssociations);
 		}
-		return entityStore;
+		return typedTokenStore;
+	}
+
+	/**
+	 * Returns the singleton {@link AccountStore} used in {@link ServicesState#handleTransaction(long, boolean, Instant,
+	 * Instant, Transaction)} to load, save, and create accounts from the Swirlds application state. It decouples the
+	 * {@code handleTransaction} logic from the details of the Merkle state.
+	 */
+	public AccountStore accountStore() {
+		if (accountStore == null) {
+			accountStore = new AccountStore(validator(), globalDynamicProperties(), this::accounts);
+		}
+		return accountStore;
 	}
 
 	public MetaAnswers metaAnswers() {
@@ -1348,9 +1364,9 @@ public class ServicesContext {
 				entry(TokenDelete,
 						List.of(new TokenDeleteTransitionLogic(tokenStore(), txnCtx()))),
 				entry(TokenMint,
-						List.of(new TokenMintTransitionLogic(entityStore(), txnCtx()))),
+						List.of(new TokenMintTransitionLogic(typedTokenStore(), txnCtx()))),
 				entry(TokenBurn,
-						List.of(new TokenBurnTransitionLogic(entityStore(), txnCtx()))),
+						List.of(new TokenBurnTransitionLogic(typedTokenStore(), txnCtx()))),
 				entry(TokenAccountWipe,
 						List.of(new TokenWipeTransitionLogic(tokenStore(), txnCtx()))),
 				entry(TokenAssociateToAccount,

@@ -20,12 +20,9 @@ package com.hedera.services.store;
  * ‍
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.TransactionRecordService;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -35,36 +32,28 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
-import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.fcmap.FCMap;
-import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class EntityStoreTest {
+class TypedTokenStoreTest {
 	@Mock
-	private OptionValidator validator;
-	@Mock
-	private GlobalDynamicProperties dynamicProperties;
-	@Mock
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private AccountStore accountStore;
 	@Mock
 	private FCMap<MerkleEntityId, MerkleToken> tokens;
 	@Mock
@@ -72,21 +61,14 @@ class EntityStoreTest {
 	@Mock
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
 
-	private EntityStore subject;
+	private TypedTokenStore subject;
 
 	@BeforeEach
 	void setUp() {
-		setupAccounts();
 		setupToken();
 		setupTokenRel();
 
-		subject = new EntityStore(
-				validator,
-				dynamicProperties,
-				transactionRecordService,
-				() -> tokens,
-				() -> accounts,
-				() -> tokenRels);
+		subject = new TypedTokenStore(accountStore, transactionRecordService, () -> tokens, () -> tokenRels);
 	}
 
 	/* --- Token relationship loading --- */
@@ -133,8 +115,8 @@ class EntityStoreTest {
 	/* --- Token loading --- */
 	@Test
 	void loadsExpectedToken() {
-		givenAccount(autoRenewMerkleId, autoRenewMerkleAccount);
-		givenAccount(treasuryMerkleId, treasuryMerkleAccount);
+		given(accountStore.loadAccount(autoRenewId)).willReturn(autoRenewAccount);
+		given(accountStore.loadAccount(treasuryId)).willReturn(treasuryAccount);
 		givenToken(merkleTokenId, merkleToken);
 
 		// when:
@@ -146,27 +128,10 @@ class EntityStoreTest {
 	}
 
 	@Test
-	void loadsExpiredTokenAsLongAsAutoRenewAccountIsSolvent() {
-		givenAccount(autoRenewMerkleId, autoRenewMerkleAccount);
-		givenAccount(treasuryMerkleId, treasuryMerkleAccount);
-		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
+	void failsLoadingTokenWithDetachedAutoRenewAccount() {
+		given(accountStore.loadAccount(autoRenewId))
+				.willThrow(new InvalidTransactionException(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
 		givenToken(merkleTokenId, merkleToken);
-
-		// when:
-		final var actualToken = subject.loadToken(tokenId);
-
-		// then:
-		/* JKey does not override equals properly, have to compare string representations here */
-		assertEquals(token.toString(), actualToken.toString());
-	}
-
-	@Test
-	void failsLoadingTokenWithDetachedAutoRenewAccount() throws NegativeAccountBalanceException {
-		givenAccount(autoRenewMerkleId, autoRenewMerkleAccount);
-		givenToken(merkleTokenId, merkleToken);
-		given(validator.isAfterConsensusSecond(expiry)).willReturn(true);
-		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
-		autoRenewMerkleAccount.setBalance(0L);
 
 		assertTokenLoadFailsWith(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 	}
@@ -200,8 +165,6 @@ class EntityStoreTest {
 
 		givenToken(merkleTokenId, merkleToken);
 		givenModifiableToken(merkleTokenId, merkleToken);
-		givenAccount(autoRenewMerkleId, autoRenewMerkleAccount);
-		givenAccount(treasuryMerkleId, treasuryMerkleAccount);
 
 		// when:
 		final var modelToken = subject.loadToken(tokenId);
@@ -218,56 +181,12 @@ class EntityStoreTest {
 		verify(transactionRecordService).includeChangesToToken(modelToken);
 	}
 
-	/* --- Account loading --- */
-	@Test
-	void failsLoadingMissingAccount() {
-		assertMiscAccountLoadFailsWith(INVALID_ACCOUNT_ID);
-	}
-
-	@Test
-	void failsLoadingDeleted() {
-		givenAccount(miscMerkleId, miscMerkleAccount);
-		miscMerkleAccount.setDeleted(true);
-
-		assertMiscAccountLoadFailsWith(ACCOUNT_DELETED);
-	}
-
-	@Test
-	void failsLoadingDetached() throws NegativeAccountBalanceException {
-		givenAccount(miscMerkleId, miscMerkleAccount);
-		given(validator.isAfterConsensusSecond(expiry)).willReturn(true);
-		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
-		miscMerkleAccount.setBalance(0L);
-
-		assertMiscAccountLoadFailsWith(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-	}
-
-	@Test
-	void canLoadExpiredWithNonzeroBalance() {
-		givenAccount(miscMerkleId, miscMerkleAccount);
-
-		// when:
-		final var actualAccount = subject.loadAccount(miscId);
-
-		// then:
-		assertEquals(actualAccount, miscAccount);
-	}
-
-	@Test
-	void saveAccountNotYetImplemented() {
-		assertThrows(NotImplementedException.class, () -> subject.saveAccount(miscAccount));
-	}
-
 	private void givenRelationship(MerkleEntityAssociation anAssoc, MerkleTokenRelStatus aRelationship) {
 		given(tokenRels.get(anAssoc)).willReturn(aRelationship);
 	}
 
 	private void givenModifiableRelationship(MerkleEntityAssociation anAssoc, MerkleTokenRelStatus aRelationship) {
 		given(tokenRels.getForModify(anAssoc)).willReturn(aRelationship);
-	}
-
-	private void givenAccount(MerkleEntityId anId, MerkleAccount anAccount) {
-		given(accounts.get(anId)).willReturn(anAccount);
 	}
 
 	private void givenToken(MerkleEntityId anId, MerkleToken aToken) {
@@ -278,11 +197,6 @@ class EntityStoreTest {
 		given(tokens.getForModify(anId)).willReturn(aToken);
 	}
 
-	private void assertMiscAccountLoadFailsWith(ResponseCodeEnum status) {
-		var ex = assertThrows(InvalidTransactionException.class, () -> subject.loadAccount(miscId));
-		assertEquals(status, ex.getResponseCode());
-	}
-
 	private void assertTokenLoadFailsWith(ResponseCodeEnum status) {
 		var ex = assertThrows(InvalidTransactionException.class, () -> subject.loadToken(tokenId));
 		assertEquals(status, ex.getResponseCode());
@@ -291,17 +205,6 @@ class EntityStoreTest {
 	private void assertMiscRelLoadFailsWith(ResponseCodeEnum status) {
 		var ex = assertThrows(InvalidTransactionException.class, () -> subject.loadTokenRelationship(token, miscAccount));
 		assertEquals(status, ex.getResponseCode());
-	}
-
-	private void setupAccounts() {
-		miscMerkleAccount = MerkleAccountFactory.newAccount().balance(balance).expirationTime(expiry).get();
-		autoRenewMerkleAccount = MerkleAccountFactory.newAccount().balance(balance).expirationTime(expiry).get();
-		treasuryMerkleAccount = new MerkleAccount();
-
-		miscAccount.setExpiry(expiry);
-		miscAccount.initBalance(balance);
-		autoRenewAccount.setExpiry(expiry);
-		autoRenewAccount.initBalance(balance);
 	}
 
 	private void setupToken() {
@@ -335,9 +238,6 @@ class EntityStoreTest {
 	private final long miscAccountNum = 1_234L;
 	private final long treasuryAccountNum = 2_234L;
 	private final long autoRenewAccountNum = 3_234L;
-	private final MerkleEntityId miscMerkleId = new MerkleEntityId(0, 0, miscAccountNum);
-	private final MerkleEntityId treasuryMerkleId = new MerkleEntityId(0, 0, treasuryAccountNum);
-	private final MerkleEntityId autoRenewMerkleId = new MerkleEntityId(0, 0, autoRenewAccountNum);
 	private final Id miscId = new Id(0, 0, miscAccountNum);
 	private final Id treasuryId = new Id(0, 0, treasuryAccountNum);
 	private final Id autoRenewId = new Id(0, 0, autoRenewAccountNum);
@@ -364,8 +264,5 @@ class EntityStoreTest {
 	private final TokenRelationship miscTokenRel = new TokenRelationship(token, miscAccount);
 
 	private MerkleToken merkleToken;
-	private MerkleAccount miscMerkleAccount;
-	private MerkleAccount autoRenewMerkleAccount;
-	private MerkleAccount treasuryMerkleAccount;
 	private MerkleTokenRelStatus miscTokenMerkleRel;
 }

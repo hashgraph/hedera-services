@@ -21,14 +21,12 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.store.EntityStore;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -61,7 +59,7 @@ class TokenBurnTransitionLogicTest {
 	@Mock
 	private Token token;
 	@Mock
-	private EntityStore store;
+	private TypedTokenStore store;
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
