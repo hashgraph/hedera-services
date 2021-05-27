@@ -21,7 +21,6 @@ package com.hedera.services.legacy.services.state;
  */
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.FeeCalculator;

@@ -29,7 +29,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
-import com.hedera.services.sigs.HederaToPlatformSigOps;
 import com.hedera.services.sigs.factories.SigFactoryCreator;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigningOrderResult;
@@ -86,11 +85,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
-import org.mockito.Mockito;
 
 import javax.inject.Inject;
 import java.io.UncheckedIOException;
-import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -120,6 +117,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
@@ -127,8 +125,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.*;
-import org.mockito.MockedStatic;
+import static org.mockito.Mockito.times;
 
 @ExtendWith(LogCaptureExtension.class)
 class ServicesStateTest {
@@ -766,7 +763,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void expandsSigs() {
+	public void expandsSigs() {
 		// setup:
 		ByteString mockPk = ByteString.copyFrom("not-a-real-pkPrefix".getBytes());
 		ByteString mockSig = ByteString.copyFrom("not-a-real-sig".getBytes());
