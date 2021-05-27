@@ -52,6 +52,7 @@ import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.Transaction;
 import com.swirlds.common.crypto.RunningHash;
 import org.junit.jupiter.api.BeforeEach;
@@ -77,7 +78,7 @@ import static org.mockito.Mockito.never;
 class AwareProcessLogicTest {
 	private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L);
 
-	private Transaction platformTxn;
+	private SwirldTransaction platformTxn;
 	private InvariantChecks invariantChecks;
 	private ServicesContext ctx;
 	private ExpiryManager expiryManager;
@@ -87,7 +88,7 @@ class AwareProcessLogicTest {
 
 	@BeforeEach
 	void setup() {
-		final Transaction txn = mock(Transaction.class);
+		final SwirldTransaction txn = mock(SwirldTransaction.class);
 		final PlatformTxnAccessor txnAccessor = mock(PlatformTxnAccessor.class);
 		final HederaLedger ledger = mock(HederaLedger.class);
 		final AccountRecordsHistorian historian = mock(AccountRecordsHistorian.class);
@@ -218,7 +219,7 @@ class AwareProcessLogicTest {
 		TransactionBody nonMockTxnBody = TransactionBody.newBuilder()
 				.setTransactionID(TransactionID.newBuilder()
 						.setAccountID(IdUtils.asAccount("0.0.2"))).build();
-		platformTxn = new Transaction(com.hederahashgraph.api.proto.java.Transaction.newBuilder()
+		platformTxn = new SwirldTransaction(com.hederahashgraph.api.proto.java.Transaction.newBuilder()
 				.setBodyBytes(nonMockTxnBody.toByteString())
 				.build().toByteArray());
 	}
@@ -231,7 +232,7 @@ class AwareProcessLogicTest {
 						.setScheduleID(IdUtils.asSchedule("0.0.1234"))
 						.build())
 				.build();
-		platformTxn = new Transaction(com.hederahashgraph.api.proto.java.Transaction.newBuilder()
+		platformTxn = new SwirldTransaction(com.hederahashgraph.api.proto.java.Transaction.newBuilder()
 				.setBodyBytes(nonMockTxnBody.toByteString())
 				.build().toByteArray());
 	}

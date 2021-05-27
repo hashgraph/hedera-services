@@ -41,6 +41,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.swirlds.common.SwirldTransaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -316,9 +317,7 @@ class RecordCacheTest {
 						.build().toByteString())
 				.build();
 		// and:
-		com.swirlds.common.Transaction platformTxn = new com.swirlds.common.Transaction(signedTxn.toByteArray());
-		// and:
-		ArgumentCaptor<ExpirableTxnRecord> captor = ArgumentCaptor.forClass(ExpirableTxnRecord.class);
+		SwirldTransaction platformTxn = new SwirldTransaction(signedTxn.toByteArray());
 		// and:
 		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
 		// and:

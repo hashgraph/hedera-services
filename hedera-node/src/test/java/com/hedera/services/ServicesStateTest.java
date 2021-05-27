@@ -67,6 +67,7 @@ import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
+import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.Transaction;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.DigestType;
@@ -133,7 +134,7 @@ class ServicesStateTest {
 	Supplier<BinaryObjectStore> mockBlobStoreSupplier;
 	BinaryObjectStore blobStore;
 	Instant now = Instant.now();
-	Transaction platformTxn;
+	SwirldTransaction platformTxn;
 	Address address;
 	AddressBook book;
 	AddressBook bookCopy;
@@ -194,7 +195,7 @@ class ServicesStateTest {
 
 		out = mock(SerializableDataOutputStream.class);
 		in = mock(SerializableDataInputStream.class);
-		platformTxn = mock(Transaction.class);
+		platformTxn = mock(SwirldTransaction.class);
 
 		address = mock(Address.class);
 		given(address.getMemo()).willReturn("0.0.3");
@@ -280,7 +281,7 @@ class ServicesStateTest {
 	@Test
 	void migratesDiskFsIfLegacySavedState() {
 		// when:
-		subject.initialize(null);
+		subject.initialize();
 
 		// then:
 		assertNotNull(subject.tokens());
@@ -417,7 +418,7 @@ class ServicesStateTest {
 	@Test
 	void catchesNonProtoExceptionInExpandSigs() {
 		// setup:
-		var platformTxn = mock(Transaction.class);
+		var platformTxn = mock(SwirldTransaction.class);
 
 		given(platformTxn.getContents()).willReturn(
 				com.hederahashgraph.api.proto.java.Transaction.getDefaultInstance().toByteArray());
@@ -432,7 +433,7 @@ class ServicesStateTest {
 	@Test
 	void catchesProtobufParseException() {
 		// setup:
-		var platformTxn = mock(Transaction.class);
+		var platformTxn = mock(SwirldTransaction.class);
 
 		given(platformTxn.getContents()).willReturn("not-a-grpc-txn".getBytes());
 
@@ -729,7 +730,7 @@ class ServicesStateTest {
 		subject.ctx = ctx;
 
 		// when:
-		subject.handleTransaction(1, false, now, now, platformTxn);
+		subject.handleTransaction(1, false, now, now, platformTxn, null);
 
 		// then:
 		verify(logic, never()).incorporateConsensusTxn(platformTxn, now, 1);
@@ -741,7 +742,7 @@ class ServicesStateTest {
 		subject.ctx = ctx;
 
 		// when:
-		subject.handleTransaction(1, true, now, now, platformTxn);
+		subject.handleTransaction(1, true, now, now, platformTxn, null);
 
 		// then:
 		verify(logic).incorporateConsensusTxn(platformTxn, now, 1);

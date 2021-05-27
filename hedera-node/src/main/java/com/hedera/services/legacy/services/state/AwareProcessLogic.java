@@ -32,7 +32,7 @@ import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeObject;
-import com.swirlds.common.Transaction;
+import com.swirlds.common.SwirldTransaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -85,7 +85,7 @@ public class AwareProcessLogic implements ProcessLogic {
 	}
 
 	@Override
-	public void incorporateConsensusTxn(Transaction platformTxn, Instant consensusTime, long submittingMember) {
+	public void incorporateConsensusTxn(SwirldTransaction platformTxn, Instant consensusTime, long submittingMember) {
 		try {
 			final var accessor = new PlatformTxnAccessor(platformTxn);
 			Instant effectiveConsensusTime = consensusTime;

@@ -20,18 +20,19 @@ package com.hedera.test.factories.txns;
  * ‍
  */
 
-import com.swirlds.common.Transaction;
+
+import com.swirlds.common.SwirldTransaction;
 
 public class PlatformTxnFactory {
-	public static Transaction from(com.hederahashgraph.api.proto.java.Transaction signedTxn) {
-		return new Transaction(signedTxn.toByteArray());
+	public static SwirldTransaction from(com.hederahashgraph.api.proto.java.Transaction signedTxn) {
+		return new SwirldTransaction(signedTxn.toByteArray());
 	}
 
-	public static TransactionWithClearFlag withClearFlag(Transaction txn) {
+	public static TransactionWithClearFlag withClearFlag(SwirldTransaction txn) {
 		return new TransactionWithClearFlag(txn.getContents());
 	}
 
-	public static class TransactionWithClearFlag extends Transaction {
+	public static class TransactionWithClearFlag extends SwirldTransaction {
 		private boolean hasClearBeenCalled = false;
 
 		public TransactionWithClearFlag(byte[] contents) {

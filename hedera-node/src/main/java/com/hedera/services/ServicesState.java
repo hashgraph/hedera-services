@@ -46,12 +46,12 @@ import com.swirlds.blob.BinaryObjectStore;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
+import com.swirlds.common.SwirldDualState;
 import com.swirlds.common.SwirldState;
-import com.swirlds.common.Transaction;
+import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
-import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
 import com.swirlds.fcmap.FCMap;
@@ -66,8 +66,8 @@ import java.util.function.Supplier;
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
-import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
+import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 
 public class ServicesState extends AbstractNaryMerkleInternal implements SwirldState.SwirldState2 {
 	private static final Logger log = LogManager.getLogger(ServicesState.class);
@@ -169,7 +169,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	@Override
-	public void initialize(MerkleInternal previous) {
+	public void initialize() {
 		if (tokens() == null) {
 			setChild(ChildIndices.TOKENS,
 					new FCMap<>());
@@ -305,7 +305,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			boolean isConsensus,
 			Instant creationTime,
 			Instant consensusTime,
-			com.swirlds.common.Transaction transaction
+			SwirldTransaction transaction,
+			SwirldDualState dualState
 	) {
 		if (isConsensus) {
 			ctx.logic().incorporateConsensusTxn(transaction, consensusTime, submittingMember);
@@ -313,7 +314,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	@Override
-	public void expandSignatures(Transaction platformTxn) {
+	public void expandSignatures(SwirldTransaction platformTxn) {
 		try {
 			var accessor = new PlatformTxnAccessor(platformTxn);
 			expandIn(

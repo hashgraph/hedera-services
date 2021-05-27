@@ -26,7 +26,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.swirlds.common.FCMValue;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
@@ -38,7 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class MerkleAccount extends AbstractNaryMerkleInternal implements FCMValue, MerkleInternal {
+public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleInternal {
 	private static final Logger log = LogManager.getLogger(MerkleAccount.class);
 
 	static Runnable stackDump = Thread::dumpStack;
@@ -108,7 +107,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements FCMValu
 	}
 
 	@Override
-	public void initialize(MerkleInternal previous) {
+	public void initialize() {
 		if (getNumberOfChildren() == ChildIndices.NUM_090_ALPHA_CHILDREN) {
 			addDeserializedChildren(List.of(
 					getChild(ChildIndices.STATE),

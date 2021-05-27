@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
+import com.swirlds.common.DualState;
 import com.swirlds.common.Platform;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
@@ -97,11 +98,12 @@ public class FreezeHandler {
 			updateFileHash = transactionBody.getFreeze().getFileHash().toByteArray();
 		}
 		try {
-			platform.setFreezeTime(
-					freezeBody.getStartHour(),
-					freezeBody.getStartMin(),
-					freezeBody.getEndHour(),
-					freezeBody.getEndMin());
+			/* TODO - invoke DualState#setFreezeTime */
+//			platform.setFreezeTime(
+//					freezeBody.getStartHour(),
+//					freezeBody.getStartMin(),
+//					freezeBody.getEndHour(),
+//					freezeBody.getEndMin());
 			receipt = getTransactionReceipt(ResponseCodeEnum.SUCCESS, exchange.activeRates());
 			log.info("Freeze time starts {}:{} end {}:{}", freezeBody.getStartHour(),
 					freezeBody.getStartMin(),

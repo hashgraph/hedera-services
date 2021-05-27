@@ -104,7 +104,8 @@ class FreezeHandlerTest {
 
 	@Test
 	public void freeze_InvalidFreezeTxBody_Test() throws Exception {
-		willThrow(IllegalArgumentException.class).given(platform).setFreezeTime(anyInt(), anyInt(), anyInt(), anyInt());
+		/* TODO - throw when setting DualState freeze time */
+//		willThrow(IllegalArgumentException.class).given(platform).setFreezeTime(anyInt(), anyInt(), anyInt(), anyInt());
 		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, false, null);
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
 		TransactionRecord record = subject.freeze(txBody, consensusTime);

@@ -45,7 +45,7 @@ import static com.hedera.services.state.submerkle.EntityId.fromGrpcScheduleId;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
-public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
+public class ExpirableTxnRecord implements FCQueueElement {
 	public static final long UNKNOWN_SUBMITTING_MEMBER = -1;
 
 	private static final Logger log = LogManager.getLogger(ExpirableTxnRecord.class);

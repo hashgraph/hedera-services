@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.common.SwirldTransaction;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -136,13 +137,13 @@ public class PlatformTxnAccessorTest {
 	public void failsWithIllegalStateOnUncheckedConstruction() {
 		// expect:
 		assertThrows(IllegalStateException.class, () ->
-				uncheckedAccessorFor(new com.swirlds.common.Transaction(NONSENSE)));
+				uncheckedAccessorFor(new SwirldTransaction(NONSENSE)));
 	}
 
 	@Test
 	public void failsOnInvalidSignedTxn() {
 		// given:
-		com.swirlds.common.Transaction platformTxn = new com.swirlds.common.Transaction(NONSENSE);
+		SwirldTransaction platformTxn = new SwirldTransaction(NONSENSE);
 
 		// expect:
 		assertThrows(InvalidProtocolBufferException.class, () -> new PlatformTxnAccessor(platformTxn));
@@ -155,8 +156,8 @@ public class PlatformTxnAccessorTest {
 				.setBodyBytes(ByteString.copyFrom(NONSENSE))
 				.build();
 		// and:
-		com.swirlds.common.Transaction platformTxn =
-				new com.swirlds.common.Transaction(signedNonsenseTxn.toByteArray());
+		SwirldTransaction platformTxn =
+				new SwirldTransaction(signedNonsenseTxn.toByteArray());
 
 		// expect:
 		assertThrows(InvalidProtocolBufferException.class, () -> new PlatformTxnAccessor(platformTxn));
@@ -168,8 +169,8 @@ public class PlatformTxnAccessorTest {
 		Transaction signedTxnWithBody = Transaction.newBuilder()
 				.setBodyBytes(someTxn.toByteString())
 				.build();
-		com.swirlds.common.Transaction platformTxn =
-				new com.swirlds.common.Transaction(signedTxnWithBody.toByteArray());
+		SwirldTransaction platformTxn =
+				new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// when:
 		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn);
@@ -188,8 +189,8 @@ public class PlatformTxnAccessorTest {
 								.setPubKeyPrefix(ByteString.copyFrom("UNREAL".getBytes()))
 								.setEd25519(ByteString.copyFrom("FAKE".getBytes()))
 				)).build();
-		com.swirlds.common.Transaction platformTxn =
-				new com.swirlds.common.Transaction(signedTxnWithBody.toByteArray());
+		SwirldTransaction platformTxn =
+				new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// when:
 		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn);
@@ -215,8 +216,8 @@ public class PlatformTxnAccessorTest {
 		Transaction txn = Transaction.newBuilder().
 				setSignedTransactionBytes(signedTxn.toByteString()).build();
 
-		com.swirlds.common.Transaction platformTxn =
-				new com.swirlds.common.Transaction(txn.toByteArray());
+		SwirldTransaction platformTxn =
+				new SwirldTransaction(txn.toByteArray());
 
 		// when:
 		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn);
@@ -240,8 +241,8 @@ public class PlatformTxnAccessorTest {
 		Transaction signedTxnWithBody = Transaction.newBuilder()
 				.setBodyBytes(someTxn.toByteString())
 				.build();
-		com.swirlds.common.Transaction platformTxn =
-				new com.swirlds.common.Transaction(signedTxnWithBody.toByteArray());
+		SwirldTransaction platformTxn =
+				new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// when:
 		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn);

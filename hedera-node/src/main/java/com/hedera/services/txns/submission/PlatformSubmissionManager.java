@@ -26,7 +26,7 @@ import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.Platform;
-import com.swirlds.common.Transaction;
+import com.swirlds.common.SwirldTransaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -53,7 +53,8 @@ public class PlatformSubmissionManager {
 	public ResponseCodeEnum trySubmission(SignedTxnAccessor accessor) {
 		accessor = effective(accessor);
 
-		var success = (accessor != null) && platform.createTransaction(new Transaction(accessor.getBackwardCompatibleSignedTxnBytes()));
+		var success = (accessor != null) &&
+				platform.createTransaction(new SwirldTransaction(accessor.getBackwardCompatibleSignedTxnBytes()));
 		if (success) {
 			recordCache.addPreConsensus(accessor.getTxnId());
 			return OK;
