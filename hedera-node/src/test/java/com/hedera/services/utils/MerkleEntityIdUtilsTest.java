@@ -101,10 +101,18 @@ class MerkleEntityIdUtilsTest {
 	}
 
 	@ParameterizedTest
-	@CsvSource({"0", "0.a.0", "...", "1.2.3.4", "1.2.three", "1.2.333333333333333333333333333333333333333333"})
-	void rejectsInvalidAccountLiterals(String badLiteral) {
+	@CsvSource({
+			"0,Cannot parse '0' due to only 0 dots",
+			"0.a.0,Argument 'literal=0.a.0' is not an account",
+			"...,Argument 'literal=...' is not an account",
+			"1.2.3.4,Argument 'literal=1.2.3.4' is not an account",
+			"1.2.three,Argument 'literal=1.2.three' is not an account",
+			"1.2.333333333333333333333,Cannot parse '1.2.333333333333333333333' due to overflow"
+	})
+	void rejectsInvalidAccountLiterals(String badLiteral, String desiredMsg) {
 		// expect:
-		assertThrows(IllegalArgumentException.class, () -> parseAccount(badLiteral));
+		final var e = assertThrows(IllegalArgumentException.class, () -> parseAccount(badLiteral));
+		assertEquals(desiredMsg, e.getMessage());
 	}
 
 	@ParameterizedTest
