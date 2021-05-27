@@ -98,7 +98,7 @@ public class RecordCache {
 				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null)
 				.build();
 
-		var record = ctx.creator().createExpiringRecord(
+		var record = ctx.creator().saveExpiringRecord(
 				effectivePayer,
 				expirableTransactionrecord,
 				consensusTimestamp.getEpochSecond(),

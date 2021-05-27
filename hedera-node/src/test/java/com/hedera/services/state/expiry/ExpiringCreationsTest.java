@@ -82,7 +82,7 @@ class ExpiringCreationsTest {
 		given(dynamicProperties.cacheRecordsTtl()).willReturn(cacheTtl);
 
 		// when:
-		var actual = subject.createExpiringRecord(effPayer, record, now, submittingMember);;
+		var actual = subject.saveExpiringRecord(effPayer, record, now, submittingMember);;
 
 		// then:
 		verify(recordCache).trackForExpiry(expectedRecord);
@@ -103,7 +103,7 @@ class ExpiringCreationsTest {
 		given(dynamicProperties.cacheRecordsTtl()).willReturn(cacheTtl);
 
 		// when:
-		var actual = subject.createExpiringRecord(effPayer, record, now, submittingMember);;
+		var actual = subject.saveExpiringRecord(effPayer, record, now, submittingMember);;
 
 		// then:
 		assertEquals(expectedRecord, actual);
@@ -117,7 +117,7 @@ class ExpiringCreationsTest {
 	void noopFormDoesNothing() {
 		// expect:
 		Assertions.assertThrows(UnsupportedOperationException.class, () ->
-				NOOP_EXPIRING_CREATIONS.createExpiringRecord(
+				NOOP_EXPIRING_CREATIONS.saveExpiringRecord(
 						null, null, 0L, submittingMember));
 	}
 }

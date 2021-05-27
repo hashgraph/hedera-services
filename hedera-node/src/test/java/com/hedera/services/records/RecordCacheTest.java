@@ -339,7 +339,7 @@ class RecordCacheTest {
 		var expectedRecord = ExpirableTxnRecord.fromGprc(grpc);
 		expectedRecord.setExpiry(consensusTime.getEpochSecond() + 180);
 		expectedRecord.setSubmittingMember(submittingMember);
-		given(creator.createExpiringRecord(any(), any(), anyLong(), anyLong())).willReturn(expectedRecord);
+		given(creator.saveExpiringRecord(any(), any(), anyLong(), anyLong())).willReturn(expectedRecord);
 
 		// when:
 		subject.setFailInvalid(
@@ -386,7 +386,7 @@ class RecordCacheTest {
 				.build();
 
 		var expectedRecord = ExpirableTxnRecord.fromGprc(grpc);
-		given(creator.createExpiringRecord(any(), any(), anyLong(), anyLong())).willReturn(expectedRecord);
+		given(creator.saveExpiringRecord(any(), any(), anyLong(), anyLong())).willReturn(expectedRecord);
 
 		// when:
 		subject.setFailInvalid(

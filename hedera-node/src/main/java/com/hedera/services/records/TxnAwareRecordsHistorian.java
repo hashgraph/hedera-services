@@ -73,7 +73,7 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 		long now = txnCtx.consensusTime().getEpochSecond();
 		long submittingMember = txnCtx.submittingSwirldsMember();
 		var accessor = txnCtx.accessor();
-		var payerRecord = creator.createExpiringRecord(
+		var payerRecord = creator.saveExpiringRecord(
 				txnCtx.effectivePayer(),
 				lastExpirableRecord,
 				now,

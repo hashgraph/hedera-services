@@ -124,7 +124,7 @@ public class TxnAwareRecordsHistorianTest {
 				txnIdA,
 				ResponseCodeEnum.valueOf(finalRecord.getReceipt().getStatus()),
 				payerRecord);
-		verify(creator).createExpiringRecord(effPayer, finalRecord, nows, submittingMember);
+		verify(creator).saveExpiringRecord(effPayer, finalRecord, nows, submittingMember);
 		// and:
 		assertEquals(finalRecord, subject.lastCreatedRecord().get());
 	}
@@ -184,7 +184,7 @@ public class TxnAwareRecordsHistorianTest {
 		given(dynamicProperties.fundingAccount()).willReturn(funding);
 
 		creator = mock(ExpiringCreations.class);
-		given(creator.createExpiringRecord(effPayer, finalRecord, nows, submittingMember)).willReturn(payerRecord);
+		given(creator.saveExpiringRecord(effPayer, finalRecord, nows, submittingMember)).willReturn(payerRecord);
 
 		expiringEntity = mock(ExpiringEntity.class);
 		given(expiringEntity.id()).willReturn(aEntity);

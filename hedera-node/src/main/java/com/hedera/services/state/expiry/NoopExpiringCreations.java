@@ -34,7 +34,7 @@ public enum NoopExpiringCreations implements EntityCreator {
 	}
 
 	@Override
-	public ExpirableTxnRecord createExpiringRecord(
+	public ExpirableTxnRecord saveExpiringRecord(
 			AccountID id,
 			ExpirableTxnRecord record,
 			long now,

@@ -27,5 +27,5 @@ import com.hederahashgraph.api.proto.java.AccountID;
 public interface EntityCreator {
 	void setRecordCache(RecordCache recordCache);
 
-	ExpirableTxnRecord createExpiringRecord(AccountID id, ExpirableTxnRecord record, long now, long submittingMember);
+	ExpirableTxnRecord saveExpiringRecord(AccountID id, ExpirableTxnRecord record, long now, long submittingMember);
 }

@@ -54,7 +54,7 @@ public class ExpiringCreations implements EntityCreator {
 	}
 
 	@Override
-	public ExpirableTxnRecord createExpiringRecord(
+	public ExpirableTxnRecord saveExpiringRecord(
 			AccountID payer,
 			ExpirableTxnRecord record,
 			long now,
