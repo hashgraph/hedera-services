@@ -38,14 +38,6 @@ public class KeyPairObj implements Serializable {
     this.privateKey = privateKey;
   }
 
-  public String getPublicKeyStr() {
-    return publicKey;
-  }
-
-  public String getPrivateKeyStr() {
-    return privateKey;
-  }
-
   public String getPublicKeyAbyteStr() throws InvalidKeySpecException {
     return CommonUtils.hex(((EdDSAPublicKey)getPublicKey()).getAbyte());
   }

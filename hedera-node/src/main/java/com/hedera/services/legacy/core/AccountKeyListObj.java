@@ -35,10 +35,6 @@ public class AccountKeyListObj implements Serializable {
 		return keyPairList;
 	}
 
-	public void setKeyPairList(List<KeyPairObj> keyPairList) {
-		this.keyPairList = keyPairList;
-	}
-
 	public AccountID getAccountId() {
 		return accountId;
 	}
