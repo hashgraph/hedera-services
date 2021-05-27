@@ -46,10 +46,6 @@ public class JECDSA_384Key extends JKey {
 		return ((null == ECDSA_384Key) || (0 == ECDSA_384Key.length));
 	}
 
-	public boolean hasECDSA_384Key() {
-		return true;
-	}
-
 	public byte[] getECDSA384() {
 		return ECDSA_384Key;
 	}
