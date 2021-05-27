@@ -170,19 +170,9 @@ public class AwareTransactionContext implements TransactionContext {
 	public ExpirableTxnRecord recordSoFar(EntityCreator creator) {
 		long amount = ctx.charging().totalFeesChargedToPayer() + otherNonThresholdFees;
 		TransferList transfersList = ctx.ledger().netTransfersInTxn();
-		List<TokenTransferList> tokenTransferList = ctx.ledger().netTokenTransfersInTxn();
 
 		if (log.isDebugEnabled()) {
 			logItemized();
-		}
-
-		List<EntityId> tokens = new ArrayList<>();
-		List<CurrencyAdjustments> tokenAdjustments = new ArrayList<>();
-		if (tokenTransferList.size() > 0) {
-			for (TokenTransferList tokenTransfers : tokenTransferList) {
-				tokens.add(EntityId.fromGrpcTokenId(tokenTransfers.getToken()));
-				tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList()));
-			}
 		}
 
 		recordSoFar
@@ -193,13 +183,26 @@ public class AwareTransactionContext implements TransactionContext {
 				.setMemo(accessor.getTxn().getMemo())
 				.setFee(amount)
 				.setTransferList(!transfersList.getAccountAmountsList().isEmpty() ? CurrencyAdjustments.fromGrpc(transfersList) : null)
-				.setTokens(tokens)
-				.setTokenAdjustments(tokenAdjustments)
 				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null);
 
+		setTokensAndTokenAdjustments();
 		recordConfig.accept(recordSoFar);
 		hasComputedRecordSoFar = true;
 		return recordSoFar.build();
+	}
+
+	private void setTokensAndTokenAdjustments(){
+		List<TokenTransferList> tokenTransferList = ctx.ledger().netTokenTransfersInTxn();
+		List<EntityId> tokens = new ArrayList<>();
+		List<CurrencyAdjustments> tokenAdjustments = new ArrayList<>();
+		if (tokenTransferList.size() > 0) {
+			for (TokenTransferList tokenTransfers : tokenTransferList) {
+				tokens.add(EntityId.fromGrpcTokenId(tokenTransfers.getToken()));
+				tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList()));
+			}
+		}
+		recordSoFar.setTokens(tokens)
+				.setTokenAdjustments(tokenAdjustments);
 	}
 
 	private void logItemized() {
