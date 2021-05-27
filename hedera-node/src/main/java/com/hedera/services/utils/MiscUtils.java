@@ -331,12 +331,7 @@ public class MiscUtils {
 
 	public static JKey lookupInCustomStore(LegacyEd25519KeyReader b64Reader, String storeLoc, String kpId) {
 		try {
-			var key = CommonUtils.unhex(b64Reader.hexedABytesFrom(storeLoc, kpId));
-			System.out.println(key.length);
-			for (int i = 0; i < key.length; i++) {
-				System.out.println(key[i] + " ");
-			}
-			return new JEd25519Key(key);
+			return new JEd25519Key(CommonUtils.unhex(b64Reader.hexedABytesFrom(storeLoc, kpId)));
 		} catch (IllegalArgumentException e) {
 			var msg = String.format("Arguments 'storeLoc=%s' and 'kpId=%s' did not denote a valid key!", storeLoc, kpId);
 			throw new IllegalArgumentException(msg, e);
