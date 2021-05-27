@@ -22,6 +22,7 @@ package com.hedera.services.records;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.expiry.ExpiryManager;
@@ -33,8 +34,10 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Test;
@@ -46,6 +49,7 @@ import java.util.function.Consumer;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
@@ -76,6 +80,7 @@ public class TxnAwareRecordsHistorianTest {
 			.setTxnId(TxnId.fromGrpc(TransactionID.newBuilder().setAccountID(a).build()))
 			.setTransferList(CurrencyAdjustments.fromGrpc(initialTransfers))
 			.setMemo("This is different!")
+			.setReceipt(TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(SUCCESS).build()))
 			.build();
 	final private ExpirableTxnRecord jFinalRecord = finalRecord;
 	{
@@ -104,25 +109,25 @@ public class TxnAwareRecordsHistorianTest {
 		assertFalse(subject.lastCreatedRecord().isPresent());
 	}
 
-//	@Test
-//	public void addsRecordToAllQualifyingAccounts() {
-//		setupForAdd();
-//		given(dynamicProperties.shouldKeepRecordsInState()).willReturn(true);
-//
-//		// when:
-//		subject.finalizeExpirableTransactionRecord();
-//		subject.saveExpirableTransactionRecord();
-//
-//		// then:
-//		verify(txnCtx).recordSoFar(creator);
-//		verify(recordCache).setPostConsensus(
-//				txnIdA,
-//				ResponseCodeEnum.valueOf(finalRecord.getReceipt().getStatus()),
-//				payerRecord);
-//		verify(creator).createExpiringRecord(effPayer, finalRecord, nows, submittingMember);
-//		// and:
-//		assertEquals(finalRecord, subject.lastCreatedRecord().get());
-//	}
+	@Test
+	public void addsRecordToAllQualifyingAccounts() {
+		setupForAdd();
+		given(dynamicProperties.shouldKeepRecordsInState()).willReturn(true);
+
+		// when:
+		subject.finalizeExpirableTransactionRecord();
+		subject.saveExpirableTransactionRecord();
+
+		// then:
+		verify(txnCtx).recordSoFar(creator);
+		verify(recordCache).setPostConsensus(
+				txnIdA,
+				ResponseCodeEnum.valueOf(finalRecord.getReceipt().getStatus()),
+				payerRecord);
+		verify(creator).createExpiringRecord(effPayer, finalRecord, nows, submittingMember);
+		// and:
+		assertEquals(finalRecord, subject.lastCreatedRecord().get());
+	}
 
 	@Test
 	public void managesAddNewEntities() {

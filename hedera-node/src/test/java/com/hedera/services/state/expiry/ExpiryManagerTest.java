@@ -22,6 +22,7 @@ package com.hedera.services.state.expiry;
 
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.config.MockHederaNumbers;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -29,12 +30,15 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.store.schedule.ScheduleStore;
+import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
@@ -42,10 +46,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.verify;
@@ -122,29 +128,29 @@ class ExpiryManagerTest {
 		assertEquals(1, subject.getShortLivedEntityExpiries().getAllExpiries().size());
 	}
 
-//	@Test
-//	void rebuildsExpectedRecordsFromState() {
-//		// setup:
-//		subject = new ExpiryManager(
-//				mockRecordCache, mockScheduleStore, nums, liveTxnHistories, () -> liveAccounts, () -> mockSchedules);
-//		final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
-//		final var leftoverTxnId = recordWith(bGrpcId, now).getTxnId().toGrpc();
-//		liveTxnHistories.put(leftoverTxnId, new TxnIdRecentHistory());
-//
-//		// given:
-//		anAccount.records().offer(expiring(recordWith(aGrpcId, start), firstThen));
-//		anAccount.records().offer(expiring(recordWith(aGrpcId, start), secondThen));
-//		liveAccounts.put(aKey, anAccount);
-//
-//		// when:
-//		subject.reviewExistingPayerRecords();
-//
-//		// then:
-//		verify(mockRecordCache).reset();
-//		assertFalse(liveTxnHistories.containsKey(leftoverTxnId));
-//		assertEquals(firstThen, liveTxnHistories.get(newTxnId).priorityRecord().getExpiry());
-//		assertEquals(secondThen, liveTxnHistories.get(newTxnId).duplicateRecords().get(0).getExpiry());
-//	}
+	@Test
+	void rebuildsExpectedRecordsFromState() {
+		// setup:
+		subject = new ExpiryManager(
+				mockRecordCache, mockScheduleStore, nums, liveTxnHistories, () -> liveAccounts, () -> mockSchedules);
+		final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
+		final var leftoverTxnId = recordWith(bGrpcId, now).getTxnId().toGrpc();
+		liveTxnHistories.put(leftoverTxnId, new TxnIdRecentHistory());
+
+		// given:
+		anAccount.records().offer(expiring(recordWith(aGrpcId, start), firstThen));
+		anAccount.records().offer(expiring(recordWith(aGrpcId, start), secondThen));
+		liveAccounts.put(aKey, anAccount);
+
+		// when:
+		subject.reviewExistingPayerRecords();
+
+		// then:
+		verify(mockRecordCache).reset();
+		assertFalse(liveTxnHistories.containsKey(leftoverTxnId));
+		assertEquals(firstThen, liveTxnHistories.get(newTxnId).priorityRecord().getExpiry());
+		assertEquals(secondThen, liveTxnHistories.get(newTxnId).duplicateRecords().get(0).getExpiry());
+	}
 
 	@Test
 	void expiresRecordsAsExpected() {
@@ -214,6 +220,8 @@ class ExpiryManagerTest {
 						.setAccountID(payer)
 						.setTransactionValidStart(Timestamp.newBuilder()
 								.setSeconds(validStartSecs)).build()))
+				.setConsensusTimestamp(RichInstant.fromGrpc(MiscUtils.asTimestamp(Instant.now())))
+				.setReceipt(TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(SUCCESS).build()))
 				.build();
 	}
 }
