@@ -22,7 +22,7 @@ package com.hedera.services.sigs.factories;
 
 
 import com.swirlds.common.crypto.TransactionSignature;
-import org.apache.commons.codec.binary.Hex;
+import com.swirlds.common.CommonUtils;
 
 import java.util.Arrays;
 import java.util.List;
@@ -83,8 +83,8 @@ public class PlatformSigFactory {
 	public static String pkSigRepr(List<TransactionSignature> sigs) {
 		return sigs.stream().map(sig -> String.format(
 				"(PK = %s | SIG = %s | %s)",
-				Hex.encodeHexString(sig.getExpandedPublicKeyDirect()),
-				Hex.encodeHexString(Arrays.copyOfRange(
+				CommonUtils.hex(sig.getExpandedPublicKeyDirect()),
+				CommonUtils.hex(Arrays.copyOfRange(
 						sig.getContentsDirect(),
 						sig.getSignatureOffset(),
 						sig.getSignatureOffset() + sig.getSignatureLength())),

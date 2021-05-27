@@ -29,7 +29,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
-import org.apache.commons.codec.binary.Hex;
+import com.swirlds.common.CommonUtils;
 import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
@@ -90,7 +90,7 @@ class MerkleEntityIdUtilsTest {
 		assertArrayEquals(expected, actual);
 		assertArrayEquals(expected, anotherActual);
 		// and:
-		assertEquals(Hex.encodeHexString(expected), actualHex);
+		assertEquals(CommonUtils.hex(expected), actualHex);
 		// and:
 		assertEquals(equivAccount, accountParsedFromSolidityAddress(actual));
 		// and:

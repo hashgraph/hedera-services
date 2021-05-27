@@ -37,7 +37,6 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.spongycastle.util.encoders.Hex;
 
 import javax.annotation.Nullable;
 import java.io.ByteArrayOutputStream;
@@ -50,6 +49,7 @@ import java.util.Objects;
 
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
+import static com.swirlds.common.CommonUtils.hex;
 
 /**
  * A consensus service topic's memo, adminKey, submitKey, autoRenew duration and account, sequenceNumber and runningHash
@@ -103,7 +103,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements FCMValue {
 				.add("deleted", deleted)
 				.add("adminKey", MiscUtils.describe(adminKey))
 				.add("submitKey", MiscUtils.describe(submitKey))
-				.add("runningHash", (runningHash != null) ? Hex.toHexString(runningHash) : "<N/A>")
+				.add("runningHash", (runningHash != null) ? hex(runningHash) : "<N/A>")
 				.add("sequenceNumber", sequenceNumber)
 				.add("autoRenewSecs", autoRenewDurationSeconds)
 				.add("autoRenewAccount", asLiteralString(asAccount(autoRenewAccountId)))

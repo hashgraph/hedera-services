@@ -71,9 +71,9 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.fee.FeeBuilder;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.core.AccountState;
@@ -221,7 +221,7 @@ public class SmartContractRequestHandlerMiscTest {
     storageWrapper = new FCStorageWrapper(storageMap);
     FeeScheduleInterceptor feeScheduleInterceptor = mock(FeeScheduleInterceptor.class);
     fsHandler = new FileServiceHandler(storageWrapper, feeScheduleInterceptor, new ExchangeRates());
-    String key = Hex.encodeHexString(EntityIdUtils.asSolidityAddress(0, 0, payerAccount));
+    String key = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, payerAccount));
     try {
       payerKeyBytes = MiscUtils.commonsHexToBytes(key);
     } catch (DecoderException e) {
@@ -822,7 +822,7 @@ public class SmartContractRequestHandlerMiscTest {
     TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
-    String contractSolidityAddress = Hex.encodeHexString(EntityIdUtils.asSolidityAddress(
+    String contractSolidityAddress = CommonUtils.hex(EntityIdUtils.asSolidityAddress(
         0, 0, newContractId.getContractNum()));
 
     // Call the contract to exercise EXTCODEHASH
@@ -856,7 +856,7 @@ public class SmartContractRequestHandlerMiscTest {
     TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
-    String accountSolidityAddress = Hex.encodeHexString(EntityIdUtils.asSolidityAddress(
+    String accountSolidityAddress = CommonUtils.hex(EntityIdUtils.asSolidityAddress(
         0, 0, payerAccount));
 
     // Call the contract to exercise EXTCODEHASH
@@ -956,7 +956,7 @@ public class SmartContractRequestHandlerMiscTest {
     TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
-    String precompiledSolidityAddress = Hex.encodeHexString(EntityIdUtils.asSolidityAddress(0, 0, 3));
+    String precompiledSolidityAddress = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, 3));
 
     // Call the contract to exercise EXTCODEHASH
     ByteString dataToGet = ByteString

@@ -29,7 +29,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
-import org.spongycastle.util.encoders.Hex;
+import com.swirlds.common.CommonUtils;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -128,7 +128,7 @@ public class EntityIdUtils {
 	}
 
 	public static String asSolidityAddressHex(AccountID id) {
-		return Hex.toHexString(asSolidityAddress((int)id.getShardNum(), id.getRealmNum(), id.getAccountNum()));
+		return CommonUtils.hex(asSolidityAddress((int)id.getShardNum(), id.getRealmNum(), id.getAccountNum()));
 	}
 
 	public static byte[] asSolidityAddress(ContractID id) {
