@@ -292,13 +292,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			ctx.setDualState(dualState);
 			ctx.logic().incorporateConsensusTxn(transaction, consensusTime, submittingMember);
 		} else {
-			if (CONTEXTS.lookup(0L) == ctx) {
-				try {
-					final var accessor = new PlatformTxnAccessor(transaction);
-					System.out.println(this + " got NON-consensus: " + accessor.getTxn());
-				} catch (InvalidProtocolBufferException e) {
-					e.printStackTrace();
-				}
+			try {
+				final var accessor = new PlatformTxnAccessor(transaction);
+				System.out.println(this + "(ctx=" + ctx + ", nodeId=" + ctx.nodeInfo().selfAccount() + ") got NON-consensus: " + accessor.getTxn());
+			} catch (InvalidProtocolBufferException e) {
+				e.printStackTrace();
 			}
 		}
 

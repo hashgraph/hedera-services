@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,12 +21,14 @@ package com.hedera.services.bdd.suites.crypto;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -36,6 +38,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 
 public class HelloWorldSpec extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(HelloWorldSpec.class);
@@ -47,7 +50,7 @@ public class HelloWorldSpec extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-				new HapiApiSpec[]{
+				new HapiApiSpec[] {
 						balancesChangeOnTransfer(),
 //						balancesChangeOnTransferWithOverrides(),
 				}
@@ -57,19 +60,23 @@ public class HelloWorldSpec extends HapiApiSuite {
 	private HapiApiSpec balancesChangeOnTransfer() {
 		return defaultHapiSpec("BalancesChangeOnTransfer")
 				.given(
-						cryptoCreate("sponsor"),
-						cryptoCreate("beneficiary"),
-						balanceSnapshot("sponsorBefore", "sponsor"),
-						balanceSnapshot("beneficiaryBefore", "beneficiary")
+						inParallel(IntStream.range(0, 10)
+								.mapToObj(i -> cryptoCreate("somebody" + i).deferStatusResolution())
+								.toArray(HapiSpecOperation[]::new))
+//						cryptoCreate("sponsor").deferStatusResolution(), cryptoCreate("beneficiary")
+//						.deferStatusResolution()
+//						balanceSnapshot("sponsorBefore", "sponsor"),
+//						balanceSnapshot("beneficiaryBefore", "beneficiary")
 				).when(
-						cryptoTransfer(tinyBarsFromTo("sponsor", "beneficiary", 1L))
-								.payingWith(GENESIS)
-								.memo("Hello World!")
+//						cryptoTransfer(tinyBarsFromTo("sponsor", "beneficiary", 1L))
+//								.payingWith(GENESIS)
+//								.memo("Hello World!")
+//								.deferStatusResolution()
 				).then(
-						getAccountBalance("sponsor")
-								.hasTinyBars(changeFromSnapshot("sponsorBefore", -1L)),
-						getAccountBalance("beneficiary")
-								.hasTinyBars(changeFromSnapshot("beneficiaryBefore", +1L))
+//						getAccountBalance("sponsor")
+//								.hasTinyBars(changeFromSnapshot("sponsorBefore", -1L)),
+//						getAccountBalance("beneficiary")
+//								.hasTinyBars(changeFromSnapshot("beneficiaryBefore", +1L))
 				);
 	}
 
