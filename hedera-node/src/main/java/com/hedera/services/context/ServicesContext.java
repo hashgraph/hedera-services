@@ -324,6 +324,7 @@ import com.swirlds.common.AddressBook;
 import com.swirlds.common.Console;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
+import com.swirlds.common.SwirldDualState;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
@@ -471,6 +472,7 @@ public class ServicesContext {
 	private HapiOpCounters opCounters;
 	private AnswerFunctions answerFunctions;
 	private ContractAnswers contractAnswers;
+	private SwirldDualState dualState;
 	private OptionValidator validator;
 	private LedgerValidator ledgerValidator;
 	private TokenController tokenGrpc;
@@ -587,6 +589,14 @@ public class ServicesContext {
 		queryableTokens().set(tokens());
 		queryableTokenAssociations().set(tokenAssociations());
 		queryableSchedules().set(schedules());
+	}
+
+	public SwirldDualState getDualState() {
+		return dualState;
+	}
+
+	public void setDualState(SwirldDualState dualState) {
+		this.dualState = dualState;
 	}
 
 	public void rebuildBackingStoresIfPresent() {
@@ -1545,7 +1555,7 @@ public class ServicesContext {
 
 	public FreezeHandler freeze() {
 		if (freeze == null) {
-			freeze = new FreezeHandler(hfs(), platform(), exchange());
+			freeze = new FreezeHandler(hfs(), platform(), exchange(), this::getDualState);
 		}
 		return freeze;
 	}

@@ -276,6 +276,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			SwirldDualState dualState
 	) {
 		if (isConsensus) {
+			ctx.setDualState(dualState);
 			ctx.logic().incorporateConsensusTxn(transaction, consensusTime, submittingMember);
 		}
 	}

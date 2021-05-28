@@ -65,15 +65,16 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.blob.BinaryObjectStore;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
+import com.swirlds.common.DualState;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
+import com.swirlds.common.SwirldDualState;
 import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
-import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.fcmap.FCMap;
 import org.hamcrest.Matchers;
@@ -686,12 +687,14 @@ class ServicesStateTest {
 	void incorporatesConsensus() {
 		// setup:
 		subject.ctx = ctx;
+		final var mockDual = mock(SwirldDualState.class);
 
 		// when:
-		subject.handleTransaction(1, true, now, now, platformTxn, null);
+		subject.handleTransaction(1, true, now, now, platformTxn, mockDual);
 
 		// then:
 		verify(logic).incorporateConsensusTxn(platformTxn, now, 1);
+		verify(ctx).setDualState(mockDual);
 	}
 
 	@Test

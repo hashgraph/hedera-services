@@ -30,8 +30,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
-import com.swirlds.common.DualState;
 import com.swirlds.common.Platform;
+import com.swirlds.common.SwirldDualState;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,10 +48,15 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.TimeZone;
+import java.util.function.Supplier;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
 import static com.hederahashgraph.builder.RequestBuilder.getTransactionReceipt;
 import static com.swirlds.common.CommonUtils.hex;
+import static java.util.Calendar.HOUR_OF_DAY;
+import static java.util.Calendar.MINUTE;
 
 /**
  * @author Qian
@@ -64,6 +69,7 @@ public class FreezeHandler {
 	private final Platform platform;
 	private final HederaFs hfs;
 	private final HbarCentExchange exchange;
+	private final Supplier<SwirldDualState> dualState;
 
 	private static String TARGET_DIR = "./";
 	private static String TEMP_DIR = "./temp";
@@ -79,43 +85,33 @@ public class FreezeHandler {
 	public FreezeHandler(
 			HederaFs hfs,
 			Platform platform,
-			HbarCentExchange exchange
+			HbarCentExchange exchange,
+			Supplier<SwirldDualState> dualState
 	) {
-
+		this.hfs = hfs;
 		this.exchange = exchange;
 		this.platform = platform;
-		this.hfs = hfs;
+		this.dualState = dualState;
 		LOG_PREFIX = "NETWORK_UPDATE Node " + platform.getSelfId();
 	}
 
 	public TransactionRecord freeze(final TransactionBody transactionBody, final Instant consensusTime) {
 		log.debug("FreezeHandler - Handling FreezeTransaction: {}", transactionBody);
-		FreezeTransactionBody freezeBody = transactionBody.getFreeze();
+		FreezeTransactionBody op = transactionBody.getFreeze();
 		TransactionReceipt receipt;
 		if (transactionBody.getFreeze().hasUpdateFile()) {
 			//save the file ID and will be used after platform goes into maintenance mode
 			updateFeatureFile = transactionBody.getFreeze().getUpdateFile();
 			updateFileHash = transactionBody.getFreeze().getFileHash().toByteArray();
 		}
+		final var naturalFreezeStart = nextNaturalInstant(consensusTime, op.getStartHour(), op.getStartMin());
 		try {
-			/* TODO - invoke DualState#setFreezeTime */
-//			platform.setFreezeTime(
-//					freezeBody.getStartHour(),
-//					freezeBody.getStartMin(),
-//					freezeBody.getEndHour(),
-//					freezeBody.getEndMin());
+			final var dual = dualState.get();
+			dual.setFreezeTime(naturalFreezeStart);
 			receipt = getTransactionReceipt(ResponseCodeEnum.SUCCESS, exchange.activeRates());
-			log.info("Freeze time starts {}:{} end {}:{}", freezeBody.getStartHour(),
-					freezeBody.getStartMin(),
-					freezeBody.getEndHour(),
-					freezeBody.getEndMin());
-		} catch (IllegalArgumentException platformEx) {
-			log.warn("Platform.setFreezeTime rejected args [startHour={},startMin={},endHour={},endMin={}] with '{}'",
-					freezeBody.getStartHour(),
-					freezeBody.getStartMin(),
-					freezeBody.getEndHour(),
-					freezeBody.getEndMin(),
-					platformEx.getMessage());
+			log.info("Dual state freeze time set to {} (now is {})", naturalFreezeStart, consensusTime);
+		} catch (Exception e) {
+			log.warn("Could not set dual state freeze time to {} (now is {})", naturalFreezeStart, consensusTime, e);
 			receipt = getTransactionReceipt(INVALID_FREEZE_TRANSACTION_BODY, exchange.activeRates());
 		}
 
@@ -125,6 +121,23 @@ public class FreezeHandler {
 				transactionBody.getTransactionID(),
 				RequestBuilder.getTimestamp(consensusTime), receipt);
 		return transactionRecord.build();
+	}
+
+	private Instant nextNaturalInstant(Instant now, int nominalHour, int nominalMin) {
+		final int minsSinceMidnightNow = minutesSinceMidnight(now);
+		final int nominalMinsSinceMidnight = nominalHour * 60 + nominalMin;
+		int diffMins = nominalMinsSinceMidnight - minsSinceMidnightNow;
+		if (diffMins < 0) {
+			/* Can't go back in time, so add a day's worth of minutes to hit the nominal time tomorrow */
+			diffMins += 24 * 60;
+		}
+		return now.plusSeconds(diffMins * 60);
+	}
+
+	public int minutesSinceMidnight(Instant now) {
+		final var calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+		calendar.setTimeInMillis(now.getEpochSecond() * 1_000);
+		return calendar.get(HOUR_OF_DAY) * 60 + calendar.get(MINUTE);
 	}
 
 	public void handleUpdateFeature() {

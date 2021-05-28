@@ -71,7 +71,10 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.fcmap.internal.FCMLeaf;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.apache.commons.codec.DecoderException;
@@ -166,7 +169,13 @@ public class SmartContractRequestHandlerStorageTest {
   }
 
   @BeforeEach
-  public void setUp() throws Exception {
+  void setUp() throws Exception {
+    // setup:
+    ConstructableRegistry.registerConstructable(
+            new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
+    ConstructableRegistry.registerConstructable(
+            new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+
     payerAccountId = RequestBuilder.getAccountIdBuild(payerAccount, 0l, 0l);
     nodeAccountId = RequestBuilder.getAccountIdBuild(nodeAccount, 0l, 0l);
     feeCollAccountId = RequestBuilder.getAccountIdBuild(feeCollAccount, 0l, 0l);
