@@ -125,7 +125,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		this.ctx = ctx;
 		this.nodeId = nodeId;
 		if (ctx != null) {
-			System.out.println("New mutable state for node " + nodeId.getId() + " (ctx " + ctx + ") is " + this);
 			ctx.update(this);
 		}
 	}
@@ -277,29 +276,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			SwirldDualState dualState
 	) {
 		if (isConsensus) {
-			try {
-				final var accessor = new PlatformTxnAccessor(transaction);
-				final var lookedUp = CONTEXTS.lookup(0L);
-				System.out.println(
-						"State " + this + " received consensus event " + accessor.getFunction()
-								+ " (looked up " + lookedUp + " vs " + ctx + " ctx)...");
-				if (CONTEXTS.lookup(0L) == ctx) {
-					System.out.println(" -> Got consensus: " + accessor.getTxn());
-				}
-			} catch (InvalidProtocolBufferException e) {
-				e.printStackTrace();
-			}
 			ctx.setDualState(dualState);
 			ctx.logic().incorporateConsensusTxn(transaction, consensusTime, submittingMember);
-		} else {
-			try {
-				final var accessor = new PlatformTxnAccessor(transaction);
-				System.out.println(this + "(ctx=" + ctx + ", nodeId=" + ctx.nodeInfo().selfAccount() + ") got NON-consensus: " + accessor.getTxn());
-			} catch (InvalidProtocolBufferException e) {
-				e.printStackTrace();
-			}
 		}
-
 	}
 
 	@Override

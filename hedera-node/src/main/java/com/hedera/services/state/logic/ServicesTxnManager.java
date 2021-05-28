@@ -21,7 +21,6 @@ package com.hedera.services.state.logic;
  */
 
 import com.hedera.services.context.ServicesContext;
-import com.hedera.services.context.SingletonContextsManager;
 import com.hedera.services.utils.TxnAccessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -63,13 +62,7 @@ public class ServicesTxnManager {
 
 		try {
 			ctx.ledger().begin();
-			if (SingletonContextsManager.CONTEXTS.lookup(0L) == ctx) {
-				System.out.println("Began ledger txn");
-			}
 			ctx.txnCtx().resetFor(accessor, consensusTime, submittingMember);
-			if (SingletonContextsManager.CONTEXTS.lookup(0L) == ctx) {
-				System.out.println("Reset txn ctx");
-			}
 			if (accessor.isTriggeredTxn()) {
 				scopedTriggeredProcessing.run();
 			} else {

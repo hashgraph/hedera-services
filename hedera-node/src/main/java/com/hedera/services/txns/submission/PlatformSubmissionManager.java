@@ -21,7 +21,6 @@ package com.hedera.services.txns.submission;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.context.SingletonContextsManager;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.utils.SignedTxnAccessor;
@@ -58,9 +57,6 @@ public class PlatformSubmissionManager {
 				platform.createTransaction(new SwirldTransaction(accessor.getBackwardCompatibleSignedTxnBytes()));
 		if (success) {
 			recordCache.addPreConsensus(accessor.getTxnId());
-			if (SingletonContextsManager.CONTEXTS.lookup(0L).submissionManager() == this) {
-				System.out.println("Submitted " + accessor.getTxn());
-			}
 			return OK;
 		} else {
 			speedometers.cyclePlatformTxnRejections();
