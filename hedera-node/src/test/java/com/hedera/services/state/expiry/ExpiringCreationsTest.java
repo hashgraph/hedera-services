@@ -70,6 +70,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class ExpiringCreationsTest {
@@ -87,8 +88,6 @@ class ExpiringCreationsTest {
 	private ExpiryManager expiries;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
-	@Mock
-	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 
 	private ExpirableTxnRecord expectedRecord;
 
@@ -126,7 +125,7 @@ class ExpiringCreationsTest {
 
 	@BeforeEach
 	void setup() {
-		subject = new ExpiringCreations(expiries, dynamicProperties, () -> accounts, ctx);
+		subject = new ExpiringCreations(expiries, dynamicProperties, ctx);
 
 		expectedRecord = record;
 		expectedRecord.setExpiry(expectedExpiry);
@@ -164,8 +163,8 @@ class ExpiringCreationsTest {
 		// setup:
 		final var key = MerkleEntityId.fromAccountId(effPayer);
 		final var payerAccount = new MerkleAccount();
-
-		given(accounts.getForModify(key)).willReturn(payerAccount);
+		given(ctx.accounts()).willReturn(mock(FCMap.class));
+		given(ctx.accounts().getForModify(key)).willReturn(payerAccount);
 		given(dynamicProperties.shouldKeepRecordsInState()).willReturn(true);
 		given(dynamicProperties.cacheRecordsTtl()).willReturn(cacheTtl);
 
@@ -175,7 +174,7 @@ class ExpiringCreationsTest {
 		// then:
 		assertEquals(expectedRecord, actual);
 		// and:
-		verify(accounts).replace(key, payerAccount);
+		verify(ctx.accounts()).replace(key, payerAccount);
 		verify(expiries).trackRecordInState(effPayer, expectedExpiry);
 		assertEquals(expectedRecord, payerAccount.records().peek());
 	}

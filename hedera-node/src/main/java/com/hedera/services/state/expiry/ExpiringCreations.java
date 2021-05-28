@@ -61,12 +61,15 @@ public class ExpiringCreations implements EntityCreator {
 	public ExpiringCreations(
 			ExpiryManager expiries,
 			GlobalDynamicProperties dynamicProperties,
-			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			ServicesContext ctx) {
-		this.accounts = accounts;
+		this.accounts = ctx::accounts;
 		this.expiries = expiries;
 		this.dynamicProperties = dynamicProperties;
 		this.ctx = ctx;
+	}
+
+	public Supplier<FCMap<MerkleEntityId, MerkleAccount>> getAccounts(){
+		return accounts;
 	}
 
 	@Override
