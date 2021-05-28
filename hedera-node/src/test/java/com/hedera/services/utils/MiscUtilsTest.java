@@ -228,14 +228,14 @@ import static org.mockito.Mockito.mock;
 
 public class MiscUtilsTest {
 	@Test
-	public void retrievesExpectedStatNames() {
+	void retrievesExpectedStatNames() {
 		// expect:
 		assertEquals(ContractController.CALL_CONTRACT_METRIC, MiscUtils.baseStatNameOf(ContractCall));
 		assertEquals(GetByKey.toString(), baseStatNameOf(GetByKey));
 	}
 
 	@Test
-	public void getsNodeAccounts() {
+	void getsNodeAccounts() {
 		var address = mock(Address.class);
 		given(address.getMemo()).willReturn("0.0.3");
 
@@ -251,32 +251,32 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void asFcKeyUncheckedTranslatesExceptions() {
+	void asFcKeyUncheckedTranslatesExceptions() {
 		// expect:
 		assertThrows(IllegalArgumentException.class,
 				() -> MiscUtils.asFcKeyUnchecked(Key.getDefaultInstance()));
 	}
 
 	@Test
-	public void asFcKeyReturnsEmptyOnUnparseableKey() {
+	void asFcKeyReturnsEmptyOnUnparseableKey() {
 		// expect:
 		assertTrue(asUsableFcKey(Key.getDefaultInstance()).isEmpty());
 	}
 
 	@Test
-	public void asFcKeyReturnsEmptyOnEmptyKey() {
+	void asFcKeyReturnsEmptyOnEmptyKey() {
 		// expect:
 		assertTrue(asUsableFcKey(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build()).isEmpty());
 	}
 
 	@Test
-	public void asFcKeyReturnsEmptyOnInvalidKey() {
+	void asFcKeyReturnsEmptyOnInvalidKey() {
 		// expect:
 		assertTrue(asUsableFcKey(Key.newBuilder().setEd25519(ByteString.copyFrom("1".getBytes())).build()).isEmpty());
 	}
 
 	@Test
-	public void asFcKeyReturnsExpected() {
+	void asFcKeyReturnsExpected() {
 		// given:
 		var key = Key.newBuilder().setEd25519(ByteString.copyFrom(
 				"01234567890123456789012345678901".getBytes())).build();
@@ -288,7 +288,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void asFcKeyUncheckedWorks() {
+	void asFcKeyUncheckedWorks() {
 		// setup:
 		byte[] fakePrivateKey = "not-really-a-key!".getBytes();
 		// and:
@@ -302,7 +302,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void translatesDecoderException() {
+	void translatesDecoderException() {
 		// setup:
 		String tmpLoc = "src/test/resources/PretendKeystore.txt";
 
@@ -316,7 +316,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void recoversKeypair() throws Exception {
+	void recoversKeypair() throws Exception {
 		// setup:
 		String tmpLoc = "src/test/resources/PretendKeystore.txt";
 
@@ -335,7 +335,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void getsCanonicalDiff() {
+	void getsCanonicalDiff() {
 		AccountID a = asAccount("1.2.3");
 		AccountID b = asAccount("2.3.4");
 		AccountID c = asAccount("3.4.5");
@@ -361,7 +361,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void getsCanonicalRepr() {
+	void getsCanonicalRepr() {
 		AccountID a = asAccount("1.2.3");
 		AccountID b = asAccount("2.3.4");
 		AccountID c = asAccount("3.4.5");
@@ -388,7 +388,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void prettyPrintsTransferList() {
+	void prettyPrintsTransferList() {
 		// given:
 		TransferList transfers = withAdjustments(
 				asAccount("0.1.2"), 500L,
@@ -402,7 +402,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void prettyPrintsJTransactionRecordFcll() {
+	void prettyPrintsJTransactionRecordFcll() {
 		// given:
 		LinkedList<ExpirableTxnRecord> records = new LinkedList<>();
 		records.add(fromGprc(
@@ -419,7 +419,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void throwsOnUnexpectedFunctionality() {
+	void throwsOnUnexpectedFunctionality() {
 		// expect:
 		assertThrows(UnknownHederaFunctionality.class, () -> {
 			functionOf(TransactionBody.getDefaultInstance());
@@ -427,7 +427,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsMetadata() {
+	void convertsMetadata() {
 		// setup:
 		long fee = 123L;
 		String memo = "Hi there!";
@@ -445,7 +445,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsContractCall() {
+	void convertsContractCall() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setContractCall(ContractCallTransactionBody.getDefaultInstance())
@@ -459,7 +459,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsContractCreateInstance() {
+	void convertsContractCreateInstance() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setContractCreateInstance(ContractCreateTransactionBody.getDefaultInstance())
@@ -473,7 +473,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsContractUpdateInstance() {
+	void convertsContractUpdateInstance() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setContractUpdateInstance(ContractUpdateTransactionBody.getDefaultInstance())
@@ -487,7 +487,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsContractDeleteInstance() {
+	void convertsContractDeleteInstance() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setContractDeleteInstance(ContractDeleteTransactionBody.getDefaultInstance())
@@ -501,7 +501,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsCryptoCreateAccount() {
+	void convertsCryptoCreateAccount() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance())
@@ -515,7 +515,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsCryptoDelete() {
+	void convertsCryptoDelete() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setCryptoDelete(CryptoDeleteTransactionBody.getDefaultInstance())
@@ -529,7 +529,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsCryptoTransfer() {
+	void convertsCryptoTransfer() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
@@ -543,7 +543,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsCryptoUpdateAccount() {
+	void convertsCryptoUpdateAccount() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setCryptoUpdateAccount(CryptoUpdateTransactionBody.getDefaultInstance())
@@ -557,7 +557,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsFileAppend() {
+	void convertsFileAppend() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setFileAppend(FileAppendTransactionBody.getDefaultInstance())
@@ -571,7 +571,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsFileCreate() {
+	void convertsFileCreate() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setFileCreate(FileCreateTransactionBody.getDefaultInstance())
@@ -585,7 +585,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsFileDelete() {
+	void convertsFileDelete() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setFileDelete(FileDeleteTransactionBody.getDefaultInstance())
@@ -599,7 +599,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsFileUpdate() {
+	void convertsFileUpdate() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setFileUpdate(FileUpdateTransactionBody.getDefaultInstance())
@@ -613,7 +613,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsSystemDelete() {
+	void convertsSystemDelete() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setSystemDelete(SystemDeleteTransactionBody.getDefaultInstance())
@@ -627,7 +627,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsSystemUndelete() {
+	void convertsSystemUndelete() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setSystemUndelete(SystemUndeleteTransactionBody.getDefaultInstance())
@@ -641,7 +641,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsFreeze() {
+	void convertsFreeze() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setFreeze(FreezeTransactionBody.getDefaultInstance())
@@ -655,7 +655,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsConsensusCreateTopic() {
+	void convertsConsensusCreateTopic() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setConsensusCreateTopic(ConsensusCreateTopicTransactionBody.getDefaultInstance())
@@ -669,7 +669,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsConsensusUpdateTopic() {
+	void convertsConsensusUpdateTopic() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setConsensusUpdateTopic(ConsensusUpdateTopicTransactionBody.getDefaultInstance())
@@ -683,7 +683,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsConsensusDeleteTopic() {
+	void convertsConsensusDeleteTopic() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setConsensusDeleteTopic(ConsensusDeleteTopicTransactionBody.getDefaultInstance())
@@ -697,7 +697,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsConsensusSubmitMessage() {
+	void convertsConsensusSubmitMessage() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setConsensusSubmitMessage(ConsensusSubmitMessageTransactionBody.getDefaultInstance())
@@ -711,7 +711,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsTokenCreation() {
+	void convertsTokenCreation() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setTokenCreation(TokenCreateTransactionBody.getDefaultInstance())
@@ -725,7 +725,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsTokenFreeze() {
+	void convertsTokenFreeze() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setTokenFreeze(TokenFreezeAccountTransactionBody.getDefaultInstance())
@@ -739,7 +739,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsTokenUnfreeze() {
+	void convertsTokenUnfreeze() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setTokenUnfreeze(TokenUnfreezeAccountTransactionBody.getDefaultInstance())
@@ -753,7 +753,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsTokenGrantKyc() {
+	void convertsTokenGrantKyc() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setTokenGrantKyc(TokenGrantKycTransactionBody.getDefaultInstance())
@@ -767,7 +767,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsTokenRevokeKyc() {
+	void convertsTokenRevokeKyc() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setTokenRevokeKyc(TokenRevokeKycTransactionBody.getDefaultInstance())
@@ -781,7 +781,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsTokenDeletion() {
+	void convertsTokenDeletion() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setTokenDeletion(TokenDeleteTransactionBody.getDefaultInstance())
@@ -795,7 +795,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsTokenUpdate() {
+	void convertsTokenUpdate() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setTokenUpdate(TokenUpdateTransactionBody.getDefaultInstance())
@@ -809,7 +809,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsTokenMint() {
+	void convertsTokenMint() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setTokenMint(TokenMintTransactionBody.getDefaultInstance())
@@ -823,7 +823,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsTokenBurn() {
+	void convertsTokenBurn() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setTokenBurn(TokenBurnTransactionBody.getDefaultInstance())
@@ -837,7 +837,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsTokenWipe() {
+	void convertsTokenWipe() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setTokenWipe(TokenWipeAccountTransactionBody.getDefaultInstance())
@@ -851,7 +851,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsTokenAssociate() {
+	void convertsTokenAssociate() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setTokenAssociate(TokenAssociateTransactionBody.getDefaultInstance())
@@ -865,7 +865,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsTokenDissociate() {
+	void convertsTokenDissociate() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setTokenDissociate(TokenDissociateTransactionBody.getDefaultInstance())
@@ -879,7 +879,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void convertsScheduleDelete() {
+	void convertsScheduleDelete() {
 		// setup:
 		var scheduledTxn = SchedulableTransactionBody.newBuilder()
 				.setScheduleDelete(ScheduleDeleteTransactionBody.getDefaultInstance())
@@ -893,7 +893,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void getExpectedTxnStat() {
+	void getExpectedTxnStat() {
 		Map<String, BodySetter<? extends GeneratedMessageV3>> setters = new HashMap<>() {{
 			put(CryptoController.CRYPTO_CREATE_METRIC, new BodySetter<>(CryptoCreateTransactionBody.class));
 			put(CryptoController.CRYPTO_UPDATE_METRIC, new BodySetter<>(CryptoUpdateTransactionBody.class));
@@ -944,13 +944,13 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void recognizesMissingQueryCase() {
+	void recognizesMissingQueryCase() {
 		// expect:
 		assertTrue(functionalityOfQuery(Query.getDefaultInstance()).isEmpty());
 	}
 
 	@Test
-	public void getsExpectedQueryFunctionality() {
+	void getsExpectedQueryFunctionality() {
 		// setup:
 		Map<HederaFunctionality, BodySetter<? extends GeneratedMessageV3>> setters = new HashMap<>() {{
 			put(GetVersionInfo, new BodySetter<>(NetworkGetVersionInfoQuery.class));
@@ -982,7 +982,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void worksForGetTokenInfo() {
+	void worksForGetTokenInfo() {
 		var op = TokenGetInfoQuery.newBuilder()
 				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
 		var query = Query.newBuilder()
@@ -992,7 +992,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void worksForGetScheduleInfo() {
+	void worksForGetScheduleInfo() {
 		var op = ScheduleGetInfoQuery.newBuilder()
 				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
 		var query = Query.newBuilder()
@@ -1002,7 +1002,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void worksForGetVersionInfo() {
+	void worksForGetVersionInfo() {
 		var op = NetworkGetVersionInfoQuery.newBuilder()
 				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
 		var query = Query.newBuilder()
@@ -1012,7 +1012,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void worksForGetTopicInfo() {
+	void worksForGetTopicInfo() {
 		var op = ConsensusGetTopicInfoQuery.newBuilder()
 				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
 		var query = Query.newBuilder()
@@ -1022,7 +1022,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void worksForGetSolidityId() {
+	void worksForGetSolidityId() {
 		var op = GetBySolidityIDQuery.newBuilder()
 				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
 		var query = Query.newBuilder()
@@ -1032,7 +1032,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void worksForGetContractCallLocal() {
+	void worksForGetContractCallLocal() {
 		var op = ContractCallLocalQuery.newBuilder()
 				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
 		var query = Query.newBuilder()
@@ -1042,7 +1042,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void worksForGetContractInfo() {
+	void worksForGetContractInfo() {
 		var op = ContractGetInfoQuery.newBuilder()
 				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
 		var query = Query.newBuilder()
@@ -1052,7 +1052,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void worksForGetContractBytecode() {
+	void worksForGetContractBytecode() {
 		var op = ContractGetBytecodeQuery.newBuilder()
 				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
 		var query = Query.newBuilder()
@@ -1062,7 +1062,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void worksForGetContractRecords() {
+	void worksForGetContractRecords() {
 		var op = ContractGetRecordsQuery.newBuilder()
 				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
 		var query = Query.newBuilder()
@@ -1072,7 +1072,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void worksForGetCryptoBalance() {
+	void worksForGetCryptoBalance() {
 		var op = CryptoGetAccountBalanceQuery.newBuilder()
 				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
 		var query = Query.newBuilder()
@@ -1082,7 +1082,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void worksForGetCryptoRecords() {
+	void worksForGetCryptoRecords() {
 		var op = CryptoGetAccountRecordsQuery.newBuilder()
 				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
 		var query = Query.newBuilder()
@@ -1092,7 +1092,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void worksForGetCryptoInfo() {
+	void worksForGetCryptoInfo() {
 		var op = CryptoGetInfoQuery.newBuilder()
 				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
 		var query = Query.newBuilder()
@@ -1102,7 +1102,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void worksForGetLiveHash() {
+	void worksForGetLiveHash() {
 		var op = CryptoGetLiveHashQuery.newBuilder()
 				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
 		var query = Query.newBuilder()
@@ -1112,7 +1112,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void worksForGetFileContents() {
+	void worksForGetFileContents() {
 		var op = FileGetContentsQuery.newBuilder()
 				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
 		var query = Query.newBuilder()
@@ -1122,7 +1122,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void worksForGetFileinfo() {
+	void worksForGetFileinfo() {
 		var op = FileGetInfoQuery.newBuilder()
 				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
 		var query = Query.newBuilder()
@@ -1132,7 +1132,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void worksForReceipt() {
+	void worksForReceipt() {
 		var op = TransactionGetReceiptQuery.newBuilder()
 				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
 		var query = Query.newBuilder()
@@ -1142,7 +1142,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void worksForRecord() {
+	void worksForRecord() {
 		var op = TransactionGetRecordQuery.newBuilder()
 				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
 		var query = Query.newBuilder()
@@ -1152,12 +1152,12 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void worksForEmpty() {
+	void worksForEmpty() {
 		assertTrue(activeHeaderFrom(Query.getDefaultInstance()).isEmpty());
 	}
 
 	@Test
-	public void worksForFastRecord() {
+	void worksForFastRecord() {
 		var op = TransactionGetFastRecordQuery.newBuilder()
 				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
 		var query = Query.newBuilder()
@@ -1167,7 +1167,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void getsExpectedTxnFunctionality() {
+	void getsExpectedTxnFunctionality() {
 		// setup:
 		Map<HederaFunctionality, BodySetter<? extends GeneratedMessageV3>> setters = new HashMap<>() {{
 			put(SystemDelete, new BodySetter<>(SystemDeleteTransactionBody.class));
@@ -1222,7 +1222,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void hashCorrectly() throws IllegalArgumentException {
+	void hashCorrectly() throws IllegalArgumentException {
 		byte[] testBytes = "test bytes".getBytes();
 		byte[] expectedHash = com.swirlds.common.CommonUtils.unhex(
 				"2ddb907ecf9a8c086521063d6d310d46259437770587b3dbe2814ab17962a4e124a825fdd02cb167ac9fffdd4a5e8120"
@@ -1237,7 +1237,7 @@ public class MiscUtilsTest {
 	}
 
 	@Test
-	public void asTimestampTest() {
+	void asTimestampTest() {
 		final Instant instant = Instant.now();
 		final Timestamp timestamp = MiscUtils.asTimestamp(instant);
 		assertEquals(instant, MiscUtils.timestampToInstant(timestamp));
@@ -1250,7 +1250,7 @@ public class MiscUtilsTest {
 			this.type = type;
 		}
 
-		public void setDefaultInstanceOnQuery(Query.Builder query) {
+		void setDefaultInstanceOnQuery(Query.Builder query) {
 			try {
 				Method setter = Stream.of(Query.Builder.class.getDeclaredMethods())
 						.filter(m -> m.getName().startsWith("set") && m.getParameterTypes()[0].equals(type))
@@ -1264,7 +1264,7 @@ public class MiscUtilsTest {
 			}
 		}
 
-		public void setDefaultInstanceOnTxn(TransactionBody.Builder txn) {
+		void setDefaultInstanceOnTxn(TransactionBody.Builder txn) {
 			try {
 				Method setter = Stream.of(TransactionBody.Builder.class.getDeclaredMethods())
 						.filter(m -> m.getName().startsWith("set") && m.getParameterTypes()[0].equals(type))

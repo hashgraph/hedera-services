@@ -180,7 +180,7 @@ public class SmartContractRequestHandler {
 		}
 		String contractByteCodeString = new String(contractByteCode);
 		if (createContract.getConstructorParameters() != null && !createContract.getConstructorParameters().isEmpty()) {
-			String constructorParamsHexString = CommonUtils.hex(
+			final var constructorParamsHexString = CommonUtils.hex(
 					createContract.getConstructorParameters().toByteArray());
 			contractByteCodeString += constructorParamsHexString;
 		}

@@ -132,7 +132,9 @@ public class MerkleScheduleTest {
 	@Test
 	public void factoryTranslatesImpossibleParseError() {
 		// expect:
-		assertThrows(IllegalArgumentException.class, () -> MerkleSchedule.from("NONSENSE".getBytes(), 0L));
+		final var iae = assertThrows(IllegalArgumentException.class,
+				() -> MerkleSchedule.from("NONSENSE".getBytes(), 0L));
+		assertEquals("Argument bodyBytes=0x4e4f4e53454e5345 was not a TransactionBody!", iae.getMessage());
 	}
 
 	@Test
