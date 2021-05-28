@@ -20,16 +20,32 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.fees.charging.ItemizableFeeCharging;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.serdes.DomainSerdesTest;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
+import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
+import javafx.util.Pair;
+import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,8 +53,20 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+
 import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
+import static com.hedera.services.utils.MiscUtils.asTimestamp;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asToken;
+import static com.hedera.test.utils.TxnUtils.withAdjustments;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
@@ -69,6 +97,33 @@ class ExpiringCreationsTest {
 	@Mock
 	private ServicesContext ctx;
 
+	@Mock
+	private ItemizableFeeCharging itemizableFeeCharging;
+	@Mock
+	private HederaLedger ledger;
+	@Mock
+	private TransactionBody txn;
+	@Mock
+	private TxnAccessor accessor;
+
+	private final AccountID payer = asAccount("0.0.2");
+	private final AccountID created = asAccount("1.0.2");
+	private final AccountID another = asAccount("1.0.300");
+	private final TransferList transfers = withAdjustments(payer, -2L, created, 1L, another, 1L);
+	private final TokenID tokenCreated = asToken("3.0.2");
+	private final TokenTransferList tokenTransfers = TokenTransferList.newBuilder()
+			.setToken(tokenCreated)
+			.addAllTransfers(withAdjustments(payer, -2L, created, 1L, another, 1L).getAccountAmountsList())
+			.build();
+
+	private static final String memo = "TEST_MEMO";
+	private static final String hashString = "TEST";
+	private static final long scheduleNum = 100L;
+	private static final String account = "0.0.10001";
+	private final TransactionReceipt receipt = TransactionReceipt.newBuilder().setStatus(SUCCESS).build();
+	private final Instant timestamp = Instant.now();
+	private final ByteString hash = ByteString.copyFrom(hashString.getBytes(StandardCharsets.UTF_8));
+
 	@BeforeEach
 	void setup() {
 		subject = new ExpiringCreations(expiries, dynamicProperties, () -> accounts, ctx);
@@ -80,13 +135,21 @@ class ExpiringCreationsTest {
 		subject.setRecordCache(recordCache);
 	}
 
+	void setUpForExpiringRecordBuilder(){
+		given(accessor.getTxnId()).willReturn(TransactionID.newBuilder().setAccountID(asAccount(account)).build());
+		given(accessor.getTxn()).willReturn(txn);
+		given(accessor.getTxn().getMemo()).willReturn(memo);
+		given(accessor.isTriggeredTxn()).willReturn(true);
+		given(accessor.getScheduleRef()).willReturn(ScheduleID.newBuilder().setScheduleNum(scheduleNum).build());
+	}
+
 	@Test
 	void ifNotCreatingStatePayerRecordsDirectlyTracksWithCache() {
 		given(dynamicProperties.shouldKeepRecordsInState()).willReturn(false);
 		given(dynamicProperties.cacheRecordsTtl()).willReturn(cacheTtl);
 
 		// when:
-		var actual = subject.saveExpiringRecord(effPayer, record, now, submittingMember);;
+		var actual = subject.saveExpiringRecord(effPayer, record, now, submittingMember);
 
 		// then:
 		verify(recordCache).trackForExpiry(expectedRecord);
@@ -107,7 +170,7 @@ class ExpiringCreationsTest {
 		given(dynamicProperties.cacheRecordsTtl()).willReturn(cacheTtl);
 
 		// when:
-		var actual = subject.saveExpiringRecord(effPayer, record, now, submittingMember);;
+		var actual = subject.saveExpiringRecord(effPayer, record, now, submittingMember);
 
 		// then:
 		assertEquals(expectedRecord, actual);
@@ -128,5 +191,86 @@ class ExpiringCreationsTest {
 						0L, null, null, null, null));
 		Assertions.assertThrows(UnsupportedOperationException.class, () ->
 				NOOP_EXPIRING_CREATIONS.buildFailedExpiringRecord(null, null));
+	}
+
+	@Test
+	void validateBuildExpiringRecord() {
+		//given:
+		setUpForExpiringRecordBuilder();
+		given(ctx.charging()).willReturn(itemizableFeeCharging);
+		given(ctx.charging().totalFeesChargedToPayer()).willReturn(10L);
+
+		given(ctx.ledger()).willReturn(ledger);
+		given(ctx.ledger().netTransfersInTxn()).willReturn(transfers);
+		given(ctx.ledger().netTokenTransfersInTxn()).willReturn(List.of(tokenTransfers));
+
+		//when:
+		ExpirableTxnRecord.Builder builder =
+				subject.buildExpiringRecord(100L, hash,
+						accessor, asTimestamp(timestamp), receipt);
+		ExpirableTxnRecord actualRecord = builder.build();
+
+		//then:
+		assertEquals(memo, actualRecord.getMemo());
+		assertEquals(SUCCESS, ResponseCodeEnum.valueOf(actualRecord.getReceipt().getStatus()));
+		assertEquals(scheduleNum, actualRecord.getScheduleRef().num());
+		assertEquals(timestamp.getEpochSecond(), actualRecord.getConsensusTimestamp().getSeconds());
+		assertEquals(timestamp.getNano(), actualRecord.getConsensusTimestamp().getNanos());
+		assertEquals(asAccount(account).getAccountNum(), actualRecord.getTxnId().getPayerAccount().num());
+		assertEquals(Hex.encodeHexString(ByteString.copyFrom(hashString.getBytes(StandardCharsets.UTF_8)).toByteArray()),
+				Hex.encodeHexString(actualRecord.getTxnHash()));
+		assertEquals(110L, actualRecord.getFee());
+		//and:
+		List<CurrencyAdjustments> tokenTransferListExpected = getTokenAdjustments(List.of(tokenTransfers)).getValue();
+		List<EntityId> tokensExpected = getTokenAdjustments(List.of(tokenTransfers)).getKey();
+
+		//verify:
+
+		assertEquals(tokenTransferListExpected.size(), actualRecord.getTokenAdjustments().size());
+		assertEquals(tokensExpected.size(), actualRecord.getTokens().size());
+		for(int i = 0; i< tokensExpected.size(); i++){
+			assertEquals(tokensExpected.get(i), actualRecord.getTokens().get(i));
+		}
+		for(int i = 0; i< tokenTransferListExpected.size(); i++){
+			assertEquals(tokenTransferListExpected.get(i), actualRecord.getTokenAdjustments().get(i));
+		}
+	}
+
+	@Test
+	void validateBuildFailedExpiringRecord() {
+		//given:
+		setUpForExpiringRecordBuilder();
+		given(accessor.getHash()).willReturn(hash);
+		//when:
+		ExpirableTxnRecord.Builder builder =
+				subject.buildFailedExpiringRecord(accessor, timestamp);
+		ExpirableTxnRecord actualRecord = builder.build();
+
+		//then:
+		assertEquals(memo, actualRecord.getMemo());
+		assertEquals(FAIL_INVALID, ResponseCodeEnum.valueOf(actualRecord.getReceipt().getStatus()));
+		assertEquals(scheduleNum, actualRecord.getScheduleRef().num());
+		assertEquals(timestamp.getEpochSecond(), actualRecord.getConsensusTimestamp().getSeconds());
+		assertEquals(timestamp.getNano(), actualRecord.getConsensusTimestamp().getNanos());
+		assertEquals(asAccount(account).getAccountNum(), actualRecord.getTxnId().getPayerAccount().num());
+		assertEquals(Hex.encodeHexString(ByteString.copyFrom(hashString.getBytes(StandardCharsets.UTF_8)).toByteArray()),
+				Hex.encodeHexString(actualRecord.getTxnHash()));
+		assertEquals(0L, actualRecord.getFee());
+		//and:
+		assertNull(actualRecord.getTokenAdjustments());
+		assertNull(actualRecord.getTokens());
+	}
+
+	private Pair<List<EntityId>, List<CurrencyAdjustments>> getTokenAdjustments(
+			List<TokenTransferList> tokenTransferList) {
+		List<EntityId> tokens = new ArrayList<>();
+		List<CurrencyAdjustments> tokenAdjustments = new ArrayList<>();
+		if (tokenTransferList.size() > 0) {
+			for (TokenTransferList tokenTransfers : tokenTransferList) {
+				tokens.add(EntityId.fromGrpcTokenId(tokenTransfers.getToken()));
+				tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList()));
+			}
+		}
+		return new Pair<>(tokens, tokenAdjustments);
 	}
 }
