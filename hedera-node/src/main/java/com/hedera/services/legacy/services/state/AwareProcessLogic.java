@@ -84,9 +84,12 @@ public class AwareProcessLogic implements ProcessLogic {
 	}
 
 	@Override
-	public void incorporateConsensusTxn(Transaction platformTxn,
-										PlatformTxnAccessor accessor,
-										Instant consensusTime, long submittingMember) throws NullPointerException{
+	public void incorporateConsensusTxn(
+			Transaction platformTxn,
+			PlatformTxnAccessor accessor,
+			Instant consensusTime,
+			long submittingMember
+	) throws NullPointerException {
 		if (accessor == null) {
 			throw new NullPointerException("The PlatformTxnAccessor is not defined.");
 		}
