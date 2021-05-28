@@ -28,7 +28,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import static org.apache.commons.codec.binary.Hex.encodeHexString;
+import com.swirlds.common.CommonUtils;
 
 public class MetadataMapFactory {
 	private static final Logger log = LogManager.getLogger(MetadataMapFactory.class);
@@ -72,7 +72,7 @@ public class MetadataMapFactory {
 		try {
 			return (bytes == null) ? null : HFileMeta.deserialize(bytes);
 		} catch (Exception internal) {
-			log.warn("Argument 'bytes={}' was not a serialized HFileMeta!", encodeHexString(bytes));
+			log.warn("Argument 'bytes={}' was not a serialized HFileMeta!", CommonUtils.hex(bytes));
 			throw new IllegalArgumentException(internal);
 		}
 	}

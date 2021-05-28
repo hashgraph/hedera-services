@@ -33,10 +33,10 @@ import com.hederahashgraph.api.proto.java.FileGetInfoResponse.FileInfo;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -175,7 +175,7 @@ public class HFileMetaSerdeTest {
 
 		// given:
 		var expInfo = toGrpc(known, fid, 1024);
-		byte[] legacyRepr = Hex.decodeHex(hexedLegacyKnown);
+		byte[] legacyRepr = CommonUtils.unhex(hexedLegacyKnown);
 
 		// when:
 		var replica = deserialize(new DataInputStream(new ByteArrayInputStream(legacyRepr)));

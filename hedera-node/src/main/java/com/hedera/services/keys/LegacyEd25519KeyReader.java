@@ -21,8 +21,6 @@ package com.hedera.services.keys;
  */
 
 import com.hedera.services.legacy.core.AccountKeyListObj;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.ByteArrayInputStream;
 import java.io.ObjectInput;
@@ -34,8 +32,6 @@ import java.util.List;
 import java.util.Map;
 
 public class LegacyEd25519KeyReader {
-	private static final Logger log = LogManager.getLogger(LegacyEd25519KeyReader.class);
-
 	public String hexedABytesFrom(String b64EncodedKeyPairLoc, String keyPairId) {
 		try {
 			var b64Encoded = Files.readString(Paths.get(b64EncodedKeyPairLoc));

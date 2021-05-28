@@ -39,7 +39,7 @@ import com.swirlds.common.FCMValue;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
-import org.apache.commons.codec.binary.Hex;
+import com.swirlds.common.CommonUtils;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -181,7 +181,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 				.add("payer", readablePayer())
 				.add("schedulingAccount", schedulingAccount)
 				.add("schedulingTXValidStart", schedulingTXValidStart)
-				.add("signatories", signatories.stream().map(Hex::encodeHexString).collect(toList()))
+				.add("signatories", signatories.stream().map(CommonUtils::hex).collect(toList()))
 				.add("adminKey", describe(adminKey));
 		if (resolutionTime != null) {
 			helper.add("resolutionTime", resolutionTime);
@@ -395,7 +395,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 			schedulingTXValidStart = RichInstant.fromGrpc(parentTxn.getTransactionID().getTransactionValidStart());
 		} catch (InvalidProtocolBufferException e) {
 			throw new IllegalArgumentException(String.format(
-					"Argument bodyBytes=0x%s was not a TransactionBody!", Hex.encodeHexString(bodyBytes)));
+					"Argument bodyBytes=0x%s was not a TransactionBody!", CommonUtils.hex(bodyBytes)));
 		}
 	}
 }

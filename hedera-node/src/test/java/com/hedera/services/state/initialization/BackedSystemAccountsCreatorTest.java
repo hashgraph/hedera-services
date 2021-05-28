@@ -32,7 +32,6 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -42,6 +41,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
+import com.swirlds.common.CommonUtils;
 import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -87,11 +87,11 @@ class BackedSystemAccountsCreatorTest {
 	private BackedSystemAccountsCreator subject;
 
 	@BeforeEach
-	public void setup() throws DecoderException, NegativeAccountBalanceException {
+	public void setup() throws DecoderException, NegativeAccountBalanceException, IllegalArgumentException {
 		genesisKey = JKey.mapKey(Key.newBuilder()
 				.setKeyList(KeyList.newBuilder()
 						.addKeys(Key.newBuilder()
-										.setEd25519(ByteString.copyFrom(MiscUtils.commonsHexToBytes(hexedABytes)))
+										.setEd25519(ByteString.copyFrom(CommonUtils.unhex(hexedABytes)))
 						)).build());
 
 		hederaNums = mock(HederaNumbers.class);

@@ -37,9 +37,9 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.AddressBook;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 
 import java.math.BigInteger;
 import java.time.Instant;
@@ -331,8 +331,8 @@ public class MiscUtils {
 
 	public static JKey lookupInCustomStore(LegacyEd25519KeyReader b64Reader, String storeLoc, String kpId) {
 		try {
-			return new JEd25519Key(commonsHexToBytes(b64Reader.hexedABytesFrom(storeLoc, kpId)));
-		} catch (DecoderException e) {
+			return new JEd25519Key(CommonUtils.unhex(b64Reader.hexedABytesFrom(storeLoc, kpId)));
+		} catch (IllegalArgumentException e) {
 			var msg = String.format("Arguments 'storeLoc=%s' and 'kpId=%s' did not denote a valid key!", storeLoc, kpId);
 			throw new IllegalArgumentException(msg, e);
 		}
@@ -520,14 +520,6 @@ public class MiscUtils {
 
 	public static Optional<HederaFunctionality> functionalityOfQuery(Query query) {
 		return Optional.ofNullable(queryFunctions.get(query.getQueryCase()));
-	}
-
-	public static String commonsBytesToHex(byte[] data) {
-		return Hex.encodeHexString(data);
-	}
-
-	public static byte[] commonsHexToBytes(String literal) throws DecoderException {
-		return Hex.decodeHex(literal);
 	}
 
 	public static String describe(JKey k) {
