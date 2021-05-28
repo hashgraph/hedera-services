@@ -21,7 +21,7 @@ package com.hedera.services;
  */
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.PropertySources;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
@@ -127,6 +127,8 @@ import static org.mockito.Mockito.times;
 
 @ExtendWith(LogCaptureExtension.class)
 class ServicesStateTest {
+	final private AccountID nodeAccount = IdUtils.asAccount("0.0.3");
+
 	Consumer<MerkleNode> mockDigest;
 	Supplier<BinaryObjectStore> mockBlobStoreSupplier;
 	BinaryObjectStore blobStore;
@@ -163,7 +165,7 @@ class ServicesStateTest {
 	SequenceNumber seqNo;
 	MerkleNetworkContext networkCtx;
 	MerkleNetworkContext networkCtxCopy;
-	NodeId self = new NodeId(false, 1);
+	NodeId self = new NodeId(false, 0);
 	SerializableDataInputStream in;
 	SerializableDataOutputStream out;
 	SystemExits systemExits;
@@ -199,7 +201,7 @@ class ServicesStateTest {
 		bookCopy = mock(AddressBook.class);
 		book = mock(AddressBook.class);
 		given(book.copy()).willReturn(bookCopy);
-		given(book.getAddress(1)).willReturn(address);
+		given(book.getAddress(0)).willReturn(address);
 		given(book.getSize()).willReturn(1);
 
 		logic = mock(ProcessLogic.class);
@@ -290,7 +292,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	public void hasExpectedMinChildCounts() {
+	void hasExpectedMinChildCounts() {
 		// given:
 		subject = new ServicesState(ctx, self, Collections.emptyList());
 		// and:
@@ -314,7 +316,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	public void fullArgsConstructorUpdatesContext() {
+	void fullArgsConstructorUpdatesContext() {
 		// when:
 		subject = new ServicesState(ctx, self, Collections.emptyList());
 
@@ -323,7 +325,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	public void getsNodeAccount() {
+	void getsNodeAccount() {
 		// setup:
 		subject.nodeId = self;
 		subject.setChild(ServicesState.ChildIndices.ADDRESS_BOOK, book);
@@ -332,11 +334,14 @@ class ServicesStateTest {
 		AccountID actual = subject.getNodeAccountId();
 
 		// then:
-		assertEquals(IdUtils.asAccount("0.0.3"), actual);
+		assertEquals(nodeAccount, actual);
 	}
 
 	@Test
-	public void initsWithoutMerkleAsExpected() {
+	void initsWithoutMerkleAsExpected() {
+
+		given(book.getSize()).willReturn(1);
+
 		// when:
 		subject.init(platform, book);
 
@@ -362,14 +367,16 @@ class ServicesStateTest {
 	}
 
 	@Test
-	public void initializesFullContextIfBlobStoreReady() {
+	void initializesFullContextIfBlobStoreReady() {
 		// setup:
 		var throttling = mock(FunctionalityThrottling.class);
+		var nodeInfo = mock(NodeInfo.class);
 
 		InOrder inOrder = inOrder(ctx, txnHistories, historian, networkCtxManager, expiryManager, networkCtx);
 
 		given(ctx.handleThrottling()).willReturn(throttling);
-		given(ctx.nodeAccount()).willReturn(AccountID.getDefaultInstance());
+		given(ctx.nodeInfo()).willReturn(nodeInfo);
+		given(nodeInfo.selfAccount()).willReturn(AccountID.getDefaultInstance());
 		// and:
 		CONTEXTS.store(ctx);
 
@@ -390,11 +397,10 @@ class ServicesStateTest {
 	}
 
 	@Test
-	public void doesntInitializeFilesIfStoreStillInitializing() {
+	void doesntInitializeFilesIfStoreStillInitializing() {
 		InOrder inOrder = inOrder(ctx, txnHistories, historian, networkCtxManager);
 
 		given(blobStore.isInitializing()).willReturn(true);
-		given(ctx.nodeAccount()).willReturn(AccountID.getDefaultInstance());
 		// and:
 		CONTEXTS.store(ctx);
 
@@ -409,7 +415,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	public void catchesNonProtoExceptionInExpandSigs() {
+	void catchesNonProtoExceptionInExpandSigs() {
 		// setup:
 		var platformTxn = mock(Transaction.class);
 
@@ -424,7 +430,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	public void catchesProtobufParseException() {
+	void catchesProtobufParseException() {
 		// setup:
 		var platformTxn = mock(Transaction.class);
 
@@ -435,9 +441,11 @@ class ServicesStateTest {
 	}
 
 	@Test
-	public void invokesMigrationsAsApropos() {
+	void invokesMigrationsAsApropos() {
 		// setup:
-		given(ctx.nodeAccount()).willReturn(IdUtils.asAccount("0.0.3"));
+		var nodeInfo = mock(NodeInfo.class);
+		given(ctx.nodeInfo()).willReturn(nodeInfo);
+		given(nodeInfo.selfAccount()).willReturn(nodeAccount);
 		CONTEXTS.store(ctx);
 		// and:
 		subject.skipDiskFsHashCheck = true;
@@ -469,9 +477,11 @@ class ServicesStateTest {
 	}
 
 	@Test
-	public void justWarnOnFailedDiskFsMigration() {
+	void justWarnOnFailedDiskFsMigration() {
 		// setup:
-		given(ctx.nodeAccount()).willReturn(IdUtils.asAccount("0.0.3"));
+		var nodeInfo = mock(NodeInfo.class);
+		given(ctx.nodeInfo()).willReturn(nodeInfo);
+		given(nodeInfo.selfAccount()).willReturn(nodeAccount);
 		willThrow(UncheckedIOException.class).given(diskFs).migrateLegacyDiskFsFromV13LocFor(
 				MerkleDiskFs.DISK_FS_ROOT_DIR, "0.0.3");
 		CONTEXTS.store(ctx);
@@ -501,9 +511,11 @@ class ServicesStateTest {
 	}
 
 	@Test
-	public void logsNonNullHashesFromSavedState() {
+	void logsNonNullHashesFromSavedState() {
 		// setup:
-		given(ctx.nodeAccount()).willReturn(AccountID.getDefaultInstance());
+		var nodeInfo = mock(NodeInfo.class);
+		given(ctx.nodeInfo()).willReturn(nodeInfo);
+		given(nodeInfo.selfAccount()).willReturn(nodeAccount);
 		CONTEXTS.store(ctx);
 
 		// and:
@@ -542,14 +554,14 @@ class ServicesStateTest {
 		assertThat(
 				logCaptor.infoLogs(),
 				contains(
-						equalTo("Init called on Services node 1 WITH Merkle saved state"),
+						equalTo("Init called on Services node 0 WITH Merkle saved state"),
 						startsWith("[SwirldState Hashes]"),
 						startsWith("Mock for MerkleNetworkContext"),
-						equalTo("--> Context initialized accordingly on Services node 1")));
+						equalTo("--> Context initialized accordingly on Services node 0")));
 	}
 
 	@Test
-	public void hashesPrintedAsExpected() {
+	void hashesPrintedAsExpected() {
 		// setup:
 		Hash ctxHash = new Hash("sdfysdfysdfysdfysdfysdfysdfysdfysdfysdfysdfysdfy".getBytes());
 		Hash bookHash = new Hash("sdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfzsdfz".getBytes());
@@ -631,7 +643,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	public void fastCopyCopiesPrimitives() {
+	void fastCopyCopiesPrimitives() {
 		// setup:
 		subject.setChild(ServicesState.ChildIndices.TOPICS, topics);
 		subject.setChild(ServicesState.ChildIndices.STORAGE, storage);
@@ -666,19 +678,19 @@ class ServicesStateTest {
 	}
 
 	@Test
-	public void noMoreIsANoop() {
+	void noMoreIsANoop() {
 		// expect:
 		assertDoesNotThrow(() -> subject.noMoreTransactions());
 	}
 
 	@Test
-	public void sanityChecks() {
+	void sanityChecks() {
 		assertEquals(ServicesState.MERKLE_VERSION, subject.getVersion());
 		assertEquals(ServicesState.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 
 	@Test
-	public void deleteCascadesToAllFcms() {
+	void deleteCascadesToAllFcms() {
 		// setup:
 		subject.setChild(ServicesState.ChildIndices.STORAGE, storage);
 		subject.setChild(ServicesState.ChildIndices.TOPICS, topics);
@@ -700,7 +712,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	public void implementsBookCopy() {
+	void implementsBookCopy() {
 		// setup:
 		subject.setChild(ServicesState.ChildIndices.ADDRESS_BOOK, book);
 
@@ -712,7 +724,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	public void doesNothingIfNotConsensus() {
+	void doesNothingIfNotConsensus() {
 		// setup:
 		subject.ctx = ctx;
 
@@ -724,7 +736,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	public void incorporatesConsensus() {
+	void incorporatesConsensus() {
 		// setup:
 		subject.ctx = ctx;
 
@@ -736,7 +748,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	public void expandsSigs() {
+	void expandsSigs() {
 		// setup:
 		ByteString mockPk = ByteString.copyFrom("not-a-real-pkPrefix".getBytes());
 		ByteString mockSig = ByteString.copyFrom("not-a-real-sig".getBytes());
@@ -770,7 +782,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	public void expandsSigsWithSignedTransactionBytes() throws InvalidProtocolBufferException {
+	void expandsSigsWithSignedTransactionBytes() {
 		// setup:
 		ByteString mockPk = ByteString.copyFrom("not-a-real-pkPrefix".getBytes());
 		ByteString mockSig = ByteString.copyFrom("not-a-real-sig".getBytes());
@@ -805,7 +817,7 @@ class ServicesStateTest {
 	}
 
 	@AfterEach
-	public void cleanup() {
+	void cleanup() {
 		CONTEXTS.clear();
 		ServicesState.blobStoreSupplier = BinaryObjectStore::getInstance;
 	}

@@ -675,10 +675,9 @@ class HfsSystemFilesManagerTest {
 
 	private void setNodeAccountIfAvailforAddressBook(Address entry, NodeAddress.Builder builder) {
 		try {
-			var id = EntityIdUtils.accountParsedFromString(entry.getMemo());
+			var id = EntityIdUtils.parseAccount(entry.getMemo());
 			builder.setNodeAccountId(id);
-		} catch (Exception ignore) {
-		}
+		} catch (Exception ignore) { }
 	}
 
 	private ExchangeRateSet expectedDefaultRates() {

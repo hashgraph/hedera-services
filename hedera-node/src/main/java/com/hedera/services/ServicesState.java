@@ -66,7 +66,7 @@ import java.util.function.Supplier;
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
-import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
+import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 
 public class ServicesState extends AbstractNaryMerkleInternal implements SwirldState.SwirldState2 {
@@ -248,7 +248,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				try {
 					restoredDiskFs.migrateLegacyDiskFsFromV13LocFor(
 							MerkleDiskFs.DISK_FS_ROOT_DIR,
-							asLiteralString(ctx.nodeAccount()));
+							asLiteralString(ctx.nodeInfo().selfAccount()));
 				} catch (UncheckedIOException expectedNonFatal) {
 					log.warn("Legacy diskFs directory not migrated, was it missing?", expectedNonFatal);
 				}
@@ -355,7 +355,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	public AccountID getNodeAccountId() {
 		var address = addressBook().getAddress(nodeId.getId());
 		var memo = address.getMemo();
-		return accountParsedFromString(memo);
+		return parseAccount(memo);
 	}
 
 	public void logSummary() {

@@ -91,7 +91,7 @@ import static com.hedera.services.grpc.controllers.NetworkController.UNCHECKED_S
 import static com.hedera.services.legacy.core.jproto.JKey.mapJKey;
 import static com.hedera.services.stats.ServicesStatsConfig.SYSTEM_DELETE_METRIC;
 import static com.hedera.services.stats.ServicesStatsConfig.SYSTEM_UNDELETE_METRIC;
-import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
+import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo;
@@ -537,7 +537,7 @@ public class MiscUtils {
 	public static Set<AccountID> getNodeAccounts(AddressBook addressBook) {
 		return IntStream.range(0, addressBook.getSize())
 				.mapToObj(addressBook::getAddress)
-				.map(address -> accountParsedFromString(address.getMemo()))
+				.map(address -> parseAccount(address.getMemo()))
 				.collect(toSet());
 	}
 

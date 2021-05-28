@@ -61,6 +61,7 @@ import java.util.stream.LongStream;
 
 import static com.google.protobuf.TextFormat.escapeBytes;
 import static com.hedera.services.fees.bootstrap.JsonToProtoSerde.loadFeeScheduleFromJson;
+import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static com.swirlds.common.Address.ipString;
 
 public class HfsSystemFilesManager implements SystemFilesManager {
@@ -370,7 +371,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 				.setPort(address.getPortExternalIpv4());
 		builder.addServiceEndpoint(serviceEndpoint);
 		try {
-			builder.setNodeAccountId(EntityIdUtils.accountParsedFromString(address.getMemo()));
+			builder.setNodeAccountId(parseAccount(address.getMemo()));
 		} catch (Exception e) {
 			log.warn("Address for node {} had memo {}, not a parseable account!", address.getId(), address.getMemo());
 		}
