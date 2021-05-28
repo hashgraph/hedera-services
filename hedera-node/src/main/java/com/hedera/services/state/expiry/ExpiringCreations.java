@@ -104,16 +104,11 @@ public class ExpiringCreations implements EntityCreator {
 	}
 
 	@Override
-	public ExpirableTxnRecord.Builder buildExpiringRecord(
-			long otherNonThresholdFees,
-			ByteString hash,
-			TxnAccessor accessor,
-			Timestamp consensusTimestamp,
-			TransactionReceipt receipt) {
-
-		long amount = ctx.charging().totalFeesChargedToPayer() + otherNonThresholdFees;
-		TransferList transfersList = ctx.ledger().netTransfersInTxn();
-		List<TokenTransferList> tokenTransferList = ctx.ledger().netTokenTransfersInTxn();
+	public ExpirableTxnRecord.Builder buildExpiringRecord(long otherNonThresholdFees, ByteString hash,
+			TxnAccessor accessor, Timestamp consensusTimestamp, TransactionReceipt receipt) {
+		final long amount = ctx.charging().totalFeesChargedToPayer() + otherNonThresholdFees;
+		final TransferList transfersList = ctx.ledger().netTransfersInTxn();
+		final List<TokenTransferList> tokenTransferList = ctx.ledger().netTokenTransfersInTxn();
 
 		var builder = ExpirableTxnRecord.newBuilder()
 				.setReceipt(TxnReceipt.fromGrpc(receipt))
@@ -125,8 +120,8 @@ public class ExpiringCreations implements EntityCreator {
 				.setTransferList(!transfersList.getAccountAmountsList().isEmpty() ? CurrencyAdjustments.fromGrpc(
 						transfersList) : null)
 				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null);
-		builder = setTokensAndTokenAdjustments(builder, tokenTransferList);
-		return builder;
+
+		return setTokensAndTokenAdjustments(builder, tokenTransferList);
 	}
 
 	private ExpirableTxnRecord.Builder setTokensAndTokenAdjustments(ExpirableTxnRecord.Builder builder,

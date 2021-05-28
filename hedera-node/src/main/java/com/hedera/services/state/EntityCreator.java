@@ -31,12 +31,58 @@ import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import java.time.Instant;
 
 public interface EntityCreator {
+	/**
+	 * setter for {@link RecordCache} in {@link EntityCreator}
+	 *
+	 * @param recordCache
+	 * 		record cache
+	 */
 	void setRecordCache(RecordCache recordCache);
 
+	/**
+	 * Sets needed properties like expiry and submitting member to {@link ExpirableTxnRecord} and adds record to state
+	 * based on {@code GlobalDynamicProperties.cacheRecordsTtl}. If not it is added to be tracked for Expiry to {@link
+	 * RecordCache}
+	 *
+	 * @param id
+	 * 		account id
+	 * @param record
+	 * 		expirable transaction record
+	 * @param now
+	 * 		consensus timestamp
+	 * @param submittingMember
+	 * 		submitting member
+	 * @return
+	 */
 	ExpirableTxnRecord saveExpiringRecord(AccountID id, ExpirableTxnRecord record, long now, long submittingMember);
 
+	/**
+	 * Build {@link ExpirableTxnRecord.Builder} when the record is finalized before committing
+	 * the active transaction
+	 *
+	 * @param otherNonThresholdFees
+	 * 		part of fees
+	 * @param hash
+	 * 		transaction hash
+	 * @param accessor
+	 * 		transaction accessor
+	 * @param consensusTimestamp
+	 * 		consensus timestamp
+	 * @param receipt
+	 * 		transaction receipt
+	 * @return
+	 */
 	ExpirableTxnRecord.Builder buildExpiringRecord(long otherNonThresholdFees, ByteString hash, TxnAccessor accessor,
 			Timestamp consensusTimestamp, TransactionReceipt receipt);
 
+	/**
+	 * Build a {@link ExpirableTxnRecord.Builder} for a transaction failed to commit
+	 *
+	 * @param accessor
+	 * 		transaction accessor
+	 * @param consensusTimestamp
+	 * 		consensus timestamp
+	 * @return
+	 */
 	ExpirableTxnRecord.Builder buildFailedExpiringRecord(TxnAccessor accessor, Instant consensusTimestamp);
 }

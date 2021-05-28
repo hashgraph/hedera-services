@@ -595,12 +595,8 @@ public class AwareTransactionContextTest {
 		assertThrows(IllegalStateException.class, () -> subject.trigger(accessor));
 	}
 
-	private ExpirableTxnRecord.Builder buildRecord(long otherNonThresholdFees,
-			ByteString hash,
-			TxnAccessor accessor,
-			Timestamp consensusTimestamp,
-			TransactionReceipt receipt){
-
+	private ExpirableTxnRecord.Builder buildRecord(long otherNonThresholdFees, ByteString hash, TxnAccessor accessor,
+			Timestamp consensusTimestamp, TransactionReceipt receipt) {
 		long amount = ctx.charging().totalFeesChargedToPayer() + otherNonThresholdFees;
 		TransferList transfersList = ctx.ledger().netTransfersInTxn();
 		List<TokenTransferList> tokenTransferList = ctx.ledger().netTokenTransfersInTxn();
@@ -630,7 +626,7 @@ public class AwareTransactionContextTest {
 		return builder;
 	}
 
-	private ExpirableTxnRecord.Builder setUpBuildingExpirableTxnRecord(){
+	private ExpirableTxnRecord.Builder setUpBuildingExpirableTxnRecord() {
 		var expirableRecordBuilder = buildRecord(subject.getNonThresholdFeeChargedToPayer(),
 				accessor.getHash(),
 				accessor, asTimestamp(now), subject.receiptSoFar().build());

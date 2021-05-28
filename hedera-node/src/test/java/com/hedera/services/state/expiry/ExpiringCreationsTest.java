@@ -135,7 +135,7 @@ class ExpiringCreationsTest {
 		subject.setRecordCache(recordCache);
 	}
 
-	void setUpForExpiringRecordBuilder(){
+	void setUpForExpiringRecordBuilder() {
 		given(accessor.getTxnId()).willReturn(TransactionID.newBuilder().setAccountID(asAccount(account)).build());
 		given(accessor.getTxn()).willReturn(txn);
 		given(accessor.getTxn().getMemo()).willReturn(memo);
@@ -228,10 +228,10 @@ class ExpiringCreationsTest {
 
 		assertEquals(tokenTransferListExpected.size(), actualRecord.getTokenAdjustments().size());
 		assertEquals(tokensExpected.size(), actualRecord.getTokens().size());
-		for(int i = 0; i< tokensExpected.size(); i++){
+		for (int i = 0; i < tokensExpected.size(); i++) {
 			assertEquals(tokensExpected.get(i), actualRecord.getTokens().get(i));
 		}
-		for(int i = 0; i< tokenTransferListExpected.size(); i++){
+		for (int i = 0; i < tokenTransferListExpected.size(); i++) {
 			assertEquals(tokenTransferListExpected.get(i), actualRecord.getTokenAdjustments().get(i));
 		}
 	}
