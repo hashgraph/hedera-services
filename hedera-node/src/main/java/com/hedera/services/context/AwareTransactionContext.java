@@ -79,8 +79,8 @@ public class AwareTransactionContext implements TransactionContext {
 	private final ServicesContext ctx;
 	private TxnAccessor triggeredTxn = null;
 
-	private final static Consumer<ExpirableTxnRecord.Builder> noopRecordConfig = ignore -> { };
-	private final static Consumer<TransactionReceipt.Builder> noopReceiptConfig = ignore -> { };
+	private static final Consumer<ExpirableTxnRecord.Builder> noopRecordConfig = ignore -> { };
+	private static final Consumer<TransactionReceipt.Builder> noopReceiptConfig = ignore -> { };
 
 	private long submittingMember;
 	private long otherNonThresholdFees;
