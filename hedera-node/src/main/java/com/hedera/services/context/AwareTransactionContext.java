@@ -42,7 +42,6 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.common.Address;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -80,8 +79,8 @@ public class AwareTransactionContext implements TransactionContext {
 	private final ServicesContext ctx;
 	private TxnAccessor triggeredTxn = null;
 
-	private final Consumer<ExpirableTxnRecord.Builder> noopRecordConfig = ignore -> { };
-	private final Consumer<TransactionReceipt.Builder> noopReceiptConfig = ignore -> { };
+	private final static Consumer<ExpirableTxnRecord.Builder> noopRecordConfig = ignore -> { };
+	private final static Consumer<TransactionReceipt.Builder> noopReceiptConfig = ignore -> { };
 
 	private long submittingMember;
 	private long otherNonThresholdFees;
@@ -278,12 +277,12 @@ public class AwareTransactionContext implements TransactionContext {
 
 	@Override
 	public void setCallResult(ContractFunctionResult result) {
-		recordConfig = record -> record.setContractCallResult(SolidityFnResult.fromGrpc(result));
+		recordConfig = expiringRecord -> expiringRecord.setContractCallResult(SolidityFnResult.fromGrpc(result));
 	}
 
 	@Override
 	public void setCreateResult(ContractFunctionResult result) {
-		recordConfig = record -> record.setContractCreateResult(SolidityFnResult.fromGrpc(result));
+		recordConfig = expiringRecord -> expiringRecord.setContractCreateResult(SolidityFnResult.fromGrpc(result));
 	}
 
 	@Override

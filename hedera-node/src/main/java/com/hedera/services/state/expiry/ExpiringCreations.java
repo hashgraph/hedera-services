@@ -76,23 +76,23 @@ public class ExpiringCreations implements EntityCreator {
 	@Override
 	public ExpirableTxnRecord saveExpiringRecord(
 			AccountID payer,
-			ExpirableTxnRecord record,
+			ExpirableTxnRecord expiringRecord,
 			long now,
 			long submittingMember
 	) {
 		long expiry = now + dynamicProperties.cacheRecordsTtl();
-		record.setExpiry(expiry);
-		record.setSubmittingMember(submittingMember);
+		expiringRecord.setExpiry(expiry);
+		expiringRecord.setSubmittingMember(submittingMember);
 
 		if (dynamicProperties.shouldKeepRecordsInState()) {
 			final var key = MerkleEntityId.fromAccountId(payer);
-			addToState(key, record);
-			expiries.trackRecordInState(payer, record.getExpiry());
+			addToState(key, expiringRecord);
+			expiries.trackRecordInState(payer, expiringRecord.getExpiry());
 		} else {
-			recordCache.trackForExpiry(record);
+			recordCache.trackForExpiry(expiringRecord);
 		}
 
-		return record;
+		return expiringRecord;
 	}
 
 	private void addToState(MerkleEntityId key, ExpirableTxnRecord record) {
@@ -127,7 +127,7 @@ public class ExpiringCreations implements EntityCreator {
 			List<TokenTransferList> tokenTransferList) {
 		List<EntityId> tokens = new ArrayList<>();
 		List<CurrencyAdjustments> tokenAdjustments = new ArrayList<>();
-		if (tokenTransferList.size() > 0) {
+		if (!tokenTransferList.isEmpty()) {
 			for (TokenTransferList tokenTransfers : tokenTransferList) {
 				tokens.add(EntityId.fromGrpcTokenId(tokenTransfers.getToken()));
 				tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList()));

@@ -54,7 +54,7 @@ public interface EntityCreator {
 	 * 		submitting member
 	 * @return
 	 */
-	ExpirableTxnRecord saveExpiringRecord(AccountID id, ExpirableTxnRecord record, long now, long submittingMember);
+	ExpirableTxnRecord saveExpiringRecord(AccountID id, ExpirableTxnRecord expiringRecord, long now, long submittingMember);
 
 	/**
 	 * Build {@link ExpirableTxnRecord.Builder} when the record is finalized before committing

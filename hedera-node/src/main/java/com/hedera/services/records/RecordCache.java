@@ -86,14 +86,14 @@ public class RecordCache {
 	) {
 		var recordBuilder = ctx.creator().buildFailedExpiringRecord(accessor,
 				consensusTimestamp);
-		var record = ctx.creator().saveExpiringRecord(
+		var expiringRecord = ctx.creator().saveExpiringRecord(
 				effectivePayer,
 				recordBuilder.build(),
 				consensusTimestamp.getEpochSecond(),
 				submittingMember);
 
 		var recentHistory = histories.computeIfAbsent(accessor.getTxnId(), ignore -> new TxnIdRecentHistory());
-		recentHistory.observe(record, FAIL_INVALID);
+		recentHistory.observe(expiringRecord, FAIL_INVALID);
 	}
 
 	public boolean isReceiptPresent(TransactionID txnId) {
