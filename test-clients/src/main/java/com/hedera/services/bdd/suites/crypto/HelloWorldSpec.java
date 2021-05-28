@@ -48,21 +48,15 @@ public class HelloWorldSpec extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[]{
-//						balancesChangeOnTransfer(),
-						balancesChangeOnTransferWithOverrides(),
+						balancesChangeOnTransfer(),
+//						balancesChangeOnTransferWithOverrides(),
 				}
 		);
 	}
 
-	private HapiApiSpec balancesChangeOnTransferWithOverrides() {
-		return customHapiSpec("BalancesChangeOnTransfer")
-				.withProperties(
-						Map.of(
-								"nodes", "35.182.80.176",
-								"default.payer", "0.0.50",
-								"startupAccounts.path", "src/main/resource/TestnetStartupAccount.txt"
-						)
-				).given(
+	private HapiApiSpec balancesChangeOnTransfer() {
+		return defaultHapiSpec("BalancesChangeOnTransfer")
+				.given(
 						cryptoCreate("sponsor"),
 						cryptoCreate("beneficiary"),
 						balanceSnapshot("sponsorBefore", "sponsor"),
@@ -79,9 +73,15 @@ public class HelloWorldSpec extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec balancesChangeOnTransfer() {
-		return defaultHapiSpec("BalancesChangeOnTransfer")
-				.given(
+	private HapiApiSpec balancesChangeOnTransferWithOverrides() {
+		return customHapiSpec("BalancesChangeOnTransfer")
+				.withProperties(
+						Map.of(
+								"nodes", "35.182.80.176",
+								"default.payer", "0.0.50",
+								"startupAccounts.path", "src/main/resource/TestnetStartupAccount.txt"
+						)
+				).given(
 						cryptoCreate("sponsor"),
 						cryptoCreate("beneficiary"),
 						balanceSnapshot("sponsorBefore", "sponsor"),

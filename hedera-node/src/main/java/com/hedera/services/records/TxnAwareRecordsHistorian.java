@@ -20,6 +20,7 @@ package com.hedera.services.records;
  * ‍
  */
 
+import com.hedera.services.context.SingletonContextsManager;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiryManager;
@@ -81,6 +82,10 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 				accessor.getTxnId(),
 				lastCreatedRecord.getReceipt().getStatus(),
 				payerRecord);
+
+		if (SingletonContextsManager.CONTEXTS.lookup(0L).txnCtx() == txnCtx) {
+			System.out.println("Set post-consensus record for " + accessor.getTxnId() + " to " + payerRecord);
+		}
 	}
 
 	@Override

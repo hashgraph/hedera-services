@@ -22,6 +22,7 @@ package com.hedera.services.legacy.services.state;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
+import com.hedera.services.context.SingletonContextsManager;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.sigs.sourcing.ScopedSigBytesProvider;
 import com.hedera.services.state.logic.ServicesTxnManager;
@@ -96,8 +97,14 @@ public class AwareProcessLogic implements ProcessLogic {
 			if (!ctx.invariants().holdFor(accessor, effectiveConsensusTime, submittingMember)) {
 				return;
 			}
+			if (SingletonContextsManager.CONTEXTS.lookup(0L) == ctx) {
+				System.out.println("Invariants pass");
+			}
 
 			ctx.expiries().purge(effectiveConsensusTime.getEpochSecond());
+			if (SingletonContextsManager.CONTEXTS.lookup(0L) == ctx) {
+				System.out.println("Expired things purged");
+			}
 
 			txnManager.process(accessor, effectiveConsensusTime, submittingMember, ctx);
 			final var triggeredAccessor = ctx.txnCtx().triggeredTxn();
@@ -156,23 +163,41 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	private void doProcess(TxnAccessor accessor, Instant consensusTime) {
 		ctx.networkCtxManager().advanceConsensusClockTo(consensusTime);
+		if (SingletonContextsManager.CONTEXTS.lookup(0L) == ctx) {
+			System.out.println("Advanced consensus clock to " + consensusTime);
+		}
 
 		var sigStatus = rationalizeWithPreConsensusSigs(accessor);
+		if (SingletonContextsManager.CONTEXTS.lookup(0L) == ctx) {
+			System.out.println("Rationalized w/ pre-consensus sigs");
+		}
 		if (hasActivePayerSig(accessor)) {
 			ctx.txnCtx().payerSigIsKnownActive();
 			ctx.networkCtxManager().prepareForIncorporating(accessor.getFunction());
 		}
+		if (SingletonContextsManager.CONTEXTS.lookup(0L) == ctx) {
+			System.out.println("Payer sig is active");
+		}
 
 		FeeObject fee = ctx.fees().computeFee(accessor, ctx.txnCtx().activePayerKey(), ctx.currentView());
+		if (SingletonContextsManager.CONTEXTS.lookup(0L) == ctx) {
+			System.out.println("Fees are " + fee);
+		}
 
 		var recentHistory = ctx.txnHistories().get(accessor.getTxnId());
 		var duplicity = (recentHistory == null)
 				? BELIEVED_UNIQUE
 				: recentHistory.currentDuplicityFor(ctx.txnCtx().submittingSwirldsMember());
+		if (SingletonContextsManager.CONTEXTS.lookup(0L) == ctx) {
+			System.out.println("Duplicity is " + duplicity);
+		}
 
 		if (ctx.nodeDiligenceScreen().nodeIgnoredDueDiligence(duplicity)) {
 			ctx.txnChargingPolicy().applyForIgnoredDueDiligence(ctx.charging(), fee);
 			return;
+		}
+		if (SingletonContextsManager.CONTEXTS.lookup(0L) == ctx) {
+			System.out.println("Node due diligence was done");
 		}
 		if (duplicity == DUPLICATE) {
 			ctx.txnChargingPolicy().applyForDuplicate(ctx.charging(), fee);
@@ -181,6 +206,9 @@ public class AwareProcessLogic implements ProcessLogic {
 		}
 
 		var chargingOutcome = ctx.txnChargingPolicy().apply(ctx.charging(), fee);
+		if (SingletonContextsManager.CONTEXTS.lookup(0L) == ctx) {
+			System.out.println("Charging outcome was " + chargingOutcome);
+		}
 		if (chargingOutcome != OK) {
 			ctx.txnCtx().setStatus(chargingOutcome);
 			return;
@@ -192,6 +220,9 @@ public class AwareProcessLogic implements ProcessLogic {
 		if (!ctx.activationHelper().areOtherPartiesActive(ONLY_IF_SIG_IS_VALID)) {
 			ctx.txnCtx().setStatus(INVALID_SIGNATURE);
 			return;
+		}
+		if (SingletonContextsManager.CONTEXTS.lookup(0L) == ctx) {
+			System.out.println("Now preparing to process...");
 		}
 
 		process(accessor);
@@ -211,6 +242,9 @@ public class AwareProcessLogic implements ProcessLogic {
 		}
 		var logic = transitionLogic.get();
 		var opValidity = logic.semanticCheck().apply(accessor.getTxn());
+		if (SingletonContextsManager.CONTEXTS.lookup(0L) == ctx) {
+			System.out.println("Validity of semantic check for " + accessor.getFunction() + " was " + opValidity);
+		}
 		if (opValidity != OK) {
 			ctx.txnCtx().setStatus(opValidity);
 			return;
