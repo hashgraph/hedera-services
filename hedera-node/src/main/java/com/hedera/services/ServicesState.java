@@ -40,7 +40,7 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.PlatformTxnRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.blob.BinaryObjectStore;
 import com.swirlds.common.AddressBook;
@@ -115,13 +115,15 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	ServicesContext ctx;
-	private PlatformTxnAccessor txnAccessor;
+	private PlatformTxnRecord platformTxnRecord;
 
 	public ServicesState() {
+		platformTxnRecord = new PlatformTxnRecord(15L);
 	}
 
 	public ServicesState(List<MerkleNode> children) {
 		super(ChildIndices.NUM_0140_CHILDREN);
+		platformTxnRecord = new PlatformTxnRecord(15L);
 		addDeserializedChildren(children, MERKLE_VERSION);
 	}
 
@@ -129,6 +131,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		this(children);
 		this.ctx = ctx;
 		this.nodeId = nodeId;
+		platformTxnRecord = new PlatformTxnRecord(15L);
 		if (ctx != null) {
 			ctx.update(this);
 		}
@@ -295,14 +298,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		}
 	}
 
-	private void setPlatformTxnAccessor(Transaction platformTxn){
-		try {
-			txnAccessor = new PlatformTxnAccessor(platformTxn);
-		} catch (InvalidProtocolBufferException e) {
-			log.warn("expandSignatures called with non-gRPC txn!", e);
-		}
-	}
-
 	@Override
 	public AddressBook getAddressBookCopy() {
 		return addressBook().copy();
@@ -317,22 +312,27 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			com.swirlds.common.Transaction transaction
 	) {
 		if (isConsensus) {
-			ctx.logic().incorporateConsensusTxn(transaction, txnAccessor, consensusTime, submittingMember);
+			ctx.logic().incorporateConsensusTxn(transaction,
+					platformTxnRecord.getPlatformTxnAccessor(transaction),
+					consensusTime,
+					submittingMember);
 		}
 	}
 
 	@Override
 	public void expandSignatures(Transaction platformTxn) {
 		try {
-			setPlatformTxnAccessor(platformTxn);
-			if (txnAccessor == null)
-				return;
-
+			platformTxnRecord.addTransaction(platformTxn);
+			var accessor = platformTxnRecord.getPlatformTxnAccessor(platformTxn);
 			expandIn(
-					txnAccessor,
+					accessor,
 					ctx.lookupRetryingKeyOrder(),
-					new ScopedSigBytesProvider(txnAccessor),
+					new ScopedSigBytesProvider(accessor),
 					ctx.sigFactoryCreator()::createScopedFactory);
+		} catch (InvalidProtocolBufferException e) {
+			log.warn("expandSignatures called with non-gRPC txn!", e);
+		} catch (NullPointerException e) {
+			log.warn("The platformTxn was null!", e);
 		} catch (Exception race) {
 			log.warn("Unexpected problem, signatures will be verified synchronously in handleTransaction!", race);
 		}

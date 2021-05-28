@@ -47,7 +47,7 @@ public class PlatformTxnRecord {
 
     }
 
-    public void addTransaction(Transaction transaction) throws InvalidProtocolBufferException {
+    public void addTransaction(Transaction transaction) throws InvalidProtocolBufferException, NullPointerException {
         PlatformTxnAccessor accessor = new PlatformTxnAccessor(transaction);
         cache.put(transaction, accessor);
     }

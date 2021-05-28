@@ -71,6 +71,7 @@ public class PlatformTxnRecordTest {
 
         // when
         assertThrows(InvalidProtocolBufferException.class, () -> subject.addTransaction(transactionA));
+        assertThrows(NullPointerException.class, () -> subject.addTransaction(null));
     }
 
     @Test

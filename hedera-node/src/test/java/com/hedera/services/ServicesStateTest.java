@@ -51,7 +51,6 @@ import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.txns.ProcessLogic;
-import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.SystemExits;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -136,7 +135,6 @@ class ServicesStateTest {
 	BinaryObjectStore blobStore;
 	Instant now = Instant.now();
 	Transaction platformTxn;
-	PlatformTxnAccessor txnAccessor;
 	Address address;
 	AddressBook book;
 	AddressBook bookCopy;
@@ -198,7 +196,6 @@ class ServicesStateTest {
 		out = mock(SerializableDataOutputStream.class);
 		in = mock(SerializableDataInputStream.class);
 		platformTxn = mock(Transaction.class);
-		txnAccessor = mock(PlatformTxnAccessor.class);
 
 		address = mock(Address.class);
 		given(address.getMemo()).willReturn("0.0.3");
@@ -445,7 +442,17 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void invokesMigrationsAsApropos() {
+	public void catchesNullPointerExceptionInExpandSigs() {
+		// expect
+		assertDoesNotThrow(() -> subject.expandSignatures(null));
+
+		// then:
+		assertThat(logCaptor.warnLogs(),
+				contains(Matchers.startsWith("The platformTxn was null!")));
+	}
+
+	@Test
+	public void invokesMigrationsAsApropos() {
 		// setup:
 		var nodeInfo = mock(NodeInfo.class);
 		given(ctx.nodeInfo()).willReturn(nodeInfo);
