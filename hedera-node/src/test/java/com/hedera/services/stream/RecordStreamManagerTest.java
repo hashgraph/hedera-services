@@ -146,6 +146,10 @@ public class RecordStreamManagerTest {
 
 	@Test
 	void warnsOnInterruptedStreaming() {
+		// setup:
+		final var mockQueue = mock(Queue.class);
+
+		given(writeQueueThreadMock.getQueue()).willReturn(mockQueue);
 		recordStreamManager = new RecordStreamManager(multiStreamMock, writeQueueThreadMock, runningAvgsMock);
 
 		willThrow(RuntimeException.class).given(multiStreamMock).addObject(any());

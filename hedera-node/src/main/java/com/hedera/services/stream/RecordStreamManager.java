@@ -154,7 +154,9 @@ public class RecordStreamManager {
 		multiStream.setRunningHash(initialHash);
 
 		hashQueueThread.start();
-		writeQueueThread.start();
+		if (writeQueueThread != null) {
+			writeQueueThread.start();
+		}
 
 		log.info("Finish initializing RecordStreamManager with: enableRecordStreaming: {}, recordStreamDir: {}, " +
 						"recordsLogPeriod: {} secs, recordStreamQueueCapacity: {}, initialHash: {}",
@@ -200,7 +202,9 @@ public class RecordStreamManager {
 				log.warn("Unhandled exception while streaming {}", recordStreamObject, e);
 			}
 		}
-		runningAvgs.writeQueueSizeRecordStream(getWriteQueueSize());
+		if (writeQueueThread != null) {
+			runningAvgs.writeQueueSizeRecordStream(getWriteQueueSize());
+		}
 		runningAvgs.hashQueueSizeRecordStream(getHashQueueSize());
 	}
 
