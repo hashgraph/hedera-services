@@ -31,6 +31,7 @@ import java.nio.file.StandardOpenOption;
  */
 public class FileBlobStorage {
 
+	// TODO refactor singleton with inner static class
 	private static final FileBlobStorage instance = new FileBlobStorage();
 	// TODO get it from the config
 	private File dbPath = new File("data/diskFs/blobs");
