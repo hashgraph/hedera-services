@@ -49,63 +49,38 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-public class MerkleAccountTest {
-	JKey key = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012345".getBytes());
-	long expiry = 1_234_567L;
-	long balance = 555_555L;
-	long autoRenewSecs = 234_567L;
-	long senderThreshold = 1_234L;
-	long receiverThreshold = 4_321L;
-	String memo = "A memo";
-	boolean deleted = true;
-	boolean smartContract = true;
-	boolean receiverSigRequired = true;
-	EntityId proxy = new EntityId(1L, 2L, 3L);
-	long firstToken = 555, secondToken = 666, thirdToken = 777;
-	long firstBalance = 123, secondBalance = 234, thirdBalance = 345;
-	long firstFlags = 0, secondFlags = 0, thirdFlags = 0;
-	long[] tokenRels = new long[] {
-			firstToken, firstBalance, firstFlags,
-			secondToken, secondBalance, secondFlags,
-			thirdToken, thirdBalance, thirdFlags
-	};
-	long otherFirstBalance = 321, otherSecondBalance = 432, otherThirdBalance = 543;
-	long otherFirstFlags = 0, otherSecondFlags = 0, otherThirdFlags = 0;
-	long[] otherTokenRels = new long[] {
-			firstToken, otherFirstBalance, otherFirstFlags,
-			secondToken, otherSecondBalance, otherSecondFlags,
-			thirdToken, otherThirdBalance, otherThirdFlags
-	};
+class MerkleAccountTest {
+	private JKey key = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012345".getBytes());
+	private long expiry = 1_234_567L;
+	private long balance = 555_555L;
+	private long autoRenewSecs = 234_567L;
+	private String memo = "A memo";
+	private boolean deleted = true;
+	private boolean smartContract = true;
+	private boolean receiverSigRequired = true;
+	private EntityId proxy = new EntityId(1L, 2L, 3L);
 
-	JKey otherKey = new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes());
-	long otherExpiry = 7_234_567L;
-	long otherBalance = 666_666L;
-	long otherAutoRenewSecs = 432_765L;
-	long otherSenderThreshold = 4_321L;
-	long otherReceiverThreshold = 1_234L;
-	String otherMemo = "Another memo";
-	boolean otherDeleted = false;
-	boolean otherSmartContract = false;
-	boolean otherReceiverSigRequired = false;
-	EntityId otherProxy = new EntityId(3L, 2L, 1L);
-	JKey adminKey = TOKEN_ADMIN_KT.asJKeyUnchecked();
-	MerkleToken unfrozenToken = new MerkleToken(
-			Long.MAX_VALUE, 100, 1,
-			"UnfrozenToken", "UnfrozenTokenName", false, false,
-			new EntityId(1, 2, 3));
+	private JKey otherKey = new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes());
+	private long otherExpiry = 7_234_567L;
+	private long otherBalance = 666_666L;
+	private long otherAutoRenewSecs = 432_765L;
+	private String otherMemo = "Another memo";
+	private boolean otherDeleted = false;
+	private boolean otherSmartContract = false;
+	private boolean otherReceiverSigRequired = false;
+	private EntityId otherProxy = new EntityId(3L, 2L, 1L);
 
-	MerkleAccountState state;
-	MerkleAccountState otherState;
-	FCQueue<ExpirableTxnRecord> payerRecords;
-	MerkleAccountTokens tokens;
-	DomainSerdes serdes;
+	private MerkleAccountState state;
+	private FCQueue<ExpirableTxnRecord> payerRecords;
+	private MerkleAccountTokens tokens;
 
-	MerkleAccount subject;
-	MerkleAccountState delegate;
+	private MerkleAccountState delegate;
+
+	private MerkleAccount subject;
 
 	@BeforeEach
-	public void setup() {
-		serdes = mock(DomainSerdes.class);
+	void setup() {
+		DomainSerdes serdes = mock(DomainSerdes.class);
 		MerkleAccount.serdes = serdes;
 
 		payerRecords = mock(FCQueue.class);
@@ -123,23 +98,17 @@ public class MerkleAccountTest {
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy);
-		otherState = new MerkleAccountState(
-				otherKey,
-				otherExpiry, otherBalance, otherAutoRenewSecs,
-				otherMemo,
-				otherDeleted, otherSmartContract, otherReceiverSigRequired,
-				otherProxy);
 
 		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
 	}
 
 	@AfterEach
-	public void cleanup() {
+	void cleanup() {
 		MerkleAccount.serdes = new DomainSerdes();
 	}
 
 	@Test
-	public void immutableAccountThrowsIse() {
+	void immutableAccountThrowsIse() {
 		// setup:
 		MerkleAccount.stackDump = () -> {
 		};
@@ -158,14 +127,8 @@ public class MerkleAccountTest {
 	}
 
 	@Test
-	public void merkleMethodsWork() {
+	void merkleMethodsWork() {
 		// expect;
-		assertEquals(
-				MerkleAccount.ChildIndices.NUM_081_CHILDREN,
-				subject.getMinimumChildCount(MerkleAccount.MERKLE_VERSION - 2));
-		assertEquals(
-				MerkleAccount.ChildIndices.NUM_090_ALPHA_CHILDREN,
-				subject.getMinimumChildCount(MerkleAccount.MERKLE_VERSION - 1));
 		assertEquals(
 				MerkleAccount.ChildIndices.NUM_090_CHILDREN,
 				subject.getMinimumChildCount(MerkleAccount.MERKLE_VERSION));
@@ -175,7 +138,7 @@ public class MerkleAccountTest {
 	}
 
 	@Test
-	public void toStringWorks() {
+	void toStringWorks() {
 		given(payerRecords.size()).willReturn(3);
 		given(tokens.readableTokenIds()).willReturn("[1.2.3, 2.3.4]");
 
@@ -189,7 +152,7 @@ public class MerkleAccountTest {
 	}
 
 	@Test
-	public void gettersDelegate() {
+	void gettersDelegate() {
 		// expect:
 		assertEquals(state.expiry(), subject.getExpiry());
 		assertEquals(state.balance(), subject.getBalance());
@@ -204,9 +167,9 @@ public class MerkleAccountTest {
 	}
 
 	@Test
-	public void settersDelegate() throws NegativeAccountBalanceException {
+	void settersDelegate() throws NegativeAccountBalanceException {
 		// given:
-		subject = new MerkleAccount(List.of(delegate, IMMUTABLE_EMPTY_FCQ, IMMUTABLE_EMPTY_FCQ));
+		subject = new MerkleAccount(List.of(delegate, new FCQueue<>(), new FCQueue<>()));
 
 		// when:
 		subject.setExpiry(otherExpiry);
@@ -232,7 +195,7 @@ public class MerkleAccountTest {
 	}
 
 	@Test
-	public void objectContractMet() {
+	void objectContractMet() {
 		// given:
 		var one = new MerkleAccount();
 		var two = new MerkleAccount(List.of(state, payerRecords, tokens));
@@ -251,7 +214,7 @@ public class MerkleAccountTest {
 	}
 
 	@Test
-	public void copyConstructorFastCopiesMutableFcqs() {
+	void copyConstructorFastCopiesMutableFcqs() {
 		given(payerRecords.isImmutable()).willReturn(false);
 
 		// when:
@@ -264,64 +227,25 @@ public class MerkleAccountTest {
 	}
 
 	@Test
-	public void throwsOnNegativeBalance() {
+	void throwsOnNegativeBalance() {
 		// expect:
 		assertThrows(NegativeAccountBalanceException.class, () -> subject.setBalance(-1L));
 	}
 
 	@Test
-	public void initializeTranslatesFromRelease090AlphaStates() {
-		// setup:
-		var accountState = new MerkleAccountState();
-		var accountTokens = new MerkleAccountTokens();
-
-		// given:
-		subject.addDeserializedChildren(
-				List.of(accountState, IMMUTABLE_EMPTY_FCQ, IMMUTABLE_EMPTY_FCQ, accountTokens),
-				MerkleAccount.RELEASE_090_ALPHA_VERSION);
-
-		// when:
-		subject.initialize();
-
-		// then:
-		assertSame(accountState, subject.getChild(MerkleAccount.ChildIndices.STATE));
-		assertSame(IMMUTABLE_EMPTY_FCQ, subject.getChild(MerkleAccount.ChildIndices.RELEASE_090_RECORDS));
-		assertSame(accountTokens, subject.getChild(RELEASE_090_ASSOCIATED_TOKENS));
-	}
-
-	@Test
-	public void initializeTranslatesFromRelease081States() {
-		// setup:
-		var accountState = new MerkleAccountState();
-
-		// given:
-		subject.addDeserializedChildren(
-				List.of(accountState, IMMUTABLE_EMPTY_FCQ, IMMUTABLE_EMPTY_FCQ),
-				MerkleAccount.RELEASE_081_VERSION);
-
-		// when:
-		subject.initialize();
-
-		// then:
-		assertSame(accountState, subject.getChild(MerkleAccount.ChildIndices.STATE));
-		assertSame(IMMUTABLE_EMPTY_FCQ, subject.getChild(MerkleAccount.ChildIndices.RELEASE_090_RECORDS));
-		assertThat(subject.getChild(RELEASE_090_ASSOCIATED_TOKENS), instanceOf(MerkleAccountTokens.class));
-	}
-
-	@Test
-	public void isMutableAfterCopy() {
+	void isMutableAfterCopy() {
 		subject.copy();
 
 		assertTrue(subject.isImmutable());
 	}
 
 	@Test
-	public void originalIsMutable() {
+	void originalIsMutable() {
 		assertFalse(subject.isImmutable());
 	}
 
 	@Test
-	public void delegatesDelete() {
+	void delegatesDelete() {
 		// when:
 		subject.release();
 

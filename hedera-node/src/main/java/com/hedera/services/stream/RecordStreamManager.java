@@ -191,7 +191,11 @@ public class RecordStreamManager {
 	 */
 	public void addRecordStreamObject(final RecordStreamObject recordStreamObject) {
 		if (!inFreeze) {
-			multiStream.addObject(recordStreamObject);
+			try {
+				multiStream.addObject(recordStreamObject);
+			} catch (Exception e) {
+				log.warn("Unhandled exception while streaming {}", recordStreamObject, e);
+			}
 		}
 		runningAvgs.writeQueueSizeRecordStream(getWriteQueueSize());
 		runningAvgs.hashQueueSizeRecordStream(getHashQueueSize());

@@ -107,7 +107,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		if (!isInTransaction) {
 			throw new IllegalStateException("Cannot perform rollback, no transaction is active!");
 		}
-		entities.flushMutableRefs();
+		entities.clearRefCache();
 
 		changes.clear();
 		deadEntities.clear();
@@ -136,7 +136,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 			deadKeys.forEach(entities::remove);
 			deadEntities.clear();
 
-			entities.flushMutableRefs();
+			entities.clearRefCache();
 
 			isInTransaction = false;
 		} catch (Exception e) {

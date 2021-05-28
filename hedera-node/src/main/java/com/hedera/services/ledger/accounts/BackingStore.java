@@ -38,7 +38,7 @@ public interface BackingStore<K, A> {
 	/**
 	 * Alerts this {@code BackingStore} it should flush any cached mutable references.
 	 */
-	void flushMutableRefs();
+	void clearRefCache();
 
 	/**
 	 * Alerts this {@code BackingStore} it should reconstruct any auxiliary data structures

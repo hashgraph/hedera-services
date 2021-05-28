@@ -119,13 +119,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	public ServicesState() {
 	}
 
-	public ServicesState(List<MerkleNode> children) {
-		super(ChildIndices.NUM_0140_CHILDREN);
+	public ServicesState(ServicesContext ctx, NodeId nodeId, List<MerkleNode> children, ServicesState immutableState) {
+		super(immutableState);
 		addDeserializedChildren(children, MERKLE_VERSION);
-	}
-
-	public ServicesState(ServicesContext ctx, NodeId nodeId, List<MerkleNode> children) {
-		this(children);
 		this.ctx = ctx;
 		this.nodeId = nodeId;
 		if (ctx != null) {
@@ -165,35 +161,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				return ChildIndices.NUM_070_CHILDREN;
 			default:
 				throw new IllegalArgumentException(String.format(UNSUPPORTED_VERSION_MSG_TPL, version));
-		}
-	}
-
-	@Override
-	public void initialize() {
-		if (tokens() == null) {
-			setChild(ChildIndices.TOKENS,
-					new FCMap<>());
-			log.info("Created tokens FCMap after 0.7.0 state restoration");
-		}
-		if (tokenAssociations() == null) {
-			setChild(ChildIndices.TOKEN_ASSOCIATIONS,
-					new FCMap<>());
-			log.info("Created token associations FCMap after <=0.8.0 state restoration");
-		}
-		if (diskFs() == null) {
-			setChild(ChildIndices.DISK_FS, new MerkleDiskFs());
-			log.info("Created disk file system after <=0.9.0 state restoration");
-			skipDiskFsHashCheck = true;
-		}
-		if (scheduleTxs() == null) {
-			setChild(ChildIndices.SCHEDULE_TXS, new FCMap<>());
-			log.info("Created scheduled transactions FCMap after <=0.10.0 state restoration");
-		}
-		if (runningHashLeaf() == null) {
-			final RunningHash runningHash = new RunningHash(emptyHash);
-			RecordsRunningHashLeaf initialRecordsRunningHashLeaf = new RecordsRunningHashLeaf(runningHash);
-			setChild(ChildIndices.RECORD_STREAM_RUNNING_HASH, initialRecordsRunningHashLeaf);
-			log.info("Created RecordsRunningHashLeaf after <=0.11.0 state restoration");
 		}
 	}
 
@@ -348,7 +315,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				diskFs().copy(),
 				scheduleTxs().copy(),
 				runningHashLeaf().copy()
-		));
+		), this);
 	}
 
 	/* --------------- */

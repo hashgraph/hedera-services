@@ -48,8 +48,6 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		IMMUTABLE_EMPTY_FCQ.copy();
 	}
 
-	static final int RELEASE_081_VERSION = 1;
-	static final int RELEASE_090_ALPHA_VERSION = 2;
 	static final int RELEASE_090_VERSION = 3;
 	static final int MERKLE_VERSION = RELEASE_090_VERSION;
 
@@ -60,16 +58,14 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	/* Order of Merkle node children */
 	static class ChildIndices {
 		static final int STATE = 0;
-		static final int RELEASE_081_PAYER_RECORDS = 2;
-		static final int NUM_081_CHILDREN = 3;
-
-		static final int RELEASE_090_ALPHA_PAYER_RECORDS = 2;
-		static final int RELEASE_090_ALPHA_ASSOCIATED_TOKENS = 3;
-		static final int NUM_090_ALPHA_CHILDREN = 4;
-
 		static final int RELEASE_090_RECORDS = 1;
 		static final int RELEASE_090_ASSOCIATED_TOKENS = 2;
 		static final int NUM_090_CHILDREN = 3;
+	}
+
+	public MerkleAccount(List<MerkleNode> children, MerkleAccount immutableAccount) {
+		super(immutableAccount);
+		addDeserializedChildren(children, MERKLE_VERSION);
 	}
 
 	public MerkleAccount(List<MerkleNode> children) {
@@ -78,10 +74,10 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	public MerkleAccount() {
-		this(List.of(
+		addDeserializedChildren(List.of(
 				new MerkleAccountState(),
 				new FCQueue<ExpirableTxnRecord>(),
-				new MerkleAccountTokens()));
+				new MerkleAccountTokens()), MERKLE_VERSION);
 	}
 
 	/* --- MerkleInternal --- */
@@ -97,30 +93,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 
 	@Override
 	public int getMinimumChildCount(int version) {
-		if (version == RELEASE_081_VERSION) {
-			return ChildIndices.NUM_081_CHILDREN;
-		} else if (version == RELEASE_090_ALPHA_VERSION) {
-			return ChildIndices.NUM_090_ALPHA_CHILDREN;
-		} else {
-			return ChildIndices.NUM_090_CHILDREN;
-		}
-	}
-
-	@Override
-	public void initialize() {
-		if (getNumberOfChildren() == ChildIndices.NUM_090_ALPHA_CHILDREN) {
-			addDeserializedChildren(List.of(
-					getChild(ChildIndices.STATE),
-					getChild(ChildIndices.RELEASE_090_ALPHA_PAYER_RECORDS),
-					getChild(ChildIndices.RELEASE_090_ALPHA_ASSOCIATED_TOKENS)), MERKLE_VERSION);
-		} else if (!(getChild(ChildIndices.RELEASE_090_ASSOCIATED_TOKENS) instanceof MerkleAccountTokens)) {
-			addDeserializedChildren(List.of(
-					getChild(ChildIndices.STATE),
-					getChild(ChildIndices.RELEASE_081_PAYER_RECORDS),
-					new MerkleAccountTokens()), MERKLE_VERSION);
-		} else {
-			/* Must be a v0.9.0 state. */
-		}
+		return ChildIndices.NUM_090_CHILDREN;
 	}
 
 	/* --- FastCopyable --- */
@@ -140,7 +113,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		return new MerkleAccount(List.of(
 				state().copy(),
 				records().copy(),
-				tokens().copy()));
+				tokens().copy()), this);
 	}
 
 	/* ---- Object ---- */

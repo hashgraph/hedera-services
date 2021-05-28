@@ -25,6 +25,7 @@ import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
+import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -91,6 +92,7 @@ public class RecordStreamManagerTest {
 
 	@BeforeAll
 	public static void init() throws Exception {
+		given(platform.getSelfId()).willReturn(new NodeId(false, 0L));
 		disabledProps = mock(NodeLocalProperties.class);
 		given(disabledProps.isRecordStreamEnabled()).willReturn(false);
 		enabledProps = mock(NodeLocalProperties.class);
@@ -146,13 +148,13 @@ public class RecordStreamManagerTest {
 	void warnsOnInterruptedStreaming() {
 		recordStreamManager = new RecordStreamManager(multiStreamMock, writeQueueThreadMock, runningAvgsMock);
 
-		willThrow(InterruptedException.class).given(multiStreamMock).addObject(any());
+		willThrow(RuntimeException.class).given(multiStreamMock).addObject(any());
 
 		// when:
 		recordStreamManager.addRecordStreamObject(new RecordStreamObject());
 
 		// then:
-		assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith("Interrupted while streaming RecordStreamObject")));
+		assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith("Unhandled exception while streaming")));
 	}
 
 	@Test

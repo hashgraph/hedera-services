@@ -135,6 +135,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		var watch = StopWatch.createStarted();
 		summary = summarized(signedState);
 		var expected = BigInteger.valueOf(expectedFloat);
+		System.out.println("Summary: " + summary.getTotalFloat() + " vs expected " + expected);
 		if (!expected.equals(summary.getTotalFloat())) {
 			throw new IllegalStateException(String.format(
 					"Signed state @ %s had total balance %d not %d!",
@@ -273,6 +274,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		for (var entry : accounts.entrySet()) {
 			var id = entry.getKey();
 			var account = entry.getValue();
+			System.out.println(account);
 			if (!account.isDeleted()) {
 				var accountId = id.toAccountId();
 				var balance = account.getBalance();

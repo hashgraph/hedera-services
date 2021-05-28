@@ -24,7 +24,11 @@ import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.fcmap.internal.FCMLeaf;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -78,13 +82,17 @@ class BackingTokenRelsTest {
 	}
 
 	@Test
-	public void relToStringWorks() {
+	void relToStringWorks() {
 		// expect:
 		assertEquals("1.2.3 <-> 9.8.7", readableTokenRel(asTokenRel(a, at)));
 	}
 
 	@Test
-	public void delegatesPutForNewRelIfMissing() {
+	void delegatesPutForNewRelIfMissing() throws ConstructableRegistryException {
+		// setup:
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
+
 		// when:
 		subject.put(asTokenRel(c, ct), cValue);
 
@@ -95,7 +103,7 @@ class BackingTokenRelsTest {
 	}
 
 	@Test
-	public void delegatesPutForNewRel() {
+	void delegatesPutForNewRel() {
 		// when:
 		subject.put(asTokenRel(c, ct), cValue);
 
@@ -104,13 +112,13 @@ class BackingTokenRelsTest {
 	}
 
 	@Test
-	public void throwsOnReplacingUnsafeRef() {
+	void throwsOnReplacingUnsafeRef() {
 		// when:
 		assertThrows(IllegalArgumentException.class, () -> subject.put(asTokenRel(a, at), aValue));
 	}
 
 	@Test
-	public void removeUpdatesBothCacheAndDelegate() {
+	void removeUpdatesBothCacheAndDelegate() {
 		// when:
 		subject.remove(asTokenRel(a, at));
 
@@ -121,7 +129,7 @@ class BackingTokenRelsTest {
 	}
 
 	@Test
-	public void replacesAllMutableRefs() {
+	void replacesAllMutableRefs() {
 		setupMocked();
 
 		given(rels.getForModify(fromAccountTokenRel(a, at))).willReturn(aValue);
@@ -131,7 +139,7 @@ class BackingTokenRelsTest {
 		subject.getRef(asTokenRel(a, at));
 		subject.getRef(asTokenRel(b, bt));
 		// and:
-		subject.flushMutableRefs();
+		subject.clearRefCache();
 
 		// then:
 		verify(rels).replace(fromAccountTokenRel(a, at), aValue);
@@ -141,14 +149,14 @@ class BackingTokenRelsTest {
 	}
 
 	@Test
-	public void syncsFromInjectedMap() {
+	void syncsFromInjectedMap() {
 		// expect:
 		assertTrue(subject.existingRels.contains(asTokenRel(a, at)));
 		assertTrue(subject.existingRels.contains(asTokenRel(b, bt)));
 	}
 
 	@Test
-	public void rebuildsFromChangedSources() {
+	void rebuildsFromChangedSources() {
 		// when:
 		rels.clear();
 		rels.put(cKey, cValue);
@@ -163,14 +171,14 @@ class BackingTokenRelsTest {
 	}
 
 	@Test
-	public void containsWorks() {
+	void containsWorks() {
 		// expect:
 		assertTrue(subject.contains(asTokenRel(a, at)));
 		assertTrue(subject.contains(asTokenRel(b, bt)));
 	}
 
 	@Test
-	public void getIsReadThrough() {
+	void getIsReadThrough() {
 		setupMocked();
 
 		given(rels.getForModify(aKey)).willReturn(aValue);
@@ -189,7 +197,7 @@ class BackingTokenRelsTest {
 	}
 
 	@Test
-	public void irrelevantMethodsNotSupported() {
+	void irrelevantMethodsNotSupported() {
 		// expect:
 		assertThrows(UnsupportedOperationException.class, () -> subject.getUnsafeRef(null));
 		assertThrows(UnsupportedOperationException.class, subject::idSet);

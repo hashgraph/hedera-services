@@ -104,7 +104,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 		var ledgerFloat = allIds.stream().mapToLong(id -> accounts.getUnsafeRef(id).getBalance()).sum();
 		var msg = String.format("Ledger float is %d tinyBars in %d accounts.", ledgerFloat, allIds.size());
 		log.info(msg);
-		accounts.flushMutableRefs();
+		accounts.clearRefCache();
 	}
 
 	private MerkleAccount accountWith(long balance, long expiry) {

@@ -243,7 +243,7 @@ class FCMapBackingAccountsTest {
 		subject.getRef(d);
 		subject.getRef(b);
 		// and:
-		subject.flushMutableRefs();
+		subject.clearRefCache();
 
 		// then:
 		inOrder.verify(map).replace(cKey, cValue);
