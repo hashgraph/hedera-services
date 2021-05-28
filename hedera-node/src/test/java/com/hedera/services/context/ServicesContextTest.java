@@ -179,7 +179,7 @@ public class ServicesContextTest {
 	private final NodeId nodeId = new NodeId(false, id);
 	private static final String recordStreamDir = "somePath/recordStream";
 
-	RichInstant consensusTimeOfLastHandledTxn = RichInstant.fromJava(Instant.now());
+	Instant consensusTimeOfLastHandledTxn = Instant.now();
 	Platform platform;
 	SequenceNumber seqNo;
 	ExchangeRates midnightRates;
@@ -290,28 +290,10 @@ public class ServicesContextTest {
 		inOrder.verify(state).addressBook();
 		assertEquals(seqNo, actualSeqNo);
 		assertEquals(midnightRates, actualMidnightRates);
-		assertEquals(consensusTimeOfLastHandledTxn.toJava(), actualLastHandleTime);
+		assertEquals(consensusTimeOfLastHandledTxn, actualLastHandleTime);
 		inOrder.verify(state).topics();
 		inOrder.verify(state).storage();
 		inOrder.verify(state).accounts();
-	}
-
-	@Test
-	void hasExpectedNodeAccount() {
-		// setup:
-		Address address = mock(Address.class);
-		AddressBook book = mock(AddressBook.class);
-
-		given(address.getMemo()).willReturn("0.0.3");
-		given(book.getAddress(1L)).willReturn(address);
-		given(state.addressBook()).willReturn(book);
-
-		// when:
-		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
-
-		// then:
-		assertEquals(ctx.address(), address);
-		assertEquals(AccountID.newBuilder().setAccountNum(3L).build(), ctx.nodeAccount());
 	}
 
 	@Test
@@ -586,11 +568,13 @@ public class ServicesContextTest {
 		final AddressBook book = mock(AddressBook.class);
 		final Address address = mock(Address.class);
 		given(state.addressBook()).willReturn(book);
-		given(book.getAddress(id)).willReturn(address);
+		given(address.getStake()).willReturn(1L);
 		given(address.getMemo()).willReturn("0.0.3");
+		given(book.getAddress(0)).willReturn(address);
+		given(book.getSize()).willReturn(1);
 
 		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
-		assertEquals(expectedDir + "/record0.0.3", ctx.getRecordStreamDirectory(sourceProps));
+		assertEquals(expectedDir + "/record0.0.0", ctx.getRecordStreamDirectory(sourceProps));
 	}
 
 	@Test

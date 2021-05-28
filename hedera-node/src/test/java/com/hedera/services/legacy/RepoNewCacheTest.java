@@ -38,13 +38,12 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.StorageSourceFactory;
 import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.fcmap.FCMap;
-import org.apache.commons.codec.DecoderException;
 import org.ethereum.core.AccountState;
 import org.ethereum.core.Repository;
 import org.ethereum.datasource.DbSource;
@@ -53,7 +52,6 @@ import org.ethereum.db.ServicesRepositoryImpl;
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.spongycastle.util.encoders.Hex;
 
 import java.math.BigInteger;
 
@@ -83,11 +81,11 @@ public class RepoNewCacheTest {
 				delegate);
 		Source<byte[], AccountState> repDatabase = new LedgerAccountsSource(ledger);
 		ServicesRepositoryRoot repository = new ServicesRepositoryRoot(repDatabase, repDBFile);
-		String key = Hex.toHexString(EntityIdUtils.asSolidityAddress(0, 0, 1));
+		String key = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, 1));
 		byte[] keyByte = null;
 		try {
-			keyByte = MiscUtils.commonsHexToBytes(key);
-		} catch (DecoderException e) {
+			keyByte = CommonUtils.unhex(key);
+		} catch (IllegalArgumentException ignore) {
 		}
 		repository.addBalance(keyByte, BigInteger.TEN);
 		repository.commit();
@@ -181,11 +179,11 @@ public class RepoNewCacheTest {
 		Source<byte[], AccountState> accountSource = new LedgerAccountsSource(ledger);
 		ServicesRepositoryRoot repository = new ServicesRepositoryRoot(accountSource, repDBFile);
 
-		String someKey = Hex.toHexString(EntityIdUtils.asSolidityAddress(0, 0, 1));
+		String someKey = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, 1));
 		byte[] someKeyBytes = null;
 		try {
-			someKeyBytes = MiscUtils.commonsHexToBytes(someKey);
-		} catch (DecoderException e) {
+			someKeyBytes = CommonUtils.unhex(someKey);
+		} catch (IllegalArgumentException ignore) {
 		}
 
 		ledger.begin();

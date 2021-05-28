@@ -24,10 +24,10 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.apache.commons.codec.binary.Hex;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -149,10 +149,10 @@ public class SolidityLog implements SelfSerializable {
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(this)
-				.add("data", Hex.encodeHexString(data))
-				.add("bloom", Hex.encodeHexString(bloom))
+				.add("data", CommonUtils.hex(data))
+				.add("bloom", CommonUtils.hex(bloom))
 				.add("contractId", contractId)
-				.add("topics", topics.stream().map(Hex::encodeHexString).collect(toList()))
+				.add("topics", topics.stream().map(CommonUtils::hex).collect(toList()))
 				.toString();
 	}
 

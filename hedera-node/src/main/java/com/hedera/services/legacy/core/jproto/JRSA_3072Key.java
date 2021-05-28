@@ -20,7 +20,7 @@ package com.hedera.services.legacy.core.jproto;
  * ‍
  */
 
-import com.hedera.services.utils.MiscUtils;
+import com.swirlds.common.CommonUtils;
 
 /**
  * Maps to proto Key of type RSA_3072.
@@ -38,7 +38,7 @@ public class JRSA_3072Key extends JKey {
 
 	@Override
 	public String toString() {
-		return "<JRSA_3072Key: RSA_3072Key hex=" + MiscUtils.commonsBytesToHex(RSA_3072Key) + ">";
+		return "<JRSA_3072Key: RSA_3072Key hex=" + CommonUtils.hex(RSA_3072Key) + ">";
 	}
 
 	public boolean hasRSA_3072Key() {

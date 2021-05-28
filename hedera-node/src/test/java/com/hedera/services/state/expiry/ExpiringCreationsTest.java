@@ -65,6 +65,7 @@ import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.swirlds.common.CommonUtils.hex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
@@ -216,8 +217,8 @@ class ExpiringCreationsTest {
 		assertEquals(timestamp.getEpochSecond(), actualRecord.getConsensusTimestamp().getSeconds());
 		assertEquals(timestamp.getNano(), actualRecord.getConsensusTimestamp().getNanos());
 		assertEquals(asAccount(account).getAccountNum(), actualRecord.getTxnId().getPayerAccount().num());
-		assertEquals(Hex.encodeHexString(ByteString.copyFrom(hashString.getBytes(StandardCharsets.UTF_8)).toByteArray()),
-				Hex.encodeHexString(actualRecord.getTxnHash()));
+		assertEquals(hex(ByteString.copyFrom(hashString.getBytes(StandardCharsets.UTF_8)).toByteArray()),
+				hex(actualRecord.getTxnHash()));
 		assertEquals(110L, actualRecord.getFee());
 		//and:
 		List<CurrencyAdjustments> tokenTransferListExpected = getTokenAdjustments(List.of(tokenTransfers)).getValue();

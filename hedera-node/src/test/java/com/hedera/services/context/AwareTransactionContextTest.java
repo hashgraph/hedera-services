@@ -39,6 +39,9 @@ import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -62,9 +65,12 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fcmap.FCMap;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import javax.inject.Inject;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -82,6 +88,8 @@ import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.IdUtils.asTopic;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -94,11 +102,11 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.when;
 
-public class AwareTransactionContextTest {
-	final TransactionID scheduledTxnId = TransactionID.newBuilder()
+@ExtendWith(LogCaptureExtension.class)
+class AwareTransactionContextTest {
+	private final TransactionID scheduledTxnId = TransactionID.newBuilder()
 			.setAccountID(IdUtils.asAccount("0.0.2"))
 			.build();
-	private long fee = 123L;
 	private long memberId = 3;
 	private long anotherMemberId = 4;
 	private Instant now = Instant.now();
@@ -134,9 +142,9 @@ public class AwareTransactionContextTest {
 	private Address anotherAddress;
 	private AddressBook book;
 	private HbarCentExchange exchange;
+	private NodeInfo nodeInfo;
 	private ServicesContext ctx;
 	private PlatformTxnAccessor accessor;
-	private AwareTransactionContext subject;
 	private Transaction signedTxn;
 	private TransactionBody txn;
 	private ExpirableTxnRecord record;
@@ -148,7 +156,13 @@ public class AwareTransactionContextTest {
 			.setAccountID(payer)
 			.build();
 	private ContractFunctionResult result = ContractFunctionResult.newBuilder().setContractID(contractCreated).build();
-	JKey payerKey;
+	private JKey payerKey;
+
+	@Inject
+	private LogCaptor logCaptor;
+
+	@LoggingSubject
+	private AwareTransactionContext subject;
 
 	private ExpiringCreations creator;
 
@@ -170,6 +184,7 @@ public class AwareTransactionContextTest {
 		given(exchange.activeRates()).willReturn(ratesNow);
 
 		itemizableFeeCharging = mock(ItemizableFeeCharging.class);
+		given(itemizableFeeCharging.itemizedFees()).willReturn(TransferList.getDefaultInstance());
 
 		payerKey = mock(JKey.class);
 		MerkleAccount payerAccount = mock(MerkleAccount.class);
@@ -186,6 +201,10 @@ public class AwareTransactionContextTest {
 		given(ctx.accounts()).willReturn(accounts);
 		given(ctx.addressBook()).willReturn(book);
 		given(ctx.creator()).willReturn(creator);
+
+		nodeInfo = mock(NodeInfo.class);
+		given(ctx.nodeInfo()).willReturn(nodeInfo);
+		given(nodeInfo.accountOf(memberId)).willReturn(nodeAccount);
 
 		txn = mock(TransactionBody.class);
 		given(txn.getMemo()).willReturn(memo);
@@ -205,13 +224,13 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void throwsIseIfNoPayerActive() {
+	void throwsIseIfNoPayerActive() {
 		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.activePayer());
 	}
 
 	@Test
-	public void returnsPayerIfSigActive() {
+	void returnsPayerIfSigActive() {
 		// given:
 		subject.payerSigIsKnownActive();
 
@@ -220,13 +239,13 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void returnsEmptyKeyIfNoPayerActive() {
+	void returnsEmptyKeyIfNoPayerActive() {
 		// expect:
 		assertEquals(EMPTY_KEY, subject.activePayerKey());
 	}
 
 	@Test
-	public void getsPayerKeyIfSigActive() {
+	void getsPayerKeyIfSigActive() {
 		// given:
 		subject.payerSigIsKnownActive();
 
@@ -235,21 +254,24 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void getsExpectedNodeAccount() {
+	void getsExpectedNodeAccount() {
 		// expect:
 		assertEquals(nodeAccount, subject.submittingNodeAccount());
 	}
 
 	@Test
-	public void failsHardForMissingMemberAccount() {
-		given(book.getAddress(memberId)).willReturn(null);
+	void failsHardForMissingMemberAccount() {
+		given(nodeInfo.accountOf(memberId)).willThrow(IllegalArgumentException.class);
 
-		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.submittingNodeAccount());
+		// then:
+		var ise = assertThrows(IllegalStateException.class, () -> subject.submittingNodeAccount());
+		// and:
+		assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith("No available Hedera account for member 3!")));
+		assertEquals("Member 3 must have a Hedera account!", ise.getMessage());
 	}
 
 	@Test
-	public void resetsRecordSoFar() {
+	void resetsRecordSoFar() {
 		// given:
 		subject.recordSoFar = mock(ExpirableTxnRecord.Builder.class);
 
@@ -261,8 +283,9 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void resetsEverythingElse() {
-		// given:
+	void resetsEverythingElse() {
+		given(nodeInfo.accountOf(anotherMemberId)).willReturn(anotherNodeAccount);
+		// and:
 		subject.addNonThresholdFeeChargedToPayer(1_234L);
 		subject.setCallResult(result);
 		subject.setStatus(SUCCESS);
@@ -294,13 +317,13 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void effectivePayerIsSubmittingNodeIfNotVerified() {
+	void effectivePayerIsSubmittingNodeIfNotVerified() {
 		// expect:
 		assertEquals(nodeAccount, subject.effectivePayer());
 	}
 
 	@Test
-	public void effectivePayerIsActiveIfVerified() {
+	void effectivePayerIsActiveIfVerified() {
 		// given:
 		subject.payerSigIsKnownActive();
 
@@ -309,7 +332,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void getsItemizedRepr() {
+	void getsItemizedRepr() {
 		// setup:
 		TransferList canonicalAdjustments =
 				withAdjustments(payer, -2100, node, 100, funding, 1000, another, 1000);
@@ -333,7 +356,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void usesChargingToSetTransactionFee() {
+	void usesChargingToSetTransactionFee() {
 		long std = 1_234L;
 		long other = 4_321L;
 		given(itemizableFeeCharging.totalFeesChargedToPayer()).willReturn(std);
@@ -349,7 +372,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void usesTokenTransfersToSetApropos() {
+	void usesTokenTransfersToSetApropos() {
 		// when:
 		setUpBuildingExpirableTxnRecord();
 		record = subject.recordSoFar();
@@ -359,7 +382,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void configuresCallResult() {
+	void configuresCallResult() {
 		// when:
 		subject.setCallResult(result);
 		setUpBuildingExpirableTxnRecord();
@@ -370,7 +393,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void configuresCreateResult() {
+	void configuresCreateResult() {
 		// when:
 		setUpBuildingExpirableTxnRecord();
 		subject.setCreateResult(result);
@@ -381,14 +404,14 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void hasTransferList() {
+	void hasTransferList() {
 		setUpBuildingExpirableTxnRecord();
 		// expect:
 		assertEquals(transfers, subject.recordSoFar().asGrpc().getTransferList());
 	}
 
 	@Test
-	public void hasExpectedCopyFields() {
+	void hasExpectedCopyFields() {
 		setUpBuildingExpirableTxnRecord();
 		// when:
 		ExpirableTxnRecord record = subject.recordSoFar();
@@ -401,7 +424,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void hasExpectedPrimitives() {
+	void hasExpectedPrimitives() {
 		// expect:
 		assertEquals(accessor, subject.accessor());
 		assertEquals(now, subject.consensusTime());
@@ -409,7 +432,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void hasExpectedStatus() {
+	void hasExpectedStatus() {
 		// when:
 		subject.setStatus(ResponseCodeEnum.INVALID_PAYER_SIGNATURE);
 
@@ -418,7 +441,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void hasExpectedRecordStatus() {
+	void hasExpectedRecordStatus() {
 		// when:
 		subject.setStatus(ResponseCodeEnum.INVALID_PAYER_SIGNATURE);
 		setUpBuildingExpirableTxnRecord();
@@ -430,7 +453,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void getsExpectedReceiptForAccountCreation() {
+	void getsExpectedReceiptForAccountCreation() {
 		// when:
 		subject.setCreated(created);
 		setUpBuildingExpirableTxnRecord();
@@ -442,7 +465,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void getsExpectedReceiptForTokenCreation() {
+	void getsExpectedReceiptForTokenCreation() {
 		// when:
 		subject.setCreated(tokenCreated);
 		setUpBuildingExpirableTxnRecord();
@@ -455,7 +478,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void getsExpectedReceiptForTokenMintBurnWipe() {
+	void getsExpectedReceiptForTokenMintBurnWipe() {
 		// when:
 		final var newTotalSupply = 1000L;
 		subject.setNewTotalSupply(newTotalSupply);
@@ -470,7 +493,7 @@ public class AwareTransactionContextTest {
 
 
 	@Test
-	public void getsExpectedReceiptForFileCreation() {
+	void getsExpectedReceiptForFileCreation() {
 		// when:
 		subject.setCreated(fileCreated);
 		setUpBuildingExpirableTxnRecord();
@@ -483,7 +506,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void getsExpectedReceiptForContractCreation() {
+	void getsExpectedReceiptForContractCreation() {
 		// when:
 		subject.setCreated(contractCreated);
 		setUpBuildingExpirableTxnRecord();
@@ -495,7 +518,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void getsExpectedReceiptForTopicCreation() {
+	void getsExpectedReceiptForTopicCreation() {
 		// when:
 		subject.setCreated(topicCreated);
 		setUpBuildingExpirableTxnRecord();
@@ -507,7 +530,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void getsExpectedReceiptForSubmitMessage() {
+	void getsExpectedReceiptForSubmitMessage() {
 		var sequenceNumber = 1000L;
 		var runningHash = new byte[11];
 
@@ -524,7 +547,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void getsExpectedReceiptForSuccessfulScheduleOps() {
+	void getsExpectedReceiptForSuccessfulScheduleOps() {
 		// when:
 		subject.setCreated(scheduleCreated);
 		subject.setScheduledTxnId(scheduledTxnId);
@@ -538,13 +561,13 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void startsWithoutKnownValidPayerSig() {
+	void startsWithoutKnownValidPayerSig() {
 		// expect:
 		assertFalse(subject.isPayerSigKnownActive());
 	}
 
 	@Test
-	public void setsSigToKnownValid() {
+	void setsSigToKnownValid() {
 		// given:
 		subject.payerSigIsKnownActive();
 
@@ -553,7 +576,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void triggersTxn() {
+	void triggersTxn() {
 		// when:
 		subject.trigger(accessor);
 		// then:
@@ -561,7 +584,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void getsExpectedRecordForTriggeredTxn() {
+	void getsExpectedRecordForTriggeredTxn() {
 		// given:
 		given(accessor.getScheduleRef()).willReturn(scheduleCreated);
 		given(accessor.isTriggeredTxn()).willReturn(true);
@@ -575,7 +598,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void addsExpiringEntities() {
+	void addsExpiringEntities() {
 		// given:
 		var expected = Collections.singletonList(expiringEntity);
 		// when:
@@ -586,7 +609,7 @@ public class AwareTransactionContextTest {
 	}
 
 	@Test
-	public void throwsIfAccessorIsAlreadyTriggered() {
+	void throwsIfAccessorIsAlreadyTriggered() {
 		// given:
 		given(accessor.getScheduleRef()).willReturn(scheduleCreated);
 		given(accessor.isTriggeredTxn()).willReturn(true);

@@ -27,7 +27,7 @@ import com.hedera.services.state.serdes.IoWritingConsumer;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.apache.commons.codec.binary.Hex;
+import com.swirlds.common.CommonUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -143,8 +143,8 @@ class SolidityFnResultTest {
 		assertEquals(
 				"SolidityFnResult{" +
 						"gasUsed=" + gasUsed + ", " +
-						"bloom=" + Hex.encodeHexString(bloom) + ", " +
-						"result=" + Hex.encodeHexString(result) + ", " +
+						"bloom=" + CommonUtils.hex(bloom) + ", " +
+						"result=" + CommonUtils.hex(result) + ", " +
 						"error=" + error + ", " +
 						"contractId=" + contractId + ", " +
 						"createdContractIds=" + createdContractIds + ", " +

@@ -23,6 +23,7 @@ package com.hedera.services.state.forensics;
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.swirlds.common.AddressBook;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.common.InvalidSignedStateListener;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
@@ -32,8 +33,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
-
-import static org.apache.commons.codec.binary.Hex.encodeHexString;
 
 public class IssListener implements InvalidSignedStateListener {
 	private static final Logger log = LogManager.getLogger(IssListener.class);
@@ -70,7 +69,7 @@ public class IssListener implements InvalidSignedStateListener {
 				var msg = String.format(
 						ISS_ERROR_MSG_PATTERN,
 						round, self.getId(), other.getId(),
-						encodeHexString(sig), encodeHexString(hash));
+						CommonUtils.hex(sig), CommonUtils.hex(hash));
 				log.error(msg);
 				fcmDump.dumpFrom(issState, self, round);
 				issState.logSummary();
