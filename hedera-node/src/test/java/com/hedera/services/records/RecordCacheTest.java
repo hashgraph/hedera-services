@@ -278,7 +278,7 @@ class RecordCacheTest {
 		given(histories.get(txnIdA)).willReturn(history);
 
 		// expect:
-		assertEquals(aRecord.asGrpc(), subject.getPriorityRecord(txnIdA));
+		assertEquals(aRecord, subject.getPriorityRecord(txnIdA));
 	}
 
 	@Test

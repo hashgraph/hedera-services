@@ -134,11 +134,10 @@ public class RecordCache {
 				.orElse(UNKNOWN_RECEIPT);
 	}
 
-	public TransactionRecord getPriorityRecord(TransactionID txnId) {
+	public ExpirableTxnRecord getPriorityRecord(TransactionID txnId) {
 		var history = histories.get(txnId);
 		if (history != null) {
 			return Optional.ofNullable(history.priorityRecord())
-					.map(ExpirableTxnRecord::asGrpc)
 					.orElse(null);
 		}
 		return null;
