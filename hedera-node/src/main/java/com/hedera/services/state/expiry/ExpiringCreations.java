@@ -68,10 +68,6 @@ public class ExpiringCreations implements EntityCreator {
 		this.ctx = ctx;
 	}
 
-	public Supplier<FCMap<MerkleEntityId, MerkleAccount>> getAccounts(){
-		return accounts;
-	}
-
 	@Override
 	public void setRecordCache(RecordCache recordCache) {
 		this.recordCache = recordCache;
