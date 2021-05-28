@@ -49,6 +49,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.never;
 
 class BackingTokenRelsTest {
 	long aBalance = 100, bBalance = 200, cBalance = 300;
@@ -142,8 +143,7 @@ class BackingTokenRelsTest {
 		subject.clearRefCache();
 
 		// then:
-		verify(rels).replace(fromAccountTokenRel(a, at), aValue);
-		verify(rels).replace(fromAccountTokenRel(b, bt), bValue);
+		verify(rels, never()).replace(any(), any());
 		// and:
 		assertTrue(subject.cache.isEmpty());
 	}

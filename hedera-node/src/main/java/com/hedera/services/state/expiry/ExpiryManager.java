@@ -163,8 +163,6 @@ public class ExpiryManager {
 			final var mutableAccount = currentAccounts.getForModify(key);
 			final var mutableRecords = mutableAccount.records();
 			purgeExpiredFrom(mutableRecords, now);
-
-			currentAccounts.replace(key, mutableAccount);
 		}
 		recordCache.forgetAnyOtherExpiredHistory(now);
 	}

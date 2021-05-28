@@ -294,7 +294,6 @@ public class HederaScheduleStoreTest {
 		// then:
 		inOrder.verify(schedules).getForModify(fromScheduleId(created));
 		inOrder.verify(change).accept(schedule);
-		inOrder.verify(schedules).replace(fromScheduleId(created), schedule);
 	}
 
 	@Test
@@ -307,11 +306,8 @@ public class HederaScheduleStoreTest {
 
 		willThrow(IllegalStateException.class).given(change).accept(any());
 
-		// when:
-		assertThrows(IllegalArgumentException.class, () -> subject.apply(created, change));
-
 		// then:
-		verify(schedules).replace(key, schedule);
+		assertThrows(IllegalArgumentException.class, () -> subject.apply(created, change));
 	}
 
 	@Test
@@ -530,7 +526,6 @@ public class HederaScheduleStoreTest {
 
 		// then:
 		verify(schedule).markDeleted(now);
-		verify(schedules).replace(fromScheduleId(created), schedule);
 		// and:
 		assertEquals(OK, outcome);
 	}

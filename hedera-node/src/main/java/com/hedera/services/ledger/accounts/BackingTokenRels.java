@@ -74,9 +74,6 @@ public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, 
 
 	@Override
 	public void clearRefCache() {
-		cache.entrySet().stream()
-				.sorted(REL_ENTRY_CMP)
-				.forEach(entry -> delegate.get().replace(fromAccountTokenRel(entry.getKey()), entry.getValue()));
 		cache.clear();
 	}
 

@@ -78,7 +78,6 @@ public class ExpiringCreations implements EntityCreator {
 		final var currentAccounts = accounts.get();
 		final var mutableAccount = currentAccounts.getForModify(key);
 		mutableAccount.records().offer(record);
-		currentAccounts.replace(key, mutableAccount);
 	}
 
 	private ExpirableTxnRecord buildFrom(TransactionRecord grpcRecord, long now, long submittingMember) {

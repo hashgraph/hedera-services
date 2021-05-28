@@ -273,9 +273,6 @@ class RenewalHelperTest {
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), deletedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
-		verify(tokenRels).replace(
-				fromAccountTokenRel(treasuryGrpcId, survivedTokenGrpcId),
-				new MerkleTokenRelStatus(tokenBalance, false, false));
 		// and:
 		assertEquals(List.of(
 					ttlOf(survivedTokenGrpcId, grpcIdWith(brokeExpiredAccountNum), treasuryGrpcId, tokenBalance)
@@ -300,8 +297,6 @@ class RenewalHelperTest {
 		// then:
 		verify(accounts).getForModify(key);
 		verify(accounts).getForModify(fundingKey);
-		verify(accounts).replace(key, renewedExpiredAccount);
-		verify(accounts).replace(fundingKey, fundingAccount);
 	}
 
 	@Test

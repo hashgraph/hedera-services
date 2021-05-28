@@ -114,7 +114,6 @@ class ExpiringCreationsTest {
 		// then:
 		assertEquals(expectedRecord, actual);
 		// and:
-		verify(accounts).replace(key, payerAccount);
 		verify(expiries).trackRecordInState(effPayer, expectedExpiry);
 		assertEquals(expectedRecord, payerAccount.records().peek());
 	}
