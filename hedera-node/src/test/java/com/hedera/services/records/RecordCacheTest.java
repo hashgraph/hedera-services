@@ -36,6 +36,7 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
@@ -43,7 +44,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -99,15 +99,13 @@ class RecordCacheTest {
 			.setAccountID(asAccount("0.0.2"))
 			.setExchangeRate(ExchangeRateSet.newBuilder().setCurrentRate(rate).setNextRate(rate))
 			.build();
-	private TransactionRecord aRecord = TransactionRecord.newBuilder()
+	private ExpirableTxnRecord aRecord = ExpirableTxnRecord.newBuilder()
 			.setMemo("Something")
-			.setConsensusTimestamp(Timestamp.newBuilder().setSeconds(500L))
-			.setReceipt(knownReceipt)
-			.setTransactionID(txnIdA)
-			.setTransactionFee(123L)
+			.setConsensusTimestamp(RichInstant.fromGrpc(Timestamp.newBuilder().setSeconds(500L).build()))
+			.setReceipt(TxnReceipt.fromGrpc(knownReceipt))
+			.setTxnId(TxnId.fromGrpc(txnIdA))
+			.setFee(123L)
 			.build();
-
-	private ExpirableTxnRecord record = ExpirableTxnRecord.fromGprc(aRecord);
 
 	private ExpiringCreations creator;
 	private ServicesContext ctx;
@@ -143,9 +141,9 @@ class RecordCacheTest {
 		subject = new RecordCache(ctx, receiptCache, new HashMap<>());
 
 		// given:
-		record.setExpiry(someExpiry);
-		subject.setPostConsensus(txnIdA, SUCCESS, record);
-		subject.trackForExpiry(record);
+		aRecord.setExpiry(someExpiry);
+		subject.setPostConsensus(txnIdA, SUCCESS, aRecord);
+		subject.trackForExpiry(aRecord);
 
 		// when:
 		subject.forgetAnyOtherExpiredHistory(someExpiry + 1);
@@ -159,10 +157,10 @@ class RecordCacheTest {
 		// setup:
 		subject.recordExpiries = mock(MonotonicFullQueueExpiries.class);
 		// and:
-		record.setExpiry(someExpiry);
+		aRecord.setExpiry(someExpiry);
 
 		// when:
-		subject.trackForExpiry(record);
+		subject.trackForExpiry(aRecord);
 
 		// then:
 		verify(subject.recordExpiries).track(txnIdA, someExpiry);
@@ -173,7 +171,7 @@ class RecordCacheTest {
 		// setup:
 		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
 
-		given(history.priorityRecord()).willReturn(record);
+		given(history.priorityRecord()).willReturn(aRecord);
 		given(histories.get(txnIdA)).willReturn(history);
 
 		// expect:
@@ -184,7 +182,7 @@ class RecordCacheTest {
 	public void getsDuplicateRecordsAsExpected() {
 		// setup:
 		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
-		var duplicateRecords = List.of(ExpirableTxnRecord.fromGprc(aRecord));
+		var duplicateRecords = List.of(aRecord);
 
 		given(history.duplicateRecords()).willReturn(duplicateRecords);
 		given(histories.get(txnIdA)).willReturn(history);
@@ -193,7 +191,7 @@ class RecordCacheTest {
 		var actual = subject.getDuplicateRecords(txnIdA);
 
 		// expect:
-		assertEquals(List.of(aRecord), actual);
+		assertEquals(List.of(aRecord.asGrpc()), actual);
 	}
 
 	@Test
@@ -206,7 +204,7 @@ class RecordCacheTest {
 	public void getsDuplicateReceiptsAsExpected() {
 		// setup:
 		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
-		var duplicateRecords = List.of(ExpirableTxnRecord.fromGprc(aRecord));
+		var duplicateRecords = List.of(aRecord);
 
 		given(history.duplicateRecords()).willReturn(duplicateRecords);
 		given(histories.get(txnIdA)).willReturn(history);
@@ -276,11 +274,11 @@ class RecordCacheTest {
 		// setup:
 		TxnIdRecentHistory history = mock(TxnIdRecentHistory.class);
 
-		given(history.priorityRecord()).willReturn(record);
+		given(history.priorityRecord()).willReturn(aRecord);
 		given(histories.get(txnIdA)).willReturn(history);
 
 		// expect:
-		assertEquals(aRecord, subject.getPriorityRecord(txnIdA));
+		assertEquals(aRecord.asGrpc(), subject.getPriorityRecord(txnIdA));
 	}
 
 	@Test
@@ -302,10 +300,10 @@ class RecordCacheTest {
 		// when:
 		subject.setPostConsensus(
 				txnIdA,
-				aRecord.getReceipt().getStatus(),
-				record);
+				ResponseCodeEnum.valueOf(aRecord.getReceipt().getStatus()),
+				aRecord);
 		// then:
-		verify(history).observe(record, aRecord.getReceipt().getStatus());
+		verify(history).observe(aRecord, ResponseCodeEnum.valueOf(aRecord.getReceipt().getStatus()));
 	}
 
 	@Test
