@@ -181,10 +181,10 @@ public class SolidityExecutor {
 		this.trackingRepository = repository.startTracking();
 		this.dynamicProperties = dynamicProperties;
 		this.payerAddress = Optional.ofNullable(payerAddress)
-				.map(ByteUtil::hexStringToBytes)
+				.map(CommonUtils::unhex)
 				.orElse(solidityTxn.getSender());
 		this.fundingAddress = Optional.ofNullable(fundingAddress)
-				.map(ByteUtil::hexStringToBytes)
+				.map(CommonUtils::unhex)
 				.orElse(EMPTY_BYTE_ARRAY);
 
 		commonConfig = CommonConfig.getDefault();

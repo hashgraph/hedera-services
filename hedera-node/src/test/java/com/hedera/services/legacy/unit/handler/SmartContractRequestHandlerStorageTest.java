@@ -74,7 +74,6 @@ import com.swirlds.common.CommonUtils;
 import com.swirlds.fcmap.FCMap;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
-import org.apache.commons.codec.DecoderException;
 import org.apache.commons.collections4.Predicate;
 import org.ethereum.core.AccountState;
 import org.ethereum.datasource.DbSource;
@@ -82,7 +81,6 @@ import org.ethereum.datasource.Source;
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.ethereum.solidity.Abi;
 import org.ethereum.solidity.Abi.Event;
-import org.ethereum.util.ByteUtil;
 import org.junit.Assert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -763,7 +761,6 @@ public class SmartContractRequestHandlerStorageTest {
         List<?> eventData = storedEvnt.decode(dataArr, topicsArr);
         BigInteger valueFromEvent = (BigInteger) eventData.get(1);
         byte[] senderAddress = (byte[]) eventData.get(0);
-        String senderAddrInStrFormat = ByteUtil.toHexString(senderAddress);
         assert (valueFromEvent.intValue() == valuePassed);
         retValue = true;
       }

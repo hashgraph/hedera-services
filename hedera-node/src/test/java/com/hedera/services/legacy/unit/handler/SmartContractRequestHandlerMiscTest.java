@@ -79,7 +79,6 @@ import org.ethereum.crypto.HashUtil;
 import org.ethereum.datasource.DbSource;
 import org.ethereum.datasource.Source;
 import org.ethereum.db.ServicesRepositoryRoot;
-import org.ethereum.util.ByteUtil;
 import org.junit.Assert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -838,7 +837,7 @@ public class SmartContractRequestHandlerMiscTest {
     Assert.assertTrue(callResults.length > 0);
     byte[] retVal = SCEncoding.decodeOpExtCodeHash(callResults);
     // Test the local convention of returning the address, not a Keccak256 hash
-    String returnedLast20Bytes = ByteUtil.toHexString(retVal).substring(24);
+    String returnedLast20Bytes = CommonUtils.hex(retVal).substring(24);
     Assert.assertEquals(contractSolidityAddress, returnedLast20Bytes);
   }
 
@@ -872,8 +871,8 @@ public class SmartContractRequestHandlerMiscTest {
     Assert.assertTrue(callResults.length > 0);
     byte[] retVal = SCEncoding.decodeOpExtCodeHash(callResults);
     // Test the local convention of returning the empty hash for a regular account
-    String returned = ByteUtil.toHexString(retVal);
-    String expected = ByteUtil.toHexString(HashUtil.EMPTY_DATA_HASH);
+    String returned = CommonUtils.hex(retVal);
+    String expected = CommonUtils.hex(HashUtil.EMPTY_DATA_HASH);
     Assert.assertEquals(expected, returned);
   }
 
@@ -912,7 +911,7 @@ public class SmartContractRequestHandlerMiscTest {
     Assert.assertNotNull(callResults);
     Assert.assertTrue(callResults.length > 0);
     byte[] bytesSolidityAddress = SCEncoding.decodeCreateTrivialGetAddress(callResults);
-    String innerContractSolidityAddress = ByteUtil.toHexString(bytesSolidityAddress);
+    String innerContractSolidityAddress = CommonUtils.hex(bytesSolidityAddress);
 
     // Create the opcode contract with EXTCODEHASH
     contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
@@ -938,7 +937,7 @@ public class SmartContractRequestHandlerMiscTest {
     Assert.assertTrue(callResults.length > 0);
     byte[] retVal = SCEncoding.decodeOpExtCodeHash(callResults);
     // Test the local convention of returning the address, not a Keccak256 hash
-    String returnedLast20Bytes = ByteUtil.toHexString(retVal).substring(24);
+    String returnedLast20Bytes = CommonUtils.hex(retVal).substring(24);
     Assert.assertEquals(innerContractSolidityAddress, returnedLast20Bytes);
   }
 
@@ -971,8 +970,8 @@ public class SmartContractRequestHandlerMiscTest {
     Assert.assertTrue(callResults.length > 0);
     byte[] retVal = SCEncoding.decodeOpExtCodeHash(callResults);
     // Finds existing account and returns not-contract, correct because there is no code at that address.
-    String returned = ByteUtil.toHexString(retVal);
-    String expected = ByteUtil.toHexString(HashUtil.EMPTY_DATA_HASH);
+    String returned = CommonUtils.hex(retVal);
+    String expected = CommonUtils.hex(HashUtil.EMPTY_DATA_HASH);
     Assert.assertEquals(expected, returned);
   }
 
