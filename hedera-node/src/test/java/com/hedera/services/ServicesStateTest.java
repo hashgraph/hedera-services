@@ -750,6 +750,8 @@ class ServicesStateTest {
 	public void incorporatesConsensus() throws NullPointerException {
 		// setup:
 		subject.ctx = ctx;
+		given(platformTxn.getContents()).willReturn(
+				com.hederahashgraph.api.proto.java.Transaction.getDefaultInstance().toByteArray());
 
 		// when:
 		subject.handleTransaction(1, true, now, now, platformTxn);
@@ -767,6 +769,21 @@ class ServicesStateTest {
 		// expect
 		Assertions.assertThrows(NullPointerException.class,
 				() -> subject.handleTransaction(1, true, now, now, platformTxn));
+	}
+
+	@Test
+	public void catchInvalidProtocolBufferExceptionInHandleTransaction() throws NullPointerException {
+		// setup
+		subject.ctx = ctx;
+		given(platformTxn.getContents()).willReturn("abcd".getBytes());
+
+		//expect
+		Assertions.assertDoesNotThrow(
+				() -> subject.handleTransaction(1, true, now, now, platformTxn)
+		);
+		assertThat(
+				logCaptor.warnLogs(),
+				contains(Matchers.startsWith("Consensus platform txn was not gRPC!")));
 	}
 
 	@Test

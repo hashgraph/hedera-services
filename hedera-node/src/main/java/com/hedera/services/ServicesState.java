@@ -311,11 +311,16 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			Instant consensusTime,
 			com.swirlds.common.Transaction transaction
 	) {
-		if (isConsensus) {
-			ctx.logic().incorporateConsensusTxn(transaction,
-					platformTxnRecord.getPlatformTxnAccessor(transaction),
-					consensusTime,
-					submittingMember);
+		try{
+			if (isConsensus) {
+				platformTxnRecord.addTransaction(transaction);
+				ctx.logic().incorporateConsensusTxn(transaction,
+						platformTxnRecord.getPlatformTxnAccessor(transaction),
+						consensusTime,
+						submittingMember);
+			}
+		} catch (InvalidProtocolBufferException e) {
+			log.warn("Consensus platform txn was not gRPC!", e);
 		}
 	}
 
