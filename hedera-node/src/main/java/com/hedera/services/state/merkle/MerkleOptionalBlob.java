@@ -38,7 +38,7 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements FCMValue, 
 
 	// Depends on Migration
 //	static final int PRE_RELEASE_0140_VERSION = 1;
-	static final int RELEASE_0140_VERSION = 2;
+	static final int RELEASE_0140_VERSION = 1;
 	static final int MERKLE_VERSION = RELEASE_0140_VERSION;
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x4cefb15eb131d9e3L;
@@ -133,7 +133,6 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements FCMValue, 
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		var hasData = in.readBoolean();
 		if (hasData) {
-			id = in.readLong();
 			int contentLength = in.readInt();
 			byte[] content = new byte[contentLength];
 			in.readFully(content);
