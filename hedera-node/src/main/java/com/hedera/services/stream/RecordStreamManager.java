@@ -153,6 +153,9 @@ public class RecordStreamManager {
 		this.initialHash = initialHash;
 		multiStream.setRunningHash(initialHash);
 
+		hashQueueThread.start();
+		writeQueueThread.start();
+
 		log.info("Finish initializing RecordStreamManager with: enableRecordStreaming: {}, recordStreamDir: {}, " +
 						"recordsLogPeriod: {} secs, recordStreamQueueCapacity: {}, initialHash: {}",
 				nodeLocalProperties::isRecordStreamEnabled,
