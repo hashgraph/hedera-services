@@ -1,4 +1,3 @@
-transThrottle,             1
 maxOutgoingSyncs,          1
 state.saveStatePeriod,     0
 showInternalStats,         1
