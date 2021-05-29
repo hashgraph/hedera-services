@@ -25,6 +25,7 @@ import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -203,7 +204,7 @@ class ExpiringCreationsTest {
 		//when:
 		ExpirableTxnRecord.Builder builder =
 				subject.buildExpiringRecord(100L, hash,
-						accessor, asTimestamp(timestamp), receipt);
+						accessor, asTimestamp(timestamp), TxnReceipt.fromGrpc(receipt));
 		ExpirableTxnRecord actualRecord = builder.build();
 
 		//then:

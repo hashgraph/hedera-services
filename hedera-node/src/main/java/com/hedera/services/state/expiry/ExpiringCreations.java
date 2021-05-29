@@ -107,7 +107,7 @@ public class ExpiringCreations implements EntityCreator {
 			ByteString hash,
 			TxnAccessor accessor,
 			Timestamp consensusTimestamp,
-			TransactionReceipt receipt
+			TxnReceipt receipt
 	) {
 		final long amount = ctx.narratedCharging().totalFeesChargedToPayer() + otherNonThresholdFees;
 		final TransferList transfersList = ctx.ledger().netTransfersInTxn();
@@ -116,7 +116,7 @@ public class ExpiringCreations implements EntityCreator {
 				? CurrencyAdjustments.fromGrpc(transfersList) : null;
 
 		var builder = ExpirableTxnRecord.newBuilder()
-				.setReceipt(TxnReceipt.fromGrpc(receipt))
+				.setReceipt(receipt)
 				.setTxnHash(hash.toByteArray())
 				.setTxnId(TxnId.fromGrpc(accessor.getTxnId()))
 				.setConsensusTimestamp(RichInstant.fromGrpc(consensusTimestamp))

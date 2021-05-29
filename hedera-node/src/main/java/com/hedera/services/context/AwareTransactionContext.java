@@ -22,11 +22,16 @@ package com.hedera.services.context;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.SolidityFnResult;
+import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.services.txns.ExpandHandleSpan;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -77,8 +82,8 @@ public class AwareTransactionContext implements TransactionContext {
 	private final ServicesContext ctx;
 	private TxnAccessor triggeredTxn = null;
 
+	private static final Consumer<TxnReceipt> noopReceiptConfig = ignore -> { };
 	private static final Consumer<ExpirableTxnRecord.Builder> noopRecordConfig = ignore -> { };
-	private static final Consumer<TransactionReceipt.Builder> noopReceiptConfig = ignore -> { };
 
 	private long submittingMember;
 	private long otherNonThresholdFees;
@@ -86,11 +91,11 @@ public class AwareTransactionContext implements TransactionContext {
 	private Instant consensusTime;
 	private Timestamp consensusTimestamp;
 	private ByteString hash;
-	private ResponseCodeEnum statusSoFar;
 	private TxnAccessor accessor;
-	private Consumer<ExpirableTxnRecord.Builder> recordConfig = noopRecordConfig;
-	private Consumer<TransactionReceipt.Builder> receiptConfig = noopReceiptConfig;
+	private ResponseCodeEnum statusSoFar;
 	private List<ExpiringEntity> expiringEntities;
+	private Consumer<TxnReceipt> receiptConfig = noopReceiptConfig;
+	private Consumer<ExpirableTxnRecord.Builder> recordConfig = noopRecordConfig;
 
 	boolean hasComputedRecordSoFar;
 	ExpirableTxnRecord.Builder recordSoFar = ExpirableTxnRecord.newBuilder();
@@ -153,9 +158,9 @@ public class AwareTransactionContext implements TransactionContext {
 
 	@Override
 	public ExpirableTxnRecord recordSoFar() {
-		final var receipt = receiptSoFar().build();
+		final var receipt = receiptSoFar();
 		recordSoFar = ctx.creator().buildExpiringRecord(
-                                otherNonThresholdFees,
+				otherNonThresholdFees,
 				hash,
 				accessor,
 				consensusTimestamp,
@@ -166,11 +171,10 @@ public class AwareTransactionContext implements TransactionContext {
 		return recordSoFar.build();
 	}
 
-
-	public TransactionReceipt.Builder receiptSoFar() {
-		TransactionReceipt.Builder receipt = TransactionReceipt.newBuilder()
-				.setExchangeRate(ctx.exchange().activeRates())
-				.setStatus(statusSoFar);
+	TxnReceipt receiptSoFar() {
+		final var receipt = new TxnReceipt();
+		receipt.setExchangeRates(ExchangeRates.fromGrpc(ctx.exchange().activeRates()));
+		receipt.setStatus(statusSoFar.name());
 		receiptConfig.accept(receipt);
 		return receipt;
 	}
@@ -197,22 +201,22 @@ public class AwareTransactionContext implements TransactionContext {
 
 	@Override
 	public void setCreated(AccountID id) {
-		receiptConfig = receipt -> receipt.setAccountID(id);
+		receiptConfig = receipt -> receipt.setAccountId(EntityId.fromGrpcAccountId(id));
 	}
 
 	@Override
 	public void setCreated(TokenID id) {
-		receiptConfig = receipt -> receipt.setTokenID(id);
+		receiptConfig = receipt -> receipt.setTokenId(EntityId.fromGrpcTokenId(id));
 	}
 
 	@Override
 	public void setCreated(ScheduleID id) {
-		receiptConfig = receipt -> receipt.setScheduleID(id);
+		receiptConfig = receipt -> receipt.setScheduleId(EntityId.fromGrpcScheduleId(id));
 	}
 
 	@Override
 	public void setScheduledTxnId(TransactionID txnId) {
-		receiptConfig = receiptConfig.andThen(receipt -> receipt.setScheduledTransactionID(txnId));
+		receiptConfig = receiptConfig.andThen(receipt -> receipt.setScheduledTxnId(TxnId.fromGrpc(txnId)));
 	}
 
 	@Override
@@ -222,25 +226,26 @@ public class AwareTransactionContext implements TransactionContext {
 
 	@Override
 	public void setCreated(FileID id) {
-		receiptConfig = receipt -> receipt.setFileID(id);
+		receiptConfig = receipt -> receipt.setFileId(EntityId.fromGrpcFileId(id));
 	}
 
 	@Override
 	public void setCreated(ContractID id) {
-		receiptConfig = receipt -> receipt.setContractID(id);
+		receiptConfig = receipt -> receipt.setContractId(EntityId.fromGrpcContractId(id));
 	}
 
 	@Override
 	public void setCreated(TopicID id) {
-		receiptConfig = receipt -> receipt.setTopicID(id);
+		receiptConfig = receipt -> receipt.setTopicId(EntityId.fromGrpcTopicId(id));
 	}
 
 	@Override
 	public void setTopicRunningHash(byte[] topicRunningHash, long sequenceNumber) {
-		receiptConfig = receipt -> receipt
-				.setTopicRunningHash(ByteString.copyFrom(topicRunningHash))
-				.setTopicSequenceNumber(sequenceNumber)
-				.setTopicRunningHashVersion(MerkleTopic.RUNNING_HASH_VERSION);
+		receiptConfig = receipt -> {
+			receipt.setTopicRunningHash(topicRunningHash);
+			receipt.setTopicSequenceNumber(sequenceNumber);
+			receipt.setRunningHashVersion(MerkleTopic.RUNNING_HASH_VERSION);
+		};
 	}
 
 	@Override
@@ -248,7 +253,7 @@ public class AwareTransactionContext implements TransactionContext {
 		otherNonThresholdFees += amount;
 	}
 
-	public long getNonThresholdFeeChargedToPayer(){
+	public long getNonThresholdFeeChargedToPayer() {
 		return otherNonThresholdFees;
 	}
 

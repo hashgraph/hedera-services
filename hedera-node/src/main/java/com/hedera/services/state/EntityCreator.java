@@ -21,6 +21,7 @@ package com.hedera.services.state;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.TxnAccessor;
@@ -46,7 +47,7 @@ public interface EntityCreator {
 	 *
 	 * @param id
 	 * 		account id
-	 * @param record
+	 * @param expiringRecord
 	 * 		expirable transaction record
 	 * @param now
 	 * 		consensus timestamp
@@ -54,7 +55,11 @@ public interface EntityCreator {
 	 * 		submitting member
 	 * @return
 	 */
-	ExpirableTxnRecord saveExpiringRecord(AccountID id, ExpirableTxnRecord expiringRecord, long now, long submittingMember);
+	ExpirableTxnRecord saveExpiringRecord(
+			AccountID id,
+			ExpirableTxnRecord expiringRecord,
+			long now,
+			long submittingMember);
 
 	/**
 	 * Build {@link ExpirableTxnRecord.Builder} when the record is finalized before committing
@@ -72,8 +77,12 @@ public interface EntityCreator {
 	 * 		transaction receipt
 	 * @return
 	 */
-	ExpirableTxnRecord.Builder buildExpiringRecord(long otherNonThresholdFees, ByteString hash, TxnAccessor accessor,
-			Timestamp consensusTimestamp, TransactionReceipt receipt);
+	ExpirableTxnRecord.Builder buildExpiringRecord(
+			long otherNonThresholdFees,
+			ByteString hash,
+			TxnAccessor accessor,
+			Timestamp consensusTimestamp,
+			TxnReceipt receipt);
 
 	/**
 	 * Build a {@link ExpirableTxnRecord.Builder} for a transaction failed to commit
