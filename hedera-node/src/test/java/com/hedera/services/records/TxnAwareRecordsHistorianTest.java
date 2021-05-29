@@ -22,18 +22,22 @@ package com.hedera.services.records;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Test;
@@ -72,16 +76,17 @@ public class TxnAwareRecordsHistorianTest {
 	final private AccountID funding = asAccount("0.0.98");
 	final private TransferList initialTransfers = withAdjustments(
 			a, -1_000L, b, 500L, c, 501L, d, -1L);
-	final private TransactionRecord finalRecord = TransactionRecord.newBuilder()
-			.setTransactionID(TransactionID.newBuilder().setAccountID(a))
-			.setTransferList(initialTransfers)
+	final private ExpirableTxnRecord finalRecord = ExpirableTxnRecord.newBuilder()
+			.setTxnId(TxnId.fromGrpc(TransactionID.newBuilder().setAccountID(a).build()))
+			.setTransferList(CurrencyAdjustments.fromGrpc(initialTransfers))
 			.setMemo("This is different!")
+			.setReceipt(TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(SUCCESS).build()))
 			.build();
-	final private ExpirableTxnRecord jFinalRecord = ExpirableTxnRecord.fromGprc(finalRecord);
+	final private ExpirableTxnRecord jFinalRecord = finalRecord;
 	{
 		jFinalRecord.setExpiry(expiry);
 	}
-	final private ExpirableTxnRecord payerRecord = ExpirableTxnRecord.fromGprc(finalRecord);
+	final private ExpirableTxnRecord payerRecord = finalRecord;
 	{
 		payerRecord.setExpiry(payerExpiry);
 	}
@@ -110,16 +115,16 @@ public class TxnAwareRecordsHistorianTest {
 		given(dynamicProperties.shouldKeepRecordsInState()).willReturn(true);
 
 		// when:
-		subject.finalizeTransactionRecord();
-		subject.saveTransactionRecord();
+		subject.finalizeExpirableTransactionRecord();
+		subject.saveExpirableTransactionRecord();
 
 		// then:
 		verify(txnCtx).recordSoFar();
 		verify(recordCache).setPostConsensus(
 				txnIdA,
-				finalRecord.getReceipt().getStatus(),
+				ResponseCodeEnum.valueOf(finalRecord.getReceipt().getStatus()),
 				payerRecord);
-		verify(creator).createExpiringRecord(effPayer, finalRecord, nows, submittingMember);
+		verify(creator).saveExpiringRecord(effPayer, finalRecord, nows, submittingMember);
 		// and:
 		assertEquals(finalRecord, subject.lastCreatedRecord().get());
 	}
@@ -179,7 +184,7 @@ public class TxnAwareRecordsHistorianTest {
 		given(dynamicProperties.fundingAccount()).willReturn(funding);
 
 		creator = mock(ExpiringCreations.class);
-		given(creator.createExpiringRecord(effPayer, finalRecord, nows, submittingMember)).willReturn(payerRecord);
+		given(creator.saveExpiringRecord(effPayer, finalRecord, nows, submittingMember)).willReturn(payerRecord);
 
 		expiringEntity = mock(ExpiringEntity.class);
 		given(expiringEntity.id()).willReturn(aEntity);
@@ -195,7 +200,7 @@ public class TxnAwareRecordsHistorianTest {
 		given(txnCtx.status()).willReturn(SUCCESS);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(now);
-		given(txnCtx.recordSoFar()).willReturn(finalRecord);
+		given(txnCtx.recordSoFar()).willReturn(jFinalRecord);
 		given(txnCtx.submittingSwirldsMember()).willReturn(submittingMember);
 		given(txnCtx.effectivePayer()).willReturn(effPayer);
 		given(txnCtx.expiringEntities()).willReturn(Collections.singletonList(expiringEntity));

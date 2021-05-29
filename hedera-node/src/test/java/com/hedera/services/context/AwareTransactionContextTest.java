@@ -9,9 +9,9 @@ package com.hedera.services.context;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,11 +25,20 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.submerkle.SolidityFnResult;
+import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -43,13 +52,14 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
@@ -58,16 +68,16 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 
 import javax.inject.Inject;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import static com.hedera.services.context.AwareTransactionContext.EMPTY_KEY;
+import static com.hedera.services.state.submerkle.EntityId.fromGrpcScheduleId;
+import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asAccountString;
 import static com.hedera.test.utils.IdUtils.asContract;
@@ -76,14 +86,20 @@ import static com.hedera.test.utils.IdUtils.asSchedule;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.IdUtils.asTopic;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(LogCaptureExtension.class)
 class AwareTransactionContextTest {
@@ -98,8 +114,10 @@ class AwareTransactionContextTest {
 			.setSeconds(now.getEpochSecond())
 			.setNanos(now.getNano())
 			.build();
-	private ExchangeRate rateNow = ExchangeRate.newBuilder().setHbarEquiv(1).setCentEquiv(100).build();
-	private ExchangeRateSet ratesNow = ExchangeRateSet.newBuilder().setCurrentRate(rateNow).setNextRate(rateNow).build();
+	private ExchangeRate rateNow = ExchangeRate.newBuilder().setHbarEquiv(1).setCentEquiv(100).setExpirationTime(
+			TimestampSeconds.newBuilder()).build();
+	private ExchangeRateSet ratesNow =
+			ExchangeRateSet.newBuilder().setCurrentRate(rateNow).setNextRate(rateNow).build();
 	private AccountID payer = asAccount("0.0.2");
 	private AccountID anotherNodeAccount = asAccount("0.0.4");
 	private AccountID created = asAccount("1.0.2");
@@ -127,14 +145,14 @@ class AwareTransactionContextTest {
 	private PlatformTxnAccessor accessor;
 	private Transaction signedTxn;
 	private TransactionBody txn;
-	private TransactionRecord record;
+	private ExpirableTxnRecord record;
 	private ExpiringEntity expiringEntity;
 	private String memo = "Hi!";
 	private ByteString hash = ByteString.copyFrom("fake hash".getBytes());
 	private TransactionID txnId = TransactionID.newBuilder()
-					.setTransactionValidStart(Timestamp.newBuilder().setSeconds(txnValidStart))
-					.setAccountID(payer)
-					.build();
+			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(txnValidStart))
+			.setAccountID(payer)
+			.build();
 	private ContractFunctionResult result = ContractFunctionResult.newBuilder().setContractID(contractCreated).build();
 	private JKey payerKey;
 
@@ -143,6 +161,8 @@ class AwareTransactionContextTest {
 
 	@LoggingSubject
 	private AwareTransactionContext subject;
+
+	private ExpiringCreations creator;
 
 	@BeforeEach
 	private void setup() {
@@ -170,12 +190,14 @@ class AwareTransactionContextTest {
 		given(accounts.get(MerkleEntityId.fromAccountId(payer))).willReturn(payerAccount);
 
 		ctx = mock(ServicesContext.class);
+		creator = mock(ExpiringCreations.class);
 		given(ctx.exchange()).willReturn(exchange);
 		given(ctx.ledger()).willReturn(ledger);
 		given(ctx.accounts()).willReturn(accounts);
 		given(ctx.narratedCharging()).willReturn(narratedCharging);
 		given(ctx.accounts()).willReturn(accounts);
 		given(ctx.addressBook()).willReturn(book);
+		given(ctx.creator()).willReturn(creator);
 
 		nodeInfo = mock(NodeInfo.class);
 		given(ctx.nodeInfo()).willReturn(nodeInfo);
@@ -249,7 +271,7 @@ class AwareTransactionContextTest {
 	@Test
 	void resetsRecordSoFar() {
 		// given:
-		subject.recordSoFar = mock(TransactionRecord.Builder.class);
+		subject.recordSoFar = mock(ExpirableTxnRecord.Builder.class);
 
 		// when:
 		subject.resetFor(accessor, now, anotherMemberId);
@@ -264,7 +286,7 @@ class AwareTransactionContextTest {
 		// and:
 		subject.addNonThresholdFeeChargedToPayer(1_234L);
 		subject.setCallResult(result);
-		subject.setStatus(ResponseCodeEnum.SUCCESS);
+		subject.setStatus(SUCCESS);
 		subject.setCreated(contractCreated);
 		subject.payerSigIsKnownActive();
 		subject.hasComputedRecordSoFar = true;
@@ -276,13 +298,14 @@ class AwareTransactionContextTest {
 		subject.resetFor(accessor, now, anotherMemberId);
 		assertFalse(subject.hasComputedRecordSoFar);
 		// and:
+		setUpBuildingExpirableTxnRecord();
 		record = subject.recordSoFar();
 
 		// then:
-		assertEquals(ResponseCodeEnum.UNKNOWN, record.getReceipt().getStatus());
-		assertFalse(record.getReceipt().hasContractID());
-		assertEquals(0, record.getTransactionFee());
-		assertFalse(record.hasContractCallResult());
+		assertEquals(ResponseCodeEnum.UNKNOWN, ResponseCodeEnum.valueOf(record.getReceipt().getStatus()));
+		assertFalse(record.getReceipt().toGrpc().hasContractID());
+		assertEquals(0, record.asGrpc().getTransactionFee());
+		assertFalse(record.asGrpc().hasContractCallResult());
 		assertFalse(subject.isPayerSigKnownActive());
 		assertTrue(subject.hasComputedRecordSoFar);
 		assertEquals(anotherNodeAccount, subject.submittingNodeAccount());
@@ -314,57 +337,64 @@ class AwareTransactionContextTest {
 
 		// when:
 		subject.addNonThresholdFeeChargedToPayer(other);
+
+		setUpBuildingExpirableTxnRecord();
 		record = subject.recordSoFar();
 
 		// then:
-		assertEquals(std + other, record.getTransactionFee());
+		assertEquals(std + other, record.asGrpc().getTransactionFee());
 	}
 
 	@Test
 	void usesTokenTransfersToSetApropos() {
 		// when:
+		setUpBuildingExpirableTxnRecord();
 		record = subject.recordSoFar();
 
 		// then:
-		assertEquals(tokenTransfers, record.getTokenTransferLists(0));
+		assertEquals(tokenTransfers, record.asGrpc().getTokenTransferLists(0));
 	}
 
 	@Test
 	void configuresCallResult() {
 		// when:
 		subject.setCallResult(result);
+		setUpBuildingExpirableTxnRecord();
 		record = subject.recordSoFar();
 
 		// expect:
-		assertEquals(result, record.getContractCallResult());
+		assertEquals(SolidityFnResult.fromGrpc(result), record.getContractCallResult());
 	}
 
 	@Test
 	void configuresCreateResult() {
 		// when:
+		setUpBuildingExpirableTxnRecord();
 		subject.setCreateResult(result);
 		record = subject.recordSoFar();
 
 		// expect:
-		assertEquals(result, record.getContractCreateResult());
+		assertEquals(SolidityFnResult.fromGrpc(result), record.getContractCreateResult());
 	}
 
 	@Test
 	void hasTransferList() {
+		setUpBuildingExpirableTxnRecord();
 		// expect:
-		assertEquals(transfers, subject.recordSoFar().getTransferList());
+		assertEquals(transfers, subject.recordSoFar().asGrpc().getTransferList());
 	}
 
 	@Test
 	void hasExpectedCopyFields() {
+		setUpBuildingExpirableTxnRecord();
 		// when:
-		TransactionRecord record = subject.recordSoFar();
+		ExpirableTxnRecord record = subject.recordSoFar();
 
 		// expect:
 		assertEquals(memo, record.getMemo());
-		assertEquals(hash, record.getTransactionHash());
-		assertEquals(txnId, record.getTransactionID());
-		assertEquals(timeNow, record.getConsensusTimestamp());
+		assertEquals(hash, record.asGrpc().getTransactionHash());
+		assertEquals(txnId, record.asGrpc().getTransactionID());
+		assertEquals(RichInstant.fromGrpc(timeNow), record.getConsensusTimestamp());
 	}
 
 	@Test
@@ -388,32 +418,37 @@ class AwareTransactionContextTest {
 	void hasExpectedRecordStatus() {
 		// when:
 		subject.setStatus(ResponseCodeEnum.INVALID_PAYER_SIGNATURE);
+		setUpBuildingExpirableTxnRecord();
 		record = subject.recordSoFar();
 
 		// then:
-		assertEquals(ResponseCodeEnum.INVALID_PAYER_SIGNATURE, record.getReceipt().getStatus());
+		assertEquals(ResponseCodeEnum.INVALID_PAYER_SIGNATURE,
+				ResponseCodeEnum.valueOf(record.getReceipt().getStatus()));
 	}
 
 	@Test
 	void getsExpectedReceiptForAccountCreation() {
 		// when:
 		subject.setCreated(created);
+		setUpBuildingExpirableTxnRecord();
 		record = subject.recordSoFar();
 
 		// then:
-		assertEquals(ratesNow, record.getReceipt().getExchangeRate());
-		assertEquals(created, record.getReceipt().getAccountID());
+		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
+		assertEquals(created, record.getReceipt().toGrpc().getAccountID());
 	}
 
 	@Test
 	void getsExpectedReceiptForTokenCreation() {
 		// when:
 		subject.setCreated(tokenCreated);
+		setUpBuildingExpirableTxnRecord();
+
 		record = subject.recordSoFar();
 
 		// then:
-		assertEquals(ratesNow, record.getReceipt().getExchangeRate());
-		assertEquals(tokenCreated, record.getReceipt().getTokenID());
+		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
+		assertEquals(tokenCreated, record.getReceipt().toGrpc().getTokenID());
 	}
 
 	@Test
@@ -421,46 +456,51 @@ class AwareTransactionContextTest {
 		// when:
 		final var newTotalSupply = 1000L;
 		subject.setNewTotalSupply(newTotalSupply);
+		setUpBuildingExpirableTxnRecord();
+
 		record = subject.recordSoFar();
 
 		// then:
-		assertEquals(ratesNow, record.getReceipt().getExchangeRate());
+		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
 		assertEquals(newTotalSupply, record.getReceipt().getNewTotalSupply());
 	}
-
 
 
 	@Test
 	void getsExpectedReceiptForFileCreation() {
 		// when:
 		subject.setCreated(fileCreated);
+		setUpBuildingExpirableTxnRecord();
+
 		record = subject.recordSoFar();
 
 		// then:
-		assertEquals(ratesNow, record.getReceipt().getExchangeRate());
-		assertEquals(fileCreated, record.getReceipt().getFileID());
+		assertEquals(ratesNow, TxnReceipt.convert(record.getReceipt()).getExchangeRate());
+		assertEquals(fileCreated, record.getReceipt().toGrpc().getFileID());
 	}
 
 	@Test
 	void getsExpectedReceiptForContractCreation() {
 		// when:
 		subject.setCreated(contractCreated);
+		setUpBuildingExpirableTxnRecord();
 		record = subject.recordSoFar();
 
 		// then:
-		assertEquals(ratesNow, record.getReceipt().getExchangeRate());
-		assertEquals(contractCreated, record.getReceipt().getContractID());
+		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
+		assertEquals(contractCreated, record.getReceipt().toGrpc().getContractID());
 	}
 
 	@Test
 	void getsExpectedReceiptForTopicCreation() {
 		// when:
 		subject.setCreated(topicCreated);
+		setUpBuildingExpirableTxnRecord();
 		record = subject.recordSoFar();
 
 		// then:
-		assertEquals(ratesNow, record.getReceipt().getExchangeRate());
-		assertEquals(topicCreated, record.getReceipt().getTopicID());
+		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
+		assertEquals(topicCreated, record.getReceipt().toGrpc().getTopicID());
 	}
 
 	@Test
@@ -470,13 +510,14 @@ class AwareTransactionContextTest {
 
 		// when:
 		subject.setTopicRunningHash(runningHash, sequenceNumber);
+		setUpBuildingExpirableTxnRecord();
 		record = subject.recordSoFar();
 
 		// then:
-		assertEquals(ratesNow, record.getReceipt().getExchangeRate());
-		assertArrayEquals(runningHash, record.getReceipt().getTopicRunningHash().toByteArray());
+		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
+		assertArrayEquals(runningHash, record.getReceipt().toGrpc().getTopicRunningHash().toByteArray());
 		assertEquals(sequenceNumber, record.getReceipt().getTopicSequenceNumber());
-		assertEquals(MerkleTopic.RUNNING_HASH_VERSION, record.getReceipt().getTopicRunningHashVersion());
+		assertEquals(MerkleTopic.RUNNING_HASH_VERSION, record.getReceipt().toGrpc().getTopicRunningHashVersion());
 	}
 
 	@Test
@@ -484,12 +525,13 @@ class AwareTransactionContextTest {
 		// when:
 		subject.setCreated(scheduleCreated);
 		subject.setScheduledTxnId(scheduledTxnId);
+		setUpBuildingExpirableTxnRecord();
 		// and:
 		record = subject.recordSoFar();
 
 		// then:
-		assertEquals(scheduleCreated, record.getReceipt().getScheduleID());
-		assertEquals(scheduledTxnId, record.getReceipt().getScheduledTransactionID());
+		assertEquals(scheduleCreated, record.getReceipt().toGrpc().getScheduleID());
+		assertEquals(scheduledTxnId, record.getReceipt().toGrpc().getScheduledTransactionID());
 	}
 
 	@Test
@@ -520,12 +562,13 @@ class AwareTransactionContextTest {
 		// given:
 		given(accessor.getScheduleRef()).willReturn(scheduleCreated);
 		given(accessor.isTriggeredTxn()).willReturn(true);
+		setUpBuildingExpirableTxnRecord();
 
 		// when:
 		record = subject.recordSoFar();
 
 		// then:
-		assertEquals(scheduleCreated, record.getScheduleRef());
+		assertEquals(fromGrpcScheduleId(scheduleCreated), record.getScheduleRef());
 	}
 
 	@Test
@@ -547,5 +590,49 @@ class AwareTransactionContextTest {
 
 		// when:
 		assertThrows(IllegalStateException.class, () -> subject.trigger(accessor));
+	}
+
+	private ExpirableTxnRecord.Builder buildRecord(
+			long otherNonThresholdFees,
+			ByteString hash,
+			TxnAccessor accessor,
+			Timestamp consensusTimestamp,
+			TransactionReceipt receipt
+	) {
+		long amount = ctx.narratedCharging().totalFeesChargedToPayer() + otherNonThresholdFees;
+		TransferList transfersList = ctx.ledger().netTransfersInTxn();
+		List<TokenTransferList> tokenTransferList = ctx.ledger().netTokenTransfersInTxn();
+
+		var builder = ExpirableTxnRecord.newBuilder()
+				.setReceipt(TxnReceipt.fromGrpc(receipt))
+				.setTxnHash(hash.toByteArray())
+				.setTxnId(TxnId.fromGrpc(accessor.getTxnId()))
+				.setConsensusTimestamp(RichInstant.fromGrpc(consensusTimestamp))
+				.setMemo(accessor.getTxn().getMemo())
+				.setFee(amount)
+				.setTransferList(!transfersList.getAccountAmountsList().isEmpty() ? CurrencyAdjustments.fromGrpc(
+						transfersList) : null)
+				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null);
+
+		List<EntityId> tokens = new ArrayList<>();
+		List<CurrencyAdjustments> tokenAdjustments = new ArrayList<>();
+		if (tokenTransferList.size() > 0) {
+			for (TokenTransferList tokenTransfers : tokenTransferList) {
+				tokens.add(EntityId.fromGrpcTokenId(tokenTransfers.getToken()));
+				tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList()));
+			}
+		}
+
+		builder.setTokens(tokens)
+				.setTokenAdjustments(tokenAdjustments);
+		return builder;
+	}
+
+	private ExpirableTxnRecord.Builder setUpBuildingExpirableTxnRecord() {
+		var expirableRecordBuilder = buildRecord(subject.getNonThresholdFeeChargedToPayer(),
+				accessor.getHash(),
+				accessor, asTimestamp(now), subject.receiptSoFar().build());
+		when(creator.buildExpiringRecord(anyLong(), any(), any(), any(), any())).thenReturn(expirableRecordBuilder);
+		return expirableRecordBuilder;
 	}
 }

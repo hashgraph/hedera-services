@@ -38,7 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import static java.util.stream.Collectors.toList;
@@ -85,24 +84,16 @@ public class RecordCache {
 			Instant consensusTimestamp,
 			long submittingMember
 	) {
-		var txnId = accessor.getTxnId();
-		var transactionRecord = TransactionRecord.newBuilder()
-				.setTransactionID(txnId)
-				.setReceipt(TransactionReceipt.newBuilder().setStatus(FAIL_INVALID))
-				.setMemo(accessor.getTxn().getMemo())
-				.setTransactionHash(accessor.getHash())
-				.setConsensusTimestamp(asTimestamp(consensusTimestamp));
-		if (accessor.isTriggeredTxn()) {
-			transactionRecord.setScheduleRef(accessor.getScheduleRef());
-		}
-		var grpc = transactionRecord.build();
-		var record = ctx.creator().createExpiringRecord(
+		var recordBuilder = ctx.creator().buildFailedExpiringRecord(accessor,
+				consensusTimestamp);
+		var expiringRecord = ctx.creator().saveExpiringRecord(
 				effectivePayer,
-				grpc,
+				recordBuilder.build(),
 				consensusTimestamp.getEpochSecond(),
 				submittingMember);
-		var recentHistory = histories.computeIfAbsent(txnId, ignore -> new TxnIdRecentHistory());
-		recentHistory.observe(record, FAIL_INVALID);
+
+		var recentHistory = histories.computeIfAbsent(accessor.getTxnId(), ignore -> new TxnIdRecentHistory());
+		recentHistory.observe(expiringRecord, FAIL_INVALID);
 	}
 
 	public boolean isReceiptPresent(TransactionID txnId) {
@@ -143,11 +134,10 @@ public class RecordCache {
 				.orElse(UNKNOWN_RECEIPT);
 	}
 
-	public TransactionRecord getPriorityRecord(TransactionID txnId) {
+	public ExpirableTxnRecord getPriorityRecord(TransactionID txnId) {
 		var history = histories.get(txnId);
 		if (history != null) {
 			return Optional.ofNullable(history.priorityRecord())
-					.map(ExpirableTxnRecord::asGrpc)
 					.orElse(null);
 		}
 		return null;

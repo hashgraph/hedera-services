@@ -20,10 +20,8 @@ package com.hedera.services.records;
  * ‍
  */
 
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 
 import java.util.Optional;
 
@@ -56,14 +54,14 @@ public interface AccountRecordsHistorian {
 	 * Called immediately before committing the active transaction
 	 * to finalize the record of the executed business logic.
 	 */
-	void finalizeTransactionRecord();
+	void finalizeExpirableTransactionRecord();
 
 	/**
 	 * Called immediately after committing the active transaction, to
 	 * save the record (e.g. in the payer account of the committed
 	 * transaction.)
 	 */
-	void saveTransactionRecord();
+	void saveExpirableTransactionRecord();
 
 	/**
 	 * Invites the historian to build any auxiliary data structures
@@ -76,7 +74,7 @@ public interface AccountRecordsHistorian {
 	 *
 	 * @return an optional record.
 	 */
-	Optional<TransactionRecord> lastCreatedRecord();
+	Optional<ExpirableTxnRecord> lastCreatedRecord();
 
 	/**
 	 * At the moment before committing the active transaction,

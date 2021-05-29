@@ -23,11 +23,11 @@ package com.hedera.services.legacy.services.state;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,7 +37,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -69,8 +68,8 @@ class RecordMgmtTest {
 	void streamsRecordIfPresent() {
 		// setup:
 		final Transaction txn = Transaction.getDefaultInstance();
-		final TransactionRecord lastRecord = TransactionRecord.getDefaultInstance();
-		final RecordStreamObject expectedRso = new RecordStreamObject(lastRecord, txn, consensusNow);
+		final ExpirableTxnRecord lastRecord = ExpirableTxnRecord.newBuilder().build();
+		final RecordStreamObject expectedRso = new RecordStreamObject(lastRecord.asGrpc(), txn, consensusNow);
 
 		given(txnAccessor.getBackwardCompatibleSignedTxn()).willReturn(txn);
 		given(txnCtx.accessor()).willReturn(txnAccessor);
