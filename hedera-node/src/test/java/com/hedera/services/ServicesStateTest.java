@@ -21,6 +21,7 @@ package com.hedera.services;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.PropertySources;
@@ -50,7 +51,9 @@ import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttling.FunctionalityThrottling;
+import com.hedera.services.txns.ExpandHandleSpan;
 import com.hedera.services.txns.ProcessLogic;
+import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.SystemExits;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -139,6 +142,7 @@ class ServicesStateTest {
 	private ProcessLogic logic;
 	private PropertySources propertySources;
 	private ServicesContext ctx;
+	private ExpandHandleSpan expandHandleSpan;
 	private AccountRecordsHistorian historian;
 	private ExpiryManager expiryManager;
 	private FCMap<MerkleEntityId, MerkleTopic> topics;
@@ -698,7 +702,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void expandsSigs() {
+	void expandsSigs() throws InvalidProtocolBufferException {
 		// setup:
 		ByteString mockPk = ByteString.copyFrom("not-a-real-pkPrefix".getBytes());
 		ByteString mockSig = ByteString.copyFrom("not-a-real-sig".getBytes());
@@ -714,6 +718,10 @@ class ServicesStateTest {
 		SigningOrderResult<SignatureStatus> payerOrderResult = new SigningOrderResult<>(List.of(key));
 		SigningOrderResult<SignatureStatus> otherOrderResult = new SigningOrderResult<>(EMPTY_LIST);
 		HederaSigningOrder keyOrderer = mock(HederaSigningOrder.class);
+		// and:
+		expandHandleSpan = mock(ExpandHandleSpan.class);
+		given(expandHandleSpan.track(platformTxn)).willReturn(new PlatformTxnAccessor(platformTxn));
+		given(ctx.expandHandleSpan()).willReturn(expandHandleSpan);
 
 		given(keyOrderer.keysForPayer(any(), any())).willReturn((SigningOrderResult) payerOrderResult);
 		given(keyOrderer.keysForOtherParties(any(), any())).willReturn((SigningOrderResult) otherOrderResult);
@@ -732,7 +740,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void expandsSigsWithSignedTransactionBytes() {
+	void expandsSigsWithSignedTransactionBytes() throws InvalidProtocolBufferException {
 		// setup:
 		ByteString mockPk = ByteString.copyFrom("not-a-real-pkPrefix".getBytes());
 		ByteString mockSig = ByteString.copyFrom("not-a-real-sig".getBytes());
@@ -750,6 +758,10 @@ class ServicesStateTest {
 		SigningOrderResult<SignatureStatus> payerOrderResult = new SigningOrderResult<>(List.of(key));
 		SigningOrderResult<SignatureStatus> otherOrderResult = new SigningOrderResult<>(EMPTY_LIST);
 		HederaSigningOrder keyOrderer = mock(HederaSigningOrder.class);
+		// and:
+		expandHandleSpan = mock(ExpandHandleSpan.class);
+		given(expandHandleSpan.track(platformTxn)).willReturn(new PlatformTxnAccessor(platformTxn));
+		given(ctx.expandHandleSpan()).willReturn(expandHandleSpan);
 
 		given(keyOrderer.keysForPayer(any(), any())).willReturn((SigningOrderResult) payerOrderResult);
 		given(keyOrderer.keysForOtherParties(any(), any())).willReturn((SigningOrderResult) otherOrderResult);

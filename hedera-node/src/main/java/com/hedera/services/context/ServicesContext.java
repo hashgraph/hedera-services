@@ -249,6 +249,7 @@ import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.HapiThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.throttling.TxnAwareHandleThrottling;
+import com.hedera.services.txns.ExpandHandleSpan;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.txns.TransitionLogic;
@@ -349,6 +350,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -490,6 +492,7 @@ public class ServicesContext {
 	private PrecheckVerifier precheckVerifier;
 	private BackingTokenRels backingTokenRels;
 	private FreezeController freezeGrpc;
+	private ExpandHandleSpan expandHandleSpan;
 	private BalancesExporter balancesExporter;
 	private SysFileCallbacks sysFileCallbacks;
 	private NarratedCharging narratedCharging;
@@ -1638,6 +1641,13 @@ public class ServicesContext {
 			feeSchedulesManager = new FeeSchedulesManager(fileNums(), fees());
 		}
 		return feeSchedulesManager;
+	}
+
+	public ExpandHandleSpan expandHandleSpan() {
+		if (expandHandleSpan == null) {
+			expandHandleSpan = new ExpandHandleSpan(10, TimeUnit.SECONDS);
+		}
+		return expandHandleSpan;
 	}
 
 	public FreezeController freezeGrpc() {

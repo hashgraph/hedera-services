@@ -284,7 +284,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	@Override
 	public void expandSignatures(SwirldTransaction platformTxn) {
 		try {
-			var accessor = new PlatformTxnAccessor(platformTxn);
+			final var accessor = ctx.expandHandleSpan().track(platformTxn);
 			expandIn(
 					accessor,
 					ctx.lookupRetryingKeyOrder(),
@@ -299,6 +299,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public void noMoreTransactions() {
+		/* No-op. */
 	}
 
 	/* --- FastCopyable --- */
