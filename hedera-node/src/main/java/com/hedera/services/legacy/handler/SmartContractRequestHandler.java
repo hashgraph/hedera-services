@@ -62,13 +62,12 @@ import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.fee.FeeBuilder;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.core.Transaction;
 import org.ethereum.db.ServicesRepositoryRoot;
-import org.ethereum.util.ByteUtil;
-import org.spongycastle.pqc.math.linearalgebra.ByteUtils;
 import org.spongycastle.util.encoders.DecoderException;
 
 import java.math.BigInteger;
@@ -181,7 +180,7 @@ public class SmartContractRequestHandler {
 		}
 		String contractByteCodeString = new String(contractByteCode);
 		if (createContract.getConstructorParameters() != null && !createContract.getConstructorParameters().isEmpty()) {
-			String constructorParamsHexString = ByteUtils.toHexString(
+			final var constructorParamsHexString = CommonUtils.hex(
 					createContract.getConstructorParameters().toByteArray());
 			contractByteCodeString += constructorParamsHexString;
 		}
@@ -448,7 +447,7 @@ public class SmartContractRequestHandler {
 			String data = "";
 			if (contractCall.getFunctionParameters() != null
 					&& !contractCall.getFunctionParameters().isEmpty()) {
-				data = ByteUtil.toHexString(contractCall.getFunctionParameters().toByteArray());
+				data = CommonUtils.hex(contractCall.getFunctionParameters().toByteArray());
 			}
 			BigInteger value = BigInteger.ZERO;
 			if (contractCall.getAmount() > 0) {
@@ -550,8 +549,7 @@ public class SmartContractRequestHandler {
 			String data = "";
 			if (transactionContractCallLocal.getFunctionParameters() != null
 					&& !transactionContractCallLocal.getFunctionParameters().isEmpty()) {
-				data = ByteUtil
-						.toHexString(transactionContractCallLocal.getFunctionParameters().toByteArray());
+				data = CommonUtils.hex(transactionContractCallLocal.getFunctionParameters().toByteArray());
 			}
 			BigInteger value = BigInteger.ZERO;
 

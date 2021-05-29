@@ -33,7 +33,7 @@ import com.hederahashgraph.builder.RequestBuilder;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.apache.commons.codec.binary.Hex;
+import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -283,7 +283,7 @@ public class TxnReceipt implements SelfSerializable {
 		}
 		if (topicRunningHash != MISSING_RUNNING_HASH) {
 			helper.add("topicSeqNo", topicSequenceNumber);
-			helper.add("topicRunningHash", Hex.encodeHexString(topicRunningHash));
+			helper.add("topicRunningHash", CommonUtils.hex(topicRunningHash));
 			helper.add("runningHashVersion", runningHashVersion);
 		}
 		helper.add("newTotalTokenSupply", newTotalSupply);

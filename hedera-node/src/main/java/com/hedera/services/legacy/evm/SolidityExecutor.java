@@ -60,7 +60,7 @@ import org.ethereum.vm.program.invoke.ProgramInvoke;
 import org.ethereum.vm.program.invoke.ProgramInvokeFactory;
 import org.ethereum.vm.program.invoke.ProgramInvokeFactoryImpl;
 import org.ethereum.vm.program.invoke.ProgramInvokeImpl;
-import org.spongycastle.util.encoders.Hex;
+import com.swirlds.common.CommonUtils;
 
 import java.math.BigInteger;
 import java.time.Instant;
@@ -93,7 +93,6 @@ import static org.ethereum.util.BIUtil.isCovers;
 import static org.ethereum.util.BIUtil.toBI;
 import static org.ethereum.util.BIUtil.transfer;
 import static org.ethereum.util.ByteUtil.EMPTY_BYTE_ARRAY;
-import static org.ethereum.util.ByteUtil.toHexString;
 import static org.ethereum.vm.VMUtils.saveProgramTraceFile;
 import static org.ethereum.vm.VMUtils.zipAndEncode;
 
@@ -182,10 +181,10 @@ public class SolidityExecutor {
 		this.trackingRepository = repository.startTracking();
 		this.dynamicProperties = dynamicProperties;
 		this.payerAddress = Optional.ofNullable(payerAddress)
-				.map(ByteUtil::hexStringToBytes)
+				.map(CommonUtils::unhex)
 				.orElse(solidityTxn.getSender());
 		this.fundingAddress = Optional.ofNullable(fundingAddress)
-				.map(ByteUtil::hexStringToBytes)
+				.map(CommonUtils::unhex)
 				.orElse(EMPTY_BYTE_ARRAY);
 
 		commonConfig = CommonConfig.getDefault();
@@ -249,7 +248,7 @@ public class SolidityExecutor {
 				errorCode = (gasSupplied.compareTo(gasLimit) < 0) ? INSUFFICIENT_GAS : MAX_GAS_LIMIT_EXCEEDED;
 				setError(String.format(
 						"OOG calling precompiled contract 0x%s (%s required, %s remaining)",
-						Hex.toHexString(targetAddress), gasRequired, gasLeft));
+						CommonUtils.hex(targetAddress), gasRequired, gasLeft));
 				gasLeft = ZERO;
 				return;
 			} else {
@@ -258,7 +257,7 @@ public class SolidityExecutor {
 				if (!out.getLeft()) {
 					errorCode = CONTRACT_EXECUTION_EXCEPTION;
 					setError(String.format("Error executing precompiled contract 0x%s",
-							Hex.toHexString(targetAddress)));
+							CommonUtils.hex(targetAddress)));
 					gasLeft = ZERO;
 					return;
 				}
@@ -267,7 +266,7 @@ public class SolidityExecutor {
 			byte[] code = repository.getCode(targetAddress);
 			if (isEmpty(code)) {
 				errorCode = CONTRACT_BYTECODE_EMPTY;
-				setError(String.format("Error: Bytecode is empty for contract 0x%s", Hex.toHexString(targetAddress)));
+				setError(String.format("Error: Bytecode is empty for contract 0x%s", CommonUtils.hex(targetAddress)));
 			} else {
 				var programInvoke = programInvokeFactory.createProgramInvoke(
 						solidityTxn, block, trackingRepository, repository, NULL_BLOCK_STORE);
@@ -304,7 +303,7 @@ public class SolidityExecutor {
 		var alreadyExtant = trackingRepository.getAccountState(newContractAddress);
 		if (alreadyExtant != null && alreadyExtant.isContractExist(blockchainConfig)) {
 			errorCode = CONTRACT_EXECUTION_EXCEPTION;
-			setError(String.format("Cannot overwrite extant contract @ 0x%s!", Hex.toHexString(newContractAddress)));
+			setError(String.format("Cannot overwrite extant contract @ 0x%s!", CommonUtils.hex(newContractAddress)));
 			gasLeft = ZERO;
 			return;
 		}
@@ -532,7 +531,7 @@ public class SolidityExecutor {
 			if (config.vmTraceCompressed()) {
 				trace = zipAndEncode(trace);
 			}
-			var hash = toHexString(solidityTxn.getHash());
+			var hash = CommonUtils.hex(solidityTxn.getHash());
 			saveProgramTraceFile(config, hash, trace);
 			listener.onVMTraceCreated(hash, trace);
 		}

@@ -27,10 +27,10 @@ import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.services.legacy.core.jproto.JThresholdKey;
 import com.hedera.services.legacy.proto.utils.AtomicCounter;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
+import com.swirlds.common.CommonUtils;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.junit.Assert;
@@ -161,7 +161,7 @@ public class JkeySerializerTest {
     KeyPair pair = new KeyPairGenerator().generateKeyPair();
     byte[] pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
     Key akey = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
-    String pubKeyHex = MiscUtils.commonsBytesToHex(pubKey);
+    String pubKeyHex = CommonUtils.hex(pubKey);
     pubKey2privKeyMap.put(pubKeyHex, pair.getPrivate());
     return akey;
   }
@@ -277,7 +277,7 @@ public class JkeySerializerTest {
       KeyPair pair = new KeyPairGenerator().generateKeyPair();
       byte[] pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
       Key akey = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
-      String pubKeyHex = MiscUtils.commonsBytesToHex(pubKey);
+      String pubKeyHex = CommonUtils.hex(pubKey);
       pubKey2privKeyMap.put(pubKeyHex, pair.getPrivate());
       rv.add(akey);
     }

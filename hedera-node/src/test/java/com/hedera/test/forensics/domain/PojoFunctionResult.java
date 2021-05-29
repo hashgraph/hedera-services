@@ -23,7 +23,7 @@ package com.hedera.test.forensics.domain;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.hedera.services.state.submerkle.SolidityFnResult;
-import org.apache.commons.codec.binary.Hex;
+import com.swirlds.common.CommonUtils;
 
 import java.util.Collections;
 import java.util.List;
@@ -53,10 +53,10 @@ public class PojoFunctionResult {
 		pojo.setId(PojoRecord.asString(value.getContractId()));
 		pojo.setGas(value.getGasUsed());
 		if (value.getResult() != null) {
-			pojo.setResult(Hex.encodeHexString(value.getResult()));
+			pojo.setResult(CommonUtils.hex(value.getResult()));
 		}
 		if (value.getBloom() != null) {
-			pojo.setBloom(Hex.encodeHexString(value.getBloom()));
+			pojo.setBloom(CommonUtils.hex(value.getBloom()));
 		}
 		if (value.getLogs() != null) {
 			pojo.setLogs(value.getLogs().stream().map(PojoFunctionLog::from).collect(toList()));

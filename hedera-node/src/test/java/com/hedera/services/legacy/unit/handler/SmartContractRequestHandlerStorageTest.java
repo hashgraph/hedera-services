@@ -48,7 +48,6 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.SolidityLifecycleFactory;
 import com.hedera.test.mocks.StorageSourceFactory;
 import com.hedera.test.mocks.TestContextValidator;
@@ -73,12 +72,11 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcmap.internal.FCMLeaf;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.collections4.Predicate;
 import org.ethereum.core.AccountState;
 import org.ethereum.datasource.DbSource;
@@ -86,7 +84,6 @@ import org.ethereum.datasource.Source;
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.ethereum.solidity.Abi;
 import org.ethereum.solidity.Abi.Event;
-import org.ethereum.util.ByteUtil;
 import org.junit.Assert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -214,10 +211,10 @@ public class SmartContractRequestHandlerStorageTest {
     storageWrapper = new FCStorageWrapper(storageMap);
     FeeScheduleInterceptor feeScheduleInterceptor = mock(FeeScheduleInterceptor.class);
     fsHandler = new FileServiceHandler(storageWrapper, feeScheduleInterceptor, new ExchangeRates());
-    String key = Hex.encodeHexString(EntityIdUtils.asSolidityAddress(0, 0, payerAccount));
+    String key = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, payerAccount));
     try {
-      payerKeyBytes = MiscUtils.commonsHexToBytes(key);
-    } catch (DecoderException e) {
+      payerKeyBytes = CommonUtils.unhex(key);
+    } catch (IllegalArgumentException e) {
       Assert.fail("Failure building solidity key for payer account");
     }
     payerMerkleEntityId = new MerkleEntityId();
@@ -773,7 +770,6 @@ public class SmartContractRequestHandlerStorageTest {
         List<?> eventData = storedEvnt.decode(dataArr, topicsArr);
         BigInteger valueFromEvent = (BigInteger) eventData.get(1);
         byte[] senderAddress = (byte[]) eventData.get(0);
-        String senderAddrInStrFormat = ByteUtil.toHexString(senderAddress);
         assert (valueFromEvent.intValue() == valuePassed);
         retValue = true;
       }

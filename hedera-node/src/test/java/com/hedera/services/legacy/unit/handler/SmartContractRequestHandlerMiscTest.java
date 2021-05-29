@@ -48,7 +48,6 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.SolidityLifecycleFactory;
 import com.hedera.test.mocks.StorageSourceFactory;
 import com.hedera.test.mocks.TestContextValidator;
@@ -77,6 +76,7 @@ import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcmap.internal.FCMLeaf;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
+import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.core.AccountState;
@@ -84,7 +84,6 @@ import org.ethereum.crypto.HashUtil;
 import org.ethereum.datasource.DbSource;
 import org.ethereum.datasource.Source;
 import org.ethereum.db.ServicesRepositoryRoot;
-import org.ethereum.util.ByteUtil;
 import org.junit.Assert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -230,10 +229,10 @@ public class SmartContractRequestHandlerMiscTest {
     storageWrapper = new FCStorageWrapper(storageMap);
     FeeScheduleInterceptor feeScheduleInterceptor = mock(FeeScheduleInterceptor.class);
     fsHandler = new FileServiceHandler(storageWrapper, feeScheduleInterceptor, new ExchangeRates());
-    String key = Hex.encodeHexString(EntityIdUtils.asSolidityAddress(0, 0, payerAccount));
+    String key = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, payerAccount));
     try {
-      payerKeyBytes = MiscUtils.commonsHexToBytes(key);
-    } catch (DecoderException e) {
+      payerKeyBytes = CommonUtils.unhex(key);
+    } catch (IllegalArgumentException e) {
       Assert.fail("Failure building solidity key for payer account");
     }
     payerMerkleEntityId = new MerkleEntityId();
@@ -831,7 +830,7 @@ public class SmartContractRequestHandlerMiscTest {
     TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
-    String contractSolidityAddress = Hex.encodeHexString(EntityIdUtils.asSolidityAddress(
+    String contractSolidityAddress = CommonUtils.hex(EntityIdUtils.asSolidityAddress(
         0, 0, newContractId.getContractNum()));
 
     // Call the contract to exercise EXTCODEHASH
@@ -849,7 +848,7 @@ public class SmartContractRequestHandlerMiscTest {
     Assert.assertTrue(callResults.length > 0);
     byte[] retVal = SCEncoding.decodeOpExtCodeHash(callResults);
     // Test the local convention of returning the address, not a Keccak256 hash
-    String returnedLast20Bytes = ByteUtil.toHexString(retVal).substring(24);
+    String returnedLast20Bytes = CommonUtils.hex(retVal).substring(24);
     Assert.assertEquals(contractSolidityAddress, returnedLast20Bytes);
   }
 
@@ -865,7 +864,7 @@ public class SmartContractRequestHandlerMiscTest {
     TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
-    String accountSolidityAddress = Hex.encodeHexString(EntityIdUtils.asSolidityAddress(
+    String accountSolidityAddress = CommonUtils.hex(EntityIdUtils.asSolidityAddress(
         0, 0, payerAccount));
 
     // Call the contract to exercise EXTCODEHASH
@@ -883,8 +882,8 @@ public class SmartContractRequestHandlerMiscTest {
     Assert.assertTrue(callResults.length > 0);
     byte[] retVal = SCEncoding.decodeOpExtCodeHash(callResults);
     // Test the local convention of returning the empty hash for a regular account
-    String returned = ByteUtil.toHexString(retVal);
-    String expected = ByteUtil.toHexString(HashUtil.EMPTY_DATA_HASH);
+    String returned = CommonUtils.hex(retVal);
+    String expected = CommonUtils.hex(HashUtil.EMPTY_DATA_HASH);
     Assert.assertEquals(expected, returned);
   }
 
@@ -923,7 +922,7 @@ public class SmartContractRequestHandlerMiscTest {
     Assert.assertNotNull(callResults);
     Assert.assertTrue(callResults.length > 0);
     byte[] bytesSolidityAddress = SCEncoding.decodeCreateTrivialGetAddress(callResults);
-    String innerContractSolidityAddress = ByteUtil.toHexString(bytesSolidityAddress);
+    String innerContractSolidityAddress = CommonUtils.hex(bytesSolidityAddress);
 
     // Create the opcode contract with EXTCODEHASH
     contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
@@ -949,7 +948,7 @@ public class SmartContractRequestHandlerMiscTest {
     Assert.assertTrue(callResults.length > 0);
     byte[] retVal = SCEncoding.decodeOpExtCodeHash(callResults);
     // Test the local convention of returning the address, not a Keccak256 hash
-    String returnedLast20Bytes = ByteUtil.toHexString(retVal).substring(24);
+    String returnedLast20Bytes = CommonUtils.hex(retVal).substring(24);
     Assert.assertEquals(innerContractSolidityAddress, returnedLast20Bytes);
   }
 
@@ -965,7 +964,7 @@ public class SmartContractRequestHandlerMiscTest {
     TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
-    String precompiledSolidityAddress = Hex.encodeHexString(EntityIdUtils.asSolidityAddress(0, 0, 3));
+    String precompiledSolidityAddress = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, 3));
 
     // Call the contract to exercise EXTCODEHASH
     ByteString dataToGet = ByteString
@@ -982,8 +981,8 @@ public class SmartContractRequestHandlerMiscTest {
     Assert.assertTrue(callResults.length > 0);
     byte[] retVal = SCEncoding.decodeOpExtCodeHash(callResults);
     // Finds existing account and returns not-contract, correct because there is no code at that address.
-    String returned = ByteUtil.toHexString(retVal);
-    String expected = ByteUtil.toHexString(HashUtil.EMPTY_DATA_HASH);
+    String returned = CommonUtils.hex(retVal);
+    String expected = CommonUtils.hex(HashUtil.EMPTY_DATA_HASH);
     Assert.assertEquals(expected, returned);
   }
 

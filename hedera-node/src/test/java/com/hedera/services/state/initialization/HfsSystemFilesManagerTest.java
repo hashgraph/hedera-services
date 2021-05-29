@@ -29,7 +29,6 @@ import com.hedera.services.files.interceptors.MockFileNumbers;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -49,6 +48,7 @@ import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
+import com.swirlds.common.CommonUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -658,7 +658,7 @@ class HfsSystemFilesManagerTest {
 			NodeAddress.Builder nodeAddress = NodeAddress.newBuilder()
 					.setIpAddress(ByteString.copyFromUtf8(nodeIPStr))
 					.setMemo(ByteString.copyFromUtf8(memo))
-					.setRSAPubKey(MiscUtils.commonsBytesToHex(publicKey.getEncoded()))
+					.setRSAPubKey(CommonUtils.hex(publicKey.getEncoded()))
 					.setNodeId(address.getId())
 					.setStake(address.getStake());
 

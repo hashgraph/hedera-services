@@ -35,14 +35,13 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.swirlds.common.AddressBook;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.fcmap.FCMap;
-import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
-import static com.hedera.services.utils.MiscUtils.commonsHexToBytes;
 
 public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 	private static final Logger log = LogManager.getLogger(BackedSystemAccountsCreator.class);
@@ -132,9 +131,9 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 				genesisKey = asFcKeyUnchecked(Key.newBuilder()
 						.setKeyList(KeyList.newBuilder()
 								.addKeys(Key.newBuilder()
-										.setEd25519(ByteString.copyFrom(commonsHexToBytes(getHexedABytes())))))
+										.setEd25519(ByteString.copyFrom(CommonUtils.unhex(getHexedABytes())))))
 						.build());
-			} catch (DecoderException e) {
+			} catch (IllegalArgumentException e) {
 				throw new IllegalStateException("Could not construct genesis key!", e);
 			}
 		}

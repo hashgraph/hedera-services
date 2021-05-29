@@ -20,9 +20,8 @@ package com.hedera.services.legacy.core;
  * ‍
  */
 
-import com.hedera.services.utils.MiscUtils;
+import com.swirlds.common.CommonUtils;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
-import org.apache.commons.codec.DecoderException;
 
 import java.io.Serializable;
 import java.security.PublicKey;
@@ -39,20 +38,12 @@ public class KeyPairObj implements Serializable {
     this.privateKey = privateKey;
   }
 
-  public String getPublicKeyStr() {
-    return publicKey;
+  public String getPublicKeyAbyteStr() throws InvalidKeySpecException {
+    return CommonUtils.hex(((EdDSAPublicKey)getPublicKey()).getAbyte());
   }
 
-  public String getPrivateKeyStr() {
-    return privateKey;
-  }
-
-  public String getPublicKeyAbyteStr() throws InvalidKeySpecException, DecoderException {
-    return MiscUtils.commonsBytesToHex(((EdDSAPublicKey)getPublicKey()).getAbyte());
-  }
-
-  private PublicKey getPublicKey() throws DecoderException, InvalidKeySpecException {
-    byte[] pubKeybytes = MiscUtils.commonsHexToBytes(publicKey);
+  private PublicKey getPublicKey() throws IllegalArgumentException, InvalidKeySpecException {
+    byte[] pubKeybytes = CommonUtils.unhex(publicKey);
     X509EncodedKeySpec pencoded = new X509EncodedKeySpec(pubKeybytes);
     EdDSAPublicKey pubKey = new EdDSAPublicKey(pencoded);
     return pubKey;
