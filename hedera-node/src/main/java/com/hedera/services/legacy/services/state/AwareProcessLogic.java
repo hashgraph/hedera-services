@@ -25,12 +25,11 @@ import com.hedera.services.context.ServicesContext;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.sigs.sourcing.ScopedSigBytesProvider;
 import com.hedera.services.state.logic.ServicesTxnManager;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.txns.ProcessLogic;
-import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeObject;
 import com.swirlds.common.SwirldTransaction;
 import org.apache.logging.log4j.LogManager;
@@ -44,9 +43,6 @@ import static com.hedera.services.keys.HederaKeyActivation.payerSigIsActive;
 import static com.hedera.services.legacy.crypto.SignatureStatusCode.SUCCESS_VERIFY_ASYNC;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.rationalizeIn;
 import static com.hedera.services.sigs.Rationalization.IN_HANDLE_SUMMARY_FACTORY;
-import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
-import static com.hedera.services.txns.diligence.DuplicateClassification.DUPLICATE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
@@ -137,7 +133,7 @@ public class AwareProcessLogic implements ProcessLogic {
 	void addRecordToStream() {
 		ctx.recordsHistorian().lastCreatedRecord().ifPresent(finalRecord ->
 				addForStreaming(ctx.txnCtx().accessor().getBackwardCompatibleSignedTxn(),
-						finalRecord.asGrpc(), ctx.txnCtx().consensusTime()));
+						finalRecord, ctx.txnCtx().consensusTime()));
 	}
 
 	private void doTriggeredProcess(TxnAccessor accessor, Instant consensusTime) {
@@ -230,12 +226,12 @@ public class AwareProcessLogic implements ProcessLogic {
 	}
 
 	void addForStreaming(
-			com.hederahashgraph.api.proto.java.Transaction grpcTransaction,
-			TransactionRecord transactionRecord,
-			Instant consensusTimeStamp
+			com.hederahashgraph.api.proto.java.Transaction txn,
+			ExpirableTxnRecord record,
+			Instant consensusTime
 	) {
-		var recordStreamObject = new RecordStreamObject(transactionRecord, grpcTransaction, consensusTimeStamp);
-		ctx.updateRecordRunningHash(recordStreamObject.getRunningHash());
-		ctx.recordStreamManager().addRecordStreamObject(recordStreamObject);
+		final var rso = new RecordStreamObject(record, txn, consensusTime);
+		ctx.updateRecordRunningHash(rso.getRunningHash());
+		ctx.recordStreamManager().addRecordStreamObject(rso);
 	}
 }

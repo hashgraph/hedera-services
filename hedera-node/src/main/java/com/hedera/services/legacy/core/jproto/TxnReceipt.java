@@ -348,6 +348,7 @@ public class TxnReceipt implements SelfSerializable {
 	/* ---  Helpers --- */
 
 	public static TxnReceipt fromGrpc(TransactionReceipt grpc) {
+		final var effRates = grpc.hasExchangeRate() ? ExchangeRates.fromGrpc(grpc.getExchangeRate()) : null;
 		String status = grpc.getStatus() != null ? grpc.getStatus().name() : null;
 		EntityId accountId = grpc.hasAccountID() ? EntityId.fromGrpcAccountId(grpc.getAccountID()) : null;
 		EntityId jFileID = grpc.hasFileID() ? EntityId.fromGrpcFileId(grpc.getFileID()) : null;
@@ -368,7 +369,7 @@ public class TxnReceipt implements SelfSerializable {
 				jContractID,
 				tokenId,
 				scheduleId,
-				ExchangeRates.fromGrpc(grpc.getExchangeRate()),
+				effRates,
 				topicId,
 				grpc.getTopicSequenceNumber(),
 				grpc.getTopicRunningHash().toByteArray(),
@@ -382,8 +383,10 @@ public class TxnReceipt implements SelfSerializable {
 	}
 
 	public static TransactionReceipt convert(TxnReceipt txReceipt) {
-		TransactionReceipt.Builder builder = TransactionReceipt.newBuilder()
-				.setStatus(ResponseCodeEnum.valueOf(txReceipt.getStatus()));
+		TransactionReceipt.Builder builder = TransactionReceipt.newBuilder();
+		if (txReceipt.getStatus() != null) {
+				builder.setStatus(ResponseCodeEnum.valueOf(txReceipt.getStatus()));
+		}
 		if (txReceipt.getAccountId() != null) {
 			builder.setAccountID(RequestBuilder.getAccountIdBuild(
 					txReceipt.getAccountId().num(),

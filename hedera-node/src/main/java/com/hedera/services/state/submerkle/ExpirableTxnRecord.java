@@ -113,24 +113,18 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	@Override
 	public String toString() {
 		var helper = MoreObjects.toStringHelper(this)
+				.omitNullValues()
 				.add("receipt", receipt)
 				.add("txnHash", CommonUtils.hex(txnHash))
 				.add("txnId", txnId)
 				.add("consensusTimestamp", consensusTimestamp)
 				.add("expiry", expiry)
-				.add("submittingMember", submittingMember);
-		if (memo != null) {
-			helper.add("memo", memo);
-		}
-		if (contractCreateResult != null) {
-			helper.add("contractCreation", contractCreateResult);
-		}
-		if (contractCallResult != null) {
-			helper.add("contractCall", contractCallResult);
-		}
-		if (hbarAdjustments != null) {
-			helper.add("hbarAdjustments", hbarAdjustments);
-		}
+				.add("submittingMember", submittingMember)
+				.add("memo", memo)
+				.add("contractCreation", contractCreateResult)
+				.add("contractCall", contractCallResult)
+				.add("hbarAdjustments", contractCallResult)
+				.add("scheduleRef", scheduleRef);
 		if (tokens != NO_TOKENS) {
 			int n = tokens.size();
 			var readable = IntStream.range(0, n)
@@ -140,9 +134,6 @@ public class ExpirableTxnRecord implements FCQueueElement {
 							tokenAdjustments.get(i)))
 					.collect(joining(", "));
 			helper.add("tokenAdjustments", readable);
-		}
-		if (scheduleRef != NO_SCHEDULE_REF) {
-			helper.add("scheduleRef", scheduleRef);
 		}
 		return helper.toString();
 	}
