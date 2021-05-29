@@ -104,6 +104,7 @@ import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.fees.charging.NarratedLedgerCharging;
 import com.hedera.services.fees.charging.FeeChargingPolicy;
+import com.hedera.services.fees.charging.TxnChargingPolicyAgent;
 import com.hedera.services.files.DataMapFactory;
 import com.hedera.services.files.EntityExpiryMapFactory;
 import com.hedera.services.files.FileUpdateInterceptor;
@@ -531,6 +532,7 @@ public class ServicesContext {
 	private HfsSystemFilesManager systemFilesManager;
 	private CurrentPlatformStatus platformStatus;
 	private SystemAccountsCreator systemAccountsCreator;
+	private TxnChargingPolicyAgent chargingPolicyAgent;
 	private ServicesRepositoryRoot repository;
 	private CharacteristicsFactory characteristics;
 	private AccountRecordsHistorian recordsHistorian;
@@ -1919,6 +1921,14 @@ public class ServicesContext {
 			txnChargingPolicy = new FeeChargingPolicy(narratedCharging());
 		}
 		return txnChargingPolicy;
+	}
+
+	public TxnChargingPolicyAgent chargingPolicyAgent() {
+		if (chargingPolicyAgent == null) {
+			chargingPolicyAgent = new TxnChargingPolicyAgent(
+					fees(), txnChargingPolicy(), txnCtx(), this::currentView, nodeDiligenceScreen(), txnHistories());
+		}
+		return chargingPolicyAgent;
 	}
 
 	public SystemAccountsCreator systemAccountsCreator() {

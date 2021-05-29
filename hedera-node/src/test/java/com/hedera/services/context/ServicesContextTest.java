@@ -45,6 +45,7 @@ import com.hedera.services.fees.calculation.AwareFcfsUsagePrices;
 import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
 import com.hedera.services.fees.charging.NarratedLedgerCharging;
 import com.hedera.services.fees.charging.FeeChargingPolicy;
+import com.hedera.services.fees.charging.TxnChargingPolicyAgent;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.SysFileCallbacks;
 import com.hedera.services.files.TieredHederaFs;
@@ -520,6 +521,7 @@ public class ServicesContextTest {
 		assertThat(ctx.nodeInfo(), instanceOf(NodeInfo.class));
 		assertThat(ctx.invariants(), instanceOf(InvariantChecks.class));
 		assertThat(ctx.narratedCharging(), instanceOf(NarratedLedgerCharging.class));
+		assertThat(ctx.chargingPolicyAgent(), instanceOf(TxnChargingPolicyAgent.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

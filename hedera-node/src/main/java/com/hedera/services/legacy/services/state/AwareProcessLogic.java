@@ -163,28 +163,10 @@ public class AwareProcessLogic implements ProcessLogic {
 			ctx.networkCtxManager().prepareForIncorporating(accessor.getFunction());
 		}
 
-		FeeObject fees = ctx.fees().computeFee(accessor, ctx.txnCtx().activePayerKey(), ctx.currentView());
-
-		var recentHistory = ctx.txnHistories().get(accessor.getTxnId());
-		var duplicity = (recentHistory == null)
-				? BELIEVED_UNIQUE
-				: recentHistory.currentDuplicityFor(ctx.txnCtx().submittingSwirldsMember());
-
-		if (ctx.nodeDiligenceScreen().nodeIgnoredDueDiligence(duplicity)) {
-			ctx.txnChargingPolicy().applyForIgnoredDueDiligence(fees);
-			return;
-		}
-		if (duplicity == DUPLICATE) {
-			ctx.txnChargingPolicy().applyForDuplicate(fees);
-			ctx.txnCtx().setStatus(DUPLICATE_TRANSACTION);
+		if (!ctx.chargingPolicyAgent().applyPolicyFor(accessor)) {
 			return;
 		}
 
-		var chargingOutcome = ctx.txnChargingPolicy().apply(fees);
-		if (chargingOutcome != OK) {
-			ctx.txnCtx().setStatus(chargingOutcome);
-			return;
-		}
 		if (SIG_RATIONALIZATION_ERRORS.contains(sigStatus.getResponseCode())) {
 			ctx.txnCtx().setStatus(sigStatus.getResponseCode());
 			return;
