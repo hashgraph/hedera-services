@@ -215,6 +215,7 @@ public class ServicesContextTest {
 		given(state.scheduleTxs()).willReturn(schedules);
 		crypto = mock(Cryptography.class);
 		platform = mock(Platform.class);
+		given(platform.getSelfId()).willReturn(new NodeId(false, 0L));
 		given(platform.getCryptography()).willReturn(crypto);
 		properties = mock(PropertySource.class);
 		propertySources = mock(StandardizedPropertySources.class);

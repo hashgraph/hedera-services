@@ -36,6 +36,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
+import com.swirlds.common.SwirldDualState;
 import com.swirlds.common.internal.SettingsCommon;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,34 +51,38 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.Calendar;
 import java.util.List;
+import java.util.TimeZone;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY;
 import static java.lang.Thread.sleep;
+import static java.util.Calendar.HOUR_OF_DAY;
+import static java.util.Calendar.MINUTE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.stringContainsInOrder;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(LogCaptureExtension.class)
 class FreezeHandlerTest {
-	Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
-	HederaFs hfs;
-	Platform platform;
-	ExchangeRateSet rates;
-	HbarCentExchange exchange;
+	private Instant consensusTime = Instant.now();
+	private HederaFs hfs;
+	private Platform platform;
+	private ExchangeRateSet rates;
+	private HbarCentExchange exchange;
+	private SwirldDualState dualState;
 
 	@Inject
 	private LogCaptor logCaptor;
 	@LoggingSubject
 	private FreezeHandler subject;
-
 
 	@BeforeEach
 	void setUp() {
@@ -88,23 +93,59 @@ class FreezeHandlerTest {
 		exchange = mock(HbarCentExchange.class);
 		given(exchange.activeRates()).willReturn(rates);
 		platform = Mockito.mock(Platform.class);
-
 		given(platform.getSelfId()).willReturn(new NodeId(false, 1));
+		dualState = mock(SwirldDualState.class);
 
-		subject = new FreezeHandler(hfs, platform, exchange);
+		subject = new FreezeHandler(hfs, platform, exchange, () -> dualState);
 	}
 
 	@Test
-	public void freezeTest() throws Exception {
+	void freezeTest() throws Exception {
+		// setup:
 		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, null);
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
+		// and:
+		final var nominalStartHour = txBody.getFreeze().getStartHour();
+		final var nominalStartMin = txBody.getFreeze().getStartMin();
+		final var expectedStart = naturalNextInstant(nominalStartHour, nominalStartMin, consensusTime);
+
+		// when:
 		TransactionRecord record = subject.freeze(txBody, consensusTime);
+
+		// then:
 		assertEquals(record.getReceipt().getStatus(), ResponseCodeEnum.SUCCESS);
+		verify(dualState).setFreezeTime(expectedStart);
 	}
 
 	@Test
-	public void freeze_InvalidFreezeTxBody_Test() throws Exception {
-		willThrow(IllegalArgumentException.class).given(platform).setFreezeTime(anyInt(), anyInt(), anyInt(), anyInt());
+	void computesMinsSinceConsensusMidnight() {
+		// given:
+		final var consensusNow = Instant.parse("2021-05-28T14:38:34.546097Z");
+		// and:
+		final int minutesSinceMidnight = 14 * 60 + 38;
+
+		// expect:
+		assertEquals(minutesSinceMidnight, subject.minutesSinceMidnight(consensusNow));
+	}
+
+	private Instant naturalNextInstant(int nominalHour, int nominalMin, Instant now) {
+		final var calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+		calendar.setTimeInMillis(consensusTime.getEpochSecond() * 1_000);
+		final int curHour = calendar.get(HOUR_OF_DAY);
+		final int curMin = calendar.get(MINUTE);
+		final int curMinsSinceMidnight = curHour * 60 + curMin;
+		final int nominalMinsSinceMidnight = nominalHour * 60 + nominalMin;
+		int diffMins = nominalMinsSinceMidnight - curMinsSinceMidnight;
+		if (diffMins < 0) {
+			diffMins += 1440;
+		}
+		final var ans = now.plusSeconds(diffMins * 60);
+		return ans;
+	}
+
+	@Test
+	void freeze_InvalidFreezeTxBody_Test() throws Exception {
+		willThrow(IllegalArgumentException.class).given(dualState).setFreezeTime(any());
 		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, false, null);
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
 		TransactionRecord record = subject.freeze(txBody, consensusTime);
@@ -112,7 +153,7 @@ class FreezeHandlerTest {
 	}
 
 	@Test
-	public void freeze_updateFeature() throws Exception {
+	void freeze_updateFeature() throws Exception {
 		String zipFile = "src/test/resources/testfiles/updateFeature/update.zip";
 		byte[] data = Files.readAllBytes(Paths.get(zipFile));
 		byte[] hash = CommonUtils.noThrowSha384HashOf(data);
@@ -139,7 +180,7 @@ class FreezeHandlerTest {
 	}
 
 	@Test
-	public void freezeOnlyNoUpdateFeature() throws Exception {
+	void freezeOnlyNoUpdateFeature() throws Exception {
 		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, null);
 
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
@@ -153,12 +194,12 @@ class FreezeHandlerTest {
 		assertThat(
 				logCaptor.infoLogs(),
 				contains(
-						Matchers.startsWith("Freeze time starts"),
+						Matchers.startsWith("Dual state freeze time set to"),
 						stringContainsInOrder(List.of("Update file id is not defined"))));
 	}
 
 	@Test
-	public void freezeUpdateWarnsWhenFileNotDeleted() throws Exception {
+	void freezeUpdateWarnsWhenFileNotDeleted() throws Exception {
 		// setup:
 		String zipFile = "src/test/resources/testfiles/updateFeature/update.zip";
 		byte[] data = Files.readAllBytes(Paths.get(zipFile));
@@ -187,7 +228,7 @@ class FreezeHandlerTest {
 	}
 
 	@Test
-	public void freeze_updateAbort_EmptyFile() throws Exception {
+	void freeze_updateAbort_EmptyFile() throws Exception {
 		byte[] data = new byte[0];
 		byte[] hash = CommonUtils.noThrowSha384HashOf(data);
 		FileID fileID = FileID.newBuilder().setShardNum(0L).setRealmNum(0L).setFileNum(150L).build();
@@ -213,7 +254,7 @@ class FreezeHandlerTest {
 	}
 
 	@Test
-	public void freeze_updateFileHash_MisMatch() throws Exception {
+	void freeze_updateFileHash_MisMatch() throws Exception {
 		FileID fileID = FileID.newBuilder().setShardNum(0L).setRealmNum(0L).setFileNum(150L).build();
 
 		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, fileID, new byte[48]);
@@ -240,7 +281,7 @@ class FreezeHandlerTest {
 
 
 	@Test
-	public void freeze_updateFileID_NonExist() throws Exception {
+	void freeze_updateFileID_NonExist() throws Exception {
 		FileID fileID = FileID.newBuilder().setShardNum(0L).setRealmNum(0L).setFileNum(150L).build();
 		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, fileID, new byte[48]);
 		given(hfs.exists(fileID)).willReturn(false);

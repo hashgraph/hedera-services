@@ -26,9 +26,8 @@ import org.junit.jupiter.api.Test;
 import java.util.Calendar;
 import java.util.TimeZone;
 
-public class CommonUtilsTest {
-
-	public static int[] getUTCHourMinFromMillis(final long utcMillis) {
+class CommonUtilsTest {
+	static int[] getUTCHourMinFromMillis(final long utcMillis) {
 		int[] hourMin = new int[2];
 		Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
 		cal.setTimeInMillis(utcMillis);
@@ -38,7 +37,7 @@ public class CommonUtilsTest {
 	}
 
 	@Test
-	public void convertUTCMillisTest() {
+	void convertUTCMillisTest() {
 		long utcMillis = 1554331942000L;
 		Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
 		cal.setTimeInMillis(utcMillis);
@@ -49,12 +48,10 @@ public class CommonUtilsTest {
 	}
 
 	@Test
-	public void getUTCHourMinFromSecsTest() {
+	void getUTCHourMinFromSecsTest() {
 		long utcMillis = 1554331942000l;
 		int[] hourMin = getUTCHourMinFromMillis(utcMillis);
 		Assertions.assertEquals(hourMin[0] , 22);
 		Assertions.assertEquals(hourMin[1] , 52);
 	}
-
-
 }

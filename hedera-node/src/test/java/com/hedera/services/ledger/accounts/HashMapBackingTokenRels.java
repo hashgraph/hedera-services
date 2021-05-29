@@ -33,7 +33,7 @@ public class HashMapBackingTokenRels implements BackingStore<Pair<AccountID, Tok
 	private Map<Pair<AccountID, TokenID>, MerkleTokenRelStatus> rels = new HashMap<>();
 
 	@Override
-	public void flushMutableRefs() { }
+	public void clearRefCache() { }
 
 	@Override
 	public MerkleTokenRelStatus getRef(Pair<AccountID, TokenID> id) {

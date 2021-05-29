@@ -31,7 +31,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
@@ -44,6 +43,7 @@ import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
+import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -362,7 +362,7 @@ public class HfsSystemFilesManager implements SystemFilesManager {
 	private NodeAddress.Builder basicBioEntryFrom(Address address) {
 		var builder = NodeAddress.newBuilder()
 				.setIpAddress(ByteString.copyFromUtf8(ipString(address.getAddressExternalIpv4())))
-				.setRSAPubKey(MiscUtils.commonsBytesToHex(address.getSigPublicKey().getEncoded()))
+				.setRSAPubKey(CommonUtils.hex(address.getSigPublicKey().getEncoded()))
 				.setNodeId(address.getId())
 				.setStake(address.getStake())
 				.setMemo(ByteString.copyFromUtf8(address.getMemo()));

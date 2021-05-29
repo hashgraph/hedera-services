@@ -44,7 +44,6 @@ import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityA
 import static com.hedera.services.utils.EntityIdUtils.contractParsedFromSolidityAddress;
 import static java.util.Collections.emptyList;
 import static org.ethereum.core.BlockchainImpl.EMPTY_LIST_HASH;
-import static org.ethereum.util.ByteUtil.longToBytesNoLeadZeroes;
 
 public class DomainUtils {
 	public static Block fakeBlock(Instant at) {
@@ -55,7 +54,7 @@ public class DomainUtils {
 				new byte[32],
 				new byte[0],
 				0,
-				longToBytesNoLeadZeroes(Long.MAX_VALUE),
+				ByteUtil.longToBytesNoLeadZeroes(Long.MAX_VALUE),
 				0,
 				at.getEpochSecond(),
 				new byte[0],

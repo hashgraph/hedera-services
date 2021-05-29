@@ -65,7 +65,7 @@ class PureFCMapBackingAccountsTest {
 		// expect:
 		assertThrows(UnsupportedOperationException.class, () -> subject.remove(null));
 		assertThrows(UnsupportedOperationException.class, () -> subject.put(null, null));
-		assertDoesNotThrow(subject::flushMutableRefs);
+		assertDoesNotThrow(subject::clearRefCache);
 	}
 
 	@Test

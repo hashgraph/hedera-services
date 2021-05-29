@@ -30,7 +30,7 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.Transaction;
+import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,7 +68,7 @@ class InHandleActivationHelperTest {
 					IdUtils.asAccount("1.2.3"),
 					TransactionID.getDefaultInstance());
 
-	Transaction platformTxn;
+	SwirldTransaction platformTxn;
 	HederaSigningOrder keyOrderer;
 	PlatformTxnAccessor accessor;
 
@@ -96,7 +96,7 @@ class InHandleActivationHelperTest {
 		characteristicsFactory = mock(CharacteristicsFactory.class);
 		given(characteristicsFactory.inferredFor(any())).willReturn(DEFAULT_ACTIVATION_CHARACTERISTICS);
 
-		platformTxn = mock(Transaction.class);
+		platformTxn = mock(SwirldTransaction.class);
 		given(platformTxn.getSignatures()).willReturn(sigs);
 		accessor = mock(PlatformTxnAccessor.class);
 		given(accessor.getPlatformTxn()).willReturn(platformTxn);

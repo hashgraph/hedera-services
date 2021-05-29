@@ -28,7 +28,7 @@ import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.events.Event;
-import org.apache.commons.codec.binary.Hex;
+import com.swirlds.common.CommonUtils;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,9 +53,9 @@ class IssListenerTest {
 	NodeId other = new NodeId(false, otherId);
 	// and:
 	byte[] hash = "xyz".getBytes();
-	String hashHex = Hex.encodeHexString(hash);
+	String hashHex = CommonUtils.hex(hash);
 	byte[] sig = "zyx".getBytes();
-	String sigHex = Hex.encodeHexString(sig);
+	String sigHex = CommonUtils.hex(sig);
 
 	Instant consensusTime = Instant.now();
 

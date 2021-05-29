@@ -22,8 +22,8 @@ package com.hedera.test.factories.keys;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.proto.utils.KeyExpansion;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.Key;
+import com.swirlds.common.CommonUtils;
 
 import java.security.PrivateKey;
 import java.util.ArrayList;
@@ -69,7 +69,7 @@ public class OverlappingKeyGenerator implements KeyGenerator {
 	public Key genEd25519AndUpdateMap(Map<String, PrivateKey> mutablePkMap) {
 		Key key = precomputed.get(nextKey);
 		nextKey = (nextKey + 1) % precomputed.size();
-		String hexPubKey = MiscUtils.commonsBytesToHex(key.getEd25519().toByteArray());
+		String hexPubKey = CommonUtils.hex(key.getEd25519().toByteArray());
 		mutablePkMap.put(hexPubKey, pkMap.get(hexPubKey));
 		return key;
 	}

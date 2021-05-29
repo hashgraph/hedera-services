@@ -160,7 +160,6 @@ public class RenewalHelper {
 		try {
 			mutableLastClassified.setBalance(newBalance);
 		} catch (NegativeAccountBalanceException impossible) { }
-		currentAccounts.replace(lastClassifiedEntityId, mutableLastClassified);
 
 		final var fundingId = fromAccountId(dynamicProperties.fundingAccount());
 		final var mutableFundingAccount = currentAccounts.getForModify(fundingId);
@@ -168,8 +167,7 @@ public class RenewalHelper {
 		try {
 			mutableFundingAccount.setBalance(newFundingBalance);
 		} catch (NegativeAccountBalanceException impossible) { }
-		currentAccounts.replace(fundingId, mutableFundingAccount);
-		
+
 		log.debug("Renewed {} at a price of {}tb", lastClassifiedEntityId, fee);
 	}
 
@@ -220,7 +218,6 @@ public class RenewalHelper {
 		final var mutableTreasuryRelStatus = currentTokenRels.getForModify(treasuryRel);
 		final long newTreasuryBalance = mutableTreasuryRelStatus.getBalance() + balance;
 		mutableTreasuryRelStatus.setBalance(newTreasuryBalance);
-		currentTokenRels.replace(treasuryRel, mutableTreasuryRelStatus);
 	}
 
 	private void assertHasLastClassifiedAccount() {

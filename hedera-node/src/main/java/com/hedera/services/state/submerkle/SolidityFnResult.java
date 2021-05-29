@@ -27,7 +27,7 @@ import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.apache.commons.codec.binary.Hex;
+import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -148,8 +148,8 @@ public class SolidityFnResult implements SelfSerializable {
 	public String toString() {
 		return MoreObjects.toStringHelper(this)
 				.add("gasUsed", gasUsed)
-				.add("bloom", Hex.encodeHexString(bloom))
-				.add("result", Hex.encodeHexString(result))
+				.add("bloom", CommonUtils.hex(bloom))
+				.add("result", CommonUtils.hex(result))
 				.add("error", error)
 				.add("contractId", contractId)
 				.add("createdContractIds", createdContractIds)

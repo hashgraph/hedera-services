@@ -46,7 +46,6 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.SolidityLifecycleFactory;
 import com.hedera.test.mocks.StorageSourceFactory;
 import com.hedera.test.mocks.TestContextValidator;
@@ -67,11 +66,13 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.fcmap.internal.FCMLeaf;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 import org.ethereum.core.AccountState;
 import org.ethereum.datasource.DbSource;
 import org.ethereum.datasource.Source;
@@ -158,6 +159,12 @@ public class SmartContractRequestHandlerPayableTest {
 
   @BeforeEach
   public void setUp() throws Exception {
+    // setup:
+    ConstructableRegistry.registerConstructable(
+            new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
+    ConstructableRegistry.registerConstructable(
+            new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+
     payerAccountId = RequestBuilder.getAccountIdBuild(payerAccount, 0l, 0l);
     nodeAccountId = RequestBuilder.getAccountIdBuild(nodeAccount, 0l, 0l);
     feeCollAccountId = RequestBuilder.getAccountIdBuild(feeCollAccount, 0l, 0l);
@@ -203,10 +210,10 @@ public class SmartContractRequestHandlerPayableTest {
             storageWrapper,
             feeScheduleInterceptor,
             new ExchangeRates());
-    String key = Hex.encodeHexString(EntityIdUtils.asSolidityAddress(0, 0, payerAccount));
+    String key = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, payerAccount));
     try {
-      payerKeyBytes = MiscUtils.commonsHexToBytes(key);
-    } catch (DecoderException e) {
+      payerKeyBytes = CommonUtils.unhex(key);
+    } catch (IllegalArgumentException e) {
       Assert.fail("Failure building solidity key for payer account");
     }
     payerMerkleEntityId = new MerkleEntityId();
@@ -424,7 +431,7 @@ public class SmartContractRequestHandlerPayableTest {
     // Create a receiver account
     AccountID receiverAccountId = RequestBuilder.getAccountIdBuild(receiverAccount, 0l, 0l);
     createAccount(receiverAccountId, INITIAL_BALANCE);
-    String receiverSolidityAddr = Hex.encodeHexString(EntityIdUtils.asSolidityAddress(0, 0, receiverAccount));
+    String receiverSolidityAddr = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, receiverAccount));
 
     // Save the "before" balances
     long receiverBefore = getBalance(receiverAccountId);
@@ -531,7 +538,7 @@ public class SmartContractRequestHandlerPayableTest {
     // Create a receiver account
     AccountID receiverAccountId = RequestBuilder.getAccountIdBuild(receiverAccount, 0l, 0l);
     createAccount(receiverAccountId, INITIAL_BALANCE);
-    String receiverSolidityAddr = Hex.encodeHexString(EntityIdUtils.asSolidityAddress(0, 0, receiverAccount));
+    String receiverSolidityAddr = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, receiverAccount));
 
     // Save the "before" balances
     long receiverBefore = getBalance(receiverAccountId);
@@ -579,7 +586,7 @@ public class SmartContractRequestHandlerPayableTest {
     // Create a new account
     AccountID receiverAccountId = RequestBuilder.getAccountIdBuild(receiverAccount, 0l, 0l);
     createAccount(receiverAccountId, INITIAL_BALANCE);
-    String receiverSolidityAddr = Hex.encodeHexString(EntityIdUtils.asSolidityAddress(0, 0, receiverAccount));
+    String receiverSolidityAddr = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, receiverAccount));
 
     // Call the contract to get the balance
     ByteString dataToGet = ByteString.copyFrom(SCEncoding.encodeGetBalanceOf(receiverSolidityAddr));

@@ -20,7 +20,7 @@ package com.hedera.services.legacy.core.jproto;
  * ‍
  */
 
-import com.hedera.services.utils.MiscUtils;
+import com.swirlds.common.CommonUtils;
 
 /**
  * Maps to proto KeyList.
@@ -38,16 +38,12 @@ public class JECDSA_384Key extends JKey {
 
 	@Override
 	public String toString() {
-		return "<JECDSA_384Key: ECDSA_384Key hex=" + MiscUtils.commonsBytesToHex(ECDSA_384Key) + ">";
+		return "<JECDSA_384Key: ECDSA_384Key hex=" + CommonUtils.hex(ECDSA_384Key) + ">";
 	}
 
 	@Override
 	public boolean isEmpty() {
 		return ((null == ECDSA_384Key) || (0 == ECDSA_384Key.length));
-	}
-
-	public boolean hasECDSA_384Key() {
-		return true;
 	}
 
 	public byte[] getECDSA384() {

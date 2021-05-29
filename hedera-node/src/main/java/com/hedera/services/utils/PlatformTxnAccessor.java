@@ -22,9 +22,10 @@ package com.hedera.services.utils;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.swirlds.common.SwirldTransaction;
 
 /**
- * Encapsulates access to several commonly referenced parts of a {@link com.swirlds.common.Transaction}
+ * Encapsulates access to several commonly referenced parts of a {@link com.swirlds.common.SwirldTransaction}
  * whose contents is <i>supposed</i> to be a Hedera Services gRPC {@link Transaction}. (The constructor of this
  * class immediately tries to parse the {@code byte[]} contents of the txn, and propagates any protobuf
  * exceptions encountered.)
@@ -32,9 +33,9 @@ import com.hederahashgraph.api.proto.java.Transaction;
  * @author Michael Tinker
  */
 public class PlatformTxnAccessor extends SignedTxnAccessor {
-	private final com.swirlds.common.Transaction platformTxn;
+	private final SwirldTransaction platformTxn;
 
-	public PlatformTxnAccessor(com.swirlds.common.Transaction platformTxn) throws InvalidProtocolBufferException {
+	public PlatformTxnAccessor(SwirldTransaction platformTxn) throws InvalidProtocolBufferException {
 		super(platformTxn.getContents());
 		this.platformTxn = platformTxn;
 	}
@@ -46,7 +47,7 @@ public class PlatformTxnAccessor extends SignedTxnAccessor {
 	 * @param platformTxn the txn to provide accessors for.
 	 * @return an initialized accessor.
 	 */
-	public static PlatformTxnAccessor uncheckedAccessorFor(com.swirlds.common.Transaction platformTxn) {
+	public static PlatformTxnAccessor uncheckedAccessorFor(SwirldTransaction platformTxn) {
 		try {
 			return new PlatformTxnAccessor(platformTxn);
 		} catch (InvalidProtocolBufferException ignore) {
@@ -54,7 +55,7 @@ public class PlatformTxnAccessor extends SignedTxnAccessor {
 		}
 	}
 
-	public com.swirlds.common.Transaction getPlatformTxn() {
+	public SwirldTransaction getPlatformTxn() {
 		return platformTxn;
 	}
 }

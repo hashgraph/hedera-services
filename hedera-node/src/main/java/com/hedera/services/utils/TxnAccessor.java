@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.common.SwirldTransaction;
 
 /**
  * Defines a type that gives access to several commonly referenced
@@ -62,5 +63,5 @@ public interface TxnAccessor {
 
     long getOfferedFee();
 
-    default com.swirlds.common.Transaction getPlatformTxn() { throw new UnsupportedOperationException(); }
+    default SwirldTransaction getPlatformTxn() { throw new UnsupportedOperationException(); }
 }

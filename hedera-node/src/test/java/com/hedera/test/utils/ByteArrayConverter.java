@@ -23,7 +23,7 @@ package com.hedera.test.utils;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.params.converter.ArgumentConversionException;
 import org.junit.jupiter.params.converter.ArgumentConverter;
-import org.spongycastle.util.encoders.Hex;
+import com.swirlds.common.CommonUtils;
 
 /**
  * Convert hex string to byte array.
@@ -39,6 +39,6 @@ public final class ByteArrayConverter implements ArgumentConverter {
 			throw new ArgumentConversionException(input + " is not a string");
 		}
 		var inputString = (String) input;
-		return Hex.decode(inputString);
+		return CommonUtils.unhex(inputString);
 	}
 }

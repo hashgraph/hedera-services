@@ -47,10 +47,13 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.fcmap.internal.FCMLeaf;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.spongycastle.util.encoders.Hex;
 
 import java.util.List;
 import java.util.Optional;
@@ -110,6 +113,10 @@ class GetAccountInfoAnswerTest {
 
 	@BeforeEach
 	private void setup() throws Throwable {
+		// setup:
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
+
 		tokenRels = new FCMap<>();
 		tokenRels.put(
 				fromAccountTokenRel(payerId, firstToken),
@@ -252,7 +259,7 @@ class GetAccountInfoAnswerTest {
 		// and:
 		CryptoGetInfoResponse.AccountInfo info = response.getCryptoGetInfo().getAccountInfo();
 		assertEquals(asAccount(payer), info.getAccountID());
-		String address = Hex.toHexString(asSolidityAddress(0, 0L, 12_345L));
+		String address = CommonUtils.hex(asSolidityAddress(0, 0L, 12_345L));
 		assertEquals(address, info.getContractAccountID());
 		assertEquals(payerAccount.getBalance(), info.getBalance());
 		assertEquals(payerAccount.getAutoRenewSecs(), info.getAutoRenewPeriod().getSeconds());

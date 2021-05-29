@@ -32,7 +32,7 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.fcqueue.FCQueueElement;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bouncycastle.util.encoders.Hex;
+import com.swirlds.common.CommonUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -45,7 +45,7 @@ import static com.hedera.services.state.submerkle.EntityId.fromGrpcScheduleId;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
-public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
+public class ExpirableTxnRecord implements FCQueueElement {
 	public static final long UNKNOWN_SUBMITTING_MEMBER = -1;
 
 	private static final Logger log = LogManager.getLogger(ExpirableTxnRecord.class);
@@ -153,7 +153,7 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 	public String toString() {
 		var helper = MoreObjects.toStringHelper(this)
 				.add("receipt", receipt)
-				.add("txnHash", Hex.toHexString(txnHash))
+				.add("txnHash", CommonUtils.hex(txnHash))
 				.add("txnId", txnId)
 				.add("consensusTimestamp", consensusTimestamp)
 				.add("expiry", expiry)

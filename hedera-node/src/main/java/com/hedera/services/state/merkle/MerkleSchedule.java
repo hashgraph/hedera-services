@@ -35,11 +35,10 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.FCMValue;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
-import org.apache.commons.codec.binary.Hex;
+import com.swirlds.common.CommonUtils;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -55,7 +54,7 @@ import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static java.util.stream.Collectors.toList;
 
-public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
+public class MerkleSchedule extends AbstractMerkleLeaf {
 	static final int MERKLE_VERSION = 1;
 
 	static final int NUM_ED25519_PUBKEY_BYTES = 32;
@@ -181,7 +180,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 				.add("payer", readablePayer())
 				.add("schedulingAccount", schedulingAccount)
 				.add("schedulingTXValidStart", schedulingTXValidStart)
-				.add("signatories", signatories.stream().map(Hex::encodeHexString).collect(toList()))
+				.add("signatories", signatories.stream().map(CommonUtils::hex).collect(toList()))
 				.add("adminKey", describe(adminKey));
 		if (resolutionTime != null) {
 			helper.add("resolutionTime", resolutionTime);
@@ -395,7 +394,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
 			schedulingTXValidStart = RichInstant.fromGrpc(parentTxn.getTransactionID().getTransactionValidStart());
 		} catch (InvalidProtocolBufferException e) {
 			throw new IllegalArgumentException(String.format(
-					"Argument bodyBytes=0x%s was not a TransactionBody!", Hex.encodeHexString(bodyBytes)));
+					"Argument bodyBytes=0x%s was not a TransactionBody!", CommonUtils.hex(bodyBytes)));
 		}
 	}
 }

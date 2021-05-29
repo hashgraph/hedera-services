@@ -73,10 +73,7 @@ public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, 
 	}
 
 	@Override
-	public void flushMutableRefs() {
-		cache.entrySet().stream()
-				.sorted(REL_ENTRY_CMP)
-				.forEach(entry -> delegate.get().replace(fromAccountTokenRel(entry.getKey()), entry.getValue()));
+	public void clearRefCache() {
 		cache.clear();
 	}
 

@@ -48,7 +48,6 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.SolidityLifecycleFactory;
 import com.hedera.test.mocks.StorageSourceFactory;
 import com.hedera.test.mocks.TestContextValidator;
@@ -71,9 +70,13 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.fee.FeeBuilder;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.fcmap.internal.FCMLeaf;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
+import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.core.AccountState;
@@ -81,7 +84,6 @@ import org.ethereum.crypto.HashUtil;
 import org.ethereum.datasource.DbSource;
 import org.ethereum.datasource.Source;
 import org.ethereum.db.ServicesRepositoryRoot;
-import org.ethereum.util.ByteUtil;
 import org.junit.Assert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -177,7 +179,13 @@ public class SmartContractRequestHandlerMiscTest {
   }
 
   @BeforeEach
-  public void setUp() throws Exception {
+  void setUp() throws Exception {
+    // setup:
+    ConstructableRegistry.registerConstructable(
+            new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
+    ConstructableRegistry.registerConstructable(
+            new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+
     payerAccountId = RequestBuilder.getAccountIdBuild(payerAccount, 0l, 0l);
     nodeAccountId = RequestBuilder.getAccountIdBuild(nodeAccount, 0l, 0l);
     feeCollAccountId = RequestBuilder.getAccountIdBuild(feeCollAccount, 0l, 0l);
@@ -221,10 +229,10 @@ public class SmartContractRequestHandlerMiscTest {
     storageWrapper = new FCStorageWrapper(storageMap);
     FeeScheduleInterceptor feeScheduleInterceptor = mock(FeeScheduleInterceptor.class);
     fsHandler = new FileServiceHandler(storageWrapper, feeScheduleInterceptor, new ExchangeRates());
-    String key = Hex.encodeHexString(EntityIdUtils.asSolidityAddress(0, 0, payerAccount));
+    String key = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, payerAccount));
     try {
-      payerKeyBytes = MiscUtils.commonsHexToBytes(key);
-    } catch (DecoderException e) {
+      payerKeyBytes = CommonUtils.unhex(key);
+    } catch (IllegalArgumentException e) {
       Assert.fail("Failure building solidity key for payer account");
     }
     payerMerkleEntityId = new MerkleEntityId();
@@ -333,7 +341,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("aa createMapContract: Success")
-  public void aa_createMapContract() {
+  void aa_createMapContract() {
     byte[] contractBytes = createFile(MAPPING_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody(0L, 250000L, null);
 
@@ -378,7 +386,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("ab MapContractSetCall: Success")
-  public void ab_mapContractSetCall() {
+  void ab_mapContractSetCall() {
     // Create the contract
     byte[] contractBytes = createFile(MAPPING_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -420,7 +428,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("ac MapContractGetCall: Success")
-  public void ac_mapContractGetCall() throws Exception {
+  void ac_mapContractGetCall() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(MAPPING_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -475,7 +483,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("ba create CreateTrivial contract: Success")
-  public void ba_createCTContract() throws StorageKeyNotFoundException {
+  void ba_createCTContract() throws StorageKeyNotFoundException {
     byte[] contractBytes = createFile(CREATE_TRIVIAL_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
 
@@ -498,7 +506,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("bb CreateTrivial create call: Success")
-  public void bb_CTCreateCall() {
+  void bb_CTCreateCall() {
     // Create the contract
     byte[] contractBytes = createFile(CREATE_TRIVIAL_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -527,7 +535,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("bc CreateTrivial get value from created contract: Success")
-  public void bc_CTGetIndirectCall() throws Exception {
+  void bc_CTGetIndirectCall() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(CREATE_TRIVIAL_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -565,7 +573,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("bd CreateTrivial get address of created contract: Success")
-  public void bd_CTGetAddressCall() throws Exception {
+  void bd_CTGetAddressCall() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(CREATE_TRIVIAL_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -609,7 +617,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("ca Call to invalid function: fails")
-  public void ca_InvalidFunctionCall() {
+  void ca_InvalidFunctionCall() {
     // Create the contract
     byte[] contractBytes = createFile(MAPPING_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -641,7 +649,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("cb Call to invalid function: fallback")
-  public void cb_FallbackFunctionCall() {
+  void cb_FallbackFunctionCall() {
     // Create the contract
     byte[] contractBytes = createFile(FALLBACK_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -671,7 +679,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("cc Create with invalid initial value: fails")
-  public void cc_InvalidInitialBalance() {
+  void cc_InvalidInitialBalance() {
     long payerBefore = getBalance(payerAccountId);
     long totalBefore = getTotalBalance();
 
@@ -697,7 +705,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("cd Create with valid initial value: succeeds")
-  public void cd_ValidInitialBalance() {
+  void cd_ValidInitialBalance() {
     long payerBefore = getBalance(payerAccountId);
     long totalBefore = getTotalBalance();
 
@@ -726,7 +734,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("da Opcode shl: Success")
-  public void da_OpcodeShl() throws Exception {
+  void da_OpcodeShl() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -754,7 +762,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("db Opcode shr: Success")
-  public void db_OpcodeShr() throws Exception {
+  void db_OpcodeShr() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -783,7 +791,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("dc Opcode sar: Success")
-  public void dc_OpcodeSar() throws Exception {
+  void dc_OpcodeSar() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -812,7 +820,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("dd Opcode extcodehash: Success")
-  public void dd_OpcodeExtCodeHash() throws Exception {
+  void dd_OpcodeExtCodeHash() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -822,7 +830,7 @@ public class SmartContractRequestHandlerMiscTest {
     TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
-    String contractSolidityAddress = Hex.encodeHexString(EntityIdUtils.asSolidityAddress(
+    String contractSolidityAddress = CommonUtils.hex(EntityIdUtils.asSolidityAddress(
         0, 0, newContractId.getContractNum()));
 
     // Call the contract to exercise EXTCODEHASH
@@ -840,13 +848,13 @@ public class SmartContractRequestHandlerMiscTest {
     Assert.assertTrue(callResults.length > 0);
     byte[] retVal = SCEncoding.decodeOpExtCodeHash(callResults);
     // Test the local convention of returning the address, not a Keccak256 hash
-    String returnedLast20Bytes = ByteUtil.toHexString(retVal).substring(24);
+    String returnedLast20Bytes = CommonUtils.hex(retVal).substring(24);
     Assert.assertEquals(contractSolidityAddress, returnedLast20Bytes);
   }
 
   @Test
   @DisplayName("de Opcode extcodehash: Account")
-  public void de_OpcodeExtCodeHashAccount() throws Exception {
+  void de_OpcodeExtCodeHashAccount() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -856,7 +864,7 @@ public class SmartContractRequestHandlerMiscTest {
     TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
-    String accountSolidityAddress = Hex.encodeHexString(EntityIdUtils.asSolidityAddress(
+    String accountSolidityAddress = CommonUtils.hex(EntityIdUtils.asSolidityAddress(
         0, 0, payerAccount));
 
     // Call the contract to exercise EXTCODEHASH
@@ -874,15 +882,15 @@ public class SmartContractRequestHandlerMiscTest {
     Assert.assertTrue(callResults.length > 0);
     byte[] retVal = SCEncoding.decodeOpExtCodeHash(callResults);
     // Test the local convention of returning the empty hash for a regular account
-    String returned = ByteUtil.toHexString(retVal);
-    String expected = ByteUtil.toHexString(HashUtil.EMPTY_DATA_HASH);
+    String returned = CommonUtils.hex(retVal);
+    String expected = CommonUtils.hex(HashUtil.EMPTY_DATA_HASH);
     Assert.assertEquals(expected, returned);
   }
 
   // Test a contract created by another contract
   @Test
   @DisplayName("df Opcode extcodehash: Contract-created contract")
-  public void df_OpcodeExtCodeHashCreated() throws Exception {
+  void df_OpcodeExtCodeHashCreated() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(CREATE_TRIVIAL_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -914,7 +922,7 @@ public class SmartContractRequestHandlerMiscTest {
     Assert.assertNotNull(callResults);
     Assert.assertTrue(callResults.length > 0);
     byte[] bytesSolidityAddress = SCEncoding.decodeCreateTrivialGetAddress(callResults);
-    String innerContractSolidityAddress = ByteUtil.toHexString(bytesSolidityAddress);
+    String innerContractSolidityAddress = CommonUtils.hex(bytesSolidityAddress);
 
     // Create the opcode contract with EXTCODEHASH
     contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
@@ -940,13 +948,13 @@ public class SmartContractRequestHandlerMiscTest {
     Assert.assertTrue(callResults.length > 0);
     byte[] retVal = SCEncoding.decodeOpExtCodeHash(callResults);
     // Test the local convention of returning the address, not a Keccak256 hash
-    String returnedLast20Bytes = ByteUtil.toHexString(retVal).substring(24);
+    String returnedLast20Bytes = CommonUtils.hex(retVal).substring(24);
     Assert.assertEquals(innerContractSolidityAddress, returnedLast20Bytes);
   }
 
   @Test
   @DisplayName("dg Opcode extcodehash: Precompiled contract")
-  public void dg_OpcodeExtCodeHashPrecompiled() throws Exception {
+  void dg_OpcodeExtCodeHashPrecompiled() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -956,7 +964,7 @@ public class SmartContractRequestHandlerMiscTest {
     TransactionRecord record = smartHandler.createContract(body, consensusTime, contractBytes, seqNumber);
     ledger.commit();
     ContractID newContractId = record.getReceipt().getContractID();
-    String precompiledSolidityAddress = Hex.encodeHexString(EntityIdUtils.asSolidityAddress(0, 0, 3));
+    String precompiledSolidityAddress = CommonUtils.hex(EntityIdUtils.asSolidityAddress(0, 0, 3));
 
     // Call the contract to exercise EXTCODEHASH
     ByteString dataToGet = ByteString
@@ -973,14 +981,14 @@ public class SmartContractRequestHandlerMiscTest {
     Assert.assertTrue(callResults.length > 0);
     byte[] retVal = SCEncoding.decodeOpExtCodeHash(callResults);
     // Finds existing account and returns not-contract, correct because there is no code at that address.
-    String returned = ByteUtil.toHexString(retVal);
-    String expected = ByteUtil.toHexString(HashUtil.EMPTY_DATA_HASH);
+    String returned = CommonUtils.hex(retVal);
+    String expected = CommonUtils.hex(HashUtil.EMPTY_DATA_HASH);
     Assert.assertEquals(expected, returned);
   }
 
   @Test
   @DisplayName("ea maxResultSize success")
-  public void ea_MaxResultSizeSuccess() throws Exception {
+  void ea_MaxResultSizeSuccess() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -1009,7 +1017,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("eb maxResultSize failure")
-  public void eb_MaxResultSizeFailure() throws Exception {
+  void eb_MaxResultSizeFailure() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -1039,7 +1047,7 @@ public class SmartContractRequestHandlerMiscTest {
   }
 
   @AfterEach
-  public void tearDown() throws Exception {
+  void tearDown() throws Exception {
     try {
       repository.close();
     } catch (Throwable tx) {
@@ -1082,7 +1090,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("cr Create In Constructor")
-  public void cr_CreateInConstructor() {
+  void cr_CreateInConstructor() {
     // Create the contract
     byte[] contractBytes = createFile(CREATE_IN_CONSTRUCTOR_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();

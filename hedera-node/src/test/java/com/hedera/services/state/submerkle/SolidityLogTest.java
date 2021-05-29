@@ -23,7 +23,7 @@ package com.hedera.services.state.submerkle;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.apache.commons.codec.binary.Hex;
+import com.swirlds.common.CommonUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -75,10 +75,10 @@ class SolidityLogTest {
 	public void toStringWorks() {
 		// expect:
 		assertEquals(
-				"SolidityLog{data="	+ Hex.encodeHexString(data) + ", " +
-					"bloom=" + Hex.encodeHexString(bloom) + ", " +
+				"SolidityLog{data="	+ CommonUtils.hex(data) + ", " +
+					"bloom=" + CommonUtils.hex(bloom) + ", " +
 					"contractId=" + contractId + ", " +
-					"topics=" + topics.stream().map(Hex::encodeHexString).collect(toList()) + "}",
+					"topics=" + topics.stream().map(CommonUtils::hex).collect(toList()) + "}",
 				subject.toString()
 		);
 	}

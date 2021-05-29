@@ -20,7 +20,7 @@ package com.hedera.services.legacy.core.jproto;
  * ‍
  */
 
-import com.hedera.services.utils.MiscUtils;
+import com.swirlds.common.CommonUtils;
 
 /**
  * Maps to proto Key of type ed25519.
@@ -39,7 +39,7 @@ public class JEd25519Key extends JKey {
 
 	@Override
 	public String toString() {
-		return "<JEd25519Key: ed25519 hex=" + MiscUtils.commonsBytesToHex(ed25519) + ">";
+		return "<JEd25519Key: ed25519 hex=" + CommonUtils.hex(ed25519) + ">";
 	}
 
 	@Override

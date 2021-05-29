@@ -28,7 +28,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.MiscUtils;
-import org.apache.commons.codec.binary.Hex;
+import com.swirlds.common.CommonUtils;
 
 @JsonPropertyOrder({
 		"receipt",
@@ -59,7 +59,7 @@ public class PojoRecord {
 		var pojo = new PojoRecord();
 		pojo.setTxnId(asString(value.getTxnId()));
 		pojo.setReceipt(asString(value.getReceipt()));
-		pojo.setHash(Hex.encodeHexString(value.getTxnHash()));
+		pojo.setHash(CommonUtils.hex(value.getTxnHash()));
 		pojo.setTimestamp(asString(value.getConsensusTimestamp()));
 		pojo.setMemo(value.getMemo());
 		pojo.setFee(value.getFee());

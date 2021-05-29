@@ -117,10 +117,6 @@ class FcBlobsBytesStoreTest {
 		verify(pathedBlobs).getForModify(pathA);
 		verify(blobA).modify(argThat((byte[] bytes) -> Arrays.equals(bytes, blobA.getData())));
 		// and:
-		verify(pathedBlobs).put(keyCaptor.capture(), valueCaptor.capture());
-		// and:
-		assertEquals(pathA, keyCaptor.getValue());
-		assertSame(blobA, valueCaptor.getValue());
 		assertNull(oldBytes);
 	}
 
