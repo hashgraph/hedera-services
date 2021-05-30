@@ -29,7 +29,7 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
+import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
@@ -100,7 +100,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.legacy.util.SCEncoding.GET_MY_VALUE_ABI;
 import static com.hedera.services.legacy.util.SCEncoding.GROW_CHILD_ABI;
 import static com.hedera.services.legacy.util.SCEncoding.encodeVia;
@@ -149,7 +148,7 @@ public class SmartContractRequestHandlerStorageTest {
     TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
             AccountProperty.class,
             MerkleAccount::new,
-			new FCMapBackingAccounts(() -> contracts),
+			new BackingAccounts(() -> contracts),
             new ChangeSummaryManager<>());
     ledger = new HederaLedger(
             mock(TokenStore.class),

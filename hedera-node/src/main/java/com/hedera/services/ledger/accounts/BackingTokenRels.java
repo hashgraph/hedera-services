@@ -37,6 +37,7 @@ import java.util.function.Supplier;
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.ledger.HederaLedger.TOKEN_ID_COMPARATOR;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
+import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 
 /**
@@ -48,14 +49,7 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
  * @author Michael Tinker
  */
 public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> {
-	public static final Comparator<Pair<AccountID, TokenID>> REL_CMP =
-			Comparator.<Pair<AccountID, TokenID>, AccountID>comparing(Pair::getLeft, ACCOUNT_ID_COMPARATOR)
-					.thenComparing(Pair::getRight, TOKEN_ID_COMPARATOR);
-	private static final Comparator<Map.Entry<Pair<AccountID, TokenID>, MerkleTokenRelStatus>> REL_ENTRY_CMP =
-			Comparator.comparing(Map.Entry::getKey, REL_CMP);
-
 	Set<Pair<AccountID, TokenID>> existingRels = new HashSet<>();
-	Map<Pair<AccountID, TokenID>, MerkleTokenRelStatus> cache = new HashMap<>();
 
 	private final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> delegate;
 
@@ -73,20 +67,13 @@ public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, 
 	}
 
 	@Override
-	public void clearRefCache() {
-		cache.clear();
-	}
-
-	@Override
 	public boolean contains(Pair<AccountID, TokenID> key) {
 		return existingRels.contains(key);
 	}
 
 	@Override
 	public MerkleTokenRelStatus getRef(Pair<AccountID, TokenID> key) {
-		return cache.computeIfAbsent(
-				key,
-				ignore -> delegate.get().getForModify(fromAccountTokenRel(key.getLeft(), key.getRight())));
+		return delegate.get().getForModify(fromAccountTokenRel(key.getLeft(), key.getRight()));
 	}
 
 	@Override
@@ -94,10 +81,6 @@ public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, 
 		if (!existingRels.contains(key)) {
 			delegate.get().put(fromAccountTokenRel(key), status);
 			existingRels.add(key);
-		} else if (!cache.containsKey(key) || cache.get(key) != status) {
-			throw new IllegalArgumentException(String.format(
-					"Argument 'key=%s' does not map to a mutable ref!",
-					fromAccountTokenRel(key).toAbbrevString()));
 		}
 	}
 
@@ -108,8 +91,8 @@ public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, 
 	}
 
 	@Override
-	public MerkleTokenRelStatus getUnsafeRef(Pair<AccountID, TokenID> id) {
-		throw new UnsupportedOperationException();
+	public MerkleTokenRelStatus getUnsafeRef(Pair<AccountID, TokenID> key) {
+		return delegate.get().get(fromAccountTokenRel(key));
 	}
 
 	@Override

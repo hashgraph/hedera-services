@@ -43,7 +43,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-class PureFCMapBackingAccountsTest {
+class PureBackingAccountsTest {
 	private final AccountID a = asAccount("1.2.3");
 	private final AccountID b = asAccount("3.2.1");
 	private final MerkleEntityId aKey = MerkleEntityId.fromAccountId(a);
@@ -51,13 +51,13 @@ class PureFCMapBackingAccountsTest {
 	private final MerkleAccount aValue = MerkleAccountFactory.newAccount().balance(123L).get();
 
 	private FCMap<MerkleEntityId, MerkleAccount> map;
-	private PureFCMapBackingAccounts subject;
+	private PureBackingAccounts subject;
 
 	@BeforeEach
 	private void setup() {
 		map = mock(FCMap.class);
 
-		subject = new PureFCMapBackingAccounts(() -> map);
+		subject = new PureBackingAccounts(() -> map);
 	}
 
 	@Test
@@ -65,7 +65,6 @@ class PureFCMapBackingAccountsTest {
 		// expect:
 		assertThrows(UnsupportedOperationException.class, () -> subject.remove(null));
 		assertThrows(UnsupportedOperationException.class, () -> subject.put(null, null));
-		assertDoesNotThrow(subject::clearRefCache);
 	}
 
 	@Test

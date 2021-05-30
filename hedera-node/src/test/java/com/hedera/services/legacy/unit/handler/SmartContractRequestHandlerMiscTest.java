@@ -28,7 +28,7 @@ import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
+import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
@@ -96,7 +96,6 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.Date;
 
-import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asContract;
 import static com.hedera.test.mocks.TestUsagePricesProvider.TEST_USAGE_PRICES;
@@ -160,7 +159,7 @@ public class SmartContractRequestHandlerMiscTest {
     TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
             AccountProperty.class,
             () -> new MerkleAccount(),
-            new FCMapBackingAccounts(() -> fcMap),
+            new BackingAccounts(() -> fcMap),
             new ChangeSummaryManager<>());
     ledger = new HederaLedger(
             mock(TokenStore.class),

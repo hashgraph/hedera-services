@@ -26,13 +26,10 @@ import com.hedera.services.ledger.accounts.TestAccount;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TestAccountProperty;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.LongStream;
@@ -72,6 +69,7 @@ class TransactionalLedgerTest {
 
 		backingAccounts = mock(BackingStore.class);
 		given(backingAccounts.getRef(1L)).willReturn(account1);
+		given(backingAccounts.getUnsafeRef(1L)).willReturn(account1);
 		given(backingAccounts.contains(1L)).willReturn(true);
 		newAccountFactory = () -> new TestAccount();
 
@@ -83,7 +81,7 @@ class TransactionalLedgerTest {
 	}
 
 	@Test
-	void rollbackFlushesMutableRefs() {
+	void rollbackClearsChanges() {
 		// given:
 		subject.begin();
 
@@ -93,7 +91,7 @@ class TransactionalLedgerTest {
 		subject.rollback();
 
 		// then:
-		verify(backingAccounts).clearRefCache();
+		assertTrue(subject.getChanges().isEmpty());
 	}
 
 	@Test
@@ -105,7 +103,7 @@ class TransactionalLedgerTest {
 		subject.set(1L, FLAG, !account1.flag);
 
 		// when:
-		var account = subject.get(1L);
+		var account = subject.getFinalized(1L);
 
 		// then:
 		assertEquals(newAccount1, account);
@@ -129,8 +127,6 @@ class TransactionalLedgerTest {
 		LongStream.range(M, N).boxed().forEach(id -> {
 			inOrder.verify(backingAccounts).put(argThat(id::equals), any());
 		});
-		// and:
-		verify(backingAccounts).clearRefCache();
 	}
 
 	@Test
@@ -247,7 +243,7 @@ class TransactionalLedgerTest {
 	@Test
 	void throwsOnGettingMissingAccount() {
 		// expect:
-		assertThrows(IllegalArgumentException.class, () -> subject.get(2L));
+		assertThrows(IllegalArgumentException.class, () -> subject.getFinalized(2L));
 	}
 
 	@Test
@@ -290,7 +286,7 @@ class TransactionalLedgerTest {
 		subject.set(2L, OBJ, things[2]);
 
 		// then:
-		assertEquals(new TestAccount(0L, things[2], false), subject.get(2L));
+		assertEquals(new TestAccount(0L, things[2], false), subject.getFinalized(2L));
 	}
 
 	@Test
@@ -330,7 +326,7 @@ class TransactionalLedgerTest {
 		subject.set(1L, OBJ, things[0]);
 
 		// expect:
-		assertEquals(new TestAccount(account1.value, things[0], account1.flag, 667L), subject.get(1L));
+		assertEquals(new TestAccount(account1.value, things[0], account1.flag, 667L), subject.getFinalized(1L));
 	}
 
 	@Test
@@ -368,8 +364,8 @@ class TransactionalLedgerTest {
 
 		// expect:
 		assertFalse(subject.isInTransaction());
-		assertEquals(account1, subject.get(1L));
-		assertThrows(IllegalArgumentException.class, () -> subject.get(2L));
+		assertEquals(account1, subject.getFinalized(1L));
+		assertThrows(IllegalArgumentException.class, () -> subject.getFinalized(2L));
 	}
 
 	@Test
@@ -404,6 +400,6 @@ class TransactionalLedgerTest {
 	@Test
 	void reflectsUnchangedAccountIfNoChanges() {
 		// expect:
-		assertEquals(account1, subject.get(1L));
+		assertEquals(account1, subject.getFinalized(1L));
 	}
 }

@@ -20,10 +20,8 @@ package com.hedera.services.ledger.accounts;
  * ‍
  */
 
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.fcmap.FCMap;
 
@@ -34,15 +32,13 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
-import static com.hedera.services.utils.EntityIdUtils.readableId;
 
-public class FCMapBackingAccounts implements BackingStore<AccountID, MerkleAccount> {
+public class BackingAccounts implements BackingStore<AccountID, MerkleAccount> {
 	Set<AccountID> existingAccounts = new HashSet<>();
-	Map<AccountID, MerkleAccount> cache = new HashMap<>();
 
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> delegate;
 
-	public FCMapBackingAccounts(Supplier<FCMap<MerkleEntityId, MerkleAccount>> delegate) {
+	public BackingAccounts(Supplier<FCMap<MerkleEntityId, MerkleAccount>> delegate) {
 		this.delegate = delegate;
 		rebuildFromSources();
 	}
@@ -56,25 +52,15 @@ public class FCMapBackingAccounts implements BackingStore<AccountID, MerkleAccou
 	}
 
 	@Override
-	public void clearRefCache() {
-		cache.clear();
-	}
-
-	@Override
 	public MerkleAccount getRef(AccountID id) {
-		return cache.computeIfAbsent(id, ignore -> delegate.get().getForModify(fromAccountId(id)));
+		return delegate.get().getForModify(fromAccountId(id));
 	}
 
 	@Override
 	public void put(AccountID id, MerkleAccount account) {
-		MerkleEntityId delegateId = fromAccountId(id);
 		if (!existingAccounts.contains(id)) {
-			delegate.get().put(delegateId, account);
+			delegate.get().put(fromAccountId(id), account);
 			existingAccounts.add(id);
-		} else if (!cache.containsKey(id) || (cache.get(id) != account)) {
-			throw new IllegalArgumentException(String.format(
-					"Argument 'id=%s' does not map to a mutable ref!",
-					readableId(id)));
 		}
 	}
 

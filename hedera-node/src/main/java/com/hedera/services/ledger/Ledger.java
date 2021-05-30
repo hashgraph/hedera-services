@@ -63,7 +63,7 @@ public interface Ledger<K, P extends Enum<P>, A> {
 	 * @param id the id of the relevant account.
 	 * @return the account.
 	 */
-	A get(K id);
+	A getFinalized(K id);
 
 	/**
 	 * Gets the current property value of the specified account. This value

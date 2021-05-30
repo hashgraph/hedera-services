@@ -137,17 +137,15 @@ class LedgerAccountsSourceTest {
 		boolean deleted = true;
 		boolean smartContract = true;
 		boolean receiverSigRequired = true;
-		MerkleAccount account = mock(MerkleAccount.class);
-		given(account.getAutoRenewSecs()).willReturn(autoRenew);
-		given(account.getExpiry()).willReturn(expiry);
-		given(account.getProxy()).willReturn(EntityId.fromGrpcAccountId(IdUtils.asAccount("1.2.3")));
-		given(account.isReceiverSigRequired()).willReturn(receiverSigRequired);
-		given(account.isDeleted()).willReturn(deleted);
-		given(account.isSmartContract()).willReturn(smartContract);
-		given(account.getBalance()).willReturn(balance);
 
 		given(ledger.exists(target)).willReturn(true);
-		given(ledger.get(target)).willReturn(account);
+		given(ledger.expiry(target)).willReturn(expiry);
+		given(ledger.getBalance(target)).willReturn(balance);
+		given(ledger.autoRenewPeriod(target)).willReturn(autoRenew);
+		given(ledger.isDeleted(target)).willReturn(deleted);
+		given(ledger.isSmartContract(target)).willReturn(smartContract);
+		given(ledger.isReceiverSigRequired(target)).willReturn(receiverSigRequired);
+		given(ledger.proxy(target)).willReturn(EntityId.fromGrpcAccountId(IdUtils.asAccount("1.2.3")));
 
 		// when:
 		var evmState = subject.get(key);

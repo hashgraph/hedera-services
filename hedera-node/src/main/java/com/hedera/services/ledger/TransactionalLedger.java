@@ -29,7 +29,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -65,6 +64,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	private static final Logger log = LogManager.getLogger(TransactionalLedger.class);
 
 	private final Set<K> deadEntities = new HashSet<>();
+	private final List<K> createdKeys = new ArrayList<>(MAX_ENTITIES_LIKELY_TOUCHED_IN_LEDGER_TXN);
 	private final List<K> changedKeys = new ArrayList<>(MAX_ENTITIES_LIKELY_TOUCHED_IN_LEDGER_TXN);
 	private final List<K> perishedKeys = new ArrayList<>(MAX_ENTITIES_LIKELY_TOUCHED_IN_LEDGER_TXN);
 	private final Class<P> propertyType;
@@ -106,11 +106,11 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		if (!isInTransaction) {
 			throw new IllegalStateException("Cannot perform rollback, no transaction is active!");
 		}
-		entities.clearRefCache();
 
 		changes.clear();
 		deadEntities.clear();
 		changedKeys.clear();
+		createdKeys.clear();
 		perishedKeys.clear();
 
 		isInTransaction = false;
@@ -123,22 +123,15 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 
 		log.debug("Changes to be committed: {}", this::changeSetSoFar);
 		try {
-			for (var key : changedKeys) {
-				if (!deadEntities.contains(key)) {
-					final var changedEntity = get(key);
-					entities.put(key, changedEntity);
-				}
-			}
+			flushListed(changedKeys);
+			flushListed(createdKeys);
 			changes.clear();
-			changedKeys.clear();
 
 			if (!deadEntities.isEmpty()) {
 				perishedKeys.forEach(entities::remove);
 				deadEntities.clear();
 				perishedKeys.clear();
 			}
-
-			entities.clearRefCache();
 
 			isInTransaction = false;
 		} catch (Exception e) {
@@ -151,6 +144,72 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 			log.error("Catastrophic failure during commit of {}!", changeDesc);
 			throw e;
 		}
+	}
+
+	@Override
+	public boolean exists(K id) {
+		return existsOrIsPendingCreation(id) && !isZombie(id);
+	}
+
+	@Override
+	public boolean existsPending(K id) {
+		return isPendingCreation(id);
+	}
+
+	@Override
+	public void set(K id, P property, Object value) {
+		assertIsSettable(id);
+
+		changeManager.update(changes.computeIfAbsent(id, ignore -> {
+			changedKeys.add(id);
+			return changeFactory.apply(id);
+		}), property, value);
+	}
+
+	@Override
+	public A getFinalized(K id) {
+		throwIfMissing(id);
+
+		final EnumMap<P, Object> changeSet = changes.get(id);
+		final boolean hasPendingChanges = changeSet != null;
+		final A account = entities.contains(id) ? entities.getRef(id) : newEntity.get();
+		if (hasPendingChanges) {
+			changeManager.persist(changeSet, account);
+		}
+
+		return account;
+	}
+
+	@Override
+	public Object get(K id, P property) {
+		throwIfMissing(id);
+
+		var changeSet = changes.get(id);
+		if (changeSet != null && changeSet.containsKey(property)) {
+			return changeSet.get(property);
+		} else {
+			return property.getter().apply(toGetterTarget(id));
+		}
+	}
+
+	@Override
+	public void create(K id) {
+		assertIsCreatable(id);
+
+		changes.put(id, new EnumMap<>(propertyType));
+		createdKeys.add(id);
+	}
+
+	@Override
+	public void destroy(K id) {
+		throwIfNotInTxn();
+
+		deadEntities.add(id);
+		perishedKeys.add(id);
+	}
+
+	boolean isInTransaction() {
+		return isInTransaction;
 	}
 
 	String changeSetSoFar() {
@@ -188,74 +247,29 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		return desc.append("}").toString();
 	}
 
-	@Override
-	public boolean exists(K id) {
-		return existsOrIsPendingCreation(id) && !isZombie(id);
-	}
-
-	@Override
-	public boolean existsPending(K id) {
-		return isPendingCreation(id);
-	}
-
-	@Override
-	public void set(K id, P property, Object value) {
-		assertIsSettable(id);
-
-		changeManager.update(changes.computeIfAbsent(id, ignore -> {
-			changedKeys.add(id);
-			return changeFactory.apply(id);
-		}), property, value);
-	}
-
-	@Override
-	public A get(K id) {
-		throwIfMissing(id);
-
-		final EnumMap<P, Object> changeSet = changes.get(id);
-		final boolean hasPendingChanges = changeSet != null;
-		final A account = entities.contains(id) ? entities.getRef(id) : newEntity.get();
-		if (hasPendingChanges) {
-			changeManager.persist(changeSet, account);
-		}
-
-		return account;
-	}
-
-	@Override
-	public Object get(K id, P property) {
-		throwIfMissing(id);
-
-		var changeSet = changes.get(id);
-		if (changeSet != null && changeSet.containsKey(property)) {
-			return changeSet.get(property);
-		} else {
-			return property.getter().apply(toGetterTarget(id));
+	void throwIfNotInTxn() {
+		if (!isInTransaction) {
+			throw new IllegalStateException("No active transaction!");
 		}
 	}
 
-	@Override
-	public void create(K id) {
-		assertIsCreatable(id);
-
-		changes.put(id, new EnumMap<>(propertyType));
-		changedKeys.add(id);
+	Map<K, EnumMap<P, Object>> getChanges() {
+		return changes;
 	}
 
-	@Override
-	public void destroy(K id) {
-		throwIfNotInTxn();
-
-		deadEntities.add(id);
-		perishedKeys.add(id);
-	}
-
-	boolean isInTransaction() {
-		return isInTransaction;
+	private void flushListed(List<K> l) {
+		if (!l.isEmpty()) {
+			for (var key : l) {
+				if (!deadEntities.contains(key)) {
+					entities.put(key, getFinalized(key));
+				}
+			}
+			l.clear();
+		}
 	}
 
 	private A toGetterTarget(K id) {
-		return isPendingCreation(id) ? newEntity.get() : entities.getRef(id);
+		return isPendingCreation(id) ? newEntity.get() : entities.getUnsafeRef(id);
 	}
 
 	private boolean isPendingCreation(K id) {
@@ -273,12 +287,6 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		}
 		if (existsOrIsPendingCreation(id)) {
 			throw new IllegalArgumentException("An account already exists with key '" + id + "'!");
-		}
-	}
-
-	void throwIfNotInTxn() {
-		if (!isInTransaction) {
-			throw new IllegalStateException("No active transaction!");
 		}
 	}
 

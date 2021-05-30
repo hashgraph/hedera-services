@@ -113,12 +113,6 @@ class BackingTokenRelsTest {
 	}
 
 	@Test
-	void throwsOnReplacingUnsafeRef() {
-		// when:
-		assertThrows(IllegalArgumentException.class, () -> subject.put(asTokenRel(a, at), aValue));
-	}
-
-	@Test
 	void removeUpdatesBothCacheAndDelegate() {
 		// when:
 		subject.remove(asTokenRel(a, at));
@@ -127,25 +121,6 @@ class BackingTokenRelsTest {
 		assertFalse(rels.containsKey(fromAccountTokenRel(a, at)));
 		// and:
 		assertFalse(subject.existingRels.contains(asTokenRel(a, at)));
-	}
-
-	@Test
-	void replacesAllMutableRefs() {
-		setupMocked();
-
-		given(rels.getForModify(fromAccountTokenRel(a, at))).willReturn(aValue);
-		given(rels.getForModify(fromAccountTokenRel(b, bt))).willReturn(bValue);
-
-		// when:
-		subject.getRef(asTokenRel(a, at));
-		subject.getRef(asTokenRel(b, bt));
-		// and:
-		subject.clearRefCache();
-
-		// then:
-		verify(rels, never()).replace(any(), any());
-		// and:
-		assertTrue(subject.cache.isEmpty());
 	}
 
 	@Test
@@ -182,6 +157,7 @@ class BackingTokenRelsTest {
 		setupMocked();
 
 		given(rels.getForModify(aKey)).willReturn(aValue);
+		given(rels.get(bKey)).willReturn(bValue);
 
 		// when:
 		var firstStatus = subject.getRef(asTokenRel(a, at));
@@ -190,16 +166,15 @@ class BackingTokenRelsTest {
 		// then:
 		assertSame(aValue, firstStatus);
 		assertSame(aValue, secondStatus);
+		assertSame(bValue, subject.getUnsafeRef(asTokenRel(b, bt)));
 		// and:
-		assertSame(aValue, subject.cache.get(asTokenRel(a, at)));
-		// and:
-		verify(rels, times(1)).getForModify(any());
+		verify(rels, times(2)).getForModify(any());
+		verify(rels, times(1)).get(any());
 	}
 
 	@Test
 	void irrelevantMethodsNotSupported() {
 		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> subject.getUnsafeRef(null));
 		assertThrows(UnsupportedOperationException.class, subject::idSet);
 	}
 

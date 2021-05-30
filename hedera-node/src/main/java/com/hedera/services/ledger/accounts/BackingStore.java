@@ -36,11 +36,6 @@ import java.util.Set;
  */
 public interface BackingStore<K, A> {
 	/**
-	 * Alerts this {@code BackingStore} it should flush any cached mutable references.
-	 */
-	void clearRefCache();
-
-	/**
 	 * Alerts this {@code BackingStore} it should reconstruct any auxiliary data structures
 	 * based on its underlying sources. Used in particular for reconnect.
 	 */

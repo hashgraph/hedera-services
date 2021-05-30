@@ -23,8 +23,6 @@ package com.hedera.test.forensics;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.txns.validation.PureValidation;
@@ -37,7 +35,6 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -52,11 +49,9 @@ import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.ConcurrentModificationException;
 import java.util.Deque;
 import java.util.List;
 import java.util.OptionalInt;
-import java.util.SplittableRandom;
 import java.util.stream.Stream;
 
 import static com.hedera.test.forensics.records.RecordParser.TxnHistory;
@@ -569,61 +564,4 @@ public class RecordStreamCmp {
 			return n;
 		}
 	}
-
-	@Test
-	public void seeWhatHappens() throws InterruptedException {
-		final FCMap<MerkleEntityId, MerkleAccount> accounts =
-				new FCMap<>();
-		final FCMapBackingAccounts backingAccounts = new FCMapBackingAccounts(() -> accounts);
-
-		final AccountID txnPayer = suspect;
-		final AccountID queryPayerOne = IdUtils.asAccount("0.0.23538");
-		final AccountID queryPayerTwo = IdUtils.asAccount("0.0.9473");
-		final SplittableRandom r = new SplittableRandom();
-
-		backingAccounts.put(txnPayer, new MerkleAccount());
-		backingAccounts.put(queryPayerOne, new MerkleAccount());
-		backingAccounts.put(queryPayerTwo, new MerkleAccount());
-
-		AccountID[] candidates = new AccountID[] { queryPayerOne, queryPayerTwo, txnPayer };
-		Runnable contractCallLocal = () -> {
-			while (true) {
-				try {
-					var queryPayer = candidates[2];
-					backingAccounts.getRef(queryPayer);
-				} catch (ConcurrentModificationException cme) {
-					System.out.println("CME in query thread");
-				}
-			}
-		};
-
-		Runnable handleTxn = () -> {
-			while (true) {
-				try {
-					var account = backingAccounts.getRef(txnPayer);
-					var payerRecords = account.records();
-					if (!payerRecords.isEmpty()) {
-						payerRecords.poll();
-					}
-
-					var accountAgain = backingAccounts.getRef(txnPayer);
-					accountAgain.records().offer(new ExpirableTxnRecord());
-
-					backingAccounts.clearRefCache();
-				} catch (ConcurrentModificationException cme) {
-					System.out.println("CME in handle thread");
-				}
-			}
-		};
-
-		var handleThread = new Thread(handleTxn);
-		handleThread.setName("handleTxnSimulator");
-		var queryThread = new Thread(contractCallLocal);
-		queryThread.setName("contractCallLocalSimulator");
-		handleThread.start();
-		queryThread.start();
-
-		handleThread.join();
-	}
-
 }

@@ -49,8 +49,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
-import static com.hedera.services.ledger.accounts.BackingTokenRels.REL_CMP;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInAnyOrder;

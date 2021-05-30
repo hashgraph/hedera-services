@@ -33,6 +33,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
@@ -50,10 +51,13 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
+import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.test.mocks.TestContextValidator.TEST_VALIDATOR;
@@ -146,8 +150,11 @@ public class BaseHederaLedgerTest {
 			Map<TokenID, TokenInfo> tokenInfo
 	) {
 		when(accountsLedger.get(id, EXPIRY)).thenReturn(1_234_567_890L);
+		when(accountsLedger.get(id, PROXY)).thenReturn(new EntityId(0, 0, 1_234L));
+		when(accountsLedger.get(id, AUTO_RENEW_PERIOD)).thenReturn(7776000L);
 		when(accountsLedger.get(id, BALANCE)).thenReturn(balance);
 		when(accountsLedger.get(id, IS_DELETED)).thenReturn(false);
+		when(accountsLedger.get(id, IS_RECEIVER_SIG_REQUIRED)).thenReturn(true);
 		when(accountsLedger.get(id, IS_SMART_CONTRACT)).thenReturn(false);
 		when(accountsLedger.exists(id)).thenReturn(true);
 		var tokens = new MerkleAccountTokens();

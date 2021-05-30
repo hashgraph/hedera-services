@@ -22,6 +22,7 @@ package com.hedera.services.contracts.sources;
 
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -64,25 +65,28 @@ public class LedgerAccountsSource implements Source<byte[], AccountState> {
 				return null;
 			}
 
-			var hederaAccount = ledger.get(id);
-			var evmState = new AccountState(
-					BigInteger.ZERO,
-					BigInteger.valueOf(hederaAccount.getBalance()));
+			final long expiry = ledger.expiry(id);
+			final long balance = ledger.getBalance(id);
+			final long autoRenewPeriod = ledger.autoRenewPeriod(id);
+			final boolean isDeleted = ledger.isDeleted(id);
+			final boolean isSmartContract = ledger.isSmartContract(id);
+			final boolean isReceiverSigRequired = ledger.isReceiverSigRequired(id);
+			final EntityId proxy = ledger.proxy(id);
 
+			final var evmState = new AccountState(BigInteger.ZERO, BigInteger.valueOf(balance));
 			evmState.setShardId(id.getShardNum());
 			evmState.setRealmId(id.getRealmNum());
 			evmState.setAccountNum(id.getAccountNum());
-			evmState.setAutoRenewPeriod(hederaAccount.getAutoRenewSecs());
-			if (hederaAccount.getProxy() != null) {
-				var proxy = hederaAccount.getProxy();
+			evmState.setAutoRenewPeriod(autoRenewPeriod);
+			evmState.setReceiverSigRequired(isReceiverSigRequired);
+			evmState.setDeleted(isDeleted);
+			evmState.setExpirationTime(expiry);
+			evmState.setSmartContract(isSmartContract);
+			if (proxy != null) {
 				evmState.setProxyAccountShard(proxy.shard());
 				evmState.setProxyAccountRealm(proxy.realm());
 				evmState.setProxyAccountNum(proxy.num());
 			}
-			evmState.setReceiverSigRequired(hederaAccount.isReceiverSigRequired());
-			evmState.setDeleted(hederaAccount.isDeleted());
-			evmState.setExpirationTime(hederaAccount.getExpiry());
-			evmState.setSmartContract(hederaAccount.isSmartContract());
 
 			return evmState;
 		}

@@ -24,7 +24,7 @@ import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
+import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -55,7 +55,6 @@ import org.junit.Test;
 
 import java.math.BigInteger;
 
-import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.mock;
 
@@ -70,7 +69,7 @@ public class RepoNewCacheTest {
 		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
 				AccountProperty.class,
 				MerkleAccount::new,
-				new FCMapBackingAccounts(() -> accountMap),
+				new BackingAccounts(() -> accountMap),
 				new ChangeSummaryManager<>());
 		HederaLedger ledger = new HederaLedger(
 				mock(TokenStore.class),
@@ -148,7 +147,7 @@ public class RepoNewCacheTest {
 		FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = new FCMap<>();
 		DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
 
-		FCMapBackingAccounts backingAccounts = new FCMapBackingAccounts(() -> accountMap);
+		BackingAccounts backingAccounts = new BackingAccounts(() -> accountMap);
 		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
 				AccountProperty.class,
 				MerkleAccount::new,

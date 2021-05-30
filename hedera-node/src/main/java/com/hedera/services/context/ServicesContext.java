@@ -140,8 +140,8 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
-import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
-import com.hedera.services.ledger.accounts.PureFCMapBackingAccounts;
+import com.hedera.services.ledger.accounts.BackingAccounts;
+import com.hedera.services.ledger.accounts.PureBackingAccounts;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -528,7 +528,7 @@ public class ServicesContext {
 	private TxnAwareRatesManager exchangeRatesManager;
 	private ServicesStatsManager statsManager;
 	private LedgerAccountsSource accountSource;
-	private FCMapBackingAccounts backingAccounts;
+	private BackingAccounts backingAccounts;
 	private TransitionLogicLookup transitionLogic;
 	private TransactionThrottling txnThrottling;
 	private ConsensusStatusCounts statusCounts;
@@ -1430,7 +1430,7 @@ public class ServicesContext {
 
 	public BackingStore<AccountID, MerkleAccount> backingAccounts() {
 		if (backingAccounts == null) {
-			backingAccounts = new FCMapBackingAccounts(this::accounts);
+			backingAccounts = new BackingAccounts(this::accounts);
 		}
 		return backingAccounts;
 	}
@@ -1820,7 +1820,7 @@ public class ServicesContext {
 			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> pureDelegate = new TransactionalLedger<>(
 					AccountProperty.class,
 					MerkleAccount::new,
-					new PureFCMapBackingAccounts(this::accounts),
+					new PureBackingAccounts(this::accounts),
 					new ChangeSummaryManager<>());
 			HederaLedger pureLedger = new HederaLedger(
 					NOOP_TOKEN_STORE,
@@ -2102,7 +2102,7 @@ public class ServicesContext {
 		this.backingTokenRels = backingTokenRels;
 	}
 
-	void setBackingAccounts(FCMapBackingAccounts backingAccounts) {
+	void setBackingAccounts(BackingAccounts backingAccounts) {
 		this.backingAccounts = backingAccounts;
 	}
 
