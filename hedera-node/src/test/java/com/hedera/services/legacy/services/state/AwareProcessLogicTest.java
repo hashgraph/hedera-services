@@ -39,6 +39,7 @@ import com.hedera.services.state.logic.InvariantChecks;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
+import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.txns.ExpandHandleSpan;
@@ -83,6 +84,7 @@ class AwareProcessLogicTest {
 	private ExpiryManager expiryManager;
 	private TransactionContext txnCtx;
 	private ExpandHandleSpan expandHandleSpan;
+	private NonBlockingHandoff nonBlockingHandoff;
 
 	private AwareProcessLogic subject;
 
@@ -214,16 +216,23 @@ class AwareProcessLogicTest {
 
 	@Test
 	void addForStreamingTest() {
-		//setup:
+		// setup:
+		nonBlockingHandoff = mock(NonBlockingHandoff.class);
+		given(nonBlockingHandoff.offer(any())).willReturn(true);
+		given(ctx.nonBlockingHandoff()).willReturn(nonBlockingHandoff);
+
 		RecordStreamManager recordStreamManager = mock(RecordStreamManager.class);
 		when(ctx.recordStreamManager()).thenReturn(recordStreamManager);
 
-		//when:
-		subject.stream(mock(com.hederahashgraph.api.proto.java.Transaction.class),
-				mock(ExpirableTxnRecord.class), Instant.now());
-		//then:
+		// when:
+		subject.stream(
+				mock(com.hederahashgraph.api.proto.java.Transaction.class),
+				mock(ExpirableTxnRecord.class),
+				Instant.now());
+
+		// then:
 		verify(ctx).updateRecordRunningHash(any(RunningHash.class));
-		verify(recordStreamManager).addRecordStreamObject(any(RecordStreamObject.class));
+		verify(nonBlockingHandoff).offer(any());
 	}
 
 	private void setupNonTriggeringTxn() {

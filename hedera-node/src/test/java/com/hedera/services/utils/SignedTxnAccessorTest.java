@@ -86,6 +86,7 @@ class SignedTxnAccessorTest {
 		assertArrayEquals(memoUtf8Bytes, accessor.getMemoUtf8Bytes());
 		assertEquals(FeeBuilder.getSignatureCount(accessor.getSignedTxnWrapper()), accessor.numSigPairs());
 		assertEquals(FeeBuilder.getSignatureSize(accessor.getSignedTxnWrapper()), accessor.sigMapSize());
+		assertEquals(memo, accessor.getMemo());
 	}
 
 	@Test
@@ -124,6 +125,7 @@ class SignedTxnAccessorTest {
 		assertArrayEquals(memoUtf8Bytes, accessor.getMemoUtf8Bytes());
 		assertEquals(FeeBuilder.getSignatureCount(accessor.getSignedTxnWrapper()), accessor.numSigPairs());
 		assertEquals(FeeBuilder.getSignatureSize(accessor.getSignedTxnWrapper()), accessor.sigMapSize());
+		assertEquals(memo, accessor.getMemo());
 	}
 
 	@Test

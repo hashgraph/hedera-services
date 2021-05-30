@@ -24,6 +24,7 @@ import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.utils.TxnAccessor;
@@ -56,6 +57,8 @@ class RecordMgmtTest {
 	private AccountRecordsHistorian recordsHistorian;
 	@Mock
 	private RecordStreamManager recordStreamManager;
+	@Mock
+	private NonBlockingHandoff nonBlockingHandoff;
 
 	private AwareProcessLogic subject;
 
@@ -77,13 +80,14 @@ class RecordMgmtTest {
 		given(recordsHistorian.lastCreatedRecord()).willReturn(Optional.of(lastRecord));
 		given(ctx.recordsHistorian()).willReturn(recordsHistorian);
 		given(ctx.txnCtx()).willReturn(txnCtx);
-		given(ctx.recordStreamManager()).willReturn(recordStreamManager);
+		given(ctx.nonBlockingHandoff()).willReturn(nonBlockingHandoff);
+		given(nonBlockingHandoff.offer(expectedRso)).willReturn(true);
 
 		// when:
 		subject.addRecordToStream();
 
 		// then:
-		verify(recordStreamManager).addRecordStreamObject(expectedRso);
+		verify(nonBlockingHandoff).offer(expectedRso);
 	}
 
 	@Test

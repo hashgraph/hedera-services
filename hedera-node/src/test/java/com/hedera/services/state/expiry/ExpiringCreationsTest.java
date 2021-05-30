@@ -134,8 +134,7 @@ class ExpiringCreationsTest {
 
 	void setUpForExpiringRecordBuilder() {
 		given(accessor.getTxnId()).willReturn(TransactionID.newBuilder().setAccountID(asAccount(account)).build());
-		given(accessor.getTxn()).willReturn(txn);
-		given(accessor.getTxn().getMemo()).willReturn(memo);
+		given(accessor.getMemo()).willReturn(memo);
 		given(accessor.isTriggeredTxn()).willReturn(true);
 		given(accessor.getScheduleRef()).willReturn(ScheduleID.newBuilder().setScheduleNum(scheduleNum).build());
 	}

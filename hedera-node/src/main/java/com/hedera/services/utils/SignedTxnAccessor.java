@@ -50,6 +50,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private byte[] txnBytes;
 	private byte[] utf8MemoBytes;
 	private byte[] signedTxnWrapperBytes;
+	private String memo;
 	private Transaction signedTxnWrapper;
 	private SignatureMap sigMap;
 	private TransactionID txnId;
@@ -88,10 +89,11 @@ public class SignedTxnAccessor implements TxnAccessor {
 		}
 
 		txn = TransactionBody.parseFrom(txnBytes);
+		memo = txn.getMemo();
 		txnId = txn.getTransactionID();
 		sigMapSize = sigMap.getSerializedSize();
 		numSigPairs = sigMap.getSigPairCount();
-		utf8MemoBytes = StringUtils.getBytesUtf8(txn.getMemo());
+		utf8MemoBytes = StringUtils.getBytesUtf8(memo);
 	}
 
 	public SignedTxnAccessor(Transaction signedTxnWrapper) throws InvalidProtocolBufferException {
@@ -154,6 +156,11 @@ public class SignedTxnAccessor implements TxnAccessor {
 	@Override
 	public int sigMapSize() {
 		return sigMapSize;
+	}
+
+	@Override
+	public String getMemo() {
+		return memo;
 	}
 
 	public byte[] getHash() {

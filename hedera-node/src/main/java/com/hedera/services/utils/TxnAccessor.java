@@ -60,6 +60,8 @@ public interface TxnAccessor {
 
     byte[] getHash();
 
+    String getMemo();
+
     boolean canTriggerTxn();
 
     boolean isTriggeredTxn();

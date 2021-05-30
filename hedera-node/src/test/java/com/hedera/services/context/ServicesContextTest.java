@@ -124,6 +124,7 @@ import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttling.HapiThrottling;
@@ -525,6 +526,7 @@ public class ServicesContextTest {
 		assertThat(ctx.narratedCharging(), instanceOf(NarratedLedgerCharging.class));
 		assertThat(ctx.chargingPolicyAgent(), instanceOf(TxnChargingPolicyAgent.class));
 		assertThat(ctx.expandHandleSpan(), instanceOf(ExpandHandleSpan.class));
+		assertThat(ctx.nonBlockingHandoff(), instanceOf(NonBlockingHandoff.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

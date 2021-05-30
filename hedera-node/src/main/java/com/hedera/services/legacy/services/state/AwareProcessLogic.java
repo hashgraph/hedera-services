@@ -232,6 +232,9 @@ public class AwareProcessLogic implements ProcessLogic {
 	) {
 		final var rso = new RecordStreamObject(record, txn, consensusTime);
 		ctx.updateRecordRunningHash(rso.getRunningHash());
-		ctx.recordStreamManager().addRecordStreamObject(rso);
+		final var handoff = ctx.nonBlockingHandoff();
+		while (!handoff.offer(rso)) {
+			/* Cannot proceed until we have handed off the record. */
+		}
 	}
 }

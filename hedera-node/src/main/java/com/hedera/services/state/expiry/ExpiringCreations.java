@@ -113,7 +113,7 @@ public class ExpiringCreations implements EntityCreator {
 				.setTxnHash(hash)
 				.setTxnId(TxnId.fromGrpc(accessor.getTxnId()))
 				.setConsensusTimestamp(RichInstant.fromJava(consensusTime))
-				.setMemo(accessor.getTxn().getMemo())
+				.setMemo(accessor.getMemo())
 				.setFee(amount)
 				.setTransferList(currencyAdjustments)
 				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null);
@@ -132,7 +132,7 @@ public class ExpiringCreations implements EntityCreator {
 		return ExpirableTxnRecord.newBuilder()
 				.setTxnId(TxnId.fromGrpc(txnId))
 				.setReceipt(TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(FAIL_INVALID).build()))
-				.setMemo(accessor.getTxn().getMemo())
+				.setMemo(accessor.getMemo())
 				.setTxnHash(accessor.getHash())
 				.setConsensusTimestamp(RichInstant.fromGrpc(asTimestamp(consensusTimestamp)))
 				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null);

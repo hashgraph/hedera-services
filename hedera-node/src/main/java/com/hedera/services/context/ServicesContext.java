@@ -243,6 +243,7 @@ import com.hedera.services.store.schedule.HederaScheduleStore;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.throttling.DeterministicThrottling;
 import com.hedera.services.throttling.FunctionalityThrottling;
@@ -511,6 +512,7 @@ public class ServicesContext {
 	private HederaSigningOrder lookupRetryingKeyOrder;
 	private StoragePersistence storagePersistence;
 	private ScheduleController scheduleGrpc;
+	private NonBlockingHandoff nonBlockingHandoff;
 	private ConsensusController consensusGrpc;
 	private QueryResponseHelper queryResponseHelper;
 	private UsagePricesProvider usagePrices;
@@ -625,6 +627,13 @@ public class ServicesContext {
 			sigFactoryCreator = new SigFactoryCreator();
 		}
 		return sigFactoryCreator;
+	}
+
+	public NonBlockingHandoff nonBlockingHandoff() {
+		if (nonBlockingHandoff == null) {
+			nonBlockingHandoff = new NonBlockingHandoff(recordStreamManager(), nodeLocalProperties());
+		}
+		return nonBlockingHandoff;
 	}
 
 	public HapiOpCounters opCounters() {
