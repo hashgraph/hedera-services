@@ -132,7 +132,7 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	void addRecordToStream() {
 		ctx.recordsHistorian().lastCreatedRecord().ifPresent(finalRecord ->
-				stream(ctx.txnCtx().accessor().getBackwardCompatibleSignedTxn(),
+				stream(ctx.txnCtx().accessor().getSignedTxnWrapper(),
 						finalRecord, ctx.txnCtx().consensusTime()));
 	}
 

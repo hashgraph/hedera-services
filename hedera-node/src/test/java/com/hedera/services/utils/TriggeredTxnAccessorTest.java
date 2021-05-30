@@ -65,9 +65,9 @@ class TriggeredTxnAccessorTest {
 
     @Test
     void validProperties() {
-        assertEquals(tx, subject.getBackwardCompatibleSignedTxn());
+        assertEquals(tx, subject.getSignedTxnWrapper());
         assertEquals(tx, subject.getSignedTxn4Log());
-        assertArrayEquals(tx.toByteArray(), subject.getBackwardCompatibleSignedTxnBytes());
+        assertArrayEquals(tx.toByteArray(), subject.getSignedTxnWrapperBytes());
         assertEquals(scheduleRef, subject.getScheduleRef());
         assertEquals(payer, subject.getPayer());
         assertEquals(txnBody, subject.getTxn());

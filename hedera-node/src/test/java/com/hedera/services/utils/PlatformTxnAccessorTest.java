@@ -77,7 +77,7 @@ public class PlatformTxnAccessorTest {
 		SignedTxnAccessor subject = new SignedTxnAccessor(signedTxnWithBody);
 
 		// then:
-		assertArrayEquals(signedTxnWithBody.toByteArray(), subject.getBackwardCompatibleSignedTxnBytes());
+		assertArrayEquals(signedTxnWithBody.toByteArray(), subject.getSignedTxnWrapperBytes());
 	}
 
 	@Test

@@ -56,6 +56,7 @@ public interface OptionValidator {
 	boolean isAcceptableTransfersLength(TransferList accountAmounts);
 
 	ResponseCodeEnum memoCheck(String cand);
+	ResponseCodeEnum rawMemoCheck(byte[] cand);
 	ResponseCodeEnum tokenNameCheck(String name);
 	ResponseCodeEnum tokenSymbolCheck(String symbol);
 	ResponseCodeEnum tokenTransfersLengthCheck(List<TokenTransferList> tokenTransferLists);

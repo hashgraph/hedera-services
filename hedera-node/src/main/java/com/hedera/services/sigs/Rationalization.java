@@ -139,7 +139,7 @@ public class Rationalization {
 			return orderResult.getErrorReport();
 		}
 		PlatformSigsCreationResult creationResult = createEd25519PlatformSigsFrom(
-				orderResult.getOrderedKeys(), sigsFn.apply(txnAccessor.getBackwardCompatibleSignedTxn()), sigFactory);
+				orderResult.getOrderedKeys(), sigsFn.apply(txnAccessor.getSignedTxnWrapper()), sigFactory);
 		if (creationResult.hasFailed()) {
 			return creationResult.asSignatureStatus(true, txnAccessor.getTxnId());
 		}

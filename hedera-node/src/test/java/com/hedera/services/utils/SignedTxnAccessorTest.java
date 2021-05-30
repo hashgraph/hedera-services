@@ -31,14 +31,18 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.builder.RequestBuilder;
+import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class SignedTxnAccessorTest {
-	SignatureMap expectedMap = SignatureMap.newBuilder()
+class SignedTxnAccessorTest {
+	private final String memo = "Eternal sunshine of the spotless mind";
+	private final byte[] memoUtf8Bytes = memo.getBytes();
+
+	private final SignatureMap expectedMap = SignatureMap.newBuilder()
 			.addSigPair(SignaturePair.newBuilder()
 					.setPubKeyPrefix(ByteString.copyFromUtf8("f"))
 					.setEd25519(ByteString.copyFromUtf8("irst")))
@@ -48,7 +52,7 @@ public class SignedTxnAccessorTest {
 			.build();
 
 	@Test
-	public void parsesLegacyCorrectly() throws Exception {
+	void parsesLegacyCorrectly() throws Exception {
 		// setup:
 		final long offeredFee = 100_000_000L;
 		Transaction transaction = RequestBuilder.getCryptoTransferRequest(1234l, 0l, 0l,
@@ -57,7 +61,7 @@ public class SignedTxnAccessorTest {
 				Timestamp.getDefaultInstance(),
 				Duration.getDefaultInstance(),
 				false,
-				"test memo",
+				memo,
 				5678l, -70000l,
 				5679l, 70000l);
 		transaction = transaction.toBuilder()
@@ -68,9 +72,9 @@ public class SignedTxnAccessorTest {
 		// given:
 		SignedTxnAccessor accessor = SignedTxnAccessor.uncheckedFrom(transaction);
 
-		assertEquals(transaction, accessor.getBackwardCompatibleSignedTxn());
+		assertEquals(transaction, accessor.getSignedTxnWrapper());
 		assertEquals(transaction, accessor.getSignedTxn4Log());
-		assertArrayEquals(transaction.toByteArray(), accessor.getBackwardCompatibleSignedTxnBytes());
+		assertArrayEquals(transaction.toByteArray(), accessor.getSignedTxnWrapperBytes());
 		assertEquals(body, accessor.getTxn());
 		assertArrayEquals(body.toByteArray(), accessor.getTxnBytes());
 		assertEquals(body.getTransactionID(), accessor.getTxnId());
@@ -79,17 +83,21 @@ public class SignedTxnAccessorTest {
 		assertEquals(offeredFee, accessor.getOfferedFee());
 		assertArrayEquals(CommonUtils.noThrowSha384HashOf(transaction.toByteArray()), accessor.getHash());
 		assertEquals(expectedMap, accessor.getSigMap());
+		assertArrayEquals(memoUtf8Bytes, accessor.getMemoUtf8Bytes());
+		assertEquals(FeeBuilder.getSignatureCount(accessor.getSignedTxnWrapper()), accessor.numSigPairs());
+		assertEquals(FeeBuilder.getSignatureSize(accessor.getSignedTxnWrapper()), accessor.sigMapSize());
 	}
 
 	@Test
 	void parseNewTransactionCorrectly() throws Exception {
-		Transaction transaction = RequestBuilder.getCryptoTransferRequest(1234l, 0l, 0l,
+		Transaction transaction = RequestBuilder.getCryptoTransferRequest(
+				1234l, 0l, 0l,
 				3l, 0l, 0l,
 				100_000_000l,
 				Timestamp.getDefaultInstance(),
 				Duration.getDefaultInstance(),
 				false,
-				"test memo",
+				memo,
 				5678l, -70000l,
 				5679l, 70000l);
 		TransactionBody body = CommonUtils.extractTransactionBody(transaction);
@@ -102,9 +110,9 @@ public class SignedTxnAccessorTest {
 				.build();
 		SignedTxnAccessor accessor = SignedTxnAccessor.uncheckedFrom(newTransaction);
 
-		assertEquals(newTransaction, accessor.getBackwardCompatibleSignedTxn());
+		assertEquals(newTransaction, accessor.getSignedTxnWrapper());
 		assertEquals(newTransaction, accessor.getSignedTxn4Log());
-		assertArrayEquals(newTransaction.toByteArray(), accessor.getBackwardCompatibleSignedTxnBytes());
+		assertArrayEquals(newTransaction.toByteArray(), accessor.getSignedTxnWrapperBytes());
 		assertEquals(body, accessor.getTxn());
 		assertArrayEquals(body.toByteArray(), accessor.getTxnBytes());
 		assertEquals(body.getTransactionID(), accessor.getTxnId());
@@ -113,10 +121,13 @@ public class SignedTxnAccessorTest {
 		assertArrayEquals(CommonUtils.noThrowSha384HashOf(signedTransaction.toByteArray()),
 				accessor.getHash());
 		assertEquals(expectedMap, accessor.getSigMap());
+		assertArrayEquals(memoUtf8Bytes, accessor.getMemoUtf8Bytes());
+		assertEquals(FeeBuilder.getSignatureCount(accessor.getSignedTxnWrapper()), accessor.numSigPairs());
+		assertEquals(FeeBuilder.getSignatureSize(accessor.getSignedTxnWrapper()), accessor.sigMapSize());
 	}
 
 	@Test
-	void whatHappensNext() throws Exception {
+	void registersNoneOnMalformedCreation() throws Exception {
 		// setup:
 		var xferWithTopLevelBodyBytes = RequestBuilder.getCryptoTransferRequest(
 				1234l, 0l, 0l,

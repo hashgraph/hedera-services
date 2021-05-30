@@ -45,7 +45,7 @@ public class StandardSyncActivationCheck {
 			Function<List<TransactionSignature>, Function<byte[], TransactionSignature>> sigsFnProvider
 	) {
 		var sigFactory = scopedSigProvider.apply(accessor);
-		var sigBytes = sigBytesProvider.apply(accessor.getBackwardCompatibleSignedTxn());
+		var sigBytes = sigBytesProvider.apply(accessor.getSignedTxnWrapper());
 
 		var creationResult = sigsFactory.createEd25519From(keys, sigBytes, sigFactory);
 		if (creationResult.hasFailed()) {

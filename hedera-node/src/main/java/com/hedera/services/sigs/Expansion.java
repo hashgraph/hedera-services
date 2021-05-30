@@ -97,7 +97,7 @@ class Expansion {
 		}
 
 		var creationResult = createEd25519PlatformSigsFrom(
-				orderResult.getOrderedKeys(), sigsFn.apply(txnAccessor.getBackwardCompatibleSignedTxn()), sigFactory);
+				orderResult.getOrderedKeys(), sigsFn.apply(txnAccessor.getSignedTxnWrapper()), sigFactory);
 		if (!creationResult.hasFailed()) {
 			txnAccessor.getPlatformTxn().addAll(creationResult.getPlatformSigs().toArray(new TransactionSignature[0]));
 		}

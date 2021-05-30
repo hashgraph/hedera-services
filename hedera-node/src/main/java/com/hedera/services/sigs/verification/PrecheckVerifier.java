@@ -86,7 +86,7 @@ public class PrecheckVerifier {
 	}
 
 	private List<TransactionSignature> getAvailSigs(List<JKey> reqKeys, SignedTxnAccessor accessor) throws Exception {
-		PubKeyToSigBytes sigBytes = provider.allPartiesSigBytesFor(accessor.getBackwardCompatibleSignedTxn());
+		PubKeyToSigBytes sigBytes = provider.allPartiesSigBytesFor(accessor.getSignedTxnWrapper());
 		TxnScopedPlatformSigFactory sigFactory = new BodySigningSigFactory(accessor);
 		PlatformSigsCreationResult creationResult = createEd25519PlatformSigsFrom(reqKeys, sigBytes, sigFactory);
 		if (creationResult.hasFailed()) {

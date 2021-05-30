@@ -122,7 +122,7 @@ class GetFileInfoAnswerTest {
 		Query query = validQuery(COST_ANSWER, fee, target);
 
 		// expect:
-		assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getBackwardCompatibleSignedTxn());
+		assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getSignedTxnWrapper());
 	}
 
 	@Test

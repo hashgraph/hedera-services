@@ -51,6 +51,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static com.hedera.services.fees.calculation.AwareFcfsUsagePrices.DEFAULT_USAGE_PRICES;
+import static com.hedera.services.keys.HederaKeyTraversal.numSimpleKeys;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAccountAutoRenew;
@@ -253,9 +254,6 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	}
 
 	private SigValueObj getSigUsage(TxnAccessor accessor, JKey payerKey) {
-		return new SigValueObj(
-				FeeBuilder.getSignatureCount(accessor.getBackwardCompatibleSignedTxn()),
-				HederaKeyTraversal.numSimpleKeys(payerKey),
-				FeeBuilder.getSignatureSize(accessor.getBackwardCompatibleSignedTxn()));
+		return new SigValueObj(accessor.numSigPairs(), numSimpleKeys(payerKey), accessor.sigMapSize());
 	}
 }

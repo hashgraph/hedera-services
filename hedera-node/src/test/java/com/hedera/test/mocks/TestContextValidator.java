@@ -112,4 +112,9 @@ public enum TestContextValidator implements OptionValidator {
 	public ResponseCodeEnum memoCheck(String cand) {
 		return cand.length() <= 100 ? OK : MEMO_TOO_LONG;
 	}
+
+	@Override
+	public ResponseCodeEnum rawMemoCheck(byte[] cand) {
+		return cand.length <= 100 ? OK : MEMO_TOO_LONG;
+	}
 }
