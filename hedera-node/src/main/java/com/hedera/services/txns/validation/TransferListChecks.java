@@ -20,14 +20,11 @@ package com.hedera.services.txns.validation;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountAmountOrBuilder;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.api.proto.java.TransferListOrBuilder;
 
 import java.math.BigInteger;
-import java.util.HashSet;
 
 import static java.math.BigInteger.ZERO;
 
@@ -47,10 +44,17 @@ public class TransferListChecks {
 	}
 
 	public static boolean hasRepeatedAccount(TransferList wrapper) {
-		var unique = new HashSet<AccountID>();
-		for (AccountAmount adjustment : wrapper.getAccountAmountsList()) {
-			unique.add(adjustment.getAccountID());
+		final int n = wrapper.getAccountAmountsCount();
+		if (n < 2) {
+			return false;
 		}
-		return unique.size() < wrapper.getAccountAmountsCount();
+		for (int i = 0; i < n - 1; i++) {
+			for (int j = i + 1; j < n; j++) {
+				if (wrapper.getAccountAmounts(i).getAccountID().equals(wrapper.getAccountAmounts(j).getAccountID())) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 }

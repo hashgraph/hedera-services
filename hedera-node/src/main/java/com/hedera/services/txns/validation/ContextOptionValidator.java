@@ -122,8 +122,12 @@ public class ContextOptionValidator implements OptionValidator {
 
 	@Override
 	public ResponseCodeEnum tokenTransfersLengthCheck(List<TokenTransferList> tokenTransferLists) {
+		final int tokenTransferListsSize = tokenTransferLists.size();
+		if (tokenTransferListsSize == 0) {
+			return OK;
+		}
+
 		int maxLen = properties.maxTokenTransferListSize();
-		int tokenTransferListsSize = tokenTransferLists.size();
 
 		if (tokenTransferListsSize > maxLen) {
 			return TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;

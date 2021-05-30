@@ -47,6 +47,7 @@ import static com.hedera.services.legacy.crypto.SignatureStatusCode.SUCCESS;
 import static com.hedera.services.sigs.PlatformSigOps.createEd25519PlatformSigsFrom;
 import static com.hedera.services.sigs.factories.PlatformSigFactory.allVaryingMaterialEquals;
 import static com.hedera.services.sigs.utils.StatusUtils.successFor;
+import static com.swirlds.common.crypto.VerificationStatus.UNKNOWN;
 
 public class Rationalization {
 	private static final Logger log = LogManager.getLogger(Rationalization.class);
@@ -78,23 +79,16 @@ public class Rationalization {
 	}
 
 	public SignatureStatus execute() {
-		log.debug("Rationalizing crypto sigs with Hedera sigs for txn {}...", txnAccessor::getSignedTxn4Log);
 		List<TransactionSignature> realPayerSigs = new ArrayList<>(), realOtherPartySigs = new ArrayList<>();
 
 		var payerStatus = expandIn(
 				realPayerSigs, sigsProvider::payerSigBytesFor, keyOrderer::keysForPayer);
 		if (!SUCCESS.equals(payerStatus.getStatusCode())) {
-			if (log.isDebugEnabled()) {
-				log.debug("Failed rationalizing payer sigs, txn {}: {}", txnAccessor.getTxnId(), payerStatus);
-			}
 			return payerStatus;
 		}
 		var otherPartiesStatus = expandIn(
 				realOtherPartySigs, sigsProvider::otherPartiesSigBytesFor, keyOrderer::keysForOtherParties);
 		if (!SUCCESS.equals(otherPartiesStatus.getStatusCode())) {
-			if (log.isDebugEnabled()) {
-				log.debug("Failed rationalizing other sigs, txn {}: {}", txnAccessor.getTxnId(), otherPartiesStatus);
-			}
 			return otherPartiesStatus;
 		}
 
@@ -118,14 +112,18 @@ public class Rationalization {
 			if (allVaryingMaterialEquals(candidateSigs, realSigs) && allStatusesAreKnown(candidateSigs)) {
 				return candidateSigs;
 			}
-		} catch (IndexOutOfBoundsException ignore) {
-		}
+		} catch (IndexOutOfBoundsException ignore) { }
 		syncVerifier.verifySync(realSigs);
 		return realSigs;
 	}
 
 	private boolean allStatusesAreKnown(List<TransactionSignature> sigs) {
-		return sigs.stream().map(TransactionSignature::getSignatureStatus).noneMatch(VerificationStatus.UNKNOWN::equals);
+		for (final var sig : sigs) {
+			if (sig.getSignatureStatus() == UNKNOWN) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private SignatureStatus expandIn(

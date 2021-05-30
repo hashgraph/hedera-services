@@ -37,6 +37,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -71,11 +72,11 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 
 	CurrentAndNextFeeSchedule feeSchedules;
 
-	Timestamp currFunctionUsagePricesExpiry;
-	Timestamp nextFunctionUsagePricesExpiry;
+	private Timestamp currFunctionUsagePricesExpiry;
+	private Timestamp nextFunctionUsagePricesExpiry;
 
-	Map<HederaFunctionality, FeeData> currFunctionUsagePrices;
-	Map<HederaFunctionality, FeeData> nextFunctionUsagePrices;
+	private EnumMap<HederaFunctionality, FeeData> currFunctionUsagePrices;
+	private EnumMap<HederaFunctionality, FeeData> nextFunctionUsagePrices;
 
 	public AwareFcfsUsagePrices(HederaFs hfs, FileNumbers fileNumbers, TransactionContext txnCtx) {
 		this.hfs = hfs;
@@ -163,9 +164,11 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 		return Timestamp.newBuilder().setSeconds(ts.getSeconds()).build();
 	}
 
-	private Map<HederaFunctionality, FeeData> functionUsagePricesFrom(FeeSchedule feeSchedule) {
-		return feeSchedule.getTransactionFeeScheduleList()
-				.stream()
-				.collect(toMap(TransactionFeeSchedule::getHederaFunctionality, TransactionFeeSchedule::getFeeData));
+	private EnumMap<HederaFunctionality, FeeData> functionUsagePricesFrom(FeeSchedule feeSchedule) {
+		final EnumMap<HederaFunctionality, FeeData> ans = new EnumMap<>(HederaFunctionality.class);
+		for (final var tfs : feeSchedule.getTransactionFeeScheduleList()) {
+			ans.put(tfs.getHederaFunctionality(), tfs.getFeeData());
+		}
+		return ans;
 	}
 }
