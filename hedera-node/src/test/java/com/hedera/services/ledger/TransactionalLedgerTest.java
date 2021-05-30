@@ -56,17 +56,15 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.verifyNoMoreInteractions;
 import static org.mockito.BDDMockito.willThrow;
 
-public class TransactionalLedgerTest {
+class TransactionalLedgerTest {
 	Supplier<TestAccount> newAccountFactory;
 	BackingStore<Long, TestAccount> backingAccounts;
 	ChangeSummaryManager<TestAccount, TestAccountProperty> changeManager = new ChangeSummaryManager<>();
 	TransactionalLedger<Long, TestAccountProperty, TestAccount> subject;
 
-	TokenID tid = IdUtils.tokenWith(666L);
 	Object[] things = { "a", "b", "c", "d" };
 	MerkleToken token;
 	TestAccount account1 = new TestAccount(1L, things[1], false, 667L);
-	TestAccount account1TokenCopy = new TestAccount(1L, things[1], false, 667L);
 
 	@BeforeEach
 	private void setup() {
@@ -77,11 +75,16 @@ public class TransactionalLedgerTest {
 		given(backingAccounts.contains(1L)).willReturn(true);
 		newAccountFactory = () -> new TestAccount();
 
-		subject = new TransactionalLedger<>(TestAccountProperty.class, newAccountFactory, backingAccounts, changeManager);
+		subject = new TransactionalLedger<>(
+				TestAccountProperty.class,
+				newAccountFactory,
+				Comparator.comparingLong(Long::longValue).reversed(),
+				backingAccounts,
+				changeManager);
 	}
 
 	@Test
-	public void rollbackFlushesMutableRefs() {
+	void rollbackFlushesMutableRefs() {
 		// given:
 		subject.begin();
 
@@ -95,7 +98,7 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
-	public void getUsesMutableRefIfPendingChanges() {
+	void getUsesMutableRefIfPendingChanges() {
 		// given:
 		var newAccount1 = new TestAccount(account1.value, account1.thing, !account1.flag, account1.tokenThing);
 		// and:
@@ -112,15 +115,11 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
-	public void usesGivenComparatorToOrderCommits() {
+	void usesGivenComparatorToOrderCommits() {
 		// setup:
 		int M = 2, N = 100;
 		InOrder inOrder = inOrder(backingAccounts);
-		Comparator<Long> backward = Comparator.comparingLong(Long::longValue).reversed();
 		List<Long> ids = LongStream.range(M, N).boxed().collect(toList());
-
-		// given:
-		subject.setKeyComparator(backward);
 
 		// when:
 		subject.begin();
@@ -136,15 +135,11 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
-	public void usesGivenComparatorToOrderDestroys() {
+	void usesGivenComparatorToOrderDestroys() {
 		// setup:
 		int M = 2, N = 100;
 		InOrder inOrder = inOrder(backingAccounts);
-		Comparator<Long> backward = Comparator.comparingLong(Long::longValue).reversed();
 		List<Long> ids = LongStream.range(M, N).boxed().collect(toList());
-
-		// given:
-		subject.setKeyComparator(backward);
 
 		// when:
 		subject.begin();
@@ -166,7 +161,7 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
-	public void requiresManualRollbackIfCommitFails() {
+	void requiresManualRollbackIfCommitFails() {
 		willThrow(IllegalStateException.class).given(backingAccounts).put(any(), any());
 
 		// when:
@@ -180,7 +175,7 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
-	public void recognizesPendingCreates() {
+	void recognizesPendingCreates() {
 		// when:
 		subject.begin();
 		subject.create(2L);
@@ -191,7 +186,7 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
-	public void reportsDeadAccountsIndividually() {
+	void reportsDeadAccountsIndividually() {
 		// when:
 		subject.begin();
 		subject.destroy(1L);
@@ -201,7 +196,7 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
-	public void existsIfNotMissingAndNotDestroyed() {
+	void existsIfNotMissingAndNotDestroyed() {
 		// given:
 		subject.begin();
 		subject.create(2L);
@@ -220,7 +215,7 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
-	public void delegatesDestroyToRemove() {
+	void delegatesDestroyToRemove() {
 		// given:
 		subject.begin();
 
@@ -234,7 +229,7 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
-	public void throwsIfNotInTransaction() {
+	void throwsIfNotInTransaction() {
 		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.set(1L, OBJ, things[0]));
 		assertThrows(IllegalStateException.class, () -> subject.create(2L));
@@ -242,7 +237,7 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
-	public void throwsOnMutationToMissingAccount() {
+	void throwsOnMutationToMissingAccount() {
 		// given:
 		subject.begin();
 
@@ -251,13 +246,13 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
-	public void throwsOnGettingMissingAccount() {
+	void throwsOnGettingMissingAccount() {
 		// expect:
 		assertThrows(IllegalArgumentException.class, () -> subject.get(2L));
 	}
 
 	@Test
-	public void throwsOnCreationWithExistingAccountId() {
+	void throwsOnCreationWithExistingAccountId() {
 		// given:
 		subject.begin();
 
@@ -266,13 +261,13 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
-	public void throwsOnGettingPropOfMissingAccount() {
+	void throwsOnGettingPropOfMissingAccount() {
 		// expect:
 		assertThrows(IllegalArgumentException.class, () -> subject.get(2L, OBJ));
 	}
 
 	@Test
-	public void returnsPendingChangePropertiesOfExistingAccounts() {
+	void returnsPendingChangePropertiesOfExistingAccounts() {
 		// given:
 		subject.begin();
 		subject.set(1L, LONG, 3L);
@@ -287,7 +282,7 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
-	public void incorporatesMutationToPendingNewAccount() {
+	void incorporatesMutationToPendingNewAccount() {
 		// given:
 		subject.begin();
 		subject.create(2L);
@@ -300,7 +295,7 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
-	public void returnsSetPropertiesOfPendingNewAccounts() {
+	void returnsSetPropertiesOfPendingNewAccounts() {
 		// given:
 		subject.begin();
 		subject.create(2L);
@@ -314,7 +309,7 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
-	public void returnsDefaultForUnsetPropertiesOfPendingNewAccounts() {
+	void returnsDefaultForUnsetPropertiesOfPendingNewAccounts() {
 		// given:
 		subject.begin();
 		subject.create(2L);
@@ -328,7 +323,7 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
-	public void reflectsChangeToExistingAccountIfInTransaction() {
+	void reflectsChangeToExistingAccountIfInTransaction() {
 		// given:
 		subject.begin();
 
@@ -340,7 +335,7 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
-	public void throwsIfTxnAlreadyBegun() {
+	void throwsIfTxnAlreadyBegun() {
 		// given:
 		subject.begin();
 
@@ -349,19 +344,19 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
-	public void throwsOnRollbackWithoutActiveTxn() {
+	void throwsOnRollbackWithoutActiveTxn() {
 		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.rollback());
 	}
 
 	@Test
-	public void throwsOnCommitWithoutActiveTxn() {
+	void throwsOnCommitWithoutActiveTxn() {
 		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.commit());
 	}
 
 	@Test
-	public void dropsPendingChangesAfterRollback() {
+	void dropsPendingChangesAfterRollback() {
 		// given:
 		subject.begin();
 
@@ -379,7 +374,7 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
-	public void persistsPendingChangesAndDestroysDeadAccountsAfterCommit() {
+	void persistsPendingChangesAndDestroysDeadAccountsAfterCommit() {
 		// setup:
 		var expected2 = new TestAccount(2L, things[2], false);
 
@@ -408,7 +403,7 @@ public class TransactionalLedgerTest {
 	}
 
 	@Test
-	public void reflectsUnchangedAccountIfNoChanges() {
+	void reflectsUnchangedAccountIfNoChanges() {
 		// expect:
 		assertEquals(account1, subject.get(1L));
 	}

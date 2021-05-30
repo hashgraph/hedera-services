@@ -28,10 +28,12 @@ import com.hedera.services.utils.EntityIdUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -59,12 +61,16 @@ import static java.util.stream.Collectors.joining;
  * @author Michael Tinker
  */
 public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> implements Ledger<K, P, A> {
+	private static final int MAX_ENTITIES_LIKELY_TOUCHED_IN_LEDGER_TXN = 42;
 
 	private static final Logger log = LogManager.getLogger(TransactionalLedger.class);
 
 	private final Set<K> deadEntities = new HashSet<>();
+	private final List<K> changedKeys = new ArrayList<>(MAX_ENTITIES_LIKELY_TOUCHED_IN_LEDGER_TXN);
+	private final List<K> perishedKeys = new ArrayList<>(MAX_ENTITIES_LIKELY_TOUCHED_IN_LEDGER_TXN);
 	private final Class<P> propertyType;
 	private final Supplier<A> newEntity;
+	private final Comparator<K> keyCmp;
 	private final BackingStore<K, A> entities;
 	private final ChangeSummaryManager<A, P> changeManager;
 	private final Function<K, EnumMap<P, Object>> changeFactory;
@@ -72,24 +78,21 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	final Map<K, EnumMap<P, Object>> changes = new HashMap<>();
 
 	private boolean isInTransaction = false;
-	private Optional<Comparator<K>> keyComparator = Optional.empty();
 	private Optional<Function<K, String>> keyToString = Optional.empty();
 
 	public TransactionalLedger(
 			Class<P> propertyType,
 			Supplier<A> newEntity,
+			Comparator<K> keyCmp,
 			BackingStore<K, A> entities,
 			ChangeSummaryManager<A, P> changeManager
 	) {
-		this.propertyType = propertyType;
-		this.newEntity = newEntity;
+		this.keyCmp = keyCmp;
 		this.entities = entities;
+		this.newEntity = newEntity;
+		this.propertyType = propertyType;
 		this.changeManager = changeManager;
 		this.changeFactory = ignore -> new EnumMap<>(propertyType);
-	}
-
-	public void setKeyComparator(Comparator<K> keyComparator) {
-		this.keyComparator = Optional.of(keyComparator);
 	}
 
 	public void setKeyToString(Function<K, String> keyToString) {
@@ -111,6 +114,8 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 
 		changes.clear();
 		deadEntities.clear();
+		changedKeys.clear();
+		perishedKeys.clear();
 
 		isInTransaction = false;
 	}
@@ -122,19 +127,21 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 
 		log.debug("Changes to be committed: {}", this::changeSetSoFar);
 		try {
-			Stream<K> changedKeys = keyComparator.isPresent()
-					? changes.keySet().stream().sorted(keyComparator.get())
-					: changes.keySet().stream();
-			changedKeys
-					.filter(id -> !deadEntities.contains(id))
-					.forEach(id -> entities.put(id, get(id)));
+			changedKeys.sort(keyCmp);
+			for (var key : changedKeys) {
+				if (!deadEntities.contains(key)) {
+					entities.put(key, get(key));
+				}
+			}
 			changes.clear();
+			changedKeys.clear();
 
-			Stream<K> deadKeys = keyComparator.isPresent()
-					? deadEntities.stream().sorted(keyComparator.get())
-					: deadEntities.stream();
-			deadKeys.forEach(entities::remove);
-			deadEntities.clear();
+			if (!deadEntities.isEmpty()) {
+				perishedKeys.sort(keyCmp);
+				perishedKeys.forEach(entities::remove);
+				deadEntities.clear();
+				perishedKeys.clear();
+			}
 
 			entities.clearRefCache();
 
@@ -200,16 +207,19 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	public void set(K id, P property, Object value) {
 		assertIsSettable(id);
 
-		changeManager.update(changes.computeIfAbsent(id, changeFactory), property, value);
+		changeManager.update(changes.computeIfAbsent(id, ignore -> {
+			changedKeys.add(id);
+			return changeFactory.apply(id);
+		}), property, value);
 	}
 
 	@Override
 	public A get(K id) {
 		throwIfMissing(id);
 
-		EnumMap<P, Object> changeSet = changes.get(id);
-		boolean hasPendingChanges = changeSet != null;
-		A account = entities.contains(id) ? entities.getRef(id) : newEntity.get();
+		final EnumMap<P, Object> changeSet = changes.get(id);
+		final boolean hasPendingChanges = changeSet != null;
+		final A account = entities.contains(id) ? entities.getRef(id) : newEntity.get();
 		if (hasPendingChanges) {
 			changeManager.persist(changeSet, account);
 		}
@@ -234,6 +244,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		assertIsCreatable(id);
 
 		changes.put(id, new EnumMap<>(propertyType));
+		changedKeys.add(id);
 	}
 
 	@Override
@@ -241,6 +252,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		throwIfNotInTxn();
 
 		deadEntities.add(id);
+		perishedKeys.add(id);
 	}
 
 	boolean isInTransaction() {

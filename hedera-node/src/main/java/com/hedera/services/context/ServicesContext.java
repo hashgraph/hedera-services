@@ -1457,9 +1457,9 @@ public class ServicesContext {
 					new TransactionalLedger<>(
 							TokenRelProperty.class,
 							MerkleTokenRelStatus::new,
+							REL_CMP,
 							backingTokenRels(),
 							new ChangeSummaryManager<>());
-			tokenRelsLedger.setKeyComparator(REL_CMP);
 			tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 			tokenStore = new HederaTokenStore(
 					ids(),
@@ -1484,9 +1484,9 @@ public class ServicesContext {
 					new TransactionalLedger<>(
 							AccountProperty.class,
 							MerkleAccount::new,
+							ACCOUNT_ID_COMPARATOR,
 							backingAccounts(),
 							new ChangeSummaryManager<>());
-			accountsLedger.setKeyComparator(ACCOUNT_ID_COMPARATOR);
 			ledger = new HederaLedger(
 					tokenStore(),
 					ids(),
@@ -1824,6 +1824,7 @@ public class ServicesContext {
 			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> pureDelegate = new TransactionalLedger<>(
 					AccountProperty.class,
 					MerkleAccount::new,
+					ACCOUNT_ID_COMPARATOR,
 					new PureFCMapBackingAccounts(this::accounts),
 					new ChangeSummaryManager<>());
 			HederaLedger pureLedger = new HederaLedger(

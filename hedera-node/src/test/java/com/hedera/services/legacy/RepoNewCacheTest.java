@@ -55,6 +55,7 @@ import org.junit.Test;
 
 import java.math.BigInteger;
 
+import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.mock;
 
@@ -68,7 +69,8 @@ public class RepoNewCacheTest {
 
 		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
 				AccountProperty.class,
-				() -> new MerkleAccount(),
+				MerkleAccount::new,
+				ACCOUNT_ID_COMPARATOR,
 				new FCMapBackingAccounts(() -> accountMap),
 				new ChangeSummaryManager<>());
 		HederaLedger ledger = new HederaLedger(
@@ -150,7 +152,8 @@ public class RepoNewCacheTest {
 		FCMapBackingAccounts backingAccounts = new FCMapBackingAccounts(() -> accountMap);
 		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
 				AccountProperty.class,
-				() -> new MerkleAccount(),
+				MerkleAccount::new,
+				ACCOUNT_ID_COMPARATOR,
 				backingAccounts,
 				new ChangeSummaryManager<>());
 		MerkleAccount someAccount = new MerkleAccount();

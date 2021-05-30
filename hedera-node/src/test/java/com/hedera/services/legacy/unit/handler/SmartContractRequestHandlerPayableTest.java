@@ -92,6 +92,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.Date;
 
+import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -141,6 +142,7 @@ public class SmartContractRequestHandlerPayableTest {
     TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
             AccountProperty.class,
             () -> new MerkleAccount(),
+            ACCOUNT_ID_COMPARATOR,
             backingAccounts,
             new ChangeSummaryManager<>());
     ledger = new HederaLedger(

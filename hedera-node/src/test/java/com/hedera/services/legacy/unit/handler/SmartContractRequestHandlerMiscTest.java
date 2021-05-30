@@ -96,6 +96,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.Date;
 
+import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asContract;
 import static com.hedera.test.mocks.TestUsagePricesProvider.TEST_USAGE_PRICES;
@@ -159,6 +160,7 @@ public class SmartContractRequestHandlerMiscTest {
     TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
             AccountProperty.class,
             () -> new MerkleAccount(),
+			ACCOUNT_ID_COMPARATOR,
             new FCMapBackingAccounts(() -> fcMap),
             new ChangeSummaryManager<>());
     ledger = new HederaLedger(

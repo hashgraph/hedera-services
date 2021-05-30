@@ -100,6 +100,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
+import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.legacy.util.SCEncoding.GET_MY_VALUE_ABI;
 import static com.hedera.services.legacy.util.SCEncoding.GROW_CHILD_ABI;
 import static com.hedera.services.legacy.util.SCEncoding.encodeVia;
@@ -147,8 +148,9 @@ public class SmartContractRequestHandlerStorageTest {
     DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
     TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
             AccountProperty.class,
-            () -> new MerkleAccount(),
-            new FCMapBackingAccounts(() -> contracts),
+            MerkleAccount::new,
+			ACCOUNT_ID_COMPARATOR,
+			new FCMapBackingAccounts(() -> contracts),
             new ChangeSummaryManager<>());
     ledger = new HederaLedger(
             mock(TokenStore.class),

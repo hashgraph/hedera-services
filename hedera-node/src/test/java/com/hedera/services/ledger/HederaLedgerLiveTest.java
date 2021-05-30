@@ -49,6 +49,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
+import static com.hedera.services.ledger.accounts.BackingTokenRels.REL_CMP;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInAnyOrder;
@@ -68,13 +70,15 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 
 		accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class,
-				() -> new MerkleAccount(),
+				MerkleAccount::new,
+				ACCOUNT_ID_COMPARATOR,
 				new HashMapBackingAccounts(),
 				new ChangeSummaryManager<>());
 		FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
 		tokenRelsLedger = new TransactionalLedger<>(
 				TokenRelProperty.class,
-				() -> new MerkleTokenRelStatus(),
+				MerkleTokenRelStatus::new,
+				REL_CMP,
 				new HashMapBackingTokenRels(),
 				new ChangeSummaryManager<>());
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
