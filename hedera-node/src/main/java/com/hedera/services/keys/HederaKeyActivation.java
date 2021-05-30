@@ -109,13 +109,19 @@ public class HederaKeyActivation {
 		if (!key.hasKeyList() && !key.hasThresholdKey()) {
 			return tests.test(key, sigsFn.apply(key.getEd25519()));
 		} else {
-			List<JKey> children = key.hasKeyList()
+			final List<JKey> children = key.hasKeyList()
 					? key.getKeyList().getKeysList()
 					: key.getThresholdKey().getKeys().getKeysList();
-			int M = key.hasKeyList()
+			final int m = key.hasKeyList()
 					? characteristics.sigsNeededForList((JKeyList)key)
 					: characteristics.sigsNeededForThreshold((JThresholdKey)key);
-			return children.stream().mapToInt(child -> isActive(child, sigsFn, tests) ? 1 : 0).sum() >= M;
+			int n = 0;
+			for (var child : children) {
+				if (isActive(child, sigsFn, tests)) {
+					n++;
+				}
+			}
+			return n >= m;
 		}
 	}
 
