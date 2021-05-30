@@ -142,7 +142,6 @@ public class SmartContractRequestHandlerPayableTest {
     TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
             AccountProperty.class,
             () -> new MerkleAccount(),
-            ACCOUNT_ID_COMPARATOR,
             backingAccounts,
             new ChangeSummaryManager<>());
     ledger = new HederaLedger(

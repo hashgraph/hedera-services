@@ -149,7 +149,6 @@ public class SmartContractRequestHandlerStorageTest {
     TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
             AccountProperty.class,
             MerkleAccount::new,
-			ACCOUNT_ID_COMPARATOR,
 			new FCMapBackingAccounts(() -> contracts),
             new ChangeSummaryManager<>());
     ledger = new HederaLedger(

@@ -40,7 +40,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.MiscUtils.readableProperty;
@@ -70,7 +69,6 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	private final List<K> perishedKeys = new ArrayList<>(MAX_ENTITIES_LIKELY_TOUCHED_IN_LEDGER_TXN);
 	private final Class<P> propertyType;
 	private final Supplier<A> newEntity;
-	private final Comparator<K> keyCmp;
 	private final BackingStore<K, A> entities;
 	private final ChangeSummaryManager<A, P> changeManager;
 	private final Function<K, EnumMap<P, Object>> changeFactory;
@@ -83,11 +81,9 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	public TransactionalLedger(
 			Class<P> propertyType,
 			Supplier<A> newEntity,
-			Comparator<K> keyCmp,
 			BackingStore<K, A> entities,
 			ChangeSummaryManager<A, P> changeManager
 	) {
-		this.keyCmp = keyCmp;
 		this.entities = entities;
 		this.newEntity = newEntity;
 		this.propertyType = propertyType;
@@ -127,17 +123,16 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 
 		log.debug("Changes to be committed: {}", this::changeSetSoFar);
 		try {
-			changedKeys.sort(keyCmp);
 			for (var key : changedKeys) {
 				if (!deadEntities.contains(key)) {
-					entities.put(key, get(key));
+					final var changedEntity = get(key);
+					entities.put(key, changedEntity);
 				}
 			}
 			changes.clear();
 			changedKeys.clear();
 
 			if (!deadEntities.isEmpty()) {
-				perishedKeys.sort(keyCmp);
 				perishedKeys.forEach(entities::remove);
 				deadEntities.clear();
 				perishedKeys.clear();

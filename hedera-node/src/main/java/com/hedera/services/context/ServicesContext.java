@@ -362,8 +362,6 @@ import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.bytec
 import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.storageMapFrom;
 import static com.hedera.services.files.interceptors.ConfigListUtils.uncheckedParse;
 import static com.hedera.services.files.interceptors.PureRatesValidation.isNormalIntradayChange;
-import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
-import static com.hedera.services.ledger.accounts.BackingTokenRels.REL_CMP;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.records.NoopRecordsHistorian.NOOP_RECORDS_HISTORIAN;
 import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
@@ -1457,7 +1455,6 @@ public class ServicesContext {
 					new TransactionalLedger<>(
 							TokenRelProperty.class,
 							MerkleTokenRelStatus::new,
-							REL_CMP,
 							backingTokenRels(),
 							new ChangeSummaryManager<>());
 			tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
@@ -1484,7 +1481,6 @@ public class ServicesContext {
 					new TransactionalLedger<>(
 							AccountProperty.class,
 							MerkleAccount::new,
-							ACCOUNT_ID_COMPARATOR,
 							backingAccounts(),
 							new ChangeSummaryManager<>());
 			ledger = new HederaLedger(
@@ -1824,7 +1820,6 @@ public class ServicesContext {
 			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> pureDelegate = new TransactionalLedger<>(
 					AccountProperty.class,
 					MerkleAccount::new,
-					ACCOUNT_ID_COMPARATOR,
 					new PureFCMapBackingAccounts(this::accounts),
 					new ChangeSummaryManager<>());
 			HederaLedger pureLedger = new HederaLedger(

@@ -78,7 +78,6 @@ class TransactionalLedgerTest {
 		subject = new TransactionalLedger<>(
 				TestAccountProperty.class,
 				newAccountFactory,
-				Comparator.comparingLong(Long::longValue).reversed(),
 				backingAccounts,
 				changeManager);
 	}
@@ -115,7 +114,7 @@ class TransactionalLedgerTest {
 	}
 
 	@Test
-	void usesGivenComparatorToOrderCommits() {
+	void putsInOrderOfChanges() {
 		// setup:
 		int M = 2, N = 100;
 		InOrder inOrder = inOrder(backingAccounts);
@@ -127,7 +126,7 @@ class TransactionalLedgerTest {
 		subject.commit();
 
 		// then:
-		LongStream.range(M, N).map(id -> N - 1 - (id - M)).boxed().forEach(id -> {
+		LongStream.range(M, N).boxed().forEach(id -> {
 			inOrder.verify(backingAccounts).put(argThat(id::equals), any());
 		});
 		// and:
@@ -135,7 +134,7 @@ class TransactionalLedgerTest {
 	}
 
 	@Test
-	void usesGivenComparatorToOrderDestroys() {
+	void destroysInOrder() {
 		// setup:
 		int M = 2, N = 100;
 		InOrder inOrder = inOrder(backingAccounts);
@@ -151,11 +150,11 @@ class TransactionalLedgerTest {
 		subject.commit();
 
 		// then:
-		LongStream.range(M, N).map(id -> N - 1 - (id - M)).boxed().forEach(id -> {
+		LongStream.range(M, N).boxed().forEach(id -> {
 			inOrder.verify(backingAccounts).put(argThat(id::equals), any());
 		});
 		// and:
-		LongStream.range(M, N).map(id -> N - 1 - (id - M)).boxed().forEach(id -> {
+		LongStream.range(M, N).boxed().forEach(id -> {
 			inOrder.verify(backingAccounts).remove(id);
 		});
 	}
