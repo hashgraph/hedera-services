@@ -35,6 +35,9 @@ class NonBlockingHandoffTest {
 		subject.getExecutor().shutdownNow();
 
 		// then:
-		verify(recordStreamManager).addRecordStreamObject(rso);
+		final var verification = verify(recordStreamManager);
+		if (verification != null) {
+			verification.addRecordStreamObject(rso);
+		}
 	}
 }
