@@ -60,7 +60,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
-import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
@@ -204,7 +203,7 @@ class ExpiringCreationsTest {
 		//when:
 		ExpirableTxnRecord.Builder builder =
 				subject.buildExpiringRecord(100L, hash,
-						accessor, asTimestamp(timestamp), TxnReceipt.fromGrpc(receipt));
+						accessor, timestamp, TxnReceipt.fromGrpc(receipt));
 		ExpirableTxnRecord actualRecord = builder.build();
 
 		//then:

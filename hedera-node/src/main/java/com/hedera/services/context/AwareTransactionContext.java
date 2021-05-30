@@ -20,18 +20,15 @@ package com.hedera.services.context;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.expiry.ExpiringEntity;
-import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.state.submerkle.TxnId;
-import com.hedera.services.txns.ExpandHandleSpan;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -45,8 +42,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
-import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -58,7 +53,6 @@ import java.util.function.Consumer;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
-import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
 /**
@@ -90,7 +84,6 @@ public class AwareTransactionContext implements TransactionContext {
 	private byte[] hash;
 	private boolean isPayerSigKnownActive;
 	private Instant consensusTime;
-	private Timestamp consensusTimestamp;
 	private TxnAccessor accessor;
 	private ResponseCodeEnum statusSoFar;
 	private List<ExpiringEntity> expiringEntities;
@@ -115,7 +108,6 @@ public class AwareTransactionContext implements TransactionContext {
 		otherNonThresholdFees = 0L;
 		hash = accessor.getHash();
 		statusSoFar = UNKNOWN;
-		consensusTimestamp = asTimestamp(consensusTime);
 		recordConfig = noopRecordConfig;
 		receiptConfig = noopReceiptConfig;
 		isPayerSigKnownActive = false;
@@ -163,7 +155,7 @@ public class AwareTransactionContext implements TransactionContext {
 				otherNonThresholdFees,
 				hash,
 				accessor,
-				consensusTimestamp,
+				consensusTime,
 				receipt);
 
 		recordConfig.accept(recordSoFar);

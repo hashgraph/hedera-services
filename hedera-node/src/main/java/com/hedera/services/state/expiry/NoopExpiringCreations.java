@@ -20,15 +20,12 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
 
 import java.time.Instant;
 
@@ -55,7 +52,7 @@ public enum NoopExpiringCreations implements EntityCreator {
 			long otherNonThresholdFees,
 			byte[] hash,
 			TxnAccessor accessor,
-			Timestamp consensusTimestamp,
+			Instant consensusTime,
 			TxnReceipt receipt
 	) {
 		throw new UnsupportedOperationException();

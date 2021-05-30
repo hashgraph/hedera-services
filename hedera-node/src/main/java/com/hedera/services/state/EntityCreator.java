@@ -69,7 +69,7 @@ public interface EntityCreator {
 	 * 		transaction hash
 	 * @param accessor
 	 * 		transaction accessor
-	 * @param consensusTimestamp
+	 * @param consensusTime
 	 * 		consensus timestamp
 	 * @param receipt
 	 * 		transaction receipt
@@ -79,7 +79,7 @@ public interface EntityCreator {
 			long otherNonThresholdFees,
 			byte[] hash,
 			TxnAccessor accessor,
-			Timestamp consensusTimestamp,
+			Instant consensusTime,
 			TxnReceipt receipt);
 
 	/**

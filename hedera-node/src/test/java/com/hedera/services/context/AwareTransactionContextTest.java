@@ -391,7 +391,7 @@ class AwareTransactionContextTest {
 
 		// expect:
 		assertEquals(memo, record.getMemo());
-		assertEquals(hash, record.asGrpc().getTransactionHash());
+		assertArrayEquals(hash, record.asGrpc().getTransactionHash().toByteArray());
 		assertEquals(txnId, record.asGrpc().getTransactionID());
 		assertEquals(RichInstant.fromGrpc(timeNow), record.getConsensusTimestamp());
 	}

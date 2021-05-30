@@ -34,7 +34,6 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -100,7 +99,7 @@ public class ExpiringCreations implements EntityCreator {
 			long otherNonThresholdFees,
 			byte[] hash,
 			TxnAccessor accessor,
-			Timestamp consensusTimestamp,
+			Instant consensusTime,
 			TxnReceipt receipt
 	) {
 		final long amount = ctx.narratedCharging().totalFeesChargedToPayer() + otherNonThresholdFees;
@@ -113,7 +112,7 @@ public class ExpiringCreations implements EntityCreator {
 				.setReceipt(receipt)
 				.setTxnHash(hash)
 				.setTxnId(TxnId.fromGrpc(accessor.getTxnId()))
-				.setConsensusTimestamp(RichInstant.fromGrpc(consensusTimestamp))
+				.setConsensusTimestamp(RichInstant.fromJava(consensusTime))
 				.setMemo(accessor.getTxn().getMemo())
 				.setFee(amount)
 				.setTransferList(currencyAdjustments)
