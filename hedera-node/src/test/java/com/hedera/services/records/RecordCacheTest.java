@@ -335,7 +335,7 @@ class RecordCacheTest {
 				.setTxnId(TxnId.fromGrpc(txnId))
 				.setReceipt(TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(FAIL_INVALID).build()))
 				.setMemo(accessor.getTxn().getMemo())
-				.setTxnHash(accessor.getHash().toByteArray())
+				.setTxnHash(accessor.getHash())
 				.setConsensusTimestamp(RichInstant.fromGrpc(asTimestamp(consensusTime)));
 		var expectedRecord = expirableTxnRecordBuilder.build();
 		expectedRecord.setExpiry(consensusTime.getEpochSecond() + 180);
@@ -384,7 +384,7 @@ class RecordCacheTest {
 				.setTxnId(TxnId.fromGrpc(txnId))
 				.setReceipt(TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(FAIL_INVALID).build()))
 				.setMemo(accessor.getTxn().getMemo())
-				.setTxnHash(accessor.getHash().toByteArray())
+				.setTxnHash(accessor.getHash())
 				.setConsensusTimestamp(RichInstant.fromGrpc(asTimestamp(consensusTime)))
 				.setScheduleRef(fromGrpcScheduleId(effectiveScheduleID));
 		var expirableTxnRecord = expirableTxnRecordBuilder.build();

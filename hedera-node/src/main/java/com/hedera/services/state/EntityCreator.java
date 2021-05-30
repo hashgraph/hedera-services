@@ -20,14 +20,12 @@ package com.hedera.services.state;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
 
 import java.time.Instant;
 
@@ -79,7 +77,7 @@ public interface EntityCreator {
 	 */
 	ExpirableTxnRecord.Builder buildExpiringRecord(
 			long otherNonThresholdFees,
-			ByteString hash,
+			byte[] hash,
 			TxnAccessor accessor,
 			Timestamp consensusTimestamp,
 			TxnReceipt receipt);

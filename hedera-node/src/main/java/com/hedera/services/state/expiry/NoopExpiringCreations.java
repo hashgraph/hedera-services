@@ -53,7 +53,7 @@ public enum NoopExpiringCreations implements EntityCreator {
 	@Override
 	public ExpirableTxnRecord.Builder buildExpiringRecord(
 			long otherNonThresholdFees,
-			ByteString hash,
+			byte[] hash,
 			TxnAccessor accessor,
 			Timestamp consensusTimestamp,
 			TxnReceipt receipt

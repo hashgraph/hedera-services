@@ -20,7 +20,6 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -53,7 +52,7 @@ public interface TxnAccessor {
 
     byte[] getBackwardCompatibleSignedTxnBytes();
 
-    ByteString getHash();
+    byte[] getHash();
 
     boolean canTriggerTxn();
 

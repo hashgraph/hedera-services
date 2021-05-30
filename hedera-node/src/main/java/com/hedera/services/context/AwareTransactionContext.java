@@ -87,10 +87,10 @@ public class AwareTransactionContext implements TransactionContext {
 
 	private long submittingMember;
 	private long otherNonThresholdFees;
+	private byte[] hash;
 	private boolean isPayerSigKnownActive;
 	private Instant consensusTime;
 	private Timestamp consensusTimestamp;
-	private ByteString hash;
 	private TxnAccessor accessor;
 	private ResponseCodeEnum statusSoFar;
 	private List<ExpiringEntity> expiringEntities;

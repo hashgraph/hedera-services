@@ -20,7 +20,6 @@ package com.hedera.services.context;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.HederaLedger;
@@ -148,7 +147,7 @@ class AwareTransactionContextTest {
 	private ExpirableTxnRecord record;
 	private ExpiringEntity expiringEntity;
 	private String memo = "Hi!";
-	private ByteString hash = ByteString.copyFrom("fake hash".getBytes());
+	private byte[] hash = "fake hash".getBytes();
 	private TransactionID txnId = TransactionID.newBuilder()
 			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(txnValidStart))
 			.setAccountID(payer)
@@ -594,7 +593,7 @@ class AwareTransactionContextTest {
 
 	private ExpirableTxnRecord.Builder buildRecord(
 			long otherNonThresholdFees,
-			ByteString hash,
+			byte[] hash,
 			TxnAccessor accessor,
 			Timestamp consensusTimestamp,
 			TransactionReceipt receipt
@@ -605,7 +604,7 @@ class AwareTransactionContextTest {
 
 		var builder = ExpirableTxnRecord.newBuilder()
 				.setReceipt(TxnReceipt.fromGrpc(receipt))
-				.setTxnHash(hash.toByteArray())
+				.setTxnHash(hash)
 				.setTxnId(TxnId.fromGrpc(accessor.getTxnId()))
 				.setConsensusTimestamp(RichInstant.fromGrpc(consensusTimestamp))
 				.setMemo(accessor.getTxn().getMemo())

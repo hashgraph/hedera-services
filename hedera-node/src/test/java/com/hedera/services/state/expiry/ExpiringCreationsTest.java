@@ -118,7 +118,7 @@ class ExpiringCreationsTest {
 	private static final String account = "0.0.10001";
 	private final TransactionReceipt receipt = TransactionReceipt.newBuilder().setStatus(SUCCESS).build();
 	private final Instant timestamp = Instant.now();
-	private final ByteString hash = ByteString.copyFrom(hashString.getBytes(StandardCharsets.UTF_8));
+	private final byte[] hash = hashString.getBytes(StandardCharsets.UTF_8);
 
 	private ExpiringCreations subject;
 
