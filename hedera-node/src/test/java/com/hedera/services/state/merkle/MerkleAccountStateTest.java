@@ -27,6 +27,8 @@ import com.hedera.services.state.serdes.IoReadingFunction;
 import com.hedera.services.state.serdes.IoWritingConsumer;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.MiscUtils;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.swirlds.common.MutabilityException;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.AfterEach;
@@ -40,6 +42,7 @@ import static com.hedera.services.state.merkle.MerkleAccountState.MAX_CONCEIVABL
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyInt;
@@ -52,46 +55,40 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 class MerkleAccountStateTest {
-	JKey key;
-	long expiry = 1_234_567L;
-	long balance = 555_555L;
-	long autoRenewSecs = 234_567L;
-	String memo = "A memo";
-	boolean deleted = true;
-	boolean smartContract = true;
-	boolean receiverSigRequired = true;
-	EntityId proxy;
+	private JKey key;
+	private long expiry = 1_234_567L;
+	private long balance = 555_555L;
+	private long autoRenewSecs = 234_567L;
+	private String memo = "A memo";
+	private boolean deleted = true;
+	private boolean smartContract = true;
+	private boolean receiverSigRequired = true;
+	private EntityId proxy;
 
-	JKey otherKey;
-	long otherExpiry = 7_234_567L;
-	long otherBalance = 666_666L;
-	long otherAutoRenewSecs = 432_765L;
-	String otherMemo = "Another memo";
-	boolean otherDeleted = false;
-	boolean otherSmartContract = false;
-	boolean otherReceiverSigRequired = false;
-	EntityId otherProxy;
+	private JKey otherKey;
+	private long otherExpiry = 7_234_567L;
+	private long otherBalance = 666_666L;
+	private long otherAutoRenewSecs = 432_765L;
+	private String otherMemo = "Another memo";
+	private boolean otherDeleted = false;
+	private boolean otherSmartContract = false;
+	private boolean otherReceiverSigRequired = false;
+	private EntityId otherProxy;
 
-	DomainSerdes serdes;
+	private DomainSerdes serdes;
 
-	MerkleAccountState subject;
-	MerkleAccountState release070Subject;
-	MerkleAccountState otherSubject;
+	private MerkleAccountState otherSubject;
+
+	private MerkleAccountState subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		key = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012345".getBytes());
 		proxy = new EntityId(1L, 2L, 3L);
 		// and:
 		otherKey = new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes());
 		otherProxy = new EntityId(3L, 2L, 1L);
 
-		release070Subject = new MerkleAccountState(
-				key,
-				expiry, balance, autoRenewSecs,
-				memo,
-				deleted, smartContract, receiverSigRequired,
-				proxy);
 		subject = new MerkleAccountState(
 				key,
 				expiry, balance, autoRenewSecs,
@@ -104,12 +101,12 @@ class MerkleAccountStateTest {
 	}
 
 	@AfterEach
-	public void cleanup() {
+	void cleanup() {
 		MerkleAccountState.serdes = new DomainSerdes();
 	}
 
 	@Test
-	public void toStringWorks() {
+	void toStringWorks() {
 		// expect:
 		assertEquals("MerkleAccountState{" +
 						"key=" + MiscUtils.describe(key) + ", " +
@@ -125,91 +122,24 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
-	public void release070DeserializeWorks() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
-		// and:
-		var newSubject = new MerkleAccountState();
-
-		given(serdes.readNullable(argThat(in::equals), any(IoReadingFunction.class))).willReturn(key);
-		given(in.readLong())
-				.willReturn(expiry)
-				.willReturn(balance)
-				.willReturn(autoRenewSecs);
-		given(in.readLongArray(MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE))
-				.willThrow(IllegalStateException.class);
-		given(in.readNormalisedString(anyInt())).willReturn(memo);
-		given(in.readBoolean())
-				.willReturn(deleted)
-				.willReturn(smartContract)
-				.willReturn(receiverSigRequired);
-		given(serdes.readNullableSerializable(in)).willReturn(proxy);
-
+	void copyIsImmutable() {
 		// when:
-		newSubject.deserialize(in, MerkleAccountState.RELEASE_070_VERSION);
+		subject.copy();
 
 		// then:
-		assertEquals(release070Subject, newSubject);
+		assertThrows(MutabilityException.class, () -> subject.setHbarBalance(1L));
+		assertThrows(MutabilityException.class, () -> subject.setAutoRenewSecs(1_234_567L));
+		assertThrows(MutabilityException.class, () -> subject.setDeleted(true));
+		assertThrows(MutabilityException.class, () -> subject.setKey(new JEd25519Key("NOPE".getBytes())));
+		assertThrows(MutabilityException.class, () -> subject.setMemo("NOPE"));
+		assertThrows(MutabilityException.class, () -> subject.setSmartContract(false));
+		assertThrows(MutabilityException.class, () -> subject.setReceiverSigRequired(true));
+		assertThrows(MutabilityException.class, () -> subject.setExpiry(1_234_567L));
+		assertThrows(MutabilityException.class, () -> subject.setProxy(new EntityId(0, 0, 2)));
 	}
 
 	@Test
-	public void release080DeserializeWorks() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
-		// and:
-		var newSubject = new MerkleAccountState();
-
-		given(serdes.readNullable(argThat(in::equals), any(IoReadingFunction.class))).willReturn(key);
-		given(in.readLong())
-				.willReturn(expiry)
-				.willReturn(balance)
-				.willReturn(autoRenewSecs);
-		given(in.readNormalisedString(anyInt())).willReturn(memo);
-		given(in.readBoolean())
-				.willReturn(deleted)
-				.willReturn(smartContract)
-				.willReturn(receiverSigRequired);
-		given(serdes.readNullableSerializable(in)).willReturn(proxy);
-
-		// when:
-		newSubject.deserialize(in, MerkleAccountState.RELEASE_08x_VERSION);
-
-		// then:
-		assertEquals(subject, newSubject);
-		// and:
-		verify(in).readLongArray(MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE);
-	}
-
-	@Test
-	public void release090AlphaDeserializeWorks() throws IOException {
-		// setup:
-		var in = mock(SerializableDataInputStream.class);
-		// and:
-		var newSubject = new MerkleAccountState();
-
-		given(serdes.readNullable(argThat(in::equals), any(IoReadingFunction.class))).willReturn(key);
-		given(in.readLong())
-				.willReturn(expiry)
-				.willReturn(balance)
-				.willReturn(autoRenewSecs);
-		given(in.readNormalisedString(anyInt())).willReturn(memo);
-		given(in.readBoolean())
-				.willReturn(deleted)
-				.willReturn(smartContract)
-				.willReturn(receiverSigRequired);
-		given(serdes.readNullableSerializable(in)).willReturn(proxy);
-
-		// when:
-		newSubject.deserialize(in, MerkleAccountState.RELEASE_090_ALPHA_VERSION);
-
-		// then:
-		assertEquals(subject, newSubject);
-		// and:
-		verify(in, never()).readLongArray(MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE);
-	}
-
-	@Test
-	public void release090DeserializeWorks() throws IOException {
+	void deserializeWorks() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 		// and:
@@ -238,7 +168,7 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
-	public void serializeWorks() throws IOException {
+	void serializeWorks() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 		// and:
@@ -260,7 +190,7 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
-	public void copyWorks() {
+	void copyWorks() {
 		// given:
 		var copySubject = subject.copy();
 
@@ -270,7 +200,7 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
-	public void equalsWorksWithRadicalDifferences() {
+	void equalsWorksWithRadicalDifferences() {
 		// expect:
 		assertEquals(subject, subject);
 		assertNotEquals(subject, null);
@@ -278,7 +208,7 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
-	public void equalsWorksForKey() {
+	void equalsWorksForKey() {
 		// given:
 		otherSubject = new MerkleAccountState(
 				otherKey,
@@ -292,7 +222,7 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
-	public void equalsWorksForExpiry() {
+	void equalsWorksForExpiry() {
 		// given:
 		otherSubject = new MerkleAccountState(
 				key,
@@ -306,7 +236,7 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
-	public void equalsWorksForBalance() {
+	void equalsWorksForBalance() {
 		// given:
 		otherSubject = new MerkleAccountState(
 				key,
@@ -320,7 +250,7 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
-	public void equalsWorksForAutoRenewSecs() {
+	void equalsWorksForAutoRenewSecs() {
 		// given:
 		otherSubject = new MerkleAccountState(
 				key,
@@ -334,7 +264,7 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
-	public void equalsWorksForMemo() {
+	void equalsWorksForMemo() {
 		// given:
 		otherSubject = new MerkleAccountState(
 				key,
@@ -348,7 +278,7 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
-	public void equalsWorksForDeleted() {
+	void equalsWorksForDeleted() {
 		// given:
 		otherSubject = new MerkleAccountState(
 				key,
@@ -362,7 +292,7 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
-	public void equalsWorksForSmartContract() {
+	void equalsWorksForSmartContract() {
 		// given:
 		otherSubject = new MerkleAccountState(
 				key,
@@ -376,7 +306,7 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
-	public void equalsWorksForReceiverSigRequired() {
+	void equalsWorksForReceiverSigRequired() {
 		// given:
 		otherSubject = new MerkleAccountState(
 				key,
@@ -390,7 +320,7 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
-	public void equalsWorksForProxy() {
+	void equalsWorksForProxy() {
 		// given:
 		otherSubject = new MerkleAccountState(
 				key,
@@ -404,7 +334,7 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
-	public void merkleMethodsWork() {
+	void merkleMethodsWork() {
 		// expect;
 		assertEquals(MerkleAccountState.RELEASE_090_VERSION, subject.getVersion());
 		assertEquals(MerkleAccountState.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
@@ -412,7 +342,7 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
-	public void objectContractMet() {
+	void objectContractMet() {
 		// given:
 		var defaultSubject = new MerkleAccountState();
 		// and:

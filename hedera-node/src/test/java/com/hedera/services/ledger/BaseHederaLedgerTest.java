@@ -134,16 +134,6 @@ public class BaseHederaLedgerTest {
 		return AccountAmount.newBuilder().setAccountID(account).setAmount(amount).build();
 	}
 
-	protected FCQueue<ExpirableTxnRecord> asExpirableRecords(long... expiries) {
-		FCQueue<ExpirableTxnRecord> records = new FCQueue<>();
-		for (int i = 0; i < expiries.length; i++) {
-			ExpirableTxnRecord record = new ExpirableTxnRecord();
-			record.setExpiry(expiries[i]);
-			records.offer(record);
-		}
-		return records;
-	}
-
 	protected void addToLedger(
 			AccountID id,
 			long balance,
