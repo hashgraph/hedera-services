@@ -40,7 +40,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -96,8 +95,6 @@ class ExpiringCreationsTest {
 	private NarratedCharging narratedCharging;
 	@Mock
 	private HederaLedger ledger;
-	@Mock
-	private TransactionBody txn;
 	@Mock
 	private TxnAccessor accessor;
 

@@ -1,9 +1,7 @@
 package com.hedera.services.stream;
 
 import com.hedera.services.context.properties.NodeLocalProperties;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -14,8 +12,8 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class NonBlockingHandoffTest {
-	private final RecordStreamObject rso = new RecordStreamObject();
 	private final int mockCap = 10;
+	private final RecordStreamObject rso = new RecordStreamObject();
 
 	@Mock
 	private RecordStreamManager recordStreamManager;
@@ -24,22 +22,17 @@ class NonBlockingHandoffTest {
 
 	private NonBlockingHandoff subject;
 
-	@BeforeEach
-	void setUp() {
-		given(nodeLocalProperties.recordStreamQueueCapacity()).willReturn(mockCap);
-
-		subject = new NonBlockingHandoff(recordStreamManager, nodeLocalProperties);
-	}
-
-	@AfterEach
-	void cleanup() {
-		subject.getExecutor().shutdownNow();
-	}
-
 	@Test
-	void worksAsExpected() {
+	void handoffWorksAsExpected() {
+		given(nodeLocalProperties.recordStreamQueueCapacity()).willReturn(mockCap);
+		// and:
+		subject = new NonBlockingHandoff(recordStreamManager, nodeLocalProperties);
+
 		// when:
 		Assertions.assertTrue(subject.offer(rso));
+
+		// and:
+		subject.getExecutor().shutdownNow();
 
 		// then:
 		verify(recordStreamManager).addRecordStreamObject(rso);

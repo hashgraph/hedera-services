@@ -40,8 +40,4 @@ public class NonBlockingHandoff {
 	ExecutorService getExecutor() {
 		return executor;
 	}
-
-	BlockingQueue<RecordStreamObject> getQueue() {
-		return queue;
-	}
 }
