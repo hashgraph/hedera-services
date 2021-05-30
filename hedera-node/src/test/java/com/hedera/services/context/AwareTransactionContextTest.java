@@ -32,6 +32,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SolidityFnResult;
@@ -178,7 +179,7 @@ class AwareTransactionContextTest {
 		given(ledger.netTokenTransfersInTxn()).willReturn(List.of(tokenTransfers));
 
 		exchange = mock(HbarCentExchange.class);
-		given(exchange.activeRates()).willReturn(ratesNow);
+		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
 
 		narratedCharging = mock(NarratedCharging.class);
 

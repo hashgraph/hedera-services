@@ -38,7 +38,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -63,6 +62,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
  * inject the infrastructure as dependencies here.
  *
  * @author Michael Tinker
+ * @author Neeharika Sompalli
  */
 public class AwareTransactionContext implements TransactionContext {
 	private static final Logger log = LogManager.getLogger(AwareTransactionContext.class);
@@ -165,7 +165,7 @@ public class AwareTransactionContext implements TransactionContext {
 
 	TxnReceipt receiptSoFar() {
 		final var receipt = new TxnReceipt();
-		receipt.setExchangeRates(ExchangeRates.fromGrpc(ctx.exchange().activeRates()));
+		receipt.setExchangeRates(ctx.exchange().fcActiveRates());
 		receipt.setStatus(statusSoFar.name());
 		receiptConfig.accept(receipt);
 		return receipt;
