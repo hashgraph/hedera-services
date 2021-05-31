@@ -22,6 +22,7 @@ package com.hedera.services.sigs;
 
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.crypto.SignatureStatus;
+import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigStatusOrderResultFactory;
@@ -93,12 +94,11 @@ public class HederaToPlatformSigOps {
 	public static SignatureStatus expandIn(
 			PlatformTxnAccessor txnAccessor,
 			HederaSigningOrder keyOrderer,
-			PubKeyToSigBytes pkToSigFn,
-			Function<SignedTxnAccessor, TxnScopedPlatformSigFactory> sigFactoryCreator
+			PubKeyToSigBytes pkToSigFn
 	) {
 		txnAccessor.getPlatformTxn().clear();
 
-		return new Expansion(txnAccessor, keyOrderer, pkToSigFn, sigFactoryCreator).execute();
+		return new Expansion(txnAccessor, keyOrderer, pkToSigFn, new BodySigningSigFactory(txnAccessor)).execute();
 	}
 
 	/**
@@ -129,8 +129,8 @@ public class HederaToPlatformSigOps {
 			TxnAccessor txnAccessor,
 			SyncVerifier syncVerifier,
 			HederaSigningOrder keyOrderer,
-			Function<TxnAccessor, PubKeyToSigBytes> pkToSigFnProvider,
-			Function<TxnAccessor, TxnScopedPlatformSigFactory> sigFactoryCreator
+			PubKeyToSigBytes pkToSigFnProvider,
+			TxnScopedPlatformSigFactory sigFactoryCreator
 	) {
 		return new Rationalization(
 				txnAccessor,

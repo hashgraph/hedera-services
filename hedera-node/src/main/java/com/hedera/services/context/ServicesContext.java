@@ -189,7 +189,6 @@ import com.hedera.services.records.RecordCacheFactory;
 import com.hedera.services.records.TxnAwareRecordsHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.security.ops.SystemOpPolicies;
-import com.hedera.services.sigs.factories.SigFactoryCreator;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.sourcing.SigMapPubKeyToSigBytes;
@@ -502,7 +501,6 @@ public class ServicesContext {
 	private NetworkController networkGrpc;
 	private GrpcServerManager grpc;
 	private TxnResponseHelper txnResponseHelper;
-	private SigFactoryCreator sigFactoryCreator;
 	private BlobStorageSource bytecodeDb;
 	private HapiOpPermissions hapiOpPermissions;
 	private EntityAutoRenewal entityAutoRenewal;
@@ -621,13 +619,6 @@ public class ServicesContext {
 		if (tokenStore != null) {
 			tokenStore.rebuildViews();
 		}
-	}
-
-	public SigFactoryCreator sigFactoryCreator() {
-		if (sigFactoryCreator == null) {
-			sigFactoryCreator = new SigFactoryCreator();
-		}
-		return sigFactoryCreator;
 	}
 
 	public NonBlockingHandoff nonBlockingHandoff() {

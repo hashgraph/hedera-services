@@ -60,7 +60,7 @@ import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-public class HederaToPlatformSigOpsTest {
+class HederaToPlatformSigOpsTest {
 	static List<JKey> payerKey;
 	static List<JKey> otherKeys;
 	SignatureStatus successStatus;
@@ -139,7 +139,7 @@ public class HederaToPlatformSigOpsTest {
 		wellBehavedOrdersAndSigSourcesPreHandle();
 
 		// when:
-		SignatureStatus status = expandIn(platformTxn, keyOrdering, allSigBytes, BodySigningSigFactory::new);
+		SignatureStatus status = expandIn(platformTxn, keyOrdering, allSigBytes);
 
 		// then:
 		assertEquals(successStatus.toString(), status.toString());
@@ -152,7 +152,7 @@ public class HederaToPlatformSigOpsTest {
 				.willReturn(new SigningOrderResult<>(failureStatus));
 
 		// when:
-		SignatureStatus status = expandIn(platformTxn, keyOrdering, allSigBytes, BodySigningSigFactory::new);
+		SignatureStatus status = expandIn(platformTxn, keyOrdering, allSigBytes);
 
 		// then:
 		assertEquals(failureStatus.toString(), status.toString());
@@ -171,7 +171,7 @@ public class HederaToPlatformSigOpsTest {
 				.willThrow(KeyPrefixMismatchException.class);
 
 		// when:
-		SignatureStatus status = expandIn(platformTxn, keyOrdering, allSigBytes, BodySigningSigFactory::new);
+		SignatureStatus status = expandIn(platformTxn, keyOrdering, allSigBytes);
 
 		// then:
 		assertEquals(successStatus.toString(), status.toString());
@@ -188,8 +188,8 @@ public class HederaToPlatformSigOpsTest {
 				platformTxn,
 				ALWAYS_VALID,
 				keyOrdering,
-				ignore -> allSigBytes,
-				BodySigningSigFactory::new);
+				allSigBytes,
+				new BodySigningSigFactory(platformTxn));
 
 		// then:
 		assertEquals(syncSuccessStatus.toString(), status.toString());
@@ -207,8 +207,8 @@ public class HederaToPlatformSigOpsTest {
 				platformTxn,
 				ALWAYS_VALID,
 				keyOrdering,
-				ignore -> allSigBytes,
-				BodySigningSigFactory::new);
+				allSigBytes,
+				new BodySigningSigFactory(platformTxn));
 
 		// then:
 		assertEquals(rationalizingFailureStatus.toString(), status.toString());
@@ -226,8 +226,8 @@ public class HederaToPlatformSigOpsTest {
 				platformTxn,
 				ALWAYS_VALID,
 				keyOrdering,
-				ignore -> allSigBytes,
-				BodySigningSigFactory::new);
+				allSigBytes,
+				new BodySigningSigFactory(platformTxn));
 
 		// then:
 		assertEquals(rationalizingFailureStatus.toString(), status.toString());
@@ -250,8 +250,8 @@ public class HederaToPlatformSigOpsTest {
 				platformTxn,
 				ALWAYS_VALID,
 				keyOrdering,
-				ignore -> allSigBytes,
-				BodySigningSigFactory::new);
+				allSigBytes,
+				new BodySigningSigFactory(platformTxn));
 
 		// then:
 		assertEquals(sigCreationFailureStatus.toString(), status.toString());
@@ -277,8 +277,8 @@ public class HederaToPlatformSigOpsTest {
 				platformTxn,
 				syncVerifier,
 				keyOrdering,
-				ignore -> allSigBytes,
-				BodySigningSigFactory::new);
+				allSigBytes,
+				new BodySigningSigFactory(platformTxn));
 
 		// then:
 		assertEquals(syncSuccessStatus.toString(), status.toString());
@@ -298,8 +298,8 @@ public class HederaToPlatformSigOpsTest {
 				platformTxn,
 				ALWAYS_VALID,
 				keyOrdering,
-				ignore -> allSigBytes,
-				BodySigningSigFactory::new);
+				allSigBytes,
+				new BodySigningSigFactory(platformTxn));
 
 		// then:
 		assertEquals(syncSuccessStatus.toString(), status.toString());
@@ -324,8 +324,8 @@ public class HederaToPlatformSigOpsTest {
 				platformTxn,
 				syncVerifier,
 				keyOrdering,
-				ignore -> allSigBytes,
-				BodySigningSigFactory::new);
+				allSigBytes,
+				new BodySigningSigFactory(platformTxn));
 
 		// then:
 		assertEquals(asyncSuccessStatus.toString(), status.toString());

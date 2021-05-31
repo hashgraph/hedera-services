@@ -52,7 +52,7 @@ class RationalizationTest {
 		given(txnAccessor.getTxn()).willReturn(txn);
 		given(txnAccessor.getPlatformTxn()).willReturn(swirldsTxn);
 
-		subject = new Rationalization(txnAccessor, syncVerifier, keyOrderer, ignore -> pkToSigFn, ignore -> sigFactory);
+		subject = new Rationalization(txnAccessor, syncVerifier, keyOrderer, pkToSigFn, sigFactory);
 	}
 
 	@Test

@@ -285,7 +285,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		try {
 			final var accessor = ctx.expandHandleSpan().track(platformTxn);
 			final var pkToSigFn = new SigMapPubKeyToSigBytes(accessor.getSigMap());
-			expandIn(accessor, ctx.lookupRetryingKeyOrder(), pkToSigFn, ctx.sigFactoryCreator()::createScopedFactory);
+			expandIn(accessor, ctx.lookupRetryingKeyOrder(), pkToSigFn);
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("expandSignatures called with non-gRPC txn!", e);
 		} catch (Exception race) {

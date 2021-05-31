@@ -52,13 +52,12 @@ class Expansion {
 			PlatformTxnAccessor txnAccessor,
 			HederaSigningOrder keyOrderer,
 			PubKeyToSigBytes pkToSigFn,
-			Function<SignedTxnAccessor, TxnScopedPlatformSigFactory> sigFactoryCreator
+			TxnScopedPlatformSigFactory sigFactory
 	) {
 		this.txnAccessor = txnAccessor;
+		this.sigFactory = sigFactory;
 		this.keyOrderer = keyOrderer;
 		this.pkToSigFn = pkToSigFn;
-
-		sigFactory = sigFactoryCreator.apply(txnAccessor);
 	}
 
 	public SignatureStatus execute() {

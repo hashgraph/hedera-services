@@ -69,16 +69,16 @@ public class Rationalization {
 			TxnAccessor txnAccessor,
 			SyncVerifier syncVerifier,
 			HederaSigningOrder keyOrderer,
-			Function<TxnAccessor, PubKeyToSigBytes> pkToSigFnProvider,
-			Function<TxnAccessor, TxnScopedPlatformSigFactory> sigFactoryCreator
+			PubKeyToSigBytes pkToSigFn,
+			TxnScopedPlatformSigFactory sigFactory
 	) {
+		this.pkToSigFn = pkToSigFn;
+		this.keyOrderer = keyOrderer;
+		this.sigFactory = sigFactory;
 		this.txnAccessor = txnAccessor;
 		this.syncVerifier = syncVerifier;
-		this.keyOrderer = keyOrderer;
 
 		txnSigs = txnAccessor.getPlatformTxn().getSignatures();
-		pkToSigFn = pkToSigFnProvider.apply(txnAccessor);
-		sigFactory = sigFactoryCreator.apply(txnAccessor);
 	}
 
 	public SignatureStatus execute() {

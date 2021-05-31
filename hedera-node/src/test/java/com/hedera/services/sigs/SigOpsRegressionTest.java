@@ -400,7 +400,7 @@ class SigOpsRegressionTest {
 				new MockGlobalDynamicProps());
 
 		final var pkToSigFn = new SigMapPubKeyToSigBytes(platformTxn.getSigMap());
-		return expandIn(platformTxn, keyOrder, pkToSigFn, BodySigningSigFactory::new);
+		return expandIn(platformTxn, keyOrder, pkToSigFn);
 	}
 
 	private SignatureStatus invokeRationalizationScenario() {
@@ -417,8 +417,8 @@ class SigOpsRegressionTest {
 				platformTxn,
 				syncVerifier,
 				keyOrder,
-				ignore -> new SigMapPubKeyToSigBytes(platformTxn.getSigMap()),
-				BodySigningSigFactory::new);
+				new SigMapPubKeyToSigBytes(platformTxn.getSigMap()),
+				new BodySigningSigFactory(platformTxn));
 	}
 
 	private void setupFor(TxnHandlingScenario scenario) throws Throwable {
