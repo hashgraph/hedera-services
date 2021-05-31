@@ -59,7 +59,7 @@ public class RecordStreamObject extends AbstractSerializableHashable implements 
 
 	/**
 	 * the consensus timestamp of this {@link ExpirableTxnRecord} object,
-	 * this field is used for deciding wether to start a new record stream file,
+	 * this field is used for deciding whether to start a new record stream file,
 	 * and for generating file name when starting to write a new record stream file;
 	 * this field is not written to record stream file
 	 */

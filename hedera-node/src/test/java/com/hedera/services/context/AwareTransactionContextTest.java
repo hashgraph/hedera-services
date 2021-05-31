@@ -653,7 +653,7 @@ class AwareTransactionContextTest {
 		var expirableRecordBuilder = buildRecord(subject.getNonThresholdFeeChargedToPayer(),
 				accessor.getHash(),
 				accessor, asTimestamp(now), subject.receiptSoFar().build());
-		when(creator.buildExpiringRecord(anyLong(), any(), any(), any(), any())).thenReturn(expirableRecordBuilder);
+		when(creator.buildExpiringRecord(anyLong(), any(), any(), any(), any(), any())).thenReturn(expirableRecordBuilder);
 		return expirableRecordBuilder;
 	}
 }

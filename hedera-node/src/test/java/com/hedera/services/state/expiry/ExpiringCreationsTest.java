@@ -71,7 +71,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class ExpiringCreationsTest {
@@ -89,6 +88,8 @@ class ExpiringCreationsTest {
 	private ExpiryManager expiries;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 
 	private ExpirableTxnRecord expectedRecord;
 
@@ -126,7 +127,7 @@ class ExpiringCreationsTest {
 
 	@BeforeEach
 	void setup() {
-		subject = new ExpiringCreations(expiries, dynamicProperties, ctx);
+		subject = new ExpiringCreations(expiries, dynamicProperties, () -> accounts);
 
 		expectedRecord = record;
 		expectedRecord.setExpiry(expectedExpiry);
@@ -164,8 +165,7 @@ class ExpiringCreationsTest {
 		// setup:
 		final var key = MerkleEntityId.fromAccountId(effPayer);
 		final var payerAccount = new MerkleAccount();
-		given(ctx.accounts()).willReturn(mock(FCMap.class));
-		given(ctx.accounts().getForModify(key)).willReturn(payerAccount);
+		given(accounts.getForModify(key)).willReturn(payerAccount);
 		given(dynamicProperties.shouldKeepRecordsInState()).willReturn(true);
 		given(dynamicProperties.cacheRecordsTtl()).willReturn(cacheTtl);
 
@@ -175,7 +175,7 @@ class ExpiringCreationsTest {
 		// then:
 		assertEquals(expectedRecord, actual);
 		// and:
-		verify(ctx.accounts()).replace(key, payerAccount);
+		verify(accounts).replace(key, payerAccount);
 		verify(expiries).trackRecordInState(effPayer, expectedExpiry);
 		assertEquals(expectedRecord, payerAccount.records().peek());
 	}
@@ -188,7 +188,7 @@ class ExpiringCreationsTest {
 						null, null, 0L, submittingMember));
 		Assertions.assertThrows(UnsupportedOperationException.class, () ->
 				NOOP_EXPIRING_CREATIONS.buildExpiringRecord(
-						0L, null, null, null, null));
+						0L, null, null, null, null, null));
 		Assertions.assertThrows(UnsupportedOperationException.class, () ->
 				NOOP_EXPIRING_CREATIONS.buildFailedExpiringRecord(null, null));
 	}
@@ -207,7 +207,7 @@ class ExpiringCreationsTest {
 		//when:
 		ExpirableTxnRecord.Builder builder =
 				subject.buildExpiringRecord(100L, hash,
-						accessor, asTimestamp(timestamp), receipt);
+						accessor, asTimestamp(timestamp), receipt, ctx);
 		ExpirableTxnRecord actualRecord = builder.build();
 
 		//then:

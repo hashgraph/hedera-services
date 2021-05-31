@@ -21,6 +21,7 @@ package com.hedera.services.state;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.ServicesContext;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.TxnAccessor;
@@ -73,7 +74,7 @@ public interface EntityCreator {
 	 * @return
 	 */
 	ExpirableTxnRecord.Builder buildExpiringRecord(long otherNonThresholdFees, ByteString hash, TxnAccessor accessor,
-			Timestamp consensusTimestamp, TransactionReceipt receipt);
+			Timestamp consensusTimestamp, TransactionReceipt receipt, ServicesContext ctx);
 
 	/**
 	 * Build a {@link ExpirableTxnRecord.Builder} for a transaction failed to commit

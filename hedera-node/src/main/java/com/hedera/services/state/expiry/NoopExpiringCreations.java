@@ -21,6 +21,7 @@ package com.hedera.services.state.expiry;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.ServicesContext;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -51,7 +52,7 @@ public enum NoopExpiringCreations implements EntityCreator {
 
 	@Override
 	public ExpirableTxnRecord.Builder buildExpiringRecord(long otherNonThresholdFees, ByteString hash,
-			TxnAccessor accessor, Timestamp consensusTimestamp, TransactionReceipt receipt) {
+			TxnAccessor accessor, Timestamp consensusTimestamp, TransactionReceipt receipt, ServicesContext ctx) {
 		throw new UnsupportedOperationException();
 	}
 

@@ -56,16 +56,15 @@ public class ExpiringCreations implements EntityCreator {
 	private final ExpiryManager expiries;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
-	private final ServicesContext ctx;
 
 	public ExpiringCreations(
 			ExpiryManager expiries,
 			GlobalDynamicProperties dynamicProperties,
-			ServicesContext ctx) {
-		this.accounts = ctx::accounts;
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
+	) {
+		this.accounts = accounts;
 		this.expiries = expiries;
 		this.dynamicProperties = dynamicProperties;
-		this.ctx = ctx;
 	}
 
 	@Override
@@ -104,7 +103,7 @@ public class ExpiringCreations implements EntityCreator {
 
 	@Override
 	public ExpirableTxnRecord.Builder buildExpiringRecord(long otherNonThresholdFees, ByteString hash,
-			TxnAccessor accessor, Timestamp consensusTimestamp, TransactionReceipt receipt) {
+			TxnAccessor accessor, Timestamp consensusTimestamp, TransactionReceipt receipt, ServicesContext ctx) {
 		final long amount = ctx.charging().totalFeesChargedToPayer() + otherNonThresholdFees;
 		final TransferList transfersList = ctx.ledger().netTransfersInTxn();
 		final List<TokenTransferList> tokenTransferList = ctx.ledger().netTokenTransfersInTxn();

@@ -164,7 +164,8 @@ public class AwareTransactionContext implements TransactionContext {
 				hash,
 				accessor,
 				consensusTimestamp,
-				receipt);
+				receipt,
+				ctx);
 
 		recordConfig.accept(recordSoFar);
 		hasComputedRecordSoFar = true;
