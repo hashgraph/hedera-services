@@ -49,8 +49,8 @@ public class PlatformSigFactoryTest {
 
 	public static byte[] sig = SIG.getBytes();
 	public static byte[] data = DATA.getBytes();
-	static byte[] pk = PK.getBytes();
-	static TransactionSignature EXPECTED_SIG = new TransactionSignature(
+	public static byte[] pk = PK.getBytes();
+	public static TransactionSignature EXPECTED_SIG = new TransactionSignature(
 			CONTENTS.getBytes(),
 			0, sig.length,
 			pk, 0, pk.length,

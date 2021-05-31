@@ -37,6 +37,12 @@ public interface TxnAccessor {
     int sigMapSize();
     int numSigPairs();
     SignatureMap getSigMap();
+    default void setSigMeta(RationalizedSigMeta sigMeta) {
+        throw new UnsupportedOperationException();
+    }
+    default RationalizedSigMeta getSigMeta() {
+        throw new UnsupportedOperationException();
+    }
 
     long getOfferedFee();
     AccountID getPayer();
