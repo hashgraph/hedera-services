@@ -64,7 +64,7 @@ public class HederaKeyActivation {
 		final var sigMeta = accessor.getSigMeta();
 
 		if (sigMeta == null) {
-			throw new IllegalArgumentException("Cannot test payer sig activation without rationalize sig meta");
+			throw new IllegalArgumentException("Cannot test payer sig activation without rationalized sig meta");
 		}
 		if (!sigMeta.couldRationalizePayer()) {
 			return false;

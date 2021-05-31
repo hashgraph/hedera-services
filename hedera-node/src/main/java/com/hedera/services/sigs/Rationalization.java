@@ -40,7 +40,6 @@ import org.apache.logging.log4j.Logger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 import static com.hedera.services.legacy.crypto.SignatureStatusCode.SUCCESS;
 import static com.hedera.services.sigs.PlatformSigOps.createEd25519PlatformSigsFrom;
@@ -83,6 +82,7 @@ public class Rationalization {
 
 	public SignatureStatus execute() {
 		boolean verifiedSync = false;
+		SignatureStatus otherFailure = null;
 		List<TransactionSignature> realPayerSigs = new ArrayList<>(), realOtherPartySigs = new ArrayList<>();
 
 		final var payerStatus = expandIn(realPayerSigs, keyOrderer::keysForPayer);
@@ -94,9 +94,8 @@ public class Rationalization {
 
 		final var otherPartiesStatus = expandIn(realOtherPartySigs, keyOrderer::keysForOtherParties);
 		if (!SUCCESS.equals(otherPartiesStatus.getStatusCode())) {
-			return otherPartiesStatus;
-		}
-		if (lastOrderResult.hasKnownOrder()) {
+			otherFailure = otherPartiesStatus;
+		} else {
 			reqOthersSigs = lastOrderResult.getOrderedKeys();
 		}
 
@@ -111,7 +110,11 @@ public class Rationalization {
 
 		makeRationalizedMetaAccessible();
 
-		return verifiedSync ? syncSuccess() : asyncSuccess();
+		if (otherFailure != null) {
+			return otherFailure;
+		} else {
+			return verifiedSync ? syncSuccess() : asyncSuccess();
+		}
 	}
 
 	private void makeRationalizedMetaAccessible() {
@@ -150,12 +153,11 @@ public class Rationalization {
 		if (lastOrderResult.hasErrorReport()) {
 			return lastOrderResult.getErrorReport();
 		}
-		PlatformSigsCreationResult creationResult = createEd25519PlatformSigsFrom(
-				lastOrderResult.getOrderedKeys(), pkToSigFn, sigFactory);
-		if (creationResult.hasFailed()) {
-			return creationResult.asSignatureStatus(true, txnAccessor.getTxnId());
+		final var creation = createEd25519PlatformSigsFrom(lastOrderResult.getOrderedKeys(), pkToSigFn, sigFactory);
+		if (creation.hasFailed()) {
+			return creation.asSignatureStatus(true, txnAccessor.getTxnId());
 		}
-		target.addAll(creationResult.getPlatformSigs());
+		target.addAll(creation.getPlatformSigs());
 		return successFor(true, txnAccessor);
 	}
 
@@ -170,7 +172,7 @@ public class Rationalization {
 	private SignatureStatus success(SignatureStatusCode code) {
 		return new SignatureStatus(
 				code, ResponseCodeEnum.OK,
-				true, txnAccessor.getTxn().getTransactionID(),
+				true, txnAccessor.getTxnId(),
 				null, null, null, null);
 	}
 }

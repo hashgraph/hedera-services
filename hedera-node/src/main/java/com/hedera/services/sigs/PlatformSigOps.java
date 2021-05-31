@@ -73,7 +73,7 @@ public class PlatformSigOps {
 		}
 
 		try {
-			var sigBytes = sigBytesFn.sigBytesFor(ed25519Key.getEd25519());
+			final var sigBytes = sigBytesFn.sigBytesFor(ed25519Key.getEd25519());
 			if (sigBytes.length > 0) {
 				var sig = copyFrom(sigBytes);
 				var cryptoKey = copyFrom(ed25519Key.getEd25519());
