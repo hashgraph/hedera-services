@@ -20,6 +20,7 @@ package com.hedera.services.stream;
  * ‍
  */
 
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -38,7 +39,7 @@ import java.io.IOException;
 import java.time.Instant;
 
 /**
- * Contains a TransactionRecord, its related Transaction, and consensus Timestamp of the Transaction.
+ * Contains a ExpirableTxnRecord, its related Transaction, and consensus Timestamp of the Transaction.
  * Is used for record streaming
  */
 public class RecordStreamObject extends AbstractSerializableHashable implements Timestamped,
@@ -50,14 +51,14 @@ public class RecordStreamObject extends AbstractSerializableHashable implements 
 	private static final int MAX_RECORD_LENGTH = 64 * 1024;
 	private static final int MAX_TRANSACTION_LENGTH = 64 * 1024;
 
-	/** the {@link TransactionRecord} object to be written to record stream file */
-	private TransactionRecord transactionRecord;
+	/** the {@link ExpirableTxnRecord} object to be written to record stream file */
+	private ExpirableTxnRecord expirableTxnRecord;
 
 	/** the {@link Transaction} object to be written to record stream file */
 	private Transaction transaction;
 
 	/**
-	 * the consensus timestamp of this {@link TransactionRecord} object,
+	 * the consensus timestamp of this {@link ExpirableTxnRecord} object,
 	 * this field is used for deciding wether to start a new record stream file,
 	 * and for generating file name when starting to write a new record stream file;
 	 * this field is not written to record stream file
@@ -73,10 +74,10 @@ public class RecordStreamObject extends AbstractSerializableHashable implements 
 	public RecordStreamObject() {
 	}
 
-	public RecordStreamObject(final TransactionRecord transactionRecord,
+	public RecordStreamObject(final ExpirableTxnRecord expirableTxnRecord,
 			final Transaction transaction, final Instant consensusTimestamp) {
 		// configurable 50/100/150 bytes
-		this.transactionRecord = transactionRecord;
+		this.expirableTxnRecord = expirableTxnRecord;
 		this.transaction = transaction;
 		this.consensusTimestamp = consensusTimestamp;
 		runningHash = new RunningHash();
@@ -84,15 +85,16 @@ public class RecordStreamObject extends AbstractSerializableHashable implements 
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
-		out.writeByteArray(transactionRecord.toByteArray());
+		out.writeByteArray(expirableTxnRecord.asGrpc().toByteArray());
 		out.writeByteArray(transaction.toByteArray());
 	}
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		transactionRecord = TransactionRecord.parseFrom(in.readByteArray(MAX_RECORD_LENGTH));
+		expirableTxnRecord = ExpirableTxnRecord.fromGprc(
+				TransactionRecord.parseFrom(in.readByteArray(MAX_RECORD_LENGTH)));
 		transaction = Transaction.parseFrom(in.readByteArray(MAX_TRANSACTION_LENGTH));
-		final Timestamp timestamp = transactionRecord.getConsensusTimestamp();
+		final Timestamp timestamp = expirableTxnRecord.getConsensusTimestamp().toGrpc();
 		consensusTimestamp = Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
 	}
 
@@ -120,7 +122,7 @@ public class RecordStreamObject extends AbstractSerializableHashable implements 
 	@Override
 	public String toString() {
 		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-				.append("TransactionRecord", transactionRecord)
+				.append("ExpirableTransactionRecord", expirableTxnRecord)
 				.append("Transaction", transaction)
 				.append("ConsensusTimestamp", consensusTimestamp).toString();
 	}
@@ -132,13 +134,13 @@ public class RecordStreamObject extends AbstractSerializableHashable implements 
 	 */
 	public String toShortString() {
 		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-				.append("TransactionRecord", toShortStringRecord(transactionRecord))
+				.append("ExpirableTransactionRecord", toShortStringRecord(expirableTxnRecord))
 				.append("ConsensusTimestamp", consensusTimestamp).toString();
 	}
 
-	public static String toShortStringRecord(TransactionRecord transactionRecord) {
-		return new ToStringBuilder(transactionRecord, ToStringStyle.NO_CLASS_NAME_STYLE)
-				.append("TransactionID", transactionRecord.getTransactionID()).toString();
+	public static String toShortStringRecord(ExpirableTxnRecord expirableTxnRecord) {
+		return new ToStringBuilder(expirableTxnRecord, ToStringStyle.NO_CLASS_NAME_STYLE)
+				.append("TransactionID", expirableTxnRecord.getTxnId()).toString();
 	}
 
 	@Override
@@ -151,7 +153,7 @@ public class RecordStreamObject extends AbstractSerializableHashable implements 
 		}
 		RecordStreamObject that = (RecordStreamObject) obj;
 		return new EqualsBuilder().
-				append(this.transactionRecord, that.transactionRecord).
+				append(this.expirableTxnRecord, that.expirableTxnRecord).
 				append(this.transaction, that.transaction).
 				append(this.consensusTimestamp, that.consensusTimestamp).
 				isEquals();
@@ -160,7 +162,7 @@ public class RecordStreamObject extends AbstractSerializableHashable implements 
 	@Override
 	public int hashCode() {
 		return new HashCodeBuilder().
-				append(transactionRecord).
+				append(expirableTxnRecord).
 				append(transaction).
 				append(consensusTimestamp).
 				toHashCode();
@@ -175,7 +177,7 @@ public class RecordStreamObject extends AbstractSerializableHashable implements 
 		return transaction;
 	}
 
-	TransactionRecord getTransactionRecord() {
-		return transactionRecord;
+	ExpirableTxnRecord getExpirableTransactionRecord() {
+		return expirableTxnRecord;
 	}
 }

@@ -20,13 +20,18 @@ package com.hedera.services.stream;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -38,8 +43,10 @@ import org.junit.jupiter.api.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -47,12 +54,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class RecordStreamObjectTest {
-	private static final TransactionRecord record = mock(TransactionRecord.class);
-	private static final TransactionID transactionID = mock(TransactionID.class);
+	private static final ExpirableTxnRecord record = mock(ExpirableTxnRecord.class);
+	private static final TxnId transactionID = mock(TxnId.class);
 	private static final Transaction transaction = mock(Transaction.class);
 	private static final Instant consensusTimestamp = mock(Instant.class);
 	private static final Hash runningHashSoFar = mock(Hash.class);
-	private static final RecordStreamObject recordStreamObject = new RecordStreamObject(record, transaction, consensusTimestamp);
+	private static final RecordStreamObject recordStreamObject = new RecordStreamObject(record, transaction,
+			consensusTimestamp);
 
 	private static final RecordStreamObject realObject = getRecordStreamObject();
 
@@ -62,7 +70,7 @@ public class RecordStreamObjectTest {
 		when(transaction.toString()).thenReturn("mock transaction");
 		when(consensusTimestamp.toString()).thenReturn("mock consensusTimestamp");
 
-		when(record.getTransactionID()).thenReturn(transactionID);
+		when(record.getTxnId()).thenReturn(transactionID);
 		when(transactionID.toString()).thenReturn("mock transactionID");
 
 		SettingsCommon.maxTransactionCountPerEvent = 245760;
@@ -86,13 +94,15 @@ public class RecordStreamObjectTest {
 
 	@Test
 	public void toStringTest() {
-		final String expectedString = "RecordStreamObject[TransactionRecord=mock record,Transaction=mock transaction,ConsensusTimestamp=mock consensusTimestamp]";
+		final String expectedString = "RecordStreamObject[ExpirableTransactionRecord=mock record,Transaction=mock " +
+				"transaction,ConsensusTimestamp=mock consensusTimestamp]";
 		assertEquals(expectedString, recordStreamObject.toString());
 	}
 
 	@Test
 	public void toShortStringTest() {
-		final String expectedString = "RecordStreamObject[TransactionRecord=[TransactionID=mock transactionID],ConsensusTimestamp=mock consensusTimestamp]";
+		final String expectedString = "RecordStreamObject[ExpirableTransactionRecord=[TransactionID=mock " +
+				"transactionID],ConsensusTimestamp=mock consensusTimestamp]";
 		assertEquals(expectedString, recordStreamObject.toShortString());
 	}
 
@@ -108,8 +118,10 @@ public class RecordStreamObjectTest {
 
 		assertNotEquals(recordStreamObject, realObject);
 		assertNotEquals(recordStreamObject, new RecordStreamObject(record, transaction, realObject.getTimestamp()));
-		assertNotEquals(recordStreamObject, new RecordStreamObject(record, realObject.getTransaction(), consensusTimestamp));
-		assertNotEquals(recordStreamObject, new RecordStreamObject(realObject.getTransactionRecord(), transaction, consensusTimestamp));
+		assertNotEquals(recordStreamObject,
+				new RecordStreamObject(record, realObject.getTransaction(), consensusTimestamp));
+		assertNotEquals(recordStreamObject,
+				new RecordStreamObject(realObject.getExpirableTransactionRecord(), transaction, consensusTimestamp));
 	}
 
 	@Test
@@ -134,9 +146,17 @@ public class RecordStreamObjectTest {
 		final AccountID.Builder accountID = AccountID.newBuilder().setAccountNum(3);
 		final TransactionID.Builder transactionID = TransactionID.newBuilder().setAccountID(accountID);
 		final TransactionBody.Builder transactionBody = TransactionBody.newBuilder().setTransactionID(transactionID);
-		final SignedTransaction.Builder signedTransaction = SignedTransaction.newBuilder().setBodyBytes(transactionBody.build().toByteString());
-		final Transaction transaction = Transaction.newBuilder().setSignedTransactionBytes(signedTransaction.getBodyBytes()).build();
-		final TransactionRecord record = TransactionRecord.newBuilder().setConsensusTimestamp(MiscUtils.asTimestamp(consensusTimestamp)).setTransactionID(transactionID).build();
+		final SignedTransaction.Builder signedTransaction = SignedTransaction.newBuilder().setBodyBytes(
+				transactionBody.build().toByteString());
+		final Transaction transaction = Transaction.newBuilder().setSignedTransactionBytes(
+				signedTransaction.getBodyBytes()).build();
+		final ExpirableTxnRecord record = ExpirableTxnRecord.newBuilder()
+				.setConsensusTimestamp(RichInstant.fromGrpc(MiscUtils.asTimestamp(consensusTimestamp)))
+				.setTxnId(TxnId.fromGrpc(transactionID.build()))
+				.setReceipt(TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(SUCCESS).build()))
+				.setMemo("TEST")
+				.setTxnHash(ByteString.copyFrom("TEST".getBytes(StandardCharsets.UTF_8)).toByteArray())
+				.build();
 		return new RecordStreamObject(record, transaction, consensusTimestamp);
 	}
 }

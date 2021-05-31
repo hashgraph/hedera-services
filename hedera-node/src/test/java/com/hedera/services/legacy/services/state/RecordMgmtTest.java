@@ -49,7 +49,7 @@ class RecordMgmtTest {
 		// setup:
 		final Transaction txn = Transaction.getDefaultInstance();
 		final ExpirableTxnRecord lastRecord = ExpirableTxnRecord.newBuilder().build();
-		final RecordStreamObject expectedRso = new RecordStreamObject(lastRecord.asGrpc(), txn, consensusNow);
+		final RecordStreamObject expectedRso = new RecordStreamObject(lastRecord, txn, consensusNow);
 
 		given(txnAccessor.getBackwardCompatibleSignedTxn()).willReturn(txn);
 		given(txnCtx.accessor()).willReturn(txnAccessor);

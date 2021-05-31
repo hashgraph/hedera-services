@@ -46,7 +46,7 @@ public interface EntityCreator {
 	 *
 	 * @param id
 	 * 		account id
-	 * @param record
+	 * @param expiringRecord
 	 * 		expirable transaction record
 	 * @param now
 	 * 		consensus timestamp

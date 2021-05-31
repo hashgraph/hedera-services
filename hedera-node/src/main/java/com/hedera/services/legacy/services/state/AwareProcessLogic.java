@@ -25,12 +25,12 @@ import com.hedera.services.context.ServicesContext;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.sigs.sourcing.ScopedSigBytesProvider;
 import com.hedera.services.state.logic.ServicesTxnManager;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeObject;
 import com.swirlds.common.Transaction;
 import org.apache.logging.log4j.LogManager;
@@ -137,7 +137,7 @@ public class AwareProcessLogic implements ProcessLogic {
 	void addRecordToStream() {
 		ctx.recordsHistorian().lastCreatedRecord().ifPresent(finalRecord ->
 				addForStreaming(ctx.txnCtx().accessor().getBackwardCompatibleSignedTxn(),
-						finalRecord.asGrpc(), ctx.txnCtx().consensusTime()));
+						finalRecord, ctx.txnCtx().consensusTime()));
 	}
 
 	private void doTriggeredProcess(TxnAccessor accessor, Instant consensusTime) {
@@ -249,10 +249,10 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	void addForStreaming(
 			com.hederahashgraph.api.proto.java.Transaction grpcTransaction,
-			TransactionRecord transactionRecord,
+			ExpirableTxnRecord expirableTxnRecord,
 			Instant consensusTimeStamp
 	) {
-		var recordStreamObject = new RecordStreamObject(transactionRecord, grpcTransaction, consensusTimeStamp);
+		var recordStreamObject = new RecordStreamObject(expirableTxnRecord, grpcTransaction, consensusTimeStamp);
 		ctx.updateRecordRunningHash(recordStreamObject.getRunningHash());
 		ctx.recordStreamManager().addRecordStreamObject(recordStreamObject);
 	}

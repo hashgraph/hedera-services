@@ -22,7 +22,12 @@ package com.hedera.services.state.expiry.renewal;
 
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.ServicesContext;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.test.utils.IdUtils;
@@ -33,7 +38,6 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,6 +48,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.List;
 
+import static com.hedera.services.state.expiry.ExpiringCreations.setTokensAndTokenAdjustments;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -136,11 +141,11 @@ class RenewalRecordsHelperTest {
 		assertEquals(0, subject.getConsensusNanosIncr());
 	}
 
-	private RecordStreamObject expectedRso(TransactionRecord record, int nanosOffset) {
+	private RecordStreamObject expectedRso(ExpirableTxnRecord record, int nanosOffset) {
 		return new RecordStreamObject(record, Transaction.getDefaultInstance(), instantNow.plusNanos(nanosOffset));
 	}
 
-	private TransactionRecord cryptoRemovalRecord(
+	private ExpirableTxnRecord cryptoRemovalRecord(
 			AccountID accountRemoved,
 			Instant removedAt,
 			AccountID autoRenewAccount,
@@ -154,17 +159,16 @@ class RenewalRecordsHelperTest {
 				.setAccountID(autoRenewAccount)
 				.build();
 
-		return TransactionRecord.newBuilder()
-				.setReceipt(receipt)
-				.setConsensusTimestamp(asTimestamp(removedAt))
-				.setTransactionID(transactionID)
+		var expirableRecordBuilder = ExpirableTxnRecord.newBuilder()
+				.setReceipt(TxnReceipt.fromGrpc(receipt))
+				.setConsensusTimestamp(RichInstant.fromGrpc(asTimestamp(removedAt)))
+				.setTxnId(TxnId.fromGrpc(transactionID))
 				.setMemo(String.format("Entity %s was automatically deleted.", asLiteralString(accountRemoved)))
-				.setTransactionFee(0L)
-				.addAllTokenTransferLists(displacements)
-				.build();
+				.setFee(0L);
+		return setTokensAndTokenAdjustments(expirableRecordBuilder, displacements).build();
 	}
 
-	private TransactionRecord cryptoRenewalRecord(
+	private ExpirableTxnRecord cryptoRenewalRecord(
 			AccountID accountRenewed,
 			Instant renewedAt,
 			AccountID autoRenewAccount,
@@ -189,13 +193,13 @@ class RenewalRecordsHelperTest {
 				.addAccountAmounts(payeeAmount)
 				.addAccountAmounts(payerAmount)
 				.build();
-		return TransactionRecord.newBuilder()
-				.setReceipt(receipt)
-				.setConsensusTimestamp(asTimestamp(renewedAt))
-				.setTransactionID(transactionID)
+		return ExpirableTxnRecord.newBuilder()
+				.setReceipt(TxnReceipt.fromGrpc(receipt))
+				.setConsensusTimestamp(RichInstant.fromGrpc(asTimestamp(renewedAt)))
+				.setTxnId(TxnId.fromGrpc(transactionID))
 				.setMemo(memo)
-				.setTransactionFee(fee)
-				.setTransferList(transferList)
+				.setFee(fee)
+				.setTransferList(CurrencyAdjustments.fromGrpc(transferList))
 				.build();
 	}
 }

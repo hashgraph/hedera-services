@@ -123,7 +123,7 @@ public class ExpiringCreations implements EntityCreator {
 		return setTokensAndTokenAdjustments(builder, tokenTransferList);
 	}
 
-	private ExpirableTxnRecord.Builder setTokensAndTokenAdjustments(ExpirableTxnRecord.Builder builder,
+	public static ExpirableTxnRecord.Builder setTokensAndTokenAdjustments(ExpirableTxnRecord.Builder builder,
 			List<TokenTransferList> tokenTransferList) {
 		List<EntityId> tokens = new ArrayList<>();
 		List<CurrencyAdjustments> tokenAdjustments = new ArrayList<>();

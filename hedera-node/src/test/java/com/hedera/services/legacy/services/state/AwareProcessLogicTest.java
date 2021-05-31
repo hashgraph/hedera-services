@@ -26,7 +26,6 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.charging.TxnFeeChargingPolicy;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.security.ops.SystemOpAuthorization;
@@ -36,12 +35,12 @@ import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.state.expiry.EntityAutoRenewal;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.logic.InvariantChecks;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.txns.TransitionLogicLookup;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -51,7 +50,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.Transaction;
 import com.swirlds.common.crypto.RunningHash;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,8 +61,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyLong;
@@ -208,7 +204,7 @@ class AwareProcessLogicTest {
 
 		//when:
 		subject.addForStreaming(mock(com.hederahashgraph.api.proto.java.Transaction.class),
-				mock(TransactionRecord.class), Instant.now());
+				mock(ExpirableTxnRecord.class), Instant.now());
 		//then:
 		verify(ctx).updateRecordRunningHash(any(RunningHash.class));
 		verify(recordStreamManager).addRecordStreamObject(any(RecordStreamObject.class));
