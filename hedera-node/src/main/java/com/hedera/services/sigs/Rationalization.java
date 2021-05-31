@@ -81,13 +81,12 @@ public class Rationalization {
 	public SignatureStatus execute() {
 		List<TransactionSignature> realPayerSigs = new ArrayList<>(), realOtherPartySigs = new ArrayList<>();
 
-		var payerStatus = expandIn(
-				realPayerSigs, sigsProvider::payerSigBytesFor, keyOrderer::keysForPayer);
+		final var pkToSigFn = sigsProvider.allPartiesSigBytesFor(txnAccessor.getSignedTxnWrapper());
+		var payerStatus = expandIn(pkToSigFn, realPayerSigs, keyOrderer::keysForPayer);
 		if (!SUCCESS.equals(payerStatus.getStatusCode())) {
 			return payerStatus;
 		}
-		var otherPartiesStatus = expandIn(
-				realOtherPartySigs, sigsProvider::otherPartiesSigBytesFor, keyOrderer::keysForOtherParties);
+		var otherPartiesStatus = expandIn(pkToSigFn, realOtherPartySigs, keyOrderer::keysForOtherParties);
 		if (!SUCCESS.equals(otherPartiesStatus.getStatusCode())) {
 			return otherPartiesStatus;
 		}
@@ -127,8 +126,8 @@ public class Rationalization {
 	}
 
 	private SignatureStatus expandIn(
+			PubKeyToSigBytes pkToSigFn,
 			List<TransactionSignature> target,
-			Function<Transaction, PubKeyToSigBytes> sigsFn,
 			BiFunction<TransactionBody, SigStatusOrderResultFactory, SigningOrderResult<SignatureStatus>> keysFn
 	) {
 		SigningOrderResult<SignatureStatus> orderResult =
@@ -137,7 +136,7 @@ public class Rationalization {
 			return orderResult.getErrorReport();
 		}
 		PlatformSigsCreationResult creationResult = createEd25519PlatformSigsFrom(
-				orderResult.getOrderedKeys(), sigsFn.apply(txnAccessor.getSignedTxnWrapper()), sigFactory);
+				orderResult.getOrderedKeys(), pkToSigFn, sigFactory);
 		if (creationResult.hasFailed()) {
 			return creationResult.asSignatureStatus(true, txnAccessor.getTxnId());
 		}

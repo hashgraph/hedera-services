@@ -35,16 +35,6 @@ public class ScopedSigBytesProvider implements PubKeyToSigBytesProvider {
 	}
 
 	@Override
-	public PubKeyToSigBytes payerSigBytesFor(Transaction ignore) {
-		return delegate;
-	}
-
-	@Override
-	public PubKeyToSigBytes otherPartiesSigBytesFor(Transaction ignore) {
-		return delegate;
-	}
-
-	@Override
 	public PubKeyToSigBytes allPartiesSigBytesFor(Transaction ignore) {
 		return delegate;
 	}

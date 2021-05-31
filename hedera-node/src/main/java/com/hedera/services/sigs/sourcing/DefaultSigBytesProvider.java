@@ -31,16 +31,6 @@ public enum DefaultSigBytesProvider implements PubKeyToSigBytesProvider {
 	DEFAULT_SIG_BYTES;
 
 	@Override
-	public PubKeyToSigBytes payerSigBytesFor(Transaction signedTxn) {
-		return PubKeyToSigBytes.forPayer(signedTxn);
-	}
-
-	@Override
-	public PubKeyToSigBytes otherPartiesSigBytesFor(Transaction signedTxn) {
-		return PubKeyToSigBytes.forOtherParties(signedTxn);
-	}
-
-	@Override
 	public PubKeyToSigBytes allPartiesSigBytesFor(Transaction signedTxn) {
 		return PubKeyToSigBytes.forAllParties(signedTxn);
 	}

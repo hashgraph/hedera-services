@@ -34,41 +34,30 @@ import com.swirlds.common.SwirldTransaction;
  * parts of a Hedera Services gRPC {@link Transaction}.
  */
 public interface TxnAccessor {
-    int numSigPairs();
-
     int sigMapSize();
-
+    int numSigPairs();
     SignatureMap getSigMap();
 
+    long getOfferedFee();
+    AccountID getPayer();
+    TransactionID getTxnId();
     HederaFunctionality getFunction();
 
-    Transaction getSignedTxn4Log();
-
-    byte[] getTxnBytes();
-
     byte[] getMemoUtf8Bytes();
-
-    Transaction getSignedTxnWrapper();
-
-    TransactionBody getTxn();
-
-    TransactionID getTxnId();
-
-    AccountID getPayer();
-
-    byte[] getSignedTxnWrapperBytes();
-
-    byte[] getHash();
-
     String getMemo();
 
+    byte[] getHash();
+    byte[] getTxnBytes();
+    byte[] getSignedTxnWrapperBytes();
+    Transaction getSignedTxn4Log();
+    Transaction getSignedTxnWrapper();
+    TransactionBody getTxn();
+
     boolean canTriggerTxn();
-
     boolean isTriggeredTxn();
-
     ScheduleID getScheduleRef();
 
-    long getOfferedFee();
-
-    default SwirldTransaction getPlatformTxn() { throw new UnsupportedOperationException(); }
+    default SwirldTransaction getPlatformTxn() {
+        throw new UnsupportedOperationException();
+    }
 }

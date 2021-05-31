@@ -65,7 +65,8 @@ class Expansion {
 
 	public SignatureStatus execute() {
 		log.debug("Expanding crypto sigs from Hedera sigs for txn {}...", txnAccessor::getSignedTxn4Log);
-		var payerStatus = expand(sigsProvider::payerSigBytesFor, keyOrderer::keysForPayer);
+		final var pkToSigFn = sigsProvider.allPartiesSigBytesFor(txnAccessor.getSignedTxnWrapper());
+		var payerStatus = expand(pkToSigFn, keyOrderer::keysForPayer);
 		if ( SUCCESS != payerStatus.getStatusCode() ) {
 			if (log.isDebugEnabled()) {
 				log.debug(
@@ -75,7 +76,7 @@ class Expansion {
 			}
 			return payerStatus;
 		}
-		var otherStatus = expand(sigsProvider::otherPartiesSigBytesFor, keyOrderer::keysForOtherParties);
+		var otherStatus = expand(pkToSigFn, keyOrderer::keysForOtherParties);
 		if ( SUCCESS != otherStatus.getStatusCode() ) {
 			if (log.isDebugEnabled()) {
 				log.debug(
@@ -88,7 +89,7 @@ class Expansion {
 	}
 
 	private SignatureStatus expand(
-			Function<Transaction, PubKeyToSigBytes> sigsFn,
+			PubKeyToSigBytes pkToSigFn,
 			BiFunction<TransactionBody, SigStatusOrderResultFactory, SigningOrderResult<SignatureStatus>> keysFn
 	) {
 		var orderResult = keysFn.apply(txnAccessor.getTxn(), HederaToPlatformSigOps.PRE_HANDLE_SUMMARY_FACTORY);
@@ -96,8 +97,7 @@ class Expansion {
 			return orderResult.getErrorReport();
 		}
 
-		var creationResult = createEd25519PlatformSigsFrom(
-				orderResult.getOrderedKeys(), sigsFn.apply(txnAccessor.getSignedTxnWrapper()), sigFactory);
+		var creationResult = createEd25519PlatformSigsFrom(orderResult.getOrderedKeys(), pkToSigFn, sigFactory);
 		if (!creationResult.hasFailed()) {
 			txnAccessor.getPlatformTxn().addAll(creationResult.getPlatformSigs().toArray(new TransactionSignature[0]));
 		}

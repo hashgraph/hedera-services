@@ -31,24 +31,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 public interface PubKeyToSigBytesProvider {
 	/**
 	 * Get a {@link PubKeyToSigBytes} providing the cryptographic signatures
-	 * for the payer of a given gRPC transaction.
-	 *
-	 * @param signedTxn the txn of interest.
-	 * @return a source of the payer signatures.
-	 */
-	PubKeyToSigBytes payerSigBytesFor(Transaction signedTxn);
-
-	/**
-	 * Get a {@link PubKeyToSigBytes} providing the cryptographic signatures
-	 * for entities involved in a non-payer role in a given gRPC transaction.
-	 *
-	 * @param signedTxn the txn of interest.
-	 * @return a source of the signatures for entities in non-payer roles.
-	 */
-	PubKeyToSigBytes otherPartiesSigBytesFor(Transaction signedTxn);
-
-	/**
-	 * Get a {@link PubKeyToSigBytes} providing the cryptographic signatures
 	 * for all entities involved in a given gRPC transaction (payer first).
 	 *
 	 * @param signedTxn the txn of interest.

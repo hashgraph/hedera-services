@@ -46,9 +46,6 @@ class ScopedSigBytesProviderTest {
 
 		// expect:
 		assertThat(subject.delegate, instanceOf(SigMapPubKeyToSigBytes.class));
-		// and:
-		assertSame(subject.payerSigBytesFor(null), subject.otherPartiesSigBytesFor(null));
-		assertSame(subject.otherPartiesSigBytesFor(null), subject.allPartiesSigBytesFor(null));
 	}
 
 	private void givenSubject(TransactionBody txn) throws InvalidProtocolBufferException {

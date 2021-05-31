@@ -61,6 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.willReturn;
 
 public class HederaToPlatformSigOpsTest {
 	static List<JKey> payerKey;
@@ -71,8 +72,7 @@ public class HederaToPlatformSigOpsTest {
 	SignatureStatus asyncSuccessStatus;
 	SignatureStatus sigCreationFailureStatus;
 	SignatureStatus rationalizingFailureStatus;
-	PubKeyToSigBytes payerSigBytes;
-	PubKeyToSigBytes othersSigBytes;
+	PubKeyToSigBytes allSigBytes;
 	PlatformTxnAccessor platformTxn;
 	HederaSigningOrder keyOrdering;
 
@@ -87,8 +87,7 @@ public class HederaToPlatformSigOpsTest {
 
 	@BeforeEach
 	private void setup() throws Throwable {
-		payerSigBytes = mock(PubKeyToSigBytes.class);
-		othersSigBytes = mock(PubKeyToSigBytes.class);
+		allSigBytes = mock(PubKeyToSigBytes.class);
 		keyOrdering = mock(HederaSigningOrder.class);
 		platformTxn = new PlatformTxnAccessor(PlatformTxnFactory.from(newSignedSystemDelete().get()));
 		successStatus = new SignatureStatus(
@@ -131,8 +130,10 @@ public class HederaToPlatformSigOpsTest {
 		given(keyOrdering.keysForOtherParties(platformTxn.getTxn(), factory))
 				.willReturn(new SigningOrderResult<>(otherKeys));
 		// and:
-		given(payerSigBytes.sigBytesFor(any())).willReturn("1".getBytes());
-		given(othersSigBytes.sigBytesFor(any())).willReturn("2".getBytes()).willReturn("3".getBytes());
+		given(allSigBytes.sigBytesFor(any()))
+				.willReturn("1".getBytes())
+				.willReturn("2".getBytes())
+				.willReturn("3".getBytes());
 	}
 
 	@Test
@@ -167,8 +168,8 @@ public class HederaToPlatformSigOpsTest {
 		given(keyOrdering.keysForOtherParties(platformTxn.getTxn(), PRE_HANDLE_SUMMARY_FACTORY))
 				.willReturn(new SigningOrderResult<>(otherKeys));
 		// and:
-		given(payerSigBytes.sigBytesFor(any())).willReturn("1".getBytes());
-		given(othersSigBytes.sigBytesFor(any()))
+		given(allSigBytes.sigBytesFor(any()))
+				.willReturn("1".getBytes())
 				.willReturn("2".getBytes())
 				.willThrow(KeyPrefixMismatchException.class);
 
@@ -242,8 +243,8 @@ public class HederaToPlatformSigOpsTest {
 		given(keyOrdering.keysForOtherParties(platformTxn.getTxn(), IN_HANDLE_SUMMARY_FACTORY))
 				.willReturn(new SigningOrderResult<>(otherKeys));
 		// and:
-		given(payerSigBytes.sigBytesFor(any())).willReturn("1".getBytes());
-		given(othersSigBytes.sigBytesFor(any()))
+		given(allSigBytes.sigBytesFor(any()))
+				.willReturn("1".getBytes())
 				.willReturn("2".getBytes())
 				.willThrow(KeyPrefixMismatchException.class);
 
@@ -362,18 +363,8 @@ public class HederaToPlatformSigOpsTest {
 
 	PubKeyToSigBytesProvider sigBytesProvider = new PubKeyToSigBytesProvider() {
 		@Override
-		public PubKeyToSigBytes payerSigBytesFor(Transaction signedTxn) {
-			return payerSigBytes;
-		}
-
-		@Override
-		public PubKeyToSigBytes otherPartiesSigBytesFor(Transaction signedTxn) {
-			return othersSigBytes;
-		}
-
-		@Override
 		public PubKeyToSigBytes allPartiesSigBytesFor(Transaction signedTxn) {
-			throw new AssertionError("Irrelevant to this operation!");
+			return allSigBytes;
 		}
 	};
 }
