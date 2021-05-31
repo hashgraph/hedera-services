@@ -59,6 +59,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 	private TokenType tokenType;
 	private TokenSupplyType supplyType;
 	private int decimals;
+	private long currentSerialNum;
 	private long expiry;
 	private long maxSupply;
 	private long totalSupply;
@@ -120,6 +121,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 				this.maxSupply == that.maxSupply &&
 				this.totalSupply == that.totalSupply &&
 				this.decimals == that.decimals &&
+				this.currentSerialNum == that.currentSerialNum &&
 				this.accountsFrozenByDefault == that.accountsFrozenByDefault &&
 				this.accountsKycGrantedByDefault == that.accountsKycGrantedByDefault &&
 				Objects.equals(this.symbol, that.symbol) &&
@@ -144,6 +146,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 				maxSupply,
 				totalSupply,
 				decimals,
+				currentSerialNum,
 				adminKey,
 				freezeKey,
 				kycKey,
@@ -174,6 +177,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 				.add("maxSupply", maxSupply)
 				.add("totalSupply", totalSupply)
 				.add("decimals", decimals)
+				.add("currentSerialNum", currentSerialNum)
 				.add("autoRenewAccount", readableAutoRenewAccount())
 				.add("autoRenewPeriod", autoRenewPeriod)
 				.add("adminKey", describe(adminKey))
@@ -226,6 +230,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 			tokenType = TokenType.values()[in.readInt()];
 			supplyType = TokenSupplyType.values()[in.readInt()];
 			maxSupply = in.readLong();
+			currentSerialNum = in.readLong();
 		}
 		if (tokenType == null) {
 			tokenType = TokenType.FUNGIBLE_COMMON;
@@ -257,6 +262,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 		out.writeInt(tokenType.ordinal());
 		out.writeInt(supplyType.ordinal());
 		out.writeLong(maxSupply);
+		out.writeLong(currentSerialNum);
 	}
 
 	/* --- FastCopyable --- */
@@ -275,6 +281,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 		fc.setDeleted(deleted);
 		fc.setAutoRenewPeriod(autoRenewPeriod);
 		fc.setAutoRenewAccount(autoRenewAccount);
+		fc.currentSerialNum = currentSerialNum;
 		fc.setTokenType(tokenType);
 		fc.setSupplyType(supplyType);
 		fc.setMaxSupply(maxSupply);
@@ -455,6 +462,15 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 	public void setMemo(String memo) {
 		this.memo = memo;
 	}
+
+	public long getCurrentSerialNum() {
+		return currentSerialNum;
+	}
+
+	public long incrementSerialNum(){
+		return ++this.currentSerialNum;
+	}
+
 
 	public TokenType tokenType() {
 		return tokenType;

@@ -34,10 +34,9 @@ import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.store.tokens.HederaTokenStore;
+import com.hedera.services.store.tokens.BaseTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -74,7 +73,7 @@ public class BaseHederaLedgerTest {
 
 	protected HederaLedger subject;
 
-	protected HederaTokenStore tokenStore;
+	protected BaseTokenStore tokenStore;
 	protected EntityIdSource ids;
 	protected ExpiringCreations creator;
 	protected AccountRecordsHistorian historian;
@@ -205,7 +204,7 @@ public class BaseHederaLedgerTest {
 		addDeletedAccountToLedger(deleted);
 		given(tokenRelsLedger.isInTransaction()).willReturn(true);
 
-		tokenStore = mock(HederaTokenStore.class);
+		tokenStore = mock(BaseTokenStore.class);
 		given(tokenStore.exists(frozenId)).willReturn(true);
 		given(tokenStore.exists(tokenId)).willReturn(true);
 		given(tokenStore.exists(missingId)).willReturn(false);
