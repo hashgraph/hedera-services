@@ -20,7 +20,6 @@ package com.hedera.services.sigs.factories;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.Assertions;
@@ -33,9 +32,9 @@ import static com.hedera.services.sigs.factories.PlatformSigFactoryTest.sig;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-public class BodySigningSigFactoryTest {
+class BodySigningSigFactoryTest {
 	@Test
-	public void createsExpectedSig() {
+	void createsExpectedSig() {
 		// setup:
 		SignedTxnAccessor accessor = mock(SignedTxnAccessor.class);
 		given(accessor.getTxnBytes()).willReturn(data);
@@ -44,7 +43,7 @@ public class BodySigningSigFactoryTest {
 		BodySigningSigFactory subject = new BodySigningSigFactory(accessor);
 
 		// when:
-		TransactionSignature actualSig = subject.create(ByteString.copyFrom(pk), ByteString.copyFrom(sig));
+		TransactionSignature actualSig = subject.create(pk, sig);
 
 		// then:
 		Assertions.assertEquals(EXPECTED_SIG, actualSig);
