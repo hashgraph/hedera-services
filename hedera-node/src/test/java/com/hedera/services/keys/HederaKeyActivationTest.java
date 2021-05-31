@@ -22,6 +22,8 @@ package com.hedera.services.keys;
 
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
+import com.hedera.services.utils.RationalizedSigMeta;
+import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.sigs.SigWrappers;
 import com.swirlds.common.crypto.TransactionSignature;
@@ -42,12 +44,13 @@ import static com.hedera.test.factories.keys.NodeFactory.list;
 import static com.hedera.test.factories.keys.NodeFactory.threshold;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-public class HederaKeyActivationTest {
+class HederaKeyActivationTest {
 	static JKey complexKey;
 	byte[] pk = "PK".getBytes();
 	byte[] sig = "SIG".getBytes();
@@ -76,13 +79,13 @@ public class HederaKeyActivationTest {
 	}
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		sigsFn = (Function<byte[], TransactionSignature>) mock(Function.class);
 		tests = (BiPredicate<JKey, TransactionSignature>) mock(BiPredicate.class);
 	}
 
 	@Test
-	public void revocationServiceActivatesWithOneTopLevelSig() {
+	void revocationServiceActivatesWithOneTopLevelSig() {
 		// setup:
 		KeyActivationCharacteristics characteristics =
 				RevocationServiceCharacteristics.forTopLevelFile((JKeyList) complexKey);
@@ -98,7 +101,7 @@ public class HederaKeyActivationTest {
 	}
 
 	@Test
-	public void revocationServiceiRequiresOneTopLevelSig() {
+	void revocationServiceiRequiresOneTopLevelSig() {
 		// setup:
 		KeyActivationCharacteristics characteristics =
 				RevocationServiceCharacteristics.forTopLevelFile((JKeyList) complexKey);
@@ -114,7 +117,7 @@ public class HederaKeyActivationTest {
 	}
 
 	@Test
-	public void mapSupplierReflectsInputList() {
+	void mapSupplierReflectsInputList() {
 		// setup:
 		List<TransactionSignature> presentSigs = List.of(mockSigFn.apply(0), mockSigFn.apply(1));
 		TransactionSignature missingSig = mockSigFn.apply(2);
@@ -136,7 +139,7 @@ public class HederaKeyActivationTest {
 	}
 
 	@Test
-	public void topLevelListActivatesOnlyIfAllChildrenAreActive() {
+	void topLevelListActivatesOnlyIfAllChildrenAreActive() {
 		given(sigsFn.apply(any())).willReturn(INVALID_SIG).willReturn(VALID_SIG);
 
 		// when:
@@ -144,7 +147,7 @@ public class HederaKeyActivationTest {
 	}
 
 	@Test
-	public void topLevelActivatesIfAllChildrenAreActive() {
+	void topLevelActivatesIfAllChildrenAreActive() {
 		given(sigsFn.apply(any()))
 				.willReturn(VALID_SIG)
 				.willReturn(INVALID_SIG).willReturn(INVALID_SIG).willReturn(INVALID_SIG).willReturn(VALID_SIG)
@@ -153,5 +156,25 @@ public class HederaKeyActivationTest {
 
 		// when:
 		assertTrue(isActive(complexKey, sigsFn, ONLY_IF_SIG_IS_VALID));
+	}
+
+	@Test
+	void throwsIfNoSigMetaHasBeenRationalized() {
+		// setup:
+		final var accessor = mock(TxnAccessor.class);
+
+		// expect:
+		assertThrows(IllegalArgumentException.class, () -> HederaKeyActivation.payerSigIsActive(accessor));
+	}
+
+	@Test
+	void immediatelyReturnsFalseForNoRationalizedPayerData() {
+		// setup:
+		final var accessor = mock(TxnAccessor.class);
+
+		given(accessor.getSigMeta()).willReturn(RationalizedSigMeta.noneAvailable());
+
+		// expect:
+		assertFalse(HederaKeyActivation.payerSigIsActive(accessor));
 	}
 }

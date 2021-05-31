@@ -32,7 +32,9 @@ import static java.util.stream.Collectors.toList;
 
 public class SigWrappers {
 	public static List<TransactionSignature> asValid(List<TransactionSignature> sigs) {
-		return sigs.stream().map(sig -> new SigWithKnownStatus(sig, VALID)).collect(toList());
+		return sigs.stream()
+				.map(sig -> new SigWithKnownStatus(sig, VALID))
+				.collect(toList());
 	}
 	public static List<TransactionSignature> asInvalid(List<TransactionSignature> sigs) {
 		return sigs.stream().map(sig -> new SigWithKnownStatus(sig, INVALID)).collect(toList());

@@ -11,24 +11,28 @@ import static com.hedera.services.keys.HederaKeyActivation.pkToSigMapFrom;
 public class RationalizedSigMeta {
 	private static final RationalizedSigMeta NONE_AVAIL = new RationalizedSigMeta();
 
-	private final List<JKey> payerReqSigs;
+	private final JKey payerReqSig;
 	private final List<JKey> othersReqSigs;
+	private final List<TransactionSignature> rationalizedSigs;
 	private final Function<byte[], TransactionSignature> pkToVerifiedSigFn;
 
 	private RationalizedSigMeta() {
-		this.pkToVerifiedSigFn = null;
-		this.payerReqSigs = null;
-		this.othersReqSigs = null;
+		payerReqSig = null;
+		othersReqSigs = null;
+		rationalizedSigs = null;
+		pkToVerifiedSigFn = null;
 	}
 
 	private RationalizedSigMeta(
-			List<JKey> payerReqSigs,
+			JKey payerReqSig,
 			List<JKey> othersReqSigs,
+			List<TransactionSignature> rationalizedSigs,
 			Function<byte[], TransactionSignature> pkToVerifiedSigFn
 	) {
-		this.pkToVerifiedSigFn = pkToVerifiedSigFn;
-		this.payerReqSigs = payerReqSigs;
+		this.payerReqSig = payerReqSig;
 		this.othersReqSigs = othersReqSigs;
+		this.rationalizedSigs = rationalizedSigs;
+		this.pkToVerifiedSigFn = pkToVerifiedSigFn;
 	}
 
 	public static RationalizedSigMeta noneAvailable() {
@@ -36,45 +40,56 @@ public class RationalizedSigMeta {
 	}
 
 	public static RationalizedSigMeta forPayerOnly(
-			List<JKey> payerReqSigs,
+			JKey payerReqSig,
 			List<TransactionSignature> rationalizedSigs
 	) {
-		return forPayerAndOthers(payerReqSigs, null, rationalizedSigs);
+		return forPayerAndOthers(payerReqSig, null, rationalizedSigs);
 	}
 
 	public static RationalizedSigMeta forPayerAndOthers(
-			List<JKey> payerReqSigs,
+			JKey payerReqSig,
 			List<JKey> othersReqSigs,
 			List<TransactionSignature> rationalizedSigs
 	) {
-		return new RationalizedSigMeta(payerReqSigs, othersReqSigs, pkToSigMapFrom(rationalizedSigs));
+		return new RationalizedSigMeta(
+				payerReqSig,
+				othersReqSigs,
+				rationalizedSigs,
+				pkToSigMapFrom(rationalizedSigs));
 	}
 
 	public boolean couldRationalizePayer() {
-		return payerReqSigs != null;
+		return payerReqSig != null;
 	}
 
 	public boolean couldRationalizeOthers() {
 		return othersReqSigs != null;
 	}
 
-	public List<JKey> payerReqSigs() {
-		if (payerReqSigs == null) {
-			throw new IllegalStateException("Payer sigs could not be rationalized");
+	public List<TransactionSignature> verifiedSigs() {
+		if (rationalizedSigs == null) {
+			throw new IllegalStateException("Verified signatures could not be rationalized");
 		}
-		return payerReqSigs;
+		return rationalizedSigs;
+	}
+
+	public JKey payerKey() {
+		if (payerReqSig == null) {
+			throw new IllegalStateException("Payer required signing keys could not be rationalized");
+		}
+		return payerReqSig;
 	}
 
 	public List<JKey> othersReqSigs() {
 		if (othersReqSigs == null) {
-			throw new IllegalStateException("Other-party sigs could not be rationalized");
+			throw new IllegalStateException("Other-party required signing keys could not be rationalized");
 		}
 		return othersReqSigs;
 	}
 
 	public Function<byte[], TransactionSignature> pkToVerifiedSigFn() {
 		if (pkToVerifiedSigFn == null) {
-			throw new IllegalStateException("Verified signatures could not be rationalied");
+			throw new IllegalStateException("Verified signatures could not be rationalized");
 		}
 		return pkToVerifiedSigFn;
 	}

@@ -34,7 +34,6 @@ import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.order.SigningOrderResultFactory;
-import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.sourcing.SigMapPubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -42,6 +41,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.RationalizedSigMeta;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.factories.txns.CryptoCreateFactory;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -184,7 +184,7 @@ class SigOpsRegressionTest {
 
 		// then:
 		statusMatches(syncSuccessStatus);
-		assertEquals(expectedSigs, platformTxn.getPlatformTxn().getSignatures());
+		assertEquals(expectedSigs, platformTxn.getSigMeta().verifiedSigs());
 		// and:
 		allVerificationStatusesAre(vs -> !VerificationStatus.UNKNOWN.equals(vs));
 	}
@@ -350,7 +350,7 @@ class SigOpsRegressionTest {
 	}
 
 	private boolean allVerificationStatusesAre(Predicate<VerificationStatus> statusPred) {
-		return platformTxn.getPlatformTxn().getSignatures().stream()
+		return platformTxn.getSigMeta().verifiedSigs().stream()
 				.map(TransactionSignature::getSignatureStatus)
 				.allMatch(statusPred);
 	}
@@ -360,16 +360,17 @@ class SigOpsRegressionTest {
 	}
 
 	private boolean invokePayerSigActivationScenario(List<TransactionSignature> knownSigs) {
-		platformTxn.getPlatformTxn().clear();
-		platformTxn.getPlatformTxn().addAll(knownSigs.toArray(new TransactionSignature[0]));
 		HederaSigningOrder keysOrder = new HederaSigningOrder(
 				new MockEntityNumbers(),
 				defaultLookupsFor(null, () -> accounts, () -> null, ref -> null, ref -> null),
 				updateAccountSigns,
 				targetWaclSigns,
 				new MockGlobalDynamicProps());
+		final var impliedOrdering = keysOrder.keysForPayer(platformTxn.getTxn(), IN_HANDLE_SUMMARY_FACTORY);
+		final var impliedKey = impliedOrdering.getPayerKey();
+		platformTxn.setSigMeta(RationalizedSigMeta.forPayerOnly(impliedKey, new ArrayList<>(knownSigs)));
 
-		return payerSigIsActive(platformTxn, keysOrder, IN_HANDLE_SUMMARY_FACTORY);
+		return payerSigIsActive(platformTxn);
 	}
 
 	private boolean invokeOtherPartySigActivationScenario(List<TransactionSignature> knownSigs) {

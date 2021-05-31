@@ -755,10 +755,7 @@ public class ServicesContext {
 
 	public InHandleActivationHelper activationHelper() {
 		if (activationHelper == null) {
-			activationHelper = new InHandleActivationHelper(
-					backedKeyOrder(),
-					characteristics(),
-					txnCtx()::accessor);
+			activationHelper = new InHandleActivationHelper(characteristics(), txnCtx()::accessor);
 		}
 		return activationHelper;
 	}

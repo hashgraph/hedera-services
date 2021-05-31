@@ -75,7 +75,7 @@ class PlatformTxnAccessorTest {
 
 		// when:
 		subject.setSigMeta(RationalizedSigMeta.noneAvailable());
-		
+
 		// then:
 		assertSame(RationalizedSigMeta.noneAvailable(), subject.getSigMeta());
 	}

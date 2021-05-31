@@ -193,7 +193,7 @@ public class HederaToPlatformSigOpsTest {
 
 		// then:
 		assertEquals(syncSuccessStatus.toString(), status.toString());
-		assertEquals(expectedSigsWithNoErrors(), platformTxn.getPlatformTxn().getSignatures());
+		assertEquals(expectedSigsWithNoErrors(), platformTxn.getSigMeta().verifiedSigs());
 		assertTrue(allVerificationStatusesAre(VerificationStatus.VALID::equals));
 	}
 
@@ -282,7 +282,7 @@ public class HederaToPlatformSigOpsTest {
 
 		// then:
 		assertEquals(syncSuccessStatus.toString(), status.toString());
-		assertEquals(expectedSigsWithNoErrors(), platformTxn.getPlatformTxn().getSignatures());
+		assertEquals(expectedSigsWithNoErrors(), platformTxn.getSigMeta().verifiedSigs());
 		assertTrue(allVerificationStatusesAre(VerificationStatus.VALID::equals));
 	}
 
@@ -303,7 +303,7 @@ public class HederaToPlatformSigOpsTest {
 
 		// then:
 		assertEquals(syncSuccessStatus.toString(), status.toString());
-		assertEquals(expectedSigsWithNoErrors(), platformTxn.getPlatformTxn().getSignatures());
+		assertEquals(expectedSigsWithNoErrors(), platformTxn.getSigMeta().verifiedSigs());
 		assertTrue(allVerificationStatusesAre(VerificationStatus.VALID::equals));
 	}
 
@@ -335,7 +335,7 @@ public class HederaToPlatformSigOpsTest {
 	}
 
 	private boolean allVerificationStatusesAre(Predicate<VerificationStatus> statusPred) {
-		return platformTxn.getPlatformTxn().getSignatures().stream()
+		return platformTxn.getSigMeta().verifiedSigs().stream()
 				.map(TransactionSignature::getSignatureStatus)
 				.allMatch(statusPred);
 	}
