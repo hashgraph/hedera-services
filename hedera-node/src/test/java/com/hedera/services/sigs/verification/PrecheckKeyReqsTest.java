@@ -69,7 +69,7 @@ public class PrecheckKeyReqsTest {
 	}
 
 	@Test
-	public void throwsGenericExceptionAsExpected() throws Exception {
+	void throwsGenericExceptionAsExpected() {
 		given(keyOrder.keysForPayer(txn, PRE_HANDLE_SUMMARY_FACTORY))
 				.willReturn(new SigningOrderResult<>(PAYER_KEYS));
 		given(keyOrderModuloRetry.keysForOtherParties(txn, PRE_HANDLE_SUMMARY_FACTORY))
@@ -81,7 +81,7 @@ public class PrecheckKeyReqsTest {
 	}
 
 	@Test
-	public void throwsInvalidAccountAsExpected() throws Exception {
+	void throwsInvalidAccountAsExpected() {
 		given(keyOrder.keysForPayer(txn, PRE_HANDLE_SUMMARY_FACTORY))
 				.willReturn(new SigningOrderResult<>(PAYER_KEYS));
 		given(keyOrderModuloRetry.keysForOtherParties(txn, PRE_HANDLE_SUMMARY_FACTORY))
@@ -93,7 +93,7 @@ public class PrecheckKeyReqsTest {
 	}
 
 	@Test
-	public void throwsInvalidPayerAccountAsExpected() throws Exception {
+	void throwsInvalidPayerAccountAsExpected() {
 		given(keyOrder.keysForPayer(txn, PRE_HANDLE_SUMMARY_FACTORY))
 				.willReturn(factory.forInvalidAccount(invalidAccount, txnId));
 		givenImpliedSubject(FOR_NON_QUERY_PAYMENT);
@@ -103,7 +103,7 @@ public class PrecheckKeyReqsTest {
 	}
 
 	@Test
-	public void usesStdKeyOrderForNonQueryPayment() throws Exception {
+	void usesStdKeyOrderForNonQueryPayment() throws Exception {
 		given(keyOrder.keysForPayer(txn, PRE_HANDLE_SUMMARY_FACTORY))
 				.willReturn(new SigningOrderResult<>(PAYER_KEYS));
 		givenImpliedSubject(FOR_NON_QUERY_PAYMENT);
@@ -119,7 +119,7 @@ public class PrecheckKeyReqsTest {
 	}
 
 	@Test
-	public void usesBothOrderForQueryPayments() throws Exception {
+	void usesBothOrderForQueryPayments() throws Exception {
 		given(keyOrder.keysForPayer(txn, PRE_HANDLE_SUMMARY_FACTORY))
 				.willReturn(new SigningOrderResult<>(PAYER_KEYS));
 		given(keyOrderModuloRetry.keysForOtherParties(txn, PRE_HANDLE_SUMMARY_FACTORY))

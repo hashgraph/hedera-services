@@ -192,7 +192,7 @@ import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.factories.SigFactoryCreator;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
 import com.hedera.services.sigs.order.HederaSigningOrder;
-import com.hedera.services.sigs.sourcing.DefaultSigBytesProvider;
+import com.hedera.services.sigs.sourcing.SigMapPubKeyToSigBytes;
 import com.hedera.services.sigs.verification.PrecheckKeyReqs;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.sigs.verification.SyncVerifier;
@@ -364,6 +364,7 @@ import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.stora
 import static com.hedera.services.files.interceptors.ConfigListUtils.uncheckedParse;
 import static com.hedera.services.files.interceptors.PureRatesValidation.isNormalIntradayChange;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
+import static com.hedera.services.legacy.proto.utils.CommonUtils.extractSignatureMapOrUseDefault;
 import static com.hedera.services.records.NoopRecordsHistorian.NOOP_RECORDS_HISTORIAN;
 import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.backedLookupsFor;
@@ -1172,7 +1173,8 @@ public class ServicesContext {
 		if (precheckVerifier == null) {
 			Predicate<TransactionBody> isQueryPayment = queryPaymentTestFor(effectiveNodeAccount());
 			PrecheckKeyReqs reqs = new PrecheckKeyReqs(keyOrder(), lookupRetryingKeyOrder(), isQueryPayment);
-			precheckVerifier = new PrecheckVerifier(syncVerifier(), reqs, DefaultSigBytesProvider.DEFAULT_SIG_BYTES);
+			precheckVerifier = new PrecheckVerifier(
+					syncVerifier(), reqs, accessor -> new SigMapPubKeyToSigBytes(accessor.getSigMap()));
 		}
 		return precheckVerifier;
 	}

@@ -23,7 +23,7 @@ package com.hedera.services.legacy.services.state;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.legacy.crypto.SignatureStatus;
-import com.hedera.services.sigs.sourcing.ScopedSigBytesProvider;
+import com.hedera.services.sigs.sourcing.SigMapPubKeyToSigBytes;
 import com.hedera.services.state.logic.ServicesTxnManager;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.RecordStreamObject;
@@ -208,12 +208,11 @@ public class AwareProcessLogic implements ProcessLogic {
 	}
 
 	private SignatureStatus rationalizeWithPreConsensusSigs(TxnAccessor accessor) {
-		var sigProvider = new ScopedSigBytesProvider(accessor);
 		var sigStatus = rationalizeIn(
 				accessor,
 				ctx.syncVerifier(),
 				ctx.backedKeyOrder(),
-				sigProvider,
+				ignore -> new SigMapPubKeyToSigBytes(accessor.getSigMap()),
 				ctx.sigFactoryCreator()::createScopedFactory);
 		if (!sigStatus.isError()) {
 			if (sigStatus.getStatusCode() == SUCCESS_VERIFY_ASYNC) {

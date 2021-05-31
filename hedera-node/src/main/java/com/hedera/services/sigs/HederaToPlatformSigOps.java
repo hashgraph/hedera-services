@@ -25,7 +25,7 @@ import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigStatusOrderResultFactory;
-import com.hedera.services.sigs.sourcing.PubKeyToSigBytesProvider;
+import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.SignedTxnAccessor;
@@ -85,20 +85,20 @@ public class HederaToPlatformSigOps {
 	 *     it silently. </li>
 	 * </ul>
 	 *
-	 * @param txnAccessor the accessor for the platform txn.
-	 * @param keyOrderer facility for listing Hedera keys required to sign the gRPC txn.
-	 * @param sigsProvider source of crypto sigs for the simple keys in the Hedera key leaves.
-	 * @return a representation of the outcome.
+	 * @param txnAccessor the accessor for the platform txn
+	 * @param keyOrderer facility for listing Hedera keys required to sign the gRPC txn
+	 * @param pkToSigFn source of crypto sigs for the simple keys in the Hedera key leaves
+	 * @return a representation of the outcome
 	 */
 	public static SignatureStatus expandIn(
 			PlatformTxnAccessor txnAccessor,
 			HederaSigningOrder keyOrderer,
-			PubKeyToSigBytesProvider sigsProvider,
+			PubKeyToSigBytes pkToSigFn,
 			Function<SignedTxnAccessor, TxnScopedPlatformSigFactory> sigFactoryCreator
 	) {
 		txnAccessor.getPlatformTxn().clear();
 
-		return new Expansion(txnAccessor, keyOrderer, sigsProvider, sigFactoryCreator).execute();
+		return new Expansion(txnAccessor, keyOrderer, pkToSigFn, sigFactoryCreator).execute();
 	}
 
 	/**
@@ -119,24 +119,24 @@ public class HederaToPlatformSigOps {
 	 *     processing and return a {@link SignatureStatus} representing this error.</li>
 	 * </ul>
 	 *
-	 * @param txnAccessor the accessor for the platform txn.
-	 * @param syncVerifier facility for synchronously verifying a cryptographic signature.
-	 * @param keyOrderer facility for listing Hedera keys required to sign the gRPC txn.
-	 * @param sigsProvider source of crypto sigs for the simple keys in the Hedera key leaves.
+	 * @param txnAccessor the accessor for the platform txn
+	 * @param syncVerifier facility for synchronously verifying a cryptographic signature
+	 * @param keyOrderer facility for listing Hedera keys required to sign the gRPC txn
+	 * @param pkToSigFnProvider source of crypto sigs for the simple keys in the Hedera key leaves
 	 * @return a representation of the outcome.
 	 */
 	public static SignatureStatus rationalizeIn(
 			TxnAccessor txnAccessor,
 			SyncVerifier syncVerifier,
 			HederaSigningOrder keyOrderer,
-			PubKeyToSigBytesProvider sigsProvider,
+			Function<TxnAccessor, PubKeyToSigBytes> pkToSigFnProvider,
 			Function<TxnAccessor, TxnScopedPlatformSigFactory> sigFactoryCreator
 	) {
 		return new Rationalization(
 				txnAccessor,
 				syncVerifier,
 				keyOrderer,
-				sigsProvider,
+				pkToSigFnProvider,
 				sigFactoryCreator
 		).execute();
 	}

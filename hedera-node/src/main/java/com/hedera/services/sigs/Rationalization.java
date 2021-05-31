@@ -27,14 +27,11 @@ import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigStatusOrderResultFactory;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
-import com.hedera.services.sigs.sourcing.PubKeyToSigBytesProvider;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.common.crypto.VerificationStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -59,20 +56,20 @@ public class Rationalization {
 	private final List<TransactionSignature> txnSigs;
 	private final TxnAccessor txnAccessor;
 	private final HederaSigningOrder keyOrderer;
-	private final PubKeyToSigBytesProvider sigsProvider;
+	private final Function<TxnAccessor, PubKeyToSigBytes> pkToSigFnProvider;
 	private final TxnScopedPlatformSigFactory sigFactory;
 
 	public Rationalization(
 			TxnAccessor txnAccessor,
 			SyncVerifier syncVerifier,
 			HederaSigningOrder keyOrderer,
-			PubKeyToSigBytesProvider sigsProvider,
+			Function<TxnAccessor, PubKeyToSigBytes> pkToSigFnProvider,
 			Function<TxnAccessor, TxnScopedPlatformSigFactory> sigFactoryCreator
 	) {
 		this.txnAccessor = txnAccessor;
 		this.syncVerifier = syncVerifier;
 		this.keyOrderer = keyOrderer;
-		this.sigsProvider = sigsProvider;
+		this.pkToSigFnProvider = pkToSigFnProvider;
 
 		txnSigs = txnAccessor.getPlatformTxn().getSignatures();
 		sigFactory = sigFactoryCreator.apply(txnAccessor);
@@ -81,7 +78,7 @@ public class Rationalization {
 	public SignatureStatus execute() {
 		List<TransactionSignature> realPayerSigs = new ArrayList<>(), realOtherPartySigs = new ArrayList<>();
 
-		final var pkToSigFn = sigsProvider.allPartiesSigBytesFor(txnAccessor.getSignedTxnWrapper());
+		final var pkToSigFn = pkToSigFnProvider.apply(txnAccessor);
 		var payerStatus = expandIn(pkToSigFn, realPayerSigs, keyOrderer::keysForPayer);
 		if (!SUCCESS.equals(payerStatus.getStatusCode())) {
 			return payerStatus;

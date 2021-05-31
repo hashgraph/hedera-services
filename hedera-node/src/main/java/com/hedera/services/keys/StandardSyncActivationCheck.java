@@ -39,13 +39,12 @@ public class StandardSyncActivationCheck {
 			SyncVerifier syncVerifier,
 			TxnAccessor accessor,
 			PlatformSigsFactory sigsFactory,
-			Function<Transaction, PubKeyToSigBytes> sigBytesProvider,
+			PubKeyToSigBytes sigBytes,
 			Function<TxnAccessor, TxnScopedPlatformSigFactory> scopedSigProvider,
 			BiPredicate<JKey, Function<byte[], TransactionSignature>> isActive,
 			Function<List<TransactionSignature>, Function<byte[], TransactionSignature>> sigsFnProvider
 	) {
 		var sigFactory = scopedSigProvider.apply(accessor);
-		var sigBytes = sigBytesProvider.apply(accessor.getSignedTxnWrapper());
 
 		var creationResult = sigsFactory.createEd25519From(keys, sigBytes, sigFactory);
 		if (creationResult.hasFailed()) {

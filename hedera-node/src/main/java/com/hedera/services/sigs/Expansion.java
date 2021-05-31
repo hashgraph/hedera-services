@@ -26,10 +26,8 @@ import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigStatusOrderResultFactory;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
-import com.hedera.services.sigs.sourcing.PubKeyToSigBytesProvider;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.SignedTxnAccessor;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.apache.logging.log4j.LogManager;
@@ -45,27 +43,26 @@ import static com.hedera.services.sigs.utils.StatusUtils.successFor;
 class Expansion {
 	private static final Logger log = LogManager.getLogger(Expansion.class);
 
-	private final PlatformTxnAccessor txnAccessor;
+	private final PubKeyToSigBytes pkToSigFn;
 	private final HederaSigningOrder keyOrderer;
-	private final PubKeyToSigBytesProvider sigsProvider;
+	private final PlatformTxnAccessor txnAccessor;
 	private final TxnScopedPlatformSigFactory sigFactory;
 
 	public Expansion(
 			PlatformTxnAccessor txnAccessor,
 			HederaSigningOrder keyOrderer,
-			PubKeyToSigBytesProvider sigsProvider,
+			PubKeyToSigBytes pkToSigFn,
 			Function<SignedTxnAccessor, TxnScopedPlatformSigFactory> sigFactoryCreator
 	) {
 		this.txnAccessor = txnAccessor;
 		this.keyOrderer = keyOrderer;
-		this.sigsProvider = sigsProvider;
+		this.pkToSigFn = pkToSigFn;
 
 		sigFactory = sigFactoryCreator.apply(txnAccessor);
 	}
 
 	public SignatureStatus execute() {
 		log.debug("Expanding crypto sigs from Hedera sigs for txn {}...", txnAccessor::getSignedTxn4Log);
-		final var pkToSigFn = sigsProvider.allPartiesSigBytesFor(txnAccessor.getSignedTxnWrapper());
 		var payerStatus = expand(pkToSigFn, keyOrderer::keysForPayer);
 		if ( SUCCESS != payerStatus.getStatusCode() ) {
 			if (log.isDebugEnabled()) {

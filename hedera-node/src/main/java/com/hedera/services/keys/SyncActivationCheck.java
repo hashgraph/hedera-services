@@ -40,7 +40,7 @@ public interface SyncActivationCheck {
 			SyncVerifier syncVerifier,
 			TxnAccessor accessor,
 			PlatformSigsFactory sigsFactory,
-			Function<Transaction, PubKeyToSigBytes> sigBytesProvider,
+			PubKeyToSigBytes pkToSigFn,
 			Function<TxnAccessor, TxnScopedPlatformSigFactory> scopedSigProvider,
 			BiPredicate<JKey, Function<byte[], TransactionSignature>> isActive,
 			Function<List<TransactionSignature>, Function<byte[], TransactionSignature>> sigsFnProvider);

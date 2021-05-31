@@ -25,7 +25,7 @@ import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.StandardizedPropertySources;
 import com.hedera.services.exceptions.ContextNotFoundException;
-import com.hedera.services.sigs.sourcing.ScopedSigBytesProvider;
+import com.hedera.services.sigs.sourcing.SigMapPubKeyToSigBytes;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -40,7 +40,6 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
-import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.blob.BinaryObjectStore;
 import com.swirlds.common.AddressBook;
@@ -285,11 +284,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	public void expandSignatures(SwirldTransaction platformTxn) {
 		try {
 			final var accessor = ctx.expandHandleSpan().track(platformTxn);
-			expandIn(
-					accessor,
-					ctx.lookupRetryingKeyOrder(),
-					new ScopedSigBytesProvider(accessor),
-					ctx.sigFactoryCreator()::createScopedFactory);
+			final var pkToSigFn = new SigMapPubKeyToSigBytes(accessor.getSigMap());
+			expandIn(accessor, ctx.lookupRetryingKeyOrder(), pkToSigFn, ctx.sigFactoryCreator()::createScopedFactory);
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("expandSignatures called with non-gRPC txn!", e);
 		} catch (Exception race) {

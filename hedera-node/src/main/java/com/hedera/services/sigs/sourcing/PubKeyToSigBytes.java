@@ -54,49 +54,4 @@ public interface PubKeyToSigBytes {
 	 * @throws Exception if the desired cryptographic signature is unavailable.
 	 */
 	byte[] sigBytesFor(byte[] pubKey) throws Exception;
-
-	/**
-	 * Create a {@code PubKeyToSigBytes} implementation backed by the given map.
-	 *
-	 * @param sigMap a list of public-key-to-cryptographic-signature map entries.
-	 * @return a source of raw signatures that encapsulates this mapping.
-	 */
-	static PubKeyToSigBytes from(SignatureMap sigMap) {
-		return new SigMapPubKeyToSigBytes(sigMap);
-	}
-
-	/**
-	 * Create a {@code PubKeyToSigBytes} implementation backed by the cryptographic
-	 * signatures associated to the payer of a given gRPC transaction.
-	 *
-	 * @param signedTxn a gRPC transaction.
-	 * @return a source of the raw signatures associated to the payer for the txn.
-	 */
-	static PubKeyToSigBytes forPayer(Transaction signedTxn) {
-		return from(extractSignatureMapOrUseDefault(signedTxn));
-	}
-
-	/**
-	 * Create a {@code PubKeyToSigBytes} implementation backed by the cryptographic
-	 * signatures associated to entities involved in non-payer roles for a given
-	 * gRPC transaction.
-	 *
-	 * @param signedTxn a gRPC transaction.
-	 * @return a source of the raw signatures associated non-payer roles in the txn.
-	 */
-	static PubKeyToSigBytes forOtherParties(Transaction signedTxn) {
-		return forPayer(signedTxn);
-	}
-
-	/**
-	 * Create a {@code PubKeyToSigBytes} implementation backed by the cryptographic
-	 * signatures associated to entities involved in non-payer roles for a given
-	 * gRPC transaction.
-	 *
-	 * @param signedTxn a gRPC transaction.
-	 * @return a source of the raw signatures associated non-payer roles in the txn.
-	 */
-	static PubKeyToSigBytes forAllParties(Transaction signedTxn) {
-		return forPayer(signedTxn);
-	}
 }
