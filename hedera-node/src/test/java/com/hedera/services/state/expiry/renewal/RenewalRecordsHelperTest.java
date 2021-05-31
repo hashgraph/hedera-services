@@ -50,7 +50,6 @@ import java.util.List;
 
 import static com.hedera.services.state.expiry.ExpiringCreations.setTokensAndTokenAdjustments;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
-import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -161,7 +160,7 @@ class RenewalRecordsHelperTest {
 
 		var expirableRecordBuilder = ExpirableTxnRecord.newBuilder()
 				.setReceipt(TxnReceipt.fromGrpc(receipt))
-				.setConsensusTimestamp(RichInstant.fromGrpc(asTimestamp(removedAt)))
+				.setConsensusTime(RichInstant.fromJava(removedAt))
 				.setTxnId(TxnId.fromGrpc(transactionID))
 				.setMemo(String.format("Entity %s was automatically deleted.", asLiteralString(accountRemoved)))
 				.setFee(0L);
@@ -195,7 +194,7 @@ class RenewalRecordsHelperTest {
 				.build();
 		return ExpirableTxnRecord.newBuilder()
 				.setReceipt(TxnReceipt.fromGrpc(receipt))
-				.setConsensusTimestamp(RichInstant.fromGrpc(asTimestamp(renewedAt)))
+				.setConsensusTime(RichInstant.fromJava(renewedAt))
 				.setTxnId(TxnId.fromGrpc(transactionID))
 				.setMemo(memo)
 				.setFee(fee)

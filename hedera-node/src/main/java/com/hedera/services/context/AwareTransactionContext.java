@@ -36,7 +36,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -53,7 +52,6 @@ import java.util.function.Consumer;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
-import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.canonicalDiffRepr;
 import static com.hedera.services.utils.MiscUtils.readableTransferList;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
@@ -86,7 +84,6 @@ public class AwareTransactionContext implements TransactionContext {
 	private long otherNonThresholdFees;
 	private boolean isPayerSigKnownActive;
 	private Instant consensusTime;
-	private Timestamp consensusTimestamp;
 	private ByteString hash;
 	private ResponseCodeEnum statusSoFar;
 	private TxnAccessor accessor;
@@ -112,7 +109,6 @@ public class AwareTransactionContext implements TransactionContext {
 		otherNonThresholdFees = 0L;
 		hash = accessor.getHash();
 		statusSoFar = UNKNOWN;
-		consensusTimestamp = asTimestamp(consensusTime);
 		recordConfig = noopRecordConfig;
 		receiptConfig = noopReceiptConfig;
 		isPayerSigKnownActive = false;
@@ -163,7 +159,7 @@ public class AwareTransactionContext implements TransactionContext {
 		recordSoFar = ctx.creator().buildExpiringRecord(otherNonThresholdFees,
 				hash,
 				accessor,
-				consensusTimestamp,
+				consensusTime,
 				receipt,
 				ctx);
 

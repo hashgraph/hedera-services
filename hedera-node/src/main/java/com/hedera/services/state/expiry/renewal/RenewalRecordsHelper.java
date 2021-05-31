@@ -44,7 +44,6 @@ import java.time.Instant;
 import java.util.List;
 
 import static com.hedera.services.state.expiry.ExpiringCreations.setTokensAndTokenAdjustments;
-import static com.hedera.services.utils.MiscUtils.asTimestamp;
 
 public class RenewalRecordsHelper {
 	private static final Logger log = LogManager.getLogger(RenewalRecordsHelper.class);
@@ -135,7 +134,7 @@ public class RenewalRecordsHelper {
 						.setAccountID(id).build()))
 				.setReceipt(TxnReceipt.fromGrpc(TransactionReceipt.newBuilder()
 						.setAccountID(id).build()))
-				.setConsensusTimestamp(RichInstant.fromGrpc(asTimestamp(at)));
+				.setConsensusTime(RichInstant.fromJava(at));
 	}
 
 	int getConsensusNanosIncr() {

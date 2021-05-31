@@ -54,7 +54,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcScheduleId;
-import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.PlatformTxnAccessor.uncheckedAccessorFor;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -101,7 +100,7 @@ class RecordCacheTest {
 			.build();
 	private ExpirableTxnRecord aRecord = ExpirableTxnRecord.newBuilder()
 			.setMemo("Something")
-			.setConsensusTimestamp(RichInstant.fromGrpc(Timestamp.newBuilder().setSeconds(500L).build()))
+			.setConsensusTime(RichInstant.fromJava(Instant.ofEpochSecond(500L)))
 			.setReceipt(TxnReceipt.fromGrpc(knownReceipt))
 			.setTxnId(TxnId.fromGrpc(txnIdA))
 			.setFee(123L)
@@ -337,7 +336,7 @@ class RecordCacheTest {
 				.setReceipt(TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(FAIL_INVALID).build()))
 				.setMemo(accessor.getTxn().getMemo())
 				.setTxnHash(accessor.getHash().toByteArray())
-				.setConsensusTimestamp(RichInstant.fromGrpc(asTimestamp(consensusTime)));
+				.setConsensusTime(RichInstant.fromJava(consensusTime));
 		var expectedRecord = expirableTxnRecordBuilder.build();
 		expectedRecord.setExpiry(consensusTime.getEpochSecond() + 180);
 		expectedRecord.setSubmittingMember(submittingMember);
@@ -386,7 +385,7 @@ class RecordCacheTest {
 				.setReceipt(TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(FAIL_INVALID).build()))
 				.setMemo(accessor.getTxn().getMemo())
 				.setTxnHash(accessor.getHash().toByteArray())
-				.setConsensusTimestamp(RichInstant.fromGrpc(asTimestamp(consensusTime)))
+				.setConsensusTime(RichInstant.fromJava(consensusTime))
 				.setScheduleRef(fromGrpcScheduleId(effectiveScheduleID));
 		var expirableTxnRecord = expirableTxnRecordBuilder.build();
 		given(creator.buildFailedExpiringRecord(any(), any())).willReturn(expirableTxnRecordBuilder);

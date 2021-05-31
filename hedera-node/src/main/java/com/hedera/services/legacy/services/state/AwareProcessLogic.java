@@ -252,8 +252,8 @@ public class AwareProcessLogic implements ProcessLogic {
 			ExpirableTxnRecord expirableTxnRecord,
 			Instant consensusTimeStamp
 	) {
-		var recordStreamObject = new RecordStreamObject(expirableTxnRecord, grpcTransaction, consensusTimeStamp);
-		ctx.updateRecordRunningHash(recordStreamObject.getRunningHash());
-		ctx.recordStreamManager().addRecordStreamObject(recordStreamObject);
+		final var rso = new RecordStreamObject(expirableTxnRecord, grpcTransaction, consensusTimeStamp);
+		ctx.updateRecordRunningHash(rso.getRunningHash());
+		ctx.recordStreamManager().addRecordStreamObject(rso);
 	}
 }

@@ -78,7 +78,6 @@ import java.util.List;
 
 import static com.hedera.services.context.AwareTransactionContext.EMPTY_KEY;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcScheduleId;
-import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asAccountString;
 import static com.hedera.test.utils.IdUtils.asContract;
@@ -110,10 +109,6 @@ class AwareTransactionContextTest {
 	private long memberId = 3;
 	private long anotherMemberId = 4;
 	private Instant now = Instant.now();
-	private Timestamp timeNow = Timestamp.newBuilder()
-			.setSeconds(now.getEpochSecond())
-			.setNanos(now.getNano())
-			.build();
 	private ExchangeRate rateNow = ExchangeRate.newBuilder().setHbarEquiv(1).setCentEquiv(100).setExpirationTime(
 			TimestampSeconds.newBuilder()).build();
 	private ExchangeRateSet ratesNow =
@@ -420,7 +415,7 @@ class AwareTransactionContextTest {
 		assertEquals(memo, record.getMemo());
 		assertEquals(hash, record.asGrpc().getTransactionHash());
 		assertEquals(txnId, record.asGrpc().getTransactionID());
-		assertEquals(RichInstant.fromGrpc(timeNow), record.getConsensusTimestamp());
+		assertEquals(RichInstant.fromJava(now), record.getConsensusTimestamp());
 	}
 
 	@Test
@@ -619,7 +614,7 @@ class AwareTransactionContextTest {
 	}
 
 	private ExpirableTxnRecord.Builder buildRecord(long otherNonThresholdFees, ByteString hash, TxnAccessor accessor,
-			Timestamp consensusTimestamp, TransactionReceipt receipt) {
+			Instant consensusTime, TransactionReceipt receipt) {
 		long amount = ctx.charging().totalFeesChargedToPayer() + otherNonThresholdFees;
 		TransferList transfersList = ctx.ledger().netTransfersInTxn();
 		List<TokenTransferList> tokenTransferList = ctx.ledger().netTokenTransfersInTxn();
@@ -628,7 +623,7 @@ class AwareTransactionContextTest {
 				.setReceipt(TxnReceipt.fromGrpc(receipt))
 				.setTxnHash(hash.toByteArray())
 				.setTxnId(TxnId.fromGrpc(accessor.getTxnId()))
-				.setConsensusTimestamp(RichInstant.fromGrpc(consensusTimestamp))
+				.setConsensusTime(RichInstant.fromJava(consensusTime))
 				.setMemo(accessor.getTxn().getMemo())
 				.setFee(amount)
 				.setTransferList(!transfersList.getAccountAmountsList().isEmpty() ? CurrencyAdjustments.fromGrpc(
@@ -652,7 +647,7 @@ class AwareTransactionContextTest {
 	private ExpirableTxnRecord.Builder setUpBuildingExpirableTxnRecord() {
 		var expirableRecordBuilder = buildRecord(subject.getNonThresholdFeeChargedToPayer(),
 				accessor.getHash(),
-				accessor, asTimestamp(now), subject.receiptSoFar().build());
+				accessor, now, subject.receiptSoFar().build());
 		when(creator.buildExpiringRecord(anyLong(), any(), any(), any(), any(), any())).thenReturn(expirableRecordBuilder);
 		return expirableRecordBuilder;
 	}

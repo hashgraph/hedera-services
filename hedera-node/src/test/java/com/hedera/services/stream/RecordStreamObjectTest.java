@@ -25,7 +25,6 @@ import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -151,7 +150,7 @@ public class RecordStreamObjectTest {
 		final Transaction transaction = Transaction.newBuilder().setSignedTransactionBytes(
 				signedTransaction.getBodyBytes()).build();
 		final ExpirableTxnRecord record = ExpirableTxnRecord.newBuilder()
-				.setConsensusTimestamp(RichInstant.fromGrpc(MiscUtils.asTimestamp(consensusTimestamp)))
+				.setConsensusTime(RichInstant.fromJava(consensusTimestamp))
 				.setTxnId(TxnId.fromGrpc(transactionID.build()))
 				.setReceipt(TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(SUCCESS).build()))
 				.setMemo("TEST")

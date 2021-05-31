@@ -97,7 +97,7 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 		this.receipt = builder.receipt;
 		this.txnHash = builder.txnHash;
 		this.txnId = builder.txnId;
-		this.consensusTimestamp = builder.consensusTimestamp;
+		this.consensusTimestamp = builder.consensusTime;
 		this.memo = builder.memo;
 		this.fee = builder.fee;
 		this.hbarAdjustments = builder.transferList;
@@ -113,24 +113,19 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 	@Override
 	public String toString() {
 		var helper = MoreObjects.toStringHelper(this)
+				.omitNullValues()
 				.add("receipt", receipt)
 				.add("txnHash", CommonUtils.hex(txnHash))
 				.add("txnId", txnId)
 				.add("consensusTimestamp", consensusTimestamp)
 				.add("expiry", expiry)
-				.add("submittingMember", submittingMember);
-		if (memo != null) {
-			helper.add("memo", memo);
-		}
-		if (contractCreateResult != null) {
-			helper.add("contractCreation", contractCreateResult);
-		}
-		if (contractCallResult != null) {
-			helper.add("contractCall", contractCallResult);
-		}
-		if (hbarAdjustments != null) {
-			helper.add("hbarAdjustments", hbarAdjustments);
-		}
+				.add("submittingMember", submittingMember)
+				.add("memo", memo)
+				.add("contractCreation", contractCreateResult)
+				.add("contractCall", contractCallResult)
+				.add("hbarAdjustments", hbarAdjustments)
+				.add("scheduleRef", scheduleRef);
+
 		if (tokens != NO_TOKENS) {
 			int n = tokens.size();
 			var readable = IntStream.range(0, n)
@@ -140,9 +135,6 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 							tokenAdjustments.get(i)))
 					.collect(joining(", "));
 			helper.add("tokenAdjustments", readable);
-		}
-		if (scheduleRef != NO_SCHEDULE_REF) {
-			helper.add("scheduleRef", scheduleRef);
 		}
 		return helper.toString();
 	}
@@ -354,7 +346,7 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 				.setReceipt(TxnReceipt.fromGrpc(record.getReceipt()))
 				.setTxnHash(record.getTransactionHash().toByteArray())
 				.setTxnId(TxnId.fromGrpc(record.getTransactionID()))
-				.setConsensusTimestamp(RichInstant.fromGrpc(record.getConsensusTimestamp()))
+				.setConsensusTime(RichInstant.fromGrpc(record.getConsensusTimestamp()))
 				.setMemo(record.getMemo())
 				.setFee(record.getTransactionFee())
 				.setTransferList(record.hasTransferList() ? CurrencyAdjustments.fromGrpc(record.getTransferList()) : null)
@@ -424,7 +416,7 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 		private TxnReceipt receipt;
 		private byte[] txnHash;
 		private TxnId txnId;
-		private RichInstant consensusTimestamp;
+		private RichInstant consensusTime;
 		private String memo;
 		private long fee;
 		private CurrencyAdjustments transferList;
@@ -459,8 +451,8 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 			return this;
 		}
 
-		public Builder setConsensusTimestamp(RichInstant consensusTimestamp) {
-			this.consensusTimestamp = consensusTimestamp;
+		public Builder setConsensusTime(RichInstant consensusTime) {
+			this.consensusTime = consensusTime;
 			return this;
 		}
 
@@ -504,7 +496,7 @@ public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 			txnHash = MISSING_TXN_HASH;
 			memo = null;
 			receipt = null;
-			consensusTimestamp = null;
+			consensusTime = null;
 			transferList = null;
 			contractCallResult = null;
 			contractCreateResult = null;
