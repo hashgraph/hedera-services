@@ -21,7 +21,6 @@ package com.hedera.services.stream;
  */
 
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.crypto.AbstractSerializableHashable;
@@ -44,17 +43,17 @@ import java.time.Instant;
  */
 public class RecordStreamObject extends AbstractSerializableHashable implements Timestamped,
 		SerializableRunningHashable {
-	public static final long CLASS_ID = 0xe370929ba5429d8bL;
+	private static final long CLASS_ID = 0xe370929ba5429d8bL;
 	public static final int CLASS_VERSION = 1;
 
 	//TODO: confirm the max length;
 	private static final int MAX_RECORD_LENGTH = 64 * 1024;
 	private static final int MAX_TRANSACTION_LENGTH = 64 * 1024;
 
-	/** the {@link ExpirableTxnRecord} object to be written to record stream file */
+	/** The fast-copyable equivalent of the gRPC transaction record for the record stream file */
 	private ExpirableTxnRecord expirableTxnRecord;
 
-	/** the {@link Transaction} object to be written to record stream file */
+	/** The gRPC transaction for the record stream file */
 	private Transaction transaction;
 
 	/**
@@ -94,7 +93,7 @@ public class RecordStreamObject extends AbstractSerializableHashable implements 
 		expirableTxnRecord = ExpirableTxnRecord.fromGprc(
 				TransactionRecord.parseFrom(in.readByteArray(MAX_RECORD_LENGTH)));
 		transaction = Transaction.parseFrom(in.readByteArray(MAX_TRANSACTION_LENGTH));
-		final Timestamp timestamp = expirableTxnRecord.getConsensusTimestamp().toGrpc();
+		final var timestamp = expirableTxnRecord.getConsensusTimestamp().toGrpc();
 		consensusTimestamp = Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
 	}
 

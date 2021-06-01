@@ -37,7 +37,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Test;
@@ -80,7 +79,7 @@ public class TxnAwareRecordsHistorianTest {
 			.setTxnId(TxnId.fromGrpc(TransactionID.newBuilder().setAccountID(a).build()))
 			.setTransferList(CurrencyAdjustments.fromGrpc(initialTransfers))
 			.setMemo("This is different!")
-			.setReceipt(TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(SUCCESS).build()))
+			.setReceipt(TxnReceipt.newBuilder().setStatus(SUCCESS.name()).build())
 			.build();
 	final private ExpirableTxnRecord jFinalRecord = finalRecord;
 	{

@@ -26,6 +26,8 @@ import com.hedera.services.context.ServicesContext;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.MonotonicFullQueueExpiries;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
@@ -43,7 +45,6 @@ import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -85,23 +86,23 @@ class RecordCacheTest {
 			.setAccountID(asAccount("2.2.3"))
 			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(12_345L).setNanos(54321))
 			.build();
-	private TransactionReceipt unknownReceipt = TransactionReceipt.newBuilder()
-			.setStatus(UNKNOWN)
+	private TxnReceipt unknownReceipt = TxnReceipt.newBuilder()
+			.setStatus(UNKNOWN.name())
 			.build();
 	private ExchangeRate rate = ExchangeRate.newBuilder()
 			.setCentEquiv(1)
 			.setHbarEquiv(12)
 			.setExpirationTime(TimestampSeconds.newBuilder().setSeconds(555L).build())
 			.build();
-	private TransactionReceipt knownReceipt = TransactionReceipt.newBuilder()
-			.setStatus(SUCCESS)
-			.setAccountID(asAccount("0.0.2"))
-			.setExchangeRate(ExchangeRateSet.newBuilder().setCurrentRate(rate).setNextRate(rate))
+	private TxnReceipt knownReceipt = TxnReceipt.newBuilder()
+			.setStatus(SUCCESS.name())
+			.setAccountId(EntityId.fromGrpcAccountId(asAccount("0.0.2")))
+			.setExchangeRates(ExchangeRates.fromGrpc(ExchangeRateSet.newBuilder().setCurrentRate(rate).setNextRate(rate).build()))
 			.build();
 	private ExpirableTxnRecord aRecord = ExpirableTxnRecord.newBuilder()
 			.setMemo("Something")
 			.setConsensusTime(RichInstant.fromJava(Instant.ofEpochSecond(500L)))
-			.setReceipt(TxnReceipt.fromGrpc(knownReceipt))
+			.setReceipt(knownReceipt)
 			.setTxnId(TxnId.fromGrpc(txnIdA))
 			.setFee(123L)
 			.build();
@@ -333,7 +334,7 @@ class RecordCacheTest {
 
 		var expirableTxnRecordBuilder = ExpirableTxnRecord.newBuilder()
 				.setTxnId(TxnId.fromGrpc(txnId))
-				.setReceipt(TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(FAIL_INVALID).build()))
+				.setReceipt(TxnReceipt.newBuilder().setStatus(FAIL_INVALID.name()).build())
 				.setMemo(accessor.getTxn().getMemo())
 				.setTxnHash(accessor.getHash().toByteArray())
 				.setConsensusTime(RichInstant.fromJava(consensusTime));
@@ -382,7 +383,7 @@ class RecordCacheTest {
 		// and:
 		var expirableTxnRecordBuilder = ExpirableTxnRecord.newBuilder()
 				.setTxnId(TxnId.fromGrpc(txnId))
-				.setReceipt(TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(FAIL_INVALID).build()))
+				.setReceipt(TxnReceipt.newBuilder().setStatus(FAIL_INVALID.name()).build())
 				.setMemo(accessor.getTxn().getMemo())
 				.setTxnHash(accessor.getHash().toByteArray())
 				.setConsensusTime(RichInstant.fromJava(consensusTime))

@@ -25,6 +25,7 @@ import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.charging.ItemizableFeeCharging;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -41,7 +42,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
 import javafx.util.Pair;
@@ -120,7 +120,7 @@ class ExpiringCreationsTest {
 	private static final String hashString = "TEST";
 	private static final long scheduleNum = 100L;
 	private static final String account = "0.0.10001";
-	private final TransactionReceipt receipt = TransactionReceipt.newBuilder().setStatus(SUCCESS).build();
+	private final TxnReceipt receipt = TxnReceipt.newBuilder().setStatus(SUCCESS.name()).build();
 	private final Instant timestamp = Instant.now();
 	private final ByteString hash = ByteString.copyFrom(hashString.getBytes(StandardCharsets.UTF_8));
 

@@ -60,7 +60,6 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
@@ -614,13 +613,13 @@ class AwareTransactionContextTest {
 	}
 
 	private ExpirableTxnRecord.Builder buildRecord(long otherNonThresholdFees, ByteString hash, TxnAccessor accessor,
-			Instant consensusTime, TransactionReceipt receipt) {
+			Instant consensusTime, TxnReceipt receipt) {
 		long amount = ctx.charging().totalFeesChargedToPayer() + otherNonThresholdFees;
 		TransferList transfersList = ctx.ledger().netTransfersInTxn();
 		List<TokenTransferList> tokenTransferList = ctx.ledger().netTokenTransfersInTxn();
 
 		var builder = ExpirableTxnRecord.newBuilder()
-				.setReceipt(TxnReceipt.fromGrpc(receipt))
+				.setReceipt(receipt)
 				.setTxnHash(hash.toByteArray())
 				.setTxnId(TxnId.fromGrpc(accessor.getTxnId()))
 				.setConsensusTime(RichInstant.fromJava(consensusTime))

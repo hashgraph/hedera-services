@@ -25,6 +25,7 @@ import com.hedera.services.context.ServicesContext;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
@@ -37,7 +38,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -150,8 +150,8 @@ class RenewalRecordsHelperTest {
 			AccountID autoRenewAccount,
 			List<TokenTransferList> displacements
 	) {
-		TransactionReceipt receipt = TransactionReceipt.newBuilder()
-				.setAccountID(accountRemoved)
+		TxnReceipt receipt = TxnReceipt.newBuilder()
+				.setAccountId(EntityId.fromGrpcAccountId(accountRemoved))
 				.build();
 
 		TransactionID transactionID = TransactionID.newBuilder()
@@ -159,7 +159,7 @@ class RenewalRecordsHelperTest {
 				.build();
 
 		var expirableRecordBuilder = ExpirableTxnRecord.newBuilder()
-				.setReceipt(TxnReceipt.fromGrpc(receipt))
+				.setReceipt(receipt)
 				.setConsensusTime(RichInstant.fromJava(removedAt))
 				.setTxnId(TxnId.fromGrpc(transactionID))
 				.setMemo(String.format("Entity %s was automatically deleted.", asLiteralString(accountRemoved)))
@@ -175,7 +175,7 @@ class RenewalRecordsHelperTest {
 			long newExpirationTime,
 			AccountID feeCollector
 	) {
-		TransactionReceipt receipt = TransactionReceipt.newBuilder().setAccountID(accountRenewed).build();
+		TxnReceipt receipt = TxnReceipt.newBuilder().setAccountId(EntityId.fromGrpcAccountId(accountRenewed)).build();
 		TransactionID transactionID = TransactionID.newBuilder().setAccountID(autoRenewAccount).build();
 		String memo = String.format("Entity %s was automatically renewed. New expiration time: %d.",
 				asLiteralString(accountRenewed),
@@ -193,7 +193,7 @@ class RenewalRecordsHelperTest {
 				.addAccountAmounts(payerAmount)
 				.build();
 		return ExpirableTxnRecord.newBuilder()
-				.setReceipt(TxnReceipt.fromGrpc(receipt))
+				.setReceipt(receipt)
 				.setConsensusTime(RichInstant.fromJava(renewedAt))
 				.setTxnId(TxnId.fromGrpc(transactionID))
 				.setMemo(memo)

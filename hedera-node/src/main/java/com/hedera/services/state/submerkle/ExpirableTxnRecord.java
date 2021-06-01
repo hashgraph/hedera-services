@@ -26,13 +26,11 @@ import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.fcqueue.FCQueueElement;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import com.swirlds.common.CommonUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -47,9 +45,6 @@ import static java.util.stream.Collectors.toList;
 
 public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
 	public static final long UNKNOWN_SUBMITTING_MEMBER = -1;
-
-	private static final Logger log = LogManager.getLogger(ExpirableTxnRecord.class);
-
 	static final List<EntityId> NO_TOKENS = null;
 	static final List<CurrencyAdjustments> NO_TOKEN_ADJUSTMENTS = null;
 	static final EntityId NO_SCHEDULE_REF = null;

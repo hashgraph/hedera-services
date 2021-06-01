@@ -43,8 +43,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import static java.util.stream.Collectors.toList;
 
 public class RecordCache {
-	static final TransactionReceipt UNKNOWN_RECEIPT = TransactionReceipt.newBuilder()
-			.setStatus(UNKNOWN)
+	static final TxnReceipt UNKNOWN_RECEIPT = TxnReceipt.newBuilder()
+			.setStatus(UNKNOWN.name())
 			.build();
 
 	public static final Boolean MARKER = Boolean.TRUE;
@@ -100,7 +100,7 @@ public class RecordCache {
 		return histories.containsKey(txnId) || timedReceiptCache.getIfPresent(txnId) == MARKER;
 	}
 
-	public TransactionReceipt getPriorityReceipt(TransactionID txnId) {
+	public TxnReceipt getPriorityReceipt(TransactionID txnId) {
 		var recentHistory = histories.get(txnId);
 		return recentHistory != null
 				? receiptFrom(recentHistory)
@@ -127,10 +127,9 @@ public class RecordCache {
 		}
 	}
 
-	private TransactionReceipt receiptFrom(TxnIdRecentHistory recentHistory) {
+	private TxnReceipt receiptFrom(TxnIdRecentHistory recentHistory) {
 		return Optional.ofNullable(recentHistory.priorityRecord())
 				.map(ExpirableTxnRecord::getReceipt)
-				.map(TxnReceipt::toGrpc)
 				.orElse(UNKNOWN_RECEIPT);
 	}
 

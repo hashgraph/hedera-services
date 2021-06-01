@@ -30,7 +30,6 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -152,7 +151,7 @@ public class RecordStreamObjectTest {
 		final ExpirableTxnRecord record = ExpirableTxnRecord.newBuilder()
 				.setConsensusTime(RichInstant.fromJava(consensusTimestamp))
 				.setTxnId(TxnId.fromGrpc(transactionID.build()))
-				.setReceipt(TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(SUCCESS).build()))
+				.setReceipt(TxnReceipt.newBuilder().setStatus(SUCCESS.name()).build())
 				.setMemo("TEST")
 				.setTxnHash(ByteString.copyFrom("TEST".getBytes(StandardCharsets.UTF_8)).toByteArray())
 				.build();

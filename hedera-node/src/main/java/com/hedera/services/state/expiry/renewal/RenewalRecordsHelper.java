@@ -25,6 +25,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
@@ -35,7 +36,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -132,8 +132,8 @@ public class RenewalRecordsHelper {
 		return ExpirableTxnRecord.newBuilder()
 				.setTxnId(TxnId.fromGrpc(TransactionID.newBuilder()
 						.setAccountID(id).build()))
-				.setReceipt(TxnReceipt.fromGrpc(TransactionReceipt.newBuilder()
-						.setAccountID(id).build()))
+				.setReceipt(TxnReceipt.newBuilder()
+						.setAccountId(EntityId.fromGrpcAccountId(id)).build())
 				.setConsensusTime(RichInstant.fromJava(at));
 	}
 

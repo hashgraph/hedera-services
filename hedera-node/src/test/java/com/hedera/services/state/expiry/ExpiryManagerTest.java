@@ -37,7 +37,6 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
@@ -220,7 +219,7 @@ class ExpiryManagerTest {
 						.setTransactionValidStart(Timestamp.newBuilder()
 								.setSeconds(validStartSecs)).build()))
 				.setConsensusTime(RichInstant.fromJava(Instant.now()))
-				.setReceipt(TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(SUCCESS).build()))
+				.setReceipt(TxnReceipt.newBuilder().setStatus(SUCCESS.name()).build())
 				.build();
 	}
 }
