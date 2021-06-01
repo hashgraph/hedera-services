@@ -1580,6 +1580,7 @@ public class ServicesContext {
 					exchange(),
 					systemFilesManager(),
 					feeMultiplierSource(),
+					globalDynamicProperties(),
 					handleThrottling(),
 					this::networkCtx);
 		}

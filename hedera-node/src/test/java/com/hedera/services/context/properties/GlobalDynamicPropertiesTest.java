@@ -49,7 +49,7 @@ class GlobalDynamicPropertiesTest {
 	GlobalDynamicProperties subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		numbers = mock(HederaNumbers.class);
 		given(numbers.shard()).willReturn(1L);
 		given(numbers.realm()).willReturn(2L);
@@ -57,7 +57,7 @@ class GlobalDynamicPropertiesTest {
 	}
 
 	@Test
-	public void constructsAsExpected() {
+	void constructsAsExpected() {
 		givenPropsWithSeed(1);
 
 		// when:
@@ -99,10 +99,11 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(31, subject.autoRenewNumberOfEntitiesToScan());
 		assertEquals(32, subject.autoRenewMaxNumberOfEntitiesToRenewOrDelete());
 		assertEquals(33L, subject.autoRenewGracePeriod());
+		assertEquals(34L, subject.ratesMidnightCheckInterval());
 	}
 
 	@Test
-	public void reloadWorksAsExpected() {
+	void reloadWorksAsExpected() {
 		givenPropsWithSeed(2);
 
 		// when:
@@ -144,6 +145,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(32, subject.autoRenewNumberOfEntitiesToScan());
 		assertEquals(33, subject.autoRenewMaxNumberOfEntitiesToRenewOrDelete());
 		assertEquals(34L, subject.autoRenewGracePeriod());
+		assertEquals(35L, subject.ratesMidnightCheckInterval());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -185,6 +187,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("autorenew.numberOfEntitiesToScan")).willReturn(i + 30);
 		given(properties.getIntProperty("autorenew.maxNumberOfEntitiesToRenewOrDelete")).willReturn(i + 31);
 		given(properties.getLongProperty("autorenew.gracePeriod")).willReturn(i + 32L);
+		given(properties.getLongProperty("rates.midnightCheckInterval")).willReturn(i + 33L);
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {
