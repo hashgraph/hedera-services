@@ -92,5 +92,5 @@ docker-compose up -d
 
 `localhost:3000` will give us the Grafana dashboard.
 
-On the Grafana dashboard, you can either create your own dashboards or use [this json](../assets/E2EPerformanceDashboard.json) and import it in.
-You can edit the queries for each graph in this dashboard.
+On the Grafana dashboard, you can either create your own dashboards or use [this json](https://github.com/hashgraph/hedera-mirror-node/blob/master/charts/hedera-mirror-common/dashboards/hedera-mirror-monitor.json) and import it in.
+You can edit the queries for each graph in this dashboard as well to get custom visualisations.
