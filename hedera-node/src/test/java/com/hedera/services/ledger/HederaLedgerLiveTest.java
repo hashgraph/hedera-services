@@ -33,7 +33,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.store.tokens.HederaTokenStore;
+import com.hedera.services.store.tokens.common.CommonTokenStore;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.utils.TxnUtils;
@@ -78,7 +78,7 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 				new HashMapBackingTokenRels(),
 				new ChangeSummaryManager<>());
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
-		tokenStore = new HederaTokenStore(
+		tokenStore = new CommonTokenStore(
 				ids,
 				TestContextValidator.TEST_VALIDATOR,
 				new MockGlobalDynamicProps(),

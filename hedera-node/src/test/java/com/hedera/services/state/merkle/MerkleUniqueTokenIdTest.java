@@ -14,7 +14,6 @@
 
 package com.hedera.services.state.merkle;
 
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -25,9 +24,11 @@ import org.mockito.InOrder;
 
 import java.io.IOException;
 
-import static com.hedera.services.state.merkle.MerkleTopic.serdes;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -106,14 +107,14 @@ public class MerkleUniqueTokenIdTest {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 		// and:
-		InOrder inOrder = inOrder(serdes, out);
+		InOrder inOrder = inOrder(out);
 
 		// when:
 		subject.serialize(out);
 
 		// then:
 		inOrder.verify(out).writeSerializable(tokenId, true);
-		inOrder.verify(out).writeInt(serialNumber);
+		inOrder.verify(out).writeLong(serialNumber);
 	}
 
 	@Test

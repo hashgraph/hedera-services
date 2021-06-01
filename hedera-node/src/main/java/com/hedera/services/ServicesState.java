@@ -38,10 +38,14 @@ import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.store.tokens.unique.OwnerIdentifier;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.invertible_fchashmap.FCInvertibleHashMap;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.blob.BinaryObjectStore;
 import com.swirlds.common.AddressBook;
@@ -59,7 +63,6 @@ import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.File;
 import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.List;
@@ -116,6 +119,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		static final int NUM_0120_CHILDREN = 10;
 		static final int NUM_0130_CHILDREN = 10;
 		static final int NUM_0140_CHILDREN = 10;
+		static final int UNIQUE_TOKENS = 10;
 	}
 
 	ServicesContext ctx;
@@ -199,6 +203,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			setChild(ChildIndices.RECORD_STREAM_RUNNING_HASH, initialRecordsRunningHashLeaf);
 			log.info("Created RecordsRunningHashLeaf after <=0.11.0 state restoration");
 		}
+		if (uniqueTokens() == null) {
+			setChild(ChildIndices.UNIQUE_TOKENS, new FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier>());
+			log.info("Created unique tokens FCInvertibleHashMap after <=0.12.0 state restoration");
+		}
 	}
 
 	@Override
@@ -264,6 +272,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			RunningHash runningHash = new RunningHash();
 			runningHash.setHash(new ImmutableHash(lastHash));
 			setChild(ChildIndices.RECORD_STREAM_RUNNING_HASH, new RecordsRunningHashLeaf(runningHash));
+			setChild(ChildIndices.UNIQUE_TOKENS, new FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier>());
 		}
 		ctx.setRecordsInitialHash(runningHashLeaf().getRunningHash().getHash());
 
@@ -356,7 +365,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				tokenAssociations().copy(),
 				diskFs().copy(),
 				scheduleTxs().copy(),
-				runningHashLeaf().copy()
+				runningHashLeaf().copy(),
+				uniqueTokens().copy()
 		));
 	}
 
@@ -380,6 +390,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 						"  Storage                :: %s\n" +
 						"  Topics                 :: %s\n" +
 						"  Tokens                 :: %s\n" +
+						"  UniqueTokens           :: %s\n" +
 						"  TokenAssociations      :: %s\n" +
 						"  DiskFs                 :: %s\n" +
 						"  ScheduledTxs           :: %s\n" +
@@ -392,6 +403,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				storage().getHash(),
 				topics().getHash(),
 				tokens().getHash(),
+				uniqueTokens().getHash(),
 				tokenAssociations().getHash(),
 				diskFs().getHash(),
 				scheduleTxs().getHash(),
@@ -415,6 +427,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	public FCMap<MerkleEntityId, MerkleToken> tokens() {
 		return getChild(ChildIndices.TOKENS);
+	}
+
+	public FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier> uniqueTokens() {
+		return getChild(ChildIndices.UNIQUE_TOKENS);
 	}
 
 	public FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations() {

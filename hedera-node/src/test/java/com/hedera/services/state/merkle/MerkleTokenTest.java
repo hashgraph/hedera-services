@@ -67,6 +67,7 @@ class MerkleTokenTest {
 	long expiry = Instant.now().getEpochSecond() + 1_234_567, otherExpiry = expiry + 2_345_678;
 	long autoRenewPeriod = 1_234_567, otherAutoRenewPeriod = 2_345_678;
 	long totalSupply = 1_000_000, otherTotalSupply = 1_000_001;
+	long currentSerialNum = 0;
 	long maxSupply = 123_456_789, otherMaxSupply = 234_567_890;
 	boolean freezeDefault = true, otherFreezeDefault = false;
 	boolean accountsKycGrantedByDefault = true, otherAccountsKycGrantedByDefault = false;
@@ -124,6 +125,12 @@ class MerkleTokenTest {
 	}
 
 	@Test
+	public void incrementsSerialNumber(){
+		var i = subject.incrementSerialNum();
+		assertEquals(i, subject.getCurrentSerialNum());
+	}
+
+	@Test
 	public void serializeWorks() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
@@ -157,6 +164,7 @@ class MerkleTokenTest {
 		inOrder.verify(out).writeNormalisedString(memo);
 		inOrder.verify(out, times(2)).writeInt(tokenType.ordinal());
 		inOrder.verify(out).writeLong(maxSupply);
+		inOrder.verify(out).writeLong(currentSerialNum);
 	}
 
 	@Test
@@ -190,7 +198,8 @@ class MerkleTokenTest {
 				.willReturn(subject.expiry())
 				.willReturn(subject.autoRenewPeriod())
 				.willReturn(subject.totalSupply())
-				.willReturn(subject.maxSupply());
+				.willReturn(subject.maxSupply())
+				.willReturn(currentSerialNum);
 		given(fin.readInt())
 				.willReturn(subject.decimals())
 				.willReturn(subject.tokenType().ordinal())
@@ -231,6 +240,7 @@ class MerkleTokenTest {
 				.willReturn(subject.expiry())
 				.willReturn(subject.autoRenewPeriod())
 				.willReturn(subject.totalSupply());
+
 		given(fin.readInt()).willReturn(subject.decimals());
 		given(fin.readBoolean())
 				.willReturn(isDeleted)
@@ -629,6 +639,7 @@ class MerkleTokenTest {
 						"maxSupply=" + maxSupply + ", " +
 						"totalSupply=" + totalSupply + ", " +
 						"decimals=" + decimals + ", " +
+						"currentSerialNum=" + currentSerialNum + ", " +
 						"autoRenewAccount=" + autoRenewAccount.toAbbrevString() + ", " +
 						"autoRenewPeriod=" + autoRenewPeriod + ", " +
 						"adminKey=" + describe(adminKey) + ", " +

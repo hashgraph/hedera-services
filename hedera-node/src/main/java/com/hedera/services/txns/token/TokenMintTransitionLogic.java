@@ -21,7 +21,10 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.state.enums.TokenType;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.unique.UniqueStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
@@ -48,14 +51,17 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
-	private final TokenStore store;
+	private final TokenStore commonStore;
+	private final UniqueStore uniqueStore;
 	private final TransactionContext txnCtx;
 
 	public TokenMintTransitionLogic(
-			TokenStore store,
+			TokenStore commonStore,
+			UniqueStore uniqueStore,
 			TransactionContext txnCtx
 	) {
-		this.store = store;
+		this.commonStore = commonStore;
+		this.uniqueStore = uniqueStore;
 		this.txnCtx = txnCtx;
 	}
 
@@ -63,14 +69,20 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		try {
 			var op = txnCtx.accessor().getTxn().getTokenMint();
-			var id = store.resolve(op.getToken());
+			var id = commonStore.resolve(op.getToken());
 			if (id == TokenStore.MISSING_TOKEN) {
 				txnCtx.setStatus(INVALID_TOKEN_ID);
 			} else {
-				var outcome = store.mint(id, op.getAmount());
+				var token = commonStore.get(id);
+				ResponseCodeEnum outcome;
+				if(token.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
+					outcome = commonStore.mint(id, op.getAmount());
+				} else {
+					outcome = uniqueStore.mint(id, op.getMetadata().toStringUtf8(), RichInstant.fromJava(txnCtx.consensusTime()));
+				}
 				txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
-				if(outcome == OK) {
-					txnCtx.setNewTotalSupply(store.get(id).totalSupply());
+				if (outcome == OK) {
+					txnCtx.setNewTotalSupply(commonStore.get(id).totalSupply());
 				}
 			}
 		} catch (Exception e) {

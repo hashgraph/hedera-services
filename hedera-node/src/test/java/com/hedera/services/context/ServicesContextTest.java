@@ -121,17 +121,17 @@ import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.store.tokens.HederaTokenStore;
-import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.BaseTokenStore;
+import com.hedera.services.store.tokens.common.CommonStore;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttling.HapiThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.throttling.TxnAwareHandleThrottling;
 import com.hedera.services.txns.TransitionLogicLookup;
+import com.hedera.services.txns.submission.BasicSubmissionFlow;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.SyntaxPrecheck;
-import com.hedera.services.txns.submission.BasicSubmissionFlow;
 import com.hedera.services.txns.submission.TransactionPrecheck;
 import com.hedera.services.txns.submission.TxnResponseHelper;
 import com.hedera.services.txns.validation.ContextOptionValidator;
@@ -368,7 +368,7 @@ public class ServicesContextTest {
 	void rebuildsStoreViewsIfNonNull() {
 		// setup:
 		ScheduleStore scheduleStore = mock(ScheduleStore.class);
-		TokenStore tokenStore = mock(TokenStore.class);
+		CommonStore tokenStore = mock(CommonStore.class);
 
 		// given:
 		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
@@ -377,7 +377,7 @@ public class ServicesContextTest {
 		assertDoesNotThrow(ctx::rebuildStoreViewsIfPresent);
 
 		// and given:
-		ctx.setTokenStore(tokenStore);
+		ctx.setCommonTokenStore(tokenStore);
 		ctx.setScheduleStore(scheduleStore);
 
 		// when:
@@ -506,7 +506,7 @@ public class ServicesContextTest {
 		assertThat(ctx.submissionManager(), instanceOf(PlatformSubmissionManager.class));
 		assertThat(ctx.platformStatus(), instanceOf(ContextPlatformStatus.class));
 		assertThat(ctx.contractAnswers(), instanceOf(ContractAnswers.class));
-		assertThat(ctx.tokenStore(), instanceOf(HederaTokenStore.class));
+		assertThat(ctx.tokenStore(), instanceOf(BaseTokenStore.class));
 		assertThat(ctx.globalDynamicProperties(), instanceOf(GlobalDynamicProperties.class));
 		assertThat(ctx.tokenGrpc(), instanceOf(TokenController.class));
 		assertThat(ctx.scheduleGrpc(), instanceOf(ScheduleController.class));

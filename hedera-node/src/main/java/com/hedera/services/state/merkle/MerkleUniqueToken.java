@@ -23,6 +23,11 @@ package com.hedera.services.state.merkle;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.serdes.DomainSerdes;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.store.tokens.unique.OwnerIdentifier;
+import com.hedera.services.utils.invertible_fchashmap.Identifiable;
 import com.swirlds.common.FCMValue;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -36,7 +41,7 @@ import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 /**
  * Represents an uniqueToken entity. Part of the nft implementation.
  */
-public class MerkleUniqueToken extends AbstractMerkleLeaf implements FCMValue {
+public class MerkleUniqueToken extends AbstractMerkleLeaf implements FCMValue, Identifiable<OwnerIdentifier> {
 
 	public static final int UPPER_BOUND_MEMO_UTF8_BYTES = 1024;
 	static final int MERKLE_VERSION = 1;
@@ -141,5 +146,10 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements FCMValue {
 
 	public RichInstant getCreationTime() {
 		return creationTime;
+	}
+
+	@Override
+	public OwnerIdentifier getIdentity() {
+		return new OwnerIdentifier(this.owner);
 	}
 }

@@ -75,7 +75,6 @@ import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -84,7 +83,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
@@ -103,8 +101,8 @@ import static java.util.stream.Collectors.toList;
  *
  * @author Michael Tinker
  */
-public class HederaTokenStore extends HederaStore implements TokenStore {
-	private static final Logger log = LogManager.getLogger(HederaTokenStore.class);
+public abstract class BaseTokenStore extends HederaStore implements TokenStore {
+	private static final Logger log = LogManager.getLogger(BaseTokenStore.class);
 
 	static final TokenID NO_PENDING_ID = TokenID.getDefaultInstance();
 
@@ -122,7 +120,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	TokenID pendingId = NO_PENDING_ID;
 	MerkleToken pendingCreation;
 
-	public HederaTokenStore(
+	public BaseTokenStore(
 			EntityIdSource ids,
 			OptionValidator validator,
 			GlobalDynamicProperties properties,
@@ -234,6 +232,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 					if (!isTokenDeleted && !isTokenExpired) {
 						return TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 					}
+					// TODO Works for common, but for UN should be a different type of transfer
 					if (!isTokenDeleted) {
 						/* Must be expired; return balance to treasury account. */
 						hederaLedger.doTokenTransfer(tId, aId, token.treasury().toGrpcAccountId(), balance);
@@ -333,29 +332,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	@Override
-	public ResponseCodeEnum wipe(AccountID aId, TokenID tId, long amount, boolean skipKeyCheck) {
-		return sanityChecked(aId, tId, token -> {
-			if (!skipKeyCheck && !token.hasWipeKey()) {
-				return TOKEN_HAS_NO_WIPE_KEY;
-			}
-			if (fromGrpcAccountId(aId).equals(token.treasury())) {
-				return CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
-			}
-
-			var relationship = asTokenRel(aId, tId);
-			long balance = (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
-			if (amount > balance) {
-				return INVALID_WIPING_AMOUNT;
-			}
-			tokenRelsLedger.set(relationship, TOKEN_BALANCE, balance - amount);
-			hederaLedger.updateTokenXfers(tId, aId, -amount);
-			apply(tId, t -> t.adjustTotalSupplyBy(-amount));
-
-			return OK;
-		});
-	}
-
-	@Override
 	public ResponseCodeEnum burn(TokenID tId, long amount) {
 		return changeSupply(tId, amount, -1, INVALID_TOKEN_BURN_AMOUNT);
 	}
@@ -365,7 +341,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		return changeSupply(tId, amount, +1, INVALID_TOKEN_MINT_AMOUNT);
 	}
 
-	private ResponseCodeEnum changeSupply(
+	protected ResponseCodeEnum changeSupply(
 			TokenID tId,
 			long amount,
 			long sign,
@@ -483,6 +459,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			return INSUFFICIENT_TOKEN_BALANCE;
 		}
 		tokenRelsLedger.set(relationship, TOKEN_BALANCE, newBalance);
+		// TODO this should and will be updated in another PR
 		hederaLedger.updateTokenXfers(tId, aId, adjustment);
 		return OK;
 	}
@@ -726,7 +703,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		});
 	}
 
-	private ResponseCodeEnum sanityChecked(
+	protected ResponseCodeEnum sanityChecked(
 			AccountID aId,
 			TokenID tId,
 			Function<MerkleToken, ResponseCodeEnum> action
@@ -749,7 +726,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		return action.apply(token);
 	}
 
-	private ResponseCodeEnum tokenSanityCheck(
+	protected ResponseCodeEnum tokenSanityCheck(
 			TokenID tId,
 			Function<MerkleToken, ResponseCodeEnum> action
 	) {
@@ -762,6 +739,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		if (token.isDeleted()) {
 			return TOKEN_WAS_DELETED;
 		}
+
 
 		return action.apply(token);
 	}
@@ -776,5 +754,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 	Map<AccountID, Set<TokenID>> getKnownTreasuries() {
 		return knownTreasuries;
+	}
+	protected TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> getTokenRelsLedger() {
+		return tokenRelsLedger;
 	}
 }
