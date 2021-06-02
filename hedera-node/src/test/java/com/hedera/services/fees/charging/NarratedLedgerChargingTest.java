@@ -158,6 +158,7 @@ class NarratedLedgerChargingTest {
 	void throwsIseIfPayerNotActuallyExtant() {
 		// expect:
 		assertThrows(IllegalStateException.class, subject::canPayerAffordAllFees);
+		assertThrows(IllegalStateException.class, subject::canPayerAffordNetworkFee);
 
 		given(accessor.getPayer()).willReturn(grpcPayerId);
 		// and given:
@@ -166,6 +167,7 @@ class NarratedLedgerChargingTest {
 
 		// still expect:
 		assertThrows(IllegalStateException.class, subject::canPayerAffordAllFees);
+		assertThrows(IllegalStateException.class, subject::canPayerAffordNetworkFee);
 	}
 
 	@Test
