@@ -1,7 +1,6 @@
 package com.hedera.services.state.merkle.virtual;
 
 import com.swirlds.common.crypto.Hashable;
-import com.swirlds.common.io.SelfSerializable;
 
 /**
  * <p>The "virtual" tree is a simple, lightweight, binary merkle tree used for
@@ -13,7 +12,7 @@ import com.swirlds.common.io.SelfSerializable;
  * VirtualDataSource, and any change to the tree structure results in updates to the
  * data source.</p>
  */
-public interface VirtualTreeNode<K, V extends SelfSerializable> extends Hashable {
+public interface VirtualTreeNode<K, V extends Hashable> extends Hashable {
     /**
      * Gets the parent node of this tree node, if there is one. A detached node
      * (one not part of any tree) or a root node will return null.
