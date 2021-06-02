@@ -50,7 +50,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-public class CryptoTransferUsageTest {
+class CryptoTransferUsageTest {
 	long now = 1_234_567L;
 	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
 	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
@@ -69,7 +69,7 @@ public class CryptoTransferUsageTest {
 	CryptoTransferUsage subject;
 
 	@BeforeEach
-	public void setUp() throws Exception {
+	void setUp() throws Exception {
 		base = mock(TxnUsageEstimator.class);
 		given(base.get()).willReturn(A_USAGES_MATRIX);
 
@@ -80,7 +80,7 @@ public class CryptoTransferUsageTest {
 	}
 
 	@Test
-	public void createsExpectedDeltaForTransferLists() {
+	void createsExpectedDeltaForTransferLists() {
 		// setup:
 		int M = 60;
 

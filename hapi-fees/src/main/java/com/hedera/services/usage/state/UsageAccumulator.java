@@ -1,7 +1,7 @@
 package com.hedera.services.usage.state;
 
 import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.SingletonEstimatorUtils;
+import com.hedera.services.usage.crypto.BaseTransactionMeta;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ACCOUNT_AMT_SIZE;
@@ -17,45 +17,51 @@ import static com.hederahashgraph.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
  *
  * Resources are consumed by three service providers,
  * <ol>
- * 	<li>The network when providing gossip, consensus, and short-term storage of receipts.</li>
- * 	<li>The node when communicating with the client, performing prechecks, and submitting to the network.</li>
- * 	<li>The network when performing the logical service itself.</li>
+ * <li>The network when providing gossip, consensus, and short-term storage of receipts.</li>
+ * <li>The node when communicating with the client, performing prechecks, and submitting to the network.</li>
+ * <li>The network when performing the logical service itself.</li>
  * </ol>
  *
  * The key fact is that the estimated resource usage for all three service providers
  * is a pure function of the <b>same</b> base usage estimates, for eight types
  * of resources:
  * <ol>
- *     <li>Network capacity needed to submit an operation to the network.
- *     Units are <tt>bpt</tt> (“bytes per transaction”).</li>
- *     <li>Network capacity needed to return information from memory in response to an operation.
- *     Units are <tt>bpt</tt> (“bytes per transaction”).</li>
- *     <li>Network capacity needed to return information from disk in response to an operation.
- *     Units are <tt>sbpr</tt> (“storage bytes per response”).</li>
- *     <li>RAM needed to persist an operation’s effects on consensus state, for as long as such effects are visible.
- *     Units are <tt>rbh</tt> (“RAM byte-hours”).</li>
- *     <li>Disk space needed to persist the operation’s effect on consensus state, for as long as such effects are visible.
- *     Units are sbh (“storage byte-hours”).</li>
- *     <li>Computation needed to verify a Ed25519 cryptographic signature.
- *     Units are <tt>vpt</tt> (“verifications per transaction”).</li>
- *     <li>Computation needed for incremental execution of a Solidity smart contract.
- *     Units are <tt>gas</tt>.</li>
+ * <li>Network capacity needed to submit an operation to the network.
+ * Units are <tt>bpt</tt> (“bytes per transaction”).</li>
+ * <li>Network capacity needed to return information from memory in response to an operation.
+ * Units are <tt>bpr</tt> (“bytes per response).</li>
+ * <li>Network capacity needed to return information from disk in response to an operation.
+ * Units are <tt>sbpr</tt> (“storage bytes per response”).</li>
+ * <li>RAM needed to persist an operation’s effects on consensus state, for as long as such effects are visible.
+ * Units are <tt>rbh</tt> (“RAM byte-hours”).</li>
+ * <li>Disk space needed to persist the operation’s effect on consensus state, for as long as such effects are visible.
+ * Units are sbh (“storage byte-hours”).</li>
+ * <li>Computation needed to verify a Ed25519 cryptographic signature.
+ * Units are <tt>vpt</tt> (“verifications per transaction”).</li>
+ * <li>Computation needed for incremental execution of a Solidity smart contract.
+ * Units are <tt>gas</tt>.</li>
  * </ol>
  */
 public class UsageAccumulator {
+	/* Captures how much signature verification work was done exclusively by the submitting node. */
+	private long numPayerKeys;
+
 	private long bpt;
 	private long bpr;
 	private long sbpr;
 	private long vpt;
 	private long gas;
 	/* For storage resources, we use a finer-grained estimate in
-	* units of seconds rather than hours, since expiration times
-	* are given in seconds since the (consensus) epoch. */
+	 * units of seconds rather than hours, since expiration times
+	 * are given in seconds since the (consensus) epoch. */
 	private long rbs;
 	private long sbs;
 	private long networkRbs;
 
-	public void resetForTransaction(int memoBytes, int numTransfers, SigUsage sigUsage) {
+	public void resetForTransaction(BaseTransactionMeta baseMeta, SigUsage sigUsage) {
+		final int memoBytes = baseMeta.getMemoUtf8Bytes();
+		final int numTransfers = baseMeta.getNumExplicitTransfers();
+
 		gas = sbs = sbpr = 0;
 
 		bpr = INT_SIZE;
@@ -64,10 +70,10 @@ public class UsageAccumulator {
 		rbs = RECEIPT_STORAGE_TIME_SEC * (BASIC_TX_RECORD_SIZE + memoBytes + BASIC_ACCOUNT_AMT_SIZE * numTransfers);
 
 		networkRbs = RECEIPT_STORAGE_TIME_SEC * BASIC_RECEIPT_SIZE;
+		numPayerKeys = sigUsage.numPayerKeys();
 	}
 
 	/* Resource accumulator methods */
-
 	public void addBpt(long amount) {
 		bpt += amount;
 	}
@@ -101,18 +107,17 @@ public class UsageAccumulator {
 	}
 
 	/* Provider-scoped usage estimates (pure functions of the total resource usage) */
-
 	/* -- NETWORK -- */
 	public long getNetworkBpt() {
 		return bpt;
 	}
 
 	public long getNetworkBpr() {
-		throw new AssertionError("Not implemented!");
+		return 0L;
 	}
 
 	public long getNetworkSbpr() {
-		throw new AssertionError("Not implemented!");
+		return 0L;
 	}
 
 	public long getNetworkVpt() {
@@ -120,7 +125,7 @@ public class UsageAccumulator {
 	}
 
 	public long getNetworkGas() {
-		throw new AssertionError("Not implemented!");
+		return 0L;
 	}
 
 	public long getNetworkRbh() {
@@ -128,65 +133,65 @@ public class UsageAccumulator {
 	}
 
 	public long getNetworkSbh() {
-		throw new AssertionError("Not implemented!");
+		return 0L;
 	}
 
 	/* -- NODE -- */
 	public long getNodeBpt() {
-		throw new AssertionError("Not implemented!");
+		return bpt;
 	}
 
 	public long getNodeBpr() {
-		throw new AssertionError("Not implemented!");
+		return bpr;
 	}
 
 	public long getNodeSbpr() {
-		throw new AssertionError("Not implemented!");
+		return sbpr;
 	}
 
 	public long getNodeVpt() {
-		throw new AssertionError("Not implemented!");
+		return numPayerKeys;
 	}
 
 	public long getNodeGas() {
-		throw new AssertionError("Not implemented!");
+		return 0;
 	}
 
 	public long getNodeRbh() {
-		throw new AssertionError("Not implemented!");
+		return 0;
 	}
 
 	public long getNodeSbh() {
-		throw new AssertionError("Not implemented!");
+		return 0;
 	}
 
 	/* -- SERVICE -- */
 	public long getServiceBpt() {
-		throw new AssertionError("Not implemented!");
+		return 0;
 	}
 
 	public long getServiceBpr() {
-		throw new AssertionError("Not implemented!");
+		return 0;
 	}
 
 	public long getServiceSbpr() {
-		throw new AssertionError("Not implemented!");
+		return 0;
 	}
 
 	public long getServiceVpt() {
-		throw new AssertionError("Not implemented!");
+		return 0;
 	}
 
 	public long getServiceGas() {
-		throw new AssertionError("Not implemented!");
+		return 0;
 	}
 
 	public long getServiceRbh() {
-		throw new AssertionError("Not implemented!");
+		return ESTIMATOR_UTILS.nonDegenerateDiv(rbs, HRS_DIVISOR);
 	}
 
 	public long getServiceSbh() {
-		throw new AssertionError("Not implemented!");
+		return ESTIMATOR_UTILS.nonDegenerateDiv(sbs, HRS_DIVISOR);
 	}
 
 	/* Helpers for test coverage */
@@ -220,5 +225,9 @@ public class UsageAccumulator {
 
 	long getNetworkRbs() {
 		return networkRbs;
+	}
+
+	long getNumPayerKeys() {
+		return numPayerKeys;
 	}
 }

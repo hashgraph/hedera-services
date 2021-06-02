@@ -24,6 +24,7 @@ import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.QueryUsage;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
+import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
@@ -46,6 +47,29 @@ import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 public class CryptoOpsUsage {
 	static EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
 	static Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
+
+	public void cryptoTransferUsage(
+			SigUsage sigUsage,
+			CryptoTransferMeta xferMeta,
+			BaseTransactionMeta baseMeta,
+			UsageAccumulator into
+	) {
+		into.resetForTransaction(baseMeta, sigUsage);
+
+		final int numXfers = baseMeta.getNumExplicitTransfers();
+		final int numTokenXfers = xferMeta.getNumTokensTransfers();
+		final int numTokensInvolved = xferMeta.getNumTokensInvolved();
+		final int tokenMultiplier = xferMeta.getTokenMultiplier();
+
+		final int weightedTokenXfers = tokenMultiplier * numTokenXfers;
+		long incBpt = tokenMultiplier * BASIC_ENTITY_ID_SIZE * numTokensInvolved;
+		incBpt += (weightedTokenXfers + numXfers) * USAGE_PROPERTIES.accountAmountBytes();
+		into.addBpt(incBpt);
+
+		long incRb = numXfers * USAGE_PROPERTIES.accountAmountBytes();
+		incRb += TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(weightedTokenXfers, numXfers);
+		into.addRbs(incRb * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+	}
 
 	public FeeData cryptoInfoUsage(Query cryptoInfoReq, ExtantCryptoContext ctx) {
 		var op = cryptoInfoReq.getCryptoGetInfo();

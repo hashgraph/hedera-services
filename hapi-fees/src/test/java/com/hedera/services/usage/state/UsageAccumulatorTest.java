@@ -1,6 +1,7 @@
 package com.hedera.services.usage.state;
 
 import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.crypto.BaseTransactionMeta;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -43,20 +44,46 @@ class UsageAccumulatorTest {
 		assertEquals(1, subject.getNetworkBpt());
 		assertEquals(4, subject.getNetworkVpt());
 		assertEquals(8, subject.getNetworkRbh());
+		assertEquals(0, subject.getNetworkBpr());
+		assertEquals(0, subject.getNetworkSbpr());
+		assertEquals(0, subject.getNetworkGas());
+		assertEquals(0, subject.getNetworkSbh());
 	}
 
 	@Test
 	void understandsNodePartitioning() {
 		// when:
+		subject.resetForTransaction(new BaseTransactionMeta(memoBytes, numTransfers), sigUsage);
 		subject.addBpt(1);
-		subject.addVpt(4);
-		subject.addNetworkRbs(8 * HRS_DIVISOR);
+		subject.addBpr(2);
+		subject.addSbpr(3);
 
 		// then:
-		assertEquals(1, subject.getNetworkBpt());
-		assertEquals(4, subject.getNetworkVpt());
-		assertEquals(8, subject.getNetworkRbh());
+		assertEquals(baseBpt + 1, subject.getNodeBpt());
+		assertEquals(baseBpr + 2, subject.getNodeBpr());
+		assertEquals(3, subject.getNodeSbpr());
+		assertEquals(sigUsage.numPayerKeys(), subject.getNodeVpt());
+		assertEquals(0, subject.getNodeGas());
+		assertEquals(0, subject.getNodeSbh());
+		assertEquals(0, subject.getNodeRbh());
 	}
+
+	@Test
+	void understandsServicePartitioning() {
+		// when:
+		subject.addRbs(6 * HRS_DIVISOR);
+		subject.addSbs(7 * HRS_DIVISOR);
+
+		// then:
+		assertEquals(0, subject.getServiceBpt());
+		assertEquals(0, subject.getServiceVpt());
+		assertEquals(6, subject.getServiceRbh());
+		assertEquals(0, subject.getServiceBpr());
+		assertEquals(0, subject.getServiceSbpr());
+		assertEquals(0, subject.getServiceGas());
+		assertEquals(7, subject.getServiceSbh());
+	}
+
 
 	@Test
 	void resetWorksForTxn() {
@@ -66,22 +93,18 @@ class UsageAccumulatorTest {
 		subject.addSbs(7);
 
 		// when:
-		subject.resetForTransaction(memoBytes, numTransfers, sigUsage);
+		subject.resetForTransaction(new BaseTransactionMeta(memoBytes, numTransfers), sigUsage);
 
 		// then:
 		assertEquals(baseBpr, subject.getBpr());
 		assertEquals(baseVpt, subject.getVpt());
-		assertEquals(baseBpt, subject.getBpt());
-		assertEquals(
-				RECEIPT_STORAGE_TIME_SEC *
-						(BASIC_TX_RECORD_SIZE + memoBytes + BASIC_ACCOUNT_AMT_SIZE * numTransfers),
-				subject.getRbs());
-		assertEquals(BASIC_RECEIPT_SIZE * RECEIPT_STORAGE_TIME_SEC, subject.getNetworkRbs());
+		assertEquals(baseBpt, subject.getBpt()); assertEquals(baseRbs, subject.getRbs());
+		assertEquals(baseNetworkRbs, subject.getNetworkRbs());
+		assertEquals(sigUsage.numPayerKeys(), subject.getNumPayerKeys());
 		// and:
 		assertEquals(0, subject.getSbpr());
 		assertEquals(0, subject.getGas());
-		assertEquals(0, subject.getSbs());
-	}
+		assertEquals(0, subject.getSbs()); }
 
 	@Test
 	void addersWork() {
