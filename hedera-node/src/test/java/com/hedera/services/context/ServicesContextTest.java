@@ -129,6 +129,7 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttling.HapiThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.throttling.TxnAwareHandleThrottling;
+import com.hedera.services.txns.ExpandHandleSpan;
 import com.hedera.services.txns.TransitionLogicLookup;
 import com.hedera.services.txns.submission.BasicSubmissionFlow;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
@@ -523,6 +524,7 @@ public class ServicesContextTest {
 		assertThat(ctx.invariants(), instanceOf(InvariantChecks.class));
 		assertThat(ctx.narratedCharging(), instanceOf(NarratedLedgerCharging.class));
 		assertThat(ctx.chargingPolicyAgent(), instanceOf(TxnChargingPolicyAgent.class));
+		assertThat(ctx.expandHandleSpan(), instanceOf(ExpandHandleSpan.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

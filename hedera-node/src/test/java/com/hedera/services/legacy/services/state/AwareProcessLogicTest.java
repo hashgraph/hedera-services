@@ -21,6 +21,7 @@ package com.hedera.services.legacy.services.state;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.FeeCalculator;
@@ -39,6 +40,7 @@ import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
+import com.hedera.services.txns.ExpandHandleSpan;
 import com.hedera.services.txns.TransitionLogicLookup;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
@@ -81,6 +83,7 @@ class AwareProcessLogicTest {
 	private ServicesContext ctx;
 	private ExpiryManager expiryManager;
 	private TransactionContext txnCtx;
+	private ExpandHandleSpan expandHandleSpan;
 
 	private AwareProcessLogic subject;
 
@@ -157,9 +160,13 @@ class AwareProcessLogicTest {
 	}
 
 	@Test
-	void shortCircuitsOnInvariantFailure() {
+	void shortCircuitsOnInvariantFailure() throws InvalidProtocolBufferException {
 		setupNonTriggeringTxn();
 
+		expandHandleSpan = mock(ExpandHandleSpan.class);
+
+		given(ctx.expandHandleSpan()).willReturn(expandHandleSpan);
+		given(expandHandleSpan.accessorFor(platformTxn)).willReturn(new PlatformTxnAccessor(platformTxn));
 		given(invariantChecks.holdFor(any(), eq(consensusNow), eq(666L))).willReturn(false);
 
 		// when:
@@ -170,9 +177,13 @@ class AwareProcessLogicTest {
 	}
 
 	@Test
-	void purgesExpiredAtNewConsensusTimeIfInvariantsHold() {
+	void purgesExpiredAtNewConsensusTimeIfInvariantsHold() throws InvalidProtocolBufferException {
 		setupNonTriggeringTxn();
 
+		expandHandleSpan = mock(ExpandHandleSpan.class);
+
+		given(ctx.expandHandleSpan()).willReturn(expandHandleSpan);
+		given(expandHandleSpan.accessorFor(platformTxn)).willReturn(new PlatformTxnAccessor(platformTxn));
 		given(invariantChecks.holdFor(any(), eq(consensusNow), eq(666L))).willReturn(true);
 
 		// when:
@@ -183,11 +194,14 @@ class AwareProcessLogicTest {
 	}
 
 	@Test
-	void decrementsParentConsensusTimeIfCanTrigger() {
+	void decrementsParentConsensusTimeIfCanTrigger() throws InvalidProtocolBufferException {
 		setupTriggeringTxn();
 		// and:
 		final var triggeredTxn = mock(TxnAccessor.class);
+		expandHandleSpan = mock(ExpandHandleSpan.class);
 
+		given(ctx.expandHandleSpan()).willReturn(expandHandleSpan);
+		given(expandHandleSpan.accessorFor(platformTxn)).willReturn(new PlatformTxnAccessor(platformTxn));
 		given(triggeredTxn.isTriggeredTxn()).willReturn(true);
 		given(txnCtx.triggeredTxn()).willReturn(triggeredTxn);
 		given(invariantChecks.holdFor(any(), eq(consensusNow.minusNanos(1L)), eq(666L))).willReturn(true);
