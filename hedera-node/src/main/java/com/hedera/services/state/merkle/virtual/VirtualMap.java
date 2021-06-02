@@ -1,212 +1,143 @@
 package com.hedera.services.state.merkle.virtual;
 
-import com.hedera.services.state.merkle.virtual.persistence.VirtualDataSource;
-import com.hedera.services.state.merkle.virtual.persistence.VirtualRecord;
-import com.swirlds.common.constructable.ConstructableIgnored;
-import com.swirlds.common.crypto.CryptoFactory;
-import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.Archivable;
+import com.swirlds.common.FCMElement;
+import com.swirlds.common.FCMValue;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleExternalLeaf;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
-import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
-import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
 import java.io.IOException;
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.function.Function;
-
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.INVALID_PATH;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.ROOT_PATH;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getIndexInRank;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getLeftChildPath;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getParentPath;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getPathForRankAndIndex;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getRank;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getRightChildPath;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getSiblingPath;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.isFarRight;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.isLeft;
 
 /**
- * A map-like Merkle node designed for working with huge numbers of key/value pairs stored primarily
- * in off-heap memory mapped files and pulled on-heap only as needed. It buffers changes locally and
- * flushes them to storage on {@link #release()}.
+ * A type of Merkle node that is also map-like and is used primarily as storage for
+ * EVM contracts. An EVM contract may have a very large data set stored to disk.
+ * For performance reasons, we don't want to read the entire data set into memory,
+ * hash the entire data set, and write it all back out to disk on each contract
+ * invocation. While this approach leads to very fast storage read/write times
+ * during contract execution, it adds enormous overhead to contract setup/teardown.
+ * Instead, we want to read only the data we need during the contract execution,
+ * efficiently compute the hash, and write only the changed data during teardown.
+ * In a typical large application, there might be 20mb of storage but only a few
+ * kilobytes that get used during contract execution (since reading and writing have
+ * substantial gas costs, contracts do not attempt to read and write all memory,
+ * because they would quickly run out of gas). From a security perspective,
+ * we just need to make sure that the read/write overhead is sufficiently less
+ * than the gas we charge so that it is not possible to slow down the system
+ * (gas is used as a proxy for time, and the gas limit is set to guarantee we
+ * get the TPS that we want).</p>
  *
- * <p>A {@code VirtualMap} is created with a {@link VirtualDataSource}. The {@code VirtualDataSource} is
- * used by the map to read/write data to/from disk. This interface has only one practical implementation
- * in this code base, the {@link com.hedera.services.state.merkle.virtual.persistence.mmap.MemMapDataSource},
- * which is backed by memory-mapped files. Several in-memory data source implementations exist for testing
- * purposes. The API of the data source is closely tied to the needs of the {@code VirtualMap}. This was done
- * intentionally to <strong>reduce temporary objects and misalignment of the API to enhance performance.</strong>.
- * The {@code VirtualDataSource} exists as an implementation interface of the {@code VirtualMap} and is unsuited
- * for generic use.</p>
+ * <p>To achieve this, we have a "virtual" map. It does not implement any of the
+ * java.util.* APIs because it is not necessary and would only add complexity and
+ * overhead to the implementation. It implements a simple get and put method pair.
+ * Access to the storage subsystem (typically, the filesystem) is implemented by
+ * the {@link VirtualDataSource}. Because MerkleNodes must all implement
+ * SerializableDet, and since SerializableDet implementations must have a no-arg
+ * constructor, we cannot be certain that a VirtualMap always has a VirtualDataSource.
+ * However, without one, it will not function, so please make sure the VirtualMap
+ * is configured with a functioning VirtualDataSource before using it.</p>
  *
- * <p>The {@code VirtualMap} buffers changes in memory and only flushes them to the {@code VirtualDataSource} on
- * {@link #release()}. The release should happen in a background thread and not as part of {@code handleTransaction}.
- * This map <strong>does not accept null keys</strong> but does accept null values.</p>
+ * <p>This map <strong>does not accept null keys</strong> but does accept null values.</p>
  *
- * TODO: Right now the implementation will break if commit is called on a background thread. This needs to be fixed.
+ * TODO FIX THESE DOCS
+ * <p>Initially, the VirtualTreeMap starts with an empty tree, it doesn't even have a root.
+ * On the first {@code get}, it defers to the VirtualDataSource to see if the entry
+ * exists. If it does not, it returns null. If it does, then it reads some information
+ * about the {@link VirtualTreeLeaf} that had previously been saved. Specifically, it
+ * reads back the data (256 byte array for EVM) and a {@code Path} that defines the
+ * path from the root of the tree to the leaf. We then decode this path, and read
+ * from the data source the root node's hash from storage, and so on down the path
+ * until we get to the leaf node (we actually instantiate both children of each
+ * internal node on our way down to the leaf, so that we have all the hashes we need
+ * to compute the updated hash later). We then return the data we looked up to the
+ * caller.
+ * <p>
+ * Now that we have a partial tree loaded into memory, if the same {@code get} call
+ * is made for the same key, we will simply return the same cached value. The initial
+ * implementation tries to keep memory costs to a minimum, so it will actually go back
+ * to the data source, read the same info it read previously, discover that it has already
+ * loaded each node along the path, and return the value. A future implementation could
+ * look into FCHashMap or some other cache for reducing costs. It isn't really necessary
+ * since EVM calls are metered and the gas cost is chosen such that it is greater than
+ * the effort we expend.
+ * <p>
+ * When the {@code set} method is called, we go through the same steps as {@code get}
+ * so as to have the values ready for us to set, except that if the value is null, we
+ * do a little more work to construct the node to save. TODO I really do need a local
+ * cache because I want writes to be asynchronous. Time to spend a little more memory...
+ * If the tree needs to be rebalanced, then we update the "Paths" saved for each node
+ * to accurately reflect the new tree structure.
+ * <p>
+ * This node is considered a {@link MerkleExternalLeaf}. As such, it is responsible
+ * for computing its own Hash. Ideally, this would not be the case, but we would
+ * let the platform compute the hashes so they could be done in bulk. The problem with
+ * reconnect. We don't have all the data in memory, and we don't want to create the
+ * entire tree in memory during reconnect. Instead, we need to be able to send the
+ * entire file across during sync. This is trivially done because each DataSource
+ * is backed by a file, so we can just send those file bytes across the network
+ * and reconstitute them on the other side. This avoids having to know ahead of time
+ * the set of keys, or nodes, that exist in the tree.
  *
- * <p>The {@code VirtualMap} is {@code FastCopyable} and should be used in a similar manner to any other normal
- * Swirlds MerkleNode. The {@code VirtualMap} does have some runtime overhead, such as caches, which require
- * size relative to the number of <strong>dirty leaves</strong> in the map, not relative to the number of values
- * read or the number of items in the backing store. On {@code release} these changes are flushed to disk and
- * the caches are cleared. Thus, a node in the Merkle tree that had a VirtualMap has very little overhead when
- * not in use, and very little overhead after release, and reasonable overhead when in use for reasonable-sized
- * changes.</p>
- *
- * TODO: The implementation needs to be made to work with reconnect. There are serialization methods to attend to.
- * TODO: The implementation needs to be integrated into the normal Merkle commit mechanism
- * TODO: The implementation needs to prove out the integration of hashing with how the Merkle tree normally hashes.
- * TODO: I'm not sure how the datasource can be serialized and restored, or how that works.
  */
-@ConstructableIgnored
-public final class VirtualMap
+public final class VirtualMap<K, V extends SelfSerializable>
         extends AbstractMerkleLeaf
-        implements MerkleExternalLeaf {
+        implements Archivable, FCMValue, MerkleExternalLeaf {
 
-    /** Used for serialization **/
     private static final long CLASS_ID = 0xb881f3704885e853L;
-
-    /** Used for serialization **/
     private static final int CLASS_VERSION = 1;
 
     /**
-     * This thread group is used by the threads that do the hashing for the VirtualMap.
-     * Each VirtualMap "family" (the map and its copies) have a single thread in this
-     * thread group.
+     * This data source is used for looking up the values and the
+     * virtual tree leaf node information. All instances of
+     * VirtualTreeMap in the "family" (i.e. that are copies
+     * going back to some first progenitor) share the same exact
+     * dataSource instance. It must be specified before the map is used.
      */
-    private static final ThreadGroup HASHING_GROUP = new ThreadGroup("VirtualMap-Hashers");
+    private /*final*/ VirtualDataSource<K, V> dataSource; // cannot be final due to swirlds des. Can I use @ConstructableIgnored to get around it?
 
     /**
-     * A singleton reference to the Cryptography libraries.
+     * The root node of the inner merkle tree. It always starts off as null,
+     * and on the first "set" on the class we end up creating this. If the
+     * root already existed previously (either from a previous version of
+     * this map or from a previous run of the server) then the hash is
+     * read from the VirtualDataSource.
      */
-    private static final Cryptography CRYPTOGRAPHY = CryptoFactory.getInstance();
+    private VirtualTreeInternal<K, V> root;
 
     /**
-     * Pre-cache the NULL_HASH since we use it so frequently.
+     * Creates a new VirtualTreeMap. {@link #setDataSource} has to be called
+     * before this class is usable.
      */
-    private static final Hash NULL_HASH = CRYPTOGRAPHY.getNullHash();
-
-    /**
-     * This data source is used for looking up the values and the virtual tree information.
-     * All instances of VirtualTreeMap in the "family" (i.e. that are copies
-     * going back to some first progenitor) share the same exact dataSource instance.
-     */
-    private final VirtualDataSource dataSource;
-
-    /**
-     * A local cache that maps from keys to leaves. Normally this map will contain a few
-     * tens of items at most. It is only populated with "dirty" leaves, that were either
-     * newly added or modified.
-     */
-    private final Map<VirtualKey, VirtualRecord> dirtyLeaves = new HashMap<>();
-
-    /**
-     * A secondary cache that maps from leaf paths to dirty leaves. This map is only used
-     * for the case where we need to find the first leaf and modify its position.
-     */
-    private final LongObjectHashMap<VirtualRecord> dirtyLeavesByPath = new LongObjectHashMap<>();
-
-    /**
-     * A map of dirty parent hashes. The map is filled during the process of hashing. This is
-     * threadsafe.
-     */
-    private final MutableLongObjectMap<Future<Hash>> dirtyParentHashes = new LongObjectHashMap<Future<Hash>>().asSynchronized();
-
-    /**
-     * An executor service for processing hashing work. A single executor service is
-     * shared across all copies of a VirtualMap.
-     */
-    private final ExecutorService hashingPool;
-
-    /**
-     * A weak reference to the previous VirtualMap from which this one was copied, or null.
-     * The previous copy is used as a secondary lookup in case of a cache miss on "get" before
-     * going to the data source. This lookup will visit each previous copy until it runs out
-     * of previous copies before going to the data source. We do not use it on "put", since we
-     * will definitely need our own VirtualRecord for put.
-     */
-    private final WeakReference<VirtualMap> prevRef;
-
-    /**
-     * Keeps track of all tree nodes that were deleted. A leaf node that was deleted represents
-     * a result of deleting a key in the main API. A parent node that was deleted represents a node
-     * that was removed as a consequence of shrinking the binary tree.
-     *
-     * // TODO A deleted node might be re-added as a consequence of some sequence of delete and add.
-     * // TODO So we need to remove things from deleted nodes if they are re-added later.
-     */
-//    private final Set<VirtualTreeInternal> deletedInternalNodes = new HashSet<>();
-//    private final Set<VirtualTreeLeaf> deletedLeafNodes = new HashSet<>();
-
-    /**
-     * A future that contains the hash. If the hash is still being computed, then
-     * any "get" on this will block until the computation finishes.
-     */
-    private transient Future<Hash> rootHash;
-
-    /**
-     * The path of the very last leaf in the tree. Can be null if there are no leaves.
-     * It is pushed to the data source on commit.
-     */
-    private long lastLeafPath;
-
-    /**
-     * The path of the very first leaf in the tree. Can be null if there are no leaves.
-     * Its path is pushed to the data source on commit.
-     */
-    private long firstLeafPath;
-
-    /**
-     * Creates a new VirtualTreeMap.
-     */
-    public VirtualMap(VirtualDataSource ds) {
-        this.dataSource = Objects.requireNonNull(ds);
-        this.firstLeafPath = ds.getFirstLeafPath();
-        this.lastLeafPath = ds.getLastLeafPath();
-        this.prevRef = null;
+    public VirtualMap() {
+        this.root = null;
         setImmutable(false);
-
-        final var rh = ds.loadParentHash(ROOT_PATH);
-        this.rootHash = rh == null ? null : completedHash(rh);
-
-        this.hashingPool = Executors.newFixedThreadPool(5, (r) -> {
-            final var thread = new Thread(HASHING_GROUP, r);
-            thread.setDaemon(true);
-            return thread;
-        });
     }
 
     /**
      * Creates a copy based on the given source.
-     *
      * @param source Not null.
      */
-    private VirtualMap(VirtualMap source) {
+    private VirtualMap(VirtualMap<K, V> source) {
         this.dataSource = source.dataSource;
-        this.firstLeafPath = source.firstLeafPath;
-        this.lastLeafPath = source.lastLeafPath;
-        this.rootHash = source.rootHash;
-        this.hashingPool = source.hashingPool;
-        this.prevRef = new WeakReference<>(source);
+        this.root = null;
         this.setImmutable(false);
         source.setImmutable(true);
+    }
+
+    /**
+     * Sets the {@link VirtualDataSource} to use with this map. It should be set once,
+     * and never changed. Ideally this would be a final field supplied in the constructor.
+     *
+     * @param ds The data source. This cannot be null.
+     */
+    public void setDataSource(VirtualDataSource<K, V> ds) {
+        this.dataSource = Objects.requireNonNull(ds);
     }
 
     /**
@@ -215,28 +146,29 @@ public final class VirtualMap
      * @param key The key to use for getting the value. Must not be null.
      * @return The value, or null if there is no such data.
      */
-    public VirtualValue getValue(VirtualKey key) {
-        throwIfReleased();
+    public V getValue(K key) {
         Objects.requireNonNull(key);
-
-        // Either return the latest dirty value, or get the value from the data source
-        var rec = findDirtyRecord((m) -> m.dirtyLeaves.get(key));
-        return rec == null ? dataSource.getLeafValue(key) : rec.getValue();
+        return dataSource.getData(key);
     }
 
     /**
      * Puts the given value into the map, associated with the given key. The key
-     * must be non-null. Cannot be called if the map is immutable.
+     * must be non-null.
      *
-     * @param key   A non-null key
+     * @param key A non-null key
      * @param value The value. May be null.
      */
-    public void putValue(VirtualKey key, VirtualValue value) {
-        throwIfImmutable();
+    public void putValue(K key, V value) {
+        // Validate the key.
         Objects.requireNonNull(key);
-        final var rec = findRecord(key);
-        if (rec != null) {
-            rec.setValue(value);
+
+        // Get the current record for the key
+        final var path = dataSource.getPathForKey(key);
+        final var record = path == null ? null : dataSource.getRecord(path);
+
+        // Handle the modification
+        if (record != null) {
+            update(value, record);
         } else {
             add(key, value);
         }
@@ -247,85 +179,28 @@ public final class VirtualMap
      *
      * @param key A non-null key
      */
-    public void deleteValue(VirtualKey key) {
+    public void deleteValue(K key) {
         // Validate the key.
         Objects.requireNonNull(key);
 
-        // TODO not sure yet how delete works with the cache.
-
         // Get the current record for the key
-//        final var record = dataSource.getRecord(key);
-//        if (record != null) {
-//            // TODO delete the node associated with this record. We gotta realize everything to get hashes right
-//            // and move everything around as needed.
-//        }
+        final var path = dataSource.getPathForKey(key);
+        final var record = path == null ? null : dataSource.getRecord(path);
+        delete(record);
     }
 
     @Override
-    public VirtualMap copy() {
+    public FCMElement copy() {
         throwIfImmutable();
         throwIfReleased();
-
-        // Since we know that at the time of copy there can be no more changes to this map,
-        // this is a good time to start the background hashing work. Hopefully by the time
-        // any code asks for the hash code, or tries to release the copy, the hashing will
-        // either be done or have done substantial work.
-        recomputeHash();
-
-        // Return the copy.
-        return new VirtualMap(this);
-    }
-
-    @Override
-    protected void onRelease() {
-        // NOTE: The copies need to be released IN ORDER or we will end up writing older state
-        // over top newer state.
-        throwIfReleased();
-
-        // NOTE: It is assumed that this method is being called on a background thread, although
-        // it can be called from any thread. The method WILL NOT RETURN until all hashes have
-        // been recomputed and all state saved successfully.
-
-        // Write the leaf paths
-        this.dataSource.writeFirstLeafPath(firstLeafPath);
-        this.dataSource.writeLastLeafPath(lastLeafPath);
-
-        // Write all the dirty leaves
-        this.dirtyLeaves.values().stream()
-                .filter(VirtualRecord::isDirty)
-                .forEach(dataSource::saveLeaf);
-
-        // TODO Delete all leaves and parents that are no longer needed
-
-        // Write all the dirty parent hashes
-        dirtyParentHashes.forEachKeyValue((k, v) -> {
-            try {
-                dataSource.saveParent(k, v.get());
-            } catch (InterruptedException | ExecutionException e) {
-                // TODO Not sure what to do here!!
-                e.printStackTrace();
-            }
-        });
-
-        // Although this instance should be garbage collected soon, we might as well
-        // proactively clear these data structures, just in case the VirtualMap instance
-        // is held on to a little longer than expected.
-        dirtyLeaves.clear();
-        dirtyLeavesByPath.clear();
-        dirtyParentHashes.clear();
+        return new VirtualMap<>(this);
     }
 
     @Override
     public Hash getHash() {
-        // In case it hasn't been computed yet, recompute it
-        recomputeHash();
-        final var rh = getRootHash();
-        return rh == null ? NULL_HASH : rh; // Really should never be null by this point...
-    }
-
-    @Override
-    public void setHash(Hash hash) {
-        throw new UnsupportedOperationException("Cannot set the hash on this node, it is computed");
+        // Realize the root node, if it doesn't already exist
+        final var r = root == null ? realizeInternalNode(null, Path.ROOT_PATH) : root;
+        return r.getHash();
     }
 
     @Override
@@ -336,6 +211,19 @@ public final class VirtualMap
     @Override
     public int getVersion() {
         return CLASS_VERSION;
+    }
+
+    @Override
+    public void archive() {
+        // I only want to delegate the "archive" call to the data source if this
+        // is the very last merkle tree to exist, not if it has been copied
+        if (!isImmutable()) {
+            try {
+                dataSource.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     @Override
@@ -358,354 +246,292 @@ public final class VirtualMap
         // TODO?
     }
 
+    // ----------------------------------------------------------------------------------------------------
+    //
+    // TODO Review this documentation for accuracy
+    // Implementation of tree functionality, such as adding nodes, walking the tree, realizing nodes,
+    // deleting nodes, etc.
+    //
+    // Definitions:
+    //   - Node: Either a VirtualTreeInternal or a VirtualTreeLeaf. Every "parent" node, including the
+    //           root node is a VirtualTreeInternal.
+    //
+    //   - Ghost Node: A "ghost" node is one that exists in the data source but has no associated node instance
+    //                 in memory yet.
+    //
+    //   - Realized Node: A "realize" node is one that was once a ghost, but is no longer. To "realize" is
+    //                    the process of reading a ghost from disk and creating an instance of the node
+    //                    in Java.
+    //
+    //   - Path: Each node has a unique path. Since our tree is a binary tree, every internal node has,
+    //           conceptually, two children; a left, and a right. In reality, sometimes the node has only
+    //           one child, and the second is left null, but this is just an optimization. No parent node
+    //           ever has zero children. "Left" nodes are represented with a "0" and "right" nodes are
+    //           represented with a "1". The Path is made up of two pieces of information: a "rank", and
+    //           a 64-bit number. Using the "rank", you can determine how many bits in the number are used
+    //           for that path. Using this system, a tree cannot be more than 64 levels deep (which is
+    //           way more than we need). The node on the far left side of any level will have a number of
+    //           all zeros. The node on the far right side of any level will have all ones. All other nodes
+    //           have some sequence of 0's and 1's that tell us how to walk from the root down to the node,
+    //           turning "left" or "right" as we traverse at each level.
+    //
+    //  Notes:
+    //   - Paths on a node change when the tree is modified. Since paths are used for node Ids and stored in
+    //     in the data source, when the tree is modified it may be necessary to update the path associated
+    //     with a node. This makes it difficult to have asynchronous writes (it requires some cache in the
+    //     data source that will know the new value before it is visible in the memory mapped file, for example).
+    //
+    //   - We store in the data source the Path of the very last leaf node on the right. This makes it trivial
+    //     to add and remove nodes in constant time.
+    //
+    //   - We always add nodes from "left to right". When a level if full (the last leaf node path is all 1's),
+    //     then we insert an internal node where the left-most leaf node was, move that leaf down a level,
+    //     and add the new leaf. A similar technique is used for every time we have to add a child to an
+    //     internal node that is already full.
+    //
+    // ----------------------------------------------------------------------------------------------------
+
     /**
-     * Finds the VirtualRecord corresponding to the given key, first by looking
-     * among the dirty records, and failing that, by looking in the data source.
-     * Returns null if no record can be found anywhere.
-     */
-    private VirtualRecord findRecord(VirtualKey key) {
-        assert key != null;
-
-        // Find the dirty record, or if it wasn't dirty, then load it from the data source
-        var rec = findDirtyRecord((m) -> m.dirtyLeaves.get(key));
-        if (rec == null) {
-            rec = dataSource.loadLeaf(key);
-            // If we found it as a clean record, then we mark it dirty
-            if (rec != null) {
-                dirtyLeaves.put(key, rec);
-                dirtyLeavesByPath.put(rec.getPath(), rec);
-            }
-        }
-
-        return rec;
-    }
-
-    /**
-     * Finds the VirtualRecord corresponding to the given leaf path, first by looking
-     * among the dirty records, and failing that, by looking in the data source.
-     * Returns null if no record can be found anywhere.
-     */
-    private VirtualRecord findRecord(long path) {
-        // Find the dirty record, or if it wasn't dirty, then load it from the data source
-        var rec = findDirtyRecord((m) -> m.dirtyLeavesByPath.get(path));
-        if (rec == null) {
-            rec = dataSource.loadLeaf(path);
-            // If we found it as a clean record, then we mark it dirty
-            if (rec != null) {
-                dirtyLeaves.put(rec.getKey(), rec);
-                dirtyLeavesByPath.put(rec.getPath(), rec);
-            }
-        }
-
-        return rec;
-    }
-
-    /**
-     * Finds a dirty record by checking this virtual map, and each previous one in the "copy chain"
-     * until it either finds the dirty record, or has exhaustively searched. Since older copies may
-     * have been GC'd, we use a WeakReference to point to each previous version. We are given the
-     * guarantee that before a previous copy has been GC'd, it has been persisted, so that if we
-     * fail to find a dirty record, looking up the value in the data source will give us the
-     * latest info.
+     * Looks for and returns the VirtualTreeLeaf at this Path. If the leaf was a ghost, it
+     * is realized. If the Path does not refer to a leaf node, then null is returned.
      *
-     * @param supplier A function that takes a VirtualMap and returns a dirty VirtualRecord, if that
-     *                 map had one. This indirection allows us to consolidate logic for iteration
-     *                 into one place while allowing callers to look up by path or key.
-     * @return The VirtualRecord if a dirty one was found, or null.
+     * @param path A path to the leaf. Can be null.
+     * @return A VirtualTreeLeaf, if there is one, realizing it if needed. If Path is null, return a null.
+     *         If the path doesn't refer to a leaf node (perhaps the path is greater than the last leaf
+     *         node or smaller than the first leaf node) then return null.
      */
-    private VirtualRecord findDirtyRecord(Function<VirtualMap, VirtualRecord> supplier) {
-        var rec = supplier.apply(this);
-        if (rec != null) {
-            return rec;
-        } else {
-            var p = prevRef == null ? null : prevRef.get();
-            while (p != null && !p.isReleased()) {
-                rec = supplier.apply(p);
-                if (rec != null) {
-                    return rec;
-                }
-                p = p.prevRef == null ? null : p.prevRef.get();
-            }
+    private VirtualTreeLeaf<K, V> findLeaf(Path path) {
+        // Quick check for null or root. Always return null in this case
+        if (path == null || path.isRoot()) {
+            return null;
         }
 
-        return null;
+        // Check for whether there are any leaves at all
+        final var lastLeafPath = dataSource.getLastLeafPath();
+        if (lastLeafPath == null) {
+            return null;
+        }
+
+        // Check whether the path is "greater than" the last leaf node.
+        // There cannot be any valid leaf after the lastLeafPath
+        if (path.isAfter(lastLeafPath)) {
+            return null;
+        }
+
+        // Check whether the path is "less than" the first leaf node.
+        final var firstLeafPath = dataSource.getFirstLeafPath();
+        if (path.isBefore(firstLeafPath)) {
+            return null;
+        }
+
+        // Now we know that we have a valid leaf path, we start walking the tree from the root.
+        // If we encounter a ghost, we realize it into an instance. Eventually, we'll find
+        // the leaf, and we can return it.
+
+        // If the root node is a ghost, then we realize it first (we know we will need it)
+        if (root == null) {
+            root = realizeInternalNode(null, Path.ROOT_PATH);
+        }
+
+        // The mask will have zeros on the high order bits and ones on the low order bits.
+        // Given some path, we will 'and' the mask with the path to get just the low order
+        // path elements.
+        var mask = 1L;
+        var parent = root;
+        VirtualTreeInternal<K, V> node;
+
+        // We start on the first child of root, and iterate until just before the leaf.
+        // Basically, we just want to walk down the internal nodes. At the end of this
+        // loop, "parent" will point to the parent of the leaf node.
+        for (byte i = 0; i<path.rank -1; i++) {
+            // i represents the child node that we're trying to visit.
+            final var decisionMask = 1L << i;
+            final var flag = (path.path & decisionMask) == 0;
+            node = (VirtualTreeInternal<K, V>) (flag ? parent.getLeftChild() : parent.getRightChild());
+
+            // If the node is null, we realize it.
+            if (node == null) {
+                node = realizeInternalNode(parent, new Path((byte)(i + 1), path.path & mask));
+            }
+
+            // Adjust the mask to prepare for the next iteration
+            mask = (mask << 1) | 0x1L;
+            parent = node;
+        }
+
+        // Parent is now the parent, and it has already been realized.
+        // Get the child and verify that the child is not a ghost.
+        var leaf = (VirtualTreeLeaf<K, V>) (path.isLeft() ? parent.getLeftChild() : parent.getRightChild());
+        if (leaf == null) {
+            leaf = realizeLeafNode(parent, path);
+        }
+
+        return leaf;
+    }
+
+    private void delete(VirtualRecord<K> record) {
+        // Nothing to do if we're deleting something that doesn't exist!
+        if (record != null) {
+            // TODO delete the node associated with this record. We gotta realize everything to get hashes right
+            // and move everything around as needed.
+        }
     }
 
     /**
-     * Adds a new leaf with the given key and value. The precondition to calling this
-     * method is that the key DOES NOT have a corresponding leaf already either in the
-     * dirty records or in the data source.
+     * Update a value.
      *
-     * @param key   A non-null key. Previously validated.
-     * @param value The value to add. May be null.
+     * @param value A potentially null value, or a 256-byte array
+     * @param record A non-null record related to the leaf node to update.
      */
-    private void add(VirtualKey key, VirtualValue value) {
-        // We're going to imagine what happens to the leaf and the tree without
-        // actually bringing into existence any nodes. Virtual Virtual!!
+    private void update(V value, VirtualRecord<K> record) {
+        // Finds the leaf, realizing it if necessary. Because record is not null,
+        // we know *FOR SURE* that the leaf and all its parents exist, so we can
+        // simply walk the tree looking for it.
+        final var leaf = findLeaf(record.getPath());
+        save(record.getKey(), value, leaf);
+    }
+
+    /**
+     * Adds a new leaf with the given key and value. At this point, we know for
+     * certain that there is no record in the data source for this key, so
+     * we can assume that here.
+     *
+     * @param key A non-null 256-byte key. Previously validated.
+     * @param value Either null, or a non-null 256-byte value.
+     */
+    private void add(K key, V value) {
+        // Gotta create the root, if there isn't one.
+        if (root == null) {
+            root = realizeInternalNode(null, Path.ROOT_PATH);
+        }
 
         // Find the lastLeafPath which will tell me the new path for this new item
-        if (lastLeafPath == INVALID_PATH) {
+        Path leafPath;
+        VirtualTreeLeaf<K, V> newLeaf;
+        final var lastLeafPath = dataSource.getLastLeafPath();
+        if (lastLeafPath == null) {
             // There are no leaves! So this one will just go right on the root
-            final var leafPath = getLeftChildPath(ROOT_PATH);
-            final var newLeaf = new VirtualRecord(NULL_HASH, leafPath, key, value);
-            newLeaf.makeDirty();
-            // Save state.
-            this.firstLeafPath = leafPath;
-            this.lastLeafPath = leafPath;
-            dirtyLeaves.put(key, newLeaf);
-            dirtyLeavesByPath.put(leafPath, newLeaf);
-        } else if (isLeft(lastLeafPath)) {
+            leafPath = new Path((byte)1, 0);
+            final var rec = new VirtualRecord<>(null, leafPath, key);
+            newLeaf = new VirtualTreeLeaf<>(dataSource, rec);
+            root.setLeftChild(newLeaf);
+            dataSource.writeFirstLeafPath(leafPath);
+        } else if (lastLeafPath.isLeft()) {
             // If the lastLeafPath is on the left, then this is easy, we just need
-            // to add the new leaf to the right of it, on the same parent
-            final var parentPath = getParentPath(lastLeafPath);
-            assert parentPath != INVALID_PATH; // Cannot happen because lastLeafPath always points to a leaf in the tree
-            final var leafPath = getRightChildPath(parentPath);
-            final var newLeaf = new VirtualRecord(NULL_HASH, leafPath, key, value);
-            newLeaf.makeDirty();
-            // Save state.
-            lastLeafPath = leafPath;
-            dirtyLeaves.put(key, newLeaf);
-            dirtyLeavesByPath.put(leafPath, newLeaf);
+            // to add the new leaf to the right of it, on the same parent (same
+            // path with a 1 as the MSB)
+            final long mask = 1L << (lastLeafPath.rank - 1);
+            leafPath = new Path(lastLeafPath.rank, lastLeafPath.path | mask);
+            final var rec = new VirtualRecord<>(null, leafPath, key);
+            newLeaf = new VirtualTreeLeaf<>(dataSource, rec);
+            root.setRightChild(newLeaf);
         } else {
             // We have to make some modification to the tree because there is not
             // an open slot. So we need to pick a slot where a leaf currently exists
             // and then swap it out with a parent, move the leaf to the parent as the
             // "left", and then we can put the new leaf on the right. It turns out,
-            // the slot is always the firstLeafPath. If the current firstLeafPath
+            // the slot is always the firstLeafPath.
+            final var firstLeafPath = dataSource.getFirstLeafPath();
+
+            // Now we have to find the next "firstLeafPath". If the current firstLeafPath
             // is all the way on the far right of the graph, then the next firstLeafPath
             // will be the first leaf on the far left of the next level. Otherwise,
             // it is just the sibling to the right.
-            final var nextFirstLeafPath = isFarRight(firstLeafPath) ?
-                    getPathForRankAndIndex((byte) (getRank(firstLeafPath) + 1), 0) :
-                    getPathForRankAndIndex(getRank(firstLeafPath), getIndexInRank(firstLeafPath) + 1);
+            final var mask = ~(-1L << firstLeafPath.rank);
+            final var firstLeafIsOnFarRight = (firstLeafPath.path & mask) == mask;
+            final var nextFirstLeafPath = firstLeafIsOnFarRight ?
+                    new Path((byte)(firstLeafPath.rank + 1), 0) :
+                    Path.getPathForRankAndIndex(firstLeafPath.rank, firstLeafPath.getIndex() + 1);
 
-            // The firstLeafPath points to the old leaf that we want to replace.
-            // Get the old leaf. Could be null, if it has not been realized.
-            final var oldLeafPath = firstLeafPath;
-            final var oldLeaf = findRecord(oldLeafPath);
-
-            // Create a new internal node that is in the position of the old leaf and attach it to the parent
-            // on the left side.
-            final var newSlotParentPath = firstLeafPath;
-
-            // Put the new item on the right side of the new parent.
-            final var leafPath = getRightChildPath(newSlotParentPath);
-            final var newLeaf = new VirtualRecord(NULL_HASH, leafPath, key, value);
-            newLeaf.makeDirty();
-            dirtyLeaves.put(key, newLeaf);
-            dirtyLeavesByPath.put(leafPath, newLeaf);
-            // Add the leaf nodes to the newSlotParent
-            if (oldLeaf != null) {
-                dirtyLeavesByPath.remove(oldLeafPath);
-                oldLeaf.setPath(getLeftChildPath(newSlotParentPath));
-                dirtyLeavesByPath.put(oldLeaf.getPath(), oldLeaf);
-            }
-
-            // Save the first and last leaf paths
-            firstLeafPath = nextFirstLeafPath;
-            lastLeafPath = leafPath;
-        }
-    }
-
-    /**
-     * Gets the root hash. Blocks until the hash has been computed. Returns null if the
-     * hashing either failed or if we have not performed any hashing at all.
-     *
-     * @return The hash, after blocking for the result if needed. May return null.
-     */
-    private Hash getRootHash() {
-        try {
-            return rootHash == null ? null : rootHash.get();
-        } catch (InterruptedException | ExecutionException e) {
-            // TODO Not sure what to do if this fails... Try, try, again?
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    /**
-     * If needed, recomputes the hashes of all parent nodes of dirty leaves and updates the
-     * rootHash to be a Future with the final result of all that hashing.
-     */
-    private void recomputeHash() {
-        // Get the old hash so we can see whether we need to recompute it at all.
-        // Note that this call blocks if there was a previous hash running that
-        // hasn't completed yet. This is critical, otherwise we may lose some
-        // information about what needs to be rehashed and end up with the wrong
-        // hash in the end.
-        Hash hash = getRootHash();
-
-        // Only recompute if we have to.
-        if (hash == null || !dirtyLeaves.isEmpty() || NULL_HASH.equals(hash)) {
-
-            // First, process all of the leaves. We need to make sure we only handle each
-            // leaf once, but we also have to deal with siblings. So we'll have an array
-            // of dirty leaves, sorted by path. Thus, two siblings will be side-by-side in
-            // the array if they are both dirty. If a sibling is missing, then it was clean and
-            // I need to look up its hash from the data source. I create a HashJobData, add it
-            // to the hashWork queue, and process the next (non-sibling) leaf.
-            final var dirtyLeaves = new ArrayList<>(this.dirtyLeaves.values());
-            final var numDirtyLeaves = dirtyLeaves.size();
-            dirtyLeaves.sort((a, b) -> Long.compare(b.getPath(), a.getPath())); // reverse the order
-
-            // The hashWork queue will hold hashing work for parents. This is basically my reverse iterator.
-            final var hashWork = new LinkedList<HashJobData>();
-
-            // Process the leaves, adding dirty parents to the hashWork queue.
-            for (int i=0; i<numDirtyLeaves; i++) {
-                // We may have a dirty left leaf followed by a possible dirty right, or a
-                // dirty right with a clean left.
-                final var leaf = dirtyLeaves.get(i);
-                final var leafPath = leaf.getPath();
-                final var nextLeaf = i == numDirtyLeaves - 1 ? // Are we on the last iteration?
-                        null : // If we're on the last iteration, there is no next.
-                        dirtyLeaves.get(i + 1);
-
-                HashJobData data;
-
-                // If the next leaf is the sibling of this leaf, then we don't need to look
-                // it up in the data source
-                final var siblingPath = getSiblingPath(leafPath);
-                if (nextLeaf != null && nextLeaf.getPath() == siblingPath) {
-                    i++; // Increment so we skip this leaf on the next iteration
-                    data = new HashJobData(
-                            getParentPath(leafPath),
-                            leaf.getFutureHash(),
-                            nextLeaf.getFutureHash());
-                } else {
-                    // nextLeaf was not the sibling. This might have happened because there were
-                    // no more leaves in the list, but a sibling might *now* exist which is a parent
-                    // and can be found on the hashJobData. Look there. If we find the sibling there,
-                    // then we use that. Otherwise, we need to look it up in the data source.
-                    if (nextLeaf == null && !hashWork.isEmpty() && hashWork.getFirst().path == siblingPath) {
-                        final var siblingData = hashWork.removeFirst();
-                        data = new HashJobData(
-                                getParentPath(leafPath),
-                                leaf.getFutureHash(),
-                                siblingData.hash);
-                    } else {
-                        // nextLeaf was not the sibling, so we need to look it up. There might be no
-                        // sibling, in which case it will be null. A leaf might have a leaf OR a parent
-                        // as a sibling, so we need to check both in the case one is null.
-                        final var siblingLeaf = dataSource.loadLeaf(siblingPath);
-                        if (siblingLeaf != null) {
-                            data = new HashJobData(
-                                    getParentPath(leafPath),
-                                    leaf.getFutureHash(),
-                                    siblingLeaf.getFutureHash());
-                        } else {
-                            final var siblingParent = dataSource.loadParentHash(siblingPath);
-                            data = new HashJobData(
-                                    getParentPath(leafPath),
-                                    leaf.getFutureHash(),
-                                    siblingParent == null ? null : completedHash(siblingParent));
-                        }
-                    }
-                }
-                data.hash = hashingPool.submit(() -> compute(data.leftHash, data.rightHash));
-                dirtyParentHashes.put(data.path, data.hash);
-                hashWork.addLast(data);
-            }
-
-            // Now we start processing all of the HashJobData that has been setup. For each
-            // one, we will create a new Future for creating the hash. Just like with the
-            // leaves, we need to look for siblings and make sure we're not processing siblings
-            // unnecessarily. Fortunately, just like with the leaves, if there *is* a sibling,
-            // it will be the next item in the hashJobData list, since we were careful to
-            // processing leaves in reverse order. As we process each parent, we add it to
-            // the hashJobData, and keep iterating until we've eventually handled everything.
-            this.rootHash = null;
-            while (!hashWork.isEmpty()) {
-                // FIFO, pull off the first, push on the last.
-                final var data = hashWork.removeFirst();
-                final var path = data.path;
-
-                if (path == ROOT_PATH) {
-                    // Also set this future as the rootHash.
-                    assert hashWork.isEmpty();
-                    this.rootHash = data.hash;
-                } else {
-                    HashJobData newData;
-                    // We're not at the root yet, so we need to look for a sibling. Fortunately,
-                    // if there is a dirty sibling, it will be next on the hashJobData list.
-                    // Otherwise, we load it from dataSource. Add the new HashJobData to the
-                    // list to be processed next.
-                    final var siblingPath = getSiblingPath(path);
-                    if (!hashWork.isEmpty() && hashWork.getFirst().path == siblingPath) {
-                        // The next node is a sibling, so lets remove it too
-                        final var sibling = hashWork.removeFirst();
-                        newData = new HashJobData(
-                                getParentPath(path),
-                                data.hash,
-                                sibling.hash);
-                    } else {
-                        // No dirty sibling, so get a fresh one from the data source
-                        final var siblingHash = dataSource.loadParentHash(siblingPath);
-                        newData = new HashJobData(
-                                getParentPath(path),
-                                data.hash,
-                                siblingHash == null ? null : completedHash(siblingHash));
-                    }
-
-                    newData.hash = hashingPool.submit(() -> compute(newData.leftHash, newData.rightHash));
-                    dirtyParentHashes.put(newData.path, newData.hash);
-                    hashWork.addLast(newData);
-                }
-            }
-
-            try {
-                // block until it is done hashing. Might actually care to do that here.
-                rootHash.get();
-            } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
-                // TODO oof, now what?
-            }
-        }
-    }
-
-    private Hash compute(Future<Hash> leftHash, Future<Hash> rightHash) {
-//                        System.out.println("Hashing (" + getRank(path) + ", " + getBreadcrumbs(path) + ")");
-        try {
-            if (leftHash == null && rightHash != null) {
-                // Since there is only a rightHash, we might as well pass it up and not bother
-                // hashing anything at all.
-                return rightHash.get();
-            } else if (leftHash != null && rightHash == null) {
-                // Since there is only a left hash, we can use it as our hash
-                return leftHash.get();
-            } else if (leftHash != null) {
-                // BTW: This branch is hit if right and left hash != null.
-                // Since we have both a left and right hash, we need to hash them together.
-                assert leftHash.get() != null;
-                assert rightHash.get() != null;
-
-                // Hash it.
-                final var hash1 = leftHash.get();
-                final var hash2 = rightHash.get();
-                return CRYPTOGRAPHY.calcRunningHash(hash1, hash2, DigestType.SHA_384);
+            final var oldLeaf = findLeaf(firstLeafPath);
+            final var parent = oldLeaf.getParent();
+            final var newSlotParent = realizeInternalNode(parent, firstLeafPath);
+            if (firstLeafPath.isLeft()) {
+                parent.setLeftChild(newSlotParent);
             } else {
-                System.err.println("Both children were null. This shouldn't be possible!");
-                return NULL_HASH;
+                parent.setRightChild(newSlotParent);
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            // TODO not sure what to do with exceptions here
-            return NULL_HASH;
+            leafPath = firstLeafPath.getRightChildPath();
+            final var rec = new VirtualRecord<>(null, leafPath, key);
+            newLeaf = new VirtualTreeLeaf<>(dataSource, rec);
+            newSlotParent.setLeftChild(oldLeaf);
+            newSlotParent.setRightChild(newLeaf);
+
+            dataSource.writeFirstLeafPath(nextFirstLeafPath);
         }
+
+        save(key, value, newLeaf);
+
+        // Now record our new lastLeafPath
+        dataSource.writeLastLeafPath(leafPath);
     }
 
-    private Future<Hash> completedHash(Hash data) {
-        final var future = new CompletableFuture<Hash>();
-        future.complete(data);
-        return future;
+    private void save(K key, V value, VirtualTreeLeaf<K, V> leaf) {
+        Path leafPath = leaf.getPath();
+        leaf.setData(value);
+        final var newRecord = new VirtualRecord<>(null, leafPath, key);
+        dataSource.writeRecord(leafPath, newRecord);
+        dataSource.writeData(newRecord.getKey(), value);
+    }
+
+    /**
+     * Either convert a ghost node to a realized one, or create a new one.
+     *
+     * @param parent The parent, can be null.
+     * @param path The path to this node.
+     * @return A non-null internal node
+     */
+    private VirtualTreeInternal<K, V> realizeInternalNode(VirtualTreeInternal<K, V> parent, Path path) {
+        // It is possible that we haven't recorded the hash, maybe because we have invalidated
+        // it and haven't refreshed it, or something. Whatever, we'll survive.
+        final var hash = dataSource.getHash(path);
+        final var node = new VirtualTreeInternal<>(dataSource);
+        node.setHash(hash);
+
+        // The parent may be null if this is the root node.
+        if (parent != null) {
+            if(path.isLeft()) {
+                parent.setLeftChild(node);
+            } else {
+                parent.setRightChild(node);
+            }
+        }
+
+        return node;
+    }
+
+    /**
+     * Either convert a ghost node to a realized one, or create a new one.
+     *
+     * @param parent The parent, cannot be null.
+     * @param path The path, cannot be null
+     * @return A non-null virtual leaf
+     */
+    private VirtualTreeLeaf<K, V> realizeLeafNode(VirtualTreeInternal<K, V> parent, Path path) {
+        final var record = dataSource.getRecord(path);
+        if (record == null) {
+            throw new IllegalStateException("Unexpectedly encountered a null record for a leaf that " +
+                    "should have existed.");
+        }
+
+        final var leaf = new VirtualTreeLeaf<>(dataSource, record);
+        final var data = dataSource.getData(record.getKey());
+        leaf.setData(data);
+        leaf.setHash(record.getHash());
+        if (path.isLeft()) {
+            parent.setLeftChild(leaf);
+        } else {
+            parent.setRightChild(leaf);
+        }
+        return leaf;
     }
 
     public String getAsciiArt() {
-        if (lastLeafPath == INVALID_PATH) {
+        if (root == null) {
             return "<Empty>";
         }
 
-        final var nodeWidth = 10; // Let's reserve this many chars for each node to write their name.
+        final var nodeWidth = 8; // Let's reserve this many chars for each node to write their name.
 
         // Use this for storing all the strings we produce as we go along.
         final var strings = new ArrayList<List<String>>(64);
@@ -714,7 +540,7 @@ public final class VirtualMap
         strings.add(l);
 
         // Simple depth-first traversal
-        print(strings, ROOT_PATH);
+        print(strings, root);
 
         final var buf = new StringBuilder();
         final var numRows = strings.size();
@@ -735,86 +561,37 @@ public final class VirtualMap
         return buf.toString();
     }
 
-    private void print(List<List<String>> strings, long path) {
+    private void print(List<List<String>> strings, VirtualTreeNode<K, V> node) {
         // Write this node out
-        final var rank = getRank(path);
-        final var pnode = Long.compare(path, firstLeafPath) < 0;
-        final var dirtyMark = !pnode && dirtyLeavesByPath.containsKey(path) ? "*" : "";
-        strings.get(rank).set(getIndexInRank(path), dirtyMark + "(" + (pnode ? "P" : "L") + ", " + (getIndexInRank(path)) + ")" + dirtyMark);
+        final var path = node.getPath();
+        final var rank = path.rank;
+        final var pnode = node instanceof VirtualTreeInternal;
+        strings.get(rank).set(path.getIndex(), "(" + (pnode ? "P" : "L") + ", " + path.path + ")");
 
         if (pnode) {
-            // Make sure we have another level down to go.
-            if (strings.size() <= rank + 1) {
-                final var size = (int)Math.pow(2, rank+1);
-                final var list = new ArrayList<String>(size);
-                for (int i=0; i<size; i++) {
-                    list.add("( )");
+            final var parent = (VirtualTreeInternal<K, V>) node;
+            final var left = parent.getLeftChild();
+            final var right = parent.getRightChild();
+            if (left != null || right != null) {
+                // Make sure we have another level down to go.
+                if (strings.size() <= rank + 1) {
+                    final var size = (int)Math.pow(2, rank+1);
+                    final var list = new ArrayList<String>(size);
+                    for (int i=0; i<size; i++) {
+                        list.add("( )");
+                    }
+                    strings.add(list);
                 }
-                strings.add(list);
-            }
 
-            print(strings, getLeftChildPath(path));
-            print(strings, getRightChildPath(path));
+                if (left != null) {
+                    print(strings, left);
+                }
+
+                if (right != null) {
+                    print(strings, right);
+                }
+            }
         }
     }
 
-    private static final class HashJobData {
-        private final long path;
-        private final Future<Hash> leftHash;
-        private final Future<Hash> rightHash;
-        private transient Future<Hash> hash;
-
-        HashJobData(long path, Future<Hash> leftHash, Future<Hash> rightHash) {
-            this.path = path;
-            this.leftHash = leftHash;
-            this.rightHash = rightHash;
-        }
-    }
-
-    private static final class HashWorkQueue {
-        private HashJobData[] q;
-        private int head = -1; // Points to first
-        private int tail = -1; // Points to last
-
-        public HashWorkQueue(int initialSize) {
-            q = new HashJobData[initialSize];
-        }
-
-        public HashJobData getFirst() {
-            return q[head];
-        }
-
-        public HashJobData getLast() {
-            return q[tail];
-        }
-
-        public HashJobData get(int index) {
-            if (index < head || index > tail) {
-                throw new IndexOutOfBoundsException();
-            }
-
-            return q[index];
-        }
-
-        public void addLast(HashJobData data) {
-            head = 0;
-            tail += 1;
-            if (tail >= q.length) {
-                q = Arrays.copyOf(q, q.length * 2);
-            }
-            q[tail] = data;
-        }
-
-        public boolean isEmpty() {
-            return head == -1;
-        }
-
-        public int size() {
-            return head == -1 ? 0 : tail - head + 1;
-        }
-
-        public void reset() {
-            head = tail = -1;
-        }
-    }
 }

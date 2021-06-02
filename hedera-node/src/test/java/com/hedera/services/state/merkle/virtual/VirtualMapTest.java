@@ -1,71 +1,48 @@
 package com.hedera.services.state.merkle.virtual;
 
-import com.hedera.services.state.merkle.virtual.persistence.VirtualDataSource;
-import com.hedera.services.state.merkle.virtual.persistence.VirtualRecord;
-import com.hedera.services.state.merkle.virtual.persistence.mmap.MemMapDataSource;
-import com.hedera.services.state.merkle.virtual.persistence.mmap.VirtualMapDataStore;
 import com.swirlds.common.crypto.Hash;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
-
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.INVALID_PATH;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 
 public class VirtualMapTest {
 
     @Test
-    public void nullDataSourceThrows() {
-        assertThrows(NullPointerException.class, () -> new VirtualMap(null));
-    }
-
-    @Test
     public void lookupNonExistent() {
         final var ds = new InMemoryDataSource();
-        final var v = new VirtualMap(ds);
+        final var v = new VirtualMap<ByteChunk, ByteChunk>();
+        v.setDataSource(ds);
 
-        final var key = asKey("DoesNotExist");
+        final var key = asBlock("DoesNotExist");
         Assertions.assertNull(v.getValue(key));
     }
 
-    @ParameterizedTest
-    @ValueSource(ints = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17})
-    public void putAndGetItems(int numItems) {
+    @Test
+    public void putAndGetItem() {
         final var ds = new InMemoryDataSource();
-        final var v = new VirtualMap(ds);
+        final var v = new VirtualMap<ByteChunk, ByteChunk>();
+        v.setDataSource(ds);
 
-        for (int i=0; i<numItems; i++) {
-            final var key = asKey(i);
-            final var value = asValue(i);
-            v.putValue(key, value);
-        }
+        final var key = asBlock("fruit");
+        final var value = asBlock("apple");
 
-        for (int i=0; i<numItems; i++) {
-            Assertions.assertEquals(asValue(i), v.getValue(asKey(i)));
-        }
+        v.putValue(key, value);
+        Assertions.assertEquals(value, v.getValue(key));
     }
 
     @Test
     public void replaceItem() {
         final var ds = new InMemoryDataSource();
-        final var v = new VirtualMap(ds);
+        final var v = new VirtualMap<ByteChunk, ByteChunk>();
+        v.setDataSource(ds);
 
-        final var key = asKey("fruit");
-        final var value = asValue("apple");
-        final var value2 = asValue("banana");
+        final var key = asBlock("fruit");
+        final var value = asBlock("apple");
+        final var value2 = asBlock("banana");
 
         v.putValue(key, value);
         v.putValue(key, value2);
@@ -73,37 +50,15 @@ public class VirtualMapTest {
     }
 
     @Test
-    public void commitAFewAtATime() {
-        final var ds = new InMemoryDataSource();
-        var v = new VirtualMap(ds);
-
-        final var expected = new HashMap<VirtualKey, VirtualValue>();
-        for (int i=0; i<256; i++) {
-            if (i > 0 && i % 8 == 0) {
-                final var old = v;
-                v = old.copy();
-                old.release();
-            }
-
-            final var key = asKey(i + "");
-            final var value = asValue((i + 1_000_000) + "");
-            v.putValue(key, value);
-            expected.put(key, value);
-        }
-
-        final var fv = v;
-        expected.forEach((key, value) -> Assertions.assertEquals(value, fv.getValue(key)));
-    }
-
-    @Test
     public void addManyItemsAndFindThemAll() {
         final var ds = new InMemoryDataSource();
-        final var v = new VirtualMap(ds);
+        final var v = new VirtualMap<ByteChunk, ByteChunk>();
+        v.setDataSource(ds);
 
-        final var expected = new HashMap<VirtualKey, VirtualValue>();
-        for (int i=0; i<1_000_000; i++) {
-            final var key = asKey(i + "");
-            final var value = asValue((i + 100_000_000) + "");
+        final var expected = new HashMap<ByteChunk, ByteChunk>();
+        for (int i=0; i<10_000_000; i++) {
+            final var key = asBlock(i + "");
+            final var value = asBlock((i + 100_000_000) + "");
             expected.put(key, value);
             v.putValue(key, value);
         }
@@ -114,207 +69,121 @@ public class VirtualMapTest {
     @Test
     public void addManyItemsUsingManyMapsAndReadThemAllFromOne() {
         final var ds = new InMemoryDataSource();
-        var v = new VirtualMap(ds);
+        var v = new VirtualMap<ByteChunk, ByteChunk>();
+        v.setDataSource(ds);
 
+        final var expected = new HashMap<ByteChunk, ByteChunk>();
         for (int i=0; i<1_000_000; i++) {
-            final var key = asKey(i + "");
-            final var value = asValue((i + 1_000_000) + "");
-            v.putValue(key, value);
-        }
-        final var rand = new Random();
-
-        var old = v;
-        v = old.copy();
-        old.release();
-        final var expected = new HashMap<VirtualKey, VirtualValue>();
-        for (int i=0; i<1_000_000; i++) {
-            if (i > 0 && i % 25000 == 0) {
-                old = v;
-                v = old.copy();
-                old.release();
+            if (i > 0 && i % 15 == 0) {
+                v = new VirtualMap<ByteChunk, ByteChunk>();
+                v.setDataSource(ds);
             }
-
-            final var r = rand.nextInt(1_000_000);
-            final var key = asKey(r + "");
-            final var value = asValue((r + 1_000_000) + "");
+            final var key = asBlock(i + "");
+            final var value = asBlock((i + 100_000_000) + "");
             expected.put(key, value);
             v.putValue(key, value);
+//            System.out.println(v.getAsciiArt());
         }
 
         final var fv = v;
         expected.forEach((key, value) -> Assertions.assertEquals(value, fv.getValue(key)));
-    }
-
-    @Test
-    public void mmapBackend() {
-        final var storeDir = new File("./store").toPath();
-        if (Files.exists(storeDir)) {
-            try {
-                //noinspection ResultOfMethodCallIgnored
-                Files.walk(storeDir)
-                        .sorted(Comparator.reverseOrder())
-                        .map(Path::toFile)
-                        .forEach(File::delete);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        final var store = new VirtualMapDataStore(storeDir, 32, 32);
-        store.open();
-        final var ds = new MemMapDataSource(store, new Account(0, 0, 100));
-        var v = new VirtualMap(ds);
-
-        final var expected = new HashMap<VirtualKey, VirtualValue>();
-        for (int i=0; i<1_000_000; i++) {
-            if (i > 0 && i % 25_000 == 0) {
-                var old = v;
-                v = old.copy();
-                old.release();
-            }
-            final var key = asKey(i);
-            final var value = asValue((i + 100_000_000));
-            expected.put(key, value);
-            v.putValue(key, value);
-        }
-
-        final var fv = v;
-        expected.forEach((key, value) -> Assertions.assertEquals(value, fv.getValue(key)));
-    }
-
-//    @Test
-//    public void hashingTest() {
-//        final var ds = new InMemoryDataSource();
-//        var v = new VirtualMap(ds);
-//        var fcmap = new FCMap<MerkleLong, MerkleLong>();
-//        var engine = new CryptoEngine();
-//
-//        for (int i=0; i<1_000_000; i++) {
-//            if (i > 0 && i % 10 == 0) {
-//                v.commit();
-//                final var tree = fcmap.getChild(0);
-//                engine.digestTreeSync(fcmap);
-//
-//                assertEquals(fcmap.getRootHash(), v.getHash());
-//
-//                v = new VirtualMap(ds);
-//                fcmap = fcmap.copy();
-//            }
-//            final var key = asKey(i + "");
-//            final var value = asValue((i + 100_000_000) + "");
-//            fcmap.put(new MerkleLong(i), new MerkleLong(i + 100_000_000));
-//            v.putValue(key, value);
-//        }
-//    }
-
-//    @Test
-//    public void quickAndDirty() {
-//        final var ds = new InMemoryDataSource();
-//        VirtualMap map = new VirtualMap(ds);
-//        for (int i=0; i<1_000_000; i++) {
-//            final var key = asKey(i);
-//            final var value = asValue(i);
-//            map.putValue(key, value);
-////            System.out.println(map.getAsciiArt());
-//        }
-//
-//        Random rand = new Random();
-//        for (int idx=0; idx<10_000; idx++) {
-//            map = new VirtualMap(ds);
-//            for (int j = 0; j < 100; j++) {
-//                final var i = rand.nextInt(1_000_000);
-//                map.putValue(asKey(i), asValue(i + 1_000_000));
-//            }
-//        }
-//    }
-
-    private VirtualKey asKey(String txt) {
-        return new VirtualKey(Arrays.copyOf(txt.getBytes(), 32));
-    }
-
-    private VirtualKey asKey(int index) {
-        return new VirtualKey(Arrays.copyOf(("key" + index).getBytes(), 32));
-    }
-
-    private VirtualValue asValue(String txt) {
-        return new VirtualValue(Arrays.copyOf(txt.getBytes(), 32));
-    }
-
-    private VirtualValue asValue(int index) {
-        return new VirtualValue(Arrays.copyOf(("val" + index).getBytes(), 32));
     }
 
     // TODO Delete items... how to do that? Set them to null I guess...
     // TODO Test hashing the tree
 
-    private static final class InMemoryDataSource implements VirtualDataSource {
-        private Map<VirtualKey, VirtualRecord> leaves = new HashMap<>();
-        private Map<Long, VirtualRecord> leavesByPath = new HashMap<>();
-        private Map<Long, Hash> parents = new HashMap<>();
-        private long firstLeafPath = INVALID_PATH;
-        private long lastLeafPath = INVALID_PATH;
+    private ByteChunk asBlock(String s) {
+        return new ByteChunk(Arrays.copyOf(s.getBytes(StandardCharsets.UTF_8), 256));
+    }
+
+    // Simple implementation for testing purposes
+    private static final class InMemoryDataSource implements VirtualDataSource<ByteChunk, ByteChunk> {
+        private HashMap<ByteChunk, ByteChunk> data = new HashMap<>();
+        private HashMap<Path, VirtualRecord<ByteChunk>> records = new HashMap<>();
+        private HashMap<Path, Hash> nodes = new HashMap<>();
+        private HashMap<ByteChunk, Path> paths = new HashMap<>();
+        private Path firstLeafPath;
+        private Path lastLeafPath;
         private boolean closed = false;
 
         @Override
-        public Hash loadParentHash(long parentPath) {
-            return parents.get(parentPath);
+        public VirtualRecord<ByteChunk> getRecord(Path path) {
+            return records.get(path);
         }
 
         @Override
-        public VirtualRecord loadLeaf(long leafPath) {
-            return leavesByPath.get(leafPath);
+        public void writeRecord(Path path, VirtualRecord<ByteChunk> record) {
+            if (record == null) {
+                records.remove(path);
+            } else {
+                records.put(path, record);
+            }
         }
 
         @Override
-        public VirtualRecord loadLeaf(VirtualKey leafKey) {
-            return leaves.get(leafKey);
+        public Hash getHash(Path path) {
+            return nodes.get(path);
         }
 
         @Override
-        public VirtualValue getLeafValue(VirtualKey leafKey) {
-            final var rec = leaves.get(leafKey);
-            return rec == null ? null : rec.getValue();
+        public void writeHash(Path path, Hash hash) {
+            if (hash == null) {
+                nodes.remove(path);
+            } else {
+                nodes.put(path, hash);
+            }
         }
 
         @Override
-        public void saveParent(long parentPath, Hash hash) {
-            parents.put(parentPath, hash);
+        public ByteChunk getData(ByteChunk key) {
+            return data.get(key);
         }
 
         @Override
-        public void saveLeaf(VirtualRecord leaf) {
-            leaves.put(leaf.getKey(), leaf);
-            leavesByPath.put(leaf.getPath(), leaf);
+        public void writeData(ByteChunk key, ByteChunk data) {
+            if (data == null) {
+                this.data.remove(key);
+            } else {
+                this.data.put(key, data);
+            }
         }
 
         @Override
-        public void deleteParent(long parentPath) {
-            parents.remove(parentPath);
+        public void deleteData(ByteChunk key) {
+            // TODO
         }
 
         @Override
-        public void deleteLeaf(VirtualRecord leaf) {
-            leaves.remove(leaf.getKey());
-            leavesByPath.remove(leaf.getPath());
+        public Path getPathForKey(ByteChunk key) {
+            return paths.get(key);
         }
 
         @Override
-        public void writeLastLeafPath(long path) {
+        public void setPathForKey(ByteChunk key, Path path) {
+            if (path == null) {
+                paths.remove(key);
+            } else {
+                paths.put(key, path);
+            }
+        }
+
+        @Override
+        public void writeLastLeafPath(Path path) {
             this.lastLeafPath = path;
         }
 
         @Override
-        public long getLastLeafPath() {
+        public Path getLastLeafPath() {
             return lastLeafPath;
         }
 
         @Override
-        public void writeFirstLeafPath(long path) {
+        public void writeFirstLeafPath(Path path) {
             this.firstLeafPath = path;
         }
 
         @Override
-        public long getFirstLeafPath() {
+        public Path getFirstLeafPath() {
             return firstLeafPath;
         }
 
