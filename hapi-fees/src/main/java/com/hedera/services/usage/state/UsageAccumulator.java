@@ -1,11 +1,14 @@
 package com.hedera.services.usage.state;
 
 import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.SingletonEstimatorUtils;
 
+import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ACCOUNT_AMT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_RECEIPT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_BODY_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_RECORD_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
 import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
 
@@ -101,7 +104,7 @@ public class UsageAccumulator {
 
 	/* -- NETWORK -- */
 	public long getNetworkBpt() {
-		throw new AssertionError("Not implemented!");
+		return bpt;
 	}
 
 	public long getNetworkBpr() {
@@ -113,7 +116,7 @@ public class UsageAccumulator {
 	}
 
 	public long getNetworkVpt() {
-		throw new AssertionError("Not implemented!");
+		return vpt;
 	}
 
 	public long getNetworkGas() {
@@ -121,7 +124,7 @@ public class UsageAccumulator {
 	}
 
 	public long getNetworkRbh() {
-		throw new AssertionError("Not implemented!");
+		return ESTIMATOR_UTILS.nonDegenerateDiv(networkRbs, HRS_DIVISOR);
 	}
 
 	public long getNetworkSbh() {

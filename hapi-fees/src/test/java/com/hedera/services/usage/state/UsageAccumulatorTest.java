@@ -8,6 +8,7 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_ACCOUNT_AMT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_RECEIPT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_BODY_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_RECORD_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
 import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
 import static org.junit.jupiter.api.Assertions.*;
@@ -33,7 +34,28 @@ class UsageAccumulatorTest {
 
 	@Test
 	void understandsNetworkPartitioning() {
-		// assertEquals:
+		// when:
+		subject.addBpt(1);
+		subject.addVpt(4);
+		subject.addNetworkRbs(8 * HRS_DIVISOR);
+
+		// then:
+		assertEquals(1, subject.getNetworkBpt());
+		assertEquals(4, subject.getNetworkVpt());
+		assertEquals(8, subject.getNetworkRbh());
+	}
+
+	@Test
+	void understandsNodePartitioning() {
+		// when:
+		subject.addBpt(1);
+		subject.addVpt(4);
+		subject.addNetworkRbs(8 * HRS_DIVISOR);
+
+		// then:
+		assertEquals(1, subject.getNetworkBpt());
+		assertEquals(4, subject.getNetworkVpt());
+		assertEquals(8, subject.getNetworkRbh());
 	}
 
 	@Test
