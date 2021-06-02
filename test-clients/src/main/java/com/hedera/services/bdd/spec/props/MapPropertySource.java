@@ -24,15 +24,27 @@ import com.hedera.services.bdd.spec.HapiPropertySource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toMap;
 
 public class MapPropertySource implements HapiPropertySource {
 	private static final Logger log = LogManager.getLogger(MapPropertySource.class);
 	private static final Set<String> KEYS_TO_CENSOR = Set.of(
 		"startupAccounts.literal", "default.payer.pemKeyPassphrase"
 	);
+
+	public static MapPropertySource parsedFromCommaDelimited(String literal) {
+		return new MapPropertySource(Stream.of(literal.split(","))
+				.map(s -> List.of(s.split("=")))
+				.filter(l -> l.size() > 1)
+				.collect(toMap(l -> l.get(0), l -> l.get(1))));
+	}
+
 
 	private final Map props;
 
@@ -41,7 +53,7 @@ public class MapPropertySource implements HapiPropertySource {
 		var filteredProps = typedProps.entrySet()
 				.stream()
 				.filter(entry -> !KEYS_TO_CENSOR.contains(entry.getKey()))
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+				.collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
 		log.info("Initializing a MapPropertySource from " + filteredProps);
 		this.props = props;
 	}

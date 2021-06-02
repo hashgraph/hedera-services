@@ -31,6 +31,8 @@ import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.persistence.EntityManager;
+import com.hedera.services.bdd.spec.props.JutilPropertySource;
+import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hedera.services.legacy.core.TestHelper;
 import com.hedera.services.stream.proto.AllAccountBalances;
@@ -86,6 +88,8 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
 public class HapiApiSpec implements Runnable {
+	private static final String CI_PROPS_FLAG_FOR_NO_UNKNOWN_ERRORS = "suppressUnknowns";
+
 	static final Logger log = LogManager.getLogger(HapiApiSpec.class);
 
 	public enum SpecStatus {PENDING, RUNNING, PASSED, FAILED, FAILED_AS_EXPECTED, PASSED_UNEXPECTEDLY, ERROR}
@@ -490,6 +494,10 @@ public class HapiApiSpec implements Runnable {
 				this.put("tls", tlsFromCi);
 				this.put("txn", txnFromCi);
 			}};
+			final var explicitCiProps = MapPropertySource.parsedFromCommaDelimited(ciPropertiesMap);
+			if (explicitCiProps.has(CI_PROPS_FLAG_FOR_NO_UNKNOWN_ERRORS)) {
+				ciPropsSource.put("warnings.suppressUnknowns", "true");
+			}
 			ciPropsSource.putAll(otherOverrides);
 		}
 		return ciPropsSource;
