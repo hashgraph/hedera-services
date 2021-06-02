@@ -1,22 +1,24 @@
 package com.hedera.services.state.merkle.virtual;
 
 import com.swirlds.common.AbstractHashable;
+import com.swirlds.common.crypto.CryptoFactory;
+import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.SelfSerializable;
+
 import java.util.Objects;
 
 /**
- * A leaf node in the virtual tree. Every leave node has a single parent, but no children.
- * The parent can change, there are times when the tree is modified such that the node moves
- * around. This leaf node, if instantiated, has a reference to the data source so it can handle
- * saving data and information about itself to the datasource, such as when its path changes,
- * or its hash.
+ * <p>A leaf node in the virtual tree. A leaf node has no children and a single
+ * parent. A newly created leaf may be <strong>detached</strong>, which means
+ * that it is not part of any tree.</p>
  */
-public class VirtualTreeLeaf extends AbstractHashable implements VirtualTreeNode {
-
+public class VirtualTreeLeaf<K, V extends SelfSerializable> extends AbstractHashable implements VirtualTreeNode<K, V> {
     /**
      * The dataSource that saves all the important information about
      * this tree leaf.
      */
-    private final VirtualDataSource dataSource;
+    private final VirtualDataSource<K, V> dataSource;
 
     /**
      * The path from the root to this node. This path can and will change as
@@ -30,29 +32,29 @@ public class VirtualTreeLeaf extends AbstractHashable implements VirtualTreeNode
      * will have a non-null parent. The pointer can and will change over
      * time as the tree is modified.
      */
-    private VirtualTreeInternal parent;
+    private VirtualTreeInternal<K, V> parent;
 
     /**
      * The VirtualRecord that represents this leaf.
      */
-    private final VirtualRecord record;
+    private final VirtualRecord<K> record;
 
     /**
      * The data associated with this leaf node. The data should never be null,
      * but can change over time. It should be a fixed 256-byte array.
      */
-    private Block data;
+    private V data;
 
-    public VirtualTreeLeaf(VirtualDataSource dataSource, VirtualRecord record) {
+    public VirtualTreeLeaf(VirtualDataSource<K, V> dataSource, VirtualRecord<K> record) {
         this.dataSource = Objects.requireNonNull(dataSource);
         this.record = Objects.requireNonNull(record);
     }
 
-    public void setData(Block data) {
+    public void setData(V data) {
         this.data = data;
     }
 
-    public Block getData() {
+    public V getData() {
         return data;
     }
 
@@ -62,18 +64,46 @@ public class VirtualTreeLeaf extends AbstractHashable implements VirtualTreeNode
     }
 
     @Override
-    public void adopt(Path path, VirtualTreeInternal parent) {
+    public void adopt(Path path, VirtualTreeInternal<K, V> parent) {
         // If the path has changed from what we expected in the record, then update the DB.
         if (!record.getPath().equals(path)) {
-            dataSource.writeRecord(path, new VirtualRecord(getHash(), path, record.getKey()));
+            dataSource.writeRecord(path, new VirtualRecord<>(getHash(), path, record.getKey()));
         }
 
         this.path = path;
         this.parent = parent;
+        this.invalidateHash();
     }
 
     @Override
-    public VirtualTreeInternal getParent() {
+    public VirtualTreeInternal<K, V> getParent() {
         return parent;
+    }
+
+    @Override
+    public Hash getHash() {
+        // Only recompute the hash if it has changed. I will know it has changed
+        // if the hash is null. This means that I *require* invalidateHash to have
+        // been called if either child has been updated.
+        final var currentHash = super.getHash();
+        if (currentHash != null) {
+            return currentHash;
+        }
+
+        // Recompute the hash
+        final var crypto = CryptoFactory.getInstance();
+        final var newHash = crypto.digestSync(data, DigestType.SHA_384);
+        setHash(newHash);
+        dataSource.writeHash(path, newHash);
+        return newHash;
+    }
+
+    @Override
+    public void invalidateHash() {
+        super.invalidateHash();
+
+        if (parent != null) {
+            parent.invalidateHash();
+        }
     }
 }
