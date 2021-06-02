@@ -214,6 +214,7 @@ class NarratedLedgerChargingTest {
 		given(accounts.get(payerId)).willReturn(payerAccount);
 
 		given(dynamicProperties.fundingAccount()).willReturn(grpcFundingId);
+		given(nodeInfo.accountOf(submittingNodeId)).willReturn(grpcNodeId);
 		given(nodeInfo.accountKeyOf(submittingNodeId)).willReturn(nodeId);
 
 		given(accessor.getPayer()).willReturn(grpcPayerId);
@@ -227,6 +228,7 @@ class NarratedLedgerChargingTest {
 		given(accounts.get(nodeId)).willReturn(nodeAccount);
 
 		given(dynamicProperties.fundingAccount()).willReturn(grpcFundingId);
+		given(nodeInfo.accountOf(submittingNodeId)).willReturn(nodeId.toAccountId());
 		given(nodeInfo.accountKeyOf(submittingNodeId)).willReturn(nodeId);
 
 		given(accessor.getPayer()).willReturn(grpcPayerId);
