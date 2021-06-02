@@ -188,6 +188,7 @@ class AwareProcessLogicTest {
 		// and:
 		final var triggeredTxn = mock(TxnAccessor.class);
 
+		given(triggeredTxn.isTriggeredTxn()).willReturn(true);
 		given(txnCtx.triggeredTxn()).willReturn(triggeredTxn);
 		given(invariantChecks.holdFor(any(), eq(consensusNow.minusNanos(1L)), eq(666L))).willReturn(true);
 
