@@ -22,6 +22,8 @@ package com.hedera.services.utils;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
+import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -36,6 +38,7 @@ import java.util.function.Function;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.utils.MiscUtils.functionOf;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 
 /**
@@ -56,6 +59,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private TransactionID txnId;
 	private TransactionBody txn;
 	private HederaFunctionality function;
+	private BaseTransactionMeta txnUsageMeta;
 
 	static Function<TransactionBody, HederaFunctionality> functionExtractor = txn -> {
 		try {
@@ -94,16 +98,21 @@ public class SignedTxnAccessor implements TxnAccessor {
 		sigMapSize = sigMap.getSerializedSize();
 		numSigPairs = sigMap.getSigPairCount();
 		utf8MemoBytes = StringUtils.getBytesUtf8(memo);
+
+		getFunction();
+		setTxnUsageMeta();
 	}
 
 	public SignedTxnAccessor(Transaction signedTxnWrapper) throws InvalidProtocolBufferException {
 		this(signedTxnWrapper.toByteArray());
 	}
 
+	@Override
 	public SignatureMap getSigMap() {
 		return sigMap;
 	}
 
+	@Override
 	public HederaFunctionality getFunction() {
 		if (function == null) {
 			function = functionExtractor.apply(getTxn());
@@ -111,34 +120,42 @@ public class SignedTxnAccessor implements TxnAccessor {
 		return function;
 	}
 
+	@Override
 	public long getOfferedFee() {
 		return txn.getTransactionFee();
 	}
 
+	@Override
 	public Transaction getSignedTxn4Log() {
 		return signedTxnWrapper;
 	}
 
+	@Override
 	public byte[] getTxnBytes() {
 		return txnBytes;
 	}
 
+	@Override
 	public Transaction getSignedTxnWrapper() {
 		return signedTxnWrapper;
 	}
 
+	@Override
 	public TransactionBody getTxn() {
 		return txn;
 	}
 
+	@Override
 	public TransactionID getTxnId() {
 		return txnId;
 	}
 
+	@Override
 	public AccountID getPayer() {
 		return getTxnId().getAccountID();
 	}
 
+	@Override
 	public byte[] getSignedTxnWrapperBytes() {
 		return signedTxnWrapperBytes;
 	}
@@ -172,11 +189,33 @@ public class SignedTxnAccessor implements TxnAccessor {
 		return getTxn().hasScheduleCreate() || getTxn().hasScheduleSign();
 	}
 
+	@Override
 	public boolean isTriggeredTxn() {
 		return false;
 	}
 
+	@Override
 	public ScheduleID getScheduleRef() {
 		throw new UnsupportedOperationException("Only the TriggeredTxnAccessor implementation can refer to a schedule");
+	}
+
+	@Override
+	public BaseTransactionMeta baseUsageMeta() {
+		return txnUsageMeta;
+	}
+
+	@Override
+	public CryptoTransferMeta availXferUsageMeta() {
+		throw new AssertionError("Not implemented!");
+	}
+
+	private void setTxnUsageMeta() {
+		if (function == CryptoTransfer) {
+			txnUsageMeta = new BaseTransactionMeta(
+					utf8MemoBytes.length,
+					getTxn().getCryptoTransfer().getTransfers().getAccountAmountsCount());
+		} else {
+			txnUsageMeta = new BaseTransactionMeta(utf8MemoBytes.length, 0);
+		}
 	}
 }

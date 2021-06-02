@@ -20,6 +20,7 @@ package com.hedera.services.usage.crypto;
  * ‍
  */
 
+import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.QueryUsage;
 import com.hedera.services.usage.SigUsage;
@@ -58,16 +59,17 @@ public class CryptoOpsUsage {
 
 		final int numXfers = baseMeta.getNumExplicitTransfers();
 		final int numTokenXfers = xferMeta.getNumTokensTransfers();
-		final int numTokensInvolved = xferMeta.getNumTokensInvolved();
 		final int tokenMultiplier = xferMeta.getTokenMultiplier();
+		final int numTokensInvolved = xferMeta.getNumTokensInvolved();
+		final int weightedTokensInvolved = tokenMultiplier * numTokensInvolved;
 
 		final int weightedTokenXfers = tokenMultiplier * numTokenXfers;
-		long incBpt = tokenMultiplier * BASIC_ENTITY_ID_SIZE * numTokensInvolved;
+		long incBpt = weightedTokensInvolved * BASIC_ENTITY_ID_SIZE;
 		incBpt += (weightedTokenXfers + numXfers) * USAGE_PROPERTIES.accountAmountBytes();
 		into.addBpt(incBpt);
 
 		long incRb = numXfers * USAGE_PROPERTIES.accountAmountBytes();
-		incRb += TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(weightedTokenXfers, numXfers);
+		incRb += TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(weightedTokensInvolved, weightedTokenXfers);
 		into.addRbs(incRb * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 

@@ -71,6 +71,8 @@ class SignedTxnAccessorTest {
 
 		// given:
 		SignedTxnAccessor accessor = SignedTxnAccessor.uncheckedFrom(transaction);
+		// and:
+		final var txnUsageMeta = accessor.baseUsageMeta();
 
 		assertEquals(transaction, accessor.getSignedTxnWrapper());
 		assertEquals(transaction, accessor.getSignedTxn4Log());
@@ -87,6 +89,13 @@ class SignedTxnAccessorTest {
 		assertEquals(FeeBuilder.getSignatureCount(accessor.getSignedTxnWrapper()), accessor.numSigPairs());
 		assertEquals(FeeBuilder.getSignatureSize(accessor.getSignedTxnWrapper()), accessor.sigMapSize());
 		assertEquals(memo, accessor.getMemo());
+		// and:
+		assertEquals(memoUtf8Bytes.length, txnUsageMeta.getMemoUtf8Bytes());
+	}
+
+	@Test
+	void understandsFullXferUsageIncTokens() {
+
 	}
 
 	@Test
