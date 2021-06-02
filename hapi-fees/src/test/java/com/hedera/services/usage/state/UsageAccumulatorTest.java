@@ -17,34 +17,39 @@ class UsageAccumulatorTest {
 	final private int numTransfers = 2;
 	final private SigUsage sigUsage = new SigUsage(2, 101, 1);
 
+	final private long baseBpr = INT_SIZE;
+	final private long baseVpt = sigUsage.numSigs();
+	final private long baseBpt = BASIC_TX_BODY_SIZE + memoBytes + sigUsage.sigsSize();
+	final private long baseRbs = RECEIPT_STORAGE_TIME_SEC *
+			(BASIC_TX_RECORD_SIZE + memoBytes + BASIC_ACCOUNT_AMT_SIZE * numTransfers);
+	final private long baseNetworkRbs = RECEIPT_STORAGE_TIME_SEC *
+			BASIC_RECEIPT_SIZE;
+
 	private UsageAccumulator subject = new UsageAccumulator();
 
 	@BeforeEach
 	void setUp() {
-		subject.addBpt(1);
-		subject.addBpr(2);
-		subject.addSbpr(3);
-		subject.addVpt(4);
-		subject.addGas(5);
-		subject.addRbs(6);
-		subject.addSbs(7);
-		subject.addNetworkRbs(8);
 	}
 
 	@Test
 	void understandsNetworkPartitioning() {
-
+		// assertEquals:
 	}
 
 	@Test
 	void resetWorksForTxn() {
+		// given:
+		subject.addSbpr(3);
+		subject.addGas(5);
+		subject.addSbs(7);
+
 		// when:
 		subject.resetForTransaction(memoBytes, numTransfers, sigUsage);
 
 		// then:
-		assertEquals(INT_SIZE, subject.getBpr());
-		assertEquals(sigUsage.numSigs(), subject.getVpt());
-		assertEquals((long)BASIC_TX_BODY_SIZE + memoBytes + sigUsage.sigsSize(), subject.getBpt());
+		assertEquals(baseBpr, subject.getBpr());
+		assertEquals(baseVpt, subject.getVpt());
+		assertEquals(baseBpt, subject.getBpt());
 		assertEquals(
 				RECEIPT_STORAGE_TIME_SEC *
 						(BASIC_TX_RECORD_SIZE + memoBytes + BASIC_ACCOUNT_AMT_SIZE * numTransfers),
@@ -58,6 +63,16 @@ class UsageAccumulatorTest {
 
 	@Test
 	void addersWork() {
+		// given:
+		subject.addBpt(1);
+		subject.addBpr(2);
+		subject.addSbpr(3);
+		subject.addVpt(4);
+		subject.addGas(5);
+		subject.addRbs(6);
+		subject.addSbs(7);
+		subject.addNetworkRbs(8);
+
 		// expect:
 		assertEquals(1, subject.getBpt());
 		assertEquals(2, subject.getBpr());

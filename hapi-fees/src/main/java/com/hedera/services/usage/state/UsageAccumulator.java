@@ -12,11 +12,31 @@ import static com.hederahashgraph.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
 /**
  * Accumulates an estimate of the resources used by a HAPI operation.
  *
- * Resources are used by three service providers:
+ * Resources are consumed by three service providers,
  * <ol>
- * 	<li>The network for providing gossip, consensus, and short-term storage of e.g. receipts; and,</li>
- * 	<li>The node that submitted the transaction, for providing prechecks and client communication; and,</li>
- * 	<li>The service actually performed by the </li>
+ * 	<li>The network when providing gossip, consensus, and short-term storage of receipts.</li>
+ * 	<li>The node when communicating with the client, performing prechecks, and submitting to the network.</li>
+ * 	<li>The network when performing the logical service itself.</li>
+ * </ol>
+ *
+ * The key fact is that the estimated resource usage for all three service providers
+ * is a pure function of the <b>same</b> base usage estimates, for eight types
+ * of resources:
+ * <ol>
+ *     <li>Network capacity needed to submit an operation to the network.
+ *     Units are <tt>bpt</tt> (“bytes per transaction”).</li>
+ *     <li>Network capacity needed to return information from memory in response to an operation.
+ *     Units are <tt>bpt</tt> (“bytes per transaction”).</li>
+ *     <li>Network capacity needed to return information from disk in response to an operation.
+ *     Units are <tt>sbpr</tt> (“storage bytes per response”).</li>
+ *     <li>RAM needed to persist an operation’s effects on consensus state, for as long as such effects are visible.
+ *     Units are <tt>rbh</tt> (“RAM byte-hours”).</li>
+ *     <li>Disk space needed to persist the operation’s effect on consensus state, for as long as such effects are visible.
+ *     Units are sbh (“storage byte-hours”).</li>
+ *     <li>Computation needed to verify a Ed25519 cryptographic signature.
+ *     Units are <tt>vpt</tt> (“verifications per transaction”).</li>
+ *     <li>Computation needed for incremental execution of a Solidity smart contract.
+ *     Units are <tt>gas</tt>.</li>
  * </ol>
  */
 public class UsageAccumulator {
@@ -25,9 +45,9 @@ public class UsageAccumulator {
 	private long sbpr;
 	private long vpt;
 	private long gas;
-	/* For storage resources, we traditionally begin with a finer-grained
-	* estimate in units of seconds rather than hours, since expiration
-	* times are given in seconds since the (consensus) epoch. */
+	/* For storage resources, we use a finer-grained estimate in
+	* units of seconds rather than hours, since expiration times
+	* are given in seconds since the (consensus) epoch. */
 	private long rbs;
 	private long sbs;
 	private long networkRbs;
@@ -42,6 +62,8 @@ public class UsageAccumulator {
 
 		networkRbs = RECEIPT_STORAGE_TIME_SEC * BASIC_RECEIPT_SIZE;
 	}
+
+	/* Resource accumulator methods */
 
 	public void addBpt(long amount) {
 		bpt += amount;
@@ -75,37 +97,125 @@ public class UsageAccumulator {
 		networkRbs += amount;
 	}
 
-	public long getBpt() {
+	/* Provider-scoped usage estimates (pure functions of the total resource usage) */
+
+	/* -- NETWORK -- */
+	public long getNetworkBpt() {
+		throw new AssertionError("Not implemented!");
+	}
+
+	public long getNetworkBpr() {
+		throw new AssertionError("Not implemented!");
+	}
+
+	public long getNetworkSbpr() {
+		throw new AssertionError("Not implemented!");
+	}
+
+	public long getNetworkVpt() {
+		throw new AssertionError("Not implemented!");
+	}
+
+	public long getNetworkGas() {
+		throw new AssertionError("Not implemented!");
+	}
+
+	public long getNetworkRbh() {
+		throw new AssertionError("Not implemented!");
+	}
+
+	public long getNetworkSbh() {
+		throw new AssertionError("Not implemented!");
+	}
+
+	/* -- NODE -- */
+	public long getNodeBpt() {
+		throw new AssertionError("Not implemented!");
+	}
+
+	public long getNodeBpr() {
+		throw new AssertionError("Not implemented!");
+	}
+
+	public long getNodeSbpr() {
+		throw new AssertionError("Not implemented!");
+	}
+
+	public long getNodeVpt() {
+		throw new AssertionError("Not implemented!");
+	}
+
+	public long getNodeGas() {
+		throw new AssertionError("Not implemented!");
+	}
+
+	public long getNodeRbh() {
+		throw new AssertionError("Not implemented!");
+	}
+
+	public long getNodeSbh() {
+		throw new AssertionError("Not implemented!");
+	}
+
+	/* -- SERVICE -- */
+	public long getServiceBpt() {
+		throw new AssertionError("Not implemented!");
+	}
+
+	public long getServiceBpr() {
+		throw new AssertionError("Not implemented!");
+	}
+
+	public long getServiceSbpr() {
+		throw new AssertionError("Not implemented!");
+	}
+
+	public long getServiceVpt() {
+		throw new AssertionError("Not implemented!");
+	}
+
+	public long getServiceGas() {
+		throw new AssertionError("Not implemented!");
+	}
+
+	public long getServiceRbh() {
+		throw new AssertionError("Not implemented!");
+	}
+
+	public long getServiceSbh() {
+		throw new AssertionError("Not implemented!");
+	}
+
+	/* Helpers for test coverage */
+	long getBpt() {
 		return bpt;
 	}
 
-	public long getBpr() {
+	long getBpr() {
 		return bpr;
 	}
 
-	public long getSbpr() {
+	long getSbpr() {
 		return sbpr;
 	}
 
-	public long getVpt() {
+	long getVpt() {
 		return vpt;
 	}
 
-	public long getGas() {
+	long getGas() {
 		return gas;
 	}
 
-	public long getRbs() {
+	long getRbs() {
 		return rbs;
 	}
 
-	public long getSbs() {
+	long getSbs() {
 		return sbs;
 	}
 
-	public long getNetworkRbs() {
+	long getNetworkRbs() {
 		return networkRbs;
 	}
-
-	/* Provider-scoped usage estimates (all provider usages */
 }
