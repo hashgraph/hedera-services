@@ -7,8 +7,12 @@ import java.io.Closeable;
 /**
  * Defines the datasource for managing records and internal node
  * hashes.
+ *
+ * TODO Updates to the data source need to be buffered, such that
+ * they are not flushed to disk unless the transaction completes
+ * successfully!
  */
-public interface VirtualDataSource extends Closeable {
+public interface VirtualDataSource<K, V> extends Closeable {
 
     /**
      * Gets the data from storage using a 256-byte key as the input. This is very EVM
@@ -17,7 +21,7 @@ public interface VirtualDataSource extends Closeable {
      * @param key A non-null 256-byte key.
      * @return The 256-byte array, or null if there is not one.
      */
-    Block getData(Block key);
+    V getData(K key);
 
     /**
      * Writes data to disk. This may be asynchronous, but subsequent reads from
@@ -27,10 +31,12 @@ public interface VirtualDataSource extends Closeable {
      * @param data The record to write. If null, then the record is deleted.
      *             If non-null, must be a 256-byte array.
      */
-    void writeData(Block key, Block data);
+    void writeData(K key, V data);
 
-    Path getPathForKey(Block key);
-    void setPathForKey(Block key, Path path);
+    void deleteData(K key);
+
+    Path getPathForKey(K key);
+    void setPathForKey(K key, Path path);
 
     /**
      * Gets the Hash of an internal node denoted by the given Path.
@@ -51,7 +57,7 @@ public interface VirtualDataSource extends Closeable {
      * @param path A non-null path to the leaf node
      * @return The record. If null, then there is no record of this node in storage (typically an error condition).
      */
-    VirtualRecord getRecord(Path path);
+    VirtualRecord<K> getRecord(Path path);
 
     /**
      * Writes the given record to storage with the Path as the key. Used for leaf nodes.
@@ -59,7 +65,7 @@ public interface VirtualDataSource extends Closeable {
      * @param record The non-null record associated with the leaf node of this Path,
      *               or null if it is to be deleted.
      */
-    void writeRecord(Path path, VirtualRecord record);
+    void writeRecord(Path path, VirtualRecord<K> record);
 
     /**
      * Writes the path for the very last leaf to durable storage. This is needed for
