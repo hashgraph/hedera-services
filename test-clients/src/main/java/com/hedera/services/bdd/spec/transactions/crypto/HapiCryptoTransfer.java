@@ -183,7 +183,8 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 		};
 	}
 
-	public static Function<HapiApiSpec, TransferList> tinyBarsFromToWithInvalidAmounts(String from, String to, long amount) {
+	public static Function<HapiApiSpec, TransferList> tinyBarsFromToWithInvalidAmounts(String from, String to,
+			long amount) {
 		return tinyBarsFromToWithInvalidAmounts(from, to, ignore -> amount);
 	}
 
@@ -273,13 +274,12 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 					txn,
 					numPayerKeys,
 					feesObserver.get());
-		} else {
-			return spec.fees().forActivityBasedOp(
-					HederaFunctionality.CryptoTransfer,
-					(_txn, _svo) -> usageEstimate(_txn, _svo, spec.fees().tokenTransferUsageMultiplier()),
-					txn,
-					numPayerKeys);
 		}
+		return spec.fees().forActivityBasedOp(
+				HederaFunctionality.CryptoTransfer,
+				(_txn, _svo) -> usageEstimate(_txn, _svo, spec.fees().tokenTransferUsageMultiplier()),
+				txn,
+				numPayerKeys);
 	}
 
 	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo, int multiplier) {
@@ -310,7 +310,8 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 				helper.add(
 						"tokenTransfers",
 						TxnUtils.readableTokenTransfers(txn.getCryptoTransfer().getTokenTransfersList()));
-			} catch (Exception ignore) { }
+			} catch (Exception ignore) {
+			}
 		}
 		return helper;
 	}

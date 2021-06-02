@@ -202,6 +202,7 @@ class AwareProcessLogicTest {
 
 		given(ctx.expandHandleSpan()).willReturn(expandHandleSpan);
 		given(expandHandleSpan.accessorFor(platformTxn)).willReturn(new PlatformTxnAccessor(platformTxn));
+		given(triggeredTxn.isTriggeredTxn()).willReturn(true);
 		given(txnCtx.triggeredTxn()).willReturn(triggeredTxn);
 		given(invariantChecks.holdFor(any(), eq(consensusNow.minusNanos(1L)), eq(666L))).willReturn(true);
 
