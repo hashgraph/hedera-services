@@ -111,6 +111,8 @@ import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.migration.StdStateMigrations;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -123,6 +125,8 @@ import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.BaseTokenStore;
 import com.hedera.services.store.tokens.common.CommonStore;
+import com.hedera.services.store.tokens.unique.OwnerIdentifier;
+import com.hedera.services.store.tokens.unique.UniqueStore;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttling.HapiThrottling;
@@ -136,6 +140,7 @@ import com.hedera.services.txns.submission.TransactionPrecheck;
 import com.hedera.services.txns.submission.TxnResponseHelper;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.utils.SleepingPause;
+import com.hedera.services.utils.invertible_fchashmap.FCInvertibleHashMap;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
@@ -193,11 +198,13 @@ public class ServicesContextTest {
 	FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
 	FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
 	FCMap<MerkleEntityId, MerkleSchedule> schedules;
+	FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier> uniqueTokens;
 
 	@BeforeEach
 	void setup() {
 		topics = mock(FCMap.class);
 		tokens = mock(FCMap.class);
+		uniqueTokens = mock(FCInvertibleHashMap.class);
 		tokenAssociations = mock(FCMap.class);
 		schedules = mock(FCMap.class);
 		storage = mock(FCMap.class);
@@ -211,6 +218,7 @@ public class ServicesContextTest {
 		given(state.storage()).willReturn(storage);
 		given(state.topics()).willReturn(topics);
 		given(state.tokens()).willReturn(tokens);
+		given(state.uniqueTokens()).willReturn(uniqueTokens);
 		given(state.tokenAssociations()).willReturn(tokenAssociations);
 		given(state.scheduleTxs()).willReturn(schedules);
 		crypto = mock(Cryptography.class);
@@ -231,6 +239,7 @@ public class ServicesContextTest {
 		var newTokens = mock(FCMap.class);
 		var newTokenRels = mock(FCMap.class);
 		var newSchedules = mock(FCMap.class);
+		var newUniqueTokens = mock(FCInvertibleHashMap.class);
 
 		given(newState.accounts()).willReturn(newAccounts);
 		given(newState.topics()).willReturn(newTopics);
@@ -238,6 +247,7 @@ public class ServicesContextTest {
 		given(newState.storage()).willReturn(newStorage);
 		given(newState.tokenAssociations()).willReturn(newTokenRels);
 		given(newState.scheduleTxs()).willReturn(newSchedules);
+		given(newState.uniqueTokens()).willReturn(newUniqueTokens);
 		// given:
 		var subject = new ServicesContext(nodeId, platform, state, propertySources);
 		// and:
@@ -247,6 +257,7 @@ public class ServicesContextTest {
 		var tokensRef = subject.queryableTokens();
 		var tokenRelsRef = subject.queryableTokenAssociations();
 		var schedulesRef = subject.queryableSchedules();
+		var uniqueTokensRef = subject.queryableUniqueTokens();
 
 		// when:
 		subject.update(newState);
@@ -259,6 +270,7 @@ public class ServicesContextTest {
 		assertSame(tokensRef, subject.queryableTokens());
 		assertSame(tokenRelsRef, subject.queryableTokenAssociations());
 		assertSame(schedulesRef, subject.queryableSchedules());
+		assertSame(uniqueTokensRef, subject.queryableUniqueTokens());
 		// and:
 		assertSame(newAccounts, subject.queryableAccounts().get());
 		assertSame(newTopics, subject.queryableTopics().get());
@@ -266,6 +278,7 @@ public class ServicesContextTest {
 		assertSame(newTokens, subject.queryableTokens().get());
 		assertSame(newTokenRels, subject.queryableTokenAssociations().get());
 		assertSame(newSchedules, subject.queryableSchedules().get());
+		assertSame(newUniqueTokens, subject.queryableUniqueTokens().get());
 	}
 
 	@Test
@@ -369,6 +382,7 @@ public class ServicesContextTest {
 		// setup:
 		ScheduleStore scheduleStore = mock(ScheduleStore.class);
 		CommonStore tokenStore = mock(CommonStore.class);
+		UniqueStore uniqueStore = mock(UniqueStore.class);
 
 		// given:
 		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
@@ -379,6 +393,7 @@ public class ServicesContextTest {
 		// and given:
 		ctx.setCommonTokenStore(tokenStore);
 		ctx.setScheduleStore(scheduleStore);
+		ctx.setUniqueTokenStore(uniqueStore);
 
 		// when:
 		ctx.rebuildStoreViewsIfPresent();
@@ -386,6 +401,7 @@ public class ServicesContextTest {
 		// then:
 		verify(tokenStore).rebuildViews();
 		verify(scheduleStore).rebuildViews();
+		verify(uniqueStore).rebuildViews();
 	}
 
 	@Test

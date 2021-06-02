@@ -20,26 +20,29 @@ package com.hedera.services.queries.token;
  * ‍
  */
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import static org.mockito.BDDMockito.*;
+
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.BDDMockito.mock;
 
 class TokenAnswersTest {
 	GetTokenInfoAnswer tokenInfo;
+	GetTokenNftInfoAnswer nftInfo;
 
 	@BeforeEach
 	private void setup() {
 		tokenInfo = mock(GetTokenInfoAnswer.class);
+		nftInfo = mock(GetTokenNftInfoAnswer.class);
 	}
 
 	@Test
 	void getsQueryBalance() {
 		// given:
-		TokenAnswers subject = new TokenAnswers(tokenInfo);
+		TokenAnswers subject = new TokenAnswers(tokenInfo, nftInfo);
 
 		// expect:
 		assertSame(tokenInfo, subject.getTokenInfo());
+		assertSame(nftInfo, subject.getNftInfoAnswer());
 	}
 }

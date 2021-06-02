@@ -22,18 +22,18 @@ package com.hedera.services.utils;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.hedera.services.state.submerkle.EntityId;
 import org.spongycastle.util.encoders.Hex;
 
 import java.util.Arrays;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 import static java.lang.System.arraycopy;
 
@@ -42,20 +42,24 @@ public class EntityIdUtils {
 
 	public static String readableId(Object o) {
 		if (o instanceof AccountID) {
-			AccountID id = (AccountID)o;
+			AccountID id = (AccountID) o;
 			return String.format("%d.%d.%d", id.getShardNum(), id.getRealmNum(), id.getAccountNum());
 		} else if (o instanceof FileID) {
-			FileID id = (FileID)o;
+			FileID id = (FileID) o;
 			return String.format("%d.%d.%d", id.getShardNum(), id.getRealmNum(), id.getFileNum());
 		} else if (o instanceof TopicID) {
-			TopicID id = (TopicID)o;
+			TopicID id = (TopicID) o;
 			return String.format("%d.%d.%d", id.getShardNum(), id.getRealmNum(), id.getTopicNum());
 		} else if (o instanceof TokenID) {
-			TokenID id = (TokenID)o;
+			TokenID id = (TokenID) o;
 			return String.format("%d.%d.%d", id.getShardNum(), id.getRealmNum(), id.getTokenNum());
 		} else if (o instanceof ScheduleID) {
 			ScheduleID id = (ScheduleID) o;
 			return String.format("%d.%d.%d", id.getShardNum(), id.getRealmNum(), id.getScheduleNum());
+		} else if (o instanceof NftID) {
+			NftID id = (NftID) o;
+			TokenID tokenID = id.getTokenID();
+			return String.format("%d.%d.%d-%d", tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(), id.getSerialNumber());
 		} else {
 			return String.valueOf(o);
 		}
@@ -129,11 +133,11 @@ public class EntityIdUtils {
 	}
 
 	public static String asSolidityAddressHex(AccountID id) {
-		return Hex.toHexString(asSolidityAddress((int)id.getShardNum(), id.getRealmNum(), id.getAccountNum()));
+		return Hex.toHexString(asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum()));
 	}
 
 	public static byte[] asSolidityAddress(ContractID id) {
-		return asSolidityAddress((int)id.getShardNum(), id.getRealmNum(), id.getContractNum());
+		return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
 	}
 
 	public static byte[] asSolidityAddress(int shard, long realm, long num) {

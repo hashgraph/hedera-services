@@ -30,6 +30,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.unique.UniqueStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.utils.IdUtils;
@@ -74,6 +75,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KE
 class GetAccountInfoAnswerTest {
 	private StateView view;
 	private TokenStore tokenStore;
+	private UniqueStore uniqueStore;
 	private ScheduleStore scheduleStore;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
@@ -168,6 +170,7 @@ class GetAccountInfoAnswerTest {
 		nodeProps = mock(NodeLocalProperties.class);
 		view = new StateView(
 				tokenStore,
+				uniqueStore,
 				scheduleStore,
 				StateView.EMPTY_TOPICS_SUPPLIER,
 				() -> accounts,

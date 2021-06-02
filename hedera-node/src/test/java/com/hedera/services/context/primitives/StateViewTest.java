@@ -29,10 +29,12 @@ import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.unique.UniqueStore;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -43,6 +45,7 @@ import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
@@ -77,6 +80,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.asFile;
+import static com.hedera.test.utils.IdUtils.asNftID;
 import static com.hedera.test.utils.IdUtils.asSchedule;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -101,6 +105,8 @@ class StateViewTest {
 	HFileMeta immutableMetadata;
 	FileID target = asFile("0.0.123");
 	TokenID tokenId = asToken("2.4.5");
+	NftID nftId = asNftID("6.7.8", 1);
+	NftID missingNftId = asNftID("6.7.8", 2);
 	TokenID missingTokenId = asToken("3.4.5");
 	AccountID payerAccountId = asAccount("9.9.9");
 	ScheduleID scheduleId = asSchedule("6.7.8");
@@ -125,10 +131,12 @@ class StateViewTest {
 
 	FCMap<MerkleEntityId, MerkleAccount> contracts;
 	TokenStore tokenStore;
+	UniqueStore uniqueStore;
 	ScheduleStore scheduleStore;
 	TransactionBody parentScheduleCreate;
 
 	MerkleToken token;
+	MerkleUniqueToken uniqueToken;
 	MerkleSchedule schedule;
 	MerkleAccount contract;
 	MerkleAccount notContract;
@@ -201,6 +209,12 @@ class StateViewTest {
 		given(tokenStore.resolve(missingTokenId)).willReturn(TokenStore.MISSING_TOKEN);
 		given(tokenStore.get(tokenId)).willReturn(token);
 
+		uniqueStore = mock(UniqueStore.class);
+		uniqueToken = new MerkleUniqueToken(new EntityId(1, 2, 3), "has to be bytes", RichInstant.fromJava(resolutionTime));
+		given(uniqueStore.nftExists(nftId)).willReturn(true);
+		given(uniqueStore.nftExists(missingNftId)).willReturn(false);
+		given(uniqueStore.get(nftId)).willReturn(uniqueToken);
+
 		scheduleStore = mock(ScheduleStore.class);
 		parentScheduleCreate =
 				scheduleCreateTxnWith(
@@ -235,6 +249,7 @@ class StateViewTest {
 
 		subject = new StateView(
 				tokenStore,
+				uniqueStore,
 				scheduleStore,
 				StateView.EMPTY_TOPICS_SUPPLIER,
 				() -> contracts,
@@ -256,6 +271,13 @@ class StateViewTest {
 		// expect:
 		assertTrue(subject.tokenExists(tokenId));
 		assertFalse(subject.tokenExists(missingTokenId));
+	}
+
+	@Test
+	public void nftExistsWorks() {
+		// expect:
+		assertTrue(subject.nftExists(nftId));
+		assertFalse(subject.nftExists(missingNftId));
 	}
 
 	@Test
@@ -338,6 +360,38 @@ class StateViewTest {
 
 		// then:
 		assertEquals(RichInstant.fromJava(resolutionTime).toGrpc(), info.getExecutionTime());
+	}
+
+	@Test
+	public void recognizesMissingNft() {
+		// when:
+		var info = subject.infoForNft(missingNftId);
+
+		// then:
+		assertTrue(info.isEmpty());
+	}
+
+	@Test
+	public void infoForNftFailsGracefully() {
+		// given:
+		given(uniqueStore.get((NftID) any())).willThrow(IllegalArgumentException.class);
+
+		// when:
+		var info = subject.infoForNft(nftId);
+
+		// then:
+		assertTrue(info.isEmpty());
+	}
+
+	@Test
+	public void getsNftInfo() {
+		// when:
+		var info = subject.infoForNft(nftId).get();
+
+		// then:
+		assertEquals(uniqueToken.getMemo(), info.getMetadata().toStringUtf8());
+		assertEquals(uniqueToken.getCreationTime().toGrpc(), info.getCreationTime());
+		assertEquals(asAccount(uniqueToken.getOwner()), info.getAccountID());
 	}
 
 	@Test

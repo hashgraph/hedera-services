@@ -21,10 +21,8 @@ package com.hedera.services.grpc.controllers;
  */
 
 import com.hedera.services.queries.answering.QueryResponseHelper;
-import com.hedera.services.queries.meta.MetaAnswers;
 import com.hedera.services.queries.token.TokenAnswers;
 import com.hedera.services.txns.submission.TxnResponseHelper;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -33,7 +31,6 @@ import io.grpc.stub.StreamObserver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.services.grpc.controllers.NetworkController.GET_VERSION_INFO_METRIC;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
@@ -42,12 +39,14 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetNftInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 
 class TokenControllerTest {
 	Query query = Query.getDefaultInstance();
@@ -188,5 +187,13 @@ class TokenControllerTest {
 
 		// expect:
 		verify(queryResponseHelper).answer(query, queryObserver,null , TokenGetInfo);
+	}
+
+	@Test void forwardsGetNftInfoAsExpected() {
+		// when:
+		subject.getTokenNftInfo(query, queryObserver);
+
+		// expect:
+		verify(queryResponseHelper).answer(query, queryObserver, null, TokenGetNftInfo);
 	}
 }

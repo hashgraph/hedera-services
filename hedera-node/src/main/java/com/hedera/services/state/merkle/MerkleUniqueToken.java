@@ -23,9 +23,6 @@ package com.hedera.services.state.merkle;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.state.serdes.DomainSerdes;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.tokens.unique.OwnerIdentifier;
 import com.hedera.services.utils.invertible_fchashmap.Identifiable;
 import com.swirlds.common.FCMValue;
@@ -49,12 +46,12 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements FCMValue, I
 
 	private EntityId owner;
 	private RichInstant creationTime;
+	// TODO: Switch to bytes
 	private String memo = DEFAULT_MEMO;
 
 	/**
-	 *
-	 * @param owner The entity which owns the unique token.
-	 * @param memo Metadata about the token.
+	 * @param owner        The entity which owns the unique token.
+	 * @param memo         Metadata about the token.
 	 * @param creationTime The consensus time at which the token was created.
 	 */
 	public MerkleUniqueToken(
