@@ -1508,7 +1508,7 @@ workflows:
   GCP-Daily-Services-Crypto-Restart-4N-1C:
     triggers:
       - schedule:
-          cron: "5 15 * * *"
+          cron: "7 20 * * *"
           filters:
             branches:
               only:
@@ -1767,11 +1767,11 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-Correctness-6N-1C:
     triggers:
       - schedule:
-          cron: "25 7 * * *"
+          cron: "7 20 * * *"
           filters:
             branches:
               only:
-                - master-plus-sdk-0.15.0-alpha.1
+                - 1506-1513-M-fix-tests
     jobs:
       - build-platform-and-services
       - jrs-regression:
