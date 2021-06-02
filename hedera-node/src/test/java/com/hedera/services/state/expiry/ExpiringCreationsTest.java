@@ -23,7 +23,7 @@ package com.hedera.services.state.expiry;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.fees.charging.ItemizableFeeCharging;
+import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordCache;
@@ -98,7 +98,7 @@ class ExpiringCreationsTest {
 	private ServicesContext ctx;
 
 	@Mock
-	private ItemizableFeeCharging itemizableFeeCharging;
+	private NarratedCharging narratedCharging;
 	@Mock
 	private HederaLedger ledger;
 	@Mock
@@ -174,7 +174,6 @@ class ExpiringCreationsTest {
 		// then:
 		assertEquals(expectedRecord, actual);
 		// and:
-		verify(accounts).replace(key, payerAccount);
 		verify(expiries).trackRecordInState(effPayer, expectedExpiry);
 		assertEquals(expectedRecord, payerAccount.records().peek());
 	}
@@ -196,8 +195,8 @@ class ExpiringCreationsTest {
 	void validateBuildExpiringRecord() {
 		//given:
 		setUpForExpiringRecordBuilder();
-		given(ctx.charging()).willReturn(itemizableFeeCharging);
-		given(ctx.charging().totalFeesChargedToPayer()).willReturn(10L);
+		given(ctx.narratedCharging()).willReturn(narratedCharging);
+		given(ctx.narratedCharging().totalFeesChargedToPayer()).willReturn(10L);
 
 		given(ctx.ledger()).willReturn(ledger);
 		given(ctx.ledger().netTransfersInTxn()).willReturn(transfers);

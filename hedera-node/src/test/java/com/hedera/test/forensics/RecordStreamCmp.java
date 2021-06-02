@@ -609,7 +609,7 @@ public class RecordStreamCmp {
 					var accountAgain = backingAccounts.getRef(txnPayer);
 					accountAgain.records().offer(new ExpirableTxnRecord());
 
-					backingAccounts.flushMutableRefs();
+					backingAccounts.clearRefCache();
 				} catch (ConcurrentModificationException cme) {
 					System.out.println("CME in handle thread");
 				}

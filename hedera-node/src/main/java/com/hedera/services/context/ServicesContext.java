@@ -101,8 +101,10 @@ import com.hedera.services.fees.calculation.token.txns.TokenRevokeKycResourceUsa
 import com.hedera.services.fees.calculation.token.txns.TokenUnfreezeResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
-import com.hedera.services.fees.charging.ItemizableFeeCharging;
-import com.hedera.services.fees.charging.TxnFeeChargingPolicy;
+import com.hedera.services.fees.charging.NarratedCharging;
+import com.hedera.services.fees.charging.NarratedLedgerCharging;
+import com.hedera.services.fees.charging.FeeChargingPolicy;
+import com.hedera.services.fees.charging.TxnChargingPolicyAgent;
 import com.hedera.services.files.DataMapFactory;
 import com.hedera.services.files.EntityExpiryMapFactory;
 import com.hedera.services.files.FileUpdateInterceptor;
@@ -247,6 +249,7 @@ import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.HapiThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.throttling.TxnAwareHandleThrottling;
+import com.hedera.services.txns.ExpandHandleSpan;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.txns.TransitionLogic;
@@ -305,7 +308,6 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.usage.schedule.ScheduleOpsUsage;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.JvmSystemExits;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.Pause;
@@ -324,6 +326,7 @@ import com.swirlds.common.AddressBook;
 import com.swirlds.common.Console;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
+import com.swirlds.common.SwirldDualState;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
@@ -347,6 +350,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -471,6 +475,7 @@ public class ServicesContext {
 	private HapiOpCounters opCounters;
 	private AnswerFunctions answerFunctions;
 	private ContractAnswers contractAnswers;
+	private SwirldDualState dualState;
 	private OptionValidator validator;
 	private LedgerValidator ledgerValidator;
 	private TokenController tokenGrpc;
@@ -487,8 +492,10 @@ public class ServicesContext {
 	private PrecheckVerifier precheckVerifier;
 	private BackingTokenRels backingTokenRels;
 	private FreezeController freezeGrpc;
+	private ExpandHandleSpan expandHandleSpan;
 	private BalancesExporter balancesExporter;
 	private SysFileCallbacks sysFileCallbacks;
+	private NarratedCharging narratedCharging;
 	private NetworkCtxManager networkCtxManager;
 	private SolidityLifecycle solidityLifecycle;
 	private ExpiringCreations creator;
@@ -519,7 +526,7 @@ public class ServicesContext {
 	private TransactionPrecheck transactionPrecheck;
 	private FeeMultiplierSource feeMultiplierSource;
 	private NodeLocalProperties nodeLocalProperties;
-	private TxnFeeChargingPolicy txnChargingPolicy;
+	private FeeChargingPolicy txnChargingPolicy;
 	private TxnAwareRatesManager exchangeRatesManager;
 	private ServicesStatsManager statsManager;
 	private LedgerAccountsSource accountSource;
@@ -530,7 +537,7 @@ public class ServicesContext {
 	private HfsSystemFilesManager systemFilesManager;
 	private CurrentPlatformStatus platformStatus;
 	private SystemAccountsCreator systemAccountsCreator;
-	private ItemizableFeeCharging itemizableFeeCharging;
+	private TxnChargingPolicyAgent chargingPolicyAgent;
 	private ServicesRepositoryRoot repository;
 	private CharacteristicsFactory characteristics;
 	private AccountRecordsHistorian recordsHistorian;
@@ -587,6 +594,14 @@ public class ServicesContext {
 		queryableTokens().set(tokens());
 		queryableTokenAssociations().set(tokenAssociations());
 		queryableSchedules().set(schedules());
+	}
+
+	public SwirldDualState getDualState() {
+		return dualState;
+	}
+
+	public void setDualState(SwirldDualState dualState) {
+		this.dualState = dualState;
 	}
 
 	public void rebuildBackingStoresIfPresent() {
@@ -838,16 +853,6 @@ public class ServicesContext {
 			txnThrottling = new TransactionThrottling(hapiThrottling());
 		}
 		return txnThrottling;
-	}
-
-	public ItemizableFeeCharging charging() {
-		if (itemizableFeeCharging == null) {
-			itemizableFeeCharging = new ItemizableFeeCharging(
-					ledger(),
-					exemptions(),
-					globalDynamicProperties());
-		}
-		return itemizableFeeCharging;
 	}
 
 	public SubmissionFlow submissionFlow() {
@@ -1512,6 +1517,14 @@ public class ServicesContext {
 		return entityAutoRenewal;
 	}
 
+	public NarratedCharging narratedCharging() {
+		if (narratedCharging == null) {
+			narratedCharging = new NarratedLedgerCharging(
+					nodeInfo(), ledger(), exemptions(), globalDynamicProperties(), this::accounts);
+		}
+		return narratedCharging;
+	}
+
 	public ExpiryManager expiries() {
 		if (expiries == null) {
 			var histories = txnHistories();
@@ -1545,7 +1558,7 @@ public class ServicesContext {
 
 	public FreezeHandler freeze() {
 		if (freeze == null) {
-			freeze = new FreezeHandler(hfs(), platform(), exchange());
+			freeze = new FreezeHandler(hfs(), platform(), exchange(), this::getDualState);
 		}
 		return freeze;
 	}
@@ -1628,6 +1641,13 @@ public class ServicesContext {
 			feeSchedulesManager = new FeeSchedulesManager(fileNums(), fees());
 		}
 		return feeSchedulesManager;
+	}
+
+	public ExpandHandleSpan expandHandleSpan() {
+		if (expandHandleSpan == null) {
+			expandHandleSpan = new ExpandHandleSpan(10, TimeUnit.SECONDS);
+		}
+		return expandHandleSpan;
 	}
 
 	public FreezeController freezeGrpc() {
@@ -1916,11 +1936,19 @@ public class ServicesContext {
 		return usagePrices;
 	}
 
-	public TxnFeeChargingPolicy txnChargingPolicy() {
+	public FeeChargingPolicy txnChargingPolicy() {
 		if (txnChargingPolicy == null) {
-			txnChargingPolicy = new TxnFeeChargingPolicy();
+			txnChargingPolicy = new FeeChargingPolicy(narratedCharging());
 		}
 		return txnChargingPolicy;
+	}
+
+	public TxnChargingPolicyAgent chargingPolicyAgent() {
+		if (chargingPolicyAgent == null) {
+			chargingPolicyAgent = new TxnChargingPolicyAgent(
+					fees(), txnChargingPolicy(), txnCtx(), this::currentView, nodeDiligenceScreen(), txnHistories());
+		}
+		return chargingPolicyAgent;
 	}
 
 	public SystemAccountsCreator systemAccountsCreator() {

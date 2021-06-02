@@ -20,7 +20,6 @@ package com.hedera.services.ledger.accounts;
  * ‍
  */
 
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -55,11 +54,7 @@ public class FCMapBackingAccounts implements BackingStore<AccountID, MerkleAccou
 	}
 
 	@Override
-	public void flushMutableRefs() {
-		cache.keySet()
-				.stream()
-				.sorted(HederaLedger.ACCOUNT_ID_COMPARATOR)
-				.forEach(id -> delegate.get().replace(fromAccountId(id), cache.get(id)));
+	public void clearRefCache() {
 		cache.clear();
 	}
 

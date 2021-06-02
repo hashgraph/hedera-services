@@ -21,6 +21,7 @@ package com.hedera.services;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.PropertySources;
@@ -50,7 +51,9 @@ import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttling.FunctionalityThrottling;
+import com.hedera.services.txns.ExpandHandleSpan;
 import com.hedera.services.txns.ProcessLogic;
+import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.SystemExits;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -65,16 +68,16 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.blob.BinaryObjectStore;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
+import com.swirlds.common.DualState;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
-import com.swirlds.common.Transaction;
+import com.swirlds.common.SwirldDualState;
+import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.fcmap.FCMap;
 import org.hamcrest.Matchers;
@@ -110,8 +113,6 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -129,49 +130,47 @@ import static org.mockito.Mockito.times;
 class ServicesStateTest {
 	final private AccountID nodeAccount = IdUtils.asAccount("0.0.3");
 
-	Consumer<MerkleNode> mockDigest;
-	Supplier<BinaryObjectStore> mockBlobStoreSupplier;
-	BinaryObjectStore blobStore;
-	Instant now = Instant.now();
-	Transaction platformTxn;
-	Address address;
-	AddressBook book;
-	AddressBook bookCopy;
-	Platform platform;
-	ProcessLogic logic;
-	PropertySources propertySources;
-	ServicesContext ctx;
-	AccountRecordsHistorian historian;
-	ExpiryManager expiryManager;
-	FCMap<MerkleEntityId, MerkleTopic> topics;
-	FCMap<MerkleEntityId, MerkleAccount> accounts;
-	FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
-	FCMap<MerkleEntityId, MerkleTopic> topicsCopy;
-	FCMap<MerkleEntityId, MerkleAccount> accountsCopy;
-	FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageCopy;
-	FCMap<MerkleEntityId, MerkleToken> tokens;
-	FCMap<MerkleEntityId, MerkleSchedule> scheduledTxs;
-	FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
-	FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociationsCopy;
-	FCMap<MerkleEntityId, MerkleToken> tokensCopy;
-	FCMap<MerkleEntityId, MerkleSchedule> scheduledTxsCopy;
-	MerkleDiskFs diskFs;
-	MerkleDiskFs diskFsCopy;
-	RecordsRunningHashLeaf runningHashLeaf;
-	RecordsRunningHashLeaf runningHashLeafCopy;
-	RunningHash runningHash;
-	Hash recordsHash;
-	ExchangeRates midnightRates;
-	SequenceNumber seqNo;
-	MerkleNetworkContext networkCtx;
-	MerkleNetworkContext networkCtxCopy;
-	NodeId self = new NodeId(false, 0);
-	SerializableDataInputStream in;
-	SerializableDataOutputStream out;
-	SystemExits systemExits;
-	RecordStreamManager recordStreamManager;
-	Map<TransactionID, TxnIdRecentHistory> txnHistories;
-	NetworkCtxManager networkCtxManager;
+	private Consumer<MerkleNode> mockDigest;
+	private Supplier<BinaryObjectStore> mockBlobStoreSupplier;
+	private BinaryObjectStore blobStore;
+	private Instant now = Instant.now();
+	private SwirldTransaction platformTxn;
+	private Address address;
+	private AddressBook book;
+	private AddressBook bookCopy;
+	private Platform platform;
+	private ProcessLogic logic;
+	private PropertySources propertySources;
+	private ServicesContext ctx;
+	private ExpandHandleSpan expandHandleSpan;
+	private AccountRecordsHistorian historian;
+	private ExpiryManager expiryManager;
+	private FCMap<MerkleEntityId, MerkleTopic> topics;
+	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
+	private FCMap<MerkleEntityId, MerkleTopic> topicsCopy;
+	private FCMap<MerkleEntityId, MerkleAccount> accountsCopy;
+	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageCopy;
+	private FCMap<MerkleEntityId, MerkleToken> tokens;
+	private FCMap<MerkleEntityId, MerkleSchedule> scheduledTxs;
+	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
+	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociationsCopy;
+	private FCMap<MerkleEntityId, MerkleToken> tokensCopy;
+	private FCMap<MerkleEntityId, MerkleSchedule> scheduledTxsCopy;
+	private MerkleDiskFs diskFs;
+	private MerkleDiskFs diskFsCopy;
+	private RecordsRunningHashLeaf runningHashLeaf;
+	private RecordsRunningHashLeaf runningHashLeafCopy;
+	private RunningHash runningHash;
+	private Hash recordsHash;
+	private ExchangeRates midnightRates;
+	private SequenceNumber seqNo;
+	private MerkleNetworkContext networkCtx;
+	private MerkleNetworkContext networkCtxCopy;
+	private NodeId self = new NodeId(false, 0);
+	private RecordStreamManager recordStreamManager;
+	private Map<TransactionID, TxnIdRecentHistory> txnHistories;
+	private NetworkCtxManager networkCtxManager;
 
 	@Inject
 	private LogCaptor logCaptor;
@@ -192,9 +191,7 @@ class ServicesStateTest {
 		ServicesState.blobStoreSupplier = mockBlobStoreSupplier;
 		given(blobStore.isInitializing()).willReturn(false);
 
-		out = mock(SerializableDataOutputStream.class);
-		in = mock(SerializableDataInputStream.class);
-		platformTxn = mock(Transaction.class);
+		platformTxn = mock(SwirldTransaction.class);
 
 		address = mock(Address.class);
 		given(address.getMemo()).willReturn("0.0.3");
@@ -272,29 +269,13 @@ class ServicesStateTest {
 		given(ctx.networkCtxManager()).willReturn(networkCtxManager);
 		given(ctx.recordStreamManager()).willReturn(recordStreamManager);
 
-		systemExits = mock(SystemExits.class);
-
 		subject = new ServicesState();
-	}
-
-	@Test
-	void migratesDiskFsIfLegacySavedState() {
-		// when:
-		subject.initialize(null);
-
-		// then:
-		assertNotNull(subject.tokens());
-		assertNotNull(subject.tokenAssociations());
-		assertNotNull(subject.diskFs());
-		assertNotNull(subject.runningHashLeaf());
-		// and:
-		assertTrue(subject.skipDiskFsHashCheck);
 	}
 
 	@Test
 	void hasExpectedMinChildCounts() {
 		// given:
-		subject = new ServicesState(ctx, self, Collections.emptyList());
+		subject = new ServicesState();
 		// and:
 		int invalidVersion = ServicesState.MERKLE_VERSION + 1;
 
@@ -318,7 +299,7 @@ class ServicesStateTest {
 	@Test
 	void fullArgsConstructorUpdatesContext() {
 		// when:
-		subject = new ServicesState(ctx, self, Collections.emptyList());
+		subject = new ServicesState(ctx, self, Collections.emptyList(), new ServicesState());
 
 		// then:
 		verify(ctx).update(subject);
@@ -335,35 +316,6 @@ class ServicesStateTest {
 
 		// then:
 		assertEquals(nodeAccount, actual);
-	}
-
-	@Test
-	void initsWithoutMerkleAsExpected() {
-
-		given(book.getSize()).willReturn(1);
-
-		// when:
-		subject.init(platform, book);
-
-		// then:
-		ServicesContext actualCtx = CONTEXTS.lookup(self.getId());
-		// and:
-		assertFalse(subject.isImmutable());
-		assertNotNull(subject.topics());
-		assertNotNull(subject.storage());
-		assertNotNull(subject.accounts());
-		assertNotNull(subject.tokens());
-		assertNotNull(subject.scheduleTxs());
-		assertEquals(book, subject.addressBook());
-		assertEquals(self, actualCtx.id());
-		assertEquals(platform, actualCtx.platform());
-		assertEquals(1001L, subject.networkCtx().seqNo().current());
-		final RecordsRunningHashLeaf runningHashLeaf = subject.runningHashLeaf();
-		assertNotNull(runningHashLeaf);
-		final ImmutableHash emptyHash = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
-		assertEquals(emptyHash, runningHashLeaf.getRunningHash().getHash());
-		// and:
-		verify(mockDigest, never()).accept(any());
 	}
 
 	@Test
@@ -417,7 +369,7 @@ class ServicesStateTest {
 	@Test
 	void catchesNonProtoExceptionInExpandSigs() {
 		// setup:
-		var platformTxn = mock(Transaction.class);
+		var platformTxn = mock(SwirldTransaction.class);
 
 		given(platformTxn.getContents()).willReturn(
 				com.hederahashgraph.api.proto.java.Transaction.getDefaultInstance().toByteArray());
@@ -432,7 +384,7 @@ class ServicesStateTest {
 	@Test
 	void catchesProtobufParseException() {
 		// setup:
-		var platformTxn = mock(Transaction.class);
+		var platformTxn = mock(SwirldTransaction.class);
 
 		given(platformTxn.getContents()).willReturn("not-a-grpc-txn".getBytes());
 
@@ -729,7 +681,7 @@ class ServicesStateTest {
 		subject.ctx = ctx;
 
 		// when:
-		subject.handleTransaction(1, false, now, now, platformTxn);
+		subject.handleTransaction(1, false, now, now, platformTxn, null);
 
 		// then:
 		verify(logic, never()).incorporateConsensusTxn(platformTxn, now, 1);
@@ -739,16 +691,18 @@ class ServicesStateTest {
 	void incorporatesConsensus() {
 		// setup:
 		subject.ctx = ctx;
+		final var mockDual = mock(SwirldDualState.class);
 
 		// when:
-		subject.handleTransaction(1, true, now, now, platformTxn);
+		subject.handleTransaction(1, true, now, now, platformTxn, mockDual);
 
 		// then:
 		verify(logic).incorporateConsensusTxn(platformTxn, now, 1);
+		verify(ctx).setDualState(mockDual);
 	}
 
 	@Test
-	void expandsSigs() {
+	void expandsSigs() throws InvalidProtocolBufferException {
 		// setup:
 		ByteString mockPk = ByteString.copyFrom("not-a-real-pkPrefix".getBytes());
 		ByteString mockSig = ByteString.copyFrom("not-a-real-sig".getBytes());
@@ -764,6 +718,10 @@ class ServicesStateTest {
 		SigningOrderResult<SignatureStatus> payerOrderResult = new SigningOrderResult<>(List.of(key));
 		SigningOrderResult<SignatureStatus> otherOrderResult = new SigningOrderResult<>(EMPTY_LIST);
 		HederaSigningOrder keyOrderer = mock(HederaSigningOrder.class);
+		// and:
+		expandHandleSpan = mock(ExpandHandleSpan.class);
+		given(expandHandleSpan.track(platformTxn)).willReturn(new PlatformTxnAccessor(platformTxn));
+		given(ctx.expandHandleSpan()).willReturn(expandHandleSpan);
 
 		given(keyOrderer.keysForPayer(any(), any())).willReturn((SigningOrderResult) payerOrderResult);
 		given(keyOrderer.keysForOtherParties(any(), any())).willReturn((SigningOrderResult) otherOrderResult);
@@ -782,7 +740,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void expandsSigsWithSignedTransactionBytes() {
+	void expandsSigsWithSignedTransactionBytes() throws InvalidProtocolBufferException {
 		// setup:
 		ByteString mockPk = ByteString.copyFrom("not-a-real-pkPrefix".getBytes());
 		ByteString mockSig = ByteString.copyFrom("not-a-real-sig".getBytes());
@@ -800,6 +758,10 @@ class ServicesStateTest {
 		SigningOrderResult<SignatureStatus> payerOrderResult = new SigningOrderResult<>(List.of(key));
 		SigningOrderResult<SignatureStatus> otherOrderResult = new SigningOrderResult<>(EMPTY_LIST);
 		HederaSigningOrder keyOrderer = mock(HederaSigningOrder.class);
+		// and:
+		expandHandleSpan = mock(ExpandHandleSpan.class);
+		given(expandHandleSpan.track(platformTxn)).willReturn(new PlatformTxnAccessor(platformTxn));
+		given(ctx.expandHandleSpan()).willReturn(expandHandleSpan);
 
 		given(keyOrderer.keysForPayer(any(), any())).willReturn((SigningOrderResult) payerOrderResult);
 		given(keyOrderer.keysForOtherParties(any(), any())).willReturn((SigningOrderResult) otherOrderResult);

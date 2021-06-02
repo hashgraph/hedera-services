@@ -282,11 +282,8 @@ class HederaTokenStoreTest {
 
 		willThrow(IllegalStateException.class).given(change).accept(any());
 
-		// when:
-		assertThrows(IllegalArgumentException.class, () -> subject.apply(misc, change));
-
 		// then:
-		verify(tokens).replace(key, token);
+		assertThrows(IllegalArgumentException.class, () -> subject.apply(misc, change));
 	}
 
 	@Test
@@ -302,7 +299,6 @@ class HederaTokenStoreTest {
 		// then:
 		inOrder.verify(tokens).getForModify(fromTokenId(misc));
 		inOrder.verify(change).accept(modifiableToken);
-		inOrder.verify(tokens).replace(fromTokenId(misc), modifiableToken);
 	}
 
 	@Test
@@ -1566,7 +1562,6 @@ class HederaTokenStoreTest {
 		// and:
 		verify(tokens).getForModify(fromTokenId(misc));
 		verify(token).adjustTotalSupplyBy(adjustment);
-		verify(tokens).replace(fromTokenId(misc), token);
 		// and:
 		verify(hederaLedger).updateTokenXfers(misc, treasury, adjustment);
 		// and:

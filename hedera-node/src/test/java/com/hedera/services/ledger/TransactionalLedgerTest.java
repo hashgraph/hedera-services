@@ -91,7 +91,7 @@ public class TransactionalLedgerTest {
 		subject.rollback();
 
 		// then:
-		verify(backingAccounts).flushMutableRefs();
+		verify(backingAccounts).clearRefCache();
 	}
 
 	@Test
@@ -132,7 +132,7 @@ public class TransactionalLedgerTest {
 			inOrder.verify(backingAccounts).put(argThat(id::equals), any());
 		});
 		// and:
-		verify(backingAccounts).flushMutableRefs();
+		verify(backingAccounts).clearRefCache();
 	}
 
 	@Test

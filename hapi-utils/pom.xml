@@ -102,4 +102,23 @@
       </extension>
     </extensions>
   </build>
+
+  <repositories>
+    <repository>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>central</id>
+      <name>Central Repository</name>
+      <url>https://repo.maven.apache.org/maven2</url>
+    </repository>
+    <repository>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>alpha-sdk</id>
+      <name>OSSRH</name>
+      <url>https://oss.sonatype.org/content/repositories/comswirlds-1104</url>
+    </repository>
+  </repositories>
 </project>

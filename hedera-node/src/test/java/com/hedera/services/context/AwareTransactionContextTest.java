@@ -22,7 +22,7 @@ package com.hedera.services.context;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.charging.ItemizableFeeCharging;
+import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
@@ -43,7 +43,6 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -102,6 +101,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(LogCaptureExtension.class)
 class AwareTransactionContextTest {
+	private final long offeredFee = 123_000_000L;
 	private final TransactionID scheduledTxnId = TransactionID.newBuilder()
 			.setAccountID(IdUtils.asAccount("0.0.2"))
 			.build();
@@ -113,9 +113,7 @@ class AwareTransactionContextTest {
 	private ExchangeRateSet ratesNow =
 			ExchangeRateSet.newBuilder().setCurrentRate(rateNow).setNextRate(rateNow).build();
 	private AccountID payer = asAccount("0.0.2");
-	private AccountID node = asAccount("0.0.3");
 	private AccountID anotherNodeAccount = asAccount("0.0.4");
-	private AccountID funding = asAccount("0.0.98");
 	private AccountID created = asAccount("1.0.2");
 	private AccountID another = asAccount("1.0.300");
 	private TransferList transfers = withAdjustments(payer, -2L, created, 1L, another, 1L);
@@ -130,7 +128,6 @@ class AwareTransactionContextTest {
 	private TopicID topicCreated = asTopic("5.4.3");
 	private long txnValidStart = now.getEpochSecond() - 1_234L;
 	private HederaLedger ledger;
-	private ItemizableFeeCharging itemizableFeeCharging;
 	private AccountID nodeAccount = asAccount("0.0.3");
 	private Address address;
 	private Address anotherAddress;
@@ -138,6 +135,7 @@ class AwareTransactionContextTest {
 	private HbarCentExchange exchange;
 	private NodeInfo nodeInfo;
 	private ServicesContext ctx;
+	private NarratedCharging narratedCharging;
 	private PlatformTxnAccessor accessor;
 	private Transaction signedTxn;
 	private TransactionBody txn;
@@ -177,8 +175,7 @@ class AwareTransactionContextTest {
 		exchange = mock(HbarCentExchange.class);
 		given(exchange.activeRates()).willReturn(ratesNow);
 
-		itemizableFeeCharging = mock(ItemizableFeeCharging.class);
-		given(itemizableFeeCharging.itemizedFees()).willReturn(TransferList.getDefaultInstance());
+		narratedCharging = mock(NarratedCharging.class);
 
 		payerKey = mock(JKey.class);
 		MerkleAccount payerAccount = mock(MerkleAccount.class);
@@ -191,7 +188,7 @@ class AwareTransactionContextTest {
 		given(ctx.exchange()).willReturn(exchange);
 		given(ctx.ledger()).willReturn(ledger);
 		given(ctx.accounts()).willReturn(accounts);
-		given(ctx.charging()).willReturn(itemizableFeeCharging);
+		given(ctx.narratedCharging()).willReturn(narratedCharging);
 		given(ctx.accounts()).willReturn(accounts);
 		given(ctx.addressBook()).willReturn(book);
 		given(ctx.creator()).willReturn(creator);
@@ -205,6 +202,7 @@ class AwareTransactionContextTest {
 		signedTxn = mock(Transaction.class);
 		given(signedTxn.toByteArray()).willReturn(memo.getBytes());
 		accessor = mock(PlatformTxnAccessor.class);
+		given(accessor.getOfferedFee()).willReturn(offeredFee);
 		given(accessor.getTxnId()).willReturn(txnId);
 		given(accessor.getTxn()).willReturn(txn);
 		given(accessor.getBackwardCompatibleSignedTxn()).willReturn(signedTxn);
@@ -307,7 +305,7 @@ class AwareTransactionContextTest {
 		assertEquals(anotherNodeAccount, subject.submittingNodeAccount());
 		assertEquals(anotherMemberId, subject.submittingSwirldsMember());
 		// and:
-		verify(itemizableFeeCharging).resetFor(accessor, anotherNodeAccount);
+		verify(narratedCharging).resetForTxn(accessor, memberId);
 	}
 
 	@Test
@@ -326,34 +324,10 @@ class AwareTransactionContextTest {
 	}
 
 	@Test
-	void getsItemizedRepr() {
-		// setup:
-		TransferList canonicalAdjustments =
-				withAdjustments(payer, -2100, node, 100, funding, 1000, another, 1000);
-		TransferList itemizedFees =
-				withAdjustments(funding, 900, payer, -900, node, 100, payer, -100);
-		// and:
-		TransferList desiredRepr = itemizedFees.toBuilder()
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(payer).setAmount(-1100))
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(funding).setAmount(100))
-				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(another).setAmount(1000))
-				.build();
-
-		given(ledger.netTransfersInTxn()).willReturn(canonicalAdjustments);
-		given(itemizableFeeCharging.itemizedFees()).willReturn(itemizedFees);
-
-		// when:
-		TransferList repr = subject.itemizedRepresentation();
-
-		// then:
-		assertEquals(desiredRepr, repr);
-	}
-
-	@Test
 	void usesChargingToSetTransactionFee() {
 		long std = 1_234L;
 		long other = 4_321L;
-		given(itemizableFeeCharging.totalFeesChargedToPayer()).willReturn(std);
+		given(narratedCharging.totalFeesChargedToPayer()).willReturn(std);
 
 		// when:
 		subject.addNonThresholdFeeChargedToPayer(other);
@@ -614,7 +588,7 @@ class AwareTransactionContextTest {
 
 	private ExpirableTxnRecord.Builder buildRecord(long otherNonThresholdFees, ByteString hash, TxnAccessor accessor,
 			Instant consensusTime, TxnReceipt receipt) {
-		long amount = ctx.charging().totalFeesChargedToPayer() + otherNonThresholdFees;
+		long amount = ctx.narratedCharging().totalFeesChargedToPayer() + otherNonThresholdFees;
 		TransferList transfersList = ctx.ledger().netTransfersInTxn();
 		List<TokenTransferList> tokenTransferList = ctx.ledger().netTokenTransfersInTxn();
 

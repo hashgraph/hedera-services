@@ -95,13 +95,12 @@ public class ExpiringCreations implements EntityCreator {
 		final var currentAccounts = accounts.get();
 		final var mutableAccount = currentAccounts.getForModify(key);
 		mutableAccount.records().offer(record);
-		currentAccounts.replace(key, mutableAccount);
 	}
 
 	@Override
 	public ExpirableTxnRecord.Builder buildExpiringRecord(long otherNonThresholdFees, ByteString hash,
 			TxnAccessor accessor, Instant consensusTime, TxnReceipt receipt, ServicesContext ctx) {
-		final long amount = ctx.charging().totalFeesChargedToPayer() + otherNonThresholdFees;
+		final long feesCharged = ctx.narratedCharging().totalFeesChargedToPayer() + otherNonThresholdFees;
 		final TransferList transfersList = ctx.ledger().netTransfersInTxn();
 		final List<TokenTransferList> tokenTransferList = ctx.ledger().netTokenTransfersInTxn();
 		final var currencyAdjustments = transfersList.getAccountAmountsCount() > 0
@@ -114,7 +113,7 @@ public class ExpiringCreations implements EntityCreator {
 				.setTxnId(TxnId.fromGrpc(accessor.getTxnId()))
 				.setConsensusTime(RichInstant.fromJava(consensusTime))
 				.setMemo(accessor.getTxn().getMemo())
-				.setFee(amount)
+				.setFee(feesCharged)
 				.setTransferList(currencyAdjustments)
 				.setScheduleRef(scheduleRef);
 

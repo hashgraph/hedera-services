@@ -43,7 +43,7 @@ import static com.hedera.services.state.submerkle.EntityId.fromGrpcScheduleId;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
-public class ExpirableTxnRecord implements FCQueueElement<ExpirableTxnRecord> {
+public class ExpirableTxnRecord implements FCQueueElement {
 	public static final long UNKNOWN_SUBMITTING_MEMBER = -1;
 	static final List<EntityId> NO_TOKENS = null;
 	static final List<CurrencyAdjustments> NO_TOKEN_ADJUSTMENTS = null;

@@ -30,6 +30,7 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.common.SwirldTransaction;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,7 +59,7 @@ class InvariantChecksTest {
 					.toByteString())
 			.build();
 	private final PlatformTxnAccessor accessor = PlatformTxnAccessor.uncheckedAccessorFor(
-			new com.swirlds.common.Transaction(mockTxn.toByteArray()));
+			new SwirldTransaction(mockTxn.toByteArray()));
 
 	@Mock
 	private NodeInfo nodeInfo;

@@ -31,7 +31,6 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.swirlds.common.FCMValue;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
@@ -70,7 +69,7 @@ import static com.swirlds.common.CommonUtils.hex;
  *   replace the Topic in the map.</li>
  * </ul>
  */
-public final class MerkleTopic extends AbstractMerkleLeaf implements FCMValue {
+public final class MerkleTopic extends AbstractMerkleLeaf {
 	private static final Logger log = LogManager.getLogger(MerkleTopic.class);
 
 	public static final int RUNNING_HASH_BYTE_ARRAY_SIZE = 48;

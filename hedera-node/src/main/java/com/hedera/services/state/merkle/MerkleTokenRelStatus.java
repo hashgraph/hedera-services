@@ -21,7 +21,6 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.swirlds.common.FCMValue;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
@@ -30,7 +29,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.io.IOException;
 
-public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements FCMValue {
+public class MerkleTokenRelStatus extends AbstractMerkleLeaf {
 	static final int RELEASE_090_VERSION = 1;
 
 	static final int MERKLE_VERSION = RELEASE_090_VERSION;

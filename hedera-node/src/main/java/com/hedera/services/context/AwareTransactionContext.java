@@ -31,7 +31,6 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.TxnAccessor;
-import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -43,6 +42,8 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -57,6 +58,7 @@ import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.canonicalDiffRepr;
 import static com.hedera.services.utils.MiscUtils.readableTransferList;
+import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
 /**
@@ -117,7 +119,8 @@ public class AwareTransactionContext implements TransactionContext {
 		isPayerSigKnownActive = false;
 		hasComputedRecordSoFar = false;
 
-		ctx.charging().resetFor(accessor, submittingNodeAccount());
+		ctx.narratedCharging().resetForTxn(accessor, submittingMember);
+
 		recordSoFar.clear();
 	}
 
@@ -155,10 +158,6 @@ public class AwareTransactionContext implements TransactionContext {
 	public ExpirableTxnRecord recordSoFar() {
 		TxnReceipt receipt = receiptSoFar().build();
 
-		if (log.isDebugEnabled()) {
-			logItemized();
-		}
-
 		recordSoFar = ctx.creator().buildExpiringRecord(otherNonThresholdFees,
 				hash,
 				accessor,
@@ -168,29 +167,11 @@ public class AwareTransactionContext implements TransactionContext {
 
 		recordConfig.accept(recordSoFar);
 		hasComputedRecordSoFar = true;
+
 		return recordSoFar.build();
 	}
 
-	private void logItemized() {
-		String readableTransferList = readableTransferList(itemizedRepresentation());
-		log.debug(
-				"Transfer list with itemized fees for {} is {}",
-				accessor().getSignedTxn4Log(),
-				readableTransferList);
-	}
-
-	TransferList itemizedRepresentation() {
-		TransferList canonicalRepr = ctx.ledger().netTransfersInTxn();
-		TransferList itemizedFees = ctx.charging().itemizedFees();
-
-		List<AccountAmount> nonFeeAdjustments =
-				canonicalDiffRepr(canonicalRepr.getAccountAmountsList(), itemizedFees.getAccountAmountsList());
-		return itemizedFees.toBuilder()
-				.addAllAccountAmounts(nonFeeAdjustments)
-				.build();
-	}
-
-	public TxnReceipt.Builder receiptSoFar() {
+	TxnReceipt.Builder receiptSoFar() {
 		TxnReceipt.Builder receipt = TxnReceipt.newBuilder()
 				.setExchangeRates(ExchangeRates.fromGrpc(ctx.exchange().activeRates()))
 				.setStatus(statusSoFar.name());

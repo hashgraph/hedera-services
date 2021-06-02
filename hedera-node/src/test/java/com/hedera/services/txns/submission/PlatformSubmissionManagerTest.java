@@ -31,6 +31,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import com.swirlds.common.Platform;
+import com.swirlds.common.SwirldTransaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -95,8 +96,8 @@ class PlatformSubmissionManagerTest {
 	@Test
 	public void updatesRecordCacheWhenTxnIsCreated() {
 		// setup:
-		ArgumentCaptor<com.swirlds.common.Transaction> captor =
-				ArgumentCaptor.forClass(com.swirlds.common.Transaction.class);
+		ArgumentCaptor<SwirldTransaction> captor =
+				ArgumentCaptor.forClass(SwirldTransaction.class);
 
 		given(platform.createTransaction(captor.capture())).willReturn(true);
 
@@ -127,8 +128,8 @@ class PlatformSubmissionManagerTest {
 	@Test
 	public void submitsChildInsteadOfParentForUnchecked() {
 		// setup:
-		ArgumentCaptor<com.swirlds.common.Transaction> captor =
-				ArgumentCaptor.forClass(com.swirlds.common.Transaction.class);
+		ArgumentCaptor<SwirldTransaction> captor =
+				ArgumentCaptor.forClass(SwirldTransaction.class);
 
 		given(platform.createTransaction(captor.capture())).willReturn(true);
 
