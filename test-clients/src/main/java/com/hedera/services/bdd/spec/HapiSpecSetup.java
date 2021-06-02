@@ -341,8 +341,8 @@ public class HapiSpecSetup {
 	public Boolean measureConsensusLatency() {
 		return props.getBoolean("measure.consensus.latency");
 	}
-	public Boolean suppressUnknownErrors() {
-		return props.getBoolean("warnings.suppressUnknowns");
+	public Boolean suppressUnrecoverableNetworkFailures() {
+		return props.getBoolean("warnings.suppressUnrecoverableNetworkFailures");
 	}
 	public FileID nodeDetailsId() {
 		return props.getFile("node.details.id");

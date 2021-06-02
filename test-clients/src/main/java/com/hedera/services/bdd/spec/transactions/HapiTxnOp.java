@@ -160,7 +160,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 					log.info("Recognized recoverable runtime exception {}, retrying status resolution...", msg);
 					continue;
 				} else {
-					if (spec.setup().suppressUnknownErrors()) {
+					if (spec.setup().suppressUnrecoverableNetworkFailures()) {
 						return false;
 					}
 					log.error("{} Status resolution failed due to unrecoverable runtime exception, " +
