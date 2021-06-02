@@ -1508,11 +1508,11 @@ workflows:
   GCP-Daily-Services-Crypto-Restart-4N-1C:
     triggers:
       - schedule:
-          cron: "15 6 * * *"
+          cron: "5 15 * * *"
           filters:
             branches:
               only:
-                - master-plus-sdk-0.15.0-alpha.1
+                - 1506-1513-M-fix-tests
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -2339,7 +2339,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression;
+            cd regression; git checkout 1506-D-fix-correctness-reconnect-tests;
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
@@ -2755,7 +2755,7 @@ jobs:
         default: "hedera-regression-test"
       slack_summary_channel:
         type: string
-        default: "hedera-regression-summary"
+        default: "hedera-regression-test"
       workflow-name:
         type: string
         default: ""
