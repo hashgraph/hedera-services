@@ -4,7 +4,7 @@ import com.swirlds.common.AbstractHashable;
 import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.crypto.Hashable;
 
 import java.util.Objects;
 
@@ -12,7 +12,7 @@ import java.util.Objects;
  * An internal (i.e. parent) node in the virtual tree. This node is just a holder of information,
  * all of the tree building / modifying logic is held in the {@link VirtualMap}.
  */
-public class VirtualTreeInternal<K, V extends SelfSerializable> extends AbstractHashable implements VirtualTreeNode<K, V> {
+public class VirtualTreeInternal<K, V extends Hashable> extends AbstractHashable implements VirtualTreeNode<K, V> {
 
     /**
      * The dataSource that saves all the important information about

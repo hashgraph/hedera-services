@@ -1,6 +1,9 @@
 package com.hedera.services.state.merkle.virtual;
 
 import com.swirlds.common.constructable.ConstructableIgnored;
+import com.swirlds.common.crypto.CryptoFactory;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.Hashable;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -11,29 +14,47 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 /**
- * An immutable 256-byte array.
+ * An immutable 32-byte array.
  *
- * <p>The Ethereum API uses a 256-byte array as both the key and the value for a
+ * <p>The Ethereum API uses a 32-byte array as both the key and the value for a
  * single data element. By wrapping that array in this class, we can safely
  * encapsulate the logic for protection against null arrays or malformed (short,
  * or long) arrays. We can also cache the hash code to improve performance.</p>
  */
-@ConstructableIgnored
-public class ByteChunk implements SelfSerializable {
+public class ByteChunk implements Hashable {
+    /**
+     * The actual data. This will never be null and will always be 32 elements in length.
+     * This data is protected by this class, we make defensive copies rather than letting
+     * this array leave this instance at any time.
+     */
     private final byte[] data;
+
+    /**
+     * A cached hash code of the data. Since we use ByteChunks as keys in maps,
+     * this gets called frequently and we want to only compute it once.
+     */
     private final int hashCode;
+
+    /**
+     * A cached Swirlds Hash of the data contents. Since we use ByteChunks as
+     * values, we need this hash to compute the hash of the merkle tree.
+     * If we separated out Keys and Values as two different types, then
+     * we'd only have this for values, not for keys.
+     */
+    private final Hash hash;
 
     /**
      * Creates a new ByteChunk with the given array. Makes a safe copy of the array.
      *
-     * @param source The source array which cannot be null and must be 256 bytes long.
+     * @param source The source array which cannot be null and must be 32 bytes long.
      */
     public ByteChunk(byte[] source) {
-        if (source.length != 256) {
-            throw new IllegalArgumentException("We only store 256 byte blocks.");
+        if (source.length != 32) {
+            throw new IllegalArgumentException("We only store 32 byte blocks.");
         }
-        this.data = Arrays.copyOf(source, 256);
+        this.data = Arrays.copyOf(source, 32);
         this.hashCode = Arrays.hashCode(this.data);
+        this.hash = CryptoFactory.getInstance().digestSync(data);
     }
 
     /**
@@ -43,6 +64,15 @@ public class ByteChunk implements SelfSerializable {
      */
     public ByteBuffer getData() {
         return ByteBuffer.wrap(data).asReadOnlyBuffer();
+    }
+
+    /**
+     * Gets a <strong>copy</strong> of the array.
+     *
+     * @return A 32-byte array. Never returns null.
+     */
+    public byte[] asByteArray() {
+        return Arrays.copyOf(data, 32);
     }
 
     @Override
@@ -59,23 +89,17 @@ public class ByteChunk implements SelfSerializable {
     }
 
     @Override
-    public void deserialize(SerializableDataInputStream serializableDataInputStream, int i) throws IOException {
-        throw new UnsupportedEncodingException();
+    public Hash getHash() {
+        return hash;
     }
 
     @Override
-    public void serialize(SerializableDataOutputStream serializableDataOutputStream) throws IOException {
-        serializableDataOutputStream.writeByteArray(data);
+    public void invalidateHash() {
+        throw new UnsupportedOperationException("Cannot invalidate a ByteChunk's hash");
     }
 
     @Override
-    public long getClassId() {
-        // TODO handle these properly
-        return 102302032030230L;
-    }
-
-    @Override
-    public int getVersion() {
-        return 1;
+    public void setHash(Hash hash) {
+        throw new UnsupportedOperationException("Cannot set a ByteChunk's hash");
     }
 }
