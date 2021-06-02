@@ -93,7 +93,7 @@ public class VirtualMapTest {
     // TODO Test hashing the tree
 
     private ByteChunk asBlock(String s) {
-        return new ByteChunk(Arrays.copyOf(s.getBytes(StandardCharsets.UTF_8), 256));
+        return new ByteChunk(Arrays.copyOf(s.getBytes(StandardCharsets.UTF_8), 32));
     }
 
     // Simple implementation for testing purposes
