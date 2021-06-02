@@ -20,6 +20,7 @@ package com.hedera.services.context;
  * ‍
  */
 
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -90,6 +91,7 @@ class NodeInfoTest {
 		// setup:
 		final var memo = "0.0.3";
 		final var expectedAccount = IdUtils.asAccount(memo);
+		final var expectedAccountKey = new MerkleEntityId(0, 0, 3);
 
 		givenEntryWithMemoAndStake(nodeId, memo, 1L);
 
@@ -97,6 +99,8 @@ class NodeInfoTest {
 		assertEquals(expectedAccount, subject.accountOf(nodeId));
 		assertEquals(expectedAccount, subject.selfAccount());
 		assertTrue(subject.hasSelfAccount());
+		// and:
+		assertEquals(expectedAccountKey, subject.accountKeyOf(nodeId));
 	}
 
 	@Test

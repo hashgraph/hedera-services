@@ -61,5 +61,7 @@ public interface TxnAccessor {
 
     ScheduleID getScheduleRef();
 
+    long getOfferedFee();
+
     default SwirldTransaction getPlatformTxn() { throw new UnsupportedOperationException(); }
 }

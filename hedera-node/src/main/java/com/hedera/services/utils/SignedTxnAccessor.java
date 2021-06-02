@@ -101,6 +101,10 @@ public class SignedTxnAccessor implements TxnAccessor {
 		return function;
 	}
 
+	public long getOfferedFee() {
+		return txn.getTransactionFee();
+	}
+
 	public Transaction getSignedTxn4Log() {
 		return backwardCompatibleSignedTxn;
 	}

@@ -24,9 +24,8 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.fees.charging.TxnFeeChargingPolicy;
+import com.hedera.services.fees.charging.FeeChargingPolicy;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.security.ops.SystemOpAuthorization;
@@ -41,7 +40,6 @@ import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.txns.TransitionLogicLookup;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -100,7 +98,7 @@ class AwareProcessLogicTest {
 		final TxnIdRecentHistory recentHistory = mock(TxnIdRecentHistory.class);
 		final Map<TransactionID, TxnIdRecentHistory> histories = mock(Map.class);
 		final AccountID accountID = mock(AccountID.class);
-		final TxnFeeChargingPolicy policy = mock(TxnFeeChargingPolicy.class);
+		final FeeChargingPolicy policy = mock(FeeChargingPolicy.class);
 		final SystemOpPolicies policies = mock(SystemOpPolicies.class);
 		final TransitionLogicLookup lookup = mock(TransitionLogicLookup.class);
 		final EntityAutoRenewal entityAutoRenewal = mock(EntityAutoRenewal.class);
@@ -150,7 +148,7 @@ class AwareProcessLogicTest {
 		given(recentHistory.currentDuplicityFor(anyLong())).willReturn(BELIEVED_UNIQUE);
 
 		given(txnBody.getNodeAccountID()).willReturn(accountID);
-		given(policy.apply(any(), any())).willReturn(ResponseCodeEnum.OK);
+		given(policy.apply(any())).willReturn(ResponseCodeEnum.OK);
 		given(policies.check(any())).willReturn(SystemOpAuthorization.AUTHORIZED);
 		given(lookup.lookupFor(any(), any())).willReturn(Optional.empty());
 		given(ctx.entityAutoRenewal()).willReturn(entityAutoRenewal);
@@ -190,6 +188,7 @@ class AwareProcessLogicTest {
 		// and:
 		final var triggeredTxn = mock(TxnAccessor.class);
 
+		given(triggeredTxn.isTriggeredTxn()).willReturn(true);
 		given(txnCtx.triggeredTxn()).willReturn(triggeredTxn);
 		given(invariantChecks.holdFor(any(), eq(consensusNow.minusNanos(1L)), eq(666L))).willReturn(true);
 
