@@ -25,7 +25,6 @@ import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.state.submerkle.TxnId;

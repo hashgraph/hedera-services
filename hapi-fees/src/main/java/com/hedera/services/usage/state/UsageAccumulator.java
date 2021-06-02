@@ -10,7 +10,14 @@ import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
 
 /**
- * Stateful class used to accumulate an estimate of the resources used by a HAPI operation.
+ * Accumulates an estimate of the resources used by a HAPI operation.
+ *
+ * Resources are used by three service providers:
+ * <ol>
+ * 	<li>The network for providing gossip, consensus, and short-term storage of e.g. receipts; and,</li>
+ * 	<li>The node that submitted the transaction, for providing prechecks and client communication; and,</li>
+ * 	<li>The service actually performed by the </li>
+ * </ol>
  */
 public class UsageAccumulator {
 	private long bpt;
@@ -99,4 +106,6 @@ public class UsageAccumulator {
 	public long getNetworkRbs() {
 		return networkRbs;
 	}
+
+	/* Provider-scoped usage estimates (all provider usages */
 }

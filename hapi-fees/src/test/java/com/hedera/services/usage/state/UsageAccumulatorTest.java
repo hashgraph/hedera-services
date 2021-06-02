@@ -1,6 +1,7 @@
 package com.hedera.services.usage.state;
 
 import com.hedera.services.usage.SigUsage;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ACCOUNT_AMT_SIZE;
@@ -18,9 +19,8 @@ class UsageAccumulatorTest {
 
 	private UsageAccumulator subject = new UsageAccumulator();
 
-	@Test
-	void resetWorksForTxn() {
-		// setup:
+	@BeforeEach
+	void setUp() {
 		subject.addBpt(1);
 		subject.addBpr(2);
 		subject.addSbpr(3);
@@ -29,7 +29,15 @@ class UsageAccumulatorTest {
 		subject.addRbs(6);
 		subject.addSbs(7);
 		subject.addNetworkRbs(8);
+	}
 
+	@Test
+	void understandsNetworkPartitioning() {
+
+	}
+
+	@Test
+	void resetWorksForTxn() {
 		// when:
 		subject.resetForTransaction(memoBytes, numTransfers, sigUsage);
 
@@ -50,17 +58,7 @@ class UsageAccumulatorTest {
 
 	@Test
 	void addersWork() {
-		// when:
-		subject.addBpt(1);
-		subject.addBpr(2);
-		subject.addSbpr(3);
-		subject.addVpt(4);
-		subject.addGas(5);
-		subject.addRbs(6);
-		subject.addSbs(7);
-		subject.addNetworkRbs(8);
-
-		// then:
+		// expect:
 		assertEquals(1, subject.getBpt());
 		assertEquals(2, subject.getBpr());
 		assertEquals(3, subject.getSbpr());
