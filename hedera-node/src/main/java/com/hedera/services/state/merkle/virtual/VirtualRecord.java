@@ -17,7 +17,7 @@ public final class VirtualRecord<K> {
      *
      * @param hash The hash associated with the data. Can be null if no hash has been computed.
      * @param path The path to the node. Cannot be null.
-     * @param key The key. This must be a 256 byte array.
+     * @param key The key. Cannot be null.
      */
     public VirtualRecord(Hash hash, Path path, K key) {
         this.hash = hash;

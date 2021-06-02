@@ -15,11 +15,11 @@ import java.io.Closeable;
 public interface VirtualDataSource<K, V> extends Closeable {
 
     /**
-     * Gets the data from storage using a 256-byte key as the input. This is very EVM
-     * specific. The return value is either null, or a non-null 256-byte array.
+     * Gets the data from storage using a non-null key as the input.
+     * The return value may be null.
      *
-     * @param key A non-null 256-byte key.
-     * @return The 256-byte array, or null if there is not one.
+     * @param key A non-null key.
+     * @return The value, or null if there is not one.
      */
     V getData(K key);
 
@@ -27,9 +27,8 @@ public interface VirtualDataSource<K, V> extends Closeable {
      * Writes data to disk. This may be asynchronous, but subsequent reads from
      * getData for this key must return the written value.
      *
-     * @param key The non-null 256-byte key.
-     * @param data The record to write. If null, then the record is deleted.
-     *             If non-null, must be a 256-byte array.
+     * @param key The non-null key.
+     * @param data The value to write.
      */
     void writeData(K key, V data);
 

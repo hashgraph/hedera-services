@@ -1,10 +1,8 @@
 package com.hedera.services.state.merkle.virtual;
 
 import com.swirlds.common.AbstractHashable;
-import com.swirlds.common.crypto.CryptoFactory;
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.crypto.Hashable;
 
 import java.util.Objects;
 
@@ -13,7 +11,7 @@ import java.util.Objects;
  * parent. A newly created leaf may be <strong>detached</strong>, which means
  * that it is not part of any tree.</p>
  */
-public class VirtualTreeLeaf<K, V extends SelfSerializable> extends AbstractHashable implements VirtualTreeNode<K, V> {
+public class VirtualTreeLeaf<K, V extends Hashable> extends AbstractHashable implements VirtualTreeNode<K, V> {
     /**
      * The dataSource that saves all the important information about
      * this tree leaf.
@@ -41,7 +39,7 @@ public class VirtualTreeLeaf<K, V extends SelfSerializable> extends AbstractHash
 
     /**
      * The data associated with this leaf node. The data should never be null,
-     * but can change over time. It should be a fixed 256-byte array.
+     * but can change over time.
      */
     private V data;
 
@@ -91,8 +89,7 @@ public class VirtualTreeLeaf<K, V extends SelfSerializable> extends AbstractHash
         }
 
         // Recompute the hash
-        final var crypto = CryptoFactory.getInstance();
-        final var newHash = crypto.digestSync(data, DigestType.SHA_384);
+        final var newHash = data.getHash();
         setHash(newHash);
         dataSource.writeHash(path, newHash);
         return newHash;

@@ -4,6 +4,7 @@ import com.swirlds.common.Archivable;
 import com.swirlds.common.FCMElement;
 import com.swirlds.common.FCMValue;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.Hashable;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -50,7 +51,7 @@ import java.util.Objects;
  * On the first {@code get}, it defers to the VirtualDataSource to see if the entry
  * exists. If it does not, it returns null. If it does, then it reads some information
  * about the {@link VirtualTreeLeaf} that had previously been saved. Specifically, it
- * reads back the data (256 byte array for EVM) and a {@code Path} that defines the
+ * reads back the data (32 byte array for EVM) and a {@code Path} that defines the
  * path from the root of the tree to the leaf. We then decode this path, and read
  * from the data source the root node's hash from storage, and so on down the path
  * until we get to the leaf node (we actually instantiate both children of each
@@ -85,7 +86,7 @@ import java.util.Objects;
  * the set of keys, or nodes, that exist in the tree.
  *
  */
-public final class VirtualMap<K, V extends SelfSerializable>
+public final class VirtualMap<K, V extends Hashable>
         extends AbstractMerkleLeaf
         implements Archivable, FCMValue, MerkleExternalLeaf {
 
@@ -380,7 +381,7 @@ public final class VirtualMap<K, V extends SelfSerializable>
     /**
      * Update a value.
      *
-     * @param value A potentially null value, or a 256-byte array
+     * @param value A potentially null value
      * @param record A non-null record related to the leaf node to update.
      */
     private void update(V value, VirtualRecord<K> record) {
@@ -396,8 +397,8 @@ public final class VirtualMap<K, V extends SelfSerializable>
      * certain that there is no record in the data source for this key, so
      * we can assume that here.
      *
-     * @param key A non-null 256-byte key. Previously validated.
-     * @param value Either null, or a non-null 256-byte value.
+     * @param key A non-null key. Previously validated.
+     * @param value The value to add. May be null.
      */
     private void add(K key, V value) {
         // Gotta create the root, if there isn't one.
