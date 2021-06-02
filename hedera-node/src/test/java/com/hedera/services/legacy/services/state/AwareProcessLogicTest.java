@@ -36,6 +36,7 @@ import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.state.expiry.EntityAutoRenewal;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.logic.InvariantChecks;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stream.RecordStreamManager;
@@ -64,8 +65,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyLong;
@@ -222,7 +221,7 @@ class AwareProcessLogicTest {
 
 		//when:
 		subject.addForStreaming(mock(com.hederahashgraph.api.proto.java.Transaction.class),
-				mock(TransactionRecord.class), Instant.now());
+				mock(ExpirableTxnRecord.class), Instant.now());
 		//then:
 		verify(ctx).updateRecordRunningHash(any(RunningHash.class));
 		verify(recordStreamManager).addRecordStreamObject(any(RecordStreamObject.class));

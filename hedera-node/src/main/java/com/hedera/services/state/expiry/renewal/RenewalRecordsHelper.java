@@ -22,7 +22,13 @@ package com.hedera.services.state.expiry.renewal;
 
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -30,8 +36,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -39,7 +43,7 @@ import org.apache.logging.log4j.Logger;
 import java.time.Instant;
 import java.util.List;
 
-import static com.hedera.services.utils.MiscUtils.asTimestamp;
+import static com.hedera.services.state.expiry.ExpiringCreations.setTokensAndTokenAdjustments;
 
 public class RenewalRecordsHelper {
 	private static final Logger log = LogManager.getLogger(RenewalRecordsHelper.class);
@@ -77,13 +81,12 @@ public class RenewalRecordsHelper {
 		final var grpcId = id.toAccountId();
 		final var memo = "Entity " + id.toAbbrevString() + " was automatically deleted.";
 
-		final var record = forCrypto(grpcId, eventTime)
-				.setMemo(memo)
-				.addAllTokenTransferLists(tokensDisplaced)
-				.build();
-		stream(record, eventTime);
+		var expirableRecord = forCrypto(grpcId, eventTime)
+				.setMemo(memo);
+		setTokensAndTokenAdjustments(expirableRecord, tokensDisplaced);
+		stream(expirableRecord.build(), eventTime);
 
-		log.debug("Streamed crypto removal record {}", record);
+		log.debug("Streamed crypto removal record {}", expirableRecord);
 	}
 
 	public void streamCryptoRenewal(MerkleEntityId id, long fee, long newExpiry) {
@@ -99,16 +102,16 @@ public class RenewalRecordsHelper {
 
 		final var record = forCrypto(grpcId, eventTime)
 				.setMemo(memo)
-				.setTransferList(feeXfers(fee, grpcId))
-				.setTransactionFee(fee)
+				.setTransferList(CurrencyAdjustments.fromGrpc(feeXfers(fee, grpcId)))
+				.setFee(fee)
 				.build();
 		stream(record, eventTime);
 
 		log.debug("Streamed crypto renewal record {}", record);
 	}
 
-	private void stream(TransactionRecord record, Instant at) {
-		final var rso = new RecordStreamObject(record, EMPTY_SIGNED_TXN, at);
+	private void stream(ExpirableTxnRecord expirableTxnRecord, Instant at) {
+		final var rso = new RecordStreamObject(expirableTxnRecord, EMPTY_SIGNED_TXN, at);
 		ctx.updateRecordRunningHash(rso.getRunningHash());
 		recordStreamManager.addRecordStreamObject(rso);
 	}
@@ -125,13 +128,13 @@ public class RenewalRecordsHelper {
 				.build();
 	}
 
-	private TransactionRecord.Builder forCrypto(AccountID id, Instant at) {
-		return TransactionRecord.newBuilder()
-				.setTransactionID(TransactionID.newBuilder()
-						.setAccountID(id))
-				.setReceipt(TransactionReceipt.newBuilder()
-						.setAccountID(id))
-				.setConsensusTimestamp(asTimestamp(at));
+	private ExpirableTxnRecord.Builder forCrypto(AccountID id, Instant at) {
+		return ExpirableTxnRecord.newBuilder()
+				.setTxnId(TxnId.fromGrpc(TransactionID.newBuilder()
+						.setAccountID(id).build()))
+				.setReceipt(TxnReceipt.newBuilder()
+						.setAccountId(EntityId.fromGrpcAccountId(id)).build())
+				.setConsensusTime(RichInstant.fromJava(at));
 	}
 
 	int getConsensusNanosIncr() {

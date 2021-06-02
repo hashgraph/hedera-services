@@ -22,6 +22,7 @@ package com.hedera.services.context;
 
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.expiry.ExpiringEntity;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -41,7 +42,7 @@ import java.util.List;
 /**
  * Defines a type that manages transaction-specific context for a node. (That is,
  * context built while processing a consensus transaction.) Most of this context
- * is ultimately captured by a {@link TransactionRecord}, so the core
+ * is ultimately captured by a {@link ExpirableTxnRecord}, so the core
  * responsibility of this type is to construct an appropriate record in method
  * {@code recordSoFar}.
  *
@@ -115,12 +116,12 @@ public interface TransactionContext {
 	ResponseCodeEnum status();
 
 	/**
-	 * Constructs and gets a {@link TransactionRecord} which captures the history
+	 * Constructs and gets a {@link ExpirableTxnRecord} which captures the history
 	 * of processing the current txn up to the time of the call.
 	 *
 	 * @return the historical record of processing the current txn thus far.
 	 */
-	TransactionRecord recordSoFar();
+	ExpirableTxnRecord recordSoFar();
 
 	/**
 	 * Gets an accessor to the defined type {@link TxnAccessor}
