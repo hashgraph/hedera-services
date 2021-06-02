@@ -5,12 +5,12 @@ import com.swirlds.common.crypto.Hash;
 import java.util.Objects;
 
 /**
- * Stores information related to a tree node. All tree nodes have a Path and a Hash.
+ * Stores information related to a virtual tree node in the VirtualDataSource.
  */
-public final class VirtualRecord {
+public final class VirtualRecord<K> {
     private final Path path;
     private final Hash hash;
-    private final Block key;
+    private final K key;
 
     /**
      * Creates a VirtualRecord suitable for a VirtualTreeLeaf.
@@ -19,7 +19,7 @@ public final class VirtualRecord {
      * @param path The path to the node. Cannot be null.
      * @param key The key. This must be a 256 byte array.
      */
-    public VirtualRecord(Hash hash, Path path, Block key) {
+    public VirtualRecord(Hash hash, Path path, K key) {
         this.hash = hash;
         this.path = Objects.requireNonNull(path);
         this.key = Objects.requireNonNull(key);
@@ -33,7 +33,7 @@ public final class VirtualRecord {
         return hash;
     }
 
-    public Block getKey() {
+    public K getKey() {
         return key;
     }
 }
