@@ -24,10 +24,15 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.common.MutabilityException;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.merkle.utility.MerkleLong;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.fcmap.internal.FCMLeaf;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
 
 import java.util.Collections;
 import java.util.Set;
@@ -40,13 +45,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
 
-class FCMapBackingAccountsTest {
+class BackingAccountsTest {
 	private final AccountID a = asAccount("1.2.3");
 	private final AccountID b = asAccount("3.2.1");
 	private final AccountID c = asAccount("4.3.0");
@@ -61,24 +65,24 @@ class FCMapBackingAccountsTest {
 	private final MerkleAccount dValue = MerkleAccountFactory.newAccount().balance(120L).get();
 
 	private FCMap<MerkleEntityId, MerkleAccount> map;
-	private FCMapBackingAccounts subject;
+	private BackingAccounts subject;
 
 	@BeforeEach
 	private void setup() {
 		map = mock(FCMap.class);
 		given(map.keySet()).willReturn(Collections.emptySet());
 
-		subject = new FCMapBackingAccounts(() -> map);
+		subject = new BackingAccounts(() -> map);
 	}
 
 	@Test
-	public void syncsFromInjectedMap() {
+	void syncsFromInjectedMap() {
 		// setup:
 		map = new FCMap<>();
 		map.put(aKey, aValue);
 		map.put(bKey, bValue);
 		// and:
-		subject = new FCMapBackingAccounts(() -> map);
+		subject = new BackingAccounts(() -> map);
 
 		// then:
 		assertTrue(subject.existingAccounts.contains(a));
@@ -86,13 +90,13 @@ class FCMapBackingAccountsTest {
 	}
 
 	@Test
-	public void rebuildsFromChangedSources() {
+	void rebuildsFromChangedSources() {
 		// setup:
 		map = new FCMap<>();
 		map.put(aKey, aValue);
 		map.put(bKey, bValue);
 		// and:
-		subject = new FCMapBackingAccounts(() -> map);
+		subject = new BackingAccounts(() -> map);
 
 		// when:
 		map.clear();
@@ -110,7 +114,7 @@ class FCMapBackingAccountsTest {
 	}
 
 	@Test
-	public void containsDelegatesToKnownActive() {
+	void containsDelegatesToKnownActive() {
 		// setup:
 		subject.existingAccounts = Set.of(a, b);
 
@@ -122,7 +126,7 @@ class FCMapBackingAccountsTest {
 	}
 
 	@Test
-	public void putUpdatesKnownAccounts() {
+	void putUpdatesKnownAccounts() {
 		// when:
 		subject.put(a, aValue);
 
@@ -133,29 +137,18 @@ class FCMapBackingAccountsTest {
 	}
 
 	@Test
-	public void getRefIsReadThrough() {
+	void getRefIsReadThrough() {
 		given(map.getForModify(aKey)).willReturn(aValue);
 
 		// expect:
 		assertEquals(aValue, subject.getRef(a));
 		assertEquals(aValue, subject.getRef(a));
 		// and:
-		verify(map, times(1)).getForModify(aKey);
+		verify(map, times(2)).getForModify(aKey);
 	}
 
 	@Test
-	public void getRefUpdatesCache() {
-		given(map.getForModify(aKey)).willReturn(aValue);
-
-		// when:
-		subject.getRef(a);
-
-		// then:
-		assertEquals(aValue, subject.cache.get(a));
-	}
-
-	@Test
-	public void removeUpdatesBothCacheAndDelegate() {
+	void removeUpdatesBothCacheAndDelegate() {
 		// given:
 		subject.existingAccounts.add(a);
 
@@ -169,7 +162,7 @@ class FCMapBackingAccountsTest {
 	}
 
 	@Test
-	public void returnsMutableRef() {
+	void returnsMutableRef() {
 		given(map.getForModify(aKey)).willReturn(aValue);
 
 		// when:
@@ -180,7 +173,7 @@ class FCMapBackingAccountsTest {
 	}
 
 	@Test
-	public void usesPutForMissing() {
+	void usesPutForMissing() {
 		// given:
 		subject.put(a, bValue);
 
@@ -189,7 +182,7 @@ class FCMapBackingAccountsTest {
 	}
 
 	@Test
-	public void putDoesNothingIfPresent() {
+	void putDoesNothingIfPresent() {
 		// setup:
 		subject.existingAccounts.add(a);
 
@@ -204,53 +197,7 @@ class FCMapBackingAccountsTest {
 	}
 
 	@Test
-	public void putThrowsIfAttemptToReplaceExistingWithUnrecognizedRef() {
-		// setup:
-		subject.existingAccounts.add(a);
-
-		// given:
-		subject.getRef(a);
-
-		// when:
-		assertThrows(IllegalArgumentException.class, () -> subject.put(a, cValue));
-	}
-
-	@Test
-	public void putThrowsIfAttemptToReplaceExistingWithNonmutableRef() {
-		// given:
-		subject.existingAccounts.add(a);
-
-		// expect:
-		assertThrows(IllegalArgumentException.class, () -> subject.put(a, cValue));
-	}
-
-	@Test
-	public void ensuresAllRefsAreReplaced() {
-		// setup:
-		subject.existingAccounts = Set.of(a, b, c, d);
-		// and:
-		InOrder inOrder = inOrder(map);
-
-		// given:
-		given(map.getForModify(aKey)).willReturn(aValue);
-		given(map.getForModify(dKey)).willReturn(dValue);
-		given(map.getForModify(bKey)).willReturn(bValue);
-		given(map.getForModify(cKey)).willReturn(cValue);
-
-		// when:
-		subject.getRef(c);
-		subject.getRef(a);
-		subject.getRef(d);
-		subject.getRef(b);
-		// and:
-		subject.clearRefCache();
-
-		// then:
-		inOrder.verify(map, never()).replace(any(), any());
-	}
-
-	@Test
-	public void returnsExpectedIds() {
+	void returnsExpectedIds() {
 		// setup:
 		var s = Set.of(a, b, c, d);
 		// given:
@@ -261,10 +208,41 @@ class FCMapBackingAccountsTest {
 	}
 
 	@Test
-	public void delegatesUnsafeRef() {
+	void delegatesUnsafeRef() {
 		given(map.get(aKey)).willReturn(aValue);
 
 		// expect:
 		assertEquals(aValue, subject.getUnsafeRef(a));
+	}
+
+	@Test
+	void twoPutsChangesG4M() throws ConstructableRegistryException {
+		// setup:
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
+
+		/* Case 1: g4m a leaf; then put ONE new leaf; then change the mutable leaf and re-get to verify new value */
+		final var firstFcm = new FCMap<MerkleLong, MerkleLong>();
+		final var oneGrandKey = new MerkleLong(1000L);
+		firstFcm.put(oneGrandKey, new MerkleLong(1L));
+		final var mutableOne = firstFcm.getForModify(oneGrandKey);
+		/* Putting just one new leaf */
+		firstFcm.put(new MerkleLong(666L), new MerkleLong(666L));
+		/* And then changing the mutable value */
+		mutableOne.increment();
+		assertEquals(2L, firstFcm.get(oneGrandKey).getValue());
+
+		/* Case 2: g4m a leaf; then put TWO new leaves; then change the mutable leaf and re-get to verify new value */
+		final var secondFcm = new FCMap<MerkleLong, MerkleLong>();
+		final var twoGrandKey = new MerkleLong(2000L);
+		secondFcm.put(twoGrandKey, new MerkleLong(2L));
+		final var mutableTwo = secondFcm.getForModify(twoGrandKey);
+		/* Putting two new leaves now */
+		secondFcm.put(new MerkleLong(666L), new MerkleLong(666L));
+		secondFcm.put(new MerkleLong(667L), new MerkleLong(667L));
+		/* And now changing the once-mutable value throws MutabilityException */
+		assertThrows(MutabilityException.class, mutableTwo::increment);
 	}
 }

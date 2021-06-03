@@ -68,13 +68,13 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 
 		accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class,
-				() -> new MerkleAccount(),
+				MerkleAccount::new,
 				new HashMapBackingAccounts(),
 				new ChangeSummaryManager<>());
 		FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
 		tokenRelsLedger = new TransactionalLedger<>(
 				TokenRelProperty.class,
-				() -> new MerkleTokenRelStatus(),
+				MerkleTokenRelStatus::new,
 				new HashMapBackingTokenRels(),
 				new ChangeSummaryManager<>());
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);

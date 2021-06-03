@@ -28,7 +28,7 @@ import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
+import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
@@ -119,7 +119,7 @@ public class SmartContractRequestHandlerPayableTest {
   SmartContractRequestHandler smartHandler;
   FileServiceHandler fsHandler;
   FCMap<MerkleEntityId, MerkleAccount> fcMap = null;
-  FCMapBackingAccounts backingAccounts;
+  BackingAccounts backingAccounts;
   private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap;
   ServicesRepositoryRoot repository;
 
@@ -137,7 +137,7 @@ public class SmartContractRequestHandlerPayableTest {
 
   private ServicesRepositoryRoot getLocalRepositoryInstance() {
     DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
-    backingAccounts = new FCMapBackingAccounts(() -> fcMap);
+    backingAccounts = new BackingAccounts(() -> fcMap);
     TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
             AccountProperty.class,
             () -> new MerkleAccount(),

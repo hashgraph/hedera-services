@@ -24,7 +24,7 @@ import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
+import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -68,8 +68,8 @@ public class RepoNewCacheTest {
 
 		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
 				AccountProperty.class,
-				() -> new MerkleAccount(),
-				new FCMapBackingAccounts(() -> accountMap),
+				MerkleAccount::new,
+				new BackingAccounts(() -> accountMap),
 				new ChangeSummaryManager<>());
 		HederaLedger ledger = new HederaLedger(
 				mock(TokenStore.class),
@@ -147,10 +147,10 @@ public class RepoNewCacheTest {
 		FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap = new FCMap<>();
 		DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
 
-		FCMapBackingAccounts backingAccounts = new FCMapBackingAccounts(() -> accountMap);
+		BackingAccounts backingAccounts = new BackingAccounts(() -> accountMap);
 		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
 				AccountProperty.class,
-				() -> new MerkleAccount(),
+				MerkleAccount::new,
 				backingAccounts,
 				new ChangeSummaryManager<>());
 		MerkleAccount someAccount = new MerkleAccount();

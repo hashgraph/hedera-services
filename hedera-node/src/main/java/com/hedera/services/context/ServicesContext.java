@@ -140,8 +140,8 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
-import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
-import com.hedera.services.ledger.accounts.PureFCMapBackingAccounts;
+import com.hedera.services.ledger.accounts.BackingAccounts;
+import com.hedera.services.ledger.accounts.PureBackingAccounts;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -362,8 +362,6 @@ import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.bytec
 import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.storageMapFrom;
 import static com.hedera.services.files.interceptors.ConfigListUtils.uncheckedParse;
 import static com.hedera.services.files.interceptors.PureRatesValidation.isNormalIntradayChange;
-import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
-import static com.hedera.services.ledger.accounts.BackingTokenRels.REL_CMP;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.records.NoopRecordsHistorian.NOOP_RECORDS_HISTORIAN;
 import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
@@ -530,7 +528,7 @@ public class ServicesContext {
 	private TxnAwareRatesManager exchangeRatesManager;
 	private ServicesStatsManager statsManager;
 	private LedgerAccountsSource accountSource;
-	private FCMapBackingAccounts backingAccounts;
+	private BackingAccounts backingAccounts;
 	private TransitionLogicLookup transitionLogic;
 	private TransactionThrottling txnThrottling;
 	private ConsensusStatusCounts statusCounts;
@@ -1432,7 +1430,7 @@ public class ServicesContext {
 
 	public BackingStore<AccountID, MerkleAccount> backingAccounts() {
 		if (backingAccounts == null) {
-			backingAccounts = new FCMapBackingAccounts(this::accounts);
+			backingAccounts = new BackingAccounts(this::accounts);
 		}
 		return backingAccounts;
 	}
@@ -1459,7 +1457,6 @@ public class ServicesContext {
 							MerkleTokenRelStatus::new,
 							backingTokenRels(),
 							new ChangeSummaryManager<>());
-			tokenRelsLedger.setKeyComparator(REL_CMP);
 			tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 			tokenStore = new HederaTokenStore(
 					ids(),
@@ -1486,7 +1483,6 @@ public class ServicesContext {
 							MerkleAccount::new,
 							backingAccounts(),
 							new ChangeSummaryManager<>());
-			accountsLedger.setKeyComparator(ACCOUNT_ID_COMPARATOR);
 			ledger = new HederaLedger(
 					tokenStore(),
 					ids(),
@@ -1824,7 +1820,7 @@ public class ServicesContext {
 			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> pureDelegate = new TransactionalLedger<>(
 					AccountProperty.class,
 					MerkleAccount::new,
-					new PureFCMapBackingAccounts(this::accounts),
+					new PureBackingAccounts(this::accounts),
 					new ChangeSummaryManager<>());
 			HederaLedger pureLedger = new HederaLedger(
 					NOOP_TOKEN_STORE,
@@ -2106,7 +2102,7 @@ public class ServicesContext {
 		this.backingTokenRels = backingTokenRels;
 	}
 
-	void setBackingAccounts(FCMapBackingAccounts backingAccounts) {
+	void setBackingAccounts(BackingAccounts backingAccounts) {
 		this.backingAccounts = backingAccounts;
 	}
 

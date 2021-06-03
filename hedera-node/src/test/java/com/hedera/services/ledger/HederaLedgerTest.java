@@ -32,10 +32,13 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import static com.hedera.services.exceptions.InsufficientFundsException.messageFor;
+import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
+import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -102,7 +105,7 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 		// setup:
 		MerkleAccount fakeGenesis = new MerkleAccount();
 
-		given(accountsLedger.get(genesis)).willReturn(fakeGenesis);
+		given(accountsLedger.getFinalized(genesis)).willReturn(fakeGenesis);
 
 		// expect:
 		assertTrue(fakeGenesis == subject.get(genesis));
@@ -146,6 +149,15 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 
 		// then:
 		verify(accountsLedger).get(genesis, IS_DELETED);
+	}
+
+	@Test
+	void delegatesToCorrectSigReqProperty() {
+		// when:
+		subject.isReceiverSigRequired(genesis);
+
+		// then:
+		verify(accountsLedger).get(genesis, IS_RECEIVER_SIG_REQUIRED);
 	}
 
 	@Test
@@ -206,6 +218,24 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 
 		// then:
 		verify(accountsLedger).get(genesis, EXPIRY);
+	}
+
+	@Test
+	void delegatesToCorrectAutoRenewProperty() {
+		// when:
+		subject.autoRenewPeriod(genesis);
+
+		// then:
+		verify(accountsLedger).get(genesis, AUTO_RENEW_PERIOD);
+	}
+
+	@Test
+	void delegatesToCorrectProxyProperty() {
+		// when:
+		subject.proxy(genesis);
+
+		// then:
+		verify(accountsLedger).get(genesis, PROXY);
 	}
 
 	@Test

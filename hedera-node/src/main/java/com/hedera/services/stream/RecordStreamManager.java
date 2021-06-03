@@ -53,7 +53,7 @@ public class RecordStreamManager {
 
 	/**
 	 * receives {@link RecordStreamObject}s from {@link com.hedera.services.legacy.services.state.AwareProcessLogic}
-	 * 	 * .addForStreaming,
+	 * * .addForStreaming,
 	 * then passes to hashQueueThread and writeQueueThread
 	 */
 	private final MultiStream<RecordStreamObject> multiStream;
@@ -102,9 +102,9 @@ public class RecordStreamManager {
 	 * 		an instance for recording the average value of recordStream queue size
 	 * @param nodeLocalProperties
 	 * 		the node-local property source, which says four things: (1) is the record stream enabled?,
-	 * 	    (2) what directory to write record files to, (3) how many seconds should elapse before
-	 * 	    creating the next record file, and (4) how large a capacity the record stream blocking
-	 * 	    queue should have.
+	 * 		(2) what directory to write record files to, (3) how many seconds should elapse before
+	 * 		creating the next record file, and (4) how large a capacity the record stream blocking
+	 * 		queue should have.
 	 * @throws NoSuchAlgorithmException
 	 * 		is thrown when fails to get required MessageDigest instance
 	 * @throws IOException
@@ -127,9 +127,10 @@ public class RecordStreamManager {
 					startWriteAtCompleteWindow,
 					RecordStreamType.RECORD);
 			writeQueueThread = new QueueThreadObjectStreamConfiguration<RecordStreamObject>()
-					.setThreadName("writeQueueThread")
 					.setNodeId(platform.getSelfId().getId())
+					.setCapacity(nodeLocalProperties.recordStreamQueueCapacity())
 					.setForwardTo(streamFileWriter)
+					.setThreadName("writeQueueThread")
 					.build();
 		}
 
@@ -141,10 +142,11 @@ public class RecordStreamManager {
 
 		hashCalculator = new HashCalculatorForStream<>(runningHashCalculator);
 		hashQueueThread = new QueueThreadObjectStreamConfiguration<RecordStreamObject>()
-						.setThreadName("hashQueueThread")
-						.setNodeId(platform.getSelfId().getId())
-						.setForwardTo(hashCalculator)
-						.build();
+				.setNodeId(platform.getSelfId().getId())
+				.setCapacity(nodeLocalProperties.recordStreamQueueCapacity())
+				.setForwardTo(hashCalculator)
+				.setThreadName("hashQueueThread")
+				.build();
 
 		multiStream = new MultiStream<>(
 				nodeLocalProperties.isRecordStreamEnabled()
@@ -211,7 +213,8 @@ public class RecordStreamManager {
 	/**
 	 * set `inFreeze` to be the given value
 	 *
-	 * @param inFreeze Whether the RecordStream is frozen or not.
+	 * @param inFreeze
+	 * 		Whether the RecordStream is frozen or not.
 	 */
 	public void setInFreeze(boolean inFreeze) {
 		this.inFreeze = inFreeze;

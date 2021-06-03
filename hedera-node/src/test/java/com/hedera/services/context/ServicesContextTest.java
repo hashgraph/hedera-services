@@ -68,7 +68,7 @@ import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
-import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
+import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
 import com.hedera.services.legacy.handler.FreezeHandler;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
@@ -376,7 +376,7 @@ public class ServicesContextTest {
 	void rebuildsBackingAccountsIfNonNull() {
 		// setup:
 		BackingTokenRels tokenRels = mock(BackingTokenRels.class);
-		FCMapBackingAccounts backingAccounts = mock(FCMapBackingAccounts.class);
+		BackingAccounts backingAccounts = mock(BackingAccounts.class);
 
 		// given:
 		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
@@ -479,7 +479,7 @@ public class ServicesContextTest {
 		assertThat(ctx.expiries(), instanceOf(ExpiryManager.class));
 		assertThat(ctx.creator(), instanceOf(ExpiringCreations.class));
 		assertThat(ctx.txnHistories(), instanceOf(Map.class));
-		assertThat(ctx.backingAccounts(), instanceOf(FCMapBackingAccounts.class));
+		assertThat(ctx.backingAccounts(), instanceOf(BackingAccounts.class));
 		assertThat(ctx.backingTokenRels(), instanceOf(BackingTokenRels.class));
 		assertThat(ctx.systemAccountsCreator(), instanceOf(BackedSystemAccountsCreator.class));
 		assertThat(ctx.b64KeyReader(), instanceOf(LegacyEd25519KeyReader.class));
