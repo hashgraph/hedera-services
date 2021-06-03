@@ -1,10 +1,10 @@
 package com.hedera.services.state.merkle.virtual.tree;
 
-import com.hedera.services.state.merkle.virtual.Path;
 import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Hashable;
 
+import java.nio.file.Path;
 import java.util.Objects;
 
 /**
@@ -16,16 +16,23 @@ import java.util.Objects;
  * <p>Although not part of this interface, all virtual tree nodes are backed by a
  * VirtualDataSource, and any change to the tree structure results in updates to the
  * data source.</p>
+ *
+ * TODO I'd like this to be a sealed class so it can only be extended by classes in this package.
  */
 public abstract class VirtualTreeNode<K, V extends Hashable> {
     static final Hash NULL_HASH = CryptoFactory.getInstance().getNullHash();
+
+    // Note, if hash is invalidated, the tree becomes dirty. But the hash may be recomputed
+    // so it is no longer NULL_HASH but the tree is still dirty. It just means we need to
+    // write the state in the end.
+    private boolean dirty = false;
 
     /**
      * The path from the root to this node. This path can and will change as
      * the tree is modified (leaves added and removed). Whenever it changes,
      * we have to update the dataSource accordingly.
      */
-    private Path path = Path.ROOT_PATH;
+    private VirtualTreePath path = VirtualTreePath.ROOT_PATH;
 
     /**
      * The hash for this node. For an internal node, this hash is the result of hashing
@@ -55,7 +62,7 @@ public abstract class VirtualTreeNode<K, V extends Hashable> {
 
     }
 
-    protected VirtualTreeNode(Hash defaultHash, Path path) {
+    protected VirtualTreeNode(Hash defaultHash, VirtualTreePath path) {
         this.hash = Objects.requireNonNull(defaultHash);
         this.path = Objects.requireNonNull(path);
     }
@@ -69,8 +76,21 @@ public abstract class VirtualTreeNode<K, V extends Hashable> {
      *
      * @return Gets the path from root to this node. May be null if the node is detached.
      */
-    public final Path getPath() {
+    public final VirtualTreePath getPath() {
         return path;
+    }
+
+    public boolean isDirty() {
+        return dirty;
+    }
+
+    // Walks up the tree marking everything as dirty
+    public void makeDirty() {
+        var node = this;
+        while (node != null && !node.dirty) {
+            node.dirty = true;
+            node = node.parent;
+        }
     }
 
     /**
@@ -79,10 +99,10 @@ public abstract class VirtualTreeNode<K, V extends Hashable> {
      * @param path The new path for this node. Never null.
      * @param parent The new parent for this node. Probably never null.... TODO I don't think it will be...
      */
-    protected void adopt(Path path, VirtualTreeInternal<K, V> parent) {
+    protected void adopt(VirtualTreePath path, VirtualTreeInternal<K, V> parent) {
         this.path = Objects.requireNonNull(path);
         this.parent = Objects.requireNonNull(parent);
-//        this.invalidateHash();
+        this.invalidateHash();
     }
 
     /**
@@ -101,29 +121,55 @@ public abstract class VirtualTreeNode<K, V extends Hashable> {
     }
 
     /**
-     * Invalidates the hash from this node all the way up for
-     * each of its parent nodes. Invalid hashes are the same as
-     * NULL or empty hashes (since no real node should have a NULL
-     * hash as long as it has at least one child).
-     */
-    protected final void invalidateHash() {
-        this.hash = NULL_HASH;
-        if (parent != null) {
-            parent.invalidateHash();
-        }
-    }
-
-    /**
      * Set the hash. To be called by the node during {@link #recomputeHash()}.
+     * The set hash must not be null or the NULL_HASH.
      *
      * @param hash The hash. Must not be null.
      */
     protected final void setHash(Hash hash) {
+        if (hash == NULL_HASH) {
+            throw new IllegalArgumentException("Cannot use the NULL_HASH");
+        }
+
         this.hash = Objects.requireNonNull(hash);
+    }
+
+    /**
+     * Invalidates the hash from this node all the way up for each of its parent nodes.
+     * Invalid hashes are the same as NULL or empty hashes (since no real node should have a NULL
+     * hash as long as it has at least one child). This method assumes that once it encounters
+     * a NULL_HASH it doesn't need to walk any farther up the tree.
+     */
+    protected final void invalidateHash() {
+        var node = this;
+        while (node != null && node.hash != NULL_HASH) {
+            node.hash = NULL_HASH;
+            node.dirty = true;
+            node = node.parent;
+        }
     }
 
     /**
      * Computes the hash and calls {@link #setHash(Hash)}.
      */
     protected abstract void recomputeHash();
+
+    /**
+     * Walks the tree starting from this node using post-order traversal, invoking the visitor
+     * for each node visited.
+     *
+     * @param visitor The visitor. Cannot be null.
+     */
+    public abstract void walk(VirtualVisitor<K, V> visitor);
+
+    /**
+     * Walks the tree starting from this node using pre-order traversal, invoking the visitor
+     * for each node visited. Only the dirty nodes are visited.
+     *
+     * TODO how does this work with deleted nodes? If we delete a node, we somehow need to
+     * visit it too. Maybe this is the wrong way to do it.
+     *
+     * @param visitor The visitor. Cannot be null.
+     */
+    public abstract void walkDirty(VirtualVisitor<K, V> visitor);
 }

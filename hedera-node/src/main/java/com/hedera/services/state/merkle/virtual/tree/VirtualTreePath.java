@@ -1,4 +1,4 @@
-package com.hedera.services.state.merkle.virtual;
+package com.hedera.services.state.merkle.virtual.tree;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -12,20 +12,20 @@ import java.util.Objects;
  * and so forth down the tree. Every node in the tree has a unique path at any given
  * point in time.
  */
-public final class Path implements Comparable<Path> {
+public final class VirtualTreePath implements Comparable<VirtualTreePath> {
     /**
      * A special constant that represents the Path of a root node. It isn't necessary
      * for this constant to be used, but it makes the code a little more readable.
      */
-    public static final Path ROOT_PATH = new Path((byte)0, 0);
+    public static final VirtualTreePath ROOT_PATH = new VirtualTreePath((byte)0, 0);
 
     /**
      *
      */
-    final byte rank;
-    final long path; // The path helps form the ID.
+    public final byte rank;
+    public final long path; // The path helps form the ID.
 
-    public Path(byte rank, long path) {
+    public VirtualTreePath(byte rank, long path) {
         this.rank = rank;
         this.path = path;
 
@@ -77,7 +77,7 @@ public final class Path implements Comparable<Path> {
      * @param index The non-negative index into the rank at which to find the node
      * @return A Path representing the path to the node found at the given rank and index. Never returns null.
      */
-    public static Path getPathForRankAndIndex(byte rank, int index) {
+    public static VirtualTreePath getPathForRankAndIndex(byte rank, int index) {
         if (rank < 0) {
             throw new IllegalArgumentException("Rank must be strictly non-negative");
         }
@@ -97,7 +97,7 @@ public final class Path implements Comparable<Path> {
             power--;
         }
 
-        return new Path(rank, path);
+        return new VirtualTreePath(rank, path);
     }
 
     /**
@@ -118,7 +118,7 @@ public final class Path implements Comparable<Path> {
      * @param other The other path. Must not be null.
      * @return Whether this Path comes before the other Path.
      */
-    public boolean isBefore(Path other) {
+    public boolean isBefore(VirtualTreePath other) {
         return compareTo(Objects.requireNonNull(other)) < 0;
     }
 
@@ -130,7 +130,7 @@ public final class Path implements Comparable<Path> {
      * @param other The other path. Must not be null.
      * @return Whether this Path comes afer the other Path.
      */
-    public boolean isAfter(Path other) {
+    public boolean isAfter(VirtualTreePath other) {
         return compareTo(Objects.requireNonNull(other)) > 0;
     }
 
@@ -140,13 +140,13 @@ public final class Path implements Comparable<Path> {
      * @return The Path of the parent. This may be null if this Path is already the root (root nodes
      *         do not have a parent).
      */
-    public Path getParentPath() {
+    public VirtualTreePath getParentPath() {
         if (rank == 0) {
             return null;
         }
 
         final long mask = ~(-1L << rank - 1);
-        return new Path((byte)(rank - 1), path & mask);
+        return new VirtualTreePath((byte)(rank - 1), path & mask);
     }
 
     /**
@@ -154,8 +154,8 @@ public final class Path implements Comparable<Path> {
      *
      * @return The path of the left child. This is never null.
      */
-    public Path getLeftChildPath() {
-        return new Path((byte)(rank + 1), path);
+    public VirtualTreePath getLeftChildPath() {
+        return new VirtualTreePath((byte)(rank + 1), path);
     }
 
     /**
@@ -163,8 +163,17 @@ public final class Path implements Comparable<Path> {
      *
      * @return The path of the right child. This is never null.
      */
-    public Path getRightChildPath() {
-        return new Path((byte)(rank + 1), path | (1L << rank));
+    public VirtualTreePath getRightChildPath() {
+        return new VirtualTreePath((byte)(rank + 1), path | (1L << rank));
+    }
+
+    public boolean isParentOf(VirtualTreePath other) {
+        if (rank < other.rank) {
+            final var mask = ~(0xFFFFFFFFFFFFFFFFL << rank);
+            return (rank & mask) == (other.rank & mask);
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -177,7 +186,7 @@ public final class Path implements Comparable<Path> {
      * @return -1 if this is left of o, 0 if they are equal, 1 if this is right of o.
      */
     @Override
-    public int compareTo(@NotNull Path o) {
+    public int compareTo(@NotNull VirtualTreePath o) {
         // Check to see if we are equal
         if (this.rank == o.rank && this.path == o.path) {
             return 0;
@@ -216,7 +225,7 @@ public final class Path implements Comparable<Path> {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Path nodeId = (Path) o;
+        VirtualTreePath nodeId = (VirtualTreePath) o;
         return rank == nodeId.rank && path == nodeId.path;
     }
 
