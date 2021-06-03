@@ -18,10 +18,6 @@ public class Account {
         this.accountNum = accountNum;
     }
 
-    public boolean isDefaultShardAndRealm() {
-        return shardNum == 0 && realmNum == 0;
-    }
-
     public long shardNum() {
         return shardNum;
     }
