@@ -22,13 +22,13 @@ package com.hedera.services.queries.crypto;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.unique.UniqueStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.utils.IdUtils;
@@ -85,6 +85,7 @@ public class GetAccountBalanceAnswerTest {
 	private TokenID cToken = IdUtils.asToken("0.0.5");
 	private TokenID dToken = IdUtils.asToken("0.0.6");
 	TokenStore tokenStore;
+	UniqueStore uniqueStore;
 	ScheduleStore scheduleStore;
 
 	MerkleToken notDeleted, deleted;
@@ -138,6 +139,7 @@ public class GetAccountBalanceAnswerTest {
 
 		view = new StateView(
 				tokenStore,
+				uniqueStore,
 				scheduleStore,
 				StateView.EMPTY_TOPICS_SUPPLIER,
 				() -> accounts,

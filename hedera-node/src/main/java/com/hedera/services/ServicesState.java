@@ -390,27 +390,27 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 						"  Storage                :: %s\n" +
 						"  Topics                 :: %s\n" +
 						"  Tokens                 :: %s\n" +
-						"  UniqueTokens           :: %s\n" +
 						"  TokenAssociations      :: %s\n" +
 						"  DiskFs                 :: %s\n" +
 						"  ScheduledTxs           :: %s\n" +
 						"  NetworkContext         :: %s\n" +
 						"  AddressBook            :: %s\n" +
 						"  RecordsRunningHashLeaf :: %s\n" +
-						"    ↪ Running hash       :: %s",
+						"    ↪ Running hash       :: %s\n" +
+						"  UniqueTokens           :: %s",
 				getHash(),
 				accounts().getHash(),
 				storage().getHash(),
 				topics().getHash(),
 				tokens().getHash(),
-				uniqueTokens().getHash(),
 				tokenAssociations().getHash(),
 				diskFs().getHash(),
 				scheduleTxs().getHash(),
 				networkCtx().getHash(),
 				addressBook().getHash(),
 				runningHashLeaf().getHash(),
-				runningHashLeaf().getRunningHash().getHash()));
+				runningHashLeaf().getRunningHash().getHash(),
+				uniqueTokens().getHash()));
 	}
 
 	public FCMap<MerkleEntityId, MerkleAccount> accounts() {

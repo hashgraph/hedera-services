@@ -9,9 +9,9 @@ package com.hedera.services.usage.token;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,69 +21,53 @@ package com.hedera.services.usage.token;
  */
 
 import com.hedera.services.test.IdUtils;
-import com.hedera.services.test.KeyUtils;
-import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
-import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenGetNftInfoQuery;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Optional;
-
-import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
+import static com.hedera.services.usage.token.entities.NftEntitySizes.NFT_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
+import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static org.junit.Assert.assertEquals;
 
-public class TokenGetInfoUsageTest {
-	Optional<Key> aKey = Optional.of(KeyUtils.A_COMPLEX_KEY);
+public class TokenGetNftInfoUsageTest {
 	String memo = "Hope";
-	String name = "WhyWhyWhyWHY";
-	String symbol = "OKITSFINE";
-	TokenID id = IdUtils.asToken("0.0.75231");
+	NftID id = IdUtils.asNftID("0.0.75231", 1);
 
-	TokenGetInfoUsage subject;
+	TokenGetNftInfoUsage subject;
 
 	@BeforeEach
 	public void setup() {
-		subject = TokenGetInfoUsage.newEstimate(tokenQuery());
+		subject = TokenGetNftInfoUsage.newEstimate(query());
 	}
 
 	@Test
 	public void assessesEverything() {
 		// given:
-		subject.givenCurrentAdminKey(aKey)
-				.givenCurrentFreezeKey(aKey)
-				.givenCurrentWipeKey(aKey)
-				.givenCurrentKycKey(aKey)
-				.givenCurrentSupplyKey(aKey)
-				.givenCurrentlyUsingAutoRenewAccount()
-				.givenCurrentName(name)
-				.givenCurrentMemo(memo)
-				.givenCurrentSymbol(symbol);
+		subject.givenMemo(memo);
 		// and:
-		var expectedKeyBytes = 5 * FeeBuilder.getAccountKeyStorageSize(aKey.get());
 		var expectedBytes = BASIC_QUERY_RES_HEADER
-                                + expectedKeyBytes
-				+ TOKEN_ENTITY_SIZES.totalBytesInTokenReprGiven(symbol, name)
-				+ memo.length()
-				+ BASIC_ENTITY_ID_SIZE;
+				+ NFT_ENTITY_SIZES.fixedBytesInNftRepr()
+				+ memo.length();
 
 		// when:
 		var usage = subject.get();
 
 		// then:
 		var node = usage.getNodedata();
-		assertEquals(FeeBuilder.BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE, node.getBpt());
+
+		assertEquals(FeeBuilder.BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE + LONG_SIZE, node.getBpt());
 		assertEquals(expectedBytes, node.getBpr());
 	}
 
-	private Query tokenQuery() {
-		var op = TokenGetInfoQuery.newBuilder()
-				.setToken(id)
+	private Query query() {
+		var op = TokenGetNftInfoQuery.newBuilder()
+				.setNftID(id)
 				.build();
-		return Query.newBuilder().setTokenGetInfo(op).build();
+		return Query.newBuilder().setTokenGetNftInfo(op).build();
 	}
 }

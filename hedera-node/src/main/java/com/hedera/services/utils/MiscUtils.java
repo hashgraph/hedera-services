@@ -21,24 +21,11 @@ package com.hedera.services.utils;
  */
 
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
-
-import static com.hedera.services.grpc.controllers.ContractController.CALL_CONTRACT_METRIC;
-import static com.hedera.services.grpc.controllers.ContractController.CREATE_CONTRACT_METRIC;
-import static com.hedera.services.grpc.controllers.ContractController.DELETE_CONTRACT_METRIC;
-import static com.hedera.services.grpc.controllers.ContractController.GET_CONTRACT_BYTECODE_METRIC;
-import static com.hedera.services.grpc.controllers.ContractController.GET_CONTRACT_INFO_METRIC;
-import static com.hedera.services.grpc.controllers.ContractController.GET_CONTRACT_RECORDS_METRIC;
-import static com.hedera.services.grpc.controllers.ContractController.GET_SOLIDITY_ADDRESS_INFO_METRIC;
-import static com.hedera.services.grpc.controllers.ContractController.LOCALCALL_CONTRACT_METRIC;
-import static com.hedera.services.grpc.controllers.ContractController.UPDATE_CONTRACT_METRIC;
-import static com.hedera.services.grpc.controllers.CryptoController.*;
-import static com.hedera.services.grpc.controllers.ConsensusController.*;
-import static com.hedera.services.grpc.controllers.NetworkController.GET_VERSION_INFO_METRIC;
-import static com.hedera.services.grpc.controllers.NetworkController.UNCHECKED_SUBMIT_METRIC;
-import static com.hedera.services.grpc.controllers.FileController.*;
-
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -49,9 +36,6 @@ import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.commons.codec.DecoderException;
@@ -69,10 +53,101 @@ import java.util.Set;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static com.hedera.services.grpc.controllers.ConsensusController.CREATE_TOPIC_METRIC;
+import static com.hedera.services.grpc.controllers.ConsensusController.DELETE_TOPIC_METRIC;
+import static com.hedera.services.grpc.controllers.ConsensusController.GET_TOPIC_INFO_METRIC;
+import static com.hedera.services.grpc.controllers.ConsensusController.SUBMIT_MESSAGE_METRIC;
+import static com.hedera.services.grpc.controllers.ConsensusController.UPDATE_TOPIC_METRIC;
+import static com.hedera.services.grpc.controllers.ContractController.CALL_CONTRACT_METRIC;
+import static com.hedera.services.grpc.controllers.ContractController.CREATE_CONTRACT_METRIC;
+import static com.hedera.services.grpc.controllers.ContractController.DELETE_CONTRACT_METRIC;
+import static com.hedera.services.grpc.controllers.ContractController.GET_CONTRACT_BYTECODE_METRIC;
+import static com.hedera.services.grpc.controllers.ContractController.GET_CONTRACT_INFO_METRIC;
+import static com.hedera.services.grpc.controllers.ContractController.GET_CONTRACT_RECORDS_METRIC;
+import static com.hedera.services.grpc.controllers.ContractController.GET_SOLIDITY_ADDRESS_INFO_METRIC;
+import static com.hedera.services.grpc.controllers.ContractController.LOCALCALL_CONTRACT_METRIC;
+import static com.hedera.services.grpc.controllers.ContractController.UPDATE_CONTRACT_METRIC;
+import static com.hedera.services.grpc.controllers.CryptoController.ADD_LIVE_HASH_METRIC;
+import static com.hedera.services.grpc.controllers.CryptoController.CRYPTO_CREATE_METRIC;
+import static com.hedera.services.grpc.controllers.CryptoController.CRYPTO_DELETE_METRIC;
+import static com.hedera.services.grpc.controllers.CryptoController.CRYPTO_TRANSFER_METRIC;
+import static com.hedera.services.grpc.controllers.CryptoController.CRYPTO_UPDATE_METRIC;
+import static com.hedera.services.grpc.controllers.CryptoController.DELETE_LIVE_HASH_METRIC;
+import static com.hedera.services.grpc.controllers.CryptoController.GET_ACCOUNT_BALANCE_METRIC;
+import static com.hedera.services.grpc.controllers.CryptoController.GET_ACCOUNT_INFO_METRIC;
+import static com.hedera.services.grpc.controllers.CryptoController.GET_ACCOUNT_RECORDS_METRIC;
+import static com.hedera.services.grpc.controllers.CryptoController.GET_LIVE_HASH_METRIC;
+import static com.hedera.services.grpc.controllers.CryptoController.GET_RECEIPT_METRIC;
+import static com.hedera.services.grpc.controllers.CryptoController.GET_RECORD_METRIC;
+import static com.hedera.services.grpc.controllers.FileController.CREATE_FILE_METRIC;
+import static com.hedera.services.grpc.controllers.FileController.DELETE_FILE_METRIC;
+import static com.hedera.services.grpc.controllers.FileController.FILE_APPEND_METRIC;
+import static com.hedera.services.grpc.controllers.FileController.GET_FILE_CONTENT_METRIC;
+import static com.hedera.services.grpc.controllers.FileController.GET_FILE_INFO_METRIC;
+import static com.hedera.services.grpc.controllers.FileController.UPDATE_FILE_METRIC;
 import static com.hedera.services.grpc.controllers.FreezeController.FREEZE_METRIC;
+import static com.hedera.services.grpc.controllers.NetworkController.GET_VERSION_INFO_METRIC;
+import static com.hedera.services.grpc.controllers.NetworkController.UNCHECKED_SUBMIT_METRIC;
+import static com.hedera.services.legacy.core.jproto.JKey.mapJKey;
 import static com.hedera.services.stats.ServicesStatsConfig.SYSTEM_DELETE_METRIC;
 import static com.hedera.services.stats.ServicesStatsConfig.SYSTEM_UNDELETE_METRIC;
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCallLocal;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetBytecode;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetRecords;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAddLiveHash;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteLiveHash;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountRecords;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetLiveHash;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetContents;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetByKey;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidityID;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleGetInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSign;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetNftInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.CONSENSUSGETTOPICINFO;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.CONTRACTCALLLOCAL;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.CONTRACTGETBYTECODE;
@@ -80,8 +155,8 @@ import static com.hederahashgraph.api.proto.java.Query.QueryCase.CONTRACTGETINFO
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.CONTRACTGETRECORDS;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.CRYPTOGETACCOUNTBALANCE;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.CRYPTOGETACCOUNTRECORDS;
-import static com.hederahashgraph.api.proto.java.Query.QueryCase.CRYPTOGETLIVEHASH;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.CRYPTOGETINFO;
+import static com.hederahashgraph.api.proto.java.Query.QueryCase.CRYPTOGETLIVEHASH;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.FILEGETCONTENTS;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.FILEGETINFO;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.GETBYKEY;
@@ -89,13 +164,12 @@ import static com.hederahashgraph.api.proto.java.Query.QueryCase.GETBYSOLIDITYID
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.NETWORKGETVERSIONINFO;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.SCHEDULEGETINFO;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TOKENGETINFO;
+import static com.hederahashgraph.api.proto.java.Query.QueryCase.TOKENGETNFTINFO;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETRECEIPT;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETRECORD;
-import static com.hedera.services.legacy.core.jproto.JKey.mapJKey;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 import static java.util.stream.Collectors.toSet;
 
 public class MiscUtils {
@@ -116,7 +190,8 @@ public class MiscUtils {
 			TransactionGetRecord,
 			GetVersionInfo,
 			TokenGetInfo,
-			ScheduleGetInfo
+			ScheduleGetInfo,
+			TokenGetNftInfo
 	);
 
 	static final String TOKEN_MINT_METRIC = "mintToken";
@@ -132,6 +207,7 @@ public class MiscUtils {
 	static final String TOKEN_ASSOCIATE_METRIC = "associateTokens";
 	static final String TOKEN_DISSOCIATE_METRIC = "dissociateTokens";
 	static final String TOKEN_GET_INFO_METRIC = "getTokenInfo";
+	static final String TOKEN_GET_NFT_INFO_METRIC = "getTokenNftInfo";
 
 	static final String SCHEDULE_CREATE_METRIC = "createSchedule";
 	static final String SCHEDULE_DELETE_METRIC = "deleteSchedule";
@@ -159,6 +235,7 @@ public class MiscUtils {
 		queryFunctions.put(TRANSACTIONGETRECORD, TransactionGetRecord);
 		queryFunctions.put(TOKENGETINFO, TokenGetInfo);
 		queryFunctions.put(SCHEDULEGETINFO, ScheduleGetInfo);
+		queryFunctions.put(TOKENGETNFTINFO, TokenGetNftInfo);
 	}
 
 	public static final EnumMap<HederaFunctionality, String> BASE_STAT_NAMES =
@@ -220,6 +297,7 @@ public class MiscUtils {
 		BASE_STAT_NAMES.put(GetVersionInfo, GET_VERSION_INFO_METRIC);
 		BASE_STAT_NAMES.put(TokenGetInfo, TOKEN_GET_INFO_METRIC);
 		BASE_STAT_NAMES.put(ScheduleGetInfo, SCHEDULE_GET_INFO_METRIC);
+		BASE_STAT_NAMES.put(TokenGetNftInfo, TOKEN_GET_NFT_INFO_METRIC);
 	}
 
 	public static String baseStatNameOf(HederaFunctionality function) {
@@ -315,6 +393,8 @@ public class MiscUtils {
 
 	public static Optional<QueryHeader> activeHeaderFrom(Query query) {
 		switch (query.getQueryCase()) {
+			case TOKENGETNFTINFO:
+				return Optional.of(query.getTokenGetNftInfo().getHeader());
 			case TOKENGETINFO:
 				return Optional.of(query.getTokenGetInfo().getHeader());
 			case SCHEDULEGETINFO:

@@ -35,6 +35,7 @@ import com.hedera.services.store.tokens.BaseTokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.invertible_fchashmap.FCInvertibleHashMap;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcmap.FCMap;
@@ -42,6 +43,8 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.function.Supplier;
 
+import static com.hedera.services.state.merkle.MerkleUniqueTokenId.fromNftID;
+import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 
@@ -93,4 +96,21 @@ public class UniqueTokenStore extends BaseTokenStore implements UniqueStore {
 		return null;
 	}
 
+	public boolean nftExists(final NftID id) {
+		return uniqueTokenSupplier.get().containsKey(fromNftID(id));
+	}
+
+	public MerkleUniqueToken get(final NftID id) {
+		throwIfMissing(id);
+
+		return uniqueTokenSupplier.get().get(fromNftID(id));
+	}
+
+	private void throwIfMissing(NftID id) {
+		if (!nftExists(id)) {
+			throw new IllegalArgumentException(String.format(
+					"Argument 'id=%s' does not refer to a known token!",
+					readableId(id)));
+		}
+	}
 }
