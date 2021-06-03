@@ -20,6 +20,7 @@ package com.hedera.services.usage.state;
  * ‍
  */
 
+import com.google.common.base.MoreObjects;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.BaseTransactionMeta;
 
@@ -212,6 +213,21 @@ public class UsageAccumulator {
 
 	public long getServiceSbh() {
 		return ESTIMATOR_UTILS.nonDegenerateDiv(sbs, HRS_DIVISOR);
+	}
+
+	@Override
+	public String toString() {
+		return MoreObjects.toStringHelper(this)
+				.add("networkBpt", getNetworkBpt())
+				.add("networkVpt", getNetworkVpt())
+				.add("networkRbh", getNetworkRbh())
+				.add("nodeBpt", getNodeBpt())
+				.add("nodeBpr", getNodeBpr())
+				.add("nodeSbpr", getNodeSbpr())
+				.add("nodeVpt", getNodeVpt())
+				.add("serviceSbh", getServiceSbh())
+				.add("serviceRbh", getServiceRbh())
+				.toString();
 	}
 
 	/* Helpers for test coverage */
