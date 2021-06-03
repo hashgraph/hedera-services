@@ -137,7 +137,7 @@ class FreezeHandlerTest {
 		TransactionRecord record = subject.freeze(txBody, consensusTime);
 
 		// then:
-		assertEquals(record.getReceipt().getStatus(), ResponseCodeEnum.SUCCESS);
+		assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
 		verify(dualState).setFreezeTime(expectedStart);
 	}
 

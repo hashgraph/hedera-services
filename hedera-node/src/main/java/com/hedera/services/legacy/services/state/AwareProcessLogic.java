@@ -227,10 +227,10 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	void stream(
 			com.hederahashgraph.api.proto.java.Transaction txn,
-			ExpirableTxnRecord record,
+			ExpirableTxnRecord expiringRecord,
 			Instant consensusTime
 	) {
-		final var rso = new RecordStreamObject(record, txn, consensusTime);
+		final var rso = new RecordStreamObject(expiringRecord, txn, consensusTime);
 		ctx.updateRecordRunningHash(rso.getRunningHash());
 		ctx.recordStreamManager().addRecordStreamObject(rso);
 	}
