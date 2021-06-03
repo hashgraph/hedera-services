@@ -76,7 +76,7 @@ public class AwareTransactionContext implements TransactionContext {
 	private final ServicesContext ctx;
 	private TxnAccessor triggeredTxn = null;
 
-	private static final Consumer<TxnReceipt> noopReceiptConfig = ignore -> { };
+	private static final Consumer<TxnReceipt.Builder> noopReceiptConfig = ignore -> { };
 	private static final Consumer<ExpirableTxnRecord.Builder> noopRecordConfig = ignore -> { };
 
 	private long submittingMember;
@@ -87,7 +87,7 @@ public class AwareTransactionContext implements TransactionContext {
 	private TxnAccessor accessor;
 	private ResponseCodeEnum statusSoFar;
 	private List<ExpiringEntity> expiringEntities;
-	private Consumer<TxnReceipt> receiptConfig = noopReceiptConfig;
+	private Consumer<TxnReceipt.Builder> receiptConfig = noopReceiptConfig;
 	private Consumer<ExpirableTxnRecord.Builder> recordConfig = noopRecordConfig;
 
 	boolean hasComputedRecordSoFar;
@@ -150,23 +150,25 @@ public class AwareTransactionContext implements TransactionContext {
 
 	@Override
 	public ExpirableTxnRecord recordSoFar() {
-		final var receipt = receiptSoFar();
+		final var receipt = receiptSoFar().build();
+
 		recordSoFar = ctx.creator().buildExpiringRecord(
-				otherNonThresholdFees,
+                                otherNonThresholdFees,
 				hash,
 				accessor,
 				consensusTime,
-				receipt);
+				receipt,
+				ctx);
 
 		recordConfig.accept(recordSoFar);
 		hasComputedRecordSoFar = true;
 		return recordSoFar.build();
 	}
 
-	TxnReceipt receiptSoFar() {
-		final var receipt = new TxnReceipt();
-		receipt.setExchangeRates(ctx.exchange().fcActiveRates());
-		receipt.setStatus(statusSoFar.name());
+	TxnReceipt.Builder receiptSoFar() {
+		final var receipt = TxnReceipt.newBuilder()
+				.setExchangeRates(ctx.exchange().fcActiveRates())
+				.setStatus(statusSoFar.name());
 		receiptConfig.accept(receipt);
 		return receipt;
 	}
@@ -233,11 +235,10 @@ public class AwareTransactionContext implements TransactionContext {
 
 	@Override
 	public void setTopicRunningHash(byte[] topicRunningHash, long sequenceNumber) {
-		receiptConfig = receipt -> {
-			receipt.setTopicRunningHash(topicRunningHash);
-			receipt.setTopicSequenceNumber(sequenceNumber);
-			receipt.setRunningHashVersion(MerkleTopic.RUNNING_HASH_VERSION);
-		};
+		receiptConfig = receipt -> receipt
+				.setTopicRunningHash(topicRunningHash)
+				.setTopicSequenceNumber(sequenceNumber)
+				.setRunningHashVersion(MerkleTopic.RUNNING_HASH_VERSION);
 	}
 
 	@Override

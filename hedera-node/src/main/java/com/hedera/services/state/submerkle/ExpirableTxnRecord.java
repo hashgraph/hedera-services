@@ -26,13 +26,11 @@ import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.fcqueue.FCQueueElement;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import com.swirlds.common.CommonUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -47,9 +45,6 @@ import static java.util.stream.Collectors.toList;
 
 public class ExpirableTxnRecord implements FCQueueElement {
 	public static final long UNKNOWN_SUBMITTING_MEMBER = -1;
-
-	private static final Logger log = LogManager.getLogger(ExpirableTxnRecord.class);
-
 	static final List<EntityId> NO_TOKENS = null;
 	static final List<CurrencyAdjustments> NO_TOKEN_ADJUSTMENTS = null;
 	static final EntityId NO_SCHEDULE_REF = null;
@@ -97,7 +92,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		this.receipt = builder.receipt;
 		this.txnHash = builder.txnHash;
 		this.txnId = builder.txnId;
-		this.consensusTimestamp = builder.consensusTimestamp;
+		this.consensusTimestamp = builder.consensusTime;
 		this.memo = builder.memo;
 		this.fee = builder.fee;
 		this.hbarAdjustments = builder.transferList;
@@ -123,8 +118,9 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				.add("memo", memo)
 				.add("contractCreation", contractCreateResult)
 				.add("contractCall", contractCallResult)
-				.add("hbarAdjustments", contractCallResult)
+				.add("hbarAdjustments", hbarAdjustments)
 				.add("scheduleRef", scheduleRef);
+
 		if (tokens != NO_TOKENS) {
 			int n = tokens.size();
 			var readable = IntStream.range(0, n)
@@ -345,7 +341,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				.setReceipt(TxnReceipt.fromGrpc(record.getReceipt()))
 				.setTxnHash(record.getTransactionHash().toByteArray())
 				.setTxnId(TxnId.fromGrpc(record.getTransactionID()))
-				.setConsensusTimestamp(RichInstant.fromGrpc(record.getConsensusTimestamp()))
+				.setConsensusTime(RichInstant.fromGrpc(record.getConsensusTimestamp()))
 				.setMemo(record.getMemo())
 				.setFee(record.getTransactionFee())
 				.setTransferList(record.hasTransferList() ? CurrencyAdjustments.fromGrpc(record.getTransferList()) : null)
@@ -415,7 +411,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		private TxnReceipt receipt;
 		private byte[] txnHash;
 		private TxnId txnId;
-		private RichInstant consensusTimestamp;
+		private RichInstant consensusTime;
 		private String memo;
 		private long fee;
 		private CurrencyAdjustments transferList;
@@ -450,8 +446,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			return this;
 		}
 
-		public Builder setConsensusTimestamp(RichInstant consensusTimestamp) {
-			this.consensusTimestamp = consensusTimestamp;
+		public Builder setConsensusTime(RichInstant consensusTime) {
+			this.consensusTime = consensusTime;
 			return this;
 		}
 
@@ -495,7 +491,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			txnHash = MISSING_TXN_HASH;
 			memo = null;
 			receipt = null;
-			consensusTimestamp = null;
+			consensusTime = null;
 			transferList = null;
 			contractCallResult = null;
 			contractCreateResult = null;

@@ -40,10 +40,21 @@ class FreezeTestHelper {
 	}
 
 	static Transaction createFreezeTransaction(boolean paidBy58, boolean valid, FileID fileID, byte[] fileHash) {
+		int[] startHourMin = CommonUtilsTest.getUTCHourMinFromMillis(System.currentTimeMillis() + 60000);
+		int[] endHourMin = CommonUtilsTest.getUTCHourMinFromMillis(System.currentTimeMillis() + 120000);
+		return createFreezeTransaction(paidBy58, valid, fileID, fileHash, startHourMin, endHourMin);
+	}
+
+	static Transaction createFreezeTransaction(
+			boolean paidBy58,
+			boolean valid,
+			FileID fileID,
+			byte[] fileHash,
+			int[] startHourMin,
+			int[] endHourMin
+	) {
 		FreezeTransactionBody freezeBody;
 		if (valid) {
-			int[] startHourMin = CommonUtilsTest.getUTCHourMinFromMillis(System.currentTimeMillis() + 60000);
-			int[] endHourMin = CommonUtilsTest.getUTCHourMinFromMillis(System.currentTimeMillis() + 120000);
 			var builder = getFreezeTranBuilder(startHourMin[0], startHourMin[1], endHourMin[0], endHourMin[1]);
 			if (fileID != null) {
 				builder.setUpdateFile(fileID);
@@ -76,6 +87,7 @@ class FreezeTestHelper {
 		ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
 		return Transaction.newBuilder().setBodyBytes(bodyBytes).build();
 	}
+
 
 	private static FreezeTransactionBody.Builder getFreezeTranBuilder(int startHour, int startMin, int endHour, int endMin){
 		return FreezeTransactionBody.newBuilder()
