@@ -1,22 +1,23 @@
 package com.hedera.services.state.merkle.virtual.persistence;
 
-import com.hedera.services.state.merkle.virtual.VirtualKey;
-import com.hedera.services.state.merkle.virtual.VirtualValue;
+import com.hedera.services.state.merkle.virtual.Path;
+import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.crypto.Hash;
 
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 /**
+ * An immutable record of a node in the Virtual Tree. It represents both
+ * internal (parent) nodes and leaf nodes. Different constructors exist
+ * for the different types of nodes. Leaf nodes always include a key.
  */
-public final class VirtualRecord {
-    private long path;
-    private Future<Hash> futureHash;
-    private final VirtualKey key;
-    private VirtualValue value;
-    private boolean dirty = false;
+public final class VirtualRecord<K, V> {
+    private static final Hash NULL_HASH = CryptoFactory.getInstance().getNullHash();
+
+    private final Path path;
+    private final Hash hash;
+    private final K key;
+    private final V value;
 
     /**
      * Creates a VirtualRecord suitable for a VirtualTreeLeaf.
@@ -26,11 +27,24 @@ public final class VirtualRecord {
      * @param key The key. Cannot be null.
      * @param value The value. May be null.
      */
-    public VirtualRecord(Hash hash, long path, VirtualKey key, VirtualValue value) {
-        this.futureHash = complete(hash);
-        this.path = path;
+    public VirtualRecord(Hash hash, Path path, K key, V value) {
+        this.hash = Objects.requireNonNull(hash);
+        this.path = Objects.requireNonNull(path);
         this.key = Objects.requireNonNull(key);
         this.value = value;
+    }
+
+    /**
+     * Creates a VirtualRecord suitable for a VirtualTreeInternal.
+     *
+     * @param hash The hash associated with the data. Cannot be null.
+     * @param path The path to the node. Cannot be null.
+     */
+    public VirtualRecord(Hash hash, Path path) {
+        this.hash = Objects.requireNonNull(hash);
+        this.path = Objects.requireNonNull(path);
+        this.key = null;
+        this.value = null;
     }
 
     /**
@@ -38,13 +52,8 @@ public final class VirtualRecord {
      *
      * @return A non-null path.
      */
-    public long getPath() {
+    public Path getPath() {
         return path;
-    }
-
-    public void setPath(long path) {
-        this.path = path;
-        this.dirty = true;
     }
 
     /**
@@ -53,17 +62,7 @@ public final class VirtualRecord {
      * @return The non-null hash.
      */
     public Hash getHash() {
-        try {
-            return futureHash.get();
-        } catch (InterruptedException | ExecutionException e) {
-            // TODO not sure what to do here.
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    public Future<Hash> getFutureHash() {
-        return futureHash;
+        return hash;
     }
 
     /**
@@ -71,7 +70,7 @@ public final class VirtualRecord {
      *
      * @return The key. May be null if this is a leaf node, otherwise it is never null.
      */
-    public VirtualKey getKey() {
+    public K getKey() {
         return key;
     }
 
@@ -80,32 +79,54 @@ public final class VirtualRecord {
      *
      * @return The value. May be null.
      */
-    public VirtualValue getValue() {
+    public V getValue() {
         return value;
     }
 
-    public void setValue(VirtualValue value) {
-        this.value = value;
-        this.dirty = true;
-
-        futureHash = complete(value == null ? null : value.getHash());
+    /**
+     * Gets whether this record represents a leaf node.
+     *
+     * @return Whether this record represents a leaf node. Checks whether the key is null.
+     */
+    public boolean isLeaf() {
+        return key != null;
     }
 
-    private Future<Hash> complete(Hash hash) {
-        if (hash == null) {
-            return null;
+    /**
+     * Creates a new VirtualRecord identical to the first, except with an invalidated (null) hash.
+     * @return A non-null virtual record that is invalidated in the hash.
+     */
+    public VirtualRecord<K, V> invalidateHash() {
+        return isLeaf() ?
+                new VirtualRecord<>(NULL_HASH, path, key, value) :
+                new VirtualRecord<>(NULL_HASH, path);
+    }
+
+    /**
+     * Returns a new record that has an invalid hash and the given value, but the same key and path as before.
+     * This can only be called on a leaf record.
+     *
+     * @param value The new value. Can be null.
+     * @return A non-null virtual record.
+     */
+    public VirtualRecord<K, V> withValue(V value) {
+        if (!isLeaf()) {
+            throw new IllegalStateException("Cannot call this method on non-leaf records");
         }
 
-        final var f = new CompletableFuture<Hash>();
-        f.complete(hash);
-        return f;
+        return new VirtualRecord<>(NULL_HASH, path, key, value);
     }
 
-    public boolean isDirty() {
-        return dirty;
-    }
-
-    public void makeDirty() {
-        this.dirty = true;
+    /**
+     * Gets a new record with the same values as before but with the given path, and its hash invalidated
+     * if it is a non-leaf node.
+     *
+     * @param path The path that has changed.
+     * @return A non-null virtual record
+     */
+    public VirtualRecord<K, V> withPath(Path path) {
+        return isLeaf() ?
+                new VirtualRecord<>(hash, path, key, value) :
+                new VirtualRecord<>(NULL_HASH, path);
     }
 }

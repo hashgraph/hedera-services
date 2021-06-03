@@ -169,19 +169,19 @@ public class ContractExecutionBench {
         };
     }
 
-    @Benchmark
-    public void addNumbers() {
-        final int gas = 10_000;
-        final String test = "runAdd";
-        try {
-            new ContractExecuteTransaction()
-                    .setGas(gas)
-                    .setFunction(test)
-                    .setContractId(contractId)
-                    .execute(customerClient);
-        } catch (Exception e) {
-            System.err.println("Encountered error: " + e.getMessage());
-        }
-    }
+//    @Benchmark
+//    public void addNumbers() {
+//        final int gas = 10_000;
+//        final String test = "runAdd";
+//        try {
+//            new ContractExecuteTransaction()
+//                    .setGas(gas)
+//                    .setFunction(test)
+//                    .setContractId(contractId)
+//                    .execute(customerClient);
+//        } catch (Exception e) {
+//            System.err.println("Encountered error: " + e.getMessage());
+//        }
+//    }
 
 }
