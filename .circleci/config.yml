@@ -2092,7 +2092,6 @@ workflows:
               branches:
                 ignore:
                   - /.*-PERF/
-                  - 01517-01505-AvoidFeeDataGrpcTypes
             workflow-name: "Continuous-integration"
         - build-platform-and-services:
             context: SonarCloud
