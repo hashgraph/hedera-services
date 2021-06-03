@@ -1,6 +1,10 @@
 package com.hedera.services.state.merkle.virtual;
 
+import com.hedera.services.state.merkle.virtual.persistence.VirtualDataSource;
+import com.hedera.services.state.merkle.virtual.persistence.VirtualRecord;
 import com.swirlds.common.crypto.Hash;
+import io.netty.buffer.ByteBufHolder;
+import org.checkerframework.checker.units.qual.K;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -8,6 +12,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 
 public class VirtualMapTest {
 
@@ -89,6 +95,37 @@ public class VirtualMapTest {
         expected.forEach((key, value) -> Assertions.assertEquals(value, fv.getValue(key)));
     }
 
+    @Test
+    public void quickAndDirty() {
+        final var ds = new InMemoryDataSource();
+        VirtualMap<ByteChunk, ByteChunk> map = new VirtualMap<>();
+        map.setDataSource(ds);
+        for (int i=0; i<1_000_000; i++) {
+            final var key = asKey(i);
+            final var value = asValue(i);
+            map.putValue(key, value);
+//            System.out.println(map.getAsciiArt());
+        }
+
+        Random rand = new Random();
+        for (int idx=0; idx<10_000; idx++) {
+            map = new VirtualMap<ByteChunk, ByteChunk>();
+            map.setDataSource(ds);
+            for (int j = 0; j < 100; j++) {
+                final var i = rand.nextInt(1_000_000);
+                map.putValue(asKey(i), asValue(i + 1_000_000));
+            }
+        }
+    }
+
+    private ByteChunk asKey(int index) {
+        return new ByteChunk(Arrays.copyOf(("key" + index).getBytes(), 32));
+    }
+
+    private ByteChunk asValue(int index) {
+        return new ByteChunk(Arrays.copyOf(("val" + index).getBytes(), 32));
+    }
+
     // TODO Delete items... how to do that? Set them to null I guess...
     // TODO Test hashing the tree
 
@@ -98,72 +135,37 @@ public class VirtualMapTest {
 
     // Simple implementation for testing purposes
     private static final class InMemoryDataSource implements VirtualDataSource<ByteChunk, ByteChunk> {
-        private HashMap<ByteChunk, ByteChunk> data = new HashMap<>();
-        private HashMap<Path, VirtualRecord<ByteChunk>> records = new HashMap<>();
-        private HashMap<Path, Hash> nodes = new HashMap<>();
-        private HashMap<ByteChunk, Path> paths = new HashMap<>();
+        private Map<ByteChunk, VirtualRecord<ByteChunk, ByteChunk>> recordsByKey = new HashMap<>();
+        private Map<Path, VirtualRecord<ByteChunk, ByteChunk>> recordsByPath = new HashMap<>();
         private Path firstLeafPath;
         private Path lastLeafPath;
         private boolean closed = false;
 
         @Override
-        public VirtualRecord<ByteChunk> getRecord(Path path) {
-            return records.get(path);
+        public VirtualRecord<ByteChunk, ByteChunk> getRecord(ByteChunk key) {
+            return recordsByKey.get(key);
         }
 
         @Override
-        public void writeRecord(Path path, VirtualRecord<ByteChunk> record) {
-            if (record == null) {
-                records.remove(path);
-            } else {
-                records.put(path, record);
+        public VirtualRecord<ByteChunk, ByteChunk> getRecord(Path path) {
+            return recordsByPath.get(path);
+        }
+
+        @Override
+        public void deleteRecord(VirtualRecord<ByteChunk, ByteChunk> record) {
+            if (record != null) {
+                recordsByPath.remove(record.getPath());
+                recordsByKey.remove(record.getKey());
             }
         }
 
         @Override
-        public Hash getHash(Path path) {
-            return nodes.get(path);
-        }
-
-        @Override
-        public void writeHash(Path path, Hash hash) {
-            if (hash == null) {
-                nodes.remove(path);
-            } else {
-                nodes.put(path, hash);
-            }
-        }
-
-        @Override
-        public ByteChunk getData(ByteChunk key) {
-            return data.get(key);
-        }
-
-        @Override
-        public void writeData(ByteChunk key, ByteChunk data) {
-            if (data == null) {
-                this.data.remove(key);
-            } else {
-                this.data.put(key, data);
-            }
-        }
-
-        @Override
-        public void deleteData(ByteChunk key) {
-            // TODO
-        }
-
-        @Override
-        public Path getPathForKey(ByteChunk key) {
-            return paths.get(key);
-        }
-
-        @Override
-        public void setPathForKey(ByteChunk key, Path path) {
-            if (path == null) {
-                paths.remove(key);
-            } else {
-                paths.put(key, path);
+        public void setRecord(VirtualRecord<ByteChunk, ByteChunk> record) {
+            if (record != null) {
+                if (record.isLeaf()) {
+                    recordsByKey.put(record.getKey(), record);
+                }
+                recordsByPath.put(record.getPath(), record);
             }
         }
 

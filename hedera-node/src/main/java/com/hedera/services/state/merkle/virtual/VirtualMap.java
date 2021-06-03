@@ -1,11 +1,16 @@
 package com.hedera.services.state.merkle.virtual;
 
+import com.hedera.services.state.merkle.virtual.persistence.VirtualDataSource;
+import com.hedera.services.state.merkle.virtual.persistence.VirtualRecord;
+import com.hedera.services.state.merkle.virtual.tree.VirtualTreeInternal;
+import com.hedera.services.state.merkle.virtual.tree.VirtualTreeLeaf;
+import com.hedera.services.state.merkle.virtual.tree.VirtualTreeNode;
 import com.swirlds.common.Archivable;
 import com.swirlds.common.FCMElement;
 import com.swirlds.common.FCMValue;
+import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Hashable;
-import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleExternalLeaf;
@@ -17,22 +22,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * A type of Merkle node that is also map-like and is used primarily as storage for
- * EVM contracts. An EVM contract may have a very large data set stored to disk.
- * For performance reasons, we don't want to read the entire data set into memory,
- * hash the entire data set, and write it all back out to disk on each contract
- * invocation. While this approach leads to very fast storage read/write times
- * during contract execution, it adds enormous overhead to contract setup/teardown.
- * Instead, we want to read only the data we need during the contract execution,
- * efficiently compute the hash, and write only the changed data during teardown.
- * In a typical large application, there might be 20mb of storage but only a few
- * kilobytes that get used during contract execution (since reading and writing have
- * substantial gas costs, contracts do not attempt to read and write all memory,
- * because they would quickly run out of gas). From a security perspective,
- * we just need to make sure that the read/write overhead is sufficiently less
- * than the gas we charge so that it is not possible to slow down the system
- * (gas is used as a proxy for time, and the gas limit is set to guarantee we
- * get the TPS that we want).</p>
+ * A type of Merkle node that is also map-like and is designed for working with
+ * data stored primarily off-heap, and pulled on-heap only as needed.
  *
  * <p>To achieve this, we have a "virtual" map. It does not implement any of the
  * java.util.* APIs because it is not necessary and would only add complexity and
@@ -46,45 +37,23 @@ import java.util.Objects;
  *
  * <p>This map <strong>does not accept null keys</strong> but does accept null values.</p>
  *
- * TODO FIX THESE DOCS
- * <p>Initially, the VirtualTreeMap starts with an empty tree, it doesn't even have a root.
- * On the first {@code get}, it defers to the VirtualDataSource to see if the entry
- * exists. If it does not, it returns null. If it does, then it reads some information
- * about the {@link VirtualTreeLeaf} that had previously been saved. Specifically, it
- * reads back the data (32 byte array for EVM) and a {@code Path} that defines the
- * path from the root of the tree to the leaf. We then decode this path, and read
- * from the data source the root node's hash from storage, and so on down the path
- * until we get to the leaf node (we actually instantiate both children of each
- * internal node on our way down to the leaf, so that we have all the hashes we need
- * to compute the updated hash later). We then return the data we looked up to the
- * caller.
- * <p>
- * Now that we have a partial tree loaded into memory, if the same {@code get} call
- * is made for the same key, we will simply return the same cached value. The initial
- * implementation tries to keep memory costs to a minimum, so it will actually go back
- * to the data source, read the same info it read previously, discover that it has already
- * loaded each node along the path, and return the value. A future implementation could
- * look into FCHashMap or some other cache for reducing costs. It isn't really necessary
- * since EVM calls are metered and the gas cost is chosen such that it is greater than
- * the effort we expend.
- * <p>
- * When the {@code set} method is called, we go through the same steps as {@code get}
- * so as to have the values ready for us to set, except that if the value is null, we
- * do a little more work to construct the node to save. TODO I really do need a local
- * cache because I want writes to be asynchronous. Time to spend a little more memory...
- * If the tree needs to be rebalanced, then we update the "Paths" saved for each node
- * to accurately reflect the new tree structure.
- * <p>
- * This node is considered a {@link MerkleExternalLeaf}. As such, it is responsible
- * for computing its own Hash. Ideally, this would not be the case, but we would
- * let the platform compute the hashes so they could be done in bulk. The problem with
- * reconnect. We don't have all the data in memory, and we don't want to create the
- * entire tree in memory during reconnect. Instead, we need to be able to send the
- * entire file across during sync. This is trivially done because each DataSource
- * is backed by a file, so we can just send those file bytes across the network
- * and reconstitute them on the other side. This avoids having to know ahead of time
- * the set of keys, or nodes, that exist in the tree.
+ * <p>This class is used primarily as storage for EVM contracts. An EVM contract
+ * may have a very large data set stored to disk. For performance reasons, we
+ * don't want to read the entire data set into memory, hash the entire data set,
+ * and write it all back out to disk on each contract invocation. While this
+ * approach leads to very fast storage read/write times during contract execution,
+ * it adds enormous overhead to contract setup/teardown.</p>
  *
+ * <p>Instead, we want to read *only* the data we need during the contract execution,
+ * efficiently compute the hash, and write only the changed data during teardown.
+ * In a typical large application, there might be 20mb of storage but only a few
+ * kilobytes that get used during contract execution (since reading and writing have
+ * substantial gas costs, contracts do not attempt to read and write all memory,
+ * because they would quickly run out of gas). From a security perspective,
+ * we just need to make sure that the read/write overhead is sufficiently less
+ * than the gas we charge so that it is not possible to slow down the system
+ * (gas is used as a proxy for time, and the gas limit is set to guarantee we
+ * get the TPS that we want).</p>
  */
 public final class VirtualMap<K, V extends Hashable>
         extends AbstractMerkleLeaf
@@ -92,6 +61,7 @@ public final class VirtualMap<K, V extends Hashable>
 
     private static final long CLASS_ID = 0xb881f3704885e853L;
     private static final int CLASS_VERSION = 1;
+    private static final Hash NULL_HASH = CryptoFactory.getInstance().getNullHash();
 
     /**
      * This data source is used for looking up the values and the
@@ -122,6 +92,7 @@ public final class VirtualMap<K, V extends Hashable>
 
     /**
      * Creates a copy based on the given source.
+     *
      * @param source Not null.
      */
     private VirtualMap(VirtualMap<K, V> source) {
@@ -133,11 +104,16 @@ public final class VirtualMap<K, V extends Hashable>
 
     /**
      * Sets the {@link VirtualDataSource} to use with this map. It should be set once,
-     * and never changed. Ideally this would be a final field supplied in the constructor.
+     * and never changed. Ideally this would be a final field supplied in the constructor
+     * and this method wouldn't exist at all.
      *
      * @param ds The data source. This cannot be null.
      */
     public void setDataSource(VirtualDataSource<K, V> ds) {
+        if (this.dataSource != null) {
+            throw new IllegalStateException("Cannot set the data source twice on the same map");
+        }
+
         this.dataSource = Objects.requireNonNull(ds);
     }
 
@@ -149,7 +125,8 @@ public final class VirtualMap<K, V extends Hashable>
      */
     public V getValue(K key) {
         Objects.requireNonNull(key);
-        return dataSource.getData(key);
+        final var record = dataSource.getRecord(key);
+        return record == null ? null : record.getValue();
     }
 
     /**
@@ -163,13 +140,9 @@ public final class VirtualMap<K, V extends Hashable>
         // Validate the key.
         Objects.requireNonNull(key);
 
-        // Get the current record for the key
-        final var path = dataSource.getPathForKey(key);
-        final var record = path == null ? null : dataSource.getRecord(path);
-
-        // Handle the modification
+        final var record = dataSource.getRecord(key);
         if (record != null) {
-            update(value, record);
+            update(record, value);
         } else {
             add(key, value);
         }
@@ -185,9 +158,10 @@ public final class VirtualMap<K, V extends Hashable>
         Objects.requireNonNull(key);
 
         // Get the current record for the key
-        final var path = dataSource.getPathForKey(key);
-        final var record = path == null ? null : dataSource.getRecord(path);
-        delete(record);
+        final var record = dataSource.getRecord(key);
+        if (record != null) {
+            delete(record);
+        }
     }
 
     @Override
@@ -200,8 +174,10 @@ public final class VirtualMap<K, V extends Hashable>
     @Override
     public Hash getHash() {
         // Realize the root node, if it doesn't already exist
-        final var r = root == null ? realizeInternalNode(null, Path.ROOT_PATH) : root;
-        return r.getHash();
+        final var r = root == null ? realizeRootNode() : root;
+
+        // Return the hash.
+        return r.hash();
     }
 
     @Override
@@ -331,7 +307,7 @@ public final class VirtualMap<K, V extends Hashable>
 
         // If the root node is a ghost, then we realize it first (we know we will need it)
         if (root == null) {
-            root = realizeInternalNode(null, Path.ROOT_PATH);
+            root = realizeRootNode();
         }
 
         // The mask will have zeros on the high order bits and ones on the low order bits.
@@ -370,7 +346,7 @@ public final class VirtualMap<K, V extends Hashable>
         return leaf;
     }
 
-    private void delete(VirtualRecord<K> record) {
+    private void delete(VirtualRecord<K, V> record) {
         // Nothing to do if we're deleting something that doesn't exist!
         if (record != null) {
             // TODO delete the node associated with this record. We gotta realize everything to get hashes right
@@ -384,12 +360,12 @@ public final class VirtualMap<K, V extends Hashable>
      * @param value A potentially null value
      * @param record A non-null record related to the leaf node to update.
      */
-    private void update(V value, VirtualRecord<K> record) {
+    private void update(VirtualRecord<K, V> record, V value) {
         // Finds the leaf, realizing it if necessary. Because record is not null,
         // we know *FOR SURE* that the leaf and all its parents exist, so we can
         // simply walk the tree looking for it.
         final var leaf = findLeaf(record.getPath());
-        save(record.getKey(), value, leaf);
+        save(leaf, record.getKey(), value);
     }
 
     /**
@@ -403,122 +379,159 @@ public final class VirtualMap<K, V extends Hashable>
     private void add(K key, V value) {
         // Gotta create the root, if there isn't one.
         if (root == null) {
-            root = realizeInternalNode(null, Path.ROOT_PATH);
+            root = realizeRootNode();
         }
 
         // Find the lastLeafPath which will tell me the new path for this new item
-        Path leafPath;
         VirtualTreeLeaf<K, V> newLeaf;
         final var lastLeafPath = dataSource.getLastLeafPath();
         if (lastLeafPath == null) {
             // There are no leaves! So this one will just go right on the root
-            leafPath = new Path((byte)1, 0);
-            final var rec = new VirtualRecord<>(null, leafPath, key);
-            newLeaf = new VirtualTreeLeaf<>(dataSource, rec);
+            final var leafPath = new Path((byte)1, 0);
+            newLeaf = new VirtualTreeLeaf<>(NULL_HASH, leafPath, value);
             root.setLeftChild(newLeaf);
+            // Save state.
+            save(newLeaf, key, value);
             dataSource.writeFirstLeafPath(leafPath);
+            dataSource.writeLastLeafPath(leafPath);
         } else if (lastLeafPath.isLeft()) {
             // If the lastLeafPath is on the left, then this is easy, we just need
             // to add the new leaf to the right of it, on the same parent (same
             // path with a 1 as the MSB)
             final long mask = 1L << (lastLeafPath.rank - 1);
-            leafPath = new Path(lastLeafPath.rank, lastLeafPath.path | mask);
-            final var rec = new VirtualRecord<>(null, leafPath, key);
-            newLeaf = new VirtualTreeLeaf<>(dataSource, rec);
+            final var leafPath = new Path(lastLeafPath.rank, lastLeafPath.path | mask);
+            newLeaf = new VirtualTreeLeaf<>(NULL_HASH, leafPath, value);
             root.setRightChild(newLeaf);
+            // Save state.
+            save(newLeaf, key, value);
+            dataSource.writeLastLeafPath(leafPath);
         } else {
             // We have to make some modification to the tree because there is not
             // an open slot. So we need to pick a slot where a leaf currently exists
             // and then swap it out with a parent, move the leaf to the parent as the
             // "left", and then we can put the new leaf on the right. It turns out,
-            // the slot is always the firstLeafPath.
-            final var firstLeafPath = dataSource.getFirstLeafPath();
-
-            // Now we have to find the next "firstLeafPath". If the current firstLeafPath
+            // the slot is always the firstLeafPath. If the current firstLeafPath
             // is all the way on the far right of the graph, then the next firstLeafPath
             // will be the first leaf on the far left of the next level. Otherwise,
             // it is just the sibling to the right.
+            final var firstLeafPath = dataSource.getFirstLeafPath();
             final var mask = ~(-1L << firstLeafPath.rank);
             final var firstLeafIsOnFarRight = (firstLeafPath.path & mask) == mask;
             final var nextFirstLeafPath = firstLeafIsOnFarRight ?
                     new Path((byte)(firstLeafPath.rank + 1), 0) :
                     Path.getPathForRankAndIndex(firstLeafPath.rank, firstLeafPath.getIndex() + 1);
 
+            // The firstLeafPath points to the old leaf that we want to replace.
+            // We need to create a new record that contains the same data that was in the old record,
+            // but at a new path. The old record will be overwritten by the new parent node that is
+            // taking the place of oldLeaf at that path.
             final var oldLeaf = findLeaf(firstLeafPath);
+            final var leafRecord = dataSource.getRecord(firstLeafPath)
+                    .withPath(firstLeafPath.getLeftChildPath());
+            dataSource.setRecord(leafRecord);
+
+            // Now get the parent. It was some kind of internal node. The parent has some record
+            // that may have a cached hash, and that needs to be invalidated since the substructure
+            // of the parent is changing
             final var parent = oldLeaf.getParent();
+            final var parentRecord = dataSource.getRecord(parent.getPath())
+                    .invalidateHash();
+            dataSource.setRecord(parentRecord);
+
+            // Create a new internal node that is in the position of the old leaf and attach it to the parent
+            // on the left side. We need to write a new record at the path position (which overwrites the old
+            // leaf's record at that position. Good thing we already saved it in the new slot!)
             final var newSlotParent = realizeInternalNode(parent, firstLeafPath);
+            final var newSlotParentRecord = new VirtualRecord<K, V>(NULL_HASH, firstLeafPath);
+            dataSource.setRecord(newSlotParentRecord);
+            // And add this new node to the parent
             if (firstLeafPath.isLeft()) {
                 parent.setLeftChild(newSlotParent);
             } else {
                 parent.setRightChild(newSlotParent);
             }
-            leafPath = firstLeafPath.getRightChildPath();
-            final var rec = new VirtualRecord<>(null, leafPath, key);
-            newLeaf = new VirtualTreeLeaf<>(dataSource, rec);
+
+            // Put the new item on the right side of the new parent.
+            final var leafPath = firstLeafPath.getRightChildPath();
+            newLeaf = new VirtualTreeLeaf<>(NULL_HASH, leafPath, value);
+            save(newLeaf, key, value);
+            // Add the leaf nodes to the newSlotParent
             newSlotParent.setLeftChild(oldLeaf);
             newSlotParent.setRightChild(newLeaf);
 
+            // Save the first and last leaf paths
             dataSource.writeFirstLeafPath(nextFirstLeafPath);
+            dataSource.writeLastLeafPath(leafPath);
         }
-
-        save(key, value, newLeaf);
-
-        // Now record our new lastLeafPath
-        dataSource.writeLastLeafPath(leafPath);
     }
 
-    private void save(K key, V value, VirtualTreeLeaf<K, V> leaf) {
+    private void save(VirtualTreeLeaf<K, V> leaf, K key, V value) {
         Path leafPath = leaf.getPath();
         leaf.setData(value);
-        final var newRecord = new VirtualRecord<>(null, leafPath, key);
-        dataSource.writeRecord(leafPath, newRecord);
-        dataSource.writeData(newRecord.getKey(), value);
+        // Computing the hash here isn't really what I want, because I really only
+        // want to compute the hash once per cycle. Bummer.
+        final var newRecord = new VirtualRecord<>(leaf.hash(), leafPath, key, value);
+        dataSource.setRecord(newRecord);
     }
 
     /**
-     * Either convert a ghost node to a realized one, or create a new one.
+     * Either convert a root ghost node to a realized one, or create a new one.
      *
-     * @param parent The parent, can be null.
-     * @param path The path to this node.
-     * @return A non-null internal node
+     * @return A non-null internal root node
      */
-    private VirtualTreeInternal<K, V> realizeInternalNode(VirtualTreeInternal<K, V> parent, Path path) {
-        // It is possible that we haven't recorded the hash, maybe because we have invalidated
-        // it and haven't refreshed it, or something. Whatever, we'll survive.
-        final var hash = dataSource.getHash(path);
-        final var node = new VirtualTreeInternal<>(dataSource);
-        node.setHash(hash);
+    private VirtualTreeInternal<K, V> realizeRootNode() {
+        final var record = dataSource.getRecord(Path.ROOT_PATH);
 
-        // The parent may be null if this is the root node.
-        if (parent != null) {
-            if(path.isLeft()) {
-                parent.setLeftChild(node);
-            } else {
-                parent.setRightChild(node);
-            }
+        // If there is no record, then we need to create and save one
+        if (record == null) {
+            dataSource.setRecord(new VirtualRecord<>(NULL_HASH, Path.ROOT_PATH));
         }
 
-        return node;
+        // Create the node and return it
+        return new VirtualTreeInternal<>(
+                record == null ? NULL_HASH : record.getHash(),
+                Path.ROOT_PATH);
     }
 
     /**
      * Either convert a ghost node to a realized one, or create a new one.
      *
      * @param parent The parent, cannot be null.
+     * @param path The path to this node.
+     * @return A non-null internal node
+     */
+    private VirtualTreeInternal<K, V> realizeInternalNode(VirtualTreeInternal<K, V> parent, Path path) {
+        Objects.requireNonNull(parent);
+        final var record = dataSource.getRecord(path);
+
+        // The parent may be null if this is the root node. Setting the children here should
+        // have no side effects -- it shouldn't cause hashes to be invalidated and it
+        // shouldn't cause any dirty state. We're just piecing the virtual tree back together.
+        final var node = new VirtualTreeInternal<K, V>(record == null ? NULL_HASH : record.getHash(), path);
+        if(path.isLeft()) {
+            parent.setLeftChild(node);
+        } else {
+            parent.setRightChild(node);
+        }
+        return node;
+    }
+
+    /**
+     * Convert a ghost node to a realized one.
+     *
+     * @param parent The parent, cannot be null.
      * @param path The path, cannot be null
      * @return A non-null virtual leaf
      */
     private VirtualTreeLeaf<K, V> realizeLeafNode(VirtualTreeInternal<K, V> parent, Path path) {
+        Objects.requireNonNull(parent);
         final var record = dataSource.getRecord(path);
         if (record == null) {
             throw new IllegalStateException("Unexpectedly encountered a null record for a leaf that " +
                     "should have existed.");
         }
 
-        final var leaf = new VirtualTreeLeaf<>(dataSource, record);
-        final var data = dataSource.getData(record.getKey());
-        leaf.setData(data);
-        leaf.setHash(record.getHash());
+        final var leaf = new VirtualTreeLeaf<K, V>(record.getHash(), path, record.getValue());
         if (path.isLeft()) {
             parent.setLeftChild(leaf);
         } else {
