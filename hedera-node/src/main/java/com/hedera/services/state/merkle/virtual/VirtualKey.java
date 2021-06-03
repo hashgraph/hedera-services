@@ -7,6 +7,8 @@ import java.util.Arrays;
  *
  */
 public final class VirtualKey {
+    /** Site of an account when serialized to bytes */
+    private static final int BYTES = Long.BYTES * 3;
     /**
      * The actual data. This will never be null.
      * This data is protected by this class, we make defensive copies rather than letting
@@ -46,6 +48,15 @@ public final class VirtualKey {
      */
     public byte[] asByteArray() {
         return Arrays.copyOf(bytes, bytes.length);
+    }
+
+    /**
+     * Write the keys bytes to the current position in byte buffer. This saves a copy.
+     *
+     * @param buffer The buffer to write to
+     */
+    public void writeToByteBuffer(ByteBuffer buffer) {
+        buffer.put(bytes);
     }
 
     @Override

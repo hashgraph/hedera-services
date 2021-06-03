@@ -57,6 +57,16 @@ public final class VirtualValue implements Hashable {
         return Arrays.copyOf(data, 32);
     }
 
+
+    /**
+     * Write the data bytes to the current position in byte buffer. This saves a copy.
+     *
+     * @param buffer The buffer to write to
+     */
+    public void writeToByteBuffer(ByteBuffer buffer) {
+        buffer.put(data);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
