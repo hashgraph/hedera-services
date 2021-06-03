@@ -72,6 +72,7 @@ class AwareHbarCentExchangeTest {
 		subject.updateRates(rates);
 
 		// expect:
+		assertEquals(rates, subject.activeRates());
 		assertEquals(rates.getCurrentRate(), subject.activeRate());
 		assertEquals(rates.getCurrentRate(), subject.rate(beforeCrossTime));
 		// and:
