@@ -43,9 +43,6 @@ public class HashMapBackingAccounts implements BackingStore<AccountID, MerkleAcc
 	}
 
 	@Override
-	public void flushMutableRefs() { }
-
-	@Override
 	public MerkleAccount getRef(AccountID id) {
 		return accounts.get(id);
 	}

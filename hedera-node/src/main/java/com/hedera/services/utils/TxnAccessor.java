@@ -20,7 +20,6 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -28,6 +27,7 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.common.SwirldTransaction;
 
 /**
  * Defines a type that gives access to several commonly referenced
@@ -52,7 +52,7 @@ public interface TxnAccessor {
 
     byte[] getBackwardCompatibleSignedTxnBytes();
 
-    ByteString getHash();
+    byte[] getHash();
 
     boolean canTriggerTxn();
 
@@ -60,5 +60,7 @@ public interface TxnAccessor {
 
     ScheduleID getScheduleRef();
 
-    default com.swirlds.common.Transaction getPlatformTxn() { throw new UnsupportedOperationException(); }
+    long getOfferedFee();
+
+    default SwirldTransaction getPlatformTxn() { throw new UnsupportedOperationException(); }
 }

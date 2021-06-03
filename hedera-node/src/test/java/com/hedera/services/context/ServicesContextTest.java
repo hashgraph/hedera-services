@@ -43,8 +43,9 @@ import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.TxnRateFeeMultiplierSource;
 import com.hedera.services.fees.calculation.AwareFcfsUsagePrices;
 import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
-import com.hedera.services.fees.charging.ItemizableFeeCharging;
-import com.hedera.services.fees.charging.TxnFeeChargingPolicy;
+import com.hedera.services.fees.charging.NarratedLedgerCharging;
+import com.hedera.services.fees.charging.FeeChargingPolicy;
+import com.hedera.services.fees.charging.TxnChargingPolicyAgent;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.SysFileCallbacks;
 import com.hedera.services.files.TieredHederaFs;
@@ -67,7 +68,7 @@ import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
-import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
+import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
 import com.hedera.services.legacy.handler.FreezeHandler;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
@@ -114,7 +115,6 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.migration.StdStateMigrations;
 import com.hedera.services.state.submerkle.ExchangeRates;
-import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.validation.BasedLedgerValidator;
 import com.hedera.services.stats.HapiOpCounters;
@@ -129,6 +129,7 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttling.HapiThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.throttling.TxnAwareHandleThrottling;
+import com.hedera.services.txns.ExpandHandleSpan;
 import com.hedera.services.txns.TransitionLogicLookup;
 import com.hedera.services.txns.submission.BasicSubmissionFlow;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
@@ -137,7 +138,6 @@ import com.hedera.services.txns.submission.TransactionPrecheck;
 import com.hedera.services.txns.submission.TxnResponseHelper;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.utils.SleepingPause;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.Console;
@@ -216,6 +216,7 @@ public class ServicesContextTest {
 		given(state.scheduleTxs()).willReturn(schedules);
 		crypto = mock(Cryptography.class);
 		platform = mock(Platform.class);
+		given(platform.getSelfId()).willReturn(new NodeId(false, 0L));
 		given(platform.getCryptography()).willReturn(crypto);
 		properties = mock(PropertySource.class);
 		propertySources = mock(StandardizedPropertySources.class);
@@ -375,7 +376,7 @@ public class ServicesContextTest {
 	void rebuildsBackingAccountsIfNonNull() {
 		// setup:
 		BackingTokenRels tokenRels = mock(BackingTokenRels.class);
-		FCMapBackingAccounts backingAccounts = mock(FCMapBackingAccounts.class);
+		BackingAccounts backingAccounts = mock(BackingAccounts.class);
 
 		// given:
 		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
@@ -463,14 +464,13 @@ public class ServicesContextTest {
 		assertThat(ctx.applicationPropertiesReloading(), instanceOf(ValidatingCallbackInterceptor.class));
 		assertThat(ctx.recordsHistorian(), instanceOf(TxnAwareRecordsHistorian.class));
 		assertThat(ctx.queryableAccounts(), instanceOf(AtomicReference.class));
-		assertThat(ctx.txnChargingPolicy(), instanceOf(TxnFeeChargingPolicy.class));
+		assertThat(ctx.txnChargingPolicy(), instanceOf(FeeChargingPolicy.class));
 		assertThat(ctx.txnResponseHelper(), instanceOf(TxnResponseHelper.class));
 		assertThat(ctx.statusCounts(), instanceOf(ConsensusStatusCounts.class));
 		assertThat(ctx.queryableStorage(), instanceOf(AtomicReference.class));
 		assertThat(ctx.systemFilesManager(), instanceOf(HfsSystemFilesManager.class));
 		assertThat(ctx.queryResponseHelper(), instanceOf(QueryResponseHelper.class));
 		assertThat(ctx.solidityLifecycle(), instanceOf(SolidityLifecycle.class));
-		assertThat(ctx.charging(), instanceOf(ItemizableFeeCharging.class));
 		assertThat(ctx.repository(), instanceOf(ServicesRepositoryRoot.class));
 		assertThat(ctx.newPureRepo(), instanceOf(Supplier.class));
 		assertThat(ctx.exchangeRatesManager(), instanceOf(TxnAwareRatesManager.class));
@@ -479,7 +479,7 @@ public class ServicesContextTest {
 		assertThat(ctx.expiries(), instanceOf(ExpiryManager.class));
 		assertThat(ctx.creator(), instanceOf(ExpiringCreations.class));
 		assertThat(ctx.txnHistories(), instanceOf(Map.class));
-		assertThat(ctx.backingAccounts(), instanceOf(FCMapBackingAccounts.class));
+		assertThat(ctx.backingAccounts(), instanceOf(BackingAccounts.class));
 		assertThat(ctx.backingTokenRels(), instanceOf(BackingTokenRels.class));
 		assertThat(ctx.systemAccountsCreator(), instanceOf(BackedSystemAccountsCreator.class));
 		assertThat(ctx.b64KeyReader(), instanceOf(LegacyEd25519KeyReader.class));
@@ -522,6 +522,9 @@ public class ServicesContextTest {
 		assertThat(ctx.entityAutoRenewal(), instanceOf(EntityAutoRenewal.class));
 		assertThat(ctx.nodeInfo(), instanceOf(NodeInfo.class));
 		assertThat(ctx.invariants(), instanceOf(InvariantChecks.class));
+		assertThat(ctx.narratedCharging(), instanceOf(NarratedLedgerCharging.class));
+		assertThat(ctx.chargingPolicyAgent(), instanceOf(TxnChargingPolicyAgent.class));
+		assertThat(ctx.expandHandleSpan(), instanceOf(ExpandHandleSpan.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

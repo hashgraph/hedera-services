@@ -20,21 +20,27 @@ package com.hedera.services.fees.charging;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.services.utils.TxnAccessor;
+import com.hederahashgraph.fee.FeeObject;
 
 /**
- * Defines a type able to determine if a given payer can afford
- * to pay a given amount.
- *
- * @author Michael Tinker
+ * Defines the checks and charging actions we need to apply the Services fee policy.
  */
-@FunctionalInterface
-public interface BalanceCheck {
-	/**
-	 * Flags if the given payer can afford the given amount.
-	 * @param payer a payer
-	 * @param amount an amount
-	 * @return if the payer can afford the amount
-	 */
-	boolean canAfford(AccountID payer, long amount);
+public interface NarratedCharging {
+	void setFees(FeeObject fees);
+	void resetForTxn(TxnAccessor accessor, long submittingNodeId);
+
+	boolean canPayerAffordAllFees();
+	boolean canPayerAffordNetworkFee();
+	boolean canPayerAffordServiceFee();
+	boolean isPayerWillingToCoverAllFees();
+	boolean isPayerWillingToCoverNetworkFee();
+	boolean isPayerWillingToCoverServiceFee();
+
+	void chargePayerAllFees();
+	void chargePayerServiceFee();
+	void chargePayerNetworkAndUpToNodeFee();
+	void chargeSubmittingNodeUpToNetworkFee();
+
+	long totalFeesChargedToPayer();
 }

@@ -20,6 +20,7 @@ package com.hedera.services.fees;
  * ‍
  */
 
+import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -32,8 +33,9 @@ import com.hederahashgraph.api.proto.java.Timestamp;
  */
 public interface HbarCentExchange {
 	ExchangeRate activeRate();
-	ExchangeRateSet activeRates();
 	ExchangeRate rate(Timestamp at);
+	ExchangeRates fcActiveRates();
+	ExchangeRateSet activeRates();
 
 	default void updateRates(ExchangeRateSet rates) {
 	}

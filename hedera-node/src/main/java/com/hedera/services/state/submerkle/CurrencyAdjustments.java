@@ -31,6 +31,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -52,7 +53,14 @@ public class CurrencyAdjustments implements SelfSerializable {
 	long[] hbars = NO_ADJUSTMENTS;
 	List<EntityId> accountIds = Collections.emptyList();
 
-	public CurrencyAdjustments() { }
+	public CurrencyAdjustments() {
+		/* For RuntimeConstructable */
+	}
+
+	public CurrencyAdjustments(long[] amounts, List<EntityId> parties) {
+		hbars = amounts;
+		accountIds = parties;
+	}
 
 	/* --- SelfSerializable --- */
 
@@ -124,15 +132,20 @@ public class CurrencyAdjustments implements SelfSerializable {
 		return fromGrpc(grpc.getAccountAmountsList());
 	}
 
-	public static CurrencyAdjustments fromGrpc(List<AccountAmount> grpc) {
-		var pojo = new CurrencyAdjustments();
-		pojo.hbars = grpc.stream()
-				.mapToLong(AccountAmount::getAmount)
-				.toArray();
-		pojo.accountIds = grpc.stream()
-				.map(AccountAmount::getAccountID)
-				.map(EntityId::fromGrpcAccountId)
-				.collect(toList());
+	public static CurrencyAdjustments fromGrpc(List<AccountAmount> adjustments) {
+		final var pojo = new CurrencyAdjustments();
+		final int n = adjustments.size();
+		if (n > 0) {
+			final var amounts = new long[n];
+			final List<EntityId> accounts = new ArrayList<>(n);
+			for (var i = 0; i < n; i++) {
+				final var adjustment = adjustments.get(i);
+				amounts[i] = adjustment.getAmount();
+				accounts.add(EntityId.fromGrpcAccountId(adjustment.getAccountID()));
+			}
+			pojo.hbars = amounts;
+			pojo.accountIds = accounts;
+		}
 		return pojo;
 	}
 }

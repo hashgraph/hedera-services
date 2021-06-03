@@ -20,7 +20,6 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -34,7 +33,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 
 import java.util.function.Function;
 
-import static com.hedera.services.legacy.proto.utils.CommonUtils.sha384HashOf;
+import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 
@@ -51,7 +50,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private TransactionID txnId;
 	private TransactionBody txn;
 	private HederaFunctionality function;
-	private ByteString hash;
+	private byte[] hash;
 
 	static Function<TransactionBody, HederaFunctionality> functionExtractor = txn -> {
 		try {
@@ -72,18 +71,21 @@ public class SignedTxnAccessor implements TxnAccessor {
 		this.backwardCompatibleSignedTxnBytes = backwardCompatibleSignedTxnBytes;
 		backwardCompatibleSignedTxn = Transaction.parseFrom(backwardCompatibleSignedTxnBytes);
 
-		if (!backwardCompatibleSignedTxn.getSignedTransactionBytes().isEmpty()) {
-			var signedTxn = SignedTransaction.parseFrom(backwardCompatibleSignedTxn.getSignedTransactionBytes());
-			txnBytes = signedTxn.getBodyBytes().toByteArray();
-			sigMap = signedTxn.getSigMap();
-		} else {
+
+		final var signedTxnBytes = backwardCompatibleSignedTxn.getSignedTransactionBytes();
+		if (signedTxnBytes.isEmpty()) {
 			txnBytes = backwardCompatibleSignedTxn.getBodyBytes().toByteArray();
 			sigMap = backwardCompatibleSignedTxn.getSigMap();
+			hash = noThrowSha384HashOf(backwardCompatibleSignedTxnBytes);
+		} else {
+			final var signedTxn = SignedTransaction.parseFrom(signedTxnBytes);
+			txnBytes = signedTxn.getBodyBytes().toByteArray();
+			sigMap = signedTxn.getSigMap();
+			hash = noThrowSha384HashOf(signedTxnBytes.toByteArray());
 		}
 
 		txn = TransactionBody.parseFrom(txnBytes);
 		txnId = txn.getTransactionID();
-		hash = sha384HashOf(backwardCompatibleSignedTxn);
 	}
 
 	public SignedTxnAccessor(Transaction backwardCompatibleSignedTxn) throws InvalidProtocolBufferException {
@@ -99,6 +101,10 @@ public class SignedTxnAccessor implements TxnAccessor {
 			function = functionExtractor.apply(getTxn());
 		}
 		return function;
+	}
+
+	public long getOfferedFee() {
+		return txn.getTransactionFee();
 	}
 
 	public Transaction getSignedTxn4Log() {
@@ -129,7 +135,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 		return backwardCompatibleSignedTxnBytes;
 	}
 
-	public ByteString getHash() {
+	public byte[] getHash() {
 		return hash;
 	}
 

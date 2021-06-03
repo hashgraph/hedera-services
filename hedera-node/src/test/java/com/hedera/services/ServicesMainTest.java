@@ -48,7 +48,6 @@ import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SystemExits;
-import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;

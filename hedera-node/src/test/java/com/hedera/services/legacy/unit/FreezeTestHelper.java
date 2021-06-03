@@ -22,6 +22,7 @@ package com.hedera.services.legacy.unit;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.TestHelper;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -31,21 +32,29 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.builder.RequestBuilder;
 
-public class FreezeTestHelper {
+class FreezeTestHelper {
+	private static AccountID nodeAccountId = IdUtils.asAccount("0.0.3");
 
-	private static AccountID payerAccountId;
-	private static AccountID nodeAccountId =
-			RequestBuilder.getAccountIdBuild(3l, 0l, 0l);
-
-	public static Transaction createFreezeTransaction(boolean paidBy58, boolean valid, FileID fileID) {
+	static Transaction createFreezeTransaction(boolean paidBy58, boolean valid, FileID fileID) {
 		return createFreezeTransaction(paidBy58, valid, fileID, null);
 	}
 
-	public static Transaction createFreezeTransaction(boolean paidBy58, boolean valid, FileID fileID, byte[] fileHash) {
+	static Transaction createFreezeTransaction(boolean paidBy58, boolean valid, FileID fileID, byte[] fileHash) {
+		int[] startHourMin = CommonUtilsTest.getUTCHourMinFromMillis(System.currentTimeMillis() + 60000);
+		int[] endHourMin = CommonUtilsTest.getUTCHourMinFromMillis(System.currentTimeMillis() + 120000);
+		return createFreezeTransaction(paidBy58, valid, fileID, fileHash, startHourMin, endHourMin);
+	}
+
+	static Transaction createFreezeTransaction(
+			boolean paidBy58,
+			boolean valid,
+			FileID fileID,
+			byte[] fileHash,
+			int[] startHourMin,
+			int[] endHourMin
+	) {
 		FreezeTransactionBody freezeBody;
 		if (valid) {
-			int[] startHourMin = CommonUtilsTest.getUTCHourMinFromMillis(System.currentTimeMillis() + 60000);
-			int[] endHourMin = CommonUtilsTest.getUTCHourMinFromMillis(System.currentTimeMillis() + 120000);
 			var builder = getFreezeTranBuilder(startHourMin[0], startHourMin[1], endHourMin[0], endHourMin[1]);
 			if (fileID != null) {
 				builder.setUpdateFile(fileID);
@@ -63,6 +72,7 @@ public class FreezeTestHelper {
 		long transactionFee = 100000000000l;
 		String memo = "Freeze Test";
 
+		AccountID payerAccountId;
 		if (paidBy58) {
 			payerAccountId = RequestBuilder.getAccountIdBuild(58l, 0l, 0l);
 		} else {
@@ -77,6 +87,7 @@ public class FreezeTestHelper {
 		ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
 		return Transaction.newBuilder().setBodyBytes(bodyBytes).build();
 	}
+
 
 	private static FreezeTransactionBody.Builder getFreezeTranBuilder(int startHour, int startMin, int endHour, int endMin){
 		return FreezeTransactionBody.newBuilder()

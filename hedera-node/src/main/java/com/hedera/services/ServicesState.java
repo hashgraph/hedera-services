@@ -40,18 +40,17 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
-import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.blob.BinaryObjectStore;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
+import com.swirlds.common.SwirldDualState;
 import com.swirlds.common.SwirldState;
-import com.swirlds.common.Transaction;
+import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
-import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
 import com.swirlds.fcmap.FCMap;
@@ -66,8 +65,8 @@ import java.util.function.Supplier;
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
-import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
+import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 
 public class ServicesState extends AbstractNaryMerkleInternal implements SwirldState.SwirldState2 {
 	private static final Logger log = LogManager.getLogger(ServicesState.class);
@@ -119,13 +118,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	public ServicesState() {
 	}
 
-	public ServicesState(List<MerkleNode> children) {
-		super(ChildIndices.NUM_0140_CHILDREN);
+	public ServicesState(ServicesContext ctx, NodeId nodeId, List<MerkleNode> children, ServicesState immutableState) {
+		super(immutableState);
 		addDeserializedChildren(children, MERKLE_VERSION);
-	}
-
-	public ServicesState(ServicesContext ctx, NodeId nodeId, List<MerkleNode> children) {
-		this(children);
 		this.ctx = ctx;
 		this.nodeId = nodeId;
 		if (ctx != null) {
@@ -165,35 +160,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				return ChildIndices.NUM_070_CHILDREN;
 			default:
 				throw new IllegalArgumentException(String.format(UNSUPPORTED_VERSION_MSG_TPL, version));
-		}
-	}
-
-	@Override
-	public void initialize(MerkleInternal previous) {
-		if (tokens() == null) {
-			setChild(ChildIndices.TOKENS,
-					new FCMap<>());
-			log.info("Created tokens FCMap after 0.7.0 state restoration");
-		}
-		if (tokenAssociations() == null) {
-			setChild(ChildIndices.TOKEN_ASSOCIATIONS,
-					new FCMap<>());
-			log.info("Created token associations FCMap after <=0.8.0 state restoration");
-		}
-		if (diskFs() == null) {
-			setChild(ChildIndices.DISK_FS, new MerkleDiskFs());
-			log.info("Created disk file system after <=0.9.0 state restoration");
-			skipDiskFsHashCheck = true;
-		}
-		if (scheduleTxs() == null) {
-			setChild(ChildIndices.SCHEDULE_TXS, new FCMap<>());
-			log.info("Created scheduled transactions FCMap after <=0.10.0 state restoration");
-		}
-		if (runningHashLeaf() == null) {
-			final RunningHash runningHash = new RunningHash(emptyHash);
-			RecordsRunningHashLeaf initialRecordsRunningHashLeaf = new RecordsRunningHashLeaf(runningHash);
-			setChild(ChildIndices.RECORD_STREAM_RUNNING_HASH, initialRecordsRunningHashLeaf);
-			log.info("Created RecordsRunningHashLeaf after <=0.11.0 state restoration");
 		}
 	}
 
@@ -305,17 +271,19 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			boolean isConsensus,
 			Instant creationTime,
 			Instant consensusTime,
-			com.swirlds.common.Transaction transaction
+			SwirldTransaction transaction,
+			SwirldDualState dualState
 	) {
 		if (isConsensus) {
+			ctx.setDualState(dualState);
 			ctx.logic().incorporateConsensusTxn(transaction, consensusTime, submittingMember);
 		}
 	}
 
 	@Override
-	public void expandSignatures(Transaction platformTxn) {
+	public void expandSignatures(SwirldTransaction platformTxn) {
 		try {
-			var accessor = new PlatformTxnAccessor(platformTxn);
+			final var accessor = ctx.expandHandleSpan().track(platformTxn);
 			expandIn(
 					accessor,
 					ctx.lookupRetryingKeyOrder(),
@@ -330,6 +298,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public void noMoreTransactions() {
+		/* No-op. */
 	}
 
 	/* --- FastCopyable --- */
@@ -347,7 +316,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				diskFs().copy(),
 				scheduleTxs().copy(),
 				runningHashLeaf().copy()
-		));
+		), this);
 	}
 
 	/* --------------- */

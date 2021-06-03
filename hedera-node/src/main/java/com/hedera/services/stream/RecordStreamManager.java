@@ -28,7 +28,8 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.stream.HashCalculatorForStream;
 import com.swirlds.common.stream.MultiStream;
-import com.swirlds.common.stream.QueueThread;
+import com.swirlds.common.stream.QueueThreadObjectStream;
+import com.swirlds.common.stream.QueueThreadObjectStreamConfiguration;
 import com.swirlds.common.stream.RunningHashCalculatorForStream;
 import com.swirlds.common.stream.TimestampStreamFileWriter;
 import org.apache.logging.log4j.LogManager;
@@ -52,13 +53,13 @@ public class RecordStreamManager {
 
 	/**
 	 * receives {@link RecordStreamObject}s from {@link com.hedera.services.legacy.services.state.AwareProcessLogic}
-	 * 	 * .addForStreaming,
+	 * * .addForStreaming,
 	 * then passes to hashQueueThread and writeQueueThread
 	 */
 	private final MultiStream<RecordStreamObject> multiStream;
 
 	/** receives {@link RecordStreamObject}s from multiStream, then passes to hashCalculator */
-	private QueueThread<RecordStreamObject> hashQueueThread;
+	private QueueThreadObjectStream<RecordStreamObject> hashQueueThread;
 	/**
 	 * receives {@link RecordStreamObject}s from hashQueueThread, calculates this object's Hash, then passes to
 	 * runningHashQueueThread
@@ -66,7 +67,7 @@ public class RecordStreamManager {
 	private HashCalculatorForStream<RecordStreamObject> hashCalculator;
 
 	/** receives {@link RecordStreamObject}s from multiStream, then passes to streamFileWriter */
-	private QueueThread<RecordStreamObject> writeQueueThread;
+	private QueueThreadObjectStream<RecordStreamObject> writeQueueThread;
 	/**
 	 * receives {@link RecordStreamObject}s from writeQueueThread, serializes {@link RecordStreamObject}s to record
 	 * stream files
@@ -101,9 +102,9 @@ public class RecordStreamManager {
 	 * 		an instance for recording the average value of recordStream queue size
 	 * @param nodeLocalProperties
 	 * 		the node-local property source, which says four things: (1) is the record stream enabled?,
-	 * 	    (2) what directory to write record files to, (3) how many seconds should elapse before
-	 * 	    creating the next record file, and (4) how large a capacity the record stream blocking
-	 * 	    queue should have.
+	 * 		(2) what directory to write record files to, (3) how many seconds should elapse before
+	 * 		creating the next record file, and (4) how large a capacity the record stream blocking
+	 * 		queue should have.
 	 * @throws NoSuchAlgorithmException
 	 * 		is thrown when fails to get required MessageDigest instance
 	 * @throws IOException
@@ -125,7 +126,12 @@ public class RecordStreamManager {
 					platform,
 					startWriteAtCompleteWindow,
 					RecordStreamType.RECORD);
-			writeQueueThread = new QueueThread<>("writeQueueThread", platform.getSelfId(), streamFileWriter);
+			writeQueueThread = new QueueThreadObjectStreamConfiguration<RecordStreamObject>()
+					.setNodeId(platform.getSelfId().getId())
+					.setCapacity(nodeLocalProperties.recordStreamQueueCapacity())
+					.setForwardTo(streamFileWriter)
+					.setThreadName("writeQueueThread")
+					.build();
 		}
 
 		this.runningAvgs = runningAvgs;
@@ -135,10 +141,12 @@ public class RecordStreamManager {
 				new RunningHashCalculatorForStream<>();
 
 		hashCalculator = new HashCalculatorForStream<>(runningHashCalculator);
-		hashQueueThread = new QueueThread<>(
-				"hashQueueThread",
-				platform.getSelfId(),
-				hashCalculator);
+		hashQueueThread = new QueueThreadObjectStreamConfiguration<RecordStreamObject>()
+				.setNodeId(platform.getSelfId().getId())
+				.setCapacity(nodeLocalProperties.recordStreamQueueCapacity())
+				.setForwardTo(hashCalculator)
+				.setThreadName("hashQueueThread")
+				.build();
 
 		multiStream = new MultiStream<>(
 				nodeLocalProperties.isRecordStreamEnabled()
@@ -146,6 +154,11 @@ public class RecordStreamManager {
 						: List.of(hashQueueThread));
 		this.initialHash = initialHash;
 		multiStream.setRunningHash(initialHash);
+
+		hashQueueThread.start();
+		if (writeQueueThread != null) {
+			writeQueueThread.start();
+		}
 
 		log.info("Finish initializing RecordStreamManager with: enableRecordStreaming: {}, recordStreamDir: {}, " +
 						"recordsLogPeriod: {} secs, recordStreamQueueCapacity: {}, initialHash: {}",
@@ -168,7 +181,7 @@ public class RecordStreamManager {
 	 */
 	RecordStreamManager(
 			final MultiStream<RecordStreamObject> multiStream,
-			final QueueThread<RecordStreamObject> writeQueueThread,
+			final QueueThreadObjectStream<RecordStreamObject> writeQueueThread,
 			final MiscRunningAvgs runningAvgs) {
 		this.multiStream = multiStream;
 		this.writeQueueThread = writeQueueThread;
@@ -186,20 +199,22 @@ public class RecordStreamManager {
 	public void addRecordStreamObject(final RecordStreamObject recordStreamObject) {
 		if (!inFreeze) {
 			try {
-				multiStream.add(recordStreamObject);
-			} catch (InterruptedException ex) {
-				log.warn("Interrupted while streaming {}!", recordStreamObject);
-				Thread.currentThread().interrupt();
+				multiStream.addObject(recordStreamObject);
+			} catch (Exception e) {
+				log.warn("Unhandled exception while streaming {}", recordStreamObject, e);
 			}
 		}
-		runningAvgs.writeQueueSizeRecordStream(getWriteQueueSize());
+		if (writeQueueThread != null) {
+			runningAvgs.writeQueueSizeRecordStream(getWriteQueueSize());
+		}
 		runningAvgs.hashQueueSizeRecordStream(getHashQueueSize());
 	}
 
 	/**
 	 * set `inFreeze` to be the given value
 	 *
-	 * @param inFreeze Whether the RecordStream is frozen or not.
+	 * @param inFreeze
+	 * 		Whether the RecordStream is frozen or not.
 	 */
 	public void setInFreeze(boolean inFreeze) {
 		this.inFreeze = inFreeze;
@@ -242,7 +257,7 @@ public class RecordStreamManager {
 	 * @return current size of working queue for calculating hash and runningHash
 	 */
 	int getHashQueueSize() {
-		return hashQueueThread == null ? 0 : hashQueueThread.getQueueSize();
+		return hashQueueThread == null ? 0 : hashQueueThread.getQueue().size();
 	}
 
 	/**
@@ -251,7 +266,7 @@ public class RecordStreamManager {
 	 * @return current size of working queue for writing to record stream files
 	 */
 	int getWriteQueueSize() {
-		return writeQueueThread == null ? 0 : writeQueueThread.getQueueSize();
+		return writeQueueThread == null ? 0 : writeQueueThread.getQueue().size();
 	}
 
 	/**

@@ -22,7 +22,11 @@ package com.hedera.services.legacy.unit;
 
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleOptionalBlob;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.fcmap.internal.FCMLeaf;
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -58,7 +62,7 @@ class StorageWrapperTest {
 	}
 
 	@Test
-	void testFileExpirationAfterCreate() throws StorageKeyNotFoundException {
+	void testFileExpirationAfterCreate() {
 		byte[] fileCreateContent = fillByteArrayWithRandomValues(5000);
 		FCStorageWrapper storageWrapper = new FCStorageWrapper(storageMap);
 		long expirationTime = ThreadLocalRandom.current().nextLong(TEST_FILE_EXPIRATION_AFTER_CREATE_CREATION_TIME,
@@ -70,7 +74,11 @@ class StorageWrapperTest {
 
 
 	@Test
-	void testFileCreateDelete() throws StorageKeyNotFoundException {
+	void testFileCreateDelete() throws StorageKeyNotFoundException, ConstructableRegistryException {
+		// setup:
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
+
 		byte[] fileCreateContent = fillByteArrayWithRandomValues(5000);
 		FCStorageWrapper storageWrapper = new FCStorageWrapper(storageMap);
 		storageWrapper.fileCreate(TEST_CREATE_DELETE_FILE_PATH, fileCreateContent, TEST_FILE_CREATE_CREATION_TIME, 0,
@@ -83,7 +91,10 @@ class StorageWrapperTest {
 	}
 
 	@Test
-	void testFileCreateAppend() throws StorageKeyNotFoundException {
+	void testFileCreateAppend() throws ConstructableRegistryException {
+		// setup:
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
 
 		byte[] fileCombinedContentExpected = fillByteArrayWithRandomValues(6000);
 		int fistChunklength = ThreadLocalRandom.current().nextInt(1000, 5000);
@@ -104,7 +115,11 @@ class StorageWrapperTest {
 	}
 
 	@Test
-	void testFileExpirationUpdate() throws StorageKeyNotFoundException {
+	void testFileExpirationUpdate() throws ConstructableRegistryException {
+		// setup:
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
+
 		byte[] fileCreateContent = fillByteArrayWithRandomValues(5000);
 		FCStorageWrapper storageWrapper = new FCStorageWrapper(storageMap);
 		long expirationTime = ThreadLocalRandom.current().nextLong(TEST_FILE_EXPIRATION_AFTER_CREATE_CREATION_TIME,

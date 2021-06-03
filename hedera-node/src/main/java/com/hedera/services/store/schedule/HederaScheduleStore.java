@@ -109,8 +109,6 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 			change.accept(schedule);
 		} catch (Exception e) {
 			throw new IllegalArgumentException("Schedule change failed unexpectedly!", e);
-		} finally {
-			schedules.get().replace(key, schedule);
 		}
 	}
 

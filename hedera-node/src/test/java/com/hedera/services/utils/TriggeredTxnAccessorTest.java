@@ -36,7 +36,7 @@ import static com.hedera.test.utils.IdUtils.asSchedule;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class TriggeredTxnAccessorTest {
+class TriggeredTxnAccessorTest {
     AccountID id = asAccount("0.0.1001");
     boolean scheduled = true;
     AccountID payer = asAccount("0.0.1234");
@@ -59,12 +59,12 @@ public class TriggeredTxnAccessorTest {
     private TriggeredTxnAccessor subject;
 
     @BeforeEach
-    public void setup() throws InvalidProtocolBufferException {
+    void setup() throws InvalidProtocolBufferException {
         subject = new TriggeredTxnAccessor(tx.toByteArray(), payer, scheduleRef);
     }
 
     @Test
-    public void validProperties() {
+    void validProperties() {
         assertEquals(tx, subject.getBackwardCompatibleSignedTxn());
         assertEquals(tx, subject.getSignedTxn4Log());
         assertArrayEquals(tx.toByteArray(), subject.getBackwardCompatibleSignedTxnBytes());
@@ -73,7 +73,6 @@ public class TriggeredTxnAccessorTest {
         assertEquals(txnBody, subject.getTxn());
         assertArrayEquals(txnBody.toByteArray(), subject.getTxnBytes());
         assertEquals(txnId, subject.getTxnId());
-        assertArrayEquals(CommonUtils.noThrowSha384HashOf(signedTxn.toByteArray()),
-                subject.getHash().toByteArray());
+        assertArrayEquals(CommonUtils.noThrowSha384HashOf(signedTxn.toByteArray()), subject.getHash());
     }
 }

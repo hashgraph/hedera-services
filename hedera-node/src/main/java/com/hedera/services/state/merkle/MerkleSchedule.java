@@ -35,7 +35,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.FCMValue;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
@@ -55,7 +54,7 @@ import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static java.util.stream.Collectors.toList;
 
-public class MerkleSchedule extends AbstractMerkleLeaf implements FCMValue {
+public class MerkleSchedule extends AbstractMerkleLeaf {
 	static final int MERKLE_VERSION = 1;
 
 	static final int NUM_ED25519_PUBKEY_BYTES = 32;

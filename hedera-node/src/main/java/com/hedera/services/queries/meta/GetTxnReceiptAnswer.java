@@ -68,7 +68,7 @@ public class GetTxnReceiptAnswer implements AnswerService {
 			if (receipt == null) {
 				validity = RECEIPT_NOT_FOUND;
 			} else {
-				opResponse.setReceipt(receipt);
+				opResponse.setReceipt(receipt.toGrpc());
 				if (op.getIncludeDuplicates()) {
 					opResponse.addAllDuplicateTransactionReceipts(recordCache.getDuplicateReceipts(txnId));
 				}

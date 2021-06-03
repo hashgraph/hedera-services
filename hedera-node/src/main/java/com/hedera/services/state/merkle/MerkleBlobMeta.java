@@ -21,7 +21,6 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.swirlds.common.FCMKey;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
@@ -32,7 +31,7 @@ import java.util.Objects;
 
 import static com.swirlds.common.CommonUtils.getNormalisedStringBytes;
 
-public class MerkleBlobMeta extends AbstractMerkleLeaf implements FCMKey {
+public class MerkleBlobMeta extends AbstractMerkleLeaf {
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x9c19df177063b4caL;
 

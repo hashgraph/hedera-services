@@ -50,9 +50,10 @@ public class SignedTxnAccessorTest {
 	@Test
 	public void parsesLegacyCorrectly() throws Exception {
 		// setup:
+		final long offeredFee = 100_000_000L;
 		Transaction transaction = RequestBuilder.getCryptoTransferRequest(1234l, 0l, 0l,
 				3l, 0l, 0l,
-				100_000_000l,
+				offeredFee,
 				Timestamp.getDefaultInstance(),
 				Duration.getDefaultInstance(),
 				false,
@@ -75,7 +76,8 @@ public class SignedTxnAccessorTest {
 		assertEquals(body.getTransactionID(), accessor.getTxnId());
 		assertEquals(1234l, accessor.getPayer().getAccountNum());
 		assertEquals(HederaFunctionality.CryptoTransfer, accessor.getFunction());
-		assertArrayEquals(CommonUtils.noThrowSha384HashOf(transaction.toByteArray()), accessor.getHash().toByteArray());
+		assertEquals(offeredFee, accessor.getOfferedFee());
+		assertArrayEquals(CommonUtils.noThrowSha384HashOf(transaction.toByteArray()), accessor.getHash());
 		assertEquals(expectedMap, accessor.getSigMap());
 	}
 
@@ -109,7 +111,7 @@ public class SignedTxnAccessorTest {
 		assertEquals(1234l, accessor.getPayer().getAccountNum());
 		assertEquals(HederaFunctionality.CryptoTransfer, accessor.getFunction());
 		assertArrayEquals(CommonUtils.noThrowSha384HashOf(signedTransaction.toByteArray()),
-				accessor.getHash().toByteArray());
+				accessor.getHash());
 		assertEquals(expectedMap, accessor.getSigMap());
 	}
 

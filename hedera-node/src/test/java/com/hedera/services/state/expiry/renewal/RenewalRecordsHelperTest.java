@@ -23,6 +23,9 @@ package com.hedera.services.state.expiry.renewal;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.test.utils.IdUtils;
@@ -43,9 +46,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
+import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -98,7 +103,7 @@ class RenewalRecordsHelperTest {
 		// when:
 		subject.beginRenewalCycle(instantNow);
 		// and:
-		subject.streamCryptoRemoval(keyId, displacements);
+		subject.streamCryptoRemoval(keyId, tokensFrom(displacements), adjustmentsFrom(displacements));
 
 		// then:
 		verify(ctx).updateRecordRunningHash(any());
@@ -136,8 +141,27 @@ class RenewalRecordsHelperTest {
 		assertEquals(0, subject.getConsensusNanosIncr());
 	}
 
+	static List<EntityId> tokensFrom(List<TokenTransferList> ttls) {
+		return ttls.stream().map(TokenTransferList::getToken).map(EntityId::fromGrpcTokenId).collect(toList());
+	}
+
+	static List<CurrencyAdjustments> adjustmentsFrom(List<TokenTransferList> ttls) {
+		return ttls.stream().map(ttl -> new CurrencyAdjustments(
+				ttl.getTransfersList().stream()
+						.mapToLong(AccountAmount::getAmount)
+						.toArray(),
+				ttl.getTransfersList().stream()
+						.map(AccountAmount::getAccountID)
+						.map(EntityId::fromGrpcAccountId)
+						.collect(toList())
+		)).collect(Collectors.toList());
+	}
+
 	private RecordStreamObject expectedRso(TransactionRecord record, int nanosOffset) {
-		return new RecordStreamObject(record, Transaction.getDefaultInstance(), instantNow.plusNanos(nanosOffset));
+		return new RecordStreamObject(
+				ExpirableTxnRecord.fromGprc(record),
+				Transaction.getDefaultInstance(),
+				instantNow.plusNanos(nanosOffset));
 	}
 
 	private TransactionRecord cryptoRemovalRecord(

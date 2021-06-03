@@ -21,12 +21,12 @@ package com.hedera.services.legacy.services.state;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.fees.charging.TxnFeeChargingPolicy;
+import com.hedera.services.fees.charging.FeeChargingPolicy;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.security.ops.SystemOpAuthorization;
@@ -36,12 +36,13 @@ import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.state.expiry.EntityAutoRenewal;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.state.logic.InvariantChecks;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
+import com.hedera.services.txns.ExpandHandleSpan;
 import com.hedera.services.txns.TransitionLogicLookup;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -51,8 +52,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.swirlds.common.Transaction;
+import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.crypto.RunningHash;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,8 +63,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyLong;
@@ -77,17 +75,18 @@ import static org.mockito.Mockito.never;
 class AwareProcessLogicTest {
 	private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L);
 
-	private Transaction platformTxn;
+	private SwirldTransaction platformTxn;
 	private InvariantChecks invariantChecks;
 	private ServicesContext ctx;
 	private ExpiryManager expiryManager;
 	private TransactionContext txnCtx;
+	private ExpandHandleSpan expandHandleSpan;
 
 	private AwareProcessLogic subject;
 
 	@BeforeEach
 	void setup() {
-		final Transaction txn = mock(Transaction.class);
+		final SwirldTransaction txn = mock(SwirldTransaction.class);
 		final PlatformTxnAccessor txnAccessor = mock(PlatformTxnAccessor.class);
 		final HederaLedger ledger = mock(HederaLedger.class);
 		final AccountRecordsHistorian historian = mock(AccountRecordsHistorian.class);
@@ -99,7 +98,7 @@ class AwareProcessLogicTest {
 		final TxnIdRecentHistory recentHistory = mock(TxnIdRecentHistory.class);
 		final Map<TransactionID, TxnIdRecentHistory> histories = mock(Map.class);
 		final AccountID accountID = mock(AccountID.class);
-		final TxnFeeChargingPolicy policy = mock(TxnFeeChargingPolicy.class);
+		final FeeChargingPolicy policy = mock(FeeChargingPolicy.class);
 		final SystemOpPolicies policies = mock(SystemOpPolicies.class);
 		final TransitionLogicLookup lookup = mock(TransitionLogicLookup.class);
 		final EntityAutoRenewal entityAutoRenewal = mock(EntityAutoRenewal.class);
@@ -149,7 +148,7 @@ class AwareProcessLogicTest {
 		given(recentHistory.currentDuplicityFor(anyLong())).willReturn(BELIEVED_UNIQUE);
 
 		given(txnBody.getNodeAccountID()).willReturn(accountID);
-		given(policy.apply(any(), any())).willReturn(ResponseCodeEnum.OK);
+		given(policy.apply(any())).willReturn(ResponseCodeEnum.OK);
 		given(policies.check(any())).willReturn(SystemOpAuthorization.AUTHORIZED);
 		given(lookup.lookupFor(any(), any())).willReturn(Optional.empty());
 		given(ctx.entityAutoRenewal()).willReturn(entityAutoRenewal);
@@ -158,9 +157,13 @@ class AwareProcessLogicTest {
 	}
 
 	@Test
-	void shortCircuitsOnInvariantFailure() {
+	void shortCircuitsOnInvariantFailure() throws InvalidProtocolBufferException {
 		setupNonTriggeringTxn();
 
+		expandHandleSpan = mock(ExpandHandleSpan.class);
+
+		given(ctx.expandHandleSpan()).willReturn(expandHandleSpan);
+		given(expandHandleSpan.accessorFor(platformTxn)).willReturn(new PlatformTxnAccessor(platformTxn));
 		given(invariantChecks.holdFor(any(), eq(consensusNow), eq(666L))).willReturn(false);
 
 		// when:
@@ -171,9 +174,13 @@ class AwareProcessLogicTest {
 	}
 
 	@Test
-	void purgesExpiredAtNewConsensusTimeIfInvariantsHold() {
+	void purgesExpiredAtNewConsensusTimeIfInvariantsHold() throws InvalidProtocolBufferException {
 		setupNonTriggeringTxn();
 
+		expandHandleSpan = mock(ExpandHandleSpan.class);
+
+		given(ctx.expandHandleSpan()).willReturn(expandHandleSpan);
+		given(expandHandleSpan.accessorFor(platformTxn)).willReturn(new PlatformTxnAccessor(platformTxn));
 		given(invariantChecks.holdFor(any(), eq(consensusNow), eq(666L))).willReturn(true);
 
 		// when:
@@ -184,11 +191,15 @@ class AwareProcessLogicTest {
 	}
 
 	@Test
-	void decrementsParentConsensusTimeIfCanTrigger() {
+	void decrementsParentConsensusTimeIfCanTrigger() throws InvalidProtocolBufferException {
 		setupTriggeringTxn();
 		// and:
 		final var triggeredTxn = mock(TxnAccessor.class);
+		expandHandleSpan = mock(ExpandHandleSpan.class);
 
+		given(ctx.expandHandleSpan()).willReturn(expandHandleSpan);
+		given(expandHandleSpan.accessorFor(platformTxn)).willReturn(new PlatformTxnAccessor(platformTxn));
+		given(triggeredTxn.isTriggeredTxn()).willReturn(true);
 		given(txnCtx.triggeredTxn()).willReturn(triggeredTxn);
 		given(invariantChecks.holdFor(any(), eq(consensusNow.minusNanos(1L)), eq(666L))).willReturn(true);
 
@@ -207,8 +218,8 @@ class AwareProcessLogicTest {
 		when(ctx.recordStreamManager()).thenReturn(recordStreamManager);
 
 		//when:
-		subject.addForStreaming(mock(com.hederahashgraph.api.proto.java.Transaction.class),
-				mock(TransactionRecord.class), Instant.now());
+		subject.stream(mock(com.hederahashgraph.api.proto.java.Transaction.class),
+				mock(ExpirableTxnRecord.class), Instant.now());
 		//then:
 		verify(ctx).updateRecordRunningHash(any(RunningHash.class));
 		verify(recordStreamManager).addRecordStreamObject(any(RecordStreamObject.class));
@@ -218,7 +229,7 @@ class AwareProcessLogicTest {
 		TransactionBody nonMockTxnBody = TransactionBody.newBuilder()
 				.setTransactionID(TransactionID.newBuilder()
 						.setAccountID(IdUtils.asAccount("0.0.2"))).build();
-		platformTxn = new Transaction(com.hederahashgraph.api.proto.java.Transaction.newBuilder()
+		platformTxn = new SwirldTransaction(com.hederahashgraph.api.proto.java.Transaction.newBuilder()
 				.setBodyBytes(nonMockTxnBody.toByteString())
 				.build().toByteArray());
 	}
@@ -231,7 +242,7 @@ class AwareProcessLogicTest {
 						.setScheduleID(IdUtils.asSchedule("0.0.1234"))
 						.build())
 				.build();
-		platformTxn = new Transaction(com.hederahashgraph.api.proto.java.Transaction.newBuilder()
+		platformTxn = new SwirldTransaction(com.hederahashgraph.api.proto.java.Transaction.newBuilder()
 				.setBodyBytes(nonMockTxnBody.toByteString())
 				.build().toByteArray());
 	}

@@ -274,8 +274,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			change.accept(token);
 		} catch (Exception internal) {
 			throw new IllegalArgumentException("Token change failed unexpectedly!", internal);
-		} finally {
-			tokens.get().replace(key, token);
 		}
 	}
 

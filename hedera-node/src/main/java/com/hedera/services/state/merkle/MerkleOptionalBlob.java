@@ -23,7 +23,6 @@ package com.hedera.services.state.merkle;
 import com.google.common.base.MoreObjects;
 import com.swirlds.blob.BinaryObject;
 import com.swirlds.blob.BinaryObjectStore;
-import com.swirlds.common.FCMValue;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -34,8 +33,8 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-public class MerkleOptionalBlob extends AbstractMerkleLeaf implements FCMValue, MerkleExternalLeaf {
-	static final int MERKLE_VERSION = (int)BinaryObject.ClassVersion.ORIGINAL;
+public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExternalLeaf {
+	static final int MERKLE_VERSION = BinaryObject.ClassVersion.ORIGINAL;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x4cefb15eb131d9e3L;
 	static final Hash MISSING_DELEGATE_HASH = new Hash(new byte[] {
 			(byte)0x00, (byte)0x01, (byte)0x02, (byte)0x03,
