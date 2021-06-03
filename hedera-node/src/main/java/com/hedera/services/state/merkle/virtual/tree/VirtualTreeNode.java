@@ -19,7 +19,7 @@ import java.util.Objects;
  *
  * TODO I'd like this to be a sealed class so it can only be extended by classes in this package.
  */
-public abstract class VirtualTreeNode<K, V extends Hashable> {
+public abstract class VirtualTreeNode {
     static final Hash NULL_HASH = CryptoFactory.getInstance().getNullHash();
 
     // Note, if hash is invalidated, the tree becomes dirty. But the hash may be recomputed
@@ -46,7 +46,7 @@ public abstract class VirtualTreeNode<K, V extends Hashable> {
      * to a tree, or if it is the root node. If this is not the root, then it can
      * move around as the tree is modified.
      */
-    private VirtualTreeInternal<K, V> parent = null;
+    private VirtualTreeInternal parent = null;
 
     /**
      * Gets the parent node of this tree node, if there is one. A detached node
@@ -54,7 +54,7 @@ public abstract class VirtualTreeNode<K, V extends Hashable> {
      *
      * @return Gets the parent, or null if there is not one.
      */
-    public final VirtualTreeInternal<K, V> getParent() {
+    public final VirtualTreeInternal getParent() {
         return parent;
     }
 
@@ -99,7 +99,7 @@ public abstract class VirtualTreeNode<K, V extends Hashable> {
      * @param path The new path for this node. Never null.
      * @param parent The new parent for this node. Probably never null.... TODO I don't think it will be...
      */
-    protected void adopt(VirtualTreePath path, VirtualTreeInternal<K, V> parent) {
+    protected void adopt(VirtualTreePath path, VirtualTreeInternal parent) {
         this.path = Objects.requireNonNull(path);
         this.parent = Objects.requireNonNull(parent);
         this.invalidateHash();
@@ -160,7 +160,7 @@ public abstract class VirtualTreeNode<K, V extends Hashable> {
      *
      * @param visitor The visitor. Cannot be null.
      */
-    public abstract void walk(VirtualVisitor<K, V> visitor);
+    public abstract void walk(VirtualVisitor visitor);
 
     /**
      * Walks the tree starting from this node using pre-order traversal, invoking the visitor
@@ -171,5 +171,5 @@ public abstract class VirtualTreeNode<K, V extends Hashable> {
      *
      * @param visitor The visitor. Cannot be null.
      */
-    public abstract void walkDirty(VirtualVisitor<K, V> visitor);
+    public abstract void walkDirty(VirtualVisitor visitor);
 }

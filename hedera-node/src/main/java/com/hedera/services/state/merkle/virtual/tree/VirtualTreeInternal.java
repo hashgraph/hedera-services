@@ -12,16 +12,16 @@ import java.util.Objects;
  * An internal (i.e. parent) node in the virtual tree. This node is just a holder of information,
  * all of the tree building / modifying logic is held in the {@link VirtualMap}.
  */
-public final class VirtualTreeInternal<K, V extends Hashable> extends VirtualTreeNode<K, V> {
+public final class VirtualTreeInternal extends VirtualTreeNode {
     /**
      * The left child, or null if there isn't one.
      */
-    private VirtualTreeNode<K, V> leftChild;
+    private VirtualTreeNode leftChild;
 
     /**
      * The right child, or null if there isn't one.
      */
-    private VirtualTreeNode<K, V> rightChild;
+    private VirtualTreeNode rightChild;
 
     /**
      * Create a new VirtualTreeInternal. As created, it is suitable as
@@ -46,7 +46,7 @@ public final class VirtualTreeInternal<K, V extends Hashable> extends VirtualTre
      *
      * @return The left child, which can be null if there are no children.
      */
-    public VirtualTreeNode<K, V> getLeftChild() {
+    public VirtualTreeNode getLeftChild() {
         return leftChild;
     }
 
@@ -55,7 +55,7 @@ public final class VirtualTreeInternal<K, V extends Hashable> extends VirtualTre
      *
      * @param child The child. Cannot be null.
      */
-    public void setLeftChild(VirtualTreeNode<K, V> child) {
+    public void setLeftChild(VirtualTreeNode child) {
         leftChild = Objects.requireNonNull(child);
         leftChild.adopt(getPath().getLeftChildPath(), this);
     }
@@ -65,7 +65,7 @@ public final class VirtualTreeInternal<K, V extends Hashable> extends VirtualTre
      *
      * @return Gets the right child, which can be null
      */
-    public VirtualTreeNode<K, V> getRightChild() {
+    public VirtualTreeNode getRightChild() {
         return rightChild;
     }
 
@@ -74,13 +74,13 @@ public final class VirtualTreeInternal<K, V extends Hashable> extends VirtualTre
      *
      * @param child The right child, which cannot be null.
      */
-    public void setRightChild(VirtualTreeNode<K, V> child) {
+    public void setRightChild(VirtualTreeNode child) {
         rightChild = Objects.requireNonNull(child);
         rightChild.adopt(getPath().getRightChildPath(), this);
     }
 
     @Override
-    public void adopt(VirtualTreePath path, VirtualTreeInternal<K, V> parent) {
+    public void adopt(VirtualTreePath path, VirtualTreeInternal parent) {
         // TODO What happens if I have children? Do I modify them as well? Or throw?
         if (leftChild != null || rightChild != null) {
             throw new IllegalStateException("Refusing adoption, this internal node has children");
@@ -100,7 +100,7 @@ public final class VirtualTreeInternal<K, V extends Hashable> extends VirtualTre
     }
 
     @Override
-    public void walk(VirtualVisitor<K, V> visitor) {
+    public void walk(VirtualVisitor visitor) {
         // Let the visitor know we hit a dead end. The visitor *might*
         // create a child at this time.
         if (leftChild == null) {
@@ -128,7 +128,7 @@ public final class VirtualTreeInternal<K, V extends Hashable> extends VirtualTre
     }
 
     @Override
-    public void walkDirty(VirtualVisitor<K, V> visitor) {
+    public void walkDirty(VirtualVisitor visitor) {
         // In pre-order traversal, this node is visited first.
         if (isDirty()) {
             visitor.visitParent(this);
