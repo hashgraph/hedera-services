@@ -49,6 +49,7 @@ import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.TxnRateFeeMultiplierSource;
+import com.hedera.services.fees.calculation.utils.AccessorBasedUsages;
 import com.hedera.services.fees.calculation.AutoRenewCalcs;
 import com.hedera.services.fees.calculation.AwareFcfsUsagePrices;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
@@ -101,6 +102,7 @@ import com.hedera.services.fees.calculation.token.txns.TokenRevokeKycResourceUsa
 import com.hedera.services.fees.calculation.token.txns.TokenUnfreezeResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
+import com.hedera.services.fees.calculation.utils.BigIntegerFallbackCalc;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.fees.charging.NarratedLedgerCharging;
 import com.hedera.services.fees.charging.FeeChargingPolicy;
@@ -363,7 +365,6 @@ import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.stora
 import static com.hedera.services.files.interceptors.ConfigListUtils.uncheckedParse;
 import static com.hedera.services.files.interceptors.PureRatesValidation.isNormalIntradayChange;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
-import static com.hedera.services.legacy.proto.utils.CommonUtils.extractSignatureMapOrUseDefault;
 import static com.hedera.services.records.NoopRecordsHistorian.NOOP_RECORDS_HISTORIAN;
 import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.backedLookupsFor;
@@ -512,6 +513,7 @@ public class ServicesContext {
 	private StoragePersistence storagePersistence;
 	private ScheduleController scheduleGrpc;
 	private NonBlockingHandoff nonBlockingHandoff;
+	private AccessorBasedUsages accessorBasedUsages;
 	private ConsensusController consensusGrpc;
 	private QueryResponseHelper queryResponseHelper;
 	private UsagePricesProvider usagePrices;
@@ -974,7 +976,9 @@ public class ServicesContext {
 					new AutoRenewCalcs(cryptoOpsUsage),
 					exchange(),
 					usagePrices(),
+					accessorBasedUsages(),
 					feeMultiplierSource(),
+					new BigIntegerFallbackCalc(),
 					List.of(
 							/* Meta */
 							new GetVersionInfoResourceUsage(),
@@ -1711,6 +1715,13 @@ public class ServicesContext {
 			submissionManager = new PlatformSubmissionManager(platform(), recordCache(), speedometers());
 		}
 		return submissionManager;
+	}
+
+	public AccessorBasedUsages accessorBasedUsages() {
+		if (accessorBasedUsages == null) {
+			accessorBasedUsages = new AccessorBasedUsages(new CryptoOpsUsage(), globalDynamicProperties());
+		}
+		return accessorBasedUsages;
 	}
 
 	public ConsensusController consensusGrpc() {

@@ -250,4 +250,8 @@ public class UsageAccumulator {
 	long getNumPayerKeys() {
 		return numPayerKeys;
 	}
+
+	public void setNumPayerKeys(long numPayerKeys) {
+		this.numPayerKeys = numPayerKeys;
+	}
 }

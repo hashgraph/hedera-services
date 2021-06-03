@@ -38,6 +38,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static com.hedera.services.test.AdapterUtils.feeDataFrom;
 import static com.hedera.services.test.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -60,7 +61,7 @@ class OpsTransferUsageTest {
 				accum);
 
 		// then:
-		assertEquals(expected, AdapterUtils.feeDataFrom(accum));
+		assertEquals(expected, feeDataFrom(accum));
 	}
 
 	private final int tokenMultiplier = 60;
@@ -76,7 +77,7 @@ class OpsTransferUsageTest {
 	private final TokenID yetAnotherId = IdUtils.asToken("0.0.75233");
 
 	private TransactionBody txn;
-	private  CryptoTransferTransactionBody op;
+	private CryptoTransferTransactionBody op;
 
 	private void givenOp() {
 		var hbarAdjusts = TransferList.newBuilder()

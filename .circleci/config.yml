@@ -2092,7 +2092,7 @@ workflows:
               branches:
                 ignore:
                   - /.*-PERF/
-                  - master-with-sdk-0.15.0-alpha.1
+                  - 01517-01505-AvoidFeeDataGrpcTypes
             workflow-name: "Continuous-integration"
         - build-platform-and-services:
             context: SonarCloud

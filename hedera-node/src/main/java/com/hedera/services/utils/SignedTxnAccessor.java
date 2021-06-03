@@ -22,6 +22,7 @@ package com.hedera.services.utils;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
+import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -29,10 +30,13 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.commons.codec.binary.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.function.Function;
 
@@ -40,6 +44,7 @@ import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384Ha
 import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 
 /**
  * Encapsulates access to several commonly referenced parts of a gRPC {@link Transaction}.
@@ -47,6 +52,8 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
  * @author Michael Tinker
  */
 public class SignedTxnAccessor implements TxnAccessor {
+	private static final Logger log = LogManager.getLogger(SignedTxnAccessor.class);
+
 	private int sigMapSize;
 	private int numSigPairs;
 	private byte[] hash;
@@ -60,6 +67,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private TransactionBody txn;
 	private HederaFunctionality function;
 	private BaseTransactionMeta txnUsageMeta;
+	private CryptoTransferMeta xferUsageMeta;
 
 	static Function<TransactionBody, HederaFunctionality> functionExtractor = txn -> {
 		try {
@@ -72,8 +80,10 @@ public class SignedTxnAccessor implements TxnAccessor {
 	public static SignedTxnAccessor uncheckedFrom(Transaction validSignedTxn) {
 		try {
 			return new SignedTxnAccessor(validSignedTxn);
-		} catch (Exception impossible) { }
-		return null;
+		} catch (Exception illegal) {
+			log.warn("Unexpected use of factory with invalid gRPC transaction", illegal);
+			throw new IllegalArgumentException("Argument 'validSignedTxn' must...a valid signed txn");
+		}
 	}
 
 	public SignedTxnAccessor(byte[] signedTxnWrapperBytes) throws InvalidProtocolBufferException {
@@ -101,6 +111,9 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 		getFunction();
 		setTxnUsageMeta();
+		if (function == CryptoTransfer) {
+			setXferUsageMeta();
+		}
 	}
 
 	public SignedTxnAccessor(Transaction signedTxnWrapper) throws InvalidProtocolBufferException {
@@ -206,16 +219,30 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	@Override
 	public CryptoTransferMeta availXferUsageMeta() {
-		throw new AssertionError("Not implemented!");
+		if (function != CryptoTransfer) {
+			throw new IllegalStateException("Cannot get CryptoTransfer metadata for a " + function + " accessor");
+		}
+		return xferUsageMeta;
 	}
 
 	private void setTxnUsageMeta() {
 		if (function == CryptoTransfer) {
 			txnUsageMeta = new BaseTransactionMeta(
 					utf8MemoBytes.length,
-					getTxn().getCryptoTransfer().getTransfers().getAccountAmountsCount());
+					txn.getCryptoTransfer().getTransfers().getAccountAmountsCount());
 		} else {
 			txnUsageMeta = new BaseTransactionMeta(utf8MemoBytes.length, 0);
 		}
+	}
+
+	private void setXferUsageMeta() {
+		int numTokensInvolved = 0;
+		int numTokenTransfers = 0;
+		final var op = txn.getCryptoTransfer();
+		for (var tokenTransfers : op.getTokenTransfersList()) {
+			numTokensInvolved++;
+			numTokenTransfers += tokenTransfers.getTransfersCount();
+		}
+		xferUsageMeta = new CryptoTransferMeta(1, numTokensInvolved, numTokenTransfers);
 	}
 }

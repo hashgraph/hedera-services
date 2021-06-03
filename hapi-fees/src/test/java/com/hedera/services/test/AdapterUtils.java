@@ -23,8 +23,10 @@ package com.hedera.services.test;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
+import org.junit.jupiter.api.Test;
 
 import static com.hederahashgraph.fee.FeeBuilder.FEE_MATRICES_CONST;
+import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
 
 public class AdapterUtils {
 	public static FeeData feeDataFrom(UsageAccumulator usage) {

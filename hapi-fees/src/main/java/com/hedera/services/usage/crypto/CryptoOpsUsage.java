@@ -58,7 +58,7 @@ public class CryptoOpsUsage {
 		into.resetForTransaction(baseMeta, sigUsage);
 
 		final int numXfers = baseMeta.getNumExplicitTransfers();
-		final int numTokenXfers = xferMeta.getNumTokensTransfers();
+		final int numTokenXfers = xferMeta.getNumTokenTransfers();
 		final int tokenMultiplier = xferMeta.getTokenMultiplier();
 		final int numTokensInvolved = xferMeta.getNumTokensInvolved();
 		final int weightedTokensInvolved = tokenMultiplier * numTokensInvolved;

@@ -24,9 +24,12 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.keys.HederaKeyTraversal;
+import com.hedera.services.fees.calculation.utils.AccessorBasedUsages;
+import com.hedera.services.fees.calculation.utils.BigIntegerFallbackCalc;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -36,7 +39,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.exception.InvalidTxBodyException;
-import com.hederahashgraph.fee.FeeBuilder;
 import com.hederahashgraph.fee.FeeObject;
 import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
@@ -55,7 +57,9 @@ import static com.hedera.services.keys.HederaKeyTraversal.numSimpleKeys;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAccountAutoRenew;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
+import static com.hederahashgraph.fee.FeeBuilder.getFeeObject;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 
 /**
@@ -68,10 +72,14 @@ import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 public class UsageBasedFeeCalculator implements FeeCalculator {
 	private static final Logger log = LogManager.getLogger(UsageBasedFeeCalculator.class);
 
+	private final UsageAccumulator inHandleUsage = new UsageAccumulator();
+
 	private final AutoRenewCalcs autoRenewCalcs;
 	private final HbarCentExchange exchange;
 	private final FeeMultiplierSource feeMultiplierSource;
 	private final UsagePricesProvider usagePrices;
+	private final AccessorBasedUsages accessorBasedUsages;
+	private final BigIntegerFallbackCalc calculator;
 	private final List<QueryResourceUsageEstimator> queryUsageEstimators;
 	private final Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators;
 
@@ -79,12 +87,16 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 			AutoRenewCalcs autoRenewCalcs,
 			HbarCentExchange exchange,
 			UsagePricesProvider usagePrices,
+			AccessorBasedUsages accessorBasedUsages,
 			FeeMultiplierSource feeMultiplierSource,
+			BigIntegerFallbackCalc calculator,
 			List<QueryResourceUsageEstimator> queryUsageEstimators,
 			Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators
 	) {
 		this.exchange = exchange;
+		this.calculator = calculator;
 		this.usagePrices = usagePrices;
+		this.accessorBasedUsages = accessorBasedUsages;
 		this.feeMultiplierSource = feeMultiplierSource;
 		this.autoRenewCalcs = autoRenewCalcs;
 		this.queryUsageEstimators = queryUsageEstimators;
@@ -136,19 +148,19 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	) {
 		var usageEstimator = getQueryUsageEstimator(query);
 		var queryUsage = usageFn.apply(usageEstimator);
-		return FeeBuilder.getFeeObject(usagePrices, queryUsage, exchange.rate(at));
+		return getFeeObject(usagePrices, queryUsage, exchange.rate(at));
 	}
 
 	@Override
 	public FeeObject computeFee(TxnAccessor accessor, JKey payerKey, StateView view) {
-		return feeGiven(accessor, payerKey, view, usagePrices.activePrices(), exchange.activeRate());
+		return feeGiven(accessor, payerKey, view, usagePrices.activePrices(), exchange.activeRate(), true);
 	}
 
 	@Override
 	public FeeObject estimateFee(TxnAccessor accessor, JKey payerKey, StateView view, Timestamp at) {
-		FeeData prices = uncheckedPricesGiven(accessor, at);
+		final var prices = uncheckedPricesGiven(accessor, at);
 
-		return feeGiven(accessor, payerKey, view, prices, exchange.rate(at));
+		return feeGiven(accessor, payerKey, view, prices, exchange.rate(at), false);
 	}
 
 	@Override
@@ -213,19 +225,29 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 			JKey payerKey,
 			StateView view,
 			FeeData prices,
-			ExchangeRate rate
+			ExchangeRate rate,
+			boolean inHandle
 	) {
-		var sigUsage = getSigUsage(accessor, payerKey);
-		var usageEstimator = getTxnUsageEstimator(accessor);
-		try {
-			FeeData metrics = usageEstimator.usageGiven(accessor.getTxn(), sigUsage, view);
-			return FeeBuilder.getFeeObject(prices, metrics, rate, feeMultiplierSource.currentMultiplier());
-		} catch (InvalidTxBodyException e) {
-			log.warn(
-					"Argument accessor={} malformed for implied estimator {}!",
-					accessor.getSignedTxn4Log(),
-					usageEstimator);
-			throw new IllegalArgumentException(e);
+		if (accessor.getFunction() == CryptoTransfer) {
+			final var sigs = new SigUsage(accessor.numSigPairs(), accessor.sigMapSize(), numSimpleKeys(payerKey));
+			final var usage = inHandle ? inHandleUsage : new UsageAccumulator();
+
+			accessorBasedUsages.assess(sigs, accessor, usage);
+
+			return calculator.fees(usage, prices, rate, feeMultiplierSource.currentMultiplier());
+		} else {
+			var sigUsage = getSigUsage(accessor, payerKey);
+			var usageEstimator = getTxnUsageEstimator(accessor);
+			try {
+				FeeData metrics = usageEstimator.usageGiven(accessor.getTxn(), sigUsage, view);
+				return getFeeObject(prices, metrics, rate, feeMultiplierSource.currentMultiplier());
+			} catch (InvalidTxBodyException e) {
+				log.warn(
+						"Argument accessor={} malformed for implied estimator {}!",
+						accessor.getSignedTxn4Log(),
+						usageEstimator);
+				throw new IllegalArgumentException(e);
+			}
 		}
 	}
 
@@ -255,5 +277,9 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 
 	private SigValueObj getSigUsage(TxnAccessor accessor, JKey payerKey) {
 		return new SigValueObj(accessor.numSigPairs(), numSimpleKeys(payerKey), accessor.sigMapSize());
+	}
+
+	UsageAccumulator getInHandleUsage() {
+		return inHandleUsage;
 	}
 }

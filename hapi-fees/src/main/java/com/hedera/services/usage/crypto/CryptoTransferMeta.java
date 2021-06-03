@@ -24,17 +24,17 @@ public class CryptoTransferMeta {
 	private int tokenMultiplier = 1;
 
 	private final int numTokensInvolved;
-	private final int numTokensTransfers;
+	private final int numTokenTransfers;
 
-	public CryptoTransferMeta(int tokenMultiplier, int numTokensInvolved, int numTokensTransfers) {
+	public CryptoTransferMeta(int tokenMultiplier, int numTokensInvolved, int numTokenTransfers) {
 		this.tokenMultiplier = tokenMultiplier;
 		this.numTokensInvolved = numTokensInvolved;
-		this.numTokensTransfers = numTokensTransfers;
+		this.numTokenTransfers = numTokenTransfers;
 	}
 
-	public CryptoTransferMeta(int numTokensInvolved, int numTokensTransfers) {
+	public CryptoTransferMeta(int numTokensInvolved, int numTokenTransfers) {
 		this.numTokensInvolved = numTokensInvolved;
-		this.numTokensTransfers = numTokensTransfers;
+		this.numTokenTransfers = numTokenTransfers;
 	}
 
 	public int getTokenMultiplier() {
@@ -45,8 +45,8 @@ public class CryptoTransferMeta {
 		return numTokensInvolved;
 	}
 
-	public int getNumTokensTransfers() {
-		return numTokensTransfers;
+	public int getNumTokenTransfers() {
+		return numTokenTransfers;
 	}
 
 	public void setTokenMultiplier(int tokenMultiplier) {
