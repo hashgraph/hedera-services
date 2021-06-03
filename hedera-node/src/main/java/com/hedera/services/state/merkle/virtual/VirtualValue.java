@@ -1,7 +1,8 @@
 package com.hedera.services.state.merkle.virtual;
 
-import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.Hashable;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -9,7 +10,7 @@ import java.util.Arrays;
 /**
  *
  */
-public final class VirtualValue {
+public final class VirtualValue implements Hashable {
     /**
      * The actual data. This will never be null and will always be 32 elements in length.
      * This data is protected by this class, we make defensive copies rather than letting
@@ -34,9 +35,8 @@ public final class VirtualValue {
         if (source.length != 32) {
             throw new IllegalArgumentException("We only store 32 byte blocks.");
         }
-
         this.data = Arrays.copyOf(source, 32);
-        this.hash = new ValueHash(source);
+        this.hash = CryptoFactory.getInstance().digestSync(data);
     }
 
     /**
@@ -57,15 +57,6 @@ public final class VirtualValue {
         return Arrays.copyOf(data, 32);
     }
 
-    /**
-     * Write the data bytes to the current position in byte buffer. This saves a copy.
-     *
-     * @param buffer The buffer to write to
-     */
-    public void writeToByteBuffer(ByteBuffer buffer) {
-        buffer.put(data);
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -79,18 +70,18 @@ public final class VirtualValue {
         return Arrays.hashCode(this.data);
     }
 
+    @Override
     public Hash getHash() {
         return hash;
     }
 
     @Override
-    public String toString() {
-        return new String(data);
+    public void invalidateHash() {
+        throw new UnsupportedOperationException("Cannot invalidate an VirtualValue's hash");
     }
 
-    private static final class ValueHash extends Hash {
-        public ValueHash(byte[] data) {
-            super(Arrays.copyOf(data, 48), DigestType.SHA_384, true, false);
-        }
+    @Override
+    public void setHash(Hash hash) {
+        throw new UnsupportedOperationException("Cannot set an VirtualValue's hash");
     }
 }

@@ -1,12 +1,14 @@
-package com.hedera.services.state.merkle.virtual;
+package com.hedera.services.state.merkle.virtual.persistence.mmap;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 /**
- *
+ * An immutable array used as the key for memory mapped data. The size of this
+ * array must match the key size as configured on the MemMapStorage at the time
+ * it was created.
  */
-public final class VirtualKey {
+public final class Key {
     /**
      * The actual data. This will never be null.
      * This data is protected by this class, we make defensive copies rather than letting
@@ -25,7 +27,7 @@ public final class VirtualKey {
      *
      * @param source The source array which cannot be null.
      */
-    public VirtualKey(byte[] source) {
+    public Key(byte[] source) {
         this.bytes = Arrays.copyOf(source, source.length);
         this.hashCode = Arrays.hashCode(this.bytes);
     }
@@ -52,7 +54,7 @@ public final class VirtualKey {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        VirtualKey that = (VirtualKey) o;
+        Key that = (Key) o;
         return Arrays.equals(bytes, that.bytes);
     }
 

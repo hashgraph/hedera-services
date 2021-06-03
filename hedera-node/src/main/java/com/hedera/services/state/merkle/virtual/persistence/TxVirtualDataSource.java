@@ -1,6 +1,6 @@
 package com.hedera.services.state.merkle.virtual.persistence;
 
-import com.hedera.services.state.merkle.virtual.Path;
+import com.hedera.services.state.merkle.virtual.tree.VirtualTreePath;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -32,7 +32,7 @@ public class TxVirtualDataSource<K, V> implements VirtualDataSource<K, V> {
      * A cache of records which have been modified, accessible by the path.
      * The same exact records are found in recordsByKey.
      */
-    private Map<Path, VirtualRecord<K, V>> recordsByPath = new HashMap<>();
+    private Map<VirtualTreePath, VirtualRecord<K, V>> recordsByPath = new HashMap<>();
 
     /**
      * A map of records which have been deleted, accessible by the key.
@@ -44,10 +44,10 @@ public class TxVirtualDataSource<K, V> implements VirtualDataSource<K, V> {
      * A map of records which have been deleted, accessible by the path.
      * The same exact records are in deletedRecordsByPath.
      */
-    private Map<Path, VirtualRecord<K, V>> deletedRecordsByPath = new HashMap<>();
+    private Map<VirtualTreePath, VirtualRecord<K, V>> deletedRecordsByPath = new HashMap<>();
 
-    private Path firstLeafPath;
-    private Path lastLeafPath;
+    private VirtualTreePath firstLeafPath;
+    private VirtualTreePath lastLeafPath;
     private boolean closed = false;
 
     /**
@@ -121,7 +121,7 @@ public class TxVirtualDataSource<K, V> implements VirtualDataSource<K, V> {
     }
 
     @Override
-    public VirtualRecord<K, V> getRecord(Path path) {
+    public VirtualRecord<K, V> getRecord(VirtualTreePath path) {
         // Check whether we have a modified record for this key. If so, return it.
         final var rec = recordsByPath.get(path);
         if (rec != null) {
@@ -165,22 +165,22 @@ public class TxVirtualDataSource<K, V> implements VirtualDataSource<K, V> {
     }
 
     @Override
-    public void writeLastLeafPath(Path path) {
+    public void writeLastLeafPath(VirtualTreePath path) {
         this.lastLeafPath = path;
     }
 
     @Override
-    public Path getLastLeafPath() {
+    public VirtualTreePath getLastLeafPath() {
         return lastLeafPath;
     }
 
     @Override
-    public void writeFirstLeafPath(Path path) {
+    public void writeFirstLeafPath(VirtualTreePath path) {
         this.firstLeafPath = path;
     }
 
     @Override
-    public Path getFirstLeafPath() {
+    public VirtualTreePath getFirstLeafPath() {
         return firstLeafPath;
     }
 

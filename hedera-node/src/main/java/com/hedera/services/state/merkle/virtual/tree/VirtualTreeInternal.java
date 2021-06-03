@@ -1,6 +1,5 @@
 package com.hedera.services.state.merkle.virtual.tree;
 
-import com.hedera.services.state.merkle.virtual.Path;
 import com.hedera.services.state.merkle.virtual.VirtualMap;
 import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.crypto.DigestType;
@@ -37,7 +36,7 @@ public final class VirtualTreeInternal<K, V extends Hashable> extends VirtualTre
      * @param hash The default hash. Cannot be null.
      * @param path The default path. Cannot be null.
      */
-    public VirtualTreeInternal(Hash hash, Path path) {
+    public VirtualTreeInternal(Hash hash, VirtualTreePath path) {
         super(hash, path);
     }
 
@@ -81,7 +80,7 @@ public final class VirtualTreeInternal<K, V extends Hashable> extends VirtualTre
     }
 
     @Override
-    public void adopt(Path path, VirtualTreeInternal<K, V> parent) {
+    public void adopt(VirtualTreePath path, VirtualTreeInternal<K, V> parent) {
         // TODO What happens if I have children? Do I modify them as well? Or throw?
         if (leftChild != null || rightChild != null) {
             throw new IllegalStateException("Refusing adoption, this internal node has children");
@@ -98,5 +97,49 @@ public final class VirtualTreeInternal<K, V extends Hashable> extends VirtualTre
                 rightChild == null ? NULL_HASH : rightChild.hash(),
                 DigestType.SHA_384);
         setHash(newHash);
+    }
+
+    @Override
+    public void walk(VirtualVisitor<K, V> visitor) {
+        // Let the visitor know we hit a dead end. The visitor *might*
+        // create a child at this time.
+        if (leftChild == null) {
+            visitor.visitUncreated(getPath().getLeftChildPath());
+        }
+
+        // The child may have been created by the visitor, so we should try to
+        // visit it again.
+        if (leftChild != null) {
+            leftChild.walk(visitor);
+        }
+
+        // Let the visitor know we hit a dead end.
+        if (rightChild == null) {
+            visitor.visitUncreated(getPath().getRightChildPath());
+        }
+
+        // The child may have been created by the visitor, so try again.
+        if (rightChild != null) {
+            rightChild.walk(visitor);
+        }
+
+        // In post-order traversal, this node is visited last.
+        visitor.visitParent(this);
+    }
+
+    @Override
+    public void walkDirty(VirtualVisitor<K, V> visitor) {
+        // In pre-order traversal, this node is visited first.
+        if (isDirty()) {
+            visitor.visitParent(this);
+
+            if (leftChild != null) {
+                leftChild.walk(visitor);
+            }
+
+            if (rightChild != null) {
+                rightChild.walk(visitor);
+            }
+        }
     }
 }
