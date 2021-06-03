@@ -70,7 +70,7 @@ public class RenewalProcess {
 	public boolean process(long entityNum) {
 		assertInCycle();
 
-		long longNow = cycleTime.getEpochSecond();
+		final var longNow = cycleTime.getEpochSecond();
 		final var classification = helper.classify(entityNum, longNow);
 		if (TERMINAL_CLASSIFICATIONS.contains(classification)) {
 			log.debug("Terminal classification entity num {} ({})", entityNum, classification);

@@ -194,6 +194,13 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setHbarBalance(balance);
 	}
 
+	public void setBalanceUnchecked(long balance) {
+		if (balance < 0) {
+			throw new IllegalArgumentException("Cannot set an ℏ balance to " + balance);
+		}
+		state().setHbarBalance(balance);
+	}
+
 	public boolean isReceiverSigRequired() {
 		return state().isReceiverSigRequired();
 	}

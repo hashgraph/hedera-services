@@ -111,8 +111,8 @@ public class RenewalRecordsHelper {
 		log.debug("Streamed crypto renewal record {}", record);
 	}
 
-	private void stream(ExpirableTxnRecord record, Instant at) {
-		final var rso = new RecordStreamObject(record, EMPTY_SIGNED_TXN, at);
+	private void stream(ExpirableTxnRecord expiringRecord, Instant at) {
+		final var rso = new RecordStreamObject(expiringRecord, EMPTY_SIGNED_TXN, at);
 		ctx.updateRecordRunningHash(rso.getRunningHash());
 		recordStreamManager.addRecordStreamObject(rso);
 	}

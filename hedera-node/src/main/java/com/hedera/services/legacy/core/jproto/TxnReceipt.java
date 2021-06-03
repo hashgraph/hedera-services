@@ -308,7 +308,7 @@ public class TxnReceipt implements SelfSerializable {
 	}
 
 	public static TransactionReceipt convert(TxnReceipt txReceipt) {
-		TransactionReceipt.Builder builder = TransactionReceipt.newBuilder();
+		final var builder = TransactionReceipt.newBuilder();
 		if (txReceipt.getStatus() != null) {
 				builder.setStatus(ResponseCodeEnum.valueOf(txReceipt.getStatus()));
 		}
