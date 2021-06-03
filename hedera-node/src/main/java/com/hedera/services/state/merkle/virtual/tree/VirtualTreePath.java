@@ -13,6 +13,9 @@ import java.util.Objects;
  * point in time.
  */
 public final class VirtualTreePath implements Comparable<VirtualTreePath> {
+    /** Site of an account when serialized to bytes */
+    public static final int BYTES = Long.BYTES + 1;
+
     /**
      * A special constant that represents the Path of a root node. It isn't necessary
      * for this constant to be used, but it makes the code a little more readable.
