@@ -9,9 +9,9 @@ package com.hedera.services.usage.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,6 +28,8 @@ import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -46,11 +48,24 @@ class OpsTransferUsageTest {
 	private CryptoOpsUsage subject = new CryptoOpsUsage();
 
 	@Test
-	void matchesWithLegacy() {
+	void matchesWithLegacyEstimate() {
 		givenOp();
-		// and:
-		final var legacyProvider = CryptoTransferUsage.newEstimate(txn, sigUsage);
-		final var expected = legacyProvider.givenTokenMultiplier(tokenMultiplier).get();
+		// and given legacy estimate:
+		final var expected = FeeData.newBuilder()
+				.setNetworkdata(FeeComponents.newBuilder()
+						.setConstant(1)
+						.setBpt(18047)
+						.setVpt(3)
+						.setRbh(1))
+				.setNodedata(FeeComponents.newBuilder()
+						.setConstant(1)
+						.setBpt(18047)
+						.setVpt(1)
+						.setBpr(4))
+				.setServicedata(FeeComponents.newBuilder()
+						.setConstant(1)
+						.setRbh(904))
+				.build();
 
 		// when:
 		final var accum = new UsageAccumulator();
