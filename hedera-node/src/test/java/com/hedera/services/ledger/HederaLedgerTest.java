@@ -58,7 +58,7 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void delegatesDestroy() {
+	void delegatesDestroy() {
 		// when:
 		subject.destroy(genesis);
 
@@ -67,7 +67,7 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void indicatesNoChangeSetIfNotInTx() {
+	void indicatesNoChangeSetIfNotInTx() {
 		// when:
 		String summary = subject.currentChangeSet();
 
@@ -77,7 +77,7 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void delegatesChangeSetIfInTxn() {
+	void delegatesChangeSetIfInTxn() {
 		// setup:
 		String zeroingGenesis = "{0.0.2: [BALANCE -> 0]}";
 		String creatingTreasury = "{0.0.2 <-> 0.0.1001: [TOKEN_BALANCE -> 1_000_000]}";
@@ -98,7 +98,7 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void delegatesGet() {
+	void delegatesGet() {
 		// setup:
 		MerkleAccount fakeGenesis = new MerkleAccount();
 
@@ -109,7 +109,7 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void delegatesExists() {
+	void delegatesExists() {
 		// given:
 		AccountID missing = asAccount("55.66.77");
 
@@ -125,13 +125,13 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 
 
 	@Test
-	public void setsCreatorOnHistorian() {
+	void setsCreatorOnHistorian() {
 		// expect:
 		verify(historian).setCreator(creator);
 	}
 
 	@Test
-	public void delegatesToCorrectContractProperty() {
+	void delegatesToCorrectContractProperty() {
 		// when:
 		subject.isSmartContract(genesis);
 
@@ -140,7 +140,7 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void delegatesToCorrectDeletionProperty() {
+	void delegatesToCorrectDeletionProperty() {
 		// when:
 		subject.isDeleted(genesis);
 
@@ -149,7 +149,7 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void recognizesDetached() {
+	void recognizesDetached() {
 		// setup:
 		validator = mock(OptionValidator.class);
 		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
@@ -165,7 +165,7 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void recognizesCannotBeDetachedIfContract() {
+	void recognizesCannotBeDetachedIfContract() {
 		// setup:
 		validator = mock(OptionValidator.class);
 		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
@@ -182,7 +182,7 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void recognizesCannotBeDetachedIfAutoRenewDisabled() {
+	void recognizesCannotBeDetachedIfAutoRenewDisabled() {
 		// setup:
 		validator = mock(OptionValidator.class);
 		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
@@ -200,7 +200,7 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void delegatesToCorrectExpiryProperty() {
+	void delegatesToCorrectExpiryProperty() {
 		// when:
 		subject.expiry(genesis);
 
@@ -209,14 +209,14 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void throwsOnUnderfundedCreate() {
+	void throwsOnUnderfundedCreate() {
 		// expect:
 		assertThrows(InsufficientFundsException.class, () ->
 				subject.create(rand, RAND_BALANCE + 1, noopCustomizer));
 	}
 
 	@Test
-	public void performsFundedCreate() {
+	void performsFundedCreate() {
 		// given:
 		HederaAccountCustomizer customizer = mock(HederaAccountCustomizer.class);
 		// and:
@@ -234,7 +234,7 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void performsUnconditionalSpawn() {
+	void performsUnconditionalSpawn() {
 		// given:
 		HederaAccountCustomizer customizer = mock(HederaAccountCustomizer.class);
 		AccountID contract = asAccount("1.2.3");
@@ -252,7 +252,7 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void deletesGivenAccount() {
+	void deletesGivenAccount() {
 		// when:
 		subject.delete(rand, misc);
 
@@ -263,19 +263,19 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void throwsOnCustomizingDeletedAccount() {
+	void throwsOnCustomizingDeletedAccount() {
 		// expect:
 		assertThrows(DeletedAccountException.class, () -> subject.customize(deleted, noopCustomizer));
 	}
 
 	@Test
-	public void throwsOnDeleteCustomizingUndeletedAccount() {
+	void throwsOnDeleteCustomizingUndeletedAccount() {
 		// expect:
 		assertThrows(DeletedAccountException.class, () -> subject.customizeDeleted(rand, noopCustomizer));
 	}
 
 	@Test
-	public void customizesGivenAccount() {
+	void customizesGivenAccount() {
 		// given:
 		HederaAccountCustomizer customizer = mock(HederaAccountCustomizer.class);
 
@@ -288,7 +288,7 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void customizesDeletedAccount() {
+	void customizesDeletedAccount() {
 		// given:
 		HederaAccountCustomizer customizer = mock(HederaAccountCustomizer.class);
 
@@ -301,7 +301,7 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void makesPossibleAdjustment() {
+	void makesPossibleAdjustment() {
 		// setup:
 		long amount = -1 * GENESIS_BALANCE / 2;
 
@@ -313,7 +313,7 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void throwsOnNegativeBalance() {
+	void throwsOnNegativeBalance() {
 		// setup:
 		long overdraftAdjustment = -1 * GENESIS_BALANCE - 1;
 		InsufficientFundsException e = null;
@@ -331,7 +331,7 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void forwardsGetBalanceCorrectly() {
+	void forwardsGetBalanceCorrectly() {
 		// when:
 		long balance = subject.getBalance(genesis);
 
@@ -340,9 +340,9 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void forwardsTransactionalSemantics() {
+	void forwardsTransactionalSemantics() {
 		// setup:
-		subject.setTokenRelsLedger(HederaLedger.UNUSABLE_TOKEN_RELS_LEDGER);
+		subject.setTokenRelsLedger(null);
 		InOrder inOrder = inOrder(accountsLedger);
 
 		// when:

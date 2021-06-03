@@ -22,13 +22,10 @@ package com.hedera.services.state.expiry.renewal;
 
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.ServicesContext;
-import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.test.utils.IdUtils;
@@ -38,6 +35,8 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,9 +46,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import static com.hedera.services.state.expiry.ExpiringCreations.setTokensAndTokenAdjustments;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
+import static com.hedera.services.utils.MiscUtils.asTimestamp;
+import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -102,7 +103,7 @@ class RenewalRecordsHelperTest {
 		// when:
 		subject.beginRenewalCycle(instantNow);
 		// and:
-		subject.streamCryptoRemoval(keyId, displacements);
+		subject.streamCryptoRemoval(keyId, tokensFrom(displacements), adjustmentsFrom(displacements));
 
 		// then:
 		verify(ctx).updateRecordRunningHash(any());
@@ -140,34 +141,54 @@ class RenewalRecordsHelperTest {
 		assertEquals(0, subject.getConsensusNanosIncr());
 	}
 
-	private RecordStreamObject expectedRso(ExpirableTxnRecord record, int nanosOffset) {
-		return new RecordStreamObject(record, Transaction.getDefaultInstance(), instantNow.plusNanos(nanosOffset));
+	static List<EntityId> tokensFrom(List<TokenTransferList> ttls) {
+		return ttls.stream().map(TokenTransferList::getToken).map(EntityId::fromGrpcTokenId).collect(toList());
 	}
 
-	private ExpirableTxnRecord cryptoRemovalRecord(
+	static List<CurrencyAdjustments> adjustmentsFrom(List<TokenTransferList> ttls) {
+		return ttls.stream().map(ttl -> new CurrencyAdjustments(
+				ttl.getTransfersList().stream()
+						.mapToLong(AccountAmount::getAmount)
+						.toArray(),
+				ttl.getTransfersList().stream()
+						.map(AccountAmount::getAccountID)
+						.map(EntityId::fromGrpcAccountId)
+						.collect(toList())
+		)).collect(Collectors.toList());
+	}
+
+	private RecordStreamObject expectedRso(TransactionRecord record, int nanosOffset) {
+		return new RecordStreamObject(
+				ExpirableTxnRecord.fromGprc(record),
+				Transaction.getDefaultInstance(),
+				instantNow.plusNanos(nanosOffset));
+	}
+
+	private TransactionRecord cryptoRemovalRecord(
 			AccountID accountRemoved,
 			Instant removedAt,
 			AccountID autoRenewAccount,
 			List<TokenTransferList> displacements
 	) {
-		TxnReceipt receipt = TxnReceipt.newBuilder()
-				.setAccountId(EntityId.fromGrpcAccountId(accountRemoved))
+		TransactionReceipt receipt = TransactionReceipt.newBuilder()
+				.setAccountID(accountRemoved)
 				.build();
 
 		TransactionID transactionID = TransactionID.newBuilder()
 				.setAccountID(autoRenewAccount)
 				.build();
 
-		var expirableRecordBuilder = ExpirableTxnRecord.newBuilder()
+		return TransactionRecord.newBuilder()
 				.setReceipt(receipt)
-				.setConsensusTime(RichInstant.fromJava(removedAt))
-				.setTxnId(TxnId.fromGrpc(transactionID))
+				.setConsensusTimestamp(asTimestamp(removedAt))
+				.setTransactionID(transactionID)
 				.setMemo(String.format("Entity %s was automatically deleted.", asLiteralString(accountRemoved)))
-				.setFee(0L);
-		return setTokensAndTokenAdjustments(expirableRecordBuilder, displacements).build();
+				.setTransactionFee(0L)
+				.addAllTokenTransferLists(displacements)
+				.build();
 	}
 
-	private ExpirableTxnRecord cryptoRenewalRecord(
+	private TransactionRecord cryptoRenewalRecord(
 			AccountID accountRenewed,
 			Instant renewedAt,
 			AccountID autoRenewAccount,
@@ -175,7 +196,7 @@ class RenewalRecordsHelperTest {
 			long newExpirationTime,
 			AccountID feeCollector
 	) {
-		TxnReceipt receipt = TxnReceipt.newBuilder().setAccountId(EntityId.fromGrpcAccountId(accountRenewed)).build();
+		TransactionReceipt receipt = TransactionReceipt.newBuilder().setAccountID(accountRenewed).build();
 		TransactionID transactionID = TransactionID.newBuilder().setAccountID(autoRenewAccount).build();
 		String memo = String.format("Entity %s was automatically renewed. New expiration time: %d.",
 				asLiteralString(accountRenewed),
@@ -192,13 +213,13 @@ class RenewalRecordsHelperTest {
 				.addAccountAmounts(payeeAmount)
 				.addAccountAmounts(payerAmount)
 				.build();
-		return ExpirableTxnRecord.newBuilder()
+		return TransactionRecord.newBuilder()
 				.setReceipt(receipt)
-				.setConsensusTime(RichInstant.fromJava(renewedAt))
-				.setTxnId(TxnId.fromGrpc(transactionID))
+				.setConsensusTimestamp(asTimestamp(renewedAt))
+				.setTransactionID(transactionID)
 				.setMemo(memo)
-				.setFee(fee)
-				.setTransferList(CurrencyAdjustments.fromGrpc(transferList))
+				.setTransactionFee(fee)
+				.setTransferList(transferList)
 				.build();
 	}
 }

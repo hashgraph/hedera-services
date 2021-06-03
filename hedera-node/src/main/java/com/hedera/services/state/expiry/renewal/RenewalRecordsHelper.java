@@ -9,9 +9,9 @@ package com.hedera.services.state.expiry.renewal;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,19 +31,15 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
-import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
 
-import static com.hedera.services.state.expiry.ExpiringCreations.setTokensAndTokenAdjustments;
+import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 
 public class RenewalRecordsHelper {
 	private static final Logger log = LogManager.getLogger(RenewalRecordsHelper.class);
@@ -74,19 +70,24 @@ public class RenewalRecordsHelper {
 		funding = dynamicProperties.fundingAccount();
 	}
 
-	public void streamCryptoRemoval(MerkleEntityId id, List<TokenTransferList> tokensDisplaced) {
+	public void streamCryptoRemoval(
+			MerkleEntityId id,
+			List<EntityId> tokens,
+			List<CurrencyAdjustments> tokenAdjustments
+	) {
 		assertInCycle();
 
 		final var eventTime = cycleStart.plusNanos(consensusNanosIncr++);
 		final var grpcId = id.toAccountId();
 		final var memo = "Entity " + id.toAbbrevString() + " was automatically deleted.";
+		final var record = forCrypto(grpcId, eventTime)
+				.setMemo(memo)
+				.setTokens(tokens)
+				.setTokenAdjustments(tokenAdjustments)
+				.build();
+		stream(record, eventTime);
 
-		var expirableRecord = forCrypto(grpcId, eventTime)
-				.setMemo(memo);
-		setTokensAndTokenAdjustments(expirableRecord, tokensDisplaced);
-		stream(expirableRecord.build(), eventTime);
-
-		log.debug("Streamed crypto removal record {}", expirableRecord);
+		log.debug("Streamed crypto removal record {}", record);
 	}
 
 	public void streamCryptoRenewal(MerkleEntityId id, long fee, long newExpiry) {
@@ -102,7 +103,7 @@ public class RenewalRecordsHelper {
 
 		final var record = forCrypto(grpcId, eventTime)
 				.setMemo(memo)
-				.setTransferList(CurrencyAdjustments.fromGrpc(feeXfers(fee, grpcId)))
+				.setTransferList(feeXfers(fee, grpcId))
 				.setFee(fee)
 				.build();
 		stream(record, eventTime);
@@ -110,8 +111,8 @@ public class RenewalRecordsHelper {
 		log.debug("Streamed crypto renewal record {}", record);
 	}
 
-	private void stream(ExpirableTxnRecord expirableTxnRecord, Instant at) {
-		final var rso = new RecordStreamObject(expirableTxnRecord, EMPTY_SIGNED_TXN, at);
+	private void stream(ExpirableTxnRecord expiringRecord, Instant at) {
+		final var rso = new RecordStreamObject(expiringRecord, EMPTY_SIGNED_TXN, at);
 		ctx.updateRecordRunningHash(rso.getRunningHash());
 		recordStreamManager.addRecordStreamObject(rso);
 	}
@@ -121,20 +122,23 @@ public class RenewalRecordsHelper {
 		consensusNanosIncr = 0;
 	}
 
-	private TransferList feeXfers(long amount, AccountID payer) {
-		return TransferList.newBuilder()
-				.addAccountAmounts(AccountAmount.newBuilder().setAmount(amount).setAccountID(funding))
-				.addAccountAmounts(AccountAmount.newBuilder().setAmount(-amount).setAccountID(payer))
-				.build();
+	private CurrencyAdjustments feeXfers(long amount, AccountID payer) {
+		return new CurrencyAdjustments(
+				new long[] { amount, -amount },
+				List.of(EntityId.fromGrpcAccountId(funding), EntityId.fromGrpcAccountId(payer))
+		);
 	}
 
-	private ExpirableTxnRecord.Builder forCrypto(AccountID id, Instant at) {
+	private ExpirableTxnRecord.Builder forCrypto(AccountID accountId, Instant consensusTime) {
+		final var at = RichInstant.fromJava(consensusTime);
+		final var id = EntityId.fromGrpcAccountId(accountId);
+		final var receipt = new TxnReceipt();
+		receipt.setAccountId(id);
+
 		return ExpirableTxnRecord.newBuilder()
-				.setTxnId(TxnId.fromGrpc(TransactionID.newBuilder()
-						.setAccountID(id).build()))
-				.setReceipt(TxnReceipt.newBuilder()
-						.setAccountId(EntityId.fromGrpcAccountId(id)).build())
-				.setConsensusTime(RichInstant.fromJava(at));
+				.setTxnId(new TxnId(EntityId.fromGrpcAccountId(accountId), MISSING_INSTANT, false))
+				.setReceipt(receipt)
+				.setConsensusTime(at);
 	}
 
 	int getConsensusNanosIncr() {

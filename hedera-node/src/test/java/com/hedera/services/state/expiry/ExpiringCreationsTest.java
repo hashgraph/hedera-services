@@ -80,6 +80,7 @@ class ExpiringCreationsTest {
 
 	private final AccountID effPayer = IdUtils.asAccount("0.0.75231");
 	private final ExpirableTxnRecord record = DomainSerdesTest.recordOne();
+	private ExpirableTxnRecord expectedRecord;
 
 	@Mock
 	private RecordCache recordCache;
@@ -89,14 +90,8 @@ class ExpiringCreationsTest {
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
-
-	private ExpirableTxnRecord expectedRecord;
-
-	private ExpiringCreations subject;
-
 	@Mock
 	private ServicesContext ctx;
-
 	@Mock
 	private NarratedCharging narratedCharging;
 	@Mock
@@ -120,9 +115,12 @@ class ExpiringCreationsTest {
 	private static final String hashString = "TEST";
 	private static final long scheduleNum = 100L;
 	private static final String account = "0.0.10001";
-	private final TxnReceipt receipt = TxnReceipt.newBuilder().setStatus(SUCCESS.name()).build();
 	private final Instant timestamp = Instant.now();
-	private final ByteString hash = ByteString.copyFrom(hashString.getBytes(StandardCharsets.UTF_8));
+	private final byte[] hash = hashString.getBytes(StandardCharsets.UTF_8);
+
+	private ExpiringCreations subject;
+
+	private final TxnReceipt receipt = TxnReceipt.newBuilder().setStatus(SUCCESS.name()).build();
 
 	@BeforeEach
 	void setup() {
@@ -196,7 +194,7 @@ class ExpiringCreationsTest {
 		//given:
 		setUpForExpiringRecordBuilder();
 		given(ctx.narratedCharging()).willReturn(narratedCharging);
-		given(ctx.narratedCharging().totalFeesChargedToPayer()).willReturn(10L);
+		given(narratedCharging.totalFeesChargedToPayer()).willReturn(10L);
 
 		given(ctx.ledger()).willReturn(ledger);
 		given(ctx.ledger().netTransfersInTxn()).willReturn(transfers);
@@ -204,8 +202,7 @@ class ExpiringCreationsTest {
 
 		//when:
 		ExpirableTxnRecord.Builder builder =
-				subject.buildExpiringRecord(100L, hash,
-						accessor, timestamp, receipt, ctx);
+				subject.buildExpiringRecord(100L, hash, accessor, timestamp, receipt, ctx);
 		ExpirableTxnRecord actualRecord = builder.build();
 
 		//then:

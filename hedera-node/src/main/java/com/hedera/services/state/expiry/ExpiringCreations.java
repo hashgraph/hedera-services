@@ -20,7 +20,6 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
@@ -91,47 +90,35 @@ public class ExpiringCreations implements EntityCreator {
 		return expiringRecord;
 	}
 
-	private void addToState(MerkleEntityId key, ExpirableTxnRecord record) {
-		final var currentAccounts = accounts.get();
-		final var mutableAccount = currentAccounts.getForModify(key);
-		mutableAccount.records().offer(record);
-	}
-
 	@Override
-	public ExpirableTxnRecord.Builder buildExpiringRecord(long otherNonThresholdFees, ByteString hash,
-			TxnAccessor accessor, Instant consensusTime, TxnReceipt receipt, ServicesContext ctx) {
-		final long feesCharged = ctx.narratedCharging().totalFeesChargedToPayer() + otherNonThresholdFees;
+	public ExpirableTxnRecord.Builder buildExpiringRecord(
+			long otherNonThresholdFees,
+			byte[] hash,
+			TxnAccessor accessor,
+			Instant consensusTime,
+			TxnReceipt receipt, 
+                        ServicesContext ctx
+	) {
+		final long amount = ctx.narratedCharging().totalFeesChargedToPayer() + otherNonThresholdFees;
 		final TransferList transfersList = ctx.ledger().netTransfersInTxn();
 		final List<TokenTransferList> tokenTransferList = ctx.ledger().netTokenTransfersInTxn();
 		final var currencyAdjustments = transfersList.getAccountAmountsCount() > 0
 				? CurrencyAdjustments.fromGrpc(transfersList) : null;
-		final var scheduleRef = accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null;
 
 		var builder = ExpirableTxnRecord.newBuilder()
 				.setReceipt(receipt)
-				.setTxnHash(hash.toByteArray())
+				.setTxnHash(hash)
 				.setTxnId(TxnId.fromGrpc(accessor.getTxnId()))
 				.setConsensusTime(RichInstant.fromJava(consensusTime))
 				.setMemo(accessor.getTxn().getMemo())
-				.setFee(feesCharged)
+				.setFee(amount)
 				.setTransferList(currencyAdjustments)
-				.setScheduleRef(scheduleRef);
+				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null);
 
-		return setTokensAndTokenAdjustments(builder, tokenTransferList);
-	}
-
-	public static ExpirableTxnRecord.Builder setTokensAndTokenAdjustments(ExpirableTxnRecord.Builder builder,
-			List<TokenTransferList> tokenTransferList) {
-		List<EntityId> tokens = new ArrayList<>();
-		List<CurrencyAdjustments> tokenAdjustments = new ArrayList<>();
 		if (!tokenTransferList.isEmpty()) {
-			for (TokenTransferList tokenTransfers : tokenTransferList) {
-				tokens.add(EntityId.fromGrpcTokenId(tokenTransfers.getToken()));
-				tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList()));
-			}
+			setTokensAndTokenAdjustments(builder, tokenTransferList);
 		}
-		builder.setTokens(tokens)
-				.setTokenAdjustments(tokenAdjustments);
+
 		return builder;
 	}
 
@@ -143,8 +130,27 @@ public class ExpiringCreations implements EntityCreator {
 				.setTxnId(TxnId.fromGrpc(txnId))
 				.setReceipt(TxnReceipt.newBuilder().setStatus(FAIL_INVALID.name()).build())
 				.setMemo(accessor.getTxn().getMemo())
-				.setTxnHash(accessor.getHash().toByteArray())
+				.setTxnHash(accessor.getHash())
 				.setConsensusTime(RichInstant.fromJava(consensusTime))
 				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null);
+	}
+
+	private void setTokensAndTokenAdjustments(
+			ExpirableTxnRecord.Builder builder,
+			List<TokenTransferList> tokenTransferList
+	) {
+		final List<EntityId> tokens = new ArrayList<>();
+		final List<CurrencyAdjustments> tokenAdjustments = new ArrayList<>();
+		for (TokenTransferList tokenTransfers : tokenTransferList) {
+			tokens.add(EntityId.fromGrpcTokenId(tokenTransfers.getToken()));
+			tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList()));
+		}
+		builder.setTokens(tokens).setTokenAdjustments(tokenAdjustments);
+	}
+
+	private void addToState(MerkleEntityId key, ExpirableTxnRecord record) {
+		final var currentAccounts = accounts.get();
+		final var mutableAccount = currentAccounts.getForModify(key);
+		mutableAccount.records().offer(record);
 	}
 }

@@ -20,13 +20,11 @@ package com.hedera.services.context;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.state.submerkle.TxnId;
@@ -42,9 +40,6 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -56,9 +51,6 @@ import java.util.function.Consumer;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
-import static com.hedera.services.utils.MiscUtils.canonicalDiffRepr;
-import static com.hedera.services.utils.MiscUtils.readableTransferList;
-import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
 /**
@@ -69,6 +61,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
  * inject the infrastructure as dependencies here.
  *
  * @author Michael Tinker
+ * @author Neeharika Sompalli
  */
 public class AwareTransactionContext implements TransactionContext {
 	private static final Logger log = LogManager.getLogger(AwareTransactionContext.class);
@@ -82,19 +75,19 @@ public class AwareTransactionContext implements TransactionContext {
 	private final ServicesContext ctx;
 	private TxnAccessor triggeredTxn = null;
 
-	private static final Consumer<ExpirableTxnRecord.Builder> noopRecordConfig = ignore -> { };
 	private static final Consumer<TxnReceipt.Builder> noopReceiptConfig = ignore -> { };
+	private static final Consumer<ExpirableTxnRecord.Builder> noopRecordConfig = ignore -> { };
 
 	private long submittingMember;
 	private long otherNonThresholdFees;
+	private byte[] hash;
 	private boolean isPayerSigKnownActive;
 	private Instant consensusTime;
-	private ByteString hash;
-	private ResponseCodeEnum statusSoFar;
 	private TxnAccessor accessor;
-	private Consumer<ExpirableTxnRecord.Builder> recordConfig = noopRecordConfig;
-	private Consumer<TxnReceipt.Builder> receiptConfig = noopReceiptConfig;
+	private ResponseCodeEnum statusSoFar;
 	private List<ExpiringEntity> expiringEntities;
+	private Consumer<TxnReceipt.Builder> receiptConfig = noopReceiptConfig;
+	private Consumer<ExpirableTxnRecord.Builder> recordConfig = noopRecordConfig;
 
 	boolean hasComputedRecordSoFar;
 	ExpirableTxnRecord.Builder recordSoFar = ExpirableTxnRecord.newBuilder();
@@ -156,9 +149,10 @@ public class AwareTransactionContext implements TransactionContext {
 
 	@Override
 	public ExpirableTxnRecord recordSoFar() {
-		TxnReceipt receipt = receiptSoFar().build();
+		final var receipt = receiptSoFar().build();
 
-		recordSoFar = ctx.creator().buildExpiringRecord(otherNonThresholdFees,
+		recordSoFar = ctx.creator().buildExpiringRecord(
+                                otherNonThresholdFees,
 				hash,
 				accessor,
 				consensusTime,
@@ -167,13 +161,12 @@ public class AwareTransactionContext implements TransactionContext {
 
 		recordConfig.accept(recordSoFar);
 		hasComputedRecordSoFar = true;
-
 		return recordSoFar.build();
 	}
 
 	TxnReceipt.Builder receiptSoFar() {
-		TxnReceipt.Builder receipt = TxnReceipt.newBuilder()
-				.setExchangeRates(ExchangeRates.fromGrpc(ctx.exchange().activeRates()))
+		final var receipt = TxnReceipt.newBuilder()
+				.setExchangeRates(ctx.exchange().fcActiveRates())
 				.setStatus(statusSoFar.name());
 		receiptConfig.accept(receipt);
 		return receipt;
@@ -252,7 +245,7 @@ public class AwareTransactionContext implements TransactionContext {
 		otherNonThresholdFees += amount;
 	}
 
-	public long getNonThresholdFeeChargedToPayer(){
+	public long getNonThresholdFeeChargedToPayer() {
 		return otherNonThresholdFees;
 	}
 

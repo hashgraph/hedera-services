@@ -51,6 +51,8 @@ import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassificati
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.EXPIRED_ACCOUNT_READY_TO_RENEW;
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.OTHER;
+import static com.hedera.services.state.expiry.renewal.RenewalRecordsHelperTest.adjustmentsFrom;
+import static com.hedera.services.state.expiry.renewal.RenewalRecordsHelperTest.tokensFrom;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -62,7 +64,6 @@ import static org.mockito.Mockito.verify;
 class RenewalHelperTest {
 	private final long tokenBalance = 1_234L;
 	private final long now = 1_234_567L;
-	private final long renewalPeriod = 3600L;
 	private final long nonZeroBalance = 1L;
 	private final MockGlobalDynamicProps dynamicProps = new MockGlobalDynamicProps();
 
@@ -79,9 +80,6 @@ class RenewalHelperTest {
 			.get();
 	private final MerkleAccount expiredAccountNonZeroBalance = MerkleAccountFactory.newAccount()
 			.balance(nonZeroBalance).expirationTime(now - 1)
-			.get();
-	private final MerkleAccount renewedExpiredAccount = MerkleAccountFactory.newAccount()
-			.balance(0).expirationTime(now + renewalPeriod - 1)
 			.get();
 	private final MerkleAccount fundingAccount = MerkleAccountFactory.newAccount()
 			.balance(0)
@@ -247,7 +245,7 @@ class RenewalHelperTest {
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), missingTokenGrpcId));
 		// and:
-		assertTrue(displacedTokens.isEmpty());
+		assertTrue(displacedTokens.getLeft().isEmpty());
 	}
 
 	@Test
@@ -274,10 +272,10 @@ class RenewalHelperTest {
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
 		// and:
-		assertEquals(List.of(
-					ttlOf(survivedTokenGrpcId, grpcIdWith(brokeExpiredAccountNum), treasuryGrpcId, tokenBalance)
-				),
-				displacedTokens);
+		final var ttls = List.of(
+				ttlOf(survivedTokenGrpcId, grpcIdWith(brokeExpiredAccountNum), treasuryGrpcId, tokenBalance));
+		assertEquals(tokensFrom(ttls), displacedTokens.getLeft());
+		assertEquals(adjustmentsFrom(ttls), displacedTokens.getRight());
 	}
 
 	@Test

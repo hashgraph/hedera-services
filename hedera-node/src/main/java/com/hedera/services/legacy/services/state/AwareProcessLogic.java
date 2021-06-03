@@ -28,7 +28,6 @@ import com.hedera.services.state.logic.ServicesTxnManager;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.txns.ProcessLogic;
-import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.fee.FeeObject;
@@ -133,7 +132,7 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	void addRecordToStream() {
 		ctx.recordsHistorian().lastCreatedRecord().ifPresent(finalRecord ->
-				addForStreaming(ctx.txnCtx().accessor().getBackwardCompatibleSignedTxn(),
+				stream(ctx.txnCtx().accessor().getBackwardCompatibleSignedTxn(),
 						finalRecord, ctx.txnCtx().consensusTime()));
 	}
 
@@ -226,12 +225,12 @@ public class AwareProcessLogic implements ProcessLogic {
 		return sigStatus;
 	}
 
-	void addForStreaming(
-			com.hederahashgraph.api.proto.java.Transaction grpcTransaction,
-			ExpirableTxnRecord expirableTxnRecord,
-			Instant consensusTimeStamp
+	void stream(
+			com.hederahashgraph.api.proto.java.Transaction txn,
+			ExpirableTxnRecord expiringRecord,
+			Instant consensusTime
 	) {
-		final var rso = new RecordStreamObject(expirableTxnRecord, grpcTransaction, consensusTimeStamp);
+		final var rso = new RecordStreamObject(expiringRecord, txn, consensusTime);
 		ctx.updateRecordRunningHash(rso.getRunningHash());
 		ctx.recordStreamManager().addRecordStreamObject(rso);
 	}

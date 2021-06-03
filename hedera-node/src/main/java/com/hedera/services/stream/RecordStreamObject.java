@@ -38,62 +38,71 @@ import java.io.IOException;
 import java.time.Instant;
 
 /**
- * Contains a ExpirableTxnRecord, its related Transaction, and consensus Timestamp of the Transaction.
+ * Contains a TransactionRecord, its related Transaction, and consensus Timestamp of the Transaction.
  * Is used for record streaming
  */
 public class RecordStreamObject extends AbstractSerializableHashable implements Timestamped,
 		SerializableRunningHashable {
 	private static final long CLASS_ID = 0xe370929ba5429d8bL;
-	public static final int CLASS_VERSION = 1;
+	static final int CLASS_VERSION = 1;
 
-	//TODO: confirm the max length;
 	private static final int MAX_RECORD_LENGTH = 64 * 1024;
 	private static final int MAX_TRANSACTION_LENGTH = 64 * 1024;
 
-	/** The fast-copyable equivalent of the gRPC transaction record for the record stream file */
-	private ExpirableTxnRecord expirableTxnRecord;
-
-	/** The gRPC transaction for the record stream file */
+	/* The gRPC transaction for the record stream file */
 	private Transaction transaction;
+	private TransactionRecord transactionRecord;
+	/* The fast-copyable equivalent of the gRPC transaction record for the record stream file */
+	private ExpirableTxnRecord fcTransactionRecord;
 
-	/**
-	 * the consensus timestamp of this {@link ExpirableTxnRecord} object,
-	 * this field is used for deciding whether to start a new record stream file,
-	 * and for generating file name when starting to write a new record stream file;
-	 * this field is not written to record stream file
-	 */
+	/* The consensus timestamp of this object's transaction; determines when to start a
+	 * new record stream file, and the name to use for a new file if started. However,
+	 * this field is NOT itself included in the record stream. */
 	private Instant consensusTimestamp;
 
-	/**
-	 * this RunningHash instance encapsulates a Hash object which denotes a running Hash calculated from
-	 * all RecordStreamObject in history up to this RecordStreamObject instance
-	 */
+	/* The running hash of all objects streamed up to and including this consensus time. */
 	private RunningHash runningHash;
 
 	public RecordStreamObject() {
 	}
 
-	public RecordStreamObject(final ExpirableTxnRecord expirableTxnRecord,
-			final Transaction transaction, final Instant consensusTimestamp) {
-		// configurable 50/100/150 bytes
-		this.expirableTxnRecord = expirableTxnRecord;
+	public RecordStreamObject(
+			final TransactionRecord transactionRecord,
+			final Transaction transaction,
+			final Instant consensusTimestamp
+	) {
 		this.transaction = transaction;
 		this.consensusTimestamp = consensusTimestamp;
+		this.transactionRecord = transactionRecord;
+
+		runningHash = new RunningHash();
+	}
+
+	public RecordStreamObject(
+			final ExpirableTxnRecord fcTransactionRecord,
+			final Transaction transaction,
+			final Instant consensusTimestamp
+	) {
+		this.transaction = transaction;
+		this.consensusTimestamp = consensusTimestamp;
+		this.fcTransactionRecord = fcTransactionRecord;
+
 		runningHash = new RunningHash();
 	}
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
-		out.writeByteArray(expirableTxnRecord.asGrpc().toByteArray());
+		ensureNonNullGrpcRecord();
+		out.writeByteArray(transactionRecord.toByteArray());
 		out.writeByteArray(transaction.toByteArray());
 	}
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		expirableTxnRecord = ExpirableTxnRecord.fromGprc(
-				TransactionRecord.parseFrom(in.readByteArray(MAX_RECORD_LENGTH)));
+		transactionRecord = TransactionRecord.parseFrom(in.readByteArray(MAX_RECORD_LENGTH));
 		transaction = Transaction.parseFrom(in.readByteArray(MAX_TRANSACTION_LENGTH));
-		final var timestamp = expirableTxnRecord.getConsensusTimestamp().toGrpc();
+
+		final var timestamp = transactionRecord.getConsensusTimestamp();
 		consensusTimestamp = Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
 	}
 
@@ -120,26 +129,25 @@ public class RecordStreamObject extends AbstractSerializableHashable implements 
 
 	@Override
 	public String toString() {
+		ensureNonNullGrpcRecord();
 		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-				.append("ExpirableTransactionRecord", expirableTxnRecord)
+				.append("TransactionRecord", transactionRecord)
 				.append("Transaction", transaction)
 				.append("ConsensusTimestamp", consensusTimestamp).toString();
 	}
 
-	/**
-	 * only show TransactionID in the record and consensusTimestamp
-	 *
-	 * @return
-	 */
-	public String toShortString() {
+	String toShortString() {
+		ensureNonNullGrpcRecord();
 		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-				.append("ExpirableTransactionRecord", toShortStringRecord(expirableTxnRecord))
-				.append("ConsensusTimestamp", consensusTimestamp).toString();
+				.append("TransactionRecord", toShortStringRecord(transactionRecord))
+				.append("ConsensusTimestamp", consensusTimestamp)
+				.toString();
 	}
 
-	public static String toShortStringRecord(ExpirableTxnRecord expirableTxnRecord) {
-		return new ToStringBuilder(expirableTxnRecord, ToStringStyle.NO_CLASS_NAME_STYLE)
-				.append("TransactionID", expirableTxnRecord.getTxnId()).toString();
+	static String toShortStringRecord(TransactionRecord transactionRecord) {
+		return new ToStringBuilder(transactionRecord, ToStringStyle.NO_CLASS_NAME_STYLE)
+				.append("TransactionID", transactionRecord.getTransactionID())
+				.toString();
 	}
 
 	@Override
@@ -151,20 +159,23 @@ public class RecordStreamObject extends AbstractSerializableHashable implements 
 			return true;
 		}
 		RecordStreamObject that = (RecordStreamObject) obj;
-		return new EqualsBuilder().
-				append(this.expirableTxnRecord, that.expirableTxnRecord).
-				append(this.transaction, that.transaction).
-				append(this.consensusTimestamp, that.consensusTimestamp).
-				isEquals();
+		ensureNonNullGrpcRecord();
+		that.ensureNonNullGrpcRecord();
+		return new EqualsBuilder()
+				.append(this.transactionRecord, that.transactionRecord)
+				.append(this.transaction, that.transaction)
+				.append(this.consensusTimestamp, that.consensusTimestamp)
+				.isEquals();
 	}
 
 	@Override
 	public int hashCode() {
-		return new HashCodeBuilder().
-				append(expirableTxnRecord).
-				append(transaction).
-				append(consensusTimestamp).
-				toHashCode();
+		ensureNonNullGrpcRecord();
+		return new HashCodeBuilder()
+				.append(transactionRecord)
+				.append(transaction)
+				.append(consensusTimestamp)
+				.toHashCode();
 	}
 
 	@Override
@@ -176,7 +187,14 @@ public class RecordStreamObject extends AbstractSerializableHashable implements 
 		return transaction;
 	}
 
-	ExpirableTxnRecord getExpirableTransactionRecord() {
-		return expirableTxnRecord;
+	TransactionRecord getTransactionRecord() {
+		ensureNonNullGrpcRecord();
+		return transactionRecord;
+	}
+
+	private void ensureNonNullGrpcRecord() {
+		if (transactionRecord == null) {
+			transactionRecord = fcTransactionRecord.asGrpc();
+		}
 	}
 }

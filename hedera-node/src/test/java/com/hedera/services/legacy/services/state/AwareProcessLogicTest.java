@@ -52,9 +52,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.SwirldTransaction;
-import com.swirlds.common.Transaction;
 import com.swirlds.common.crypto.RunningHash;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -220,7 +218,7 @@ class AwareProcessLogicTest {
 		when(ctx.recordStreamManager()).thenReturn(recordStreamManager);
 
 		//when:
-		subject.addForStreaming(mock(com.hederahashgraph.api.proto.java.Transaction.class),
+		subject.stream(mock(com.hederahashgraph.api.proto.java.Transaction.class),
 				mock(ExpirableTxnRecord.class), Instant.now());
 		//then:
 		verify(ctx).updateRecordRunningHash(any(RunningHash.class));

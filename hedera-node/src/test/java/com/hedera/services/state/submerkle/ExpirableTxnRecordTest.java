@@ -83,7 +83,7 @@ class ExpirableTxnRecordTest {
 	ExpirableTxnRecord subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		subject = subjectRecordWithTokenTransfersAndScheduleRef();
 
 		din = mock(DataInputStream.class);
@@ -130,7 +130,7 @@ class ExpirableTxnRecordTest {
 	}
 
 	@Test
-	public void hashableMethodsWork() {
+	void hashableMethodsWork() {
 		// given:
 		Hash pretend = mock(Hash.class);
 
@@ -142,7 +142,7 @@ class ExpirableTxnRecordTest {
 	}
 
 	@Test
-	public void fastCopyableWorks() {
+	void fastCopyableWorks() {
 		// expect;
 		assertTrue(subject.isImmutable());
 		assertSame(subject, subject.copy());
@@ -150,7 +150,7 @@ class ExpirableTxnRecordTest {
 	}
 
 	@Test
-	public void v070DeserializeWorks() throws IOException {
+	void v070DeserializeWorks() throws IOException {
 		// setup:
 		subject = subjectRecord();
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
@@ -181,7 +181,7 @@ class ExpirableTxnRecordTest {
 	}
 
 	@Test
-	public void v080DeserializeWorks() throws IOException {
+	void v080DeserializeWorks() throws IOException {
 		// setup:
 		subject = subjectRecordWithTokenTransfers();
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
@@ -219,7 +219,7 @@ class ExpirableTxnRecordTest {
 	}
 
 	@Test
-	public void v0120DeserializeWorks() throws IOException {
+	void v0120DeserializeWorks() throws IOException {
 		// setup:
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
 
@@ -257,7 +257,7 @@ class ExpirableTxnRecordTest {
 	}
 
 	@Test
-	public void serializeWorks() throws IOException {
+	void serializeWorks() throws IOException {
 		// setup:
 		SerializableDataOutputStream fout = mock(SerializableDataOutputStream.class);
 		// and:
@@ -286,14 +286,14 @@ class ExpirableTxnRecordTest {
 	}
 
 	@Test
-	public void serializableDetWorks() {
+	void serializableDetWorks() {
 		// expect;
 		assertEquals(ExpirableTxnRecord.MERKLE_VERSION, subject.getVersion());
 		assertEquals(ExpirableTxnRecord.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 
 	@Test
-	public void grpcInterconversionWorks() {
+	void grpcInterconversionWorks() {
 		// given:
 		subject.setExpiry(0L);
 		subject.setSubmittingMember(UNKNOWN_SUBMITTING_MEMBER);
@@ -303,7 +303,7 @@ class ExpirableTxnRecordTest {
 	}
 
 	@Test
-	public void objectContractWorks() {
+	void objectContractWorks() {
 		// given:
 		var one = subject;
 		var two = DomainSerdesTest.recordOne();
@@ -320,28 +320,27 @@ class ExpirableTxnRecordTest {
 	}
 
 	@Test
-	public void toStringHasntChanged() {
+	void toStringHasntChanged() {
+		// setup:
+		final var desired = "ExpirableTxnRecord{receipt=TxnReceipt{status=INVALID_ACCOUNT_ID, " +
+				"accountCreated=EntityId{shard=0, realm=0, num=3}, newTotalTokenSupply=0}, " +
+				"txnHash=6e6f742d7265616c6c792d612d68617368, txnId=TxnId{payer=EntityId{shard=0, realm=0, num=0}, " +
+				"validStart=RichInstant{seconds=9999999999, nanos=0}, scheduled=false}, " +
+				"consensusTimestamp=RichInstant{seconds=9999999999, nanos=0}, expiry=1234567, " +
+				"submittingMember=1, memo=Alpha bravo charlie, contractCreation=SolidityFnResult{gasUsed=55, bloom=," +
+				" result=, error=null, contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[], " +
+				"logs=[SolidityLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}]}, " +
+				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
+				"scheduleRef=EntityId{shard=5, realm=6, num=7}, " +
+				"tokenAdjustments=1.2.3(CurrencyAdjustments{readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), " +
+				"1.2.4(CurrencyAdjustments{readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]})}";
+
 		// expect:
-		assertEquals(
-				"ExpirableTxnRecord{receipt=TxnReceipt{status=INVALID_ACCOUNT_ID, " +
-						"exchangeRates=ExchangeRates{currHbarEquiv=0, currCentEquiv=0, currExpiry=0, nextHbarEquiv=0, " +
-						"nextCentEquiv=0, nextExpiry=0}, accountCreated=EntityId{shard=0, realm=0, num=3}, " +
-						"newTotalTokenSupply=0}, txnHash=6e6f742d7265616c6c792d612d68617368, " +
-						"txnId=TxnId{payer=EntityId{shard=0, realm=0, num=0}, " +
-						"validStart=RichInstant{seconds=9999999999, nanos=0}, scheduled=false}, " +
-						"consensusTimestamp=RichInstant{seconds=9999999999, nanos=0}, expiry=1234567, " +
-						"submittingMember=1, memo=Alpha bravo charlie, contractCreation=SolidityFnResult{gasUsed=55, " +
-						"bloom=, result=, error=null, contractId=EntityId{shard=4, realm=3, num=2}, " +
-						"createdContractIds=[], logs=[SolidityLog{data=4e6f6e73656e736963616c21, bloom=, " +
-						"contractId=null, topics=[]}]}, hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0" +
-						".1001 <- +2, 0.0.1002 <- +2]}, scheduleRef=EntityId{shard=5, realm=6, num=7}, " +
-						"tokenAdjustments=1.2.3(CurrencyAdjustments{readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- " +
-						"+1000]}), 1.2.4(CurrencyAdjustments{readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]})}",
-				subject.toString());
+		assertEquals(desired, subject.toString());
 	}
 
 	@AfterEach
-	public void cleanup() {
+	void cleanup() {
 		ExpirableTxnRecord.serdes = new DomainSerdes();
 	}
 }

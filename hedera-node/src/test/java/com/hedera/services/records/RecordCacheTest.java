@@ -46,7 +46,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.SwirldTransaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -337,7 +336,7 @@ class RecordCacheTest {
 				.setTxnId(TxnId.fromGrpc(txnId))
 				.setReceipt(TxnReceipt.newBuilder().setStatus(FAIL_INVALID.name()).build())
 				.setMemo(accessor.getTxn().getMemo())
-				.setTxnHash(accessor.getHash().toByteArray())
+				.setTxnHash(accessor.getHash())
 				.setConsensusTime(RichInstant.fromJava(consensusTime));
 		var expectedRecord = expirableTxnRecordBuilder.build();
 		expectedRecord.setExpiry(consensusTime.getEpochSecond() + 180);
@@ -386,7 +385,7 @@ class RecordCacheTest {
 				.setTxnId(TxnId.fromGrpc(txnId))
 				.setReceipt(TxnReceipt.newBuilder().setStatus(FAIL_INVALID.name()).build())
 				.setMemo(accessor.getTxn().getMemo())
-				.setTxnHash(accessor.getHash().toByteArray())
+				.setTxnHash(accessor.getHash())
 				.setConsensusTime(RichInstant.fromJava(consensusTime))
 				.setScheduleRef(fromGrpcScheduleId(effectiveScheduleID));
 		var expirableTxnRecord = expirableTxnRecordBuilder.build();

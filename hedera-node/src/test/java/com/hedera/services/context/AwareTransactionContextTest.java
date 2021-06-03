@@ -20,7 +20,6 @@ package com.hedera.services.context;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.HederaLedger;
@@ -33,6 +32,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SolidityFnResult;
@@ -59,6 +59,7 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
@@ -142,7 +143,7 @@ class AwareTransactionContextTest {
 	private ExpirableTxnRecord record;
 	private ExpiringEntity expiringEntity;
 	private String memo = "Hi!";
-	private ByteString hash = ByteString.copyFrom("fake hash".getBytes());
+	private byte[] hash = "fake hash".getBytes();
 	private TransactionID txnId = TransactionID.newBuilder()
 			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(txnValidStart))
 			.setAccountID(payer)
@@ -173,7 +174,7 @@ class AwareTransactionContextTest {
 		given(ledger.netTokenTransfersInTxn()).willReturn(List.of(tokenTransfers));
 
 		exchange = mock(HbarCentExchange.class);
-		given(exchange.activeRates()).willReturn(ratesNow);
+		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
 
 		narratedCharging = mock(NarratedCharging.class);
 
@@ -386,7 +387,7 @@ class AwareTransactionContextTest {
 
 		// expect:
 		assertEquals(memo, record.getMemo());
-		assertEquals(hash, record.asGrpc().getTransactionHash());
+		assertArrayEquals(hash, record.asGrpc().getTransactionHash().toByteArray());
 		assertEquals(txnId, record.asGrpc().getTransactionID());
 		assertEquals(RichInstant.fromJava(now), record.getConsensusTimestamp());
 	}
@@ -586,15 +587,20 @@ class AwareTransactionContextTest {
 		assertThrows(IllegalStateException.class, () -> subject.trigger(accessor));
 	}
 
-	private ExpirableTxnRecord.Builder buildRecord(long otherNonThresholdFees, ByteString hash, TxnAccessor accessor,
-			Instant consensusTime, TxnReceipt receipt) {
+	private ExpirableTxnRecord.Builder buildRecord(
+                  long otherNonThresholdFees, 
+                  byte[] hash, 
+                  TxnAccessor accessor, 
+                  Instant consensusTime, 
+                  TxnReceipt receipt
+        ) {
 		long amount = ctx.narratedCharging().totalFeesChargedToPayer() + otherNonThresholdFees;
 		TransferList transfersList = ctx.ledger().netTransfersInTxn();
 		List<TokenTransferList> tokenTransferList = ctx.ledger().netTokenTransfersInTxn();
 
 		var builder = ExpirableTxnRecord.newBuilder()
 				.setReceipt(receipt)
-				.setTxnHash(hash.toByteArray())
+				.setTxnHash(hash)
 				.setTxnId(TxnId.fromGrpc(accessor.getTxnId()))
 				.setConsensusTime(RichInstant.fromJava(consensusTime))
 				.setMemo(accessor.getTxn().getMemo())
