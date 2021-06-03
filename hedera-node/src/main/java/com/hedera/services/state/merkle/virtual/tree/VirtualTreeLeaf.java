@@ -12,33 +12,33 @@ import java.util.Objects;
  * parent. A newly created leaf may be <strong>detached</strong>, which means
  * that it is not part of any tree.</p>
  */
-public final class VirtualTreeLeaf<K, V extends Hashable> extends VirtualTreeNode<K, V> {
+public final class VirtualTreeLeaf extends VirtualTreeNode {
     /**
      * The key associated with this leaf node. The key will never be null
      * and never changes over time.
      */
-    private final K key;
+    private final VirtualKey key;
 
     /**
      * The data associated with this leaf node. The data should never be null,
      * but can change over time.
      */
-    private V data;
+    private VirtualValue data;
 
     /**
      * Creates a new VirtualTreeLeaf
      */
-    public VirtualTreeLeaf(K key) {
+    public VirtualTreeLeaf(VirtualKey key) {
         this.key = key;
     }
 
-    public VirtualTreeLeaf(Hash hash, VirtualTreePath path, K key, V data) {
+    public VirtualTreeLeaf(Hash hash, VirtualTreePath path, VirtualKey key, VirtualValue data) {
         super(hash, path);
         this.key = key;
         this.data = data;
     }
 
-    public K getKey() {
+    public VirtualKey getKey() {
         return key;
     }
 
@@ -48,7 +48,7 @@ public final class VirtualTreeLeaf<K, V extends Hashable> extends VirtualTreeNod
      *
      * @param data The data, which can be null.
      */
-    public void setData(V data) {
+    public void setData(VirtualValue data) {
         if (!Objects.equals(this.data, data)) {
             this.data = data;
             invalidateHash();
@@ -60,7 +60,7 @@ public final class VirtualTreeLeaf<K, V extends Hashable> extends VirtualTreeNod
      *
      * @return The data, which may be null.
      */
-    public V getData() {
+    public VirtualValue getData() {
         return data;
     }
 
@@ -70,12 +70,12 @@ public final class VirtualTreeLeaf<K, V extends Hashable> extends VirtualTreeNod
     }
 
     @Override
-    public void walk(VirtualVisitor<K, V> visitor) {
+    public void walk(VirtualVisitor visitor) {
         visitor.visitLeaf(this);
     }
 
     @Override
-    public void walkDirty(VirtualVisitor<K, V> visitor) {
+    public void walkDirty(VirtualVisitor visitor) {
         if (isDirty()) {
             visitor.visitLeaf(this);
         }
