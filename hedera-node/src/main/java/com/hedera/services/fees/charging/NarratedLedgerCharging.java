@@ -164,7 +164,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
 		}
 		ledger.adjustBalance(dynamicProperties.fundingAccount(), +serviceFee);
 		totalCharged = serviceFee;
-		ledger.adjustBalance(payerId.toAccountId(), -totalCharged);
+		ledger.adjustBalance(grpcPayerId, -totalCharged);
 	}
 
 	@Override

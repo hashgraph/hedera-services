@@ -267,60 +267,11 @@ public class TxnReceipt implements SelfSerializable {
 		return helper.toString();
 	}
 
-	public void setRunningHashVersion(long runningHashVersion) {
-		this.runningHashVersion = runningHashVersion;
-	}
-
-	public void setTopicSequenceNumber(long topicSequenceNumber) {
-		this.topicSequenceNumber = topicSequenceNumber;
-	}
-
-	public void setTopicRunningHash(byte[] topicRunningHash) {
-		this.topicRunningHash = topicRunningHash;
-	}
-
-	public void setScheduledTxnId(TxnId scheduledTxnId) {
-		this.scheduledTxnId = scheduledTxnId;
-	}
-
-	public void setStatus(String status) {
-		this.status = status;
-	}
-
 	public void setAccountId(EntityId accountId) {
 		this.accountId = accountId;
 	}
 
-	public void setFileId(EntityId fileId) {
-		this.fileId = fileId;
-	}
-
-	public void setTopicId(EntityId topicId) {
-		this.topicId = topicId;
-	}
-
-	public void setTokenId(EntityId tokenId) {
-		this.tokenId = tokenId;
-	}
-
-	public void setContractId(EntityId contractId) {
-		this.contractId = contractId;
-	}
-
-	public void setScheduleId(EntityId scheduleId) {
-		this.scheduleId = scheduleId;
-	}
-
-	public void setExchangeRates(ExchangeRates exchangeRates) {
-		this.exchangeRates = exchangeRates;
-	}
-
-	public void setNewTotalSupply(Long newTotalSupply) {
-		this.newTotalSupply = newTotalSupply;
-	}
-
 	/* ---  Helpers --- */
-
 	public static TxnReceipt fromGrpc(TransactionReceipt grpc) {
 		final var effRates = grpc.hasExchangeRate() ? ExchangeRates.fromGrpc(grpc.getExchangeRate()) : null;
 		String status = grpc.getStatus() != null ? grpc.getStatus().name() : null;
