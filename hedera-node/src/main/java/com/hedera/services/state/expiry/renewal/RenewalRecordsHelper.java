@@ -31,12 +31,8 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamObject;
-import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -84,7 +80,6 @@ public class RenewalRecordsHelper {
 		final var eventTime = cycleStart.plusNanos(consensusNanosIncr++);
 		final var grpcId = id.toAccountId();
 		final var memo = "Entity " + id.toAbbrevString() + " was automatically deleted.";
-
 		final var record = forCrypto(grpcId, eventTime)
 				.setMemo(memo)
 				.setTokens(tokens)
@@ -143,7 +138,7 @@ public class RenewalRecordsHelper {
 		return ExpirableTxnRecord.newBuilder()
 				.setTxnId(new TxnId(EntityId.fromGrpcAccountId(accountId), MISSING_INSTANT, false))
 				.setReceipt(receipt)
-				.setConsensusTimestamp(at);
+				.setConsensusTime(at);
 	}
 
 	int getConsensusNanosIncr() {

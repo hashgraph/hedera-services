@@ -34,6 +34,7 @@ import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
 import com.hedera.services.bdd.spec.stats.QueryObs;
 import com.hedera.services.bdd.spec.stats.TxnObs;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.legacy.proto.utils.KeyExpansion;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
@@ -159,10 +160,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 					log.info("Recognized recoverable runtime exception {}, retrying status resolution...", msg);
 					continue;
 				} else {
-					log.error(
-							"{} Status resolution failed due to unrecoverable runtime exception, possibly network " +
-									"connection lost.",
-							txn);
+					if (spec.setup().suppressUnrecoverableNetworkFailures()) {
+						return false;
+					}
+					log.error("{} Status resolution failed due to unrecoverable runtime exception, " +
+									"possibly network connection lost.", CommonUtils.toReadableString(txn));
 					throw new HapiTxnCheckStateException("Unable to resolve txn status!");
 				}
 			}

@@ -35,7 +35,6 @@ import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
 
@@ -45,25 +44,22 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcScheduleId;
-import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 public class ExpiringCreations implements EntityCreator {
 	private RecordCache recordCache;
 
 	private final ExpiryManager expiries;
-	private final ServicesContext ctx;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 
 	public ExpiringCreations(
 			ExpiryManager expiries,
 			GlobalDynamicProperties dynamicProperties,
-			ServicesContext ctx
+			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts
 	) {
-		this.ctx = ctx;
+		this.accounts = accounts;
 		this.expiries = expiries;
-		this.accounts = ctx::accounts;
 		this.dynamicProperties = dynamicProperties;
 	}
 
@@ -100,7 +96,8 @@ public class ExpiringCreations implements EntityCreator {
 			byte[] hash,
 			TxnAccessor accessor,
 			Instant consensusTime,
-			TxnReceipt receipt
+			TxnReceipt receipt, 
+                        ServicesContext ctx
 	) {
 		final long amount = ctx.narratedCharging().totalFeesChargedToPayer() + otherNonThresholdFees;
 		final TransferList transfersList = ctx.ledger().netTransfersInTxn();
@@ -112,7 +109,7 @@ public class ExpiringCreations implements EntityCreator {
 				.setReceipt(receipt)
 				.setTxnHash(hash)
 				.setTxnId(TxnId.fromGrpc(accessor.getTxnId()))
-				.setConsensusTimestamp(RichInstant.fromJava(consensusTime))
+				.setConsensusTime(RichInstant.fromJava(consensusTime))
 				.setMemo(accessor.getTxn().getMemo())
 				.setFee(amount)
 				.setTransferList(currencyAdjustments)
@@ -126,15 +123,15 @@ public class ExpiringCreations implements EntityCreator {
 	}
 
 	@Override
-	public ExpirableTxnRecord.Builder buildFailedExpiringRecord(TxnAccessor accessor, Instant consensusTimestamp) {
+	public ExpirableTxnRecord.Builder buildFailedExpiringRecord(TxnAccessor accessor, Instant consensusTime) {
 		var txnId = accessor.getTxnId();
 
 		return ExpirableTxnRecord.newBuilder()
 				.setTxnId(TxnId.fromGrpc(txnId))
-				.setReceipt(TxnReceipt.fromGrpc(TransactionReceipt.newBuilder().setStatus(FAIL_INVALID).build()))
+				.setReceipt(TxnReceipt.newBuilder().setStatus(FAIL_INVALID.name()).build())
 				.setMemo(accessor.getTxn().getMemo())
 				.setTxnHash(accessor.getHash())
-				.setConsensusTimestamp(RichInstant.fromGrpc(asTimestamp(consensusTimestamp)))
+				.setConsensusTime(RichInstant.fromJava(consensusTime))
 				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null);
 	}
 
