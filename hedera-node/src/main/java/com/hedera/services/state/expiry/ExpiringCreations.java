@@ -96,8 +96,8 @@ public class ExpiringCreations implements EntityCreator {
 			byte[] hash,
 			TxnAccessor accessor,
 			Instant consensusTime,
-			TxnReceipt receipt, 
-                        ServicesContext ctx
+			TxnReceipt receipt,
+			ServicesContext ctx
 	) {
 		final long amount = ctx.narratedCharging().totalFeesChargedToPayer() + otherNonThresholdFees;
 		final TransferList transfersList = ctx.ledger().netTransfersInTxn();
