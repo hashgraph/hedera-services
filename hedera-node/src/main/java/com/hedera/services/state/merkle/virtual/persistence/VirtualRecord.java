@@ -1,6 +1,8 @@
 package com.hedera.services.state.merkle.virtual.persistence;
 
-import com.hedera.services.state.merkle.virtual.Path;
+import com.hedera.services.state.merkle.virtual.VirtualKey;
+import com.hedera.services.state.merkle.virtual.VirtualValue;
+import com.hedera.services.state.merkle.virtual.tree.VirtualTreePath;
 import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.crypto.Hash;
 
@@ -11,13 +13,13 @@ import java.util.Objects;
  * internal (parent) nodes and leaf nodes. Different constructors exist
  * for the different types of nodes. Leaf nodes always include a key.
  */
-public final class VirtualRecord<K, V> {
+public final class VirtualRecord {
     private static final Hash NULL_HASH = CryptoFactory.getInstance().getNullHash();
 
-    private final Path path;
+    private final VirtualTreePath path;
     private final Hash hash;
-    private final K key;
-    private final V value;
+    private final VirtualKey key;
+    private final VirtualValue value;
 
     /**
      * Creates a VirtualRecord suitable for a VirtualTreeLeaf.
@@ -27,7 +29,7 @@ public final class VirtualRecord<K, V> {
      * @param key The key. Cannot be null.
      * @param value The value. May be null.
      */
-    public VirtualRecord(Hash hash, Path path, K key, V value) {
+    public VirtualRecord(Hash hash, VirtualTreePath path, VirtualKey key, VirtualValue value) {
         this.hash = Objects.requireNonNull(hash);
         this.path = Objects.requireNonNull(path);
         this.key = Objects.requireNonNull(key);
@@ -40,7 +42,7 @@ public final class VirtualRecord<K, V> {
      * @param hash The hash associated with the data. Cannot be null.
      * @param path The path to the node. Cannot be null.
      */
-    public VirtualRecord(Hash hash, Path path) {
+    public VirtualRecord(Hash hash, VirtualTreePath path) {
         this.hash = Objects.requireNonNull(hash);
         this.path = Objects.requireNonNull(path);
         this.key = null;
@@ -52,7 +54,7 @@ public final class VirtualRecord<K, V> {
      *
      * @return A non-null path.
      */
-    public Path getPath() {
+    public VirtualTreePath getPath() {
         return path;
     }
 
@@ -70,7 +72,7 @@ public final class VirtualRecord<K, V> {
      *
      * @return The key. May be null if this is a leaf node, otherwise it is never null.
      */
-    public K getKey() {
+    public VirtualKey getKey() {
         return key;
     }
 
@@ -79,7 +81,7 @@ public final class VirtualRecord<K, V> {
      *
      * @return The value. May be null.
      */
-    public V getValue() {
+    public VirtualValue getValue() {
         return value;
     }
 
@@ -96,10 +98,10 @@ public final class VirtualRecord<K, V> {
      * Creates a new VirtualRecord identical to the first, except with an invalidated (null) hash.
      * @return A non-null virtual record that is invalidated in the hash.
      */
-    public VirtualRecord<K, V> invalidateHash() {
+    public VirtualRecord invalidateHash() {
         return isLeaf() ?
-                new VirtualRecord<>(NULL_HASH, path, key, value) :
-                new VirtualRecord<>(NULL_HASH, path);
+                new VirtualRecord(NULL_HASH, path, key, value) :
+                new VirtualRecord(NULL_HASH, path);
     }
 
     /**
@@ -109,12 +111,12 @@ public final class VirtualRecord<K, V> {
      * @param value The new value. Can be null.
      * @return A non-null virtual record.
      */
-    public VirtualRecord<K, V> withValue(V value) {
+    public VirtualRecord withValue(VirtualValue value) {
         if (!isLeaf()) {
             throw new IllegalStateException("Cannot call this method on non-leaf records");
         }
 
-        return new VirtualRecord<>(NULL_HASH, path, key, value);
+        return new VirtualRecord(NULL_HASH, path, key, value);
     }
 
     /**
@@ -124,9 +126,9 @@ public final class VirtualRecord<K, V> {
      * @param path The path that has changed.
      * @return A non-null virtual record
      */
-    public VirtualRecord<K, V> withPath(Path path) {
+    public VirtualRecord withPath(VirtualTreePath path) {
         return isLeaf() ?
-                new VirtualRecord<>(hash, path, key, value) :
-                new VirtualRecord<>(NULL_HASH, path);
+                new VirtualRecord(hash, path, key, value) :
+                new VirtualRecord(NULL_HASH, path);
     }
 }

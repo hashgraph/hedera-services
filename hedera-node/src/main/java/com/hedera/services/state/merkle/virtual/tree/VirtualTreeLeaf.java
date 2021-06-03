@@ -1,6 +1,7 @@
 package com.hedera.services.state.merkle.virtual.tree;
 
-import com.hedera.services.state.merkle.virtual.Path;
+import com.hedera.services.state.merkle.virtual.VirtualKey;
+import com.hedera.services.state.merkle.virtual.VirtualValue;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Hashable;
 
@@ -13,6 +14,12 @@ import java.util.Objects;
  */
 public final class VirtualTreeLeaf<K, V extends Hashable> extends VirtualTreeNode<K, V> {
     /**
+     * The key associated with this leaf node. The key will never be null
+     * and never changes over time.
+     */
+    private final K key;
+
+    /**
      * The data associated with this leaf node. The data should never be null,
      * but can change over time.
      */
@@ -21,12 +28,18 @@ public final class VirtualTreeLeaf<K, V extends Hashable> extends VirtualTreeNod
     /**
      * Creates a new VirtualTreeLeaf
      */
-    public VirtualTreeLeaf() {
+    public VirtualTreeLeaf(K key) {
+        this.key = key;
     }
 
-    public VirtualTreeLeaf(Hash hash, Path path, V data) {
+    public VirtualTreeLeaf(Hash hash, VirtualTreePath path, K key, V data) {
         super(hash, path);
+        this.key = key;
         this.data = data;
+    }
+
+    public K getKey() {
+        return key;
     }
 
     /**
@@ -54,5 +67,17 @@ public final class VirtualTreeLeaf<K, V extends Hashable> extends VirtualTreeNod
     @Override
     protected void recomputeHash() {
         setHash(data.getHash());
+    }
+
+    @Override
+    public void walk(VirtualVisitor<K, V> visitor) {
+        visitor.visitLeaf(this);
+    }
+
+    @Override
+    public void walkDirty(VirtualVisitor<K, V> visitor) {
+        if (isDirty()) {
+            visitor.visitLeaf(this);
+        }
     }
 }
