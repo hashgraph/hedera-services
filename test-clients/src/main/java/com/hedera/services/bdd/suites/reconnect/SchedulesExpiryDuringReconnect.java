@@ -44,6 +44,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.scheduleOpsEnablement;
+import static com.hedera.services.bdd.suites.reconnect.AutoRenewEntitiesForReconnect.runSomeTransactionsBeforeReconnect;
 import static com.hedera.services.bdd.suites.reconnect.ValidateTokensStateAfterReconnect.nonReconnectingNode;
 import static com.hedera.services.bdd.suites.reconnect.ValidateTokensStateAfterReconnect.reconnectingNode;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
@@ -66,6 +67,7 @@ public class SchedulesExpiryDuringReconnect extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
+				runSomeTransactionsBeforeReconnect(),
 				suiteSetup(),
 				expireSchedulesDuringReconnect()
 		);
