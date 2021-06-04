@@ -75,6 +75,13 @@ public final class VirtualTreeLeaf extends VirtualTreeNode {
     }
 
     @Override
+    public void walk(VirtualTreePath target, VirtualVisitor visitor) {
+        if (getPath().equals(target)) {
+            visitor.visitLeaf(this);
+        }
+    }
+
+    @Override
     public void walkDirty(VirtualVisitor visitor) {
         if (isDirty()) {
             visitor.visitLeaf(this);

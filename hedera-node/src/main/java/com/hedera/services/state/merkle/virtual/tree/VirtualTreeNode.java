@@ -144,7 +144,6 @@ public abstract class VirtualTreeNode {
         var node = this;
         while (node != null && node.hash != NULL_HASH) {
             node.hash = NULL_HASH;
-            node.dirty = true;
             node = node.parent;
         }
     }
@@ -161,6 +160,15 @@ public abstract class VirtualTreeNode {
      * @param visitor The visitor. Cannot be null.
      */
     public abstract void walk(VirtualVisitor visitor);
+
+    /**
+     * Walks the tree starting from this node taking the most direct route to the
+     * target node. Calls the visitor for each step downward.
+     *
+     * @param target The path of the node we're trying to walk towards.
+     * @param visitor The visitor. Cannot be null.
+     */
+    public abstract void walk(VirtualTreePath target, VirtualVisitor visitor);
 
     /**
      * Walks the tree starting from this node using pre-order traversal, invoking the visitor

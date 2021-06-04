@@ -1,58 +1,25 @@
 package com.hedera.services.state.merkle.virtual.persistence;
 
 import com.hedera.services.state.merkle.virtual.VirtualKey;
+import com.hedera.services.state.merkle.virtual.tree.VirtualTreeInternal;
+import com.hedera.services.state.merkle.virtual.tree.VirtualTreeLeaf;
 import com.hedera.services.state.merkle.virtual.tree.VirtualTreePath;
 
 import java.io.Closeable;
 import java.nio.file.Path;
 
 /**
- * Defines the datasource for persisting information about the virtual tree to disk,
- * or some other persistence engine. Every node in the virtual tree is represented
- * as a {@link VirtualRecord}. The {@code VirtualDataSource} is transactional,
- * having a {@link #commit()} method which must be called to persist the current
- * transaction state.
+ * Defines the datasource for persisting information about the virtual tree to disk.
  */
 public interface VirtualDataSource extends Closeable {
-    /**
-     * Gets the {@link VirtualRecord} for the node associated with the given key.
-     * This record is guaranteed to refer to a leaf node.
-     *
-     * @param key The key. May be null, but shouldn't be.
-     * @return The VirtualRecord for that key, or null if there isn't one.
-     */
-    VirtualRecord getRecord(VirtualKey key);
+    public VirtualTreeInternal load(VirtualTreePath parentPath);
+    public VirtualTreeLeaf load(VirtualKey leafKey);
 
-    /**
-     * Gets the {@link VirtualRecord} for the given node Path. If there is no record
-     * of this node (perhaps the node was never created or recorded), then
-     * null is returned.
-     *
-     * @param path The path to use for finding the record. May be null, but shouldn't be.
-     * @return Gets the virtual record for this path. Returns null if there is no such record.
-     */
-    VirtualRecord getRecord(VirtualTreePath path);
+    public void save(VirtualTreeInternal parent);
+    public void save(VirtualTreeLeaf leaf);
 
-    /**
-     * Deletes the record.
-     *
-     * @param record A non-null record.
-     */
-    void deleteRecord(VirtualRecord record);
-
-    /**
-     * Deletes the record.
-     *
-     * @param path A non-null path.
-     */
-    void deleteRecord(VirtualTreePath path);
-
-    /**
-     * Adds or updates the given record.
-     *
-     * @param record A non-null record.
-     */
-    void setRecord(VirtualRecord record);
+    public void delete(VirtualTreeInternal parent);
+    public void delete(VirtualTreeLeaf leaf);
 
     /**
      * Writes the path for the very last leaf to durable storage. This is needed for
