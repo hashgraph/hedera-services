@@ -24,13 +24,20 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.token.TokenMintUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.SubType;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenInfo;
+import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Optional;
 import java.util.function.BiFunction;
 
+import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -48,17 +55,28 @@ class TokenMintResourceUsageTest {
 	BiFunction<TransactionBody, SigUsage, TokenMintUsage> factory;
 	FeeData expected;
 
+	TokenID tokenID;
 	StateView view;
 	TokenMintUsage usage;
 	TokenMintResourceUsage subject;
+	TokenMintTransactionBody tokenMintTransactionBody;
+	TokenInfo tokenInfo;
 
 	@BeforeEach
 	private void setup() throws Throwable {
 		expected = mock(FeeData.class);
 		view = mock(StateView.class);
+		tokenID = mock(TokenID.class);
+		tokenInfo = mock(TokenInfo.class);
+		tokenMintTransactionBody = mock(TokenMintTransactionBody.class);
+		given(tokenInfo.getTokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
 
 		tokenMintTxn = mock(TransactionBody.class);
 		given(tokenMintTxn.hasTokenMint()).willReturn(true);
+		given(tokenMintTxn.getTokenMint()).willReturn(tokenMintTransactionBody);
+		given(tokenMintTransactionBody.getToken()).willReturn(tokenID);
+		given(view.infoForToken(tokenID)).willReturn(Optional.of(tokenInfo));
+		given(view.tokenType(tokenID)).willReturn(Optional.of(FUNGIBLE_COMMON));
 
 		nonTokenMintTxn = mock(TransactionBody.class);
 		given(nonTokenMintTxn.hasTokenMint()).willReturn(false);
@@ -68,6 +86,7 @@ class TokenMintResourceUsageTest {
 
 		factory = (BiFunction<TransactionBody, SigUsage, TokenMintUsage>)mock(BiFunction.class);
 		given(factory.apply(tokenMintTxn, sigUsage)).willReturn(usage);
+		given(usage.givenSubType(SubType.TOKEN_FUNGIBLE_COMMON)).willReturn(usage);
 
 		TokenMintResourceUsage.factory = factory;
 

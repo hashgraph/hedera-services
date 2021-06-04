@@ -447,6 +447,7 @@ class HfsSystemFilesManagerTest {
 
 	@Test
 	void logsSchedulesIfCorrupt() throws IOException {
+		// TODO: Update the json files with the new format.
 		// setup:
 		byte[] corruptSchedules = "NONSENSE".getBytes();
 		// and:
@@ -466,6 +467,7 @@ class HfsSystemFilesManagerTest {
 	@Test
 	void createsSchedulesFromResourcesIfMissing() throws IOException {
 		// setup:
+		// TODO: Should generate new .bin file with the new format
 		byte[] schedules = Files.readAllBytes(Paths.get(R4_FEE_SCHEDULE_REPR_PATH));
 
 		given(hfs.exists(schedulesId)).willReturn(false);

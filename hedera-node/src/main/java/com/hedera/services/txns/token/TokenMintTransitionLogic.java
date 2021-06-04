@@ -78,7 +78,7 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 				if(token.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
 					outcome = commonStore.mint(id, op.getAmount());
 				} else {
-					outcome = uniqueStore.mint(id, op.getMetadata().toStringUtf8(), RichInstant.fromJava(txnCtx.consensusTime()));
+					outcome = uniqueStore.mint(id, op.getMetadata(0).toStringUtf8(), RichInstant.fromJava(txnCtx.consensusTime()));
 				}
 				txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
 				if (outcome == OK) {

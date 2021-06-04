@@ -21,28 +21,40 @@ package com.hedera.services.bdd.suites.utils.sysfiles;
  */
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ScheduleEntryPojo {
 	String hederaFunctionality;
-	ScopedResourcePricesPojo feeData;
+	List<ScopedResourcePricesPojo> feeDataList;
 
 	public static ScheduleEntryPojo from(TransactionFeeSchedule grpc) {
 		var pojo = new ScheduleEntryPojo();
 
 		pojo.setHederaFunctionality(grpc.getHederaFunctionality().toString());
 
-		var nodePrices = ResourcePricesPojo.from(grpc.getFeeData().getNodedata());
-		var servicePrices = ResourcePricesPojo.from(grpc.getFeeData().getServicedata());
-		var networkPrices = ResourcePricesPojo.from(grpc.getFeeData().getNetworkdata());
+		List<ScopedResourcePricesPojo> feeDataList = new ArrayList<>();
 
-		var scopedPrices = new ScopedResourcePricesPojo();
-		scopedPrices.setNodedata(nodePrices);
-		scopedPrices.setNetworkdata(networkPrices);
-		scopedPrices.setServicedata(servicePrices);
-		pojo.setFeeData(scopedPrices);
+		for (FeeData feeData : grpc.getFeeDataListList()) {
+			var subType = feeData.getSubType();
+			var nodePrices = ResourcePricesPojo.from(feeData.getNodedata());
+			var servicePrices = ResourcePricesPojo.from(feeData.getServicedata());
+			var networkPrices = ResourcePricesPojo.from(feeData.getNetworkdata());
 
+			var scopedPrices = new ScopedResourcePricesPojo();
+			scopedPrices.setNodedata(nodePrices);
+			scopedPrices.setNetworkdata(networkPrices);
+			scopedPrices.setServicedata(servicePrices);
+			scopedPrices.setSubType(subType);
+
+			feeDataList.add(scopedPrices);
+		}
+
+		pojo.setFeeDataList(feeDataList);
 		return pojo;
 	}
 
@@ -54,11 +66,11 @@ public class ScheduleEntryPojo {
 		this.hederaFunctionality = hederaFunctionality;
 	}
 
-	public ScopedResourcePricesPojo getFeeData() {
-		return feeData;
+	public List<ScopedResourcePricesPojo> getFeeDataList() {
+		return feeDataList;
 	}
 
-	public void setFeeData(ScopedResourcePricesPojo feeData) {
-		this.feeData = feeData;
+	public void setFeeDataList(List<ScopedResourcePricesPojo> feeData) {
+		this.feeDataList = feeData;
 	}
 }

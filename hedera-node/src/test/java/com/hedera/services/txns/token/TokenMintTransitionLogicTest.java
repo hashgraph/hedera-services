@@ -182,7 +182,7 @@ class TokenMintTransitionLogicTest {
 		givenValidTxnCtx();
 		var  tokenMintBody = TokenMintTransactionBody.newBuilder()
 				.setToken(id)
-				.setMetadata(ByteString.copyFrom("memo".getBytes(StandardCharsets.UTF_8)))
+				.addMetadata(ByteString.copyFrom("memo".getBytes(StandardCharsets.UTF_8)))
 				.setAmount(amount).build();
 
 		tokenMintTxn = TransactionBody.newBuilder()

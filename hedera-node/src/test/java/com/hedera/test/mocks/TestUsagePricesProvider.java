@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
@@ -35,6 +36,7 @@ import org.apache.commons.lang3.tuple.Triple;
 
 import java.io.File;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import static java.util.stream.Collectors.toMap;
@@ -48,8 +50,8 @@ public enum TestUsagePricesProvider implements UsagePricesProvider {
 	Timestamp currFunctionUsagePricesExpiry;
 	Timestamp nextFunctionUsagePricesExpiry;
 
-	Map<HederaFunctionality, FeeData> currFunctionUsagePrices;
-	Map<HederaFunctionality, FeeData> nextFunctionUsagePrices;
+	Map<HederaFunctionality, Map<SubType, FeeData>> currFunctionUsagePrices;
+	Map<HederaFunctionality, Map<SubType, FeeData>> nextFunctionUsagePrices;
 
 	TestUsagePricesProvider() {
 		loadPriceSchedules();
@@ -66,15 +68,20 @@ public enum TestUsagePricesProvider implements UsagePricesProvider {
 	}
 
 	@Override
-	public FeeData activePrices() {
+	public Map<SubType, FeeData> activePrices() {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public FeeData pricesGiven(HederaFunctionality function, Timestamp at) {
+	public FeeData defaultActivePrices() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public Map<SubType, FeeData> pricesGiven(HederaFunctionality function, Timestamp at) {
 		try {
-			Map<HederaFunctionality, FeeData> functionUsagePrices = applicableUsagePrices(at);
-			FeeData usagePrices = functionUsagePrices.get(function);
+			Map<HederaFunctionality, Map<SubType, FeeData>> functionUsagePrices = applicableUsagePrices(at);
+			Map<SubType, FeeData> usagePrices = functionUsagePrices.get(function);
 			Objects.requireNonNull(usagePrices);
 			return usagePrices;
 		} catch (Exception ignore) { }
@@ -82,14 +89,19 @@ public enum TestUsagePricesProvider implements UsagePricesProvider {
 	}
 
 	@Override
-	public Triple<FeeData, Instant, FeeData> activePricingSequence(HederaFunctionality function) {
+	public FeeData defaultPricesGiven(HederaFunctionality function, Timestamp at) {
+		return pricesGiven(function, at).get(SubType.DEFAULT);
+	}
+
+	@Override
+	public Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> activePricingSequence(HederaFunctionality function) {
 		var now = Instant.now();
 		var prices = pricesGiven(function, MiscUtils.asTimestamp(now));
 		return Triple.of(prices, now, prices);
 	}
 
 
-	private Map<HederaFunctionality, FeeData> applicableUsagePrices(Timestamp at) {
+	private Map<HederaFunctionality, Map<SubType, FeeData>> applicableUsagePrices(Timestamp at) {
 		if (onlyNextScheduleApplies(at)) {
 			return nextFunctionUsagePrices;
 		} else {
@@ -116,9 +128,16 @@ public enum TestUsagePricesProvider implements UsagePricesProvider {
 		return Timestamp.newBuilder().setSeconds(ts.getSeconds()).build();
 	}
 
-	private Map<HederaFunctionality, FeeData> functionUsagePricesFrom(FeeSchedule feeSchedule) {
-		return feeSchedule.getTransactionFeeScheduleList()
-				.stream()
-				.collect(toMap(TransactionFeeSchedule::getHederaFunctionality, TransactionFeeSchedule::getFeeData));
+	private Map<HederaFunctionality, Map<SubType, FeeData>> functionUsagePricesFrom(FeeSchedule feeSchedule) {
+		var feeScheduleList = feeSchedule.getTransactionFeeScheduleList();
+		Map<HederaFunctionality, Map<SubType, FeeData>> feeDataMap = new HashMap<>();;
+		for (TransactionFeeSchedule fs : feeScheduleList) {
+			Map<SubType, FeeData> subTypeMap = new HashMap<>();
+			for (FeeData value : fs.getFeeDataListList()) {
+				subTypeMap.put(value.getSubType(), value);
+			}
+			feeDataMap.put(fs.getHederaFunctionality(), subTypeMap);
+		}
+		return feeDataMap;
 	}
 }

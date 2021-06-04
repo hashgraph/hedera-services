@@ -119,7 +119,6 @@ public class FeeBuilder {
    */
   public static long getTotalFeeforRequest(FeeData feeCoefficients, FeeData componentMetrics,
       ExchangeRate exchangeRate) {
-
     FeeObject feeObject = getFeeObject(feeCoefficients, componentMetrics,exchangeRate);
     long totalFee = feeObject.getServiceFee() + feeObject.getNodeFee() + feeObject.getNetworkFee();
     return totalFee;

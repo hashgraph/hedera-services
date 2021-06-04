@@ -376,8 +376,8 @@ public class CryptoTransferTransitionLogicTest {
 								.setToken(asToken("0.0.12345"))
 								.addAllTransfers(List.of(
 										adjustFrom(asAccount("0.0.2"), -1_000),
-										adjustFrom(asAccount("0.0.2"), +1_000)
-								))
+										adjustFrom(asAccount("0.0.2"), +1_000))
+								)
 				)
 				.build();
 
@@ -393,8 +393,8 @@ public class CryptoTransferTransitionLogicTest {
 								.setToken(asToken("0.0.12345"))
 								.addAllTransfers(List.of(
 										adjustFrom(asAccount("0.0.2"), -1_000),
-										adjustFrom(asAccount("0.0.3"), -1_000)
-								))
+										adjustFrom(asAccount("0.0.3"), -1_000))
+								)
 				)
 				.build();
 
@@ -428,8 +428,8 @@ public class CryptoTransferTransitionLogicTest {
 										AccountAmount.newBuilder()
 												.setAmount(-1000)
 												.build(),
-										adjustFrom(asAccount("0.0.3"), +1_000)
-								))
+										adjustFrom(asAccount("0.0.3"), +1_000))
+								)
 				)
 				.build();
 
@@ -445,8 +445,8 @@ public class CryptoTransferTransitionLogicTest {
 								.setToken(asToken("0.0.12345"))
 								.addAllTransfers(List.of(
 										adjustFrom(asAccount("0.0.2"), 0),
-										adjustFrom(asAccount("0.0.3"), 0)
-								))
+										adjustFrom(asAccount("0.0.3"), 0))
+								)
 				)
 				.build();
 

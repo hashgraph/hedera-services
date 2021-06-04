@@ -28,6 +28,8 @@ import java.util.function.Predicate;
 
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
 public abstract class TxnUsage {
@@ -50,6 +52,10 @@ public abstract class TxnUsage {
 
 	protected void addAmountBpt() {
 		usageEstimator.addBpt(AMOUNT_REPR_BYTES);
+	}
+
+	protected void addUniqueTokenBaseRb(int tokenSize) {
+		usageEstimator.addRbs(tokenSize * (BASIC_RICH_INSTANT_SIZE + BASIC_ENTITY_ID_SIZE + LONG_SIZE + BASIC_ENTITY_ID_SIZE));
 	}
 
 	protected void addEntityBpt() {

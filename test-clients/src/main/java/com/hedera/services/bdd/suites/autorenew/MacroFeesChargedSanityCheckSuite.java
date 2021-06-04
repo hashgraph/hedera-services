@@ -26,13 +26,17 @@ import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.SubType;
 import junit.framework.Assert;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -120,12 +124,17 @@ public class MacroFeesChargedSanityCheckSuite extends HapiApiSuite {
 						CryptoTransfers. We want to confirm its balance changed as expected
 						with the number of renewals. */
 						assertionsHold((spec, opLog) -> {
-							final var prices = spec.ratesProvider().currentSchedule().getTransactionFeeScheduleList()
+							var prices = spec.ratesProvider().currentSchedule().getTransactionFeeScheduleList()
 									.stream()
 									.filter(tfs -> tfs.getHederaFunctionality() == CryptoAccountAutoRenew)
 									.findFirst()
 									.get()
-									.getFeeData();
+									.getFeeDataListList()
+									.stream()
+									.filter(a -> a.getSubType() == SubType.DEFAULT)
+									.findFirst()
+									.get();
+
 							final var constantPrice = prices.getNodedata().getConstant() +
 											prices.getNetworkdata().getConstant() +
 											prices.getServicedata().getConstant();

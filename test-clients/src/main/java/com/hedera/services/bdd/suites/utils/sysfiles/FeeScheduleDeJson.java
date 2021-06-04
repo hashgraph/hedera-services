@@ -48,7 +48,7 @@ public class FeeScheduleDeJson {
 	private static String[] FEE_SCHEDULE_KEYS = { "currentFeeSchedule", "nextFeeSchedule" };
 	private static final String EXPIRY_TIME_KEY = "expiryTime";
 	private static final String TXN_FEE_SCHEDULE_KEY = "transactionFeeSchedule";
-	private static final String FEE_DATA_KEY = "feeData";
+	private static final String FEE_DATA_KEY = "feeDataList";
 	private static final String HEDERA_FUNCTION_KEY = "hederaFunctionality";
 	private static final String[] FEE_COMPONENT_KEYS = { "nodedata", "networkdata", "servicedata" };
 	private static final String[] RESOURCE_KEYS =
@@ -108,7 +108,11 @@ public class FeeScheduleDeJson {
 		TransactionFeeSchedule.Builder txnFeeSchedule = TransactionFeeSchedule.newBuilder();
 		var key = translateClaimFunction((String)rawTxnFeeSchedule.get(HEDERA_FUNCTION_KEY));
 		txnFeeSchedule.setHederaFunctionality(HederaFunctionality.valueOf(key));
-		txnFeeSchedule.setFeeData(bindFeeDataFrom((Map<String, Object>)rawTxnFeeSchedule.get(FEE_DATA_KEY)));
+
+		var feeDataList = (List<Object>)rawTxnFeeSchedule.get(FEE_DATA_KEY);
+		for (Object o : feeDataList) {
+			txnFeeSchedule.addFeeDataList(bindFeeDataFrom((Map<String, Object>) o));
+		}
 		return txnFeeSchedule.build();
 	}
 

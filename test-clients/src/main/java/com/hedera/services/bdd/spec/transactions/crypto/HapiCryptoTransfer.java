@@ -336,6 +336,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 				.collect(groupingBy(
 						TokenTransferList::getToken,
 						flatMapping(xfers -> xfers.getTransfersList().stream(), toList())));
+
 		return aggregated.entrySet().stream()
 				.map(entry -> TokenTransferList.newBuilder()
 						.setToken(entry.getKey())
