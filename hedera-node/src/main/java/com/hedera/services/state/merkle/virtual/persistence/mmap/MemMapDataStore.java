@@ -65,7 +65,8 @@ public final class MemMapDataStore {
         this.storageDirectory = storageDirectory;
         this.filePrefix = filePrefix;
         this.fileExtension = fileExtension;
-        final long fileSizeBytes = (long)fileSize * (long)MB;
+//        final long fileSizeBytes = (long)fileSize * (long)MB;
+        final long fileSizeBytes = fileSize;
         this.size = (int)(fileSizeBytes / (dataSize+MemMapDataFile.HEADER_SIZE));
     }
 
@@ -133,7 +134,7 @@ public final class MemMapDataStore {
      *
      * @return SlotLocation for a new location to store into
      */
-    public SlotLocation getNewSlot(){
+    public SlotLocation getNewSlot() {
         // search for a file to writ to if currentFileForWriting is missing or full
         if (currentFileForWriting == null || (currentFileForWriting.isFileFull())) {
             // current file is full or there is no current file

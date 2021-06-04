@@ -3,6 +3,7 @@ package com.hedera.services.state.merkle.virtual.persistence.mmap;
 import com.hedera.services.state.merkle.virtual.Account;
 import com.hedera.services.state.merkle.virtual.VirtualKey;
 import com.hedera.services.state.merkle.virtual.VirtualValue;
+import com.hedera.services.state.merkle.virtual.persistence.VirtualDataSource;
 import com.hedera.services.state.merkle.virtual.tree.VirtualTreeInternal;
 import com.hedera.services.state.merkle.virtual.tree.VirtualTreeLeaf;
 import com.hedera.services.state.merkle.virtual.tree.VirtualTreeNode;
@@ -217,7 +218,7 @@ public class VirtualMapDataStore {
      * @param account The account that the parent belongs to
      * @param parent The parent node to save
      */
-    public void save(Account account, VirtualTreeInternal parent){
+    public void save(Account account, VirtualTreeInternal parent) {
         // if already stored and if so it is an update
         SlotLocation slotLocation = findParent(account,parent.getPath());
         if (slotLocation == null) {
@@ -243,7 +244,7 @@ public class VirtualMapDataStore {
      * @param account The account that the leaf belongs to
      * @param leaf The leaf to store
      */
-    public void save(Account account, VirtualTreeLeaf leaf){
+    public void save(Account account, VirtualTreeLeaf leaf) {
         // if already stored and if so it is an update
         SlotLocation slotLocation = findLeaf(account,leaf.getKey());
         if (slotLocation == null) {
@@ -272,9 +273,9 @@ public class VirtualMapDataStore {
      * @param key The byte key for the path
      * @param path The path to write
      */
-    public void save(Account account, byte key, VirtualTreePath path){
+    public void save(Account account, byte key, VirtualTreePath path) {
         // if already stored and if so it is an update
-        SlotLocation slotLocation = findPath(account,key);
+        SlotLocation slotLocation = findPath(account, key);
         if (slotLocation == null) {
             // find a new slot location
             slotLocation = pathStore.getNewSlot();
