@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.fee.FeeObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -121,8 +122,7 @@ public class StakedAnswerFlow implements AnswerFlow {
 		final var bestGuessNow = optionalPayment
 				.map(a -> a.getTxnId().getTransactionValidStart())
 				.orElse(asTimestamp(now.get()));
-		final var usagePrices = resourceCosts.pricesGiven(service.canonicalFunction(), bestGuessNow);
-		
+		final var usagePrices = resourceCosts.defaultPricesGiven(service.canonicalFunction(), bestGuessNow);
 		long fee = 0L;
 		final Map<String, Object> queryCtx = new HashMap<>();
 		if (service.requiresNodePayment(query)) {

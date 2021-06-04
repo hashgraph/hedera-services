@@ -38,6 +38,7 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -52,6 +53,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo;
@@ -350,7 +352,7 @@ class StakedAnswerFlowTest {
 	}
 
 	private void givenAvailableResourcePrices() {
-		given(resourceCosts.pricesGiven(ConsensusGetTopicInfo, now)).willReturn(usagePrices);
+		given(resourceCosts.defaultPricesGiven(ConsensusGetTopicInfo, now)).willReturn(usagePrices);
 	}
 
 	private void givenHappyService() {

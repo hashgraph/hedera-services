@@ -20,6 +20,7 @@ package com.hedera.services.legacy.handler;
  * ‍
  */
 
+import com.fasterxml.jackson.databind.jsontype.SubtypeResolver;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.TextFormat;
 import com.hedera.services.context.TransactionContext;
@@ -50,12 +51,12 @@ import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseHeader;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -759,11 +760,15 @@ public class SmartContractRequestHandler {
 		return rbhPriceTinyBarsGiven(ContractCreate, at);
 	}
 
-	private long rbhPriceTinyBarsGiven(HederaFunctionality function, Timestamp at) {
-		FeeData prices = usagePrices.pricesGiven(function, at);
-		long feeInTinyCents = prices.getServicedata().getRbh() / 1000;
+	private long rbhPriceTinyBarsGiven(HederaFunctionality function, SubType subType, Timestamp at) {
+		Map<SubType, FeeData> prices = usagePrices.pricesGiven(function, at);
+		long feeInTinyCents = prices.get(subType).getServicedata().getRbh() / 1000;
 		long feeInTinyBars = FeeBuilder.getTinybarsFromTinyCents(exchange.rate(at), feeInTinyCents);
 		return Math.max(1L, feeInTinyBars);
+	}
+
+	private long rbhPriceTinyBarsGiven(HederaFunctionality function, Timestamp at) {
+		return rbhPriceTinyBarsGiven(function, at);
 	}
 
 	private long getContractCreateGasPriceInTinyBars(Timestamp at) {
@@ -774,25 +779,33 @@ public class SmartContractRequestHandler {
 		return gasPriceTinyBarsGiven(ContractCall, at);
 	}
 
-	private long gasPriceTinyBarsGiven(HederaFunctionality function, Timestamp at) {
-		FeeData prices = usagePrices.pricesGiven(function, at);
-		long feeInTinyCents = prices.getServicedata().getGas() / 1000;
+	private long gasPriceTinyBarsGiven(HederaFunctionality function, SubType subType, Timestamp at) {
+		Map<SubType, FeeData> prices = usagePrices.pricesGiven(function, at);
+		long feeInTinyCents = prices.get(subType).getServicedata().getGas() / 1000;
 		long feeInTinyBars = FeeBuilder.getTinybarsFromTinyCents(exchange.rate(at), feeInTinyCents);
 		return Math.max(1L, feeInTinyBars);
+	}
+
+	private long gasPriceTinyBarsGiven(HederaFunctionality function, Timestamp at) {
+		return gasPriceTinyBarsGiven(function, SubType.DEFAULT, at);
 	}
 
 	private long getContractCallSbhInTinyBars(Timestamp at) {
-		return sbhPriceTinyBarsGiven(ContractCall, at);
+		return sbhPriceTinyBarsGiven(ContractCall, SubType.DEFAULT, at);
 	}
 
 	private long getContractCreateSbhInTinyBars(Timestamp at) {
-		return sbhPriceTinyBarsGiven(ContractCreate, at);
+		return sbhPriceTinyBarsGiven(ContractCreate, SubType.DEFAULT, at);
+	}
+
+	private long sbhPriceTinyBarsGiven(HederaFunctionality function, SubType subType, Timestamp at) {
+		Map<SubType, FeeData> prices = usagePrices.pricesGiven(function, at);
+		long feeInTinyCents = prices.get(subType).getServicedata().getSbh() / 1000;
+		long feeInTinyBars = FeeBuilder.getTinybarsFromTinyCents(exchange.rate(at), feeInTinyCents);
+		return Math.max(1L, feeInTinyBars);
 	}
 
 	private long sbhPriceTinyBarsGiven(HederaFunctionality function, Timestamp at) {
-		FeeData prices = usagePrices.pricesGiven(function, at);
-		long feeInTinyCents = prices.getServicedata().getSbh() / 1000;
-		long feeInTinyBars = FeeBuilder.getTinybarsFromTinyCents(exchange.rate(at), feeInTinyCents);
-		return Math.max(1L, feeInTinyBars);
+		return sbhPriceTinyBarsGiven(function, SubType.DEFAULT, at);
 	}
 }

@@ -29,6 +29,7 @@ import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.files.store.FcBlobsBytesStore;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -284,6 +285,23 @@ public class StateView {
 			}
 
 			return Optional.of(info.build());
+		} catch (Exception unexpected) {
+			log.warn(
+					"Unexpected failure getting info for token {}!",
+					readableId(tokenID),
+					unexpected);
+			return Optional.empty();
+		}
+	}
+
+	public Optional<TokenType> tokenType(TokenID tokenID) {
+		try {
+			var id = tokenStore.resolve(tokenID);
+			if (id == MISSING_TOKEN) {
+				return Optional.empty();
+			}
+			var token = tokenStore.get(id);
+			return Optional.of(token.tokenType());
 		} catch (Exception unexpected) {
 			log.warn(
 					"Unexpected failure getting info for token {}!",

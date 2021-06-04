@@ -26,6 +26,7 @@ import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import com.hederahashgraph.fee.FeeBuilder;
 import com.hederahashgraph.service.proto.java.FileServiceGrpc;
@@ -119,11 +120,14 @@ public class FeeUtility {
     long gasPriceKiloTinyCentsCall = 0;
     for (TransactionFeeSchedule tFS : currentNextFeeSch.getCurrentFeeSchedule()
         .getTransactionFeeScheduleList()) {
+      var prices = tFS.getFeeDataListList()
+              .stream()
+              .filter(a -> a.getSubType() == SubType.DEFAULT).findFirst().get();
       if (tFS.getHederaFunctionality() == HederaFunctionality.ContractCall) {
-        gasPriceKiloTinyCentsCall = tFS.getFeeData().getServicedata().getGas();
+        gasPriceKiloTinyCentsCall = prices.getServicedata().getGas();
         System.out.println("Raw Contract Call gas: " + gasPriceKiloTinyCentsCall);
       } else if (tFS.getHederaFunctionality() == HederaFunctionality.ContractCreate) {
-        gasPriceKiloTinyCentsCreate = tFS.getFeeData().getServicedata().getGas();
+        gasPriceKiloTinyCentsCreate = prices.getServicedata().getGas();
         System.out.println("Raw Contract Create gas: " + gasPriceKiloTinyCentsCreate);
       }
     }
