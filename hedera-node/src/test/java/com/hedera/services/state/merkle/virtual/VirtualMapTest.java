@@ -109,39 +109,39 @@ public class VirtualMapTest {
         expected.forEach((key, value) -> Assertions.assertEquals(value, fv.getValue(key)));
     }
 
-    @Test
-    public void mmapBackend() {
-        final var storeDir = new File("./store").toPath();
-        try {
-            //noinspection ResultOfMethodCallIgnored
-            Files.walk(storeDir)
-                    .sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    .forEach(File::delete);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        final var store = new VirtualMapDataStore(storeDir, 32, 32);
-        store.open();
-        final var ds = new MemMapDataSource(store, new Account(0, 0, 100));
-        var v = new VirtualMap(ds);
-
-        final var expected = new HashMap<VirtualKey, VirtualValue>();
-        for (int i=0; i<1_000_000; i++) {
-            if (i > 0 && i % 15 == 0) {
-                v.commit();
-                v = new VirtualMap(ds);
-            }
-            final var key = asKey(i);
-            final var value = asValue((i + 100_000_000));
-            expected.put(key, value);
-            v.putValue(key, value);
-        }
-
-        final var fv = v;
-        expected.forEach((key, value) -> Assertions.assertEquals(value, fv.getValue(key)));
-    }
+//    @Test
+//    public void mmapBackend() {
+//        final var storeDir = new File("./store").toPath();
+//        try {
+//            //noinspection ResultOfMethodCallIgnored
+//            Files.walk(storeDir)
+//                    .sorted(Comparator.reverseOrder())
+//                    .map(Path::toFile)
+//                    .forEach(File::delete);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//
+//        final var store = new VirtualMapDataStore(storeDir, 32, 32);
+//        store.open();
+//        final var ds = new MemMapDataSource(store, new Account(0, 0, 100));
+//        var v = new VirtualMap(ds);
+//
+//        final var expected = new HashMap<VirtualKey, VirtualValue>();
+//        for (int i=0; i<1_000_000; i++) {
+//            if (i > 0 && i % 15 == 0) {
+//                v.commit();
+//                v = new VirtualMap(ds);
+//            }
+//            final var key = asKey(i);
+//            final var value = asValue((i + 100_000_000));
+//            expected.put(key, value);
+//            v.putValue(key, value);
+//        }
+//
+//        final var fv = v;
+//        expected.forEach((key, value) -> Assertions.assertEquals(value, fv.getValue(key)));
+//    }
 
 //    @Test
 //    public void quickAndDirty() {
@@ -191,19 +191,19 @@ public class VirtualMapTest {
     private static final class LeafRecord {
         private VirtualKey key;
         private Hash hash;
-        private VirtualTreePath path;
+        private long path;
         private VirtualValue value;
     }
 
     private static final class InMemoryDataSource implements VirtualDataSource {
         private Map<VirtualKey, LeafRecord> leaves = new HashMap<>();
-        private Map<VirtualTreePath, Hash> parents = new HashMap<>();
-        private VirtualTreePath firstLeafPath;
-        private VirtualTreePath lastLeafPath;
+        private Map<Long, Hash> parents = new HashMap<>();
+        private long firstLeafPath;
+        private long lastLeafPath;
         private boolean closed = false;
 
         @Override
-        public VirtualTreeInternal load(VirtualTreePath parentPath) {
+        public VirtualTreeInternal load(long parentPath) {
             final var hash = parents.get(parentPath);
             return hash == null ? null : new VirtualTreeInternal(hash, parentPath);
         }
@@ -247,22 +247,22 @@ public class VirtualMapTest {
         }
 
         @Override
-        public void writeLastLeafPath(VirtualTreePath path) {
+        public void writeLastLeafPath(long path) {
             this.lastLeafPath = path;
         }
 
         @Override
-        public VirtualTreePath getLastLeafPath() {
+        public long getLastLeafPath() {
             return lastLeafPath;
         }
 
         @Override
-        public void writeFirstLeafPath(VirtualTreePath path) {
+        public void writeFirstLeafPath(long path) {
             this.firstLeafPath = path;
         }
 
         @Override
-        public VirtualTreePath getFirstLeafPath() {
+        public long getFirstLeafPath() {
             return firstLeafPath;
         }
 

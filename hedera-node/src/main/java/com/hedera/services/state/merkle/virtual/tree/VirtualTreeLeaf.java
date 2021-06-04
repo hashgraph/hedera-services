@@ -32,7 +32,7 @@ public final class VirtualTreeLeaf extends VirtualTreeNode {
         this.key = key;
     }
 
-    public VirtualTreeLeaf(Hash hash, VirtualTreePath path, VirtualKey key, VirtualValue data) {
+    public VirtualTreeLeaf(Hash hash, long path, VirtualKey key, VirtualValue data) {
         super(hash, path);
         this.key = key;
         this.data = data;

@@ -9,7 +9,7 @@ public class VirtualVisitor {
 
     }
 
-    public void visitUncreated(VirtualTreePath uncreated) {
+    public void visitUncreated(long uncreatedPath) {
 
     }
 }
