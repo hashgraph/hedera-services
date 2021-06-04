@@ -118,7 +118,7 @@ public class AwareNodeDiligenceScreen {
 				readableId(submittingNodeAccount),
 				submittingMember,
 				readableId(designatedNodeAccount),
-				accessor.getSignedTxn4Log());
+				accessor.getSignedTxnWrapper());
 	}
 
 	private void warnOfMismatched(
@@ -131,6 +131,6 @@ public class AwareNodeDiligenceScreen {
 				readableId(submittingNodeAccount),
 				submittingMember,
 				readableId(designatedNodeAccount),
-				accessor.getSignedTxn4Log());
+				accessor.getSignedTxnWrapper());
 	}
 }

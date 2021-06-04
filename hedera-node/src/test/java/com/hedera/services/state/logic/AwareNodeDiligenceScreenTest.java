@@ -59,7 +59,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
@@ -185,7 +184,7 @@ class AwareNodeDiligenceScreenTest {
 		given(validator.isValidTxnDuration(validDuration.getSeconds())).willReturn(true);
 		given(validator.chronologyStatus(accessor, consensusTime)).willReturn(OK);
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
-		given(validator.rawMemoCheck(eq(accessor.getMemoUtf8Bytes()), eq(accessor.memoHasZeroByte())))
+		given(validator.rawMemoCheck(accessor.getMemoUtf8Bytes(), accessor.memoHasZeroByte()))
 				.willReturn(INVALID_ZERO_BYTE_IN_STRING);
 
 		// then:
@@ -202,7 +201,7 @@ class AwareNodeDiligenceScreenTest {
 		given(validator.isValidTxnDuration(validDuration.getSeconds())).willReturn(true);
 		given(validator.chronologyStatus(accessor, consensusTime)).willReturn(OK);
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
-		given(validator.rawMemoCheck(eq(accessor.getMemoUtf8Bytes()), eq(accessor.memoHasZeroByte())))
+		given(validator.rawMemoCheck(accessor.getMemoUtf8Bytes(), accessor.memoHasZeroByte()))
 				.willReturn(OK);
 
 		// then:

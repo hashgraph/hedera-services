@@ -121,11 +121,6 @@ public class SignedTxnAccessor implements TxnAccessor {
 	}
 
 	@Override
-	public Transaction getSignedTxn4Log() {
-		return signedTxnWrapper;
-	}
-
-	@Override
 	public byte[] getTxnBytes() {
 		return txnBytes;
 	}
