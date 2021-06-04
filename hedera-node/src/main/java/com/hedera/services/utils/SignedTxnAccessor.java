@@ -31,6 +31,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.commons.codec.binary.StringUtils;
+import org.bouncycastle.util.Arrays;
 
 import java.util.function.Function;
 
@@ -51,6 +52,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private byte[] utf8MemoBytes;
 	private byte[] signedTxnWrapperBytes;
 	private String memo;
+	private boolean memoHasZeroByte;
 	private Transaction signedTxnWrapper;
 	private SignatureMap sigMap;
 	private TransactionID txnId;
@@ -68,7 +70,8 @@ public class SignedTxnAccessor implements TxnAccessor {
 	public static SignedTxnAccessor uncheckedFrom(Transaction validSignedTxn) {
 		try {
 			return new SignedTxnAccessor(validSignedTxn);
-		} catch (Exception impossible) { }
+		} catch (Exception impossible) {
+		}
 		return null;
 	}
 
@@ -94,16 +97,19 @@ public class SignedTxnAccessor implements TxnAccessor {
 		sigMapSize = sigMap.getSerializedSize();
 		numSigPairs = sigMap.getSigPairCount();
 		utf8MemoBytes = StringUtils.getBytesUtf8(memo);
+		memoHasZeroByte = Arrays.contains(utf8MemoBytes, (byte)0);
 	}
 
 	public SignedTxnAccessor(Transaction signedTxnWrapper) throws InvalidProtocolBufferException {
 		this(signedTxnWrapper.toByteArray());
 	}
 
+	@Override
 	public SignatureMap getSigMap() {
 		return sigMap;
 	}
 
+	@Override
 	public HederaFunctionality getFunction() {
 		if (function == null) {
 			function = functionExtractor.apply(getTxn());
@@ -111,34 +117,42 @@ public class SignedTxnAccessor implements TxnAccessor {
 		return function;
 	}
 
+	@Override
 	public long getOfferedFee() {
 		return txn.getTransactionFee();
 	}
 
+	@Override
 	public Transaction getSignedTxn4Log() {
 		return signedTxnWrapper;
 	}
 
+	@Override
 	public byte[] getTxnBytes() {
 		return txnBytes;
 	}
 
+	@Override
 	public Transaction getSignedTxnWrapper() {
 		return signedTxnWrapper;
 	}
 
+	@Override
 	public TransactionBody getTxn() {
 		return txn;
 	}
 
+	@Override
 	public TransactionID getTxnId() {
 		return txnId;
 	}
 
+	@Override
 	public AccountID getPayer() {
 		return getTxnId().getAccountID();
 	}
 
+	@Override
 	public byte[] getSignedTxnWrapperBytes() {
 		return signedTxnWrapperBytes;
 	}
@@ -163,6 +177,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 		return memo;
 	}
 
+        @Override
 	public byte[] getHash() {
 		return hash;
 	}
@@ -170,6 +185,11 @@ public class SignedTxnAccessor implements TxnAccessor {
 	@Override
 	public boolean canTriggerTxn() {
 		return getTxn().hasScheduleCreate() || getTxn().hasScheduleSign();
+	}
+
+	@Override
+	public boolean memoHasZeroByte() {
+		return memoHasZeroByte;
 	}
 
 	public boolean isTriggeredTxn() {

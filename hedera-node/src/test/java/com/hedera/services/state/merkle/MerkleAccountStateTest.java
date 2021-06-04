@@ -22,6 +22,7 @@ package com.hedera.services.state.merkle;
 
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.serdes.IoReadingFunction;
 import com.hedera.services.state.serdes.IoWritingConsumer;
@@ -123,6 +124,10 @@ class MerkleAccountStateTest {
 
 	@Test
 	void copyIsImmutable() {
+		// given:
+		final var key = new JKeyList();
+		final var proxy = new EntityId(0, 0, 2);
+
 		// when:
 		subject.copy();
 
@@ -130,12 +135,12 @@ class MerkleAccountStateTest {
 		assertThrows(MutabilityException.class, () -> subject.setHbarBalance(1L));
 		assertThrows(MutabilityException.class, () -> subject.setAutoRenewSecs(1_234_567L));
 		assertThrows(MutabilityException.class, () -> subject.setDeleted(true));
-		assertThrows(MutabilityException.class, () -> subject.setKey(new JEd25519Key("NOPE".getBytes())));
+		assertThrows(MutabilityException.class, () -> subject.setKey(key));
 		assertThrows(MutabilityException.class, () -> subject.setMemo("NOPE"));
 		assertThrows(MutabilityException.class, () -> subject.setSmartContract(false));
 		assertThrows(MutabilityException.class, () -> subject.setReceiverSigRequired(true));
 		assertThrows(MutabilityException.class, () -> subject.setExpiry(1_234_567L));
-		assertThrows(MutabilityException.class, () -> subject.setProxy(new EntityId(0, 0, 2)));
+		assertThrows(MutabilityException.class, () -> subject.setProxy(proxy));
 	}
 
 	@Test

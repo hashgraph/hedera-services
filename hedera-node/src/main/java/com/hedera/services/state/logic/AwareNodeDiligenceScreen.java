@@ -99,7 +99,7 @@ public class AwareNodeDiligenceScreen {
 			return true;
 		}
 
-		var memoValidity = validator.rawMemoCheck(accessor.getMemoUtf8Bytes());
+		var memoValidity = validator.rawMemoCheck(accessor.getMemoUtf8Bytes(), accessor.memoHasZeroByte());
 		if (memoValidity != OK) {
 			txnCtx.setStatus(memoValidity);
 			return true;

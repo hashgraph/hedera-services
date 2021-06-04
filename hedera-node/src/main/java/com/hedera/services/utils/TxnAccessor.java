@@ -48,6 +48,8 @@ public interface TxnAccessor {
 
     byte[] getMemoUtf8Bytes();
 
+    boolean memoHasZeroByte();
+
     Transaction getSignedTxnWrapper();
 
     TransactionBody getTxn();
