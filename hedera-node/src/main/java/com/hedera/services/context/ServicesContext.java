@@ -1708,6 +1708,7 @@ public class ServicesContext {
 		if (grpc == null) {
 			grpc = new NettyGrpcServerManager(
 					Runtime.getRuntime()::addShutdownHook,
+					nodeLocalProperties(),
 					List.of(
 							cryptoGrpc(),
 							filesGrpc(),

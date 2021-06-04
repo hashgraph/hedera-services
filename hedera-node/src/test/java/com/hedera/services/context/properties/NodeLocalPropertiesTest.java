@@ -33,19 +33,19 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 class NodeLocalPropertiesTest {
-	PropertySource properties;
+	private PropertySource properties;
 
-	NodeLocalProperties subject;
+	private NodeLocalProperties subject;
 
 	private static final Profile[] LEGACY_ENV_ORDER = { DEV, PROD, TEST };
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		properties = mock(PropertySource.class);
 	}
 
 	@Test
-	public void constructsAsExpected() {
+	void constructsAsExpected() {
 		givenPropsWithSeed(1);
 
 		// when:
@@ -79,10 +79,12 @@ class NodeLocalPropertiesTest {
 		assertEquals("B", subject.accountsExportPath());
 		assertFalse(subject.exportAccountsOnStartup());
 		assertEquals(Profile.PROD, subject.nettyMode());
+		assertEquals(23, subject.nettyStartRetries());
+		assertEquals(24L, subject.nettyStartRetryIntervalMs());
 	}
 
 	@Test
-	public void reloadWorksAsExpected() {
+	void reloadWorksAsExpected() {
 		givenPropsWithSeed(2);
 
 		// when:
@@ -116,6 +118,8 @@ class NodeLocalPropertiesTest {
 		assertEquals("A", subject.accountsExportPath());
 		assertTrue(subject.exportAccountsOnStartup());
 		assertEquals(Profile.TEST, subject.nettyMode());
+		assertEquals(24, subject.nettyStartRetries());
+		assertEquals(25L, subject.nettyStartRetryIntervalMs());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -147,6 +151,8 @@ class NodeLocalPropertiesTest {
 		given(properties.getStringProperty("hedera.accountsExportPath")).willReturn(i % 2 == 0 ? "A" : "B");
 		given(properties.getBooleanProperty("hedera.exportAccountsOnStartup")).willReturn(i % 2 == 0);
 		given(properties.getProfileProperty("netty.mode")).willReturn(LEGACY_ENV_ORDER[(i + 21) % 3]);
+		given(properties.getIntProperty("netty.startRetries")).willReturn(i + 22);
+		given(properties.getLongProperty("netty.startRetryIntervalMs")).willReturn(i + 23L);
 	}
 
 	static String logDir(int num) {
