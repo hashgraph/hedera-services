@@ -62,7 +62,7 @@ public class UpdateTopicResourceUsage implements TxnResourceUsageEstimator {
             } else {
                     return getConsensusUpdateTopicFee(txn, 0, sigUsage);
                 }
-        } catch (DecoderException illegal) {
+        } catch (NullPointerException | DecoderException illegal) {
             log.warn("Usage estimation unexpectedly failed for {}!", txn, illegal);
             throw new InvalidTxBodyException(illegal);
         }
