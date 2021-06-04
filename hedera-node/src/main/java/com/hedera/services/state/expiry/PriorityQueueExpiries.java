@@ -9,9 +9,9 @@ package com.hedera.services.state.expiry;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,12 +22,12 @@ package com.hedera.services.state.expiry;
 
 import com.google.common.base.MoreObjects;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.PriorityBlockingQueue;
 
-public class MonotonicFullQueueExpiries<K> implements KeyedExpirations<K> {
+public class PriorityQueueExpiries<K> implements KeyedExpirations<K> {
 	private long now = 0L;
-	private Deque<ExpiryEvent> allExpiries = new ArrayDeque<>();
+	private BlockingQueue<ExpiryEvent> allExpiries = new PriorityBlockingQueue<>();
 
 	@Override
 	public void reset() {
@@ -37,16 +37,13 @@ public class MonotonicFullQueueExpiries<K> implements KeyedExpirations<K> {
 
 	@Override
 	public void track(K id, long expiry) {
-		if (expiry < now) {
-			throw new IllegalArgumentException(String.format("Track time %d for %s not later than %d", expiry, id, now));
-		}
-		now = expiry;
-		allExpiries.add(new ExpiryEvent(id, expiry));
+		allExpiries.offer(new ExpiryEvent(id, expiry));
+		now = allExpiries.peek().getExpiry();
 	}
 
 	@Override
 	public boolean hasExpiringAt(long now) {
-		return !allExpiries.isEmpty() && allExpiries.peekFirst().isExpiredAt(now);
+		return !allExpiries.isEmpty() && allExpiries.peek().isExpiredAt(now);
 	}
 
 	@Override
@@ -55,12 +52,13 @@ public class MonotonicFullQueueExpiries<K> implements KeyedExpirations<K> {
 			throw new IllegalStateException("No ids are queued for expiration!");
 		}
 		if (!allExpiries.peek().isExpiredAt(now)) {
-			throw new IllegalArgumentException(String.format("Argument 'now=%d' is earlier than the next expiry!", now));
+			throw new IllegalArgumentException(String.format("Argument 'now=%d' is earlier than the next expiry!",
+					now));
 		}
-		return allExpiries.removeFirst().getId();
+		return allExpiries.remove().getId();
 	}
 
-	final class ExpiryEvent {
+	final class ExpiryEvent implements Comparable<ExpiryEvent> {
 		private final K id;
 		private final long expiry;
 
@@ -88,9 +86,14 @@ public class MonotonicFullQueueExpiries<K> implements KeyedExpirations<K> {
 					.add("expiry", expiry)
 					.toString();
 		}
+
+		@Override
+		public int compareTo(ExpiryEvent that) {
+			return Long.compare(this.expiry, that.expiry);
+		}
 	}
 
-	Deque<ExpiryEvent> getAllExpiries() {
+	BlockingQueue<ExpiryEvent> getAllExpiries() {
 		return allExpiries;
 	}
 

@@ -62,10 +62,10 @@ public class ExpiryManager {
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 	private final Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules;
 
-	private final MonotonicFullQueueExpiries<Long> payerRecordExpiries =
-			new MonotonicFullQueueExpiries<>();
-	private final MonotonicFullQueueExpiries<Pair<Long, Consumer<EntityId>>> shortLivedEntityExpiries =
-			new MonotonicFullQueueExpiries<>();
+	private final PriorityQueueExpiries<Long> payerRecordExpiries =
+			new PriorityQueueExpiries<>();
+	private final PriorityQueueExpiries<Pair<Long, Consumer<EntityId>>> shortLivedEntityExpiries =
+			new PriorityQueueExpiries<>();
 
 	public ExpiryManager(
 			RecordCache recordCache,
@@ -216,7 +216,7 @@ public class ExpiryManager {
 		return new EntityId(shard, realm, num);
 	}
 
-	MonotonicFullQueueExpiries<Pair<Long, Consumer<EntityId>>> getShortLivedEntityExpiries() {
+	PriorityQueueExpiries<Pair<Long, Consumer<EntityId>>> getShortLivedEntityExpiries() {
 		return shortLivedEntityExpiries;
 	}
 }

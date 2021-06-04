@@ -24,7 +24,7 @@ import com.google.common.cache.Cache;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.state.expiry.ExpiringCreations;
-import com.hedera.services.state.expiry.MonotonicFullQueueExpiries;
+import com.hedera.services.state.expiry.PriorityQueueExpiries;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.TriggeredTxnAccessor;
@@ -124,7 +124,7 @@ class RecordCacheTest {
 
 	@Test
 	public void resetsHistoriesIfRequested() {
-		subject.recordExpiries = mock(MonotonicFullQueueExpiries.class);
+		subject.recordExpiries = mock(PriorityQueueExpiries.class);
 
 		// when:
 		subject.reset();
@@ -153,7 +153,7 @@ class RecordCacheTest {
 	@Test
 	public void tracksExpiringTxnIds() {
 		// setup:
-		subject.recordExpiries = mock(MonotonicFullQueueExpiries.class);
+		subject.recordExpiries = mock(PriorityQueueExpiries.class);
 		// and:
 		record.setExpiry(someExpiry);
 

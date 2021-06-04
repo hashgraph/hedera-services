@@ -28,24 +28,30 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class MonotonicFullQueueExpiriesTest {
+class PriorityQueueExpiriesTest {
 	String k1 = "first", k2 = "second", k3 = "third";
 	long expiry1 = 50, expiry2 = 100, expiry3 = 1000;
 
-	MonotonicFullQueueExpiries<String> subject;
+	PriorityQueueExpiries<String> subject;
 
 	@BeforeEach
 	void setup() {
-		subject = new MonotonicFullQueueExpiries<>();
+		subject = new PriorityQueueExpiries<>();
 	}
 
 	@Test
-	void throwsOnNonMonotonicClock() {
+	void succeedsOnNonMonotonicClock() {
 		// given:
 		subject.track(k1, expiry1);
 
-		// expect:
-		assertThrows(IllegalArgumentException.class, () -> subject.track(k2, expiry1 - 1));
+		// given:
+		subject.track(k2, expiry1 - 1);
+
+		//expect:
+		assertTrue(subject.hasExpiringAt(expiry1 - 1));
+		assertEquals(expiry1 - 1, subject.getNow());
+		assertEquals(expiry1-1, subject.getAllExpiries().peek().getExpiry());
+		assertEquals(k2, subject.expireNextAt(expiry1 -1));
 	}
 
 	@Test
@@ -59,7 +65,7 @@ class MonotonicFullQueueExpiriesTest {
 		assertTrue(subject.hasExpiringAt(expiry1 + 1));
 		assertFalse(subject.hasExpiringAt(expiry1 - 1));
 		// and:
-		assertEquals(expiry3, subject.getNow());
+		assertEquals(expiry1, subject.getNow());
 
 		// when:
 		var firstExpired = subject.expireNextAt(expiry1);
@@ -111,7 +117,7 @@ class MonotonicFullQueueExpiriesTest {
 	@Test
 	void expiryEventToStringWorks() {
 		// given:
-		var expiryEvent = new MonotonicFullQueueExpiries<String>().new ExpiryEvent("something", 1_234_567L);
+		var expiryEvent = new PriorityQueueExpiries<String>().new ExpiryEvent("something", 1_234_567L);
 		var desired = "ExpiryEvent{id=something, expiry=1234567}";
 
 		// when:
