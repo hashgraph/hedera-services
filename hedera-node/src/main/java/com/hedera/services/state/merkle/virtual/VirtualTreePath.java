@@ -1,4 +1,4 @@
-package com.hedera.services.state.merkle.virtual.tree;
+package com.hedera.services.state.merkle.virtual;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -22,8 +22,6 @@ public final class VirtualTreePath {
     private static final long BREADCRUMB_MASK = 0x00FFFFFFFFFFFFFFL;
     private static final long RANK_MASK = 0xFF00000000000000L;
     private static final long ALL_SET = -1L;
-    private static final long LEFT = 1;
-    private static final long RIGHT = 0;
 
     /**
      * A special constant that represents the Path of a root node. It isn't necessary

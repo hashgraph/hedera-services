@@ -1,11 +1,7 @@
 package com.hedera.services.state.merkle.virtual;
 
 import com.hedera.services.state.merkle.virtual.persistence.VirtualDataSource;
-import com.hedera.services.state.merkle.virtual.tree.VirtualTreePath;
-import com.hedera.services.state.merkle.virtual.tree.VirtualTreeInternal;
-import com.hedera.services.state.merkle.virtual.tree.VirtualTreeLeaf;
-import com.hedera.services.state.merkle.virtual.tree.VirtualTreeNode;
-import com.hedera.services.state.merkle.virtual.tree.VirtualVisitor;
+import com.hedera.services.state.merkle.virtual.persistence.VirtualRecord;
 import com.swirlds.common.Archivable;
 import com.swirlds.common.FCMElement;
 import com.swirlds.common.FCMValue;
@@ -18,28 +14,20 @@ import com.swirlds.common.merkle.MerkleExternalLeaf;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
-import static com.hedera.services.state.merkle.virtual.tree.VirtualTreePath.INVALID_PATH;
-import static com.hedera.services.state.merkle.virtual.tree.VirtualTreePath.ROOT_PATH;
-import static com.hedera.services.state.merkle.virtual.tree.VirtualTreePath.asPath;
-import static com.hedera.services.state.merkle.virtual.tree.VirtualTreePath.getBreadcrumbs;
-import static com.hedera.services.state.merkle.virtual.tree.VirtualTreePath.getIndexInRank;
-import static com.hedera.services.state.merkle.virtual.tree.VirtualTreePath.getLeftChildPath;
-import static com.hedera.services.state.merkle.virtual.tree.VirtualTreePath.getParentPath;
-import static com.hedera.services.state.merkle.virtual.tree.VirtualTreePath.getPathForRankAndIndex;
-import static com.hedera.services.state.merkle.virtual.tree.VirtualTreePath.getRank;
-import static com.hedera.services.state.merkle.virtual.tree.VirtualTreePath.getRightChildPath;
-import static com.hedera.services.state.merkle.virtual.tree.VirtualTreePath.isFarRight;
-import static com.hedera.services.state.merkle.virtual.tree.VirtualTreePath.isLeft;
-import static com.hedera.services.state.merkle.virtual.tree.VirtualTreePath.isParentOf;
+import static com.hedera.services.state.merkle.virtual.VirtualTreePath.INVALID_PATH;
+import static com.hedera.services.state.merkle.virtual.VirtualTreePath.ROOT_PATH;
+import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getIndexInRank;
+import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getLeftChildPath;
+import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getParentPath;
+import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getPathForRankAndIndex;
+import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getRank;
+import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getRightChildPath;
+import static com.hedera.services.state.merkle.virtual.VirtualTreePath.isFarRight;
+import static com.hedera.services.state.merkle.virtual.VirtualTreePath.isLeft;
 
 /**
  * A type of Merkle node that is also map-like and is designed for working with
@@ -79,16 +67,11 @@ public final class VirtualMap
     private final VirtualDataSource dataSource;
 
     /**
-     * The root node of the inner merkle tree. It always starts off as null,
-     * and is created or loaded lazily.
-     */
-    private VirtualTreeInternal root;
-
-    /**
      * A local cache that maps from keys to leaves. Normally this map will contain a few
      * tens of items at most.
      */
-    private final Map<VirtualKey, VirtualTreeLeaf> cache = new HashMap<>();
+    private final Map<VirtualKey, VirtualRecord> cache = new HashMap<>();
+    private final Map<Long, VirtualRecord> cache2 = new HashMap<>();
 
     /**
      * Keeps track of all tree nodes that were deleted. A leaf node that was deleted represents
@@ -98,8 +81,8 @@ public final class VirtualMap
      * // TODO A deleted node might be re-added as a consequence of some sequence of delete and add.
      * // TODO So we need to remove things from deleted nodes if they are re-added later.
      */
-    private final Set<VirtualTreeInternal> deletedInternalNodes = new HashSet<>();
-    private final Set<VirtualTreeLeaf> deletedLeafNodes = new HashSet<>();
+//    private final Set<VirtualTreeInternal> deletedInternalNodes = new HashSet<>();
+//    private final Set<VirtualTreeLeaf> deletedLeafNodes = new HashSet<>();
 
     /**
      * The path of the very last leaf in the tree. Can be null if there are no leaves.
@@ -117,7 +100,6 @@ public final class VirtualMap
      * Creates a new VirtualTreeMap.
      */
     public VirtualMap(VirtualDataSource ds) {
-        this.root = null;
         this.dataSource = Objects.requireNonNull(ds);
         this.firstLeafPath = ds.getFirstLeafPath();
         this.lastLeafPath = ds.getLastLeafPath();
@@ -130,7 +112,6 @@ public final class VirtualMap
      * @param source Not null.
      */
     private VirtualMap(VirtualMap source) {
-        this.root = null;
         this.dataSource = source.dataSource;
         this.firstLeafPath = source.firstLeafPath;
         this.lastLeafPath = source.lastLeafPath;
@@ -147,18 +128,13 @@ public final class VirtualMap
     public VirtualValue getValue(VirtualKey key) {
         Objects.requireNonNull(key);
 
-        // Check the cache and return the leaf if it was in there.
-        var leaf = cache.get(key);
-        if (leaf != null) {
-            return leaf.getData();
+        // Check the cache and return the value if it was in there.
+        var rec = cache.get(key);
+        if (rec != null) {
+            return rec.getValue();
         }
 
-        final var value = dataSource.get(key);
-        if (value != null) {
-            return value;
-        }
-
-        return null;
+        return dataSource.getLeafValue(key);
     }
 
     /**
@@ -171,10 +147,9 @@ public final class VirtualMap
     public void putValue(VirtualKey key, VirtualValue value) {
         throwIfImmutable();
         Objects.requireNonNull(key);
-        final var leaf = findLeaf(key);
-        if (leaf != null) {
-            leaf.setData(value);
-            leaf.makeDirty();
+        final var rec = findRecord(key);
+        if (rec != null) {
+            rec.setValue(value);
         } else {
             add(key, value);
         }
@@ -207,30 +182,11 @@ public final class VirtualMap
         this.dataSource.writeFirstLeafPath(firstLeafPath);
         this.dataSource.writeLastLeafPath(lastLeafPath);
 
-        // Flush everything to the data source. Note that as long as the tree got larger,
-        // this will overwrite records at various paths with the new data, which is exactly
-        // what we want. For example, if a leaf node used to be at path 1001 but it is now
-        // a parent node, the entry will be overwritten with the parent node data. All good!
-        // If the tree got smaller, there can be some paths "left over". We maintain a map
-        // of all such abandoned paths so that we can delete them during this phase.
-        if (root != null) {
-            // Commit all of the dirty tree nodes
-            root.walkDirty(new VirtualVisitor() {
-                @Override
-                public void visitParent(VirtualTreeInternal parent) {
-                    dataSource.save(parent);
-                }
+        this.cache.values().stream()
+                .filter(VirtualRecord::isDirty)
+                .forEach(dataSource::saveLeaf);
 
-                @Override
-                public void visitLeaf(VirtualTreeLeaf leaf) {
-                    dataSource.save(leaf);
-                }
-            });
-
-            // Delete all the nodes that were removed.
-            deletedInternalNodes.forEach(dataSource::delete);
-            deletedLeafNodes.forEach(dataSource::delete);
-        }
+        // TODO handle updating hashes, updating parents, deleting things, etc.
     }
 
     @Override
@@ -243,8 +199,10 @@ public final class VirtualMap
     @Override
     public Hash getHash() {
         // Realize the root node, if it doesn't already exist
-        final var r = root == null ? realizeRootNode() : root;
-        return r.hash(); // recomputes if needed
+        // TODO compute this
+        return NULL_HASH;
+//        final var r = root == null ? realizeRootNode() : root;
+//        return r.hash(); // recomputes if needed
     }
 
     @Override
@@ -336,65 +294,57 @@ public final class VirtualMap
     // ----------------------------------------------------------------------------------------------------
 
     /**
-     * Finds the leaf associated with the given key, realizing a ghost if needed,
-     * and returning the leaf, or null if one cannot be found.
-     *
-     * @param key They key. Cannot be null.
-     * @return The tree leaf associated with this key, or null if there is not one.
      */
-    private VirtualTreeLeaf findLeaf(VirtualKey key) {
+    private VirtualRecord findRecord(VirtualKey key) {
         assert key != null;
 
-        // Check the cache and return the leaf if it was in there.
-        var leaf = cache.get(key);
-        if (leaf != null) {
-            return leaf;
+        var rec = cache.get(key);
+        if (rec == null) {
+            rec = dataSource.loadLeaf(key);
         }
 
-        // Check for a ghost record and realize the leaf (and its parents) if there is a record.
-        leaf = dataSource.load(key);
-        if (leaf != null) {
-            // Make sure all the parents are realized
-            final var leafPath = leaf.getPath();
-            final var parent = realizeAllInternal(getParentPath(leafPath));
-            if (isLeft(leafPath)) {
-                parent.setLeftChild(leaf);
-            } else {
-                parent.setRightChild(leaf);
-            }
-
-            // Add it to the cache
-            cache.put(key, leaf);
-            return leaf;
+        if (rec != null) {
+            cache.put(key, rec);
+            cache2.put(rec.getPath(), rec);
         }
-
-        // There is no record of this leaf either in the cache or the data source, so
-        // the key is bogus.
-        return null;
+        return rec;
     }
 
-    private VirtualTreeInternal realizeAllInternal(long path) {
-        final var parentRef = new AtomicReference<VirtualTreeInternal>();
-        if (root == null) {
-            root = realizeRootNode();
+    private VirtualRecord findRecord(long path) {
+        var rec = cache2.get(path);
+        if (rec == null) {
+            rec = dataSource.loadLeaf(path);
         }
-        root.walk(path, new VirtualVisitor() {
-            @Override
-            public void visitParent(VirtualTreeInternal parent) {
-                parentRef.set(parent);
-            }
 
-            @Override
-            public void visitUncreated(long uncreated) {
-                // If the uncreated tree path matches the prefix of our path, then we create
-                // the node. This brings all the parents into reality.
-                if (isParentOf(uncreated, path) || uncreated == path) {
-                    realizeInternalNode(parentRef.get(), uncreated);
-                }
-            }
-        });
-        return parentRef.get();
+        if (rec != null) {
+            cache.put(rec.getKey(), rec);
+            cache2.put(path, rec);
+        }
+        return rec;
     }
+
+//    private VirtualTreeInternal realizeAllInternal(long path) {
+//        final var parentRef = new AtomicReference<VirtualTreeInternal>();
+//        if (root == null) {
+//            root = realizeRootNode();
+//        }
+//        root.walk(path, new VirtualVisitor() {
+//            @Override
+//            public void visitParent(VirtualTreeInternal parent) {
+//                parentRef.set(parent);
+//            }
+//
+//            @Override
+//            public void visitUncreated(long uncreated) {
+//                // If the uncreated tree path matches the prefix of our path, then we create
+//                // the node. This brings all the parents into reality.
+//                if (isParentOf(uncreated, path) || uncreated == path) {
+//                    realizeInternalNode(parentRef.get(), uncreated);
+//                }
+//            }
+//        });
+//        return parentRef.get();
+//    }
 
     /**
      * Adds a new leaf with the given key and value. At this point, we know for
@@ -405,18 +355,15 @@ public final class VirtualMap
      * @param value The value to add. May be null.
      */
     private void add(VirtualKey key, VirtualValue value) {
-        // Gotta create the root, if there isn't one.
-        if (root == null) {
-            root = realizeRootNode();
-        }
+        // We're going to imagine what happens to the leaf and the tree without
+        // actually bringing into existence any nodes. Virtual Virtual!!
 
         // Find the lastLeafPath which will tell me the new path for this new item
         if (lastLeafPath == INVALID_PATH) {
             // There are no leaves! So this one will just go right on the root
             final var leafPath = getLeftChildPath(ROOT_PATH);
-            final var newLeaf = new VirtualTreeLeaf(NULL_HASH, leafPath, key, value);
+            final var newLeaf = new VirtualRecord(NULL_HASH, leafPath, key, value);
             newLeaf.makeDirty();
-            root.setLeftChild(newLeaf);
             // Save state.
             this.firstLeafPath = leafPath;
             this.lastLeafPath = leafPath;
@@ -427,9 +374,8 @@ public final class VirtualMap
             final var parentPath = getParentPath(lastLeafPath);
             assert parentPath != INVALID_PATH; // Cannot happen because lastLeafPath always points to a leaf in the tree
             final var leafPath = getRightChildPath(parentPath);
-            final var newLeaf = new VirtualTreeLeaf(NULL_HASH, leafPath, key, value);
+            final var newLeaf = new VirtualRecord(NULL_HASH, leafPath, key, value);
             newLeaf.makeDirty();
-            root.setRightChild(newLeaf);
             // Save state.
             lastLeafPath = leafPath;
             cache.put(key, newLeaf);
@@ -447,33 +393,26 @@ public final class VirtualMap
                     getPathForRankAndIndex(getRank(firstLeafPath), getIndexInRank(firstLeafPath) + 1);
 
             // The firstLeafPath points to the old leaf that we want to replace.
-            final var parent = realizeAllInternal(getParentPath(firstLeafPath));
+            final var parentPath = getParentPath(firstLeafPath);
 
             // Get the old leaf. Could be null, if it has not been realized.
-            final var oldLeaf = isLeft(firstLeafPath) ? parent.getLeftChild() : parent.getRightChild();
+            final var oldLeafPath = isLeft(firstLeafPath) ? getLeftChildPath(parentPath) : getRightChildPath(parentPath);
+            final var oldLeaf = findRecord(oldLeafPath);
 
             // Create a new internal node that is in the position of the old leaf and attach it to the parent
             // on the left side.
-            final var newSlotParent = realizeInternalNode(parent, firstLeafPath);
-
-            // And add this new node to the parent
-            if (isLeft(firstLeafPath)) {
-                parent.setLeftChild(newSlotParent);
-            } else {
-                parent.setRightChild(newSlotParent);
-            }
-            newSlotParent.makeDirty();
+            final var newSlotParentPath = firstLeafPath;
 
             // Put the new item on the right side of the new parent.
-            final var leafPath = getRightChildPath(firstLeafPath);
-            final var newLeaf = new VirtualTreeLeaf(NULL_HASH, leafPath, key, value);
+            final var leafPath = getRightChildPath(newSlotParentPath);
+            final var newLeaf = new VirtualRecord(NULL_HASH, leafPath, key, value);
             newLeaf.makeDirty();
             cache.put(key, newLeaf);
+            cache2.put(leafPath, newLeaf);
             // Add the leaf nodes to the newSlotParent
             if (oldLeaf != null) {
-                newSlotParent.setLeftChild(oldLeaf);
+                oldLeaf.setPath(getLeftChildPath(newSlotParentPath));
             }
-            newSlotParent.setRightChild(newLeaf);
 
             // Save the first and last leaf paths
             firstLeafPath = nextFirstLeafPath;
@@ -486,14 +425,14 @@ public final class VirtualMap
      *
      * @return A non-null internal root node
      */
-    private VirtualTreeInternal realizeRootNode() {
-        var node = dataSource.load(VirtualTreePath.ROOT_PATH);
-        if (node == null) {
-            node = new VirtualTreeInternal(NULL_HASH, VirtualTreePath.ROOT_PATH);
-            node.makeDirty();
-        }
-        return node;
-    }
+//    private VirtualTreeInternal realizeRootNode() {
+//        var node = dataSource.load(VirtualTreePath.ROOT_PATH);
+//        if (node == null) {
+//            node = new VirtualTreeInternal(NULL_HASH, VirtualTreePath.ROOT_PATH);
+//            node.makeDirty();
+//        }
+//        return node;
+//    }
 
     /**
      * Either convert a ghost node to a realized one, or create a new one.
@@ -502,85 +441,185 @@ public final class VirtualMap
      * @param path The path to this node.
      * @return A non-null internal node
      */
-    private VirtualTreeInternal realizeInternalNode(VirtualTreeInternal parent, long path) {
-        Objects.requireNonNull(parent);
-        final var n = dataSource.load(path);
-        final var node = n == null ? new VirtualTreeInternal(NULL_HASH, path) : n;
-        if(isLeft(path)) {
-            parent.setLeftChild(node);
-        } else {
-            parent.setRightChild(node);
-        }
-        return node;
-    }
+//    private VirtualTreeInternal realizeInternalNode(VirtualTreeInternal parent, long path) {
+//        Objects.requireNonNull(parent);
+//        final var n = dataSource.load(path);
+//        final var node = n == null ? new VirtualTreeInternal(NULL_HASH, path) : n;
+//        if(isLeft(path)) {
+//            parent.setLeftChild(node);
+//        } else {
+//            parent.setRightChild(node);
+//        }
+//        return node;
+//    }
 
-    public String getAsciiArt() {
-        if (root == null) {
-            return "<Empty>";
-        }
+//    public String getAsciiArt() {
+//        if (root == null) {
+//            return "<Empty>";
+//        }
+//
+//        final var nodeWidth = 10; // Let's reserve this many chars for each node to write their name.
+//
+//        // Use this for storing all the strings we produce as we go along.
+//        final var strings = new ArrayList<List<String>>(64);
+//        final var l = new ArrayList<String>(1);
+//        l.add("( )");
+//        strings.add(l);
+//
+//        // Simple depth-first traversal
+//        print(strings, root);
+//
+//        final var buf = new StringBuilder();
+//        final var numRows = strings.size();
+//        final var width = (int) (Math.pow(2, numRows-1) * nodeWidth);
+//        for (int i=0; i<strings.size(); i++) {
+//            final var list = strings.get(i);
+//            int x = width/2 - (nodeWidth * (int)(Math.pow(2, i)))/2;
+//            buf.append(" ".repeat(x));
+//            x = 0;
+//            for (var s : list) {
+//                final var padLeft = ((nodeWidth - s.length()) / 2);
+//                final var padRight = ((nodeWidth - s.length()) - padLeft);
+//                buf.append(" ".repeat(padLeft)).append(s).append(" ".repeat(padRight));
+//                x += nodeWidth;
+//            }
+//            buf.append("\n");
+//        }
+//        return buf.toString();
+//    }
+//
+//    private void print(List<List<String>> strings, VirtualTreeNode node) {
+//        // Write this node out
+//        final var path = node.getPath();
+//        final var rank = getRank(path);
+//        final var pnode = node instanceof VirtualTreeInternal;
+//        final var dirtyMark = node.isDirty() ? "*" : "";
+//        strings.get(rank).set(getIndexInRank(path), dirtyMark + "(" + (pnode ? "P" : "L") + ", " + getBreadcrumbs(path) + ")" + dirtyMark);
+//
+//        if (pnode) {
+//            final var parent = (VirtualTreeInternal) node;
+//            final var left = parent.getLeftChild();
+//            final var right = parent.getRightChild();
+//            if (left != null || right != null) {
+//                // Make sure we have another level down to go.
+//                if (strings.size() <= rank + 1) {
+//                    final var size = (int)Math.pow(2, rank+1);
+//                    final var list = new ArrayList<String>(size);
+//                    for (int i=0; i<size; i++) {
+//                        list.add("( )");
+//                    }
+//                    strings.add(list);
+//                }
+//
+//                if (left != null) {
+//                    print(strings, left);
+//                }
+//
+//                if (right != null) {
+//                    print(strings, right);
+//                }
+//            }
+//        }
+//    }
 
-        final var nodeWidth = 10; // Let's reserve this many chars for each node to write their name.
-
-        // Use this for storing all the strings we produce as we go along.
-        final var strings = new ArrayList<List<String>>(64);
-        final var l = new ArrayList<String>(1);
-        l.add("( )");
-        strings.add(l);
-
-        // Simple depth-first traversal
-        print(strings, root);
-
-        final var buf = new StringBuilder();
-        final var numRows = strings.size();
-        final var width = (int) (Math.pow(2, numRows-1) * nodeWidth);
-        for (int i=0; i<strings.size(); i++) {
-            final var list = strings.get(i);
-            int x = width/2 - (nodeWidth * (int)(Math.pow(2, i)))/2;
-            buf.append(" ".repeat(x));
-            x = 0;
-            for (var s : list) {
-                final var padLeft = ((nodeWidth - s.length()) / 2);
-                final var padRight = ((nodeWidth - s.length()) - padLeft);
-                buf.append(" ".repeat(padLeft)).append(s).append(" ".repeat(padRight));
-                x += nodeWidth;
-            }
-            buf.append("\n");
-        }
-        return buf.toString();
-    }
-
-    private void print(List<List<String>> strings, VirtualTreeNode node) {
-        // Write this node out
-        final var path = node.getPath();
-        final var rank = getRank(path);
-        final var pnode = node instanceof VirtualTreeInternal;
-        final var dirtyMark = node.isDirty() ? "*" : "";
-        strings.get(rank).set(getIndexInRank(path), dirtyMark + "(" + (pnode ? "P" : "L") + ", " + getBreadcrumbs(path) + ")" + dirtyMark);
-
-        if (pnode) {
-            final var parent = (VirtualTreeInternal) node;
-            final var left = parent.getLeftChild();
-            final var right = parent.getRightChild();
-            if (left != null || right != null) {
-                // Make sure we have another level down to go.
-                if (strings.size() <= rank + 1) {
-                    final var size = (int)Math.pow(2, rank+1);
-                    final var list = new ArrayList<String>(size);
-                    for (int i=0; i<size; i++) {
-                        list.add("( )");
-                    }
-                    strings.add(list);
-                }
-
-                if (left != null) {
-                    print(strings, left);
-                }
-
-                if (right != null) {
-                    print(strings, right);
-                }
-            }
-        }
-    }
-
+//    /**
+//     * Walks the tree starting from this node taking the most direct route to the
+//     * target node. Calls the visitor for each step downward.
+//     *
+//     * @param target The path of the node we're trying to walk towards.
+//     * @param visitor The visitor. Cannot be null.
+//     */
+//    public final void walk(long target, VirtualVisitor visitor) {
+//        // Maybe I was the target! In that case, visit me and quit.
+//        if (getPath() == target) {
+//            visitor.visitParent(this);
+//            return;
+//        }
+//
+//        // I wasn't the target and I'm not the parent of the target so quit.
+//        if (!isParentOf(getPath(), target)) {
+//            return;
+//        }
+//
+//        var node = this;
+//        while (node != null) {
+//            final var path = node.getPath();
+//            // Visit the node
+//            visitor.visitParent(node);
+//
+//            // If we've found the target, then we're done
+//            if (path == target) {
+//                break;
+//            }
+//
+//            // We didn't find the target yet and `node` is a parent node,
+//            // so we need to go down either the left or right branch.
+//            VirtualTreeNode nextNode;
+//            final var leftPath = getLeftChildPath(path);
+//            if (isParentOf(leftPath, target) || leftPath == target) {
+//                if (node.leftChild == null) {
+//                    visitor.visitUncreated(leftPath);
+//                }
+//                nextNode = node.leftChild;
+//            } else {
+//                final var rightPath = getRightChildPath(path);
+//                if (isParentOf(rightPath, target) || rightPath == target) {
+//                    if (node.rightChild == null) {
+//                        visitor.visitUncreated(rightPath);
+//                    }
+//                    nextNode = node.rightChild;
+//                } else {
+//                    // Neither left or right, we're at a dead end.
+//                    break;
+//                }
+//            }
+//
+//            if (nextNode instanceof VirtualTreeLeaf) {
+//                // We found the leaf. Visit and quit.
+//                visitor.visitLeaf((VirtualTreeLeaf) nextNode);
+//                break;
+//            } else {
+//                // iterate
+//                node = (VirtualTreeInternal) nextNode;
+//            }
+//        }
+//    }
+//
+//    /**
+//     * Walks the tree starting from this node using pre-order traversal, invoking the visitor
+//     * for each node visited. Only the dirty nodes are visited.
+//     *
+//     * TODO how does this work with deleted nodes? If we delete a node, we somehow need to
+//     * visit it too. Maybe this is the wrong way to do it.
+//     *
+//     * @param visitor The visitor. Cannot be null.
+//     */
+//    public final void walkDirty(VirtualVisitor visitor) {
+//        // We need a stack to keep track of which node to process next
+//        final var deque = new ArrayDeque<VirtualTreeNode>(64);
+//        deque.push(this);
+//        while (!deque.isEmpty()) {
+//            // In pre-order traversal, this node is visited first.
+//            final var node = deque.pop();
+//            final var pnode = node instanceof VirtualTreeInternal;
+//            if (pnode) {
+//                final var parent = (VirtualTreeInternal) node;
+//                visitor.visitParent(parent);
+//
+//                // Push the right first, and then the left, so that we process
+//                // the left branch first as we pop off the stack.
+//                final var right = parent.rightChild;
+//                if (right != null) {
+//                    deque.push(right);
+//                }
+//
+//                final var left = parent.leftChild;
+//                if (left != null) {
+//                    deque.push(left);
+//                }
+//            } else {
+//                visitor.visitLeaf((VirtualTreeLeaf) node);
+//            }
+//        }
+//    }
 }

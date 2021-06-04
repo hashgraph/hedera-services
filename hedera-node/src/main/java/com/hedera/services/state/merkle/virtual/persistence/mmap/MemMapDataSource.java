@@ -4,9 +4,8 @@ import com.hedera.services.state.merkle.virtual.Account;
 import com.hedera.services.state.merkle.virtual.VirtualKey;
 import com.hedera.services.state.merkle.virtual.VirtualValue;
 import com.hedera.services.state.merkle.virtual.persistence.VirtualDataSource;
-import com.hedera.services.state.merkle.virtual.tree.VirtualTreeInternal;
-import com.hedera.services.state.merkle.virtual.tree.VirtualTreeLeaf;
-import com.hedera.services.state.merkle.virtual.tree.VirtualTreePath;
+import com.hedera.services.state.merkle.virtual.persistence.VirtualRecord;
+import com.swirlds.common.crypto.Hash;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -21,37 +20,42 @@ public class MemMapDataSource implements VirtualDataSource {
     }
 
     @Override
-    public VirtualTreeInternal load(long parentPath) {
-        return store.loadParent(account, parentPath);
+    public Hash loadParentHash(long parentPath) {
+        return store.loadParentHash(account, parentPath);
     }
 
     @Override
-    public VirtualTreeLeaf load(VirtualKey leafKey) {
+    public VirtualRecord loadLeaf(VirtualKey leafKey) {
         return store.loadLeaf(account, leafKey);
     }
 
     @Override
-    public VirtualValue get(VirtualKey leafKey) {
+    public VirtualRecord loadLeaf(long leafPath) {
+        return store.loadLeaf(account, leafPath);
+    }
+
+    @Override
+    public VirtualValue getLeafValue(VirtualKey leafKey) {
         return store.get(account, leafKey);
     }
 
     @Override
-    public void save(VirtualTreeInternal parent) {
-        store.save(account, parent);
+    public void saveParent(long parentPath, Hash hash) {
+        store.save(account, parentPath, hash);
     }
 
     @Override
-    public void save(VirtualTreeLeaf leaf) {
+    public void saveLeaf(VirtualRecord leaf) {
         store.save(account, leaf);
     }
 
     @Override
-    public void delete(VirtualTreeInternal parent) {
-        store.delete(account, parent);
+    public void deleteParent(long parentPath) {
+        store.delete(account, parentPath);
     }
 
     @Override
-    public void delete(VirtualTreeLeaf leaf) {
+    public void deleteLeaf(VirtualRecord leaf) {
         store.delete(account, leaf);
     }
 
