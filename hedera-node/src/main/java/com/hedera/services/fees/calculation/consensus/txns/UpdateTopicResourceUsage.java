@@ -47,9 +47,9 @@ public class UpdateTopicResourceUsage implements TxnResourceUsageEstimator {
 
     @Override
     public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException {
-        MerkleTopic merkleTopic = view.topics().get(MerkleEntityId.fromTopicId(txn.getConsensusUpdateTopic().getTopicID()));
-        if(merkleTopic.hasAdminKey()) {
-            try {
+        try {
+            MerkleTopic merkleTopic = view.topics().get(MerkleEntityId.fromTopicId(txn.getConsensusUpdateTopic().getTopicID()));
+            if(merkleTopic.hasAdminKey()) {
                 long rbsIncrease = getUpdateTopicRbsIncrease(
                         txn.getTransactionID().getTransactionValidStart(),
                         JKey.mapJKey(merkleTopic.getAdminKey()),
@@ -58,13 +58,13 @@ public class UpdateTopicResourceUsage implements TxnResourceUsageEstimator {
                         merkleTopic.hasAutoRenewAccountId(),
                         lookupExpiry(merkleTopic),
                         txn.getConsensusUpdateTopic());
-                return getConsensusUpdateTopicFee(txn, rbsIncrease, sigUsage);
-            } catch (Exception illegal) {
-                log.warn("Usage estimation unexpectedly failed for {}!", txn, illegal);
-                throw new InvalidTxBodyException(illegal);
-            }
-        } else {
-            return getConsensusUpdateTopicFee(txn, 0, sigUsage);
+            return getConsensusUpdateTopicFee(txn, rbsIncrease, sigUsage);
+            } else {
+                    return getConsensusUpdateTopicFee(txn, 0, sigUsage);
+                }
+        } catch (Exception illegal) {
+            log.warn("Usage estimation unexpectedly failed for {}!", txn, illegal);
+            throw new InvalidTxBodyException(illegal);
         }
     }
 
