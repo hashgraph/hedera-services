@@ -134,6 +134,8 @@ class BootstrapPropertiesTest {
 			entry("netty.prod.maxConnectionIdle", 10L),
 			entry("netty.prod.keepAliveTime", 10L),
 			entry("netty.prod.keepAliveTimeout", 3L),
+			entry("netty.startRetries", 30),
+			entry("netty.startRetryInterval", 1),
 			entry("netty.tlsCrt.path", "hedera.crt"),
 			entry("netty.tlsKey.path", "hedera.key"),
 			entry("precheck.account.maxLookupRetries", 10),

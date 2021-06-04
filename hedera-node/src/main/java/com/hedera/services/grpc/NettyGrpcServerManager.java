@@ -20,6 +20,9 @@ package com.hedera.services.grpc;
  * ‍
  */
 
+import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.utils.Pause;
+import com.hedera.services.utils.SleepingPause;
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerServiceDefinition;
@@ -28,9 +31,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+
+import static com.hedera.services.utils.SleepingPause.SLEEPING_PAUSE;
 
 
 public class NettyGrpcServerManager implements GrpcServerManager {
@@ -41,18 +47,21 @@ public class NettyGrpcServerManager implements GrpcServerManager {
 	private Server server;
 	private Server tlsServer;
 	private final Consumer<Thread> hookAdder;
+	private final NodeLocalProperties nodeProperties;
 	private final List<BindableService> bindableServices;
 	private final ConfigDrivenNettyFactory nettyBuilder;
 	private final List<ServerServiceDefinition> serviceDefinitions;
 
 	public NettyGrpcServerManager(
 			Consumer<Thread> hookAdder,
+			NodeLocalProperties nodeProperties,
 			List<BindableService> bindableServices,
 			ConfigDrivenNettyFactory nettyBuilder,
 			List<ServerServiceDefinition> serviceDefinitions
 	) {
 		this.hookAdder = hookAdder;
 		this.nettyBuilder = nettyBuilder;
+		this.nodeProperties = nodeProperties;
 		this.bindableServices = bindableServices;
 		this.serviceDefinitions = serviceDefinitions;
 	}
@@ -61,8 +70,8 @@ public class NettyGrpcServerManager implements GrpcServerManager {
 	public void start(int port, int tlsPort, Consumer<String> println) {
 		try {
 			hookAdder.accept(new Thread(() -> terminateNetty(port, tlsPort, println)));
-			server = startOneNettyServer(false, port, println);
-			tlsServer = startOneNettyServer(true, tlsPort, println);
+			server = startOneNettyServer(false, port, println, SLEEPING_PAUSE);
+			tlsServer = startOneNettyServer(true, tlsPort, println, SLEEPING_PAUSE);
 		} catch (FileNotFoundException fnfe) {
 			tlsServer = null;
 			String message = nettyAction("Could not start", true, tlsPort, false);
@@ -73,14 +82,29 @@ public class NettyGrpcServerManager implements GrpcServerManager {
 		}
 	}
 
-	private Server startOneNettyServer(boolean sslEnabled, int port, Consumer<String> println) throws Exception {
+	Server startOneNettyServer(boolean sslEnabled, int port, Consumer<String> println, Pause pause) throws Exception {
 		println.accept(nettyAction("Starting", sslEnabled, port, true));
 
 		NettyServerBuilder builder = nettyBuilder.builderFor(port, sslEnabled);
 		bindableServices.forEach(builder::addService);
 		serviceDefinitions.forEach(builder::addService);
 		Server server = builder.build();
-		server.start();
+
+		var n = Math.max(0, nodeProperties.nettyStartRetries());
+		var retryNo = 1;
+		for (; retryNo <= n; retryNo++) {
+			try {
+				server.start();
+				break;
+			} catch (IOException e) {
+				final var summaryMsg = nettyAction("Still trying to start", sslEnabled, port, true);
+				log.warn("(Attempts=" + retryNo + ") " + summaryMsg + e.getMessage());
+				pause.forMs(nodeProperties.nettyStartRetryInterval() * 1_000L);
+			}
+		}
+		if (retryNo == n + 1) {
+			server.start();
+		}
 
 		println.accept(nettyAction("...done starting", sslEnabled, port, false));
 
