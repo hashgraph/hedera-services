@@ -42,7 +42,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
 import javafx.util.Pair;
@@ -71,7 +70,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class ExpiringCreationsTest {
@@ -90,6 +88,8 @@ class ExpiringCreationsTest {
 	private ExpiryManager expiries;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 	@Mock
 	private ServicesContext ctx;
 	@Mock
@@ -115,15 +115,16 @@ class ExpiringCreationsTest {
 	private static final String hashString = "TEST";
 	private static final long scheduleNum = 100L;
 	private static final String account = "0.0.10001";
-	private final TransactionReceipt receipt = TransactionReceipt.newBuilder().setStatus(SUCCESS).build();
 	private final Instant timestamp = Instant.now();
 	private final byte[] hash = hashString.getBytes(StandardCharsets.UTF_8);
 
 	private ExpiringCreations subject;
 
+	private final TxnReceipt receipt = TxnReceipt.newBuilder().setStatus(SUCCESS.name()).build();
+
 	@BeforeEach
 	void setup() {
-		subject = new ExpiringCreations(expiries, dynamicProperties, ctx);
+		subject = new ExpiringCreations(expiries, dynamicProperties, () -> accounts);
 
 		expectedRecord = record;
 		expectedRecord.setExpiry(expectedExpiry);
@@ -161,8 +162,7 @@ class ExpiringCreationsTest {
 		// setup:
 		final var key = MerkleEntityId.fromAccountId(effPayer);
 		final var payerAccount = new MerkleAccount();
-		given(ctx.accounts()).willReturn(mock(FCMap.class));
-		given(ctx.accounts().getForModify(key)).willReturn(payerAccount);
+		given(accounts.getForModify(key)).willReturn(payerAccount);
 		given(dynamicProperties.shouldKeepRecordsInState()).willReturn(true);
 		given(dynamicProperties.cacheRecordsTtl()).willReturn(cacheTtl);
 
@@ -184,7 +184,7 @@ class ExpiringCreationsTest {
 						null, null, 0L, submittingMember));
 		Assertions.assertThrows(UnsupportedOperationException.class, () ->
 				NOOP_EXPIRING_CREATIONS.buildExpiringRecord(
-						0L, null, null, null, null));
+						0L, null, null, null, null, null));
 		Assertions.assertThrows(UnsupportedOperationException.class, () ->
 				NOOP_EXPIRING_CREATIONS.buildFailedExpiringRecord(null, null));
 	}
@@ -202,8 +202,7 @@ class ExpiringCreationsTest {
 
 		//when:
 		ExpirableTxnRecord.Builder builder =
-				subject.buildExpiringRecord(100L, hash,
-						accessor, timestamp, TxnReceipt.fromGrpc(receipt));
+				subject.buildExpiringRecord(100L, hash, accessor, timestamp, receipt, ctx);
 		ExpirableTxnRecord actualRecord = builder.build();
 
 		//then:

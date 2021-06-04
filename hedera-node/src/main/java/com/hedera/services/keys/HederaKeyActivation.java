@@ -115,7 +115,7 @@ public class HederaKeyActivation {
 			final int m = key.hasKeyList()
 					? characteristics.sigsNeededForList((JKeyList)key)
 					: characteristics.sigsNeededForThreshold((JThresholdKey)key);
-			int n = 0;
+			var n = 0;
 			for (var child : children) {
 				if (isActive(child, sigsFn, tests)) {
 					n++;

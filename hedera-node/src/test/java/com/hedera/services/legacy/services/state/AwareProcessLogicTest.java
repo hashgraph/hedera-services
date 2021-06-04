@@ -63,8 +63,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyLong;
@@ -141,7 +139,7 @@ class AwareProcessLogicTest {
 		final com.hederahashgraph.api.proto.java.Transaction signedTxn = mock(com.hederahashgraph.api.proto.java.Transaction.class);
 		final TransactionID txnId = mock(TransactionID.class);
 
-		given(txnAccessor.getSignedTxnWrapper()).willReturn(signedTxn);
+		given(txnAccessor.getBackwardCompatibleSignedTxn()).willReturn(signedTxn);
 		given(signedTxn.getSignedTransactionBytes()).willReturn(ByteString.EMPTY);
 		given(txnAccessor.getTxn()).willReturn(txnBody);
 		given(txnBody.getTransactionID()).willReturn(txnId);
@@ -201,6 +199,7 @@ class AwareProcessLogicTest {
 
 		given(ctx.expandHandleSpan()).willReturn(expandHandleSpan);
 		given(expandHandleSpan.accessorFor(platformTxn)).willReturn(new PlatformTxnAccessor(platformTxn));
+		given(triggeredTxn.isTriggeredTxn()).willReturn(true);
 		given(txnCtx.triggeredTxn()).willReturn(triggeredTxn);
 		given(invariantChecks.holdFor(any(), eq(consensusNow.minusNanos(1L)), eq(666L))).willReturn(true);
 

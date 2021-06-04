@@ -61,14 +61,14 @@ class PureBackingAccountsTest {
 	}
 
 	@Test
-	public void mutationsNotSupported() {
+	void mutationsNotSupported() {
 		// expect:
 		assertThrows(UnsupportedOperationException.class, () -> subject.remove(null));
 		assertThrows(UnsupportedOperationException.class, () -> subject.put(null, null));
 	}
 
 	@Test
-	public void delegatesGet() {
+	void delegatesGet() {
 		given(map.get(aKey)).willReturn(aValue);
 
 		// then:
@@ -76,7 +76,7 @@ class PureBackingAccountsTest {
 	}
 
 	@Test
-	public void delegatesContains() {
+	void delegatesContains() {
 		given(map.containsKey(aKey)).willReturn(false);
 		given(map.containsKey(bKey)).willReturn(true);
 
@@ -88,7 +88,7 @@ class PureBackingAccountsTest {
 	}
 
 	@Test
-	public void delegatesIdSet() {
+	void delegatesIdSet() {
 		var ids = Set.of(aKey, bKey);
 		var expectedIds = Set.of(a, b);
 
@@ -99,7 +99,7 @@ class PureBackingAccountsTest {
 	}
 
 	@Test
-	public void delegatesUnsafeGet() {
+	void delegatesUnsafeGet() {
 		given(map.get(aKey)).willReturn(aValue);
 
 		// expect:

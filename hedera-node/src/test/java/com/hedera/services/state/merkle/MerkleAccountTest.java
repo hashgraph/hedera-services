@@ -167,6 +167,20 @@ class MerkleAccountTest {
 	}
 
 	@Test
+	void uncheckedSetterDelegates() {
+		// given:
+		subject = new MerkleAccount(List.of(delegate, new FCQueue<>(), new FCQueue<>()));
+		// and:
+		assertThrows(IllegalArgumentException.class, () -> subject.setBalanceUnchecked(-1L));
+
+		// when:
+		subject.setBalanceUnchecked(otherBalance);
+
+		// then:
+		verify(delegate).setHbarBalance(otherBalance);
+	}
+
+	@Test
 	void settersDelegate() throws NegativeAccountBalanceException {
 		// given:
 		subject = new MerkleAccount(List.of(delegate, new FCQueue<>(), new FCQueue<>()));
