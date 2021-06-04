@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
-import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 
 /**
