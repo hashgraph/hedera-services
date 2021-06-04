@@ -31,6 +31,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.commons.codec.binary.StringUtils;
+import org.bouncycastle.util.Arrays;
 
 import java.util.function.Function;
 
@@ -94,6 +95,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 		sigMapSize = sigMap.getSerializedSize();
 		numSigPairs = sigMap.getSigPairCount();
 		utf8MemoBytes = StringUtils.getBytesUtf8(txn.getMemo());
+		memoHasZeroByte = Arrays.contains(utf8MemoBytes, (byte)0);
 	}
 
 	public SignedTxnAccessor(Transaction signedTxnWrapper) throws InvalidProtocolBufferException {
@@ -180,7 +182,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	@Override
 	public boolean memoHasZeroByte() {
-		throw new AssertionError("Not implemented!");
+		return memoHasZeroByte;
 	}
 
 	public boolean isTriggeredTxn() {
