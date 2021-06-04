@@ -20,12 +20,16 @@ import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -46,14 +50,25 @@ import java.util.concurrent.TimeUnit;
 public class VirtualMapBench {
     private InMemoryDataSource ds = new InMemoryDataSource();
     private MemMapDataSource ds2;
+    private VirtualMapDataStore store;
     private Random rand = new Random();
 
     @Setup
     public void prepare() throws Exception {
-        final var store = new VirtualMapDataStore(
-                new File("./store").toPath(),
-                32,
-                32);
+        final var storeDir = new File("./store").toPath();
+        if (Files.exists(storeDir)) {
+            try {
+                //noinspection ResultOfMethodCallIgnored
+                Files.walk(storeDir)
+                        .sorted(Comparator.reverseOrder())
+                        .map(Path::toFile)
+                        .forEach(File::delete);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        store = new VirtualMapDataStore(storeDir, 32, 32);
         store.open();
         ds2 = new MemMapDataSource(store,
                 new Account(0, 0, 100));
@@ -69,6 +84,11 @@ public class VirtualMapBench {
         }
         map.commit();
         map2.commit();
+    }
+
+    @TearDown
+    public void destroy() {
+        store.close();
     }
 
 //    @Benchmark
