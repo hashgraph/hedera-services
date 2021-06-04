@@ -388,7 +388,7 @@ public final class VirtualMapDataStore {
             ByteBuffer buffer = pathStore.accessSlot(slotLocation);
             // Account -- Account.BYTES
             // Key -- 1 byte
-            buffer.position(buffer.position() + Account.BYTES); // jump over
+            buffer.position(buffer.position() + Account.BYTES + 1); // jump over
             // Path -- VirtualTreePath.BYTES
             return buffer.getLong();
         } else {

@@ -130,7 +130,6 @@ public class VirtualMapTest {
 
         final var expected = new HashMap<VirtualKey, VirtualValue>();
         for (int i=0; i<1_000_000; i++) {
-            System.out.println("i = " + i);
             if (i > 0 && i % 15 == 0) {
                 v.commit();
                 v = new VirtualMap(ds);
