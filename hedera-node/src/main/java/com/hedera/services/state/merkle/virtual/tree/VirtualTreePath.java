@@ -233,6 +233,10 @@ public final class VirtualTreePath implements Comparable<VirtualTreePath> {
         return ((p1 & 0x1) == 0) ? -1 : 1;
     }
 
+    boolean unsafeEquals(VirtualTreePath other) {
+        return rank == other.rank && path == other.path;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
