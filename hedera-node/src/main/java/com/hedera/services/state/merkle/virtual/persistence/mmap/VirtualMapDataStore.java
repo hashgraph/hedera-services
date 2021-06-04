@@ -8,6 +8,9 @@ import com.hedera.services.state.merkle.virtual.tree.VirtualTreeLeaf;
 import com.hedera.services.state.merkle.virtual.tree.VirtualTreeNode;
 import com.hedera.services.state.merkle.virtual.tree.VirtualTreePath;
 import com.swirlds.common.crypto.Hash;
+import org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap;
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
+import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -53,12 +56,44 @@ public class VirtualMapDataStore {
      */
     private final MemMapDataStore pathStore;
 
-    private final Map<Account, Map<Long, Long>> parentIndex = new HashMap<>();
-    private final Map<Account, Map<VirtualKey, Long>> leafIndex = new HashMap<>();
-    private final Map<Account, Map<Byte, Long>> pathIndex = new HashMap<>();
+
+    private final Map<Account, Index> indexMap = new HashMap<>();
+    // fast path for default realm
+    private final LongObjectHashMap<Index> defaultRealmShardIndex = new LongObjectHashMap<>();
 
     private final int keySizeBytes;
     private final int dataSizeBytes;
+
+    /**
+     * Class for indexes for each account
+     */
+    private static class Index {
+        public final LongLongHashMap parentIndex = new LongLongHashMap();
+        public final ObjectLongHashMap<VirtualKey> leafIndex = new ObjectLongHashMap<>();
+        public final LongLongHashMap pathIndex = new LongLongHashMap();
+    }
+
+    public Index index(Account account) {
+        Index index;
+        if (account.isDefaultShardAndRealm()) {
+            index = defaultRealmShardIndex.get(account.accountNum());
+            if (index == null) {
+                index = new Index();
+                defaultRealmShardIndex.put(account.accountNum(),index);
+            }
+        } else {
+            index = indexMap.get(account);
+            if (index == null) {
+                index = new Index();
+                indexMap.put(account,index);
+            }
+        }
+        return index;
+    }
+
+    public Index indexNoCreate(Account account) {
+        return account.isDefaultShardAndRealm() ? defaultRealmShardIndex.get(account.accountNum()) : indexMap.get(account);
+    }
 
     /**
      * Create new VirtualMapDataStore
@@ -85,7 +120,7 @@ public class VirtualMapDataStore {
         leafStore.open((location, fileAtSlot) -> {
             try {
                 final Account account = new Account(fileAtSlot.readLong(), fileAtSlot.readLong(), fileAtSlot.readLong());
-                Map<VirtualKey, Long> indexMap = leafIndex.computeIfAbsent(account, k -> new HashMap<>());
+                ObjectLongHashMap<VirtualKey> indexMap = index(account).leafIndex;
                 byte[] keyBytes = new byte[keySizeBytes];
                 fileAtSlot.read(keyBytes);
                 indexMap.put(
@@ -99,7 +134,7 @@ public class VirtualMapDataStore {
             try {
                 final Account account = new Account(fileAtSlot.readLong(), fileAtSlot.readLong(), fileAtSlot.readLong());
                 final long path = fileAtSlot.readLong();
-                Map<Long, Long> indexMap = parentIndex.computeIfAbsent(account, k -> new HashMap<>());
+                LongLongHashMap indexMap = index(account).parentIndex;
                 indexMap.put(path, location);
             } catch (IOException e) {
                 e.printStackTrace(); // TODO something better here, this should only happen if our files are corrupt
@@ -109,7 +144,7 @@ public class VirtualMapDataStore {
             try {
                 final Account account = new Account(fileAtSlot.readLong(), fileAtSlot.readLong(), fileAtSlot.readLong());
                 final byte key = fileAtSlot.readByte();
-                Map<Byte, Long> indexMap = pathIndex.computeIfAbsent(account, k -> new HashMap<>());
+                LongLongHashMap indexMap = index(account).pathIndex;
                 indexMap.put(key, location);
             } catch (IOException e) {
                 e.printStackTrace(); // TODO something better here, this should only happen if our files are corrupt
@@ -122,11 +157,10 @@ public class VirtualMapDataStore {
      */
     public void close(){
         leafStore.close();
-        leafIndex.clear();
         parentStore.close();
-        parentIndex.clear();
         pathStore.close();
-        pathIndex.clear();
+        indexMap.clear();
+        defaultRealmShardIndex.clear();
     }
 
     /**
@@ -238,8 +272,8 @@ public class VirtualMapDataStore {
         if (slotLocation == MemMapDataStore.NOT_FOUND_LOCATION) {
             // find a new slot location
             slotLocation = parentStore.getNewSlot();
-            final var indexMap = parentIndex.computeIfAbsent(account, k -> new HashMap<>());
-            indexMap.put(parent.getPath(), slotLocation);
+            // store in index
+            index(account).parentIndex.put(parent.getPath(), slotLocation);
         }
         // write parent into slot
         ByteBuffer buffer = parentStore.accessSlot(slotLocation);
@@ -266,8 +300,8 @@ public class VirtualMapDataStore {
         if (slotLocation == MemMapDataStore.NOT_FOUND_LOCATION) {
             // find a new slot location
             slotLocation = leafStore.getNewSlot();
-            final var indexMap = leafIndex.computeIfAbsent(account, k -> new HashMap<>());
-            indexMap.put(leaf.getKey(), slotLocation);
+            // store in index
+            index(account).leafIndex.put(leaf.getKey(), slotLocation);
         }
         // write leaf into slot
         ByteBuffer buffer = leafStore.accessSlot(slotLocation);
@@ -296,8 +330,8 @@ public class VirtualMapDataStore {
         if (slotLocation == MemMapDataStore.NOT_FOUND_LOCATION) {
             // find a new slot location
             slotLocation = pathStore.getNewSlot();
-            final var indexMap = pathIndex.computeIfAbsent(account, k -> new HashMap<>());
-            indexMap.put(key, slotLocation);
+            // store in index
+            index(account).pathIndex.put(key, slotLocation);
 
         }
         // write path into slot
@@ -342,8 +376,8 @@ public class VirtualMapDataStore {
      * @return slot location of parent if it is stored or null if not found
      */
     private long findParent(Account account, long path) {
-        Map<Long, Long> indexMap = parentIndex.get(account);
-        if (indexMap != null) return indexMap.get(path);
+        Index index = indexNoCreate(account);
+        if (index != null) return index.parentIndex.get(path);
         return MemMapDataStore.NOT_FOUND_LOCATION;
     }
 
@@ -355,8 +389,8 @@ public class VirtualMapDataStore {
      * @return slot location of leaf if it is stored or null if not found
      */
     private long findLeaf(Account account, VirtualKey key) {
-        Map<VirtualKey, Long> indexMap = leafIndex.get(account);
-        if(indexMap != null) return indexMap.get(key);
+        Index index = indexNoCreate(account);
+        if (index != null) return index.leafIndex.get(key);
         return MemMapDataStore.NOT_FOUND_LOCATION;
     }
 
@@ -368,8 +402,8 @@ public class VirtualMapDataStore {
      * @return slot location of path if it is stored or null if not found
      */
     private long findPath(Account account, byte key) {
-        Map<Byte, Long> indexMap = pathIndex.get(account);
-        if (indexMap != null) return indexMap.get(key);
+        Index index = indexNoCreate(account);
+        if (index != null) return index.pathIndex.get(key);
         return MemMapDataStore.NOT_FOUND_LOCATION;
     }
 
