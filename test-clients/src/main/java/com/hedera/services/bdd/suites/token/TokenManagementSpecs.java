@@ -22,8 +22,6 @@ package com.hedera.services.bdd.suites.token;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.TokenSupplyType;
-import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -33,7 +31,6 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
@@ -54,11 +51,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
@@ -79,7 +74,6 @@ public class TokenManagementSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
 				List.of(new HapiApiSpec[] {
-								getTokenNftInfoWork(),
 								freezeMgmtFailureCasesWork(),
 								freezeMgmtSuccessCasesWork(),
 								kycMgmtFailureCasesWork(),
@@ -96,37 +90,6 @@ public class TokenManagementSpecs extends HapiApiSuite {
 		);
 	}
 
-	private HapiApiSpec getTokenNftInfoWork() {
-//		final byte[] metadata;
-
-		return defaultHapiSpec("getTokenNftInfoWorks")
-				.given(
-						newKeyNamed("supplyKey"),
-						cryptoCreate(TOKEN_TREASURY).balance(0L)
-				).when(
-						tokenCreate("non-fungible-unique-finite")
-								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-								.supplyType(TokenSupplyType.FINITE)
-								.supplyKey("supplyKey")
-								.initialSupply(0)
-								.maxSupply(100)
-								.treasury(TOKEN_TREASURY)
-//						mintToken("non-fungible-unique-finite", metadata)
-				).then(
-						getTokenNftInfo("non-fungible-unique-finite", 0)
-								.hasCostAnswerPrecheck(INVALID_TOKEN_NFT_SERIAL_NUMBER),
-						getTokenNftInfo("non-fungible-unique-finite", -1)
-								.hasCostAnswerPrecheck(INVALID_TOKEN_NFT_SERIAL_NUMBER),
-						getTokenNftInfo("non-fungible-unique-finite", 2)
-								.hasCostAnswerPrecheck(INVALID_NFT_ID)
-//						getTokenNftInfo("non-fungible-unique-finite", 1)
-//								.hasTokenID("non-fungible-unique-finite")
-//								.hasAccountID(TOKEN_TREASURY)
-//								.hasSerialNum(1)
-//								.hasMetadata(metadata)
-//								.hasValidCreationTime()
-				);
-	}
 
 	private HapiApiSpec frozenTreasuryCannotBeMintedOrBurned() {
 		return defaultHapiSpec("FrozenTreasuryCannotBeMintedOrBurned")

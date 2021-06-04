@@ -20,6 +20,7 @@ package com.hedera.services.bdd.spec.queries.token;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
@@ -54,7 +55,7 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 	}
 
 	OptionalLong expectedSerialNum = OptionalLong.empty();
-	Optional<byte[]> expectedMetadata = Optional.empty();
+	Optional<ByteString> expectedMetadata = Optional.empty();
 	Optional<String> expectedTokenID = Optional.empty();
 	Optional<String> expectedAccountID = Optional.empty();
 	Optional<Boolean> expectedCreationTime = Optional.empty();
@@ -74,7 +75,7 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 		return this;
 	}
 
-	public HapiGetTokenNftInfo hasMetadata(byte[] metadata) {
+	public HapiGetTokenNftInfo hasMetadata(ByteString metadata) {
 		expectedMetadata = Optional.of(metadata);
 		return this;
 	}
@@ -116,7 +117,7 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 		expectedMetadata.ifPresent(bytes -> Assert.assertEquals(
 				"Wrong metadata!",
 				bytes,
-				actualInfo.getMetadata().toByteArray()));
+				actualInfo.getMetadata()));
 
 		assertFor(
 				actualInfo.getCreationTime(),

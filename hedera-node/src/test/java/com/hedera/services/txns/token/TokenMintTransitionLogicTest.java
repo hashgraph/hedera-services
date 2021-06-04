@@ -25,7 +25,9 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.common.CommonTokenStore;
 import com.hedera.services.store.tokens.unique.UniqueTokenStore;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -35,7 +37,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -46,7 +48,6 @@ import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -58,7 +59,7 @@ class TokenMintTransitionLogicTest {
 	long amount = 123L;
 	private TokenID id = IdUtils.asToken("1.2.3");
 
-	private TokenStore tokenStore;
+	private CommonTokenStore tokenStore;
 	private UniqueTokenStore uniqueStore;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
@@ -69,7 +70,7 @@ class TokenMintTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		tokenStore = mock(TokenStore.class);
+		tokenStore = mock(CommonTokenStore.class);
 		uniqueStore = mock(UniqueTokenStore.class);
 		accessor = mock(PlatformTxnAccessor.class);
 		token = mock(MerkleToken.class);
@@ -179,37 +180,65 @@ class TokenMintTransitionLogicTest {
 
 	@Test
 	public void followsHappyPathForUnique() {
-		givenValidTxnCtx();
-		var tokenMintBody = TokenMintTransactionBody.newBuilder()
-				.setToken(id)
-				.addMetadata(ByteString.copyFrom("memo".getBytes(StandardCharsets.UTF_8)))
-				.setAmount(amount).build();
-
-		tokenMintTxn = TransactionBody.newBuilder()
-				.setTokenMint(tokenMintBody)
-				.build();
-
-		given(accessor.getTxn()).willReturn(tokenMintTxn);
-		given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-		given(uniqueStore.mint(any(), anyString(), any())).willReturn(OK);
-
+		givenValidUniqueTxnCtx();
 		subject.doStateTransition();
-		verify(uniqueStore, times(1)).mint(id, "memo", RichInstant.fromJava(txnCtx.consensusTime()));
+		verify(uniqueStore, times(1)).mint(tokenMintTxn.getTokenMint(), RichInstant.fromJava(txnCtx.consensusTime()));
 		verify(txnCtx).setStatus(SUCCESS);
+		verify(txnCtx).setCreated(any(List.class));
 	}
 
 	@Test
 	public void followsSadPathForUnique() {
-		givenValidTxnCtx();
+		givenValidCommonTxnCtx();
 		given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 		given(tokenStore.resolve(any())).willReturn(TokenID.getDefaultInstance());
 
 		subject.doStateTransition();
-		verify(uniqueStore, times(0)).mint(any(), anyString(), any());
+		verify(uniqueStore, times(0)).mint(any(), any());
 		verify(txnCtx).setStatus(INVALID_TOKEN_ID);
 	}
 
-	private void givenValidTxnCtx() {
+	private void givenValidTxnCtx(){
+		givenValidCommonTxnCtx();
+	}
+
+	private void givenValidCommonTxnCtx() {
+		tokenMintTxn = TransactionBody.newBuilder()
+				.setTokenMint(TokenMintTransactionBody.newBuilder()
+						.setToken(id)
+						.setAmount(amount)
+				)
+				.build();
+		given(accessor.getTxn()).willReturn(tokenMintTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(tokenStore.resolve(id)).willReturn(id);
+		given(tokenStore.get(id)).willReturn(token);
+		given(token.totalSupply()).willReturn(amount);
+	}
+
+
+	private void givenValidUniqueTxnCtx() {
+		tokenMintTxn = TransactionBody.newBuilder()
+				.setTokenMint(TokenMintTransactionBody.newBuilder()
+						.setToken(id)
+						.addMetadata(ByteString.copyFromUtf8("meta"))
+						.setAmount(0)
+				)
+				.build();
+		given(accessor.getTxn()).willReturn(tokenMintTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(tokenStore.resolve(id)).willReturn(id);
+		given(token.totalSupply()).willReturn(amount);
+		given(tokenStore.exists(id)).willReturn(true);
+		given(tokenStore.get(id)).willReturn(token);
+		given(token.isDeleted()).willReturn(false);
+		given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+
+		given(uniqueStore.mint(any(), any())).willReturn(CreationResult.success(List.of(1L, 2L)));
+
+	}
+
+	private void givenInvalidUniqueTxnCtx() {
 		tokenMintTxn = TransactionBody.newBuilder()
 				.setTokenMint(TokenMintTransactionBody.newBuilder()
 						.setToken(id)

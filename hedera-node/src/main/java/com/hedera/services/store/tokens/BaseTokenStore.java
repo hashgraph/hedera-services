@@ -445,7 +445,7 @@ public abstract class BaseTokenStore extends HederaStore implements TokenStore {
 		}
 	}
 
-	private ResponseCodeEnum tryAdjustment(AccountID aId, TokenID tId, long adjustment) {
+	protected ResponseCodeEnum tryAdjustment(AccountID aId, TokenID tId, long adjustment) {
 		var relationship = asTokenRel(aId, tId);
 		if ((boolean) tokenRelsLedger.get(relationship, IS_FROZEN)) {
 			return ACCOUNT_FROZEN_FOR_TOKEN;

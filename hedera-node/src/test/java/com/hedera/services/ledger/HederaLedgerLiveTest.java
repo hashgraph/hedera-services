@@ -34,6 +34,12 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.store.tokens.common.CommonTokenStore;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.MerkleUniqueTokenId;
+import com.hedera.services.store.tokens.common.CommonTokenStore;
+import com.hedera.services.store.tokens.unique.OwnerIdentifier;
+import com.hedera.services.store.tokens.unique.UniqueTokenStore;
+import com.hedera.services.utils.invertible_fchashmap.FCInvertibleHashMap;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.utils.TxnUtils;
@@ -72,6 +78,7 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 				new HashMapBackingAccounts(),
 				new ChangeSummaryManager<>());
 		FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
+		FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier> uniqueTokens = new FCInvertibleHashMap<>();
 		tokenRelsLedger = new TransactionalLedger<>(
 				TokenRelProperty.class,
 				() -> new MerkleTokenRelStatus(),
@@ -84,7 +91,14 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 				new MockGlobalDynamicProps(),
 				() -> tokens,
 				tokenRelsLedger);
-		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);
+		uniqueTokenStore = new UniqueTokenStore(
+				ids,
+				TestContextValidator.TEST_VALIDATOR,
+				new MockGlobalDynamicProps(),
+				()->tokens,
+				()->uniqueTokens,
+				tokenRelsLedger);
+		subject = new HederaLedger(tokenStore, uniqueTokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);
 	}
 
 	@Test

@@ -37,7 +37,7 @@ import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.txns.validation.ContextOptionValidator;
+import com.hedera.services.store.tokens.unique.UniqueStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -126,6 +126,7 @@ public class HederaLedger {
 			.thenComparingLong(FileID::getRealmNum);
 
 	private final TokenStore tokenStore;
+	private final UniqueStore uniqueTokenStore;
 	private final EntityIdSource ids;
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
@@ -143,6 +144,7 @@ public class HederaLedger {
 
 	public HederaLedger(
 			TokenStore tokenStore,
+			UniqueStore uniqueTokenStore,
 			EntityIdSource ids,
 			EntityCreator creator,
 			OptionValidator validator,
@@ -156,12 +158,14 @@ public class HederaLedger {
 		this.tokenStore = tokenStore;
 		this.accountsLedger = accountsLedger;
 		this.dynamicProperties = dynamicProperties;
+		this.uniqueTokenStore = uniqueTokenStore;
 
 		creator.setLedger(this);
 		historian.setLedger(this);
 		historian.setCreator(creator);
 		tokenStore.setAccountsLedger(accountsLedger);
 		tokenStore.setHederaLedger(this);
+		uniqueTokenStore.setHederaLedger(this);
 	}
 
 	public void setTokenRelsLedger(

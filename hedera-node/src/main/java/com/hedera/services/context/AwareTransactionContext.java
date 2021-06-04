@@ -37,7 +37,6 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -339,5 +338,10 @@ public class AwareTransactionContext implements TransactionContext {
 	@Override
 	public List<ExpiringEntity> expiringEntities() {
 		return expiringEntities;
+	}
+
+	@Override
+	public void setCreated(List<Long> serialNumbers) {
+		receiptConfig = record -> record.addAllSerialNumbers(serialNumbers);
 	}
 }

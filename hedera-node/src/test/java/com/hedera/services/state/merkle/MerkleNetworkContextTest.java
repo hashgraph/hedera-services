@@ -95,6 +95,8 @@ class MerkleNetworkContextTest {
 		consensusTimeOfLastHandledTxn = RichInstant.fromJava(
 				Instant.ofEpochSecond(1_234_567L, 54321));
 
+
+
 		seqNo = mock(SequenceNumber.class);
 		given(seqNo.current()).willReturn(1234L);
 		seqNoCopy = mock(SequenceNumber.class);

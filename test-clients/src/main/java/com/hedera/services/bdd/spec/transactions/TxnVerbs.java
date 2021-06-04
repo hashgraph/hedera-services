@@ -20,33 +20,12 @@ package com.hedera.services.bdd.spec.transactions;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicCreate;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicDelete;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicUpdate;
-import com.hedera.services.bdd.spec.transactions.network.HapiUncheckedSubmit;
-import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate;
-import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleDelete;
-import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleSign;
-import com.hedera.services.bdd.spec.transactions.system.HapiSysDelete;
-import com.hedera.services.bdd.spec.transactions.system.HapiSysUndelete;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenAssociate;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenBurn;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenDissociate;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenFreeze;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenDelete;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenKycGrant;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenKycRevoke;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenMint;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenUnfreeze;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenUpdate;
-import com.hedera.services.bdd.spec.transactions.token.HapiTokenWipe;
-import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hederahashgraph.api.proto.java.ScheduleSign;
-import com.hederahashgraph.api.proto.java.TopicID;
-import com.hederahashgraph.api.proto.java.TransferList;
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractDelete;
@@ -59,6 +38,27 @@ import com.hedera.services.bdd.spec.transactions.file.HapiFileAppend;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileDelete;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
+import com.hedera.services.bdd.spec.transactions.network.HapiUncheckedSubmit;
+import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate;
+import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleDelete;
+import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleSign;
+import com.hedera.services.bdd.spec.transactions.system.HapiSysDelete;
+import com.hedera.services.bdd.spec.transactions.system.HapiSysUndelete;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenAssociate;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenBurn;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenDelete;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenDissociate;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenFreeze;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenKycGrant;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenKycRevoke;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenMint;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenUnfreeze;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenUpdate;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenWipe;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hederahashgraph.api.proto.java.TopicID;
+import com.hederahashgraph.api.proto.java.TransferList;
 
 import java.util.List;
 import java.util.function.Function;
@@ -158,6 +158,10 @@ public class TxnVerbs {
 	}
 	public static HapiTokenMint mintToken(String token, long amount) {
 		return new HapiTokenMint(token, amount);
+	}
+
+	public static HapiTokenMint mintToken(String token, List<ByteString> metadata){
+		return new HapiTokenMint(token,  metadata);
 	}
 	public static HapiTokenBurn burnToken(String token, long amount) {
 		return new HapiTokenBurn(token, amount);
