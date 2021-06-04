@@ -16,6 +16,8 @@ dependencies {
     jmhImplementation("com.swirlds:swirlds-common:0.9.4")
     jmhRuntimeOnly("io.grpc:grpc-okhttp:1.35.0")
     jmhRuntimeOnly("org.slf4j:slf4j-simple:1.7.29")
+    jmhRuntimeOnly("org.eclipse.collections:eclipse-collections-api:10.4.0")
+    jmhRuntimeOnly("org.eclipse.collections:eclipse-collections:10.4.0")
 }
 
 jmh {
