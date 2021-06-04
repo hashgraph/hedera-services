@@ -97,8 +97,7 @@ public class SchedulesExpiryDuringReconnect extends HapiApiSuite {
 								.adminKey(DEFAULT_PAYER)
 								.logging()
 								.advertisingCreation()
-								.savingExpectedScheduledTxnId(),
-						sleepFor(Duration.ofSeconds(5).toMillis())
+								.savingExpectedScheduledTxnId()
 				)
 				.when(
 						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
