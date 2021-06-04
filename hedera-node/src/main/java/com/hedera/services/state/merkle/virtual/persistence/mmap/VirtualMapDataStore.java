@@ -207,7 +207,7 @@ public class VirtualMapDataStore {
             buffer.get(valueBytes);
             // Hash TODO we assume we can use data value as hash here
             byte[] hashBytes = new byte[HASH_SIZE_BYTES];
-            System.arraycopy(valueBytes,0,hashBytes,0,valueBytes.length);
+            System.arraycopy(valueBytes, 0, hashBytes, 0, valueBytes.length);
             return new VirtualTreeLeaf(new Hash(hashBytes), path, new VirtualKey(keyBytes), new VirtualValue(valueBytes));
         }
         return null;
@@ -268,8 +268,8 @@ public class VirtualMapDataStore {
         if (slotLocation == null) {
             // find a new slot location
             slotLocation = leafStore.getNewSlot();
-            final var leafMap = leafIndex.computeIfAbsent(account, k -> new HashMap<>());
-            leafMap.put(leaf.getKey(), slotLocation);
+            final var indexMap = leafIndex.computeIfAbsent(account, k -> new HashMap<>());
+            indexMap.put(leaf.getKey(), slotLocation);
         }
         // write leaf into slot
         ByteBuffer buffer = leafStore.accessSlot(slotLocation.fileIndex(), slotLocation.slotIndex());

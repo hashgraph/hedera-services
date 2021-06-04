@@ -447,7 +447,7 @@ public final class MemMapDataStore {
                 slotIndex = freeSlotsForReuse.pop();
             }
             // mark slot as used
-            mappedBuffer.put(slotIndex, USED);
+            mappedBuffer.put(slotIndex * slotSize, USED);
             // return slot index
             return slotIndex;
         }
