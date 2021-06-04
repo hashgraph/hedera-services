@@ -101,7 +101,7 @@ public final class VirtualTreePath {
 
         final var maxForRank = (1L << rank);
         if (index > (maxForRank - 1)) {
-            throw new IllegalArgumentException("The index is too large for the number of items at this rank");
+            throw new IllegalArgumentException("The index ["+index+"] is too large for the number of items at this rank. maxForRank ="+maxForRank);
         }
 
         final var breadcrumbs = (maxForRank - index - 1);

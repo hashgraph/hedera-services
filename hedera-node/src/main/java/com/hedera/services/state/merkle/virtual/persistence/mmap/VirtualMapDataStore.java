@@ -20,7 +20,7 @@ import java.util.Map;
  * TODO we assume data size is less than hash length and use padded data value as the hash for leaf node
  */
 @SuppressWarnings({"unused", "DuplicatedCode"})
-public class VirtualMapDataStore {
+public final class VirtualMapDataStore {
     private static final int MB = 1024*1024;
     /** The size of a hash we store in bytes, TODO what happens if we change digest? */
     private static final int HASH_SIZE_BYTES = 384/Byte.SIZE;
@@ -327,8 +327,9 @@ public class VirtualMapDataStore {
         if (slotLocation == MemMapDataStore.NOT_FOUND_LOCATION) {
             // find a new slot location
             slotLocation = leafStore.getNewSlot();
-            // store in index
+            // store in indexes
             index(account).leafIndex.put(leaf.getKey(), slotLocation);
+            index(account).leafPathIndex.put(leaf.getPath(), slotLocation);
         }
         // write leaf into slot
         ByteBuffer buffer = leafStore.accessSlot(slotLocation);
@@ -404,7 +405,7 @@ public class VirtualMapDataStore {
      */
     private long findParent(Account account, long path) {
         Index index = indexNoCreate(account);
-        if (index != null) return index.parentIndex.get(path);
+        if (index != null) return index.parentIndex.getIfAbsent(path, MemMapDataStore.NOT_FOUND_LOCATION);
         return MemMapDataStore.NOT_FOUND_LOCATION;
     }
 
@@ -417,13 +418,13 @@ public class VirtualMapDataStore {
      */
     private long findLeaf(Account account, VirtualKey key) {
         Index index = indexNoCreate(account);
-        if (index != null) return index.leafIndex.get(key);
+        if (index != null) return index.leafIndex.getIfAbsent(key,MemMapDataStore.NOT_FOUND_LOCATION);
         return MemMapDataStore.NOT_FOUND_LOCATION;
     }
 
     private long findLeaf(Account account, long path) {
         Index index = indexNoCreate(account);
-        if (index != null) return index.leafPathIndex.get(path);
+        if (index != null) return index.leafPathIndex.getIfAbsent(path,MemMapDataStore.NOT_FOUND_LOCATION);
         return MemMapDataStore.NOT_FOUND_LOCATION;
     }
 
@@ -436,7 +437,7 @@ public class VirtualMapDataStore {
      */
     private long findPath(Account account, byte key) {
         Index index = indexNoCreate(account);
-        if (index != null) return index.pathIndex.get(key);
+        if (index != null) return index.pathIndex.getIfAbsent(key, MemMapDataStore.NOT_FOUND_LOCATION);
         return MemMapDataStore.NOT_FOUND_LOCATION;
     }
 
