@@ -2,11 +2,9 @@ package com.hedera.services.state.merkle.virtual.persistence.mmap;
 
 import com.hedera.services.state.merkle.virtual.Account;
 import com.hedera.services.state.merkle.virtual.VirtualKey;
+import com.hedera.services.state.merkle.virtual.VirtualTreePath;
 import com.hedera.services.state.merkle.virtual.VirtualValue;
-import com.hedera.services.state.merkle.virtual.tree.VirtualTreeInternal;
-import com.hedera.services.state.merkle.virtual.tree.VirtualTreeLeaf;
-import com.hedera.services.state.merkle.virtual.tree.VirtualTreeNode;
-import com.hedera.services.state.merkle.virtual.tree.VirtualTreePath;
+import com.hedera.services.state.merkle.virtual.persistence.VirtualRecord;
 import com.swirlds.common.crypto.Hash;
 import org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
@@ -70,6 +68,7 @@ public class VirtualMapDataStore {
     private static class Index {
         public final LongLongHashMap parentIndex = new LongLongHashMap();
         public final ObjectLongHashMap<VirtualKey> leafIndex = new ObjectLongHashMap<>();
+        public final LongLongHashMap leafPathIndex = new LongLongHashMap();
         public final LongLongHashMap pathIndex = new LongLongHashMap();
     }
 
@@ -126,6 +125,11 @@ public class VirtualMapDataStore {
                 indexMap.put(
                         new VirtualKey(keyBytes),
                         location);
+
+                LongLongHashMap pathIndexMap = index(account).leafPathIndex;
+                pathIndexMap.put(
+                        fileAtSlot.readLong(),
+                        location);
             } catch (IOException e) {
                 e.printStackTrace(); // TODO something better here, this should only happen if our files are corrupt
             }
@@ -177,10 +181,10 @@ public class VirtualMapDataStore {
      * Delete a stored parent from storage, if it is stored.
      *
      * @param account The account that the parent belongs to
-     * @param parent The parent to delete
+     * @param parentPath The path of the parent to delete
      */
-    public void delete(Account account, VirtualTreeNode parent){
-        long slotLocation = findParent(account,parent.getPath());
+    public void delete(Account account, long parentPath) {
+        long slotLocation = findParent(account, parentPath);
         if (slotLocation != MemMapDataStore.NOT_FOUND_LOCATION) parentStore.deleteSlot(slotLocation);
     }
 
@@ -190,8 +194,8 @@ public class VirtualMapDataStore {
      * @param account The account that the leaf belongs to
      * @param leaf The leaf to delete
      */
-    public void delete(Account account, VirtualTreeLeaf leaf){
-        long slotLocation = findLeaf(account,leaf.getKey());
+    public void delete(Account account, VirtualRecord leaf){
+        long slotLocation = findLeaf(account, leaf.getKey());
         if (slotLocation != MemMapDataStore.NOT_FOUND_LOCATION) leafStore.deleteSlot(slotLocation);
     }
 
@@ -202,7 +206,7 @@ public class VirtualMapDataStore {
      * @param path The path of the parent to find and load
      * @return a loaded VirtualTreeInternal with path and hash set or null if not found
      */
-    public VirtualTreeInternal loadParent(Account account, long path) {
+    public Hash loadParentHash(Account account, long path) {
         long slotLocation = findParent(account,path);
         if (slotLocation != MemMapDataStore.NOT_FOUND_LOCATION) {
             ByteBuffer buffer = parentStore.accessSlot(slotLocation);
@@ -212,7 +216,7 @@ public class VirtualMapDataStore {
             // Hash -- HASH_SIZE_BYTES
             byte[] hashBytes = new byte[HASH_SIZE_BYTES];
             buffer.get(hashBytes);
-            return new VirtualTreeInternal(new Hash(hashBytes), path);
+            return new Hash(hashBytes);
         }
         return null;
     }
@@ -224,7 +228,7 @@ public class VirtualMapDataStore {
      * @param key The key of the leaf to find
      * @return a loaded VirtualTreeLeaf or null if not found
      */
-    public VirtualTreeLeaf loadLeaf(Account account, VirtualKey key){
+    public VirtualRecord loadLeaf(Account account, VirtualKey key){
         long slotLocation = findLeaf(account,key);
         if (slotLocation != MemMapDataStore.NOT_FOUND_LOCATION) {
             ByteBuffer buffer = leafStore.accessSlot(slotLocation);
@@ -241,7 +245,29 @@ public class VirtualMapDataStore {
             // Hash TODO we assume we can use data value as hash here
             byte[] hashBytes = new byte[HASH_SIZE_BYTES];
             System.arraycopy(valueBytes, 0, hashBytes, 0, valueBytes.length);
-            return new VirtualTreeLeaf(new Hash(hashBytes), path, new VirtualKey(keyBytes), new VirtualValue(valueBytes));
+            return new VirtualRecord(new Hash(hashBytes), path, new VirtualKey(keyBytes), new VirtualValue(valueBytes));
+        }
+        return null;
+    }
+
+    public VirtualRecord loadLeaf(Account account, long path) {
+        long slotLocation = findLeaf(account, path);
+        if (slotLocation != MemMapDataStore.NOT_FOUND_LOCATION) {
+            ByteBuffer buffer = leafStore.accessSlot(slotLocation);
+            // Account -- Account.BYTES
+            buffer.position(buffer.position() + Account.BYTES); // jump over
+            // Key -- keySizeBytes
+            byte[] keyBytes = new byte[keySizeBytes];
+            buffer.get(keyBytes);
+            // Path -- VirtualTreePath.BYTES
+            buffer.getLong(); // skip it!
+            // Value -- dataSizeBytes
+            byte[] valueBytes = new byte[dataSizeBytes];
+            buffer.get(valueBytes);
+            // Hash TODO we assume we can use data value as hash here
+            byte[] hashBytes = new byte[HASH_SIZE_BYTES];
+            System.arraycopy(valueBytes, 0, hashBytes, 0, valueBytes.length);
+            return new VirtualRecord(new Hash(hashBytes), path, new VirtualKey(keyBytes), new VirtualValue(valueBytes));
         }
         return null;
     }
@@ -264,16 +290,17 @@ public class VirtualMapDataStore {
      * Save a VirtualTreeInternal parent node into storage
      *
      * @param account The account that the parent belongs to
-     * @param parent The parent node to save
+     * @param parentPath The path of the parent node to save
+     * @param hash The parent's hash
      */
-    public void save(Account account, VirtualTreeInternal parent) {
+    public void save(Account account, long parentPath, Hash hash) {
         // if already stored and if so it is an update
-        long slotLocation = findParent(account, parent.getPath());
+        long slotLocation = findParent(account, parentPath);
         if (slotLocation == MemMapDataStore.NOT_FOUND_LOCATION) {
             // find a new slot location
             slotLocation = parentStore.getNewSlot();
             // store in index
-            index(account).parentIndex.put(parent.getPath(), slotLocation);
+            index(account).parentIndex.put(parentPath, slotLocation);
         }
         // write parent into slot
         ByteBuffer buffer = parentStore.accessSlot(slotLocation);
@@ -282,9 +309,9 @@ public class VirtualMapDataStore {
         buffer.putLong(account.realmNum());
         buffer.putLong(account.accountNum());
         // Path -- VirtualTreePath.BYTES
-        buffer.putLong(parent.getPath());
+        buffer.putLong(parentPath);
         // Hash -- HASH_SIZE_BYTES
-        buffer.put(parent.hash().getValue());
+        buffer.put(hash.getValue());
 
     }
 
@@ -294,7 +321,7 @@ public class VirtualMapDataStore {
      * @param account The account that the leaf belongs to
      * @param leaf The leaf to store
      */
-    public void save(Account account, VirtualTreeLeaf leaf) {
+    public void save(Account account, VirtualRecord leaf) {
         // if already stored and if so it is an update
         long slotLocation = findLeaf(account,leaf.getKey());
         if (slotLocation == MemMapDataStore.NOT_FOUND_LOCATION) {
@@ -314,7 +341,7 @@ public class VirtualMapDataStore {
         // Path -- VirtualTreePath.BYTES
         buffer.putLong(leaf.getPath());
         // Value -- dataSizeBytes
-        leaf.getData().writeToByteBuffer(buffer);
+        leaf.getValue().writeToByteBuffer(buffer);
     }
 
     /**
@@ -391,6 +418,12 @@ public class VirtualMapDataStore {
     private long findLeaf(Account account, VirtualKey key) {
         Index index = indexNoCreate(account);
         if (index != null) return index.leafIndex.get(key);
+        return MemMapDataStore.NOT_FOUND_LOCATION;
+    }
+
+    private long findLeaf(Account account, long path) {
+        Index index = indexNoCreate(account);
+        if (index != null) return index.leafPathIndex.get(path);
         return MemMapDataStore.NOT_FOUND_LOCATION;
     }
 

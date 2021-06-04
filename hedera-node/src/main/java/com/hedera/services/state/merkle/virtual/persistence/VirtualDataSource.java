@@ -2,27 +2,25 @@ package com.hedera.services.state.merkle.virtual.persistence;
 
 import com.hedera.services.state.merkle.virtual.VirtualKey;
 import com.hedera.services.state.merkle.virtual.VirtualValue;
-import com.hedera.services.state.merkle.virtual.tree.VirtualTreeInternal;
-import com.hedera.services.state.merkle.virtual.tree.VirtualTreeLeaf;
-import com.hedera.services.state.merkle.virtual.tree.VirtualTreePath;
+import com.swirlds.common.crypto.Hash;
 
 import java.io.Closeable;
-import java.nio.file.Path;
 
 /**
  * Defines the datasource for persisting information about the virtual tree to disk.
  */
 public interface VirtualDataSource extends Closeable {
-    public VirtualTreeInternal load(long parentPathId);
-    public VirtualTreeLeaf load(VirtualKey leafKey);
+    public Hash loadParentHash(long parentPath);
+    public VirtualRecord loadLeaf(long leafPath);
+    public VirtualRecord loadLeaf(VirtualKey leafKey);
 
-    public VirtualValue get(VirtualKey leafKey);
+    public VirtualValue getLeafValue(VirtualKey leafKey);
 
-    public void save(VirtualTreeInternal parent);
-    public void save(VirtualTreeLeaf leaf);
+    public void saveParent(long parentPath, Hash hash);
+    public void saveLeaf(VirtualRecord leaf);
 
-    public void delete(VirtualTreeInternal parent);
-    public void delete(VirtualTreeLeaf leaf);
+    public void deleteParent(long parentPath);
+    public void deleteLeaf(VirtualRecord leaf);
 
     /**
      * Writes the path for the very last leaf to durable storage. This is needed for
@@ -30,7 +28,7 @@ public interface VirtualDataSource extends Closeable {
      *
      * @param path The path of the very last leaf node. This can be null, if the tree is empty.
      */
-    void writeLastLeafPath(long pathId);
+    void writeLastLeafPath(long path);
 
     /**
      * Gets the Path of the last leaf node. If there are no leaves, this will return null.
@@ -45,7 +43,7 @@ public interface VirtualDataSource extends Closeable {
      *
      * @param path The path of the very first leaf node. This can be null, if the tree is empty.
      */
-    void writeFirstLeafPath(long pathId);
+    void writeFirstLeafPath(long path);
 
     /**
      * Gets the Path of the first leaf node. If there are no leaves, this will return null.

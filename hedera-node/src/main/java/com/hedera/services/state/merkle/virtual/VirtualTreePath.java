@@ -5,10 +5,23 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Objects;
 
 /**
+ * Represents a path in a virtual tree from the root to a node. The path is
+ * represented as a string of bits and a rank, such that each bit represents either
+ * the left or right node as you traverse from the root node downwards. The root
+ * node is found at rank 0, while the first level of children are found at rank 1,
+ * and so forth down the tree. Every node in the tree has a unique path at any given
+ * point in time.
+ *
+ * TODO: NOTE! To optimize, we now use MSB->LSB of breadcrumbs! So 10 is left first (1)
+ * and then right (0), and 110 is left first (1) and then left again (1) and then right (0).
  */
 public final class VirtualTreePath {
     /** Site of an account when serialized to bytes */
     public static final int BYTES = Long.BYTES;
+
+    private static final long BREADCRUMB_MASK = 0x00FFFFFFFFFFFFFFL;
+    private static final long RANK_MASK = 0xFF00000000000000L;
+    private static final long ALL_SET = -1L;
 
     /**
      * A special constant that represents the Path of a root node. It isn't necessary
@@ -21,13 +34,23 @@ public final class VirtualTreePath {
     private VirtualTreePath() {
     }
 
-    // Gets the rank part of the pathId
-    public static int getRank(long path) {
-        if (path == 0) {
-            return 0;
-        }
+    // combines the rank and path. Rank will replace the top byte of the path.
+    // There are many breadcrumbs that don't make sense, for example if I have
+    // a rank of "1", there can only be valid values of "0" and "1" for
+    // breadcrumbs. I could zero out anything in breadcrumbs that is invalid,
+    // and maybe this is a good idea for safety reasons.
+    public static long asPath(byte rank, long breadcrumbs) {
+        return ((long)rank << 56) | (BREADCRUMB_MASK & (~(ALL_SET << rank) & breadcrumbs));
+    }
 
-        return (63 - Long.numberOfLeadingZeros(path + 1));
+    // Gets the rank part of the pathId
+    public static byte getRank(long path) {
+        return (byte) ((RANK_MASK & path) >> 56);
+    }
+
+    // Gets the path from the pathId
+    public static long getBreadcrumbs(long path) {
+        return BREADCRUMB_MASK & path;
     }
 
     /**
@@ -52,12 +75,10 @@ public final class VirtualTreePath {
      * @return A non-negative index of the node with this path within its rank.
      */
     public static int getIndexInRank(long path) {
-        if (path == ROOT_PATH) {
-            return 0;
-        }
-
         final var rank = getRank(path);
-        return (int)(path - (2L << (rank - 1)) + 1);
+        final var breadcrumbs = getBreadcrumbs(path);
+        final var maxForRank = (1L << rank);
+        return (int) (maxForRank - breadcrumbs - 1);
     }
 
     /**
@@ -69,7 +90,7 @@ public final class VirtualTreePath {
      * @param index The non-negative index into the rank at which to find the node
      * @return A Path representing the path to the node found at the given rank and index. Never returns null.
      */
-    public static long getPathForRankAndIndex(int rank, int index) {
+    public static long getPathForRankAndIndex(byte rank, int index) {
         if (rank < 0) {
             throw new IllegalArgumentException("Rank must be strictly non-negative");
         }
@@ -78,16 +99,13 @@ public final class VirtualTreePath {
             throw new IllegalArgumentException("Index must be strictly non-negative");
         }
 
-        if (rank == 0 && index == 0) {
-            return ROOT_PATH;
-        }
-
         final var maxForRank = (1L << rank);
         if (index > (maxForRank - 1)) {
-            throw new IllegalArgumentException("The index ["+index+"] is too large for the number of items at this rank. maxForRank ="+maxForRank);
+            throw new IllegalArgumentException("The index is too large for the number of items at this rank");
         }
 
-        return index + (2L << (rank - 1)) - 1;
+        final var breadcrumbs = (maxForRank - index - 1);
+        return asPath(rank, breadcrumbs);
     }
 
     /**
@@ -100,13 +118,37 @@ public final class VirtualTreePath {
     }
 
     public static boolean isFarRight(long path) {
-        // It turns out, all 0's followed by all 1's followed by a single 0 is always the far right node.
-        // Given a valid far right like 0b0000000_00111110, -1L << (64 - numLeadingZeros) will produce a complimentary
-        // mask for the high leading 0's, such as 0b11111111_11000000. Xor on the path with 0x1 will end up
-        // flipping the low bit, so it becomes 0b00000000_00111111. By or'ing the two together, we should
-        // get all 1's, which is represented as -1L.
-        final var numLeadingZeros = Long.numberOfLeadingZeros(path);
-        return ((path ^ 0x1) | (-1L << (64 - numLeadingZeros))) == -1L;
+        final var breadcrumbs = getBreadcrumbs(path);
+        return breadcrumbs == 0;
+    }
+
+    public boolean isFarLeft(long path) {
+        final var rank = getRank(path);
+        final var breadcrumbs = getBreadcrumbs(path);
+        final var maxForRank = (1L << rank);
+        return (maxForRank - breadcrumbs) == 1;
+    }
+
+    /**
+     * Gets whether this path comes <strong>before</strong> the {@code other} path.
+     * A path comes before if it has a lesser rank, or if it has a lesser index within the
+     * same rank as the other Path.
+     *
+     * @return Whether this Path comes before the other Path.
+     */
+    public static boolean isBefore(long a, long b) {
+        return compareTo(a, b) < 0;
+    }
+
+    /**
+     * Gets whether this path comes <strong>after</strong> the {@code other} path.
+     * A path comes after if it has a greater rank, or if it has a greater index within
+     * the same rank.
+     *
+     * @return Whether this Path comes after the other Path.
+     */
+    public static boolean isAfter(long a, long b) {
+        return compareTo(a, b) > 0;
     }
 
     /**
@@ -116,7 +158,13 @@ public final class VirtualTreePath {
      *         do not have a parent).
      */
     public static long getParentPath(long path) {
-        return (path - 1) >> 1;
+        final byte rank = getRank(path);
+        if (rank == 0) {
+            return INVALID_PATH;
+        }
+
+        final var breadcrumbs = getBreadcrumbs(path);
+        return asPath((byte) (rank - 1), breadcrumbs >> 1);
     }
 
     /**
@@ -125,7 +173,9 @@ public final class VirtualTreePath {
      * @return The path of the left child. This is never null.
      */
     public static long getLeftChildPath(long path) {
-        return (path << 1) + 1;
+        final var rank = getRank(path);
+        final var breadcrumbs = getBreadcrumbs(path);
+        return asPath((byte)(rank + 1), (breadcrumbs << 1) | 0x1);
     }
 
     /**
@@ -134,19 +184,72 @@ public final class VirtualTreePath {
      * @return The path of the right child. This is never null.
      */
     public static long getRightChildPath(long path) {
-        return (path << 1) + 2;
+        final var rank = getRank(path);
+        final var breadcrumbs = getBreadcrumbs(path);
+        return asPath((byte)(rank + 1), breadcrumbs << 1);
     }
 
-    public static long getSiblingPath(long path) {
-        if (path == ROOT_PATH) {
-            return INVALID_PATH;
+    public static boolean isParentOf(long a, long b) {
+        final var rankA = getRank(a);
+        final var rankB = getRank(b);
+        if (rankB <= rankA) {
+            return false;
         }
 
-        return isLeft(path) ? path + 1 : path - 1;
+        final var breadA = getBreadcrumbs(a);
+        final var breadB = getBreadcrumbs(b);
+        return (breadB >> (rankB - rankA)) == breadA;
+    }
+
+    /**
+     * Compares two Paths. A Path is "less than" another path if it is either at a
+     * more shallow rank (closer to the root), or to the left of the other path. It is
+     * "greater than" if its rank is deeper (farther from the root) or to the right
+     * of the other path.
+     *
+     * @param a The first path.
+     * @param b The other path to compare with.
+     * @return -1 if this is left of o, 0 if they are equal, 1 if this is right of o.
+     */
+    private static int compareTo(long a, long b) {
+        // Check to see if we are equal
+        if (a == b) {
+            return 0;
+        }
+
+        // If my rank is less, then I am more shallow, so return -1
+        final var rankA = getRank(a);
+        final var rankB = getRank(b);
+        if (rankA < rankB) {
+            return -1;
+        }
+
+        // If my rank is more, then I am deeper, so return 1
+        if (rankA > rankB) {
+            return 1;
+        }
+
+        // Check the sequence of 0's and 1's in the two paths.
+        // I don't need to check the positions that are the same, I only need to check the first position
+        // at which they differ. If my first different position is a 0, then I'm to the left (return -1).
+        // If my first different position is a 1, then I'm to the right (return 1).
+        long firstDiffPos = a ^ b;
+
+        long p1 = a;
+        while ((firstDiffPos & 0x1) != 1) {
+            firstDiffPos >>= 1;
+            p1 >>= 1;
+
+            if (firstDiffPos == 0) {
+                throw new IllegalStateException("Unexpected failure in the algorithm. This should not be possible.");
+            }
+        }
+
+        return ((p1 & 0x1) == 0) ? -1 : 1;
     }
 
     public static String toString(long path) {
         // Should print the path as a byte string
-        return "Path [ rank=" + getRank(path) + ", indexInRank=" + getIndexInRank(path) + "]";
+        return "Path [ rank=" + getRank(path) + ", breadcrumbs=" + getBreadcrumbs(path) + "]";
     }
 }
