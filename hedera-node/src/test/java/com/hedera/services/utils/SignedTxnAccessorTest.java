@@ -91,7 +91,7 @@ class SignedTxnAccessorTest {
 		assertTrue(accessor.memoHasZeroByte());
 		assertEquals(FeeBuilder.getSignatureCount(accessor.getSignedTxnWrapper()), accessor.numSigPairs());
 		assertEquals(FeeBuilder.getSignatureSize(accessor.getSignedTxnWrapper()), accessor.sigMapSize());
-		assertEquals(memo, accessor.getMemo());
+		assertEquals(zeroByteMemo, accessor.getMemo());
 	}
 
 	@Test

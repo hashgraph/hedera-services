@@ -97,7 +97,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 		sigMapSize = sigMap.getSerializedSize();
 		numSigPairs = sigMap.getSigPairCount();
 		utf8MemoBytes = StringUtils.getBytesUtf8(memo);
-		memoHasZeroByte = Arrays.contains(utf8MemoBytes, (byte)0);
+		memoHasZeroByte = Arrays.contains(utf8MemoBytes, (byte) 0);
 	}
 
 	public SignedTxnAccessor(Transaction signedTxnWrapper) throws InvalidProtocolBufferException {
@@ -177,7 +177,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 		return memo;
 	}
 
-        @Override
+	@Override
 	public byte[] getHash() {
 		return hash;
 	}
