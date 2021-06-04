@@ -1315,7 +1315,7 @@ workflows:
           filters:
             branches:
               only:
-                - master-plus-sdk-0.15.0-alpha.1
+                - master-plus-sdk-0.15.0
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1432,7 +1432,7 @@ workflows:
           filters:
             branches:
               only:
-                - master-plus-sdk-0.15.0-alpha.1
+                - master-plus-sdk-0.15.0
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1457,7 +1457,7 @@ workflows:
           filters:
             branches:
               only:
-                - master-plus-sdk-0.15.0-alpha.1
+                - master-plus-sdk-0.15.0
     jobs:
       - build-platform-and-services
       - update-start-up-key:
@@ -1512,7 +1512,7 @@ workflows:
           filters:
             branches:
               only:
-                - master-plus-sdk-0.15.0-alpha.1
+                - master-plus-sdk-0.15.0
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1535,7 +1535,7 @@ workflows:
           filters:
             branches:
               only:
-                - master-plus-sdk-0.15.0-alpha.1
+                - master-plus-sdk-0.15.0
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1559,7 +1559,7 @@ workflows:
           filters:
             branches:
               only:
-                - master-plus-sdk-0.15.0-alpha.1
+                - master-plus-sdk-0.15.0
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1583,7 +1583,7 @@ workflows:
           filters:
             branches:
               only:
-                - master-plus-sdk-0.15.0-alpha.1
+                - master-plus-sdk-0.15.0
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1608,7 +1608,7 @@ workflows:
           filters:
             branches:
               only:
-                - master-plus-sdk-0.15.0-alpha.1
+                - master-plus-sdk-0.15.0
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1631,7 +1631,7 @@ workflows:
           filters:
             branches:
               only:
-                - master-plus-sdk-0.15.0-alpha.1
+                - master-plus-sdk-0.15.0
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1678,7 +1678,7 @@ workflows:
           filters:
             branches:
               only:
-                - master-plus-sdk-0.15.0-alpha.1
+                - master-plus-sdk-0.15.0
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1701,7 +1701,7 @@ workflows:
           filters:
             branches:
               only:
-                - master-plus-sdk-0.15.0-alpha.1
+                - master-plus-sdk-0.15.0
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1725,7 +1725,7 @@ workflows:
           filters:
             branches:
               only:
-                - master-plus-sdk-0.15.0-alpha.1
+                - master-plus-sdk-0.15.0
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1748,7 +1748,7 @@ workflows:
           filters:
             branches:
               only:
-                - master-plus-sdk-0.15.0-alpha.1
+                - master-plus-sdk-0.15.0
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1771,7 +1771,7 @@ workflows:
           filters:
             branches:
               only:
-                - master-plus-sdk-0.15.0-alpha.1
+                - master-plus-sdk-0.15.0
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1794,7 +1794,7 @@ workflows:
           filters:
             branches:
               only:
-                - master-plus-sdk-0.15.0-alpha.1
+                - master-plus-sdk-0.15.0
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1817,7 +1817,7 @@ workflows:
           filters:
             branches:
               only:
-                - master-plus-sdk-0.15.0-alpha.1
+                - master-plus-sdk-0.15.0
     jobs:
       - build-platform-and-services
       - jrs-regression:
