@@ -14,7 +14,9 @@ import com.swirlds.common.merkle.MerkleExternalLeaf;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -323,29 +325,6 @@ public final class VirtualMap
         return rec;
     }
 
-//    private VirtualTreeInternal realizeAllInternal(long path) {
-//        final var parentRef = new AtomicReference<VirtualTreeInternal>();
-//        if (root == null) {
-//            root = realizeRootNode();
-//        }
-//        root.walk(path, new VirtualVisitor() {
-//            @Override
-//            public void visitParent(VirtualTreeInternal parent) {
-//                parentRef.set(parent);
-//            }
-//
-//            @Override
-//            public void visitUncreated(long uncreated) {
-//                // If the uncreated tree path matches the prefix of our path, then we create
-//                // the node. This brings all the parents into reality.
-//                if (isParentOf(uncreated, path) || uncreated == path) {
-//                    realizeInternalNode(parentRef.get(), uncreated);
-//                }
-//            }
-//        });
-//        return parentRef.get();
-//    }
-
     /**
      * Adds a new leaf with the given key and value. At this point, we know for
      * certain that there is no record in the data source for this key, so
@@ -420,39 +399,6 @@ public final class VirtualMap
         }
     }
 
-    /**
-     * Either convert a root ghost node to a realized one, or create a new one.
-     *
-     * @return A non-null internal root node
-     */
-//    private VirtualTreeInternal realizeRootNode() {
-//        var node = dataSource.load(VirtualTreePath.ROOT_PATH);
-//        if (node == null) {
-//            node = new VirtualTreeInternal(NULL_HASH, VirtualTreePath.ROOT_PATH);
-//            node.makeDirty();
-//        }
-//        return node;
-//    }
-
-    /**
-     * Either convert a ghost node to a realized one, or create a new one.
-     *
-     * @param parent The parent, cannot be null.
-     * @param path The path to this node.
-     * @return A non-null internal node
-     */
-//    private VirtualTreeInternal realizeInternalNode(VirtualTreeInternal parent, long path) {
-//        Objects.requireNonNull(parent);
-//        final var n = dataSource.load(path);
-//        final var node = n == null ? new VirtualTreeInternal(NULL_HASH, path) : n;
-//        if(isLeft(path)) {
-//            parent.setLeftChild(node);
-//        } else {
-//            parent.setRightChild(node);
-//        }
-//        return node;
-//    }
-
 //    public String getAsciiArt() {
 //        if (root == null) {
 //            return "<Empty>";
@@ -522,104 +468,4 @@ public final class VirtualMap
 //        }
 //    }
 
-//    /**
-//     * Walks the tree starting from this node taking the most direct route to the
-//     * target node. Calls the visitor for each step downward.
-//     *
-//     * @param target The path of the node we're trying to walk towards.
-//     * @param visitor The visitor. Cannot be null.
-//     */
-//    public final void walk(long target, VirtualVisitor visitor) {
-//        // Maybe I was the target! In that case, visit me and quit.
-//        if (getPath() == target) {
-//            visitor.visitParent(this);
-//            return;
-//        }
-//
-//        // I wasn't the target and I'm not the parent of the target so quit.
-//        if (!isParentOf(getPath(), target)) {
-//            return;
-//        }
-//
-//        var node = this;
-//        while (node != null) {
-//            final var path = node.getPath();
-//            // Visit the node
-//            visitor.visitParent(node);
-//
-//            // If we've found the target, then we're done
-//            if (path == target) {
-//                break;
-//            }
-//
-//            // We didn't find the target yet and `node` is a parent node,
-//            // so we need to go down either the left or right branch.
-//            VirtualTreeNode nextNode;
-//            final var leftPath = getLeftChildPath(path);
-//            if (isParentOf(leftPath, target) || leftPath == target) {
-//                if (node.leftChild == null) {
-//                    visitor.visitUncreated(leftPath);
-//                }
-//                nextNode = node.leftChild;
-//            } else {
-//                final var rightPath = getRightChildPath(path);
-//                if (isParentOf(rightPath, target) || rightPath == target) {
-//                    if (node.rightChild == null) {
-//                        visitor.visitUncreated(rightPath);
-//                    }
-//                    nextNode = node.rightChild;
-//                } else {
-//                    // Neither left or right, we're at a dead end.
-//                    break;
-//                }
-//            }
-//
-//            if (nextNode instanceof VirtualTreeLeaf) {
-//                // We found the leaf. Visit and quit.
-//                visitor.visitLeaf((VirtualTreeLeaf) nextNode);
-//                break;
-//            } else {
-//                // iterate
-//                node = (VirtualTreeInternal) nextNode;
-//            }
-//        }
-//    }
-//
-//    /**
-//     * Walks the tree starting from this node using pre-order traversal, invoking the visitor
-//     * for each node visited. Only the dirty nodes are visited.
-//     *
-//     * TODO how does this work with deleted nodes? If we delete a node, we somehow need to
-//     * visit it too. Maybe this is the wrong way to do it.
-//     *
-//     * @param visitor The visitor. Cannot be null.
-//     */
-//    public final void walkDirty(VirtualVisitor visitor) {
-//        // We need a stack to keep track of which node to process next
-//        final var deque = new ArrayDeque<VirtualTreeNode>(64);
-//        deque.push(this);
-//        while (!deque.isEmpty()) {
-//            // In pre-order traversal, this node is visited first.
-//            final var node = deque.pop();
-//            final var pnode = node instanceof VirtualTreeInternal;
-//            if (pnode) {
-//                final var parent = (VirtualTreeInternal) node;
-//                visitor.visitParent(parent);
-//
-//                // Push the right first, and then the left, so that we process
-//                // the left branch first as we pop off the stack.
-//                final var right = parent.rightChild;
-//                if (right != null) {
-//                    deque.push(right);
-//                }
-//
-//                final var left = parent.leftChild;
-//                if (left != null) {
-//                    deque.push(left);
-//                }
-//            } else {
-//                visitor.visitLeaf((VirtualTreeLeaf) node);
-//            }
-//        }
-//    }
 }
