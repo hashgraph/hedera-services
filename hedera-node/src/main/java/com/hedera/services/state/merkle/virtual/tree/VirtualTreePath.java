@@ -192,9 +192,15 @@ public final class VirtualTreePath {
     }
 
     public static boolean isParentOf(long a, long b) {
+        final var rankA = getRank(a);
+        final var rankB = getRank(b);
+        if (rankB <= rankA) {
+            return false;
+        }
+
         final var breadA = getBreadcrumbs(a);
         final var breadB = getBreadcrumbs(b);
-        return (breadB >> 1) == breadA;
+        return (breadB >> (rankB - rankA)) == breadA;
     }
 
     /**

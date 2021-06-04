@@ -246,12 +246,24 @@ public class PathTest {
         assertTrue(isParentOf(ROOT_PATH, asPath((byte)1, 0b001)));
 
         // rank 2
+        assertTrue(isParentOf(ROOT_PATH, asPath((byte)2, 0b000)));
+        assertTrue(isParentOf(ROOT_PATH, asPath((byte)2, 0b001)));
+        assertTrue(isParentOf(ROOT_PATH, asPath((byte)2, 0b010)));
+        assertTrue(isParentOf(ROOT_PATH, asPath((byte)2, 0b011)));
         assertTrue(isParentOf(asPath((byte)1, 0b000), asPath((byte)2, 0b000)));
         assertTrue(isParentOf(asPath((byte)1, 0b000), asPath((byte)2, 0b001)));
         assertTrue(isParentOf(asPath((byte)1, 0b001), asPath((byte)2, 0b010)));
         assertTrue(isParentOf(asPath((byte)1, 0b001), asPath((byte)2, 0b011)));
 
         // rank 3
+        assertTrue(isParentOf(ROOT_PATH, asPath((byte)3, 0b000)));
+        assertTrue(isParentOf(ROOT_PATH, asPath((byte)3, 0b001)));
+        assertTrue(isParentOf(ROOT_PATH, asPath((byte)3, 0b010)));
+        assertTrue(isParentOf(ROOT_PATH, asPath((byte)3, 0b011)));
+        assertTrue(isParentOf(ROOT_PATH, asPath((byte)3, 0b100)));
+        assertTrue(isParentOf(ROOT_PATH, asPath((byte)3, 0b101)));
+        assertTrue(isParentOf(ROOT_PATH, asPath((byte)3, 0b110)));
+        assertTrue(isParentOf(ROOT_PATH, asPath((byte)3, 0b111)));
         assertTrue(isParentOf(asPath((byte)2, 0b000), asPath((byte)3, 0b000)));
         assertTrue(isParentOf(asPath((byte)2, 0b000), asPath((byte)3, 0b001)));
         assertTrue(isParentOf(asPath((byte)2, 0b001), asPath((byte)3, 0b010)));
