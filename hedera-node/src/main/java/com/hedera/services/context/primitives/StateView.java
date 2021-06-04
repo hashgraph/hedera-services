@@ -83,7 +83,7 @@ import static com.hedera.services.store.schedule.ExceptionalScheduleStore.NOOP_S
 import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
 import static com.hedera.services.store.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
-import static com.hedera.services.store.tokens.unique.ExceptionalTokenUniqueStore.NOOP_UNIQUE_TOKEN_STORE;
+import static com.hedera.services.store.tokens.unique.ExceptionalUniqueTokenStore.NOOP_UNIQUE_TOKEN_STORE;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;

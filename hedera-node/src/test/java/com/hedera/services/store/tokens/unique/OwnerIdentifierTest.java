@@ -44,6 +44,17 @@ class OwnerIdentifierTest {
 	}
 
 	@Test
+	void testSelfEquality(){
+		assertTrue(oid1.equals(oid1));
+	}
+
+	@Test
+	void testNegativeEquality(){
+		assertTrue(!oid1.equals(new Object()));
+		assertTrue(!oid1.equals(null));
+	}
+
+	@Test
 	void testEqualityWithHashCode() {
 		assertEquals(oid1.hashCode(), oid2.hashCode());
 	}

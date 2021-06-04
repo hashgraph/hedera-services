@@ -21,12 +21,11 @@ package com.hedera.services.bdd.spec.transactions.token;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.usage.token.TokenMintUsage;
-import com.hedera.services.usage.token.TokenRevokeKycUsage;
-import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -38,6 +37,7 @@ import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -49,6 +49,7 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 
 	private long amount;
 	private String token;
+	private List<ByteString> metadata;
 
 	@Override
 	public HederaFunctionality type() {
@@ -58,6 +59,13 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 	public HapiTokenMint(String token, long amount) {
 		this.token = token;
 		this.amount = amount;
+		this.metadata = new ArrayList<>();
+	}
+
+	public HapiTokenMint(String token, List<ByteString> metadata){
+		this.token = token;
+		this.metadata = metadata;
+		this.amount = 0;
 	}
 
 	@Override
@@ -84,6 +92,7 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 						TokenMintTransactionBody.class, b -> {
 							b.setToken(tId);
 							b.setAmount(amount);
+							b.addAllMetadata(metadata);
 						});
 		return b -> b.setTokenMint(opBody);
 	}
@@ -108,7 +117,8 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 	protected MoreObjects.ToStringHelper toStringHelper() {
 		MoreObjects.ToStringHelper helper = super.toStringHelper()
 				.add("token", token)
-				.add("amount", amount);
+				.add("amount", amount)
+				.add("metadata", metadata);
 		return helper;
 	}
 }

@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.token;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -72,6 +73,7 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiApiSuite {
 				).when(
 						tokenCreate(tokenName)
 								.treasury(TOKEN_TREASURY)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
 								.initialSupply(1000)
 								.decimals(1)
 								.supplyKey("supplyKey")

@@ -22,10 +22,13 @@ package com.hedera.services.store.tokens.unique;
 
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+
+import java.util.List;
 
 /**
  * An interface which defines methods for the UniqueTokenStore
@@ -34,14 +37,29 @@ import com.hederahashgraph.api.proto.java.TokenID;
  */
 public interface UniqueStore extends TokenStore {
 
-	ResponseCodeEnum mint(final TokenID tId, String memo, RichInstant creationTime);
 
-	//	MerkleUniqueToken getUnique(final EntityId eId, final int serialNum);
-//	Iterator<MerkleUniqueTokenId> getByToken(final MerkleUniqueToken token);
-//	Iterator<MerkleUniqueTokenId> getByTokenFromIdx(final MerkleUniqueToken token, final int start);
-//	Iterator<MerkleUniqueTokenId> getByTokenFromIdxToIdx(final MerkleUniqueToken token, final int start, final int end);
-//	Iterator<MerkleUniqueTokenId> getByAccountFromIdxToIdx(final AccountID aId, final int start, final int end);
+	/**
+	 * Attempts to mint unique tokens in a batch. Rollbacks the batch if anything goes wrong.
+	 * It's important to note that this mint should be called only on unique tokens, otherwise we'll go into invalid state
+	 *
+	 * @param txBody {@link TokenMintTransactionBody} the body of the mint tx
+	 * @param creationTime {@link RichInstant} the consensus time of the minting
+	 * @return {@link CreationResult<List>} List of serial numbers on success, else - the cause of the fail {@link ResponseCodeEnum}
+	 */
+	CreationResult<List<Long>> mint(final TokenMintTransactionBody txBody, final RichInstant creationTime);
+
+	/**
+	 * Checks whether given unique token exists
+	 *
+	 * @param id
+	 * @return true/false
+	 */
 	boolean nftExists(final NftID id);
 
+	/**
+	 * Fetches an unique token
+	 * @param id {@link NftID}
+	 * @return {@link MerkleUniqueToken}
+	 */
 	MerkleUniqueToken get(final NftID id);
 }
