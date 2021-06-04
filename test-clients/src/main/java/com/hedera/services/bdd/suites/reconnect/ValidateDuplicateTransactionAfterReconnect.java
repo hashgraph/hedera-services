@@ -37,7 +37,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
-import static com.hedera.services.bdd.suites.reconnect.AutoRenewEntitiesForReconnect.runSomeTransactionsBeforeReconnect;
+import static com.hedera.services.bdd.suites.reconnect.AutoRenewEntitiesForReconnect.runTransfersBeforeReconnect;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 
 public class ValidateDuplicateTransactionAfterReconnect extends HapiApiSuite {
@@ -50,7 +50,7 @@ public class ValidateDuplicateTransactionAfterReconnect extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-				runSomeTransactionsBeforeReconnect(),
+				runTransfersBeforeReconnect(),
 				validateDuplicateTransactionAfterReconnect()
 		);
 	}

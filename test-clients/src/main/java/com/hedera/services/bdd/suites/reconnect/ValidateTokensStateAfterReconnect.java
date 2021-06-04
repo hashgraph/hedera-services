@@ -51,7 +51,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
-import static com.hedera.services.bdd.suites.reconnect.AutoRenewEntitiesForReconnect.runSomeTransactionsBeforeReconnect;
+import static com.hedera.services.bdd.suites.reconnect.AutoRenewEntitiesForReconnect.runTransfersBeforeReconnect;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 
 /**
@@ -71,7 +71,7 @@ public class ValidateTokensStateAfterReconnect extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-				runSomeTransactionsBeforeReconnect(),
+				runTransfersBeforeReconnect(),
 				validateTokensAfterReconnect()
 		);
 	}

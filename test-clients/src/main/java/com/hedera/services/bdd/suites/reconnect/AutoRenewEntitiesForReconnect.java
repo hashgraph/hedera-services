@@ -54,7 +54,7 @@ public class AutoRenewEntitiesForReconnect extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-				runSomeTransactionsBeforeReconnect(),
+				runTransfersBeforeReconnect(),
 				autoRenewAccountGetsDeletedOnReconnectingNodeAsWell(),
 				accountAutoRenewalSuiteCleanup()
 		);
@@ -112,8 +112,8 @@ public class AutoRenewEntitiesForReconnect extends HapiApiSuite {
 	 *
 	 * @return
 	 */
-	public static HapiApiSpec runSomeTransactionsBeforeReconnect() {
-		return defaultHapiSpec("runInitialTransactionsBeforeReconnect")
+	public static HapiApiSpec runTransfersBeforeReconnect() {
+		return defaultHapiSpec("runTransfersBeforeReconnect")
 				.given().when().then(
 						// do some transfers to save a state before reconnect
 						withOpContext((spec, ctxLog) -> {
