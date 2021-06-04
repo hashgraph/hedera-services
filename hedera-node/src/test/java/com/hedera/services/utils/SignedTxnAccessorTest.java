@@ -37,10 +37,14 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SignedTxnAccessorTest {
 	private final String memo = "Eternal sunshine of the spotless mind";
+	private final String zeroByteMemo = "Eternal s\u0000nshine of the spotless mind";
 	private final byte[] memoUtf8Bytes = memo.getBytes();
+	private final byte[] zeroByteMemoUtf8Bytes = zeroByteMemo.getBytes();
 
 	private final SignatureMap expectedMap = SignatureMap.newBuilder()
 			.addSigPair(SignaturePair.newBuilder()
@@ -61,7 +65,7 @@ class SignedTxnAccessorTest {
 				Timestamp.getDefaultInstance(),
 				Duration.getDefaultInstance(),
 				false,
-				memo,
+				zeroByteMemo,
 				5678l, -70000l,
 				5679l, 70000l);
 		transaction = transaction.toBuilder()
@@ -83,7 +87,8 @@ class SignedTxnAccessorTest {
 		assertEquals(offeredFee, accessor.getOfferedFee());
 		assertArrayEquals(CommonUtils.noThrowSha384HashOf(transaction.toByteArray()), accessor.getHash());
 		assertEquals(expectedMap, accessor.getSigMap());
-		assertArrayEquals(memoUtf8Bytes, accessor.getMemoUtf8Bytes());
+		assertArrayEquals(zeroByteMemoUtf8Bytes, accessor.getMemoUtf8Bytes());
+		assertTrue(accessor.memoHasZeroByte());
 		assertEquals(FeeBuilder.getSignatureCount(accessor.getSignedTxnWrapper()), accessor.numSigPairs());
 		assertEquals(FeeBuilder.getSignatureSize(accessor.getSignedTxnWrapper()), accessor.sigMapSize());
 	}
@@ -122,6 +127,7 @@ class SignedTxnAccessorTest {
 				accessor.getHash());
 		assertEquals(expectedMap, accessor.getSigMap());
 		assertArrayEquals(memoUtf8Bytes, accessor.getMemoUtf8Bytes());
+		assertFalse(accessor.memoHasZeroByte());
 		assertEquals(FeeBuilder.getSignatureCount(accessor.getSignedTxnWrapper()), accessor.numSigPairs());
 		assertEquals(FeeBuilder.getSignatureSize(accessor.getSignedTxnWrapper()), accessor.sigMapSize());
 	}

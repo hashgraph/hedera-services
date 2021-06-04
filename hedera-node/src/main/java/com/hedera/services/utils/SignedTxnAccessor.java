@@ -50,6 +50,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private byte[] txnBytes;
 	private byte[] utf8MemoBytes;
 	private byte[] signedTxnWrapperBytes;
+	private boolean memoHasZeroByte;
 	private Transaction signedTxnWrapper;
 	private SignatureMap sigMap;
 	private TransactionID txnId;
@@ -67,7 +68,8 @@ public class SignedTxnAccessor implements TxnAccessor {
 	public static SignedTxnAccessor uncheckedFrom(Transaction validSignedTxn) {
 		try {
 			return new SignedTxnAccessor(validSignedTxn);
-		} catch (Exception impossible) { }
+		} catch (Exception impossible) {
+		}
 		return null;
 	}
 
@@ -98,10 +100,12 @@ public class SignedTxnAccessor implements TxnAccessor {
 		this(signedTxnWrapper.toByteArray());
 	}
 
+	@Override
 	public SignatureMap getSigMap() {
 		return sigMap;
 	}
 
+	@Override
 	public HederaFunctionality getFunction() {
 		if (function == null) {
 			function = functionExtractor.apply(getTxn());
@@ -109,34 +113,42 @@ public class SignedTxnAccessor implements TxnAccessor {
 		return function;
 	}
 
+	@Override
 	public long getOfferedFee() {
 		return txn.getTransactionFee();
 	}
 
+	@Override
 	public Transaction getSignedTxn4Log() {
 		return signedTxnWrapper;
 	}
 
+	@Override
 	public byte[] getTxnBytes() {
 		return txnBytes;
 	}
 
+	@Override
 	public Transaction getSignedTxnWrapper() {
 		return signedTxnWrapper;
 	}
 
+	@Override
 	public TransactionBody getTxn() {
 		return txn;
 	}
 
+	@Override
 	public TransactionID getTxnId() {
 		return txnId;
 	}
 
+	@Override
 	public AccountID getPayer() {
 		return getTxnId().getAccountID();
 	}
 
+	@Override
 	public byte[] getSignedTxnWrapperBytes() {
 		return signedTxnWrapperBytes;
 	}
@@ -156,6 +168,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 		return sigMapSize;
 	}
 
+	@Override
 	public byte[] getHash() {
 		return hash;
 	}
@@ -163,6 +176,11 @@ public class SignedTxnAccessor implements TxnAccessor {
 	@Override
 	public boolean canTriggerTxn() {
 		return getTxn().hasScheduleCreate() || getTxn().hasScheduleSign();
+	}
+
+	@Override
+	public boolean memoHasZeroByte() {
+		throw new AssertionError("Not implemented!");
 	}
 
 	public boolean isTriggeredTxn() {
