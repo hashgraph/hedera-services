@@ -22,6 +22,7 @@ package com.hedera.services.fees.calculation.consensus.txns;
 
 import com.google.protobuf.StringValue;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
@@ -30,6 +31,7 @@ import com.hedera.test.utils.AccountIDConverter;
 import com.hedera.test.utils.DurationConverter;
 import com.hedera.test.utils.Ed25519KeyConverter;
 import com.hedera.test.utils.EntityIdConverter;
+import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.JEd25519KeyConverter;
 import com.hedera.test.utils.RichInstantConverter;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -42,6 +44,8 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.exception.InvalidTxBodyException;
+import com.swirlds.common.CommonUtils;
+import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -65,7 +69,7 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     }
 
     @Test
-    public void recognizesApplicableQuery() {
+    void recognizesApplicableQuery() {
         // setup:
         TransactionBody updateTopicTx = TransactionBody.newBuilder()
                 .setConsensusUpdateTopic(ConsensusUpdateTopicTransactionBody.newBuilder().build())
@@ -78,13 +82,34 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     }
 
     @Test
-    public void getFeeThrowsExceptionForBadTxBody() {
+    void getFeeThrowsExceptionForBadTxBody() {
         // setup:
         TransactionBody nonUpdateTopicTx = TransactionBody.newBuilder().build();
 
         // expect:
         assertThrows(InvalidTxBodyException.class, () -> subject.usageGiven(null, sigValueObj, view));
         assertThrows(InvalidTxBodyException.class, () -> subject.usageGiven(nonUpdateTopicTx, sigValueObj, view));
+    }
+
+    @Test
+    void updateToMissingTopic() throws DecoderException, InvalidTxBodyException {
+        // given
+        TransactionBody txBody = makeTransactionBody(topicId, "12345678",
+                JKey.mapJKey(new JEd25519Key(CommonUtils.unhex("0000000000000000000000000000000000000000000000000000000000000000"))),
+                JKey.mapJKey(new JEd25519Key(CommonUtils.unhex("1111111111111111111111111111111111111111111111111111111111111111"))),
+                IdUtils.asAccount("0.1.2"),
+                null,
+                null);
+        given(topics.get(MerkleEntityId.fromTopicId(topicId))).willReturn(null);
+
+        // when
+        FeeData feeData = subject.usageGiven(txBody, sigValueObj, view);
+
+        // then
+        checkServicesFee(feeData, 0);
+        checkNetworkFee(feeData, 120, 0);
+        checkNodeFee(feeData, 120);
+
     }
 
     // Test to check fee values correctness for various kinds of update topic transactions.
@@ -100,7 +125,7 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
             // No change to fields, only increase expiration time; 24(topicId) + 8(expirationTimestamp); rbs increase equal to size of set fields (memo, adminKey, autoRenewAccount)
             "12345678,, 0000000000000000000000000000000000000000000000000000000000000000,,,, 0.1.2,,, 3600_0, 7200_0, 32, 164",
     })
-    public void feeDataAsExpected(
+    void feeDataAsExpected(
             String oldMemo,
             String newMemo,
             @ConvertWith(JEd25519KeyConverter.class) JEd25519Key oldAdminKey,

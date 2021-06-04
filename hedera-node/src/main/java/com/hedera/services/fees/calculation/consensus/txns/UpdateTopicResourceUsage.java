@@ -49,7 +49,7 @@ public class UpdateTopicResourceUsage implements TxnResourceUsageEstimator {
     public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException {
         try {
             MerkleTopic merkleTopic = view.topics().get(MerkleEntityId.fromTopicId(txn.getConsensusUpdateTopic().getTopicID()));
-            if(merkleTopic.hasAdminKey()) {
+            if(merkleTopic != null && merkleTopic.hasAdminKey()) {
                 long rbsIncrease = getUpdateTopicRbsIncrease(
                         txn.getTransactionID().getTransactionValidStart(),
                         JKey.mapJKey(merkleTopic.getAdminKey()),
