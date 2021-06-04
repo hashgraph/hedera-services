@@ -21,6 +21,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.hedera.services.state.merkle.virtual.tree.VirtualTreePath.INVALID_PATH;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 
@@ -198,8 +199,8 @@ public class VirtualMapTest {
     private static final class InMemoryDataSource implements VirtualDataSource {
         private Map<VirtualKey, LeafRecord> leaves = new HashMap<>();
         private Map<Long, Hash> parents = new HashMap<>();
-        private long firstLeafPath;
-        private long lastLeafPath;
+        private long firstLeafPath = INVALID_PATH;
+        private long lastLeafPath = INVALID_PATH;
         private boolean closed = false;
 
         @Override
