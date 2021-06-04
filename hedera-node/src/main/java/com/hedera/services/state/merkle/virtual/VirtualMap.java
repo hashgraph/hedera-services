@@ -362,6 +362,9 @@ public final class VirtualMap
 
     private VirtualTreeInternal realizeAllInternal(VirtualTreePath path) {
         final var parentRef = new AtomicReference<VirtualTreeInternal>();
+        if (root == null) {
+            root = realizeRootNode();
+        }
         root.walk(path, new VirtualVisitor() {
             @Override
             public void visitParent(VirtualTreeInternal parent) {

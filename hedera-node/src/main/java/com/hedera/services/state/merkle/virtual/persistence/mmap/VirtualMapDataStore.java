@@ -21,6 +21,7 @@ import java.util.Map;
  */
 @SuppressWarnings({"unused", "DuplicatedCode"})
 public class VirtualMapDataStore {
+    private static final int MB = 1024*1024;
     /** The size of a hash we store in bytes, TODO what happens if we change digest? */
     private static final int HASH_SIZE_BYTES = 384/Byte.SIZE;
 
@@ -73,9 +74,9 @@ public class VirtualMapDataStore {
         this.dataSizeBytes = dataSizeBytes;
         int leafStoreSlotSize = Account.BYTES + keySizeBytes + VirtualTreePath.BYTES + dataSizeBytes;
         int parentStoreSlotSize = Account.BYTES + VirtualTreePath.BYTES + HASH_SIZE_BYTES;
-        leafStore = new MemMapDataStore(leafStoreSlotSize,100*MemMapDataStore.MB,storageDirectory.resolve("leaves"),"leaves_","dat");
-        parentStore = new MemMapDataStore(parentStoreSlotSize,100*MemMapDataStore.MB,storageDirectory.resolve("parents"),"parents_","dat");
-        pathStore = new MemMapDataStore(VirtualTreePath.BYTES,100*MemMapDataStore.MB,storageDirectory.resolve("paths"),"paths_","dat");
+        leafStore = new MemMapDataStore(leafStoreSlotSize,100*MB,storageDirectory.resolve("leaves"),"leaves_","dat");
+        parentStore = new MemMapDataStore(parentStoreSlotSize,100*MB,storageDirectory.resolve("parents"),"parents_","dat");
+        pathStore = new MemMapDataStore(Account.BYTES + VirtualTreePath.BYTES,100*MB,storageDirectory.resolve("paths"),"paths_","dat");
     }
 
     /**
@@ -234,10 +235,12 @@ public class VirtualMapDataStore {
      */
     public void save(Account account, VirtualTreeInternal parent) {
         // if already stored and if so it is an update
-        SlotLocation slotLocation = findParent(account,parent.getPath());
+        SlotLocation slotLocation = findParent(account, parent.getPath());
         if (slotLocation == null) {
             // find a new slot location
             slotLocation = parentStore.getNewSlot();
+            final var indexMap = parentIndex.computeIfAbsent(account, k -> new HashMap<>());
+            indexMap.put(parent.getPath(), slotLocation);
         }
         // write parent into slot
         ByteBuffer buffer = parentStore.accessSlot(slotLocation.fileIndex(), slotLocation.slotIndex());
@@ -250,6 +253,7 @@ public class VirtualMapDataStore {
         buffer.putLong(parent.getPath().path);
         // Hash -- HASH_SIZE_BYTES
         buffer.put(parent.hash().getValue());
+
     }
 
     /**
@@ -264,6 +268,8 @@ public class VirtualMapDataStore {
         if (slotLocation == null) {
             // find a new slot location
             slotLocation = leafStore.getNewSlot();
+            final var leafMap = leafIndex.computeIfAbsent(account, k -> new HashMap<>());
+            leafMap.put(leaf.getKey(), slotLocation);
         }
         // write leaf into slot
         ByteBuffer buffer = leafStore.accessSlot(slotLocation.fileIndex(), slotLocation.slotIndex());
@@ -293,6 +299,9 @@ public class VirtualMapDataStore {
         if (slotLocation == null) {
             // find a new slot location
             slotLocation = pathStore.getNewSlot();
+            final var indexMap = pathIndex.computeIfAbsent(account, k -> new HashMap<>());
+            indexMap.put(key, slotLocation);
+
         }
         // write path into slot
         ByteBuffer buffer = pathStore.accessSlot(slotLocation.fileIndex(), slotLocation.slotIndex());
@@ -314,7 +323,7 @@ public class VirtualMapDataStore {
      * @param key The byte key for the path
      * @return the Path if it was found in store or null
      */
-    public VirtualTreePath load(Account account, byte key){
+    public VirtualTreePath load(Account account, byte key) {
         SlotLocation slotLocation = findPath(account,key);
         if (slotLocation != null) {
             // read path from slot
