@@ -28,9 +28,11 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.state.merkle.virtual.tree.VirtualTreePath.INVALID_PATH;
+import static com.hedera.services.state.merkle.virtual.tree.VirtualTreePath.ROOT_PATH;
 import static com.hedera.services.state.merkle.virtual.tree.VirtualTreePath.asPath;
 import static com.hedera.services.state.merkle.virtual.tree.VirtualTreePath.getBreadcrumbs;
 import static com.hedera.services.state.merkle.virtual.tree.VirtualTreePath.getIndexInRank;
+import static com.hedera.services.state.merkle.virtual.tree.VirtualTreePath.getLeftChildPath;
 import static com.hedera.services.state.merkle.virtual.tree.VirtualTreePath.getParentPath;
 import static com.hedera.services.state.merkle.virtual.tree.VirtualTreePath.getPathForRankAndIndex;
 import static com.hedera.services.state.merkle.virtual.tree.VirtualTreePath.getRank;
@@ -411,7 +413,7 @@ public final class VirtualMap
         // Find the lastLeafPath which will tell me the new path for this new item
         if (lastLeafPath == INVALID_PATH) {
             // There are no leaves! So this one will just go right on the root
-            final var leafPath = asPath((byte)1, 0);
+            final var leafPath = getLeftChildPath(ROOT_PATH);
             final var newLeaf = new VirtualTreeLeaf(NULL_HASH, leafPath, key, value);
             newLeaf.makeDirty();
             root.setLeftChild(newLeaf);
@@ -441,7 +443,7 @@ public final class VirtualMap
             // will be the first leaf on the far left of the next level. Otherwise,
             // it is just the sibling to the right.
             final var nextFirstLeafPath = isFarRight(firstLeafPath) ?
-                    asPath(getRank(firstLeafPath), 0) :
+                    getPathForRankAndIndex((byte)(getRank(firstLeafPath) + 1), 0) :
                     getPathForRankAndIndex(getRank(firstLeafPath), getIndexInRank(firstLeafPath) + 1);
 
             // The firstLeafPath points to the old leaf that we want to replace.
