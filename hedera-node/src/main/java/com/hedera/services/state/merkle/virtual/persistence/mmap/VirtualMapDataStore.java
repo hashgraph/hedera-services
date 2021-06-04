@@ -53,9 +53,9 @@ public class VirtualMapDataStore {
      */
     private final MemMapDataStore pathStore;
 
-    private final Map<Account, Map<Long, SlotLocation>> parentIndex = new HashMap<>();
-    private final Map<Account, Map<VirtualKey, SlotLocation>> leafIndex = new HashMap<>();
-    private final Map<Account, Map<Byte, SlotLocation>> pathIndex = new HashMap<>();
+    private final Map<Account, Map<Long, Long>> parentIndex = new HashMap<>();
+    private final Map<Account, Map<VirtualKey, Long>> leafIndex = new HashMap<>();
+    private final Map<Account, Map<Byte, Long>> pathIndex = new HashMap<>();
 
     private final int keySizeBytes;
     private final int dataSizeBytes;
@@ -82,35 +82,35 @@ public class VirtualMapDataStore {
      * Open all storage files and read the indexes.
      */
     public void open(){
-        leafStore.open((fileIndex, slotIndex, fileAtSlot) -> {
+        leafStore.open((location, fileAtSlot) -> {
             try {
                 final Account account = new Account(fileAtSlot.readLong(), fileAtSlot.readLong(), fileAtSlot.readLong());
-                Map<VirtualKey, SlotLocation> indexMap = leafIndex.computeIfAbsent(account, k -> new HashMap<>());
+                Map<VirtualKey, Long> indexMap = leafIndex.computeIfAbsent(account, k -> new HashMap<>());
                 byte[] keyBytes = new byte[keySizeBytes];
                 fileAtSlot.read(keyBytes);
                 indexMap.put(
                         new VirtualKey(keyBytes),
-                        new SlotLocation(fileIndex,slotIndex));
+                        location);
             } catch (IOException e) {
                 e.printStackTrace(); // TODO something better here, this should only happen if our files are corrupt
             }
         });
-        parentStore.open((fileIndex, slotIndex, fileAtSlot) -> {
+        parentStore.open((location, fileAtSlot) -> {
             try {
                 final Account account = new Account(fileAtSlot.readLong(), fileAtSlot.readLong(), fileAtSlot.readLong());
                 final long path = fileAtSlot.readLong();
-                Map<Long, SlotLocation> indexMap = parentIndex.computeIfAbsent(account, k -> new HashMap<>());
-                indexMap.put(path, new SlotLocation(fileIndex,slotIndex));
+                Map<Long, Long> indexMap = parentIndex.computeIfAbsent(account, k -> new HashMap<>());
+                indexMap.put(path, location);
             } catch (IOException e) {
                 e.printStackTrace(); // TODO something better here, this should only happen if our files are corrupt
             }
         });
-        pathStore.open((fileIndex, slotIndex, fileAtSlot) -> {
+        pathStore.open((location, fileAtSlot) -> {
             try {
                 final Account account = new Account(fileAtSlot.readLong(), fileAtSlot.readLong(), fileAtSlot.readLong());
                 final byte key = fileAtSlot.readByte();
-                Map<Byte, SlotLocation> indexMap = pathIndex.computeIfAbsent(account, k -> new HashMap<>());
-                indexMap.put(key, new SlotLocation(fileIndex,slotIndex));
+                Map<Byte, Long> indexMap = pathIndex.computeIfAbsent(account, k -> new HashMap<>());
+                indexMap.put(key, location);
             } catch (IOException e) {
                 e.printStackTrace(); // TODO something better here, this should only happen if our files are corrupt
             }
@@ -146,8 +146,8 @@ public class VirtualMapDataStore {
      * @param parent The parent to delete
      */
     public void delete(Account account, VirtualTreeNode parent){
-        SlotLocation slotLocation = findParent(account,parent.getPath());
-        if (slotLocation != null) parentStore.deleteSlot(slotLocation.fileIndex(), slotLocation.slotIndex());
+        long slotLocation = findParent(account,parent.getPath());
+        if (slotLocation != MemMapDataStore.NOT_FOUND_LOCATION) parentStore.deleteSlot(slotLocation);
     }
 
     /**
@@ -157,8 +157,8 @@ public class VirtualMapDataStore {
      * @param leaf The leaf to delete
      */
     public void delete(Account account, VirtualTreeLeaf leaf){
-        SlotLocation slotLocation = findLeaf(account,leaf.getKey());
-        if (slotLocation != null) leafStore.deleteSlot(slotLocation.fileIndex(), slotLocation.slotIndex());
+        long slotLocation = findLeaf(account,leaf.getKey());
+        if (slotLocation != MemMapDataStore.NOT_FOUND_LOCATION) leafStore.deleteSlot(slotLocation);
     }
 
     /**
@@ -169,9 +169,9 @@ public class VirtualMapDataStore {
      * @return a loaded VirtualTreeInternal with path and hash set or null if not found
      */
     public VirtualTreeInternal loadParent(Account account, long path) {
-        SlotLocation slotLocation = findParent(account,path);
-        if (slotLocation != null) {
-            ByteBuffer buffer = parentStore.accessSlot(slotLocation.fileIndex(), slotLocation.slotIndex());
+        long slotLocation = findParent(account,path);
+        if (slotLocation != MemMapDataStore.NOT_FOUND_LOCATION) {
+            ByteBuffer buffer = parentStore.accessSlot(slotLocation);
             // Account -- Account.BYTES
             // Path -- VirtualTreePath.BYTES
             buffer.position(buffer.position() + Account.BYTES + VirtualTreePath.BYTES); // jump over
@@ -191,9 +191,9 @@ public class VirtualMapDataStore {
      * @return a loaded VirtualTreeLeaf or null if not found
      */
     public VirtualTreeLeaf loadLeaf(Account account, VirtualKey key){
-        SlotLocation slotLocation = findLeaf(account,key);
-        if (slotLocation != null) {
-            ByteBuffer buffer = leafStore.accessSlot(slotLocation.fileIndex(), slotLocation.slotIndex());
+        long slotLocation = findLeaf(account,key);
+        if (slotLocation != MemMapDataStore.NOT_FOUND_LOCATION) {
+            ByteBuffer buffer = leafStore.accessSlot(slotLocation);
             // Account -- Account.BYTES
             buffer.position(buffer.position() + Account.BYTES); // jump over
             // Key -- keySizeBytes
@@ -213,9 +213,9 @@ public class VirtualMapDataStore {
     }
 
     public VirtualValue get(Account account, VirtualKey key) {
-        SlotLocation slotLocation = findLeaf(account,key);
-        if (slotLocation != null) {
-            ByteBuffer buffer = leafStore.accessSlot(slotLocation.fileIndex(), slotLocation.slotIndex());
+        long slotLocation = findLeaf(account,key);
+        if (slotLocation != MemMapDataStore.NOT_FOUND_LOCATION) {
+            ByteBuffer buffer = leafStore.accessSlot(slotLocation);
             // Account -- Account.BYTES
             buffer.position(buffer.position() + Account.BYTES + keySizeBytes + VirtualTreePath.BYTES); // jump over
             // Value -- dataSizeBytes
@@ -234,15 +234,15 @@ public class VirtualMapDataStore {
      */
     public void save(Account account, VirtualTreeInternal parent) {
         // if already stored and if so it is an update
-        SlotLocation slotLocation = findParent(account, parent.getPath());
-        if (slotLocation == null) {
+        long slotLocation = findParent(account, parent.getPath());
+        if (slotLocation == MemMapDataStore.NOT_FOUND_LOCATION) {
             // find a new slot location
             slotLocation = parentStore.getNewSlot();
             final var indexMap = parentIndex.computeIfAbsent(account, k -> new HashMap<>());
             indexMap.put(parent.getPath(), slotLocation);
         }
         // write parent into slot
-        ByteBuffer buffer = parentStore.accessSlot(slotLocation.fileIndex(), slotLocation.slotIndex());
+        ByteBuffer buffer = parentStore.accessSlot(slotLocation);
         // Account -- Account.BYTES
         buffer.putLong(account.shardNum());
         buffer.putLong(account.realmNum());
@@ -262,15 +262,15 @@ public class VirtualMapDataStore {
      */
     public void save(Account account, VirtualTreeLeaf leaf) {
         // if already stored and if so it is an update
-        SlotLocation slotLocation = findLeaf(account,leaf.getKey());
-        if (slotLocation == null) {
+        long slotLocation = findLeaf(account,leaf.getKey());
+        if (slotLocation == MemMapDataStore.NOT_FOUND_LOCATION) {
             // find a new slot location
             slotLocation = leafStore.getNewSlot();
             final var indexMap = leafIndex.computeIfAbsent(account, k -> new HashMap<>());
             indexMap.put(leaf.getKey(), slotLocation);
         }
         // write leaf into slot
-        ByteBuffer buffer = leafStore.accessSlot(slotLocation.fileIndex(), slotLocation.slotIndex());
+        ByteBuffer buffer = leafStore.accessSlot(slotLocation);
         // Account -- Account.BYTES
         buffer.putLong(account.shardNum());
         buffer.putLong(account.realmNum());
@@ -292,8 +292,8 @@ public class VirtualMapDataStore {
      */
     public void save(Account account, byte key, long path) {
         // if already stored and if so it is an update
-        SlotLocation slotLocation = findPath(account, key);
-        if (slotLocation == null) {
+        long slotLocation = findPath(account, key);
+        if (slotLocation == MemMapDataStore.NOT_FOUND_LOCATION) {
             // find a new slot location
             slotLocation = pathStore.getNewSlot();
             final var indexMap = pathIndex.computeIfAbsent(account, k -> new HashMap<>());
@@ -301,7 +301,7 @@ public class VirtualMapDataStore {
 
         }
         // write path into slot
-        ByteBuffer buffer = pathStore.accessSlot(slotLocation.fileIndex(), slotLocation.slotIndex());
+        ByteBuffer buffer = pathStore.accessSlot(slotLocation);
         // Account -- Account.BYTES
         buffer.putLong(account.shardNum());
         buffer.putLong(account.realmNum());
@@ -320,10 +320,10 @@ public class VirtualMapDataStore {
      * @return the Path if it was found in store or null
      */
     public long load(Account account, byte key) {
-        SlotLocation slotLocation = findPath(account,key);
-        if (slotLocation != null) {
+        long slotLocation = findPath(account,key);
+        if (slotLocation != MemMapDataStore.NOT_FOUND_LOCATION) {
             // read path from slot
-            ByteBuffer buffer = pathStore.accessSlot(slotLocation.fileIndex(), slotLocation.slotIndex());
+            ByteBuffer buffer = pathStore.accessSlot(slotLocation);
             // Account -- Account.BYTES
             // Key -- 1 byte
             buffer.position(buffer.position() + Account.BYTES); // jump over
@@ -341,10 +341,10 @@ public class VirtualMapDataStore {
      * @param path The path of the parent to find
      * @return slot location of parent if it is stored or null if not found
      */
-    private SlotLocation findParent(Account account, long path) {
-        Map<Long, SlotLocation> indexMap = parentIndex.get(account);
+    private long findParent(Account account, long path) {
+        Map<Long, Long> indexMap = parentIndex.get(account);
         if (indexMap != null) return indexMap.get(path);
-        return null;
+        return MemMapDataStore.NOT_FOUND_LOCATION;
     }
 
     /**
@@ -354,10 +354,10 @@ public class VirtualMapDataStore {
      * @param key The key of the leaf to find
      * @return slot location of leaf if it is stored or null if not found
      */
-    private SlotLocation findLeaf(Account account, VirtualKey key) {
-        Map<VirtualKey, SlotLocation> indexMap = leafIndex.get(account);
+    private long findLeaf(Account account, VirtualKey key) {
+        Map<VirtualKey, Long> indexMap = leafIndex.get(account);
         if(indexMap != null) return indexMap.get(key);
-        return null;
+        return MemMapDataStore.NOT_FOUND_LOCATION;
     }
 
     /**
@@ -367,10 +367,10 @@ public class VirtualMapDataStore {
      * @param key The path of the path to find
      * @return slot location of path if it is stored or null if not found
      */
-    private SlotLocation findPath(Account account, byte key) {
-        Map<Byte, SlotLocation> indexMap = pathIndex.get(account);
+    private long findPath(Account account, byte key) {
+        Map<Byte, Long> indexMap = pathIndex.get(account);
         if (indexMap != null) return indexMap.get(key);
-        return null;
+        return MemMapDataStore.NOT_FOUND_LOCATION;
     }
 
 }
