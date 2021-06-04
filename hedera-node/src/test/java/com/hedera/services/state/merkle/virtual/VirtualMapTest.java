@@ -14,10 +14,12 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -109,7 +111,18 @@ public class VirtualMapTest {
 
     @Test
     public void mmapBackend() {
-        final var store = new VirtualMapDataStore(new File("./store").toPath(), 32, 32);
+        final var storeDir = new File("./store").toPath();
+        try {
+            //noinspection ResultOfMethodCallIgnored
+            Files.walk(storeDir)
+                    .sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(File::delete);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        final var store = new VirtualMapDataStore(storeDir, 32, 32);
         store.open();
         final var ds = new MemMapDataSource(store, new Account(0, 0, 100));
         var v = new VirtualMap(ds);
@@ -124,7 +137,6 @@ public class VirtualMapTest {
             final var value = asValue((i + 100_000_000));
             expected.put(key, value);
             v.putValue(key, value);
-//            System.out.println(v.getAsciiArt());
         }
 
         final var fv = v;
