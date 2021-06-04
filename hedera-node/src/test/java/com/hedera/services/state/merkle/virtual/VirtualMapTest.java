@@ -203,6 +203,12 @@ public class VirtualMapTest {
         }
 
         @Override
+        public VirtualValue get(VirtualKey leafKey) {
+            final var rec = leaves.get(leafKey);
+            return rec == null ? null : rec.value;
+        }
+
+        @Override
         public void save(VirtualTreeInternal parent) {
             parents.put(parent.getPath(), parent.hash());
         }
