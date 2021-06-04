@@ -10,7 +10,7 @@ import com.swirlds.common.crypto.Hash;
 import java.io.IOException;
 import java.util.Objects;
 
-public class MemMapDataSource implements VirtualDataSource {
+public final class MemMapDataSource implements VirtualDataSource {
     private VirtualMapDataStore store;
     private Account account;
 
