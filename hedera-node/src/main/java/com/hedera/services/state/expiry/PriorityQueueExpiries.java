@@ -22,12 +22,11 @@ package com.hedera.services.state.expiry;
 
 import com.google.common.base.MoreObjects;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.PriorityBlockingQueue;
+import java.util.PriorityQueue;
 
 public class PriorityQueueExpiries<K> implements KeyedExpirations<K> {
 	private long now = 0L;
-	private BlockingQueue<ExpiryEvent> allExpiries = new PriorityBlockingQueue<>();
+	private PriorityQueue<ExpiryEvent> allExpiries = new PriorityQueue<>();
 
 	@Override
 	public void reset() {
@@ -93,7 +92,7 @@ public class PriorityQueueExpiries<K> implements KeyedExpirations<K> {
 		}
 	}
 
-	BlockingQueue<ExpiryEvent> getAllExpiries() {
+	PriorityQueue<ExpiryEvent> getAllExpiries() {
 		return allExpiries;
 	}
 
