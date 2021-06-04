@@ -112,7 +112,10 @@ public final class MemMapDataStore {
             } else {
                 // find all storage files in directory with prefix
                 List<Path> filePaths = Files.list(storageDirectory)
-                        .filter(path -> path.getFileName().startsWith(filePrefix) && path.getFileName().endsWith(fileExtension))
+                        .filter(path -> {
+                            final String fileName = path.getFileName().toString();
+                            return fileName.startsWith(filePrefix) && fileName.endsWith(fileExtension);
+                        })
                         .sorted(Comparator.comparingInt(this::indexForFile))
                         .collect(Collectors.toList());
                 // open files for each path
