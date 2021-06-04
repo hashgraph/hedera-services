@@ -12,29 +12,37 @@ import java.util.Objects;
  * and so forth down the tree. Every node in the tree has a unique path at any given
  * point in time.
  */
-public final class VirtualTreePath implements Comparable<VirtualTreePath> {
+public final class VirtualTreePath {
     /** Site of an account when serialized to bytes */
-    public static final int BYTES = Long.BYTES + 1;
+    public static final int BYTES = Long.BYTES;
+
+    private static final long BREADCRUMB_MASK = 0x00FFFFFFFFFFFFFFL;
+    private static final long RANK_MASK = 0xFF00000000000000L;
 
     /**
      * A special constant that represents the Path of a root node. It isn't necessary
      * for this constant to be used, but it makes the code a little more readable.
      */
-    public static final VirtualTreePath ROOT_PATH = new VirtualTreePath((byte)0, 0);
+    public static final long ROOT_PATH = 0L;
+    public static final long INVALID_PATH = -1L; // All 1's!
 
-    /**
-     *
-     */
-    public final byte rank;
-    public final long path; // The path helps form the ID.
+    // Utility class only
+    private VirtualTreePath() {
+    }
 
-    public VirtualTreePath(byte rank, long path) {
-        this.rank = rank;
-        this.path = path;
+    // combines the rank and path. Rank will replace the top byte of the path.
+    public static long asPath(byte rank, long breadcrumbs) {
+        return ((long)rank << 56) | (BREADCRUMB_MASK & breadcrumbs);
+    }
 
-        if (rank < 0 || rank >= 64) {
-            throw new IllegalArgumentException("Rank must be between [0,63]");
-        }
+    // Gets the rank part of the pathId
+    public static byte getRank(long path) {
+        return (byte) ((RANK_MASK & path) >> 56);
+    }
+
+    // Gets the path from the pathId
+    public static long getBreadcrumbs(long path) {
+        return BREADCRUMB_MASK & path;
     }
 
     /**
@@ -44,8 +52,8 @@ public final class VirtualTreePath implements Comparable<VirtualTreePath> {
      *
      * @return Whether this path refers to the root node.
      */
-    public boolean isRoot() {
-        return rank == 0;
+    public static boolean isRootPath(long path) {
+        return path == 0;
     }
 
     // Gets the position of the node represented by this path at its rank. For example,
@@ -58,9 +66,9 @@ public final class VirtualTreePath implements Comparable<VirtualTreePath> {
      *
      * @return A non-negative index of the node with this path within its rank.
      */
-    public int getIndex() {
+    public static int getIndexInRank(long path) {
         int index = 0;
-        byte power = (byte) (rank -1);
+        byte power = (byte) (getRank(path) -1);
         long n = path;
         while (n != 0) {
             index += (n & 1) << power;
@@ -80,7 +88,7 @@ public final class VirtualTreePath implements Comparable<VirtualTreePath> {
      * @param index The non-negative index into the rank at which to find the node
      * @return A Path representing the path to the node found at the given rank and index. Never returns null.
      */
-    public static VirtualTreePath getPathForRankAndIndex(byte rank, int index) {
+    public static long getPathForRankAndIndex(byte rank, int index) {
         if (rank < 0) {
             throw new IllegalArgumentException("Rank must be strictly non-negative");
         }
@@ -100,7 +108,7 @@ public final class VirtualTreePath implements Comparable<VirtualTreePath> {
             power--;
         }
 
-        return new VirtualTreePath(rank, path);
+        return ((long)rank << 56) | path;
     }
 
     /**
@@ -108,18 +116,18 @@ public final class VirtualTreePath implements Comparable<VirtualTreePath> {
      *
      * @return Whether this Path is a left-side node.
      */
-    public boolean isLeft() {
-        final var decisionMask = 1L << (rank - 1);
+    public static boolean isLeft(long path) {
+        final var decisionMask = 1L << (getRank(path) - 1);
         return (path & decisionMask) == 0;
     }
 
-    public boolean isFarRight() {
-        final var mask = ~(-1L << rank);
+    public static boolean isFarRight(long path) {
+        final var mask = ~(-1L << getRank(path));
         return (path & mask) == mask;
     }
 
-    public boolean isFarLeft() {
-        return path == 0;
+    public boolean isFarLeft(long path) {
+        return path == 0; // TODO check the rank too
     }
 
     /**
@@ -127,11 +135,10 @@ public final class VirtualTreePath implements Comparable<VirtualTreePath> {
      * A path comes before if it has a lesser rank, or if it has a lesser index within the
      * same rank as the other Path.
      *
-     * @param other The other path. Must not be null.
      * @return Whether this Path comes before the other Path.
      */
-    public boolean isBefore(VirtualTreePath other) {
-        return compareTo(Objects.requireNonNull(other)) < 0;
+    public static boolean isBefore(long a, long b) {
+        return compareTo(a, b) < 0;
     }
 
     /**
@@ -139,11 +146,10 @@ public final class VirtualTreePath implements Comparable<VirtualTreePath> {
      * A path comes after if it has a greater rank, or if it has a greater index within
      * the same rank.
      *
-     * @param other The other path. Must not be null.
      * @return Whether this Path comes afer the other Path.
      */
-    public boolean isAfter(VirtualTreePath other) {
-        return compareTo(Objects.requireNonNull(other)) > 0;
+    public static boolean isAfter(long a, long b) {
+        return compareTo(a, b) > 0;
     }
 
     /**
@@ -152,13 +158,14 @@ public final class VirtualTreePath implements Comparable<VirtualTreePath> {
      * @return The Path of the parent. This may be null if this Path is already the root (root nodes
      *         do not have a parent).
      */
-    public VirtualTreePath getParentPath() {
+    public static long getParentPath(long path) {
+        final byte rank = getRank(path);
         if (rank == 0) {
-            return null;
+            return INVALID_PATH;
         }
 
         final long mask = ~(-1L << rank - 1);
-        return new VirtualTreePath((byte)(rank - 1), path & mask);
+        return asPath((byte)(rank - 1), path & mask);
     }
 
     /**
@@ -166,8 +173,8 @@ public final class VirtualTreePath implements Comparable<VirtualTreePath> {
      *
      * @return The path of the left child. This is never null.
      */
-    public VirtualTreePath getLeftChildPath() {
-        return new VirtualTreePath((byte)(rank + 1), path);
+    public static long getLeftChildPath(long path) {
+        return asPath((byte)(getRank(path) + 1), path);
     }
 
     /**
@@ -175,14 +182,16 @@ public final class VirtualTreePath implements Comparable<VirtualTreePath> {
      *
      * @return The path of the right child. This is never null.
      */
-    public VirtualTreePath getRightChildPath() {
-        return new VirtualTreePath((byte)(rank + 1), path | (1L << rank));
+    public static long getRightChildPath(long path) {
+        final byte rank = getRank(path);
+        return asPath((byte)(rank + 1), path | (1L << rank));
     }
 
-    public boolean isParentOf(VirtualTreePath other) {
-        if (rank < other.rank) {
+    public static boolean isParentOf(long a, long b) {
+        final byte rank = getRank(a);
+        if (rank < getRank(b)) {
             final var mask = ~(0xFFFFFFFFFFFFFFFFL << rank);
-            return (path & mask) == (other.path & mask);
+            return (a & mask) == (b & mask);
         } else {
             return false;
         }
@@ -194,23 +203,25 @@ public final class VirtualTreePath implements Comparable<VirtualTreePath> {
      * "greater than" if its rank is deeper (farther from the root) or to the right
      * of the other path.
      *
-     * @param o The other path to compare with. Cannot be null.
+     * @param a The first path.
+     * @param b The other path to compare with.
      * @return -1 if this is left of o, 0 if they are equal, 1 if this is right of o.
      */
-    @Override
-    public int compareTo(@NotNull VirtualTreePath o) {
+    private static int compareTo(long a, long b) {
         // Check to see if we are equal
-        if (this.rank == o.rank && this.path == o.path) {
+        if (a == b) {
             return 0;
         }
 
         // If my rank is less, then I am more shallow, so return -1
-        if (this.rank < o.rank) {
+        final var rankA = getRank(a);
+        final var rankB = getRank(b);
+        if (rankA < rankB) {
             return -1;
         }
 
         // If my rank is more, then I am deeper, so return 1
-        if (this.rank > o.rank) {
+        if (rankA > rankB) {
             return 1;
         }
 
@@ -218,9 +229,9 @@ public final class VirtualTreePath implements Comparable<VirtualTreePath> {
         // I don't need to check the positions that are the same, I only need to check the first position
         // at which they differ. If my first different position is a 0, then I'm to the left (return -1).
         // If my first different position is a 1, then I'm to the right (return 1).
-        long firstDiffPos = this.path ^ o.path;
+        long firstDiffPos = a ^ b;
 
-        long p1 = this.path;
+        long p1 = a;
         while ((firstDiffPos & 0x1) != 1) {
             firstDiffPos >>= 1;
             p1 >>= 1;
@@ -233,26 +244,8 @@ public final class VirtualTreePath implements Comparable<VirtualTreePath> {
         return ((p1 & 0x1) == 0) ? -1 : 1;
     }
 
-    boolean unsafeEquals(VirtualTreePath other) {
-        return rank == other.rank && path == other.path;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        VirtualTreePath nodeId = (VirtualTreePath) o;
-        return rank == nodeId.rank && path == nodeId.path;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(rank, path);
-    }
-
-    @Override
-    public String toString() {
+    public static String toString(long path) {
         // Should print the path as a byte string
-        return "Path [ rank=" + rank + ", path=" + path + "]";
+        return "Path [ rank=" + getRank(path) + ", breadcrumbs=" + getBreadcrumbs(path) + "]";
     }
 }

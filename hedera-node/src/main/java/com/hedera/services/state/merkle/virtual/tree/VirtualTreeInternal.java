@@ -8,6 +8,10 @@ import com.swirlds.common.crypto.Hash;
 import java.util.ArrayDeque;
 import java.util.Objects;
 
+import static com.hedera.services.state.merkle.virtual.tree.VirtualTreePath.getLeftChildPath;
+import static com.hedera.services.state.merkle.virtual.tree.VirtualTreePath.getRightChildPath;
+import static com.hedera.services.state.merkle.virtual.tree.VirtualTreePath.isParentOf;
+
 /**
  * An internal (i.e. parent) node in the virtual tree. This node is just a holder of information,
  * all of the tree building / modifying logic is held in the {@link VirtualMap}.
@@ -36,7 +40,7 @@ public final class VirtualTreeInternal extends VirtualTreeNode {
      * @param hash The default hash. Cannot be null.
      * @param path The default path. Cannot be null.
      */
-    public VirtualTreeInternal(Hash hash, VirtualTreePath path) {
+    public VirtualTreeInternal(Hash hash, long path) {
         super(hash, path);
     }
 
@@ -57,7 +61,7 @@ public final class VirtualTreeInternal extends VirtualTreeNode {
      */
     public void setLeftChild(VirtualTreeNode child) {
         leftChild = Objects.requireNonNull(child);
-        leftChild.adopt(getPath().getLeftChildPath(), this);
+        leftChild.adopt(getLeftChildPath(getPath()), this);
     }
 
     /**
@@ -76,11 +80,11 @@ public final class VirtualTreeInternal extends VirtualTreeNode {
      */
     public void setRightChild(VirtualTreeNode child) {
         rightChild = Objects.requireNonNull(child);
-        rightChild.adopt(getPath().getRightChildPath(), this);
+        rightChild.adopt(getRightChildPath(getPath()), this);
     }
 
     @Override
-    public void adopt(VirtualTreePath path, VirtualTreeInternal parent) {
+    public void adopt(long path, VirtualTreeInternal parent) {
         // TODO What happens if I have children? Do I modify them as well? Or throw?
         if (leftChild != null || rightChild != null) {
             throw new IllegalStateException("Refusing adoption, this internal node has children");
@@ -106,20 +110,15 @@ public final class VirtualTreeInternal extends VirtualTreeNode {
      * @param target The path of the node we're trying to walk towards.
      * @param visitor The visitor. Cannot be null.
      */
-    public final void walk(VirtualTreePath target, VirtualVisitor visitor) {
-        // Cannot find a null target!
-        if (target == null) {
-            return;
-        }
-
+    public final void walk(long target, VirtualVisitor visitor) {
         // Maybe I was the target! In that case, visit me and quit.
-        if (getPath().unsafeEquals(target)) {
+        if (getPath() == target) {
             visitor.visitParent(this);
             return;
         }
 
         // I wasn't the target and I'm not the parent of the target so quit.
-        if (!getPath().isParentOf(target)) {
+        if (!isParentOf(getPath(), target)) {
             return;
         }
 
@@ -130,22 +129,22 @@ public final class VirtualTreeInternal extends VirtualTreeNode {
             visitor.visitParent(node);
 
             // If we've found the target, then we're done
-            if (path.unsafeEquals(target)) {
+            if (path == target) {
                 break;
             }
 
             // We didn't find the target yet and `node` is a parent node,
             // so we need to go down either the left or right branch.
             VirtualTreeNode nextNode;
-            final var leftPath = path.getLeftChildPath();
-            if (leftPath.isParentOf(target) || leftPath.unsafeEquals(target)) {
+            final var leftPath = getLeftChildPath(path);
+            if (isParentOf(leftPath, target) || leftPath == target) {
                 if (node.leftChild == null) {
                     visitor.visitUncreated(leftPath);
                 }
                 nextNode = node.leftChild;
             } else {
-                final var rightPath = path.getRightChildPath();
-                if (rightPath.isParentOf(target) || rightPath.unsafeEquals(target)) {
+                final var rightPath = getRightChildPath(path);
+                if (isParentOf(rightPath, target) || rightPath == target) {
                     if (node.rightChild == null) {
                         visitor.visitUncreated(rightPath);
                     }
