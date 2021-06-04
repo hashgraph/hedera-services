@@ -66,20 +66,20 @@ import static org.mockito.BDDMockito.verify;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class AwareNodeDiligenceScreenTest {
-	long submittingMember = 2L;
-	String pretendMemo = "ignored";
-	Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
-	AccountID aNodeAccount = IdUtils.asAccount("0.0.3");
-	AccountID bNodeAccount = IdUtils.asAccount("0.0.4");
-	TxnAccessor accessor;
-	Duration validDuration = Duration.newBuilder().setSeconds(1_234_567L).build();
+	private long submittingMember = 2L;
+	private String pretendMemo = "ignored";
+	private Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
+	private AccountID aNodeAccount = IdUtils.asAccount("0.0.3");
+	private AccountID bNodeAccount = IdUtils.asAccount("0.0.4");
+	private TxnAccessor accessor;
+	private Duration validDuration = Duration.newBuilder().setSeconds(1_234_567L).build();
 
 	@Mock
-	TransactionContext txnCtx;
+	private TransactionContext txnCtx;
 	@Mock
-	OptionValidator validator;
+	private OptionValidator validator;
 	@Mock
-	BackingStore<AccountID, MerkleAccount> backingAccounts;
+	private BackingStore<AccountID, MerkleAccount> backingAccounts;
 
 	@Inject
 	private LogCaptor logCaptor;
@@ -184,7 +184,8 @@ class AwareNodeDiligenceScreenTest {
 		given(validator.isValidTxnDuration(validDuration.getSeconds())).willReturn(true);
 		given(validator.chronologyStatus(accessor, consensusTime)).willReturn(OK);
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
-		given(validator.memoCheck(pretendMemo)).willReturn(INVALID_ZERO_BYTE_IN_STRING);
+		given(validator.rawMemoCheck(accessor.getMemoUtf8Bytes(), accessor.memoHasZeroByte()))
+				.willReturn(INVALID_ZERO_BYTE_IN_STRING);
 
 		// then:
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
@@ -200,7 +201,8 @@ class AwareNodeDiligenceScreenTest {
 		given(validator.isValidTxnDuration(validDuration.getSeconds())).willReturn(true);
 		given(validator.chronologyStatus(accessor, consensusTime)).willReturn(OK);
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
-		given(validator.memoCheck(pretendMemo)).willReturn(OK);
+		given(validator.rawMemoCheck(accessor.getMemoUtf8Bytes(), accessor.memoHasZeroByte()))
+				.willReturn(OK);
 
 		// then:
 		assertFalse(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));

@@ -37,6 +37,7 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bouncycastle.util.Arrays;
 
 import java.time.Instant;
 import java.util.List;
@@ -121,8 +122,12 @@ public class ContextOptionValidator implements OptionValidator {
 
 	@Override
 	public ResponseCodeEnum tokenTransfersLengthCheck(List<TokenTransferList> tokenTransferLists) {
+		final int tokenTransferListsSize = tokenTransferLists.size();
+		if (tokenTransferListsSize == 0) {
+			return OK;
+		}
+
 		int maxLen = properties.maxTokenTransferListSize();
-		int tokenTransferListsSize = tokenTransferLists.size();
 
 		if (tokenTransferListsSize > maxLen) {
 			return TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
@@ -194,9 +199,19 @@ public class ContextOptionValidator implements OptionValidator {
 
 	@Override
 	public ResponseCodeEnum memoCheck(String cand) {
-		if (StringUtils.getBytesUtf8(cand).length > properties.maxMemoUtf8Bytes()) {
+		return rawMemoCheck(StringUtils.getBytesUtf8(cand));
+	}
+
+	@Override
+	public ResponseCodeEnum rawMemoCheck(byte[] utf8Cand) {
+		return rawMemoCheck(utf8Cand, Arrays.contains(utf8Cand, (byte)0));
+	}
+
+	@Override
+	public ResponseCodeEnum rawMemoCheck(byte[] utf8Cand, boolean hasZeroByte) {
+		if (utf8Cand.length > properties.maxMemoUtf8Bytes()) {
 			return MEMO_TOO_LONG;
-		} else if (cand.contains("\u0000")) {
+		} else if (hasZeroByte) {
 			return INVALID_ZERO_BYTE_IN_STRING;
 		} else {
 			return OK;

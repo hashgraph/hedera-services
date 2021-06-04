@@ -59,7 +59,6 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
@@ -206,7 +205,7 @@ class AwareTransactionContextTest {
 		given(accessor.getOfferedFee()).willReturn(offeredFee);
 		given(accessor.getTxnId()).willReturn(txnId);
 		given(accessor.getTxn()).willReturn(txn);
-		given(accessor.getBackwardCompatibleSignedTxn()).willReturn(signedTxn);
+		given(accessor.getSignedTxnWrapper()).willReturn(signedTxn);
 		given(accessor.getPayer()).willReturn(payer);
 		given(accessor.getHash()).willReturn(hash);
 

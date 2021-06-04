@@ -111,7 +111,7 @@ public class SigVerifierRegressionTest {
 		setupFor(FULL_PAYER_SIGS_VIA_MAP_SCENARIO);
 
 		// expect:
-		assertTrue(sigVerifies(platformTxn.getBackwardCompatibleSignedTxn()));
+		assertTrue(sigVerifies(platformTxn.getSignedTxnWrapper()));
 	}
 
 	@Test
@@ -122,7 +122,7 @@ public class SigVerifierRegressionTest {
 		setupFor(MISSING_PAYER_SIGS_VIA_MAP_SCENARIO);
 
 		// expect:
-		assertFalse(sigVerifies(platformTxn.getBackwardCompatibleSignedTxn()));
+		assertFalse(sigVerifies(platformTxn.getSignedTxnWrapper()));
 	}
 
 	@Test
@@ -133,7 +133,7 @@ public class SigVerifierRegressionTest {
 		setupFor(INVALID_PAYER_SIGS_VIA_MAP_SCENARIO);
 
 		// expect:
-		assertFalse(sigVerifies(platformTxn.getBackwardCompatibleSignedTxn()));
+		assertFalse(sigVerifies(platformTxn.getSignedTxnWrapper()));
 	}
 
 	@Test
@@ -144,7 +144,7 @@ public class SigVerifierRegressionTest {
 		setupFor(CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO);
 
 		// expect:
-		assertTrue(sigVerifies(platformTxn.getBackwardCompatibleSignedTxn()));
+		assertTrue(sigVerifies(platformTxn.getSignedTxnWrapper()));
 	}
 
 	@Test
@@ -155,7 +155,7 @@ public class SigVerifierRegressionTest {
 		setupFor(VALID_QUERY_PAYMENT_SCENARIO);
 
 		// expect:
-		assertTrue(sigVerifies(platformTxn.getBackwardCompatibleSignedTxn()));
+		assertTrue(sigVerifies(platformTxn.getSignedTxnWrapper()));
 	}
 
 	@Test
@@ -166,7 +166,7 @@ public class SigVerifierRegressionTest {
 		setupFor(INVALID_PAYER_ID_SCENARIO);
 
 		// expect:
-		assertFalse(sigVerifies(platformTxn.getBackwardCompatibleSignedTxn()));
+		assertFalse(sigVerifies(platformTxn.getSignedTxnWrapper()));
 	}
 
 	@Test
@@ -176,7 +176,7 @@ public class SigVerifierRegressionTest {
 
 		// expect:
 		assertThrows(InvalidAccountIDException.class,
-				() -> sigVerifies(platformTxn.getBackwardCompatibleSignedTxn()));
+				() -> sigVerifies(platformTxn.getSignedTxnWrapper()));
 		verify(runningAvgs).recordAccountLookupRetries(anyInt());
 		verify(runningAvgs).recordAccountRetryWaitMs(anyDouble());
 		verify(speedometers).cycleAccountLookupRetries();
@@ -189,7 +189,7 @@ public class SigVerifierRegressionTest {
 
 		// expect:
 		assertThrows(KeyPrefixMismatchException.class,
-				() -> sigVerifies(platformTxn.getBackwardCompatibleSignedTxn()));
+				() -> sigVerifies(platformTxn.getSignedTxnWrapper()));
 	}
 
 	@Test
@@ -200,7 +200,7 @@ public class SigVerifierRegressionTest {
 		setupFor(QUERY_PAYMENT_MISSING_SIGS_SCENARIO);
 
 		// expect:
-		assertFalse(sigVerifies(platformTxn.getBackwardCompatibleSignedTxn()));
+		assertFalse(sigVerifies(platformTxn.getSignedTxnWrapper()));
 	}
 
 	private boolean sigVerifies(Transaction signedTxn) throws Exception {

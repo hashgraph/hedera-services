@@ -34,7 +34,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.common.crypto.VerificationStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -47,6 +46,7 @@ import static com.hedera.services.legacy.crypto.SignatureStatusCode.SUCCESS;
 import static com.hedera.services.sigs.PlatformSigOps.createEd25519PlatformSigsFrom;
 import static com.hedera.services.sigs.factories.PlatformSigFactory.allVaryingMaterialEquals;
 import static com.hedera.services.sigs.utils.StatusUtils.successFor;
+import static com.swirlds.common.crypto.VerificationStatus.UNKNOWN;
 
 public class Rationalization {
 	private static final Logger log = LogManager.getLogger(Rationalization.class);
@@ -78,23 +78,16 @@ public class Rationalization {
 	}
 
 	public SignatureStatus execute() {
-		log.debug("Rationalizing crypto sigs with Hedera sigs for txn {}...", txnAccessor::getSignedTxn4Log);
 		List<TransactionSignature> realPayerSigs = new ArrayList<>(), realOtherPartySigs = new ArrayList<>();
 
 		var payerStatus = expandIn(
 				realPayerSigs, sigsProvider::payerSigBytesFor, keyOrderer::keysForPayer);
 		if (!SUCCESS.equals(payerStatus.getStatusCode())) {
-			if (log.isDebugEnabled()) {
-				log.debug("Failed rationalizing payer sigs, txn {}: {}", txnAccessor.getTxnId(), payerStatus);
-			}
 			return payerStatus;
 		}
 		var otherPartiesStatus = expandIn(
 				realOtherPartySigs, sigsProvider::otherPartiesSigBytesFor, keyOrderer::keysForOtherParties);
 		if (!SUCCESS.equals(otherPartiesStatus.getStatusCode())) {
-			if (log.isDebugEnabled()) {
-				log.debug("Failed rationalizing other sigs, txn {}: {}", txnAccessor.getTxnId(), otherPartiesStatus);
-			}
 			return otherPartiesStatus;
 		}
 
@@ -105,7 +98,7 @@ public class Rationalization {
 			txnAccessor.getPlatformTxn().clear();
 			txnAccessor.getPlatformTxn().addAll(rationalizedPayerSigs.toArray(new TransactionSignature[0]));
 			txnAccessor.getPlatformTxn().addAll(rationalizedOtherPartySigs.toArray(new TransactionSignature[0]));
-			log.warn("Verified crypto sigs synchronously for txn {}", txnAccessor.getSignedTxn4Log());
+			log.warn("Verified crypto sigs synchronously for txn {}", txnAccessor.getSignedTxnWrapper());
 			return syncSuccess();
 		}
 
@@ -113,19 +106,25 @@ public class Rationalization {
 	}
 
 	private List<TransactionSignature> rationalize(List<TransactionSignature> realSigs, int startingAt) {
-		try {
+		final var maxSubListEnd = txnSigs.size();
+		final var requestedSubListEnd = startingAt + realSigs.size();
+		if (requestedSubListEnd <= maxSubListEnd) {
 			var candidateSigs = txnSigs.subList(startingAt, startingAt + realSigs.size());
 			if (allVaryingMaterialEquals(candidateSigs, realSigs) && allStatusesAreKnown(candidateSigs)) {
 				return candidateSigs;
 			}
-		} catch (IndexOutOfBoundsException ignore) {
 		}
 		syncVerifier.verifySync(realSigs);
 		return realSigs;
 	}
 
 	private boolean allStatusesAreKnown(List<TransactionSignature> sigs) {
-		return sigs.stream().map(TransactionSignature::getSignatureStatus).noneMatch(VerificationStatus.UNKNOWN::equals);
+		for (final var sig : sigs) {
+			if (sig.getSignatureStatus() == UNKNOWN) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private SignatureStatus expandIn(
@@ -139,7 +138,7 @@ public class Rationalization {
 			return orderResult.getErrorReport();
 		}
 		PlatformSigsCreationResult creationResult = createEd25519PlatformSigsFrom(
-				orderResult.getOrderedKeys(), sigsFn.apply(txnAccessor.getBackwardCompatibleSignedTxn()), sigFactory);
+				orderResult.getOrderedKeys(), sigsFn.apply(txnAccessor.getSignedTxnWrapper()), sigFactory);
 		if (creationResult.hasFailed()) {
 			return creationResult.asSignatureStatus(true, txnAccessor.getTxnId());
 		}

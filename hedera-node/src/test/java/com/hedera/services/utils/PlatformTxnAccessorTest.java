@@ -77,7 +77,7 @@ public class PlatformTxnAccessorTest {
 		SignedTxnAccessor subject = new SignedTxnAccessor(signedTxnWithBody);
 
 		// then:
-		assertArrayEquals(signedTxnWithBody.toByteArray(), subject.getBackwardCompatibleSignedTxnBytes());
+		assertArrayEquals(signedTxnWithBody.toByteArray(), subject.getSignedTxnWrapperBytes());
 	}
 
 	@Test
@@ -194,7 +194,7 @@ public class PlatformTxnAccessorTest {
 
 		// when:
 		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn);
-		Transaction signedTxn4Log = subject.getSignedTxn4Log();
+		Transaction signedTxn4Log = subject.getSignedTxnWrapper();
 		Transaction asBodyBytes = signedTxn4Log
 				.toBuilder()
 				.setBodyBytes(CommonUtils.extractTransactionBodyByteString(signedTxn4Log))
@@ -221,7 +221,7 @@ public class PlatformTxnAccessorTest {
 
 		// when:
 		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn);
-		Transaction signedTxn4Log = subject.getSignedTxn4Log();
+		Transaction signedTxn4Log = subject.getSignedTxnWrapper();
 
 		ByteString signedTxnBytes = signedTxn4Log.getSignedTransactionBytes();
 		Transaction asBodyBytes = signedTxn4Log

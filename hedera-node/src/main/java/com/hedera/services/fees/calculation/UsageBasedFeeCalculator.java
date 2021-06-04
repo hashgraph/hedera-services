@@ -24,7 +24,6 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.keys.HederaKeyTraversal;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.TxnAccessor;
@@ -51,6 +50,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static com.hedera.services.fees.calculation.AwareFcfsUsagePrices.DEFAULT_USAGE_PRICES;
+import static com.hedera.services.keys.HederaKeyTraversal.numSimpleKeys;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAccountAutoRenew;
@@ -202,7 +202,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 		try {
 			return usagePrices.pricesGiven(accessor.getFunction(), at);
 		} catch (Exception e) {
-			log.warn("Using default usage prices to calculate fees for {}!", accessor.getSignedTxn4Log(), e);
+			log.warn("Using default usage prices to calculate fees for {}!", accessor.getSignedTxnWrapper(), e);
 		}
 		return DEFAULT_USAGE_PRICES;
 	}
@@ -222,7 +222,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 		} catch (InvalidTxBodyException e) {
 			log.warn(
 					"Argument accessor={} malformed for implied estimator {}!",
-					accessor.getSignedTxn4Log(),
+					accessor.getSignedTxnWrapper(),
 					usageEstimator);
 			throw new IllegalArgumentException(e);
 		}
@@ -253,9 +253,6 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	}
 
 	private SigValueObj getSigUsage(TxnAccessor accessor, JKey payerKey) {
-		return new SigValueObj(
-				FeeBuilder.getSignatureCount(accessor.getBackwardCompatibleSignedTxn()),
-				HederaKeyTraversal.numSimpleKeys(payerKey),
-				FeeBuilder.getSignatureSize(accessor.getBackwardCompatibleSignedTxn()));
+		return new SigValueObj(accessor.numSigPairs(), numSimpleKeys(payerKey), accessor.sigMapSize());
 	}
 }

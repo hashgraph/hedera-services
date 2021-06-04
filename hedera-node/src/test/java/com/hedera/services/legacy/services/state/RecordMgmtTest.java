@@ -71,7 +71,7 @@ class RecordMgmtTest {
 		final ExpirableTxnRecord lastRecord = ExpirableTxnRecord.newBuilder().build();
 		final RecordStreamObject expectedRso = new RecordStreamObject(lastRecord, txn, consensusNow);
 
-		given(txnAccessor.getBackwardCompatibleSignedTxn()).willReturn(txn);
+		given(txnAccessor.getSignedTxnWrapper()).willReturn(txn);
 		given(txnCtx.accessor()).willReturn(txnAccessor);
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
 		given(recordsHistorian.lastCreatedRecord()).willReturn(Optional.of(lastRecord));

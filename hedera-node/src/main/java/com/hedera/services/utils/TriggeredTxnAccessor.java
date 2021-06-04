@@ -29,11 +29,11 @@ public class TriggeredTxnAccessor extends SignedTxnAccessor {
     private final ScheduleID scheduleRef;
 
     public TriggeredTxnAccessor(
-            byte[] signedTxnBytes,
+            byte[] signedTxnWrapperBytes,
             AccountID payer,
             ScheduleID scheduleRef
     ) throws InvalidProtocolBufferException {
-        super(signedTxnBytes);
+        super(signedTxnWrapperBytes);
         this.payer = payer;
         this.scheduleRef = scheduleRef;
     }

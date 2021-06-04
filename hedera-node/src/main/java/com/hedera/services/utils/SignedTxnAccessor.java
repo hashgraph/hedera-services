@@ -30,6 +30,8 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import org.apache.commons.codec.binary.StringUtils;
+import org.bouncycastle.util.Arrays;
 
 import java.util.function.Function;
 
@@ -43,14 +45,18 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
  * @author Michael Tinker
  */
 public class SignedTxnAccessor implements TxnAccessor {
+	private int sigMapSize;
+	private int numSigPairs;
+	private byte[] hash;
 	private byte[] txnBytes;
-	private byte[] backwardCompatibleSignedTxnBytes;
-	private Transaction backwardCompatibleSignedTxn;
+	private byte[] utf8MemoBytes;
+	private byte[] signedTxnWrapperBytes;
+	private boolean memoHasZeroByte;
+	private Transaction signedTxnWrapper;
 	private SignatureMap sigMap;
 	private TransactionID txnId;
 	private TransactionBody txn;
 	private HederaFunctionality function;
-	private byte[] hash;
 
 	static Function<TransactionBody, HederaFunctionality> functionExtractor = txn -> {
 		try {
@@ -63,20 +69,20 @@ public class SignedTxnAccessor implements TxnAccessor {
 	public static SignedTxnAccessor uncheckedFrom(Transaction validSignedTxn) {
 		try {
 			return new SignedTxnAccessor(validSignedTxn);
-		} catch (Exception impossible) { }
+		} catch (Exception impossible) {
+		}
 		return null;
 	}
 
-	public SignedTxnAccessor(byte[] backwardCompatibleSignedTxnBytes) throws InvalidProtocolBufferException {
-		this.backwardCompatibleSignedTxnBytes = backwardCompatibleSignedTxnBytes;
-		backwardCompatibleSignedTxn = Transaction.parseFrom(backwardCompatibleSignedTxnBytes);
+	public SignedTxnAccessor(byte[] signedTxnWrapperBytes) throws InvalidProtocolBufferException {
+		this.signedTxnWrapperBytes = signedTxnWrapperBytes;
+		signedTxnWrapper = Transaction.parseFrom(signedTxnWrapperBytes);
 
-
-		final var signedTxnBytes = backwardCompatibleSignedTxn.getSignedTransactionBytes();
+		final var signedTxnBytes = signedTxnWrapper.getSignedTransactionBytes();
 		if (signedTxnBytes.isEmpty()) {
-			txnBytes = backwardCompatibleSignedTxn.getBodyBytes().toByteArray();
-			sigMap = backwardCompatibleSignedTxn.getSigMap();
-			hash = noThrowSha384HashOf(backwardCompatibleSignedTxnBytes);
+			txnBytes = signedTxnWrapper.getBodyBytes().toByteArray();
+			sigMap = signedTxnWrapper.getSigMap();
+			hash = noThrowSha384HashOf(signedTxnWrapperBytes);
 		} else {
 			final var signedTxn = SignedTransaction.parseFrom(signedTxnBytes);
 			txnBytes = signedTxn.getBodyBytes().toByteArray();
@@ -86,16 +92,22 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 		txn = TransactionBody.parseFrom(txnBytes);
 		txnId = txn.getTransactionID();
+		sigMapSize = sigMap.getSerializedSize();
+		numSigPairs = sigMap.getSigPairCount();
+		utf8MemoBytes = StringUtils.getBytesUtf8(txn.getMemo());
+		memoHasZeroByte = Arrays.contains(utf8MemoBytes, (byte)0);
 	}
 
-	public SignedTxnAccessor(Transaction backwardCompatibleSignedTxn) throws InvalidProtocolBufferException {
-		this(backwardCompatibleSignedTxn.toByteArray());
+	public SignedTxnAccessor(Transaction signedTxnWrapper) throws InvalidProtocolBufferException {
+		this(signedTxnWrapper.toByteArray());
 	}
 
+	@Override
 	public SignatureMap getSigMap() {
 		return sigMap;
 	}
 
+	@Override
 	public HederaFunctionality getFunction() {
 		if (function == null) {
 			function = functionExtractor.apply(getTxn());
@@ -103,38 +115,57 @@ public class SignedTxnAccessor implements TxnAccessor {
 		return function;
 	}
 
+	@Override
 	public long getOfferedFee() {
 		return txn.getTransactionFee();
 	}
 
-	public Transaction getSignedTxn4Log() {
-		return backwardCompatibleSignedTxn;
-	}
-
+	@Override
 	public byte[] getTxnBytes() {
 		return txnBytes;
 	}
 
-	public Transaction getBackwardCompatibleSignedTxn() {
-		return backwardCompatibleSignedTxn;
+	@Override
+	public Transaction getSignedTxnWrapper() {
+		return signedTxnWrapper;
 	}
 
+	@Override
 	public TransactionBody getTxn() {
 		return txn;
 	}
 
+	@Override
 	public TransactionID getTxnId() {
 		return txnId;
 	}
 
+	@Override
 	public AccountID getPayer() {
 		return getTxnId().getAccountID();
 	}
 
-	public byte[] getBackwardCompatibleSignedTxnBytes() {
-		return backwardCompatibleSignedTxnBytes;
+	@Override
+	public byte[] getSignedTxnWrapperBytes() {
+		return signedTxnWrapperBytes;
 	}
 
+	@Override
+	public byte[] getMemoUtf8Bytes() {
+		return utf8MemoBytes;
+	}
+
+	@Override
+	public int numSigPairs() {
+		return numSigPairs;
+	}
+
+	@Override
+	public int sigMapSize() {
+		return sigMapSize;
+	}
+
+	@Override
 	public byte[] getHash() {
 		return hash;
 	}
@@ -142,6 +173,11 @@ public class SignedTxnAccessor implements TxnAccessor {
 	@Override
 	public boolean canTriggerTxn() {
 		return getTxn().hasScheduleCreate() || getTxn().hasScheduleSign();
+	}
+
+	@Override
+	public boolean memoHasZeroByte() {
+		return memoHasZeroByte;
 	}
 
 	public boolean isTriggeredTxn() {

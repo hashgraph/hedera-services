@@ -139,7 +139,7 @@ class AwareProcessLogicTest {
 		final com.hederahashgraph.api.proto.java.Transaction signedTxn = mock(com.hederahashgraph.api.proto.java.Transaction.class);
 		final TransactionID txnId = mock(TransactionID.class);
 
-		given(txnAccessor.getBackwardCompatibleSignedTxn()).willReturn(signedTxn);
+		given(txnAccessor.getSignedTxnWrapper()).willReturn(signedTxn);
 		given(signedTxn.getSignedTransactionBytes()).willReturn(ByteString.EMPTY);
 		given(txnAccessor.getTxn()).willReturn(txnBody);
 		given(txnBody.getTransactionID()).willReturn(txnId);

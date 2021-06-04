@@ -74,7 +74,7 @@ class StandardSyncActivationCheckTest {
 		result = mock(PlatformSigsCreationResult.class);
 		accessor = mock(PlatformTxnAccessor.class);
 		given(accessor.getTxnBytes()).willReturn("Goodness".getBytes());
-		given(accessor.getBackwardCompatibleSignedTxn()).willReturn(signedTxn);
+		given(accessor.getSignedTxnWrapper()).willReturn(signedTxn);
 		isActive = mock(BiPredicate.class);
 		syncVerifier = mock(SyncVerifier.class);
 		sigBytesProvider = mock(Function.class);

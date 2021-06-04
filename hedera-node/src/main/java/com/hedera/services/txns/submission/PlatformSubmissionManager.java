@@ -54,7 +54,7 @@ public class PlatformSubmissionManager {
 		accessor = effective(accessor);
 
 		var success = (accessor != null) &&
-				platform.createTransaction(new SwirldTransaction(accessor.getBackwardCompatibleSignedTxnBytes()));
+				platform.createTransaction(new SwirldTransaction(accessor.getSignedTxnWrapperBytes()));
 		if (success) {
 			recordCache.addPreConsensus(accessor.getTxnId());
 			return OK;

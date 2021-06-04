@@ -121,7 +121,7 @@ public class AwareProcessLogic implements ProcessLogic {
 			log.error(
 					tpl,
 					context,
-					ctx.txnCtx().accessor().getSignedTxn4Log(),
+					ctx.txnCtx().accessor().getSignedTxnWrapper(),
 					ctx.ledger().currentChangeSet(),
 					e);
 		} catch (Exception unexpected) {
@@ -132,7 +132,7 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	void addRecordToStream() {
 		ctx.recordsHistorian().lastCreatedRecord().ifPresent(finalRecord ->
-				stream(ctx.txnCtx().accessor().getBackwardCompatibleSignedTxn(),
+				stream(ctx.txnCtx().accessor().getSignedTxnWrapper(),
 						finalRecord, ctx.txnCtx().consensusTime()));
 	}
 
@@ -183,7 +183,7 @@ public class AwareProcessLogic implements ProcessLogic {
 		}
 		var transitionLogic = ctx.transitionLogic().lookupFor(accessor.getFunction(), accessor.getTxn());
 		if (transitionLogic.isEmpty()) {
-			log.warn("Transaction w/o applicable transition logic at consensus :: {}", accessor::getSignedTxn4Log);
+			log.warn("Transaction w/o applicable transition logic at consensus :: {}", accessor::getSignedTxnWrapper);
 			ctx.txnCtx().setStatus(FAIL_INVALID);
 			return;
 		}

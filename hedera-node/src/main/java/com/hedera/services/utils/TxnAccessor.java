@@ -34,15 +34,21 @@ import com.swirlds.common.SwirldTransaction;
  * parts of a Hedera Services gRPC {@link Transaction}.
  */
 public interface TxnAccessor {
+    int numSigPairs();
+
+    int sigMapSize();
+
     SignatureMap getSigMap();
 
     HederaFunctionality getFunction();
 
-    Transaction getSignedTxn4Log();
-
     byte[] getTxnBytes();
 
-    Transaction getBackwardCompatibleSignedTxn();
+    byte[] getMemoUtf8Bytes();
+
+    boolean memoHasZeroByte();
+
+    Transaction getSignedTxnWrapper();
 
     TransactionBody getTxn();
 
@@ -50,7 +56,7 @@ public interface TxnAccessor {
 
     AccountID getPayer();
 
-    byte[] getBackwardCompatibleSignedTxnBytes();
+    byte[] getSignedTxnWrapperBytes();
 
     byte[] getHash();
 

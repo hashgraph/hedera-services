@@ -121,7 +121,6 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 			throw new IllegalStateException("Cannot perform commit, no transaction is active!");
 		}
 
-		log.debug("Changes to be committed: {}", this::changeSetSoFar);
 		try {
 			flushListed(changedKeys);
 			flushListed(createdKeys);
