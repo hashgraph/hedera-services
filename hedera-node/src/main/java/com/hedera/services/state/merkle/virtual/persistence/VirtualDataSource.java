@@ -1,6 +1,7 @@
 package com.hedera.services.state.merkle.virtual.persistence;
 
 import com.hedera.services.state.merkle.virtual.VirtualKey;
+import com.hedera.services.state.merkle.virtual.VirtualValue;
 import com.hedera.services.state.merkle.virtual.tree.VirtualTreeInternal;
 import com.hedera.services.state.merkle.virtual.tree.VirtualTreeLeaf;
 import com.hedera.services.state.merkle.virtual.tree.VirtualTreePath;
@@ -14,6 +15,8 @@ import java.nio.file.Path;
 public interface VirtualDataSource extends Closeable {
     public VirtualTreeInternal load(VirtualTreePath parentPath);
     public VirtualTreeLeaf load(VirtualKey leafKey);
+
+    public VirtualValue get(VirtualKey leafKey);
 
     public void save(VirtualTreeInternal parent);
     public void save(VirtualTreeLeaf leaf);

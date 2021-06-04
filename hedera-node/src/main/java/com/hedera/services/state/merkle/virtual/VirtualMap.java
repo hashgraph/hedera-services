@@ -133,8 +133,19 @@ public final class VirtualMap
      */
     public VirtualValue getValue(VirtualKey key) {
         Objects.requireNonNull(key);
-        final var leaf = findLeaf(key);
-        return leaf == null ? null : leaf.getData();
+
+        // Check the cache and return the leaf if it was in there.
+        var leaf = cache.get(key);
+        if (leaf != null) {
+            return leaf.getData();
+        }
+
+        final var value = dataSource.get(key);
+        if (value != null) {
+            return value;
+        }
+
+        return null;
     }
 
     /**
