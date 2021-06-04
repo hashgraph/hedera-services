@@ -3,7 +3,6 @@ package com.hedera.services.state.merkle.virtual.persistence.mmap;
 import com.hedera.services.state.merkle.virtual.Account;
 import com.hedera.services.state.merkle.virtual.VirtualKey;
 import com.hedera.services.state.merkle.virtual.VirtualValue;
-import com.hedera.services.state.merkle.virtual.persistence.VirtualDataSource;
 import com.hedera.services.state.merkle.virtual.tree.VirtualTreeInternal;
 import com.hedera.services.state.merkle.virtual.tree.VirtualTreeLeaf;
 import com.hedera.services.state.merkle.virtual.tree.VirtualTreeNode;
@@ -54,7 +53,7 @@ public class VirtualMapDataStore {
      */
     private final MemMapDataStore pathStore;
 
-    private final Map<Account, Map<VirtualTreePath, SlotLocation>> parentIndex = new HashMap<>();
+    private final Map<Account, Map<Long, SlotLocation>> parentIndex = new HashMap<>();
     private final Map<Account, Map<VirtualKey, SlotLocation>> leafIndex = new HashMap<>();
     private final Map<Account, Map<Byte, SlotLocation>> pathIndex = new HashMap<>();
 
@@ -99,8 +98,8 @@ public class VirtualMapDataStore {
         parentStore.open((fileIndex, slotIndex, fileAtSlot) -> {
             try {
                 final Account account = new Account(fileAtSlot.readLong(), fileAtSlot.readLong(), fileAtSlot.readLong());
-                final VirtualTreePath path = new VirtualTreePath(fileAtSlot.readByte(), fileAtSlot.readLong());
-                Map<VirtualTreePath, SlotLocation> indexMap = parentIndex.computeIfAbsent(account, k -> new HashMap<>());
+                final long path = fileAtSlot.readLong();
+                Map<Long, SlotLocation> indexMap = parentIndex.computeIfAbsent(account, k -> new HashMap<>());
                 indexMap.put(path, new SlotLocation(fileIndex,slotIndex));
             } catch (IOException e) {
                 e.printStackTrace(); // TODO something better here, this should only happen if our files are corrupt
@@ -169,7 +168,7 @@ public class VirtualMapDataStore {
      * @param path The path of the parent to find and load
      * @return a loaded VirtualTreeInternal with path and hash set or null if not found
      */
-    public VirtualTreeInternal loadParent(Account account, VirtualTreePath path){
+    public VirtualTreeInternal loadParent(Account account, long path) {
         SlotLocation slotLocation = findParent(account,path);
         if (slotLocation != null) {
             ByteBuffer buffer = parentStore.accessSlot(slotLocation.fileIndex(), slotLocation.slotIndex());
@@ -201,7 +200,7 @@ public class VirtualMapDataStore {
             byte[] keyBytes = new byte[keySizeBytes];
             buffer.get(keyBytes);
             // Path -- VirtualTreePath.BYTES
-            VirtualTreePath path = new VirtualTreePath(buffer.get(), buffer.getLong());
+            long path = buffer.getLong();
             // Value -- dataSizeBytes
             byte[] valueBytes = new byte[dataSizeBytes];
             buffer.get(valueBytes);
@@ -249,8 +248,7 @@ public class VirtualMapDataStore {
         buffer.putLong(account.realmNum());
         buffer.putLong(account.accountNum());
         // Path -- VirtualTreePath.BYTES
-        buffer.put(parent.getPath().rank);
-        buffer.putLong(parent.getPath().path);
+        buffer.putLong(parent.getPath());
         // Hash -- HASH_SIZE_BYTES
         buffer.put(parent.hash().getValue());
 
@@ -280,8 +278,7 @@ public class VirtualMapDataStore {
         // Key -- keySizeBytes
         leaf.getKey().writeToByteBuffer(buffer);
         // Path -- VirtualTreePath.BYTES
-        buffer.put(leaf.getPath().rank);
-        buffer.putLong(leaf.getPath().path);
+        buffer.putLong(leaf.getPath());
         // Value -- dataSizeBytes
         leaf.getData().writeToByteBuffer(buffer);
     }
@@ -293,7 +290,7 @@ public class VirtualMapDataStore {
      * @param key The byte key for the path
      * @param path The path to write
      */
-    public void save(Account account, byte key, VirtualTreePath path) {
+    public void save(Account account, byte key, long path) {
         // if already stored and if so it is an update
         SlotLocation slotLocation = findPath(account, key);
         if (slotLocation == null) {
@@ -312,8 +309,7 @@ public class VirtualMapDataStore {
         // Key -- 1 byte
         buffer.put(key);
         // Path -- VirtualTreePath.BYTES
-        buffer.put(path.rank);
-        buffer.putLong(path.path);
+        buffer.putLong(path);
     }
 
     /**
@@ -323,18 +319,18 @@ public class VirtualMapDataStore {
      * @param key The byte key for the path
      * @return the Path if it was found in store or null
      */
-    public VirtualTreePath load(Account account, byte key) {
+    public long load(Account account, byte key) {
         SlotLocation slotLocation = findPath(account,key);
         if (slotLocation != null) {
             // read path from slot
             ByteBuffer buffer = pathStore.accessSlot(slotLocation.fileIndex(), slotLocation.slotIndex());
             // Account -- Account.BYTES
             // Key -- 1 byte
-            buffer.position(buffer.position() + Account.BYTES + 1); // jump over
+            buffer.position(buffer.position() + Account.BYTES); // jump over
             // Path -- VirtualTreePath.BYTES
-            return new VirtualTreePath(buffer.get(), buffer.getLong());
+            return buffer.getLong();
         } else {
-            return null;
+            return VirtualTreePath.INVALID_PATH;
         }
     }
 
@@ -345,8 +341,8 @@ public class VirtualMapDataStore {
      * @param path The path of the parent to find
      * @return slot location of parent if it is stored or null if not found
      */
-    private SlotLocation findParent(Account account, VirtualTreePath path) {
-        Map<VirtualTreePath, SlotLocation> indexMap = parentIndex.get(account);
+    private SlotLocation findParent(Account account, long path) {
+        Map<Long, SlotLocation> indexMap = parentIndex.get(account);
         if (indexMap != null) return indexMap.get(path);
         return null;
     }

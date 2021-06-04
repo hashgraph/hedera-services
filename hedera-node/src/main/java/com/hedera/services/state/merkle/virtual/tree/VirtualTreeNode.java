@@ -29,7 +29,7 @@ public abstract class VirtualTreeNode {
      * the tree is modified (leaves added and removed). Whenever it changes,
      * we have to update the dataSource accordingly.
      */
-    private VirtualTreePath path = VirtualTreePath.ROOT_PATH;
+    private long path = VirtualTreePath.ROOT_PATH;
 
     /**
      * The hash for this node. For an internal node, this hash is the result of hashing
@@ -59,9 +59,9 @@ public abstract class VirtualTreeNode {
 
     }
 
-    protected VirtualTreeNode(Hash defaultHash, VirtualTreePath path) {
+    protected VirtualTreeNode(Hash defaultHash, long path) {
         this.hash = Objects.requireNonNull(defaultHash);
-        this.path = Objects.requireNonNull(path);
+        this.path = path;
     }
 
     /**
@@ -73,7 +73,7 @@ public abstract class VirtualTreeNode {
      *
      * @return Gets the path from root to this node. May be null if the node is detached.
      */
-    public final VirtualTreePath getPath() {
+    public final long getPath() {
         return path;
     }
 
@@ -96,9 +96,9 @@ public abstract class VirtualTreeNode {
      * @param path The new path for this node. Never null.
      * @param parent The new parent for this node. Probably never null.... TODO I don't think it will be...
      */
-    protected void adopt(VirtualTreePath path, VirtualTreeInternal parent) {
-        this.path = Objects.requireNonNull(path);
+    protected void adopt(long path, VirtualTreeInternal parent) {
         this.parent = Objects.requireNonNull(parent);
+        this.path = path;
         this.invalidateHash(); // try to remove this
     }
 

@@ -13,7 +13,7 @@ import java.nio.file.Path;
  * Defines the datasource for persisting information about the virtual tree to disk.
  */
 public interface VirtualDataSource extends Closeable {
-    public VirtualTreeInternal load(VirtualTreePath parentPath);
+    public VirtualTreeInternal load(long parentPathId);
     public VirtualTreeLeaf load(VirtualKey leafKey);
 
     public VirtualValue get(VirtualKey leafKey);
@@ -30,14 +30,14 @@ public interface VirtualDataSource extends Closeable {
      *
      * @param path The path of the very last leaf node. This can be null, if the tree is empty.
      */
-    void writeLastLeafPath(VirtualTreePath path);
+    void writeLastLeafPath(long pathId);
 
     /**
      * Gets the Path of the last leaf node. If there are no leaves, this will return null.
      *
      * @return The path to the last leaf node, or null if there are no leaves.
      */
-    VirtualTreePath getLastLeafPath();
+    long getLastLeafPath();
 
     /**
      * Writes the path for the very first leaf to durable storage. This is needed for
@@ -45,13 +45,13 @@ public interface VirtualDataSource extends Closeable {
      *
      * @param path The path of the very first leaf node. This can be null, if the tree is empty.
      */
-    void writeFirstLeafPath(VirtualTreePath path);
+    void writeFirstLeafPath(long pathId);
 
     /**
      * Gets the Path of the first leaf node. If there are no leaves, this will return null.
      *
      * @return The path to the first leaf node, or null if there are no leaves.
      */
-    VirtualTreePath getFirstLeafPath();
+    long getFirstLeafPath();
 
 }

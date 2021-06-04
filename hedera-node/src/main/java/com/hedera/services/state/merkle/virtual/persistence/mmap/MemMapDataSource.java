@@ -21,7 +21,7 @@ public class MemMapDataSource implements VirtualDataSource {
     }
 
     @Override
-    public VirtualTreeInternal load(VirtualTreePath parentPath) {
+    public VirtualTreeInternal load(long parentPath) {
         return store.loadParent(account, parentPath);
     }
 
@@ -56,22 +56,22 @@ public class MemMapDataSource implements VirtualDataSource {
     }
 
     @Override
-    public void writeLastLeafPath(VirtualTreePath path) {
+    public void writeLastLeafPath(long path) {
         store.save(account, (byte)1, path);
     }
 
     @Override
-    public VirtualTreePath getLastLeafPath() {
+    public long getLastLeafPath() {
         return store.load(account, (byte)1);
     }
 
     @Override
-    public void writeFirstLeafPath(VirtualTreePath path) {
+    public void writeFirstLeafPath(long path) {
         store.save(account, (byte)2, path);
     }
 
     @Override
-    public VirtualTreePath getFirstLeafPath() {
+    public long getFirstLeafPath() {
         return store.load(account, (byte)2);
     }
 
