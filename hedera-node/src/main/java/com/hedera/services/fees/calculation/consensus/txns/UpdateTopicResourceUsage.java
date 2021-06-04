@@ -30,10 +30,10 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
+import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import static com.hedera.services.fees.calculation.FeeCalcUtils.ZERO_EXPIRY;
 import static com.hederahashgraph.fee.ConsensusServiceFeeBuilder.getConsensusUpdateTopicFee;
 import static com.hederahashgraph.fee.ConsensusServiceFeeBuilder.getUpdateTopicRbsIncrease;
 
@@ -62,21 +62,15 @@ public class UpdateTopicResourceUsage implements TxnResourceUsageEstimator {
             } else {
                     return getConsensusUpdateTopicFee(txn, 0, sigUsage);
                 }
-        } catch (Exception illegal) {
+        } catch (DecoderException illegal) {
             log.warn("Usage estimation unexpectedly failed for {}!", txn, illegal);
             throw new InvalidTxBodyException(illegal);
         }
     }
 
     private Timestamp lookupExpiry(MerkleTopic merkleTopic) {
-        try {
             return Timestamp.newBuilder()
                     .setSeconds(merkleTopic.getExpirationTimestamp().getSeconds())
                     .build();
-        } catch (NullPointerException e) {
-			/* Effect is to charge nothing for RBH */
-            log.warn("Missing topic expiry data, ignoring expiration time in fee calculation!", e);
-            return ZERO_EXPIRY;
-        }
     }
 }
