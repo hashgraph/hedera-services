@@ -80,7 +80,7 @@ class NodeLocalPropertiesTest {
 		assertFalse(subject.exportAccountsOnStartup());
 		assertEquals(Profile.PROD, subject.nettyMode());
 		assertEquals(23, subject.nettyStartRetries());
-		assertEquals(24, subject.nettyStartRetryInterval());
+		assertEquals(24L, subject.nettyStartRetryIntervalMs());
 	}
 
 	@Test
@@ -119,7 +119,7 @@ class NodeLocalPropertiesTest {
 		assertTrue(subject.exportAccountsOnStartup());
 		assertEquals(Profile.TEST, subject.nettyMode());
 		assertEquals(24, subject.nettyStartRetries());
-		assertEquals(25, subject.nettyStartRetryInterval());
+		assertEquals(25L, subject.nettyStartRetryIntervalMs());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -152,7 +152,7 @@ class NodeLocalPropertiesTest {
 		given(properties.getBooleanProperty("hedera.exportAccountsOnStartup")).willReturn(i % 2 == 0);
 		given(properties.getProfileProperty("netty.mode")).willReturn(LEGACY_ENV_ORDER[(i + 21) % 3]);
 		given(properties.getIntProperty("netty.startRetries")).willReturn(i + 22);
-		given(properties.getIntProperty("netty.startRetryInterval")).willReturn(i + 23);
+		given(properties.getLongProperty("netty.startRetryIntervalMs")).willReturn(i + 23L);
 	}
 
 	static String logDir(int num) {

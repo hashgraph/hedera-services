@@ -59,7 +59,7 @@ import static org.mockito.Mockito.times;
 @ExtendWith(LogCaptureExtension.class)
 class NettyGrpcServerManagerTest {
 	private int startRetries = 3;
-	private int startRetryInterval = 1;
+	private long startRetryIntervalMs = 1_000L;
 	private int port = 8080;
 	private int tlsPort = port + 1;
 	private Server server;
@@ -108,7 +108,7 @@ class NettyGrpcServerManagerTest {
 
 		nodeProperties = mock(NodeLocalProperties.class);
 		given(nodeProperties.nettyStartRetries()).willReturn(startRetries);
-		given(nodeProperties.nettyStartRetryInterval()).willReturn(startRetryInterval);
+		given(nodeProperties.nettyStartRetryIntervalMs()).willReturn(startRetryIntervalMs);
 
 		println = mock(Consumer.class);
 		hookAdder = mock(Consumer.class);
@@ -131,7 +131,7 @@ class NettyGrpcServerManagerTest {
 		subject.startOneNettyServer(false, port, ignore -> {}, mockPause);
 
 		// then:
-		verify(mockPause, times(2)).forMs(startRetryInterval * 1_000L);
+		verify(mockPause, times(2)).forMs(startRetryIntervalMs);
 		verify(server, times(3)).start();
 		assertThat(logCaptor.warnLogs(), contains(
 				"(Attempts=1) Still trying to start Netty on port 8080...Failed to bind",
@@ -151,7 +151,7 @@ class NettyGrpcServerManagerTest {
 				subject.startOneNettyServer(false, port, ignore -> {}, mockPause));
 
 		// then:
-		verify(mockPause, times(startRetries)).forMs(startRetryInterval * 1_000L);
+		verify(mockPause, times(startRetries)).forMs(startRetryIntervalMs);
 		verify(server, times(startRetries + 1)).start();
 		assertThat(logCaptor.warnLogs(), contains(
 				"(Attempts=1) Still trying to start Netty on port 8080...Failed to bind",
@@ -173,7 +173,7 @@ class NettyGrpcServerManagerTest {
 				subject.startOneNettyServer(false, port, ignore -> {}, mockPause));
 
 		// then:
-		verify(mockPause, never()).forMs(startRetryInterval * 1_000L);
+		verify(mockPause, never()).forMs(startRetryIntervalMs);
 		verify(server).start();
 		assertTrue(logCaptor.warnLogs().isEmpty());
 	}

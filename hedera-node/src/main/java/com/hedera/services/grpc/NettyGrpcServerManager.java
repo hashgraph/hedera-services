@@ -22,7 +22,6 @@ package com.hedera.services.grpc;
 
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.utils.Pause;
-import com.hedera.services.utils.SleepingPause;
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerServiceDefinition;
@@ -90,8 +89,8 @@ public class NettyGrpcServerManager implements GrpcServerManager {
 		serviceDefinitions.forEach(builder::addService);
 		Server server = builder.build();
 
-		var n = Math.max(0, nodeProperties.nettyStartRetries());
 		var retryNo = 1;
+		final var n = Math.max(0, nodeProperties.nettyStartRetries());
 		for (; retryNo <= n; retryNo++) {
 			try {
 				server.start();
@@ -99,7 +98,7 @@ public class NettyGrpcServerManager implements GrpcServerManager {
 			} catch (IOException e) {
 				final var summaryMsg = nettyAction("Still trying to start", sslEnabled, port, true);
 				log.warn("(Attempts=" + retryNo + ") " + summaryMsg + e.getMessage());
-				pause.forMs(nodeProperties.nettyStartRetryInterval() * 1_000L);
+				pause.forMs(nodeProperties.nettyStartRetryIntervalMs());
 			}
 		}
 		if (retryNo == n + 1) {

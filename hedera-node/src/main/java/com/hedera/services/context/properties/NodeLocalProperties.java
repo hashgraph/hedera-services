@@ -51,7 +51,7 @@ public class NodeLocalProperties {
 	private boolean exportAccountsOnStartup;
 	private Profile nettyMode;
 	private int nettyStartRetries;
-	private int nettyStartRetryInterval;
+	private long nettyStartRetryIntervalMs;
 
 	public NodeLocalProperties(PropertySource properties) {
 		this.properties = properties;
@@ -88,7 +88,7 @@ public class NodeLocalProperties {
 		exportAccountsOnStartup = properties.getBooleanProperty("hedera.exportAccountsOnStartup");
 		nettyMode = properties.getProfileProperty("netty.mode");
 		nettyStartRetries = properties.getIntProperty("netty.startRetries");
-		nettyStartRetryInterval = properties.getIntProperty("netty.startRetryInterval");
+		nettyStartRetryIntervalMs = properties.getLongProperty("netty.startRetryIntervalMs");
 	}
 
 	public int port() {
@@ -203,7 +203,7 @@ public class NodeLocalProperties {
 		return nettyStartRetries;
 	}
 
-	public int nettyStartRetryInterval() {
-		return nettyStartRetryInterval;
+	public long nettyStartRetryIntervalMs() {
+		return nettyStartRetryIntervalMs;
 	}
 }
