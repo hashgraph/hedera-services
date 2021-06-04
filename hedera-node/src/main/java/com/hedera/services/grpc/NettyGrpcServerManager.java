@@ -45,8 +45,10 @@ public class NettyGrpcServerManager implements GrpcServerManager {
 
 	private Server server;
 	private Server tlsServer;
+
+	private final int startRetries;
+	private final long startRetryIntervalMs;
 	private final Consumer<Thread> hookAdder;
-	private final NodeLocalProperties nodeProperties;
 	private final List<BindableService> bindableServices;
 	private final ConfigDrivenNettyFactory nettyBuilder;
 	private final List<ServerServiceDefinition> serviceDefinitions;
@@ -60,9 +62,11 @@ public class NettyGrpcServerManager implements GrpcServerManager {
 	) {
 		this.hookAdder = hookAdder;
 		this.nettyBuilder = nettyBuilder;
-		this.nodeProperties = nodeProperties;
 		this.bindableServices = bindableServices;
 		this.serviceDefinitions = serviceDefinitions;
+
+		startRetries = nodeProperties.nettyStartRetries();
+		startRetryIntervalMs = nodeProperties.nettyStartRetryIntervalMs();
 	}
 
 	@Override
@@ -90,7 +94,7 @@ public class NettyGrpcServerManager implements GrpcServerManager {
 		Server server = builder.build();
 
 		var retryNo = 1;
-		final var n = Math.max(0, nodeProperties.nettyStartRetries());
+		final var n = Math.max(0, startRetries);
 		for (; retryNo <= n; retryNo++) {
 			try {
 				server.start();
@@ -98,7 +102,7 @@ public class NettyGrpcServerManager implements GrpcServerManager {
 			} catch (IOException e) {
 				final var summaryMsg = nettyAction("Still trying to start", sslEnabled, port, true);
 				log.warn("(Attempts=" + retryNo + ") " + summaryMsg + e.getMessage());
-				pause.forMs(nodeProperties.nettyStartRetryIntervalMs());
+				pause.forMs(startRetryIntervalMs);
 			}
 		}
 		if (retryNo == n + 1) {

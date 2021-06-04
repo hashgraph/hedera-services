@@ -165,6 +165,8 @@ class NettyGrpcServerManagerTest {
 		final var mockPause = mock(Pause.class);
 
 		given(nodeProperties.nettyStartRetries()).willReturn(0);
+		subject = new NettyGrpcServerManager(
+				hookAdder, nodeProperties, bindableServices, nettyFactory, serviceDefinitions);
 		given(server.start())
 				.willThrow(new IOException("Failed to bind"));
 
