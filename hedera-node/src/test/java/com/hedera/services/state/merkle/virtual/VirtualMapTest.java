@@ -1,6 +1,8 @@
 package com.hedera.services.state.merkle.virtual;
 
 import com.hedera.services.state.merkle.virtual.persistence.VirtualDataSource;
+import com.hedera.services.state.merkle.virtual.persistence.mmap.MemMapDataSource;
+import com.hedera.services.state.merkle.virtual.persistence.mmap.VirtualMapDataStore;
 import com.hedera.services.state.merkle.virtual.tree.VirtualTreeInternal;
 import com.hedera.services.state.merkle.virtual.tree.VirtualTreeLeaf;
 import com.hedera.services.state.merkle.virtual.tree.VirtualTreePath;
@@ -10,10 +12,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -104,10 +108,33 @@ public class VirtualMapTest {
     }
 
     @Test
-    public void quickAndDirty() {
+    public void mmapBackend() {
+        final var store = new VirtualMapDataStore(new File("./store").toPath(), 32, 32);
+        store.open();
+        final var ds = new MemMapDataSource(store, new Account(0, 0, 100));
+        var v = new VirtualMap(ds);
+
+        final var expected = new HashMap<VirtualKey, VirtualValue>();
+        for (int i=0; i<1_000_000; i++) {
+            if (i > 0 && i % 15 == 0) {
+                v.commit();
+                v = new VirtualMap(ds);
+            }
+            final var key = asKey(i + "");
+            final var value = asValue((i + 100_000_000) + "");
+            expected.put(key, value);
+            v.putValue(key, value);
+//            System.out.println(v.getAsciiArt());
+        }
+
+        final var fv = v;
+        expected.forEach((key, value) -> Assertions.assertEquals(value, fv.getValue(key)));
+    }
+
+//    @Test
+//    public void quickAndDirty() {
 //        final var ds = new InMemoryDataSource();
-//        VirtualMap map = new VirtualMap<>();
-//        map.setDataSource(ds);
+//        VirtualMap map = new VirtualMap(ds);
 //        for (int i=0; i<1_000_000; i++) {
 //            final var key = asKey(i);
 //            final var value = asValue(i);
@@ -117,14 +144,13 @@ public class VirtualMapTest {
 //
 //        Random rand = new Random();
 //        for (int idx=0; idx<10_000; idx++) {
-//            map = new VirtualMap();
-//            map.setDataSource(ds);
+//            map = new VirtualMap(ds);
 //            for (int j = 0; j < 100; j++) {
 //                final var i = rand.nextInt(1_000_000);
 //                map.putValue(asKey(i), asValue(i + 1_000_000));
 //            }
 //        }
-    }
+//    }
 
     private VirtualKey asKey(String txt) {
         return new VirtualKey(Arrays.copyOf(txt.getBytes(), 32));
