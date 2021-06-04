@@ -1,11 +1,9 @@
 package com.hedera.services.state.merkle.virtual;
 
 import com.hedera.services.state.merkle.virtual.persistence.VirtualDataSource;
+import com.hedera.services.state.merkle.virtual.persistence.VirtualRecord;
 import com.hedera.services.state.merkle.virtual.persistence.mmap.MemMapDataSource;
 import com.hedera.services.state.merkle.virtual.persistence.mmap.VirtualMapDataStore;
-import com.hedera.services.state.merkle.virtual.tree.VirtualTreeInternal;
-import com.hedera.services.state.merkle.virtual.tree.VirtualTreeLeaf;
-import com.hedera.services.state.merkle.virtual.tree.VirtualTreePath;
 import com.swirlds.common.crypto.Hash;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -21,7 +19,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.hedera.services.state.merkle.virtual.tree.VirtualTreePath.INVALID_PATH;
+import static com.hedera.services.state.merkle.virtual.VirtualTreePath.INVALID_PATH;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 
@@ -110,39 +108,41 @@ public class VirtualMapTest {
         expected.forEach((key, value) -> Assertions.assertEquals(value, fv.getValue(key)));
     }
 
-//    @Test
-//    public void mmapBackend() {
-//        final var storeDir = new File("./store").toPath();
-//        try {
-//            //noinspection ResultOfMethodCallIgnored
-//            Files.walk(storeDir)
-//                    .sorted(Comparator.reverseOrder())
-//                    .map(Path::toFile)
-//                    .forEach(File::delete);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//        final var store = new VirtualMapDataStore(storeDir, 32, 32);
-//        store.open();
-//        final var ds = new MemMapDataSource(store, new Account(0, 0, 100));
-//        var v = new VirtualMap(ds);
-//
-//        final var expected = new HashMap<VirtualKey, VirtualValue>();
-//        for (int i=0; i<1_000_000; i++) {
-//            if (i > 0 && i % 15 == 0) {
-//                v.commit();
-//                v = new VirtualMap(ds);
-//            }
-//            final var key = asKey(i);
-//            final var value = asValue((i + 100_000_000));
-//            expected.put(key, value);
-//            v.putValue(key, value);
-//        }
-//
-//        final var fv = v;
-//        expected.forEach((key, value) -> Assertions.assertEquals(value, fv.getValue(key)));
-//    }
+    @Test
+    public void mmapBackend() {
+        final var storeDir = new File("./store").toPath();
+        if (Files.exists(storeDir)) {
+            try {
+                //noinspection ResultOfMethodCallIgnored
+                Files.walk(storeDir)
+                        .sorted(Comparator.reverseOrder())
+                        .map(Path::toFile)
+                        .forEach(File::delete);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        final var store = new VirtualMapDataStore(storeDir, 32, 32);
+        store.open();
+        final var ds = new MemMapDataSource(store, new Account(0, 0, 100));
+        var v = new VirtualMap(ds);
+
+        final var expected = new HashMap<VirtualKey, VirtualValue>();
+        for (int i=0; i<1_000_000; i++) {
+            if (i > 0 && i % 15 == 0) {
+                v.commit();
+                v = new VirtualMap(ds);
+            }
+            final var key = asKey(i);
+            final var value = asValue((i + 100_000_000));
+            expected.put(key, value);
+            v.putValue(key, value);
+        }
+
+        final var fv = v;
+        expected.forEach((key, value) -> Assertions.assertEquals(value, fv.getValue(key)));
+    }
 
 //    @Test
 //    public void quickAndDirty() {
@@ -184,67 +184,55 @@ public class VirtualMapTest {
     // TODO Delete items... how to do that? Set them to null I guess...
     // TODO Test hashing the tree
 
-//    private EthValue asBlock(String s) {
-//        return new EthValue(Arrays.copyOf(s.getBytes(StandardCharsets.UTF_8), 32));
-//    }
-
-    // Simple implementation for testing purposes
-    private static final class LeafRecord {
-        private VirtualKey key;
-        private Hash hash;
-        private long path;
-        private VirtualValue value;
-    }
-
     private static final class InMemoryDataSource implements VirtualDataSource {
-        private Map<VirtualKey, LeafRecord> leaves = new HashMap<>();
+        private Map<VirtualKey, VirtualRecord> leaves = new HashMap<>();
+        private Map<Long, VirtualRecord> leavesByPath = new HashMap<>();
         private Map<Long, Hash> parents = new HashMap<>();
         private long firstLeafPath = INVALID_PATH;
         private long lastLeafPath = INVALID_PATH;
         private boolean closed = false;
 
         @Override
-        public VirtualTreeInternal load(long parentPath) {
-            final var hash = parents.get(parentPath);
-            return hash == null ? null : new VirtualTreeInternal(hash, parentPath);
+        public Hash loadParentHash(long parentPath) {
+            return parents.get(parentPath);
         }
 
         @Override
-        public VirtualTreeLeaf load(VirtualKey leafKey) {
+        public VirtualRecord loadLeaf(long leafPath) {
+            return leavesByPath.get(leafPath);
+        }
+
+        @Override
+        public VirtualRecord loadLeaf(VirtualKey leafKey) {
+            return leaves.get(leafKey);
+        }
+
+        @Override
+        public VirtualValue getLeafValue(VirtualKey leafKey) {
             final var rec = leaves.get(leafKey);
-            return rec == null ? null : new VirtualTreeLeaf(rec.hash, rec.path, rec.key, rec.value);
+            return rec == null ? null : rec.getValue();
         }
 
         @Override
-        public VirtualValue get(VirtualKey leafKey) {
-            final var rec = leaves.get(leafKey);
-            return rec == null ? null : rec.value;
+        public void saveParent(long parentPath, Hash hash) {
+            parents.put(parentPath, hash);
         }
 
         @Override
-        public void save(VirtualTreeInternal parent) {
-            parents.put(parent.getPath(), parent.hash());
+        public void saveLeaf(VirtualRecord leaf) {
+            leaves.put(leaf.getKey(), leaf);
+            leavesByPath.put(leaf.getPath(), leaf);
         }
 
         @Override
-        public void save(VirtualTreeLeaf leaf) {
-            final var rec = new LeafRecord();
-            rec.hash = leaf.hash();
-            rec.key = leaf.getKey();
-            rec.path = leaf.getPath();
-            rec.value = leaf.getData();
-            leaves.put(leaf.getKey(), rec);
+        public void deleteParent(long parentPath) {
+            parents.remove(parentPath);
         }
 
         @Override
-        public void delete(VirtualTreeInternal parent) {
-            // TODO potentially dangerous, what if a new parent has been put here??
-            parents.remove(parent.getPath());
-        }
-
-        @Override
-        public void delete(VirtualTreeLeaf leaf) {
-            leaves.remove(leaf.getKey()); // Always safe.
+        public void deleteLeaf(VirtualRecord leaf) {
+            leaves.remove(leaf.getKey());
+            leavesByPath.remove(leaf.getPath());
         }
 
         @Override

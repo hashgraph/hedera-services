@@ -5,11 +5,9 @@ import com.hedera.services.state.merkle.virtual.VirtualKey;
 import com.hedera.services.state.merkle.virtual.VirtualMap;
 import com.hedera.services.state.merkle.virtual.VirtualValue;
 import com.hedera.services.state.merkle.virtual.persistence.VirtualDataSource;
+import com.hedera.services.state.merkle.virtual.persistence.VirtualRecord;
 import com.hedera.services.state.merkle.virtual.persistence.mmap.MemMapDataSource;
 import com.hedera.services.state.merkle.virtual.persistence.mmap.VirtualMapDataStore;
-import com.hedera.services.state.merkle.virtual.tree.VirtualTreeInternal;
-import com.hedera.services.state.merkle.virtual.tree.VirtualTreeLeaf;
-import com.hedera.services.state.merkle.virtual.tree.VirtualTreePath;
 import com.swirlds.common.crypto.Hash;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -34,6 +32,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+
+import static com.hedera.services.state.merkle.virtual.VirtualTreePath.INVALID_PATH;
 
 /**
  * Microbenchmark tests for the VirtualMap. These benchmarks are just of the tree itself,
@@ -78,15 +78,15 @@ public class VirtualMapBench {
 
         // Populate the data source with one million items.
         VirtualMap map = new VirtualMap(ds);
-        VirtualMap map2 = new VirtualMap(ds2);
+//        VirtualMap map2 = new VirtualMap(ds2);
         for (int i=0; i<1_000_000; i++) {
             final var key = asKey(i);
             final var value = asValue(i);
             map.putValue(key, value);
-            map2.putValue(key, value);
+//            map2.putValue(key, value);
         }
         map.commit();
-        map2.commit();
+//        map2.commit();
     }
 
     @TearDown
@@ -132,16 +132,17 @@ public class VirtualMapBench {
             final var i = rand.nextInt(1_000_000);
             map.putValue(asKey(i), asValue(i + 1_000_000));
         }
+        map.commit();
     }
 
-    @Benchmark
-    public void update_100PerVirtualMap_Files() {
-        final var map = new VirtualMap(ds2);
-        for (int j=0; j<25; j++) {
-            final var i = rand.nextInt(1_000_000);
-            map.putValue(asKey(i), asValue(i + 1_000_000));
-        }
-    }
+//    @Benchmark
+//    public void update_100PerVirtualMap_Files() {
+//        final var map = new VirtualMap(ds2);
+//        for (int j=0; j<25; j++) {
+//            final var i = rand.nextInt(1_000_000);
+//            map.putValue(asKey(i), asValue(i + 1_000_000));
+//        }
+//    }
 
     private VirtualKey asKey(int index) {
         return new VirtualKey(Arrays.copyOf(("key" + index).getBytes(), 32));
@@ -151,62 +152,55 @@ public class VirtualMapBench {
         return new VirtualValue(Arrays.copyOf(("val" + index).getBytes(), 32));
     }
 
-    private static final class LeafRecord {
-        private VirtualKey key;
-        private Hash hash;
-        private long path;
-        private VirtualValue value;
-    }
-
     private static final class InMemoryDataSource implements VirtualDataSource {
-        private Map<VirtualKey, LeafRecord> leaves = new HashMap<>();
+        private Map<VirtualKey, VirtualRecord> leaves = new HashMap<>();
+        private Map<Long, VirtualRecord> leavesByPath = new HashMap<>();
         private Map<Long, Hash> parents = new HashMap<>();
-        private long firstLeafPath;
-        private long lastLeafPath;
+        private long firstLeafPath = INVALID_PATH;
+        private long lastLeafPath = INVALID_PATH;
         private boolean closed = false;
 
         @Override
-        public VirtualTreeInternal load(long parentPath) {
-            final var hash = parents.get(parentPath);
-            return hash == null ? null : new VirtualTreeInternal(hash, parentPath);
+        public Hash loadParentHash(long parentPath) {
+            return parents.get(parentPath);
         }
 
         @Override
-        public VirtualTreeLeaf load(VirtualKey leafKey) {
+        public VirtualRecord loadLeaf(long leafPath) {
+            return leavesByPath.get(leafPath);
+        }
+
+        @Override
+        public VirtualRecord loadLeaf(VirtualKey leafKey) {
+            return leaves.get(leafKey);
+        }
+
+        @Override
+        public VirtualValue getLeafValue(VirtualKey leafKey) {
             final var rec = leaves.get(leafKey);
-            return rec == null ? null : new VirtualTreeLeaf(rec.hash, rec.path, rec.key, rec.value);
+            return rec == null ? null : rec.getValue();
         }
 
         @Override
-        public VirtualValue get(VirtualKey leafKey) {
-            final var rec = leaves.get(leafKey);
-            return rec == null ? null : rec.value;
+        public void saveParent(long parentPath, Hash hash) {
+            parents.put(parentPath, hash);
         }
 
         @Override
-        public void save(VirtualTreeInternal parent) {
-            parents.put(parent.getPath(), parent.hash());
+        public void saveLeaf(VirtualRecord leaf) {
+            leaves.put(leaf.getKey(), leaf);
+            leavesByPath.put(leaf.getPath(), leaf);
         }
 
         @Override
-        public void save(VirtualTreeLeaf leaf) {
-            final var rec = new LeafRecord();
-            rec.hash = leaf.hash();
-            rec.key = leaf.getKey();
-            rec.path = leaf.getPath();
-            rec.value = leaf.getData();
-            leaves.put(leaf.getKey(), rec);
+        public void deleteParent(long parentPath) {
+            parents.remove(parentPath);
         }
 
         @Override
-        public void delete(VirtualTreeInternal parent) {
-            // TODO potentially dangerous, what if a new parent has been put here??
-            parents.remove(parent.getPath());
-        }
-
-        @Override
-        public void delete(VirtualTreeLeaf leaf) {
-            leaves.remove(leaf.getKey()); // Always safe.
+        public void deleteLeaf(VirtualRecord leaf) {
+            leaves.remove(leaf.getKey());
+            leavesByPath.remove(leaf.getPath());
         }
 
         @Override
