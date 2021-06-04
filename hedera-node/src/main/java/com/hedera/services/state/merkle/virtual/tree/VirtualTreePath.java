@@ -113,6 +113,15 @@ public final class VirtualTreePath implements Comparable<VirtualTreePath> {
         return (path & decisionMask) == 0;
     }
 
+    public boolean isFarRight() {
+        final var mask = ~(-1L << rank);
+        return (path & mask) == mask;
+    }
+
+    public boolean isFarLeft() {
+        return path == 0;
+    }
+
     /**
      * Gets whether this path comes <strong>before</strong> the {@code other} path.
      * A path comes before if it has a lesser rank, or if it has a lesser index within the
@@ -173,7 +182,7 @@ public final class VirtualTreePath implements Comparable<VirtualTreePath> {
     public boolean isParentOf(VirtualTreePath other) {
         if (rank < other.rank) {
             final var mask = ~(0xFFFFFFFFFFFFFFFFL << rank);
-            return (rank & mask) == (other.rank & mask);
+            return (path & mask) == (other.path & mask);
         } else {
             return false;
         }
