@@ -46,25 +46,30 @@ public class UpdateTopicResourceUsage implements TxnResourceUsageEstimator {
     }
 
     @Override
-    public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException {
-        try {
-            MerkleTopic merkleTopic = view.topics().get(MerkleEntityId.fromTopicId(txn.getConsensusUpdateTopic().getTopicID()));
-            if(merkleTopic != null && merkleTopic.hasAdminKey()) {
-                long rbsIncrease = getUpdateTopicRbsIncrease(
-                        txn.getTransactionID().getTransactionValidStart(),
-                        JKey.mapJKey(merkleTopic.getAdminKey()),
-                        JKey.mapJKey(merkleTopic.getSubmitKey()),
-                        merkleTopic.getMemo(),
-                        merkleTopic.hasAutoRenewAccountId(),
-                        lookupExpiry(merkleTopic),
-                        txn.getConsensusUpdateTopic());
-            return getConsensusUpdateTopicFee(txn, rbsIncrease, sigUsage);
-            } else {
-                    return getConsensusUpdateTopicFee(txn, 0, sigUsage);
+    public FeeData usageGiven(TransactionBody txnBody, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException {
+        if(txnBody == null) {
+            throw new InvalidTxBodyException("consensusCreateTopic field not available for Fee Calculation");
+        } else {
+            try {
+                MerkleTopic merkleTopic = view.topics().get(
+                        MerkleEntityId.fromTopicId(txnBody.getConsensusUpdateTopic().getTopicID()));
+                if (merkleTopic != null && merkleTopic.hasAdminKey()) {
+                    long rbsIncrease = getUpdateTopicRbsIncrease(
+                            txnBody.getTransactionID().getTransactionValidStart(),
+                            JKey.mapJKey(merkleTopic.getAdminKey()),
+                            JKey.mapJKey(merkleTopic.getSubmitKey()),
+                            merkleTopic.getMemo(),
+                            merkleTopic.hasAutoRenewAccountId(),
+                            lookupExpiry(merkleTopic),
+                            txnBody.getConsensusUpdateTopic());
+                    return getConsensusUpdateTopicFee(txnBody, rbsIncrease, sigUsage);
+                } else {
+                    return getConsensusUpdateTopicFee(txnBody, 0, sigUsage);
                 }
-        } catch (NullPointerException | DecoderException illegal) {
-            log.warn("Usage estimation unexpectedly failed for {}!", txn, illegal);
-            throw new InvalidTxBodyException(illegal);
+            } catch (DecoderException illegal) {
+                log.warn("Usage estimation unexpectedly failed for {}!", txnBody, illegal);
+                throw new InvalidTxBodyException(illegal);
+            }
         }
     }
 
