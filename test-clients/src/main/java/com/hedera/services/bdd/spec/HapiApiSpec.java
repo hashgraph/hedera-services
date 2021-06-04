@@ -485,7 +485,7 @@ public class HapiApiSpec implements Runnable {
 			}};
 			final var explicitCiProps = MapPropertySource.parsedFromCommaDelimited(ciPropertiesMap);
 			if (explicitCiProps.has(CI_PROPS_FLAG_FOR_NO_UNRECOVERABLE_NETWORK_FAILURES)) {
-				ciPropsSource.put("warnings.suppressUnknowns", "true");
+				ciPropsSource.put("warnings.suppressUnrecoverableNetworkFailures", "true");
 			}
 			ciPropsSource.putAll(otherOverrides);
 		}
