@@ -1,9 +1,12 @@
 package contract;
 
+import com.hedera.services.state.merkle.virtual.Account;
 import com.hedera.services.state.merkle.virtual.VirtualKey;
 import com.hedera.services.state.merkle.virtual.VirtualMap;
 import com.hedera.services.state.merkle.virtual.VirtualValue;
 import com.hedera.services.state.merkle.virtual.persistence.VirtualDataSource;
+import com.hedera.services.state.merkle.virtual.persistence.mmap.MemMapDataSource;
+import com.hedera.services.state.merkle.virtual.persistence.mmap.VirtualMapDataStore;
 import com.hedera.services.state.merkle.virtual.tree.VirtualTreeInternal;
 import com.hedera.services.state.merkle.virtual.tree.VirtualTreeLeaf;
 import com.hedera.services.state.merkle.virtual.tree.VirtualTreePath;
@@ -20,6 +23,7 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -41,17 +45,30 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.SECONDS)
 public class VirtualMapBench {
     private InMemoryDataSource ds = new InMemoryDataSource();
+    private MemMapDataSource ds2;
     private Random rand = new Random();
 
     @Setup
     public void prepare() throws Exception {
+        final var store = new VirtualMapDataStore(
+                new File("./store").toPath(),
+                32,
+                32);
+        store.open();
+        ds2 = new MemMapDataSource(store,
+                new Account(0, 0, 100));
+
         // Populate the data source with one million items.
         VirtualMap map = new VirtualMap(ds);
+        VirtualMap map2 = new VirtualMap(ds2);
         for (int i=0; i<1_000_000; i++) {
             final var key = asKey(i);
             final var value = asValue(i);
             map.putValue(key, value);
+            map2.putValue(key, value);
         }
+        map.commit();
+        map2.commit();
     }
 
 //    @Benchmark
@@ -88,6 +105,15 @@ public class VirtualMapBench {
     @Benchmark
     public void update_100PerVirtualMap() {
         final var map = new VirtualMap(ds);
+        for (int j=0; j<25; j++) {
+            final var i = rand.nextInt(1_000_000);
+            map.putValue(asKey(i), asValue(i + 1_000_000));
+        }
+    }
+
+    @Benchmark
+    public void update_100PerVirtualMap_Files() {
+        final var map = new VirtualMap(ds2);
         for (int j=0; j<25; j++) {
             final var i = rand.nextInt(1_000_000);
             map.putValue(asKey(i), asValue(i + 1_000_000));

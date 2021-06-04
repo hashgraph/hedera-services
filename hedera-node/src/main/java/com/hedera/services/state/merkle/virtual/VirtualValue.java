@@ -94,4 +94,9 @@ public final class VirtualValue implements Hashable {
     public void setHash(Hash hash) {
         throw new UnsupportedOperationException("Cannot set an VirtualValue's hash");
     }
+
+    @Override
+    public String toString() {
+        return new String(data);
+    }
 }
