@@ -17,6 +17,8 @@ import java.util.stream.Collectors;
  * Each slot can store {@code dataSize} bytes worth of data.
  */
 public final class MemMapDataStore {
+    /** Special Location for when not found */
+    public static final long NOT_FOUND_LOCATION = Long.MAX_VALUE;
     /**
      * A slot is made up of a header followed by dataSize bytes.
      *
@@ -154,22 +156,22 @@ public final class MemMapDataStore {
     /**
      * Get direct access to the slot in the base storage
      *
-     * @param slotIndex the slot index of the data to get
+     * @param location the file and slot location of the data to get
      * @return the real ByteBuffer containing the data positioned and marked at the data location
      */
-    public ByteBuffer accessSlot(int fileIndex, int slotIndex) {
+    public ByteBuffer accessSlot(long location) {
         // Technically, we should throw if !open, but because this is a super hot fast path,
         // we're going to play fast and loose and let an NPE get thrown in that case instead.
         // Either way, it is a runtime exception.
-        return files.get(fileIndex).accessSlot(slotIndex);
+        return files.get(fileIndexFromLocation(location)).accessSlot(slotIndexFromLocation(location));
     }
 
     /**
      * Finds a new slot in this file
      *
-     * @return SlotLocation for a new location to store into
+     * @return File and slot location for a new location to store into
      */
-    public SlotLocation getNewSlot() {
+    public long getNewSlot() {
         throwIfNotOpen(); // We will end up throwing with an NPE while accessing "files" below anyway.
 
         // search for a file to write to if currentFileForWriting is missing or full
@@ -197,17 +199,17 @@ public final class MemMapDataStore {
             }
         }
         // we now have a file for writing, get a new slot
-        return new SlotLocation(currentFileForWriting.fileIndex, currentFileForWriting.getNewSlot());
+        return locationFromParts(currentFileForWriting.fileIndex, currentFileForWriting.getNewSlot());
     }
 
     /**
      * Delete a slot, marking it as empty
      *
-     * @param slotIndex The index of the slot to delete
+     * @param location the file and slot location to delete
      */
-    public void deleteSlot(int fileIndex, int slotIndex) {
+    public void deleteSlot(long location) {
         throwIfNotOpen();
-        files.get(fileIndex).deleteSlot(slotIndex);
+        files.get(fileIndexFromLocation(location)).deleteSlot(slotIndexFromLocation(location));
     }
 
     /**
@@ -250,6 +252,37 @@ public final class MemMapDataStore {
      */
     private Path fileForIndex(int index) {
         return storageDirectory.resolve(filePrefix + index + "." + fileExtension);
+    }
+
+    /**
+     * Util method to create a long location out of the two parts
+     *
+     * @param file The file location
+     * @param slot The slot location
+     * @return long containg file and slot location
+     */
+    public static long locationFromParts(int file, int slot) {
+        return (long)file << 32 | slot & 0xFFFFFFFFL;
+    }
+
+    /**
+     * Get the file part out of a location long
+     *
+     * @param location long location containing file and slot locations
+     * @return file part of location
+     */
+    public static int fileIndexFromLocation(long location) {
+        return (int)(location >> 32);
+    }
+
+    /**
+     * Get the slot part out of a location long
+     *
+     * @param location long location containing file and slot locations
+     * @return slot part of location
+     */
+    public static int slotIndexFromLocation(long location) {
+        return(int)location;
     }
 
     /**
@@ -346,15 +379,13 @@ public final class MemMapDataStore {
          * Read all slots and build list of all used slot locations as well as updating "freeSlotsForReuse" stack for any
          * empty slots in middle of data and updating nextFreeSlotAtEnd for the first free slot
          *
-         * @return index of key to slot index
          * @param slotVisitor Visitor that gets to visit every used slot
          */
-        private List<SlotKeyLocation> loadExistingFile(RandomAccessFile file, SlotVisitor slotVisitor) throws IOException {
-            List<SlotKeyLocation> slotKeyLocations = new ArrayList<>(size);
+        private void loadExistingFile(RandomAccessFile file, SlotVisitor slotVisitor) throws IOException {
             // start at last slot
             final var fileLength = (int)file.length();
             if (fileLength == 0) {
-                return slotKeyLocations;
+                return;
             }
 
             int slotOffset = fileLength - slotSize;
@@ -372,7 +403,7 @@ public final class MemMapDataStore {
                     foundFirstData = true;
                     // read key from file
                     if (slotVisitor != null) {
-                        slotVisitor.visitSlot(fileIndex, i, file);
+                        slotVisitor.visitSlot(locationFromParts(fileIndex, i), file);
                     }
                 } else if(foundFirstData) {
                     // this is a free slot in the middle of data so add to stack
@@ -384,7 +415,6 @@ public final class MemMapDataStore {
                 // move key pointer to next slot
                 slotOffset -= slotSize;
             }
-            return slotKeyLocations;
         }
 
         /**

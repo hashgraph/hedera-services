@@ -42,9 +42,12 @@ import java.util.concurrent.TimeUnit;
  * baseline numbers.
  */
 @State(Scope.Thread)
-@Warmup(iterations = 5, time = 10, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 5, time = 30, timeUnit = TimeUnit.SECONDS)
-@Fork(3)
+//@Warmup(iterations = 5, time = 10, timeUnit = TimeUnit.SECONDS)
+//@Measurement(iterations = 5, time = 30, timeUnit = TimeUnit.SECONDS)
+//@Fork(3)
+@Warmup(iterations = 1, time = 10, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 1, time = 15, timeUnit = TimeUnit.SECONDS)
+@Fork(1)
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
 public class VirtualMapBench {
@@ -151,19 +154,19 @@ public class VirtualMapBench {
     private static final class LeafRecord {
         private VirtualKey key;
         private Hash hash;
-        private VirtualTreePath path;
+        private long path;
         private VirtualValue value;
     }
 
     private static final class InMemoryDataSource implements VirtualDataSource {
         private Map<VirtualKey, LeafRecord> leaves = new HashMap<>();
-        private Map<VirtualTreePath, Hash> parents = new HashMap<>();
-        private VirtualTreePath firstLeafPath;
-        private VirtualTreePath lastLeafPath;
+        private Map<Long, Hash> parents = new HashMap<>();
+        private long firstLeafPath;
+        private long lastLeafPath;
         private boolean closed = false;
 
         @Override
-        public VirtualTreeInternal load(VirtualTreePath parentPath) {
+        public VirtualTreeInternal load(long parentPath) {
             final var hash = parents.get(parentPath);
             return hash == null ? null : new VirtualTreeInternal(hash, parentPath);
         }
@@ -207,22 +210,22 @@ public class VirtualMapBench {
         }
 
         @Override
-        public void writeLastLeafPath(VirtualTreePath path) {
+        public void writeLastLeafPath(long path) {
             this.lastLeafPath = path;
         }
 
         @Override
-        public VirtualTreePath getLastLeafPath() {
+        public long getLastLeafPath() {
             return lastLeafPath;
         }
 
         @Override
-        public void writeFirstLeafPath(VirtualTreePath path) {
+        public void writeFirstLeafPath(long path) {
             this.firstLeafPath = path;
         }
 
         @Override
-        public VirtualTreePath getFirstLeafPath() {
+        public long getFirstLeafPath() {
             return firstLeafPath;
         }
 

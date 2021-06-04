@@ -9,9 +9,8 @@ public interface SlotVisitor {
     /**
      * Visit a slot in a random access file
      *
-     * @param fileIndex the index of the file for the slot we are visiting
-     * @param slotIndex the index of the slot we are visiting
+     * @param location the location for the slot we are visiting
      * @param fileAtSlot the file containing the slot, with position set to the begining of slots data in the file
      */
-    public void visitSlot(int fileIndex, int slotIndex, RandomAccessFile fileAtSlot);
+    public void visitSlot(long location, RandomAccessFile fileAtSlot);
 }
