@@ -11,6 +11,9 @@ import java.util.Objects;
  * node is found at rank 0, while the first level of children are found at rank 1,
  * and so forth down the tree. Every node in the tree has a unique path at any given
  * point in time.
+ *
+ * TODO: NOTE! To optimize, we now use MSB->LSB of breadcrumbs! So 10 is left first (1)
+ * and then right (0), and 110 is left first (1) and then left again (1) and then right (0).
  */
 public final class VirtualTreePath {
     /** Site of an account when serialized to bytes */
@@ -18,6 +21,9 @@ public final class VirtualTreePath {
 
     private static final long BREADCRUMB_MASK = 0x00FFFFFFFFFFFFFFL;
     private static final long RANK_MASK = 0xFF00000000000000L;
+    private static final long ALL_SET = -1L;
+    private static final long LEFT = 1;
+    private static final long RIGHT = 0;
 
     /**
      * A special constant that represents the Path of a root node. It isn't necessary
@@ -31,8 +37,12 @@ public final class VirtualTreePath {
     }
 
     // combines the rank and path. Rank will replace the top byte of the path.
+    // There are many breadcrumbs that don't make sense, for example if I have
+    // a rank of "1", there can only be valid values of "0" and "1" for
+    // breadcrumbs. I could zero out anything in breadcrumbs that is invalid,
+    // and maybe this is a good idea for safety reasons.
     public static long asPath(byte rank, long breadcrumbs) {
-        return ((long)rank << 56) | (BREADCRUMB_MASK & breadcrumbs);
+        return ((long)rank << 56) | (BREADCRUMB_MASK & (~(ALL_SET << rank) & breadcrumbs));
     }
 
     // Gets the rank part of the pathId
@@ -67,16 +77,10 @@ public final class VirtualTreePath {
      * @return A non-negative index of the node with this path within its rank.
      */
     public static int getIndexInRank(long path) {
-        int index = 0;
-        byte power = (byte) (getRank(path) -1);
-        long n = path;
-        while (n != 0) {
-            index += (n & 1) << power;
-            n = n >> 1;
-            power--;
-        }
-
-        return index;
+        final var rank = getRank(path);
+        final var breadcrumbs = getBreadcrumbs(path);
+        final var maxForRank = (1L << rank);
+        return (int) (maxForRank - breadcrumbs - 1);
     }
 
     /**
@@ -97,18 +101,13 @@ public final class VirtualTreePath {
             throw new IllegalArgumentException("Index must be strictly non-negative");
         }
 
-        // TODO Throw an example if the index is too large for the rank.
-
-        int path = 0;
-        byte power = (byte) (rank-1);
-        long n = index;
-        while (n != 0) {
-            path += (n & 1) << power;
-            n = n >> 1;
-            power--;
+        final var maxForRank = (1L << rank);
+        if (index > (maxForRank - 1)) {
+            throw new IllegalArgumentException("The index is too large for the number of items at this rank");
         }
 
-        return ((long)rank << 56) | path;
+        final var breadcrumbs = (maxForRank - index - 1);
+        return asPath(rank, breadcrumbs);
     }
 
     /**
@@ -117,17 +116,19 @@ public final class VirtualTreePath {
      * @return Whether this Path is a left-side node.
      */
     public static boolean isLeft(long path) {
-        final var decisionMask = 1L << (getRank(path) - 1);
-        return (path & decisionMask) == 0;
+        return (path & 0x1) == 1;
     }
 
     public static boolean isFarRight(long path) {
-        final var mask = ~(-1L << getRank(path));
-        return (path & mask) == mask;
+        final var breadcrumbs = getBreadcrumbs(path);
+        return breadcrumbs == 0;
     }
 
     public boolean isFarLeft(long path) {
-        return path == 0; // TODO check the rank too
+        final var rank = getRank(path);
+        final var breadcrumbs = getBreadcrumbs(path);
+        final var maxForRank = (1L << rank);
+        return (maxForRank - breadcrumbs) == 1;
     }
 
     /**
@@ -146,7 +147,7 @@ public final class VirtualTreePath {
      * A path comes after if it has a greater rank, or if it has a greater index within
      * the same rank.
      *
-     * @return Whether this Path comes afer the other Path.
+     * @return Whether this Path comes after the other Path.
      */
     public static boolean isAfter(long a, long b) {
         return compareTo(a, b) > 0;
@@ -164,8 +165,8 @@ public final class VirtualTreePath {
             return INVALID_PATH;
         }
 
-        final long mask = ~(-1L << rank - 1);
-        return asPath((byte)(rank - 1), path & mask);
+        final var breadcrumbs = getBreadcrumbs(path);
+        return asPath((byte) (rank - 1), breadcrumbs >> 1);
     }
 
     /**
@@ -174,7 +175,9 @@ public final class VirtualTreePath {
      * @return The path of the left child. This is never null.
      */
     public static long getLeftChildPath(long path) {
-        return asPath((byte)(getRank(path) + 1), path);
+        final var rank = getRank(path);
+        final var breadcrumbs = getBreadcrumbs(path);
+        return asPath((byte)(rank + 1), (breadcrumbs << 1) | 0x1);
     }
 
     /**
@@ -183,18 +186,15 @@ public final class VirtualTreePath {
      * @return The path of the right child. This is never null.
      */
     public static long getRightChildPath(long path) {
-        final byte rank = getRank(path);
-        return asPath((byte)(rank + 1), path | (1L << rank));
+        final var rank = getRank(path);
+        final var breadcrumbs = getBreadcrumbs(path);
+        return asPath((byte)(rank + 1), breadcrumbs << 1);
     }
 
     public static boolean isParentOf(long a, long b) {
-        final byte rank = getRank(a);
-        if (rank < getRank(b)) {
-            final var mask = ~(0xFFFFFFFFFFFFFFFFL << rank);
-            return (a & mask) == (b & mask);
-        } else {
-            return false;
-        }
+        final var breadA = getBreadcrumbs(a);
+        final var breadB = getBreadcrumbs(b);
+        return (breadB >> 1) == breadA;
     }
 
     /**
