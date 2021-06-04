@@ -44,7 +44,6 @@ import java.util.Set;
  * 		the type of the identifier used for the value, as required by the {@link Identifiable} interface
  */
 public class FCInvertibleHashMap<K, V extends Identifiable<I>, I> extends AbstractMap<K, V> implements FastCopyable, MerkleNode {
-
 	/**
 	 * A standard mapping between keys and values.
 	 */

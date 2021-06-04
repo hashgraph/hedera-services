@@ -26,12 +26,15 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
+
 import static com.hedera.services.utils.EntityIdUtils.accountParsedFromSolidityAddress;
+import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
@@ -41,7 +44,6 @@ import static com.hedera.test.utils.IdUtils.asContract;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 
 class MerkleEntityIdUtilsTest {
 	@Test
@@ -163,6 +165,18 @@ class MerkleEntityIdUtilsTest {
 
 		// expect:
 		assertEquals("1.2.3", EntityIdUtils.readableId(id));
+	}
+
+	@Test
+	public void prettyPrintsNftIds() {
+		// given:
+		NftID id = NftID.newBuilder()
+				.setTokenID(TokenID.newBuilder().setShardNum(1).setRealmNum(2).setTokenNum(3).build())
+				.setSerialNumber(4)
+				.build();
+
+		// expect:
+		assertEquals("1.2.3-4", EntityIdUtils.readableId(id));
 	}
 
 	@Test

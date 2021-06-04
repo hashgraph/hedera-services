@@ -20,12 +20,8 @@ package com.hedera.services.bdd.spec.queries;
  * ‍
  */
 
-import com.hedera.services.bdd.spec.queries.consensus.HapiGetTopicInfo;
-import com.hedera.services.bdd.spec.queries.meta.HapiGetVersionInfo;
-import com.hedera.services.bdd.spec.queries.schedule.HapiGetScheduleInfo;
-import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.queries.consensus.HapiGetTopicInfo;
 import com.hedera.services.bdd.spec.queries.contract.HapiContractCallLocal;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractBytecode;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
@@ -37,6 +33,11 @@ import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileInfo;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetReceipt;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
+import com.hedera.services.bdd.spec.queries.meta.HapiGetVersionInfo;
+import com.hedera.services.bdd.spec.queries.schedule.HapiGetScheduleInfo;
+import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
+import com.hedera.services.bdd.spec.queries.token.HapiGetTokenNftInfo;
+import com.hederahashgraph.api.proto.java.TransactionID;
 
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -125,4 +126,6 @@ public class QueryVerbs {
 	public static HapiGetScheduleInfo getScheduleInfo(String schedule) {
 		return new HapiGetScheduleInfo(schedule);
 	}
+
+	public static HapiGetTokenNftInfo getTokenNftInfo(String token, long serialNum) { return new HapiGetTokenNftInfo(token, serialNum); }
 }

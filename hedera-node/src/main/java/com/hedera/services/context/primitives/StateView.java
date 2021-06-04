@@ -24,9 +24,9 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
 import com.hedera.services.files.DataMapFactory;
+import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.files.store.FcBlobsBytesStore;
-import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -42,6 +42,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.unique.UniqueStore;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
@@ -52,6 +53,7 @@ import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ScheduleInfo;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -59,6 +61,7 @@ import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
+import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
@@ -80,6 +83,7 @@ import static com.hedera.services.store.schedule.ExceptionalScheduleStore.NOOP_S
 import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
 import static com.hedera.services.store.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
+import static com.hedera.services.store.tokens.unique.ExceptionalTokenUniqueStore.NOOP_UNIQUE_TOKEN_STORE;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
@@ -126,6 +130,7 @@ public class StateView {
 	Map<FileID, byte[]> fileContents;
 	Map<FileID, HFileMeta> fileAttrs;
 	private final TokenStore tokenStore;
+	private final UniqueStore uniqueTokenStore;
 	private final ScheduleStore scheduleStore;
 	private final Supplier<MerkleDiskFs> diskFs;
 	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
@@ -140,24 +145,26 @@ public class StateView {
 			NodeLocalProperties properties,
 			Supplier<MerkleDiskFs> diskFs
 	) {
-		this(NOOP_TOKEN_STORE, NOOP_SCHEDULE_STORE, topics, accounts, EMPTY_STORAGE_SUPPLIER,
+		this(NOOP_TOKEN_STORE, NOOP_UNIQUE_TOKEN_STORE, NOOP_SCHEDULE_STORE, topics, accounts, EMPTY_STORAGE_SUPPLIER,
 				EMPTY_TOKEN_ASSOCS_SUPPLIER, diskFs, properties);
 	}
 
 	public StateView(
 			TokenStore tokenStore,
+			UniqueStore uniqueStore,
 			ScheduleStore scheduleStore,
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			NodeLocalProperties properties,
 			Supplier<MerkleDiskFs> diskFs
 	) {
-		this(tokenStore, scheduleStore, topics, accounts, EMPTY_STORAGE_SUPPLIER, EMPTY_TOKEN_ASSOCS_SUPPLIER, diskFs,
+		this(tokenStore, uniqueStore, scheduleStore, topics, accounts, EMPTY_STORAGE_SUPPLIER, EMPTY_TOKEN_ASSOCS_SUPPLIER, diskFs,
 				properties);
 	}
 
 	public StateView(
 			TokenStore tokenStore,
+			UniqueStore uniqueTokenStore,
 			ScheduleStore scheduleStore,
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
@@ -169,6 +176,7 @@ public class StateView {
 		this.topics = topics;
 		this.accounts = accounts;
 		this.tokenStore = tokenStore;
+		this.uniqueTokenStore = uniqueTokenStore;
 		this.tokenAssociations = tokenAssociations;
 		this.scheduleStore = scheduleStore;
 
@@ -324,6 +332,32 @@ public class StateView {
 		}
 	}
 
+	public Optional<TokenNftInfo> infoForNft(NftID nftID) {
+		try {
+			var exists = uniqueTokenStore.nftExists(nftID);
+			if (!exists) {
+				return Optional.empty();
+			}
+			var uniqueToken = uniqueTokenStore.get(nftID);
+
+			var info = TokenNftInfo.newBuilder()
+					.setNftID(nftID)
+					.setAccountID(uniqueToken.getOwner().toGrpcAccountId())
+					.setCreationTime(Timestamp.newBuilder()
+							.setSeconds(uniqueToken.getCreationTime().getSeconds())
+							.setNanos(uniqueToken.getCreationTime().getNanos()))
+					.setMetadata(ByteString.copyFromUtf8(uniqueToken.getMemo()));
+
+			return Optional.of(info.build());
+		} catch (Exception unexpected) {
+			log.warn(
+					"Unexpected failure getting info for token nft {}!",
+					readableId(nftID),
+					unexpected);
+			return Optional.empty();
+		}
+	}
+
 	TokenFreezeStatus tfsFor(boolean flag) {
 		return flag ? TokenFreezeStatus.Frozen : TokenFreezeStatus.Unfrozen;
 	}
@@ -339,6 +373,8 @@ public class StateView {
 	public boolean scheduleExists(ScheduleID id) {
 		return scheduleStore.resolve(id) != MISSING_SCHEDULE;
 	}
+
+	public boolean nftExists(NftID id) { return uniqueTokenStore.nftExists(id); }
 
 	public Optional<FileGetInfoResponse.FileInfo> infoForFile(FileID id) {
 		int attemptsLeft = 1 + properties.queryBlobLookupRetries();

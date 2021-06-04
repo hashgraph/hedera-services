@@ -25,6 +25,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -97,6 +98,15 @@ public class IdUtils {
 				.setShardNum(nativeParts[0])
 				.setRealmNum(nativeParts[1])
 				.setScheduleNum(nativeParts[2])
+				.build();
+	}
+
+	public static NftID asNftID(String v, long serialNum) {
+		final var tokenID = asToken(v);
+
+		return NftID.newBuilder()
+				.setTokenID(tokenID)
+				.setSerialNumber(serialNum)
 				.build();
 	}
 

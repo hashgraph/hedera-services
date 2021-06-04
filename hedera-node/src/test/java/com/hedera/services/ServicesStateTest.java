@@ -620,8 +620,8 @@ class ServicesStateTest {
 						"  NetworkContext         :: %s\n" +
 						"  AddressBook            :: %s\n" +
 						"  RecordsRunningHashLeaf :: %s\n" +
-						"    ↪ Running hash       :: %s",
-
+						"    ↪ Running hash       :: %s\n" +
+						"  UniqueTokens           :: %s",
 				overallHash,
 				accountsRootHash,
 				storageRootHash,
@@ -634,7 +634,8 @@ class ServicesStateTest {
 				ctxHash,
 				bookHash,
 				runningHashLeafHash,
-				hashInRunningHash);
+				hashInRunningHash,
+				uniqueTokensRootHash);
 		subject.setHash(overallHash);
 
 		given(topics.getHash()).willReturn(topicRootHash);
@@ -648,6 +649,7 @@ class ServicesStateTest {
 		given(book.getHash()).willReturn(bookHash);
 		given(diskFs.getHash()).willReturn(specialFileSystemHash);
 		given(scheduledTxs.getHash()).willReturn(scheduledTxsRootHash);
+		given(uniqueTokens.getHash()).willReturn(uniqueTokensRootHash);
 
 		given(runningHashLeaf.getHash()).willReturn(runningHashLeafHash);
 		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);

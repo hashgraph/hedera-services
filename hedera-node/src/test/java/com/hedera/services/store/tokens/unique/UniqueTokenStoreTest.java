@@ -38,6 +38,7 @@ import com.hedera.services.utils.invertible_fchashmap.FCInvertibleHashMap;
 import com.hedera.test.mocks.TestContextValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcmap.FCMap;
@@ -52,11 +53,16 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
+import static com.hedera.services.state.merkle.MerkleUniqueTokenId.fromNftID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -78,11 +84,13 @@ class UniqueTokenStoreTest {
 	MerkleUniqueToken nft;
 	MerkleToken token;
 	EntityId eId;
+	NftID misc = IdUtils.asNftID("3.2.1", 4);
 	TokenID tokenID = IdUtils.asToken("1.2.3");
 	AccountID treasury = IdUtils.asAccount("1.2.3");
 	AccountID sponsor = IdUtils.asAccount("1.2.666");
 	Pair<AccountID, TokenID> sponsorPair = asTokenRel(sponsor, tokenID);
 	long sponsorBalance = 1_000;
+	String memo = "hello";
 
 
 	@BeforeEach
@@ -90,6 +98,8 @@ class UniqueTokenStoreTest {
 		eId = mock(EntityId.class);
 		nftId = mock(MerkleUniqueTokenId.class);
 		nft = mock(MerkleUniqueToken.class);
+		given(nft.getOwner()).willReturn(EntityId.fromGrpcAccountId(treasury));
+		given(nft.getMemo()).willReturn(memo);
 		token = mock(MerkleToken.class);
 		given(token.isDeleted()).willReturn(false);
 		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(sponsor));
@@ -123,6 +133,8 @@ class UniqueTokenStoreTest {
 		store.setHederaLedger(hederaLedger);
 		store.setAccountsLedger(accountsLedger);
 
+		given(nfTokens.containsKey(fromNftID(misc))).willReturn(true);
+		given(nfTokens.get(fromNftID(misc))).willReturn(nft);
 	}
 
 	@Test
@@ -135,7 +147,7 @@ class UniqueTokenStoreTest {
 
 
 	@Test
-	void mintFailsIfNoSupplyKey(){
+	void mintFailsIfNoSupplyKey() {
 		given(token.hasSupplyKey()).willReturn(false);
 		var res = store.mint(tokenID, "memo", RichInstant.fromJava(Instant.now()));
 		assertEquals(ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY, res);
@@ -148,4 +160,32 @@ class UniqueTokenStoreTest {
 		assertNull(res);
 	}
 
+	@Test
+	public void getDelegates() {
+		// expect:
+		assertSame(nft, store.get(misc));
+		// and:
+		verify(nfTokens).containsKey(fromNftID(misc));
+		verify(nfTokens).get(fromNftID(misc));
+	}
+
+	@Test
+	public void getThrowsIseOnMissing() {
+		// given:
+		given(nfTokens.containsKey(fromNftID(misc))).willReturn(false);
+
+		// expect:
+		assertThrows(IllegalArgumentException.class, () -> store.get(misc));
+		// and:
+		verify(nfTokens).containsKey(fromNftID(misc));
+		verify(nfTokens, never()).get(fromNftID(misc));
+	}
+
+	@Test
+	public void validExistence() {
+		// expect:
+		assertTrue(store.nftExists(misc));
+		// and:
+		verify(nfTokens).containsKey(fromNftID(misc));
+	}
 }

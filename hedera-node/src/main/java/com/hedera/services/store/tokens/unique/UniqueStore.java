@@ -20,8 +20,10 @@ package com.hedera.services.store.tokens.unique;
  * ‍
  */
 
+import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 
@@ -33,10 +35,13 @@ import com.hederahashgraph.api.proto.java.TokenID;
 public interface UniqueStore extends TokenStore {
 
 	ResponseCodeEnum mint(final TokenID tId, String memo, RichInstant creationTime);
-//	MerkleUniqueToken getUnique(final EntityId eId, final int serialNum);
+
+	//	MerkleUniqueToken getUnique(final EntityId eId, final int serialNum);
 //	Iterator<MerkleUniqueTokenId> getByToken(final MerkleUniqueToken token);
 //	Iterator<MerkleUniqueTokenId> getByTokenFromIdx(final MerkleUniqueToken token, final int start);
 //	Iterator<MerkleUniqueTokenId> getByTokenFromIdxToIdx(final MerkleUniqueToken token, final int start, final int end);
 //	Iterator<MerkleUniqueTokenId> getByAccountFromIdxToIdx(final AccountID aId, final int start, final int end);
+	boolean nftExists(final NftID id);
 
+	MerkleUniqueToken get(final NftID id);
 }
