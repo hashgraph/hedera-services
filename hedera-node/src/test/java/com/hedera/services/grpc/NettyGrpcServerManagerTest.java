@@ -20,20 +20,31 @@ package com.hedera.services.grpc;
  * ‍
  */
 
+import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.utils.Pause;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.netty.NettyServerBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 
+import javax.inject.Inject;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyLong;
 import static org.mockito.BDDMockito.given;
@@ -42,23 +53,33 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.verifyNoInteractions;
 import static org.mockito.BDDMockito.willDoNothing;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 
+@ExtendWith(LogCaptureExtension.class)
 class NettyGrpcServerManagerTest {
-	int port = 8080;
-	int tlsPort = port + 1;
-	Server server;
-	Server tlsServer;
-	Consumer<Thread> hookAdder;
-	Consumer<String> println;
-	NettyServerBuilder nettyBuilder;
-	NettyServerBuilder tlsBuilder;
-	ConfigDrivenNettyFactory nettyFactory;
-	BindableService a, b, c;
-	List<BindableService> bindableServices;
-	List<ServerServiceDefinition> serviceDefinitions;
-	ServerServiceDefinition d;
+	private int startRetries = 3;
+	private long startRetryIntervalMs = 1_000L;
+	private int port = 8080;
+	private int tlsPort = port + 1;
+	private Server server;
+	private Server tlsServer;
+	private Consumer<Thread> hookAdder;
+	private Consumer<String> println;
+	private NodeLocalProperties nodeProperties;
+	private NettyServerBuilder nettyBuilder;
+	private NettyServerBuilder tlsBuilder;
+	private ConfigDrivenNettyFactory nettyFactory;
+	private BindableService a, b, c;
+	private List<BindableService> bindableServices;
+	private List<ServerServiceDefinition> serviceDefinitions;
+	private ServerServiceDefinition d;
 
-	NettyGrpcServerManager subject;
+	@Inject
+	private LogCaptor logCaptor;
+
+	@LoggingSubject
+	private NettyGrpcServerManager subject;
 
 	@BeforeEach
 	private void setup() throws Exception {
@@ -85,15 +106,82 @@ class NettyGrpcServerManagerTest {
 		given(nettyFactory.builderFor(port, false)).willReturn(nettyBuilder);
 		given(nettyFactory.builderFor(tlsPort, true)).willReturn(tlsBuilder);
 
+		nodeProperties = mock(NodeLocalProperties.class);
+		given(nodeProperties.nettyStartRetries()).willReturn(startRetries);
+		given(nodeProperties.nettyStartRetryIntervalMs()).willReturn(startRetryIntervalMs);
+
 		println = mock(Consumer.class);
 		hookAdder = mock(Consumer.class);
 
-		subject = new NettyGrpcServerManager(hookAdder, bindableServices, nettyFactory, serviceDefinitions);
+		subject = new NettyGrpcServerManager(
+				hookAdder, nodeProperties, bindableServices, nettyFactory, serviceDefinitions);
 	}
 
 	@Test
-	public void buildsAndAddsHookNonTlsOnNonExistingCertOrKey() throws Exception {
+	void retriesStartingTilSuccess() throws Exception {
 		// setup:
+		final var mockPause = mock(Pause.class);
+
+		given(server.start())
+				.willThrow(new IOException("Failed to bind"))
+				.willThrow(new IOException("Failed to bind"))
+				.willReturn(server);
+
+		// when:
+		subject.startOneNettyServer(false, port, ignore -> {}, mockPause);
+
+		// then:
+		verify(mockPause, times(2)).forMs(startRetryIntervalMs);
+		verify(server, times(3)).start();
+		assertThat(logCaptor.warnLogs(), contains(
+				"(Attempts=1) Still trying to start Netty on port 8080...Failed to bind",
+				"(Attempts=2) Still trying to start Netty on port 8080...Failed to bind"));
+	}
+
+	@Test
+	void givesUpIfMaxRetriesExhaustedAndPropagatesIOException() throws Exception {
+		// setup:
+		final var mockPause = mock(Pause.class);
+
+		given(server.start())
+				.willThrow(new IOException("Failed to bind"));
+
+		// expect:
+		assertThrows(IOException.class, () ->
+				subject.startOneNettyServer(false, port, ignore -> {}, mockPause));
+
+		// then:
+		verify(mockPause, times(startRetries)).forMs(startRetryIntervalMs);
+		verify(server, times(startRetries + 1)).start();
+		assertThat(logCaptor.warnLogs(), contains(
+				"(Attempts=1) Still trying to start Netty on port 8080...Failed to bind",
+				"(Attempts=2) Still trying to start Netty on port 8080...Failed to bind",
+				"(Attempts=3) Still trying to start Netty on port 8080...Failed to bind"));
+	}
+
+	@Test
+	void neverRetriesIfZeroRetriesSet() throws Exception {
+		// setup:
+		final var mockPause = mock(Pause.class);
+
+		given(nodeProperties.nettyStartRetries()).willReturn(0);
+		subject = new NettyGrpcServerManager(
+				hookAdder, nodeProperties, bindableServices, nettyFactory, serviceDefinitions);
+		given(server.start())
+				.willThrow(new IOException("Failed to bind"));
+
+		// expect:
+		assertThrows(IOException.class, () ->
+				subject.startOneNettyServer(false, port, ignore -> {}, mockPause));
+
+		// then:
+		verify(mockPause, never()).forMs(startRetryIntervalMs);
+		verify(server).start();
+		assertTrue(logCaptor.warnLogs().isEmpty());
+	}
+
+	@Test
+	void buildsAndAddsHookNonTlsOnNonExistingCertOrKey() throws Exception {
 		given(nettyFactory.builderFor(tlsPort, true)).willThrow(new FileNotFoundException());
 		ArgumentCaptor<Thread> captor = ArgumentCaptor.forClass(Thread.class);
 
@@ -117,7 +205,7 @@ class NettyGrpcServerManagerTest {
 	}
 
 	@Test
-	public void buildsAndAddsHookAsExpected() throws Exception {
+	void buildsAndAddsHookAsExpected() throws Exception {
 		// setup:
 		ArgumentCaptor<Thread> captor = ArgumentCaptor.forClass(Thread.class);
 
@@ -150,7 +238,7 @@ class NettyGrpcServerManagerTest {
 	}
 
 	@Test
-	public void throwsIseOnProblem() {
+	void throwsIseOnProblem() {
 		willThrow(RuntimeException.class).given(hookAdder).accept(any());
 
 		// expect:
@@ -158,7 +246,7 @@ class NettyGrpcServerManagerTest {
 	}
 
 	@Test
-	public void catchesInterruptedException() throws Exception {
+	void catchesInterruptedException() throws Exception {
 		// setup:
 		ArgumentCaptor<Thread> captor = ArgumentCaptor.forClass(Thread.class);
 
