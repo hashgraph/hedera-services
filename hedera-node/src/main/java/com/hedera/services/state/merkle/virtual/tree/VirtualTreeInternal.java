@@ -4,8 +4,8 @@ import com.hedera.services.state.merkle.virtual.VirtualMap;
 import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.Hashable;
 
+import java.util.ArrayDeque;
 import java.util.Objects;
 
 /**
@@ -99,80 +99,108 @@ public final class VirtualTreeInternal extends VirtualTreeNode {
         setHash(newHash);
     }
 
-    @Override
-    public void walk(VirtualVisitor visitor) {
-        // Let the visitor know we hit a dead end. The visitor *might*
-        // create a child at this time.
-        if (leftChild == null) {
-            visitor.visitUncreated(getPath().getLeftChildPath());
+    /**
+     * Walks the tree starting from this node taking the most direct route to the
+     * target node. Calls the visitor for each step downward.
+     *
+     * @param target The path of the node we're trying to walk towards.
+     * @param visitor The visitor. Cannot be null.
+     */
+    public final void walk(VirtualTreePath target, VirtualVisitor visitor) {
+        // Cannot find a null target!
+        if (target == null) {
+            return;
         }
 
-        // The child may have been created by the visitor, so we should try to
-        // visit it again.
-        if (leftChild != null) {
-            leftChild.walk(visitor);
-        }
-
-        // Let the visitor know we hit a dead end.
-        if (rightChild == null) {
-            visitor.visitUncreated(getPath().getRightChildPath());
-        }
-
-        // The child may have been created by the visitor, so try again.
-        if (rightChild != null) {
-            rightChild.walk(visitor);
-        }
-
-        // In post-order traversal, this node is visited last.
-        visitor.visitParent(this);
-    }
-
-    @Override
-    public void walk(VirtualTreePath target, VirtualVisitor visitor) {
-        final var path = getPath();
-        if (path.equals(target)) {
+        // Maybe I was the target! In that case, visit me and quit.
+        if (getPath().unsafeEquals(target)) {
             visitor.visitParent(this);
-        } else if (target != null && path.isParentOf(target)) {
-            // If the target is null, or before this node, or on a completely
-            // different branch, then we bail.
-            // TODO I don't really want to do this on every iteration. Dude.
-            visitor.visitParent(this);
+            return;
+        }
+
+        // I wasn't the target and I'm not the parent of the target so quit.
+        if (!getPath().isParentOf(target)) {
+            return;
+        }
+
+        var node = this;
+        while (node != null) {
+            final var path = node.getPath();
+            // Visit the node
+            visitor.visitParent(node);
+
+            // If we've found the target, then we're done
+            if (path.unsafeEquals(target)) {
+                break;
+            }
+
+            // We didn't find the target yet and `node` is a parent node,
+            // so we need to go down either the left or right branch.
+            VirtualTreeNode nextNode;
             final var leftPath = path.getLeftChildPath();
-            if (leftPath.isParentOf(target) || leftPath.equals(target)) {
-                if (leftChild == null) {
+            if (leftPath.isParentOf(target) || leftPath.unsafeEquals(target)) {
+                if (node.leftChild == null) {
                     visitor.visitUncreated(leftPath);
                 }
-
-                if (leftChild != null) {
-                    leftChild.walk(target, visitor);
-                }
+                nextNode = node.leftChild;
             } else {
                 final var rightPath = path.getRightChildPath();
-                if (rightPath.isParentOf(target) || rightPath.equals(target)) {
-                    if (rightChild == null) {
+                if (rightPath.isParentOf(target) || rightPath.unsafeEquals(target)) {
+                    if (node.rightChild == null) {
                         visitor.visitUncreated(rightPath);
                     }
-
-                    if (rightChild != null) {
-                        rightChild.walk(target, visitor);
-                    }
+                    nextNode = node.rightChild;
+                } else {
+                    // Neither left or right, we're at a dead end.
+                    break;
                 }
+            }
+
+            if (nextNode instanceof VirtualTreeLeaf) {
+                // We found the leaf. Visit and quit.
+                visitor.visitLeaf((VirtualTreeLeaf) nextNode);
+                break;
+            } else {
+                // iterate
+                node = (VirtualTreeInternal) nextNode;
             }
         }
     }
 
-    @Override
-    public void walkDirty(VirtualVisitor visitor) {
-        // In pre-order traversal, this node is visited first.
-        if (isDirty()) {
-            visitor.visitParent(this);
+    /**
+     * Walks the tree starting from this node using pre-order traversal, invoking the visitor
+     * for each node visited. Only the dirty nodes are visited.
+     *
+     * TODO how does this work with deleted nodes? If we delete a node, we somehow need to
+     * visit it too. Maybe this is the wrong way to do it.
+     *
+     * @param visitor The visitor. Cannot be null.
+     */
+    public final void walkDirty(VirtualVisitor visitor) {
+        // We need a stack to keep track of which node to process next
+        final var deque = new ArrayDeque<VirtualTreeNode>(64);
+        deque.push(this);
+        while (!deque.isEmpty()) {
+            // In pre-order traversal, this node is visited first.
+            final var node = deque.pop();
+            final var pnode = node instanceof VirtualTreeInternal;
+            if (pnode) {
+                final var parent = (VirtualTreeInternal) node;
+                visitor.visitParent(parent);
 
-            if (leftChild != null) {
-                leftChild.walkDirty(visitor);
-            }
+                // Push the right first, and then the left, so that we process
+                // the left branch first as we pop off the stack.
+                final var right = parent.rightChild;
+                if (right != null) {
+                    deque.push(right);
+                }
 
-            if (rightChild != null) {
-                rightChild.walkDirty(visitor);
+                final var left = parent.leftChild;
+                if (left != null) {
+                    deque.push(left);
+                }
+            } else {
+                visitor.visitLeaf((VirtualTreeLeaf) node);
             }
         }
     }

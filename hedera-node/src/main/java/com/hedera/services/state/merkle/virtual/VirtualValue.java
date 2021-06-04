@@ -35,6 +35,7 @@ public final class VirtualValue implements Hashable {
         if (source.length != 32) {
             throw new IllegalArgumentException("We only store 32 byte blocks.");
         }
+
         this.data = Arrays.copyOf(source, 32);
         this.hash = new Hash(Arrays.copyOf(data, 48));
     }

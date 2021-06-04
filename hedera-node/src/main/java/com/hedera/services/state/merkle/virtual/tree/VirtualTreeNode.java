@@ -2,9 +2,6 @@ package com.hedera.services.state.merkle.virtual.tree;
 
 import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.Hashable;
-
-import java.nio.file.Path;
 import java.util.Objects;
 
 /**
@@ -102,7 +99,7 @@ public abstract class VirtualTreeNode {
     protected void adopt(VirtualTreePath path, VirtualTreeInternal parent) {
         this.path = Objects.requireNonNull(path);
         this.parent = Objects.requireNonNull(parent);
-        this.invalidateHash();
+        this.invalidateHash(); // try to remove this
     }
 
     /**
@@ -152,32 +149,4 @@ public abstract class VirtualTreeNode {
      * Computes the hash and calls {@link #setHash(Hash)}.
      */
     protected abstract void recomputeHash();
-
-    /**
-     * Walks the tree starting from this node using post-order traversal, invoking the visitor
-     * for each node visited.
-     *
-     * @param visitor The visitor. Cannot be null.
-     */
-    public abstract void walk(VirtualVisitor visitor);
-
-    /**
-     * Walks the tree starting from this node taking the most direct route to the
-     * target node. Calls the visitor for each step downward.
-     *
-     * @param target The path of the node we're trying to walk towards.
-     * @param visitor The visitor. Cannot be null.
-     */
-    public abstract void walk(VirtualTreePath target, VirtualVisitor visitor);
-
-    /**
-     * Walks the tree starting from this node using pre-order traversal, invoking the visitor
-     * for each node visited. Only the dirty nodes are visited.
-     *
-     * TODO how does this work with deleted nodes? If we delete a node, we somehow need to
-     * visit it too. Maybe this is the wrong way to do it.
-     *
-     * @param visitor The visitor. Cannot be null.
-     */
-    public abstract void walkDirty(VirtualVisitor visitor);
 }
