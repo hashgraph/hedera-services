@@ -13,24 +13,34 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * A data store backed by a series of files in a directory. Each of those files is made up of slots that each can store
- * $dataSize bytes worth of data.
+ * A data store backed by a series of files in a directory. Each of those files is made up of slots.
+ * Each slot can store {@code dataSize} bytes worth of data.
  */
 public final class MemMapDataStore {
-    public static final int MB = 1024*1024;
-
-    /** Slot data size in bytes */
+    /**
+     * A slot is made up of a header followed by dataSize bytes.
+     *
+     * <p>Must be a positive number. The value must be less than Integer.MAX_VALUE - HEADER_SIZE,
+     * and must also be less than the fileSize - HEADER_SIZE. Such a dataSize would
+     * represent a single slot taking up the entire file!</p>
+     */
     private final int dataSize;
-    /** The path of the directory to store storage files */
-    private final Path storageDirectory;
-    /** The prefix for each storage file */
-    private final String filePrefix;
-    /** The extension for each storage file, for example "dat" */
-    private final String fileExtension;
-    /** Number of key/values pairs to store in the file */
-    private final int size;
 
-    /** List of all of our storage files */
+    /** The path of the directory to store storage files. This is never null. */
+    private final Path storageDirectory;
+    /** The prefix for each storage file. Will never be null, but can be the empty string. */
+    private final String filePrefix;
+    /** The extension for each storage file, for example "dat". Will never be null, but can be the empty string. */
+    private final String fileExtension;
+    /** Number of key/values pairs to store in the file. This is a computed value. */
+    private final int size;
+    /** Tracks whether this file is open or not */
+    private boolean open = false;
+
+    /**
+     * List of all of our storage files. This is lazily created so we can default to the right array size.
+     * Be careful to avoid an NPE.
+     * */
     private List<MemMapDataFile> files;
 
     /**
@@ -54,28 +64,43 @@ public final class MemMapDataStore {
      * Create new MemMapStorage
      *
      * @param dataSize Slot data size in bytes
-     * @param fileSize The size of each storage file in MB
+     * @param fileSize The size of each storage file in bytes
      * @param storageDirectory The path of the directory to store storage files
      * @param filePrefix The prefix for each storage file
      * @param fileExtension The extension for each storage file, for example "dat"
      */
     public MemMapDataStore(int dataSize, int fileSize, Path storageDirectory, String filePrefix, String fileExtension) {
-        // TODO Add validation for all the inputs
+        if (fileSize <= 0) {
+            throw new IllegalArgumentException("fileSize must be strictly positive");
+        }
+
+        if (dataSize <= 0) {
+            throw new IllegalArgumentException("dataSize must be strictly positive");
+        }
+
+        // TODO I feel like we should dramatically limit the dataSize so that it cannot be larger than something like
+        // 10K or something. If we allow it to be too big, we get some weird edge cases. Thoughts?
+        if (fileSize < dataSize + MemMapDataFile.HEADER_SIZE) {
+            throw new IllegalArgumentException("fileSize must be larger than dataSize plus " + MemMapDataFile.HEADER_SIZE);
+        }
+
         this.dataSize = dataSize;
-        this.storageDirectory = storageDirectory;
-        this.filePrefix = filePrefix;
-        this.fileExtension = fileExtension;
-//        final long fileSizeBytes = (long)fileSize * (long)MB;
-        final long fileSizeBytes = fileSize;
-        this.size = (int)(fileSizeBytes / (dataSize+MemMapDataFile.HEADER_SIZE));
+        this.storageDirectory = Objects.requireNonNull(storageDirectory);
+        this.filePrefix = filePrefix == null ? "" : filePrefix;
+        this.fileExtension = fileExtension == null ? "" : fileExtension;
+        this.size = fileSize / (dataSize + MemMapDataFile.HEADER_SIZE);
     }
 
     /**
      * Opens all the files in this store. While opening it visits every used slot and calls slotVisitor.
      *
-     * @param slotVisitor Visitor that gets to visit every used slot
+     * @param slotVisitor Visitor that gets to visit every used slot. May be null.
      */
     public void open(SlotVisitor slotVisitor) {
+        if (open) {
+            throw new IllegalStateException("Cannot open an already open store");
+        }
+
         try {
             if (!Files.exists(storageDirectory)) {
                 // create directory
@@ -83,7 +108,7 @@ public final class MemMapDataStore {
                 // create empty list for files
                 files = new ArrayList<>();
             } else {
-                // file all storage files in directory with prefix
+                // find all storage files in directory with prefix
                 List<Path> filePaths = Files.list(storageDirectory)
                         .filter(path -> path.getFileName().startsWith(filePrefix) && path.getFileName().endsWith(fileExtension))
                         .sorted(Comparator.comparingInt(this::indexForFile))
@@ -91,17 +116,20 @@ public final class MemMapDataStore {
                 // open files for each path
                 files = new ArrayList<>(filePaths.size());
                 for (int i = 0; i < filePaths.size(); i++) {
-                    files.add(new MemMapDataFile(dataSize, size,filePaths.get(i).toFile(), i));
+                    files.add(new MemMapDataFile(dataSize, size, filePaths.get(i).toFile(), i));
                 }
                 // set the first file as the current one for writing
                 if (!files.isEmpty()) currentFileForWriting = files.get(0);
-                // open all the files and build index
+                // open all the files
                 for (MemMapDataFile file : files) {
                     file.open(slotVisitor);
                 }
             }
+
+            // Change state to open
+            open = true;
         } catch (IOException e) {
-            throw new IllegalStateException("Error opening storage directory.",e);
+            throw new IllegalStateException("Error opening storage directory", e);
         }
     }
 
@@ -109,13 +137,17 @@ public final class MemMapDataStore {
      * Flush all data to disk and close all files
      */
     public void close() {
-        for (MemMapDataFile file : files) {
-            try {
-                file.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+        if (open) {
+            // Note: files is never null when we are in the open state.
+            for (MemMapDataFile file : files) {
+                try {
+                    file.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }
+        open = false;
         files = null;
     }
 
@@ -125,7 +157,10 @@ public final class MemMapDataStore {
      * @param slotIndex the slot index of the data to get
      * @return the real ByteBuffer containing the data positioned and marked at the data location
      */
-    public ByteBuffer accessSlot(int fileIndex, int slotIndex){
+    public ByteBuffer accessSlot(int fileIndex, int slotIndex) {
+        // Technically, we should throw if !open, but because this is a super hot fast path,
+        // we're going to play fast and loose and let an NPE get thrown in that case instead.
+        // Either way, it is a runtime exception.
         return files.get(fileIndex).accessSlot(slotIndex);
     }
 
@@ -135,7 +170,9 @@ public final class MemMapDataStore {
      * @return SlotLocation for a new location to store into
      */
     public SlotLocation getNewSlot() {
-        // search for a file to writ to if currentFileForWriting is missing or full
+        throwIfNotOpen(); // We will end up throwing with an NPE while accessing "files" below anyway.
+
+        // search for a file to write to if currentFileForWriting is missing or full
         if (currentFileForWriting == null || (currentFileForWriting.isFileFull())) {
             // current file is full or there is no current file
             // start by scanning existing files for free space
@@ -149,8 +186,8 @@ public final class MemMapDataStore {
             // all current files are full so create a new file
             if (currentFileForWriting == null) {
                 // open new file
-                int newIndex = files.size();
-                currentFileForWriting = new MemMapDataFile(dataSize,size, fileForIndex(newIndex).toFile(), newIndex);
+                final var newIndex = files.size();
+                currentFileForWriting = new MemMapDataFile(dataSize, size, fileForIndex(newIndex).toFile(), newIndex);
                 files.add(currentFileForWriting);
                 try {
                     currentFileForWriting.open(null);
@@ -160,16 +197,16 @@ public final class MemMapDataStore {
             }
         }
         // we now have a file for writing, get a new slot
-        return new SlotLocation(currentFileForWriting.fileIndex ,currentFileForWriting.getNewSlot());
+        return new SlotLocation(currentFileForWriting.fileIndex, currentFileForWriting.getNewSlot());
     }
-
 
     /**
      * Delete a slot, marking it as empty
      *
      * @param slotIndex The index of the slot to delete
      */
-    public void deleteSlot(int fileIndex, int slotIndex){
+    public void deleteSlot(int fileIndex, int slotIndex) {
+        throwIfNotOpen();
         files.get(fileIndex).deleteSlot(slotIndex);
     }
 
@@ -178,8 +215,18 @@ public final class MemMapDataStore {
      * background, so only call this if you need to insure it is written synchronously.
      */
     public void sync() {
+        throwIfNotOpen();
         for (MemMapDataFile dataFile : files) {
             dataFile.sync();
+        }
+    }
+
+    /**
+     * Little helper method that throws an ISE if the class isn't open
+     */
+    private void throwIfNotOpen() {
+        if (!open) {
+            throw new IllegalStateException("MemMapDataStore is not open");
         }
     }
 
@@ -191,9 +238,7 @@ public final class MemMapDataStore {
      */
     private int indexForFile(Path file) {
         String fileName = file.getFileName().toString();
-        System.out.println("fileName = " + fileName);
-        String strIndex = fileName.substring(filePrefix.length(),fileName.length() - (fileExtension.length()+1));
-        System.out.println("strIndex = " + strIndex);
+        String strIndex = fileName.substring(filePrefix.length(), fileName.length() - (fileExtension.length()+1));
         return Integer.parseInt(strIndex);
     }
 
@@ -204,7 +249,7 @@ public final class MemMapDataStore {
      * @return Path to file
      */
     private Path fileForIndex(int index) {
-        return storageDirectory.resolve(filePrefix+index+"."+fileExtension);
+        return storageDirectory.resolve(filePrefix + index + "." + fileExtension);
     }
 
     /**
@@ -228,8 +273,6 @@ public final class MemMapDataStore {
         private final int size;
         /** The file we are storing the data in */
         private final File file;
-        /** The number of bytes each slots data takes up */
-        private final int dataSize;
         /** The number of bytes each slot takes up */
         private final int slotSize;
         /** total file size in bytes */
@@ -245,6 +288,7 @@ public final class MemMapDataStore {
 
         /** stack of empty slots not at end of file */
         private final Deque<Integer> freeSlotsForReuse = new ArrayDeque<>(100);
+
         /**
          * Index of first available slot at the end of file.
          *  = 0 being first slot is free,
@@ -253,14 +297,13 @@ public final class MemMapDataStore {
         private int nextFreeSlotAtEnd;
 
         /**
-         * Create MapDataFile,  you need to call open() after to actually open/create file.
+         * Create MapDataFile, you need to call open() after to actually open/create file.
          *
          * @param dataSize Data size in bytes
          * @param size Number of key/values pairs to store in the file
          * @param file The file we are storing the data in
          */
         public MemMapDataFile(int dataSize, int size, File file, int fileIndex) {
-            this.dataSize = dataSize;
             this.size = size;
             this.file = file;
             this.fileIndex = fileIndex;
@@ -282,6 +325,8 @@ public final class MemMapDataStore {
                 // open random access file
                 randomAccessFile = new RandomAccessFile(file, "rw");
                 if (fileExisted) {
+                    // TODO It seems we have a problem if the file was created at the wrong
+                    // size before. I had a file that had size 0 and couldn't recover.
                     loadExistingFile(randomAccessFile, slotVisitor);
                 } else {
                     // set size for new empty file
@@ -307,7 +352,12 @@ public final class MemMapDataStore {
         private List<SlotKeyLocation> loadExistingFile(RandomAccessFile file, SlotVisitor slotVisitor) throws IOException {
             List<SlotKeyLocation> slotKeyLocations = new ArrayList<>(size);
             // start at last slot
-            int slotOffset = fileSize - slotSize;
+            final var fileLength = (int)file.length();
+            if (fileLength == 0) {
+                return slotKeyLocations;
+            }
+
+            int slotOffset = fileLength - slotSize;
             // keep track of the first real data from end of file
             boolean foundFirstData = false;
             // start assuming the file is full
@@ -316,12 +366,14 @@ public final class MemMapDataStore {
             for (int i = (size-1); i >= 0; i--) {
                 file.seek(slotOffset);
                 // read size from file
-                short size = file.readShort();
+                short size = file.readByte();
                 if (size != EMPTY) {
                     // we found some real data
                     foundFirstData = true;
                     // read key from file
-                    slotVisitor.visitSlot(fileIndex, i, file);
+                    if (slotVisitor != null) {
+                        slotVisitor.visitSlot(fileIndex, i, file);
+                    }
                 } else if(foundFirstData) {
                     // this is a free slot in the middle of data so add to stack
                     freeSlotsForReuse.push(i);

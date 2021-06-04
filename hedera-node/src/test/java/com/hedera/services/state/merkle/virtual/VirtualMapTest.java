@@ -120,8 +120,8 @@ public class VirtualMapTest {
                 v.commit();
                 v = new VirtualMap(ds);
             }
-            final var key = asKey(i + "");
-            final var value = asValue((i + 100_000_000) + "");
+            final var key = asKey(i);
+            final var value = asValue((i + 100_000_000));
             expected.put(key, value);
             v.putValue(key, value);
 //            System.out.println(v.getAsciiArt());
