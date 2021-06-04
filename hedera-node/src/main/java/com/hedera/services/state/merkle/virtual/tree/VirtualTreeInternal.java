@@ -128,17 +128,51 @@ public final class VirtualTreeInternal extends VirtualTreeNode {
     }
 
     @Override
+    public void walk(VirtualTreePath target, VirtualVisitor visitor) {
+        final var path = getPath();
+        if (path.equals(target)) {
+            visitor.visitParent(this);
+        } else if (target != null && path.isParentOf(target)) {
+            // If the target is null, or before this node, or on a completely
+            // different branch, then we bail.
+            // TODO I don't really want to do this on every iteration. Dude.
+            visitor.visitParent(this);
+            final var leftPath = path.getLeftChildPath();
+            if (leftPath.isParentOf(target) || leftPath.equals(target)) {
+                if (leftChild == null) {
+                    visitor.visitUncreated(leftPath);
+                }
+
+                if (leftChild != null) {
+                    leftChild.walk(target, visitor);
+                }
+            } else {
+                final var rightPath = path.getRightChildPath();
+                if (rightPath.isParentOf(target) || rightPath.equals(target)) {
+                    if (rightChild == null) {
+                        visitor.visitUncreated(rightPath);
+                    }
+
+                    if (rightChild != null) {
+                        rightChild.walk(target, visitor);
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
     public void walkDirty(VirtualVisitor visitor) {
         // In pre-order traversal, this node is visited first.
         if (isDirty()) {
             visitor.visitParent(this);
 
             if (leftChild != null) {
-                leftChild.walk(visitor);
+                leftChild.walkDirty(visitor);
             }
 
             if (rightChild != null) {
-                rightChild.walk(visitor);
+                rightChild.walkDirty(visitor);
             }
         }
     }
