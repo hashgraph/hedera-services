@@ -390,7 +390,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 						"  Storage                :: %s\n" +
 						"  Topics                 :: %s\n" +
 						"  Tokens                 :: %s\n" +
-						"  UniqueTokens           :: %s\n" +
 						"  TokenAssociations      :: %s\n" +
 						"  DiskFs                 :: %s\n" +
 						"  ScheduledTxs           :: %s\n" +
@@ -404,7 +403,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				storage().getHash(),
 				topics().getHash(),
 				tokens().getHash(),
-				uniqueTokens().getHash(),
 				tokenAssociations().getHash(),
 				diskFs().getHash(),
 				scheduleTxs().getHash(),

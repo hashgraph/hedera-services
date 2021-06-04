@@ -260,7 +260,7 @@ public abstract class BaseTokenStore extends HederaStore implements TokenStore {
 	public MerkleToken get(TokenID id) {
 		throwIfMissing(id);
 
-		return pendingId.equals(id) ? pendingCreation : tokens.get().get(fromTokenId(id));
+		return pendingId.equals(id) ? pendingCreation : tokens.get().getForModify(fromTokenId(id));
 	}
 
 	@Override

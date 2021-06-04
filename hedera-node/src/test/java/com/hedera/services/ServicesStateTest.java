@@ -613,7 +613,6 @@ class ServicesStateTest {
 						"  Storage                :: %s\n" +
 						"  Topics                 :: %s\n" +
 						"  Tokens                 :: %s\n" +
-						"  UniqueTokens           :: %s\n" +
 						"  TokenAssociations      :: %s\n" +
 						"  DiskFs                 :: %s\n" +
 						"  ScheduledTxs           :: %s\n" +
@@ -627,7 +626,6 @@ class ServicesStateTest {
 				storageRootHash,
 				topicRootHash,
 				tokensRootHash,
-				uniqueTokensRootHash,
 				tokenRelsRootHash,
 				specialFileSystemHash,
 				scheduledTxsRootHash,
@@ -649,7 +647,6 @@ class ServicesStateTest {
 		given(book.getHash()).willReturn(bookHash);
 		given(diskFs.getHash()).willReturn(specialFileSystemHash);
 		given(scheduledTxs.getHash()).willReturn(scheduledTxsRootHash);
-		given(uniqueTokens.getHash()).willReturn(uniqueTokensRootHash);
 
 		given(runningHashLeaf.getHash()).willReturn(runningHashLeafHash);
 		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
