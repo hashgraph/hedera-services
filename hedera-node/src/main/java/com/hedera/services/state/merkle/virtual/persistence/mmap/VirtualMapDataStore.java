@@ -212,6 +212,20 @@ public class VirtualMapDataStore {
         return null;
     }
 
+    public VirtualValue get(Account account, VirtualKey key) {
+        SlotLocation slotLocation = findLeaf(account,key);
+        if (slotLocation != null) {
+            ByteBuffer buffer = leafStore.accessSlot(slotLocation.fileIndex(), slotLocation.slotIndex());
+            // Account -- Account.BYTES
+            buffer.position(buffer.position() + Account.BYTES + keySizeBytes + VirtualTreePath.BYTES); // jump over
+            // Value -- dataSizeBytes
+            byte[] valueBytes = new byte[dataSizeBytes];
+            buffer.get(valueBytes);
+            return new VirtualValue(valueBytes);
+        }
+        return null;
+    }
+
     /**
      * Save a VirtualTreeInternal parent node into storage
      *

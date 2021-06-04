@@ -36,7 +36,7 @@ public final class VirtualValue implements Hashable {
             throw new IllegalArgumentException("We only store 32 byte blocks.");
         }
         this.data = Arrays.copyOf(source, 32);
-        this.hash = CryptoFactory.getInstance().digestSync(data);
+        this.hash = new Hash(Arrays.copyOf(data, 48));
     }
 
     /**

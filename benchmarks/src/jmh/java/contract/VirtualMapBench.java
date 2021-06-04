@@ -1,10 +1,12 @@
 package contract;
 
-import com.hedera.services.state.merkle.virtual.ByteChunk;
-import com.hedera.services.state.merkle.virtual.Path;
+import com.hedera.services.state.merkle.virtual.VirtualKey;
 import com.hedera.services.state.merkle.virtual.VirtualMap;
+import com.hedera.services.state.merkle.virtual.VirtualValue;
 import com.hedera.services.state.merkle.virtual.persistence.VirtualDataSource;
-import com.hedera.services.state.merkle.virtual.persistence.VirtualRecord;
+import com.hedera.services.state.merkle.virtual.tree.VirtualTreeInternal;
+import com.hedera.services.state.merkle.virtual.tree.VirtualTreeLeaf;
+import com.hedera.services.state.merkle.virtual.tree.VirtualTreePath;
 import com.swirlds.common.crypto.Hash;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -44,8 +46,7 @@ public class VirtualMapBench {
     @Setup
     public void prepare() throws Exception {
         // Populate the data source with one million items.
-        VirtualMap<ByteChunk, ByteChunk> map = new VirtualMap<>();
-        map.setDataSource(ds);
+        VirtualMap map = new VirtualMap(ds);
         for (int i=0; i<1_000_000; i++) {
             final var key = asKey(i);
             final var value = asValue(i);
@@ -86,75 +87,96 @@ public class VirtualMapBench {
 
     @Benchmark
     public void update_100PerVirtualMap() {
-        final var map = new VirtualMap<ByteChunk, ByteChunk>();
-        map.setDataSource(ds);
+        final var map = new VirtualMap(ds);
         for (int j=0; j<25; j++) {
             final var i = rand.nextInt(1_000_000);
             map.putValue(asKey(i), asValue(i + 1_000_000));
         }
     }
 
-    private ByteChunk asKey(int index) {
-        return new ByteChunk(Arrays.copyOf(("key" + index).getBytes(), 32));
+    private VirtualKey asKey(int index) {
+        return new VirtualKey(Arrays.copyOf(("key" + index).getBytes(), 32));
     }
 
-    private ByteChunk asValue(int index) {
-        return new ByteChunk(Arrays.copyOf(("val" + index).getBytes(), 32));
+    private VirtualValue asValue(int index) {
+        return new VirtualValue(Arrays.copyOf(("val" + index).getBytes(), 32));
     }
 
+    private static final class LeafRecord {
+        private VirtualKey key;
+        private Hash hash;
+        private VirtualTreePath path;
+        private VirtualValue value;
+    }
 
-    private static final class InMemoryDataSource implements VirtualDataSource<ByteChunk, ByteChunk> {
-        private Map<ByteChunk, VirtualRecord<ByteChunk, ByteChunk>> recordsByKey = new HashMap<>();
-        private Map<Path, VirtualRecord<ByteChunk, ByteChunk>> recordsByPath = new HashMap<>();
-        private Path firstLeafPath;
-        private Path lastLeafPath;
+    private static final class InMemoryDataSource implements VirtualDataSource {
+        private Map<VirtualKey, LeafRecord> leaves = new HashMap<>();
+        private Map<VirtualTreePath, Hash> parents = new HashMap<>();
+        private VirtualTreePath firstLeafPath;
+        private VirtualTreePath lastLeafPath;
         private boolean closed = false;
 
         @Override
-        public VirtualRecord<ByteChunk, ByteChunk> getRecord(ByteChunk key) {
-            return recordsByKey.get(key);
+        public VirtualTreeInternal load(VirtualTreePath parentPath) {
+            final var hash = parents.get(parentPath);
+            return hash == null ? null : new VirtualTreeInternal(hash, parentPath);
         }
 
         @Override
-        public VirtualRecord<ByteChunk, ByteChunk> getRecord(Path path) {
-            return recordsByPath.get(path);
+        public VirtualTreeLeaf load(VirtualKey leafKey) {
+            final var rec = leaves.get(leafKey);
+            return rec == null ? null : new VirtualTreeLeaf(rec.hash, rec.path, rec.key, rec.value);
         }
 
         @Override
-        public void deleteRecord(VirtualRecord<ByteChunk, ByteChunk> record) {
-            if (record != null) {
-                recordsByPath.remove(record.getPath());
-                recordsByKey.remove(record.getKey());
-            }
+        public VirtualValue get(VirtualKey leafKey) {
+            final var rec = leaves.get(leafKey);
+            return rec == null ? null : rec.value;
         }
 
         @Override
-        public void setRecord(VirtualRecord<ByteChunk, ByteChunk> record) {
-            if (record != null) {
-                if (record.isLeaf()) {
-                    recordsByKey.put(record.getKey(), record);
-                }
-                recordsByPath.put(record.getPath(), record);
-            }
+        public void save(VirtualTreeInternal parent) {
+            parents.put(parent.getPath(), parent.hash());
         }
 
         @Override
-        public void writeLastLeafPath(Path path) {
+        public void save(VirtualTreeLeaf leaf) {
+            final var rec = new LeafRecord();
+            rec.hash = leaf.hash();
+            rec.key = leaf.getKey();
+            rec.path = leaf.getPath();
+            rec.value = leaf.getData();
+            leaves.put(leaf.getKey(), rec);
+        }
+
+        @Override
+        public void delete(VirtualTreeInternal parent) {
+            // TODO potentially dangerous, what if a new parent has been put here??
+            parents.remove(parent.getPath());
+        }
+
+        @Override
+        public void delete(VirtualTreeLeaf leaf) {
+            leaves.remove(leaf.getKey()); // Always safe.
+        }
+
+        @Override
+        public void writeLastLeafPath(VirtualTreePath path) {
             this.lastLeafPath = path;
         }
 
         @Override
-        public Path getLastLeafPath() {
+        public VirtualTreePath getLastLeafPath() {
             return lastLeafPath;
         }
 
         @Override
-        public void writeFirstLeafPath(Path path) {
+        public void writeFirstLeafPath(VirtualTreePath path) {
             this.firstLeafPath = path;
         }
 
         @Override
-        public Path getFirstLeafPath() {
+        public VirtualTreePath getFirstLeafPath() {
             return firstLeafPath;
         }
 

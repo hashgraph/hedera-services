@@ -2,6 +2,7 @@ package com.hedera.services.state.merkle.virtual.persistence.mmap;
 
 import com.hedera.services.state.merkle.virtual.Account;
 import com.hedera.services.state.merkle.virtual.VirtualKey;
+import com.hedera.services.state.merkle.virtual.VirtualValue;
 import com.hedera.services.state.merkle.virtual.persistence.VirtualDataSource;
 import com.hedera.services.state.merkle.virtual.tree.VirtualTreeInternal;
 import com.hedera.services.state.merkle.virtual.tree.VirtualTreeLeaf;
@@ -27,6 +28,11 @@ public class MemMapDataSource implements VirtualDataSource {
     @Override
     public VirtualTreeLeaf load(VirtualKey leafKey) {
         return store.loadLeaf(account, leafKey);
+    }
+
+    @Override
+    public VirtualValue get(VirtualKey leafKey) {
+        return store.get(account, leafKey);
     }
 
     @Override
