@@ -54,9 +54,11 @@ public class TokenMintUsage extends TokenTxnUsage<TokenMintUsage> {
 	public FeeData get() {
 		var op = this.op.getTokenMint();
 
-		// TODO: Split logic for calculations
 		if (currentSubType == SubType.TOKEN_NON_FUNGIBLE_UNIQUE) {
-			var bytesToAdd = op.getMetadataList().stream().mapToInt(ByteString::size).sum();
+			var bytesToAdd = 0;
+			for (ByteString o : op.getMetadataList()) {
+				bytesToAdd += o.size();
+			}
 			usageEstimator.addBpt(bytesToAdd);
 			usageEstimator.addRbs(bytesToAdd);
 			var tokenSize = op.getMetadataList().size();
