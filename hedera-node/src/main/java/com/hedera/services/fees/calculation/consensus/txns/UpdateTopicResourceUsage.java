@@ -47,20 +47,24 @@ public class UpdateTopicResourceUsage implements TxnResourceUsageEstimator {
 
     @Override
     public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException {
-        try {
-            MerkleTopic merkleTopic = view.topics().get(MerkleEntityId.fromTopicId(txn.getConsensusUpdateTopic().getTopicID()));
-            long rbsIncrease = getUpdateTopicRbsIncrease(
-                    txn.getTransactionID().getTransactionValidStart(),
-                    JKey.mapJKey(merkleTopic.getAdminKey()),
-                    JKey.mapJKey(merkleTopic.getSubmitKey()),
-                    merkleTopic.getMemo(),
-                    merkleTopic.hasAutoRenewAccountId(),
-                    lookupExpiry(merkleTopic),
-                    txn.getConsensusUpdateTopic());
-            return getConsensusUpdateTopicFee(txn, rbsIncrease, sigUsage);
-        } catch (Exception illegal) {
-            log.warn("Usage estimation unexpectedly failed for {}!", txn, illegal);
-            throw new InvalidTxBodyException(illegal);
+        MerkleTopic merkleTopic = view.topics().get(MerkleEntityId.fromTopicId(txn.getConsensusUpdateTopic().getTopicID()));
+        if(merkleTopic.hasAdminKey()) {
+            try {
+                long rbsIncrease = getUpdateTopicRbsIncrease(
+                        txn.getTransactionID().getTransactionValidStart(),
+                        JKey.mapJKey(merkleTopic.getAdminKey()),
+                        JKey.mapJKey(merkleTopic.getSubmitKey()),
+                        merkleTopic.getMemo(),
+                        merkleTopic.hasAutoRenewAccountId(),
+                        lookupExpiry(merkleTopic),
+                        txn.getConsensusUpdateTopic());
+                return getConsensusUpdateTopicFee(txn, rbsIncrease, sigUsage);
+            } catch (Exception illegal) {
+                log.warn("Usage estimation unexpectedly failed for {}!", txn, illegal);
+                throw new InvalidTxBodyException(illegal);
+            }
+        } else {
+            return getConsensusUpdateTopicFee(txn, 0, sigUsage);
         }
     }
 

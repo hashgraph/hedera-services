@@ -93,8 +93,8 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     @CsvSource({
             // 24(topidId) + 8(autoRenewAccount); updating value -> no extra rbs cost
             ",,,,,,,, 2000,,, 32, 0",
-            // Add fields; 24(topicId) + 8(memo), 32(admin key), 32(submit key), 24(auto renew account); no change in expiration timestamp, rbs increase due to all fields except topicId
-            ", 12345678,, 0000000000000000000000000000000000000000000000000000000000000000,, 1111111111111111111111111111111111111111111111111111111111111111,, 0.1.2,, 3600_0,, 120, 96",
+            // Add fields; 24(topicId) + 8(memo), 32(admin key), 32(submit key), 24(auto renew account); no change in expiration timestamp, 0 increase in rbs as no Old Admin Key making it immutable
+            ", 12345678,, 0000000000000000000000000000000000000000000000000000000000000000,, 1111111111111111111111111111111111111111111111111111111111111111,, 0.1.2,, 3600_0,, 120, 0",
             // No change to fields; 24(topicId); no change in expiration timestamp, no additional rbs cost
             "12345678,, 0000000000000000000000000000000000000000000000000000000000000000,, 1111111111111111111111111111111111111111111111111111111111111111,, 0.1.2,,, 3600_0,, 24, 0",
             // No change to fields, only increase expiration time; 24(topicId) + 8(expirationTimestamp); rbs increase equal to size of set fields (memo, adminKey, autoRenewAccount)
