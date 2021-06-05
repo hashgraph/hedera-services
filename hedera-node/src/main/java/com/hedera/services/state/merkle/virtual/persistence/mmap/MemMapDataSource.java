@@ -36,47 +36,47 @@ public final class MemMapDataSource implements VirtualDataSource {
 
     @Override
     public VirtualValue getLeafValue(VirtualKey leafKey) {
-        return store.get(account, leafKey);
+        return store.loadLeafValue(account, leafKey);
     }
 
     @Override
     public void saveParent(long parentPath, Hash hash) {
-        store.save(account, parentPath, hash);
+        store.saveParentHash(account, parentPath, hash);
     }
 
     @Override
     public void saveLeaf(VirtualRecord leaf) {
-        store.save(account, leaf);
+        store.saveLeaf(account, leaf);
     }
 
     @Override
     public void deleteParent(long parentPath) {
-        store.delete(account, parentPath);
+        store.deleteParent(account, parentPath);
     }
 
     @Override
     public void deleteLeaf(VirtualRecord leaf) {
-        store.delete(account, leaf);
+        store.deleteLeaf(account, leaf.getKey());
     }
 
     @Override
     public void writeLastLeafPath(long path) {
-        store.save(account, (byte)1, path);
+        store.savePath(account, (byte)1, path);
     }
 
     @Override
     public long getLastLeafPath() {
-        return store.load(account, (byte)1);
+        return store.loadPath(account, (byte)1);
     }
 
     @Override
     public void writeFirstLeafPath(long path) {
-        store.save(account, (byte)2, path);
+        store.savePath(account, (byte)2, path);
     }
 
     @Override
     public long getFirstLeafPath() {
-        return store.load(account, (byte)2);
+        return store.loadPath(account, (byte)2);
     }
 
     @Override
