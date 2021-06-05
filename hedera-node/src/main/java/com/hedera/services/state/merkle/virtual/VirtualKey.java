@@ -7,8 +7,6 @@ import java.util.Arrays;
  *
  */
 public final class VirtualKey {
-    /** Site of an account when serialized to bytes */
-    private static final int BYTES = Long.BYTES * 3;
     /**
      * The actual data. This will never be null.
      * This data is protected by this class, we make defensive copies rather than letting
