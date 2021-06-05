@@ -7,11 +7,14 @@ import com.swirlds.common.FCMElement;
 import com.swirlds.common.FCMValue;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.CryptoFactory;
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleExternalLeaf;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import org.eclipse.collections.impl.map.mutable.ConcurrentHashMapUnsafe;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -19,6 +22,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static com.hedera.services.state.merkle.virtual.VirtualTreePath.INVALID_PATH;
 import static com.hedera.services.state.merkle.virtual.VirtualTreePath.ROOT_PATH;
@@ -70,7 +78,8 @@ public final class VirtualMap
 
     /**
      * A local cache that maps from keys to leaves. Normally this map will contain a few
-     * tens of items at most.
+     * tens of items at most. It is only populated with "dirty" leaves, that were either
+     * newly added or modified.
      */
     private final Map<VirtualKey, VirtualRecord> cache = new HashMap<>();
     private final Map<Long, VirtualRecord> cache2 = new HashMap<>();
@@ -85,6 +94,9 @@ public final class VirtualMap
      */
 //    private final Set<VirtualTreeInternal> deletedInternalNodes = new HashSet<>();
 //    private final Set<VirtualTreeLeaf> deletedLeafNodes = new HashSet<>();
+
+    private final ConcurrentHashMapUnsafe<Long, FutureTask<Hash>> hashFutures = new ConcurrentHashMapUnsafe<>();
+    private Future<Hash> rootHash;
 
     /**
      * The path of the very last leaf in the tree. Can be null if there are no leaves.
@@ -106,6 +118,9 @@ public final class VirtualMap
         this.firstLeafPath = ds.getFirstLeafPath();
         this.lastLeafPath = ds.getLastLeafPath();
         setImmutable(false);
+
+        final var rh = ds.loadParentHash(ROOT_PATH);
+        rootHash = new FutureTask<>(() -> rh);
     }
 
     /**
@@ -117,6 +132,7 @@ public final class VirtualMap
         this.dataSource = source.dataSource;
         this.firstLeafPath = source.firstLeafPath;
         this.lastLeafPath = source.lastLeafPath;
+        this.rootHash = source.rootHash;
         this.setImmutable(false);
         source.setImmutable(true);
     }
@@ -188,7 +204,17 @@ public final class VirtualMap
                 .filter(VirtualRecord::isDirty)
                 .forEach(dataSource::saveLeaf);
 
-        // TODO handle updating hashes, updating parents, deleting things, etc.
+        // TODO handle deleting things, etc.
+
+        // Start hash recomputation.
+        Hash hash = getHash(); // blocks if there was a previous commit that hadn't finished yet.
+        if (hash == null || NULL_HASH.equals(hash) || !cache.isEmpty()) {
+            // Must recompute the hash. "rootHash" is updated by "hashParentTask".
+            cache.values()
+                    .parallelStream()
+                    .map(this::hashLeafTask)
+                    .forEach(FutureTask::run);
+        }
     }
 
     @Override
@@ -200,11 +226,63 @@ public final class VirtualMap
 
     @Override
     public Hash getHash() {
-        // Realize the root node, if it doesn't already exist
-        // TODO compute this
+        try {
+            // Not sure what to do if this fails... Try, try, again?
+            return rootHash.get();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
         return NULL_HASH;
-//        final var r = root == null ? realizeRootNode() : root;
-//        return r.hash(); // recomputes if needed
+    }
+
+    private FutureTask<Hash> hashLeafTask(VirtualRecord leaf) {
+        // Gotta process the hash for this leaf, and I also have to create a new parent task.
+        final var future = hashFutures.putIfAbsent(leaf.getPath(), new FutureTask<>(() -> {
+            return CryptoFactory.getInstance().digestSync(leaf.getValue().asByteArray(), DigestType.SHA_384);
+        }));
+
+        final var parentPath = getParentPath(leaf.getPath());
+        hashFutures.putIfAbsent(parentPath, hashParentTask(parentPath));
+
+        return future;
+    }
+
+    private FutureTask<Hash> hashParentTask(long path) {
+        // Gotta create hashNodeTasks for both children, and then after they give me their
+        // result, then I can go ahead and produce my own hash. Also gotta put on the stack
+        // a job for processing the next parent, unless this is root, in which case I need to put
+        // the result into rootHash.
+        final var leftChild = getLeftChildPath(path);
+        final var rightChild = getRightChildPath(path);
+
+        final var future = hashFutures.putIfAbsent(path, new FutureTask<>(() -> {
+            final var leftChildFuture = hashFutures.putIfAbsent(leftChild, hashNodeTask(leftChild));
+            final var rightChildFuture = hashFutures.putIfAbsent(rightChild, hashNodeTask(rightChild));
+            final var leftHash = leftChildFuture.get();
+            final var rightHash = rightChildFuture.get();
+            return CryptoFactory.getInstance().calcRunningHash(leftHash, rightHash, DigestType.SHA_384);
+        }));
+
+        if (path == ROOT_PATH) {
+            rootHash = future;
+        } else {
+            final var parentPath = getParentPath(path);
+            hashFutures.putIfAbsent(parentPath, hashParentTask(parentPath));
+        }
+
+        return future;
+    }
+
+    private FutureTask<Hash> hashNodeTask(long path) {
+        // Gotta get my own hash (nothing to compute). Just return it.
+        // Since paths are either parent or child, first we check for a leaf at this path
+        // and then we check for a parent, and return the hash we find in either case.
+        return hashFutures.putIfAbsent(path, new FutureTask<>(() -> {
+            final var leafRec = dataSource.loadLeaf(path);
+            return leafRec == null ? dataSource.loadParentHash(path) : leafRec.getHash();
+        }));
     }
 
     @Override
