@@ -78,15 +78,15 @@ public class VirtualMapBench {
 
         // Populate the data source with one million items.
         VirtualMap map = new VirtualMap(ds);
-//        VirtualMap map2 = new VirtualMap(ds2);
+        VirtualMap map2 = new VirtualMap(ds2);
         for (int i=0; i<1_000_000; i++) {
             final var key = asKey(i);
             final var value = asValue(i);
             map.putValue(key, value);
-//            map2.putValue(key, value);
+            map2.putValue(key, value);
         }
         map.commit();
-//        map2.commit();
+        map2.commit();
     }
 
     @TearDown
@@ -135,14 +135,15 @@ public class VirtualMapBench {
         map.commit();
     }
 
-//    @Benchmark
-//    public void update_100PerVirtualMap_Files() {
-//        final var map = new VirtualMap(ds2);
-//        for (int j=0; j<25; j++) {
-//            final var i = rand.nextInt(1_000_000);
-//            map.putValue(asKey(i), asValue(i + 1_000_000));
-//        }
-//    }
+    @Benchmark
+    public void update_100PerVirtualMap_Files() {
+        final var map = new VirtualMap(ds2);
+        for (int j=0; j<25; j++) {
+            final var i = rand.nextInt(1_000_000);
+            map.putValue(asKey(i), asValue(i + 1_000_000));
+        }
+        map.commit();
+    }
 
     private VirtualKey asKey(int index) {
         return new VirtualKey(Arrays.copyOf(("key" + index).getBytes(), 32));
