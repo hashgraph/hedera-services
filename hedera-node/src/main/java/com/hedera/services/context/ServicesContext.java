@@ -308,11 +308,9 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.usage.schedule.ScheduleOpsUsage;
-import com.hedera.services.utils.JvmSystemExits;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
-import com.hedera.services.utils.SystemExits;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -363,7 +361,6 @@ import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.stora
 import static com.hedera.services.files.interceptors.ConfigListUtils.uncheckedParse;
 import static com.hedera.services.files.interceptors.PureRatesValidation.isNormalIntradayChange;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
-import static com.hedera.services.legacy.proto.utils.CommonUtils.extractSignatureMapOrUseDefault;
 import static com.hedera.services.records.NoopRecordsHistorian.NOOP_RECORDS_HISTORIAN;
 import static com.hedera.services.security.ops.SystemOpAuthorization.AUTHORIZED;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.backedLookupsFor;
@@ -424,8 +421,6 @@ import static java.util.Map.entry;
 public class ServicesContext {
 	private static final Logger log = LogManager.getLogger(ServicesContext.class);
 
-	private SystemExits systemExits = new JvmSystemExits();
-
 	/* Injected dependencies. */
 	ServicesState state;
 
@@ -443,7 +438,6 @@ public class ServicesContext {
 	private HederaFs hfs;
 	private NodeInfo nodeInfo;
 	private StateView currentView;
-	private AccountID accountId;
 	private AnswerFlow answerFlow;
 	private HcsAnswers hcsAnswers;
 	private FileNumbers fileNums;
@@ -2112,10 +2106,6 @@ public class ServicesContext {
 
 	public void setScheduleStore(ScheduleStore scheduleStore) {
 		this.scheduleStore = scheduleStore;
-	}
-
-	void setSystemExits(SystemExits systemExits) {
-		this.systemExits = systemExits;
 	}
 
 	private AccountID effectiveNodeAccount() {
