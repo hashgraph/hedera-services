@@ -47,6 +47,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.restoreFileFromRegi
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.saveFileToRegistry;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
+import static com.hedera.services.bdd.suites.reconnect.AutoRenewEntitiesForReconnect.runTransfersBeforeReconnect;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -69,6 +70,7 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
+				runTransfersBeforeReconnect(),
 				updateAllProtectedFilesDuringReconnect()
 		);
 	}

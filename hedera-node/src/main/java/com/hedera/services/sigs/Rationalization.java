@@ -34,7 +34,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.common.crypto.VerificationStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -99,7 +98,7 @@ public class Rationalization {
 			txnAccessor.getPlatformTxn().clear();
 			txnAccessor.getPlatformTxn().addAll(rationalizedPayerSigs.toArray(new TransactionSignature[0]));
 			txnAccessor.getPlatformTxn().addAll(rationalizedOtherPartySigs.toArray(new TransactionSignature[0]));
-			log.warn("Verified crypto sigs synchronously for txn {}", txnAccessor.getSignedTxn4Log());
+			log.warn("Verified crypto sigs synchronously for txn {}", txnAccessor.getSignedTxnWrapper());
 			return syncSuccess();
 		}
 
@@ -107,12 +106,14 @@ public class Rationalization {
 	}
 
 	private List<TransactionSignature> rationalize(List<TransactionSignature> realSigs, int startingAt) {
-		try {
+		final var maxSubListEnd = txnSigs.size();
+		final var requestedSubListEnd = startingAt + realSigs.size();
+		if (requestedSubListEnd <= maxSubListEnd) {
 			var candidateSigs = txnSigs.subList(startingAt, startingAt + realSigs.size());
 			if (allVaryingMaterialEquals(candidateSigs, realSigs) && allStatusesAreKnown(candidateSigs)) {
 				return candidateSigs;
 			}
-		} catch (IndexOutOfBoundsException ignore) { }
+		}
 		syncVerifier.verifySync(realSigs);
 		return realSigs;
 	}

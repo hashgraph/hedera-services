@@ -77,7 +77,6 @@ class SignedTxnAccessorTest {
 		SignedTxnAccessor accessor = SignedTxnAccessor.uncheckedFrom(transaction);
 
 		assertEquals(transaction, accessor.getSignedTxnWrapper());
-		assertEquals(transaction, accessor.getSignedTxn4Log());
 		assertArrayEquals(transaction.toByteArray(), accessor.getSignedTxnWrapperBytes());
 		assertEquals(body, accessor.getTxn());
 		assertArrayEquals(body.toByteArray(), accessor.getTxnBytes());
@@ -91,7 +90,6 @@ class SignedTxnAccessorTest {
 		assertTrue(accessor.memoHasZeroByte());
 		assertEquals(FeeBuilder.getSignatureCount(accessor.getSignedTxnWrapper()), accessor.numSigPairs());
 		assertEquals(FeeBuilder.getSignatureSize(accessor.getSignedTxnWrapper()), accessor.sigMapSize());
-		assertEquals(zeroByteMemo, accessor.getMemo());
 	}
 
 	@Test
@@ -117,7 +115,6 @@ class SignedTxnAccessorTest {
 		SignedTxnAccessor accessor = SignedTxnAccessor.uncheckedFrom(newTransaction);
 
 		assertEquals(newTransaction, accessor.getSignedTxnWrapper());
-		assertEquals(newTransaction, accessor.getSignedTxn4Log());
 		assertArrayEquals(newTransaction.toByteArray(), accessor.getSignedTxnWrapperBytes());
 		assertEquals(body, accessor.getTxn());
 		assertArrayEquals(body.toByteArray(), accessor.getTxnBytes());

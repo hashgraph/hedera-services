@@ -64,7 +64,7 @@ class Expansion {
 	}
 
 	public SignatureStatus execute() {
-		log.debug("Expanding crypto sigs from Hedera sigs for txn {}...", txnAccessor::getSignedTxn4Log);
+		log.debug("Expanding crypto sigs from Hedera sigs for txn {}...", txnAccessor::getSignedTxnWrapper);
 		var payerStatus = expand(sigsProvider::payerSigBytesFor, keyOrderer::keysForPayer);
 		if ( SUCCESS != payerStatus.getStatusCode() ) {
 			if (log.isDebugEnabled()) {

@@ -42,8 +42,6 @@ public interface TxnAccessor {
 
     HederaFunctionality getFunction();
 
-    Transaction getSignedTxn4Log();
-
     byte[] getTxnBytes();
 
     byte[] getMemoUtf8Bytes();
