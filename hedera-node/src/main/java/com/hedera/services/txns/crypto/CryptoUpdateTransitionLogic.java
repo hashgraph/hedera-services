@@ -104,7 +104,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		} catch (DeletedAccountException aide) {
 			txnCtx.setStatus(ACCOUNT_DELETED);
 		} catch (Exception e) {
-			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
+			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
 	}

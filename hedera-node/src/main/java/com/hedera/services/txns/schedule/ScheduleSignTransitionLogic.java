@@ -74,7 +74,7 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
 			var accessor = txnCtx.accessor();
 			transitionFor(accessor.getSigMap(), accessor.getTxn().getScheduleSign());
 		} catch (Exception e) {
-			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
+			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
 	}

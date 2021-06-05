@@ -48,8 +48,8 @@ public class TransferListChecks {
 		if (n < 2) {
 			return false;
 		}
-		for (int i = 0; i < n - 1; i++) {
-			for (int j = i + 1; j < n; j++) {
+		for (var i = 0; i < n - 1; i++) {
+			for (var j = i + 1; j < n; j++) {
 				if (wrapper.getAccountAmounts(i).getAccountID().equals(wrapper.getAccountAmounts(j).getAccountID())) {
 					return true;
 				}

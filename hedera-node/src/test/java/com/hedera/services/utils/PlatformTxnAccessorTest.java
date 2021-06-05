@@ -214,7 +214,7 @@ class PlatformTxnAccessorTest {
 
 		// when:
 		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn);
-		Transaction signedTxn4Log = subject.getSignedTxn4Log();
+		Transaction signedTxn4Log = subject.getSignedTxnWrapper();
 		Transaction asBodyBytes = signedTxn4Log
 				.toBuilder()
 				.setBodyBytes(CommonUtils.extractTransactionBodyByteString(signedTxn4Log))
@@ -241,7 +241,7 @@ class PlatformTxnAccessorTest {
 
 		// when:
 		PlatformTxnAccessor subject = new PlatformTxnAccessor(platformTxn);
-		Transaction signedTxn4Log = subject.getSignedTxn4Log();
+		Transaction signedTxn4Log = subject.getSignedTxnWrapper();
 
 		ByteString signedTxnBytes = signedTxn4Log.getSignedTransactionBytes();
 		Transaction asBodyBytes = signedTxn4Log

@@ -57,6 +57,7 @@ public class PlatformTxnAccessor extends SignedTxnAccessor {
 		}
 	}
 
+	@Override
 	public SwirldTransaction getPlatformTxn() {
 		return platformTxn;
 	}

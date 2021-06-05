@@ -123,7 +123,7 @@ public class TxnAwareRatesManager implements FileUpdateInterceptor {
 					midnightRates.get().replaceWith(rates);
 				}
 			}, () -> {
-				log.error("Rates postUpdate called with invalid data by {}!", txnCtx.accessor().getSignedTxn4Log());
+				log.error("Rates postUpdate called with invalid data by {}!", txnCtx.accessor().getSignedTxnWrapper());
 			});
 		}
 	}

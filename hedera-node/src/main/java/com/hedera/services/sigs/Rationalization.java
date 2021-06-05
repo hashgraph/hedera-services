@@ -126,12 +126,14 @@ public class Rationalization {
 	}
 
 	private List<TransactionSignature> rationalize(List<TransactionSignature> realSigs, int startingAt) {
-		try {
+		final var maxSubListEnd = txnSigs.size();
+		final var requestedSubListEnd = startingAt + realSigs.size();
+		if (requestedSubListEnd <= maxSubListEnd) {
 			var candidateSigs = txnSigs.subList(startingAt, startingAt + realSigs.size());
 			if (allVaryingMaterialEquals(candidateSigs, realSigs) && allStatusesAreKnown(candidateSigs)) {
 				return candidateSigs;
 			}
-		} catch (IndexOutOfBoundsException ignore) { }
+		}
 		syncVerifier.verifySync(realSigs);
 		return realSigs;
 	}

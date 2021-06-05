@@ -100,7 +100,7 @@ class FreezeHandlerTest {
 	}
 
 	@Test
-	void freezeTest() throws Exception {
+	void setsInstantInSameDayWhenNatural() throws Exception {
 		// setup:
 		Transaction transaction = FreezeTestHelper.createFreezeTransaction(true, true, null);
 		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
@@ -114,6 +114,30 @@ class FreezeHandlerTest {
 
 		// then:
 		assertEquals(record.getReceipt().getStatus(), ResponseCodeEnum.SUCCESS);
+		verify(dualState).setFreezeTime(expectedStart);
+	}
+
+	@Test
+	void setsInstantInNextDayWhenNatural() throws Exception {
+		// setup:
+		Transaction transaction = FreezeTestHelper.createFreezeTransaction(
+				true,
+				true,
+				null,
+				null,
+				new int[] { 10, 0 },
+				new int[] { 10, 1 });
+		TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
+		// and:
+		final var nominalStartHour = txBody.getFreeze().getStartHour();
+		final var nominalStartMin = txBody.getFreeze().getStartMin();
+		final var expectedStart = naturalNextInstant(nominalStartHour, nominalStartMin, consensusTime);
+
+		// when:
+		TransactionRecord record = subject.freeze(txBody, consensusTime);
+
+		// then:
+		assertEquals(ResponseCodeEnum.SUCCESS, record.getReceipt().getStatus());
 		verify(dualState).setFreezeTime(expectedStart);
 	}
 

@@ -158,6 +158,7 @@ class NarratedLedgerChargingTest {
 	void throwsIseIfPayerNotActuallyExtant() {
 		// expect:
 		assertThrows(IllegalStateException.class, subject::canPayerAffordAllFees);
+		assertThrows(IllegalStateException.class, subject::canPayerAffordNetworkFee);
 
 		given(accessor.getPayer()).willReturn(grpcPayerId);
 		// and given:
@@ -166,6 +167,7 @@ class NarratedLedgerChargingTest {
 
 		// still expect:
 		assertThrows(IllegalStateException.class, subject::canPayerAffordAllFees);
+		assertThrows(IllegalStateException.class, subject::canPayerAffordNetworkFee);
 	}
 
 	@Test
@@ -214,6 +216,7 @@ class NarratedLedgerChargingTest {
 		given(accounts.get(payerId)).willReturn(payerAccount);
 
 		given(dynamicProperties.fundingAccount()).willReturn(grpcFundingId);
+		given(nodeInfo.accountOf(submittingNodeId)).willReturn(grpcNodeId);
 		given(nodeInfo.accountKeyOf(submittingNodeId)).willReturn(nodeId);
 
 		given(accessor.getPayer()).willReturn(grpcPayerId);
@@ -227,6 +230,7 @@ class NarratedLedgerChargingTest {
 		given(accounts.get(nodeId)).willReturn(nodeAccount);
 
 		given(dynamicProperties.fundingAccount()).willReturn(grpcFundingId);
+		given(nodeInfo.accountOf(submittingNodeId)).willReturn(nodeId.toAccountId());
 		given(nodeInfo.accountKeyOf(submittingNodeId)).willReturn(nodeId);
 
 		given(accessor.getPayer()).willReturn(grpcPayerId);

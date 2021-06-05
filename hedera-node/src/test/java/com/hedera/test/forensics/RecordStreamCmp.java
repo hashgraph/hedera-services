@@ -259,7 +259,7 @@ public class RecordStreamCmp {
 				}
 				writer.write("---\n");
 				writer.write(entry.readable() + "\n");
-				writer.write(entry.accessor().getSignedTxn4Log() + "\n");
+				writer.write(entry.accessor().getSignedTxnWrapper() + "\n");
 			}
 			writer.flush();
 		}
@@ -274,7 +274,7 @@ public class RecordStreamCmp {
 		try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(loc))) {
 			for (StreamEntry entry : orderedPairs) {
 				writer.write(entry.readable() + "\n");
-				writer.write(entry.accessor().getSignedTxn4Log() + "\n");
+				writer.write(entry.accessor().getSignedTxnWrapper() + "\n");
 				writer.write("---");
 			}
 			writer.flush();
@@ -324,7 +324,7 @@ public class RecordStreamCmp {
 
 	private void compare(EntryPair pair) throws JsonProcessingException, InvalidProtocolBufferException {
 		var accessor = new SignedTxnAccessor(pair.fromConsensus.history.getSignedTxn());
-		System.out.println(accessor.getSignedTxn4Log());
+		System.out.println(accessor.getSignedTxnWrapper());
 		System.out.println("------- CONSENSUS record -------");
 		System.out.println(pair.fromConsensus.readable());
 		System.out.println("------- SPLINTER record -------");

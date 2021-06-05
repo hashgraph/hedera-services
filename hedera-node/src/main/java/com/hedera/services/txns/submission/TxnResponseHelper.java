@@ -74,7 +74,7 @@ public class TxnResponseHelper {
 			response = submissionFlow.submit(signedTxn);
 		} catch (Exception surprising) {
 			SignedTxnAccessor accessor = SignedTxnAccessor.uncheckedFrom(signedTxn);
-			log.warn("Submission flow unable to submit {}!", accessor.getSignedTxn4Log(), surprising);
+			log.warn("Submission flow unable to submit {}!", accessor.getSignedTxnWrapper(), surprising);
 			response = FAIL_INVALID_RESPONSE;
 		}
 

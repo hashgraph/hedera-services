@@ -67,7 +67,7 @@ public class TokenDissociateTransitionLogic implements TransitionLogic {
 			var outcome = store.dissociate(op.getAccount(), op.getTokensList());
 			txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
 		} catch (Exception e) {
-			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
+			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
 	}

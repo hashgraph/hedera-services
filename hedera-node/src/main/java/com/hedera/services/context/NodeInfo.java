@@ -109,7 +109,7 @@ public class NodeInfo {
 			throw new IllegalArgumentException("No node with id " + nodeId + " was in the address book!");
 		}
 		if (accounts[index] == null) {
-			throw new IllegalArgumentException("The  address book did not have an account for node id " + nodeId + "!");
+			throw new IllegalArgumentException("The address book did not have an account for node id " + nodeId + "!");
 		}
 		return index;
 	}

@@ -31,6 +31,7 @@ import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.persistence.EntityManager;
+import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hedera.services.legacy.core.TestHelper;
 import com.hedera.services.stream.proto.AllAccountBalances;
@@ -86,6 +87,8 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
 public class HapiApiSpec implements Runnable {
+	private static final String CI_PROPS_FLAG_FOR_NO_UNRECOVERABLE_NETWORK_FAILURES = "suppressNetworkFailures";
+
 	static final Logger log = LogManager.getLogger(HapiApiSpec.class);
 
 	public enum SpecStatus {PENDING, RUNNING, PASSED, FAILED, FAILED_AS_EXPECTED, PASSED_UNEXPECTEDLY, ERROR}
@@ -462,16 +465,6 @@ public class HapiApiSpec implements Runnable {
 		return customizedHapiSpec(name, prioritySource).withProperties();
 	}
 
-	public static Def.Given defaultHapiSpecWithRegistry(String name) {
-		restoreContextFlag = true;
-		return defaultHapiSpec(name);
-	}
-
-	public static Def.Sourced CustomHapiSpecWithRegistry(String name) {
-		restoreContextFlag = true;
-		return customHapiSpec(name);
-	}
-
 	private static Map<String, String> ciPropOverrides() {
 		if (ciPropsSource == null) {
 			Properties appProps = TestHelper.getApplicationProperties();
@@ -490,6 +483,10 @@ public class HapiApiSpec implements Runnable {
 				this.put("tls", tlsFromCi);
 				this.put("txn", txnFromCi);
 			}};
+			final var explicitCiProps = MapPropertySource.parsedFromCommaDelimited(ciPropertiesMap);
+			if (explicitCiProps.has(CI_PROPS_FLAG_FOR_NO_UNRECOVERABLE_NETWORK_FAILURES)) {
+				ciPropsSource.put("warnings.suppressUnrecoverableNetworkFailures", "true");
+			}
 			ciPropsSource.putAll(otherOverrides);
 		}
 		return ciPropsSource;
