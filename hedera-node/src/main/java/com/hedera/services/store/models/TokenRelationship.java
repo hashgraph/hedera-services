@@ -9,9 +9,9 @@ package com.hedera.services.store.models;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -49,6 +49,7 @@ public class TokenRelationship {
 	private long balance;
 	private boolean frozen;
 	private boolean kycGranted;
+	private boolean notYetPersisted = true;
 
 	private long balanceChange = 0L;
 
@@ -66,7 +67,8 @@ public class TokenRelationship {
 	 * the account holds at the beginning of a user transaction. (In particular, does
 	 * <b>not</b> change the return value of {@link TokenRelationship#getBalanceChange()}.)
 	 *
-	 * @param balance the initial balance in the relationship
+	 * @param balance
+	 * 		the initial balance in the relationship
 	 */
 	public void initBalance(long balance) {
 		this.balance = balance;
@@ -78,7 +80,8 @@ public class TokenRelationship {
 	 *
 	 * This <b>does</b> change the return value of {@link TokenRelationship#getBalanceChange()}.
 	 *
-	 * @param balance the updated balance of the relationship
+	 * @param balance
+	 * 		the updated balance of the relationship
 	 */
 	public void setBalance(long balance) {
 		validateTrue(!token.hasFreezeKey() || !frozen, ACCOUNT_FROZEN_FOR_TOKEN);
@@ -120,10 +123,17 @@ public class TokenRelationship {
 		return account.getId().equals(accountId) && token.getId().equals(tokenId);
 	}
 
-	/* NOTE: The object methods below are only overridden to improve
+	public boolean isNotYetPersisted() {
+		return notYetPersisted;
+	}
+
+	public void setNotYetPersisted(boolean notYetPersisted) {
+		this.notYetPersisted = notYetPersisted;
+	}
+
+	/* The object methods below are only overridden to improve
 	readability of unit tests; model objects are not used in hash-based
 	collections, so the performance of these methods doesn't matter. */
-
 	@Override
 	public boolean equals(Object obj) {
 		return EqualsBuilder.reflectionEquals(this, obj);
@@ -137,6 +147,7 @@ public class TokenRelationship {
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(TokenRelationship.class)
+				.add("notYetPersisted", notYetPersisted)
 				.add("account", account)
 				.add("token", token)
 				.add("balance", balance)

@@ -290,7 +290,7 @@ public class HederaLedger {
 		}
 
 		var tokens = (MerkleAccountTokens) accountsLedger.get(aId, TOKENS);
-		for (TokenID tId : tokens.asIds()) {
+		for (TokenID tId : tokens.asTokenIds()) {
 			if (tokenStore.get(tId).isDeleted()) {
 				continue;
 			}

@@ -9,9 +9,9 @@ package com.hedera.services.store;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,7 @@ package com.hedera.services.store;
  */
 
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
@@ -60,6 +61,8 @@ class TypedTokenStoreTest {
 	private TransactionRecordService transactionRecordService;
 	@Mock
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
+	@Mock
+	private BackingTokenRels backingTokenRels;
 
 	private TypedTokenStore subject;
 
@@ -68,7 +71,8 @@ class TypedTokenStoreTest {
 		setupToken();
 		setupTokenRel();
 
-		subject = new TypedTokenStore(accountStore, transactionRecordService, () -> tokens, () -> tokenRels);
+		subject = new TypedTokenStore(
+				accountStore, transactionRecordService, () -> tokens, () -> tokenRels, backingTokenRels);
 	}
 
 	/* --- Token relationship loading --- */
@@ -90,7 +94,7 @@ class TypedTokenStoreTest {
 
 	/* --- Token relationship saving --- */
 	@Test
-	void savesTokenRelAsExpected() {
+	void persistsExtantTokenRelAsExpected() {
 		// setup:
 		final var expectedReplacementTokenRel = new MerkleTokenRelStatus(balance * 2, !frozen, !kycGranted);
 
@@ -110,6 +114,26 @@ class TypedTokenStoreTest {
 		verify(tokenRels).replace(miscTokenRelId, expectedReplacementTokenRel);
 		// and:
 		verify(transactionRecordService).includeChangesToTokenRel(modelTokenRel);
+	}
+
+	@Test
+	void persistsNewTokenRelAsExpected() {
+		// setup:
+		final var expectedNewTokenRel = new MerkleTokenRelStatus(balance * 2, false, true);
+
+		// given:
+		final var newTokenRel = new TokenRelationship(token, miscAccount);
+
+		// when:
+		newTokenRel.setKycGranted(true);
+		newTokenRel.setBalance(balance * 2);
+		// and:
+		subject.persistTokenRelationship(newTokenRel);
+
+		// then:
+		verify(tokenRels).put(miscTokenRelId, expectedNewTokenRel);
+		// and:
+		verify(transactionRecordService).includeChangesToTokenRel(newTokenRel);
 	}
 
 	/* --- Token loading --- */
@@ -154,14 +178,15 @@ class TypedTokenStoreTest {
 	void savesTokenAsExpected() {
 		// setup:
 		final var expectedReplacementToken = new MerkleToken(
-						expiry, tokenSupply * 2, 0,
-						symbol, name,
-						false, true,
-						new EntityId(0, 0, autoRenewAccountNum));
+				expiry, tokenSupply * 2, 0,
+				symbol, name,
+				freezeDefault, true,
+				new EntityId(0, 0, autoRenewAccountNum));
 		expectedReplacementToken.setAutoRenewAccount(new EntityId(0, 0, treasuryAccountNum));
 		expectedReplacementToken.setSupplyKey(supplyKey);
 		expectedReplacementToken.setFreezeKey(freezeKey);
 		expectedReplacementToken.setKycKey(kycKey);
+		expectedReplacementToken.setAccountsFrozenByDefault(!freezeDefault);
 
 		givenToken(merkleTokenId, merkleToken);
 		givenModifiableToken(merkleTokenId, merkleToken);
@@ -172,8 +197,9 @@ class TypedTokenStoreTest {
 		modelToken.setTotalSupply(tokenSupply * 2);
 		modelToken.setAutoRenewAccount(treasuryAccount);
 		modelToken.setTreasury(autoRenewAccount);
+		modelToken.setFrozenByDefault(!freezeDefault);
 		// and:
-		subject.saveToken(modelToken);
+		subject.persistToken(modelToken);
 
 		// then:
 		verify(tokens).replace(merkleTokenId, expectedReplacementToken);
@@ -203,7 +229,8 @@ class TypedTokenStoreTest {
 	}
 
 	private void assertMiscRelLoadFailsWith(ResponseCodeEnum status) {
-		var ex = assertThrows(InvalidTransactionException.class, () -> subject.loadTokenRelationship(token, miscAccount));
+		var ex = assertThrows(InvalidTransactionException.class,
+				() -> subject.loadTokenRelationship(token, miscAccount));
 		assertEquals(status, ex.getResponseCode());
 	}
 
@@ -211,7 +238,7 @@ class TypedTokenStoreTest {
 		merkleToken = new MerkleToken(
 				expiry, tokenSupply, 0,
 				symbol, name,
-				false, true,
+				freezeDefault, true,
 				new EntityId(0, 0, treasuryAccountNum));
 		merkleToken.setAutoRenewAccount(new EntityId(0, 0, autoRenewAccountNum));
 		merkleToken.setSupplyKey(supplyKey);
@@ -224,6 +251,7 @@ class TypedTokenStoreTest {
 		token.setKycKey(kycKey);
 		token.setSupplyKey(supplyKey);
 		token.setFreezeKey(freezeKey);
+		token.setFrozenByDefault(freezeDefault);
 	}
 
 	private void setupTokenRel() {
@@ -231,6 +259,7 @@ class TypedTokenStoreTest {
 		miscTokenRel.initBalance(balance);
 		miscTokenRel.setFrozen(frozen);
 		miscTokenRel.setKycGranted(kycGranted);
+		miscTokenRel.setNotYetPersisted(false);
 	}
 
 	private final long expiry = 1_234_567L;
@@ -258,9 +287,10 @@ class TypedTokenStoreTest {
 
 	private final boolean frozen = false;
 	private final boolean kycGranted = true;
+	private final boolean freezeDefault = true;
 	private final MerkleEntityAssociation miscTokenRelId = new MerkleEntityAssociation(
-		0, 0, miscAccountNum,
-		0, 0, tokenNum);
+			0, 0, miscAccountNum,
+			0, 0, tokenNum);
 	private final TokenRelationship miscTokenRel = new TokenRelationship(token, miscAccount);
 
 	private MerkleToken merkleToken;

@@ -120,6 +120,10 @@ public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, 
 		throw new UnsupportedOperationException();
 	}
 
+	public void addToExistingRels(Pair<AccountID, TokenID> key)	{
+		existingRels.add(key);
+	}
+
 	public static Pair<AccountID, TokenID> asTokenRel(AccountID account, TokenID token) {
 		return Pair.of(account, token);
 	}

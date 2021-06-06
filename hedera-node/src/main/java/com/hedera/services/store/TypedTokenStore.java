@@ -9,9 +9,9 @@ package com.hedera.services.store;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,7 @@ package com.hedera.services.store;
  */
 
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -31,7 +32,10 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcmap.FCMap;
+import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
 import java.util.function.Supplier;
@@ -51,9 +55,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
  * if the token is not usable in normal business logic. There are three such
  * cases:
  * <ol>
- *     <li>The token is missing.</li>
- *     <li>The token is deleted.</li>
- *     <li>The token is expired and pending removal.</li>
+ * <li>The token is missing.</li>
+ * <li>The token is deleted.</li>
+ * <li>The token is expired and pending removal.</li>
  * </ol>
  * Note that in the third case, there <i>is</i> one valid use of the token;
  * namely, in an update transaction whose only purpose is to manually renew
@@ -69,17 +73,22 @@ public class TypedTokenStore {
 	private final TransactionRecordService transactionRecordService;
 	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
 	private final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels;
+	/* Only needed for interoperability with legacy HTS during refactor */
+	private final BackingTokenRels backingTokenRels;
 
 	public TypedTokenStore(
 			AccountStore accountStore,
 			TransactionRecordService transactionRecordService,
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
-			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels
+			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels,
+			BackingTokenRels backingTokenRels
 	) {
 		this.tokens = tokens;
 		this.tokenRels = tokenRels;
 		this.accountStore = accountStore;
 		this.transactionRecordService = transactionRecordService;
+
+		this.backingTokenRels = backingTokenRels;
 	}
 
 	/**
@@ -97,10 +106,13 @@ public class TypedTokenStore {
 	 * in order for its changes to be applied to the Swirlds state, and included in the
 	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
 	 *
-	 * @param token the token in the relationship to load
-	 * @param account the account in the relationship to load
+	 * @param token
+	 * 		the token in the relationship to load
+	 * @param account
+	 * 		the account in the relationship to load
 	 * @return a usable model of the token-account relationship
-	 * @throws InvalidTransactionException if the requested relationship does not exist
+	 * @throws InvalidTransactionException
+	 * 		if the requested relationship does not exist
 	 */
 	public TokenRelationship loadTokenRelationship(Token token, Account account) {
 		final var tokenId = token.getId();
@@ -116,6 +128,7 @@ public class TypedTokenStore {
 		tokenRelationship.initBalance(merkleTokenRel.getBalance());
 		tokenRelationship.setKycGranted(merkleTokenRel.isKycGranted());
 		tokenRelationship.setFrozen(merkleTokenRel.isFrozen());
+		tokenRelationship.setNotYetPersisted(false);
 
 		return tokenRelationship;
 	}
@@ -125,7 +138,8 @@ public class TypedTokenStore {
 	 * {@link TransactionRecordService} to update the {@link com.hedera.services.state.submerkle.ExpirableTxnRecord}
 	 * of the active transaction with these changes.
 	 *
-	 * @param tokenRelationship the token relationship to save
+	 * @param tokenRelationship
+	 * 		the token relationship to save
 	 */
 	public void persistTokenRelationship(TokenRelationship tokenRelationship) {
 		final var tokenId = tokenRelationship.getToken().getId();
@@ -135,11 +149,19 @@ public class TypedTokenStore {
 				tokenId.getShard(), tokenId.getRealm(), tokenId.getNum());
 		final var currentTokenRels = tokenRels.get();
 
-		final var mutableTokenRel = currentTokenRels.getForModify(key);
+		final var isNewRel = tokenRelationship.isNotYetPersisted();
+		final var mutableTokenRel = isNewRel ? new MerkleTokenRelStatus() : currentTokenRels.getForModify(key);
 		mutableTokenRel.setBalance(tokenRelationship.getBalance());
 		mutableTokenRel.setFrozen(tokenRelationship.isFrozen());
 		mutableTokenRel.setKycGranted(tokenRelationship.isKycGranted());
-		currentTokenRels.replace(key, mutableTokenRel);
+
+		if (isNewRel) {
+			currentTokenRels.put(key, mutableTokenRel);
+			/* Only done for interoperability with legacy HTS code during refactor */
+			alertTokenBackingStoreOfNew(tokenRelationship);
+		} else {
+			currentTokenRels.replace(key, mutableTokenRel);
+		}
 
 		transactionRecordService.includeChangesToTokenRel(tokenRelationship);
 	}
@@ -149,13 +171,15 @@ public class TypedTokenStore {
 	 * implement business logic in a transaction.
 	 *
 	 * <b>IMPORTANT:</b> Changes to the returned model are not automatically persisted
-	 * to state! The altered model must be passed to {@link TypedTokenStore#saveToken(Token)}
+	 * to state! The altered model must be passed to {@link TypedTokenStore#persistToken(Token)}
 	 * in order for its changes to be applied to the Swirlds state, and included in the
 	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
 	 *
-	 * @param id the token to load
+	 * @param id
+	 * 		the token to load
 	 * @return a usable model of the token
-	 * @throws InvalidTransactionException if the requested token is missing, deleted, or expired and pending removal
+	 * @throws InvalidTransactionException
+	 * 		if the requested token is missing, deleted, or expired and pending removal
 	 */
 	public Token loadToken(Id id) {
 		final var key = new MerkleEntityId(id.getShard(), id.getRealm(), id.getNum());
@@ -175,9 +199,10 @@ public class TypedTokenStore {
 	 * to update the {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} of the active transaction
 	 * with these changes.
 	 *
-	 * @param token the token to save
+	 * @param token
+	 * 		the token to save
 	 */
-	public void saveToken(Token token) {
+	public void persistToken(Token token) {
 		final var id = token.getId();
 		final var key = new MerkleEntityId(id.getShard(), id.getRealm(), id.getNum());
 		final var currentTokens = tokens.get();
@@ -205,6 +230,7 @@ public class TypedTokenStore {
 		}
 		mutableToken.setTreasury(new EntityId(token.getTreasury().getId()));
 		mutableToken.setTotalSupply(token.getTotalSupply());
+		mutableToken.setAccountsFrozenByDefault(token.isFrozenByDefault());
 	}
 
 	private void initModelAccounts(Token token, EntityId _treasuryId, @Nullable EntityId _autoRenewId) {
@@ -223,5 +249,22 @@ public class TypedTokenStore {
 		token.setKycKey(immutableToken.getKycKey());
 		token.setFreezeKey(immutableToken.getFreezeKey());
 		token.setSupplyKey(immutableToken.getSupplyKey());
+		token.setFrozenByDefault(immutableToken.accountsAreFrozenByDefault());
+	}
+
+	private void alertTokenBackingStoreOfNew(TokenRelationship newRel) {
+		final var tokenId = newRel.getToken().getId();
+		final var accountId = newRel.getAccount().getId();
+		backingTokenRels.addToExistingRels(Pair.of(
+				AccountID.newBuilder()
+						.setShardNum(accountId.getShard())
+						.setRealmNum(accountId.getRealm())
+						.setAccountNum(accountId.getNum())
+						.build(),
+				TokenID.newBuilder()
+						.setShardNum(tokenId.getShard())
+						.setRealmNum(tokenId.getRealm())
+						.setTokenNum(tokenId.getNum())
+						.build()));
 	}
 }

@@ -434,4 +434,8 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 	public void setMemo(String memo) {
 		this.memo = memo;
 	}
+
+	public void setAccountsFrozenByDefault(boolean accountsFrozenByDefault) {
+		this.accountsFrozenByDefault = accountsFrozenByDefault;
+	}
 }

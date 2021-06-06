@@ -1,6 +1,7 @@
 package com.hedera.services.state.merkle.internals;
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.TokenID;
 
 import java.util.ArrayList;
@@ -13,9 +14,9 @@ import java.util.function.Predicate;
 import static java.util.Comparator.comparingLong;
 
 /**
- * Manages a multiset of <tt>(shard, realm, num)</tt> ids with
- * convenience methods for adding, removing, and querying gRPC id
- * types (though only {@link TokenID} is needed so far).
+ * Manages a multiset of {@code (num, realm, shard)} ids with
+ * convenience methods for adding, removing, and checking
+ * membership of {@link com.hedera.services.store.models.Id} instances.
  *
  * Does simplistic copy-on-write via structural sharing with the
  * {@link CopyOnWriteIds#copy()} method. That is, given an instance
@@ -99,28 +100,60 @@ public class CopyOnWriteIds {
 		return logicalIndexOf(asNativeId(grpcId)) >= 0;
 	}
 
+	public boolean contains(Id id) {
+		return logicalIndexOf(asNativeId(id)) >= 0;
+	}
+
 	/**
-	 * Adds the <tt>(shard, realm, num)</tt> ids represented by the given set
-	 * of gRPC {@link TokenID} objects.
+	 * Adds the {@code (num, realm, shard)} ids represented by the given set
+	 * of gRPC {@link TokenID} objects. Will be removed by ongoing HTS refactor.
 	 *
 	 * @param grpcIds
 	 * 		the ids to add
 	 */
+	@Deprecated
 	public void addAll(Set<TokenID> grpcIds) {
 		add(asNativeIds(grpcIds));
 	}
 
 	/**
-	 * Removes all appearances of any managed <tt>(shard, realm, num)</tt> ids
+	 * Adds the {@code (num, realm, shard)} ids represented by the given set of model {@link Id} objects.
+	 *
+	 * @param modelIds
+	 * 		the ids to add
+	 */
+	public void addAllIds(Set<Id> modelIds) {
+		add(asNative(modelIds));
+	}
+
+	/**
+	 * Removes all appearances of any managed {@code (num, realm, shard)} ids
 	 * represented in the given set of gRPC {@link TokenID} objects.
 	 *
 	 * @param grpcIds
 	 * 		the ids to remove
 	 */
+	@Deprecated
 	public void removeAll(Set<TokenID> grpcIds) {
 		remove(nativeId -> grpcIds.contains(asGrpcTokenId(nativeId)));
 	}
 
+	/**
+	 * Removes all appearances of any managed {@code (num, realm, shard)} ids
+	 * represented in the given set of model {@link Id} objects.
+	 *
+	 * @param modelIds
+	 * 		the ids to remove
+	 */
+	public void removeAllIds(Set<Id> modelIds) {
+		remove(nativeId -> modelIds.contains(asModel(nativeId)));
+	}
+
+	/**
+	 * Overwrite the managed multiset with the given sequence of {@code (num, realm, shard)} ids.
+	 *
+	 * @param ids
+	 */
 	public void setNativeIds(long[] ids) {
 		this.ids = ids;
 	}
@@ -129,12 +162,12 @@ public class CopyOnWriteIds {
 		return ids;
 	}
 
-	public List<TokenID> getAsTokenIds() {
-		final List<TokenID> grpcIds = new ArrayList<>();
+	public List<Id> getAsIds() {
+		final List<Id> modelIds = new ArrayList<>();
 		for (int i = 0, n = size(); i < n; i++) {
-			grpcIds.add(asGrpcTokenId(nativeIdAt(i)));
+			modelIds.add(asModel(nativeIdAt(i)));
 		}
-		return grpcIds;
+		return modelIds;
 	}
 
 	/* --- Helpers --- */
@@ -234,10 +267,24 @@ public class CopyOnWriteIds {
 		return new long[] { grpcId.getTokenNum(), grpcId.getRealmNum(), grpcId.getShardNum() };
 	}
 
+	private long[] asNativeId(Id id) {
+		return new long[] { id.getNum(), id.getRealm(), id.getShard() };
+	}
+
 	private List<long[]> asNativeIds(Set<TokenID> grpcIds) {
 		final var nativeIds = new ArrayList<long[]>();
 		grpcIds.forEach(grpcId -> nativeIds.add(asNativeId(grpcId)));
 		return nativeIds;
+	}
+
+	private List<long[]> asNative(Set<Id> modelIds) {
+		final var nativeIds = new ArrayList<long[]>();
+		modelIds.forEach(grpcId -> nativeIds.add(asNativeId(grpcId)));
+		return nativeIds;
+	}
+
+	private Id asModel(long[] nativeId) {
+		return new Id(nativeId[SHARD_OFFSET], nativeId[REALM_OFFSET], nativeId[NUM_OFFSET]);
 	}
 
 	private TokenID asGrpcTokenId(long[] nativeId) {

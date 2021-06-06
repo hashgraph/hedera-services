@@ -21,6 +21,7 @@ package com.hedera.services.state.merkle;
  */
 
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
+import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -50,10 +51,15 @@ class MerkleAccountTokensTest {
 	TokenID a = asToken("0.0.2");
 	TokenID b = asToken("0.1.2");
 	TokenID c = asToken("1.1.2");
-	TokenID d = asToken("0.0.3");
-	TokenID e = asToken("0.0.1");
-	long[] initialIds = new long[] {
-		2, 0, 0, 2, 1, 0, 2, 1, 1
+
+	private Id aId = new Id(0, 0, 2);
+	private Id bId = new Id(0, 1, 2);
+	private Id cId = new Id(1, 1, 2);
+	private Id dId = new Id(0, 0, 3);
+	private Id eId = new Id(0, 0, 1);
+
+	private long[] initialIds = new long[] {
+			2, 0, 0, 2, 1, 0, 2, 1, 1
 	};
 
 	MerkleAccountTokens subject;
@@ -86,45 +92,45 @@ class MerkleAccountTokensTest {
 	}
 
 	@Test
-	public void asIdsWorks() {
+	void asTokenIdsWorks() {
 		// expect:
 		assertEquals(
 				List.of(a, b, c),
-				subject.asIds());
+				subject.asTokenIds());
 		// and when:
 		subject = new MerkleAccountTokens();
 		// then:
-		assertEquals(Collections.emptyList(), subject.asIds());
+		assertEquals(Collections.emptyList(), subject.asTokenIds());
 	}
 
 	@Test
-	public void dissociateAllWorks() {
+	void dissociateWorks() {
 		// when:
-		subject.dissociateAll(Set.of(a, e));
+		subject.dissociate(Set.of(aId, eId));
 
 		// then:
-		assertArrayEquals(new long[] {2, 1, 0}, Arrays.copyOfRange(subject.getIds(), 0, 3));
+		assertArrayEquals(new long[] { 2, 1, 0 }, Arrays.copyOfRange(subject.getRawIds(), 0, 3));
 		// and:
-		assertFalse(subject.includes(a));
+		assertFalse(subject.includes(aId));
 	}
 
 	@Test
-	public void associateAllWorks() {
+	void associateWorks() {
 		// when:
-		subject.associateAll(Set.of(d, e));
+		subject.associate(Set.of(dId, eId));
 
 		// then:
-		assertArrayEquals(new long[] {1, 0, 0}, Arrays.copyOfRange(subject.getIds(), 0, 3));
+		assertArrayEquals(new long[] { 1, 0, 0 }, Arrays.copyOfRange(subject.getRawIds(), 0, 3));
 		// and:
-		assertArrayEquals(new long[] {3, 0, 0}, Arrays.copyOfRange(subject.getIds(), 12, 15));
+		assertArrayEquals(new long[] { 3, 0, 0 }, Arrays.copyOfRange(subject.getRawIds(), 12, 15));
 	}
 
 	@Test
-	public void objectContractMet() {
+	void objectContractMet() {
 		// given:
 		var one = new MerkleAccountTokens();
 		var two = new MerkleAccountTokens();
-		two.associateAll(Set.of(a, b, c));
+		two.associate(Set.of(aId, bId, cId));
 
 		// then:
 		assertNotEquals(one, null);
@@ -136,7 +142,7 @@ class MerkleAccountTokensTest {
 	}
 
 	@Test
-	public void merkleMethodsWork() {
+	void merkleMethodsWork() {
 		// expect;
 		assertEquals(MerkleAccountTokens.MERKLE_VERSION, subject.getVersion());
 		assertEquals(MerkleAccountTokens.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
@@ -144,7 +150,7 @@ class MerkleAccountTokensTest {
 	}
 
 	@Test
-	public void serializeWorks() throws IOException {
+	void serializeWorks() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 		// and:
@@ -158,7 +164,7 @@ class MerkleAccountTokensTest {
 	}
 
 	@Test
-	public void deserializeWorks() throws IOException {
+	void deserializeWorks() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 		// and:
@@ -174,7 +180,7 @@ class MerkleAccountTokensTest {
 	}
 
 	@Test
-	public void toStringWorks() {
+	void toStringWorks() {
 		// expect:
 		assertEquals(
 				"MerkleAccountTokens{tokens=[0.0.2, 0.1.2, 1.1.2]}",
@@ -182,12 +188,28 @@ class MerkleAccountTokensTest {
 	}
 
 	@Test
-	public void copyWorks() {
+	void copyWorks() {
 		// when:
 		var subjectCopy = subject.copy();
 
 		// then:
 		assertNotSame(subjectCopy, subject);
 		assertEquals(subject, subjectCopy);
+	}
+
+	@Test
+	void updateAssociationsWorks() {
+		// setup:
+		final var expectedUpdate = "[0.0.1, 0.0.3]";
+
+		// given:
+		final var newIds = new CopyOnWriteIds();
+		newIds.addAllIds(Set.of(dId, eId));
+
+		// when:
+		subject.updateAssociationsFrom(newIds);
+
+		// then:
+		assertEquals(expectedUpdate, subject.readableTokenIds());
 	}
 }

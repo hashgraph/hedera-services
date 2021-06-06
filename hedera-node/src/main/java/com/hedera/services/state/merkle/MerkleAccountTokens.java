@@ -22,6 +22,7 @@ package com.hedera.services.state.merkle;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
+import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -31,6 +32,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+
+import static java.util.stream.Collectors.toList;
 
 public class MerkleAccountTokens extends AbstractMerkleLeaf {
 	static final int MAX_CONCEIVABLE_TOKEN_ID_PARTS = Integer.MAX_VALUE;
@@ -106,24 +109,26 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 				.toString();
 	}
 
-	String readableTokenIds() {
-		return ids.toReadableIdList();
+	public List<TokenID> asTokenIds() {
+		return ids.getAsIds().stream()
+				.map(id -> TokenID.newBuilder()
+						.setShardNum(id.getShard())
+						.setRealmNum(id.getRealm())
+						.setTokenNum(id.getNum())
+						.build()
+				).collect(toList());
 	}
 
-	public List<TokenID> asIds() {
-		return ids.getAsTokenIds();
-	}
-
-	long[] getIds() {
-		return ids.getNativeIds();
-	}
-
-	/* --- Association Manipulation --- */
+	/* --- Association ops --- */
 	public int numAssociations() {
 		return ids.size();
 	}
 
 	public boolean includes(TokenID id) {
+		return ids.contains(id);
+	}
+
+	public boolean includes(Id id) {
 		return ids.contains(id);
 	}
 
@@ -139,5 +144,35 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 			throw new IllegalStateException("Cannot dissociate any tokens from an immutable container");
 		}
 		ids.removeAll(tokenIds);
+	}
+
+	public void updateAssociationsFrom(CopyOnWriteIds newIds) {
+		ids.setNativeIds(newIds.getNativeIds());
+	}
+
+	public void associate(Set<Id> modelIds) {
+		if (isImmutable()) {
+			throw new IllegalStateException("Cannot associate any tokens to an immutable container");
+		}
+		ids.addAllIds(modelIds);
+	}
+
+	public void dissociate(Set<Id> modelIds) {
+		if (isImmutable()) {
+			throw new IllegalStateException("Cannot dissociate any tokens from an immutable container");
+		}
+		ids.removeAllIds(modelIds);
+	}
+
+	public CopyOnWriteIds getIds() {
+		return ids;
+	}
+
+	long[] getRawIds() {
+		return ids.getNativeIds();
+	}
+
+	String readableTokenIds() {
+		return ids.toReadableIdList();
 	}
 }

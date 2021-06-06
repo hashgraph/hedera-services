@@ -912,7 +912,8 @@ public class ServicesContext {
 	}
 
 	/**
-	 * Returns the singleton {@link TypedTokenStore} used in {@link ServicesState#handleTransaction(long, boolean, Instant,
+	 * Returns the singleton {@link TypedTokenStore} used in {@link ServicesState#handleTransaction(long, boolean,
+	 * Instant,
 	 * Instant, Transaction)} to load, save, and create tokens in the Swirlds application state. It decouples the
 	 * {@code handleTransaction} logic from the details of the Merkle state.
 	 *
@@ -926,7 +927,11 @@ public class ServicesContext {
 	public TypedTokenStore typedTokenStore() {
 		if (typedTokenStore == null) {
 			typedTokenStore = new TypedTokenStore(
-					accountStore(), new TransactionRecordService(txnCtx()), this::tokens, this::tokenAssociations);
+					accountStore(),
+					new TransactionRecordService(txnCtx()),
+					this::tokens,
+					this::tokenAssociations,
+					(BackingTokenRels) backingTokenRels());
 		}
 		return typedTokenStore;
 	}
@@ -1370,7 +1375,8 @@ public class ServicesContext {
 				entry(TokenAccountWipe,
 						List.of(new TokenWipeTransitionLogic(tokenStore(), txnCtx()))),
 				entry(TokenAssociateToAccount,
-						List.of(new TokenAssociateTransitionLogic(tokenStore(), txnCtx()))),
+						List.of(new TokenAssociateTransitionLogic(
+								accountStore(), typedTokenStore(), txnCtx(), globalDynamicProperties()))),
 				entry(TokenDissociateFromAccount,
 						List.of(new TokenDissociateTransitionLogic(tokenStore(), txnCtx()))),
 				/* Schedule */
@@ -1379,11 +1385,7 @@ public class ServicesContext {
 								scheduleStore(), txnCtx(), activationHelper(), validator(), scheduleExecutor()))),
 				entry(ScheduleSign,
 						List.of(new ScheduleSignTransitionLogic(
-								scheduleStore(),
-								txnCtx(),
-								activationHelper(),
-								scheduleExecutor()
-						))),
+								scheduleStore(), txnCtx(), activationHelper(), scheduleExecutor()))),
 				entry(ScheduleDelete,
 						List.of(new ScheduleDeleteTransitionLogic(scheduleStore(), txnCtx()))),
 				/* System */

@@ -185,7 +185,7 @@ public class StateView {
 	public static List<TokenRelationship> tokenRels(StateView view, AccountID id) {
 		var account = view.accounts().get(fromAccountId(id));
 		List<TokenRelationship> relationships = new ArrayList<>();
-		var tokenIds = account.tokens().asIds();
+		var tokenIds = account.tokens().asTokenIds();
 		for (TokenID tId : tokenIds) {
 			var optionalToken = view.tokenWith(tId);
 			var effectiveToken = optionalToken.orElse(GONE_TOKEN);

@@ -92,7 +92,7 @@ class TokenBurnTransitionLogicTest {
 
 		// then:
 		verify(token).burn(treasuryRel, amount);
-		verify(store).saveToken(token);
+		verify(store).persistToken(token);
 		verify(store).persistTokenRelationship(treasuryRel);
 	}
 

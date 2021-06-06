@@ -29,7 +29,6 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.swirlds.fcmap.FCMap;
-import org.apache.commons.lang3.NotImplementedException;
 
 import java.util.function.Supplier;
 
@@ -76,6 +75,7 @@ public class AccountStore {
 		final var account = new Account(id);
 		account.setExpiry(merkleAccount.getExpiry());
 		account.initBalance(merkleAccount.getBalance());
+		account.setAssociatedTokens(merkleAccount.tokens().getIds().copy());
 
 		return account;
 	}
@@ -88,7 +88,14 @@ public class AccountStore {
 	 * @param account the account to save
 	 */
 	public void persistAccount(Account account) {
-		throw new NotImplementedException();
+		final var id = account.getId();
+		final var key = new MerkleEntityId(id.getShard(), id.getRealm(), id.getNum());
+
+		final var currentAccounts = accounts.get();
+		final var mutableAccount = currentAccounts.getForModify(key);
+		mutableAccount.tokens().updateAssociationsFrom(account.getAssociatedTokens());
+
+		currentAccounts.replace(key, mutableAccount);
 	}
 
 

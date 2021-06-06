@@ -35,7 +35,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_S
 import static org.junit.jupiter.api.Assertions.*;
 
 class TokenTest {
-	private final JKey supplyKey = TxnHandlingScenario.TOKEN_SUPPLY_KT.asJKeyUnchecked();
+	private final JKey someKey = TxnHandlingScenario.TOKEN_SUPPLY_KT.asJKeyUnchecked();
 	private final long initialSupply = 1_000L;
 	private final long initialTreasuryBalance = 500L;
 	private final Id id = new Id(1,2 , 3);
@@ -60,6 +60,63 @@ class TokenTest {
 	}
 
 	@Test
+	void constructsExpectedDefaultRelWithNoKeys() {
+		// setup:
+		nonTreasuryRel.setKycGranted(true);
+
+		// when:
+		final var newRel = subject.newRelationshipWith(nonTreasuryAccount);
+
+		// then:
+		assertEquals(newRel, nonTreasuryRel);
+	}
+
+	@Test
+	void constructsExpectedDefaultRelWithFreezeKeyAndFrozenByDefault() {
+		// setup:
+		nonTreasuryRel.setFrozen(true);
+		nonTreasuryRel.setKycGranted(true);
+
+		// given:
+		subject.setFreezeKey(someKey);
+		subject.setFrozenByDefault(true);
+
+		// when:
+		final var newRel = subject.newRelationshipWith(nonTreasuryAccount);
+
+		// then:
+		assertEquals(newRel, nonTreasuryRel);
+	}
+
+	@Test
+	void constructsExpectedDefaultRelWithFreezeKeyAndNotFrozenByDefault() {
+		// setup:
+		nonTreasuryRel.setKycGranted(true);
+
+		// given:
+		subject.setFreezeKey(someKey);
+		subject.setFrozenByDefault(false);
+
+		// when:
+		final var newRel = subject.newRelationshipWith(nonTreasuryAccount);
+
+		// then:
+		assertEquals(newRel, nonTreasuryRel);
+	}
+
+	@Test
+	void constructsExpectedDefaultRelWithKycKeyOnly() {
+		// given:
+		subject.setKycKey(someKey);
+
+		// when:
+		final var newRel = subject.newRelationshipWith(nonTreasuryAccount);
+
+		// then:
+		assertEquals(newRel, nonTreasuryRel);
+	}
+
+	@Test
 	void failsInvalidIfLogicImplTriesToChangeNonTreasurySupply() {
 		assertFailsWith(() -> subject.burn(nonTreasuryRel, 1L), FAIL_INVALID);
 		assertFailsWith(() -> subject.mint(nonTreasuryRel, 1L), FAIL_INVALID);
@@ -80,7 +137,7 @@ class TokenTest {
 	@Test
 	void cannotChangeTreasuryBalanceToNegative() {
 		// given:
-		subject.setSupplyKey(supplyKey);
+		subject.setSupplyKey(someKey);
 
 		assertFailsWith(() -> subject.burn(treasuryRel, initialTreasuryBalance + 1), INSUFFICIENT_TOKEN_BALANCE);
 	}
@@ -91,7 +148,7 @@ class TokenTest {
 		final long overflowMint = Long.MAX_VALUE - initialSupply + 1L;
 
 		// given:
-		subject.setSupplyKey(supplyKey);
+		subject.setSupplyKey(someKey);
 
 		assertFailsWith(() -> subject.mint(treasuryRel, overflowMint), INVALID_TOKEN_MINT_AMOUNT);
 		assertFailsWith(() -> subject.burn(treasuryRel, initialSupply + 1), INVALID_TOKEN_BURN_AMOUNT);
@@ -102,7 +159,7 @@ class TokenTest {
 		final long burnAmount = 100L;
 
 		// given:
-		subject.setSupplyKey(supplyKey);
+		subject.setSupplyKey(someKey);
 
 		// when:
 		subject.burn(treasuryRel, burnAmount);
@@ -118,7 +175,7 @@ class TokenTest {
 		final long mintAmount = 100L;
 
 		// given:
-		subject.setSupplyKey(supplyKey);
+		subject.setSupplyKey(someKey);
 
 		// when:
 		subject.mint(treasuryRel, mintAmount);

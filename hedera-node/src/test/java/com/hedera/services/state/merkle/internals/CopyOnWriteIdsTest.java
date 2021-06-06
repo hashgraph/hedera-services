@@ -1,5 +1,6 @@
 package com.hedera.services.state.merkle.internals;
 
+import com.hedera.services.store.models.Id;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -7,6 +8,8 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CopyOnWriteIdsTest {
 	private List<long[]> someIds = List.of(
@@ -39,6 +42,21 @@ class CopyOnWriteIdsTest {
 		// then:
 		assertEquals(aRepr, a.toReadableIdList());
 		assertEquals(aCopyRepr, aCopy.toReadableIdList());
+	}
+
+	@Test
+	void containsWorks() {
+		// setup:
+		final var present = new Id(1, 2, 4);
+		final var absent = new Id(1, 2, 666);
+
+		// given:
+		final var subject = new CopyOnWriteIds();
+		subject.add(someIds);
+
+		// expect:
+		assertTrue(subject.contains(present));
+		assertFalse(subject.contains(absent));
 	}
 
 	private Predicate<long[]> listHas(List<long[]> l) {
