@@ -299,24 +299,6 @@ public class ServicesContextTest {
 	}
 
 	@Test
-	void hasExpectedNodeAccount() {
-		// setup:
-		Address address = mock(Address.class);
-		AddressBook book = mock(AddressBook.class);
-
-		given(address.getMemo()).willReturn("0.0.3");
-		given(book.getAddress(1L)).willReturn(address);
-		given(state.addressBook()).willReturn(book);
-
-		// when:
-		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
-
-		// then:
-		assertEquals(ctx.address(), address);
-		assertEquals(AccountID.newBuilder().setAccountNum(3L).build(), ctx.nodeAccount());
-	}
-
-	@Test
 	void canOverrideLastHandledConsensusTime() {
 		// given:
 		Instant dataDrivenNow = Instant.now();
@@ -591,11 +573,13 @@ public class ServicesContextTest {
 		final AddressBook book = mock(AddressBook.class);
 		final Address address = mock(Address.class);
 		given(state.addressBook()).willReturn(book);
-		given(book.getAddress(id)).willReturn(address);
+		given(address.getStake()).willReturn(1L);
 		given(address.getMemo()).willReturn("0.0.3");
+		given(book.getAddress(0)).willReturn(address);
+		given(book.getSize()).willReturn(1);
 
 		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
-		assertEquals(expectedDir + "/record0.0.3", ctx.getRecordStreamDirectory(sourceProps));
+		assertEquals(expectedDir + "/record0.0.0", ctx.getRecordStreamDirectory(sourceProps));
 	}
 
 	@Test

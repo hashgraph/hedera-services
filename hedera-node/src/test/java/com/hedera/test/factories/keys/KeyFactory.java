@@ -21,10 +21,10 @@ package com.hedera.test.factories.keys;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
+import com.swirlds.common.CommonUtils;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 
@@ -76,11 +76,11 @@ public class KeyFactory {
 	public static String asPubKeyHex(Key key) {
 		assert(!key.hasKeyList() && !key.hasThresholdKey());
 		if (key.getRSA3072() != ByteString.EMPTY) {
-			return MiscUtils.commonsBytesToHex(key.getRSA3072().toByteArray());
+			return CommonUtils.hex(key.getRSA3072().toByteArray());
 		} else if (key.getECDSA384() != ByteString.EMPTY) {
-			return MiscUtils.commonsBytesToHex(key.getECDSA384().toByteArray());
+			return CommonUtils.hex(key.getECDSA384().toByteArray());
 		} else {
-			return MiscUtils.commonsBytesToHex(key.getEd25519().toByteArray());
+			return CommonUtils.hex(key.getEd25519().toByteArray());
 		}
 	}
 
@@ -94,7 +94,7 @@ public class KeyFactory {
 		KeyPair pair = new KeyPairGenerator().generateKeyPair();
 		byte[] pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
 		Key akey = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
-		String pubKeyHex = MiscUtils.commonsBytesToHex(pubKey);
+		String pubKeyHex = CommonUtils.hex(pubKey);
 		pubKey2privKeyMap.put(pubKeyHex, pair.getPrivate());
 		return akey;
 	}

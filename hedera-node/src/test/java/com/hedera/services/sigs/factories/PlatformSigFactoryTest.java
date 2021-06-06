@@ -21,7 +21,7 @@ package com.hedera.services.sigs.factories;
  */
 
 import com.swirlds.common.crypto.TransactionSignature;
-import org.apache.commons.codec.binary.Hex;
+import com.swirlds.common.CommonUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -134,10 +134,10 @@ public class PlatformSigFactoryTest {
 		var b = createEd25519(differentPk, differentSig, data);
 		String expected = String.format(
 				"(PK = %s | SIG = %s | UNKNOWN), (PK = %s | SIG = %s | UNKNOWN)",
-				Hex.encodeHexString(pk),
-				Hex.encodeHexString(sig),
-				Hex.encodeHexString(differentPk),
-				Hex.encodeHexString(differentSig));
+				CommonUtils.hex(pk),
+				CommonUtils.hex(sig),
+				CommonUtils.hex(differentPk),
+				CommonUtils.hex(differentSig));
 
 		// given:
 		var sigs = List.of(a, b);

@@ -24,7 +24,7 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.params.converter.ArgumentConversionException;
 import org.junit.jupiter.params.converter.ArgumentConverter;
-import org.spongycastle.util.encoders.Hex;
+import com.swirlds.common.CommonUtils;
 
 public final class JEd25519KeyConverter implements ArgumentConverter {
 	@Override
@@ -37,6 +37,6 @@ public final class JEd25519KeyConverter implements ArgumentConverter {
 			throw new ArgumentConversionException(input + " is not a string");
 		}
 		var inputString = (String) input;
-		return new JEd25519Key(Hex.decode(inputString));
+		return new JEd25519Key(CommonUtils.unhex(inputString));
 	}
 }

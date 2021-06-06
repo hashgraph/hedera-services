@@ -24,7 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
-import org.apache.commons.codec.binary.Hex;
+import com.swirlds.common.CommonUtils;
 import org.ethereum.core.AccountState;
 import org.ethereum.core.Transaction;
 import org.ethereum.core.TransactionReceipt;
@@ -90,8 +90,8 @@ class DomainUtilsTest {
 		logInfo = new LogInfo(
 				EntityIdUtils.asSolidityAddress(0, 0, primaryCreated.getContractNum()),
 				List.of(
-						DataWord.of(Hex.encodeHexString("First".getBytes())),
-						DataWord.of(Hex.encodeHexString("Second".getBytes()))),
+						DataWord.of(CommonUtils.hex("First".getBytes())),
+						DataWord.of(CommonUtils.hex("Second".getBytes()))),
 				data);
 		receipt.setLogInfoList(List.of(logInfo));
 	}

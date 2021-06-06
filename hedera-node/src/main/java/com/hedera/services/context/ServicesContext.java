@@ -377,7 +377,7 @@ import static com.hedera.services.sigs.utils.PrecheckUtils.queryPaymentTestFor;
 import static com.hedera.services.state.expiry.NoopExpiringCreations.NOOP_EXPIRING_CREATIONS;
 import static com.hedera.services.store.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
 import static com.hedera.services.txns.submission.StructuralPrecheck.HISTORICAL_MAX_PROTO_MESSAGE_DEPTH;
-import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
+import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
@@ -757,7 +757,7 @@ public class ServicesContext {
 
 	public NodeInfo nodeInfo() {
 		if (nodeInfo == null) {
-			nodeInfo = new NodeInfo(this::addressBook);
+			nodeInfo = new NodeInfo(id.getId(), this::addressBook);
 		}
 		return nodeInfo;
 	}
@@ -1205,7 +1205,7 @@ public class ServicesContext {
 
 	public PrecheckVerifier precheckVerifier() {
 		if (precheckVerifier == null) {
-			Predicate<TransactionBody> isQueryPayment = queryPaymentTestFor(nodeAccount());
+			Predicate<TransactionBody> isQueryPayment = queryPaymentTestFor(effectiveNodeAccount());
 			PrecheckKeyReqs reqs = new PrecheckKeyReqs(keyOrder(), lookupRetryingKeyOrder(), isQueryPayment);
 			precheckVerifier = new PrecheckVerifier(syncVerifier(), reqs, DefaultSigBytesProvider.DEFAULT_SIG_BYTES);
 		}
@@ -1578,7 +1578,7 @@ public class ServicesContext {
 
 	public OptionValidator validator() {
 		if (validator == null) {
-			validator = new ContextOptionValidator(nodeAccount(), txnCtx(), globalDynamicProperties());
+			validator = new ContextOptionValidator(effectiveNodeAccount(), txnCtx(), globalDynamicProperties());
 		}
 		return validator;
 	}
@@ -1755,6 +1755,7 @@ public class ServicesContext {
 		if (grpc == null) {
 			grpc = new NettyGrpcServerManager(
 					Runtime.getRuntime()::addShutdownHook,
+					nodeLocalProperties(),
 					List.of(
 							cryptoGrpc(),
 							filesGrpc(),
@@ -1904,18 +1905,6 @@ public class ServicesContext {
 			console = platform().createConsole(true);
 		}
 		return console;
-	}
-
-	public AccountID nodeAccount() {
-		if (accountId == null) {
-			try {
-				accountId = accountParsedFromString(address().getMemo());
-			} catch (Exception fatal) {
-				log.error("Address book has no account for node, cannot proceed!", fatal);
-				systemExits.fail(1);
-			}
-		}
-		return accountId;
 	}
 
 	public Address address() {
@@ -2090,7 +2079,7 @@ public class ServicesContext {
 	 */
 	public String getRecordStreamDirectory(NodeLocalProperties source) {
 		if (recordStreamDir == null) {
-			final String nodeAccountString = EntityIdUtils.asLiteralString(nodeAccount());
+			final String nodeAccountString = asLiteralString(effectiveNodeAccount());
 			String parentDir = source.recordLogDir();
 			if (!parentDir.endsWith(File.separator)) {
 				parentDir += File.separator;
@@ -2151,5 +2140,11 @@ public class ServicesContext {
 
 	void setSystemExits(SystemExits systemExits) {
 		this.systemExits = systemExits;
+	}
+
+	private AccountID effectiveNodeAccount() {
+		final var info = nodeInfo();
+		/* If we do not have a self account, we must be zero-stake and will never process a query payment. */
+		return info.hasSelfAccount() ? info.selfAccount() : AccountID.getDefaultInstance();
 	}
 }

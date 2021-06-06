@@ -30,6 +30,9 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -52,9 +55,15 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fcmap.FCMap;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 
+import javax.inject.Inject;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -78,11 +87,11 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
+@ExtendWith(LogCaptureExtension.class)
 class AwareTransactionContextTest {
-	final TransactionID scheduledTxnId = TransactionID.newBuilder()
+	private final TransactionID scheduledTxnId = TransactionID.newBuilder()
 			.setAccountID(IdUtils.asAccount("0.0.2"))
 			.build();
-	private long fee = 123L;
 	private long memberId = 3;
 	private long anotherMemberId = 4;
 	private Instant now = Instant.now();
@@ -117,9 +126,9 @@ class AwareTransactionContextTest {
 	private Address anotherAddress;
 	private AddressBook book;
 	private HbarCentExchange exchange;
+	private NodeInfo nodeInfo;
 	private ServicesContext ctx;
 	private PlatformTxnAccessor accessor;
-	private AwareTransactionContext subject;
 	private Transaction signedTxn;
 	private TransactionBody txn;
 	private TransactionRecord record;
@@ -131,7 +140,13 @@ class AwareTransactionContextTest {
 			.setAccountID(payer)
 			.build();
 	private ContractFunctionResult result = ContractFunctionResult.newBuilder().setContractID(contractCreated).build();
-	JKey payerKey;
+	private JKey payerKey;
+
+	@Inject
+	private LogCaptor logCaptor;
+
+	@LoggingSubject
+	private AwareTransactionContext subject;
 
 	@BeforeEach
 	private void setup() {
@@ -151,6 +166,7 @@ class AwareTransactionContextTest {
 		given(exchange.activeRates()).willReturn(ratesNow);
 
 		itemizableFeeCharging = mock(ItemizableFeeCharging.class);
+		given(itemizableFeeCharging.itemizedFees()).willReturn(TransferList.getDefaultInstance());
 
 		payerKey = mock(JKey.class);
 		MerkleAccount payerAccount = mock(MerkleAccount.class);
@@ -165,6 +181,10 @@ class AwareTransactionContextTest {
 		given(ctx.charging()).willReturn(itemizableFeeCharging);
 		given(ctx.accounts()).willReturn(accounts);
 		given(ctx.addressBook()).willReturn(book);
+
+		nodeInfo = mock(NodeInfo.class);
+		given(ctx.nodeInfo()).willReturn(nodeInfo);
+		given(nodeInfo.accountOf(memberId)).willReturn(nodeAccount);
 
 		txn = mock(TransactionBody.class);
 		given(txn.getMemo()).willReturn(memo);
@@ -272,10 +292,13 @@ class AwareTransactionContextTest {
 
 	@Test
 	void failsHardForMissingMemberAccount() {
-		given(book.getAddress(memberId)).willReturn(null);
+		given(nodeInfo.accountOf(memberId)).willThrow(IllegalArgumentException.class);
 
-		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.submittingNodeAccount());
+		// then:
+		var ise = assertThrows(IllegalStateException.class, () -> subject.submittingNodeAccount());
+		// and:
+		assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith("No available Hedera account for member 3!")));
+		assertEquals("Member 3 must have a Hedera account!", ise.getMessage());
 	}
 
 	@Test
@@ -292,7 +315,8 @@ class AwareTransactionContextTest {
 
 	@Test
 	void resetsEverythingElse() {
-		// given:
+		given(nodeInfo.accountOf(anotherMemberId)).willReturn(anotherNodeAccount);
+		// and:
 		subject.addNonThresholdFeeChargedToPayer(1_234L);
 		subject.setCallResult(result);
 		subject.setStatus(ResponseCodeEnum.SUCCESS);

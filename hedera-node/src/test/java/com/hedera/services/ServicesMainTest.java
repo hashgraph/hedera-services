@@ -21,6 +21,7 @@ package com.hedera.services;
  */
 
 import com.hedera.services.context.CurrentPlatformStatus;
+import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
@@ -83,42 +84,44 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.verifyNoInteractions;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.mockStatic;
 
 public class ServicesMainTest {
-	final long NODE_ID = 1L;
-	final String PATH = "/this/was/mr/bleaneys/room";
+	private final long NODE_ID = 1L;
+	private final String PATH = "/this/was/mr/bleaneys/room";
 
-	FCMap topics;
-	FCMap accounts;
-	FCMap storage;
-	Pause pause;
-	Console console;
-	Platform platform;
-	SystemExits systemExits;
-	AddressBook addressBook;
-	PrintStream consoleOut;
-	FeeCalculator fees;
-	ServicesMain subject;
-	ServicesContext ctx;
-	PropertySource properties;
-	LedgerValidator ledgerValidator;
-	AccountsExporter accountsExporter;
-	PropertySources propertySources;
-	BalancesExporter balancesExporter;
-	StateMigrations stateMigrations;
-	MerkleNetworkContext networkCtx;
-	FeeMultiplierSource feeMultiplierSource;
-	ServicesStatsManager statsManager;
-	GrpcServerManager grpc;
-	NodeLocalProperties nodeLocalProps;
-	SystemFilesManager systemFilesManager;
-	SystemAccountsCreator systemAccountsCreator;
-	CurrentPlatformStatus platformStatus;
-	AccountRecordsHistorian recordsHistorian;
-	GlobalDynamicProperties globalDynamicProperties;
-	BackingStore<AccountID, MerkleAccount> backingAccounts;
-	RecordStreamManager recordStreamManager;
-	NetworkCtxManager networkCtxManager;
+	private FCMap topics;
+	private FCMap accounts;
+	private FCMap storage;
+	private Pause pause;
+	private Console console;
+	private Platform platform;
+	private SystemExits systemExits;
+	private AddressBook addressBook;
+	private PrintStream consoleOut;
+	private FeeCalculator fees;
+	private ServicesMain subject;
+	private ServicesContext ctx;
+	private PropertySource properties;
+	private LedgerValidator ledgerValidator;
+	private AccountsExporter accountsExporter;
+	private PropertySources propertySources;
+	private BalancesExporter balancesExporter;
+	private StateMigrations stateMigrations;
+	private MerkleNetworkContext networkCtx;
+	private FeeMultiplierSource feeMultiplierSource;
+	private ServicesStatsManager statsManager;
+	private GrpcServerManager grpc;
+	private NodeLocalProperties nodeLocalProps;
+	private SystemFilesManager systemFilesManager;
+	private SystemAccountsCreator systemAccountsCreator;
+	private CurrentPlatformStatus platformStatus;
+	private AccountRecordsHistorian recordsHistorian;
+	private GlobalDynamicProperties globalDynamicProperties;
+	private BackingStore<AccountID, MerkleAccount> backingAccounts;
+	private RecordStreamManager recordStreamManager;
+	private NetworkCtxManager networkCtxManager;
+	private NodeInfo nodeInfo;
 
 	@BeforeEach
 	private void setup() {
@@ -151,6 +154,8 @@ public class ServicesMainTest {
 		networkCtx = mock(MerkleNetworkContext.class);
 		feeMultiplierSource = mock(FeeMultiplierSource.class);
 		networkCtxManager = mock(NetworkCtxManager.class);
+		nodeInfo = mock(NodeInfo.class);
+		given(nodeInfo.hasSelfAccount()).willReturn(true);
 
 		ctx = mock(ServicesContext.class);
 
@@ -164,7 +169,7 @@ public class ServicesMainTest {
 		given(ctx.nodeLocalProperties()).willReturn(nodeLocalProps);
 		given(ctx.accounts()).willReturn(accounts);
 		given(ctx.id()).willReturn(new NodeId(false, NODE_ID));
-		given(ctx.nodeAccount()).willReturn(IdUtils.asAccount("0.0.3"));
+		given(ctx.nodeInfo()).willReturn(nodeInfo);
 		given(ctx.console()).willReturn(console);
 		given(ctx.consoleOut()).willReturn(consoleOut);
 		given(ctx.addressBook()).willReturn(addressBook);
@@ -197,7 +202,7 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void failsFastOnNonUtf8DefaultCharset() {
+	void failsFastOnNonUtf8DefaultCharset() {
 		// setup:
 		subject.defaultCharset = () -> StandardCharsets.US_ASCII;
 
@@ -209,8 +214,8 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void failsFastOnMissingNodeAccountIdIfNotSkippingExits() {
-		given(ctx.nodeAccount()).willReturn(null);
+	void failsFastOnMissingNodeAccountIdIfNotSkippingExits() {
+		given(nodeInfo.hasSelfAccount()).willReturn(false);
 
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
@@ -220,7 +225,7 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void exitsOnAddressBookCreationFailure() {
+	void exitsOnAddressBookCreationFailure() {
 		willThrow(IllegalStateException.class)
 				.given(systemFilesManager).createAddressBookIfMissing();
 
@@ -232,7 +237,7 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void exitsOnCreationFailure() {
+	void exitsOnCreationFailure() {
 		willThrow(IllegalStateException.class)
 				.given(systemAccountsCreator).ensureSystemAccounts(any(), any());
 
@@ -244,7 +249,7 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void initializesSanelyGivenPreconditions() {
+	void initializesSanelyGivenPreconditions() {
 		var throttling = mock(FunctionalityThrottling.class);
 
 		// given:
@@ -278,7 +283,7 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void runsOnDefaultPortInProduction() {
+	void runsOnDefaultPortInProduction() {
 		given(nodeLocalProps.activeProfile()).willReturn(Profile.PROD);
 
 		// when:
@@ -289,7 +294,7 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void runsOnDefaultPortInDevIfBlessedInSingleNodeListeningNode() {
+	void runsOnDefaultPortInDevIfBlessedInSingleNodeListeningNode() {
 		// setup:
 		Address address = mock(Address.class);
 
@@ -306,7 +311,7 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void doesntRunInDevIfNotBlessedInSingleNodeListeningNode() {
+	void doesntRunInDevIfNotBlessedInSingleNodeListeningNode() {
 		// setup:
 		Address address = mock(Address.class);
 
@@ -323,7 +328,7 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void runsOnDefaultPortInDevIfNotInSingleNodeListeningNodeAndDefault() {
+	void runsOnDefaultPortInDevIfNotInSingleNodeListeningNodeAndDefault() {
 		// setup:
 		Address address = mock(Address.class);
 
@@ -341,7 +346,7 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void runsOnOffsetPortInDevIfNotInSingleNodeListeningNodeAndNotDefault() {
+	void runsOnOffsetPortInDevIfNotInSingleNodeListeningNodeAndNotDefault() {
 		// setup:
 		Address address = mock(Address.class);
 
@@ -359,7 +364,7 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void loadsSystemFilesIfNotAlreadyDone() {
+	void loadsSystemFilesIfNotAlreadyDone() {
 		given(systemFilesManager.areObservableFilesLoaded()).willReturn(true);
 
 		// when:
@@ -374,7 +379,7 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void managesSystemFiles() {
+	void managesSystemFiles() {
 		given(systemFilesManager.areObservableFilesLoaded()).willReturn(false);
 
 		// when:
@@ -389,7 +394,7 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void createsSystemAccountsIfRequested() {
+	void createsSystemAccountsIfRequested() {
 		// when:
 		subject.init(null, new NodeId(false, NODE_ID));
 
@@ -399,7 +404,7 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void rethrowsAccountsCreationFailureAsIse() {
+	void rethrowsAccountsCreationFailureAsIse() {
 		given(ctx.systemAccountsCreator()).willReturn(null);
 
 		// when:
@@ -410,7 +415,7 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void exportsAccountsIfRequested() throws Exception {
+	void exportsAccountsIfRequested() throws Exception {
 		given(nodeLocalProps.accountsExportPath()).willReturn(PATH);
 		given(nodeLocalProps.exportAccountsOnStartup()).willReturn(true);
 
@@ -422,7 +427,7 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void rethrowsAccountsExportFailureAsIse() {
+	void rethrowsAccountsExportFailureAsIse() {
 		given(nodeLocalProps.accountsExportPath()).willReturn(PATH);
 		given(nodeLocalProps.exportAccountsOnStartup()).willReturn(true);
 		given(ctx.accountsExporter()).willReturn(null);
@@ -435,7 +440,7 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void updatesCurrentStatusOnChangeOnlyIfBehind() {
+	void updatesCurrentStatusOnChangeOnlyIfBehind() {
 		// given:
 		subject.ctx = ctx;
 		PlatformStatus newStatus = PlatformStatus.BEHIND;
@@ -449,7 +454,7 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void updatesCurrentStatusAndFreezesRecordStreamOnMaintenance() {
+	void updatesCurrentStatusAndFreezesRecordStreamOnMaintenance() {
 		// given:
 		subject.ctx = ctx;
 		PlatformStatus newStatus = PlatformStatus.MAINTENANCE;
@@ -463,7 +468,7 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void updatesCurrentStatusAndFreezesRecordStreamOnActive() {
+	void updatesCurrentStatusAndFreezesRecordStreamOnActive() {
 		// given:
 		subject.ctx = ctx;
 		PlatformStatus newStatus = PlatformStatus.ACTIVE;
@@ -477,7 +482,7 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void doesLogSummaryIfNotInMaintenance() {
+	void doesLogSummaryIfNotInMaintenance() {
 		// setup:
 		subject.ctx = ctx;
 		var signedState = mock(ServicesState.class);
@@ -494,7 +499,7 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void onlyLogsSummary() {
+	void onlyLogsSummary() {
 		// setup:
 		subject.ctx = ctx;
 		var signedState = mock(ServicesState.class);
@@ -511,7 +516,7 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void doesntExportBalanceIfNotTime() throws Exception {
+	void doesntExportBalanceIfNotTime() throws Exception {
 		// setup:
 		subject.ctx = ctx;
 		Instant when = Instant.now();
@@ -528,7 +533,7 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void exportsBalancesIfPropertySet() throws Exception {
+	void exportsBalancesIfPropertySet() throws Exception {
 		// setup:
 		subject.ctx = ctx;
 		Instant when = Instant.now();
@@ -545,7 +550,7 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void doesntExportBalancesIfPropertyNotSet() {
+	void doesntExportBalancesIfPropertyNotSet() {
 		// setup:
 		subject.ctx = ctx;
 		Instant when = Instant.now();
@@ -561,7 +566,7 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void failsFastIfBalanceExportDetectedInvalidState() throws Exception {
+	void failsFastIfBalanceExportDetectedInvalidState() throws Exception {
 		// setup:
 		subject.ctx = ctx;
 		Instant when = Instant.now();
@@ -581,7 +586,7 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void noOpsRun() {
+	void noOpsRun() {
 		// expect:
 		assertDoesNotThrow(() -> {
 			subject.run();
@@ -590,20 +595,20 @@ public class ServicesMainTest {
 	}
 
 	@Test
-	public void returnsAppState() {
+	void returnsAppState() {
 		// expect:
 		assertTrue(subject.newState() instanceof ServicesState);
 	}
 
 	@Test
-	public void registerReconnectCompleteListenerTest() {
+	void registerReconnectCompleteListenerTest() {
 		NotificationEngine engineMock = mock(NotificationEngine.class);
 		subject.registerReconnectCompleteListener(engineMock);
 		verify(engineMock).register(eq(ReconnectCompleteListener.class), any());
 	}
 
 	@Test
-	public void reconnectCompleteListenerTest() {
+	void reconnectCompleteListenerTest() {
 		// setup
 		subject.ctx = ctx;
 		// register

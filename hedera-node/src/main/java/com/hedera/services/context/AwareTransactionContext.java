@@ -53,7 +53,6 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
-import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.canonicalDiffRepr;
@@ -72,7 +71,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 public class AwareTransactionContext implements TransactionContext {
 	private static final Logger log = LogManager.getLogger(AwareTransactionContext.class);
 
-	public static final JKey EMPTY_KEY;
+	static final JKey EMPTY_KEY;
 
 	static {
 		EMPTY_KEY = asFcKeyUnchecked(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build());
@@ -81,10 +80,8 @@ public class AwareTransactionContext implements TransactionContext {
 	private final ServicesContext ctx;
 	private TxnAccessor triggeredTxn = null;
 
-	private final Consumer<TransactionRecord.Builder> noopRecordConfig = ignore -> {
-	};
-	private final Consumer<TransactionReceipt.Builder> noopReceiptConfig = ignore -> {
-	};
+	private final Consumer<TransactionRecord.Builder> noopRecordConfig = ignore -> { };
+	private final Consumer<TransactionReceipt.Builder> noopReceiptConfig = ignore -> { };
 
 	private long submittingMember;
 	private long otherNonThresholdFees;
@@ -102,7 +99,7 @@ public class AwareTransactionContext implements TransactionContext {
 	boolean hasComputedRecordSoFar;
 	TransactionRecord.Builder recordSoFar = TransactionRecord.newBuilder();
 
-	public AwareTransactionContext(ServicesContext ctx) {
+	AwareTransactionContext(ServicesContext ctx) {
 		this.ctx = ctx;
 	}
 
@@ -151,10 +148,8 @@ public class AwareTransactionContext implements TransactionContext {
 	@Override
 	public AccountID submittingNodeAccount() {
 		try {
-			Address member = ctx.addressBook().getAddress(submittingMember);
-			String memo = member.getMemo();
-			return accountParsedFromString(memo);
-		} catch (Exception e) {
+			return ctx.nodeInfo().accountOf(submittingMember);
+		} catch (IllegalArgumentException e) {
 			log.warn("No available Hedera account for member {}!", submittingMember, e);
 			throw new IllegalStateException(String.format("Member %d must have a Hedera account!", submittingMember));
 		}

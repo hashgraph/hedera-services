@@ -39,7 +39,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.apache.commons.codec.binary.Hex;
+import com.swirlds.common.CommonUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -132,7 +132,9 @@ public class MerkleScheduleTest {
 	@Test
 	public void factoryTranslatesImpossibleParseError() {
 		// expect:
-		assertThrows(IllegalArgumentException.class, () -> MerkleSchedule.from("NONSENSE".getBytes(), 0L));
+		final var iae = assertThrows(IllegalArgumentException.class,
+				() -> MerkleSchedule.from("NONSENSE".getBytes(), 0L));
+		assertEquals("Argument bodyBytes=0x4e4f4e53454e5345 was not a TransactionBody!", iae.getMessage());
 	}
 
 	@Test
@@ -460,7 +462,7 @@ public class MerkleScheduleTest {
 	}
 
 	private String signatoriesToString() {
-		return signatories.stream().map(Hex::encodeHexString).collect(Collectors.joining(", "));
+		return signatories.stream().map(CommonUtils::hex).collect(Collectors.joining(", "));
 	}
 
 	private static final long fee = 123L;
