@@ -71,7 +71,7 @@ class MerkleAccountPropertyTest {
 		// setup:
 		final var copyResult = new MerkleAccountTokens(new long[] { 1, 2, 3 });
 
-		given(mockAccountTokens.copy()).willReturn(copyResult);
+		given(mockAccountTokens.tmpNonMerkleCopy()).willReturn(copyResult);
 		given(mockAccount.tokens()).willReturn(mockAccountTokens);
 
 		// when:

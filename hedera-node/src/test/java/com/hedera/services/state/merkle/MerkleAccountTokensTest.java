@@ -78,6 +78,21 @@ class MerkleAccountTokensTest {
 	}
 
 	@Test
+	void nonMerkleCopiedSubjectNotImmutable() {
+		// given:
+		final var someSet = Set.of(asToken("1.2.3"));
+
+		// when:
+		final var subjectCopy = subject.tmpNonMerkleCopy();
+
+		// then:
+		assertFalse(subject.isImmutable());
+		Assertions.assertDoesNotThrow(() -> subject.associateAll(someSet));
+		Assertions.assertDoesNotThrow(() -> subject.dissociateAll(someSet));
+		Assertions.assertDoesNotThrow(() -> subject.shareTokensOf(subjectCopy));
+	}
+
+	@Test
 	void shareTokensUsesStructuralSharing() {
 		// given:
 		final var other = new MerkleAccountTokens();

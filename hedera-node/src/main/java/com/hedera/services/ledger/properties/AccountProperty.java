@@ -157,7 +157,7 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 
 		@Override
 		public Function<MerkleAccount, Object> getter() {
-			return a -> a.tokens().copy();
+			return a -> a.tokens().tmpNonMerkleCopy();
 		}
 	};
 

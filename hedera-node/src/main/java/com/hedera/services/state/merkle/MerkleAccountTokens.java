@@ -93,6 +93,10 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 		return new MerkleAccountTokens(tokenIds);
 	}
 
+	public MerkleAccountTokens tmpNonMerkleCopy() {
+		return new MerkleAccountTokens(tokenIds);
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
