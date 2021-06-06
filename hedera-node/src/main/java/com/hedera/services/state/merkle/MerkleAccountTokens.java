@@ -22,11 +22,10 @@ package com.hedera.services.state.merkle;
 
 import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.common.MutabilityException;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -41,21 +40,20 @@ import static com.hedera.services.ledger.HederaLedger.TOKEN_ID_COMPARATOR;
 import static java.util.stream.Collectors.toList;
 
 public class MerkleAccountTokens extends AbstractMerkleLeaf {
-	private static final Logger log = LogManager.getLogger(MerkleAccountTokens.class);
-
 	static final int MAX_CONCEIVABLE_TOKEN_ID_PARTS = Integer.MAX_VALUE;
 
-	static final long[] NO_ASSOCIATIONS = new long[0];
+	private static final long[] NO_ASSOCIATIONS = new long[0];
 	static final int NUM_ID_PARTS = 3;
-	static final int NUM_OFFSET = 0;
-	static final int REALM_OFFSET = 1;
-	static final int SHARD_OFFSET = 2;
+	private static final int NUM_OFFSET = 0;
+	private static final int REALM_OFFSET = 1;
+	private static final int SHARD_OFFSET = 2;
 
-	static final int RELEASE_090_VERSION = 1;
+	private static final int RELEASE_090_VERSION = 1;
+
 	static final int MERKLE_VERSION = RELEASE_090_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x4dd9cde14aae5f8eL;
 
-	long[] tokenIds = NO_ASSOCIATIONS;
+	private long[] tokenIds = NO_ASSOCIATIONS;
 
 	public MerkleAccountTokens() {
 	}
@@ -91,6 +89,7 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 
 	/* --- Copyable --- */
 	public MerkleAccountTokens copy() {
+		setImmutable(true);
 		return new MerkleAccountTokens(tokenIds);
 	}
 
@@ -121,7 +120,7 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 				.toString();
 	}
 
-	public String readableTokenIds() {
+	String readableTokenIds() {
 		var sb = new StringBuilder("[");
 		for (int i = 0, n = numAssociations(); i < n; i++) {
 			if (i > 0) {
@@ -165,6 +164,9 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 	}
 
 	public void associateAll(Set<TokenID> ids) {
+		if (isImmutable()) {
+			throw new MutabilityException("Cannot associate any tokens to an immutable container");
+		}
 		List<TokenID> allTogether = Stream.concat(
 				ids.stream(),
 				IntStream.range(0, numAssociations()).mapToObj(this::idAt)).sorted(TOKEN_ID_COMPARATOR).collect(toList());
@@ -177,6 +179,9 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 	}
 
 	public void dissociateAll(Set<TokenID> ids) {
+		if (isImmutable()) {
+			throw new MutabilityException("Cannot dissociate any tokens from an immutable container");
+		}
 		int n = numAssociations(), newN = 0;
 		for (int i = 0; i < n; i++) {
 			if (!ids.contains(idAt(i))) {
@@ -193,6 +198,13 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 			}
 			tokenIds = newTokenIds;
 		}
+	}
+
+	public void shareTokensOf(MerkleAccountTokens other) {
+		if (isImmutable()) {
+			throw new MutabilityException("Cannot share any tokens with an immutable container");
+		}
+		tokenIds = other.tokenIds;
 	}
 
 	private void set(long[] someTokenIds, int i, TokenID id) {

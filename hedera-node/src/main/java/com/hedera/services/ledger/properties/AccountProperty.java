@@ -25,8 +25,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.swirlds.fcqueue.FCQueue;
 
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -154,12 +152,12 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 	TOKENS {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, t) -> a.setTokens((MerkleAccountTokens) t);
+			return (a, t) -> a.tokens().shareTokensOf((MerkleAccountTokens) t);
 		}
 
 		@Override
 		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::tokens;
+			return a -> a.tokens().copy();
 		}
 	};
 

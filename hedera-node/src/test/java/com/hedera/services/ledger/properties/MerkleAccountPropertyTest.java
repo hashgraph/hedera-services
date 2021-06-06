@@ -36,6 +36,9 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,11 +56,49 @@ import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
-public class MerkleAccountPropertyTest {
+@ExtendWith(MockitoExtension.class)
+class MerkleAccountPropertyTest {
+	@Mock
+	private MerkleAccount mockAccount;
+	@Mock
+	private MerkleAccountTokens mockAccountTokens;
+
 	@Test
-	public void cannotSetNegativeBalance() {
+	void tokenGetterWorksWithNewFcmParadigm() {
+		// setup:
+		final var copyResult = new MerkleAccountTokens(new long[] { 1, 2, 3 });
+
+		given(mockAccountTokens.copy()).willReturn(copyResult);
+		given(mockAccount.tokens()).willReturn(mockAccountTokens);
+
+		// when:
+		final var result = TOKENS.getter().apply(mockAccount);
+
+		// then:
+		assertSame(copyResult, result);
+	}
+
+	@Test
+	void tokenSetterWorksWithNewFcmParadigm() {
+		// setup:
+		final var newTokens = new MerkleAccountTokens(new long[] { 1, 2, 3, 4, 5, 6 });
+
+		given(mockAccount.tokens()).willReturn(mockAccountTokens);
+
+		// when:
+		TOKENS.setter().accept(mockAccount, newTokens);
+
+		// then:
+		verify(mockAccountTokens).shareTokensOf(newTokens);
+	}
+
+	@Test
+	void cannotSetNegativeBalance() {
 		// expect:
 		assertThrows(
 				IllegalArgumentException.class,
@@ -65,7 +106,7 @@ public class MerkleAccountPropertyTest {
 	}
 
 	@Test
-	public void cannotConvertNonNumericObjectToBalance() {
+	void cannotConvertNonNumericObjectToBalance() {
 		// expect:
 		assertThrows(
 				IllegalArgumentException.class,
@@ -73,7 +114,7 @@ public class MerkleAccountPropertyTest {
 	}
 
 	@Test
-	public void gettersAndSettersWork() throws Exception {
+	void gettersAndSettersWork() throws Exception {
 		// given:
 		boolean origIsDeleted = false;
 		boolean origIsReceiverSigReq = false;
