@@ -20,7 +20,7 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
-import com.hedera.test.utils.IdUtils;
+import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -35,23 +35,23 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import static com.hedera.test.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 
 class MerkleAccountTokensTest {
-	TokenID a = IdUtils.asToken("0.0.2");
-	TokenID b = IdUtils.asToken("0.1.2");
-	TokenID c = IdUtils.asToken("1.1.2");
-	TokenID d = IdUtils.asToken("0.0.3");
-	TokenID e = IdUtils.asToken("0.0.1");
+	TokenID a = asToken("0.0.2");
+	TokenID b = asToken("0.1.2");
+	TokenID c = asToken("1.1.2");
+	TokenID d = asToken("0.0.3");
+	TokenID e = asToken("0.0.1");
 	long[] initialIds = new long[] {
 		2, 0, 0, 2, 1, 0, 2, 1, 1
 	};
@@ -60,7 +60,21 @@ class MerkleAccountTokensTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new MerkleAccountTokens(initialIds);
+		subject = new MerkleAccountTokens(new CopyOnWriteIds(initialIds));
+	}
+
+	@Test
+	void copiedSubjectBecomesImmutable() {
+		// given:
+		final var someSet = Set.of(asToken("1.2.3"));
+
+		// when:
+		subject.copy();
+
+		// then:
+		assertTrue(subject.isImmutable());
+		Assertions.assertThrows(IllegalStateException.class, () -> subject.associateAll(someSet));
+		Assertions.assertThrows(IllegalStateException.class, () -> subject.dissociateAll(someSet));
 	}
 
 	@Test
@@ -68,7 +82,7 @@ class MerkleAccountTokensTest {
 		// expect:
 		Assertions.assertThrows(
 				IllegalArgumentException.class,
-				() -> new MerkleAccountTokens(new long[MerkleAccountTokens.NUM_ID_PARTS + 1]));
+				() -> new MerkleAccountTokens(new CopyOnWriteIds(new long[MerkleAccountTokens.NUM_ID_PARTS + 1])));
 	}
 
 	@Test
@@ -80,7 +94,7 @@ class MerkleAccountTokensTest {
 		// and when:
 		subject = new MerkleAccountTokens();
 		// then:
-		assertSame(Collections.emptyList(), subject.asIds());
+		assertEquals(Collections.emptyList(), subject.asIds());
 	}
 
 	@Test
@@ -89,7 +103,7 @@ class MerkleAccountTokensTest {
 		subject.dissociateAll(Set.of(a, e));
 
 		// then:
-		assertArrayEquals(new long[] {2, 1, 0}, Arrays.copyOfRange(subject.getTokenIds(), 0, 3));
+		assertArrayEquals(new long[] {2, 1, 0}, Arrays.copyOfRange(subject.getIds(), 0, 3));
 		// and:
 		assertFalse(subject.includes(a));
 	}
@@ -100,9 +114,9 @@ class MerkleAccountTokensTest {
 		subject.associateAll(Set.of(d, e));
 
 		// then:
-		assertArrayEquals(new long[] {1, 0, 0}, Arrays.copyOfRange(subject.getTokenIds(), 0, 3));
+		assertArrayEquals(new long[] {1, 0, 0}, Arrays.copyOfRange(subject.getIds(), 0, 3));
 		// and:
-		assertArrayEquals(new long[] {3, 0, 0}, Arrays.copyOfRange(subject.getTokenIds(), 12, 15));
+		assertArrayEquals(new long[] {3, 0, 0}, Arrays.copyOfRange(subject.getIds(), 12, 15));
 	}
 
 	@Test

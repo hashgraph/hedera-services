@@ -59,7 +59,7 @@ public class AccountStore {
 	 * implement business logic in a transaction.
 	 *
 	 * <b>IMPORTANT:</b> Changes to the returned model are not automatically persisted
-	 * to state! The altered model must be passed to {@link AccountStore#saveAccount(Account)}
+	 * to state! The altered model must be passed to {@link AccountStore#persistAccount(Account)}
 	 * in order for its changes to be applied to the Swirlds state, and included in the
 	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
 	 *
@@ -87,7 +87,7 @@ public class AccountStore {
 	 *
 	 * @param account the account to save
 	 */
-	public void saveAccount(Account account) {
+	public void persistAccount(Account account) {
 		throw new NotImplementedException();
 	}
 

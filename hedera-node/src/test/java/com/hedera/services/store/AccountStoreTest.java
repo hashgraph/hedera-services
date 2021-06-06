@@ -100,7 +100,7 @@ class AccountStoreTest {
 
 	@Test
 	void saveAccountNotYetImplemented() {
-		assertThrows(NotImplementedException.class, () -> subject.saveAccount(miscAccount));
+		assertThrows(NotImplementedException.class, () -> subject.persistAccount(miscAccount));
 	}
 
 	private void givenAccount(MerkleEntityId anId, MerkleAccount anAccount) {

@@ -93,7 +93,7 @@ public class TypedTokenStore {
 	 * been validated as usable.
 	 *
 	 * <b>IMPORTANT:</b> Changes to the returned model are not automatically persisted
-	 * to state! The altered model must be passed to {@link TypedTokenStore#saveTokenRelationship(TokenRelationship)}
+	 * to state! The altered model must be passed to {@link TypedTokenStore#persistTokenRelationship(TokenRelationship)}
 	 * in order for its changes to be applied to the Swirlds state, and included in the
 	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
 	 *
@@ -127,7 +127,7 @@ public class TypedTokenStore {
 	 *
 	 * @param tokenRelationship the token relationship to save
 	 */
-	public void saveTokenRelationship(TokenRelationship tokenRelationship) {
+	public void persistTokenRelationship(TokenRelationship tokenRelationship) {
 		final var tokenId = tokenRelationship.getToken().getId();
 		final var accountId = tokenRelationship.getAccount().getId();
 		final var key = new MerkleEntityAssociation(

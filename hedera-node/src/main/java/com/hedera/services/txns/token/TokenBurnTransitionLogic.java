@@ -72,7 +72,7 @@ public class TokenBurnTransitionLogic implements TransitionLogic {
 
 		/* Save the updated models */
 		store.saveToken(token);
-		store.saveTokenRelationship(treasuryRel);
+		store.persistTokenRelationship(treasuryRel);
 	}
 
 	@Override

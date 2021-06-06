@@ -104,7 +104,7 @@ class TypedTokenStoreTest {
 		modelTokenRel.setFrozen(!frozen);
 		modelTokenRel.setKycGranted(!kycGranted);
 		// and:
-		subject.saveTokenRelationship(modelTokenRel);
+		subject.persistTokenRelationship(modelTokenRel);
 
 		// then:
 		verify(tokenRels).replace(miscTokenRelId, expectedReplacementTokenRel);

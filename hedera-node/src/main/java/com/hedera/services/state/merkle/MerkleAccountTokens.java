@@ -21,51 +21,35 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-
-import static com.hedera.services.ledger.HederaLedger.TOKEN_ID_COMPARATOR;
-import static java.util.stream.Collectors.toList;
 
 public class MerkleAccountTokens extends AbstractMerkleLeaf {
-	private static final Logger log = LogManager.getLogger(MerkleAccountTokens.class);
-
 	static final int MAX_CONCEIVABLE_TOKEN_ID_PARTS = Integer.MAX_VALUE;
 
-	static final long[] NO_ASSOCIATIONS = new long[0];
 	static final int NUM_ID_PARTS = 3;
-	static final int NUM_OFFSET = 0;
-	static final int REALM_OFFSET = 1;
-	static final int SHARD_OFFSET = 2;
 
-	static final int RELEASE_090_VERSION = 1;
+	private static final int RELEASE_090_VERSION = 1;
+
 	static final int MERKLE_VERSION = RELEASE_090_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x4dd9cde14aae5f8eL;
 
-	long[] tokenIds = NO_ASSOCIATIONS;
+	private CopyOnWriteIds ids;
 
 	public MerkleAccountTokens() {
+		ids = new CopyOnWriteIds();
 	}
 
-	public MerkleAccountTokens(long[] tokenIds) {
-		if (tokenIds.length % NUM_ID_PARTS != 0) {
-			throw new IllegalArgumentException(String.format(
-					"Argument 'tokenIds' has length=%d not divisible by %d", tokenIds.length, NUM_ID_PARTS));
-		}
-		this.tokenIds = tokenIds;
+	public MerkleAccountTokens(CopyOnWriteIds ids) {
+		this.ids = ids;
 	}
 
 	/* --- MerkleLeaf --- */
@@ -81,17 +65,18 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		tokenIds = in.readLongArray(MAX_CONCEIVABLE_TOKEN_ID_PARTS);
+		ids.setNativeIds(in.readLongArray(MAX_CONCEIVABLE_TOKEN_ID_PARTS));
 	}
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
-		out.writeLongArray(tokenIds);
+		out.writeLongArray(ids.getNativeIds());
 	}
 
 	/* --- Copyable --- */
 	public MerkleAccountTokens copy() {
-		return new MerkleAccountTokens(tokenIds);
+		setImmutable(true);
+		return new MerkleAccountTokens(ids.copy());
 	}
 
 	@Override
@@ -105,150 +90,54 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 
 		var that = (MerkleAccountTokens) o;
 
-		return Arrays.equals(this.tokenIds, that.tokenIds);
+		return Objects.equals(this.ids, that.ids);
 	}
 
 	@Override
 	public int hashCode() {
-		return Arrays.hashCode(tokenIds);
+		return Objects.hash(ids);
 	}
 
 	/* --- Bean --- */
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(this)
-				.add("tokens", readableTokenIds())
+				.add("tokens", ids.toReadableIdList())
 				.toString();
 	}
 
-	public String readableTokenIds() {
-		var sb = new StringBuilder("[");
-		for (int i = 0, n = numAssociations(); i < n; i++) {
-			if (i > 0) {
-				sb.append(", ");
-			}
-			sb.append(String.format(
-					"%d.%d.%d",
-					tokenIds[shard(i)],
-					tokenIds[realm(i)],
-					tokenIds[num(i)]));
-		}
-		sb.append("]");
-
-		return sb.toString();
+	String readableTokenIds() {
+		return ids.toReadableIdList();
 	}
 
 	public List<TokenID> asIds() {
-		int n;
-		if ((n = numAssociations()) == 0) {
-			return Collections.emptyList();
-		} else {
-			List<TokenID> ids = new ArrayList<>();
-			for (int i = 0; i < n; i++) {
-				ids.add(idAt(i));
-			}
-			return ids;
-		}
+		return ids.getAsTokenIds();
 	}
 
-	long[] getTokenIds() {
-		return tokenIds;
+	long[] getIds() {
+		return ids.getNativeIds();
 	}
 
 	/* --- Association Manipulation --- */
 	public int numAssociations() {
-		return tokenIds.length / NUM_ID_PARTS;
+		return ids.size();
 	}
 
 	public boolean includes(TokenID id) {
-		return logicalIndexOf(id) >= 0;
+		return ids.contains(id);
 	}
 
-	public void associateAll(Set<TokenID> ids) {
-		List<TokenID> allTogether = Stream.concat(
-				ids.stream(),
-				IntStream.range(0, numAssociations()).mapToObj(this::idAt)).sorted(TOKEN_ID_COMPARATOR).collect(toList());
-		int newN = numAssociations() + ids.size();
-		long[] newTokenIds = new long[newN * NUM_ID_PARTS];
-		for (int i = 0; i < newN; i++) {
-			set(newTokenIds, i, allTogether.get(i));
+	public void associateAll(Set<TokenID> tokenIds) {
+		if (isImmutable()) {
+			throw new IllegalStateException("Cannot associate any tokens to an immutable container");
 		}
-		tokenIds = newTokenIds;
+		ids.addAll(tokenIds);
 	}
 
-	public void dissociateAll(Set<TokenID> ids) {
-		int n = numAssociations(), newN = 0;
-		for (int i = 0; i < n; i++) {
-			if (!ids.contains(idAt(i))) {
-				newN++;
-			}
+	public void dissociateAll(Set<TokenID> tokenIds) {
+		if (isImmutable()) {
+			throw new IllegalStateException("Cannot dissociate any tokens from an immutable container");
 		}
-		if (newN != n) {
-			long[] newTokenIds = new long[newN * NUM_ID_PARTS];
-			for (int i = 0, j = 0; i < n; i++) {
-				var id = idAt(i);
-				if (!ids.contains(id)) {
-					set(newTokenIds, j++, id);
-				}
-			}
-			tokenIds = newTokenIds;
-		}
-	}
-
-	private void set(long[] someTokenIds, int i, TokenID id) {
-		someTokenIds[shard(i)] = id.getShardNum();
-		someTokenIds[realm(i)] = id.getRealmNum();
-		someTokenIds[num(i)] = id.getTokenNum();
-	}
-
-	private TokenID idAt(int i) {
-		return TokenID.newBuilder()
-				.setShardNum(tokenIds[shard(i)])
-				.setRealmNum(tokenIds[realm(i)])
-				.setTokenNum(tokenIds[num(i)])
-				.build();
-	}
-
-	/* --- Helpers --- */
-	private int num(int i) {
-		return i * NUM_ID_PARTS + NUM_OFFSET;
-	}
-
-	private int realm(int i) {
-		return i * NUM_ID_PARTS + REALM_OFFSET;
-	}
-
-	private int shard(int i) {
-		return i * NUM_ID_PARTS + SHARD_OFFSET;
-	}
-
-	private int logicalIndexOf(TokenID token) {
-		int lo = 0, hi = tokenIds.length / NUM_ID_PARTS - 1;
-		while (lo <= hi) {
-			int mid = lo + (hi - lo) / 2;
-			int comparison = compareImplied(mid, token);
-			if (comparison == 0) {
-				return mid;
-			} else if (comparison < 0) {
-				lo = mid + 1;
-			} else {
-				hi = mid - 1;
-			}
-		}
-		return -(lo + 1);
-	}
-
-	private int compareImplied(int at, TokenID to) {
-		long numA = tokenIds[num(at)], numB = to.getTokenNum();
-		if (numA == numB) {
-			long realmA = tokenIds[realm(at)], realmB = to.getRealmNum();
-			if (realmA == realmB) {
-				return Long.compare(tokenIds[shard(at)], to.getShardNum());
-			} else {
-				return Long.compare(realmA, realmB);
-			}
-		} else {
-			return Long.compare(numA, numB);
-		}
+		ids.removeAll(tokenIds);
 	}
 }
