@@ -30,16 +30,16 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ScheduleEntryPojo {
 	String hederaFunctionality;
-	List<ScopedResourcePricesPojo> feeDataList;
+	List<ScopedResourcePricesPojo> feesList;
 
 	public static ScheduleEntryPojo from(TransactionFeeSchedule grpc) {
 		var pojo = new ScheduleEntryPojo();
 
 		pojo.setHederaFunctionality(grpc.getHederaFunctionality().toString());
 
-		List<ScopedResourcePricesPojo> feeDataList = new ArrayList<>();
+		List<ScopedResourcePricesPojo> feesList = new ArrayList<>();
 
-		for (FeeData feeData : grpc.getFeeDataListList()) {
+		for (FeeData feeData : grpc.getFeesList()) {
 			var subType = feeData.getSubType();
 			var nodePrices = ResourcePricesPojo.from(feeData.getNodedata());
 			var servicePrices = ResourcePricesPojo.from(feeData.getServicedata());
@@ -51,10 +51,10 @@ public class ScheduleEntryPojo {
 			scopedPrices.setServicedata(servicePrices);
 			scopedPrices.setSubType(subType);
 
-			feeDataList.add(scopedPrices);
+			feesList.add(scopedPrices);
 		}
 
-		pojo.setFeeDataList(feeDataList);
+		pojo.setFeesList(feesList);
 		return pojo;
 	}
 
@@ -66,11 +66,11 @@ public class ScheduleEntryPojo {
 		this.hederaFunctionality = hederaFunctionality;
 	}
 
-	public List<ScopedResourcePricesPojo> getFeeDataList() {
-		return feeDataList;
+	public List<ScopedResourcePricesPojo> getFeesList() {
+		return feesList;
 	}
 
-	public void setFeeDataList(List<ScopedResourcePricesPojo> feeData) {
-		this.feeDataList = feeData;
+	public void setFeesList(List<ScopedResourcePricesPojo> feeData) {
+		this.feesList = feeData;
 	}
 }

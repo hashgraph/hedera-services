@@ -73,13 +73,13 @@ public class FeeClient {
   }
   private static Map<HederaFunctionality, Map<SubType, FeeData>> FeeScheduleListToMap(List<TransactionFeeSchedule> transFeeSchList) {
     for (TransactionFeeSchedule transSch : transFeeSchList) {
-      feeSchMap.put(transSch.getHederaFunctionality(), FeeDataListToMap(transSch.getFeeDataListList()));
+      feeSchMap.put(transSch.getHederaFunctionality(), FeesListToMap(transSch.getFeesList()));
     }
     return feeSchMap;
   }
-  private static Map<SubType, FeeData> FeeDataListToMap(List<FeeData> feeDataList) {
+  private static Map<SubType, FeeData> FeesListToMap(List<FeeData> feesList) {
     Map<SubType, FeeData> resultingMap = new HashMap<>();
-    for (FeeData feeData : feeDataList) {
+    for (FeeData feeData : feesList) {
       resultingMap.put(feeData.getSubType(), feeData);
     }
     return resultingMap;
@@ -94,7 +94,7 @@ public class FeeClient {
       List<TransactionFeeSchedule> transFeeSchList =
           feeSch.getCurrentFeeSchedule().getTransactionFeeScheduleList();
       for (TransactionFeeSchedule transSch : transFeeSchList) {
-        feeSchMap.put(transSch.getHederaFunctionality(), FeeDataListToMap(transSch.getFeeDataListList()));
+        feeSchMap.put(transSch.getHederaFunctionality(), FeesListToMap(transSch.getFeesList()));
       }
     } catch (Exception e) {
       log.info("Exception while reading Fee file: "+e.getMessage());

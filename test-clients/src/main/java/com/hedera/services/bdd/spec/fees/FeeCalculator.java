@@ -63,15 +63,15 @@ public class FeeCalculator {
 			return;
 		}
 		FeeSchedule feeSchedule = provider.currentSchedule();
-		feeSchedule.getTransactionFeeScheduleList().forEach(feeDataList -> {
-			opFeeData.put(feeDataList.getHederaFunctionality(), FeeDataListToMap(feeDataList.getFeeDataListList()));
+		feeSchedule.getTransactionFeeScheduleList().forEach(f -> {
+			opFeeData.put(f.getHederaFunctionality(), FeesListToMap(f.getFeesList()));
 		});
 		tokenTransferUsageMultiplier = setup.feesTokenTransferUsageMultiplier();
 	}
 
-	private Map<SubType, FeeData> FeeDataListToMap(List<FeeData> feeDataList) {
+	private Map<SubType, FeeData> FeesListToMap(List<FeeData> feesList) {
 		Map<SubType, FeeData> feeDataMap = new HashMap<>();
-		for (FeeData feeData : feeDataList) {
+		for (FeeData feeData : feesList) {
 			feeDataMap.put(feeData.getSubType(), feeData);
 		}
 		return feeDataMap;

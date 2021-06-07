@@ -129,7 +129,7 @@ public class MacroFeesChargedSanityCheckSuite extends HapiApiSuite {
 									.filter(tfs -> tfs.getHederaFunctionality() == CryptoAccountAutoRenew)
 									.findFirst()
 									.get()
-									.getFeeDataListList()
+									.getFeesList()
 									.stream()
 									.filter(a -> a.getSubType() == SubType.DEFAULT)
 									.findFirst()

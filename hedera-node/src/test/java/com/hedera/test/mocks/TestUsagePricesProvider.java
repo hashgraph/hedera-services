@@ -133,7 +133,7 @@ public enum TestUsagePricesProvider implements UsagePricesProvider {
 		Map<HederaFunctionality, Map<SubType, FeeData>> feeDataMap = new HashMap<>();;
 		for (TransactionFeeSchedule fs : feeScheduleList) {
 			Map<SubType, FeeData> subTypeMap = new HashMap<>();
-			for (FeeData value : fs.getFeeDataListList()) {
+			for (FeeData value : fs.getFeesList()) {
 				subTypeMap.put(value.getSubType(), value);
 			}
 			feeDataMap.put(fs.getHederaFunctionality(), subTypeMap);

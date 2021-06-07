@@ -194,16 +194,16 @@ class AutoRenewCalcsTest {
 				.filter(transactionFeeSchedule -> transactionFeeSchedule.getHederaFunctionality() == autoRenewFunction)
 				.findFirst()
 				.get()
-				.getFeeDataListList();
+				.getFeesList();
 		var prePricesMap = toSubTypeMap(prePrices);
 
 		var postPricesMap = toPostPrices(prePricesMap);
 		return Triple.of(prePricesMap, cutoff, postPricesMap);
 	}
 
-	private Map<SubType, FeeData> toSubTypeMap(List<FeeData> feeDataList) {
+	private Map<SubType, FeeData> toSubTypeMap(List<FeeData> feesList) {
 		Map<SubType, FeeData> result = new HashMap<>();
-		for (FeeData feeData : feeDataList) {
+		for (FeeData feeData : feesList) {
 			result.put(feeData.getSubType(), feeData);
 		}
 		return result;

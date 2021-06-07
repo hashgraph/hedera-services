@@ -120,7 +120,7 @@ public class FeeUtility {
     long gasPriceKiloTinyCentsCall = 0;
     for (TransactionFeeSchedule tFS : currentNextFeeSch.getCurrentFeeSchedule()
         .getTransactionFeeScheduleList()) {
-      var prices = tFS.getFeeDataListList()
+      var prices = tFS.getFeesList()
               .stream()
               .filter(a -> a.getSubType() == SubType.DEFAULT).findFirst().get();
       if (tFS.getHederaFunctionality() == HederaFunctionality.ContractCall) {
