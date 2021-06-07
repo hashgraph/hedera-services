@@ -31,6 +31,9 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.builder.RequestBuilder;
 
+import java.util.Calendar;
+import java.util.TimeZone;
+
 public class FreezeTestHelper {
 
 	private static AccountID payerAccountId;
@@ -44,8 +47,8 @@ public class FreezeTestHelper {
 	public static Transaction createFreezeTransaction(boolean paidBy58, boolean valid, FileID fileID, byte[] fileHash) {
 		FreezeTransactionBody freezeBody;
 		if (valid) {
-			int[] startHourMin = CommonUtilsTest.getUTCHourMinFromMillis(System.currentTimeMillis() + 60000);
-			int[] endHourMin = CommonUtilsTest.getUTCHourMinFromMillis(System.currentTimeMillis() + 120000);
+			int[] startHourMin = getUTCHourMinFromMillis(System.currentTimeMillis() + 60000);
+			int[] endHourMin = getUTCHourMinFromMillis(System.currentTimeMillis() + 120000);
 			var builder = getFreezeTranBuilder(startHourMin[0], startHourMin[1], endHourMin[0], endHourMin[1]);
 			if (fileID != null) {
 				builder.setUpdateFile(fileID);
@@ -82,5 +85,14 @@ public class FreezeTestHelper {
 		return FreezeTransactionBody.newBuilder()
 				.setStartHour(startHour).setStartMin(startMin)
 				.setEndHour(endHour).setEndMin(endMin);
+	}
+
+	private static int[] getUTCHourMinFromMillis(final long utcMillis) {
+		int[] hourMin = new int[2];
+		Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+		cal.setTimeInMillis(utcMillis);
+		hourMin[0] = cal.get(Calendar.HOUR_OF_DAY);
+		hourMin[1] = cal.get(Calendar.MINUTE);
+		return hourMin;
 	}
 }

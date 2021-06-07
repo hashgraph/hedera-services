@@ -203,21 +203,9 @@ public class AwareProcessLogic implements ProcessLogic {
 			ctx.txnCtx().setStatus(sysAuthStatus);
 			return;
 		}
-		var transitionLogic = ctx.transitionLogic().lookupFor(accessor.getFunction(), accessor.getTxn());
-		if (transitionLogic.isEmpty()) {
-			log.warn("Transaction w/o applicable transition logic at consensus :: {}", accessor::getSignedTxn4Log);
-			ctx.txnCtx().setStatus(FAIL_INVALID);
-			return;
+		if (ctx.transitionRunner().tryTransition(accessor)) {
+			ctx.networkCtxManager().finishIncorporating(accessor.getFunction());
 		}
-		var logic = transitionLogic.get();
-		var opValidity = logic.semanticCheck().apply(accessor.getTxn());
-		if (opValidity != OK) {
-			ctx.txnCtx().setStatus(opValidity);
-			return;
-		}
-		logic.doStateTransition();
-
-		ctx.networkCtxManager().finishIncorporating(accessor.getFunction());
 	}
 
 	private boolean hasActivePayerSig(TxnAccessor accessor) {

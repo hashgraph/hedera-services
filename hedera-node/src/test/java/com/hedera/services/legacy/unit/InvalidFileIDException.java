@@ -30,8 +30,4 @@ public class InvalidFileIDException extends Exception {
 		super(message);
 		this.fileId = fileId;
 	}
-
-	public FileID getFileId() {
-		return fileId;
-	}
 }
