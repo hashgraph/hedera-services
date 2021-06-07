@@ -20,12 +20,12 @@ package com.hedera.services.state;
  * ‍
  */
 
+import com.hedera.services.context.ServicesContext;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Timestamp;
 
 import java.time.Instant;
 
@@ -70,7 +70,7 @@ public interface EntityCreator {
 	 * @param accessor
 	 * 		transaction accessor
 	 * @param consensusTime
-	 * 		consensus timestamp
+	 * 		consensus time
 	 * @param receipt
 	 * 		transaction receipt
 	 * @return
@@ -80,7 +80,8 @@ public interface EntityCreator {
 			byte[] hash,
 			TxnAccessor accessor,
 			Instant consensusTime,
-			TxnReceipt receipt);
+			TxnReceipt receipt,
+			ServicesContext ctx);
 
 	/**
 	 * Build a {@link ExpirableTxnRecord.Builder} for a transaction failed to commit

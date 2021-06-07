@@ -65,7 +65,6 @@ import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
-import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.times;
 
 @ExtendWith(LogCaptureExtension.class)
@@ -168,10 +167,23 @@ class MerkleNetworkContextTest {
 		// then:
 		assertThrows(MutabilityException.class, () -> subject.updateLastScannedEntity(1L));
 		assertThrows(MutabilityException.class, () -> subject.updateAutoRenewSummaryCounts(1, 2));
-		assertThrows(MutabilityException.class, () -> subject.resetAutoRenewSummaryCounts());
+		assertThrows(MutabilityException.class, () -> subject.clearAutoRenewSummaryCounts());
 		assertThrows(MutabilityException.class, () -> subject.updateCongestionStartsFrom(null));
+		assertThrows(MutabilityException.class, () -> subject.updateSnapshotsFrom(null));
+		assertThrows(MutabilityException.class, () -> subject.setStateVersion(1));
 		assertThrows(MutabilityException.class, () -> subject.setLastMidnightBoundaryCheck(null));
 		assertThrows(MutabilityException.class, () -> subject.setConsensusTimeOfLastHandledTxn(null));
+	}
+
+	@Test
+	void canSetLastMidnightBoundaryCheck() {
+		final var newLmbc = lastMidnightBoundaryCheck.plusSeconds(1L);
+
+		// when:
+		subject.setLastMidnightBoundaryCheck(newLmbc);
+
+		// then:
+		assertSame(newLmbc, subject.lastMidnightBoundaryCheck());
 	}
 
 	@Test
@@ -258,7 +270,7 @@ class MerkleNetworkContextTest {
 	@Test
 	void resetsWork() {
 		// when:
-		subject.resetAutoRenewSummaryCounts();
+		subject.clearAutoRenewSummaryCounts();
 
 		// then:
 		assertEquals(0, subject.getEntitiesTouchedThisSecond());
@@ -369,7 +381,7 @@ class MerkleNetworkContextTest {
 		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[] { subjectSnapshotA, subjectSnapshotC });
 
 		// when:
-		subject.resetWithSavedSnapshots(throttling);
+		subject.resetThrottlingFromSavedSnapshots(throttling);
 
 		// then:
 
@@ -398,7 +410,7 @@ class MerkleNetworkContextTest {
 		var desired = "There are 2 active throttles, but 1 usage snapshots from saved state. Not performing a reset!";
 
 		// when:
-		subject.resetWithSavedSnapshots(throttling);
+		subject.resetThrottlingFromSavedSnapshots(throttling);
 
 		// then:
 		assertThat(logCaptor.warnLogs(), contains(desired));
@@ -422,7 +434,7 @@ class MerkleNetworkContextTest {
 		subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[]{ subjectSnapshot });
 
 		// when:
-		subject.resetWithSavedSnapshots(throttling);
+		subject.resetThrottlingFromSavedSnapshots(throttling);
 
 		// then:
 		assertEquals(subjectSnapshot.used(), aThrottle.usageSnapshot().used());
@@ -439,7 +451,7 @@ class MerkleNetworkContextTest {
 		subject.getCongestionLevelStarts()[1] = null;
 
 		// when:
-		subject.updateWithSavedCongestionStarts(feeMultiplierSource);
+		subject.resetMultiplierSourceFromSavedCongestionStarts(feeMultiplierSource);
 
 		// then:
 		verify(feeMultiplierSource, times(1))
@@ -451,10 +463,10 @@ class MerkleNetworkContextTest {
 		feeMultiplierSource = mock(FeeMultiplierSource.class);
 
 		// when:
-		subject.updateWithSavedCongestionStarts(feeMultiplierSource);
+		subject.resetMultiplierSourceFromSavedCongestionStarts(feeMultiplierSource);
 		// and:
 		subject.setCongestionLevelStarts(NO_CONGESTION_STARTS);
-		subject.updateWithSavedCongestionStarts(feeMultiplierSource);
+		subject.resetMultiplierSourceFromSavedCongestionStarts(feeMultiplierSource);
 
 		// then:
 		verify(feeMultiplierSource, times(1)).resetCongestionLevelStarts(congestionStarts);

@@ -557,7 +557,6 @@ public class ServicesContextTest {
 		given(diskFs.contentsOf(any())).willReturn(fileContents);
 
 		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
-		ctx.setSystemExits(ignore -> {});
 		var subject = ctx.systemFilesManager();
 
 		assertSame(networkCtx, ctx.networkCtx());

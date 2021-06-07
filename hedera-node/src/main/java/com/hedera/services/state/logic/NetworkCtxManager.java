@@ -58,7 +58,7 @@ public class NetworkCtxManager {
 	private final FunctionalityThrottling handleThrottling;
 	private final Supplier<MerkleNetworkContext> networkCtx;
 
-	private BiPredicate<Instant, Instant> shouldUpdateMidnightRates = NetworkCtxManager::inSameUtcDay;
+	private BiPredicate<Instant, Instant> shouldUpdateMidnightRates = (now, then) -> !inSameUtcDay(now, then);
 
 	public NetworkCtxManager(
 			IssEventInfo issInfo,
@@ -93,9 +93,9 @@ public class NetworkCtxManager {
 			log.info("Observable files not yet loaded, doing now.");
 			systemFilesManager.loadObservableSystemFiles();
 			log.info("Loaded observable files. {}", networkCtxNow);
-			networkCtxNow.resetWithSavedSnapshots(handleThrottling);
+			networkCtxNow.resetThrottlingFromSavedSnapshots(handleThrottling);
 			feeMultiplierSource.resetExpectations();
-			networkCtxNow.updateWithSavedCongestionStarts(feeMultiplierSource);
+			networkCtxNow.resetMultiplierSourceFromSavedCongestionStarts(feeMultiplierSource);
 		}
 	}
 
@@ -106,13 +106,19 @@ public class NetworkCtxManager {
 
 		if (lastMidnightBoundaryCheck != null) {
 			final long intervalSecs = dynamicProperties.ratesMidnightCheckInterval();
-			if (consensusTime.getEpochSecond() - lastMidnightBoundaryCheck.getEpochSecond() >= intervalSecs) {
+			final long elapsedInterval = consensusTime.getEpochSecond() - lastMidnightBoundaryCheck.getEpochSecond();
+
+			/* We only check whether the midnight rates should be updated every intervalSecs in consensus time */
+			if (elapsedInterval >= intervalSecs) {
+				/* If the lastMidnightBoundaryCheck was in a different UTC day, we update the midnight rates */
 				if (shouldUpdateMidnightRates.test(lastMidnightBoundaryCheck, consensusTime)) {
 					networkCtxNow.midnightRates().replaceWith(exchange.activeRates());
 				}
+				/* And mark this as the last time we checked the midnight boundary */
 				networkCtxNow.setLastMidnightBoundaryCheck(consensusTime);
 			}
 		} else {
+			/* The first transaction after genesis will initialize the lastMidnightBoundaryCheck */
 			networkCtxNow.setLastMidnightBoundaryCheck(consensusTime);
 		}
 
@@ -164,5 +170,9 @@ public class NetworkCtxManager {
 
 	void setShouldUpdateMidnightRates(BiPredicate<Instant, Instant> shouldUpdateMidnightRates) {
 		this.shouldUpdateMidnightRates = shouldUpdateMidnightRates;
+	}
+
+	BiPredicate<Instant, Instant> getShouldUpdateMidnightRates() {
+		return shouldUpdateMidnightRates;
 	}
 }

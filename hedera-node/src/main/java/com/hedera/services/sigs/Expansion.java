@@ -27,14 +27,12 @@ import com.hedera.services.sigs.order.SigStatusOrderResultFactory;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 import static com.hedera.services.legacy.crypto.SignatureStatusCode.SUCCESS;
 import static com.hedera.services.sigs.PlatformSigOps.createEd25519PlatformSigsFrom;
@@ -61,7 +59,7 @@ class Expansion {
 	}
 
 	public SignatureStatus execute() {
-		log.debug("Expanding crypto sigs from Hedera sigs for txn {}...", txnAccessor::getSignedTxn4Log);
+		log.debug("Expanding crypto sigs from Hedera sigs for txn {}...", txnAccessor::getSignedTxnWrapper);
 		var payerStatus = expand(pkToSigFn, keyOrderer::keysForPayer);
 		if (SUCCESS != payerStatus.getStatusCode()) {
 			if (log.isDebugEnabled()) {

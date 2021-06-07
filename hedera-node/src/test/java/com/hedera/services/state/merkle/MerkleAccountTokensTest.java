@@ -20,8 +20,8 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
-import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.common.MutabilityException;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.Assertions;
@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import static com.hedera.test.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -47,20 +48,60 @@ import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 
 class MerkleAccountTokensTest {
-	TokenID a = IdUtils.asToken("0.0.2");
-	TokenID b = IdUtils.asToken("0.1.2");
-	TokenID c = IdUtils.asToken("1.1.2");
-	TokenID d = IdUtils.asToken("0.0.3");
-	TokenID e = IdUtils.asToken("0.0.1");
-	long[] initialIds = new long[] {
-		2, 0, 0, 2, 1, 0, 2, 1, 1
-	};
+	private TokenID a = asToken("0.0.2");
+	private TokenID b = asToken("0.1.2");
+	private TokenID c = asToken("1.1.2");
+	private TokenID d = asToken("0.0.3");
+	private TokenID e = asToken("0.0.1");
+	private long[] initialIds = new long[] { 2, 0, 0, 2, 1, 0, 2, 1, 1 };
 
-	MerkleAccountTokens subject;
+	private MerkleAccountTokens subject;
 
 	@BeforeEach
 	private void setup() {
 		subject = new MerkleAccountTokens(initialIds);
+	}
+
+	@Test
+	void copiedSubjectBecomesImmutable() {
+		// given:
+		final var someSet = Set.of(asToken("1.2.3"));
+
+		// when:
+		final var subjectCopy = subject.copy();
+
+		// then:
+		assertTrue(subject.isImmutable());
+		Assertions.assertThrows(MutabilityException.class, () -> subject.associateAll(someSet));
+		Assertions.assertThrows(MutabilityException.class, () -> subject.dissociateAll(someSet));
+		Assertions.assertThrows(MutabilityException.class, () -> subject.shareTokensOf(subjectCopy));
+	}
+
+	@Test
+	void nonMerkleCopiedSubjectNotImmutable() {
+		// given:
+		final var someSet = Set.of(asToken("1.2.3"));
+
+		// when:
+		final var subjectCopy = subject.tmpNonMerkleCopy();
+
+		// then:
+		assertFalse(subject.isImmutable());
+		Assertions.assertDoesNotThrow(() -> subject.associateAll(someSet));
+		Assertions.assertDoesNotThrow(() -> subject.dissociateAll(someSet));
+		Assertions.assertDoesNotThrow(() -> subject.shareTokensOf(subjectCopy));
+	}
+
+	@Test
+	void shareTokensUsesStructuralSharing() {
+		// given:
+		final var other = new MerkleAccountTokens();
+
+		// when:
+		other.shareTokensOf(subject);
+
+		// then:
+		assertSame(subject.getTokenIds(), other.getTokenIds());
 	}
 
 	@Test
@@ -72,7 +113,7 @@ class MerkleAccountTokensTest {
 	}
 
 	@Test
-	public void asIdsWorks() {
+	void asIdsWorks() {
 		// expect:
 		assertEquals(
 				List.of(a, b, c),
@@ -84,7 +125,7 @@ class MerkleAccountTokensTest {
 	}
 
 	@Test
-	public void dissociateAllWorks() {
+	void dissociateAllWorks() {
 		// when:
 		subject.dissociateAll(Set.of(a, e));
 
@@ -95,7 +136,7 @@ class MerkleAccountTokensTest {
 	}
 
 	@Test
-	public void associateAllWorks() {
+	void associateAllWorks() {
 		// when:
 		subject.associateAll(Set.of(d, e));
 
@@ -106,7 +147,7 @@ class MerkleAccountTokensTest {
 	}
 
 	@Test
-	public void objectContractMet() {
+	void objectContractMet() {
 		// given:
 		var one = new MerkleAccountTokens();
 		var two = new MerkleAccountTokens();
@@ -122,7 +163,7 @@ class MerkleAccountTokensTest {
 	}
 
 	@Test
-	public void merkleMethodsWork() {
+	void merkleMethodsWork() {
 		// expect;
 		assertEquals(MerkleAccountTokens.MERKLE_VERSION, subject.getVersion());
 		assertEquals(MerkleAccountTokens.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
@@ -130,7 +171,7 @@ class MerkleAccountTokensTest {
 	}
 
 	@Test
-	public void serializeWorks() throws IOException {
+	void serializeWorks() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 		// and:
@@ -144,7 +185,7 @@ class MerkleAccountTokensTest {
 	}
 
 	@Test
-	public void deserializeWorks() throws IOException {
+	void deserializeWorks() throws IOException {
 		// setup:
 		var in = mock(SerializableDataInputStream.class);
 		// and:
@@ -160,7 +201,7 @@ class MerkleAccountTokensTest {
 	}
 
 	@Test
-	public void toStringWorks() {
+	void toStringWorks() {
 		// expect:
 		assertEquals(
 				"MerkleAccountTokens{tokens=[0.0.2, 0.1.2, 1.1.2]}",
@@ -168,7 +209,7 @@ class MerkleAccountTokensTest {
 	}
 
 	@Test
-	public void copyWorks() {
+	void copyWorks() {
 		// when:
 		var subjectCopy = subject.copy();
 

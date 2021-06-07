@@ -131,7 +131,7 @@ public class FreezeHandler {
 			/* Can't go back in time, so add a day's worth of minutes to hit the nominal time tomorrow */
 			diffMins += 24 * 60;
 		}
-		return now.plusSeconds(diffMins * 60);
+		return now.plusSeconds(diffMins * 60L);
 	}
 
 	public int minutesSinceMidnight(Instant now) {

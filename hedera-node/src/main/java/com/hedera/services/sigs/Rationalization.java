@@ -34,8 +34,6 @@ import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,8 +46,6 @@ import static com.hedera.services.sigs.utils.StatusUtils.successFor;
 import static com.swirlds.common.crypto.VerificationStatus.UNKNOWN;
 
 public class Rationalization {
-	private static final Logger log = LogManager.getLogger(Rationalization.class);
-
 	public final static SigStatusOrderResultFactory IN_HANDLE_SUMMARY_FACTORY =
 			new SigStatusOrderResultFactory(true);
 
@@ -81,7 +77,7 @@ public class Rationalization {
 	}
 
 	public SignatureStatus execute() {
-		boolean verifiedSync = false;
+		var verifiedSync = false;
 		SignatureStatus otherFailure = null;
 		List<TransactionSignature> realPayerSigs = new ArrayList<>(), realOtherPartySigs = new ArrayList<>();
 
@@ -126,12 +122,14 @@ public class Rationalization {
 	}
 
 	private List<TransactionSignature> rationalize(List<TransactionSignature> realSigs, int startingAt) {
-		try {
+		final var maxSubListEnd = txnSigs.size();
+		final var requestedSubListEnd = startingAt + realSigs.size();
+		if (requestedSubListEnd <= maxSubListEnd) {
 			var candidateSigs = txnSigs.subList(startingAt, startingAt + realSigs.size());
 			if (allVaryingMaterialEquals(candidateSigs, realSigs) && allStatusesAreKnown(candidateSigs)) {
 				return candidateSigs;
 			}
-		} catch (IndexOutOfBoundsException ignore) { }
+		}
 		syncVerifier.verifySync(realSigs);
 		return realSigs;
 	}

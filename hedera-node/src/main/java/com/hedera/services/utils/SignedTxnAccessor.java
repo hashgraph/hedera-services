@@ -22,7 +22,6 @@ package com.hedera.services.utils;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
-import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -30,13 +29,13 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.commons.codec.binary.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bouncycastle.util.Arrays;
 
 import java.util.function.Function;
 
@@ -44,7 +43,6 @@ import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384Ha
 import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 
 /**
  * Encapsulates access to several commonly referenced parts of a gRPC {@link Transaction}.
@@ -61,6 +59,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private byte[] utf8MemoBytes;
 	private byte[] signedTxnWrapperBytes;
 	private String memo;
+	private boolean memoHasZeroByte;
 	private Transaction signedTxnWrapper;
 	private SignatureMap sigMap;
 	private TransactionID txnId;
@@ -82,7 +81,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 			return new SignedTxnAccessor(validSignedTxn);
 		} catch (Exception illegal) {
 			log.warn("Unexpected use of factory with invalid gRPC transaction", illegal);
-			throw new IllegalArgumentException("Argument 'validSignedTxn' must...a valid signed txn");
+			throw new IllegalArgumentException("Argument 'validSignedTxn' must be a valid signed txn");
 		}
 	}
 
@@ -108,6 +107,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 		sigMapSize = sigMap.getSerializedSize();
 		numSigPairs = sigMap.getSigPairCount();
 		utf8MemoBytes = StringUtils.getBytesUtf8(memo);
+		memoHasZeroByte = Arrays.contains(utf8MemoBytes, (byte) 0);
 
 		getFunction();
 		setTxnUsageMeta();
@@ -136,11 +136,6 @@ public class SignedTxnAccessor implements TxnAccessor {
 	@Override
 	public long getOfferedFee() {
 		return txn.getTransactionFee();
-	}
-
-	@Override
-	public Transaction getSignedTxn4Log() {
-		return signedTxnWrapper;
 	}
 
 	@Override
@@ -193,6 +188,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 		return memo;
 	}
 
+	@Override
 	public byte[] getHash() {
 		return hash;
 	}
@@ -200,6 +196,11 @@ public class SignedTxnAccessor implements TxnAccessor {
 	@Override
 	public boolean canTriggerTxn() {
 		return getTxn().hasScheduleCreate() || getTxn().hasScheduleSign();
+	}
+
+	@Override
+	public boolean memoHasZeroByte() {
+		return memoHasZeroByte;
 	}
 
 	@Override

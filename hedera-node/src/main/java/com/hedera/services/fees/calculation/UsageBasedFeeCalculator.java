@@ -215,7 +215,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 		try {
 			return usagePrices.pricesGiven(accessor.getFunction(), at);
 		} catch (Exception e) {
-			log.warn("Using default usage prices to calculate fees for {}!", accessor.getSignedTxn4Log(), e);
+			log.warn("Using default usage prices to calculate fees for {}!", accessor.getSignedTxnWrapper(), e);
 		}
 		return DEFAULT_USAGE_PRICES;
 	}
@@ -244,7 +244,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 			} catch (InvalidTxBodyException e) {
 				log.warn(
 						"Argument accessor={} malformed for implied estimator {}!",
-						accessor.getSignedTxn4Log(),
+					        accessor.getSignedTxnWrapper(),
 						usageEstimator);
 				throw new IllegalArgumentException(e);
 			}

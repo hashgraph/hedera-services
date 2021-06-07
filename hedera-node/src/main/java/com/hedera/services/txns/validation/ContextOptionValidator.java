@@ -204,9 +204,14 @@ public class ContextOptionValidator implements OptionValidator {
 
 	@Override
 	public ResponseCodeEnum rawMemoCheck(byte[] utf8Cand) {
+		return rawMemoCheck(utf8Cand, Arrays.contains(utf8Cand, (byte)0));
+	}
+
+	@Override
+	public ResponseCodeEnum rawMemoCheck(byte[] utf8Cand, boolean hasZeroByte) {
 		if (utf8Cand.length > properties.maxMemoUtf8Bytes()) {
 			return MEMO_TOO_LONG;
-		} else if (Arrays.contains(utf8Cand, (byte)0)) {
+		} else if (hasZeroByte) {
 			return INVALID_ZERO_BYTE_IN_STRING;
 		} else {
 			return OK;

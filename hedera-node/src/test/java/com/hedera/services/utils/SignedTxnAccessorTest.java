@@ -50,10 +50,14 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SignedTxnAccessorTest {
 	private final String memo = "Eternal sunshine of the spotless mind";
+	private final String zeroByteMemo = "Eternal s\u0000nshine of the spotless mind";
 	private final byte[] memoUtf8Bytes = memo.getBytes();
+	private final byte[] zeroByteMemoUtf8Bytes = zeroByteMemo.getBytes();
 
 	private final SignatureMap expectedMap = SignatureMap.newBuilder()
 			.addSigPair(SignaturePair.newBuilder()
@@ -83,7 +87,7 @@ class SignedTxnAccessorTest {
 				Timestamp.getDefaultInstance(),
 				Duration.getDefaultInstance(),
 				false,
-				memo,
+				zeroByteMemo,
 				5678l, -70000l,
 				5679l, 70000l);
 		transaction = transaction.toBuilder()
@@ -97,7 +101,6 @@ class SignedTxnAccessorTest {
 		final var txnUsageMeta = accessor.baseUsageMeta();
 
 		assertEquals(transaction, accessor.getSignedTxnWrapper());
-		assertEquals(transaction, accessor.getSignedTxn4Log());
 		assertArrayEquals(transaction.toByteArray(), accessor.getSignedTxnWrapperBytes());
 		assertEquals(body, accessor.getTxn());
 		assertArrayEquals(body.toByteArray(), accessor.getTxnBytes());
@@ -107,10 +110,11 @@ class SignedTxnAccessorTest {
 		assertEquals(offeredFee, accessor.getOfferedFee());
 		assertArrayEquals(CommonUtils.noThrowSha384HashOf(transaction.toByteArray()), accessor.getHash());
 		assertEquals(expectedMap, accessor.getSigMap());
-		assertArrayEquals(memoUtf8Bytes, accessor.getMemoUtf8Bytes());
+		assertArrayEquals(zeroByteMemoUtf8Bytes, accessor.getMemoUtf8Bytes());
+		assertTrue(accessor.memoHasZeroByte());
 		assertEquals(FeeBuilder.getSignatureCount(accessor.getSignedTxnWrapper()), accessor.numSigPairs());
 		assertEquals(FeeBuilder.getSignatureSize(accessor.getSignedTxnWrapper()), accessor.sigMapSize());
-		assertEquals(memo, accessor.getMemo());
+		assertEquals(zeroByteMemo, accessor.getMemo());
 		// and:
 		assertEquals(memoUtf8Bytes.length, txnUsageMeta.getMemoUtf8Bytes());
 	}
@@ -173,7 +177,6 @@ class SignedTxnAccessorTest {
 		SignedTxnAccessor accessor = SignedTxnAccessor.uncheckedFrom(newTransaction);
 
 		assertEquals(newTransaction, accessor.getSignedTxnWrapper());
-		assertEquals(newTransaction, accessor.getSignedTxn4Log());
 		assertArrayEquals(newTransaction.toByteArray(), accessor.getSignedTxnWrapperBytes());
 		assertEquals(body, accessor.getTxn());
 		assertArrayEquals(body.toByteArray(), accessor.getTxnBytes());
@@ -184,6 +187,7 @@ class SignedTxnAccessorTest {
 				accessor.getHash());
 		assertEquals(expectedMap, accessor.getSigMap());
 		assertArrayEquals(memoUtf8Bytes, accessor.getMemoUtf8Bytes());
+		assertFalse(accessor.memoHasZeroByte());
 		assertEquals(FeeBuilder.getSignatureCount(accessor.getSignedTxnWrapper()), accessor.numSigPairs());
 		assertEquals(FeeBuilder.getSignatureSize(accessor.getSignedTxnWrapper()), accessor.sigMapSize());
 		assertEquals(memo, accessor.getMemo());

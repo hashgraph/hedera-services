@@ -136,9 +136,9 @@ public class CurrencyAdjustments implements SelfSerializable {
 		final var pojo = new CurrencyAdjustments();
 		final int n = adjustments.size();
 		if (n > 0) {
-			final long[] amounts = new long[n];
+			final var amounts = new long[n];
 			final List<EntityId> accounts = new ArrayList<>(n);
-			for (int i = 0; i < n; i++) {
+			for (var i = 0; i < n; i++) {
 				final var adjustment = adjustments.get(i);
 				amounts[i] = adjustment.getAmount();
 				accounts.add(EntityId.fromGrpcAccountId(adjustment.getAccountID()));

@@ -35,6 +35,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -140,10 +141,7 @@ public class HapiSpecSetup {
 	public CostSnapshotMode costSnapshotMode() { return props.getCostSnapshotMode("cost.snapshot.mode"); }
 	public HapiPropertySource ciPropertiesMap() {
 		if (null == ciPropertiesMap) {
-			ciPropertiesMap = new MapPropertySource(Stream.of(props.get("ci.properties.map").split(","))
-					.map(s -> List.of(s.split("=")))
-					.filter(l -> l.size() > 1)
-					.collect(toMap(l -> l.get(0), l -> l.get(1))));
+			ciPropertiesMap = MapPropertySource.parsedFromCommaDelimited(props.get("ci.properties.map"));
 		}
 		return ciPropertiesMap;
 	}
@@ -340,7 +338,12 @@ public class HapiSpecSetup {
 	public String invalidContractName() {
 		return props.get("invalid.contract.name");
 	}
-	public Boolean measureConsensusLatency() { return props.getBoolean("measure.consensus.latency"); }
+	public Boolean measureConsensusLatency() {
+		return props.getBoolean("measure.consensus.latency");
+	}
+	public Boolean suppressUnrecoverableNetworkFailures() {
+		return props.getBoolean("warnings.suppressUnrecoverableNetworkFailures");
+	}
 	public FileID nodeDetailsId() {
 		return props.getFile("node.details.id");
 	}

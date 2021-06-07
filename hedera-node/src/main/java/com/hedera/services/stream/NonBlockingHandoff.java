@@ -25,13 +25,16 @@ import com.hedera.services.context.properties.NodeLocalProperties;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 
 public class NonBlockingHandoff {
 	private static final int MIN_CAPACITY = 5_000;
 
-	private final ExecutorService executor = newSingleThreadExecutor();
+	private ExecutorService executor = newSingleThreadExecutor();
+
+	private final AtomicBoolean timeToStop = new AtomicBoolean(false);
 	private final RecordStreamManager recordStreamManager;
 	private final BlockingQueue<RecordStreamObject> queue;
 
@@ -41,7 +44,7 @@ public class NonBlockingHandoff {
 		final int capacity = Math.max(MIN_CAPACITY, nodeLocalProperties.recordStreamQueueCapacity());
 		queue = new ArrayBlockingQueue<>(capacity);
 		executor.execute(this::handoff);
-		Runtime.getRuntime().addShutdownHook(new Thread(executor::shutdown));
+		Runtime.getRuntime().addShutdownHook(new Thread(getShutdownHook()));
 	}
 
 	public boolean offer(RecordStreamObject rso) {
@@ -49,7 +52,7 @@ public class NonBlockingHandoff {
 	}
 
 	private void handoff() {
-		for (;;) {
+		while (!timeToStop.get()) {
 			final var rso = queue.poll();
 			if (rso != null) {
 				recordStreamManager.addRecordStreamObject(rso);
@@ -59,5 +62,20 @@ public class NonBlockingHandoff {
 
 	ExecutorService getExecutor() {
 		return executor;
+	}
+
+	void setExecutor(ExecutorService executor) {
+		this.executor = executor;
+	}
+
+	Runnable getShutdownHook() {
+		return () -> {
+			timeToStop.set(true);
+			executor.shutdown();
+		};
+	}
+
+	AtomicBoolean getTimeToStop() {
+		return timeToStop;
 	}
 }

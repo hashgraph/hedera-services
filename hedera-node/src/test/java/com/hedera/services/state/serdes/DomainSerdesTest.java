@@ -22,15 +22,17 @@ package com.hedera.services.state.serdes;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.submerkle.SolidityFnResult;
+import com.hedera.services.state.submerkle.TxnId;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -41,6 +43,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.time.Instant;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -387,52 +390,48 @@ public class DomainSerdesTest {
 	}
 
 	public static ExpirableTxnRecord recordOne() {
-		TransactionRecord record = TransactionRecord.newBuilder()
-				.setReceipt(TransactionReceipt.newBuilder()
-						.setStatus(INVALID_ACCOUNT_ID)
-						.setAccountID(asAccount("0.0.3")))
-				.setTransactionID(TransactionID.newBuilder()
-						.setTransactionValidStart(Timestamp.newBuilder().setSeconds(9_999_999_999L)))
+		return ExpirableTxnRecord.newBuilder()
+				.setReceipt(TxnReceipt.newBuilder()
+						.setStatus(INVALID_ACCOUNT_ID.name())
+						.setAccountId(EntityId.fromGrpcAccountId(asAccount("0.0.3"))).build())
+				.setTxnId(TxnId.fromGrpc(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder().setSeconds(9_999_999_999L)).build()))
 				.setMemo("Alpha bravo charlie")
-				.setConsensusTimestamp(Timestamp.newBuilder().setSeconds(9_999_999_999L))
-				.setTransactionFee(555L)
-				.setTransferList(withAdjustments(
+				.setConsensusTime(RichInstant.fromJava(Instant.ofEpochSecond(9_999_999_999L)))
+				.setFee(555L)
+				.setTransferList(CurrencyAdjustments.fromGrpc(withAdjustments(
 						asAccount("0.0.2"), -4L,
 						asAccount("0.0.1001"), 2L,
-						asAccount("0.0.1002"), 2L))
-				.setContractCallResult(ContractFunctionResult.newBuilder()
+						asAccount("0.0.1002"), 2L)))
+				.setContractCallResult(SolidityFnResult.fromGrpc(ContractFunctionResult.newBuilder()
 						.setContractID(asContract("1.2.3"))
 						.setErrorMessage("Couldn't figure it out!")
 						.setGasUsed(55L)
 						.addLogInfo(ContractLoginfo.newBuilder()
-								.setData(ByteString.copyFrom("Nonsense!".getBytes()))))
+								.setData(ByteString.copyFrom("Nonsense!".getBytes()))).build()))
 				.build();
-		ExpirableTxnRecord jRecord = ExpirableTxnRecord.fromGprc(record);
-		return jRecord;
 	}
 
 	public static ExpirableTxnRecord recordTwo() {
-		TransactionRecord record = TransactionRecord.newBuilder()
-				.setReceipt(TransactionReceipt.newBuilder()
-						.setStatus(INVALID_CONTRACT_ID)
-						.setAccountID(asAccount("0.0.4")))
-				.setTransactionID(TransactionID.newBuilder()
-						.setTransactionValidStart(Timestamp.newBuilder().setSeconds(7_777_777_777L)))
+		return ExpirableTxnRecord.newBuilder()
+				.setReceipt(TxnReceipt.newBuilder()
+						.setStatus(INVALID_CONTRACT_ID.name())
+						.setAccountId(EntityId.fromGrpcAccountId(asAccount("0.0.4"))).build())
+				.setTxnId(TxnId.fromGrpc(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder().setSeconds(7_777_777_777L)).build()))
 				.setMemo("Alpha bravo charlie")
-				.setConsensusTimestamp(Timestamp.newBuilder().setSeconds(7_777_777_777L))
-				.setTransactionFee(556L)
-				.setTransferList(withAdjustments(
+				.setConsensusTime(RichInstant.fromJava(Instant.ofEpochSecond(7_777_777_777L)))
+				.setFee(556L)
+				.setTransferList(CurrencyAdjustments.fromGrpc(withAdjustments(
 						asAccount("0.0.2"),-6L,
 						asAccount("0.0.1001"), 3L,
-						asAccount("0.0.1002"), 3L))
-				.setContractCallResult(ContractFunctionResult.newBuilder()
+						asAccount("0.0.1002"), 3L)))
+				.setContractCallResult(SolidityFnResult.fromGrpc(ContractFunctionResult.newBuilder()
 						.setContractID(asContract("4.3.2"))
 						.setErrorMessage("Couldn't figure it out immediately!")
 						.setGasUsed(55L)
 						.addLogInfo(ContractLoginfo.newBuilder()
-								.setData(ByteString.copyFrom("Nonsensical!".getBytes()))))
+								.setData(ByteString.copyFrom("Nonsensical!".getBytes()))).build()))
 				.build();
-		ExpirableTxnRecord jRecord = ExpirableTxnRecord.fromGprc(record);
-		return jRecord;
 	}
 }

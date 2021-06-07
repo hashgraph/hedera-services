@@ -105,8 +105,8 @@ class NetworkCtxManagerTest {
 
 		// then:
 		verify(systemFilesManager, never()).loadObservableSystemFiles();
-		verify(networkCtx, never()).resetWithSavedSnapshots(handleThrottling);
-		verify(networkCtx, never()).updateWithSavedCongestionStarts(feeMultiplierSource);
+		verify(networkCtx, never()).resetThrottlingFromSavedSnapshots(handleThrottling);
+		verify(networkCtx, never()).resetMultiplierSourceFromSavedCongestionStarts(feeMultiplierSource);
 		verify(feeMultiplierSource, never()).resetExpectations();
 	}
 
@@ -119,8 +119,8 @@ class NetworkCtxManagerTest {
 
 		// then:
 		verify(systemFilesManager).loadObservableSystemFiles();
-		verify(networkCtx).resetWithSavedSnapshots(handleThrottling);
-		verify(networkCtx).updateWithSavedCongestionStarts(feeMultiplierSource);
+		verify(networkCtx).resetThrottlingFromSavedSnapshots(handleThrottling);
+		verify(networkCtx).resetMultiplierSourceFromSavedCongestionStarts(feeMultiplierSource);
 		verify(feeMultiplierSource).resetExpectations();
 	}
 
@@ -332,5 +332,20 @@ class NetworkCtxManagerTest {
 
 		// then:
 		verify(systemFilesManager).setObservableFilesNotLoaded();
+	}
+
+	@Test
+	void defaultShouldUpdateOnlyTrueOnDifferentUtcDays() {
+		// setup:
+		final var now = Instant.parse("2021-06-07T23:59:59.369613Z");
+		final var thenSameDay = Instant.parse("2021-06-07T23:59:59.99999Z");
+		final var thenNextDay = Instant.parse("2021-06-08T00:00:00.00000Z");
+
+		// given:
+		final var updateTest = subject.getShouldUpdateMidnightRates();
+
+		// then:
+		assertFalse(updateTest.test(now, thenSameDay));
+		assertTrue(updateTest.test(now, thenNextDay));
 	}
 }

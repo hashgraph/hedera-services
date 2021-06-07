@@ -121,7 +121,7 @@ public class AwareProcessLogic implements ProcessLogic {
 			log.error(
 					tpl,
 					context,
-					ctx.txnCtx().accessor().getSignedTxn4Log(),
+					ctx.txnCtx().accessor().getSignedTxnWrapper(),
 					ctx.ledger().currentChangeSet(),
 					e);
 		} catch (Exception unexpected) {
@@ -183,7 +183,7 @@ public class AwareProcessLogic implements ProcessLogic {
 		}
 		var transitionLogic = ctx.transitionLogic().lookupFor(accessor.getFunction(), accessor.getTxn());
 		if (transitionLogic.isEmpty()) {
-			log.warn("Transaction w/o applicable transition logic at consensus :: {}", accessor::getSignedTxn4Log);
+			log.warn("Transaction w/o applicable transition logic at consensus :: {}", accessor::getSignedTxnWrapper);
 			ctx.txnCtx().setStatus(FAIL_INVALID);
 			return;
 		}
@@ -226,10 +226,10 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	void stream(
 			com.hederahashgraph.api.proto.java.Transaction txn,
-			ExpirableTxnRecord record,
+			ExpirableTxnRecord expiringRecord,
 			Instant consensusTime
 	) {
-		final var rso = new RecordStreamObject(record, txn, consensusTime);
+		final var rso = new RecordStreamObject(expiringRecord, txn, consensusTime);
 		ctx.updateRecordRunningHash(rso.getRunningHash());
 		final var handoff = ctx.nonBlockingHandoff();
 		while (!handoff.offer(rso)) {

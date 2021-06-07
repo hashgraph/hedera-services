@@ -21,12 +21,14 @@ package com.hedera.services.stream;
  */
 
 import com.hedera.services.context.properties.NodeLocalProperties;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.concurrent.ExecutorService;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -35,6 +37,8 @@ class NonBlockingHandoffTest {
 	private final int mockCap = 10;
 	private final RecordStreamObject rso = new RecordStreamObject();
 
+	@Mock
+	private ExecutorService executorService;
 	@Mock
 	private RecordStreamManager recordStreamManager;
 	@Mock
@@ -49,7 +53,7 @@ class NonBlockingHandoffTest {
 		subject = new NonBlockingHandoff(recordStreamManager, nodeLocalProperties);
 
 		// when:
-		Assertions.assertTrue(subject.offer(rso));
+		assertTrue(subject.offer(rso));
 
 		// and:
 		subject.getExecutor().shutdownNow();
@@ -60,5 +64,22 @@ class NonBlockingHandoffTest {
 		} catch (NullPointerException ignore) {
 			/* In CI apparently Mockito can have problems here? */
 		}
+	}
+
+	@Test
+	void shutdownHookWorksAsExpected() {
+		given(nodeLocalProperties.recordStreamQueueCapacity()).willReturn(mockCap);
+		// and:
+		subject = new NonBlockingHandoff(recordStreamManager, nodeLocalProperties);
+		// and:
+		subject.setExecutor(executorService);
+
+		// when:
+		subject.getShutdownHook().run();
+
+		// then:
+		assertTrue(subject.getTimeToStop().get());
+		// and:
+		verify(executorService).shutdown();
 	}
 }

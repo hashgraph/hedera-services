@@ -185,7 +185,8 @@ class AwareNodeDiligenceScreenTest {
 		given(validator.isValidTxnDuration(validDuration.getSeconds())).willReturn(true);
 		given(validator.chronologyStatus(accessor, consensusTime)).willReturn(OK);
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
-		given(validator.rawMemoCheck(eq(accessor.getMemoUtf8Bytes()))).willReturn(INVALID_ZERO_BYTE_IN_STRING);
+		given(validator.rawMemoCheck(accessor.getMemoUtf8Bytes(), accessor.memoHasZeroByte()))
+				.willReturn(INVALID_ZERO_BYTE_IN_STRING);
 
 		// then:
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
@@ -201,7 +202,8 @@ class AwareNodeDiligenceScreenTest {
 		given(validator.isValidTxnDuration(validDuration.getSeconds())).willReturn(true);
 		given(validator.chronologyStatus(accessor, consensusTime)).willReturn(OK);
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
-		given(validator.rawMemoCheck(eq(accessor.getMemoUtf8Bytes()))).willReturn(OK);
+		given(validator.rawMemoCheck(accessor.getMemoUtf8Bytes(), accessor.memoHasZeroByte()))
+				.willReturn(OK);
 
 		// then:
 		assertFalse(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
