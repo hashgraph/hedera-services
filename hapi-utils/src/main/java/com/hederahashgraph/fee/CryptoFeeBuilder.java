@@ -21,23 +21,14 @@ package com.hederahashgraph.fee;
  */
 
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.LiveHash;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
-
 
 /**
  * This class includes methods for generating Fee Matrices and calculating Fee for Crypto related
@@ -45,8 +36,6 @@ import java.util.List;
  */
 
 public class CryptoFeeBuilder extends FeeBuilder {
-
-
   /**
    * This method returns the Fee Matrices for Crypto Create Transaction.
    */
@@ -120,168 +109,6 @@ public class CryptoFeeBuilder extends FeeBuilder {
     return getFeeDataMatrices(feeMatricesForTx, sigValObj.getPayerAcctSigCount(), rbsNetwork);
   }
 
-
-  /**
-   * This method returns the Fee Matrices for Crypto Transfer Transaction.
-   */
-  public FeeData getCryptoTransferTxFeeMatrices(TransactionBody txBody, SigValueObj sigValObj)
-      throws InvalidTxBodyException {
-
-    if (txBody == null || !txBody.hasCryptoTransfer()) {
-      throw new InvalidTxBodyException("CryptoTransfer Tx Body not available for Fee Calculation");
-    }
-
-    long bpt = 0;
-    long vpt = 0;
-    long rbs = 0;
-    long sbs = 0;
-    long gas = 0;
-    long tv = 0;
-    long bpr = 0;
-    long sbpr = 0;
-
-    long txBodySize = 0;
-    txBodySize = getCommonTransactionBodyBytes(txBody);
-
-    // bpt - Bytes per Transaction
-    bpt = txBodySize + getCryptoTransferBodyTxSize(txBody) + sigValObj.getSignatureSize();
-
-    // vpt - verifications per transactions
-    vpt = sigValObj.getTotalSigCount();
-
-    bpr = INT_SIZE;
-
-    rbs = calculateRBS(txBody);
-
-    long rbsNetwork = getDefaultRBHNetworkSize();
-
-    FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-        .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
-
-    return  getFeeDataMatrices(feeMatricesForTx, sigValObj.getPayerAcctSigCount(), rbsNetwork);
-  }
-
-  /**
-   * This method returns the Fee Matrices for Crypto Update Transaction
-   */
-  public FeeData getCryptoUpdateTxFeeMatrices(TransactionBody txBody, SigValueObj sigValObj,
-      Timestamp expirationTimeStamp, Key existingKey) throws InvalidTxBodyException {
-
-    if (txBody == null || !txBody.hasCryptoUpdateAccount()) {
-      throw new InvalidTxBodyException("CryptoUpdate Tx Body not available for Fee Calculation");
-    }
-
-    long bpt = 0;
-    long vpt = 0;
-    long rbs = 0;
-    long sbs = 0;
-    long gas = 0;
-    long tv = 0;
-    long bpr = 0;
-    long sbpr = 0;
-
-    CryptoUpdateTransactionBody crUpdateTxBody = txBody.getCryptoUpdateAccount();
-    long txBodySize = 0;
-    txBodySize = getCommonTransactionBodyBytes(txBody);
-
-    // bpt - Bytes per Transaction
-    bpt = txBodySize + getCryptoUpdateBodyTxSize(txBody) +  sigValObj.getSignatureSize();
-
-    rbs = calculateRBS(txBody);
-
-    // vpt - verifications per transactions
-    vpt = sigValObj.getTotalSigCount();
-    long rbsNetwork = getDefaultRBHNetworkSize();
-
-    if(expirationTimeStamp != null && expirationTimeStamp.getSeconds() > 0) {
-	    if (crUpdateTxBody.hasExpirationTime()) {
-	      if (crUpdateTxBody.getExpirationTime().getSeconds() > expirationTimeStamp.getSeconds()) {
-	        if (crUpdateTxBody.hasKey()) {
-	          rbs = rbs + (BASIC_ACCOUNT_SIZE + getAccountKeyStorageSize(crUpdateTxBody.getKey()))
-	              * (crUpdateTxBody.getExpirationTime().getSeconds()
-	                  - expirationTimeStamp.getSeconds());
-	        } else {
-	          rbs = rbs + (BASIC_ACCOUNT_SIZE + getAccountKeyStorageSize(existingKey))
-	              * (crUpdateTxBody.getExpirationTime().getSeconds()
-	                  - expirationTimeStamp.getSeconds());
-	        }
-	      } else {
-	        if (crUpdateTxBody.hasKey()) {
-	          int newKeySize = getAccountKeyStorageSize(crUpdateTxBody.getKey());
-	          int existingKeySize = getAccountKeyStorageSize(existingKey);
-	          if (newKeySize > existingKeySize) {
-	            Instant expirationTime = RequestBuilder.convertProtoTimeStamp(expirationTimeStamp);
-	            Timestamp txValidStartTimestamp = txBody.getTransactionID().getTransactionValidStart();
-	            Instant txValidStartTime = RequestBuilder.convertProtoTimeStamp(txValidStartTimestamp);
-	            Duration duration = Duration.between(txValidStartTime, expirationTime);
-	            long seconds = duration.getSeconds();
-	            rbs = rbs + newKeySize * seconds;
-	          }
-	        }
-	      }
-	    }
-    }
-
-   
-
-    bpr = INT_SIZE;
-
-    FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-        .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
-
-    return getFeeDataMatrices(feeMatricesForTx, sigValObj.getPayerAcctSigCount(), rbsNetwork);
-  }
-
-  /**
-   * This method calculated total bytes in Crypto Update Tx body
-   */
-  private int getCryptoUpdateBodyTxSize(TransactionBody txBody) {
-    /*
-     * AccountID accountIDToUpdate - BASIC_ENTITY_ID_SIZE Key - calculated bytes AccountID proxyAccountID -
-     * BASIC_ENTITY_ID_SIZE google.protobuf.UInt64Value sendRecordThreshold - LONG_SIZE
-     * google.protobuf.UInt64Value receiveRecordThreshold - LONG_SIZE Duration autoRenewPeriod -
-     * (LONG_SIZE + INT_SIZE) Timestamp expirationTime - (LONG_SIZE + INT_SIZE) bytes
-     * google.protobuf.BoolValue receiverSigRequired - BOOL_VALUE
-     */
-
-    int cryptoAcctUpdateBodySize = BASIC_ENTITY_ID_SIZE;
-
-    CryptoUpdateTransactionBody crUpdateTxBody = txBody.getCryptoUpdateAccount();
-
-    if (crUpdateTxBody.hasKey()) {
-      cryptoAcctUpdateBodySize += getAccountKeyStorageSize(crUpdateTxBody.getKey());
-    }
-
-    if (crUpdateTxBody.hasProxyAccountID()) {
-      cryptoAcctUpdateBodySize += (BASIC_ENTITY_ID_SIZE);
-    }
-    if (crUpdateTxBody.getSendRecordThreshold() != 0
-        || crUpdateTxBody.hasSendRecordThresholdWrapper()) {
-      cryptoAcctUpdateBodySize += LONG_SIZE;
-    }
-
-    if (crUpdateTxBody.getReceiveRecordThreshold() != 0
-        || crUpdateTxBody.hasReceiveRecordThresholdWrapper()) {
-      cryptoAcctUpdateBodySize += LONG_SIZE;
-    }
-
-    if (crUpdateTxBody.hasAutoRenewPeriod()) {
-      cryptoAcctUpdateBodySize += (LONG_SIZE);
-    }
-
-    if (crUpdateTxBody.hasExpirationTime()) {
-      cryptoAcctUpdateBodySize += (LONG_SIZE);
-    }
-
-    if (crUpdateTxBody.hasReceiverSigRequiredWrapper()
-        || crUpdateTxBody.getReceiverSigRequired() == true) {
-      cryptoAcctUpdateBodySize += BOOL_SIZE;
-    }
-
-    return cryptoAcctUpdateBodySize;
-
-  }
-
   /**
    * This method calculates total total RAM Bytes (product of total bytes that will be stored in
    * memory and time till account expires)
@@ -332,51 +159,7 @@ public class CryptoFeeBuilder extends FeeBuilder {
 
   }
 
-
-
-  private int getCryptoTransferBodyTxSize(TransactionBody txBody) {
-
-    /*
-     * TransferList transfers repeated AccountAmount AccountID - (BASIC_ENTITY_ID_SIZE) sint64 amount -
-     * LONG_SIZE
-     */
-    int accountAmountCount = txBody.getCryptoTransfer().getTransfers().getAccountAmountsCount();
-    int cryptoTransfertBodySize = (BASIC_ACCOUNT_AMT_SIZE) * accountAmountCount;
-    return cryptoTransfertBodySize;
-  }
-
   // Query Fee
-
-  /**
-   * This method returns the Fee Matrices for balance query
-   */
-  public FeeData getBalanceQueryFeeMatrices(ResponseType responseType) {
-    // get the Fee Matrices
-    long bpt = 0;
-    long vpt = 0;
-    long rbs = 0;
-    long sbs = 0;
-    long gas = 0;
-    long tv = 0;
-    long bpr = 0;
-    long sbpr = 0;
-
-
-    /*
-     * CryptoGetAccountBalanceQuery QueryHeader Transaction - CryptoTransfer - (will be taken care
-     * in Transaction processing) ResponseType - INT_SIZE AccountID - BASIC_ENTITY_ID_SIZE
-     */
-    bpt = (long) INT_SIZE + BASIC_ENTITY_ID_SIZE;
-
-    /*
-     * CryptoGetAccountBalanceResponse Response header NodeTransactionPrecheckCode - 4 bytes
-     * ResponseType - 4 bytes AccountID - 24 bytes (consist of 3 long values) balance - 8 bytes (1
-     * long value)
-     */
-    bpr = BASIC_QUERY_RES_HEADER + BASIC_ENTITY_ID_SIZE + LONG_SIZE + getStateProofSize(responseType);
-    
-    return FeeData.getDefaultInstance();
-  }
 
   /**
    * This method returns the Fee Matrices for query (for getting the cost of Transaction Record
@@ -459,48 +242,6 @@ public class CryptoFeeBuilder extends FeeBuilder {
 
   }
 
-  /**
-   * This method returns the Fee matrices for Account Info query
-   */
-  public FeeData getAccountInfoQueryFeeMatrices(
-          Key key, List<LiveHash>
-          liveHashes,
-          ResponseType responseType
-  ) {
-    // get the Fee Matrices
-    long bpt = 0;
-    long vpt = 0;
-    long rbs = 0;
-    long sbs = 0;
-    long gas = 0;
-    long tv = 0;
-    long bpr = 0;
-    long sbpr = 0;
-
-    /*
-     * CryptoGetInfoQuery QueryHeader Transaction - CryptoTransfer - (will be taken care in
-     * Transaction processing) ResponseType - INT_SIZE AccountID accountID - BASIC_ENTITY_ID_SIZE bytes
-     *
-     */
-
-    bpt = calculateBPT();
-
-    /*
-     * bpr = CryptoGetInfoResponse Response header NodeTransactionPrecheckCode - 4 bytes
-     * ResponseType - 4 bytes AccountInfo accountInfo - calculated value
-     *
-     */
-    int accountInfoSize = getAccountInfoSize(key, liveHashes);
-
-    bpr = BASIC_QUERY_RES_HEADER + accountInfoSize + getStateProofSize(responseType);
-
-   
-    FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-        .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
-
-    return getQueryFeeDataMatrices(feeMatrices);
-
-  }
 
   /**
    * This method returns the Fee Matrices for Account Records query
@@ -562,31 +303,6 @@ public class CryptoFeeBuilder extends FeeBuilder {
     return getCostForQueryByIDOnly();
   }
 
-
-  private int getAccountInfoSize(Key accountKey, List<LiveHash> liveHashes) {
-
-    /*
-     * AccountID accountID - BASIC_ENTITY_ID_SIZE string contractAccountID - SOLIDITY_ADDRESS bool deleted
-     * - BOOL_SIZE AccountID proxyAccountID - BASIC_ENTITY_ID_SIZE int32 proxyFraction - INT_SIZE int64
-     * proxyReceived - INT_SIZE Key key - calculated value uint64 balance - LONG_SIZE uint64
-     * generateSendRecordThreshold - LONG_SIZE uint64 generateReceiveRecordThreshold - LONG_SIZE
-     * bool receiverSigRequired - BOOL_SIZE Timestamp expirationTime - LONG_SIZE Duration
-     * autoRenewPeriod - LONG_SIZE repeated LiveHash claims - calculated value AccountID accountID - BASIC_ENTITY_ID_SIZE
-     * bytes hash - 48 byte SHA-384 hash (presumably of some kind of credential or
-     * certificate) KeyList keys - calculated value
-     *
-     */
-
-    int keySize = getAccountKeyStorageSize(accountKey);
-
-    int claimSize = liveHashSize(liveHashes);
-
-    int accountInfoSize = BASIC_ACCOUNT_SIZE + keySize + claimSize;
-
-    return accountInfoSize;
-
-  }
-
   private int getAccountTransactionRecordSize(TransactionRecord transRecord) {
 
     /*
@@ -612,180 +328,4 @@ public class CryptoFeeBuilder extends FeeBuilder {
     return txRecordSize;
 
   }
-
-  public FeeData getCryptoAddLiveHashTxFeeMatrices(TransactionBody txBody, SigValueObj sigValObj)
-      throws InvalidTxBodyException {
-
-    /*
-     * account ID LiveHash contains accountID hash keys claimExpiration
-     */
-
-    if (txBody == null || !txBody.hasCryptoAddLiveHash()) {
-      throw new InvalidTxBodyException("CryptoAddLiveHash Tx Body not available for Fee Calculation");
-    }
-    long bpt = 0;
-    long vpt = 0;
-    long rbs = 0; // as nothing is stored in memory for claim
-    long sbs = 0;
-    long gas = 0;
-    long tv = 0;
-    long bpr = 0;
-    long sbpr = 0;
-
-    // calculate BPT - Total Bytes in Transaction
-    long txBodySize = 0;
-    txBodySize = getCommonTransactionBodyBytes(txBody);
-    bpt = txBodySize + getCryptoAddLiveHashBodyBodyTxSize(txBody) + (BASIC_ENTITY_ID_SIZE)
-        + sigValObj.getSignatureSize();
-
-    // vpt - verifications per transactions
-    vpt = sigValObj.getTotalSigCount();
-    long rbsNetwork = getDefaultRBHNetworkSize();
-    rbs = getCryptoLiveHashStorageBytesSec(txBody)
-        + calculateRBS(txBody);
-
-    bpr = INT_SIZE;
-
-    FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-        .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
-
-
-    return getFeeDataMatrices(feeMatrices, sigValObj.getPayerAcctSigCount(), rbsNetwork);
-  }
-
-  public FeeData getCryptoDeleteLiveHashTxFeeMatrices(TransactionBody txBody, SigValueObj sigValObj)
-      throws InvalidTxBodyException {
-
-    if (txBody == null || !txBody.hasCryptoDeleteLiveHash()) {
-      throw new InvalidTxBodyException(
-          "CryptoDeleteLiveHash Tx Body not available for Fee Calculation");
-    }
-    long bpt = 0;
-    long vpt = 0;
-    long rbs = 0;
-    long sbs = 0;
-    long gas = 0;
-    long tv = 0;
-    long bpr = 0;
-    long sbpr = 0;
-
-    // calculate BPT - Total Bytes in Transaction
-    long txBodySize = 0;
-    txBodySize = getCommonTransactionBodyBytes(txBody);
-    bpt = txBodySize + getCryptoDeleteLiveHashBodyBodyTxSize() + sigValObj.getSignatureSize();
-
-    // vpt - verifications per transactions
-    vpt = sigValObj.getTotalSigCount();
-
-    bpr = INT_SIZE;
-
-    long rbsNetwork = getDefaultRBHNetworkSize();
-    rbs = getCryptoLiveHashStorageBytesSec(txBody)
-        + calculateRBS(txBody);
-    FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-        .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
-
-    return getFeeDataMatrices(feeMatricesForTx, sigValObj.getPayerAcctSigCount(), rbsNetwork);
-
-  }
-
-  private int getCryptoAddLiveHashBodyBodyTxSize(TransactionBody txBody) {
-
-    int keySize = 0;
-    int keyListSize = 0;
-    KeyList liveHashKeys = txBody.getCryptoAddLiveHash().getLiveHash().getKeys();
-    for (Key key : liveHashKeys.getKeysList()) {
-      keySize = sizeOfLiveHashKeyStorage(key);
-      keyListSize = keySize + 1;
-    }
-    int claimHashSize = getLiveHashHashSize();
-
-    int cryptoAddLiveHashBodySize = keyListSize + (BASIC_ENTITY_ID_SIZE) + claimHashSize;
-
-    return cryptoAddLiveHashBodySize;
-  }
-
-  private int getCryptoDeleteLiveHashBodyBodyTxSize() {
-    int claimHashSize = getLiveHashHashSize();
-    int cryptoDeleteLiveHashBodySize = +(BASIC_ENTITY_ID_SIZE) + claimHashSize;
-    return cryptoDeleteLiveHashBodySize;
-  }
-
-  private int getCryptoGetLiveHashBodyTxSize() {
-    int claimHashSize = getLiveHashHashSize();
-    int cryptoGetLiveHashBodySize = (BASIC_ENTITY_ID_SIZE) + claimHashSize;
-    return cryptoGetLiveHashBodySize;
-  }
-
-  private int getLiveHashHashSize() {
-    return TX_HASH_SIZE;
-
-  }
-
-  private long getCryptoLiveHashStorageBytesSec(TransactionBody txBody) {
-
-    long storageSize = (long) (BASIC_ENTITY_ID_SIZE) + TX_HASH_SIZE
-        + txBody.getCryptoAddLiveHash().getLiveHash().getKeys().getSerializedSize();
-    long seconds = txBody.getCryptoAddLiveHash().getLiveHash().getDuration().getSeconds();
-    storageSize = storageSize * seconds;
-    return storageSize;
-
-  }
-
-
-  public FeeData getLiveHashFeeQueryFeeMatrices() {
-    // get the Fee Matrices
-    long bpt = 0;
-    long vpt = 0;
-    long rbs = 0;
-    long sbs = 0;
-    long gas = 0;
-    long tv = 0;
-    long bpr = 0;
-    long sbpr = 0;
-
-    bpt = (long) INT_SIZE + INT_SIZE + getCryptoGetLiveHashBodyTxSize();
-    sbpr = getCryptoGetLiveHashBodyTxSize();
-    FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-        .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
-
-    return getFeeDataMatrices(feeMatrices, DEFAULT_PAYER_ACC_SIG_COUNT, DEFAULT_RBS_NETWORK);
-  }
- 
-
-  /**
-   * FeeMetrics for Crypto Account
-   *
-   * @return feeComponents
-   */
-  public FeeData getCryptoAccountRenewalFeeMatrices(Key key, long autoRenewal) {
-
-    long bpt = 0;
-    long vpt = 0;
-    long rbs = 0;
-    long sbs = 0;
-    long gas = 0;
-    long tv = 0;
-    long bpr = 0;
-    long sbpr = 0;
-
-    // Since its renewal, only RAM bytes will be considered!
-    // rbs - RAM bytes seconds
-    /*
-     * long balance - LONG_SIZE long receiverThreshold - LONG_SIZE long senderThreshold - LONG_SIZE
-     * boolean receiverSigRequired - BOOL_SIZE Key accountKeys - calculated size AccountID
-     * proxyAccount - BASIC_ENTITY_ID_SIZE long autoRenewPeriod - LONG_SIZE boolean deleted - BOOL_SIZE
-     */
-
-    rbs = (BASIC_ACCOUNT_SIZE + getAccountKeyStorageSize(key)) * autoRenewal;
-
-
-    FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-        .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
-
-    return getFeeDataMatrices(feeMatricesForTx, DEFAULT_PAYER_ACC_SIG_COUNT, DEFAULT_RBS_NETWORK);
-
-  }
-
-
 }
