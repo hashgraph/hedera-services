@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.STANDARD_PERMISSIBLE_PRECHECKS;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
@@ -40,7 +39,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 import static com.hedera.services.bdd.suites.reconnect.ValidateTokensStateAfterReconnect.nonReconnectingNode;
@@ -53,7 +51,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * Once the node is reconnected the state of the schedules are verified on reconnected node
  */
 public class SchedulesExpiryDuringReconnect extends HapiApiSuite {
-	private static final String SCHEDULE_EXPIRY_TIME_SECS = "10";
 
 	private static final Logger log = LogManager.getLogger(SchedulesExpiryDuringReconnect.class);
 
@@ -64,7 +61,6 @@ public class SchedulesExpiryDuringReconnect extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-				suiteSetup(),
 				expireSchedulesDuringReconnect()
 		);
 	}
@@ -169,13 +165,6 @@ public class SchedulesExpiryDuringReconnect extends HapiApiSuite {
 								.hasScheduledTxnIdSavedBy(soonToBeExpiredSchedule)
 								.logging()
 								.hasCostAnswerPrecheck(INVALID_SCHEDULE_ID)
-				);
-	}
-
-	private HapiApiSpec suiteSetup() {
-		return defaultHapiSpec("suiteSetup")
-				.given().when().then(
-						overriding("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS)
 				);
 	}
 
