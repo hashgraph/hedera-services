@@ -51,6 +51,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.MockedStatic;
 
 import java.util.Optional;
 
@@ -58,11 +59,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 
 class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     UpdateTopicResourceUsage subject;
+    String adminKeyString = "0000000000000000000000000000000000000000000000000000000000000000";
+    String submitKeyString = "1111111111111111111111111111111111111111111111111111111111111111";
+    String defaultMemo = "12345678";
 
     @BeforeEach
     void setup() throws Throwable {
@@ -86,7 +92,6 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     @Test
     void getFeeThrowsExceptionForBadTxBody() {
         // setup:
-        TransactionBody nonUpdateTopicTx = TransactionBody.newBuilder().build();
         TransactionBody mockTxnBody = mock(TransactionBody.class);
         given(mockTxnBody.hasConsensusUpdateTopic()).willReturn(false);
 
@@ -100,16 +105,38 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
         given(mockTxnBody.hasConsensusUpdateTopic()).willReturn(true);
         exception = assertThrows(IllegalStateException.class, () -> subject.usageGiven(mockTxnBody, sigValueObj, null));
         assertEquals("No StateView present !!", exception.getMessage());
+    }
 
-        assertThrows(InvalidTxBodyException.class, () -> subject.usageGiven(nonUpdateTopicTx, sigValueObj, view));
+    @Test
+    void getFeeThrowsExceptionForBadKeys() throws DecoderException {
+        // given
+        TransactionBody txnBody = makeTransactionBody(topicId, defaultMemo,
+                JKey.mapJKey(new JEd25519Key(CommonUtils.unhex(adminKeyString))),
+                JKey.mapJKey(new JEd25519Key(CommonUtils.unhex(submitKeyString))),
+                IdUtils.asAccount("0.1.2"),
+                null,
+                null);
+
+        MerkleTopic merkleTopic = new MerkleTopic(defaultMemo,
+                new JEd25519Key(CommonUtils.unhex(adminKeyString)),
+                new JEd25519Key(CommonUtils.unhex(submitKeyString)),
+                0, new EntityId(0,1,2), new RichInstant(36_000, 0));
+
+        given(topics.get(MerkleEntityId.fromTopicId(topicId))).willReturn(merkleTopic);
+        MockedStatic<JKey> mockedJkey = mockStatic(JKey.class);
+        mockedJkey.when(() -> JKey.mapJKey(any())).thenThrow(new DecoderException());
+
+        // expect
+        assertThrows(InvalidTxBodyException.class, () -> subject.usageGiven(txnBody, sigValueObj, view));
+        mockedJkey.close();
     }
 
     @Test
     void updateToMissingTopic() throws DecoderException, InvalidTxBodyException {
         // given
-        TransactionBody txBody = makeTransactionBody(topicId, "12345678",
-                JKey.mapJKey(new JEd25519Key(CommonUtils.unhex("0000000000000000000000000000000000000000000000000000000000000000"))),
-                JKey.mapJKey(new JEd25519Key(CommonUtils.unhex("1111111111111111111111111111111111111111111111111111111111111111"))),
+        TransactionBody txBody = makeTransactionBody(topicId, defaultMemo,
+                JKey.mapJKey(new JEd25519Key(CommonUtils.unhex(adminKeyString))),
+                JKey.mapJKey(new JEd25519Key(CommonUtils.unhex(submitKeyString))),
                 IdUtils.asAccount("0.1.2"),
                 null,
                 null);
