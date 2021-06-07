@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PriorityQueueExpiriesTest {
 	String k1 = "first", k2 = "second", k3 = "third";
-	long expiry1 = 50, expiry2 = 100, expiry3 = 1000;
+	long expiry1 = 50, expiry2 = 1000, expiry3 = 200;
 
 	PriorityQueueExpiries<String> subject;
 
@@ -69,15 +69,15 @@ class PriorityQueueExpiriesTest {
 
 		// when:
 		var firstExpired = subject.expireNextAt(expiry1);
-		var secondExpired = subject.expireNextAt(expiry2);
+		var secondExpired = subject.expireNextAt(expiry3);
 
 		// then:
 		assertEquals(k1, firstExpired);
-		assertEquals(k2, secondExpired);
+		assertEquals(k3, secondExpired);
 		// and:
 		assertEquals(1, subject.getAllExpiries().size());
-		assertFalse(subject.hasExpiringAt(expiry2));
-		assertTrue(subject.hasExpiringAt(expiry3));
+		assertFalse(subject.hasExpiringAt(expiry3));
+		assertTrue(subject.hasExpiringAt(expiry2));
 	}
 
 	@Test
