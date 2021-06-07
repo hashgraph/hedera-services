@@ -46,36 +46,36 @@ public class UpdateTopicResourceUsage implements TxnResourceUsageEstimator {
     }
 
     @Override
-    public FeeData usageGiven(TransactionBody txnBody, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException {
-        if(txnBody == null) {
-            throw new InvalidTxBodyException("consensusCreateTopic field not available for Fee Calculation");
-        } else {
-            try {
-                MerkleTopic merkleTopic = view.topics().get(
-                        MerkleEntityId.fromTopicId(txnBody.getConsensusUpdateTopic().getTopicID()));
-                if (merkleTopic != null && merkleTopic.hasAdminKey()) {
-                    long rbsIncrease = getUpdateTopicRbsIncrease(
-                            txnBody.getTransactionID().getTransactionValidStart(),
-                            JKey.mapJKey(merkleTopic.getAdminKey()),
-                            JKey.mapJKey(merkleTopic.getSubmitKey()),
-                            merkleTopic.getMemo(),
-                            merkleTopic.hasAutoRenewAccountId(),
-                            lookupExpiry(merkleTopic),
-                            txnBody.getConsensusUpdateTopic());
-                    return getConsensusUpdateTopicFee(txnBody, rbsIncrease, sigUsage);
-                } else {
-                    return getConsensusUpdateTopicFee(txnBody, 0, sigUsage);
-                }
+    public FeeData usageGiven(final TransactionBody txnBody, final SigValueObj sigUsage, final StateView view) throws InvalidTxBodyException {
+        if (txnBody == null || !txnBody.hasConsensusUpdateTopic()) {
+            throw new InvalidTxBodyException("consensusUpdateTopic field not available for Fee Calculation");
+        }
+        if (view == null) {
+            throw new IllegalStateException("No StateView present !!");
+        }
+
+        long rbsIncrease = 0;
+        MerkleTopic merkleTopic = view.topics().get(
+                MerkleEntityId.fromTopicId(txnBody.getConsensusUpdateTopic().getTopicID()));
+
+        if (merkleTopic != null && merkleTopic.hasAdminKey()) {
+            try{
+                var expiry = Timestamp.newBuilder()
+                        .setSeconds(merkleTopic.getExpirationTimestamp().getSeconds())
+                        .build();
+                rbsIncrease = getUpdateTopicRbsIncrease(
+                        txnBody.getTransactionID().getTransactionValidStart(),
+                        JKey.mapJKey(merkleTopic.getAdminKey()),
+                        JKey.mapJKey(merkleTopic.getSubmitKey()),
+                        merkleTopic.getMemo(),
+                        merkleTopic.hasAutoRenewAccountId(),
+                        expiry,
+                        txnBody.getConsensusUpdateTopic());
             } catch (DecoderException illegal) {
                 log.warn("Usage estimation unexpectedly failed for {}!", txnBody, illegal);
                 throw new InvalidTxBodyException(illegal);
             }
         }
-    }
-
-    private Timestamp lookupExpiry(MerkleTopic merkleTopic) {
-            return Timestamp.newBuilder()
-                    .setSeconds(merkleTopic.getExpirationTimestamp().getSeconds())
-                    .build();
+        return getConsensusUpdateTopicFee(txnBody, rbsIncrease, sigUsage);
     }
 }

@@ -54,10 +54,12 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 import java.util.Optional;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     UpdateTopicResourceUsage subject;
@@ -85,9 +87,20 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     void getFeeThrowsExceptionForBadTxBody() {
         // setup:
         TransactionBody nonUpdateTopicTx = TransactionBody.newBuilder().build();
+        TransactionBody mockTxnBody = mock(TransactionBody.class);
+        given(mockTxnBody.hasConsensusUpdateTopic()).willReturn(false);
 
         // expect:
-        assertThrows(InvalidTxBodyException.class, () -> subject.usageGiven(null, sigValueObj, view));
+        Throwable exception = assertThrows(InvalidTxBodyException.class, () -> subject.usageGiven(null, sigValueObj, view));
+        assertEquals("consensusUpdateTopic field not available for Fee Calculation", exception.getMessage());
+
+        exception = assertThrows(InvalidTxBodyException.class, () -> subject.usageGiven(mockTxnBody, sigValueObj, view));
+        assertEquals("consensusUpdateTopic field not available for Fee Calculation", exception.getMessage());
+
+        given(mockTxnBody.hasConsensusUpdateTopic()).willReturn(true);
+        exception = assertThrows(IllegalStateException.class, () -> subject.usageGiven(mockTxnBody, sigValueObj, null));
+        assertEquals("No StateView present !!", exception.getMessage());
+
         assertThrows(InvalidTxBodyException.class, () -> subject.usageGiven(nonUpdateTopicTx, sigValueObj, view));
     }
 
