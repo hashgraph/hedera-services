@@ -23,7 +23,7 @@ package com.hedera.services.records;
 import com.google.common.cache.Cache;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.state.expiry.PriorityQueueExpiries;
+import com.hedera.services.state.expiry.MonotonicFullQueueExpiries;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -54,7 +54,7 @@ public class RecordCache {
 	private Cache<TransactionID, Boolean> timedReceiptCache;
 	private Map<TransactionID, TxnIdRecentHistory> histories;
 
-	PriorityQueueExpiries<TransactionID> recordExpiries = new PriorityQueueExpiries<>();
+	MonotonicFullQueueExpiries<TransactionID> recordExpiries = new MonotonicFullQueueExpiries<>();
 
 	public RecordCache(
 			ServicesContext ctx,

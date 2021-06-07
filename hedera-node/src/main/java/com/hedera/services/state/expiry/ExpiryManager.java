@@ -62,8 +62,8 @@ public class ExpiryManager {
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 	private final Supplier<FCMap<MerkleEntityId, MerkleSchedule>> schedules;
 
-	private final PriorityQueueExpiries<Long> payerRecordExpiries =
-			new PriorityQueueExpiries<>();
+	private final MonotonicFullQueueExpiries<Long> payerRecordExpiries =
+			new MonotonicFullQueueExpiries<>();
 	private final PriorityQueueExpiries<Pair<Long, Consumer<EntityId>>> shortLivedEntityExpiries =
 			new PriorityQueueExpiries<>();
 
