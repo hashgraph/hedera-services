@@ -48,19 +48,19 @@ import static com.hederahashgraph.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
  * of resources:
  * <ol>
  * <li>Network capacity needed to submit an operation to the network.
- * Units are <tt>bpt</tt> (“bytes per transaction”).</li>
+ * Units are {@code bpt} (“bytes per transaction”).</li>
  * <li>Network capacity needed to return information from memory in response to an operation.
- * Units are <tt>bpr</tt> (“bytes per response).</li>
+ * Units are {@code bpr} (“bytes per response).</li>
  * <li>Network capacity needed to return information from disk in response to an operation.
- * Units are <tt>sbpr</tt> (“storage bytes per response”).</li>
+ * Units are {@code sbpr} (“storage bytes per response”).</li>
  * <li>RAM needed to persist an operation’s effects on consensus state, for as long as such effects are visible.
- * Units are <tt>rbh</tt> (“RAM byte-hours”).</li>
+ * Units are {@code rbh} (“RAM byte-hours”).</li>
  * <li>Disk space needed to persist the operation’s effect on consensus state, for as long as such effects are visible.
- * Units are sbh (“storage byte-hours”).</li>
+ * Units are {@code sbh} (“storage byte-hours”).</li>
  * <li>Computation needed to verify a Ed25519 cryptographic signature.
- * Units are <tt>vpt</tt> (“verifications per transaction”).</li>
+ * Units are {@code vpt} (“verifications per transaction”).</li>
  * <li>Computation needed for incremental execution of a Solidity smart contract.
- * Units are <tt>gas</tt>.</li>
+ * Units are {@code gas}.</li>
  * </ol>
  */
 public class UsageAccumulator {
