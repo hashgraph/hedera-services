@@ -26,7 +26,6 @@ import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.utils.TxnAccessor;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.TransactionSignature;
 
 import java.util.List;

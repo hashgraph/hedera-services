@@ -21,9 +21,6 @@ package com.hedera.services.sigs.sourcing;
  */
 
 import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.Transaction;
-
-import static com.hedera.services.legacy.proto.utils.CommonUtils.extractSignatureMapOrUseDefault;
 
 /**
  * Defines a type that is a source of the cryptographic signatures associated to

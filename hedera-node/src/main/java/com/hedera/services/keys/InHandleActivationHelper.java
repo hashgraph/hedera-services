@@ -24,8 +24,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.Collections;
 import java.util.List;
@@ -47,8 +45,6 @@ import static com.hedera.services.keys.HederaKeyTraversal.visitSimpleKeys;
  * @author Michael Tinker
  */
 public class InHandleActivationHelper {
-	private static final Logger log = LogManager.getLogger(InHandleActivationHelper.class);
-
 	private static final List<JKey> NO_OTHER_PARTIES = null;
 	private static final TxnAccessor NO_LAST_ACCESSOR = null;
 	private static final Function<byte[], TransactionSignature> NO_LAST_SIGS_FN = null;
