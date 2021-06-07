@@ -228,6 +228,6 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 
 	@Override
 	public long ratesMidnightCheckInterval() {
-		return 3L;
+		return 1L;
 	}
 }

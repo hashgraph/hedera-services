@@ -105,8 +105,8 @@ class NetworkCtxManagerTest {
 
 		// then:
 		verify(systemFilesManager, never()).loadObservableSystemFiles();
-		verify(networkCtx, never()).resetWithSavedSnapshots(handleThrottling);
-		verify(networkCtx, never()).updateWithSavedCongestionStarts(feeMultiplierSource);
+		verify(networkCtx, never()).resetThrottlingFromSavedSnapshots(handleThrottling);
+		verify(networkCtx, never()).resetMultiplierSourceFromSavedCongestionStarts(feeMultiplierSource);
 		verify(feeMultiplierSource, never()).resetExpectations();
 	}
 
@@ -119,8 +119,8 @@ class NetworkCtxManagerTest {
 
 		// then:
 		verify(systemFilesManager).loadObservableSystemFiles();
-		verify(networkCtx).resetWithSavedSnapshots(handleThrottling);
-		verify(networkCtx).updateWithSavedCongestionStarts(feeMultiplierSource);
+		verify(networkCtx).resetThrottlingFromSavedSnapshots(handleThrottling);
+		verify(networkCtx).resetMultiplierSourceFromSavedCongestionStarts(feeMultiplierSource);
 		verify(feeMultiplierSource).resetExpectations();
 	}
 
