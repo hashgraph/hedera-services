@@ -40,7 +40,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
@@ -97,8 +96,6 @@ class ExpiringCreationsTest {
 	@Mock
 	private HederaLedger ledger;
 	@Mock
-	private TransactionBody txn;
-	@Mock
 	private TxnAccessor accessor;
 
 	private final AccountID payer = asAccount("0.0.2");
@@ -135,8 +132,7 @@ class ExpiringCreationsTest {
 
 	void setUpForExpiringRecordBuilder() {
 		given(accessor.getTxnId()).willReturn(TransactionID.newBuilder().setAccountID(asAccount(account)).build());
-		given(accessor.getTxn()).willReturn(txn);
-		given(accessor.getTxn().getMemo()).willReturn(memo);
+		given(accessor.getMemo()).willReturn(memo);
 		given(accessor.isTriggeredTxn()).willReturn(true);
 		given(accessor.getScheduleRef()).willReturn(ScheduleID.newBuilder().setScheduleNum(scheduleNum).build());
 	}
