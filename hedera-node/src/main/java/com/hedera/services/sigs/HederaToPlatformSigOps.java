@@ -29,13 +29,10 @@ import com.hedera.services.sigs.order.SigStatusOrderResultFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.VerificationStatus;
-
-import java.util.function.Function;
 
 /**
  * Provides two operations that act in-place on the {@link Signature} list of a

@@ -253,7 +253,7 @@
       </snapshots>
       <id>alpha-sdk</id>
       <name>OSSRH</name>
-      <url>https://oss.sonatype.org/content/repositories/comswirlds-1104</url>
+      <url>https://oss.sonatype.org/content/repositories/comswirlds-1106</url>
     </repository>
   </repositories>
 

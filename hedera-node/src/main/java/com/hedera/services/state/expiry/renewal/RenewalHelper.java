@@ -22,7 +22,6 @@ package com.hedera.services.state.expiry.renewal;
 
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -155,18 +154,12 @@ public class RenewalHelper {
 		final long newExpiry = mutableLastClassified.getExpiry() + renewalPeriod;
 		final long newBalance = mutableLastClassified.getBalance() - fee;
 		mutableLastClassified.setExpiry(newExpiry);
-		try {
-			mutableLastClassified.setBalance(newBalance);
-		} catch (NegativeAccountBalanceException impossible) {
-		}
+		mutableLastClassified.setBalanceUnchecked(newBalance);
 
 		final var fundingId = fromAccountId(dynamicProperties.fundingAccount());
 		final var mutableFundingAccount = currentAccounts.getForModify(fundingId);
 		final long newFundingBalance = mutableFundingAccount.getBalance() + fee;
-		try {
-			mutableFundingAccount.setBalance(newFundingBalance);
-		} catch (NegativeAccountBalanceException impossible) {
-		}
+		mutableFundingAccount.setBalanceUnchecked(newFundingBalance);
 
 		log.debug("Renewed {} at a price of {}tb", lastClassifiedEntityId, fee);
 	}

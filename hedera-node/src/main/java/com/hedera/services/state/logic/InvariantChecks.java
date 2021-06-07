@@ -53,7 +53,7 @@ public class InvariantChecks {
 		if (lastConsensusTime != null && !consensusTime.isAfter(lastConsensusTime)) {
 			log.error(
 					"Invariant failure! {} submitted by {} reached consensus at {}, not later than last-handled {}",
-					accessor.getSignedTxn4Log(),
+					accessor.getSignedTxnWrapper(),
 					submittingMember,
 					consensusTime,
 					lastConsensusTime);
@@ -64,7 +64,7 @@ public class InvariantChecks {
 			log.warn(
 					"Invariant failure! Zero-stake node {} submitted {}",
 					submittingMember,
-					accessor.getSignedTxn4Log());
+					accessor.getSignedTxnWrapper());
 			return false;
 		}
 

@@ -94,7 +94,7 @@ class TxnAwareRatesManagerTest {
 				Instant.now().getEpochSecond());
 
 		PlatformTxnAccessor accessor = mock(PlatformTxnAccessor.class);
-		given(accessor.getSignedTxn4Log()).willReturn(Transaction.getDefaultInstance());
+		given(accessor.getSignedTxnWrapper()).willReturn(Transaction.getDefaultInstance());
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.accessor()).willReturn(accessor);
 		midnightRates = mock(ExchangeRates.class);

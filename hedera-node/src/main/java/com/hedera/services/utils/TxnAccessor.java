@@ -51,11 +51,11 @@ public interface TxnAccessor {
 
     byte[] getMemoUtf8Bytes();
     String getMemo();
+    boolean memoHasZeroByte();
 
     byte[] getHash();
     byte[] getTxnBytes();
     byte[] getSignedTxnWrapperBytes();
-    Transaction getSignedTxn4Log();
     Transaction getSignedTxnWrapper();
     TransactionBody getTxn();
 
