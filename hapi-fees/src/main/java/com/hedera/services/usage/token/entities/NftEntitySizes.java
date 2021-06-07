@@ -1,8 +1,8 @@
-package com.hedera.services.queries.token;
+package com.hedera.services.usage.token.entities;
 
 /*-
  * ‌
- * Hedera Services Node
+ * Hedera Services API Fees
  * ​
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
@@ -20,19 +20,19 @@ package com.hedera.services.queries.token;
  * ‍
  */
 
-public class TokenAnswers {
-	private final GetTokenInfoAnswer tokenInfo;
-	private final GetTokenNftInfoAnswer nftInfo;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 
-	public TokenAnswers(GetTokenInfoAnswer tokenInfo, GetTokenNftInfoAnswer nftInfo) {
+public enum NftEntitySizes {
+	NFT_ENTITY_SIZES;
 
-		this.tokenInfo = tokenInfo;
-		this.nftInfo = nftInfo;
+	public int fixedBytesInNftRepr() {
+		/* { creation time } */
+		return BASIC_RICH_INSTANT_SIZE // creation time
+				/* { tokenID, accountID } */
+				+ 2 * BASIC_ENTITY_ID_SIZE
+				/* { serialNum } */
+				+ LONG_SIZE;
 	}
-
-	public GetTokenInfoAnswer getTokenInfo() {
-		return tokenInfo;
-	}
-
-	public GetTokenNftInfoAnswer getNftInfoAnswer() { return nftInfo; }
 }

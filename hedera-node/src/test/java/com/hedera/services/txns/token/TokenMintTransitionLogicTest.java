@@ -178,9 +178,9 @@ class TokenMintTransitionLogicTest {
 	}
 
 	@Test
-	public void followsHappyPathForUnique(){
+	public void followsHappyPathForUnique() {
 		givenValidTxnCtx();
-		var  tokenMintBody = TokenMintTransactionBody.newBuilder()
+		var tokenMintBody = TokenMintTransactionBody.newBuilder()
 				.setToken(id)
 				.addMetadata(ByteString.copyFrom("memo".getBytes(StandardCharsets.UTF_8)))
 				.setAmount(amount).build();
@@ -199,7 +199,7 @@ class TokenMintTransitionLogicTest {
 	}
 
 	@Test
-	public void followsSadPathForUnique(){
+	public void followsSadPathForUnique() {
 		givenValidTxnCtx();
 		given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 		given(tokenStore.resolve(any())).willReturn(TokenID.getDefaultInstance());

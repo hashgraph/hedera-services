@@ -22,6 +22,7 @@ package com.hedera.services.state.merkle;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.swirlds.common.FCMKey;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -58,6 +59,13 @@ public class MerkleUniqueTokenId extends AbstractMerkleLeaf implements FCMKey {
 	) {
 		this.tokenId = tokenId;
 		this.serialNumber = serialNumber;
+	}
+
+	public static MerkleUniqueTokenId fromNftID(NftID grpc) {
+		final var tokenID = grpc.getTokenID();
+		final var entity = new EntityId(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum());
+
+		return new MerkleUniqueTokenId(entity, grpc.getSerialNumber());
 	}
 
 	/* --- Object --- */

@@ -75,7 +75,7 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 			} else {
 				var token = commonStore.get(id);
 				ResponseCodeEnum outcome;
-				if(token.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
+				if (token.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
 					outcome = commonStore.mint(id, op.getAmount());
 				} else {
 					outcome = uniqueStore.mint(id, op.getMetadata(0).toStringUtf8(), RichInstant.fromJava(txnCtx.consensusTime()));

@@ -613,41 +613,40 @@ class ServicesStateTest {
 						"  Storage                :: %s\n" +
 						"  Topics                 :: %s\n" +
 						"  Tokens                 :: %s\n" +
-						"  UniqueTokens           :: %s\n" +
 						"  TokenAssociations      :: %s\n" +
 						"  DiskFs                 :: %s\n" +
 						"  ScheduledTxs           :: %s\n" +
 						"  NetworkContext         :: %s\n" +
 						"  AddressBook            :: %s\n" +
 						"  RecordsRunningHashLeaf :: %s\n" +
-						"    ↪ Running hash       :: %s",
-
+						"    ↪ Running hash       :: %s\n" +
+						"  UniqueTokens           :: %s",
 				overallHash,
 				accountsRootHash,
 				storageRootHash,
 				topicRootHash,
 				tokensRootHash,
-				uniqueTokensRootHash,
 				tokenRelsRootHash,
 				specialFileSystemHash,
 				scheduledTxsRootHash,
 				ctxHash,
 				bookHash,
 				runningHashLeafHash,
-				hashInRunningHash);
+				hashInRunningHash,
+				uniqueTokensRootHash);
 		subject.setHash(overallHash);
 
 		given(topics.getHash()).willReturn(topicRootHash);
 		given(accounts.getHash()).willReturn(accountsRootHash);
 		given(storage.getHash()).willReturn(storageRootHash);
 		given(tokens.getHash()).willReturn(tokensRootHash);
-		given(uniqueTokens.getHash()).willReturn(uniqueTokensRootHash);
 		given(tokenAssociations.getHash()).willReturn(tokenRelsRootHash);
 		given(networkCtx.getHash()).willReturn(ctxHash);
 		given(networkCtx.toString()).willReturn("Not really a network context representation!");
 		given(book.getHash()).willReturn(bookHash);
 		given(diskFs.getHash()).willReturn(specialFileSystemHash);
 		given(scheduledTxs.getHash()).willReturn(scheduledTxsRootHash);
+		given(uniqueTokens.getHash()).willReturn(uniqueTokensRootHash);
 
 		given(runningHashLeaf.getHash()).willReturn(runningHashLeafHash);
 		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
