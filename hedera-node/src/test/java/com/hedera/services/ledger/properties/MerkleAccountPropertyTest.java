@@ -29,17 +29,18 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.test.factories.txns.SignedTxnFactory;
-import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
@@ -53,11 +54,49 @@ import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
-public class MerkleAccountPropertyTest {
+@ExtendWith(MockitoExtension.class)
+class MerkleAccountPropertyTest {
+	@Mock
+	private MerkleAccount mockAccount;
+	@Mock
+	private MerkleAccountTokens mockAccountTokens;
+
 	@Test
-	public void cannotSetNegativeBalance() {
+	void tokenGetterWorksWithNewFcmParadigm() {
+		// setup:
+		final var copyResult = new MerkleAccountTokens(new long[] { 1, 2, 3 });
+
+		given(mockAccountTokens.tmpNonMerkleCopy()).willReturn(copyResult);
+		given(mockAccount.tokens()).willReturn(mockAccountTokens);
+
+		// when:
+		final var result = TOKENS.getter().apply(mockAccount);
+
+		// then:
+		assertSame(copyResult, result);
+	}
+
+	@Test
+	void tokenSetterWorksWithNewFcmParadigm() {
+		// setup:
+		final var newTokens = new MerkleAccountTokens(new long[] { 1, 2, 3, 4, 5, 6 });
+
+		given(mockAccount.tokens()).willReturn(mockAccountTokens);
+
+		// when:
+		TOKENS.setter().accept(mockAccount, newTokens);
+
+		// then:
+		verify(mockAccountTokens).shareTokensOf(newTokens);
+	}
+
+	@Test
+	void cannotSetNegativeBalance() {
 		// expect:
 		assertThrows(
 				IllegalArgumentException.class,
@@ -65,7 +104,7 @@ public class MerkleAccountPropertyTest {
 	}
 
 	@Test
-	public void cannotConvertNonNumericObjectToBalance() {
+	void cannotConvertNonNumericObjectToBalance() {
 		// expect:
 		assertThrows(
 				IllegalArgumentException.class,
@@ -73,7 +112,7 @@ public class MerkleAccountPropertyTest {
 	}
 
 	@Test
-	public void gettersAndSettersWork() throws Exception {
+	void gettersAndSettersWork() throws Exception {
 		// given:
 		boolean origIsDeleted = false;
 		boolean origIsReceiverSigReq = false;
@@ -81,9 +120,6 @@ public class MerkleAccountPropertyTest {
 		long origBalance = 1L;
 		long origAutoRenew = 1L;
 		long origExpiry = 1L;
-		MerkleAccountTokens origTokens = new MerkleAccountTokens();
-		origTokens.associateAll(Set.of(IdUtils.asToken("1.2.3")));
-		origTokens.associateAll(Set.of(IdUtils.asToken("3.2.1")));
 		Key origKey = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
 		String origMemo = "a";
 		AccountID origProxy = AccountID.getDefaultInstance();
@@ -100,9 +136,6 @@ public class MerkleAccountPropertyTest {
 		long newBalance = 2L;
 		long newAutoRenew = 2L;
 		long newExpiry = 2L;
-		MerkleAccountTokens newTokens = origTokens.copy();
-		newTokens.dissociateAll(Set.of(IdUtils.asToken("1.2.3")));
-		newTokens.associateAll(Set.of(IdUtils.asToken("8.9.10")));
 		JKey newKey = new JKeyList();
 		String newMemo = "b";
 		EntityId newProxy = new EntityId(0, 0, 2);
@@ -117,7 +150,6 @@ public class MerkleAccountPropertyTest {
 				.isSmartContract(origIsContract)
 				.isReceiverSigRequired(origIsReceiverSigReq)
 				.customizing(new MerkleAccount());
-		account.setTokens(origTokens);
 		account.setBalance(origBalance);
 		account.records().offer(origPayerRecords.get(0));
 		account.records().offer(origPayerRecords.get(1));
@@ -137,8 +169,6 @@ public class MerkleAccountPropertyTest {
 		frozenToken.setKycKey(adminKey);
 
 		// expect:
-		assertEquals(origTokens, TOKENS.getter().apply(account));
-		// and when:
 		IS_DELETED.setter().accept(account, newIsDeleted);
 		IS_RECEIVER_SIG_REQUIRED.setter().accept(account, newIsReceiverSigReq);
 		IS_SMART_CONTRACT.setter().accept(account, newIsContract);
@@ -148,8 +178,6 @@ public class MerkleAccountPropertyTest {
 		KEY.setter().accept(account, newKey);
 		MEMO.setter().accept(account, newMemo);
 		PROXY.setter().accept(account, newProxy);
-		// and:
-		TOKENS.setter().accept(account, newTokens);
 
 		// then:
 		assertEquals(newIsDeleted, IS_DELETED.getter().apply(account));
@@ -161,8 +189,6 @@ public class MerkleAccountPropertyTest {
 		assertEquals(newKey, KEY.getter().apply(account));
 		assertEquals(newMemo, MEMO.getter().apply(account));
 		assertEquals(newProxy, PROXY.getter().apply(account));
-		// and:
-		assertEquals(newTokens, TOKENS.getter().apply(account));
 	}
 
 	private ExpirableTxnRecord expirableRecord(ResponseCodeEnum status) {
