@@ -60,7 +60,6 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiApiSuite {
 		);
 	}
 
-
 	public HapiApiSpec checkTokenTotalSupplyAfterMintAndBurn() {
 		String tokenName = "tokenToTest";
 		return defaultHapiSpec("checkTokenTotalSupplyAfterMintAndBurn")

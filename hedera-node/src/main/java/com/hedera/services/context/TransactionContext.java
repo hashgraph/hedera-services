@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -264,4 +265,11 @@ public interface TransactionContext {
 	 * @return {@code List<ExpiringEntity>} for the current expiring entities.
 	 */
 	List<ExpiringEntity> expiringEntities();
+
+	/**
+	 * Set the token transfers that occurred as a result of the active transaction.
+	 *
+	 * @param tokenTransfers the token transfers to record
+	 */
+	void setTokenTransferLists(List<TokenTransferList> tokenTransfers);
 }

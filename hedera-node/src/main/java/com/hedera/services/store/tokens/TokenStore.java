@@ -51,8 +51,6 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 	boolean isTreasuryForToken(AccountID aId, TokenID tId);
 	List<TokenID> listOfTokensServed(AccountID treasury);
 
-	ResponseCodeEnum burn(TokenID tId, long amount);
-	ResponseCodeEnum mint(TokenID tId, long amount);
 	ResponseCodeEnum wipe(AccountID aId, TokenID tId, long wipingAmount, boolean skipKeyCheck);
 	ResponseCodeEnum freeze(AccountID aId, TokenID tId);
 	ResponseCodeEnum update(TokenUpdateTransactionBody changes, long now);

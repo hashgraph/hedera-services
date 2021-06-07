@@ -22,6 +22,7 @@ package com.hedera.services.state.submerkle;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -50,6 +51,12 @@ public class EntityId implements SelfSerializable {
 	private long num;
 
 	public EntityId() { }
+
+	public EntityId(Id id) {
+		this.shard = id.getShard();
+		this.realm = id.getRealm();
+		this.num = id.getNum();
+	}
 
 	public EntityId(long shard, long realm, long num) {
 		this.shard = shard;

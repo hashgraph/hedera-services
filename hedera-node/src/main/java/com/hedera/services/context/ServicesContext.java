@@ -184,6 +184,7 @@ import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.records.RecordCacheFactory;
+import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.records.TxnAwareRecordsHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.security.ops.SystemOpPolicies;
@@ -237,6 +238,8 @@ import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.RunningAvgFactory;
 import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stats.SpeedometerFactory;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.schedule.HederaScheduleStore;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
@@ -251,6 +254,7 @@ import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.TransitionLogicLookup;
+import com.hedera.services.txns.TransitionRunner;
 import com.hedera.services.txns.consensus.SubmitMessageTransitionLogic;
 import com.hedera.services.txns.consensus.TopicCreateTransitionLogic;
 import com.hedera.services.txns.consensus.TopicDeleteTransitionLogic;
@@ -324,6 +328,7 @@ import com.swirlds.common.AddressBook;
 import com.swirlds.common.Console;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
+import com.swirlds.common.Transaction;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
@@ -448,6 +453,7 @@ public class ServicesContext {
 	private MetaAnswers metaAnswers;
 	private RecordCache recordCache;
 	private TokenStore tokenStore;
+	private AccountStore accountStore;
 	private TokenAnswers tokenAnswers;
 	private HederaLedger ledger;
 	private SyncVerifier syncVerifier;
@@ -477,12 +483,14 @@ public class ServicesContext {
 	private MiscRunningAvgs runningAvgs;
 	private ScheduleAnswers scheduleAnswers;
 	private InvariantChecks invariantChecks;
+	private TypedTokenStore typedTokenStore;
 	private MiscSpeedometers speedometers;
 	private ScheduleExecutor scheduleExecutor;
 	private ServicesNodeType nodeType;
 	private SystemOpPolicies systemOpPolicies;
 	private CryptoController cryptoGrpc;
 	private HbarCentExchange exchange;
+	private TransitionRunner transitionRunner;
 	private SemanticVersions semVers;
 	private PrecheckVerifier precheckVerifier;
 	private BackingTokenRels backingTokenRels;
@@ -605,6 +613,13 @@ public class ServicesContext {
 		if (tokenStore != null) {
 			tokenStore.rebuildViews();
 		}
+	}
+
+	public TransitionRunner transitionRunner() {
+		if (transitionRunner == null) {
+			transitionRunner = new TransitionRunner(txnCtx(), transitionLogic());
+		}
+		return transitionRunner;
 	}
 
 	public SigFactoryCreator sigFactoryCreator() {
@@ -894,6 +909,38 @@ public class ServicesContext {
 			);
 		}
 		return hcsAnswers;
+	}
+
+	/**
+	 * Returns the singleton {@link TypedTokenStore} used in {@link ServicesState#handleTransaction(long, boolean, Instant,
+	 * Instant, Transaction)} to load, save, and create tokens in the Swirlds application state. It decouples the
+	 * {@code handleTransaction} logic from the details of the Merkle state.
+	 *
+	 * Here "singleton" means that, no matter how many fast-copies are made of the {@link ServicesState}, the mutable
+	 * instance receiving the {@code handleTransaction} call will always use the same {@code typedTokenStore} instance.
+	 *
+	 * Hence we inject the {@code typedTokenStore} with method references to {@link ServicesContext#tokens()} and
+	 * {@link ServicesContext#tokenAssociations()} so it can always access the children of the mutable
+	 * {@link ServicesState}.
+	 */
+	public TypedTokenStore typedTokenStore() {
+		if (typedTokenStore == null) {
+			typedTokenStore = new TypedTokenStore(
+					accountStore(), new TransactionRecordService(txnCtx()), this::tokens, this::tokenAssociations);
+		}
+		return typedTokenStore;
+	}
+
+	/**
+	 * Returns the singleton {@link AccountStore} used in {@link ServicesState#handleTransaction(long, boolean, Instant,
+	 * Instant, Transaction)} to load, save, and create accounts from the Swirlds application state. It decouples the
+	 * {@code handleTransaction} logic from the details of the Merkle state.
+	 */
+	public AccountStore accountStore() {
+		if (accountStore == null) {
+			accountStore = new AccountStore(validator(), globalDynamicProperties(), this::accounts);
+		}
+		return accountStore;
 	}
 
 	public MetaAnswers metaAnswers() {
@@ -1317,9 +1364,9 @@ public class ServicesContext {
 				entry(TokenDelete,
 						List.of(new TokenDeleteTransitionLogic(tokenStore(), txnCtx()))),
 				entry(TokenMint,
-						List.of(new TokenMintTransitionLogic(tokenStore(), txnCtx()))),
+						List.of(new TokenMintTransitionLogic(typedTokenStore(), txnCtx()))),
 				entry(TokenBurn,
-						List.of(new TokenBurnTransitionLogic(tokenStore(), txnCtx()))),
+						List.of(new TokenBurnTransitionLogic(typedTokenStore(), txnCtx()))),
 				entry(TokenAccountWipe,
 						List.of(new TokenWipeTransitionLogic(tokenStore(), txnCtx()))),
 				entry(TokenAssociateToAccount,
