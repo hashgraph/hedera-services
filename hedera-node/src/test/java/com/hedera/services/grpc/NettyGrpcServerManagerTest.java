@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static com.hedera.test.CiConditions.outsideCircleCi;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -133,9 +134,11 @@ class NettyGrpcServerManagerTest {
 		// then:
 		verify(mockPause, times(2)).forMs(startRetryIntervalMs);
 		verify(server, times(3)).start();
-		assertThat(logCaptor.warnLogs(), contains(
-				"(Attempts=1) Still trying to start Netty on port 8080...Failed to bind",
-				"(Attempts=2) Still trying to start Netty on port 8080...Failed to bind"));
+		if (outsideCircleCi.getAsBoolean()) {
+			assertThat(logCaptor.warnLogs(), contains(
+					"(Attempts=1) Still trying to start Netty on port 8080...Failed to bind",
+					"(Attempts=2) Still trying to start Netty on port 8080...Failed to bind"));
+		}
 	}
 
 	@Test
@@ -153,10 +156,12 @@ class NettyGrpcServerManagerTest {
 		// then:
 		verify(mockPause, times(startRetries)).forMs(startRetryIntervalMs);
 		verify(server, times(startRetries + 1)).start();
-		assertThat(logCaptor.warnLogs(), contains(
-				"(Attempts=1) Still trying to start Netty on port 8080...Failed to bind",
-				"(Attempts=2) Still trying to start Netty on port 8080...Failed to bind",
-				"(Attempts=3) Still trying to start Netty on port 8080...Failed to bind"));
+		if (outsideCircleCi.getAsBoolean()) {
+			assertThat(logCaptor.warnLogs(), contains(
+					"(Attempts=1) Still trying to start Netty on port 8080...Failed to bind",
+					"(Attempts=2) Still trying to start Netty on port 8080...Failed to bind",
+					"(Attempts=3) Still trying to start Netty on port 8080...Failed to bind"));
+		}
 	}
 
 	@Test
