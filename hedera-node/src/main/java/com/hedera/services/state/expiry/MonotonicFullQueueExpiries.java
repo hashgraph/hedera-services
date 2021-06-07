@@ -20,14 +20,12 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
-import com.google.common.base.MoreObjects;
-
 import java.util.ArrayDeque;
 import java.util.Deque;
 
 public class MonotonicFullQueueExpiries<K> implements KeyedExpirations<K> {
 	private long now = 0L;
-	private Deque<ExpiryEvent> allExpiries = new ArrayDeque<>();
+	private Deque<ExpiryEvent<K>> allExpiries = new ArrayDeque<>();
 
 	@Override
 	public void reset() {
@@ -60,37 +58,7 @@ public class MonotonicFullQueueExpiries<K> implements KeyedExpirations<K> {
 		return allExpiries.removeFirst().getId();
 	}
 
-	final class ExpiryEvent {
-		private final K id;
-		private final long expiry;
-
-		ExpiryEvent(K id, long expiry) {
-			this.id = id;
-			this.expiry = expiry;
-		}
-
-		boolean isExpiredAt(long now) {
-			return expiry <= now;
-		}
-
-		public K getId() {
-			return id;
-		}
-
-		public long getExpiry() {
-			return expiry;
-		}
-
-		@Override
-		public String toString() {
-			return MoreObjects.toStringHelper(ExpiryEvent.class)
-					.add("id", id)
-					.add("expiry", expiry)
-					.toString();
-		}
-	}
-
-	Deque<ExpiryEvent> getAllExpiries() {
+	Deque<ExpiryEvent<K>> getAllExpiries() {
 		return allExpiries;
 	}
 

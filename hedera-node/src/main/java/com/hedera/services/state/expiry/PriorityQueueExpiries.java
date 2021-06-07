@@ -20,13 +20,11 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
-import com.google.common.base.MoreObjects;
-
 import java.util.PriorityQueue;
 
 public class PriorityQueueExpiries<K> implements KeyedExpirations<K> {
 	private long now = 0L;
-	private PriorityQueue<ExpiryEvent> allExpiries = new PriorityQueue<>();
+	private PriorityQueue<ExpiryEvent<K>> allExpiries = new PriorityQueue<>();
 
 	@Override
 	public void reset() {
@@ -57,42 +55,7 @@ public class PriorityQueueExpiries<K> implements KeyedExpirations<K> {
 		return allExpiries.remove().getId();
 	}
 
-	final class ExpiryEvent implements Comparable<ExpiryEvent> {
-		private final K id;
-		private final long expiry;
-
-		ExpiryEvent(K id, long expiry) {
-			this.id = id;
-			this.expiry = expiry;
-		}
-
-		boolean isExpiredAt(long now) {
-			return expiry <= now;
-		}
-
-		public K getId() {
-			return id;
-		}
-
-		public long getExpiry() {
-			return expiry;
-		}
-
-		@Override
-		public String toString() {
-			return MoreObjects.toStringHelper(ExpiryEvent.class)
-					.add("id", id)
-					.add("expiry", expiry)
-					.toString();
-		}
-
-		@Override
-		public int compareTo(ExpiryEvent that) {
-			return Long.compare(this.expiry, that.expiry);
-		}
-	}
-
-	PriorityQueue<ExpiryEvent> getAllExpiries() {
+	PriorityQueue<ExpiryEvent<K>> getAllExpiries() {
 		return allExpiries;
 	}
 

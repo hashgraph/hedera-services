@@ -117,7 +117,7 @@ class PriorityQueueExpiriesTest {
 	@Test
 	void expiryEventToStringWorks() {
 		// given:
-		var expiryEvent = new PriorityQueueExpiries<String>().new ExpiryEvent("something", 1_234_567L);
+		var expiryEvent = new ExpiryEvent("something", 1_234_567L);
 		var desired = "ExpiryEvent{id=something, expiry=1234567}";
 
 		// when:
