@@ -186,6 +186,14 @@ class TokenTest {
 		assertEquals(initialTreasuryBalance + mintAmount, treasuryRel.getBalance());
 	}
 
+	@Test
+	void reflectionObjectHelpersWork() {
+		final var otherToken = new Token(new Id(1,2, 3));
+
+		assertNotEquals(subject, otherToken);
+		assertNotEquals(subject.hashCode(), otherToken.hashCode());
+	}
+
 	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
 		var ex = assertThrows(InvalidTransactionException.class, something::run);
 		assertEquals(status, ex.getResponseCode());

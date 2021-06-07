@@ -912,8 +912,7 @@ public class ServicesContext {
 	}
 
 	/**
-	 * Returns the singleton {@link TypedTokenStore} used in {@link ServicesState#handleTransaction(long, boolean,
-	 * Instant,
+	 * Returns the singleton {@link TypedTokenStore} used in {@link ServicesState#handleTransaction(long, boolean, Instant,
 	 * Instant, Transaction)} to load, save, and create tokens in the Swirlds application state. It decouples the
 	 * {@code handleTransaction} logic from the details of the Merkle state.
 	 *

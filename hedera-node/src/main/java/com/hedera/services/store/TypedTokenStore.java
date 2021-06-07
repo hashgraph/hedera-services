@@ -55,9 +55,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
  * if the token is not usable in normal business logic. There are three such
  * cases:
  * <ol>
- * <li>The token is missing.</li>
- * <li>The token is deleted.</li>
- * <li>The token is expired and pending removal.</li>
+ *     <li>The token is missing.</li>
+ *     <li>The token is deleted.</li>
+ *     <li>The token is expired and pending removal.</li>
  * </ol>
  * Note that in the third case, there <i>is</i> one valid use of the token;
  * namely, in an update transaction whose only purpose is to manually renew
@@ -128,6 +128,7 @@ public class TypedTokenStore {
 		tokenRelationship.initBalance(merkleTokenRel.getBalance());
 		tokenRelationship.setKycGranted(merkleTokenRel.isKycGranted());
 		tokenRelationship.setFrozen(merkleTokenRel.isFrozen());
+
 		tokenRelationship.setNotYetPersisted(false);
 
 		return tokenRelationship;

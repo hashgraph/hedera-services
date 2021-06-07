@@ -73,6 +73,7 @@ class MerkleAccountTokensTest {
 	void copiedSubjectBecomesImmutable() {
 		// given:
 		final var someSet = Set.of(asToken("1.2.3"));
+		final var someModelSet = Set.of(aId);
 
 		// when:
 		subject.copy();
@@ -80,7 +81,9 @@ class MerkleAccountTokensTest {
 		// then:
 		assertTrue(subject.isImmutable());
 		Assertions.assertThrows(IllegalStateException.class, () -> subject.associateAll(someSet));
+		Assertions.assertThrows(IllegalStateException.class, () -> subject.associate(someModelSet));
 		Assertions.assertThrows(IllegalStateException.class, () -> subject.dissociateAll(someSet));
+		Assertions.assertThrows(IllegalStateException.class, () -> subject.dissociate(someModelSet));
 	}
 
 	@Test

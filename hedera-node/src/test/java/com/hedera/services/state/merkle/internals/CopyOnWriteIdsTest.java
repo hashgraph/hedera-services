@@ -9,6 +9,7 @@ import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CopyOnWriteIdsTest {
@@ -20,10 +21,6 @@ class CopyOnWriteIdsTest {
 			new long[] { 3, 2, 1 },
 			new long[] { 2, 0, 0 },
 			new long[] { 98, 0, 0 });
-	private List<long[]> evenMoreIds = List.of(
-			new long[] { 0, 0, 2 },
-			new long[] { 0, 0, 50 },
-			new long[] { 0, 0, 1001 });
 
 	@Test
 	void usesCopyOnWriteSemantics() {
@@ -57,6 +54,28 @@ class CopyOnWriteIdsTest {
 		// expect:
 		assertTrue(subject.contains(present));
 		assertFalse(subject.contains(absent));
+	}
+
+	@Test
+	void degenerateEqualsWorks() {
+		// given:
+		final var a = new CopyOnWriteIds(new long[] { 1, 2, 3, 4, 5, 6 });
+		final var b = a;
+
+		// expect:
+		assertEquals(a, b);
+		assertNotEquals(a, new Object());
+		assertNotEquals(a, null);
+	}
+
+	@Test
+	void toStringWorks() {
+		// setup:
+		final var desired = "CopyOnWriteIds{ids=[3.2.1, 6.5.4]}";
+		final var a = new CopyOnWriteIds(new long[] { 1, 2, 3, 4, 5, 6 });
+
+		// expect:
+		assertEquals(desired, a.toString());
 	}
 
 	private Predicate<long[]> listHas(List<long[]> l) {
