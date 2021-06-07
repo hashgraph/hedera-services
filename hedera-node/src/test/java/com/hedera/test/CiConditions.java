@@ -28,4 +28,6 @@ import static java.lang.Boolean.parseBoolean;
 public class CiConditions {
 	public static BooleanSupplier isInCircleCi = () ->
 			parseBoolean(Optional.ofNullable(System.getenv("IN_CIRCLE_CI")).orElse("false"));
+	public static BooleanSupplier outsideCircleCi = () ->
+			!parseBoolean(Optional.ofNullable(System.getenv("CIRCLECI")).orElse("false"));
 }
