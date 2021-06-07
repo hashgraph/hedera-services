@@ -58,7 +58,7 @@ public class NetworkCtxManager {
 	private final FunctionalityThrottling handleThrottling;
 	private final Supplier<MerkleNetworkContext> networkCtx;
 
-	private BiPredicate<Instant, Instant> shouldUpdateMidnightRates = NetworkCtxManager::inSameUtcDay;
+	private BiPredicate<Instant, Instant> shouldUpdateMidnightRates = (now, then) -> !inSameUtcDay(now, then);
 
 	public NetworkCtxManager(
 			IssEventInfo issInfo,
@@ -164,5 +164,9 @@ public class NetworkCtxManager {
 
 	void setShouldUpdateMidnightRates(BiPredicate<Instant, Instant> shouldUpdateMidnightRates) {
 		this.shouldUpdateMidnightRates = shouldUpdateMidnightRates;
+	}
+
+	BiPredicate<Instant, Instant> getShouldUpdateMidnightRates() {
+		return shouldUpdateMidnightRates;
 	}
 }
