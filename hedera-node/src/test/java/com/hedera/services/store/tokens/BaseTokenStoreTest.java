@@ -345,7 +345,7 @@ class BaseTokenStoreTest {
 	@Test
 	public void rejectsDeletionMissingAdminKey() {
 		// given:
-		given(modifiableToken.adminKey()).willReturn(Optional.empty());
+		given(token.adminKey()).willReturn(Optional.empty());
 
 		// when:
 		var outcome = subject.delete(misc);
@@ -357,7 +357,7 @@ class BaseTokenStoreTest {
 	@Test
 	public void rejectsDeletionTokenAlreadyDeleted() {
 		// given:
-		given(modifiableToken.isDeleted()).willReturn(true);
+		given(token.isDeleted()).willReturn(true);
 
 		// when:
 		var outcome = subject.delete(misc);
@@ -385,7 +385,7 @@ class BaseTokenStoreTest {
 	@Test
 	public void getDelegates() {
 		// expect:
-		assertSame(modifiableToken, subject.get(misc));
+		assertSame(token, subject.get(misc));
 	}
 
 	@Test
@@ -434,7 +434,7 @@ class BaseTokenStoreTest {
 
 	@Test
 	public void associatingRejectsDeletedTokens() {
-		given(modifiableToken.isDeleted()).willReturn(true);
+		given(token.isDeleted()).willReturn(true);
 
 		// when:
 		var status = subject.associate(sponsor, List.of(misc));
@@ -565,9 +565,9 @@ class BaseTokenStoreTest {
 		given(tokens.includes(misc)).willReturn(false);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 		// and:
-		given(modifiableToken.hasKycKey()).willReturn(true);
-		given(modifiableToken.hasFreezeKey()).willReturn(true);
-		given(modifiableToken.accountsAreFrozenByDefault()).willReturn(true);
+		given(token.hasKycKey()).willReturn(true);
+		given(token.hasFreezeKey()).willReturn(true);
+		given(token.accountsAreFrozenByDefault()).willReturn(true);
 
 		// when:
 		var status = subject.associate(sponsor, List.of(misc));
@@ -657,7 +657,7 @@ class BaseTokenStoreTest {
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 		// and:
 		given(tokenRelsLedger.get(key, TOKEN_BALANCE)).willReturn(1L);
-		given(modifiableToken.isDeleted()).willReturn(true);
+		given(token.isDeleted()).willReturn(true);
 		given(tokenRelsLedger.get(sponsorMisc, IS_FROZEN)).willReturn(true);
 
 		// when:
@@ -681,7 +681,7 @@ class BaseTokenStoreTest {
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 		// and:
 		given(tokenRelsLedger.get(key, TOKEN_BALANCE)).willReturn(1L);
-		given(modifiableToken.isDeleted()).willReturn(true);
+		given(token.isDeleted()).willReturn(true);
 
 		// when:
 		var status = subject.dissociate(sponsor, List.of(misc));
@@ -705,7 +705,7 @@ class BaseTokenStoreTest {
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 		// and:
 		given(tokenRelsLedger.get(key, TOKEN_BALANCE)).willReturn(balance);
-		given(modifiableToken.expiry()).willReturn(CONSENSUS_NOW - 1);
+		given(token.expiry()).willReturn(CONSENSUS_NOW - 1);
 
 		// when:
 		var status = subject.dissociate(sponsor, List.of(misc));
@@ -792,8 +792,8 @@ class BaseTokenStoreTest {
 	public void wipingRejectsTokenTreasury() {
 		long wiping = 3L;
 
-		given(modifiableToken.hasWipeKey()).willReturn(true);
-		given(modifiableToken.treasury()).willReturn(EntityId.fromGrpcAccountId(sponsor));
+		given(token.hasWipeKey()).willReturn(true);
+		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(sponsor));
 
 		// when:
 		var status = subject.wipe(sponsor, misc, wiping, false);
@@ -867,8 +867,8 @@ class BaseTokenStoreTest {
 		// setup:
 		long wipe = 1_235L;
 
-		given(modifiableToken.hasWipeKey()).willReturn(true);
-		given(modifiableToken.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
+		given(token.hasWipeKey()).willReturn(true);
+		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
 
 		// when:
 		var status = subject.wipe(sponsor, misc, wipe, false);
@@ -1408,7 +1408,7 @@ class BaseTokenStoreTest {
 
 	@Test
 	public void mintingRejectsDetachedTreasury() {
-		given(modifiableToken.hasSupplyKey()).willReturn(true);
+		given(token.hasSupplyKey()).willReturn(true);
 		given(hederaLedger.isDetached(treasury)).willReturn(true);
 
 		// when:
@@ -1453,8 +1453,8 @@ class BaseTokenStoreTest {
 
 	@Test
 	public void burningRejectsDetachedTreasury() {
-		given(modifiableToken.hasSupplyKey()).willReturn(true);
-		given(modifiableToken.totalSupply()).willReturn(treasuryBalance);
+		given(token.hasSupplyKey()).willReturn(true);
+		given(token.totalSupply()).willReturn(treasuryBalance);
 		given(hederaLedger.isDetached(treasury)).willReturn(true);
 
 		// when:
@@ -1466,7 +1466,7 @@ class BaseTokenStoreTest {
 
 	@Test
 	public void mintingRejectsNegativeMintAmount() {
-		given(modifiableToken.hasSupplyKey()).willReturn(true);
+		given(token.hasSupplyKey()).willReturn(true);
 
 		// when:
 		var status = subject.mint(misc, -1L);
@@ -1477,9 +1477,9 @@ class BaseTokenStoreTest {
 
 	@Test
 	public void burningRejectsDueToInsufficientFundsInTreasury() {
-		given(modifiableToken.hasSupplyKey()).willReturn(true);
-		given(modifiableToken.totalSupply()).willReturn(treasuryBalance * 2);
-		given(modifiableToken.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
+		given(token.hasSupplyKey()).willReturn(true);
+		given(token.totalSupply()).willReturn(treasuryBalance * 2);
+		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
 
 		// when:
 		var status = subject.burn(misc, treasuryBalance + 1);
@@ -1492,8 +1492,8 @@ class BaseTokenStoreTest {
 	public void mintingRejectsInvalidNewSupply() {
 		long halfwayToOverflow = ((1L << 63) - 1) / 2;
 
-		given(modifiableToken.hasSupplyKey()).willReturn(true);
-		given(modifiableToken.totalSupply()).willReturn(halfwayToOverflow + 1);
+		given(token.hasSupplyKey()).willReturn(true);
+		given(token.totalSupply()).willReturn(halfwayToOverflow + 1);
 
 		// when:
 		var status = subject.mint(misc, halfwayToOverflow + 1);
@@ -1504,7 +1504,7 @@ class BaseTokenStoreTest {
 
 	@Test
 	public void wipingRejectsDeletedToken() {
-		given(modifiableToken.isDeleted()).willReturn(true);
+		given(token.isDeleted()).willReturn(true);
 
 		// when:
 		var status = subject.wipe(sponsor, misc, adjustment, false);
@@ -1515,7 +1515,7 @@ class BaseTokenStoreTest {
 
 	@Test
 	public void mintingRejectsDeletedToken() {
-		given(modifiableToken.isDeleted()).willReturn(true);
+		given(token.isDeleted()).willReturn(true);
 
 		// when:
 		var status = subject.mint(misc, 1L);
@@ -1557,11 +1557,11 @@ class BaseTokenStoreTest {
 		long oldTotalSupply = 1_000;
 		long adjustment = 500;
 
-		given(modifiableToken.hasSupplyKey()).willReturn(true);
-		given(modifiableToken.totalSupply()).willReturn(oldTotalSupply);
-		given(modifiableToken.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
+		given(token.hasSupplyKey()).willReturn(true);
+		given(token.totalSupply()).willReturn(oldTotalSupply);
+		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
 		// and:
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(modifiableToken);
+		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 
 		// when:
 		var status = subject.mint(misc, adjustment);
@@ -1569,9 +1569,9 @@ class BaseTokenStoreTest {
 		// then:
 		assertEquals(ResponseCodeEnum.OK, status);
 		// and:
-		verify(tokens, times(2)).getForModify(fromTokenId(misc));
-		verify(modifiableToken).adjustTotalSupplyBy(adjustment);
-		verify(tokens).replace(fromTokenId(misc), modifiableToken);
+		verify(tokens).getForModify(fromTokenId(misc));
+		verify(token).adjustTotalSupplyBy(adjustment);
+		verify(tokens).replace(fromTokenId(misc), token);
 		// and:
 		verify(hederaLedger).updateTokenXfers(misc, treasury, adjustment);
 		// and:
@@ -1585,9 +1585,9 @@ class BaseTokenStoreTest {
 	public void burningRejectsAmountMoreThanFound() {
 		long amount = 1;
 
-		given(modifiableToken.hasSupplyKey()).willReturn(true);
-		given(modifiableToken.totalSupply()).willReturn(amount);
-		given(modifiableToken.decimals()).willReturn(1);
+		given(token.hasSupplyKey()).willReturn(true);
+		given(token.totalSupply()).willReturn(amount);
+		given(token.decimals()).willReturn(1);
 
 		// when:
 		var status = subject.burn(misc, amount + 1);
@@ -1599,7 +1599,7 @@ class BaseTokenStoreTest {
 	@Test
 	public void freezingRejectsDeletedToken() {
 		givenTokenWithFreezeKey(true);
-		given(modifiableToken.isDeleted()).willReturn(true);
+		given(token.isDeleted()).willReturn(true);
 
 		// when:
 		var status = subject.freeze(treasury, misc);
@@ -1638,7 +1638,7 @@ class BaseTokenStoreTest {
 
 	@Test
 	public void adjustingRejectsDeletedToken() {
-		given(modifiableToken.isDeleted()).willReturn(true);
+		given(token.isDeleted()).willReturn(true);
 
 		// when:
 		var status = subject.adjustBalance(treasury, misc, 1);

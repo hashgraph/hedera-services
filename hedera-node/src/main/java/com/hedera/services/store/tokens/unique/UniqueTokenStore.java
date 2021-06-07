@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.services.state.merkle.MerkleUniqueTokenId.fromNftID;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
@@ -84,19 +85,15 @@ public class UniqueTokenStore extends BaseTokenStore implements UniqueStore {
 	@Override
 	public CreationResult<List<Long>> mint(final TokenMintTransactionBody txBody, final RichInstant creationTime) {
 		var provisionalUniqueTokens = new ArrayList<Pair<MerkleUniqueTokenId, MerkleUniqueToken>>();
-
 		var tokenId = txBody.getToken();
 		var provisionalSanityCheck = tokenSanityCheck(tokenId, merkleToken -> {
-
 			if (!merkleToken.hasSupplyKey()) {
 				return TOKEN_HAS_NO_SUPPLY_KEY;
 			}
-
 			final var eId = EntityId.fromGrpcTokenId(tokenId);
 			final var owner = merkleToken.treasury();
 			final var metadataList = txBody.getMetadataList();
 			long serialNum = merkleToken.getCurrentSerialNum();
-
 			for (ByteString el : metadataList) {
 				serialNum++;
 				String metaAsStr = el.toStringUtf8();
@@ -104,36 +101,33 @@ public class UniqueTokenStore extends BaseTokenStore implements UniqueStore {
 				final var nft = new MerkleUniqueToken(owner, metaAsStr, creationTime);
 				provisionalUniqueTokens.add(Pair.of(nftId, nft));
 			}
-
 			if (!checkProvisional(provisionalUniqueTokens)) {
 				return INVALID_TRANSACTION_BODY;
 			}
-
 			var adjustmentResult = tryAdjustment(merkleToken.treasury().toGrpcAccountId(), tokenId, provisionalUniqueTokens.size());
-
 			if (!adjustmentResult.equals(OK)) {
 				return adjustmentResult;
 			}
-
-				return OK;
+			return OK;
 		});
-
 		if (!provisionalSanityCheck.equals(OK)) {
 			return CreationResult.failure(provisionalSanityCheck);
 		}
+		// Commit logic
+		var token = super.getTokens().get().getForModify(tokenId);
 		var lastMintedSerialNumbers = new ArrayList<Long>();
-		var token = get(tokenId);
-		provisionalUniqueTokens.forEach(pair -> {
+		for (Pair<MerkleUniqueTokenId, MerkleUniqueToken> pair : provisionalUniqueTokens) {
 			var nft = pair.getValue();
 			var nftId = pair.getKey();
-			lastMintedSerialNumbers.add(token.incrementSerialNum());
+			var serialNum = token.incrementSerialNum();
+			lastMintedSerialNumbers.add(serialNum);
 			uniqueTokenSupplier.get().put(nftId, nft);
-		});
+		}
+		super.getTokens().get().replace(fromTokenId(tokenId), token);
 		return CreationResult.success(lastMintedSerialNumbers);
 	}
 
 	private boolean checkProvisional(List<Pair<MerkleUniqueTokenId, MerkleUniqueToken>> provisionalUniqueTokens) {
-		// Memo should not be repeated check
 		var provisionalTokenSet = provisionalUniqueTokens.stream()
 				.map(e -> e.getValue().getMemo())
 				.collect(Collectors.toSet());

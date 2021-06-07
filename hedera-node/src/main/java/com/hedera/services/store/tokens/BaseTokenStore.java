@@ -110,6 +110,7 @@ public abstract class BaseTokenStore extends HederaStore implements TokenStore {
 
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties properties;
+
 	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
 	private final TransactionalLedger<
 			Pair<AccountID, TokenID>,
@@ -260,7 +261,7 @@ public abstract class BaseTokenStore extends HederaStore implements TokenStore {
 	public MerkleToken get(TokenID id) {
 		throwIfMissing(id);
 
-		return pendingId.equals(id) ? pendingCreation : tokens.get().getForModify(fromTokenId(id));
+		return pendingId.equals(id) ? pendingCreation : tokens.get().get(fromTokenId(id));
 	}
 
 	@Override
@@ -757,5 +758,9 @@ public abstract class BaseTokenStore extends HederaStore implements TokenStore {
 	}
 	protected TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> getTokenRelsLedger() {
 		return tokenRelsLedger;
+	}
+
+	protected Supplier<FCMap<MerkleEntityId, MerkleToken>> getTokens() {
+		return tokens;
 	}
 }

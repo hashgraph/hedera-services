@@ -27,7 +27,6 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -146,27 +145,12 @@ class UniqueTokenStoreTest {
 	}
 
 	@Test
-	void superAdjustBalanceFails(){
+	void superAdjustBalanceFails() {
 		given(tokenRelsLedger.get(sponsorPair, IS_FROZEN)).willReturn(true);
 		var res = store.mint(singleTokenTxBody(), RichInstant.fromJava(Instant.now()));
 		assertEquals(ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN, res.getStatus());
 		verify(token, times(0)).incrementSerialNum();
 	}
-
-//	@Test
-//	void revertWorks() {
-//		var res = store.mintProvisional(singleTokenTxBody(), RichInstant.fromJava(Instant.now()));
-//		assertEquals(res, ResponseCodeEnum.OK);
-//		verify(token, times(0)).incrementSerialNum();
-//		verify(nfTokens, times(0)).put(any(), any());
-//
-//		given(token.hasSupplyKey()).willReturn(false);
-//
-//		res = store.commitProvisional(token);
-//		verify(token, times(0)).incrementSerialNum();
-//		verify(nfTokens, times(0)).put(any(), any());
-//		assertNotEquals(res, ResponseCodeEnum.OK);
-//	}
 
 	@Test
 	void mintOne() {
@@ -176,36 +160,30 @@ class UniqueTokenStoreTest {
 	}
 
 	@Test
-	void verifyPopsLastMintedNums(){
+	void verifyPopsLastMintedNums() {
 		given(token.getCurrentSerialNum()).willReturn(5L);
 		var lastSerials = store.mint(multipleTokenTxBody(), RichInstant.fromJava(Instant.now()));
 		assertEquals(2, lastSerials.getCreated().get().size());
 	}
 
 	@Test
-	void verifyPopsCorrectStuff() {
-		// this token will have serialNum = 0
-		MerkleToken tkn = new MerkleToken(100L, 100L, 2, "tkn", "name", false, true, EntityId.fromGrpcAccountId(sponsor));
-		var jKey = mock(JKey.class);
-		tkn.setSupplyKey(jKey);
+	void verifyIncrementSerialNumGetsCalled() {
+//		MerkleToken tkn = new MerkleToken(100L, 100L, 2,
+//				"tkn", "name", false, true,
+//				EntityId.fromGrpcAccountId(sponsor));
+//		var jKey = mock(JKey.class);
+//		tkn.setSupplyKey(jKey);
 
-		given(store.get(tokenID)).willReturn(tkn);
-		var res = store.mint(multipleTokenTxBody(), RichInstant.fromJava(Instant.now()));
+		var tbody = multipleTokenTxBody();
+		given(store.get(tokenID)).willReturn(token);
+		given(tokens.getForModify(tokenID)).willReturn(token);
+
+		var res = store.mint(tbody, RichInstant.fromJava(Instant.now()));
 		assertEquals(ResponseCodeEnum.OK, res.getStatus());
 		var lastSerials = res.getCreated().get();
 		assertEquals(2, lastSerials.size());
-		assertEquals(1, lastSerials.get(0)); // ensure it's incremented 2 times
-		assertEquals(2, lastSerials.get(1));
-
+		verify(token, times(2)).incrementSerialNum();
 	}
-
-//	@Test
-//	void mintWithSeparateOperations() {
-//		var res = store.mintProvisional(singleTokenTxBody(), RichInstant.fromJava(Instant.now()));
-//		assertEquals(ResponseCodeEnum.OK, res);
-//		res = store.commitProvisional(token);
-//		assertEquals(ResponseCodeEnum.OK, res);
-//	}
 
 	@Test
 	void mintMany() {
@@ -221,15 +199,6 @@ class UniqueTokenStoreTest {
 		verify(token, times(0)).incrementSerialNum();
 		verify(nfTokens, times(0)).put(any(), any());
 	}
-
-//	@Test
-//	void mintManyWithSeparateOps() {
-//		var res = store.mintProvisional(multipleTokenFailTxBody(), RichInstant.fromJava(Instant.now()));
-//		assertEquals(ResponseCodeEnum.OK, res);
-//		res = store.commitProvisional(token);
-//		assertEquals(ResponseCodeEnum.INVALID_TRANSACTION_BODY, res);
-//		verify(token, times(0)).incrementSerialNum();
-//	}
 
 	@Test
 	void mintFailsIfNoSupplyKey() {
@@ -256,7 +225,6 @@ class UniqueTokenStoreTest {
 	private TokenMintTransactionBody multipleTokenTxBody() {
 		return TokenMintTransactionBody.newBuilder()
 				.setToken(tokenID)
-				.setAmount(123)
 				.addMetadata(ByteString.copyFromUtf8("memo1"))
 				.addMetadata(ByteString.copyFromUtf8("memo2"))
 				.build();
