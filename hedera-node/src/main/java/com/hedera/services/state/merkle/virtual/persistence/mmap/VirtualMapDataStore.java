@@ -245,7 +245,7 @@ public final class VirtualMapDataStore {
      * @param path The path of the parent to find and load
      * @return a loaded VirtualTreeInternal with path and hash set or null if not found
      */
-    public Hash loadParentHash(Account account, long path) {
+    public byte[] loadParentHash(Account account, long path) {
         long slotLocation = findParent(account,path);
         if (slotLocation != MemMapDataStore.NOT_FOUND_LOCATION) {
             ByteBuffer buffer = parentStore.accessSlot(slotLocation);
@@ -255,7 +255,7 @@ public final class VirtualMapDataStore {
             // Hash -- HASH_SIZE_BYTES
             byte[] hashBytes = new byte[HASH_SIZE_BYTES];
             buffer.get(hashBytes);
-            return new Hash(hashBytes);
+            return hashBytes;
         }
         return null;
     }
@@ -284,7 +284,7 @@ public final class VirtualMapDataStore {
             // Hash TODO we assume we can use data value as hash here
             byte[] hashBytes = new byte[HASH_SIZE_BYTES];
             System.arraycopy(valueBytes, 0, hashBytes, 0, valueBytes.length);
-            return new VirtualRecord(new Hash(hashBytes), path, new VirtualKey(keyBytes), new VirtualValue(valueBytes));
+            return new VirtualRecord(hashBytes, path, new VirtualKey(keyBytes), new VirtualValue(valueBytes));
         }
         return null;
     }
@@ -313,7 +313,7 @@ public final class VirtualMapDataStore {
             // Hash TODO we assume we can use data value as hash here
             byte[] hashBytes = new byte[HASH_SIZE_BYTES];
             System.arraycopy(valueBytes, 0, hashBytes, 0, valueBytes.length);
-            return new VirtualRecord(new Hash(hashBytes), path, new VirtualKey(keyBytes), new VirtualValue(valueBytes));
+            return new VirtualRecord(hashBytes, path, new VirtualKey(keyBytes), new VirtualValue(valueBytes));
         }
         return null;
     }
@@ -348,7 +348,7 @@ public final class VirtualMapDataStore {
      * @param parentPath The path of the parent to save
      * @param hash The hash the node that would have been at that path
      */
-    public void saveParentHash(Account account, long parentPath, Hash hash) {
+    public void saveParentHash(Account account, long parentPath, byte[] hash) {
         // if already stored and if so it is an update
         long slotLocation = findParent(account, parentPath);
         if (slotLocation == MemMapDataStore.NOT_FOUND_LOCATION) {
@@ -366,7 +366,7 @@ public final class VirtualMapDataStore {
         // Path -- VirtualTreePath.BYTES
         buffer.putLong(parentPath);
         // Hash -- HASH_SIZE_BYTES
-        buffer.put(hash.getValue());
+        buffer.put(hash);
 
     }
 
