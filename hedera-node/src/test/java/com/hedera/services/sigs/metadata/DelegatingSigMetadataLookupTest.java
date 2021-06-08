@@ -37,27 +37,27 @@ import java.util.function.Function;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.willCallRealMethod;
+import static org.mockito.Mockito.verify;
 
 class DelegatingSigMetadataLookupTest {
-	JKey adminKey;
-	JKey freezeKey;
-	String symbol = "NotAnHbar";
-	String tokenName = "TokenName";
-	int decimals = 2;
-	long totalSupply = 1_000_000;
-	boolean freezeDefault = true;
-	boolean accountsKycGrantedByDefault = true;
-	EntityId treasury = new EntityId(1,2, 3);
-	TokenID id = IdUtils.asToken("1.2.666");
+	private JKey freezeKey;
+	private String symbol = "NotAnHbar";
+	private String tokenName = "TokenName";
+	private int decimals = 2;
+	private long totalSupply = 1_000_000;
+	private boolean freezeDefault = true;
+	private boolean accountsKycGrantedByDefault = true;
+	private EntityId treasury = new EntityId(1,2, 3);
+	private TokenID id = IdUtils.asToken("1.2.666");
 
-	MerkleToken token;
-	TokenStore tokenStore;
+	private MerkleToken token;
+	private TokenStore tokenStore;
 
-	Function<TokenID, SafeLookupResult<TokenSigningMetadata>> subject;
+	private Function<TokenID, SafeLookupResult<TokenSigningMetadata>> subject;
 
 	@BeforeEach
-	public void setup() {
-		adminKey = new JEd25519Key("not-a-real-admin-key".getBytes());
+	void setup() {
 		freezeKey = new JEd25519Key("not-a-real-freeze-key".getBytes());
 
 		token = new MerkleToken(Long.MAX_VALUE, totalSupply, decimals, symbol, tokenName,  freezeDefault, accountsKycGrantedByDefault, treasury);
@@ -68,7 +68,20 @@ class DelegatingSigMetadataLookupTest {
 	}
 
 	@Test
-	public void returnsExpectedFailIfExplicitlyMissing() {
+	void forwardsPureLookupByDefault() {
+		final var accountId = IdUtils.asAccount("1.2.3");
+		final var mockLookup = mock(SigMetadataLookup.class);
+
+		willCallRealMethod().given(mockLookup).pureAccountSigningMetaFor(accountId);
+
+		// when:
+		mockLookup.pureAccountSigningMetaFor(accountId);
+
+		verify(mockLookup).accountSigningMetaFor(accountId);
+	}
+
+	@Test
+	void returnsExpectedFailIfExplicitlyMissing() {
 		given(tokenStore.resolve(id)).willReturn(TokenID.newBuilder()
 				.setShardNum(0L)
 				.setRealmNum(0L)
@@ -83,7 +96,7 @@ class DelegatingSigMetadataLookupTest {
 	}
 
 	@Test
-	public void returnsExpectedFailIfMissing() {
+	void returnsExpectedFailIfMissing() {
 		given(tokenStore.resolve(id)).willReturn(TokenStore.MISSING_TOKEN);
 
 		// when:
@@ -94,7 +107,7 @@ class DelegatingSigMetadataLookupTest {
 	}
 
 	@Test
-	public void returnsExpectedMetaIfPresent() {
+	void returnsExpectedMetaIfPresent() {
 		// setup:
 		token.setFreezeKey(freezeKey);
 		var expected = TokenSigningMetadata.from(token);

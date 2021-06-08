@@ -58,21 +58,21 @@ public class TokenBurnTransitionLogic implements TransitionLogic {
 
 	@Override
 	public void doStateTransition() {
-		/* Translate from gRPC types */
+		/* --- Translate from gRPC types --- */
 		final var op = txnCtx.accessor().getTxn().getTokenBurn();
 		final var grpcId = op.getToken();
 		final var targetId = new Id(grpcId.getShardNum(), grpcId.getRealmNum(), grpcId.getTokenNum());
 
-		/* Load the model objects */
+		/* --- Load the model objects --- */
 		final var token = store.loadToken(targetId);
 		final var treasuryRel = store.loadTokenRelationship(token, token.getTreasury());
 
-		/* Do the business logic */
+		/* --- Do the business logic --- */
 		token.burn(treasuryRel, op.getAmount());
 
-		/* Save the updated models */
-		store.saveToken(token);
-		store.saveTokenRelationship(treasuryRel);
+		/* --- Persist the updated models --- */
+		store.persistToken(token);
+		store.persistTokenRelationship(treasuryRel);
 	}
 
 	@Override

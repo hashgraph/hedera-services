@@ -1,16 +1,36 @@
 package com.hedera.services.store.models;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class TokenRelationshipTest {
 	private final Id tokenId = new Id(0, 0, 1234);
@@ -31,6 +51,19 @@ class TokenRelationshipTest {
 		
 		subject = new TokenRelationship(token, account);
 		subject.initBalance(balance);
+	}
+
+	@Test
+	void toStringAsExpected() {
+		// given:
+		final var desired = "TokenRelationship{notYetPersisted=true, " +
+				"account=Account{id=Id{shard=1, realm=0, num=1234}, expiry=0, balance=0, deleted=false, " +
+				"tokens=<N/A>}, token=Token{id=Id{shard=0, realm=0, num=1234}, treasury=null, autoRenewAccount=null, " +
+				"kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>}, balance=1234, " +
+				"balanceChange=0, frozen=false, kycGranted=false}";
+
+		// expect:
+		assertEquals(desired, subject.toString());
 	}
 
 	@Test

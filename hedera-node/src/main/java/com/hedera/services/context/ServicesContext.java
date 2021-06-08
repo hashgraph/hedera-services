@@ -926,7 +926,11 @@ public class ServicesContext {
 	public TypedTokenStore typedTokenStore() {
 		if (typedTokenStore == null) {
 			typedTokenStore = new TypedTokenStore(
-					accountStore(), new TransactionRecordService(txnCtx()), this::tokens, this::tokenAssociations);
+					accountStore(),
+					new TransactionRecordService(txnCtx()),
+					this::tokens,
+					this::tokenAssociations,
+					(BackingTokenRels) backingTokenRels());
 		}
 		return typedTokenStore;
 	}
@@ -1370,7 +1374,8 @@ public class ServicesContext {
 				entry(TokenAccountWipe,
 						List.of(new TokenWipeTransitionLogic(tokenStore(), txnCtx()))),
 				entry(TokenAssociateToAccount,
-						List.of(new TokenAssociateTransitionLogic(tokenStore(), txnCtx()))),
+						List.of(new TokenAssociateTransitionLogic(
+								accountStore(), typedTokenStore(), txnCtx(), globalDynamicProperties()))),
 				entry(TokenDissociateFromAccount,
 						List.of(new TokenDissociateTransitionLogic(tokenStore(), txnCtx()))),
 				/* Schedule */
@@ -1379,11 +1384,7 @@ public class ServicesContext {
 								scheduleStore(), txnCtx(), activationHelper(), validator(), scheduleExecutor()))),
 				entry(ScheduleSign,
 						List.of(new ScheduleSignTransitionLogic(
-								scheduleStore(),
-								txnCtx(),
-								activationHelper(),
-								scheduleExecutor()
-						))),
+								scheduleStore(), txnCtx(), activationHelper(), scheduleExecutor()))),
 				entry(ScheduleDelete,
 						List.of(new ScheduleDeleteTransitionLogic(scheduleStore(), txnCtx()))),
 				/* System */

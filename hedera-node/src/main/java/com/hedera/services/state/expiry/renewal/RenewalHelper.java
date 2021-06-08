@@ -133,7 +133,7 @@ public class RenewalHelper {
 			final var grpcId = lastClassifiedEntityId.toAccountId();
 			final var currentTokens = tokens.get();
 			final List<TokenTransferList> displacements = new ArrayList<>();
-			for (var tId : lastClassifiedTokens.asIds()) {
+			for (var tId : lastClassifiedTokens.asTokenIds()) {
 				doReturnToTreasury(grpcId, tId, displacements, currentTokens);
 			}
 			tokensDisplaced = displacements;
