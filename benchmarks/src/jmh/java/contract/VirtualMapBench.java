@@ -55,9 +55,11 @@ public class VirtualMapBench {
     private MemMapDataSource ds2;
     private VirtualMapDataStore store;
     private Random rand = new Random();
+    private VirtualMap inMemoryMap;
 
     @Setup
     public void prepare() throws Exception {
+        System.out.println("PREPARING");
         final var storeDir = new File("./store").toPath();
         if (Files.exists(storeDir)) {
             try {
@@ -77,15 +79,15 @@ public class VirtualMapBench {
                 new Account(0, 0, 100));
 
         // Populate the data source with one million items.
-        VirtualMap map = new VirtualMap(ds);
+        inMemoryMap = new VirtualMap(ds);
         VirtualMap map2 = new VirtualMap(ds2);
         for (int i=0; i<1_000_000; i++) {
             final var key = asKey(i);
             final var value = asValue(i);
-            map.putValue(key, value);
+            inMemoryMap.putValue(key, value);
             map2.putValue(key, value);
         }
-        map.commit();
+        inMemoryMap.commit();
         map2.commit();
     }
 
@@ -127,12 +129,12 @@ public class VirtualMapBench {
 
     @Benchmark
     public void update_100PerVirtualMap() {
-        final var map = new VirtualMap(ds);
+        inMemoryMap = inMemoryMap.copy();
         for (int j=0; j<25; j++) {
             final var i = rand.nextInt(1_000_000);
-            map.putValue(asKey(i), asValue(i + 1_000_000));
+            inMemoryMap.putValue(asKey(i), asValue(i + 1_000_000));
         }
-        map.commit();
+        inMemoryMap.commit();
     }
 
     @Benchmark
