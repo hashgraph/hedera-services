@@ -231,13 +231,13 @@ public class VirtualMapTest {
     private static final class InMemoryDataSource implements VirtualDataSource {
         private Map<VirtualKey, VirtualRecord> leaves = new HashMap<>();
         private Map<Long, VirtualRecord> leavesByPath = new HashMap<>();
-        private Map<Long, Hash> parents = new HashMap<>();
+        private Map<Long, byte[]> parents = new HashMap<>();
         private long firstLeafPath = INVALID_PATH;
         private long lastLeafPath = INVALID_PATH;
         private boolean closed = false;
 
         @Override
-        public Hash loadParentHash(long parentPath) {
+        public byte[] loadParentHash(long parentPath) {
             return parents.get(parentPath);
         }
 
@@ -258,7 +258,7 @@ public class VirtualMapTest {
         }
 
         @Override
-        public void saveParent(long parentPath, Hash hash) {
+        public void saveParent(long parentPath, byte[] hash) {
             parents.put(parentPath, hash);
         }
 

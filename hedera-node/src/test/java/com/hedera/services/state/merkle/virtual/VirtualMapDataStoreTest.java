@@ -62,7 +62,7 @@ public class VirtualMapDataStoreTest {
         for (int a = 0; a < ACCOUNT_COUNT; a++) {
             Account account = new Account(0,0,a);
             for (int i = 0; i < COUNT; i++) {
-                Hash hash = hash(i);
+                byte[] hash = hash(i);
                 // write parent
                 store.saveParentHash(account, i, hash);
                 // write leaf
@@ -75,22 +75,22 @@ public class VirtualMapDataStoreTest {
         for (int a = 0; a < ACCOUNT_COUNT; a++) {
             Account account = new Account(0,0,a);
             for (int i = 0; i < COUNT; i++) {
-                Hash hash = hash(i);
+                byte[] hash = hash(i);
                 VirtualKey key = new VirtualKey(get32Bytes(i));
                 VirtualValue value = new VirtualValue(get32Bytes(i));
 
                 // read parent
-                Hash parentHash = store.loadParentHash(account,i);
-                Assertions.assertEquals(parentHash, hash);
+                byte[] parentHash = store.loadParentHash(account,i);
+                Assertions.assertArrayEquals(parentHash, hash);
                 // read leaf by key
                 VirtualRecord record = store.loadLeaf(account,key);
-                Assertions.assertEquals(record.getHash(), hash);
+                Assertions.assertArrayEquals(record.getHash(), hash);
                 Assertions.assertEquals(record.getPath(), i);
                 Assertions.assertEquals(record.getKey(), key);
                 Assertions.assertEquals(record.getValue(), value);
                 // read leaf by path
                 record = store.loadLeaf(account,i);
-                Assertions.assertEquals(record.getHash(), hash);
+                Assertions.assertArrayEquals(record.getHash(), hash);
                 Assertions.assertEquals(record.getPath(), i);
                 Assertions.assertEquals(record.getKey(), key);
                 Assertions.assertEquals(record.getValue(), value);
@@ -113,7 +113,7 @@ public class VirtualMapDataStoreTest {
         for (int a = 0; a < ACCOUNT_COUNT; a++) {
             Account account = new Account(0,0,a);
             for (int i = 0; i < COUNT; i++) {
-                Hash hash = hash(i);
+                byte[] hash = hash(i);
                 // write parent
                 store.saveParentHash(account, i, hash);
                 // write leaf
@@ -131,22 +131,22 @@ public class VirtualMapDataStoreTest {
         for (int a = 0; a < ACCOUNT_COUNT; a++) {
             Account account = new Account(0,0,a);
             for (int i = 0; i < COUNT; i++) {
-                Hash hash = hash(i);
+                byte[] hash = hash(i);
                 VirtualKey key = new VirtualKey(get32Bytes(i));
                 VirtualValue value = new VirtualValue(get32Bytes(i));
 
                 // read parent
-                Hash parentHash = store.loadParentHash(account,i);
-                Assertions.assertEquals(parentHash, hash);
+                byte[] parentHash = store.loadParentHash(account,i);
+                Assertions.assertArrayEquals(parentHash, hash);
                 // read leaf by key
                 VirtualRecord record = store.loadLeaf(account,key);
-                Assertions.assertEquals(record.getHash(), hash);
+                Assertions.assertArrayEquals(record.getHash(), hash);
                 Assertions.assertEquals(record.getPath(), i);
                 Assertions.assertEquals(record.getKey(), key);
                 Assertions.assertEquals(record.getValue(), value);
                 // read leaf by path
                 record = store.loadLeaf(account,i);
-                Assertions.assertEquals(record.getHash(), hash);
+                Assertions.assertArrayEquals(record.getHash(), hash);
                 Assertions.assertEquals(record.getPath(), i);
                 Assertions.assertEquals(record.getKey(), key);
                 Assertions.assertEquals(record.getValue(), value);
@@ -290,9 +290,9 @@ public class VirtualMapDataStoreTest {
      * Creates a hash containing a int
      * @return
      */
-    private Hash hash(int value) {
+    private byte[] hash(int value) {
         byte[] hashData = new byte[384/8];
-        System.arraycopy(get32Bytes(value),0,hashData,0,32);
-        return new Hash(hashData);
+        System.arraycopy(get32Bytes(value),0, hashData,0,32);
+        return hashData;
     }
 }

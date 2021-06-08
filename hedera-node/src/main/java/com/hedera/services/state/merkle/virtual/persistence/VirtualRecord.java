@@ -3,25 +3,18 @@ package com.hedera.services.state.merkle.virtual.persistence;
 import com.hedera.services.state.merkle.virtual.VirtualKey;
 import com.hedera.services.state.merkle.virtual.VirtualValue;
 import com.swirlds.common.crypto.CryptoFactory;
-import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.crypto.Hash;
 
-import java.security.MessageDigest;
-import java.util.Arrays;
 import java.util.Objects;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 /**
  */
 public final class VirtualRecord {
-    private static final Hash NULL_HASH = CryptoFactory.getInstance().getNullHash();
+    private static final byte[] NULL_HASH = CryptoFactory.getInstance().getNullHash().getValue();
 
     private long path;
-    private Future<Hash> hash;
+    private Future<byte[]> hash;
     private final VirtualKey key;
     private VirtualValue value;
     private boolean dirty = false;
@@ -34,7 +27,7 @@ public final class VirtualRecord {
      * @param key The key. Cannot be null.
      * @param value The value. May be null.
      */
-    public VirtualRecord(Hash hash, long path, VirtualKey key, VirtualValue value) {
+    public VirtualRecord(byte[] hash, long path, VirtualKey key, VirtualValue value) {
         this.hash = new ImmutableFuture<>(Objects.requireNonNull(hash));
         this.path = path;
         this.key = Objects.requireNonNull(key);
@@ -60,7 +53,7 @@ public final class VirtualRecord {
      *
      * @return The non-null hash.
      */
-    public Hash getHash() {
+    public byte[] getHash() {
         try {
             return hash.get();
         } catch (InterruptedException | ExecutionException e) {
@@ -70,7 +63,7 @@ public final class VirtualRecord {
         }
     }
 
-    public Future<Hash> getFutureHash() {
+    public Future<byte[]> getFutureHash() {
         return hash;
     }
 
