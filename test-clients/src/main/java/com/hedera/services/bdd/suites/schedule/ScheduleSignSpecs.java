@@ -128,7 +128,6 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
-										"ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS,
 										"scheduling.whitelist", suiteWhitelist
 								))
 				);

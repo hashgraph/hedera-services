@@ -67,7 +67,6 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						suiteSetup(),
 						deleteWithNoAdminKeyFails(),
 						unauthorizedDeletionFails(),
 						deletingAlreadyDeletedIsObvious(),
@@ -83,13 +82,6 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
 		return defaultHapiSpec("suiteCleanup")
 				.given().when().then(
 						overriding("ledger.schedule.txExpiryTimeSecs", defaultTxExpiry)
-				);
-	}
-
-	private HapiApiSpec suiteSetup() {
-		return defaultHapiSpec("suiteSetup")
-				.given().when().then(
-						overriding("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS)
 				);
 	}
 
