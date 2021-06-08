@@ -88,7 +88,6 @@ import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.records.TxnAwareRecordsHistorian;
 import com.hedera.services.security.ops.SystemOpPolicies;
-import com.hedera.services.sigs.factories.SigFactoryCreator;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.sigs.verification.SyncVerifier;
@@ -505,7 +504,6 @@ public class ServicesContextTest {
 		assertThat(ctx.semVers(), instanceOf(SemanticVersions.class));
 		assertThat(ctx.freezeGrpc(), instanceOf(FreezeController.class));
 		assertThat(ctx.contractsGrpc(), instanceOf(ContractController.class));
-		assertThat(ctx.sigFactoryCreator(), instanceOf(SigFactoryCreator.class));
 		assertThat(ctx.activationHelper(), instanceOf(InHandleActivationHelper.class));
 		assertThat(ctx.characteristics(), instanceOf(CharacteristicsFactory.class));
 		assertThat(ctx.nodeDiligenceScreen(), instanceOf(AwareNodeDiligenceScreen.class));
@@ -557,7 +555,6 @@ public class ServicesContextTest {
 		given(diskFs.contentsOf(any())).willReturn(fileContents);
 
 		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
-		ctx.setSystemExits(ignore -> {});
 		var subject = ctx.systemFilesManager();
 
 		assertSame(networkCtx, ctx.networkCtx());

@@ -46,6 +46,7 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
@@ -53,7 +54,7 @@ import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
 
-public class PlatformTxnAccessorTest {
+class PlatformTxnAccessorTest {
 	private static final byte[] NONSENSE = "Jabberwocky".getBytes();
 	TransactionBody someTxn = TransactionBody.newBuilder()
 			.setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
@@ -61,13 +62,32 @@ public class PlatformTxnAccessorTest {
 			.build();
 
 	@Test
-	public void extractorReturnsNoneWhenExpected() {
+	void sigMetaGetterSetterCheck() throws InvalidProtocolBufferException {
+		// setup:
+		Transaction signedTxnWithBody = Transaction.newBuilder()
+				.setBodyBytes(someTxn.toByteString())
+				.build();
+		SwirldTransaction platformTxn =
+				new SwirldTransaction(signedTxnWithBody.toByteArray());
+
+		// given:
+		SignedTxnAccessor subject = new PlatformTxnAccessor(platformTxn);
+
+		// when:
+		subject.setSigMeta(RationalizedSigMeta.noneAvailable());
+
+		// then:
+		assertSame(RationalizedSigMeta.noneAvailable(), subject.getSigMeta());
+	}
+
+	@Test
+	void extractorReturnsNoneWhenExpected() {
 		// expect:
 		assertEquals(HederaFunctionality.NONE, SignedTxnAccessor.functionExtractor.apply(someTxn));
 	}
 
 	@Test
-	public void hasExpectedSignedBytes() throws InvalidProtocolBufferException {
+	void hasExpectedSignedBytes() throws InvalidProtocolBufferException {
 		// given:
 		Transaction signedTxnWithBody = Transaction.newBuilder()
 				.setBodyBytes(someTxn.toByteString())
@@ -81,7 +101,7 @@ public class PlatformTxnAccessorTest {
 	}
 
 	@Test
-	public void extractorReturnsExpectedFunction() {
+	void extractorReturnsExpectedFunction() {
 		// given:
 		someTxn = someTxn.toBuilder()
 				.setConsensusCreateTopic(ConsensusCreateTopicTransactionBody.newBuilder())
@@ -92,7 +112,7 @@ public class PlatformTxnAccessorTest {
 	}
 
 	@Test
-	public void usesExtractorToGetFunctionAsExpected() {
+	void usesExtractorToGetFunctionAsExpected() {
 		// setup:
 		var memory = SignedTxnAccessor.functionExtractor;
 		Function<TransactionBody, HederaFunctionality> mockFn =
@@ -124,7 +144,7 @@ public class PlatformTxnAccessorTest {
 	}
 
 	@Test
-	public void allowsUncheckedConstruction() {
+	void allowsUncheckedConstruction() {
 		// setup:
 		Transaction validTxn = Transaction.getDefaultInstance();
 
@@ -134,14 +154,14 @@ public class PlatformTxnAccessorTest {
 	}
 
 	@Test
-	public void failsWithIllegalStateOnUncheckedConstruction() {
+	void failsWithIllegalStateOnUncheckedConstruction() {
 		// expect:
 		assertThrows(IllegalStateException.class, () ->
 				uncheckedAccessorFor(new SwirldTransaction(NONSENSE)));
 	}
 
 	@Test
-	public void failsOnInvalidSignedTxn() {
+	void failsOnInvalidSignedTxn() {
 		// given:
 		SwirldTransaction platformTxn = new SwirldTransaction(NONSENSE);
 
@@ -150,7 +170,7 @@ public class PlatformTxnAccessorTest {
 	}
 
 	@Test
-	public void failsOnInvalidTxn() {
+	void failsOnInvalidTxn() {
 		// given:
 		Transaction signedNonsenseTxn = Transaction.newBuilder()
 				.setBodyBytes(ByteString.copyFrom(NONSENSE))
@@ -164,7 +184,7 @@ public class PlatformTxnAccessorTest {
 	}
 
 	@Test
-	public void usesBodyBytesCorrectly() throws Exception {
+	void usesBodyBytesCorrectly() throws Exception {
 		// given:
 		Transaction signedTxnWithBody = Transaction.newBuilder()
 				.setBodyBytes(someTxn.toByteString())
@@ -181,7 +201,7 @@ public class PlatformTxnAccessorTest {
 	}
 
 	@Test
-	public void getsCorrectLoggableForm() throws Exception {
+	void getsCorrectLoggableForm() throws Exception {
 		Transaction signedTxnWithBody = Transaction.newBuilder()
 				.setBodyBytes(someTxn.toByteString())
 				.setSigMap(SignatureMap.newBuilder().addSigPair(
@@ -206,7 +226,7 @@ public class PlatformTxnAccessorTest {
 	}
 
 	@Test
-	public void getsCorrectLoggableFormWithSignedTransactionBytes() throws Exception {
+	void getsCorrectLoggableFormWithSignedTransactionBytes() throws Exception {
 		SignedTransaction signedTxn = SignedTransaction.newBuilder().
 				setBodyBytes(someTxn.toByteString()).
 				setSigMap(SignatureMap.newBuilder().addSigPair(SignaturePair.newBuilder()
@@ -235,7 +255,7 @@ public class PlatformTxnAccessorTest {
 	}
 
 	@Test
-	public void getsPayer() throws Exception {
+	void getsPayer() throws Exception {
 		// given:
 		AccountID payer = asAccount("0.0.2");
 		Transaction signedTxnWithBody = Transaction.newBuilder()

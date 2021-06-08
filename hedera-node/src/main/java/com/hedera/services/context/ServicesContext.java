@@ -189,10 +189,9 @@ import com.hedera.services.records.RecordCacheFactory;
 import com.hedera.services.records.TxnAwareRecordsHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.security.ops.SystemOpPolicies;
-import com.hedera.services.sigs.factories.SigFactoryCreator;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
 import com.hedera.services.sigs.order.HederaSigningOrder;
-import com.hedera.services.sigs.sourcing.DefaultSigBytesProvider;
+import com.hedera.services.sigs.sourcing.SigMapPubKeyToSigBytes;
 import com.hedera.services.sigs.verification.PrecheckKeyReqs;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.sigs.verification.SyncVerifier;
@@ -309,11 +308,9 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.usage.schedule.ScheduleOpsUsage;
-import com.hedera.services.utils.JvmSystemExits;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
-import com.hedera.services.utils.SystemExits;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -424,8 +421,6 @@ import static java.util.Map.entry;
 public class ServicesContext {
 	private static final Logger log = LogManager.getLogger(ServicesContext.class);
 
-	private SystemExits systemExits = new JvmSystemExits();
-
 	/* Injected dependencies. */
 	ServicesState state;
 
@@ -443,7 +438,6 @@ public class ServicesContext {
 	private HederaFs hfs;
 	private NodeInfo nodeInfo;
 	private StateView currentView;
-	private AccountID accountId;
 	private AnswerFlow answerFlow;
 	private HcsAnswers hcsAnswers;
 	private FileNumbers fileNums;
@@ -501,7 +495,6 @@ public class ServicesContext {
 	private NetworkController networkGrpc;
 	private GrpcServerManager grpc;
 	private TxnResponseHelper txnResponseHelper;
-	private SigFactoryCreator sigFactoryCreator;
 	private BlobStorageSource bytecodeDb;
 	private HapiOpPermissions hapiOpPermissions;
 	private EntityAutoRenewal entityAutoRenewal;
@@ -620,13 +613,6 @@ public class ServicesContext {
 		if (tokenStore != null) {
 			tokenStore.rebuildViews();
 		}
-	}
-
-	public SigFactoryCreator sigFactoryCreator() {
-		if (sigFactoryCreator == null) {
-			sigFactoryCreator = new SigFactoryCreator();
-		}
-		return sigFactoryCreator;
 	}
 
 	public NonBlockingHandoff nonBlockingHandoff() {
@@ -754,10 +740,7 @@ public class ServicesContext {
 
 	public InHandleActivationHelper activationHelper() {
 		if (activationHelper == null) {
-			activationHelper = new InHandleActivationHelper(
-					backedKeyOrder(),
-					characteristics(),
-					txnCtx()::accessor);
+			activationHelper = new InHandleActivationHelper(characteristics(), txnCtx()::accessor);
 		}
 		return activationHelper;
 	}
@@ -1172,7 +1155,8 @@ public class ServicesContext {
 		if (precheckVerifier == null) {
 			Predicate<TransactionBody> isQueryPayment = queryPaymentTestFor(effectiveNodeAccount());
 			PrecheckKeyReqs reqs = new PrecheckKeyReqs(keyOrder(), lookupRetryingKeyOrder(), isQueryPayment);
-			precheckVerifier = new PrecheckVerifier(syncVerifier(), reqs, DefaultSigBytesProvider.DEFAULT_SIG_BYTES);
+			precheckVerifier = new PrecheckVerifier(
+					syncVerifier(), reqs, accessor -> new SigMapPubKeyToSigBytes(accessor.getSigMap()));
 		}
 		return precheckVerifier;
 	}
@@ -2122,10 +2106,6 @@ public class ServicesContext {
 
 	public void setScheduleStore(ScheduleStore scheduleStore) {
 		this.scheduleStore = scheduleStore;
-	}
-
-	void setSystemExits(SystemExits systemExits) {
-		this.systemExits = systemExits;
 	}
 
 	private AccountID effectiveNodeAccount() {

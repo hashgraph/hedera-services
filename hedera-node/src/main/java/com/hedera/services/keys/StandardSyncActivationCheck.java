@@ -26,7 +26,6 @@ import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.utils.TxnAccessor;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.TransactionSignature;
 
 import java.util.List;
@@ -39,13 +38,12 @@ public class StandardSyncActivationCheck {
 			SyncVerifier syncVerifier,
 			TxnAccessor accessor,
 			PlatformSigsFactory sigsFactory,
-			Function<Transaction, PubKeyToSigBytes> sigBytesProvider,
+			PubKeyToSigBytes sigBytes,
 			Function<TxnAccessor, TxnScopedPlatformSigFactory> scopedSigProvider,
 			BiPredicate<JKey, Function<byte[], TransactionSignature>> isActive,
 			Function<List<TransactionSignature>, Function<byte[], TransactionSignature>> sigsFnProvider
 	) {
 		var sigFactory = scopedSigProvider.apply(accessor);
-		var sigBytes = sigBytesProvider.apply(accessor.getSignedTxnWrapper());
 
 		var creationResult = sigsFactory.createEd25519From(keys, sigBytes, sigFactory);
 		if (creationResult.hasFailed()) {

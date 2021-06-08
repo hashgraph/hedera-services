@@ -88,7 +88,7 @@ class ExpandHandleSpanTest {
 		final var startAccessor = subject.track(validTxn);
 
 		// when:
-		testUnit.sleep(duration / 2);
+		testUnit.sleep(duration / 10);
 		// and:
 		final var endAccessor = subject.accessorFor(validTxn);
 

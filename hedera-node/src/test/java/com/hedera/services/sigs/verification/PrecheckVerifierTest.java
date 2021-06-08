@@ -25,7 +25,6 @@ import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.sigs.PlatformSigOps;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
-import com.hedera.services.sigs.sourcing.PubKeyToSigBytesProvider;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.txns.PlatformTxnFactory;
@@ -74,14 +73,13 @@ public class PrecheckVerifierTest {
 		private int i = 0;
 
 		@Override
-		public byte[] sigBytesFor(byte[] pubKey) throws Exception {
+		public byte[] sigBytesFor(byte[] pubKey) {
 			return VALID_SIG_BYTES[i++];
 		}
 	};
 	private static List<TransactionSignature> expectedSigs = EMPTY_LIST;
 
 	private PrecheckKeyReqs precheckKeyReqs;
-	private PubKeyToSigBytesProvider provider;
 	private PrecheckVerifier subject;
 
 	@BeforeAll
@@ -96,14 +94,12 @@ public class PrecheckVerifierTest {
 
 	@BeforeEach
 	void setup() {
-		provider = mock(PubKeyToSigBytesProvider.class);
 		precheckKeyReqs = mock(PrecheckKeyReqs.class);
 	}
 
 	@Test
-	public void affirmsValidSignatures() throws Exception {
+	void affirmsValidSignatures() throws Exception {
 		given(precheckKeyReqs.getRequiredKeys(txnBody)).willReturn(reqKeys);
-		given(provider.allPartiesSigBytesFor(txn)).willReturn(VALID_PROVIDER_FACTORY.get());
 		AtomicReference<List<TransactionSignature>> actualSigsVerified = new AtomicReference<>();
 		givenImpliedSubject(sigs -> {
 			actualSigsVerified.set(sigs);
@@ -119,9 +115,8 @@ public class PrecheckVerifierTest {
 	}
 
 	@Test
-	public void rejectsInvalidSignatures() throws Exception {
+	void rejectsInvalidSignatures() throws Exception {
 		given(precheckKeyReqs.getRequiredKeys(txnBody)).willReturn(reqKeys);
-		given(provider.allPartiesSigBytesFor(txn)).willReturn(VALID_PROVIDER_FACTORY.get());
 		AtomicReference<List<TransactionSignature>> actualSigsVerified = new AtomicReference<>();
 		givenImpliedSubject(sigs -> {
 			actualSigsVerified.set(sigs);
@@ -137,19 +132,21 @@ public class PrecheckVerifierTest {
 	}
 
 	@Test
-	public void propagatesSigCreationFailure() throws Exception {
+	void propagatesSigCreationFailure() throws Exception {
 		given(precheckKeyReqs.getRequiredKeys(txnBody)).willReturn(reqKeys);
-		given(provider.allPartiesSigBytesFor(txn)).willReturn(bytes -> {
-			throw new KeyPrefixMismatchException("Oops!");
-		});
-		givenImpliedSubject(ALWAYS_VALID);
+		subject = new PrecheckVerifier(
+				ALWAYS_VALID,
+				precheckKeyReqs,
+				ignore -> bytes -> {
+					throw new KeyPrefixMismatchException("Oops!");
+				});
 
 		// expect:
 		assertThrows(KeyPrefixMismatchException.class, () -> subject.hasNecessarySignatures(accessor));
 	}
 
 	@Test
-	public void rejectsGivenInvalidPayerException() throws Exception {
+	void rejectsGivenInvalidPayerException() throws Exception {
 		given(precheckKeyReqs.getRequiredKeys(txnBody)).willThrow(new InvalidPayerAccountException());
 		givenImpliedSubject(ALWAYS_VALID);
 
@@ -158,7 +155,7 @@ public class PrecheckVerifierTest {
 	}
 
 	@Test
-	public void propagatesOtherKeyLookupExceptions() throws Exception {
+	void propagatesOtherKeyLookupExceptions() throws Exception {
 		given(precheckKeyReqs.getRequiredKeys(txnBody)).willThrow(new IllegalStateException());
 		givenImpliedSubject(ALWAYS_VALID);
 
@@ -167,7 +164,7 @@ public class PrecheckVerifierTest {
 	}
 
 	@Test
-	public void affirmsValidSignaturesInSignedTxn() throws Exception {
+	void affirmsValidSignaturesInSignedTxn() throws Exception {
 		//setUp
 		SignedTransaction signedTransaction = SignedTransaction.newBuilder().setBodyBytes(
 				txnBody.toByteString()).build();
@@ -178,7 +175,6 @@ public class PrecheckVerifierTest {
 		//given
 		given(precheckKeyReqs.getRequiredKeys(TransactionBody.parseFrom(signedTransaction.getBodyBytes()))).
 				willReturn(reqKeys);
-		given(provider.allPartiesSigBytesFor(signedTxn)).willReturn(VALID_PROVIDER_FACTORY.get());
 		AtomicReference<List<TransactionSignature>> actualSigsVerified = new AtomicReference<>();
 		givenImpliedSubject(sigs -> {
 			actualSigsVerified.set(sigs);
@@ -194,6 +190,6 @@ public class PrecheckVerifierTest {
 	}
 
 	private void givenImpliedSubject(SyncVerifier syncVerifier) {
-		subject = new PrecheckVerifier(syncVerifier, precheckKeyReqs, provider);
+		subject = new PrecheckVerifier(syncVerifier, precheckKeyReqs, ignore -> VALID_PROVIDER_FACTORY.get());
 	}
 }

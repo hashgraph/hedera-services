@@ -30,7 +30,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.crypto.SignatureStatus;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
-import com.hedera.services.sigs.factories.SigFactoryCreator;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.state.expiry.ExpiryManager;
@@ -203,7 +202,6 @@ class ServicesStateTest {
 
 		logic = mock(ProcessLogic.class);
 		ctx = mock(ServicesContext.class);
-		given(ctx.sigFactoryCreator()).willReturn(new SigFactoryCreator());
 		given(ctx.id()).willReturn(self);
 		given(ctx.logic()).willReturn(logic);
 
@@ -736,7 +734,6 @@ class ServicesStateTest {
 		// then:
 		assertEquals(1, platformTxn.getSignatures().size());
 		assertEquals(mockPk, ByteString.copyFrom(platformTxn.getSignatures().get(0).getExpandedPublicKeyDirect()));
-		verify(ctx).sigFactoryCreator();
 	}
 
 	@Test

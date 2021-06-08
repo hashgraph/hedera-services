@@ -58,7 +58,6 @@ class StandardSyncActivationCheckTest {
 	PlatformSigsFactory sigsFactory;
 	TxnScopedPlatformSigFactory scopedSig;
 	Function<byte[], TransactionSignature> sigsFn;
-	Function<Transaction, PubKeyToSigBytes> sigBytesProvider;
 	Function<TxnAccessor, TxnScopedPlatformSigFactory> scopedSigProvider;
 	BiPredicate<JKey, Function<byte[], TransactionSignature>> isActive;
 	Function<List<TransactionSignature>, Function<byte[], TransactionSignature>> sigsFnProvider;
@@ -77,8 +76,6 @@ class StandardSyncActivationCheckTest {
 		given(accessor.getSignedTxnWrapper()).willReturn(signedTxn);
 		isActive = mock(BiPredicate.class);
 		syncVerifier = mock(SyncVerifier.class);
-		sigBytesProvider = mock(Function.class);
-		given(sigBytesProvider.apply(signedTxn)).willReturn(sigBytes);
 		sigsFnProvider = mock(Function.class);
 		given(sigsFnProvider.apply(sigs)).willReturn(sigsFn);
 		scopedSig = mock(TxnScopedPlatformSigFactory.class);
@@ -100,7 +97,7 @@ class StandardSyncActivationCheckTest {
 				syncVerifier,
 				accessor,
 				sigsFactory,
-				sigBytesProvider,
+				sigBytes,
 				scopedSigProvider,
 				isActive,
 				sigsFnProvider);
@@ -123,7 +120,7 @@ class StandardSyncActivationCheckTest {
 				syncVerifier,
 				accessor,
 				sigsFactory,
-				sigBytesProvider,
+				sigBytes,
 				scopedSigProvider,
 				isActive,
 				sigsFnProvider);
@@ -144,7 +141,7 @@ class StandardSyncActivationCheckTest {
 				syncVerifier,
 				accessor,
 				sigsFactory,
-				sigBytesProvider,
+				sigBytes,
 				scopedSigProvider,
 				isActive,
 				sigsFnProvider);

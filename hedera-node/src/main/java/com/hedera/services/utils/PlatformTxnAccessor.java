@@ -35,6 +35,8 @@ import com.swirlds.common.SwirldTransaction;
 public class PlatformTxnAccessor extends SignedTxnAccessor {
 	private final SwirldTransaction platformTxn;
 
+	private RationalizedSigMeta sigMeta = null;
+
 	public PlatformTxnAccessor(SwirldTransaction platformTxn) throws InvalidProtocolBufferException {
 		super(platformTxn.getContents());
 		this.platformTxn = platformTxn;
@@ -58,5 +60,15 @@ public class PlatformTxnAccessor extends SignedTxnAccessor {
 	@Override
 	public SwirldTransaction getPlatformTxn() {
 		return platformTxn;
+	}
+
+	@Override
+	public void setSigMeta(RationalizedSigMeta sigMeta) {
+		this.sigMeta = sigMeta;
+	}
+
+	@Override
+	public RationalizedSigMeta getSigMeta() {
+		return sigMeta;
 	}
 }

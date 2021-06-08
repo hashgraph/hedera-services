@@ -23,7 +23,8 @@ package com.hedera.services.legacy.services.state;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.legacy.crypto.SignatureStatus;
-import com.hedera.services.sigs.sourcing.ScopedSigBytesProvider;
+import com.hedera.services.sigs.factories.BodySigningSigFactory;
+import com.hedera.services.sigs.sourcing.SigMapPubKeyToSigBytes;
 import com.hedera.services.state.logic.ServicesTxnManager;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.RecordStreamObject;
@@ -42,7 +43,6 @@ import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 import static com.hedera.services.keys.HederaKeyActivation.payerSigIsActive;
 import static com.hedera.services.legacy.crypto.SignatureStatusCode.SUCCESS_VERIFY_ASYNC;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.rationalizeIn;
-import static com.hedera.services.sigs.Rationalization.IN_HANDLE_SUMMARY_FACTORY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
@@ -200,7 +200,7 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	private boolean hasActivePayerSig(TxnAccessor accessor) {
 		try {
-			return payerSigIsActive(accessor, ctx.backedKeyOrder(), IN_HANDLE_SUMMARY_FACTORY);
+			return payerSigIsActive(accessor);
 		} catch (Exception edgeCase) {
 			log.warn("Almost inconceivably, when testing payer sig activation:", edgeCase);
 		}
@@ -208,13 +208,12 @@ public class AwareProcessLogic implements ProcessLogic {
 	}
 
 	private SignatureStatus rationalizeWithPreConsensusSigs(TxnAccessor accessor) {
-		var sigProvider = new ScopedSigBytesProvider(accessor);
 		var sigStatus = rationalizeIn(
 				accessor,
 				ctx.syncVerifier(),
 				ctx.backedKeyOrder(),
-				sigProvider,
-				ctx.sigFactoryCreator()::createScopedFactory);
+				new SigMapPubKeyToSigBytes(accessor.getSigMap()),
+				new BodySigningSigFactory(accessor));
 		if (!sigStatus.isError()) {
 			if (sigStatus.getStatusCode() == SUCCESS_VERIFY_ASYNC) {
 				ctx.speedometers().cycleAsyncVerifications();

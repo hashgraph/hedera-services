@@ -34,41 +34,36 @@ import com.swirlds.common.SwirldTransaction;
  * parts of a Hedera Services gRPC {@link Transaction}.
  */
 public interface TxnAccessor {
-    int numSigPairs();
-
     int sigMapSize();
-
+    int numSigPairs();
     SignatureMap getSigMap();
-
-    HederaFunctionality getFunction();
-
-    byte[] getTxnBytes();
-
-    byte[] getMemoUtf8Bytes();
-
-    boolean memoHasZeroByte();
-
-    Transaction getSignedTxnWrapper();
-
-    TransactionBody getTxn();
-
-    TransactionID getTxnId();
-
-    AccountID getPayer();
-
-    byte[] getSignedTxnWrapperBytes();
-
-    byte[] getHash();
-
-    String getMemo();
-
-    boolean canTriggerTxn();
-
-    boolean isTriggeredTxn();
-
-    ScheduleID getScheduleRef();
+    default void setSigMeta(RationalizedSigMeta sigMeta) {
+        throw new UnsupportedOperationException();
+    }
+    default RationalizedSigMeta getSigMeta() {
+        throw new UnsupportedOperationException();
+    }
 
     long getOfferedFee();
+    AccountID getPayer();
+    TransactionID getTxnId();
+    HederaFunctionality getFunction();
 
-    default SwirldTransaction getPlatformTxn() { throw new UnsupportedOperationException(); }
+    byte[] getMemoUtf8Bytes();
+    String getMemo();
+    boolean memoHasZeroByte();
+
+    byte[] getHash();
+    byte[] getTxnBytes();
+    byte[] getSignedTxnWrapperBytes();
+    Transaction getSignedTxnWrapper();
+    TransactionBody getTxn();
+
+    boolean canTriggerTxn();
+    boolean isTriggeredTxn();
+    ScheduleID getScheduleRef();
+
+    default SwirldTransaction getPlatformTxn() {
+        throw new UnsupportedOperationException();
+    }
 }
