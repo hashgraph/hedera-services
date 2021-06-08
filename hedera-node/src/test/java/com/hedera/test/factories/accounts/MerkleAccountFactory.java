@@ -24,6 +24,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.models.Id;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -36,6 +37,8 @@ import java.util.Optional;
 import java.util.Set;
 
 public class MerkleAccountFactory {
+	private boolean useNewStyleTokenIds = false;
+
 	private KeyFactory keyFactory = KeyFactory.getDefaultInstance();
 	private Optional<Long> balance = Optional.empty();
 	private Optional<Long> receiverThreshold = Optional.empty();
@@ -49,20 +52,25 @@ public class MerkleAccountFactory {
 	private Optional<Boolean> isSmartContract = Optional.empty();
 	private Optional<AccountID> proxy = Optional.empty();
 	private Set<TokenID> associatedTokens = new HashSet<>();
+	private Set<Id> assocTokens = new HashSet<>();
 
 	public MerkleAccount get() {
 		MerkleAccount value = new MerkleAccount();
-		memo.ifPresent(s -> value.setMemo(s));
+		memo.ifPresent(value::setMemo);
 		proxy.ifPresent(p -> value.setProxy(EntityId.fromGrpcAccountId(p)));
 		balance.ifPresent(b -> { try { value.setBalance(b); } catch (Exception ignore) {} });
-		deleted.ifPresent(b -> value.setDeleted(b));
-		accountKeys.ifPresent(k -> value.setKey(k));
-		expirationTime.ifPresent(l -> value.setExpiry(l));
-		autoRenewPeriod.ifPresent(d -> value.setAutoRenewSecs(d));
-		isSmartContract.ifPresent(b -> value.setSmartContract(b));
-		receiverSigRequired.ifPresent(b -> value.setReceiverSigRequired(b));
+		deleted.ifPresent(value::setDeleted);
+		accountKeys.ifPresent(value::setKey);
+		expirationTime.ifPresent(value::setExpiry);
+		autoRenewPeriod.ifPresent(value::setAutoRenewSecs);
+		isSmartContract.ifPresent(value::setSmartContract);
+		receiverSigRequired.ifPresent(value::setReceiverSigRequired);
 		var tokens = new MerkleAccountTokens();
-		tokens.associateAll(associatedTokens);
+		if (useNewStyleTokenIds) {
+			tokens.associate(assocTokens);
+		} else {
+			tokens.associateAll(associatedTokens);
+		}
 		value.setTokens(tokens);
 		return value;
 	}
@@ -82,6 +90,12 @@ public class MerkleAccountFactory {
 
 	public MerkleAccountFactory balance(long amount) {
 		balance = Optional.of(amount);
+		return this;
+	}
+
+	public MerkleAccountFactory assocTokens(Id... tokens) {
+		useNewStyleTokenIds = true;
+		assocTokens.addAll(List.of(tokens));
 		return this;
 	}
 

@@ -26,6 +26,7 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
 import com.hedera.services.state.submerkle.EntityId;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.AfterEach;
@@ -65,9 +66,9 @@ class ToStringAccountsExporterTest {
 	void producesExpectedText() throws Exception {
 		// setup:
 		account1.setBalance(1L);
-		account1.setTokens(new MerkleAccountTokens(new long[] { 1L, 2L, 3L, 3L, 2L, 1L }));
+		account1.setTokens(new MerkleAccountTokens(new CopyOnWriteIds(new long[] { 1L, 2L, 3L, 3L, 2L, 1L })));
 		account2.setBalance(2L);
-		account2.setTokens(new MerkleAccountTokens(new long[] { 0L, 0L, 1234L }));
+		account2.setTokens(new MerkleAccountTokens(new CopyOnWriteIds(new long[] { 0L, 0L, 1234L })));
 		// and:
 		var desired = "0.0.1\n" +
 				"---\n" +

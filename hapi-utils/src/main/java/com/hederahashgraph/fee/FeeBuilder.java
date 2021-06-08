@@ -27,7 +27,6 @@ import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.LiveHash;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -53,10 +52,8 @@ public class FeeBuilder {
   public static final long SOLIDITY_ADDRESS = 20;
   public static final int KEY_SIZE = 32;
   public static final int TX_HASH_SIZE = 48;
-  public static final int DEFAULT_PAYER_ACC_SIG_COUNT = 0;
   public static final long RECEIPT_STORAGE_TIME_SEC = 180;
   public static final int THRESHOLD_STORAGE_TIME_SEC = 90000;
-  public static final int DEFAULT_RBS_NETWORK = 0;
   public static final int FEE_DIVISOR_FACTOR = 1000;
   public static final int HRS_DIVISOR = 3600;
   public static final int BASIC_ENTITY_ID_SIZE = (3 * LONG_SIZE);
@@ -227,12 +224,6 @@ public class FeeBuilder {
     return FeeData.getDefaultInstance();
   }
 
-  public static int sizeOfLiveHashKeyStorage(Key key) {
-    int[] countKeyMetatData = {0, 0};
-    countKeyMetatData = calculateKeysMetadata(key, countKeyMetatData);
-    return countKeyMetatData[0] * KEY_SIZE + countKeyMetatData[1] * INT_SIZE;
-  }
-
   public static int getSignatureCount(Transaction transaction) {
     try {
       return CommonUtils.extractSignatureMap(transaction).getSigPairCount();
@@ -383,26 +374,6 @@ public class FeeBuilder {
     contResult = contResult + LONG_SIZE + 2 * LONG_SIZE;
 
     return contResult;
-  }
-
-  public static int liveHashSize(List<LiveHash> liveHashes) {
-    int liveHashsKeySize = 0;
-    int liveHashDataSize = 0;
-    int liveHashsAccountID = 0;
-
-    if (liveHashes != null) {
-      int liveHashsListSize = liveHashes.size();
-      liveHashDataSize = TX_HASH_SIZE * liveHashsListSize;
-      liveHashsAccountID = (BASIC_ENTITY_ID_SIZE) * liveHashsListSize;
-      for (LiveHash liveHashs : liveHashes) {
-        List<Key> keyList = liveHashs.getKeys().getKeysList();
-        for (Key key : keyList) {
-          liveHashsKeySize += getAccountKeyStorageSize(key);
-        }
-      }
-    }
-
-    return (liveHashsKeySize + liveHashDataSize + liveHashsAccountID);
   }
 
   public static int getStateProofSize(ResponseType responseType) {

@@ -64,8 +64,8 @@ public class ExpiryManager {
 
 	private final MonotonicFullQueueExpiries<Long> payerRecordExpiries =
 			new MonotonicFullQueueExpiries<>();
-	private final MonotonicFullQueueExpiries<Pair<Long, Consumer<EntityId>>> shortLivedEntityExpiries =
-			new MonotonicFullQueueExpiries<>();
+	private final PriorityQueueExpiries<Pair<Long, Consumer<EntityId>>> shortLivedEntityExpiries =
+			new PriorityQueueExpiries<>();
 
 	public ExpiryManager(
 			RecordCache recordCache,
@@ -216,7 +216,7 @@ public class ExpiryManager {
 		return new EntityId(shard, realm, num);
 	}
 
-	MonotonicFullQueueExpiries<Pair<Long, Consumer<EntityId>>> getShortLivedEntityExpiries() {
+	PriorityQueueExpiries<Pair<Long, Consumer<EntityId>>> getShortLivedEntityExpiries() {
 		return shortLivedEntityExpiries;
 	}
 }

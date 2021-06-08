@@ -20,15 +20,14 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
-import java.util.ArrayDeque;
-import java.util.Deque;
+import java.util.PriorityQueue;
 
 /**
- * Queue of expiration events in which events are in the order of insertion
+ * Priority Queue of expiration events in which events are ordered based on expiry
  */
-public class MonotonicFullQueueExpiries<K> implements KeyedExpirations<K> {
+public class PriorityQueueExpiries<K> implements KeyedExpirations<K> {
 	private long now = 0L;
-	private Deque<ExpiryEvent<K>> allExpiries = new ArrayDeque<>();
+	private PriorityQueue<ExpiryEvent<K>> allExpiries = new PriorityQueue<>();
 
 	@Override
 	public void reset() {
@@ -38,17 +37,13 @@ public class MonotonicFullQueueExpiries<K> implements KeyedExpirations<K> {
 
 	@Override
 	public void track(K id, long expiry) {
-		if (expiry < now) {
-			throw new IllegalArgumentException(String.format("Track time %d for %s not later than %d", expiry, id,
-					now));
-		}
-		now = expiry;
-		allExpiries.add(new ExpiryEvent(id, expiry));
+		allExpiries.offer(new ExpiryEvent(id, expiry));
+		now = allExpiries.peek().getExpiry();
 	}
 
 	@Override
 	public boolean hasExpiringAt(long now) {
-		return !allExpiries.isEmpty() && allExpiries.peekFirst().isExpiredAt(now);
+		return !allExpiries.isEmpty() && allExpiries.peek().isExpiredAt(now);
 	}
 
 	@Override
@@ -60,10 +55,10 @@ public class MonotonicFullQueueExpiries<K> implements KeyedExpirations<K> {
 			throw new IllegalArgumentException(String.format("Argument 'now=%d' is earlier than the next expiry!",
 					now));
 		}
-		return allExpiries.removeFirst().getId();
+		return allExpiries.remove().getId();
 	}
 
-	Deque<ExpiryEvent<K>> getAllExpiries() {
+	PriorityQueue<ExpiryEvent<K>> getAllExpiries() {
 		return allExpiries;
 	}
 

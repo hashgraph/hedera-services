@@ -30,10 +30,10 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
+import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import static com.hedera.services.fees.calculation.FeeCalcUtils.ZERO_EXPIRY;
 import static com.hederahashgraph.fee.ConsensusServiceFeeBuilder.getConsensusUpdateTopicFee;
 import static com.hederahashgraph.fee.ConsensusServiceFeeBuilder.getUpdateTopicRbsIncrease;
 
@@ -46,33 +46,37 @@ public class UpdateTopicResourceUsage implements TxnResourceUsageEstimator {
     }
 
     @Override
-    public FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view) throws InvalidTxBodyException {
-        try {
-            MerkleTopic merkleTopic = view.topics().get(MerkleEntityId.fromTopicId(txn.getConsensusUpdateTopic().getTopicID()));
-            long rbsIncrease = getUpdateTopicRbsIncrease(
-                    txn.getTransactionID().getTransactionValidStart(),
-                    JKey.mapJKey(merkleTopic.getAdminKey()),
-                    JKey.mapJKey(merkleTopic.getSubmitKey()),
-                    merkleTopic.getMemo(),
-                    merkleTopic.hasAutoRenewAccountId(),
-                    lookupExpiry(merkleTopic),
-                    txn.getConsensusUpdateTopic());
-            return getConsensusUpdateTopicFee(txn, rbsIncrease, sigUsage);
-        } catch (Exception illegal) {
-            log.warn("Usage estimation unexpectedly failed for {}!", txn, illegal);
-            throw new InvalidTxBodyException(illegal);
+    public FeeData usageGiven(final TransactionBody txnBody, final SigValueObj sigUsage, final StateView view)
+            throws InvalidTxBodyException, IllegalStateException {
+        if (txnBody == null || !txnBody.hasConsensusUpdateTopic()) {
+            throw new InvalidTxBodyException("consensusUpdateTopic field not available for Fee Calculation");
         }
-    }
+        if (view == null) {
+            throw new IllegalStateException("No StateView present !!");
+        }
 
-    private Timestamp lookupExpiry(MerkleTopic merkleTopic) {
-        try {
-            return Timestamp.newBuilder()
+        long rbsIncrease = 0;
+        final MerkleTopic merkleTopic = view.topics().get(
+                MerkleEntityId.fromTopicId(txnBody.getConsensusUpdateTopic().getTopicID()));
+
+        if (merkleTopic != null && merkleTopic.hasAdminKey()) {
+            final var expiry = Timestamp.newBuilder()
                     .setSeconds(merkleTopic.getExpirationTimestamp().getSeconds())
                     .build();
-        } catch (NullPointerException e) {
-			/* Effect is to charge nothing for RBH */
-            log.warn("Missing topic expiry data, ignoring expiration time in fee calculation!", e);
-            return ZERO_EXPIRY;
+            try{
+                rbsIncrease = getUpdateTopicRbsIncrease(
+                        txnBody.getTransactionID().getTransactionValidStart(),
+                        JKey.mapJKey(merkleTopic.getAdminKey()),
+                        JKey.mapJKey(merkleTopic.getSubmitKey()),
+                        merkleTopic.getMemo(),
+                        merkleTopic.hasAutoRenewAccountId(),
+                        expiry,
+                        txnBody.getConsensusUpdateTopic());
+            } catch (DecoderException illegal) {
+                log.warn("Usage estimation unexpectedly failed for {}!", txnBody, illegal);
+                throw new InvalidTxBodyException(illegal);
+            }
         }
+        return getConsensusUpdateTopicFee(txnBody, rbsIncrease, sigUsage);
     }
 }

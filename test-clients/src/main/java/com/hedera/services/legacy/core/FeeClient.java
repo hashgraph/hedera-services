@@ -26,10 +26,8 @@ import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
@@ -101,30 +99,6 @@ public class FeeClient {
     return feeSchMap;
   }
 
-  public static long getTransferFee(Transaction transaction, int payerAcctSigCount)
-      throws Exception {
-    CryptoFeeBuilder crBuilder = new CryptoFeeBuilder();
-    Map<HederaFunctionality, FeeData> feeSchMap = getFeeScheduleMap();
-    FeeData feeData = feeSchMap.get(HederaFunctionality.CryptoTransfer);
-    TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
-
-    int totalSignatureCount = FeeBuilder.getSignatureCount(transaction);
-    int signatureSize = FeeBuilder.getSignatureSize(transaction);
-    SigValueObj sigValueObj = new SigValueObj(totalSignatureCount, payerAcctSigCount,
-        signatureSize);
-
-    FeeData feeMatrices = crBuilder.getCryptoTransferTxFeeMatrices(txBody, sigValueObj);
-    return crBuilder.getTotalFeeforRequest(feeData, feeMatrices,exchangeRate);
-  }
-
-  public static long getBalanceQueryFee() {
-    CryptoFeeBuilder crBuilder = new CryptoFeeBuilder();
-    Map<HederaFunctionality, FeeData> feeSchMap = getFeeScheduleMap();
-    FeeData feeData = feeSchMap.get(HederaFunctionality.CryptoGetAccountBalance);
-    FeeData feeMatrices = crBuilder.getBalanceQueryFeeMatrices(ResponseType.ANSWER_ONLY);
-    return crBuilder.getTotalFeeforRequest(feeData, feeMatrices,exchangeRate);
-  }
-
   public static long getFeeByID(HederaFunctionality hederaFunctionality) {
     FeeBuilder crBuilder = new FeeBuilder();
     Map<HederaFunctionality, FeeData> feeSchMap = getFeeScheduleMap();
@@ -148,36 +122,6 @@ public class FeeClient {
     return crBuilder.getTotalFeeforRequest(feeData, feeMatrices,exchangeRate);
   }
 
-  public static long getCreateTransferFee(Transaction transaction, int payerAcctSigCount)
-          throws Exception {
-    CryptoFeeBuilder crBuilder = new CryptoFeeBuilder();
-    Map<HederaFunctionality, FeeData> feeSchMap = getFeeScheduleMap();
-    FeeData feeData = feeSchMap.get(HederaFunctionality.CryptoTransfer);
-    TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
-    int totalSignatureCount = FeeBuilder.getSignatureCount(transaction);
-    int signatureSize = FeeBuilder.getSignatureSize(transaction);
-    SigValueObj sigValueObj = new SigValueObj(totalSignatureCount, payerAcctSigCount,
-            signatureSize);
-    FeeData feeMatrices = crBuilder.getCryptoTransferTxFeeMatrices(txBody, sigValueObj);
-    return crBuilder.getTotalFeeforRequest(feeData, feeMatrices,exchangeRate);
-  }
-
-  public static long getCreateUpdateFee(Transaction transaction, int payerAcctSigCount,
-          Timestamp expirationTimeStamp, Key existingKey)
-          throws Exception {
-    CryptoFeeBuilder crBuilder = new CryptoFeeBuilder();
-    Map<HederaFunctionality, FeeData> feeSchMap = getFeeScheduleMap();
-    FeeData feeData = feeSchMap.get(HederaFunctionality.CryptoUpdate);
-    TransactionBody txBody = CommonUtils.extractTransactionBody(transaction);
-    int totalSignatureCount = FeeBuilder.getSignatureCount(transaction);
-    int signatureSize = FeeBuilder.getSignatureSize(transaction);
-    SigValueObj sigValueObj = new SigValueObj(totalSignatureCount, payerAcctSigCount,
-            signatureSize);
-    FeeData feeMatrices = crBuilder.getCryptoUpdateTxFeeMatrices(txBody, sigValueObj, expirationTimeStamp, existingKey);
-    return crBuilder.getTotalFeeforRequest(feeData, feeMatrices,exchangeRate);
-  }
-
-
 
   public static long getCostForGettingTxRecord() {
     CryptoFeeBuilder crBuilder = new CryptoFeeBuilder();
@@ -200,14 +144,6 @@ public class FeeClient {
     FeeData feeMatrices = crBuilder.getCostContractCallLocalFeeMatrices(funcParamSize);
     Map<HederaFunctionality, FeeData> feeSchMap = getFeeScheduleMap();
     FeeData feeData = feeSchMap.get(HederaFunctionality.ContractCallLocal);
-    return crBuilder.getTotalFeeforRequest(feeData, feeMatrices,exchangeRate);
-  }
-
-  public static long getFeegetBySolidityID() {
-    SmartContractFeeBuilder crBuilder = new SmartContractFeeBuilder();
-    FeeData feeMatrices = crBuilder.getContractSolidityIDQueryFeeMatrices(ResponseType.ANSWER_ONLY);
-    Map<HederaFunctionality, FeeData> feeSchMap = getFeeScheduleMap();
-    FeeData feeData = feeSchMap.get(HederaFunctionality.GetBySolidityID);
     return crBuilder.getTotalFeeforRequest(feeData, feeMatrices,exchangeRate);
   }
 

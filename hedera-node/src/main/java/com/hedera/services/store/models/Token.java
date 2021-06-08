@@ -23,6 +23,8 @@ package com.hedera.services.store.models;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.utils.MiscUtils.describe;
@@ -53,6 +55,7 @@ public class Token {
 	private JKey kycKey;
 	private JKey freezeKey;
 	private JKey supplyKey;
+	private boolean frozenByDefault;
 	private Account treasury;
 	private Account autoRenewAccount;
 
@@ -72,10 +75,19 @@ public class Token {
 		changeSupply(treasuryRel, +amount, INVALID_TOKEN_MINT_AMOUNT);
 	}
 
+	public TokenRelationship newRelationshipWith(Account account) {
+		final var newRel = new TokenRelationship(this, account);
+		if (hasFreezeKey() && frozenByDefault) {
+			newRel.setFrozen(true);
+		}
+		newRel.setKycGranted(!hasKycKey());
+		return newRel;
+	}
+
 	private void changeSupply(TokenRelationship treasuryRel, long amount, ResponseCodeEnum negSupplyCode) {
 		validateTrue(treasuryRel != null, FAIL_INVALID, () ->
 				"Cannot mint with a null treasuryRel");
-		validateTrue( treasuryRel.hasInvolvedIds(id, treasury.getId()), FAIL_INVALID, () ->
+		validateTrue(treasuryRel.hasInvolvedIds(id, treasury.getId()), FAIL_INVALID, () ->
 				"Cannot change " + this + " supply (" + amount + ") with non-treasury rel " + treasuryRel);
 
 		validateTrue(supplyKey != null, TOKEN_HAS_NO_SUPPLY_KEY);
@@ -143,8 +155,29 @@ public class Token {
 		return supplyHasChanged;
 	}
 
+	public boolean isFrozenByDefault() {
+		return frozenByDefault;
+	}
+
+	public void setFrozenByDefault(boolean frozenByDefault) {
+		this.frozenByDefault = frozenByDefault;
+	}
+
 	public Id getId() {
 		return id;
+	}
+
+	/* NOTE: The object methods below are only overridden to improve
+	readability of unit tests; this model object is not used in hash-based
+	collections, so the performance of these methods doesn't matter. */
+	@Override
+	public boolean equals(Object obj) {
+		return EqualsBuilder.reflectionEquals(this, obj);
+	}
+
+	@Override
+	public int hashCode() {
+		return HashCodeBuilder.reflectionHashCode(this);
 	}
 
 	@Override
@@ -155,6 +188,7 @@ public class Token {
 				.add("autoRenewAccount", autoRenewAccount)
 				.add("kycKey", describe(kycKey))
 				.add("freezeKey", describe(freezeKey))
+				.add("frozenByDefault", frozenByDefault)
 				.add("supplyKey", describe(supplyKey))
 				.toString();
 	}

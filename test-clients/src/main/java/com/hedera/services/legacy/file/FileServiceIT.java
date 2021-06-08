@@ -25,7 +25,6 @@ import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.CommonUtils;
 import com.hedera.services.legacy.core.CustomProperties;
 import com.hedera.services.legacy.core.FeeClient;
-import com.hedera.services.legacy.core.HexUtils;
 import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.legacy.core.TestHelper;
 import com.hedera.services.legacy.proto.utils.ProtoCommonUtils;
@@ -576,51 +575,6 @@ public class FileServiceIT {
   }
 
   /**
-   * Gets balance of an account using genesis as payer and default listening node as receiving
-   * node.
- * @throws Exception 
-   */
-  public long getAccountBalance(AccountID accountID)
-      throws Exception {
-    return getAccountBalance(accountID, genesisAccountID, defaultListeningNodeAccountID);
-  }
-
-  /**
-   * Gets balance of an account.
-   *
-   * @param accountID the account to get balance for
-   * @return the balance
- * @throws Exception 
-   */
-  public long getAccountBalance(AccountID accountID, AccountID payerID, AccountID nodeID)
-      throws Exception {
-    long balanceFee = FeeClient.getBalanceQueryFee();
-    Transaction paymentTxSigned = getPaymentSigned(payerID.getAccountNum(), nodeID.getAccountNum(),
-        "getAccountBalance", balanceFee);
-    Query cryptoGetBalanceQuery = RequestBuilder
-        .getCryptoGetBalanceQuery(accountID, paymentTxSigned, ResponseType.ANSWER_ONLY);
-    Response getBalanceResponse = cstub.cryptoGetBalance(cryptoGetBalanceQuery);
-    log.info("Pre Check Response of getAccountBalance:: "
-        + getBalanceResponse.getCryptoGetInfo().getHeader().getNodeTransactionPrecheckCode()
-        .name());
-    Assert.assertNotNull(getBalanceResponse);
-    Assert.assertNotNull(getBalanceResponse.getCryptoGetInfo());
-    log.info("getAccountBalance :: " + getBalanceResponse.getCryptoGetInfo());
-
-    long balance = getBalanceResponse.getCryptogetAccountBalance().getBalance();
-    return balance;
-  }
-
-  /**
-   * Gets the hex string of the public key.
-   */
-  public static String getPubKeyHex(KeyPair keypair) {
-    byte[] pubKey0 = ((EdDSAPublicKey) keypair.getPublic()).getAbyte();
-    String pubKeyHex = HexUtils.bytes2Hex(pubKey0);
-    return pubKeyHex;
-  }
-
-  /**
    * Fetches the receipts, wait if necessary.
    */
   protected static Response fetchReceipts(Query query, CryptoServiceBlockingStub cstub2)
@@ -731,10 +685,6 @@ public class FileServiceIT {
 
   public List<PrivateKey> getGenesisPrivateKeyList() {
     return genesisPrivateKeyList;
-  }
-
-  public void setGenesisPrivateKeyList(List<PrivateKey> genesisPrivateKeyList) {
-    this.genesisPrivateKeyList = genesisPrivateKeyList;
   }
 
   /**

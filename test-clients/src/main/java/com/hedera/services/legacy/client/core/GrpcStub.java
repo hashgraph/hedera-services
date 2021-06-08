@@ -21,13 +21,10 @@ package com.hedera.services.legacy.client.core;
  */
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.legacy.client.util.Common;
-import com.hedera.services.legacy.client.util.FileUploader;
 import com.hedera.services.legacy.core.TestHelper;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -43,7 +40,6 @@ import com.hederahashgraph.service.proto.java.SmartContractServiceGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -72,30 +68,6 @@ public class GrpcStub {
 		cryptoStub = CryptoServiceGrpc.newBlockingStub(channel);
 		scStub = SmartContractServiceGrpc.newBlockingStub(channel);
 		fileStub = FileServiceGrpc.newBlockingStub(channel);
-	}
-
-	public Pair<List<Transaction>, FileGetInfoResponse.FileInfo> getFileInfo(AccountID payerAccount,
-			PrivateKey payerKey,
-			long nodeAccountNumber,
-			FileID fid)
-	{
-		return FileUploader.getFileInfo(fileStub, payerAccount, payerKey, nodeAccountNumber, fid);
-	}
-
-	public Pair<List<Transaction>, FileID> updateFile(FileID fileID,
-			AccountID payerAccount,
-			PrivateKey payerPrivateKey,
-			final List<KeyPair> accessKeys,
-			long fileDuration, long transactionFee,
-			final Map<String, PrivateKey> pubKey2PrivateKeyMap,
-			byte[] bytes,
-			long nodeAccountNumber) throws Exception {
-
-		return FileUploader.uploadFile(fileID, cryptoStub, fileStub,
-				payerAccount, payerPrivateKey, accessKeys, fileDuration, transactionFee,
-				pubKey2PrivateKeyMap,
-				bytes,
-				nodeAccountNumber);
 	}
 
 	public TransactionID deleteFile(AccountID payerAccount,
@@ -141,30 +113,5 @@ public class GrpcStub {
 			return null;
 		}
 
-	}
-
-	public TransactionID deleteAccount(AccountID payer, Key payerKey,
-			AccountID deleteAccount, Key accKey,
-			AccountID transferAccount,
-			AccountID nodeAccount, Map<String, PrivateKey> pubKey2privKeyMap) throws InvalidProtocolBufferException  {
-		Transaction transaction = Common.tranSubmit(() -> {
-			Transaction deleteRequest;
-			try {
-				deleteRequest = Common.buildCryptoDelete(payer, payerKey,
-						deleteAccount, accKey,
-						transferAccount,
-						nodeAccount, pubKey2privKeyMap);
-			} catch (Exception e) {
-				e.printStackTrace();
-				return null;
-			}
-			return deleteRequest;
-		}, cryptoStub::cryptoDelete);
-		if (transaction != null) {
-			return TransactionBody.parseFrom(transaction.getBodyBytes())
-					.getTransactionID();
-		} else {
-			return null;
-		}
 	}
 }
