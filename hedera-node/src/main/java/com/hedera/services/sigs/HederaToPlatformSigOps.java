@@ -120,6 +120,7 @@ public class HederaToPlatformSigOps {
 	 * @param syncVerifier facility for synchronously verifying a cryptographic signature
 	 * @param keyOrderer facility for listing Hedera keys required to sign the gRPC txn
 	 * @param pkToSigFnProvider source of crypto sigs for the simple keys in the Hedera key leaves
+	 * @param sigFactoryCreator source of Platform sigs scoped to the active txn
 	 * @return a representation of the outcome.
 	 */
 	public static SignatureStatus rationalizeIn(

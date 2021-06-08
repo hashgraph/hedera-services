@@ -21,13 +21,40 @@ package com.hedera.services.utils;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.sigs.Rationalization;
+import com.swirlds.common.SwirldDualState;
+import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.crypto.TransactionSignature;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.function.Function;
 
 import static com.hedera.services.keys.HederaKeyActivation.pkToSigMapFrom;
 
+/**
+ * A simple wrapper around the three outputs of the {@link Rationalization#execute()} process.
+ *
+ * These outputs are,
+ * <ol>
+ *     <li>The payer key required to sign the active transaction.</li>
+ *     <li>The list of other-party keys (if any) required to sign the active transaction.</li>
+ *     <li>The mapping from a public key to the verified {@link TransactionSignature} for that key.
+ * </ol>
+ *
+ * If a transaction is invalid, it is possible that one or both of the payer key and the list
+ * of other-party keys will be unavailable. So this wrapper class can be constructed using one
+ * of three factories: {@link RationalizedSigMeta#noneAvailable()},
+ * {@link RationalizedSigMeta#forPayerOnly(JKey, List)}, and {@link RationalizedSigMeta#forPayerAndOthers(JKey, List, List)}.
+ * (There is no factory for just other-party signatures, because without a payer signature
+ * {@link com.hedera.services.ServicesState#handleTransaction(long, boolean, Instant, Instant, SwirldTransaction, SwirldDualState)}
+ * will abort almost immediately.)
+ *
+ * Note that the mapping from public key to verified {@link TransactionSignature} is equivalent
+ * to just the list of verified {@link TransactionSignature}s, since each {@link TransactionSignature}
+ * instance includes the relevant public key. We construct the function in this class just
+ * to avoid repeating that work twice in {@code handleTransaction}.
+ */
 public class RationalizedSigMeta {
 	private static final RationalizedSigMeta NONE_AVAIL = new RationalizedSigMeta();
 
