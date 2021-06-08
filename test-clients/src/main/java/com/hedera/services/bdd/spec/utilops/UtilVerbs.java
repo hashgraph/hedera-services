@@ -445,14 +445,14 @@ public class UtilVerbs {
 
 	private static void reduceFeeComponentsFor(FeeSchedule.Builder feeSchedule, HederaFunctionality function,
 			long maxNodeFee, long maxNetworkFee, long maxServiceFee) {
-		var feeDataList = feeSchedule.getTransactionFeeScheduleBuilderList()
+		var feesList = feeSchedule.getTransactionFeeScheduleBuilderList()
 				.stream()
 				.filter(tfs -> tfs.getHederaFunctionality() == function)
 				.findAny()
 				.get()
-				.getFeeDataListBuilderList();
+				.getFeesBuilderList();
 
-		for (FeeData.Builder builder : feeDataList) {
+		for (FeeData.Builder builder : feesList) {
 			builder.getNodedataBuilder().setMax(maxNodeFee);
 			builder.getNetworkdataBuilder().setMax(maxNetworkFee);
 			builder.getServicedataBuilder().setMax(maxServiceFee);

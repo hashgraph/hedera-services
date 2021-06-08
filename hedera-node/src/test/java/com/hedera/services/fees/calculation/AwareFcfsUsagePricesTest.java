@@ -121,13 +121,13 @@ class AwareFcfsUsagePricesTest {
 				.setExpiryTime(TimestampSeconds.newBuilder().setSeconds(nextExpiry))
 				.addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
 						.setHederaFunctionality(CryptoTransfer)
-						.addFeeDataList(nextCryptoTransferUsagePrices.get(SubType.DEFAULT)))
+						.addFees(nextCryptoTransferUsagePrices.get(SubType.DEFAULT)))
 				.build();
 		currentFeeSchedule = FeeSchedule.newBuilder()
 				.setExpiryTime(TimestampSeconds.newBuilder().setSeconds(currentExpiry))
 				.addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
 						.setHederaFunctionality(CryptoTransfer)
-						.addFeeDataList(currentCryptoTransferUsagePrices.get(SubType.DEFAULT)))
+						.addFees(currentCryptoTransferUsagePrices.get(SubType.DEFAULT)))
 				.build();
 		feeSchedules = CurrentAndNextFeeSchedule.newBuilder()
 				.setCurrentFeeSchedule(currentFeeSchedule)
