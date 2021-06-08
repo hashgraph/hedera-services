@@ -467,10 +467,9 @@ public class MerkleToken extends AbstractMerkleLeaf implements FCMValue {
 		return currentSerialNum;
 	}
 
-	public long incrementSerialNum(){
-		return ++this.currentSerialNum;
+	public void setSerialNum(long serialNum){
+		this.currentSerialNum = serialNum;
 	}
-
 
 	public TokenType tokenType() {
 		return tokenType;

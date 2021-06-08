@@ -63,6 +63,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -149,14 +150,14 @@ class UniqueTokenStoreTest {
 		given(tokenRelsLedger.get(sponsorPair, IS_FROZEN)).willReturn(true);
 		var res = store.mint(singleTokenTxBody(), RichInstant.fromJava(Instant.now()));
 		assertEquals(ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN, res.getStatus());
-		verify(token, times(0)).incrementSerialNum();
+		verify(token, times(0)).setSerialNum(anyLong());
 	}
 
 	@Test
 	void mintOne() {
 		var res = store.mint(singleTokenTxBody(), RichInstant.fromJava(Instant.now()));
 		assertEquals(ResponseCodeEnum.OK, res.getStatus());
-		verify(token, times(1)).incrementSerialNum();
+		verify(token, times(1)).setSerialNum(anyLong());
 	}
 
 	@Test
@@ -182,21 +183,21 @@ class UniqueTokenStoreTest {
 		assertEquals(ResponseCodeEnum.OK, res.getStatus());
 		var lastSerials = res.getCreated().get();
 		assertEquals(2, lastSerials.size());
-		verify(token, times(2)).incrementSerialNum();
+		verify(token, times(1)).setSerialNum(anyLong());
 	}
 
 	@Test
 	void mintMany() {
 		var res = store.mint(multipleTokenTxBody(), RichInstant.fromJava(Instant.now()));
 		assertEquals(ResponseCodeEnum.OK, res.getStatus());
-		verify(token, times(2)).incrementSerialNum();
+		verify(token, times(1)).setSerialNum(anyLong());
 	}
 
 	@Test
 	void mintManyFail() {
 		var res = store.mint(multipleTokenFailTxBody(), RichInstant.fromJava(Instant.now()));
 		assertNotEquals(res, ResponseCodeEnum.OK);
-		verify(token, times(0)).incrementSerialNum();
+		verify(token, times(0)).setSerialNum(anyLong());
 		verify(nfTokens, times(0)).put(any(), any());
 	}
 
@@ -205,7 +206,7 @@ class UniqueTokenStoreTest {
 		given(token.hasSupplyKey()).willReturn(false);
 		var res = store.mint(singleTokenTxBody(), RichInstant.fromJava(Instant.now()));
 		assertEquals(ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY, res.getStatus());
-		verify(token, times(0)).incrementSerialNum();
+		verify(token, times(0)).setSerialNum(anyLong());
 	}
 
 	@Test

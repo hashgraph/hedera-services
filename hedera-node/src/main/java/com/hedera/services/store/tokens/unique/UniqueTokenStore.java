@@ -85,6 +85,7 @@ public class UniqueTokenStore extends BaseTokenStore implements UniqueStore {
 	@Override
 	public CreationResult<List<Long>> mint(final TokenMintTransactionBody txBody, final RichInstant creationTime) {
 		var provisionalUniqueTokens = new ArrayList<Pair<MerkleUniqueTokenId, MerkleUniqueToken>>();
+		var lastMintedSerialNumbers = new ArrayList<Long>();
 		var tokenId = txBody.getToken();
 		var provisionalSanityCheck = tokenSanityCheck(tokenId, merkleToken -> {
 			if (!merkleToken.hasSupplyKey()) {
@@ -100,6 +101,7 @@ public class UniqueTokenStore extends BaseTokenStore implements UniqueStore {
 				final var nftId = new MerkleUniqueTokenId(eId, serialNum);
 				final var nft = new MerkleUniqueToken(owner, metaAsStr, creationTime);
 				provisionalUniqueTokens.add(Pair.of(nftId, nft));
+				lastMintedSerialNumbers.add(serialNum);
 			}
 			if (!checkProvisional(provisionalUniqueTokens)) {
 				return INVALID_TRANSACTION_BODY;
@@ -114,16 +116,14 @@ public class UniqueTokenStore extends BaseTokenStore implements UniqueStore {
 			return CreationResult.failure(provisionalSanityCheck);
 		}
 		// Commit logic
-		var token = super.getTokens().get().getForModify(tokenId);
-		var lastMintedSerialNumbers = new ArrayList<Long>();
+		var token = getTokens().get().getForModify(fromTokenId(tokenId));
 		for (Pair<MerkleUniqueTokenId, MerkleUniqueToken> pair : provisionalUniqueTokens) {
 			var nft = pair.getValue();
 			var nftId = pair.getKey();
-			var serialNum = token.incrementSerialNum();
-			lastMintedSerialNumbers.add(serialNum);
 			uniqueTokenSupplier.get().put(nftId, nft);
 		}
-		super.getTokens().get().replace(fromTokenId(tokenId), token);
+		token.setSerialNum(token.getCurrentSerialNum() + lastMintedSerialNumbers.size());
+		getTokens().get().replace(fromTokenId(tokenId), token);
 		return CreationResult.success(lastMintedSerialNumbers);
 	}
 
