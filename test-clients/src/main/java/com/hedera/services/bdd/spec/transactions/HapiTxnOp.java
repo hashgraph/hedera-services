@@ -200,7 +200,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 //							permissiblePrechecks.get());
 					throw new HapiTxnPrecheckStateException(String.format(
 							"Wrong precheck status! Expected one of %s, actual %s",
-							permissibleStatuses.get(), actualStatus));
+							permissiblePrechecks.get(), actualStatus));
 				}
 			} else {
 				if (getExpectedPrecheck() != actualPrecheck) {
