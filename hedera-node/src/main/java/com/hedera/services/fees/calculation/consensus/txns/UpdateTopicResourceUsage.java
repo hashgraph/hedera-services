@@ -46,7 +46,8 @@ public class UpdateTopicResourceUsage implements TxnResourceUsageEstimator {
     }
 
     @Override
-    public FeeData usageGiven(final TransactionBody txnBody, final SigValueObj sigUsage, final StateView view) throws InvalidTxBodyException {
+    public FeeData usageGiven(final TransactionBody txnBody, final SigValueObj sigUsage, final StateView view)
+            throws InvalidTxBodyException, IllegalStateException {
         if (txnBody == null || !txnBody.hasConsensusUpdateTopic()) {
             throw new InvalidTxBodyException("consensusUpdateTopic field not available for Fee Calculation");
         }
@@ -55,14 +56,14 @@ public class UpdateTopicResourceUsage implements TxnResourceUsageEstimator {
         }
 
         long rbsIncrease = 0;
-        MerkleTopic merkleTopic = view.topics().get(
+        final MerkleTopic merkleTopic = view.topics().get(
                 MerkleEntityId.fromTopicId(txnBody.getConsensusUpdateTopic().getTopicID()));
 
         if (merkleTopic != null && merkleTopic.hasAdminKey()) {
+            final var expiry = Timestamp.newBuilder()
+                    .setSeconds(merkleTopic.getExpirationTimestamp().getSeconds())
+                    .build();
             try{
-                var expiry = Timestamp.newBuilder()
-                        .setSeconds(merkleTopic.getExpirationTimestamp().getSeconds())
-                        .build();
                 rbsIncrease = getUpdateTopicRbsIncrease(
                         txnBody.getTransactionID().getTransactionValidStart(),
                         JKey.mapJKey(merkleTopic.getAdminKey()),

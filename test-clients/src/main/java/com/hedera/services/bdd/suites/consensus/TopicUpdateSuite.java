@@ -73,12 +73,12 @@ public class TopicUpdateSuite extends HapiApiSuite {
 						updateSubmitKeyOnTopicWithNoAdminKeyFails(),
 						clearingAdminKeyWhenAutoRenewAccountPresent(),
 						feeAsExpected(),
-						udpateToMissingTopicFails()
+						updateToMissingTopicFails()
 				}
 		);
 	}
 
-	private HapiApiSpec udpateToMissingTopicFails() {
+	private HapiApiSpec updateToMissingTopicFails() {
 		return defaultHapiSpec("UpdateTopicHandlesMissingTopicGracefully")
 				.given( ).when( ).then(
 						updateTopic("1.2.3").hasKnownStatus(INVALID_TOPIC_ID)
