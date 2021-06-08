@@ -79,6 +79,29 @@ public class VirtualMapTest {
     }
 
     @Test
+    public void commitAFewAtATime() {
+        final var ds = new InMemoryDataSource();
+        var v = new VirtualMap(ds);
+
+        v = v.copy();
+        final var expected = new HashMap<VirtualKey, VirtualValue>();
+        for (int i=0; i<256; i++) {
+            if (i > 0 && i % 8 == 0) {
+                v.commit();
+                v = v.copy();
+            }
+
+            final var key = asKey(i + "");
+            final var value = asValue((i + 1_000_000) + "");
+            v.putValue(key, value);
+            expected.put(key, value);
+        }
+
+        final var fv = v;
+        expected.forEach((key, value) -> Assertions.assertEquals(value, fv.getValue(key)));
+    }
+
+    @Test
     public void addManyItemsAndFindThemAll() {
         final var ds = new InMemoryDataSource();
         final var v = new VirtualMap(ds);
@@ -151,7 +174,7 @@ public class VirtualMapTest {
         for (int i=0; i<1_000_000; i++) {
             if (i > 0 && i % 15 == 0) {
                 v.commit();
-                v = new VirtualMap(ds);
+                v = v.copy();
             }
             final var key = asKey(i);
             final var value = asValue((i + 100_000_000));
