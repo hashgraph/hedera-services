@@ -1,16 +1,12 @@
 package com.hedera.services.state.merkle.virtual;
 
-import com.swirlds.common.crypto.CryptoFactory;
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.Hashable;
-
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 /**
  *
  */
-public final class VirtualValue implements Hashable {
+public final class VirtualValue {
     /**
      * The actual data. This will never be null and will always be 32 elements in length.
      * This data is protected by this class, we make defensive copies rather than letting
@@ -24,7 +20,7 @@ public final class VirtualValue implements Hashable {
      * If we separated out Keys and Values as two different types, then
      * we'd only have this for values, not for keys.
      */
-    private final Hash hash;
+    private final byte[] hash;
 
     /**
      * Creates a new ByteChunk with the given array. Makes a safe copy of the array.
@@ -37,7 +33,7 @@ public final class VirtualValue implements Hashable {
         }
 
         this.data = Arrays.copyOf(source, 32);
-        this.hash = new Hash(Arrays.copyOf(data, 48));
+        this.hash = Arrays.copyOf(data, 48);
     }
 
     /**
@@ -81,19 +77,8 @@ public final class VirtualValue implements Hashable {
         return Arrays.hashCode(this.data);
     }
 
-    @Override
-    public Hash getHash() {
+    public byte[] getHash() {
         return hash;
-    }
-
-    @Override
-    public void invalidateHash() {
-        throw new UnsupportedOperationException("Cannot invalidate an VirtualValue's hash");
-    }
-
-    @Override
-    public void setHash(Hash hash) {
-        throw new UnsupportedOperationException("Cannot set an VirtualValue's hash");
     }
 
     @Override
