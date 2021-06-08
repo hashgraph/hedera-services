@@ -109,19 +109,6 @@ class MonotonicFullQueueExpiriesTest {
 	}
 
 	@Test
-	void expiryEventToStringWorks() {
-		// given:
-		var expiryEvent = new ExpiryEvent("something", 1_234_567L);
-		var desired = "ExpiryEvent{id=something, expiry=1234567}";
-
-		// when:
-		var actual = expiryEvent.toString();
-
-		// then:
-		assertEquals(desired, actual);
-	}
-
-	@Test
 	void expiryInNonMonotonicOrder() {
 		String k4 = "fourth";
 		long expiry1 = 50, expiry2 = 1000, expiry3 = 200, expiry4 = 10;

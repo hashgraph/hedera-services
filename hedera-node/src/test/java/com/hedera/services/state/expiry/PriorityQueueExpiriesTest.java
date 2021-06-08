@@ -113,17 +113,4 @@ class PriorityQueueExpiriesTest {
 		// expect:
 		assertFalse(subject.hasExpiringAt(expiry1));
 	}
-
-	@Test
-	void expiryEventToStringWorks() {
-		// given:
-		var expiryEvent = new ExpiryEvent("something", 1_234_567L);
-		var desired = "ExpiryEvent{id=something, expiry=1234567}";
-
-		// when:
-		var actual = expiryEvent.toString();
-
-		// then:
-		assertEquals(desired, actual);
-	}
 }
