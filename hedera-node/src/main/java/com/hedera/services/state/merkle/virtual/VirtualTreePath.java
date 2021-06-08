@@ -122,35 +122,6 @@ public final class VirtualTreePath {
         return breadcrumbs == 0;
     }
 
-    public boolean isFarLeft(long path) {
-        final var rank = getRank(path);
-        final var breadcrumbs = getBreadcrumbs(path);
-        final var maxForRank = (1L << rank);
-        return (maxForRank - breadcrumbs) == 1;
-    }
-
-    /**
-     * Gets whether this path comes <strong>before</strong> the {@code other} path.
-     * A path comes before if it has a lesser rank, or if it has a lesser index within the
-     * same rank as the other Path.
-     *
-     * @return Whether this Path comes before the other Path.
-     */
-    public static boolean isBefore(long a, long b) {
-        return compareTo(a, b) < 0;
-    }
-
-    /**
-     * Gets whether this path comes <strong>after</strong> the {@code other} path.
-     * A path comes after if it has a greater rank, or if it has a greater index within
-     * the same rank.
-     *
-     * @return Whether this Path comes after the other Path.
-     */
-    public static boolean isAfter(long a, long b) {
-        return compareTo(a, b) > 0;
-    }
-
     /**
      * Gets the path of a node that would be the parent of the node represented by this path.
      *
@@ -201,6 +172,15 @@ public final class VirtualTreePath {
         return (breadB >> (rankB - rankA)) == breadA;
     }
 
+    public static long getSiblingPath(long path) {
+        if (path == ROOT_PATH) {
+            return INVALID_PATH;
+        }
+
+        // Just flip the last bit.
+        return path ^ 0x1;
+    }
+
     /**
      * Compares two Paths. A Path is "less than" another path if it is either at a
      * more shallow rank (closer to the root), or to the left of the other path. It is
@@ -211,7 +191,7 @@ public final class VirtualTreePath {
      * @param b The other path to compare with.
      * @return -1 if this is left of o, 0 if they are equal, 1 if this is right of o.
      */
-    private static int compareTo(long a, long b) {
+    public static int compareTo(long a, long b) {
         // Check to see if we are equal
         if (a == b) {
             return 0;
@@ -220,32 +200,18 @@ public final class VirtualTreePath {
         // If my rank is less, then I am more shallow, so return -1
         final var rankA = getRank(a);
         final var rankB = getRank(b);
-        if (rankA < rankB) {
-            return -1;
+        if (rankA != rankB) {
+            return rankA - rankB;
         }
 
-        // If my rank is more, then I am deeper, so return 1
-        if (rankA > rankB) {
-            return 1;
+        final var bcA = getBreadcrumbs(a);
+        final var bcB = getBreadcrumbs(b);
+        if (bcA == bcB) {
+            return 0;
         }
 
-        // Check the sequence of 0's and 1's in the two paths.
-        // I don't need to check the positions that are the same, I only need to check the first position
-        // at which they differ. If my first different position is a 0, then I'm to the left (return -1).
-        // If my first different position is a 1, then I'm to the right (return 1).
-        long firstDiffPos = a ^ b;
-
-        long p1 = a;
-        while ((firstDiffPos & 0x1) != 1) {
-            firstDiffPos >>= 1;
-            p1 >>= 1;
-
-            if (firstDiffPos == 0) {
-                throw new IllegalStateException("Unexpected failure in the algorithm. This should not be possible.");
-            }
-        }
-
-        return ((p1 & 0x1) == 0) ? -1 : 1;
+        // Note that the higher number is on the left of the graph
+        return bcB - bcA > 0 ? 1 : -1;
     }
 
     public static String toString(long path) {

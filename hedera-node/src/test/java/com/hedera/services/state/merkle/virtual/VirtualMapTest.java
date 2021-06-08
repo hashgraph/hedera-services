@@ -4,7 +4,13 @@ import com.hedera.services.state.merkle.virtual.persistence.VirtualDataSource;
 import com.hedera.services.state.merkle.virtual.persistence.VirtualRecord;
 import com.hedera.services.state.merkle.virtual.persistence.mmap.MemMapDataSource;
 import com.hedera.services.state.merkle.virtual.persistence.mmap.VirtualMapDataStore;
+import com.swirlds.common.FCMKey;
+import com.swirlds.common.FCMValue;
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.engine.CryptoEngine;
+import com.swirlds.common.merkle.utility.MerkleLong;
+import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -18,8 +24,10 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 import static com.hedera.services.state.merkle.virtual.VirtualTreePath.INVALID_PATH;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 
@@ -91,17 +99,28 @@ public class VirtualMapTest {
         final var ds = new InMemoryDataSource();
         var v = new VirtualMap(ds);
 
+        for (int i=0; i<1_000_000; i++) {
+            final var key = asKey(i + "");
+            final var value = asValue((i + 1_000_000) + "");
+            v.putValue(key, value);
+        }
+        v.commit();
+
+        final var rand = new Random();
+
+        v = v.copy();
         final var expected = new HashMap<VirtualKey, VirtualValue>();
         for (int i=0; i<1_000_000; i++) {
-            if (i > 0 && i % 15 == 0) {
+            if (i > 0 && i % 25 == 0) {
                 v.commit();
-                v = new VirtualMap(ds);
+                v = v.copy();
             }
-            final var key = asKey(i + "");
-            final var value = asValue((i + 100_000_000) + "");
+
+            final var r = rand.nextInt(1_000_000);
+            final var key = asKey(r + "");
+            final var value = asValue((r + 1_000_000) + "");
             expected.put(key, value);
             v.putValue(key, value);
-//            System.out.println(v.getAsciiArt());
         }
 
         final var fv = v;
@@ -143,6 +162,31 @@ public class VirtualMapTest {
         final var fv = v;
         expected.forEach((key, value) -> Assertions.assertEquals(value, fv.getValue(key)));
     }
+
+//    @Test
+//    public void hashingTest() {
+//        final var ds = new InMemoryDataSource();
+//        var v = new VirtualMap(ds);
+//        var fcmap = new FCMap<MerkleLong, MerkleLong>();
+//        var engine = new CryptoEngine();
+//
+//        for (int i=0; i<1_000_000; i++) {
+//            if (i > 0 && i % 10 == 0) {
+//                v.commit();
+//                final var tree = fcmap.getChild(0);
+//                engine.digestTreeSync(fcmap);
+//
+//                assertEquals(fcmap.getRootHash(), v.getHash());
+//
+//                v = new VirtualMap(ds);
+//                fcmap = fcmap.copy();
+//            }
+//            final var key = asKey(i + "");
+//            final var value = asValue((i + 100_000_000) + "");
+//            fcmap.put(new MerkleLong(i), new MerkleLong(i + 100_000_000));
+//            v.putValue(key, value);
+//        }
+//    }
 
 //    @Test
 //    public void quickAndDirty() {
