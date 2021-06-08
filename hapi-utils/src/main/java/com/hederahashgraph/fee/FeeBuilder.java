@@ -27,7 +27,6 @@ import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.LiveHash;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -271,19 +270,6 @@ public class FeeBuilder {
     return feeMatricesForTx;
   }
 
-  public static int sizeOfLiveHashKeyStorage(Key key) {
-
-    int keyStorageSize = 0;
-    try {
-      int[] countKeyMetatData = {0, 0};
-      countKeyMetatData = calculateKeysMetadata(key, countKeyMetatData);
-      keyStorageSize = countKeyMetatData[0] * KEY_SIZE + countKeyMetatData[1] * INT_SIZE;
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    return keyStorageSize;
-  }
-
   public static int getSignatureCount(Transaction transaction) {
     try {
       return CommonUtils.extractSignatureMap(transaction).getSigPairCount();
@@ -440,41 +426,6 @@ public class FeeBuilder {
     contResult = contResult + LONG_SIZE + 2 * LONG_SIZE;
 
     return contResult;
-  }
-
-  public static long getTransactionRecordFeeInTinyCents(TransactionRecord txRecord,long feeCoeffRBH, int timeInSec) {
-	  if(txRecord == null) {
-        return 0;
-      }
-	  long txRecordUsageRBH = getTxRecordUsageRBH(txRecord, timeInSec);
-	  long rawFee = txRecordUsageRBH * feeCoeffRBH;
-	  return Math.max(rawFee > 0 ? 1 : 0, (rawFee) / FEE_DIVISOR_FACTOR);
-  }
-
-  public static int getQueryTransactionSize() {
-    int commonTxBodyBytes =
-            BASIC_ENTITY_ID_SIZE + (LONG_SIZE) + BASIC_ENTITY_ID_SIZE + LONG_SIZE + (LONG_SIZE) + BOOL_SIZE;
-    return (commonTxBodyBytes + BASIC_TX_ID_SIZE + SIGNATURE_SIZE + INT_SIZE);
-  }
-
-  public static int liveHashSize(List<LiveHash> liveHashes) {
-    int liveHashsKeySize = 0;
-    int liveHashDataSize = 0;
-    int liveHashsAccountID = 0;
-
-    if (liveHashes != null) {
-      int liveHashsListSize = liveHashes.size();
-      liveHashDataSize = TX_HASH_SIZE * liveHashsListSize;
-      liveHashsAccountID = (BASIC_ENTITY_ID_SIZE) * liveHashsListSize;
-      for (LiveHash liveHashs : liveHashes) {
-        List<Key> keyList = liveHashs.getKeys().getKeysList();
-        for (Key key : keyList) {
-          liveHashsKeySize += getAccountKeyStorageSize(key);
-        }
-      }
-    }
-
-    return (liveHashsKeySize + liveHashDataSize + liveHashsAccountID);
   }
 
   public static int getStateProofSize(ResponseType responseType) {
