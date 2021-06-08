@@ -28,6 +28,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.EnumSet;
+
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -36,6 +39,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class TransitionRunner {
 	private static final Logger log = LogManager.getLogger(TransitionRunner.class);
+
+	private static final EnumSet<HederaFunctionality> refactoredOps = EnumSet.of(
+			TokenMint, TokenBurn,
+			TokenAssociateToAccount
+	);
 
 	private final TransactionContext txnCtx;
 	private final TransitionLogicLookup lookup;
@@ -69,8 +77,8 @@ public class TransitionRunner {
 			}
 			try {
 				transition.doStateTransition();
-				/* Only these two functions are refactored yet. */
-				if (function == TokenMint || function == TokenBurn) {
+				/* Only certain functions are refactored */
+				if (refactoredOps.contains(function)) {
 					txnCtx.setStatus(SUCCESS);
 				}
 			} catch (InvalidTransactionException ite) {

@@ -817,7 +817,7 @@ public class HederaSigningOrder {
 			TokenAssociateTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
-		return forSingleAccount(txnId, op.getAccount(), factory);
+		return forSingleAccount(txnId, op.getAccount(), factory, true);
 	}
 
 	private <T> SigningOrderResult<T> tokenDissociate(
@@ -945,9 +945,20 @@ public class HederaSigningOrder {
 			AccountID target,
 			SigningOrderResultFactory<T> factory
 	) {
+		return forSingleAccount(txnId, target, factory, false);
+	}
+
+	private <T> SigningOrderResult<T> forSingleAccount(
+			TransactionID txnId,
+			AccountID target,
+			SigningOrderResultFactory<T> factory,
+			boolean usePure
+	) {
 		List<JKey> required = EMPTY_LIST;
 
-		var result = sigMetaLookup.accountSigningMetaFor(target);
+		var result = usePure
+				? sigMetaLookup.pureAccountSigningMetaFor(target)
+				: sigMetaLookup.accountSigningMetaFor(target);
 		if (result.succeeded()) {
 			var meta = result.metadata();
 			required = mutable(required);

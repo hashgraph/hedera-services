@@ -92,8 +92,8 @@ class TokenMintTransitionLogicTest {
 
 		// then:
 		verify(token).mint(treasuryRel, amount);
-		verify(store).saveToken(token);
-		verify(store).saveTokenRelationship(treasuryRel);
+		verify(store).persistToken(token);
+		verify(store).persistTokenRelationship(treasuryRel);
 	}
 
 	@Test

@@ -25,6 +25,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcmap.FCMap;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -75,6 +76,18 @@ class BackingTokenRelsTest {
 		rels.put(bKey, bValue);
 
 		subject = new BackingTokenRels(() -> rels);
+	}
+
+	@Test
+	void manualAddToExistingWorks() {
+		// given:
+		final var aNewPair = Pair.of(c, ct);
+
+		// when:
+		subject.addToExistingRels(aNewPair);
+
+		// then:
+		subject.contains(aNewPair);
 	}
 
 	@Test
