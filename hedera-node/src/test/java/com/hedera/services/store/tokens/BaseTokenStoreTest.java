@@ -180,7 +180,6 @@ class BaseTokenStoreTest {
 		supplyKey = COMPLEX_KEY_ACCOUNT_KT.asKey();
 
 		token = mock(MerkleToken.class);
-		modifiableToken = mock(MerkleToken.class);
 		given(token.expiry()).willReturn(expiry);
 		given(token.symbol()).willReturn(symbol);
 		given(token.hasAutoRenewAccount()).willReturn(true);
@@ -188,6 +187,16 @@ class BaseTokenStoreTest {
 		given(token.name()).willReturn(name);
 		given(token.hasAdminKey()).willReturn(true);
 		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
+
+		modifiableToken = mock(MerkleToken.class);
+		given(modifiableToken.expiry()).willReturn(expiry);
+		given(modifiableToken.symbol()).willReturn(symbol);
+		given(modifiableToken.hasAutoRenewAccount()).willReturn(true);
+		given(modifiableToken.adminKey()).willReturn(Optional.of(TOKEN_ADMIN_KT.asJKeyUnchecked()));
+		given(modifiableToken.name()).willReturn(name);
+		given(modifiableToken.hasAdminKey()).willReturn(true);
+		given(modifiableToken.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
+
 
 		ids = mock(EntityIdSource.class);
 		given(ids.newTokenId(sponsor)).willReturn(created);
@@ -1622,6 +1631,9 @@ class BaseTokenStoreTest {
 	private void givenTokenWithFreezeKey(boolean freezeDefault) {
 		given(token.freezeKey()).willReturn(Optional.of(TOKEN_TREASURY_KT.asJKeyUnchecked()));
 		given(token.accountsAreFrozenByDefault()).willReturn(freezeDefault);
+
+		given(modifiableToken.freezeKey()).willReturn(Optional.of(TOKEN_TREASURY_KT.asJKeyUnchecked()));
+		given(modifiableToken.accountsAreFrozenByDefault()).willReturn(freezeDefault);
 	}
 
 	@Test

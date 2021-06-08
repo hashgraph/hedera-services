@@ -264,4 +264,10 @@ public interface TransactionContext {
 	 * @return {@code List<ExpiringEntity>} for the current expiring entities.
 	 */
 	List<ExpiringEntity> expiringEntities();
+
+	/**
+	 * Update the serial numbers after minting unique tokens
+	 * @param serialNumbers - the serial numbers used in the mint op
+	 */
+	void setCreated(List<Long> serialNumbers);
 }

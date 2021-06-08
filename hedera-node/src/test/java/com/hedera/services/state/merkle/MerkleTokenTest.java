@@ -125,12 +125,6 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void incrementsSerialNumber(){
-		var i = subject.incrementSerialNum();
-		assertEquals(i, subject.getCurrentSerialNum());
-	}
-
-	@Test
 	public void serializeWorks() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);

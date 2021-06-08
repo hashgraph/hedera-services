@@ -110,6 +110,7 @@ public abstract class BaseTokenStore extends HederaStore implements TokenStore {
 
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties properties;
+
 	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
 	private final TransactionalLedger<
 			Pair<AccountID, TokenID>,
@@ -445,7 +446,7 @@ public abstract class BaseTokenStore extends HederaStore implements TokenStore {
 		}
 	}
 
-	private ResponseCodeEnum tryAdjustment(AccountID aId, TokenID tId, long adjustment) {
+	protected ResponseCodeEnum tryAdjustment(AccountID aId, TokenID tId, long adjustment) {
 		var relationship = asTokenRel(aId, tId);
 		if ((boolean) tokenRelsLedger.get(relationship, IS_FROZEN)) {
 			return ACCOUNT_FROZEN_FOR_TOKEN;
@@ -757,5 +758,9 @@ public abstract class BaseTokenStore extends HederaStore implements TokenStore {
 	}
 	protected TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> getTokenRelsLedger() {
 		return tokenRelsLedger;
+	}
+
+	protected Supplier<FCMap<MerkleEntityId, MerkleToken>> getTokens() {
+		return tokens;
 	}
 }

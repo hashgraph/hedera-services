@@ -640,13 +640,13 @@ class ServicesStateTest {
 		given(accounts.getHash()).willReturn(accountsRootHash);
 		given(storage.getHash()).willReturn(storageRootHash);
 		given(tokens.getHash()).willReturn(tokensRootHash);
+		given(uniqueTokens.getHash()).willReturn(uniqueTokensRootHash);
 		given(tokenAssociations.getHash()).willReturn(tokenRelsRootHash);
 		given(networkCtx.getHash()).willReturn(ctxHash);
 		given(networkCtx.toString()).willReturn("Not really a network context representation!");
 		given(book.getHash()).willReturn(bookHash);
 		given(diskFs.getHash()).willReturn(specialFileSystemHash);
 		given(scheduledTxs.getHash()).willReturn(scheduledTxsRootHash);
-		given(uniqueTokens.getHash()).willReturn(uniqueTokensRootHash);
 
 		given(runningHashLeaf.getHash()).willReturn(runningHashLeafHash);
 		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);

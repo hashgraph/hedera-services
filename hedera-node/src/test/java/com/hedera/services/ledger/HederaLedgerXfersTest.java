@@ -34,7 +34,6 @@ import org.junit.jupiter.api.Test;
 import static com.hedera.services.exceptions.InsufficientFundsException.messageFor;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.any;
@@ -125,7 +124,7 @@ public class HederaLedgerXfersTest extends BaseHederaLedgerTest {
 		given(mockValidator.isAfterConsensusSecond(1_234_567_890L)).willReturn(true);
 		given(mockValidator.isAfterConsensusSecond(666L)).willReturn(false);
 
-		subject = new HederaLedger(tokenStore, ids, creator, mockValidator, historian, dynamicProps, accountsLedger);
+		subject = new HederaLedger(tokenStore, uniqueTokenStore, ids, creator, mockValidator, historian, dynamicProps, accountsLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 
 		// expect:
@@ -152,7 +151,7 @@ public class HederaLedgerXfersTest extends BaseHederaLedgerTest {
 		given(mockValidator.isAfterConsensusSecond(1_234_567_890L)).willReturn(true);
 		given(mockValidator.isAfterConsensusSecond(666L)).willReturn(false);
 
-		subject = new HederaLedger(tokenStore, ids, creator, mockValidator, historian, dynamicProps, accountsLedger);
+		subject = new HederaLedger(tokenStore, uniqueTokenStore, ids, creator, mockValidator, historian, dynamicProps, accountsLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 
 		// expect:

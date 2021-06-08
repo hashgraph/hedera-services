@@ -36,6 +36,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.tokens.BaseTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.unique.UniqueTokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -74,6 +75,7 @@ public class BaseHederaLedgerTest {
 	protected HederaLedger subject;
 
 	protected BaseTokenStore tokenStore;
+	protected UniqueTokenStore uniqueTokenStore;
 	protected EntityIdSource ids;
 	protected ExpiringCreations creator;
 	protected AccountRecordsHistorian historian;
@@ -216,7 +218,9 @@ public class BaseHederaLedgerTest {
 				.willReturn(tokenId);
 		given(tokenStore.get(frozenId)).willReturn(frozenToken);
 
-		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);
+		uniqueTokenStore = mock(UniqueTokenStore.class);
+
+		subject = new HederaLedger(tokenStore, uniqueTokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 	}
 

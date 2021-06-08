@@ -23,6 +23,7 @@ package com.hedera.services.txns.token;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.unique.UniqueStore;
 import com.hedera.services.txns.TransitionLogic;
@@ -32,12 +33,14 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -75,14 +78,19 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 			} else {
 				var token = commonStore.get(id);
 				ResponseCodeEnum outcome;
-				if (token.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
+				CreationResult<List<Long>> nftMintOutcome = null;
+				if(token.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
 					outcome = commonStore.mint(id, op.getAmount());
 				} else {
-					outcome = uniqueStore.mint(id, op.getMetadata(0).toStringUtf8(), RichInstant.fromJava(txnCtx.consensusTime()));
+					nftMintOutcome = uniqueStore.mint(op, RichInstant.fromJava(txnCtx.consensusTime()));
+					outcome = nftMintOutcome.getStatus();
 				}
 				txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
 				if (outcome == OK) {
 					txnCtx.setNewTotalSupply(commonStore.get(id).totalSupply());
+					if (token.tokenType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
+						txnCtx.setCreated(nftMintOutcome.getCreated().get());
+					}
 				}
 			}
 		} catch (Exception e) {
@@ -108,10 +116,18 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 			return INVALID_TOKEN_ID;
 		}
 
-		if (op.getAmount() <= 0) {
+		boolean bothPresent = (op.getAmount() > 0 && op.getMetadataCount() > 0);
+		boolean nonePresent = (op.getAmount() <= 0 && op.getMetadataCount() == 0);
+
+		if (nonePresent) {
 			return INVALID_TOKEN_MINT_AMOUNT;
 		}
 
+		if (bothPresent) {
+			return INVALID_TRANSACTION_BODY;
+		}
+
+		// TODO add check for batch size
 		return OK;
 	}
 }

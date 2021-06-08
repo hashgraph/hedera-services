@@ -47,6 +47,7 @@ import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.unique.UniqueStore;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.mocks.SolidityLifecycleFactory;
@@ -152,6 +153,7 @@ public class SmartContractRequestHandlerStorageTest {
             new ChangeSummaryManager<>());
     ledger = new HederaLedger(
             mock(TokenStore.class),
+            mock(UniqueStore.class),
             mock(EntityIdSource.class),
             mock(ExpiringCreations.class),
             TestContextValidator.TEST_VALIDATOR,

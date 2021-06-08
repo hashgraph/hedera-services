@@ -123,7 +123,7 @@ import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.store.tokens.BaseTokenStore;
+import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.common.CommonStore;
 import com.hedera.services.store.tokens.unique.OwnerIdentifier;
 import com.hedera.services.store.tokens.unique.UniqueStore;
@@ -239,7 +239,7 @@ public class ServicesContextTest {
 		var newTokens = mock(FCMap.class);
 		var newTokenRels = mock(FCMap.class);
 		var newSchedules = mock(FCMap.class);
-		var newUniqueTokens = mock(FCInvertibleHashMap.class);
+		var newUniqueTokens =  mock(FCInvertibleHashMap.class);
 
 		given(newState.accounts()).willReturn(newAccounts);
 		given(newState.topics()).willReturn(newTopics);
@@ -393,7 +393,6 @@ public class ServicesContextTest {
 		// and given:
 		ctx.setCommonTokenStore(tokenStore);
 		ctx.setScheduleStore(scheduleStore);
-		ctx.setUniqueTokenStore(uniqueStore);
 
 		// when:
 		ctx.rebuildStoreViewsIfPresent();
@@ -401,7 +400,6 @@ public class ServicesContextTest {
 		// then:
 		verify(tokenStore).rebuildViews();
 		verify(scheduleStore).rebuildViews();
-		verify(uniqueStore).rebuildViews();
 	}
 
 	@Test
@@ -522,7 +520,7 @@ public class ServicesContextTest {
 		assertThat(ctx.submissionManager(), instanceOf(PlatformSubmissionManager.class));
 		assertThat(ctx.platformStatus(), instanceOf(ContextPlatformStatus.class));
 		assertThat(ctx.contractAnswers(), instanceOf(ContractAnswers.class));
-		assertThat(ctx.tokenStore(), instanceOf(BaseTokenStore.class));
+		assertThat(ctx.tokenStore(), instanceOf(TokenStore.class));
 		assertThat(ctx.globalDynamicProperties(), instanceOf(GlobalDynamicProperties.class));
 		assertThat(ctx.tokenGrpc(), instanceOf(TokenController.class));
 		assertThat(ctx.scheduleGrpc(), instanceOf(ScheduleController.class));
