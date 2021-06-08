@@ -23,6 +23,9 @@ package com.hedera.services.state.expiry;
 
 import com.google.common.base.MoreObjects;
 
+/**
+ * Expiry event with the id and expiration time
+ */
 public class ExpiryEvent<K> implements Comparable<ExpiryEvent> {
 	private final K id;
 	private final long expiry;

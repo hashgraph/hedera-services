@@ -22,6 +22,9 @@ package com.hedera.services.state.expiry;
 
 import java.util.PriorityQueue;
 
+/**
+ * Priority Queue of expiration events in which events are ordered based on expiry
+ */
 public class PriorityQueueExpiries<K> implements KeyedExpirations<K> {
 	private long now = 0L;
 	private PriorityQueue<ExpiryEvent<K>> allExpiries = new PriorityQueue<>();
