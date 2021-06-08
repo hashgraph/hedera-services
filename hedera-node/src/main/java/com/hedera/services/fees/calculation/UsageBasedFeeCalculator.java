@@ -25,7 +25,7 @@ import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.utils.AccessorBasedUsages;
-import com.hedera.services.fees.calculation.utils.BigIntegerFallbackCalc;
+import com.hedera.services.fees.calculation.utils.OverflowCheckingCalc;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.usage.SigUsage;
@@ -79,7 +79,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	private final FeeMultiplierSource feeMultiplierSource;
 	private final UsagePricesProvider usagePrices;
 	private final AccessorBasedUsages accessorBasedUsages;
-	private final BigIntegerFallbackCalc calculator;
+	private final OverflowCheckingCalc calculator;
 	private final List<QueryResourceUsageEstimator> queryUsageEstimators;
 	private final Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators;
 
@@ -89,7 +89,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 			UsagePricesProvider usagePrices,
 			AccessorBasedUsages accessorBasedUsages,
 			FeeMultiplierSource feeMultiplierSource,
-			BigIntegerFallbackCalc calculator,
+			OverflowCheckingCalc calculator,
 			List<QueryResourceUsageEstimator> queryUsageEstimators,
 			Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators
 	) {

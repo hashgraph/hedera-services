@@ -102,7 +102,7 @@ import com.hedera.services.fees.calculation.token.txns.TokenRevokeKycResourceUsa
 import com.hedera.services.fees.calculation.token.txns.TokenUnfreezeResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
-import com.hedera.services.fees.calculation.utils.BigIntegerFallbackCalc;
+import com.hedera.services.fees.calculation.utils.OverflowCheckingCalc;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.fees.charging.NarratedLedgerCharging;
 import com.hedera.services.fees.charging.FeeChargingPolicy;
@@ -973,7 +973,7 @@ public class ServicesContext {
 					usagePrices(),
 					accessorBasedUsages(),
 					feeMultiplierSource(),
-					new BigIntegerFallbackCalc(),
+					new OverflowCheckingCalc(),
 					List.of(
 							/* Meta */
 							new GetVersionInfoResourceUsage(),

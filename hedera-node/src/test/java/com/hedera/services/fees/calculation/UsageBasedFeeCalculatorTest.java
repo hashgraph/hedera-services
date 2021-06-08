@@ -24,7 +24,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.utils.AccessorBasedUsages;
-import com.hedera.services.fees.calculation.utils.BigIntegerFallbackCalc;
+import com.hedera.services.fees.calculation.utils.OverflowCheckingCalc;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.usage.state.UsageAccumulator;
@@ -107,7 +107,7 @@ public class UsageBasedFeeCalculatorTest {
 	private HbarCentExchange exchange;
 	private UsagePricesProvider usagePrices;
 	private AccessorBasedUsages accessorBasedUsages;
-	private BigIntegerFallbackCalc calculator;
+	private OverflowCheckingCalc calculator;
 	private TxnResourceUsageEstimator correctOpEstimator;
 	private TxnResourceUsageEstimator incorrectOpEstimator;
 	private QueryResourceUsageEstimator correctQueryEstimator;
@@ -148,7 +148,7 @@ public class UsageBasedFeeCalculatorTest {
 		correctQueryEstimator = mock(QueryResourceUsageEstimator.class);
 		incorrectQueryEstimator = mock(QueryResourceUsageEstimator.class);
 		autoRenewCalcs = mock(AutoRenewCalcs.class);
-		calculator = mock(BigIntegerFallbackCalc.class);
+		calculator = mock(OverflowCheckingCalc.class);
 
 		txnUsageEstimators = (Function<HederaFunctionality, List<TxnResourceUsageEstimator>>) mock(Function.class);
 
