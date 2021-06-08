@@ -3,9 +3,17 @@ package com.hedera.services.state.merkle.virtual.persistence;
 import com.hedera.services.state.merkle.virtual.VirtualKey;
 import com.hedera.services.state.merkle.virtual.VirtualValue;
 import com.swirlds.common.crypto.CryptoFactory;
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 
+import java.security.MessageDigest;
+import java.util.Arrays;
 import java.util.Objects;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  */
@@ -13,7 +21,7 @@ public final class VirtualRecord {
     private static final Hash NULL_HASH = CryptoFactory.getInstance().getNullHash();
 
     private long path;
-    private Hash hash;
+    private Future<Hash> hash;
     private final VirtualKey key;
     private VirtualValue value;
     private boolean dirty = false;
@@ -27,7 +35,7 @@ public final class VirtualRecord {
      * @param value The value. May be null.
      */
     public VirtualRecord(Hash hash, long path, VirtualKey key, VirtualValue value) {
-        this.hash = Objects.requireNonNull(hash);
+        this.hash = new ImmutableFuture<>(Objects.requireNonNull(hash));
         this.path = path;
         this.key = Objects.requireNonNull(key);
         this.value = value;
@@ -53,12 +61,17 @@ public final class VirtualRecord {
      * @return The non-null hash.
      */
     public Hash getHash() {
-        return hash;
+        try {
+            return hash.get();
+        } catch (InterruptedException | ExecutionException e) {
+            // TODO not sure what to do here.
+            e.printStackTrace();
+            return null;
+        }
     }
 
-    public void setHash(Hash hash) {
-        this.hash = hash;
-        this.dirty = true;
+    public Future<Hash> getFutureHash() {
+        return hash;
     }
 
     /**
@@ -82,15 +95,11 @@ public final class VirtualRecord {
     public void setValue(VirtualValue value) {
         this.value = value;
         this.dirty = true;
-    }
 
-    /**
-     * Gets whether this record represents a leaf node.
-     *
-     * @return Whether this record represents a leaf node. Checks whether the key is null.
-     */
-    public boolean isLeaf() {
-        return key != null;
+        // Create a background job to hash the darn thing.
+        this.hash = value == null ?
+                new ImmutableFuture<>(NULL_HASH) :
+                new ImmutableFuture<>(value.getHash());
     }
 
     public boolean isDirty() {

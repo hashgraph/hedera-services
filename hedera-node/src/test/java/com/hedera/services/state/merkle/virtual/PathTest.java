@@ -2,9 +2,12 @@ package com.hedera.services.state.merkle.virtual;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+
 import static com.hedera.services.state.merkle.virtual.VirtualTreePath.INVALID_PATH;
 import static com.hedera.services.state.merkle.virtual.VirtualTreePath.ROOT_PATH;
 import static com.hedera.services.state.merkle.virtual.VirtualTreePath.asPath;
+import static com.hedera.services.state.merkle.virtual.VirtualTreePath.compareTo;
 import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getIndexInRank;
 import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getLeftChildPath;
 import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getParentPath;
@@ -270,5 +273,43 @@ public class PathTest {
         assertTrue(isParentOf(asPath((byte)2, 0b010), asPath((byte)3, 0b101)));
         assertTrue(isParentOf(asPath((byte)2, 0b011), asPath((byte)3, 0b110)));
         assertTrue(isParentOf(asPath((byte)2, 0b011), asPath((byte)3, 0b111)));
+    }
+
+    @Test
+    public void comparisonTest() {
+        // Construct a nice list of ordered results. Then try all permutations and make sure
+        // they return the expected answers.
+        final var expected = Arrays.asList(
+                ROOT_PATH,
+                asPath((byte)1, 0b001),
+                asPath((byte)1, 0b000),
+                asPath((byte)2, 0b011),
+                asPath((byte)2, 0b010),
+                asPath((byte)2, 0b001),
+                asPath((byte)2, 0b000),
+                asPath((byte)3, 0b111),
+                asPath((byte)3, 0b110),
+                asPath((byte)3, 0b101),
+                asPath((byte)3, 0b100),
+                asPath((byte)3, 0b011),
+                asPath((byte)3, 0b010),
+                asPath((byte)3, 0b001),
+                asPath((byte)3, 0b000));
+
+        for (int i=0; i<expected.size(); i++) {
+            assertTrue(compareTo(expected.get(i), expected.get(i)) == 0);
+        }
+
+        for (int i=0; i<expected.size() - 1; i++) {
+            for (int j=i+1; j<expected.size(); j++) {
+                assertTrue(compareTo(expected.get(i), expected.get(j)) < 0);
+            }
+        }
+
+        for (int i=expected.size() - 1; i>1; i--) {
+            for (int j=0; j<i-1; j++) {
+                assertTrue(compareTo(expected.get(i), expected.get(j)) > 0);
+            }
+        }
     }
 }
