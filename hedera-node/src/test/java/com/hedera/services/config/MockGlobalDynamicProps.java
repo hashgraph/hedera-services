@@ -225,4 +225,9 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	public int feesMinCongestionPeriod() {
 		return minCongestionPeriod;
 	}
+
+	@Override
+	public long ratesMidnightCheckInterval() {
+		return 1L;
+	}
 }

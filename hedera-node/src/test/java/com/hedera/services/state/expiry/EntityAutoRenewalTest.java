@@ -105,7 +105,7 @@ class EntityAutoRenewalTest {
 		subject.execute(instantNow);
 
 		// then:
-		verify(networkCtx).resetAutoRenewSummaryCounts();
+		verify(networkCtx).clearAutoRenewSummaryCounts();
 	}
 
 	@Test
