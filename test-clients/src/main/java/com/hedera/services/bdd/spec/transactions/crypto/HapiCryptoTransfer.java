@@ -22,11 +22,14 @@ package com.hedera.services.bdd.spec.transactions.crypto;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
-import com.hedera.services.usage.crypto.CryptoTransferUsage;
+import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.crypto.CryptoTransferMeta;
+import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -282,10 +285,24 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 				numPayerKeys);
 	}
 
-	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo, int multiplier) {
-		return CryptoTransferUsage.newEstimate(txn, suFrom(svo))
-				.givenTokenMultiplier(multiplier)
-				.get();
+	public static FeeData usageEstimate(TransactionBody txn, SigValueObj svo, int multiplier) {
+		final var op = txn.getCryptoTransfer();
+
+		final var baseMeta = new BaseTransactionMeta(
+				txn.getMemoBytes().size(),
+				op.getTransfers().getAccountAmountsCount());
+
+		int numTokensInvolved = 0, numTokenTransfers = 0;
+		for (var tokenTransfers : op.getTokenTransfersList()) {
+			numTokensInvolved++;
+			numTokenTransfers += tokenTransfers.getTransfersCount();
+		}
+		final var xferMeta = new CryptoTransferMeta(multiplier, numTokensInvolved, numTokenTransfers);
+
+		final var into = new UsageAccumulator();
+		cryptoOpsUsage.cryptoTransferUsage(suFrom(svo), xferMeta, baseMeta, into);
+
+		return AdapterUtils.feeDataFrom(into);
 	}
 
 	@Override

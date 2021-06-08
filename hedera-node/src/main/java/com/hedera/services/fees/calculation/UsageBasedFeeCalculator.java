@@ -20,12 +20,12 @@ package com.hedera.services.fees.calculation;
  * ‍
  */
 
+import com.hedera.services.calc.OverflowCheckingCalc;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.utils.AccessorBasedUsages;
-import com.hedera.services.fees.calculation.utils.OverflowCheckingCalc;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.usage.SigUsage;

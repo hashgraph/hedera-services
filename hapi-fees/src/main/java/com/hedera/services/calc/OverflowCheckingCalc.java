@@ -1,4 +1,4 @@
-package com.hedera.services.fees.calculation.utils;
+package com.hedera.services.calc;
 
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
