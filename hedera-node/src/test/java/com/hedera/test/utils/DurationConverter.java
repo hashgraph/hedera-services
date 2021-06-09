@@ -31,9 +31,7 @@ public class DurationConverter implements ArgumentConverter {
         if (null == input) {
             return null;
         }
-        if (!(input instanceof String)) {
-            throw new ArgumentConversionException(input + " is not a string");
-        }
+        ConverterUtils.checkIfInputString(input);
         return Duration.newBuilder().setSeconds(Long.parseLong((String) input)).build();
     }
 }

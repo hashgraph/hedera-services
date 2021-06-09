@@ -33,11 +33,8 @@ public final class InstantConverter implements ArgumentConverter {
 		if (null == input) {
 			return null;
 		}
-		if (!(input instanceof String)) {
-			throw new ArgumentConversionException(input + " is not a string");
-		}
-		var inputString = (String) input;
-		var l = Long.valueOf(inputString);
+		ConverterUtils.checkIfInputString(input);
+		var l = Long.valueOf((String) input);
 		return Instant.ofEpochSecond(l / 1_000_000_000L, (int) (l % 1_000_000_000L));
 	}
 }

@@ -34,12 +34,9 @@ public class Ed25519KeyConverter implements ArgumentConverter {
         if (null == input) {
             return null;
         }
-        if (!(input instanceof String)) {
-            throw new ArgumentConversionException(input + " is not a string");
-        }
-        var inputString = (String) input;
+        ConverterUtils.checkIfInputString(input);
         try {
-            return JKey.mapJKey(new JEd25519Key(CommonUtils.unhex(inputString)));
+            return JKey.mapJKey(new JEd25519Key(CommonUtils.unhex((String) input)));
         } catch (Exception e) {
             throw new IllegalArgumentException(e);
         }

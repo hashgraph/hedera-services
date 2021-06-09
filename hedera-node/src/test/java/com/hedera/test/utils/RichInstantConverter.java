@@ -36,9 +36,7 @@ public final class RichInstantConverter implements ArgumentConverter {
 		if (null == input) {
 			return null;
 		}
-		if (!(input instanceof String)) {
-			throw new ArgumentConversionException(input + " is not a string");
-		}
+		ConverterUtils.checkIfInputString(input);
 		String[] splits = Strings.split((String) input, '_');
 		return new RichInstant(Long.parseLong(splits[0]), Integer.parseInt(splits[1]));
 	}
