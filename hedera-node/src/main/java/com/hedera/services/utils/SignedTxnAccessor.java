@@ -23,6 +23,7 @@ package com.hedera.services.utils;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -41,6 +42,7 @@ import java.util.function.Function;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.utils.MiscUtils.functionOf;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 
@@ -65,8 +67,9 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private TransactionID txnId;
 	private TransactionBody txn;
 	private HederaFunctionality function;
-	private BaseTransactionMeta txnUsageMeta;
+	private SubmitMessageMeta submitMessageMeta;
 	private CryptoTransferMeta xferUsageMeta;
+	private BaseTransactionMeta txnUsageMeta;
 
 	static Function<TransactionBody, HederaFunctionality> functionExtractor = txn -> {
 		try {
@@ -113,6 +116,8 @@ public class SignedTxnAccessor implements TxnAccessor {
 		setTxnUsageMeta();
 		if (function == CryptoTransfer) {
 			setXferUsageMeta();
+		} else if (function == ConsensusSubmitMessage) {
+			setSubmitUsageMeta();
 		}
 	}
 
@@ -226,6 +231,14 @@ public class SignedTxnAccessor implements TxnAccessor {
 		return xferUsageMeta;
 	}
 
+	@Override
+	public SubmitMessageMeta availSubmitUsageMeta() {
+		if (function != ConsensusSubmitMessage) {
+			throw new IllegalStateException("Cannot get ConsensusSubmitMessage metadata for a " + function + " accessor");
+		}
+		return submitMessageMeta;
+	}
+
 	private void setTxnUsageMeta() {
 		if (function == CryptoTransfer) {
 			txnUsageMeta = new BaseTransactionMeta(
@@ -245,5 +258,9 @@ public class SignedTxnAccessor implements TxnAccessor {
 			numTokenTransfers += tokenTransfers.getTransfersCount();
 		}
 		xferUsageMeta = new CryptoTransferMeta(1, numTokensInvolved, numTokenTransfers);
+	}
+
+	private void setSubmitUsageMeta() {
+		submitMessageMeta = new SubmitMessageMeta(txn.getConsensusSubmitMessage().getMessage().size());
 	}
 }

@@ -34,12 +34,12 @@ public class ConsensusOpsUsage {
 			SigUsage sigUsage,
 			SubmitMessageMeta submitMeta,
 			BaseTransactionMeta baseMeta,
-			UsageAccumulator into
+			UsageAccumulator accumulator
 	) {
-		into.resetForTransaction(baseMeta, sigUsage);
-		into.addBpt(BASIC_ENTITY_ID_SIZE + submitMeta.getNumMsgBytes());
+		accumulator.resetForTransaction(baseMeta, sigUsage);
+		accumulator.addBpt(BASIC_ENTITY_ID_SIZE + submitMeta.getNumMsgBytes());
 		/* SubmitMessage receipts include a sequence number and running hash */
 		final var extraReceiptBytes = LONG_SIZE + TX_HASH_SIZE;
-		into.addNetworkRbs(extraReceiptBytes * RECEIPT_STORAGE_TIME_SEC);
+		accumulator.addNetworkRbs(extraReceiptBytes * RECEIPT_STORAGE_TIME_SEC);
 	}
 }

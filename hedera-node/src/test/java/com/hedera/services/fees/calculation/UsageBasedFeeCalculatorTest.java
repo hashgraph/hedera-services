@@ -442,6 +442,7 @@ public class UsageBasedFeeCalculatorTest {
 		// and:
 		final var expectedFees = FeeBuilder.getFeeObject(currentPrices, resourceUsage, currentRate);
 
+		given(accessorBasedUsages.supports(CryptoTransfer)).willReturn(true);
 		given(exchange.rate(at)).willReturn(currentRate);
 		willAnswer(invocationOnMock -> {
 			final var usage = (UsageAccumulator)invocationOnMock.getArgument(2);
@@ -479,6 +480,7 @@ public class UsageBasedFeeCalculatorTest {
 		// and:
 		final var expectedFees = FeeBuilder.getFeeObject(currentPrices, resourceUsage, currentRate);
 
+		given(accessorBasedUsages.supports(CryptoTransfer)).willReturn(true);
 		given(exchange.activeRate()).willReturn(currentRate);
 		willAnswer(invocationOnMock -> {
 			final var usage = (UsageAccumulator)invocationOnMock.getArgument(2);

@@ -1,7 +1,28 @@
 package com.hedera.services.fees.calculation.utils;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.consensus.ConsensusOpsUsage;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.utils.TxnAccessor;
@@ -15,16 +36,20 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
 public class AccessorBasedUsages {
 	private static final EnumSet<HederaFunctionality> supportedOps = EnumSet.of(
 			CryptoTransfer,
-			ConsensusSubmitMessage);
+			ConsensusSubmitMessage
+	);
 
 	private final CryptoOpsUsage cryptoOpsUsage;
+	private final ConsensusOpsUsage consensusOpsUsage;
 	private final GlobalDynamicProperties dynamicProperties;
 
 	public AccessorBasedUsages(
 			CryptoOpsUsage cryptoOpsUsage,
+			ConsensusOpsUsage consensusOpsUsage,
 			GlobalDynamicProperties dynamicProperties
 	) {
 		this.cryptoOpsUsage = cryptoOpsUsage;
+		this.consensusOpsUsage = consensusOpsUsage;
 		this.dynamicProperties = dynamicProperties;
 	}
 
@@ -40,7 +65,12 @@ public class AccessorBasedUsages {
 			xferMeta.setTokenMultiplier(dynamicProperties.feesTokenTransferUsageMultiplier());
 			cryptoOpsUsage.cryptoTransferUsage(sigUsage, xferMeta, baseMeta, into);
 		} else if (function == ConsensusSubmitMessage) {
-			throw new AssertionError("Not implemented!");
+			final var submitMeta = accessor.availSubmitUsageMeta();
+			consensusOpsUsage.submitMessageUsage(sigUsage, submitMeta, baseMeta, into);
 		}
+	}
+
+	public boolean supports(HederaFunctionality function) {
+		return supportedOps.contains(function);
 	}
 }

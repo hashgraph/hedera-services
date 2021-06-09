@@ -57,7 +57,6 @@ import static com.hedera.services.keys.HederaKeyTraversal.numSimpleKeys;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAccountAutoRenew;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static com.hederahashgraph.fee.FeeBuilder.getFeeObject;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
@@ -228,7 +227,8 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 			ExchangeRate rate,
 			boolean inHandle
 	) {
-		if (accessor.getFunction() == CryptoTransfer) {
+		final var function = accessor.getFunction();
+		if (accessorBasedUsages.supports(function)) {
 			final var sigs = new SigUsage(accessor.numSigPairs(), accessor.sigMapSize(), numSimpleKeys(payerKey));
 			final var usage = inHandle ? inHandleUsage : new UsageAccumulator();
 

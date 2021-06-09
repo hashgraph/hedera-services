@@ -306,6 +306,7 @@ import com.hedera.services.txns.token.TokenUpdateTransitionLogic;
 import com.hedera.services.txns.token.TokenWipeTransitionLogic;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.usage.consensus.ConsensusOpsUsage;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.usage.schedule.ScheduleOpsUsage;
@@ -1712,7 +1713,10 @@ public class ServicesContext {
 
 	public AccessorBasedUsages accessorBasedUsages() {
 		if (accessorBasedUsages == null) {
-			accessorBasedUsages = new AccessorBasedUsages(new CryptoOpsUsage(), globalDynamicProperties());
+			accessorBasedUsages = new AccessorBasedUsages(
+					new CryptoOpsUsage(),
+					new ConsensusOpsUsage(),
+					globalDynamicProperties());
 		}
 		return accessorBasedUsages;
 	}

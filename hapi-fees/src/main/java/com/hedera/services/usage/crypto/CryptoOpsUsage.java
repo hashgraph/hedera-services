@@ -53,9 +53,9 @@ public class CryptoOpsUsage {
 			SigUsage sigUsage,
 			CryptoTransferMeta xferMeta,
 			BaseTransactionMeta baseMeta,
-			UsageAccumulator into
+			UsageAccumulator accumulator
 	) {
-		into.resetForTransaction(baseMeta, sigUsage);
+		accumulator.resetForTransaction(baseMeta, sigUsage);
 
 		final int numXfers = baseMeta.getNumExplicitTransfers();
 		final int numTokenXfers = xferMeta.getNumTokenTransfers();
@@ -66,11 +66,11 @@ public class CryptoOpsUsage {
 		final int weightedTokenXfers = tokenMultiplier * numTokenXfers;
 		long incBpt = weightedTokensInvolved * BASIC_ENTITY_ID_SIZE;
 		incBpt += (weightedTokenXfers + numXfers) * USAGE_PROPERTIES.accountAmountBytes();
-		into.addBpt(incBpt);
+		accumulator.addBpt(incBpt);
 
 		long incRb = numXfers * USAGE_PROPERTIES.accountAmountBytes();
 		incRb += TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(weightedTokensInvolved, weightedTokenXfers);
-		into.addRbs(incRb * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+		accumulator.addRbs(incRb * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
 	public FeeData cryptoInfoUsage(Query cryptoInfoReq, ExtantCryptoContext ctx) {

@@ -25,6 +25,7 @@ import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -49,9 +50,12 @@ import java.util.List;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.mock;
 
 class SignedTxnAccessorTest {
 	private final String memo = "Eternal sunshine of the spotless mind";
@@ -67,6 +71,26 @@ class SignedTxnAccessorTest {
 					.setPubKeyPrefix(ByteString.copyFromUtf8("s"))
 					.setEd25519(ByteString.copyFromUtf8("econd")))
 			.build();
+
+	@Test
+	void unsupportedOpsThrowByDefault() {
+		// setup:
+		final var subject = mock(TxnAccessor.class);
+
+		// given:
+		doCallRealMethod().when(subject).setSigMeta(any());
+		doCallRealMethod().when(subject).getSigMeta();
+		doCallRealMethod().when(subject).baseUsageMeta();
+		doCallRealMethod().when(subject).availXferUsageMeta();
+		doCallRealMethod().when(subject).availSubmitUsageMeta();
+
+		// expect:
+		assertThrows(UnsupportedOperationException.class, subject::getSigMeta);
+		assertThrows(UnsupportedOperationException.class, subject::baseUsageMeta);
+		assertThrows(UnsupportedOperationException.class, subject::availXferUsageMeta);
+		assertThrows(UnsupportedOperationException.class, subject::availSubmitUsageMeta);
+		assertThrows(UnsupportedOperationException.class, () -> subject.setSigMeta(null));
+	}
 
 	@Test
 	void uncheckedPropagatesIaeOnNonsense() {
@@ -139,7 +163,7 @@ class SignedTxnAccessorTest {
 	}
 
 	@Test
-	void rejectsRequestForXferMetaIfNotXfer() {
+	void rejectsRequestForMetaIfNotAvail() {
 		// setup:
 		final var txn = Transaction.newBuilder()
 				.setBodyBytes(TransactionBody.newBuilder()
@@ -150,8 +174,30 @@ class SignedTxnAccessorTest {
 		// given:
 		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
 
-		// when:
+		// expect:
 		assertThrows(IllegalStateException.class, subject::availXferUsageMeta);
+		assertThrows(IllegalStateException.class, subject::availSubmitUsageMeta);
+	}
+
+	@Test
+	void understandsSubmitMessageMeta() {
+		// setup:
+		final var message = "And after, arranged it in a song";
+		final var txn = Transaction.newBuilder()
+				.setBodyBytes(TransactionBody.newBuilder()
+						.setConsensusSubmitMessage(ConsensusSubmitMessageTransactionBody.newBuilder()
+								.setMessage(ByteString.copyFromUtf8(message)))
+						.build().toByteString())
+				.build();
+
+		// given:
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		// when:
+		final var submitMeta = subject.availSubmitUsageMeta();
+
+		// then:
+		assertEquals(message.length(), submitMeta.getNumMsgBytes());
 	}
 
 	@Test
