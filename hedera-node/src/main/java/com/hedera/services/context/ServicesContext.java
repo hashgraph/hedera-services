@@ -58,7 +58,6 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.fees.calculation.consensus.queries.GetTopicInfoResourceUsage;
 import com.hedera.services.fees.calculation.consensus.txns.CreateTopicResourceUsage;
 import com.hedera.services.fees.calculation.consensus.txns.DeleteTopicResourceUsage;
-import com.hedera.services.fees.calculation.consensus.txns.SubmitMessageResourceUsage;
 import com.hedera.services.fees.calculation.consensus.txns.UpdateTopicResourceUsage;
 import com.hedera.services.fees.calculation.contract.queries.ContractCallLocalResourceUsage;
 import com.hedera.services.fees.calculation.contract.queries.GetBytecodeResourceUsage;
@@ -1033,7 +1032,6 @@ public class ServicesContext {
 				entry(ConsensusCreateTopic, List.of(new CreateTopicResourceUsage())),
 				entry(ConsensusUpdateTopic, List.of(new UpdateTopicResourceUsage())),
 				entry(ConsensusDeleteTopic, List.of(new DeleteTopicResourceUsage())),
-				entry(ConsensusSubmitMessage, List.of(new SubmitMessageResourceUsage())),
 				/* Token */
 				entry(TokenCreate, List.of(new TokenCreateResourceUsage())),
 				entry(TokenUpdate, List.of(new TokenUpdateResourceUsage())),

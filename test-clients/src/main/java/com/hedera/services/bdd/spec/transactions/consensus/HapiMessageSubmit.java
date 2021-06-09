@@ -24,9 +24,14 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.consensus.SubmitMessageMeta;
+import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -34,7 +39,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.hederahashgraph.fee.ConsensusServiceFeeBuilder;
+import com.hederahashgraph.fee.SigValueObj;
 
 import java.util.Collections;
 import java.util.List;
@@ -45,10 +50,10 @@ import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTopicId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransactionID;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 
 public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
-	private static long totalMsgSubmitted = 0;
 	private Optional<String> topic = Optional.empty();
 	private Optional<Function<HapiApiSpec, TopicID>> topicFn = Optional.empty();
 	private Optional<ByteString> message = Optional.empty();
@@ -82,12 +87,6 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
 
 	public Optional<ByteString> getMessage() {
 		return message;
-	}
-
-	public HapiMessageSubmit defaultName() {
-		totalMsgSubmitted++;
-		super.via("submitMessage" + totalMsgSubmitted);
-		return this;
 	}
 
 	public HapiMessageSubmit message(ByteString s) {
@@ -184,7 +183,18 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		return spec.fees().forActivityBasedOp(
-				ConsensusSubmitMessage, ConsensusServiceFeeBuilder::getConsensusSubmitMessageFee, txn, numPayerKeys);
+				ConsensusSubmitMessage, this::usageEstimate, txn, numPayerKeys);
+	}
+
+	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo)	{
+		final var op = txn.getConsensusSubmitMessage();
+		final var baseMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
+		final var submitMeta = new SubmitMessageMeta(op.getMessage().size());
+
+		final var accumulator = new UsageAccumulator();
+		consensusOpsUsage.submitMessageUsage(suFrom(svo), submitMeta, baseMeta, accumulator);
+
+		return AdapterUtils.feeDataFrom(accumulator);
 	}
 
 	@Override

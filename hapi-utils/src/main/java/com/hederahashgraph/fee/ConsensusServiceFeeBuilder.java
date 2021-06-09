@@ -21,10 +21,8 @@ package com.hederahashgraph.fee;
  */
 
 import com.google.common.base.Charsets;
-import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
-import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -161,27 +159,6 @@ public class ConsensusServiceFeeBuilder extends FeeBuilder {
             throw new InvalidTxBodyException("consensusDeleteTopic field not available for Fee Calculation");
         }
         return getTxFeeMatrices(txBody, sigValObj, BASIC_ENTITY_ID_SIZE, 0, 0);
-    }
-
-    /**
-     * Computes fee for ConsensusSubmitMessage transaction
-     * @throws InvalidTxBodyException
-     */
-    public static FeeData getConsensusSubmitMessageFee(TransactionBody txBody, SigValueObj sigValObj)
-            throws InvalidTxBodyException {
-        if (txBody == null || !txBody.hasConsensusSubmitMessage()) {
-            throw new InvalidTxBodyException("consensusSubmitMessage field not available for Fee Calculation");
-        }
-        ConsensusSubmitMessageTransactionBody submitMessageTxBody = txBody.getConsensusSubmitMessage();
-        int submitMessageTxBodySize = 3 * LONG_SIZE;  // for topicID
-        if (submitMessageTxBody.getMessage() != ByteString.EMPTY) {
-            submitMessageTxBodySize += submitMessageTxBody.getMessage().size();
-        }
-        return getTxFeeMatrices(
-                txBody, sigValObj,
-                submitMessageTxBodySize,
-                0,
-                (LONG_SIZE + TX_HASH_SIZE) * RECEIPT_STORAGE_TIME_SEC);  // For topicSequenceNumber, topicRunningHash
     }
 
     /**
