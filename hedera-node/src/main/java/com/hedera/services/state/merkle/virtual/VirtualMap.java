@@ -46,21 +46,38 @@ import static com.hedera.services.state.merkle.virtual.VirtualTreePath.isFarRigh
 import static com.hedera.services.state.merkle.virtual.VirtualTreePath.isLeft;
 
 /**
- * A type of Merkle node that is also map-like and is designed for working with
- * data stored primarily off-heap, and pulled on-heap only as needed. It buffers
- * changes locally and flushes them to the storage on {@link #commit()}.
+ * A map-like Merkle node designed for working with huge numbers of key/value pairs stored primarily
+ * in off-heap memory mapped files and pulled on-heap only as needed. It buffers changes locally and
+ * flushes them to the storage on {@link #commit()}.
  *
- * <p>To achieve this, we have a "virtual" map. It does not implement any of the
- * java.util.* APIs because it is not necessary and would only add complexity and
- * overhead to the implementation. It implements a simple get and put method pair.
- * Access to the storage subsystem (typically, the filesystem) is implemented by
- * the {@link VirtualDataSource}. Because MerkleNodes must all implement
- * SerializableDet, and since SerializableDet implementations must have a no-arg
- * constructor, we cannot be certain that a VirtualMap always has a VirtualDataSource.
- * However, without one, it will not function, so please make sure the VirtualMap
- * is configured with a functioning VirtualDataSource before using it.</p>
+ * <p>The {@code VirtualMap} is created with a {@link VirtualDataSource}. The {@code VirtualDataSource} is
+ * used by the map to read/write data to/from disk. This interface has only one practical implementation
+ * in this code base, the {@link com.hedera.services.state.merkle.virtual.persistence.mmap.MemMapDataSource},
+ * which is backed by memory-mapped files. Several in-memory data source implementations exist for testing
+ * purposes. The API of the data source is closely tied to the needs of the {@code VirtualMap}. This was done
+ * intentionally to <strong>reduce temporary objects and misalignment of the API to enhance performance.</strong>.
+ * The {@code VirtualDataSource} exists as an implementation interface of the {@code VirtualMap} and is unsuited
+ * for generic use.</p>
  *
- * <p>This map <strong>does not accept null keys</strong> but does accept null values.</p>
+ * <p>The {@code VirtualMap} buffers changes in memory and only flushes them to the {@code VirtualDataSource} on
+ * {@link #commit()}. The commit should happen in a background thread and not as part of {@code handleTransaction}.
+ * This map <strong>does not accept null keys</strong> but does accept null values.</p>
+ *
+ * TODO: Right now the implementation will break if commit is called on a background thread. This needs to be fixed.
+ *
+ * <p>The {@code VirtualMap} is {@code FastCopyable} and should be used in a similar manner to any other normal
+ * Swirlds MerkleNode. The {@code VirtualMap} does have some runtime overhead, such as caches, which require
+ * size relative to the number of <strong>dirty leaves</strong> in the map, not relative to the number of values
+ * read or the number of items in the backing store. On {@code commit} these changes are flushed to disk and
+ * the caches are cleared. Thus, a node in the Merkle tree that had a VirtualMap has very little overhead when
+ * not in use, and very little overhead after commit, and reasonable overhead when in use for reasonable-sized
+ * changes.</p>
+ *
+ * TODO: The FastCopyable implementation needs to be improved. It should use FCHashMap for the cache.
+ * TODO: The implementation needs to be made to work with reconnect. There are serialization methods to attend to.
+ * TODO: The implementation needs to be integrated into the normal Merkle commit mechanism
+ * TODO: The implementation needs to prove out the integration of hashing with how the Merkle tree normally hashes.
+ * TODO: I'm not sure how the datasource can be serialized and restored, or how that works.
  */
 @ConstructableIgnored
 public final class VirtualMap
