@@ -194,11 +194,12 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 			}
 		}
 		if (newN != n) {
-			long[] newTokenIds = new long[newN * NUM_ID_PARTS];
-			for (int i = 0, j = 0; i < n; i++) {
+			final var newTokenIds = new long[newN * NUM_ID_PARTS];
+			var nextNewI = 0;
+			for (var i = 0; i < n; i++) {
 				var id = idAt(i);
 				if (!ids.contains(id)) {
-					set(newTokenIds, j++, id);
+					set(newTokenIds, nextNewI++, id);
 				}
 			}
 			tokenIds = newTokenIds;
