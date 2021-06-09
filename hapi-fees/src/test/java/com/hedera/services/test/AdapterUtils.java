@@ -23,10 +23,8 @@ package com.hedera.services.test;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
-import org.junit.jupiter.api.Test;
 
 import static com.hederahashgraph.fee.FeeBuilder.FEE_MATRICES_CONST;
-import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
 
 public class AdapterUtils {
 	public static FeeData feeDataFrom(UsageAccumulator usage) {
@@ -34,12 +32,12 @@ public class AdapterUtils {
 
 		var network = FeeComponents.newBuilder()
 				.setConstant(FEE_MATRICES_CONST)
-				.setBpt(usage.getNetworkBpt())
+				.setBpt(usage.getUniversalBpt())
 				.setVpt(usage.getNetworkVpt())
 				.setRbh(usage.getNetworkRbh());
 		var node = FeeComponents.newBuilder()
 				.setConstant(FEE_MATRICES_CONST)
-				.setBpt(usage.getNodeBpt())
+				.setBpt(usage.getUniversalBpt())
 				.setVpt(usage.getNodeVpt())
 				.setBpr(usage.getNodeBpr())
 				.setSbpr(usage.getNodeSbpr());

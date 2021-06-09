@@ -32,12 +32,12 @@ public class AdapterUtils {
 
 		var network = FeeComponents.newBuilder()
 				.setConstant(FEE_MATRICES_CONST)
-				.setBpt(usage.getNetworkBpt())
+				.setBpt(usage.getUniversalBpt())
 				.setVpt(usage.getNetworkVpt())
 				.setRbh(usage.getNetworkRbh());
 		var node = FeeComponents.newBuilder()
 				.setConstant(FEE_MATRICES_CONST)
-				.setBpt(usage.getNodeBpt())
+				.setBpt(usage.getUniversalBpt())
 				.setVpt(usage.getNodeVpt())
 				.setBpr(usage.getNodeBpr())
 				.setSbpr(usage.getNodeSbpr());

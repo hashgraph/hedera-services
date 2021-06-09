@@ -94,11 +94,13 @@ class SignedTxnAccessorTest {
 
 	@Test
 	void uncheckedPropagatesIaeOnNonsense() {
+		// setup:
+		final var nonsenseTxn = Transaction.newBuilder()
+				.setSignedTransactionBytes(ByteString.copyFromUtf8("NONSENSE"))
+				.build();
+
 		// expect:
-		Assertions.assertThrows(IllegalArgumentException.class,
-				() -> SignedTxnAccessor.uncheckedFrom(Transaction.newBuilder()
-						.setSignedTransactionBytes(ByteString.copyFromUtf8("NONSENSE"))
-						.build()));
+		Assertions.assertThrows(IllegalArgumentException.class, () -> SignedTxnAccessor.uncheckedFrom(nonsenseTxn));
 	}
 
 	@Test

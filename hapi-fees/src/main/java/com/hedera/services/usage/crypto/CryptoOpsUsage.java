@@ -46,6 +46,9 @@ import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
 public class CryptoOpsUsage {
+	private static final long longBasicEntityIdSize = (long)BASIC_ENTITY_ID_SIZE;
+	private static final long longAccountAmountBytes = (long)USAGE_PROPERTIES.accountAmountBytes();
+
 	static EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
 	static Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
 
@@ -64,11 +67,11 @@ public class CryptoOpsUsage {
 		final int weightedTokensInvolved = tokenMultiplier * numTokensInvolved;
 
 		final int weightedTokenXfers = tokenMultiplier * numTokenXfers;
-		long incBpt = weightedTokensInvolved * BASIC_ENTITY_ID_SIZE;
-		incBpt += (weightedTokenXfers + numXfers) * USAGE_PROPERTIES.accountAmountBytes();
+		long incBpt = weightedTokensInvolved * longBasicEntityIdSize;
+		incBpt += (weightedTokenXfers + numXfers) * longAccountAmountBytes;
 		accumulator.addBpt(incBpt);
 
-		long incRb = numXfers * USAGE_PROPERTIES.accountAmountBytes();
+		long incRb = numXfers * longAccountAmountBytes;
 		incRb += TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(weightedTokensInvolved, weightedTokenXfers);
 		accumulator.addRbs(incRb * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}

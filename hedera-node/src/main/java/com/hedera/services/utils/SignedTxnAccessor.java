@@ -250,8 +250,8 @@ public class SignedTxnAccessor implements TxnAccessor {
 	}
 
 	private void setXferUsageMeta() {
-		int numTokensInvolved = 0;
-		int numTokenTransfers = 0;
+		var numTokensInvolved = 0;
+		var numTokenTransfers = 0;
 		final var op = txn.getCryptoTransfer();
 		for (var tokenTransfers : op.getTokenTransfersList()) {
 			numTokensInvolved++;

@@ -30,6 +30,8 @@ import static com.hederahashgraph.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
 import static com.hederahashgraph.fee.FeeBuilder.TX_HASH_SIZE;
 
 public class ConsensusOpsUsage {
+	private static final long longBasicEntityIdSize = (long)BASIC_ENTITY_ID_SIZE;
+
 	public void submitMessageUsage(
 			SigUsage sigUsage,
 			SubmitMessageMeta submitMeta,
@@ -37,7 +39,7 @@ public class ConsensusOpsUsage {
 			UsageAccumulator accumulator
 	) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
-		accumulator.addBpt(BASIC_ENTITY_ID_SIZE + submitMeta.getNumMsgBytes());
+		accumulator.addBpt(longBasicEntityIdSize + submitMeta.getNumMsgBytes());
 		/* SubmitMessage receipts include a sequence number and running hash */
 		final var extraReceiptBytes = LONG_SIZE + TX_HASH_SIZE;
 		accumulator.addNetworkRbs(extraReceiptBytes * RECEIPT_STORAGE_TIME_SEC);

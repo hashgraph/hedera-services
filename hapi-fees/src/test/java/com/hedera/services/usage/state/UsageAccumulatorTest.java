@@ -61,13 +61,9 @@ class UsageAccumulatorTest {
 		subject.addNetworkRbs(8 * HRS_DIVISOR);
 
 		// then:
-		assertEquals(1, subject.getNetworkBpt());
+		assertEquals(1, subject.getUniversalBpt());
 		assertEquals(4, subject.getNetworkVpt());
 		assertEquals(8, subject.getNetworkRbh());
-		assertEquals(0, subject.getNetworkBpr());
-		assertEquals(0, subject.getNetworkSbpr());
-		assertEquals(0, subject.getNetworkGas());
-		assertEquals(0, subject.getNetworkSbh());
 	}
 
 	@Test
@@ -79,13 +75,10 @@ class UsageAccumulatorTest {
 		subject.addSbpr(3);
 
 		// then:
-		assertEquals(baseBpt + 1, subject.getNodeBpt());
+		assertEquals(baseBpt + 1, subject.getUniversalBpt());
 		assertEquals(baseBpr + 2, subject.getNodeBpr());
 		assertEquals(3, subject.getNodeSbpr());
 		assertEquals(sigUsage.numPayerKeys(), subject.getNodeVpt());
-		assertEquals(0, subject.getNodeGas());
-		assertEquals(0, subject.getNodeSbh());
-		assertEquals(0, subject.getNodeRbh());
 	}
 
 	@Test
@@ -95,12 +88,7 @@ class UsageAccumulatorTest {
 		subject.addSbs(7 * HRS_DIVISOR);
 
 		// then:
-		assertEquals(0, subject.getServiceBpt());
-		assertEquals(0, subject.getServiceVpt());
 		assertEquals(6, subject.getServiceRbh());
-		assertEquals(0, subject.getServiceBpr());
-		assertEquals(0, subject.getServiceSbpr());
-		assertEquals(0, subject.getServiceGas());
 		assertEquals(7, subject.getServiceSbh());
 	}
 

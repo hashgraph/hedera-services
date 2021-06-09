@@ -41,7 +41,7 @@ public class OverflowCheckingCalc {
 		final long serviceFee = tinycentsToTinybars(serviceFeeTinycents, rate) * multiplier;
 
 		if (networkFee < 0 || nodeFee < 0 || serviceFee < 0) {
-			throwOnNegativeContribution();
+			throw new IllegalArgumentException("All fee contributions and intermediate terms must be positive");
 		}
 
 		return new FeeObject(nodeFee, networkFee, serviceFee);
@@ -57,15 +57,16 @@ public class OverflowCheckingCalc {
 
 	private long networkFeeInTinycents(UsageAccumulator usage, FeeComponents networkPrices) {
 		final var nominal = safeAccumulateThree(networkPrices.getConstant(),
-				usage.getNetworkBpt() * networkPrices.getBpt(),
+				usage.getUniversalBpt() * networkPrices.getBpt(),
 				usage.getNetworkVpt() * networkPrices.getVpt(),
 				usage.getNetworkRbh() * networkPrices.getRbh());
 		return ESTIMATOR_UTILS.nonDegenerateDiv(nominal, FEE_DIVISOR_FACTOR);
 	}
 
+
 	private long nodeFeeInTinycents(UsageAccumulator usage, FeeComponents nodePrices) {
 		final var nominal = safeAccumulateFour(nodePrices.getConstant(),
-				usage.getNodeBpt() * nodePrices.getBpt(),
+				usage.getUniversalBpt() * nodePrices.getBpt(),
 				usage.getNodeBpr() * nodePrices.getBpr(),
 				usage.getNodeSbpr() * nodePrices.getSbpr(),
 				usage.getNodeVpt() * nodePrices.getVpt());
@@ -80,64 +81,43 @@ public class OverflowCheckingCalc {
 	}
 
 	/* These verbose accumulators signatures are to avoid any performance hit from varargs */
-	long safeAccumulateTwo(long base, long a, long b) {
-		if (base < 0 || a < 0 || b < 0) {
-			throwOnNegativeContribution();
+	long safeAccumulateFour(long base, long a, long b, long c, long d) {
+		if (base < 0 || a < 0 || b < 0 || c < 0 || d < 0) {
+			throw new IllegalArgumentException("All fee contributions and intermediate terms must be positive");
 		}
-		base += a;
-		if (base < 0) {
-			throwOnNegativeContribution();
+		var sum = safeAccumulateThree(base, a, b, c);
+		sum += d;
+		if (sum < 0) {
+			throw new IllegalArgumentException("All fee contributions and intermediate terms must be positive");
 		}
-		base += b;
-		if (base < 0) {
-			throwOnNegativeContribution();
-		}
-		return base;
+		return sum;
 	}
 
 	long safeAccumulateThree(long base, long a, long b, long c) {
 		if (base < 0 || a < 0 || b < 0 || c < 0) {
-			throwOnNegativeContribution();
+			throw new IllegalArgumentException("All fee contributions and intermediate terms must be positive");
+		}
+		var sum = safeAccumulateTwo(base, a, b);
+		sum += c;
+		if (sum < 0) {
+			throw new IllegalArgumentException("All fee contributions and intermediate terms must be positive");
+		}
+		return sum;
+	}
+
+	long safeAccumulateTwo(long base, long a, long b) {
+		if (base < 0 || a < 0 || b < 0) {
+			throw new IllegalArgumentException("All fee contributions and intermediate terms must be positive");
 		}
 		base += a;
 		if (base < 0) {
-			throwOnNegativeContribution();
+			throw new IllegalArgumentException("All fee contributions and intermediate terms must be positive");
 		}
 		base += b;
 		if (base < 0) {
-			throwOnNegativeContribution();
-		}
-		base += c;
-		if (base < 0) {
-			throwOnNegativeContribution();
+			throw new IllegalArgumentException("All fee contributions and intermediate terms must be positive");
 		}
 		return base;
 	}
 
-	long safeAccumulateFour(long base, long a, long b, long c, long d) {
-		if (base < 0 || a < 0 || b < 0 || c < 0 || d < 0) {
-			throwOnNegativeContribution();
-		}
-		base += a;
-		if (base < 0) {
-			throwOnNegativeContribution();
-		}
-		base += b;
-		if (base < 0) {
-			throwOnNegativeContribution();
-		}
-		base += c;
-		if (base < 0) {
-			throwOnNegativeContribution();
-		}
-		base += d;
-		if (base < 0) {
-			throwOnNegativeContribution();
-		}
-		return base;
-	}
-
-	private void throwOnNegativeContribution() {
-		throw new IllegalArgumentException("All fee contributions and intermediate terms must be positive");
-	}
 }

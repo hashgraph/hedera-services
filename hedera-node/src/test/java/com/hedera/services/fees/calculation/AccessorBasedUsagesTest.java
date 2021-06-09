@@ -66,11 +66,13 @@ class AccessorBasedUsagesTest {
 
 	@Test
 	void throwsIfNotSupported() {
+		// setup:
+		final var accumulator = new UsageAccumulator();
+
 		given(txnAccessor.getFunction()).willReturn(CryptoCreate);
 
 		// expect:
-		assertThrows(IllegalArgumentException.class, () ->
-				subject.assess(sigUsage, txnAccessor, new UsageAccumulator()));
+		assertThrows(IllegalArgumentException.class, () -> subject.assess(sigUsage, txnAccessor, accumulator));
 	}
 
 	@Test

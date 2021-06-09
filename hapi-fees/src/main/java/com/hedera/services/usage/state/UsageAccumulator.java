@@ -21,8 +21,8 @@ package com.hedera.services.usage.state;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.SigUsage;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ACCOUNT_AMT_SIZE;
@@ -64,6 +64,8 @@ import static com.hederahashgraph.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
  * </ol>
  */
 public class UsageAccumulator {
+	private static final long longBasicTxBodySize = (long)BASIC_TX_BODY_SIZE;
+
 	/* Captures how much signature verification work was done exclusively by the submitting node. */
 	private long numPayerKeys;
 
@@ -87,7 +89,7 @@ public class UsageAccumulator {
 
 		bpr = INT_SIZE;
 		vpt = sigUsage.numSigs();
-		bpt = BASIC_TX_BODY_SIZE + memoBytes + sigUsage.sigsSize();
+		bpt = longBasicTxBodySize + memoBytes + sigUsage.sigsSize();
 		rbs = RECEIPT_STORAGE_TIME_SEC * (BASIC_TX_RECORD_SIZE + memoBytes + BASIC_ACCOUNT_AMT_SIZE * numTransfers);
 
 		networkRbs = RECEIPT_STORAGE_TIME_SEC * BASIC_RECEIPT_SIZE;
@@ -128,40 +130,21 @@ public class UsageAccumulator {
 	}
 
 	/* Provider-scoped usage estimates (pure functions of the total resource usage) */
-	/* -- NETWORK -- */
-	public long getNetworkBpt() {
+	/* -- NETWORK & NODE -- */
+	public long getUniversalBpt() {
 		return bpt;
 	}
 
-	public long getNetworkBpr() {
-		return 0L;
-	}
-
-	public long getNetworkSbpr() {
-		return 0L;
-	}
-
+	/* -- NETWORK -- */
 	public long getNetworkVpt() {
 		return vpt;
-	}
-
-	public long getNetworkGas() {
-		return 0L;
 	}
 
 	public long getNetworkRbh() {
 		return ESTIMATOR_UTILS.nonDegenerateDiv(networkRbs, HRS_DIVISOR);
 	}
 
-	public long getNetworkSbh() {
-		return 0L;
-	}
-
 	/* -- NODE -- */
-	public long getNodeBpt() {
-		return bpt;
-	}
-
 	public long getNodeBpr() {
 		return bpr;
 	}
@@ -174,39 +157,7 @@ public class UsageAccumulator {
 		return numPayerKeys;
 	}
 
-	public long getNodeGas() {
-		return 0;
-	}
-
-	public long getNodeRbh() {
-		return 0;
-	}
-
-	public long getNodeSbh() {
-		return 0;
-	}
-
 	/* -- SERVICE -- */
-	public long getServiceBpt() {
-		return 0;
-	}
-
-	public long getServiceBpr() {
-		return 0;
-	}
-
-	public long getServiceSbpr() {
-		return 0;
-	}
-
-	public long getServiceVpt() {
-		return 0;
-	}
-
-	public long getServiceGas() {
-		return 0;
-	}
-
 	public long getServiceRbh() {
 		return ESTIMATOR_UTILS.nonDegenerateDiv(rbs, HRS_DIVISOR);
 	}
@@ -218,10 +169,9 @@ public class UsageAccumulator {
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(this)
-				.add("networkBpt", getNetworkBpt())
+				.add("universalBpt", getUniversalBpt())
 				.add("networkVpt", getNetworkVpt())
 				.add("networkRbh", getNetworkRbh())
-				.add("nodeBpt", getNodeBpt())
 				.add("nodeBpr", getNodeBpr())
 				.add("nodeSbpr", getNodeSbpr())
 				.add("nodeVpt", getNodeVpt())
