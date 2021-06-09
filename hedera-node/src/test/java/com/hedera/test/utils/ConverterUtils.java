@@ -22,7 +22,17 @@ package com.hedera.test.utils;
 
 import org.junit.jupiter.params.converter.ArgumentConversionException;
 
+/**
+ * Contians various common checks and methods used by the Converter classes
+ * @author abhishekpandey
+ * */
 public final class ConverterUtils {
+    /**
+     * Checks if the input to the converter is of type {@link String} else throws an {@link ArgumentConversionException}
+     * @param input
+     *              the input to the converter
+     * @throws ArgumentConversionException
+     * */
     public static void checkIfInputString(Object input)
             throws ArgumentConversionException {
         if (!(input instanceof String)) {
@@ -30,6 +40,17 @@ public final class ConverterUtils {
         }
     }
 
+    /**
+     * Returns an array of string from the input after performing split operation else throws an
+     * {@link ArgumentConversionException}
+     * @param inputString
+     *              the input to the converter
+     * @param limit
+     *              the limit to be applied for the split operation
+     * @param type
+     *             the string defining the type of input
+     * @throws ArgumentConversionException
+     * */
     public static String[] getPartsIfValid(String inputString, int limit, String type)
             throws ArgumentConversionException {
         var parts = inputString.split("\\.", limit);
