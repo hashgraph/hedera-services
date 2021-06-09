@@ -31,6 +31,8 @@ import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
 
 public class OverflowCheckingCalc {
+	private static final String POSITIVITY_ERROR = "All fee contributions and intermediate terms must be positive";
+
 	public FeeObject fees(UsageAccumulator usage, FeeData prices, ExchangeRate rate, long multiplier) {
 		final long networkFeeTinycents = networkFeeInTinycents(usage, prices.getNetworkdata());
 		final long nodeFeeTinycents = nodeFeeInTinycents(usage, prices.getNodedata());
@@ -41,7 +43,7 @@ public class OverflowCheckingCalc {
 		final long serviceFee = tinycentsToTinybars(serviceFeeTinycents, rate) * multiplier;
 
 		if (networkFee < 0 || nodeFee < 0 || serviceFee < 0) {
-			throw new IllegalArgumentException("All fee contributions and intermediate terms must be positive");
+			throw new IllegalArgumentException(POSITIVITY_ERROR);
 		}
 
 		return new FeeObject(nodeFee, networkFee, serviceFee);
@@ -63,7 +65,6 @@ public class OverflowCheckingCalc {
 		return ESTIMATOR_UTILS.nonDegenerateDiv(nominal, FEE_DIVISOR_FACTOR);
 	}
 
-
 	private long nodeFeeInTinycents(UsageAccumulator usage, FeeComponents nodePrices) {
 		final var nominal = safeAccumulateFour(nodePrices.getConstant(),
 				usage.getUniversalBpt() * nodePrices.getBpt(),
@@ -83,39 +84,39 @@ public class OverflowCheckingCalc {
 	/* These verbose accumulators signatures are to avoid any performance hit from varargs */
 	long safeAccumulateFour(long base, long a, long b, long c, long d) {
 		if (base < 0 || a < 0 || b < 0 || c < 0 || d < 0) {
-			throw new IllegalArgumentException("All fee contributions and intermediate terms must be positive");
+			throw new IllegalArgumentException(POSITIVITY_ERROR);
 		}
 		var sum = safeAccumulateThree(base, a, b, c);
 		sum += d;
 		if (sum < 0) {
-			throw new IllegalArgumentException("All fee contributions and intermediate terms must be positive");
+			throw new IllegalArgumentException(POSITIVITY_ERROR);
 		}
 		return sum;
 	}
 
 	long safeAccumulateThree(long base, long a, long b, long c) {
 		if (base < 0 || a < 0 || b < 0 || c < 0) {
-			throw new IllegalArgumentException("All fee contributions and intermediate terms must be positive");
+			throw new IllegalArgumentException(POSITIVITY_ERROR);
 		}
 		var sum = safeAccumulateTwo(base, a, b);
 		sum += c;
 		if (sum < 0) {
-			throw new IllegalArgumentException("All fee contributions and intermediate terms must be positive");
+			throw new IllegalArgumentException(POSITIVITY_ERROR);
 		}
 		return sum;
 	}
 
 	long safeAccumulateTwo(long base, long a, long b) {
 		if (base < 0 || a < 0 || b < 0) {
-			throw new IllegalArgumentException("All fee contributions and intermediate terms must be positive");
+			throw new IllegalArgumentException(POSITIVITY_ERROR);
 		}
 		base += a;
 		if (base < 0) {
-			throw new IllegalArgumentException("All fee contributions and intermediate terms must be positive");
+			throw new IllegalArgumentException(POSITIVITY_ERROR);
 		}
 		base += b;
 		if (base < 0) {
-			throw new IllegalArgumentException("All fee contributions and intermediate terms must be positive");
+			throw new IllegalArgumentException(POSITIVITY_ERROR);
 		}
 		return base;
 	}

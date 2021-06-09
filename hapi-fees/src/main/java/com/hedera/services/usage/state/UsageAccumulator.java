@@ -64,7 +64,7 @@ import static com.hederahashgraph.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
  * </ol>
  */
 public class UsageAccumulator {
-	private static final long longBasicTxBodySize = (long)BASIC_TX_BODY_SIZE;
+	private static final long LONG_BASIC_TX_BODY_SIZE = BASIC_TX_BODY_SIZE;
 
 	/* Captures how much signature verification work was done exclusively by the submitting node. */
 	private long numPayerKeys;
@@ -89,7 +89,7 @@ public class UsageAccumulator {
 
 		bpr = INT_SIZE;
 		vpt = sigUsage.numSigs();
-		bpt = longBasicTxBodySize + memoBytes + sigUsage.sigsSize();
+		bpt = LONG_BASIC_TX_BODY_SIZE + memoBytes + sigUsage.sigsSize();
 		rbs = RECEIPT_STORAGE_TIME_SEC * (BASIC_TX_RECORD_SIZE + memoBytes + BASIC_ACCOUNT_AMT_SIZE * numTransfers);
 
 		networkRbs = RECEIPT_STORAGE_TIME_SEC * BASIC_RECEIPT_SIZE;
