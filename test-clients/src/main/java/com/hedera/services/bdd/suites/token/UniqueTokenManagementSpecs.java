@@ -63,13 +63,13 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[]{
-						getTokenNftInfoWork(),
+						getTokenNftInfoWorks(),
 						uniqueTokenHappyPath(),
-						sadPathWithFrozenToken(),
-						sadPathWithDeletedToken(),
+						failsWithFrozenToken(),
+						failsWithDeletedToken(),
 						sadPathWithRepeatedMetadata(),
-						happyPathCallingMintOnceWithFiveMetadata(),
-						happyPathCallMintFiveTimesWithOneMetadata(),
+						happyPathWithBatchMetadata(),
+						happyPathMintMultipleWithIdenticalMetadata(),
 				}
 		);
 	}
@@ -119,7 +119,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec happyPathCallingMintOnceWithFiveMetadata() {
+	private HapiApiSpec happyPathWithBatchMetadata() {
 		return defaultHapiSpec("happyPathCallingMintOnceWithFiveMetadata")
 				.given(
 						newKeyNamed(SUPPLY_KEY),
@@ -164,7 +164,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec happyPathCallMintFiveTimesWithOneMetadata() {
+	private HapiApiSpec happyPathMintMultipleWithIdenticalMetadata() {
 		return defaultHapiSpec("happyPathCallMintFiveTimesWithOneMetadata")
 				.given(
 						newKeyNamed(SUPPLY_KEY),
@@ -220,7 +220,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec sadPathWithFrozenToken() {
+	private HapiApiSpec failsWithFrozenToken() {
 		return defaultHapiSpec("sadPathWithFrozenToken")
 				.given(
 						newKeyNamed(SUPPLY_KEY),
@@ -242,7 +242,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec sadPathWithDeletedToken() {
+	private HapiApiSpec failsWithDeletedToken() {
 		return defaultHapiSpec("sadPathWithDeletedToken").given(
 				newKeyNamed(SUPPLY_KEY),
 				newKeyNamed("adminKey"),
@@ -262,8 +262,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 		);
 	}
 
-	private HapiApiSpec getTokenNftInfoWork() {
-
+	private HapiApiSpec getTokenNftInfoWorks() {
 		return defaultHapiSpec("getTokenNftInfoWorks")
 				.given(
 						newKeyNamed(SUPPLY_KEY),
