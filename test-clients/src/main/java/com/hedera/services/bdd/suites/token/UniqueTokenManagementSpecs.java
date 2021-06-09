@@ -67,7 +67,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 						uniqueTokenHappyPath(),
 						failsWithFrozenToken(),
 						failsWithDeletedToken(),
-						sadPathWithRepeatedMetadata(),
+						failsWithRepeatedMetadata(),
 						happyPathWithBatchMetadata(),
 						happyPathMintMultipleWithIdenticalMetadata(),
 				}
@@ -120,7 +120,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec happyPathWithBatchMetadata() {
-		return defaultHapiSpec("happyPathCallingMintOnceWithFiveMetadata")
+		return defaultHapiSpec("happyPathWithBatchMetadata")
 				.given(
 						newKeyNamed(SUPPLY_KEY),
 						cryptoCreate(TOKEN_TREASURY),
@@ -165,7 +165,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec happyPathMintMultipleWithIdenticalMetadata() {
-		return defaultHapiSpec("happyPathCallMintFiveTimesWithOneMetadata")
+		return defaultHapiSpec("happyPathMintMultipleWithIdenticalMetadata")
 				.given(
 						newKeyNamed(SUPPLY_KEY),
 						cryptoCreate(TOKEN_TREASURY),
@@ -221,7 +221,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec failsWithFrozenToken() {
-		return defaultHapiSpec("sadPathWithFrozenToken")
+		return defaultHapiSpec("failsWithFrozenToken")
 				.given(
 						newKeyNamed(SUPPLY_KEY),
 						newKeyNamed("tokenFreezeKey"),
@@ -243,7 +243,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec failsWithDeletedToken() {
-		return defaultHapiSpec("sadPathWithDeletedToken").given(
+		return defaultHapiSpec("failsWithDeletedToken").given(
 				newKeyNamed(SUPPLY_KEY),
 				newKeyNamed("adminKey"),
 				cryptoCreate(TOKEN_TREASURY),
@@ -291,8 +291,8 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec sadPathWithRepeatedMetadata() {
-		return defaultHapiSpec("sadPathWithRepeatedMetadata")
+	private HapiApiSpec failsWithRepeatedMetadata() {
+		return defaultHapiSpec("failsWithRepeatedMetadata")
 				.given(
 						newKeyNamed(SUPPLY_KEY),
 						cryptoCreate(TOKEN_TREASURY),
