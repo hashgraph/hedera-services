@@ -148,4 +148,23 @@ class UsageAccumulatorTest {
 		assertEquals(7, subject.getSbs());
 		assertEquals(8, subject.getNetworkRbs());
 	}
+
+	@Test
+	void toStringWorks() {
+		final var desired = "UsageAccumulator{networkBpt=1, networkVpt=4, networkRbh=1, nodeBpt=1, nodeBpr=2, " +
+				"nodeSbpr=3, nodeVpt=0, serviceSbh=1, serviceRbh=1}";
+
+		// given:
+		subject.addBpt(1);
+		subject.addBpr(2);
+		subject.addSbpr(3);
+		subject.addVpt(4);
+		subject.addGas(5);
+		subject.addRbs(6);
+		subject.addSbs(7);
+		subject.addNetworkRbs(8);
+
+		// expect:
+		assertEquals(desired, subject.toString());
+	}
 }
