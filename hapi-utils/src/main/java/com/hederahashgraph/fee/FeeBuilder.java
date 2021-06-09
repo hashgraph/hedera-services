@@ -52,12 +52,9 @@ public class FeeBuilder {
   public static final long SOLIDITY_ADDRESS = 20;
   public static final int KEY_SIZE = 32;
   public static final int TX_HASH_SIZE = 48;
-  public static final int DEFAULT_PAYER_ACC_SIG_COUNT = 0;
   public static final long RECEIPT_STORAGE_TIME_SEC = 180;
   public static final int THRESHOLD_STORAGE_TIME_SEC = 90000;
-  public static final int DEFAULT_RBS_NETWORK = 0;
   public static final int FEE_DIVISOR_FACTOR = 1000;
-  public static final int SIGNATURE_SIZE = 64;
   public static final int HRS_DIVISOR = 3600;
   public static final int BASIC_ENTITY_ID_SIZE = (3 * LONG_SIZE);
   public static final long BASIC_RICH_INSTANT_SIZE = (1L * LONG_SIZE) + INT_SIZE;
@@ -129,8 +126,7 @@ public class FeeBuilder {
       ExchangeRate exchangeRate) {
 
     FeeObject feeObject = getFeeObject(feeCoefficients, componentMetrics,exchangeRate);
-    long totalFee = feeObject.getServiceFee() + feeObject.getNodeFee() + feeObject.getNetworkFee();
-    return totalFee;
+    return feeObject.getServiceFee() + feeObject.getNodeFee() + feeObject.getNetworkFee();
   }
 
   public static FeeObject getFeeObject(
@@ -192,15 +188,11 @@ public class FeeBuilder {
     if (key == Key.getDefaultInstance()) {
       return 0;
     }
-    int keyStorageSize = 0;
-    try {
-      int[] countKeyMetatData = {0, 0};
-      countKeyMetatData = calculateKeysMetadata(key, countKeyMetatData);
-      keyStorageSize = countKeyMetatData[0] * KEY_SIZE + countKeyMetatData[1] * INT_SIZE;
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    return keyStorageSize;
+
+    int[] countKeyMetatData = {0, 0};
+    countKeyMetatData = calculateKeysMetadata(key, countKeyMetatData);
+
+    return countKeyMetatData[0] * KEY_SIZE + countKeyMetatData[1] * INT_SIZE;
   }
 
   /**
@@ -209,14 +201,14 @@ public class FeeBuilder {
   public static int[] calculateKeysMetadata(Key key, int[] count) {
     if (key.hasKeyList()) {
       List<Key> keyList = key.getKeyList().getKeysList();
-      for (int i = 0; i < keyList.size(); i++) {
-        count = calculateKeysMetadata(keyList.get(i), count);
+      for (Key value : keyList) {
+        count = calculateKeysMetadata(value, count);
       }
     } else if (key.hasThresholdKey()) {
       List<Key> keyList = key.getThresholdKey().getKeys().getKeysList();
       count[1]++;
-      for (int i = 0; i < keyList.size(); i++) {
-        count = calculateKeysMetadata(keyList.get(i), count);
+      for (Key value : keyList) {
+        count = calculateKeysMetadata(value, count);
       }
     } else {
       count[0]++;
@@ -229,58 +221,20 @@ public class FeeBuilder {
    * Contract)
    */
   public static FeeData getCostForQueryByIDOnly() {
-
-    // get the Fee Matrices
-    long bpt = 0;
-    long vpt = 0;
-    long rbs = 0;
-    long sbs = 0;
-    long gas = 0;
-    long tv = 0;
-    long bpr = 0;
-    long sbpr = 0;
-
-    /*
-     * Query QueryHeader Transaction - CryptoTransfer - (will be taken care in Transaction
-     * processing) ResponseType - INT_SIZE ID - BASIC_ENTITY_ID_SIZE
-     *
-     */
-
-    bpt = (long) INT_SIZE + BASIC_ENTITY_ID_SIZE;
-
-    /*
-     * bpr = Response header NodeTransactionPrecheckCode - 4 bytes ResponseType - 4 bytes uint64
-     * cost - 8 bytes
-     */
-
-    bpr = BASIC_QUERY_RES_HEADER;
-    FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-        .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
-
     return FeeData.getDefaultInstance();
-  }
-
-
-  /**
-   * It returns the default Fee Matrices
-   */
-  public static FeeComponents getDefaultMatrices() {
-    FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(0).setVpt(0).setRbh(0)
-        .setSbh(0).setGas(0).setTv(0).setBpr(0).setSbpr(0).build();
-    return feeMatricesForTx;
   }
 
   public static int getSignatureCount(Transaction transaction) {
     try {
       return CommonUtils.extractSignatureMap(transaction).getSigPairCount();
-    } catch (InvalidProtocolBufferException ignoreToReturnZeroCount) { }
+    } catch (InvalidProtocolBufferException ignored) { }
     return 0;
   }
 
   public static int getSignatureSize(Transaction transaction) {
     try {
       return CommonUtils.extractSignatureMap(transaction).toByteArray().length;
-    } catch (InvalidProtocolBufferException ignoreToReturnZeroSize) { }
+    } catch (InvalidProtocolBufferException ignored) { }
     return 0;
   }
 
@@ -320,11 +274,8 @@ public class FeeBuilder {
         .setVpt(payerVpt)
         .setBpr(feeComponents.getBpr()).setSbpr(feeComponents.getSbpr()).build();
 
-    FeeData feeDataMatrices = FeeData.newBuilder().setNetworkdata(feeMatricesForTxNetwork)
+    return FeeData.newBuilder().setNetworkdata(feeMatricesForTxNetwork)
         .setNodedata(feeMatricesForTxNode).setServicedata(feeMatricesForTxService).build();
-
-    return feeDataMatrices;
-
   }
 
 
@@ -341,11 +292,8 @@ public class FeeBuilder {
         .setSbpr(feeComponents.getSbpr())
         .build();
 
-    FeeData feeDataMatrices = FeeData.newBuilder().setNetworkdata(feeMatricesForTxNetwork)
+    return FeeData.newBuilder().setNetworkdata(feeMatricesForTxNetwork)
         .setNodedata(feeMatricesForTxNode).setServicedata(feeMatricesForTxService).build();
-
-    return feeDataMatrices;
-
   }
 
   public static long getDefaultRBHNetworkSize() {
