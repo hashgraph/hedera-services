@@ -20,16 +20,13 @@ package com.hedera.services.fees.calculation;
  * ‍
  */
 
-import com.hedera.services.calc.OverflowCheckingCalc;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.calculation.utils.AccessorBasedUsages;
+import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -71,35 +68,30 @@ import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 public class UsageBasedFeeCalculator implements FeeCalculator {
 	private static final Logger log = LogManager.getLogger(UsageBasedFeeCalculator.class);
 
-	private final UsageAccumulator inHandleUsage = new UsageAccumulator();
-
 	private final AutoRenewCalcs autoRenewCalcs;
 	private final HbarCentExchange exchange;
 	private final FeeMultiplierSource feeMultiplierSource;
 	private final UsagePricesProvider usagePrices;
-	private final AccessorBasedUsages accessorBasedUsages;
-	private final OverflowCheckingCalc calculator;
 	private final List<QueryResourceUsageEstimator> queryUsageEstimators;
 	private final Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators;
+	private final PricedUsageCalculator pricedUsageCalculator;
 
 	public UsageBasedFeeCalculator(
 			AutoRenewCalcs autoRenewCalcs,
 			HbarCentExchange exchange,
 			UsagePricesProvider usagePrices,
-			AccessorBasedUsages accessorBasedUsages,
 			FeeMultiplierSource feeMultiplierSource,
-			OverflowCheckingCalc calculator,
+			PricedUsageCalculator pricedUsageCalculator,
 			List<QueryResourceUsageEstimator> queryUsageEstimators,
 			Function<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators
 	) {
 		this.exchange = exchange;
-		this.calculator = calculator;
 		this.usagePrices = usagePrices;
-		this.accessorBasedUsages = accessorBasedUsages;
 		this.feeMultiplierSource = feeMultiplierSource;
 		this.autoRenewCalcs = autoRenewCalcs;
-		this.queryUsageEstimators = queryUsageEstimators;
 		this.txnUsageEstimators = txnUsageEstimators;
+		this.queryUsageEstimators = queryUsageEstimators;
+		this.pricedUsageCalculator = pricedUsageCalculator;
 	}
 
 	@Override
@@ -228,13 +220,10 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 			boolean inHandle
 	) {
 		final var function = accessor.getFunction();
-		if (accessorBasedUsages.supports(function)) {
-			final var sigs = new SigUsage(accessor.numSigPairs(), accessor.sigMapSize(), numSimpleKeys(payerKey));
-			final var usage = inHandle ? inHandleUsage : new UsageAccumulator();
-
-			accessorBasedUsages.assess(sigs, accessor, usage);
-
-			return calculator.fees(usage, prices, rate, feeMultiplierSource.currentMultiplier());
+		if (pricedUsageCalculator.supports(function)) {
+			return inHandle
+					? pricedUsageCalculator.inHandleFees(accessor, prices, rate, payerKey)
+					: pricedUsageCalculator.extraHandleFees(accessor, prices, rate, payerKey);
 		} else {
 			var sigUsage = getSigUsage(accessor, payerKey);
 			var usageEstimator = getTxnUsageEstimator(accessor);
@@ -277,9 +266,5 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 
 	private SigValueObj getSigUsage(TxnAccessor accessor, JKey payerKey) {
 		return new SigValueObj(accessor.numSigPairs(), numSimpleKeys(payerKey), accessor.sigMapSize());
-	}
-
-	UsageAccumulator getInHandleUsage() {
-		return inHandleUsage;
 	}
 }

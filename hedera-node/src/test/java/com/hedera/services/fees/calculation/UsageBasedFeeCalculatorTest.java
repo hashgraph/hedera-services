@@ -20,11 +20,10 @@ package com.hedera.services.fees.calculation;
  * ‍
  */
 
-import com.hedera.services.calc.OverflowCheckingCalc;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.calculation.utils.AccessorBasedUsages;
+import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.usage.state.UsageAccumulator;
@@ -78,14 +77,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.longThat;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.BDDMockito.willThrow;
 
 public class UsageBasedFeeCalculatorTest {
@@ -106,8 +102,6 @@ public class UsageBasedFeeCalculatorTest {
 	private Timestamp at = Timestamp.newBuilder().setSeconds(1_234_567L).build();
 	private HbarCentExchange exchange;
 	private UsagePricesProvider usagePrices;
-	private AccessorBasedUsages accessorBasedUsages;
-	private OverflowCheckingCalc calculator;
 	private TxnResourceUsageEstimator correctOpEstimator;
 	private TxnResourceUsageEstimator incorrectOpEstimator;
 	private QueryResourceUsageEstimator correctQueryEstimator;
@@ -123,6 +117,7 @@ public class UsageBasedFeeCalculatorTest {
 	private Transaction signedTxn;
 	private SignedTxnAccessor accessor;
 	private AutoRenewCalcs autoRenewCalcs;
+	private PricedUsageCalculator pricedUsageCalculator;
 
 	private AtomicLong suggestedMultiplier = new AtomicLong(1L);
 
@@ -134,7 +129,6 @@ public class UsageBasedFeeCalculatorTest {
 		query = mock(Query.class);
 		payerKey = complexKey.asJKey();
 		exchange = mock(HbarCentExchange.class);
-		accessorBasedUsages = mock(AccessorBasedUsages.class);
 		signedTxn = newSignedCryptoCreate()
 				.balance(balance)
 				.payerKt(complexKey)
@@ -148,7 +142,7 @@ public class UsageBasedFeeCalculatorTest {
 		correctQueryEstimator = mock(QueryResourceUsageEstimator.class);
 		incorrectQueryEstimator = mock(QueryResourceUsageEstimator.class);
 		autoRenewCalcs = mock(AutoRenewCalcs.class);
-		calculator = mock(OverflowCheckingCalc.class);
+		pricedUsageCalculator = mock(PricedUsageCalculator.class);
 
 		txnUsageEstimators = (Function<HederaFunctionality, List<TxnResourceUsageEstimator>>) mock(Function.class);
 
@@ -156,9 +150,8 @@ public class UsageBasedFeeCalculatorTest {
 				autoRenewCalcs,
 				exchange,
 				usagePrices,
-				accessorBasedUsages,
 				new NestedMultiplierSource(),
-				calculator,
+				pricedUsageCalculator,
 				List.of(incorrectQueryEstimator, correctQueryEstimator),
 				txnUsageEstimators);
 	}
@@ -442,20 +435,15 @@ public class UsageBasedFeeCalculatorTest {
 		// and:
 		final var expectedFees = FeeBuilder.getFeeObject(currentPrices, resourceUsage, currentRate);
 
-		given(accessorBasedUsages.supports(CryptoTransfer)).willReturn(true);
+		given(pricedUsageCalculator.supports(CryptoTransfer)).willReturn(true);
 		given(exchange.rate(at)).willReturn(currentRate);
-		willAnswer(invocationOnMock -> {
-			final var usage = (UsageAccumulator)invocationOnMock.getArgument(2);
-			copyData(resourceUsage, usage);
-			return Void.TYPE;
-		}).given(accessorBasedUsages).assess(any(), any(), any());
 		given(usagePrices.pricesGiven(CryptoTransfer, at)).willReturn(currentPrices);
-		given(calculator.fees(
-				argThat(usage -> usage != subject.getInHandleUsage()),
-				eq(currentPrices),
-				eq(currentRate),
-				longThat(l -> l == 1L))
-		).willReturn(expectedFees);
+		given(pricedUsageCalculator.extraHandleFees(
+				accessor,
+				currentPrices,
+				currentRate,
+				payerKey
+		)).willReturn(expectedFees);
 
 		// when:
 		FeeObject fees = subject.estimateFee(accessor, payerKey, view, at);
@@ -480,15 +468,14 @@ public class UsageBasedFeeCalculatorTest {
 		// and:
 		final var expectedFees = FeeBuilder.getFeeObject(currentPrices, resourceUsage, currentRate);
 
-		given(accessorBasedUsages.supports(CryptoTransfer)).willReturn(true);
+		given(pricedUsageCalculator.supports(CryptoTransfer)).willReturn(true);
 		given(exchange.activeRate()).willReturn(currentRate);
-		willAnswer(invocationOnMock -> {
-			final var usage = (UsageAccumulator)invocationOnMock.getArgument(2);
-			copyData(resourceUsage, usage);
-			return Void.TYPE;
-		}).given(accessorBasedUsages).assess(any(), any(), any());
-		given(calculator.fees(subject.getInHandleUsage(), currentPrices, currentRate, 1L))
-				.willReturn(expectedFees);
+		given(pricedUsageCalculator.inHandleFees(
+				accessor,
+				currentPrices,
+				currentRate,
+				payerKey
+		)).willReturn(expectedFees);
 
 		// when:
 		FeeObject fees = subject.computeFee(accessor, payerKey, view);

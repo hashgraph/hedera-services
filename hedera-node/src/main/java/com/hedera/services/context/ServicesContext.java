@@ -101,6 +101,7 @@ import com.hedera.services.fees.calculation.token.txns.TokenUnfreezeResourceUsag
 import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
 import com.hedera.services.fees.calculation.utils.AccessorBasedUsages;
+import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.fees.charging.FeeChargingPolicy;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.fees.charging.NarratedLedgerCharging;
@@ -527,6 +528,7 @@ public class ServicesContext {
 	private LedgerAccountsSource accountSource;
 	private BackingAccounts backingAccounts;
 	private TransitionLogicLookup transitionLogic;
+	private PricedUsageCalculator pricedUsageCalculator;
 	private TransactionThrottling txnThrottling;
 	private ConsensusStatusCounts statusCounts;
 	private HfsSystemFilesManager systemFilesManager;
@@ -663,6 +665,16 @@ public class ServicesContext {
 			transactionPrecheck = new TransactionPrecheck(queryFeeCheck(), stagedChecks, platformStatus());
 		}
 		return transactionPrecheck;
+	}
+
+	public PricedUsageCalculator pricedUsageCalculator() {
+		if (pricedUsageCalculator == null) {
+			pricedUsageCalculator = new PricedUsageCalculator(
+					accessorBasedUsages(),
+					feeMultiplierSource(),
+					new OverflowCheckingCalc());
+		}
+		return pricedUsageCalculator;
 	}
 
 	public FeeMultiplierSource feeMultiplierSource() {
@@ -970,9 +982,8 @@ public class ServicesContext {
 					new AutoRenewCalcs(cryptoOpsUsage),
 					exchange(),
 					usagePrices(),
-					accessorBasedUsages(),
 					feeMultiplierSource(),
-					new OverflowCheckingCalc(),
+					pricedUsageCalculator(),
 					List.of(
 							/* Meta */
 							new GetVersionInfoResourceUsage(),
