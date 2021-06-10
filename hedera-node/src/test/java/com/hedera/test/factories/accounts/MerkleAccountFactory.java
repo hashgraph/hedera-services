@@ -42,6 +42,7 @@ public class MerkleAccountFactory {
 	private Optional<Long> senderThreshold = Optional.empty();
 	private Optional<Boolean> receiverSigRequired = Optional.empty();
 	private Optional<JKey> accountKeys = Optional.empty();
+	private Optional<Long> ownedNfts = Optional.empty();
 	private Optional<Long> autoRenewPeriod = Optional.empty();
 	private Optional<Boolean> deleted = Optional.empty();
 	private Optional<Long> expirationTime = Optional.empty();
@@ -61,6 +62,7 @@ public class MerkleAccountFactory {
 		autoRenewPeriod.ifPresent(d -> value.setAutoRenewSecs(d));
 		isSmartContract.ifPresent(b -> value.setSmartContract(b));
 		receiverSigRequired.ifPresent(b -> value.setReceiverSigRequired(b));
+		ownedNfts.ifPresent(o -> value.setNftsOwned(o));
 		var tokens = new MerkleAccountTokens();
 		tokens.associateAll(associatedTokens);
 		value.setTokens(tokens);
@@ -134,6 +136,10 @@ public class MerkleAccountFactory {
 	}
 	public MerkleAccountFactory isSmartContract(boolean b) {
 		isSmartContract = Optional.of(b);
+		return this;
+	}
+	public MerkleAccountFactory ownedNfts(long l) {
+		ownedNfts = Optional.of(l);
 		return this;
 	}
 }

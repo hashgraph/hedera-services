@@ -71,6 +71,7 @@ import static com.hedera.services.state.merkle.MerkleScheduleTest.scheduleCreate
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
+import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_ADMIN_KT;
@@ -108,6 +109,8 @@ class StateViewTest {
 	NftID nftId = asNftID("6.7.8", 1);
 	NftID missingNftId = asNftID("6.7.8", 2);
 	TokenID missingTokenId = asToken("3.4.5");
+	AccountID accountId = asAccount("0.0.777");
+	AccountID notAccountId = asAccount("0.0.8765");
 	AccountID payerAccountId = asAccount("9.9.9");
 	ScheduleID scheduleId = asSchedule("6.7.8");
 	ScheduleID missingScheduleId = asSchedule("7.8.9");
@@ -129,12 +132,14 @@ class StateViewTest {
 	Map<FileID, HFileMeta> attrs;
 	BiFunction<StateView, AccountID, List<TokenRelationship>> mockTokenRelsFn;
 
-	FCMap<MerkleEntityId, MerkleAccount> contracts;
+	FCMap<MerkleEntityId, MerkleAccount> accounts;
 	TokenStore tokenStore;
 	UniqueStore uniqueStore;
 	ScheduleStore scheduleStore;
 	TransactionBody parentScheduleCreate;
 
+	MerkleAccount account;
+	MerkleAccount notAccount;
 	MerkleToken token;
 	MerkleUniqueToken uniqueToken;
 	MerkleSchedule schedule;
@@ -184,9 +189,24 @@ class StateViewTest {
 				.deleted(true)
 				.expirationTime(9_999_999L)
 				.get();
-		contracts = (FCMap<MerkleEntityId, MerkleAccount>) mock(FCMap.class);
-		given(contracts.get(MerkleEntityId.fromContractId(cid))).willReturn(contract);
-		given(contracts.get(MerkleEntityId.fromContractId(notCid))).willReturn(notContract);
+
+		account = MerkleAccountFactory.newAccount()
+				.autoRenewPeriod(1_000_000L)
+				.balance(1_000)
+				.deleted(false)
+				.expirationTime(9_999_999L)
+				.isSmartContract(false)
+				.memo("Here is a memo")
+				.receiverSigRequired(true)
+				.ownedNfts(5L)
+				.get();
+
+		accounts = (FCMap<MerkleEntityId, MerkleAccount>) mock(FCMap.class);
+		given(accounts.get(MerkleEntityId.fromContractId(cid))).willReturn(contract);
+		given(accounts.get(MerkleEntityId.fromContractId(notCid))).willReturn(notContract);
+
+		given(accounts.get(MerkleEntityId.fromAccountId(accountId))).willReturn(account);
+		given(accounts.get(MerkleEntityId.fromAccountId(notAccountId))).willReturn(notAccount);
 
 		tokenStore = mock(TokenStore.class);
 		token = new MerkleToken(
@@ -252,7 +272,7 @@ class StateViewTest {
 				uniqueStore,
 				scheduleStore,
 				StateView.EMPTY_TOPICS_SUPPLIER,
-				() -> contracts,
+				() -> accounts,
 				nodeProps,
 				() -> diskFs);
 		subject.fileAttrs = attrs;
@@ -462,6 +482,33 @@ class StateViewTest {
 	}
 
 	@Test
+	public void getsAccountInfo() {
+		// when:
+		List<TokenRelationship> rels = List.of(
+				TokenRelationship.newBuilder()
+						.setTokenId(TokenID.newBuilder().setTokenNum(123L))
+						.setFreezeStatus(TokenFreezeStatus.FreezeNotApplicable)
+						.setKycStatus(TokenKycStatus.KycNotApplicable)
+						.setBalance(321L)
+						.build());
+		given(mockTokenRelsFn.apply(subject, accountId)).willReturn(rels);
+
+		// then:
+		var info = subject.infoForAccount(accountId).get();
+		assertEquals(accountId, info.getAccountID());
+		assertEquals(Duration.newBuilder().setSeconds(account.getAutoRenewSecs()).build(), info.getAutoRenewPeriod());
+		assertEquals(asKeyUnchecked(account.getKey()), info.getKey());
+		assertEquals(account.isReceiverSigRequired(), info.getReceiverSigRequired());
+		assertEquals(account.isDeleted(), info.getDeleted());
+		assertEquals(account.getMemo(), info.getMemo());
+		assertEquals(account.getBalance(), info.getBalance());
+		assertEquals(Timestamp.newBuilder().setSeconds(account.getExpiry()).build(), info.getExpirationTime());
+		assertEquals(asSolidityAddressHex(accountId), info.getContractAccountID());
+		assertEquals(account.getNftsOwned(), info.getOwnedNfts());
+		assertEquals(rels, info.getTokenRelationshipsList());
+	}
+
+	@Test
 	public void getsContractInfo() throws Exception {
 		// setup:
 		List<TokenRelationship> rels = List.of(
@@ -493,7 +540,7 @@ class StateViewTest {
 
 	@Test
 	public void returnsEmptyOptionalIfContractMissing() {
-		given(contracts.get(any())).willReturn(null);
+		given(accounts.get(any())).willReturn(null);
 
 		// expect:
 		assertTrue(subject.infoForContract(cid).isEmpty());
