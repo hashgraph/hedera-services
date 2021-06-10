@@ -22,6 +22,7 @@ package com.hedera.services.txns.validation;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -65,18 +66,21 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER
 public class ContextOptionValidator implements OptionValidator {
 	private static final Logger log = LogManager.getLogger(ContextOptionValidator.class);
 
+	private final long maxEntityLifetime;
 	private final AccountID nodeAccount;
 	private final TransactionContext txnCtx;
-	private final GlobalDynamicProperties properties;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	public ContextOptionValidator(
 			AccountID nodeAccount,
+			PropertySource properties,
 			TransactionContext txnCtx,
-			GlobalDynamicProperties properties
+			GlobalDynamicProperties dynamicProperties
 	) {
+		maxEntityLifetime = properties.getLongProperty("entities.maxLifetime");
 		this.txnCtx = txnCtx;
-		this.properties = properties;
 		this.nodeAccount = nodeAccount;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -96,20 +100,22 @@ public class ContextOptionValidator implements OptionValidator {
 
 	@Override
 	public boolean isValidTxnDuration(long duration) {
-		return duration >= properties.minTxnDuration() && duration <= properties.maxTxnDuration();
+		return duration >= dynamicProperties.minTxnDuration() && duration <= dynamicProperties.maxTxnDuration();
 	}
 
 	@Override
 	public boolean isValidExpiry(Timestamp expiry) {
-		Instant then = Instant.ofEpochSecond(expiry.getSeconds(), expiry.getNanos());
-		return then.isAfter(txnCtx.consensusTime());
+		final var consensusNow = txnCtx.consensusTime();
+		final var expiryGivenMaxLifetime = consensusNow.plusSeconds(maxEntityLifetime);
+		final var then = Instant.ofEpochSecond(expiry.getSeconds(), expiry.getNanos());
+		return then.isAfter(consensusNow) && then.isBefore(expiryGivenMaxLifetime);
 	}
 
 	@Override
 	public boolean isValidAutoRenewPeriod(Duration autoRenewPeriod) {
 		long duration = autoRenewPeriod.getSeconds();
 
-		if (duration < properties.minAutoRenewDuration() || duration > properties.maxAutoRenewDuration()) {
+		if (duration < dynamicProperties.minAutoRenewDuration() || duration > dynamicProperties.maxAutoRenewDuration()) {
 			return false;
 		}
 		return true;
@@ -117,7 +123,7 @@ public class ContextOptionValidator implements OptionValidator {
 
 	@Override
 	public boolean isAcceptableTransfersLength(TransferList accountAmounts) {
-		return accountAmounts.getAccountAmountsCount() <= properties.maxTransferListSize();
+		return accountAmounts.getAccountAmountsCount() <= dynamicProperties.maxTransferListSize();
 	}
 
 	@Override
@@ -127,7 +133,7 @@ public class ContextOptionValidator implements OptionValidator {
 			return OK;
 		}
 
-		int maxLen = properties.maxTokenTransferListSize();
+		int maxLen = dynamicProperties.maxTokenTransferListSize();
 
 		if (tokenTransferListsSize > maxLen) {
 			return TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
@@ -163,7 +169,7 @@ public class ContextOptionValidator implements OptionValidator {
 	public ResponseCodeEnum tokenSymbolCheck(String symbol) {
 		return tokenStringCheck(
 				symbol,
-				properties.maxTokenSymbolUtf8Bytes(),
+				dynamicProperties.maxTokenSymbolUtf8Bytes(),
 				MISSING_TOKEN_SYMBOL,
 				TOKEN_SYMBOL_TOO_LONG);
 	}
@@ -172,7 +178,7 @@ public class ContextOptionValidator implements OptionValidator {
 	public ResponseCodeEnum tokenNameCheck(String name) {
 		return tokenStringCheck(
 				name,
-				properties.maxTokenNameUtf8Bytes(),
+				dynamicProperties.maxTokenNameUtf8Bytes(),
 				MISSING_TOKEN_NAME,
 				TOKEN_NAME_TOO_LONG);
 	}
@@ -209,7 +215,7 @@ public class ContextOptionValidator implements OptionValidator {
 
 	@Override
 	public ResponseCodeEnum rawMemoCheck(byte[] utf8Cand, boolean hasZeroByte) {
-		if (utf8Cand.length > properties.maxMemoUtf8Bytes()) {
+		if (utf8Cand.length > dynamicProperties.maxMemoUtf8Bytes()) {
 			return MEMO_TOO_LONG;
 		} else if (hasZeroByte) {
 			return INVALID_ZERO_BYTE_IN_STRING;
