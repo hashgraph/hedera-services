@@ -47,7 +47,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	static final int RELEASE_08x_VERSION = 2;
 	static final int RELEASE_090_ALPHA_VERSION = 3;
 	static final int RELEASE_090_VERSION = 4;
-	static final int MERKLE_VERSION = RELEASE_090_VERSION;
+	static final int RELEASE_0150_VERSION = 5;
+	static final int MERKLE_VERSION = RELEASE_0150_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
 
 	static DomainSerdes serdes = new DomainSerdes();
@@ -58,6 +59,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private long expiry;
 	private long hbarBalance;
 	private long autoRenewSecs;
+	private long nftsOwned;
 	private String memo = DEFAULT_MEMO;
 	private boolean deleted;
 	private boolean smartContract;
@@ -119,6 +121,10 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			/* Releases v0.8.0 and v0.8.1 included token information in the account state. */
 			in.readLongArray(MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE);
 		}
+		if (version >= RELEASE_0150_VERSION) {
+			/* The number of nfts owned is being saved in the state after RELEASE_0150_VERSION */
+			nftsOwned = in.readLong();
+		}
 	}
 
 	@Override
@@ -132,11 +138,12 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		out.writeBoolean(smartContract);
 		out.writeBoolean(receiverSigRequired);
 		serdes.writeNullableSerializable(proxy, out);
+		out.writeLong(nftsOwned);
 	}
 
 	/* --- Copyable --- */
 	public MerkleAccountState copy() {
-		return new MerkleAccountState(
+		var copied = new MerkleAccountState(
 				key,
 				expiry,
 				hbarBalance,
@@ -146,6 +153,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				smartContract,
 				receiverSigRequired,
 				proxy);
+		copied.setNftsOwned(this.nftsOwned);
+		return copied;
 	}
 
 	@Override
@@ -162,6 +171,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		return this.expiry == that.expiry &&
 				this.hbarBalance == that.hbarBalance &&
 				this.autoRenewSecs == that.autoRenewSecs &&
+				this.nftsOwned == that.nftsOwned &&
 				Objects.equals(this.memo, that.memo) &&
 				this.deleted == that.deleted &&
 				this.smartContract == that.smartContract &&
@@ -181,7 +191,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				deleted,
 				smartContract,
 				receiverSigRequired,
-				proxy);
+				proxy,
+				nftsOwned);
 	}
 
 	/* --- Bean --- */
@@ -197,6 +208,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				.add("smartContract", smartContract)
 				.add("receiverSigRequired", receiverSigRequired)
 				.add("proxy", proxy)
+				.add("nftsOwned", nftsOwned)
 				.toString();
 	}
 
@@ -214,6 +226,10 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 
 	public long autoRenewSecs() {
 		return autoRenewSecs;
+	}
+
+	public long nftsOwned() {
+		return nftsOwned;
 	}
 
 	public String memo() {
@@ -246,6 +262,10 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 
 	public void setHbarBalance(long hbarBalance) {
 		this.hbarBalance = hbarBalance;
+	}
+
+	public void setNftsOwned(long nftsOwned) {
+		this.nftsOwned = nftsOwned;
 	}
 
 	public void setAutoRenewSecs(long autoRenewSecs) {
