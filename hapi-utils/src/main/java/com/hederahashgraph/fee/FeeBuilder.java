@@ -45,6 +45,7 @@ import java.util.List;
 
 
 public class FeeBuilder {
+  public static final long MAX_ENTITY_LIFETIME = 100L * 365L * 24L * 60L * 60L;
 
   public static final int LONG_SIZE = 8;
   public static final int FEE_MATRICES_CONST = 1;
