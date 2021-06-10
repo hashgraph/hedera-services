@@ -56,9 +56,11 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Setting;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -76,6 +78,7 @@ import java.text.ParseException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -98,6 +101,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.BYTES_4K;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransactionID;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.readableTransferList;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
@@ -441,15 +445,18 @@ public class UtilVerbs {
 
 	private static void reduceFeeComponentsFor(FeeSchedule.Builder feeSchedule, HederaFunctionality function,
 			long maxNodeFee, long maxNetworkFee, long maxServiceFee) {
-		var feeData = feeSchedule.getTransactionFeeScheduleBuilderList()
+		var feesList = feeSchedule.getTransactionFeeScheduleBuilderList()
 				.stream()
 				.filter(tfs -> tfs.getHederaFunctionality() == function)
 				.findAny()
 				.get()
-				.getFeeDataBuilder();
-		feeData.getNodedataBuilder().setMax(maxNodeFee);
-		feeData.getNetworkdataBuilder().setMax(maxNetworkFee);
-		feeData.getServicedataBuilder().setMax(maxServiceFee);
+				.getFeesBuilderList();
+
+		for (FeeData.Builder builder : feesList) {
+			builder.getNodedataBuilder().setMax(maxNodeFee);
+			builder.getNetworkdataBuilder().setMax(maxNetworkFee);
+			builder.getServicedataBuilder().setMax(maxServiceFee);
+		}
 	}
 
 	public static HapiSpecOperation uploadDefaultFeeSchedules(String payer) {

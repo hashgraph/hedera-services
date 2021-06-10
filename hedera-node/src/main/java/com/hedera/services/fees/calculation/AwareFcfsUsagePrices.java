@@ -29,6 +29,7 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
@@ -37,11 +38,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
 import static com.hedera.services.utils.EntityIdUtils.readableId;
-import static java.util.stream.Collectors.toMap;
 
 /**
  * Implements a {@link UsagePricesProvider} by loading the required
@@ -59,11 +60,11 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 			.setMax(DEFAULT_FEE)
 			.setConstant(0).setBpt(0).setVpt(0).setRbh(0).setSbh(0).setGas(0).setTv(0).setBpr(0).setSbpr(0)
 			.build();
-	public static final FeeData DEFAULT_USAGE_PRICES = FeeData.newBuilder()
+	public static final Map<SubType, FeeData> DEFAULT_USAGE_PRICES = Map.of(SubType.DEFAULT, FeeData.newBuilder()
 			.setNetworkdata(DEFAULT_RESOURCE_USAGE_PRICES)
 			.setNodedata(DEFAULT_RESOURCE_USAGE_PRICES)
 			.setServicedata(DEFAULT_RESOURCE_USAGE_PRICES)
-			.build();
+			.build());
 
 	private final HederaFs hfs;
 	private final FileNumbers fileNumbers;
@@ -74,8 +75,8 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 	Timestamp currFunctionUsagePricesExpiry;
 	Timestamp nextFunctionUsagePricesExpiry;
 
-	Map<HederaFunctionality, FeeData> currFunctionUsagePrices;
-	Map<HederaFunctionality, FeeData> nextFunctionUsagePrices;
+	Map<HederaFunctionality, Map<SubType, FeeData>> currFunctionUsagePrices;
+	Map<HederaFunctionality, Map<SubType, FeeData>> nextFunctionUsagePrices;
 
 	public AwareFcfsUsagePrices(HederaFs hfs, FileNumbers fileNumbers, TransactionContext txnCtx) {
 		this.hfs = hfs;
@@ -101,7 +102,18 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 	}
 
 	@Override
-	public FeeData activePrices() {
+	public FeeData defaultActivePrices() {
+		try {
+			var accessor = txnCtx.accessor();
+			return pricesGiven(accessor.getFunction(), accessor.getTxnId().getTransactionValidStart()).get(SubType.DEFAULT);
+		} catch (Exception e) {
+			log.warn("Using default usage prices to calculate fees for {}!", txnCtx.accessor().getSignedTxn4Log(), e);
+		}
+		return DEFAULT_USAGE_PRICES.get(SubType.DEFAULT);
+	}
+
+	@Override
+	public Map<SubType, FeeData> activePrices() {
 		try {
 			var accessor = txnCtx.accessor();
 			return pricesGiven(accessor.getFunction(), accessor.getTxnId().getTransactionValidStart());
@@ -112,10 +124,10 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 	}
 
 	@Override
-	public FeeData pricesGiven(HederaFunctionality function, Timestamp at) {
+	public Map<SubType, FeeData> pricesGiven(HederaFunctionality function, Timestamp at) {
 		try {
-			Map<HederaFunctionality, FeeData> functionUsagePrices = applicableUsagePrices(at);
-			FeeData usagePrices = functionUsagePrices.get(function);
+			Map<HederaFunctionality, Map<SubType, FeeData>> functionUsagePrices = applicableUsagePrices(at);
+			Map<SubType, FeeData> usagePrices = functionUsagePrices.get(function);
 			Objects.requireNonNull(usagePrices);
 			return usagePrices;
 		} catch (Exception e) {
@@ -127,7 +139,12 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 	}
 
 	@Override
-	public Triple<FeeData, Instant, FeeData> activePricingSequence(HederaFunctionality function) {
+	public FeeData defaultPricesGiven(HederaFunctionality function, Timestamp at) {
+		return pricesGiven(function, at).get(SubType.DEFAULT);
+	}
+
+	@Override
+	public Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> activePricingSequence(HederaFunctionality function) {
 		return Triple.of(
 				currFunctionUsagePrices.get(function),
 				Instant.ofEpochSecond(
@@ -136,7 +153,7 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 				nextFunctionUsagePrices.get(function));
 	}
 
-	private Map<HederaFunctionality, FeeData> applicableUsagePrices(Timestamp at) {
+	private Map<HederaFunctionality, Map<SubType, FeeData>> applicableUsagePrices(Timestamp at) {
 		if (onlyNextScheduleApplies(at)) {
 			return nextFunctionUsagePrices;
 		} else {
@@ -163,9 +180,18 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 		return Timestamp.newBuilder().setSeconds(ts.getSeconds()).build();
 	}
 
-	private Map<HederaFunctionality, FeeData> functionUsagePricesFrom(FeeSchedule feeSchedule) {
-		return feeSchedule.getTransactionFeeScheduleList()
-				.stream()
-				.collect(toMap(TransactionFeeSchedule::getHederaFunctionality, TransactionFeeSchedule::getFeeData));
+	private Map<HederaFunctionality, Map<SubType, FeeData>> functionUsagePricesFrom(FeeSchedule feeSchedule) {
+		Map<HederaFunctionality, Map<SubType, FeeData>> feeScheduleMap = new HashMap<>();
+		for (TransactionFeeSchedule transactionFeeSchedule : feeSchedule.getTransactionFeeScheduleList()) {
+			Map<SubType, FeeData> map = feeScheduleMap.get(transactionFeeSchedule.getHederaFunctionality());
+			if (map == null) {
+				map = new HashMap<>();
+			}
+			for (FeeData feeData : transactionFeeSchedule.getFeesList()) {
+				map.put(feeData.getSubType(), feeData);
+			}
+			feeScheduleMap.put(transactionFeeSchedule.getHederaFunctionality(), map);
+		}
+		return feeScheduleMap;
 	}
 }

@@ -34,7 +34,7 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.fee.FeeBuilder;
+import com.hederahashgraph.api.proto.java.SubType;
 import org.apache.commons.lang3.tuple.Triple;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
@@ -44,6 +44,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import javax.inject.Inject;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAccountAutoRenew;
@@ -58,7 +61,7 @@ class AutoRenewCalcsTest {
 	private final Instant preCutoff = Instant.ofEpochSecond(1_234_566L);
 	private final Instant cutoff = Instant.ofEpochSecond(1_234_567L);
 
-	private Triple<FeeData, Instant, FeeData> cryptoPrices;
+	private Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> cryptoPrices;
 	private MerkleAccount expiredAccount;
 	private final CryptoOpsUsage cryptoOpsUsage = new CryptoOpsUsage();
 	private final ExchangeRate activeRates = ExchangeRate.newBuilder()
@@ -182,7 +185,7 @@ class AutoRenewCalcsTest {
 		assertEquals(cryptoOpsUsage.cryptoAutoRenewRb(expectedCtx), subject.rbUsedBy(expiredAccount));
 	}
 
-	private Triple<FeeData, Instant, FeeData> frozenPricesFrom(
+	private Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> frozenPricesFrom(
 			String resource,
 			HederaFunctionality autoRenewFunction
 	) throws Exception {
@@ -191,11 +194,30 @@ class AutoRenewCalcsTest {
 				.filter(transactionFeeSchedule -> transactionFeeSchedule.getHederaFunctionality() == autoRenewFunction)
 				.findFirst()
 				.get()
-				.getFeeData();
-		var postPrices = prePrices.toBuilder()
-				.setServicedata(prePrices.getServicedata().toBuilder().setRbh(2 * prePrices.getServicedata().getRbh()))
-				.build();
-		return Triple.of(prePrices, cutoff, postPrices);
+				.getFeesList();
+		var prePricesMap = toSubTypeMap(prePrices);
+
+		var postPricesMap = toPostPrices(prePricesMap);
+		return Triple.of(prePricesMap, cutoff, postPricesMap);
+	}
+
+	private Map<SubType, FeeData> toSubTypeMap(List<FeeData> feesList) {
+		Map<SubType, FeeData> result = new HashMap<>();
+		for (FeeData feeData : feesList) {
+			result.put(feeData.getSubType(), feeData);
+		}
+		return result;
+	}
+
+	private Map<SubType, FeeData> toPostPrices(Map<SubType, FeeData> feeDataMap) {
+		var changeableMap = new HashMap<>(feeDataMap);
+		for (FeeData feeData : feeDataMap.values()) {
+			var postPrices = feeData.toBuilder()
+					.setServicedata(feeData.getServicedata().toBuilder().setRbh(2 * feeData.getServicedata().getRbh()))
+					.build();
+			changeableMap.put(postPrices.getSubType(), postPrices);
+		}
+		return changeableMap;
 	}
 
 	private void setupAccountWith(long balance) {

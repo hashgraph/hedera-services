@@ -20,14 +20,18 @@ package com.hedera.services.usage.token;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 
 public class TokenMintUsage extends TokenTxnUsage<TokenMintUsage> {
+	private SubType currentSubType;
+
 	private TokenMintUsage(TransactionBody tokenMintOp, TxnUsageEstimator usageEstimator) {
 		super(tokenMintOp, usageEstimator);
 	}
@@ -41,9 +45,28 @@ public class TokenMintUsage extends TokenTxnUsage<TokenMintUsage> {
 		return this;
 	}
 
+
+	public TokenMintUsage givenSubType(SubType subType) {
+		this.currentSubType = subType;
+		return this;
+	}
+
 	public FeeData get() {
+		var op = this.op.getTokenMint();
+
+		if (currentSubType == SubType.TOKEN_NON_FUNGIBLE_UNIQUE) {
+			var bytesToAdd = 0;
+			for (ByteString o : op.getMetadataList()) {
+				bytesToAdd += o.size();
+			}
+			usageEstimator.addBpt(bytesToAdd);
+			usageEstimator.addRbs(bytesToAdd);
+			var tokenSize = op.getMetadataList().size();
+			addUniqueTokenBaseRb(tokenSize);
+		} else if (currentSubType == SubType.TOKEN_FUNGIBLE_COMMON) {
+			addAmountBpt();
+		}
 		addEntityBpt();
-		addAmountBpt();
 		addTokenTransfersRecordRb(1, 1);
 		return usageEstimator.get();
 	}

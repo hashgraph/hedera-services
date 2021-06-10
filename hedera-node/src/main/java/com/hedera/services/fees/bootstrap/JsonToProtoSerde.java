@@ -26,6 +26,7 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 
@@ -46,7 +47,7 @@ public class JsonToProtoSerde {
 	private static String[] FEE_SCHEDULE_KEYS = { "currentFeeSchedule", "nextFeeSchedule" };
 	private static final String EXPIRY_TIME_KEY = "expiryTime";
 	private static final String TXN_FEE_SCHEDULE_KEY = "transactionFeeSchedule";
-	private static final String FEE_DATA_KEY = "feeData";
+	private static final String FEE_DATA_KEY = "fees";
 	private static final String HEDERA_FUNCTION_KEY = "hederaFunctionality";
 	private static final String[] FEE_COMPONENT_KEYS = { "nodedata", "networkdata", "servicedata" };
 	private static final String[] RESOURCE_KEYS =
@@ -98,7 +99,12 @@ public class JsonToProtoSerde {
 		TransactionFeeSchedule.Builder txnFeeSchedule = TransactionFeeSchedule.newBuilder();
 		var key = translateClaimFunction((String)rawTxnFeeSchedule.get(HEDERA_FUNCTION_KEY));
 		txnFeeSchedule.setHederaFunctionality(HederaFunctionality.valueOf(key));
-		txnFeeSchedule.setFeeData(bindFeeDataFrom((Map<String, Object>)rawTxnFeeSchedule.get(FEE_DATA_KEY)));
+
+		var feesList = (List<Object>)rawTxnFeeSchedule.get(FEE_DATA_KEY);
+
+		for (Object o : feesList) {
+			txnFeeSchedule.addFees(bindFeeDataFrom((Map<String, Object>) o));
+		}
 		return txnFeeSchedule.build();
 	}
 
@@ -117,6 +123,12 @@ public class JsonToProtoSerde {
 	static FeeData bindFeeDataFrom(Map<String, Object> rawFeeData) throws Exception {
 		FeeData.Builder feeData = FeeData.newBuilder();
 
+		if (rawFeeData.get("subType") == null) {
+			feeData.setSubType(SubType.DEFAULT);
+		} else {
+			feeData.setSubType(stringToSubType((String)rawFeeData.get("subType")));
+		}
+
 		for (String feeComponent : FEE_COMPONENT_KEYS) {
 			set(
 					FeeData.Builder.class,
@@ -127,6 +139,17 @@ public class JsonToProtoSerde {
 		}
 
 		return feeData.build();
+	}
+
+	static SubType stringToSubType(String subType) {
+		switch (subType){
+			case "TOKEN_FUNGIBLE_COMMON":
+				return SubType.TOKEN_FUNGIBLE_COMMON;
+			case "TOKEN_NON_FUNGIBLE_UNIQUE":
+				return SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+			default:
+				return SubType.DEFAULT;
+		}
 	}
 
 	static FeeComponents bindFeeComponentsFrom(Map<String, Object> rawFeeComponents) throws Exception {

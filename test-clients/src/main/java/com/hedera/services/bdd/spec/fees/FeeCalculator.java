@@ -23,10 +23,10 @@ package com.hedera.services.bdd.spec.fees;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import static com.hederahashgraph.fee.FeeBuilder.*;
-import com.hederahashgraph.fee.FeeBuilder;
 import com.hederahashgraph.fee.SigValueObj;
 import com.hedera.services.legacy	.proto.utils.CommonUtils;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -35,6 +35,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -42,7 +43,7 @@ public class FeeCalculator {
 	private static final Logger log = LogManager.getLogger(FeeCalculator.class);
 
 	final private HapiSpecSetup setup;
-	final private Map<HederaFunctionality, FeeData> opFeeData = new HashMap<>();
+	final private Map<HederaFunctionality, Map<SubType, FeeData>> opFeeData = new HashMap<>();
 	final private FeesAndRatesProvider provider;
 
 	private long fixedFee = Long.MIN_VALUE;
@@ -62,36 +63,52 @@ public class FeeCalculator {
 			return;
 		}
 		FeeSchedule feeSchedule = provider.currentSchedule();
-		feeSchedule.getTransactionFeeScheduleList().stream().forEach(feeData -> {
-			opFeeData.put(feeData.getHederaFunctionality(), feeData.getFeeData());
+		feeSchedule.getTransactionFeeScheduleList().forEach(f -> {
+			opFeeData.put(f.getHederaFunctionality(), FeesListToMap(f.getFeesList()));
 		});
 		tokenTransferUsageMultiplier = setup.feesTokenTransferUsageMultiplier();
 	}
 
-	public long maxFeeTinyBars() {
+	private Map<SubType, FeeData> FeesListToMap(List<FeeData> feesList) {
+		Map<SubType, FeeData> feeDataMap = new HashMap<>();
+		for (FeeData feeData : feesList) {
+			feeDataMap.put(feeData.getSubType(), feeData);
+		}
+		return feeDataMap;
+	}
+
+	public long maxFeeTinyBars(SubType subType) {
 		return usingFixedFee ? fixedFee : Arrays
 				.stream(HederaFunctionality.values())
 				.mapToLong(op ->
 						Optional.ofNullable(
 								opFeeData.get(op)).map(fd ->
-										fd.getServicedata().getMax()
-										+ fd.getNodedata().getMax()
-										+ fd.getNetworkdata().getMax()).orElse(0L))
+								fd.get(subType).getServicedata().getMax()
+										+ fd.get(subType).getNodedata().getMax()
+										+ fd.get(subType).getNetworkdata().getMax()).orElse(0L))
 				.max()
 				.orElse(0L);
 	}
 
-	public long forOp(HederaFunctionality op, FeeData knownActivity) {
+	public long maxFeeTinyBars() {
+		return maxFeeTinyBars(SubType.DEFAULT);
+	}
+
+	public long forOp(HederaFunctionality op, SubType subType, FeeData knownActivity) {
 		if (usingFixedFee) {
 			return fixedFee;
 		}
 		try {
-			FeeData activityPrices = opFeeData.get(op);
-			return getTotalFeeforRequest(activityPrices, knownActivity, provider.rates());
+			Map<SubType, FeeData> activityPrices = opFeeData.get(op);
+			return getTotalFeeforRequest(activityPrices.get(subType), knownActivity, provider.rates());
 		} catch (Throwable t) {
 			log.warn("Unable to calculate fee for op {}, using max fee!", op, t);
 		}
-		return maxFeeTinyBars();
+		return maxFeeTinyBars(subType);
+	}
+
+	public long forOp(HederaFunctionality op, FeeData knownActivity) {
+		return forOp(op, SubType.DEFAULT, knownActivity);
 	}
 
 	@FunctionalInterface
@@ -106,7 +123,18 @@ public class FeeCalculator {
 			int numPayerSigs
 	) throws Throwable {
 		FeeData activityMetrics = metricsFor(txn, numPayerSigs, metricsCalculator);
-		return forOp(op, activityMetrics);
+		return forOp(op, SubType.DEFAULT, activityMetrics);
+	}
+
+	public long forActivityBasedOp(
+			HederaFunctionality op,
+			SubType subType,
+			ActivityMetrics metricsCalculator,
+			Transaction txn,
+			int numPayerSigs
+	) throws Throwable {
+		FeeData activityMetrics = metricsFor(txn, numPayerSigs, metricsCalculator);
+		return forOp(op, subType, activityMetrics);
 	}
 
 	private FeeData metricsFor(

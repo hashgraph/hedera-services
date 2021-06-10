@@ -680,6 +680,4 @@ public class HederaLedger {
 			recordsPurged += n;
 		}
 	}
-
-
 }
