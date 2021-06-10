@@ -217,26 +217,9 @@ class AwareTransactionContextTest {
 
 		subject = new AwareTransactionContext(ctx);
 		subject.resetFor(accessor, now, memberId);
-	}
 
-//	@Test
-//	void canOverrideTokenTransfers() {
-//		// given:
-//		final AccountID funding = asAccount("0.0.98");
-//		final var someTokenXfers = List.of(TokenTransferList.newBuilder()
-//				.setToken(IdUtils.asToken("1.2.3"))
-//				.addAllTransfers(
-//						withAdjustments(payer, -100, nodeAccount, 10, funding, 90).getAccountAmountsList())
-//				.build());
-//
-//		// when:
-//		subject.setTokenTransferLists(someTokenXfers);
-//		// and:
-//		var record = subject.recordSoFar();
-//
-//		// then:
-//		assertEquals(someTokenXfers, record.asGrpc().getTokenTransferListsList());
-//	}
+		verify(narratedCharging).resetForTxn(accessor, memberId);
+	}
 
 	@Test
 	void throwsIseIfNoPayerActive() {
@@ -649,7 +632,8 @@ class AwareTransactionContextTest {
 		var expirableRecordBuilder = buildRecord(subject.getNonThresholdFeeChargedToPayer(),
 				accessor.getHash(),
 				accessor, now, subject.receiptSoFar().build());
-		when(creator.buildExpiringRecord(anyLong(), any(), any(), any(), any(), any())).thenReturn(expirableRecordBuilder);
+		when(creator.buildExpiringRecord(anyLong(), any(), any(), any(), any(), any(), any()))
+				.thenReturn(expirableRecordBuilder);
 		return expirableRecordBuilder;
 	}
 }

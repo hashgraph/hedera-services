@@ -27,8 +27,10 @@ import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 
 import java.time.Instant;
+import java.util.List;
 
 public enum NoopExpiringCreations implements EntityCreator {
 	NOOP_EXPIRING_CREATIONS;
@@ -54,8 +56,9 @@ public enum NoopExpiringCreations implements EntityCreator {
 			byte[] hash,
 			TxnAccessor accessor,
 			Instant consensusTime,
-			TxnReceipt receipt, 
-                        ServicesContext ctx
+			TxnReceipt receipt,
+			List<TokenTransferList> explicitTokenTransfers,
+			ServicesContext ctx
 	) {
 		throw new UnsupportedOperationException();
 	}

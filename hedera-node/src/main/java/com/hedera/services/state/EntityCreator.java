@@ -26,8 +26,10 @@ import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 
 import java.time.Instant;
+import java.util.List;
 
 public interface EntityCreator {
 	/**
@@ -73,6 +75,10 @@ public interface EntityCreator {
 	 * 		consensus time
 	 * @param receipt
 	 * 		transaction receipt
+	 * @param explicitTokenTransfers
+	 * 		explicit list of token transfers
+	 * @param ctx
+	 * 		services context
 	 * @return
 	 */
 	ExpirableTxnRecord.Builder buildExpiringRecord(
@@ -81,6 +87,7 @@ public interface EntityCreator {
 			TxnAccessor accessor,
 			Instant consensusTime,
 			TxnReceipt receipt,
+			List<TokenTransferList> explicitTokenTransfers,
 			ServicesContext ctx);
 
 	/**

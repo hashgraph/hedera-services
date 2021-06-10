@@ -165,6 +165,7 @@ public class AwareTransactionContext implements TransactionContext {
 				accessor,
 				consensusTime,
 				receipt,
+				explicitTokenTransfers,
 				ctx);
 
 		recordConfig.accept(recordSoFar);

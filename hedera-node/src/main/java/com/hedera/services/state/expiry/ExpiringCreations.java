@@ -96,12 +96,15 @@ public class ExpiringCreations implements EntityCreator {
 			byte[] hash,
 			TxnAccessor accessor,
 			Instant consensusTime,
-			TxnReceipt receipt, 
-                        ServicesContext ctx
+			TxnReceipt receipt,
+			List<TokenTransferList> explicitTokenTransfers,
+			ServicesContext ctx
 	) {
 		final long amount = ctx.narratedCharging().totalFeesChargedToPayer() + otherNonThresholdFees;
 		final TransferList transfersList = ctx.ledger().netTransfersInTxn();
-		final List<TokenTransferList> tokenTransferList = ctx.ledger().netTokenTransfersInTxn();
+		final var tokenTransferList = explicitTokenTransfers != null
+				? explicitTokenTransfers
+				: ctx.ledger().netTokenTransfersInTxn();
 		final var currencyAdjustments = transfersList.getAccountAmountsCount() > 0
 				? CurrencyAdjustments.fromGrpc(transfersList) : null;
 
