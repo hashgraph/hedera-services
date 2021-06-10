@@ -147,7 +147,7 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 			return Collections.emptyList();
 		} else {
 			List<TokenID> ids = new ArrayList<>();
-			for (int i = 0; i < n; i++) {
+			for (var i = 0; i < n; i++) {
 				ids.add(idAt(i));
 			}
 			return ids;
@@ -171,11 +171,11 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 		if (isImmutable()) {
 			throw new MutabilityException("Cannot associate any tokens to an immutable container");
 		}
-		List<TokenID> allTogether = Stream.concat(
+		final List<TokenID> allTogether = Stream.concat(
 				ids.stream(),
 				IntStream.range(0, numAssociations()).mapToObj(this::idAt)).sorted(TOKEN_ID_COMPARATOR).collect(toList());
-		int newN = numAssociations() + ids.size();
-		long[] newTokenIds = new long[newN * NUM_ID_PARTS];
+		final int newN = numAssociations() + ids.size();
+		final var newTokenIds = new long[newN * NUM_ID_PARTS];
 		for (int i = 0; i < newN; i++) {
 			set(newTokenIds, i, allTogether.get(i));
 		}
@@ -186,18 +186,20 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 		if (isImmutable()) {
 			throw new MutabilityException("Cannot dissociate any tokens from an immutable container");
 		}
-		int n = numAssociations(), newN = 0;
-		for (int i = 0; i < n; i++) {
+		var n = numAssociations();
+		var newN = 0;
+		for (var i = 0; i < n; i++) {
 			if (!ids.contains(idAt(i))) {
 				newN++;
 			}
 		}
 		if (newN != n) {
-			long[] newTokenIds = new long[newN * NUM_ID_PARTS];
-			for (int i = 0, j = 0; i < n; i++) {
+			final var newTokenIds = new long[newN * NUM_ID_PARTS];
+			var nextNewI = 0;
+			for (var i = 0; i < n; i++) {
 				var id = idAt(i);
 				if (!ids.contains(id)) {
-					set(newTokenIds, j++, id);
+					set(newTokenIds, nextNewI++, id);
 				}
 			}
 			tokenIds = newTokenIds;
@@ -239,10 +241,11 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 	}
 
 	private int logicalIndexOf(TokenID token) {
-		int lo = 0, hi = tokenIds.length / NUM_ID_PARTS - 1;
+		var lo = 0;
+		var hi = tokenIds.length / NUM_ID_PARTS - 1;
 		while (lo <= hi) {
-			int mid = lo + (hi - lo) / 2;
-			int comparison = compareImplied(mid, token);
+			final var mid = lo + (hi - lo) / 2;
+			final var comparison = compareImplied(mid, token);
 			if (comparison == 0) {
 				return mid;
 			} else if (comparison < 0) {
@@ -255,9 +258,11 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 	}
 
 	private int compareImplied(int at, TokenID to) {
-		long numA = tokenIds[num(at)], numB = to.getTokenNum();
+		final var numA = tokenIds[num(at)];
+		final var numB = to.getTokenNum();
 		if (numA == numB) {
-			long realmA = tokenIds[realm(at)], realmB = to.getRealmNum();
+			final var realmA = tokenIds[realm(at)];
+			final var realmB = to.getRealmNum();
 			if (realmA == realmB) {
 				return Long.compare(tokenIds[shard(at)], to.getShardNum());
 			} else {

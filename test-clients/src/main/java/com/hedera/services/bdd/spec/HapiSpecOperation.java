@@ -32,6 +32,7 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.usage.consensus.ConsensusOpsUsage;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.usage.schedule.ScheduleOpsUsage;
@@ -78,6 +79,7 @@ public abstract class HapiSpecOperation {
 	protected static final FileOpsUsage fileOpsUsage = new FileOpsUsage();
 	protected static final CryptoOpsUsage cryptoOpsUsage = new CryptoOpsUsage();
 	protected static final ScheduleOpsUsage scheduleOpsUsage = new ScheduleOpsUsage();
+	protected static final ConsensusOpsUsage consensusOpsUsage = new ConsensusOpsUsage();
 
 	private Random r = new Random();
 

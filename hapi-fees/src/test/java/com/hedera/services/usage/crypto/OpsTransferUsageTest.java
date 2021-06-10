@@ -20,92 +20,79 @@ package com.hedera.services.usage.crypto;
  * ‍
  */
 
+import com.hedera.services.test.AdapterUtils;
 import com.hedera.services.test.IdUtils;
-import com.hedera.services.usage.EstimatorFactory;
+import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.TxnUsage;
-import com.hedera.services.usage.TxnUsageEstimator;
+import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.hederahashgraph.fee.FeeBuilder;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static com.hedera.services.test.AdapterUtils.feeDataFrom;
 import static com.hedera.services.test.IdUtils.asAccount;
-import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
-import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
-import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class CryptoTransferUsageTest {
-	long now = 1_234_567L;
-	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
-	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
-
-	AccountID a = asAccount("1.2.3");
-	AccountID b = asAccount("2.3.4");
-	AccountID c = asAccount("3.4.5");
-	TokenID anId = IdUtils.asToken("0.0.75231");
-	TokenID anotherId = IdUtils.asToken("0.0.75232");
-
-	CryptoTransferTransactionBody op;
-	TransactionBody txn;
-
-	EstimatorFactory factory;
-	TxnUsageEstimator base;
-	CryptoTransferUsage subject;
-
-	@BeforeEach
-	public void setUp() throws Exception {
-		base = mock(TxnUsageEstimator.class);
-		given(base.get()).willReturn(A_USAGES_MATRIX);
-
-		factory = mock(EstimatorFactory.class);
-		given(factory.get(any(), any(), any())).willReturn(base);
-
-		TxnUsage.estimatorFactory = factory;
-	}
+class OpsTransferUsageTest {
+	private CryptoOpsUsage subject = new CryptoOpsUsage();
 
 	@Test
-	public void createsExpectedDeltaForTransferLists() {
-		// setup:
-		int M = 60;
-
+	void matchesWithLegacyEstimate() {
 		givenOp();
-		// and:
-		subject = CryptoTransferUsage.newEstimate(txn, sigUsage);
+		// and given legacy estimate:
+		final var expected = FeeData.newBuilder()
+				.setNetworkdata(FeeComponents.newBuilder()
+						.setConstant(1)
+						.setBpt(18047)
+						.setVpt(3)
+						.setRbh(1))
+				.setNodedata(FeeComponents.newBuilder()
+						.setConstant(1)
+						.setBpt(18047)
+						.setVpt(1)
+						.setBpr(4))
+				.setServicedata(FeeComponents.newBuilder()
+						.setConstant(1)
+						.setRbh(904))
+				.build();
 
 		// when:
-		var actual = subject.givenTokenMultiplier(M).get();
+		final var accum = new UsageAccumulator();
+		subject.cryptoTransferUsage(
+				sigUsage,
+				new CryptoTransferMeta(tokenMultiplier, 3, 7),
+				new BaseTransactionMeta(memo.getBytes().length, 3),
+				accum);
 
 		// then:
-		assertEquals(A_USAGES_MATRIX, actual);
-		// and:
-		verify(base).addBpt(M * FeeBuilder.BASIC_ENTITY_ID_SIZE
-				+ 3 * M * (FeeBuilder.BASIC_ENTITY_ID_SIZE + 8)
-				+ M * FeeBuilder.BASIC_ENTITY_ID_SIZE
-				+ 2 * M * (FeeBuilder.BASIC_ENTITY_ID_SIZE + 8)
-				+ M * FeeBuilder.BASIC_ENTITY_ID_SIZE
-				+ 2 * M * (FeeBuilder.BASIC_ENTITY_ID_SIZE + 8)
-				+ 3 * (FeeBuilder.BASIC_ENTITY_ID_SIZE + 8));
-		verify(base).addRbs(
-				TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(3 * M, 7 * M) *
-						USAGE_PROPERTIES.legacyReceiptStorageSecs());
-		verify(base).addRbs((3 * USAGE_PROPERTIES.accountAmountBytes()) * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+		assertEquals(expected, feeDataFrom(accum));
 	}
+
+	private final int tokenMultiplier = 60;
+	private final int numSigs = 3, sigSize = 100, numPayerKeys = 1;
+	private final String memo = "Yikes who knows";
+	private final SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
+	private final long now = 1_234_567L;
+	private final AccountID a = asAccount("1.2.3");
+	private final AccountID b = asAccount("2.3.4");
+	private final AccountID c = asAccount("3.4.5");
+	private final TokenID anId = IdUtils.asToken("0.0.75231");
+	private final TokenID anotherId = IdUtils.asToken("0.0.75232");
+	private final TokenID yetAnotherId = IdUtils.asToken("0.0.75233");
+
+	private TransactionBody txn;
+	private CryptoTransferTransactionBody op;
 
 	private void givenOp() {
 		var hbarAdjusts = TransferList.newBuilder()
@@ -129,7 +116,7 @@ public class CryptoTransferUsageTest {
 								adjustFrom(c, 100)
 						)))
 				.addTokenTransfers(TokenTransferList.newBuilder()
-						.setToken(anotherId)
+						.setToken(yetAnotherId)
 						.addAllTransfers(List.of(
 								adjustFrom(a, -15),
 								adjustFrom(b, 15)
@@ -141,6 +128,7 @@ public class CryptoTransferUsageTest {
 
 	private void setTxn() {
 		txn = TransactionBody.newBuilder()
+				.setMemo(memo)
 				.setTransactionID(TransactionID.newBuilder()
 						.setTransactionValidStart(Timestamp.newBuilder()
 								.setSeconds(now)))

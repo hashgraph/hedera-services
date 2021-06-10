@@ -22,6 +22,9 @@ package com.hedera.services.utils;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
+import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.consensus.SubmitMessageMeta;
+import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -31,12 +34,16 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.commons.codec.binary.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.Arrays;
 
 import java.util.function.Function;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.utils.MiscUtils.functionOf;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 
 /**
@@ -45,6 +52,8 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
  * @author Michael Tinker
  */
 public class SignedTxnAccessor implements TxnAccessor {
+	private static final Logger log = LogManager.getLogger(SignedTxnAccessor.class);
+
 	private int sigMapSize;
 	private int numSigPairs;
 	private byte[] hash;
@@ -58,6 +67,9 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private TransactionID txnId;
 	private TransactionBody txn;
 	private HederaFunctionality function;
+	private SubmitMessageMeta submitMessageMeta;
+	private CryptoTransferMeta xferUsageMeta;
+	private BaseTransactionMeta txnUsageMeta;
 
 	static Function<TransactionBody, HederaFunctionality> functionExtractor = txn -> {
 		try {
@@ -70,9 +82,10 @@ public class SignedTxnAccessor implements TxnAccessor {
 	public static SignedTxnAccessor uncheckedFrom(Transaction validSignedTxn) {
 		try {
 			return new SignedTxnAccessor(validSignedTxn);
-		} catch (Exception impossible) {
+		} catch (Exception illegal) {
+			log.warn("Unexpected use of factory with invalid gRPC transaction", illegal);
+			throw new IllegalArgumentException("Argument 'validSignedTxn' must be a valid signed txn");
 		}
-		return null;
 	}
 
 	public SignedTxnAccessor(byte[] signedTxnWrapperBytes) throws InvalidProtocolBufferException {
@@ -98,6 +111,14 @@ public class SignedTxnAccessor implements TxnAccessor {
 		numSigPairs = sigMap.getSigPairCount();
 		utf8MemoBytes = StringUtils.getBytesUtf8(memo);
 		memoHasZeroByte = Arrays.contains(utf8MemoBytes, (byte) 0);
+
+		getFunction();
+		setTxnUsageMeta();
+		if (function == CryptoTransfer) {
+			setXferUsageMeta();
+		} else if (function == ConsensusSubmitMessage) {
+			setSubmitUsageMeta();
+		}
 	}
 
 	public SignedTxnAccessor(Transaction signedTxnWrapper) throws InvalidProtocolBufferException {
@@ -187,11 +208,59 @@ public class SignedTxnAccessor implements TxnAccessor {
 		return memoHasZeroByte;
 	}
 
+	@Override
 	public boolean isTriggeredTxn() {
 		return false;
 	}
 
+	@Override
 	public ScheduleID getScheduleRef() {
 		throw new UnsupportedOperationException("Only the TriggeredTxnAccessor implementation can refer to a schedule");
+	}
+
+	@Override
+	public BaseTransactionMeta baseUsageMeta() {
+		return txnUsageMeta;
+	}
+
+	@Override
+	public CryptoTransferMeta availXferUsageMeta() {
+		if (function != CryptoTransfer) {
+			throw new IllegalStateException("Cannot get CryptoTransfer metadata for a " + function + " accessor");
+		}
+		return xferUsageMeta;
+	}
+
+	@Override
+	public SubmitMessageMeta availSubmitUsageMeta() {
+		if (function != ConsensusSubmitMessage) {
+			throw new IllegalStateException("Cannot get ConsensusSubmitMessage metadata for a " + function + " accessor");
+		}
+		return submitMessageMeta;
+	}
+
+	private void setTxnUsageMeta() {
+		if (function == CryptoTransfer) {
+			txnUsageMeta = new BaseTransactionMeta(
+					utf8MemoBytes.length,
+					txn.getCryptoTransfer().getTransfers().getAccountAmountsCount());
+		} else {
+			txnUsageMeta = new BaseTransactionMeta(utf8MemoBytes.length, 0);
+		}
+	}
+
+	private void setXferUsageMeta() {
+		var numTokensInvolved = 0;
+		var numTokenTransfers = 0;
+		final var op = txn.getCryptoTransfer();
+		for (var tokenTransfers : op.getTokenTransfersList()) {
+			numTokensInvolved++;
+			numTokenTransfers += tokenTransfers.getTransfersCount();
+		}
+		xferUsageMeta = new CryptoTransferMeta(1, numTokensInvolved, numTokenTransfers);
+	}
+
+	private void setSubmitUsageMeta() {
+		submitMessageMeta = new SubmitMessageMeta(txn.getConsensusSubmitMessage().getMessage().size());
 	}
 }

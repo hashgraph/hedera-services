@@ -41,8 +41,10 @@ import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.fees.AwareHbarCentExchange;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.TxnRateFeeMultiplierSource;
+import com.hedera.services.fees.calculation.utils.AccessorBasedUsages;
 import com.hedera.services.fees.calculation.AwareFcfsUsagePrices;
 import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
+import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.fees.charging.NarratedLedgerCharging;
 import com.hedera.services.fees.charging.FeeChargingPolicy;
 import com.hedera.services.fees.charging.TxnChargingPolicyAgent;
@@ -525,6 +527,8 @@ public class ServicesContextTest {
 		assertThat(ctx.chargingPolicyAgent(), instanceOf(TxnChargingPolicyAgent.class));
 		assertThat(ctx.expandHandleSpan(), instanceOf(ExpandHandleSpan.class));
 		assertThat(ctx.nonBlockingHandoff(), instanceOf(NonBlockingHandoff.class));
+		assertThat(ctx.accessorBasedUsages(), instanceOf(AccessorBasedUsages.class));
+		assertThat(ctx.pricedUsageCalculator(), instanceOf(PricedUsageCalculator.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

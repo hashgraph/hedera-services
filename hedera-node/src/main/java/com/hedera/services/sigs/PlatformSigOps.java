@@ -27,7 +27,6 @@ import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 
 import java.util.List;
 
-import static com.google.protobuf.ByteString.copyFrom;
 import static com.hedera.services.keys.HederaKeyTraversal.visitSimpleKeys;
 
 /**

@@ -23,8 +23,10 @@ package com.hedera.services.fees.calculation;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -65,10 +67,13 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCal
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAccountAutoRenew;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
+import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -79,7 +84,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
 
-class UsageBasedFeeCalculatorTest {
+public class UsageBasedFeeCalculatorTest {
 	private FeeComponents mockFees = FeeComponents.newBuilder()
 			.setMax(1_234_567L)
 			.setGas(5_000_000L)
@@ -105,16 +110,17 @@ class UsageBasedFeeCalculatorTest {
 	private long balance = 1_234_567L;
 	private AccountID payer = IdUtils.asAccount("0.0.75231");
 	private AccountID receiver = IdUtils.asAccount("0.0.86342");
-	
+
 	/* Has nine simple keys. */
 	private KeyTree complexKey = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 	private JKey payerKey;
 	private Transaction signedTxn;
 	private SignedTxnAccessor accessor;
 	private AutoRenewCalcs autoRenewCalcs;
-	
+	private PricedUsageCalculator pricedUsageCalculator;
+
 	private AtomicLong suggestedMultiplier = new AtomicLong(1L);
-	
+
 	private UsageBasedFeeCalculator subject;
 
 	@BeforeEach
@@ -136,6 +142,7 @@ class UsageBasedFeeCalculatorTest {
 		correctQueryEstimator = mock(QueryResourceUsageEstimator.class);
 		incorrectQueryEstimator = mock(QueryResourceUsageEstimator.class);
 		autoRenewCalcs = mock(AutoRenewCalcs.class);
+		pricedUsageCalculator = mock(PricedUsageCalculator.class);
 
 		txnUsageEstimators = (Function<HederaFunctionality, List<TxnResourceUsageEstimator>>) mock(Function.class);
 
@@ -144,6 +151,7 @@ class UsageBasedFeeCalculatorTest {
 				exchange,
 				usagePrices,
 				new NestedMultiplierSource(),
+				pricedUsageCalculator,
 				List.of(incorrectQueryEstimator, correctQueryEstimator),
 				txnUsageEstimators);
 	}
@@ -415,6 +423,70 @@ class UsageBasedFeeCalculatorTest {
 	}
 
 	@Test
+	void invokesAccessorBasedUsagesForCryptoTransferOutsideHandleWithNewAccumulator() throws Throwable {
+		// setup:
+		long sent = 1_234L;
+		signedTxn = newSignedCryptoTransfer()
+				.payer(asAccountString(payer))
+				.transfers(tinyBarsFromTo(asAccountString(payer), asAccountString(receiver), sent))
+				.txnValidStart(at)
+				.get();
+		accessor = SignedTxnAccessor.uncheckedFrom(signedTxn);
+		// and:
+		final var expectedFees = FeeBuilder.getFeeObject(currentPrices, resourceUsage, currentRate);
+
+		given(pricedUsageCalculator.supports(CryptoTransfer)).willReturn(true);
+		given(exchange.rate(at)).willReturn(currentRate);
+		given(usagePrices.pricesGiven(CryptoTransfer, at)).willReturn(currentPrices);
+		given(pricedUsageCalculator.extraHandleFees(
+				accessor,
+				currentPrices,
+				currentRate,
+				payerKey
+		)).willReturn(expectedFees);
+
+		// when:
+		FeeObject fees = subject.estimateFee(accessor, payerKey, view, at);
+
+		// then:
+		assertNotNull(fees);
+		assertEquals(fees.getNodeFee(), expectedFees.getNodeFee());
+		assertEquals(fees.getNetworkFee(), expectedFees.getNetworkFee());
+		assertEquals(fees.getServiceFee(), expectedFees.getServiceFee());
+	}
+
+	@Test
+	void invokesAccessorBasedUsagesForCryptoTransferInHandleWithReusedAccumulator() throws Throwable {
+		// setup:
+		long sent = 1_234L;
+		signedTxn = newSignedCryptoTransfer()
+				.payer(asAccountString(payer))
+				.transfers(tinyBarsFromTo(asAccountString(payer), asAccountString(receiver), sent))
+				.txnValidStart(at)
+				.get();
+		accessor = SignedTxnAccessor.uncheckedFrom(signedTxn);
+		// and:
+		final var expectedFees = FeeBuilder.getFeeObject(currentPrices, resourceUsage, currentRate);
+
+		given(pricedUsageCalculator.supports(CryptoTransfer)).willReturn(true);
+		given(exchange.activeRate()).willReturn(currentRate);
+		given(pricedUsageCalculator.inHandleFees(
+				accessor,
+				currentPrices,
+				currentRate,
+				payerKey
+		)).willReturn(expectedFees);
+
+		// when:
+		FeeObject fees = subject.computeFee(accessor, payerKey, view);
+
+		// then:
+		assertEquals(fees.getNodeFee(), expectedFees.getNodeFee());
+		assertEquals(fees.getNetworkFee(), expectedFees.getNetworkFee());
+		assertEquals(fees.getServiceFee(), expectedFees.getServiceFee());
+	}
+
+	@Test
 	void invokesOpDelegateAsExpectedWithTwoOptions() throws Exception {
 		// setup:
 		SigValueObj expectedSigUsage = new SigValueObj(
@@ -502,5 +574,16 @@ class UsageBasedFeeCalculatorTest {
 		public Instant[] congestionLevelStarts() {
 			return new Instant[0];
 		}
+	}
+
+	public static void copyData(FeeData feeData, UsageAccumulator into) {
+		into.setNumPayerKeys(feeData.getNodedata().getVpt());
+		into.addVpt(feeData.getNetworkdata().getVpt());
+		into.addBpt(feeData.getNetworkdata().getBpt());
+		into.addBpr(feeData.getNodedata().getBpr());
+		into.addSbpr(feeData.getNodedata().getSbpr());
+		into.addNetworkRbs(feeData.getNetworkdata().getRbh() * HRS_DIVISOR);
+		into.addRbs(feeData.getServicedata().getRbh() * HRS_DIVISOR);
+		into.addSbs(feeData.getServicedata().getSbh() * HRS_DIVISOR);
 	}
 }

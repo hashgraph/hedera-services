@@ -22,23 +22,40 @@ package com.hedera.services.utils;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
+import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.mock;
 
 class SignedTxnAccessorTest {
 	private final String memo = "Eternal sunshine of the spotless mind";
@@ -54,6 +71,37 @@ class SignedTxnAccessorTest {
 					.setPubKeyPrefix(ByteString.copyFromUtf8("s"))
 					.setEd25519(ByteString.copyFromUtf8("econd")))
 			.build();
+
+	@Test
+	void unsupportedOpsThrowByDefault() {
+		// setup:
+		final var subject = mock(TxnAccessor.class);
+
+		// given:
+		doCallRealMethod().when(subject).setSigMeta(any());
+		doCallRealMethod().when(subject).getSigMeta();
+		doCallRealMethod().when(subject).baseUsageMeta();
+		doCallRealMethod().when(subject).availXferUsageMeta();
+		doCallRealMethod().when(subject).availSubmitUsageMeta();
+
+		// expect:
+		assertThrows(UnsupportedOperationException.class, subject::getSigMeta);
+		assertThrows(UnsupportedOperationException.class, subject::baseUsageMeta);
+		assertThrows(UnsupportedOperationException.class, subject::availXferUsageMeta);
+		assertThrows(UnsupportedOperationException.class, subject::availSubmitUsageMeta);
+		assertThrows(UnsupportedOperationException.class, () -> subject.setSigMeta(null));
+	}
+
+	@Test
+	void uncheckedPropagatesIaeOnNonsense() {
+		// setup:
+		final var nonsenseTxn = Transaction.newBuilder()
+				.setSignedTransactionBytes(ByteString.copyFromUtf8("NONSENSE"))
+				.build();
+
+		// expect:
+		Assertions.assertThrows(IllegalArgumentException.class, () -> SignedTxnAccessor.uncheckedFrom(nonsenseTxn));
+	}
 
 	@Test
 	void parsesLegacyCorrectly() throws Exception {
@@ -75,6 +123,8 @@ class SignedTxnAccessorTest {
 
 		// given:
 		SignedTxnAccessor accessor = SignedTxnAccessor.uncheckedFrom(transaction);
+		// and:
+		final var txnUsageMeta = accessor.baseUsageMeta();
 
 		assertEquals(transaction, accessor.getSignedTxnWrapper());
 		assertArrayEquals(transaction.toByteArray(), accessor.getSignedTxnWrapperBytes());
@@ -90,6 +140,66 @@ class SignedTxnAccessorTest {
 		assertTrue(accessor.memoHasZeroByte());
 		assertEquals(FeeBuilder.getSignatureCount(accessor.getSignedTxnWrapper()), accessor.numSigPairs());
 		assertEquals(FeeBuilder.getSignatureSize(accessor.getSignedTxnWrapper()), accessor.sigMapSize());
+		assertEquals(zeroByteMemo, accessor.getMemo());
+		// and:
+		assertEquals(memoUtf8Bytes.length, txnUsageMeta.getMemoUtf8Bytes());
+	}
+
+	@Test
+	void understandsFullXferUsageIncTokens() {
+		// setup:
+		final var txn = Transaction.newBuilder()
+				.setBodyBytes(tokenXfers().toByteString())
+				.build();
+
+		// given:
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		// when:
+		final var xferMeta = subject.availXferUsageMeta();
+
+		// then:
+		assertEquals(1, xferMeta.getTokenMultiplier());
+		assertEquals(3, xferMeta.getNumTokensInvolved());
+		assertEquals(7, xferMeta.getNumTokenTransfers());
+	}
+
+	@Test
+	void rejectsRequestForMetaIfNotAvail() {
+		// setup:
+		final var txn = Transaction.newBuilder()
+				.setBodyBytes(TransactionBody.newBuilder()
+						.setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance())
+						.build().toByteString())
+				.build();
+
+		// given:
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		// expect:
+		assertThrows(IllegalStateException.class, subject::availXferUsageMeta);
+		assertThrows(IllegalStateException.class, subject::availSubmitUsageMeta);
+	}
+
+	@Test
+	void understandsSubmitMessageMeta() {
+		// setup:
+		final var message = "And after, arranged it in a song";
+		final var txn = Transaction.newBuilder()
+				.setBodyBytes(TransactionBody.newBuilder()
+						.setConsensusSubmitMessage(ConsensusSubmitMessageTransactionBody.newBuilder()
+								.setMessage(ByteString.copyFromUtf8(message)))
+						.build().toByteString())
+				.build();
+
+		// given:
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		// when:
+		final var submitMeta = subject.availSubmitUsageMeta();
+
+		// then:
+		assertEquals(message.length(), submitMeta.getNumMsgBytes());
 	}
 
 	@Test
@@ -164,4 +274,57 @@ class SignedTxnAccessorTest {
 		// expect:
 		Assertions.assertThrows(UnsupportedOperationException.class, subject::getScheduleRef);
 	}
+
+	private TransactionBody tokenXfers() {
+		var hbarAdjusts = TransferList.newBuilder()
+				.addAccountAmounts(adjustFrom(a, -100))
+				.addAccountAmounts(adjustFrom(b, 50))
+				.addAccountAmounts(adjustFrom(c, 50))
+				.build();
+		final var op = CryptoTransferTransactionBody.newBuilder()
+				.setTransfers(hbarAdjusts)
+				.addTokenTransfers(TokenTransferList.newBuilder()
+						.setToken(anotherId)
+						.addAllTransfers(List.of(
+								adjustFrom(a, -50),
+								adjustFrom(b, 25),
+								adjustFrom(c, 25)
+						)))
+				.addTokenTransfers(TokenTransferList.newBuilder()
+						.setToken(anId)
+						.addAllTransfers(List.of(
+								adjustFrom(b, -100),
+								adjustFrom(c, 100)
+						)))
+				.addTokenTransfers(TokenTransferList.newBuilder()
+						.setToken(yetAnotherId)
+						.addAllTransfers(List.of(
+								adjustFrom(a, -15),
+								adjustFrom(b, 15)
+						)))
+				.build();
+
+		return TransactionBody.newBuilder()
+				.setMemo(memo)
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(now)))
+				.setCryptoTransfer(op)
+				.build();
+	}
+
+	private AccountAmount adjustFrom(AccountID account, long amount) {
+		return AccountAmount.newBuilder()
+				.setAmount(amount)
+				.setAccountID(account)
+				.build();
+	}
+
+	private final long now = 1_234_567L;
+	private final AccountID a = asAccount("1.2.3");
+	private final AccountID b = asAccount("2.3.4");
+	private final AccountID c = asAccount("3.4.5");
+	private final TokenID anId = IdUtils.asToken("0.0.75231");
+	private final TokenID anotherId = IdUtils.asToken("0.0.75232");
+	private final TokenID yetAnotherId = IdUtils.asToken("0.0.75233");
 }

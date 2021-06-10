@@ -38,7 +38,6 @@ import java.util.List;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.utils.MiscUtils.readableTransferList;
-import static java.util.stream.Collectors.toList;
 
 public class CurrencyAdjustments implements SelfSerializable {
 	private static final Logger log = LogManager.getLogger(CurrencyAdjustments.class);

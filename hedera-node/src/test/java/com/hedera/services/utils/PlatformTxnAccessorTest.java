@@ -150,7 +150,6 @@ class PlatformTxnAccessorTest {
 
 		// expect:
 		assertDoesNotThrow(() -> SignedTxnAccessor.uncheckedFrom(validTxn));
-		assertDoesNotThrow(() -> SignedTxnAccessor.uncheckedFrom(null));
 	}
 
 	@Test

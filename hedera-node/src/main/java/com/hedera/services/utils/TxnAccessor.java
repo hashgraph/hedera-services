@@ -20,6 +20,9 @@ package com.hedera.services.utils;
  * ‍
  */
 
+import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.consensus.SubmitMessageMeta;
+import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -41,6 +44,15 @@ public interface TxnAccessor {
         throw new UnsupportedOperationException();
     }
     default RationalizedSigMeta getSigMeta() {
+        throw new UnsupportedOperationException();
+    }
+    default BaseTransactionMeta baseUsageMeta() {
+        throw new UnsupportedOperationException();
+    }
+    default CryptoTransferMeta availXferUsageMeta() {
+        throw new UnsupportedOperationException();
+    }
+    default SubmitMessageMeta availSubmitUsageMeta() {
         throw new UnsupportedOperationException();
     }
 

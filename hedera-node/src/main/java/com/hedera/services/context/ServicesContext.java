@@ -22,6 +22,7 @@ package com.hedera.services.context;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.services.ServicesState;
+import com.hedera.services.calc.OverflowCheckingCalc;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.config.FileNumbers;
@@ -57,7 +58,6 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.fees.calculation.consensus.queries.GetTopicInfoResourceUsage;
 import com.hedera.services.fees.calculation.consensus.txns.CreateTopicResourceUsage;
 import com.hedera.services.fees.calculation.consensus.txns.DeleteTopicResourceUsage;
-import com.hedera.services.fees.calculation.consensus.txns.SubmitMessageResourceUsage;
 import com.hedera.services.fees.calculation.consensus.txns.UpdateTopicResourceUsage;
 import com.hedera.services.fees.calculation.contract.queries.ContractCallLocalResourceUsage;
 import com.hedera.services.fees.calculation.contract.queries.GetBytecodeResourceUsage;
@@ -72,7 +72,6 @@ import com.hedera.services.fees.calculation.crypto.queries.GetAccountRecordsReso
 import com.hedera.services.fees.calculation.crypto.queries.GetTxnRecordResourceUsage;
 import com.hedera.services.fees.calculation.crypto.txns.CryptoCreateResourceUsage;
 import com.hedera.services.fees.calculation.crypto.txns.CryptoDeleteResourceUsage;
-import com.hedera.services.fees.calculation.crypto.txns.CryptoTransferResourceUsage;
 import com.hedera.services.fees.calculation.crypto.txns.CryptoUpdateResourceUsage;
 import com.hedera.services.fees.calculation.file.queries.GetFileContentsResourceUsage;
 import com.hedera.services.fees.calculation.file.queries.GetFileInfoResourceUsage;
@@ -101,9 +100,11 @@ import com.hedera.services.fees.calculation.token.txns.TokenRevokeKycResourceUsa
 import com.hedera.services.fees.calculation.token.txns.TokenUnfreezeResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
+import com.hedera.services.fees.calculation.utils.AccessorBasedUsages;
+import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
+import com.hedera.services.fees.charging.FeeChargingPolicy;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.fees.charging.NarratedLedgerCharging;
-import com.hedera.services.fees.charging.FeeChargingPolicy;
 import com.hedera.services.fees.charging.TxnChargingPolicyAgent;
 import com.hedera.services.files.DataMapFactory;
 import com.hedera.services.files.EntityExpiryMapFactory;
@@ -138,9 +139,9 @@ import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.keys.StandardSyncActivationCheck;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
-import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.accounts.PureBackingAccounts;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
@@ -305,6 +306,7 @@ import com.hedera.services.txns.token.TokenUpdateTransitionLogic;
 import com.hedera.services.txns.token.TokenWipeTransitionLogic;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.usage.consensus.ConsensusOpsUsage;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.usage.schedule.ScheduleOpsUsage;
@@ -506,6 +508,7 @@ public class ServicesContext {
 	private StoragePersistence storagePersistence;
 	private ScheduleController scheduleGrpc;
 	private NonBlockingHandoff nonBlockingHandoff;
+	private AccessorBasedUsages accessorBasedUsages;
 	private ConsensusController consensusGrpc;
 	private QueryResponseHelper queryResponseHelper;
 	private UsagePricesProvider usagePrices;
@@ -525,6 +528,7 @@ public class ServicesContext {
 	private LedgerAccountsSource accountSource;
 	private BackingAccounts backingAccounts;
 	private TransitionLogicLookup transitionLogic;
+	private PricedUsageCalculator pricedUsageCalculator;
 	private TransactionThrottling txnThrottling;
 	private ConsensusStatusCounts statusCounts;
 	private HfsSystemFilesManager systemFilesManager;
@@ -661,6 +665,16 @@ public class ServicesContext {
 			transactionPrecheck = new TransactionPrecheck(queryFeeCheck(), stagedChecks, platformStatus());
 		}
 		return transactionPrecheck;
+	}
+
+	public PricedUsageCalculator pricedUsageCalculator() {
+		if (pricedUsageCalculator == null) {
+			pricedUsageCalculator = new PricedUsageCalculator(
+					accessorBasedUsages(),
+					feeMultiplierSource(),
+					new OverflowCheckingCalc());
+		}
+		return pricedUsageCalculator;
 	}
 
 	public FeeMultiplierSource feeMultiplierSource() {
@@ -969,6 +983,7 @@ public class ServicesContext {
 					exchange(),
 					usagePrices(),
 					feeMultiplierSource(),
+					pricedUsageCalculator(),
 					List.of(
 							/* Meta */
 							new GetVersionInfoResourceUsage(),
@@ -1014,7 +1029,6 @@ public class ServicesContext {
 				entry(CryptoCreate, List.of(new CryptoCreateResourceUsage(cryptoOpsUsage))),
 				entry(CryptoDelete, List.of(new CryptoDeleteResourceUsage(cryptoFees))),
 				entry(CryptoUpdate, List.of(new CryptoUpdateResourceUsage(cryptoOpsUsage))),
-				entry(CryptoTransfer, List.of(new CryptoTransferResourceUsage(globalDynamicProperties()))),
 				/* Contract */
 				entry(ContractCall, List.of(new ContractCallResourceUsage(contractFees))),
 				entry(ContractCreate, List.of(new ContractCreateResourceUsage(contractFees))),
@@ -1029,7 +1043,6 @@ public class ServicesContext {
 				entry(ConsensusCreateTopic, List.of(new CreateTopicResourceUsage())),
 				entry(ConsensusUpdateTopic, List.of(new UpdateTopicResourceUsage())),
 				entry(ConsensusDeleteTopic, List.of(new DeleteTopicResourceUsage())),
-				entry(ConsensusSubmitMessage, List.of(new SubmitMessageResourceUsage())),
 				/* Token */
 				entry(TokenCreate, List.of(new TokenCreateResourceUsage())),
 				entry(TokenUpdate, List.of(new TokenUpdateResourceUsage())),
@@ -1705,6 +1718,16 @@ public class ServicesContext {
 			submissionManager = new PlatformSubmissionManager(platform(), recordCache(), speedometers());
 		}
 		return submissionManager;
+	}
+
+	public AccessorBasedUsages accessorBasedUsages() {
+		if (accessorBasedUsages == null) {
+			accessorBasedUsages = new AccessorBasedUsages(
+					new CryptoOpsUsage(),
+					new ConsensusOpsUsage(),
+					globalDynamicProperties());
+		}
+		return accessorBasedUsages;
 	}
 
 	public ConsensusController consensusGrpc() {
