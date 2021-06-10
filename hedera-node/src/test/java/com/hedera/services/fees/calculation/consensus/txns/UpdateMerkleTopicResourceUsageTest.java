@@ -22,6 +22,7 @@ package com.hedera.services.fees.calculation.consensus.txns;
 
 import com.google.protobuf.StringValue;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
@@ -30,6 +31,7 @@ import com.hedera.test.utils.AccountIDConverter;
 import com.hedera.test.utils.DurationConverter;
 import com.hedera.test.utils.Ed25519KeyConverter;
 import com.hedera.test.utils.EntityIdConverter;
+import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.JEd25519KeyConverter;
 import com.hedera.test.utils.RichInstantConverter;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -42,21 +44,31 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.exception.InvalidTxBodyException;
+import com.swirlds.common.CommonUtils;
+import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.MockedStatic;
 
 import java.util.Optional;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 
 class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     UpdateTopicResourceUsage subject;
+    String adminKeyString = "0000000000000000000000000000000000000000000000000000000000000000";
+    String submitKeyString = "1111111111111111111111111111111111111111111111111111111111111111";
+    String defaultMemo = "12345678";
 
     @BeforeEach
     void setup() throws Throwable {
@@ -65,7 +77,7 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     }
 
     @Test
-    public void recognizesApplicableQuery() {
+    void recognizesApplicableQuery() {
         // setup:
         TransactionBody updateTopicTx = TransactionBody.newBuilder()
                 .setConsensusUpdateTopic(ConsensusUpdateTopicTransactionBody.newBuilder().build())
@@ -78,13 +90,66 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     }
 
     @Test
-    public void getFeeThrowsExceptionForBadTxBody() {
+    void getFeeThrowsExceptionForBadTxBody() {
         // setup:
-        TransactionBody nonUpdateTopicTx = TransactionBody.newBuilder().build();
+        TransactionBody mockTxnBody = mock(TransactionBody.class);
+        given(mockTxnBody.hasConsensusUpdateTopic()).willReturn(false);
 
         // expect:
-        assertThrows(InvalidTxBodyException.class, () -> subject.usageGiven(null, sigValueObj, view));
-        assertThrows(InvalidTxBodyException.class, () -> subject.usageGiven(nonUpdateTopicTx, sigValueObj, view));
+        Throwable exception = assertThrows(InvalidTxBodyException.class, () -> subject.usageGiven(null, sigValueObj, view));
+        assertEquals("consensusUpdateTopic field not available for Fee Calculation", exception.getMessage());
+
+        exception = assertThrows(InvalidTxBodyException.class, () -> subject.usageGiven(mockTxnBody, sigValueObj, view));
+        assertEquals("consensusUpdateTopic field not available for Fee Calculation", exception.getMessage());
+
+        given(mockTxnBody.hasConsensusUpdateTopic()).willReturn(true);
+        exception = assertThrows(IllegalStateException.class, () -> subject.usageGiven(mockTxnBody, sigValueObj, null));
+        assertEquals("No StateView present !!", exception.getMessage());
+    }
+
+    @Test
+    void getFeeThrowsExceptionForBadKeys() throws DecoderException {
+        // given
+        TransactionBody txnBody = makeTransactionBody(topicId, defaultMemo,
+                JKey.mapJKey(new JEd25519Key(CommonUtils.unhex(adminKeyString))),
+                JKey.mapJKey(new JEd25519Key(CommonUtils.unhex(submitKeyString))),
+                IdUtils.asAccount("0.1.2"),
+                null,
+                null);
+
+        MerkleTopic merkleTopic = new MerkleTopic(defaultMemo,
+                new JEd25519Key(CommonUtils.unhex(adminKeyString)),
+                new JEd25519Key(CommonUtils.unhex(submitKeyString)),
+                0, new EntityId(0,1,2), new RichInstant(36_000, 0));
+
+        given(topics.get(MerkleEntityId.fromTopicId(topicId))).willReturn(merkleTopic);
+        MockedStatic<JKey> mockedJkey = mockStatic(JKey.class);
+        mockedJkey.when(() -> JKey.mapJKey(any())).thenThrow(new DecoderException());
+
+        // expect
+        assertThrows(InvalidTxBodyException.class, () -> subject.usageGiven(txnBody, sigValueObj, view));
+        mockedJkey.close();
+    }
+
+    @Test
+    void updateToMissingTopic() throws DecoderException, InvalidTxBodyException {
+        // given
+        TransactionBody txBody = makeTransactionBody(topicId, defaultMemo,
+                JKey.mapJKey(new JEd25519Key(CommonUtils.unhex(adminKeyString))),
+                JKey.mapJKey(new JEd25519Key(CommonUtils.unhex(submitKeyString))),
+                IdUtils.asAccount("0.1.2"),
+                null,
+                null);
+        given(topics.get(MerkleEntityId.fromTopicId(topicId))).willReturn(null);
+
+        // when
+        FeeData feeData = subject.usageGiven(txBody, sigValueObj, view);
+
+        // then
+        checkServicesFee(feeData, 0);
+        checkNetworkFee(feeData, 120, 0);
+        checkNodeFee(feeData, 120);
+
     }
 
     // Test to check fee values correctness for various kinds of update topic transactions.
@@ -93,14 +158,14 @@ class UpdateMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
     @CsvSource({
             // 24(topidId) + 8(autoRenewAccount); updating value -> no extra rbs cost
             ",,,,,,,, 2000,,, 32, 0",
-            // Add fields; 24(topicId) + 8(memo), 32(admin key), 32(submit key), 24(auto renew account); no change in expiration timestamp, rbs increase due to all fields except topicId
-            ", 12345678,, 0000000000000000000000000000000000000000000000000000000000000000,, 1111111111111111111111111111111111111111111111111111111111111111,, 0.1.2,, 3600_0,, 120, 96",
+            // Add fields; 24(topicId) + 8(memo), 32(admin key), 32(submit key), 24(auto renew account); no change in expiration timestamp, 0 increase in rbs as no Old Admin Key making it immutable
+            ", 12345678,, 0000000000000000000000000000000000000000000000000000000000000000,, 1111111111111111111111111111111111111111111111111111111111111111,, 0.1.2,, 3600_0,, 120, 0",
             // No change to fields; 24(topicId); no change in expiration timestamp, no additional rbs cost
             "12345678,, 0000000000000000000000000000000000000000000000000000000000000000,, 1111111111111111111111111111111111111111111111111111111111111111,, 0.1.2,,, 3600_0,, 24, 0",
             // No change to fields, only increase expiration time; 24(topicId) + 8(expirationTimestamp); rbs increase equal to size of set fields (memo, adminKey, autoRenewAccount)
             "12345678,, 0000000000000000000000000000000000000000000000000000000000000000,,,, 0.1.2,,, 3600_0, 7200_0, 32, 164",
     })
-    public void feeDataAsExpected(
+    void feeDataAsExpected(
             String oldMemo,
             String newMemo,
             @ConvertWith(JEd25519KeyConverter.class) JEd25519Key oldAdminKey,

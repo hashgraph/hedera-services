@@ -110,6 +110,10 @@ class AwareTransactionContextTest {
 	private Instant now = Instant.now();
 	private ExchangeRate rateNow = ExchangeRate.newBuilder().setHbarEquiv(1).setCentEquiv(100).setExpirationTime(
 			TimestampSeconds.newBuilder()).build();
+	private Timestamp timeNow = Timestamp.newBuilder()
+			.setSeconds(now.getEpochSecond())
+			.setNanos(now.getNano())
+			.build();
 	private ExchangeRateSet ratesNow =
 			ExchangeRateSet.newBuilder().setCurrentRate(rateNow).setNextRate(rateNow).build();
 	private AccountID payer = asAccount("0.0.2");
@@ -214,6 +218,25 @@ class AwareTransactionContextTest {
 		subject = new AwareTransactionContext(ctx);
 		subject.resetFor(accessor, now, memberId);
 	}
+
+//	@Test
+//	void canOverrideTokenTransfers() {
+//		// given:
+//		final AccountID funding = asAccount("0.0.98");
+//		final var someTokenXfers = List.of(TokenTransferList.newBuilder()
+//				.setToken(IdUtils.asToken("1.2.3"))
+//				.addAllTransfers(
+//						withAdjustments(payer, -100, nodeAccount, 10, funding, 90).getAccountAmountsList())
+//				.build());
+//
+//		// when:
+//		subject.setTokenTransferLists(someTokenXfers);
+//		// and:
+//		var record = subject.recordSoFar();
+//
+//		// then:
+//		assertEquals(someTokenXfers, record.asGrpc().getTokenTransferListsList());
+//	}
 
 	@Test
 	void throwsIseIfNoPayerActive() {

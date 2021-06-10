@@ -410,11 +410,31 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		totalSupply += amount;
 	}
 
+	public JKey getSupplyKey() {
+		return supplyKey;
+	}
+
+	public JKey getKycKey() {
+		return kycKey;
+	}
+
+	public JKey getFreezeKey() {
+		return freezeKey;
+	}
+
+	public void setTotalSupply(long totalSupply) {
+		this.totalSupply = totalSupply;
+	}
+
 	public String memo() {
 		return memo;
 	}
 
 	public void setMemo(String memo) {
 		this.memo = memo;
+	}
+
+	public void setAccountsFrozenByDefault(boolean accountsFrozenByDefault) {
+		this.accountsFrozenByDefault = accountsFrozenByDefault;
 	}
 }

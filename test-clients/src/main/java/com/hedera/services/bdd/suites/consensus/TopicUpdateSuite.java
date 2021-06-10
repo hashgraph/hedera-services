@@ -45,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -72,8 +73,16 @@ public class TopicUpdateSuite extends HapiApiSuite {
 						updateSubmitKeyOnTopicWithNoAdminKeyFails(),
 						clearingAdminKeyWhenAutoRenewAccountPresent(),
 						feeAsExpected(),
+						updateToMissingTopicFails()
 				}
 		);
+	}
+
+	private HapiApiSpec updateToMissingTopicFails() {
+		return defaultHapiSpec("UpdateTopicHandlesMissingTopicGracefully")
+				.given( ).when( ).then(
+						updateTopic("1.2.3").hasKnownStatus(INVALID_TOPIC_ID)
+				);
 	}
 
 	private HapiApiSpec validateMultipleFields() {

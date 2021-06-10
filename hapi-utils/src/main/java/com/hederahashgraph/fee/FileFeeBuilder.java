@@ -24,7 +24,6 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseType;
@@ -43,113 +42,6 @@ import java.util.List;
  * Transactions and Query.
  */
 public class FileFeeBuilder extends FeeBuilder {
-  /**
-   * This method returns Fee Matrices for File Create Transaction
-   */
-  public FeeData getFileCreateTxFeeMatrices(TransactionBody txBody, SigValueObj sigValObj)
-      throws InvalidTxBodyException {
-
-    if (txBody == null || !txBody.hasFileCreate()) {
-      throw new InvalidTxBodyException("FileCreate Tx Body not available for Fee Calculation");
-    }
-
-    long bpt = 0;
-    long vpt = 0;
-    long rbs = 0;
-    long sbs = 0;
-    long gas = 0;
-    long tv = 0;
-    long bpr = 0;
-    long sbpr = 0;
-
-    // calculate BPT - Total Bytes in Transaction
-    final long txBodySize = getCommonTransactionBodyBytes(txBody);
-    bpt = txBodySize + getFileCreateTxSize(txBody) + sigValObj.getSignatureSize();
-    
-    // vpt - verifications per transactions
-    vpt = sigValObj.getTotalSigCount();
-
-    // sbs - Stoarge bytes seconds 
-    sbs = getFileCreateStorageBytesSec(txBody);
-
-    bpr = INT_SIZE;
-    
-    rbs = (getBaseTransactionRecordSize(txBody) + BASIC_ENTITY_ID_SIZE/* Added for File ID size*/) * RECEIPT_STORAGE_TIME_SEC;
-
-    long rbsNetwork = getDefaultRBHNetworkSize() + BASIC_ENTITY_ID_SIZE * (RECEIPT_STORAGE_TIME_SEC);
-
-    FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-        .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
-
-    return getFeeDataMatrices(feeMatricesForTx, sigValObj.getPayerAcctSigCount(),rbsNetwork);
-  }
-
-  /**
-   * This method returns Fee Matrices for File Update Transaction
-   */
-  public FeeData getFileUpdateTxFeeMatrices(TransactionBody txBody, Timestamp expirationTimeStamp,
-      SigValueObj sigValObj) throws InvalidTxBodyException {
-
-    if (txBody == null || !txBody.hasFileUpdate()) {
-      throw new InvalidTxBodyException("FileUpdate Tx Body not available for Fee Calculation");
-    }
-
-    long bpt = 0;
-    long vpt = 0;
-    long rbs = 0;
-    long sbs = 0;
-    long gas = 0;
-    long tv = 0;
-    long bpr = 0;
-    long sbpr = 0;
-
-    FileUpdateTransactionBody fileUpdateTxBody = txBody.getFileUpdate();
-    final long txBodySize = getCommonTransactionBodyBytes(txBody);
-
-    // bpt - Bytes per Transaction
-    bpt = txBodySize + getFileUpdateBodyTxSize(txBody) + sigValObj.getSignatureSize();
-
-    // vpt - verifications per transactions
-    vpt = sigValObj.getTotalSigCount();
-
-    bpr = INT_SIZE;
-
-    // sbs - Storage bytes seconds - check if key is changed, need to charge for new key storage
-    int sbsStorageSize = 0;
-
-    if (fileUpdateTxBody.hasKeys()) {
-      List<Key> waclKeys = fileUpdateTxBody.getKeys().getKeysList();
-      int keySize = 0;
-
-      for (Key key : waclKeys) {
-        keySize += getAccountKeyStorageSize(key);
-      }
-      sbsStorageSize += keySize;
-    }
-
-    if (fileUpdateTxBody.getContents() != null) {
-      sbsStorageSize += fileUpdateTxBody.getContents().size();
-    }
-    if ((sbsStorageSize != 0) && (expirationTimeStamp != null && expirationTimeStamp.getSeconds() > 0)) {
-      Instant expirationTime = RequestBuilder.convertProtoTimeStamp(expirationTimeStamp);
-      Timestamp txValidStartTimestamp = txBody.getTransactionID().getTransactionValidStart();
-      Instant txValidStartTime = RequestBuilder.convertProtoTimeStamp(txValidStartTimestamp);
-      Duration duration = Duration.between(txValidStartTime, expirationTime);
-      long seconds = duration.getSeconds();
-      sbs = sbsStorageSize * seconds;
-    }
-    
-    rbs =  calculateRBS(txBody);
-
-    long rbsNetwork = getDefaultRBHNetworkSize();
-
-    FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-        .setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
-   
-    return getFeeDataMatrices(feeMatricesForTx, sigValObj.getPayerAcctSigCount(),rbsNetwork);
-
-  }
-
   /**
    * This method returns Fee Matrices for File Append Transaction
    */
@@ -203,7 +95,6 @@ public class FileFeeBuilder extends FeeBuilder {
     return getFeeDataMatrices(feeMatricesForTx, sigValObj.getPayerAcctSigCount(),rbsNetwork);
 
   }
-
 
   /**
    * This method returns Fee Matrices for File Info Query
@@ -333,61 +224,6 @@ public class FileFeeBuilder extends FeeBuilder {
     int cryptoFileCreateSize = (LONG_SIZE) + keySize + fileContentsSize + (BASIC_ENTITY_ID_SIZE)   + newRealmAdminKeySize;
 
     return cryptoFileCreateSize;
-
-  }
-
-  /**
-   * This method returns total bytes in File Update Transaction Body
-   */
-  public static int getFileUpdateBodyTxSize(TransactionBody txBody) {
-    /*
-     * FileID fileID = 1; // the file to update Timestamp expirationTime = 2; // the new time at
-     * which it should expire (ignored if not later than the current value) KeyList keys = 3; // the
-     * keys that can modify or delete the file bytes contents = 4; // the new file contents. All the
-     * bytes in the old contents are discarded.
-     */
-
-    int fileUpdateBodySize = BASIC_ENTITY_ID_SIZE;
-    FileUpdateTransactionBody fileUpdateTxBody = txBody.getFileUpdate();
-
-    if (fileUpdateTxBody.hasKeys()) {
-      List<Key> waclKeys = fileUpdateTxBody.getKeys().getKeysList();
-      int keySize = 0;
-      for (Key key : waclKeys) {
-        keySize = keySize + getAccountKeyStorageSize(key);
-      }
-      fileUpdateBodySize = fileUpdateBodySize +keySize;
-    }
-
-    if (fileUpdateTxBody.hasExpirationTime()) {
-      fileUpdateBodySize = fileUpdateBodySize + (LONG_SIZE);
-    }
-
-    if (fileUpdateTxBody.getContents() != null) {
-      fileUpdateBodySize = fileUpdateBodySize +  fileUpdateTxBody.getContents().size();
-    }
-
-    return fileUpdateBodySize;
-
-  }
-
-  /**
-   * This method calculates total total Storage Bytes (product of total bytes that will be stored in
-   * File Storage and time till account expires)
-   */
-  private long getFileCreateStorageBytesSec(TransactionBody txBody) {
-    long storageSize = (long) getFileCreateTxSize(txBody)  + LONG_SIZE + BOOL_SIZE ; // add Expiration Time and Deleted flag space
-    Timestamp expirationTimeStamp = txBody.getFileCreate().getExpirationTime();
-    if (expirationTimeStamp == null) {
-      return 0;
-    }
-    Instant expirationTime = RequestBuilder.convertProtoTimeStamp(expirationTimeStamp);
-    Timestamp txValidStartTimestamp = txBody.getTransactionID().getTransactionValidStart();
-    Instant txValidStartTime = RequestBuilder.convertProtoTimeStamp(txValidStartTimestamp);
-    Duration duration = Duration.between(txValidStartTime, expirationTime);
-    long seconds = duration.getSeconds();
-    storageSize = storageSize * seconds;
-    return storageSize;
 
   }
 

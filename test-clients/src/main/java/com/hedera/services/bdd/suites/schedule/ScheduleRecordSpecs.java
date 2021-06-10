@@ -60,7 +60,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID
 
 public class ScheduleRecordSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ScheduleRecordSpecs.class);
-	private static final int SCHEDULE_EXPIRY_TIME_SECS = 10;
 
 	private static final String defaultTxExpiry =
 			HapiSpecSetup.getDefaultNodeProps().get("ledger.schedule.txExpiryTimeSecs");
@@ -72,7 +71,6 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						suiteSetup(),
 						executionTimeIsAvailable(),
 						deletionTimeIsAvailable(),
 						allRecordsAreQueryable(),
@@ -90,13 +88,6 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
 		return defaultHapiSpec("suiteCleanup")
 				.given().when().then(
 						overriding("ledger.schedule.txExpiryTimeSecs", defaultTxExpiry)
-				);
-	}
-
-	private HapiApiSpec suiteSetup() {
-		return defaultHapiSpec("suiteSetup")
-				.given().when().then(
-						overriding("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS)
 				);
 	}
 

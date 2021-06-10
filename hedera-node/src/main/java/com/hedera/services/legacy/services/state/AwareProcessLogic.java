@@ -193,9 +193,9 @@ public class AwareProcessLogic implements ProcessLogic {
 			ctx.txnCtx().setStatus(opValidity);
 			return;
 		}
-		logic.doStateTransition();
-
-		ctx.networkCtxManager().finishIncorporating(accessor.getFunction());
+		if (ctx.transitionRunner().tryTransition(accessor)) {
+			ctx.networkCtxManager().finishIncorporating(accessor.getFunction());
+		}
 	}
 
 	private boolean hasActivePayerSig(TxnAccessor accessor) {

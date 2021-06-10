@@ -23,25 +23,16 @@ package com.hederahashgraph.builder;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.legacy.proto.utils.KeyExpansion;
-import com.hedera.services.legacy.proto.utils.SignatureGenerator;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionOrBuilder;
-import net.i2p.crypto.eddsa.EdDSAEngine;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
-import net.i2p.crypto.eddsa.EdDSAPublicKey;
-import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 
-import java.io.UnsupportedEncodingException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -55,44 +46,6 @@ import java.util.Set;
  * @author hua
  */
 public class TransactionSigner {
-
-  /**
-   * Signature algorithm
-   */
-  static final String ECDSA_SIGNATURE_ALGORITHM = "SHA384withECDSA";
-
-  /**
-   * Generates ED25519 or ECDSA signature depending on the type of private key provided.
-   *
-   * @param msgBytes message to be signed
-   * @param priv the private key to sign
-   * @return the generated signature as a ByteString
-   */
-  public static ByteString signBytes(byte[] msgBytes, PrivateKey priv) {
-    // Create a Signature object and initialize it with the private key
-    byte[] sigBytes = null;
-    try {
-      if (priv instanceof EdDSAPrivateKey) {
-        EdDSAEngine engine = new EdDSAEngine();
-        engine.initSign(priv);
-        sigBytes = engine.signOneShot(msgBytes);
-
-      } else {
-        java.security.Signature sigInstance = null;
-        sigInstance = java.security.Signature.getInstance(ECDSA_SIGNATURE_ALGORITHM);
-        sigInstance.initSign(priv);
-        sigInstance.update(msgBytes, 0, msgBytes.length);
-        // Update and sign the data
-        sigBytes = sigInstance.sign();
-
-      }
-    } catch (NoSuchAlgorithmException | SignatureException | InvalidKeyException e) {
-      e.printStackTrace();
-    }
-
-    return ByteString.copyFrom(sigBytes);
-  }
-
   /**
    * Signs a transaction using SignatureMap format with provided private keys.
    * 

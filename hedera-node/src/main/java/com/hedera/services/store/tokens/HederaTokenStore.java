@@ -80,9 +80,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -348,48 +346,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			tokenRelsLedger.set(relationship, TOKEN_BALANCE, balance - amount);
 			hederaLedger.updateTokenXfers(tId, aId, -amount);
 			apply(tId, t -> t.adjustTotalSupplyBy(-amount));
-
-			return OK;
-		});
-	}
-
-	@Override
-	public ResponseCodeEnum burn(TokenID tId, long amount) {
-		return changeSupply(tId, amount, -1, INVALID_TOKEN_BURN_AMOUNT);
-	}
-
-	@Override
-	public ResponseCodeEnum mint(TokenID tId, long amount) {
-		return changeSupply(tId, amount, +1, INVALID_TOKEN_MINT_AMOUNT);
-	}
-
-	private ResponseCodeEnum changeSupply(
-			TokenID tId,
-			long amount,
-			long sign,
-			ResponseCodeEnum failure
-	) {
-		return tokenSanityCheck(tId, token -> {
-			if (!token.hasSupplyKey()) {
-				return TOKEN_HAS_NO_SUPPLY_KEY;
-			}
-
-			var change = sign * amount;
-			var toBeUpdatedTotalSupply = token.totalSupply() + change;
-			if (toBeUpdatedTotalSupply < 0) {
-				return failure;
-			}
-
-			var aId = token.treasury().toGrpcAccountId();
-			var validity = checkAccountUsability(aId);
-			if (validity == OK) {
-				validity = tryAdjustment(aId, tId, change);
-			}
-			if (validity != OK) {
-				return validity;
-			}
-
-			apply(tId, t -> t.adjustTotalSupplyBy(change));
 
 			return OK;
 		});
@@ -739,23 +695,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		var key = asTokenRel(aId, tId);
 		if (!tokenRelsLedger.exists(key)) {
 			return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-		}
-
-		return action.apply(token);
-	}
-
-	private ResponseCodeEnum tokenSanityCheck(
-			TokenID tId,
-			Function<MerkleToken, ResponseCodeEnum> action
-	) {
-		var validity = exists(tId) ? OK : INVALID_TOKEN_ID;
-		if (validity != OK) {
-			return validity;
-		}
-
-		var token = get(tId);
-		if (token.isDeleted()) {
-			return TOKEN_WAS_DELETED;
 		}
 
 		return action.apply(token);

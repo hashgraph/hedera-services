@@ -21,8 +21,11 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.Token;
+import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
@@ -30,89 +33,71 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.never;
 
+@ExtendWith(MockitoExtension.class)
 class TokenBurnTransitionLogicTest {
-	long amount = 123L;
-	private TokenID id = IdUtils.asToken("1.2.3");
+	private final long amount = 123L;
+	private final TokenID grpcId = IdUtils.asToken("1.2.3");
+	private final Id id = new Id(1, 2, 3);
+	private final Id treasuryId = new Id(2, 4, 6);
+	private final Account treasury = new Account(treasuryId);
 
-	private TokenStore tokenStore;
+	@Mock
+	private Token token;
+	@Mock
+	private TypedTokenStore store;
+	@Mock
 	private TransactionContext txnCtx;
+	@Mock
 	private PlatformTxnAccessor accessor;
-	private MerkleToken token;
 
+	private TokenRelationship treasuryRel;
 	private TransactionBody tokenBurnTxn;
+
 	private TokenBurnTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
-		tokenStore = mock(TokenStore.class);
-		accessor = mock(PlatformTxnAccessor.class);
-		token = mock(MerkleToken.class);
-
-		txnCtx = mock(TransactionContext.class);
-
-		subject = new TokenBurnTransitionLogic(tokenStore, txnCtx);
+		subject = new TokenBurnTransitionLogic(store, txnCtx);
 	}
 
 	@Test
-	public void capturesInvalidBurn() {
+	void followsHappyPath() {
+		// setup:
+		treasuryRel = new TokenRelationship(token, treasury);
+
 		givenValidTxnCtx();
-		// and:
-		given(tokenStore.burn(id, amount)).willReturn(INVALID_TOKEN_BURN_AMOUNT);
+		given(accessor.getTxn()).willReturn(tokenBurnTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(store.loadToken(id)).willReturn(token);
+		given(token.getTreasury()).willReturn(treasury);
+		given(store.loadTokenRelationship(token, treasury)).willReturn(treasuryRel);
 
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(txnCtx).setStatus(INVALID_TOKEN_BURN_AMOUNT);
+		verify(token).burn(treasuryRel, amount);
+		verify(store).persistToken(token);
+		verify(store).persistTokenRelationship(treasuryRel);
 	}
 
 	@Test
-	public void rejectsBadRefForSafety() {
-		givenValidTxnCtx();
-		// and:
-		given(tokenStore.resolve(id)).willReturn(TokenStore.MISSING_TOKEN);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(tokenStore, never()).burn(id, amount);
-		verify(txnCtx).setStatus(INVALID_TOKEN_ID);
-	}
-
-	@Test
-	public void followsHappyPath() {
-		givenValidTxnCtx();
-		// and:
-		given(tokenStore.burn(id, amount)).willReturn(OK);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(tokenStore).burn(id, amount);
-		verify(txnCtx).setStatus(SUCCESS);
-		verify(txnCtx).setNewTotalSupply(amount);
-	}
-
-	@Test
-	public void hasCorrectApplicability() {
+	void hasCorrectApplicability() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -121,21 +106,7 @@ class TokenBurnTransitionLogicTest {
 	}
 
 	@Test
-	public void setsFailInvalidIfUnhandledException() {
-		givenValidTxnCtx();
-		// and:
-		given(tokenStore.burn(any(), anyLong()))
-				.willThrow(IllegalArgumentException.class);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(FAIL_INVALID);
-	}
-
-	@Test
-	public void acceptsValidTxn() {
+	void acceptsValidTxn() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -143,7 +114,7 @@ class TokenBurnTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsMissingToken() {
+	void rejectsMissingToken() {
 		givenMissingToken();
 
 		// expect:
@@ -151,7 +122,7 @@ class TokenBurnTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidNegativeAmount() {
+	void rejectsInvalidNegativeAmount() {
 		givenInvalidNegativeAmount();
 
 		// expect:
@@ -159,7 +130,7 @@ class TokenBurnTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidZeroAmount() {
+	void rejectsInvalidZeroAmount() {
 		givenInvalidZeroAmount();
 
 		// expect:
@@ -169,14 +140,9 @@ class TokenBurnTransitionLogicTest {
 	private void givenValidTxnCtx() {
 		tokenBurnTxn = TransactionBody.newBuilder()
 				.setTokenBurn(TokenBurnTransactionBody.newBuilder()
-						.setToken(id)
+						.setToken(grpcId)
 						.setAmount(amount))
 				.build();
-		given(accessor.getTxn()).willReturn(tokenBurnTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(tokenStore.resolve(id)).willReturn(id);
-		given(tokenStore.get(id)).willReturn(token);
-		given(token.totalSupply()).willReturn(amount);
 	}
 
 	private void givenMissingToken() {
@@ -191,7 +157,7 @@ class TokenBurnTransitionLogicTest {
 		tokenBurnTxn = TransactionBody.newBuilder()
 				.setTokenBurn(
 						TokenBurnTransactionBody.newBuilder()
-								.setToken(id)
+								.setToken(grpcId)
 								.setAmount(-1)
 								.build()
 				).build();
@@ -201,7 +167,7 @@ class TokenBurnTransitionLogicTest {
 		tokenBurnTxn = TransactionBody.newBuilder()
 				.setTokenBurn(
 						TokenBurnTransactionBody.newBuilder()
-								.setToken(id)
+								.setToken(grpcId)
 								.setAmount(0)
 								.build()
 				).build();

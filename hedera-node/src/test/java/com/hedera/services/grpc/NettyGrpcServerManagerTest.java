@@ -185,6 +185,7 @@ class NettyGrpcServerManagerTest {
 		if (outsideCircleCi.getAsBoolean()) {
 			assertTrue(logCaptor.warnLogs().isEmpty());
 		}
+		assertTrue(logCaptor.warnLogs().isEmpty());
 	}
 
 	@Test

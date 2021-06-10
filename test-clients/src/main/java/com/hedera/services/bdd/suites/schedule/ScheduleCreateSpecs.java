@@ -71,7 +71,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_R
 
 public class ScheduleCreateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ScheduleCreateSpecs.class);
-	private static final int SCHEDULE_EXPIRY_TIME_SECS = 10;
 
 	private static final String defaultWhitelist =
 			HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist");
@@ -85,7 +84,6 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				suiteSetup(),
 				notIdenticalScheduleIfScheduledTxnChanges(),
 				notIdenticalScheduleIfAdminKeyChanges(),
 				notIdenticalScheduleIfMemoChanges(),
@@ -112,13 +110,6 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				infoIncludesTxnIdFromCreationReceipt(),
 				suiteCleanup(),
 		});
-	}
-
-	private HapiApiSpec suiteSetup() {
-		return defaultHapiSpec("suiteSetup")
-				.given().when().then(
-						overriding("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS)
-				);
 	}
 
 	private HapiApiSpec suiteCleanup() {
