@@ -43,7 +43,6 @@ import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 import static com.hedera.services.keys.HederaKeyActivation.payerSigIsActive;
 import static com.hedera.services.legacy.crypto.SignatureStatusCode.SUCCESS_VERIFY_ASYNC;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.rationalizeIn;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
@@ -179,18 +178,6 @@ public class AwareProcessLogic implements ProcessLogic {
 		var sysAuthStatus = ctx.systemOpPolicies().check(accessor).asStatus();
 		if (sysAuthStatus != OK) {
 			ctx.txnCtx().setStatus(sysAuthStatus);
-			return;
-		}
-		var transitionLogic = ctx.transitionLogic().lookupFor(accessor.getFunction(), accessor.getTxn());
-		if (transitionLogic.isEmpty()) {
-			log.warn("Transaction w/o applicable transition logic at consensus :: {}", accessor::getSignedTxnWrapper);
-			ctx.txnCtx().setStatus(FAIL_INVALID);
-			return;
-		}
-		var logic = transitionLogic.get();
-		var opValidity = logic.semanticCheck().apply(accessor.getTxn());
-		if (opValidity != OK) {
-			ctx.txnCtx().setStatus(opValidity);
 			return;
 		}
 		if (ctx.transitionRunner().tryTransition(accessor)) {
