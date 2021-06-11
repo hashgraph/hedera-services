@@ -119,7 +119,7 @@ commands:
           name: Check SonarCloud Quality Gate
           command: |
             set -x
-            REPO_PATH="/repo/<< parameters.repo_name >>"
+            REPO_PATH="/repo<< parameters.repo_name >>"
             if [[ ! -d "${REPO_PATH}" ]]; then exit 15; fi
             SONAR_QG_SCRIPT="${REPO_PATH}/.circleci/scripts/sonar_check_quality_gate.pl"
             if [[ ! -f "${SONAR_QG_SCRIPT}" ]]; then exit 38; fi
