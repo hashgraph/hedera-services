@@ -24,6 +24,7 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
@@ -36,12 +37,14 @@ import static com.hedera.services.sigs.utils.ImmutableKeyUtils.IMMUTABILITY_SENT
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class UpdateCustomizerFactory {
 	public Pair<Optional<HederaAccountCustomizer>, ResponseCodeEnum> customizerFor(
 			MerkleAccount contract,
+			OptionValidator validator,
 			ContractUpdateTransactionBody updateOp
 	) {
 		if (!onlyAffectsExpiry(updateOp) && !isMutable(contract)) {
@@ -72,6 +75,9 @@ public class UpdateCustomizerFactory {
 			customizer.autoRenewPeriod(updateOp.getAutoRenewPeriod().getSeconds());
 		}
 		if (updateOp.hasExpirationTime()) {
+			if (!validator.isValidExpiry(updateOp.getExpirationTime())) {
+				return Pair.of(Optional.empty(), INVALID_EXPIRATION_TIME);
+			}
 			customizer.expiry(updateOp.getExpirationTime().getSeconds());
 		}
 		if (affectsMemo(updateOp)) {

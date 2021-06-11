@@ -21,11 +21,13 @@ package com.hedera.services.bdd.suites.contract;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Instant;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -36,11 +38,15 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 
 public class ContractUpdateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractUpdateSuite.class);
+
+	private static final long defaultMaxLifetime =
+			Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
 
 	public static void main(String... args) {
 		new ContractUpdateSuite().runSuiteSync();
@@ -52,7 +58,22 @@ public class ContractUpdateSuite extends HapiApiSuite {
 				updateWithPendingNewKeySucceeds(),
 				canSetImmutableWithEmptyKeyList(),
 				updateWithBothMemoSettersWorks(),
+				updateCannotSetUnreasonableLifetime(),
 		});
+	}
+
+	private HapiApiSpec updateCannotSetUnreasonableLifetime() {
+		final var smallBuffer = 12_345L;
+		final var excessiveExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() + smallBuffer;
+
+		return defaultHapiSpec("UpdateCannotSetUnreasonableLifetime")
+				.given(
+						contractCreate("target")
+				).when( ).then(
+						contractUpdate("target")
+								.newExpirySecs(excessiveExpiry)
+								.hasKnownStatus(INVALID_EXPIRATION_TIME)
+				);
 	}
 
 	private HapiApiSpec updateWithBothMemoSettersWorks() {

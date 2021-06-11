@@ -86,6 +86,7 @@ class BootstrapPropertiesTest {
 			entry("contracts.maxStorageKb", 1024),
 			entry("dev.onlyDefaultNodeListens", true),
 			entry("dev.defaultListeningNodeAccount", "0.0.3"),
+			entry("entities.maxLifetime", 3153600000L),
 			entry("fees.percentCongestionMultipliers", CongestionMultipliers.from("90,10x,95,25x,99,100x")),
 			entry("fees.minCongestionPeriod", 60),
 			entry("files.addressBook", 101L),

@@ -43,8 +43,6 @@ import java.util.List;
  * related Transactions and Query.
  */
 public class SmartContractFeeBuilder extends FeeBuilder {
-
-
 	/**
 	 * This method returns Fee Matrices for Contract Create Transaction
 	 */
@@ -477,7 +475,7 @@ public class SmartContractFeeBuilder extends FeeBuilder {
 		Timestamp txValidStartTimestamp = txBody.getTransactionID().getTransactionValidStart();
 		Instant txValidStartTime = RequestBuilder.convertProtoTimeStamp(txValidStartTimestamp);
 		Duration duration = Duration.between(txValidStartTime, expirationTime);
-		long seconds = duration.getSeconds();
+		long seconds = Math.min(duration.getSeconds(), MAX_ENTITY_LIFETIME);
 		storageSize = storageSize * seconds;
 		return storageSize;
 	}

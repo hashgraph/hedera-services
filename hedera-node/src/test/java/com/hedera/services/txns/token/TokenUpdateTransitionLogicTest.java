@@ -33,6 +33,7 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -47,6 +48,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SUPPLY_KEY;
@@ -121,7 +123,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void abortsOnInvalidIdForSafety() {
+	void abortsOnInvalidIdForSafety() {
 		givenValidTxnCtx(true);
 		given(store.resolve(target)).willReturn(TokenStore.MISSING_TOKEN);
 
@@ -133,7 +135,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void setsFailInvalidIfUnhandledException() {
+	void setsFailInvalidIfUnhandledException() {
 		givenValidTxnCtx(false);
 		givenToken(true, true);
 
@@ -150,7 +152,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void abortsIfCreationFails() {
+	void abortsIfCreationFails() {
 		givenValidTxnCtx();
 		// and:
 		given(store.update(any(), anyLong())).willReturn(INVALID_TOKEN_SYMBOL);
@@ -165,7 +167,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void rollsbackNewTreasuryChangesIfUpdateFails() {
+	void rollsbackNewTreasuryChangesIfUpdateFails() {
 		givenValidTxnCtx(true);
 		givenToken(true, true);
 		// and:
@@ -184,7 +186,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void abortsOnUnassociatedNewTreasury() {
+	void abortsOnUnassociatedNewTreasury() {
 		givenValidTxnCtx(true);
 		givenToken(true, true);
 		// and:
@@ -202,7 +204,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void abortsOnInvalidNewTreasury() {
+	void abortsOnInvalidNewTreasury() {
 		givenValidTxnCtx(true);
 		givenToken(true, true);
 		// and:
@@ -221,7 +223,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void abortsOnDetachedNewTreasury() {
+	void abortsOnDetachedNewTreasury() {
 		givenValidTxnCtx(true);
 		givenToken(true, true);
 		// and:
@@ -237,7 +239,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void abortsOnDetachedOldTreasury() {
+	void abortsOnDetachedOldTreasury() {
 		givenValidTxnCtx(true);
 		givenToken(true, true);
 		// and:
@@ -253,7 +255,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void abortsOnDetachedOldAutoRenew() {
+	void abortsOnDetachedOldAutoRenew() {
 		givenValidTxnCtx(true);
 		givenToken(true, true);
 		// and:
@@ -269,7 +271,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void abortsOnDetachedNewAutoRenew() {
+	void abortsOnDetachedNewAutoRenew() {
 		givenValidTxnCtx(true);
 		givenToken(true, true);
 		// and:
@@ -285,7 +287,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void permitsExtendingExpiry() {
+	void permitsExtendingExpiry() {
 		givenValidTxnCtx(false);
 		// and:
 		given(token.adminKey()).willReturn(Optional.empty());
@@ -300,7 +302,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void abortsOnNotSetAdminKey() {
+	void abortsOnNotSetAdminKey() {
 		givenValidTxnCtx(true);
 		// and:
 		given(token.adminKey()).willReturn(Optional.empty());
@@ -313,7 +315,26 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void abortsOnAlreadyDeletedToken() {
+	void abortsOnInvalidNewExpiry() {
+		final var expiry = Timestamp.newBuilder().setSeconds(thisSecond + thisSecond).build();
+
+		var builder = TransactionBody.newBuilder()
+				.setTokenUpdate(TokenUpdateTransactionBody.newBuilder()
+						.setExpiry(expiry));
+		tokenUpdateTxn = builder.build();
+		given(accessor.getTxn()).willReturn(tokenUpdateTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(validator.isValidExpiry(expiry)).willReturn(false);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(txnCtx).setStatus(INVALID_EXPIRATION_TIME);
+	}
+
+	@Test
+	void abortsOnAlreadyDeletedToken() {
 		givenValidTxnCtx(true);
 		// and:
 		given(token.isDeleted()).willReturn(true);
@@ -326,7 +347,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void doesntReplaceIdenticalTreasury() {
+	void doesntReplaceIdenticalTreasury() {
 		givenValidTxnCtx(true, true);
 		givenToken(true, true);
 		given(store.update(any(), anyLong())).willReturn(OK);
@@ -343,7 +364,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void followsHappyPathWithNewTreasury() {
+	void followsHappyPathWithNewTreasury() {
 		// setup:
 		long oldTreasuryBalance = 1000;
 		givenValidTxnCtx(true);
@@ -368,7 +389,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void followsHappyPathWithNewTreasuryAndZeroBalanceOldTreasury() {
+	void followsHappyPathWithNewTreasuryAndZeroBalanceOldTreasury() {
 		// setup:
 		long oldTreasuryBalance = 0;
 		givenValidTxnCtx(true);
@@ -392,7 +413,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void doesntGrantKycOrUnfreezeNewTreasuryIfNoKeyIsPresent() {
+	void doesntGrantKycOrUnfreezeNewTreasuryIfNoKeyIsPresent() {
 		givenValidTxnCtx(true);
 		// and:
 		givenToken(false, false);
@@ -411,7 +432,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void hasCorrectApplicability() {
+	void hasCorrectApplicability() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -420,7 +441,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void acceptsValidTxn() {
+	void acceptsValidTxn() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -428,7 +449,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsExcessiveMemo() {
+	void rejectsExcessiveMemo() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -436,7 +457,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsMissingToken() {
+	void rejectsMissingToken() {
 		givenMissingToken();
 
 		// expect:
@@ -444,7 +465,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsTooLongSymbol() {
+	void rejectsTooLongSymbol() {
 		givenValidTxnCtx();
 		given(validator.tokenSymbolCheck(any())).willReturn(TOKEN_SYMBOL_TOO_LONG);
 
@@ -453,7 +474,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidSymbol() {
+	void rejectsInvalidSymbol() {
 		givenValidTxnCtx();
 		given(validator.tokenSymbolCheck(any())).willReturn(INVALID_TOKEN_SYMBOL);
 
@@ -462,7 +483,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsTooLongName() {
+	void rejectsTooLongName() {
 		givenValidTxnCtx();
 		given(validator.tokenNameCheck(any())).willReturn(TOKEN_SYMBOL_TOO_LONG);
 
@@ -471,7 +492,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidAdminKey() {
+	void rejectsInvalidAdminKey() {
 		givenInvalidAdminKey();
 
 		// expect:
@@ -479,7 +500,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidKycKey() {
+	void rejectsInvalidKycKey() {
 		givenInvalidKycKey();
 
 		// expect:
@@ -487,7 +508,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidWipeKey() {
+	void rejectsInvalidWipeKey() {
 		givenInvalidWipeKey();
 
 		// expect:
@@ -495,7 +516,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidSupplyKey() {
+	void rejectsInvalidSupplyKey() {
 		givenInvalidSupplyKey();
 
 		// expect:
@@ -503,7 +524,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidMemo() {
+	void rejectsInvalidMemo() {
 		givenValidTxnCtx();
 		given(validator.memoCheck(any())).willReturn(INVALID_ZERO_BYTE_IN_STRING);
 
@@ -512,7 +533,7 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidFreezeKey() {
+	void rejectsInvalidFreezeKey() {
 		givenInvalidFreezeKey();
 
 		// expect:

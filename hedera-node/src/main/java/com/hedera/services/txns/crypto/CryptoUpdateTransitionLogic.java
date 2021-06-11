@@ -91,6 +91,10 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			final var target = op.getAccountIDToUpdate();
 			final var customizer = asCustomizer(op);
 
+			if (op.hasExpirationTime() && !validator.isValidExpiry(op.getExpirationTime())) {
+				txnCtx.setStatus(INVALID_EXPIRATION_TIME);
+				return;
+			}
 			final var validity = sanityCheck(target, customizer);
 			if (validity != OK) {
 				txnCtx.setStatus(validity);
@@ -194,9 +198,6 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 
 		if (op.hasAutoRenewPeriod() && !validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod())) {
 			return AUTORENEW_DURATION_NOT_IN_RANGE;
-		}
-		if (op.hasExpirationTime() && !validator.isValidExpiry(op.getExpirationTime())) {
-			return INVALID_EXPIRATION_TIME;
 		}
 
 		return OK;

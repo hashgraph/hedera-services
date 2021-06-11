@@ -27,6 +27,9 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_BODY_SIZE;
 
 public interface EstimatorUtils {
+	/* A century of seconds */
+	long MAX_ENTITY_LIFETIME = 100L * 365L * 24L * 60L * 60L;
+
 	default long baseBodyBytes(TransactionBody txn) {
 		return (long) BASIC_TX_BODY_SIZE + txn.getMemoBytes().size();
 	}
@@ -41,6 +44,9 @@ public interface EstimatorUtils {
 	}
 
 	default long changeInBsUsage(long oldB, long oldLifetimeSecs, long newB, long newLifetimeSecs) {
+		oldLifetimeSecs = Math.min(MAX_ENTITY_LIFETIME, oldLifetimeSecs);
+		newLifetimeSecs = Math.min(MAX_ENTITY_LIFETIME, newLifetimeSecs);
+
 		newLifetimeSecs = Math.max(oldLifetimeSecs, newLifetimeSecs);
 		long oldBs = oldB * oldLifetimeSecs;
 		long newBs = newB * newLifetimeSecs;

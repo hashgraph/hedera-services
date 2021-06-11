@@ -140,8 +140,10 @@ public class ConsensusServiceFeeBuilder extends FeeBuilder {
         Instant newExpiration = RequestBuilder.convertProtoTimeStamp(newExpirationTimeStamp);
 
         // RBS which has already been paid for.
-        long rbsRefund = oldRamBytes * Duration.between(txValidStart, oldExpiration).getSeconds();
-        long rbsCharge = newRamBytes *  Duration.between(txValidStart, newExpiration).getSeconds();
+        long oldLifetime = Math.min(MAX_ENTITY_LIFETIME, Duration.between(txValidStart, oldExpiration).getSeconds());
+        long newLifetime = Math.min(MAX_ENTITY_LIFETIME, Duration.between(txValidStart, newExpiration).getSeconds());
+        long rbsRefund = oldRamBytes * oldLifetime;
+        long rbsCharge = newRamBytes * newLifetime;
         long netRbs = rbsCharge - rbsRefund;
         return netRbs > 0 ? netRbs : 0;
     }
