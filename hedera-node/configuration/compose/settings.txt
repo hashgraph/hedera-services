@@ -1,3 +1,6 @@
+dbBackup.active,                               0
+dbConnection.host,                             hedera-postgres
+dbConnection.schema,                           fcfsNODE_ID
 checkSignedStateFromDisk,                      1
 csvFileName,                                   MainNetStats
 dbBackup.active,                               1
