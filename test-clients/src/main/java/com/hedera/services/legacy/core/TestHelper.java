@@ -25,7 +25,6 @@ import com.google.protobuf.TextFormat;
 import com.hedera.services.legacy.client.util.Common;
 import com.hedera.services.legacy.exception.InvalidNodeTransactionPrecheckCode;
 import com.hedera.services.legacy.proto.utils.ProtoCommonUtils;
-import com.hedera.services.legacy.regression.FeeUtility;
 import com.hedera.services.legacy.regression.Utilities;
 import com.hedera.services.legacy.regression.umbrella.CryptoServiceTest;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -143,7 +142,7 @@ public class TestHelper {
 
     FileServiceGrpc.FileServiceBlockingStub fStub = FileServiceGrpc.newBlockingStub(channel);
     FileID feeFileId = FileID.newBuilder()
-        .setFileNum(FeeUtility.FEE_FILE_ACCOUNT_NUM)
+        .setFileNum(111L)
         .setRealmNum(0L).setShardNum(0L).build();
     byte[] feeScheduleBytes = new byte[0];
     try {
@@ -685,41 +684,6 @@ public class TestHelper {
     Transaction transferTransaction = createTransferSigMap(payerAccount, payerAccountKeyPair,
         nodeAccount, payerAccount, payerAccountKeyPair, nodeAccount, getTxRecordFee);
     return RequestBuilder.getAccountRecordsQuery(accountID, transferTransaction, responsetype);
-  }
-
-  public static Transaction createTransfer(AccountID fromAccount, PrivateKey fromKey,
-      AccountID toAccount, AccountID payerAccount, PrivateKey payerAccountKey,
-      AccountID nodeAccount, long amount) {
-    Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
-    Duration transactionDuration = RequestBuilder.getDuration(TX_DURATION);
-
-    Transaction transferTx = RequestBuilder.getCryptoTransferRequest(payerAccount.getAccountNum(),
-        payerAccount.getRealmNum(), payerAccount.getShardNum(), nodeAccount.getAccountNum(),
-        nodeAccount.getRealmNum(), nodeAccount.getShardNum(), 0, timestamp, transactionDuration,
-        false, "Test Transfer", fromAccount.getAccountNum(), -amount,
-        toAccount.getAccountNum(), amount);
-    // sign the tx
-    List<PrivateKey> privKeysList = new ArrayList<>();
-    privKeysList.add(payerAccountKey);
-    privKeysList.add(fromKey);
-
-    Transaction signedTx = TransactionSigner.signTransaction(transferTx, privKeysList);
-
-    long transferFee = 0;
-    try {
-      transferFee = FeeClient.getTransferFee(signedTx, privKeysList.size());
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    transferTx = RequestBuilder.getCryptoTransferRequest(payerAccount.getAccountNum(),
-        payerAccount.getRealmNum(), payerAccount.getShardNum(), nodeAccount.getAccountNum(),
-        nodeAccount.getRealmNum(), nodeAccount.getShardNum(), transferFee, timestamp,
-        transactionDuration, false,
-        "Test Transfer", fromAccount.getAccountNum(), -amount, toAccount.getAccountNum(),
-        amount);
-
-    signedTx = TransactionSigner.signTransaction(transferTx, privKeysList);
-    return signedTx;
   }
 
   public static Transaction createTransferSigMap(AccountID fromAccount, KeyPair fromKeyPair,

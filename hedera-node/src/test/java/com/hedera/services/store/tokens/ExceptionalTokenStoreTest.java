@@ -41,7 +41,6 @@ class ExceptionalTokenStoreTest {
 		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.grantKyc(null, null));
 		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.revokeKyc(null, null));
 		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.apply(null, token -> {}));
-		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.burn(null, 0L));
 		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.wipe(null,null, 0L, false));
 		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.associate(null, null));
 		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.dissociate(null, null));

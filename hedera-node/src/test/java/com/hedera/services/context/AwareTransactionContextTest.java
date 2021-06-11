@@ -110,6 +110,10 @@ class AwareTransactionContextTest {
 	private Instant now = Instant.now();
 	private ExchangeRate rateNow = ExchangeRate.newBuilder().setHbarEquiv(1).setCentEquiv(100).setExpirationTime(
 			TimestampSeconds.newBuilder()).build();
+	private Timestamp timeNow = Timestamp.newBuilder()
+			.setSeconds(now.getEpochSecond())
+			.setNanos(now.getNano())
+			.build();
 	private ExchangeRateSet ratesNow =
 			ExchangeRateSet.newBuilder().setCurrentRate(rateNow).setNextRate(rateNow).build();
 	private AccountID payer = asAccount("0.0.2");
@@ -213,6 +217,8 @@ class AwareTransactionContextTest {
 
 		subject = new AwareTransactionContext(ctx);
 		subject.resetFor(accessor, now, memberId);
+
+		verify(narratedCharging).resetForTxn(accessor, memberId);
 	}
 
 	@Test
@@ -626,7 +632,8 @@ class AwareTransactionContextTest {
 		var expirableRecordBuilder = buildRecord(subject.getNonThresholdFeeChargedToPayer(),
 				accessor.getHash(),
 				accessor, now, subject.receiptSoFar().build());
-		when(creator.buildExpiringRecord(anyLong(), any(), any(), any(), any(), any())).thenReturn(expirableRecordBuilder);
+		when(creator.buildExpiringRecord(anyLong(), any(), any(), any(), any(), any(), any()))
+				.thenReturn(expirableRecordBuilder);
 		return expirableRecordBuilder;
 	}
 }

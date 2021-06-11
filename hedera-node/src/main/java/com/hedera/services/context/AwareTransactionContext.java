@@ -38,6 +38,7 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.logging.log4j.LogManager;
@@ -88,6 +89,7 @@ public class AwareTransactionContext implements TransactionContext {
 	private List<ExpiringEntity> expiringEntities;
 	private Consumer<TxnReceipt.Builder> receiptConfig = noopReceiptConfig;
 	private Consumer<ExpirableTxnRecord.Builder> recordConfig = noopRecordConfig;
+	private List<TokenTransferList> explicitTokenTransfers;
 
 	boolean hasComputedRecordSoFar;
 	ExpirableTxnRecord.Builder recordSoFar = ExpirableTxnRecord.newBuilder();
@@ -111,10 +113,16 @@ public class AwareTransactionContext implements TransactionContext {
 		receiptConfig = noopReceiptConfig;
 		isPayerSigKnownActive = false;
 		hasComputedRecordSoFar = false;
+		explicitTokenTransfers = null;
 
 		ctx.narratedCharging().resetForTxn(accessor, submittingMember);
 
 		recordSoFar.clear();
+	}
+
+	@Override
+	public void setTokenTransferLists(List<TokenTransferList> tokenTransfers) {
+		explicitTokenTransfers = tokenTransfers;
 	}
 
 	@Override
@@ -152,11 +160,12 @@ public class AwareTransactionContext implements TransactionContext {
 		final var receipt = receiptSoFar().build();
 
 		recordSoFar = ctx.creator().buildExpiringRecord(
-                                otherNonThresholdFees,
+				otherNonThresholdFees,
 				hash,
 				accessor,
 				consensusTime,
 				receipt,
+				explicitTokenTransfers,
 				ctx);
 
 		recordConfig.accept(recordSoFar);

@@ -26,8 +26,10 @@ import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 
 import java.time.Instant;
+import java.util.List;
 
 public interface EntityCreator {
 	/**
@@ -47,16 +49,16 @@ public interface EntityCreator {
 	 * 		account id
 	 * @param expiringRecord
 	 * 		expirable transaction record
-	 * @param now
+	 * @param consensusTime
 	 * 		consensus timestamp
 	 * @param submittingMember
 	 * 		submitting member
-	 * @return
+	 * @return the {@link ExpirableTxnRecord} after setting needed properties
 	 */
 	ExpirableTxnRecord saveExpiringRecord(
 			AccountID id,
 			ExpirableTxnRecord expiringRecord,
-			long now,
+			long consensusTime,
 			long submittingMember);
 
 	/**
@@ -73,7 +75,11 @@ public interface EntityCreator {
 	 * 		consensus time
 	 * @param receipt
 	 * 		transaction receipt
-	 * @return
+	 * @param explicitTokenTransfers
+	 * 		explicit list of token transfers
+	 * @param ctx
+	 * 		services context
+	 * @return a {@link ExpirableTxnRecord.Builder} for the finalized record
 	 */
 	ExpirableTxnRecord.Builder buildExpiringRecord(
 			long otherNonThresholdFees,
@@ -81,6 +87,7 @@ public interface EntityCreator {
 			TxnAccessor accessor,
 			Instant consensusTime,
 			TxnReceipt receipt,
+			List<TokenTransferList> explicitTokenTransfers,
 			ServicesContext ctx);
 
 	/**
@@ -90,7 +97,7 @@ public interface EntityCreator {
 	 * 		transaction accessor
 	 * @param consensusTimestamp
 	 * 		consensus timestamp
-	 * @return
+	 * @return a {@link ExpirableTxnRecord.Builder} for a transaction failed to commit
 	 */
 	ExpirableTxnRecord.Builder buildFailedExpiringRecord(TxnAccessor accessor, Instant consensusTimestamp);
 }

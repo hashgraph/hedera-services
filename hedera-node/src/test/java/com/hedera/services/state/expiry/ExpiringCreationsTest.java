@@ -180,7 +180,7 @@ class ExpiringCreationsTest {
 						null, null, 0L, submittingMember));
 		Assertions.assertThrows(UnsupportedOperationException.class, () ->
 				NOOP_EXPIRING_CREATIONS.buildExpiringRecord(
-						0L, null, null, null, null, null));
+						0L, null, null, null, null, null, null));
 		Assertions.assertThrows(UnsupportedOperationException.class, () ->
 				NOOP_EXPIRING_CREATIONS.buildFailedExpiringRecord(null, null));
 	}
@@ -198,7 +198,7 @@ class ExpiringCreationsTest {
 
 		//when:
 		ExpirableTxnRecord.Builder builder =
-				subject.buildExpiringRecord(100L, hash, accessor, timestamp, receipt, ctx);
+				subject.buildExpiringRecord(100L, hash, accessor, timestamp, receipt, null, ctx);
 		ExpirableTxnRecord actualRecord = builder.build();
 
 		//then:
@@ -225,6 +225,32 @@ class ExpiringCreationsTest {
 		for (int i = 0; i < tokenTransferListExpected.size(); i++) {
 			assertEquals(tokenTransferListExpected.get(i), actualRecord.getTokenAdjustments().get(i));
 		}
+	}
+
+	@Test
+	void canOverrideTokenTransfers() {
+		//given:
+		setUpForExpiringRecordBuilder();
+		given(ctx.narratedCharging()).willReturn(narratedCharging);
+		given(narratedCharging.totalFeesChargedToPayer()).willReturn(123L);
+		given(ctx.ledger()).willReturn(ledger);
+		given(ledger.netTransfersInTxn()).willReturn(transfers);
+		final var someTokenXfers = List.of(TokenTransferList.newBuilder()
+				.setToken(IdUtils.asToken("1.2.3"))
+				.addAllTransfers(
+						withAdjustments(payer, -100,
+								asAccount("0.0.3"), 10,
+								asAccount("0.0.98"), 90).getAccountAmountsList())
+				.build());
+
+		//when:
+		final var builder =
+				subject.buildExpiringRecord(100L, hash, accessor, timestamp, receipt, someTokenXfers, ctx);
+		final var actualRecord = builder.build();
+
+		//then:
+		verify(ledger, never()).netTokenTransfersInTxn();
+		assertEquals(someTokenXfers, actualRecord.asGrpc().getTokenTransferListsList());
 	}
 
 	@Test

@@ -69,6 +69,9 @@ public class TxnChargingPolicyAgent {
 
 	/**
 	 * Returns {@code true} if {@code handleTransaction} can continue after policy application; {@code false} otherwise.
+	 *
+	 * @param accessor the transaction accessor.
+	 * @return whether or not handleTransaction can continue after policy application.
 	 */
 	public boolean applyPolicyFor(TxnAccessor accessor) {
 		final var fees = feeCalc.computeFee(accessor, txnCtx.activePayerKey(), currentView.get());

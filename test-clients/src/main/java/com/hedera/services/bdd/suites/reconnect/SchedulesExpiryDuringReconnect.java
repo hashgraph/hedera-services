@@ -85,6 +85,9 @@ public class SchedulesExpiryDuringReconnect extends HapiApiSuite {
 				.given(
 						scheduleOpsEnablement(),
 						sleepFor(Duration.ofSeconds(25).toMillis()),
+						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
+								.overridingProps(Map.of("ledger.schedule.txExpiryTimeSecs", "10")),
+
 						scheduleCreate(soonToBeExpiredSchedule,
 								cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1))
 										.fee(ONE_HBAR)
@@ -101,7 +104,7 @@ public class SchedulesExpiryDuringReconnect extends HapiApiSuite {
 				)
 				.when(
 						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
-								.overridingProps(Map.of("ledger.schedule.txExpiryTimeSecs", "1000")),
+								.overridingProps(Map.of("ledger.schedule.txExpiryTimeSecs", "1800")),
 
 						scheduleCreate(longLastingSchedule,
 								cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 2))
@@ -151,7 +154,7 @@ public class SchedulesExpiryDuringReconnect extends HapiApiSuite {
 								.sleepingBetweenRetriesFor(10),
 
 						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
-								.overridingProps(Map.of("ledger.schedule.txExpiryTimeSecs", "1800")),
+								.overridingProps(Map.of("ledger.schedule.txExpiryTimeSecs", "1000")),
 
 						scheduleCreate(duplicateSchedule,
 								cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1))

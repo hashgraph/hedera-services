@@ -159,6 +159,7 @@ public interface SigningOrderResultFactory<T> {
 	 *
 	 * @param scheduled the transaction that was attempted to be scheduled.
 	 * @param txnId the {@link TransactionID} of the problematic {@code ScheduleCreate} or {@code ScheduleSign} txn.
+	 * @param errorReport the error to be reported on failure
 	 * @return the error summary.
 	 */
 	SigningOrderResult<T> forUnresolvableRequiredSigners(

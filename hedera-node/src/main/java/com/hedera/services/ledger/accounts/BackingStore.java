@@ -20,7 +20,6 @@ package com.hedera.services.ledger.accounts;
  * ‍
  */
 
-
 import java.util.Set;
 
 /**
@@ -85,6 +84,8 @@ public interface BackingStore<K, A> {
 
 	/**
 	 * Returns the set of extant account ids.
+	 *
+	 * @return the set of extant account ids.
 	 */
 	Set<K> idSet();
 }

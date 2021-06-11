@@ -135,8 +135,8 @@ public class QueryFeeCheck {
 	 * Validate each payer has enough balance that is needed for transfer.
 	 * If one of the payer for query is also paying transactionFee validate the payer has balance to pay both
 	 *
-	 * @param txn
-	 * @return
+	 * @param txn the transaction body to validate
+	 * @return the corresponding {@link ResponseCodeEnum} after the validation
 	 */
 	public ResponseCodeEnum validateQueryPaymentTransfers(TransactionBody txn) {
 		AccountID transactionPayer = txn.getTransactionID().getAccountID();
