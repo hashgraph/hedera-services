@@ -94,8 +94,6 @@ public class AccountStore {
 		final var currentAccounts = accounts.get();
 		final var mutableAccount = currentAccounts.getForModify(key);
 		mutableAccount.tokens().updateAssociationsFrom(account.getAssociatedTokens());
-
-		currentAccounts.replace(key, mutableAccount);
 	}
 
 

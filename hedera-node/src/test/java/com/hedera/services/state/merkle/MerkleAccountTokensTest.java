@@ -58,8 +58,6 @@ class MerkleAccountTokensTest {
 	private long[] initialIds = new long[] { 2, 0, 0, 2, 1, 0, 2, 1, 1 };
 
 	private Id aId = new Id(0, 0, 2);
-	private Id bId = new Id(0, 1, 2);
-	private Id cId = new Id(1, 1, 2);
 	private Id dId = new Id(0, 0, 3);
 	private Id eId = new Id(0, 0, 1);
 
@@ -81,11 +79,12 @@ class MerkleAccountTokensTest {
 
 		// then:
 		assertTrue(subject.isImmutable());
-		Assertions.assertThrows(IllegalStateException.class, () -> subject.associateAll(someSet));
-		Assertions.assertThrows(IllegalStateException.class, () -> subject.associate(someModelSet));
-		Assertions.assertThrows(IllegalStateException.class, () -> subject.dissociateAll(someSet));
-		Assertions.assertThrows(IllegalStateException.class, () -> subject.dissociate(someModelSet));
+		Assertions.assertThrows(MutabilityException.class, () -> subject.associateAll(someSet));
+		Assertions.assertThrows(MutabilityException.class, () -> subject.associate(someModelSet));
+		Assertions.assertThrows(MutabilityException.class, () -> subject.dissociateAll(someSet));
+		Assertions.assertThrows(MutabilityException.class, () -> subject.dissociate(someModelSet));
 		Assertions.assertThrows(MutabilityException.class, () -> subject.shareTokensOf(subjectCopy));
+		Assertions.assertThrows(MutabilityException.class, () -> subject.updateAssociationsFrom(subject.getIds()));
 	}
 
 	@Test

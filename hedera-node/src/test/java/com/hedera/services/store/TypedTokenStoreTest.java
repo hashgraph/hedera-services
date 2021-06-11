@@ -111,7 +111,7 @@ class TypedTokenStoreTest {
 		subject.persistTokenRelationship(modelTokenRel);
 
 		// then:
-		verify(tokenRels).replace(miscTokenRelId, expectedReplacementTokenRel);
+		assertEquals(expectedReplacementTokenRel, miscTokenMerkleRel);
 		// and:
 		verify(transactionRecordService).includeChangesToTokenRel(modelTokenRel);
 	}
@@ -202,7 +202,7 @@ class TypedTokenStoreTest {
 		subject.persistToken(modelToken);
 
 		// then:
-		verify(tokens).replace(merkleTokenId, expectedReplacementToken);
+		assertEquals(expectedReplacementToken, merkleToken);
 		// and:
 		verify(transactionRecordService).includeChangesToToken(modelToken);
 	}

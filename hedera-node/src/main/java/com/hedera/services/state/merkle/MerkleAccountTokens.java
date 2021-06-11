@@ -24,7 +24,6 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.common.MutabilityException;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
@@ -137,46 +136,33 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 		return ids.contains(id);
 	}
 
-	public boolean includes(Id id) {
-		return ids.contains(id);
-	}
-
 	public void associateAll(Set<TokenID> tokenIds) {
-		if (isImmutable()) {
-			throw new IllegalStateException("Cannot associate any tokens to an immutable container");
-		}
+		throwIfImmutable();
 		ids.addAll(tokenIds);
 	}
 
 	public void dissociateAll(Set<TokenID> tokenIds) {
-		if (isImmutable()) {
-			throw new IllegalStateException("Cannot dissociate any tokens from an immutable container");
-		}
+		throwIfImmutable();
 		ids.removeAll(tokenIds);
 	}
 
 	public void shareTokensOf(MerkleAccountTokens other) {
-		if (isImmutable()) {
-			throw new MutabilityException("Cannot share any tokens with an immutable container");
-		}
+		throwIfImmutable();
 		ids = other.getIds();
 	}
 
 	public void updateAssociationsFrom(CopyOnWriteIds newIds) {
+		throwIfImmutable();
 		ids.setNativeIds(newIds.getNativeIds());
 	}
 
 	public void associate(Set<Id> modelIds) {
-		if (isImmutable()) {
-			throw new IllegalStateException("Cannot associate any tokens to an immutable container");
-		}
+		throwIfImmutable();
 		ids.addAllIds(modelIds);
 	}
 
 	public void dissociate(Set<Id> modelIds) {
-		if (isImmutable()) {
-			throw new IllegalStateException("Cannot dissociate any tokens from an immutable container");
-		}
+		throwIfImmutable();
 		ids.removeAllIds(modelIds);
 	}
 }

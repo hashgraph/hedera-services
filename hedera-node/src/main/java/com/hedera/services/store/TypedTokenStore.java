@@ -160,8 +160,6 @@ public class TypedTokenStore {
 			currentTokenRels.put(key, mutableTokenRel);
 			/* Only done for interoperability with legacy HTS code during refactor */
 			alertTokenBackingStoreOfNew(tokenRelationship);
-		} else {
-			currentTokenRels.replace(key, mutableTokenRel);
 		}
 
 		transactionRecordService.includeChangesToTokenRel(tokenRelationship);
@@ -210,7 +208,6 @@ public class TypedTokenStore {
 
 		final var mutableToken = currentTokens.getForModify(key);
 		mapModelChangesToMutable(token, mutableToken);
-		currentTokens.replace(key, mutableToken);
 
 		transactionRecordService.includeChangesToToken(token);
 	}
