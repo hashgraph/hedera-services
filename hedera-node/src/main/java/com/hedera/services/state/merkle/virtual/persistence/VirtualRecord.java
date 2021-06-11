@@ -5,6 +5,7 @@ import com.hedera.services.state.merkle.virtual.VirtualValue;
 import com.swirlds.common.crypto.CryptoFactory;
 
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -14,7 +15,7 @@ public final class VirtualRecord {
     private static final byte[] NULL_HASH = CryptoFactory.getInstance().getNullHash().getValue();
 
     private long path;
-    private Future<byte[]> hash;
+    private CompletableFuture<byte[]> hash;
     private final VirtualKey key;
     private VirtualValue value;
     private boolean dirty = false;
@@ -28,7 +29,8 @@ public final class VirtualRecord {
      * @param value The value. May be null.
      */
     public VirtualRecord(byte[] hash, long path, VirtualKey key, VirtualValue value) {
-        this.hash = new ImmutableFuture<>(Objects.requireNonNull(hash));
+        this.hash = new CompletableFuture<>();
+        this.hash.complete(Objects.requireNonNull(hash));
         this.path = path;
         this.key = Objects.requireNonNull(key);
         this.value = value;
@@ -89,10 +91,8 @@ public final class VirtualRecord {
         this.value = value;
         this.dirty = true;
 
-        // Create a background job to hash the darn thing.
-        this.hash = value == null ?
-                new ImmutableFuture<>(NULL_HASH) :
-                new ImmutableFuture<>(value.getHash());
+        this.hash = new CompletableFuture<>();
+        hash.complete(value == null ? NULL_HASH : value.getHash());
     }
 
     public boolean isDirty() {
