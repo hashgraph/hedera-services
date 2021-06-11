@@ -33,7 +33,7 @@ public final class TopicIDConverter implements ArgumentConverter {
 			return null;
 		}
 		final String inputString = ConverterUtils.toStringInstance(input);
-		final var parts = ConverterUtils.getPartsIfValid(inputString, 3, "\\.","topic");
+		final var parts = ConverterUtils.getPartsIfValid(inputString, 3, "\\.", "topic");
 		return TopicID.newBuilder()
 				.setShardNum(Long.valueOf(parts[0]))
 				.setRealmNum(Long.valueOf(parts[1]))
