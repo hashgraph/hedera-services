@@ -1,5 +1,11 @@
 version: 2.1
 
+########################################################
+# Orbs Definitions
+########################################################
+orbs:
+  slack: circleci/slack@4.0.2
+
 commands:
   install-tools:
     description: Install tools for JRS regression
@@ -117,11 +123,7 @@ commands:
               echo "Skipping SonarCloud Quality Gate Enforcement - Branch is Temporarily Excluded (develop)........"
               exit 0
             fi
-            if [[ "${CIRCLE_BRANCH}" == "prerelease" ]]; then
-              echo "Skipping SonarCloud Quality Gate Enforcement - Branch is Temporarily Excluded (prerelease)........"
-              exit 0
-            fi
-            REPO_PATH="${HOME}/repos/<< parameters.repo_name >>"
+            REPO_PATH="/repo/<< parameters.repo_name >>"
             if [[ ! -d "${REPO_PATH}" ]]; then exit 15; fi
             SONAR_QG_SCRIPT="${REPO_PATH}/.circleci/scripts/sonar_check_quality_gate.pl"
             if [[ ! -f "${SONAR_QG_SCRIPT}" ]]; then exit 38; fi
@@ -2373,7 +2375,7 @@ jobs:
           # use double quote otherwise the backslash of line continuation will be treated as part of mvn parameter
           command: |
             /repo/.circleci/scripts/trap-failure-report.sh \
-              "mvn --no-transfer-progress -Dsonar.branch.name=${CIRCLE_BRANCH} -Dsonar.login=${SONAR_TOKEN} clean install sonar:sonar \
+              "mvn -X --no-transfer-progress -Dsonar.branch.name=${CIRCLE_BRANCH} -Dsonar.login=${SONAR_TOKEN} clean install sonar:sonar \
               | tee /repo/test-clients/output/hapi-client.log"
       - run:
           name: Save Unit Test Results
@@ -2390,6 +2392,9 @@ jobs:
           path: ~/junit
       - store_artifacts:
           path: ~/junit
+
+      - sonar_check_quality_gate
+
       - run:
           name: Upload codecov
           command: |
