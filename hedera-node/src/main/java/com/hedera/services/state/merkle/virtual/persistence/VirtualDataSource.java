@@ -2,7 +2,6 @@ package com.hedera.services.state.merkle.virtual.persistence;
 
 import com.hedera.services.state.merkle.virtual.VirtualKey;
 import com.hedera.services.state.merkle.virtual.VirtualValue;
-import com.swirlds.common.crypto.Hash;
 
 import java.io.Closeable;
 
