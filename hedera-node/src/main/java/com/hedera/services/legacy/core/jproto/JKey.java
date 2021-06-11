@@ -57,6 +57,7 @@ public abstract class JKey implements Serializable {
 	 * @param key
 	 * 		the proto Key to be converted
 	 * @return the generated JKey instance
+	 * @throws DecoderException on an inconvertible given key
 	 */
 	public static JKey mapKey(Key key) throws DecoderException {
 		return convertKey(key, 1);
@@ -70,6 +71,8 @@ public abstract class JKey implements Serializable {
 	 * 		the current proto Key to be converted
 	 * @param depth
 	 * 		current level that is to be verified. The first level has a value of 1.
+	 * @return the converted JKey instance
+	 * @throws DecoderException on an inconvertible given key
 	 */
 	public static JKey convertKey(Key key, int depth) throws DecoderException {
 		if (depth > MAX_KEY_DEPTH) {
@@ -106,7 +109,8 @@ public abstract class JKey implements Serializable {
 	 *
 	 * @param key
 	 * 		proto Key to be converted
-	 * @return converted JKey instance
+	 * @return the converted JKey instance
+	 * @throws DecoderException on an inconvertible given key
 	 */
 	private static JKey convertBasic(Key key) throws DecoderException {
 		JKey rv;
@@ -134,7 +138,8 @@ public abstract class JKey implements Serializable {
 	 *
 	 * @param jkey
 	 * 		JKey object to be converted
-	 * @return converted Key instance
+	 * @return the converted proto Key instance
+	 * @throws DecoderException on an inconvertible given key
 	 */
 	static Key convertJKeyBasic(JKey jkey) throws DecoderException {
 		Key rv = null;
@@ -160,7 +165,8 @@ public abstract class JKey implements Serializable {
 	 * 		the current JKey to be converted
 	 * @param depth
 	 * 		current level that is to be verified. The first level has a value of 1.
-	 * @return converted proto Key
+	 * @return the converted proto Key instance
+	 * @throws DecoderException on an inconvertible given key
 	 */
 	public static Key convertJKey(JKey jkey, int depth) throws DecoderException {
 		if (depth > MAX_KEY_DEPTH) {
@@ -214,7 +220,8 @@ public abstract class JKey implements Serializable {
 	 *
 	 * @param jkey
 	 * 		the JKey to be converted
-	 * @return the converted Key instance
+	 * @return the converted proto Key instance
+	 * @throws DecoderException on an inconvertible given key
 	 */
 	public static Key mapJKey(JKey jkey) throws DecoderException {
 		return convertJKey(jkey, 1);

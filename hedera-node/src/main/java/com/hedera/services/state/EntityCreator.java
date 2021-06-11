@@ -49,16 +49,16 @@ public interface EntityCreator {
 	 * 		account id
 	 * @param expiringRecord
 	 * 		expirable transaction record
-	 * @param now
+	 * @param consensusTime
 	 * 		consensus timestamp
 	 * @param submittingMember
 	 * 		submitting member
-	 * @return
+	 * @return the {@link ExpirableTxnRecord} after setting needed properties
 	 */
 	ExpirableTxnRecord saveExpiringRecord(
 			AccountID id,
 			ExpirableTxnRecord expiringRecord,
-			long now,
+			long consensusTime,
 			long submittingMember);
 
 	/**
@@ -79,7 +79,7 @@ public interface EntityCreator {
 	 * 		explicit list of token transfers
 	 * @param ctx
 	 * 		services context
-	 * @return
+	 * @return a {@link ExpirableTxnRecord.Builder} for the finalized record
 	 */
 	ExpirableTxnRecord.Builder buildExpiringRecord(
 			long otherNonThresholdFees,
@@ -97,7 +97,7 @@ public interface EntityCreator {
 	 * 		transaction accessor
 	 * @param consensusTimestamp
 	 * 		consensus timestamp
-	 * @return
+	 * @return a {@link ExpirableTxnRecord.Builder} for a transaction failed to commit
 	 */
 	ExpirableTxnRecord.Builder buildFailedExpiringRecord(TxnAccessor accessor, Instant consensusTimestamp);
 }

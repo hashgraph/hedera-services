@@ -152,7 +152,7 @@ public class CopyOnWriteIds {
 	/**
 	 * Overwrite the managed multiset with the given sequence of {@code (num, realm, shard)} ids.
 	 *
-	 * @param ids
+	 * @param ids the sequence of {@code (num, realm, shard)} ids to overwrite
 	 */
 	public void setNativeIds(long[] ids) {
 		this.ids = ids;

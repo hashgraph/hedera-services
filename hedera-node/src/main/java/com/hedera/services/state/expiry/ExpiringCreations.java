@@ -72,10 +72,10 @@ public class ExpiringCreations implements EntityCreator {
 	public ExpirableTxnRecord saveExpiringRecord(
 			AccountID payer,
 			ExpirableTxnRecord expiringRecord,
-			long now,
+			long consensusTime,
 			long submittingMember
 	) {
-		final long expiry = now + dynamicProperties.cacheRecordsTtl();
+		final long expiry = consensusTime + dynamicProperties.cacheRecordsTtl();
 		expiringRecord.setExpiry(expiry);
 		expiringRecord.setSubmittingMember(submittingMember);
 

@@ -331,7 +331,7 @@ import com.swirlds.common.Console;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.SwirldDualState;
-import com.swirlds.common.Transaction;
+import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
@@ -922,8 +922,8 @@ public class ServicesContext {
 
 	/**
 	 * Returns the singleton {@link TypedTokenStore} used in {@link ServicesState#handleTransaction(long, boolean, Instant,
-	 * Instant, Transaction)} to load, save, and create tokens in the Swirlds application state. It decouples the
-	 * {@code handleTransaction} logic from the details of the Merkle state.
+	 * Instant, SwirldTransaction, SwirldDualState)} to load, save, and create tokens in the Swirlds application state.
+	 * It decouples the {@code handleTransaction} logic from the details of the Merkle state.
 	 *
 	 * Here "singleton" means that, no matter how many fast-copies are made of the {@link ServicesState}, the mutable
 	 * instance receiving the {@code handleTransaction} call will always use the same {@code typedTokenStore} instance.
@@ -931,6 +931,8 @@ public class ServicesContext {
 	 * Hence we inject the {@code typedTokenStore} with method references to {@link ServicesContext#tokens()} and
 	 * {@link ServicesContext#tokenAssociations()} so it can always access the children of the mutable
 	 * {@link ServicesState}.
+	 *
+	 * @return the singleton TypedTokenStore
 	 */
 	public TypedTokenStore typedTokenStore() {
 		if (typedTokenStore == null) {
@@ -946,8 +948,10 @@ public class ServicesContext {
 
 	/**
 	 * Returns the singleton {@link AccountStore} used in {@link ServicesState#handleTransaction(long, boolean, Instant,
-	 * Instant, Transaction)} to load, save, and create accounts from the Swirlds application state. It decouples the
-	 * {@code handleTransaction} logic from the details of the Merkle state.
+	 * Instant, SwirldTransaction, SwirldDualState)} to load, save, and create accounts from the Swirlds application state.
+	 * It decouples the {@code handleTransaction} logic from the details of the Merkle state.
+	 *
+	 * @return the singleton AccountStore
 	 */
 	public AccountStore accountStore() {
 		if (accountStore == null) {
@@ -2117,6 +2121,7 @@ public class ServicesContext {
 	/**
 	 * return the directory to which record stream files should be write
 	 *
+	 * @param source the node local properties that contain the record logging directory
 	 * @return the direct file folder for writing record stream files
 	 */
 	public String getRecordStreamDirectory(NodeLocalProperties source) {

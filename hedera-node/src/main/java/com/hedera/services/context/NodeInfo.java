@@ -21,12 +21,12 @@ package com.hedera.services.context;
  */
 
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.swirlds.common.AddressBook;
-
-import java.util.function.Supplier;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.common.AddressBook;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.function.Supplier;
 
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 
@@ -59,6 +59,7 @@ public class NodeInfo {
 	 * the argument as an {@code int}) has zero stake.
 	 *
 	 * @param nodeId the id of interest
+	 * @return whether or not the node of interest has zero stake.
 	 * @throws IllegalArgumentException if the {@code nodeId} cast to an {@code int} is not a usable index
 	 */
 	public boolean isZeroStake(long nodeId) {
@@ -75,6 +76,8 @@ public class NodeInfo {
 
 	/**
 	 * Convenience method to check if this node is zero-stake.
+	 *
+	 * @return whether or not this node has zero stake.
 	 */
 	public boolean isSelfZeroStake() {
 		return isZeroStake(selfId);
@@ -85,6 +88,7 @@ public class NodeInfo {
 	 * to the given node id.
 	 *
 	 * @param nodeId the id of interest
+	 * @return the account parsed from the address book memo corresponding to the given node id.
 	 * @throws IllegalArgumentException if the book did not contain the id, or was missing an account for the id
 	 */
 	public AccountID accountOf(long nodeId) {
@@ -116,6 +120,8 @@ public class NodeInfo {
 
 	/**
 	 * Convenience method to check if this node has an account in the address book.
+	 *
+	 * @return whether or not this node has an account in the address book.
 	 */
 	public boolean hasSelfAccount() {
 		try {
@@ -129,6 +135,7 @@ public class NodeInfo {
 	/**
 	 * Convenience method to get this node's account from the address book.
 	 *
+	 * @return this node's account from the address book.
 	 * @throws IllegalArgumentException if the node did not have an account
 	 */
 	public AccountID selfAccount() {
