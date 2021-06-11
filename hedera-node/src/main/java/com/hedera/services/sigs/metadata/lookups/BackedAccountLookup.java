@@ -36,19 +36,10 @@ public class BackedAccountLookup implements AccountSigMetaLookup {
 
 	@Override
 	public SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id) {
-		return lookup(id, false);
-	}
-
-	@Override
-	public SafeLookupResult<AccountSigningMetadata> pureSafeLookup(AccountID id) {
-		return lookup(id, true);
-	}
-
-	private SafeLookupResult<AccountSigningMetadata> lookup(AccountID id, boolean usePure) {
 		if (!accounts.contains(id)) {
 			return SafeLookupResult.failure(MISSING_ACCOUNT);
 		}
-		var account = usePure ? accounts.getUnsafeRef(id) : accounts.getRef(id);
+		var account = accounts.getUnsafeRef(id);
 		return new SafeLookupResult<>(
 				new AccountSigningMetadata(
 						account.getKey(),
