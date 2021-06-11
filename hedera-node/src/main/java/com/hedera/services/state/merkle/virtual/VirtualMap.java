@@ -1,6 +1,5 @@
 package com.hedera.services.state.merkle.virtual;
 
-import com.hedera.services.state.merkle.virtual.persistence.ImmutableFuture;
 import com.hedera.services.state.merkle.virtual.persistence.VirtualDataSource;
 import com.hedera.services.state.merkle.virtual.persistence.VirtualRecord;
 import com.swirlds.common.Archivable;
@@ -422,7 +421,7 @@ public final class VirtualMap
                             hashWork.addLast(new HashJobData(
                                     getParentPath(leafPath),
                                     leaf.getFutureHash(),
-                                    siblingParent == null ? null : new ImmutableFuture<>(siblingParent)));
+                                    siblingParent == null ? null : completedHash(siblingParent)));
                         }
                     }
                 }
@@ -466,7 +465,7 @@ public final class VirtualMap
                         hashWork.addLast(new HashJobData(
                                 getParentPath(path),
                                 data.hash,
-                                siblingHash == null ? null : new ImmutableFuture<>(siblingHash)));
+                                siblingHash == null ? null : completedHash(siblingHash)));
                     }
                 }
             }
@@ -706,6 +705,12 @@ public final class VirtualMap
             firstLeafPath = nextFirstLeafPath;
             lastLeafPath = leafPath;
         }
+    }
+
+    private Future<byte[]> completedHash(byte[] data) {
+        final var future = new CompletableFuture<byte[]>();
+        future.complete(data);
+        return future;
     }
 
     public String getAsciiArt() {
