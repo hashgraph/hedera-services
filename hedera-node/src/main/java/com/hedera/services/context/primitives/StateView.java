@@ -309,7 +309,9 @@ public class StateView {
 			}
 
 			var adminCandidate = schedule.adminKey();
-			adminCandidate.ifPresent(k -> info.setAdminKey(asKeyUnchecked(k)));
+			// Create a smelly code
+			//adminCandidate.ifPresent(k -> info.setAdminKey(asKeyUnchecked(k)));
+			info.setAdminKey(asKeyUnchecked(adminCandidate.get()));
 
 			return Optional.of(info.build());
 		} catch (Exception unexpected) {
