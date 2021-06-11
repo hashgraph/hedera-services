@@ -33,7 +33,7 @@ public final class JEd25519KeyConverter implements ArgumentConverter {
 		if (null == input) {
 			return null;
 		}
-		ConverterUtils.checkIfInputString(input);
-		return new JEd25519Key(CommonUtils.unhex((String) input));
+		final String inputString = ConverterUtils.toStringInstance(input);
+		return new JEd25519Key(CommonUtils.unhex(inputString));
 	}
 }

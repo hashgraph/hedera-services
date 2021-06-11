@@ -35,7 +35,7 @@ public final class ByteArrayConverter implements ArgumentConverter {
 		if (null == input) {
 			return null;
 		}
-		ConverterUtils.checkIfInputString(input);
-		return CommonUtils.unhex((String) input);
+		final String inputString = ConverterUtils.toStringInstance(input);
+		return CommonUtils.unhex(inputString);
 	}
 }

@@ -32,8 +32,8 @@ public final class EntityIdConverter implements ArgumentConverter {
 		if (null == input) {
 			return null;
 		}
-		ConverterUtils.checkIfInputString(input);
-		var parts = ConverterUtils.getPartsIfValid((String) input, 3, "account");
+		final String inputString = ConverterUtils.toStringInstance(input);
+		final var parts = ConverterUtils.getPartsIfValid(inputString, 3, "\\.", "account");
 		return new EntityId(Long.valueOf(parts[0]), Long.valueOf(parts[1]), Long.valueOf(parts[2]));
 	}
 }

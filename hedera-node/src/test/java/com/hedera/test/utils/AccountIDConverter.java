@@ -30,7 +30,7 @@ public class AccountIDConverter implements ArgumentConverter {
         if (null == input) {
             return null;
         }
-        ConverterUtils.checkIfInputString(input);
-        return IdUtils.asAccount((String) input);
+        final String inputString = ConverterUtils.toStringInstance(input);
+        return IdUtils.asAccount(inputString);
     }
 }

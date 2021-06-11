@@ -34,9 +34,9 @@ public class Ed25519KeyConverter implements ArgumentConverter {
         if (null == input) {
             return null;
         }
-        ConverterUtils.checkIfInputString(input);
+        final String inputString = ConverterUtils.toStringInstance(input);
         try {
-            return JKey.mapJKey(new JEd25519Key(CommonUtils.unhex((String) input)));
+            return JKey.mapJKey(new JEd25519Key(CommonUtils.unhex(inputString)));
         } catch (Exception e) {
             throw new IllegalArgumentException(e);
         }

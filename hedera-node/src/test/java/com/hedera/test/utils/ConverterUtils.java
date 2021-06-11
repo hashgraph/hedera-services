@@ -23,21 +23,23 @@ package com.hedera.test.utils;
 import org.junit.jupiter.params.converter.ArgumentConversionException;
 
 /**
- * Contians various common checks and methods used by the Converter classes
+ * Contains various common checks and methods used by the Converter classes
  * @author abhishekpandey
  * */
 public final class ConverterUtils {
     /**
-     * Checks if the input to the converter is of type {@link String} else throws an {@link ArgumentConversionException}
+     * Returns the input as a {@link String} if it is string type else throws an {@link ArgumentConversionException}
      * @param input
      *              the input to the converter
-     * @throws ArgumentConversionException
+     * @throws ArgumentConversionException  thrown when the input is not of type {@link String}
+     * @return input casted as a string
      * */
-    public static void checkIfInputString(Object input)
+    public static String toStringInstance(final Object input)
             throws ArgumentConversionException {
         if (!(input instanceof String)) {
             throw new ArgumentConversionException(input + " is not a string");
         }
+        return (String) input;
     }
 
     /**
@@ -45,17 +47,23 @@ public final class ConverterUtils {
      * {@link ArgumentConversionException}
      * @param inputString
      *              the input to the converter
-     * @param limit
-     *              the limit to be applied for the split operation
+     * @param numberOfParts
+     *              the limit to be applied for the split operation, non positive number means it will be applied as many
+     *              times as possible
+     * @param delimiter
+     *              the regex to be applied for the split operation
      * @param type
      *             the string defining the type of input
-     * @throws ArgumentConversionException
+     * @throws ArgumentConversionException thrown when the numberOfParts don't match after the split operation
      * */
-    public static String[] getPartsIfValid(String inputString, int limit, String type)
-            throws ArgumentConversionException {
-        var parts = inputString.split("\\.", limit);
-        if (limit != parts.length) {
-            throw new ArgumentConversionException(inputString + " is not a " + limit + "-part " + type +" ID");
+    public static String[] getPartsIfValid(
+            final String inputString,
+            final int numberOfParts,
+            final String delimiter,
+            final String type) throws ArgumentConversionException {
+        final var parts = inputString.split(delimiter, numberOfParts);
+        if (numberOfParts != parts.length && numberOfParts > 0) {
+            throw new ArgumentConversionException(inputString + " is not a " + numberOfParts + "-part " + type +" ID");
         }
         return parts;
     }
