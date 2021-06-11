@@ -55,19 +55,6 @@ class BackedAccountLookupTest {
 	}
 
 	@Test
-	void usesUnsafeRefForPureLookup() {
-		given(accounts.contains(id)).willReturn(true);
-		given(accounts.getUnsafeRef(id)).willReturn(account);
-
-		// when:
-		final var result = subject.pureSafeLookup(id);
-
-		// then:
-		assertTrue(result.metadata().isReceiverSigRequired());
-		assertSame(account.getKey(), result.metadata().getKey());
-	}
-
-	@Test
 	void usesRefForImpureLookup() {
 		given(accounts.contains(id)).willReturn(true);
 		given(accounts.getRef(id)).willReturn(account);

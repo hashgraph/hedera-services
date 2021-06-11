@@ -66,9 +66,6 @@ public interface SigMetadataLookup {
 	SafeLookupResult<TopicSigningMetadata> topicSigningMetaFor(TopicID id);
 	SafeLookupResult<TokenSigningMetadata> tokenSigningMetaFor(TokenID id);
 	SafeLookupResult<AccountSigningMetadata> accountSigningMetaFor(AccountID id);
-	default SafeLookupResult<AccountSigningMetadata> pureAccountSigningMetaFor(AccountID id) {
-		return accountSigningMetaFor(id);
-	}
 	SafeLookupResult<ScheduleSigningMetadata> scheduleSigningMetaFor(ScheduleID id);
 	SafeLookupResult<ContractSigningMetadata> contractSigningMetaFor(ContractID id);
 }
