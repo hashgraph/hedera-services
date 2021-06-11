@@ -2271,6 +2271,12 @@ workflows:
                 ignore:
                   - /.*-PERF/
             workflow-name: "Continuous-integration"
+        - sonar-check:
+            context: SonarCloud
+            requires:
+              - artifact-build
+            workflow-name: "Continuous-integration-GCP"
+
         - build-platform-and-services:
             context: SonarCloud
             requires:
@@ -2354,17 +2360,17 @@ jobs:
           name: prepare log dir
           command: |
             mkdir -p /repo/test-clients/output
-      - run:
-          name: Install tools for Sonar scan
-          command: |
-            export DEBIAN_FRONTEND=noninteractive
-            apt-get update && \
-            apt-get install -y openssh-client haveged tar gzip git ca-certificates wget zip unzip make gcc liblwp-protocol-https-perl && \
-            apt-get install -y jq libjq1 libonig4 curl && \
-            echo | cpan && \
-            cpan install CPAN && \
-            cpan install Mozilla::CA && \
-            cpan install JSON::Parse
+#      - run:
+#          name: Install tools for Sonar scan
+#          command: |
+#            export DEBIAN_FRONTEND=noninteractive
+#            apt-get update && \
+#            apt-get install -y openssh-client haveged tar gzip git ca-certificates wget zip unzip make gcc liblwp-protocol-https-perl && \
+#            apt-get install -y jq libjq1 libonig4 curl && \
+#            echo | cpan && \
+#            cpan install CPAN && \
+#            cpan install Mozilla::CA && \
+#            cpan install JSON::Parse
 
       - run:
           name: mvn install
@@ -2389,7 +2395,7 @@ jobs:
       - store_artifacts:
           path: ~/junit
 
-      - sonar_check_quality_gate
+#      - sonar_check_quality_gate
 
       - run:
           name: Upload codecov
@@ -2401,6 +2407,32 @@ jobs:
           root: /
           paths:
             - root/.m2
+
+  sonar-check:
+    parameters:
+      sys-props:
+        type: string
+        description: System properties for mvn install
+        default: ''
+      workflow-name:
+        type: string
+        default: ""
+    executor:
+      name: build-executor
+      workflow-name:  << parameters.workflow-name >>
+    steps:
+      - run:
+          name: Install tools for Sonar scan
+          command: |
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update && \
+            apt-get install -y openssh-client haveged tar gzip git ca-certificates wget zip unzip make gcc liblwp-protocol-https-perl && \
+            apt-get install -y jq libjq1 libonig4 curl && \
+            echo | cpan && \
+            cpan install CPAN && \
+            cpan install Mozilla::CA && \
+            cpan install JSON::Parse
+      - sonar_check_quality_gate
 
   fast-build-artifact:
     parameters:
