@@ -109,15 +109,28 @@ class MonotonicFullQueueExpiriesTest {
 	}
 
 	@Test
-	void expiryEventToStringWorks() {
+	void expiryInNonMonotonicOrder() {
+		String k4 = "fourth";
+		long expiry1 = 50, expiry2 = 1000, expiry3 = 200, expiry4 = 10;
 		// given:
-		var expiryEvent = new MonotonicFullQueueExpiries<String>().new ExpiryEvent("something", 1_234_567L);
-		var desired = "ExpiryEvent{id=something, expiry=1234567}";
+		subject.track(k1, expiry1);
+		subject.track(k2, expiry2);
+		assertThrows(IllegalArgumentException.class, () -> subject.track(k3, expiry3));
+		assertThrows(IllegalArgumentException.class, () -> subject.track(k4, expiry4));
+
+		// expect:
+		assertEquals(expiry2, subject.getNow());
 
 		// when:
-		var actual = expiryEvent.toString();
+		var firstExpired = subject.expireNextAt(expiry1);
+		var secondExpired = subject.expireNextAt(expiry2);
 
 		// then:
-		assertEquals(desired, actual);
+		assertEquals(k1, firstExpired);
+		assertEquals(k2, secondExpired);
+		// and:
+		assertEquals(0, subject.getAllExpiries().size());
+		assertFalse(subject.hasExpiringAt(expiry2));
+		assertThrows(IllegalStateException.class, () -> subject.expireNextAt(expiry3));
 	}
 }

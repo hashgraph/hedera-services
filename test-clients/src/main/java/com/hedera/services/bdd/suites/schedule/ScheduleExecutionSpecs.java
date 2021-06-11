@@ -97,7 +97,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_R
 
 public class ScheduleExecutionSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ScheduleExecutionSpecs.class);
-	private static final int SCHEDULE_EXPIRY_TIME_SECS = 10;
 	private static final int TMP_MAX_TRANSFER_LENGTH = 2;
 	private static final int TMP_MAX_TOKEN_TRANSFER_LENGTH = 2;
 
@@ -120,7 +119,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				suiteSetup(),
 				executionWithDefaultPayerWorks(),
 				executionWithCustomPayerWorks(),
 				executionWithDefaultPayerButNoFundsFails(),
@@ -153,13 +151,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 		return defaultHapiSpec("suiteCleanup")
 				.given().when().then(
 						overriding("ledger.schedule.txExpiryTimeSecs", defaultTxExpiry)
-				);
-	}
-
-	private HapiApiSpec suiteSetup() {
-		return defaultHapiSpec("suiteSetup")
-				.given().when().then(
-						overriding("ledger.schedule.txExpiryTimeSecs", "" + SCHEDULE_EXPIRY_TIME_SECS)
 				);
 	}
 

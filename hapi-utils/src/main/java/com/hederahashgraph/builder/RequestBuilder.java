@@ -27,14 +27,12 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractGetBytecodeQuery;
 import com.hederahashgraph.api.proto.java.ContractGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ContractGetRecordsQuery;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceQuery;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
@@ -49,8 +47,6 @@ import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileGetContentsQuery;
 import com.hederahashgraph.api.proto.java.FileGetInfoQuery;
-import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
-import com.hederahashgraph.api.proto.java.FileGetInfoResponse.FileInfo;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.GetBySolidityIDQuery;
@@ -59,13 +55,9 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.LiveHash;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
-import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseHeader;
-import com.hederahashgraph.api.proto.java.ResponseHeader.Builder;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.ShardID;
-import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -103,35 +95,6 @@ public class RequestBuilder {
         autoRenew);
   }
 
-
-  public static TransactionBody getCreateAccountTxBody(Long payerAccountNum, Long payerRealmNum,
-      Long payerShardNum,
-      Long nodeAccountNum, Long nodeRealmNum, Long nodeShardNum, long transactionFee,
-      Timestamp startTime,
-      Duration transactionDuration, boolean generateRecord, String memo, int thresholdValue,
-      List<Key> keyList,
-      long initBal, long sendRecordThreshold, long receiveRecordThreshold, boolean receiverSign,
-      Duration autoRenew, long proxyAccountNum, long proxyRealmNum, long proxyShardNum,
-      long shardID, long realmID) {
-    Key keys = Key.newBuilder().setKeyList(KeyList.newBuilder().addAllKeys(keyList).build())
-        .build();
-    CryptoCreateTransactionBody createAccount = CryptoCreateTransactionBody.newBuilder()
-        .setKey(keys)
-        .setInitialBalance(initBal)
-        .setProxyAccountID(getAccountIdBuild(proxyAccountNum, proxyRealmNum, proxyShardNum))
-        .setReceiveRecordThreshold(receiveRecordThreshold)
-        .setSendRecordThreshold(sendRecordThreshold).setReceiverSigRequired(receiverSign)
-        .setRealmID(RealmID.newBuilder().setRealmNum(realmID).build())
-        .setShardID(ShardID.newBuilder().setShardNum(shardID))
-        .setAutoRenewPeriod(autoRenew).build();
-
-    TransactionBody.Builder body = getTransactionBody(payerAccountNum, payerRealmNum, payerShardNum,
-        nodeAccountNum, nodeRealmNum, nodeShardNum, transactionFee, startTime, transactionDuration,
-        generateRecord, memo);
-    body.setCryptoCreateAccount(createAccount);
-    return body.build();
-  }
-
   public static Transaction getAccountUpdateRequest(AccountID accountID, Long payerAccountNum,
       Long payerRealmNum,
       Long payerShardNum, Long nodeAccountNum, Long nodeRealmNum,
@@ -164,23 +127,6 @@ public class RequestBuilder {
         nodeRealmNum, nodeShardNum, transactionFee, startTime, transactionDuration, generateRecord,
         memo);
     body.setCryptoUpdateAccount(cryptoUpdate);
-    byte[] bodyBytesArr = body.build().toByteArray();
-    ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
-    return Transaction.newBuilder().setBodyBytes(bodyBytes).build();
-  }
-
-  public static Transaction getAccountDeleteRequest(AccountID accountID, AccountID trasferAccountID,
-      Long payerAccountNum, Long payerRealmNum,
-      Long payerShardNum, Long nodeAccountNum, Long nodeRealmNum, Long nodeShardNum,
-      long transactionFee,
-      Timestamp startTime, Duration transactionDuration, boolean generateRecord, String memo) {
-    CryptoDeleteTransactionBody cryptoDelete = CryptoDeleteTransactionBody.newBuilder()
-        .setDeleteAccountID(accountID).setTransferAccountID(trasferAccountID).build();
-    TransactionBody.Builder body = getTransactionBody(payerAccountNum, payerRealmNum, payerShardNum,
-        nodeAccountNum,
-        nodeRealmNum, nodeShardNum, transactionFee, startTime, transactionDuration, generateRecord,
-        memo);
-    body.setCryptoDelete(cryptoDelete);
     byte[] bodyBytesArr = body.build().toByteArray();
     ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
     return Transaction.newBuilder().setBodyBytes(bodyBytes).build();
@@ -236,11 +182,6 @@ public class RequestBuilder {
 
   public static Timestamp getTimestamp(Instant instant) {
     return Timestamp.newBuilder().setNanos(instant.getNano()).setSeconds(instant.getEpochSecond())
-        .build();
-  }
-
-  public static TimestampSeconds getTimestampSeconds(Instant instant) {
-    return TimestampSeconds.newBuilder().setSeconds(instant.getEpochSecond())
         .build();
   }
 
@@ -409,28 +350,6 @@ public class RequestBuilder {
   }
 
   /**
-   * Builds a file update tx without of key update.
-   */
-  public static Transaction getFileUpdateBuilder(Long payerAccountNum, Long payerRealmNum,
-                                                 Long payerShardNum,
-                                                 Long nodeAccountNum, Long nodeRealmNum, Long nodeShardNum,
-                                                 long transactionFee, Timestamp timestamp, Timestamp fileExpTime,
-                                                 Duration transactionDuration, boolean generateRecord, String memo,
-                                                 ByteString data, FileID fid) {
-    FileUpdateTransactionBody.Builder builder = FileUpdateTransactionBody.newBuilder()
-            .setContents(data)
-            .setFileID(fid).setExpirationTime(fileExpTime);
-
-    TransactionBody.Builder body = getTransactionBody(payerAccountNum, payerRealmNum, payerShardNum,
-            nodeAccountNum,
-            nodeRealmNum, nodeShardNum, transactionFee, timestamp, transactionDuration, generateRecord,
-            memo);
-    body.setFileUpdate(builder);
-    byte[] bodyBytesArr = body.build().toByteArray();
-    ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
-    return Transaction.newBuilder().setBodyBytes(bodyBytes).build();
-  }
-  /**
    * Builds a file delete tx.
    *
    * @param fileID file ID
@@ -483,56 +402,6 @@ public class RequestBuilder {
     return Query.newBuilder().setFileGetInfo(fileGetInfoQuery).build();
   }
 
-  /**
-   * Builds FileGetInfo response.
-   *
-   * @param cost cost of answer if type is COST_ANSWER_VALUE, total cost of answer and state proof
-   * if the type is COST_ANSWER_STATE_PROOF_VALUE
-   * @return FileGetInfoResponse object
-   */
-  public static FileGetInfoResponse getFileGetInfoResponseBuilder(FileID fid, long size,
-      Timestamp expTime,
-      boolean deleted, List<Key> keys,
-      ResponseCodeEnum precheckCode,
-      ResponseType respType, long cost,
-      ByteString stateProof) {
-    Builder headerBuilder = ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(precheckCode)
-        .setResponseType(respType);
-    FileGetInfoResponse.FileInfo.Builder fileInfoBuilder = FileInfo.newBuilder();
-
-    switch (respType.getNumber()) {
-      case ResponseType.ANSWER_ONLY_VALUE:
-        fileInfoBuilder.setFileID(fid).setSize(size)
-            .setExpirationTime(expTime)
-            .setDeleted(deleted)
-            .setKeys(KeyList.newBuilder().addAllKeys(keys).build());
-        break;
-
-      case ResponseType.ANSWER_STATE_PROOF_VALUE:
-        headerBuilder.setStateProof(stateProof);
-        fileInfoBuilder.setFileID(fid).setSize(size)
-            .setExpirationTime(expTime)
-            .setDeleted(deleted)
-            .setKeys(KeyList.newBuilder().addAllKeys(keys).build());
-        break;
-
-      case ResponseType.COST_ANSWER_STATE_PROOF_VALUE:
-        headerBuilder.setCost(cost);
-        break;
-
-      case ResponseType.COST_ANSWER_VALUE:
-        headerBuilder.setCost(cost);
-        break;
-
-      default:
-        break;
-    }
-
-    return FileGetInfoResponse.newBuilder().setHeader(headerBuilder.build())
-        .setFileInfo(fileInfoBuilder.build())
-        .build();
-  }
-
   public static Timestamp getExpirationTime(Instant startTime, Duration autoRenewalTime) {
     Instant autoRenewPeriod = startTime.plusSeconds(autoRenewalTime.getSeconds());
 
@@ -543,14 +412,6 @@ public class RequestBuilder {
     return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
   }
 
-  public static Instant convertProtoTimeStampSeconds(TimestampSeconds timestampSeconds) {
-    return Instant.ofEpochSecond(timestampSeconds.getSeconds());
-  }
-
-  public static Instant convertProtoDuration(Duration timestamp) {
-    return Instant.ofEpochSecond(timestamp.getSeconds(), 0);
-  }
-
   public static ResponseHeader getResponseHeader(ResponseCodeEnum code, long cost,
       ResponseType type,
       ByteString stateProof) {
@@ -558,35 +419,6 @@ public class RequestBuilder {
         .setResponseType(type)
         .setStateProof(stateProof).build();
   }
-
-  public static ResponseHeader getResponseHeaderNew(ResponseCodeEnum code, Long cost,
-      ResponseType type, ByteString stateProof) {
-    Builder builder = ResponseHeader.newBuilder().setNodeTransactionPrecheckCode(code).setResponseType(type);
-    if(cost != null) {
-		builder.setCost(cost);
-	}
-    if(stateProof != null) {
-		builder.setStateProof(stateProof).build();
-	}
-
-    return builder.build();
-  }
-
-  public static Transaction getCreateContractRequest(Long payerAccountNum, Long payerRealmNum,
-      Long payerShardNum,
-      Long nodeAccountNum, Long nodeRealmNum, Long nodeShardNum,
-      long transactionFee, Timestamp timestamp, Duration txDuration,
-      boolean generateRecord, String txMemo, long gas, FileID fileId,
-      ByteString constructorParameters, long initialBalance,
-      Duration autoRenewalPeriod, String contractMemo) {
-    return getCreateContractRequest(payerAccountNum, payerRealmNum, payerShardNum,
-        nodeAccountNum, nodeRealmNum, nodeShardNum,
-        transactionFee, timestamp, txDuration,
-        generateRecord, txMemo, gas, fileId,
-        constructorParameters, initialBalance,
-        autoRenewalPeriod, contractMemo, null);
-  }
-
 
   public static Transaction getCreateContractRequest(Long payerAccountNum, Long payerRealmNum,
       Long payerShardNum,
@@ -793,28 +625,6 @@ public class RequestBuilder {
 
   }
 
-  public static Transaction getContractUpdateRequestWrapper(AccountID payerAccount,
-      AccountID nodeAccount,
-      long transactionFee, Timestamp startTime,
-      Duration transactionDuration, boolean generateRecord, String memo,
-      ContractID contractId, Duration autoRenewPeriod,
-      List<Key> adminKeysList, AccountID proxyAccount,
-      Timestamp expirationTime, String contractMemo) {
-
-    Key adminKey = null;
-    if (adminKeysList != null && !adminKeysList.isEmpty()) {
-      adminKey = Key.newBuilder().setKeyList(KeyList.newBuilder().addAllKeys(adminKeysList).build())
-          .build();
-    }
-
-    return getContractUpdateRequest(payerAccount, nodeAccount,
-        transactionFee, startTime,
-        transactionDuration, generateRecord, memo,
-        contractId, autoRenewPeriod,
-        adminKey, proxyAccount,
-        expirationTime, contractMemo);
-  }
-
   public static Transaction getContractUpdateRequest(AccountID payerAccount, AccountID nodeAccount,
       long transactionFee, Timestamp startTime,
       Duration transactionDuration, boolean generateRecord, String memo,
@@ -908,39 +718,5 @@ public class RequestBuilder {
         .setNextRate(getExchangeRateBuilder(nextHbarEquivalent, nextCentEquivalent,
             nextExpirationSeconds))
         .build();
-  }
-
-  public static SystemDeleteTransactionBody getSystemDeleteTransactionBody(FileID fileID,
-      long expireTimeInSeconds) {
-    return SystemDeleteTransactionBody.newBuilder()
-        .setFileID(fileID)
-        .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(expireTimeInSeconds).build())
-        .build();
-  }
-
-  public static Transaction getDeleteContractRequest(AccountID payer,
-      AccountID node,
-      long transactionFee, Timestamp timestamp, Duration txDuration, ContractID contractId,
-      AccountID transferAccount,
-      ContractID transferContract,
-      boolean generateRecord, String txMemo) {
-    ContractDeleteTransactionBody.Builder contractDeleteBuilder = ContractDeleteTransactionBody
-        .newBuilder();
-    contractDeleteBuilder = contractDeleteBuilder.setContractID(contractId);
-    if (transferAccount != null) {
-      contractDeleteBuilder.setTransferAccountID(transferAccount);
-    } else if (transferContract != null) {
-      contractDeleteBuilder.setTransferContractID(transferContract);
-    }
-    ContractDeleteTransactionBody contractDeleteBody = contractDeleteBuilder.build();
-    TransactionBody.Builder body = getTransactionBody(payer.getAccountNum(), payer.getRealmNum(),
-        payer.getShardNum(),
-        node.getAccountNum(),
-        node.getRealmNum(), node.getShardNum(), transactionFee, timestamp,
-        txDuration, generateRecord, txMemo);
-    body.setContractDeleteInstance(contractDeleteBody);
-    byte[] bodyBytesArr = body.build().toByteArray();
-    ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
-    return Transaction.newBuilder().setBodyBytes(bodyBytes).build();
   }
 }

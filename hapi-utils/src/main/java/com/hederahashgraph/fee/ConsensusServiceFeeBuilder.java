@@ -68,9 +68,6 @@ public class ConsensusServiceFeeBuilder extends FeeBuilder {
      */
     public static FeeData getConsensusUpdateTopicFee(TransactionBody txBody, long rbsIncrease, SigValueObj sigValObj)
             throws InvalidTxBodyException {
-        if (txBody == null || !txBody.hasConsensusUpdateTopic()) {
-            throw new InvalidTxBodyException("consensusUpdateTopic field not available for Fee Calculation");
-        }
         ConsensusUpdateTopicTransactionBody updateTopicTxBody = txBody.getConsensusUpdateTopic();
         int variableSize = computeVariableSizedFieldsUsage(updateTopicTxBody.getAdminKey(),
                 updateTopicTxBody.getSubmitKey(), updateTopicTxBody.getMemo().getValue(),

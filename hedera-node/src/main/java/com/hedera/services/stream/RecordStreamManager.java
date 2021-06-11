@@ -102,9 +102,12 @@ public class RecordStreamManager {
 	 * 		an instance for recording the average value of recordStream queue size
 	 * @param nodeLocalProperties
 	 * 		the node-local property source, which says four things: (1) is the record stream enabled?,
-	 * 		(2) what directory to write record files to, (3) how many seconds should elapse before
-	 * 		creating the next record file, and (4) how large a capacity the record stream blocking
-	 * 		queue should have.
+	 * 		(2) how many seconds should elapse before creating the next record file,
+	 * 		and (3) how large a capacity the record stream blocking queue should have.
+	 * @param nodeScopedRecordLogDir
+	 * 		the direct file folder for writing record stream files
+	 * @param initialHash
+	 * 		the initial hash
 	 * @throws NoSuchAlgorithmException
 	 * 		is thrown when fails to get required MessageDigest instance
 	 * @throws IOException

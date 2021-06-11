@@ -29,6 +29,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcmap.internal.FCMLeaf;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -49,7 +50,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.never;
 
 class BackingTokenRelsTest {
 	long aBalance = 100, bBalance = 200, cBalance = 300;
@@ -80,6 +80,18 @@ class BackingTokenRelsTest {
 		rels.put(bKey, bValue);
 
 		subject = new BackingTokenRels(() -> rels);
+	}
+
+	@Test
+	void manualAddToExistingWorks() {
+		// given:
+		final var aNewPair = Pair.of(c, ct);
+
+		// when:
+		subject.addToExistingRels(aNewPair);
+
+		// then:
+		subject.contains(aNewPair);
 	}
 
 	@Test

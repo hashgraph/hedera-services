@@ -69,6 +69,7 @@ public class InHandleActivationHelper {
 	 * to the active transaction.
 	 *
 	 * @param tests the predicate(s) to use for testing if an Ed25519 key has signed
+	 * @return whether or not the given set of keys are sufficient for signing the active transaction
 	 */
 	public boolean areOtherPartiesActive(BiPredicate<JKey, TransactionSignature> tests) {
 		ensureUpToDate();
@@ -80,7 +81,10 @@ public class InHandleActivationHelper {
 	 * suffice to meet the signing requirements of all Hedera keys prerequisite
 	 * to the schedule referenced by the active transaction.
 	 *
+	 * @param scheduledTxn the scheduled transaction
 	 * @param tests the predicate(s) to use for testing if an Ed25519 key has signed
+	 * @return whether or not the given set of keys are sufficient for signing the schedule
+	 * 		referenced by the active transaction
 	 */
 	public boolean areScheduledPartiesActive(
 			TransactionBody scheduledTxn,
@@ -107,8 +111,9 @@ public class InHandleActivationHelper {
 	}
 
 	/**
-	 * Returns the canonical mapping between Ed25519 public keys and expanded
-	 * signatures for the active transaction.
+	 * Returns the canonical mapping between Ed25519 public keys and expanded signatures for the active transaction.
+	 *
+	 * @return the canonical mapping between Ed25519 public keys and expanded signatures for the active transaction.
 	 */
 	public Function<byte[], TransactionSignature> currentSigsFn() {
 		return sigsFn;

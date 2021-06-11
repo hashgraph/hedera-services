@@ -20,6 +20,8 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
+import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
+import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.MutabilityException;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -55,25 +57,34 @@ class MerkleAccountTokensTest {
 	private TokenID e = asToken("0.0.1");
 	private long[] initialIds = new long[] { 2, 0, 0, 2, 1, 0, 2, 1, 1 };
 
+	private Id aId = new Id(0, 0, 2);
+	private Id bId = new Id(0, 1, 2);
+	private Id cId = new Id(1, 1, 2);
+	private Id dId = new Id(0, 0, 3);
+	private Id eId = new Id(0, 0, 1);
+
 	private MerkleAccountTokens subject;
 
 	@BeforeEach
 	private void setup() {
-		subject = new MerkleAccountTokens(initialIds);
+		subject = new MerkleAccountTokens(new CopyOnWriteIds(initialIds));
 	}
 
 	@Test
 	void copiedSubjectBecomesImmutable() {
 		// given:
 		final var someSet = Set.of(asToken("1.2.3"));
+		final var someModelSet = Set.of(aId);
 
 		// when:
 		final var subjectCopy = subject.copy();
 
 		// then:
 		assertTrue(subject.isImmutable());
-		Assertions.assertThrows(MutabilityException.class, () -> subject.associateAll(someSet));
-		Assertions.assertThrows(MutabilityException.class, () -> subject.dissociateAll(someSet));
+		Assertions.assertThrows(IllegalStateException.class, () -> subject.associateAll(someSet));
+		Assertions.assertThrows(IllegalStateException.class, () -> subject.associate(someModelSet));
+		Assertions.assertThrows(IllegalStateException.class, () -> subject.dissociateAll(someSet));
+		Assertions.assertThrows(IllegalStateException.class, () -> subject.dissociate(someModelSet));
 		Assertions.assertThrows(MutabilityException.class, () -> subject.shareTokensOf(subjectCopy));
 	}
 
@@ -101,7 +112,7 @@ class MerkleAccountTokensTest {
 		other.shareTokensOf(subject);
 
 		// then:
-		assertSame(subject.getTokenIds(), other.getTokenIds());
+		assertSame(subject.getRawIds(), other.getRawIds());
 	}
 
 	@Test
@@ -109,19 +120,19 @@ class MerkleAccountTokensTest {
 		// expect:
 		Assertions.assertThrows(
 				IllegalArgumentException.class,
-				() -> new MerkleAccountTokens(new long[MerkleAccountTokens.NUM_ID_PARTS + 1]));
+				() -> new MerkleAccountTokens(new CopyOnWriteIds(new long[MerkleAccountTokens.NUM_ID_PARTS + 1])));
 	}
 
 	@Test
-	void asIdsWorks() {
+	void asTokenIdsWorks() {
 		// expect:
 		assertEquals(
 				List.of(a, b, c),
-				subject.asIds());
+				subject.asTokenIds());
 		// and when:
 		subject = new MerkleAccountTokens();
 		// then:
-		assertSame(Collections.emptyList(), subject.asIds());
+		assertEquals(Collections.emptyList(), subject.asTokenIds());
 	}
 
 	@Test
@@ -130,7 +141,7 @@ class MerkleAccountTokensTest {
 		subject.dissociateAll(Set.of(a, e));
 
 		// then:
-		assertArrayEquals(new long[] {2, 1, 0}, Arrays.copyOfRange(subject.getTokenIds(), 0, 3));
+		assertArrayEquals(new long[] { 2, 1, 0 }, Arrays.copyOfRange(subject.getRawIds(), 0, 3));
 		// and:
 		assertFalse(subject.includes(a));
 	}
@@ -141,9 +152,9 @@ class MerkleAccountTokensTest {
 		subject.associateAll(Set.of(d, e));
 
 		// then:
-		assertArrayEquals(new long[] {1, 0, 0}, Arrays.copyOfRange(subject.getTokenIds(), 0, 3));
+		assertArrayEquals(new long[] { 1, 0, 0 }, Arrays.copyOfRange(subject.getRawIds(), 0, 3));
 		// and:
-		assertArrayEquals(new long[] {3, 0, 0}, Arrays.copyOfRange(subject.getTokenIds(), 12, 15));
+		assertArrayEquals(new long[] { 3, 0, 0 }, Arrays.copyOfRange(subject.getRawIds(), 12, 15));
 	}
 
 	@Test
@@ -216,5 +227,21 @@ class MerkleAccountTokensTest {
 		// then:
 		assertNotSame(subjectCopy, subject);
 		assertEquals(subject, subjectCopy);
+	}
+
+	@Test
+	void updateAssociationsWorks() {
+		// setup:
+		final var expectedUpdate = "[0.0.1, 0.0.3]";
+
+		// given:
+		final var newIds = new CopyOnWriteIds();
+		newIds.addAllIds(Set.of(dId, eId));
+
+		// when:
+		subject.updateAssociationsFrom(newIds);
+
+		// then:
+		assertEquals(expectedUpdate, subject.readableTokenIds());
 	}
 }

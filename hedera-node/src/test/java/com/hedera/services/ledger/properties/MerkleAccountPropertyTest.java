@@ -26,6 +26,7 @@ import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.test.factories.txns.SignedTxnFactory;
@@ -69,7 +70,8 @@ class MerkleAccountPropertyTest {
 	@Test
 	void tokenGetterWorksWithNewFcmParadigm() {
 		// setup:
-		final var copyResult = new MerkleAccountTokens(new long[] { 1, 2, 3 });
+		final var ids = new CopyOnWriteIds(new long[] { 1, 2, 3 });
+		final var copyResult = new MerkleAccountTokens(ids);
 
 		given(mockAccountTokens.tmpNonMerkleCopy()).willReturn(copyResult);
 		given(mockAccount.tokens()).willReturn(mockAccountTokens);
@@ -84,7 +86,8 @@ class MerkleAccountPropertyTest {
 	@Test
 	void tokenSetterWorksWithNewFcmParadigm() {
 		// setup:
-		final var newTokens = new MerkleAccountTokens(new long[] { 1, 2, 3, 4, 5, 6 });
+		final var ids = new CopyOnWriteIds(new long[] { 1, 2, 3, 4, 5, 6 });
+		final var newTokens = new MerkleAccountTokens(ids);
 
 		given(mockAccount.tokens()).willReturn(mockAccountTokens);
 

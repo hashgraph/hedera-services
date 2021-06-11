@@ -26,7 +26,6 @@ import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -83,18 +82,6 @@ public class SmartContractFeeBuilder extends FeeBuilder {
 
 		return getFeeDataMatrices(feeMatricesForTx, sigValObj.getPayerAcctSigCount(), rbsNetwork);
 
-	}
-
-	/**
-	 * This method calculates total total Storage Bytes (product of total bytes that will be stored in
-	 * disk and time till account expires)
-	 */
-	private long getContractCreateStorageBytesSec(TransactionBody txBody) {
-
-		long storageSize = getContractCreateTransactionBodySize(txBody);
-		long seconds = txBody.getCryptoCreateAccount().getAutoRenewPeriod().getSeconds();
-		storageSize = storageSize * seconds;
-		return storageSize;
 	}
 
 	/**
@@ -390,57 +377,6 @@ public class SmartContractFeeBuilder extends FeeBuilder {
 		return contractCallBodySize;
 	}
 
-
-	/**
-	 * This method returns the Fee Matrices for Contract Info Query
-	 */
-	public FeeData getContractInfoQueryFeeMatrices(Key key, ResponseType responseType) {
-
-		// get the Fee Matrices
-		long bpt = 0;
-		long vpt = 0;
-		long rbs = 0;
-		long sbs = 0;
-		long gas = 0;
-		long tv = 0;
-		long bpr = 0;
-		long sbpr = 0;
-
-
-		/*
-		 * ContractInfoQuery QueryHeader Transaction - CryptoTransfer - (will be taken care in
-		 * Transaction processing) ResponseType - INT_SIZE ContractID - BASIC_ENTITY_ID_SIZE
-		 */
-
-		bpt = calculateBPT();
-		/*
-		 *
-		 * Response header NodeTransactionPrecheckCode - 4 bytes ResponseType - 4 bytes
-		 *
-		 * ContractInfo ContractID contractID - BASIC_ENTITY_ID_SIZE AccountID accountID - BASIC_ENTITY_ID_SIZE string
-		 * contractAccountID - SOLIDITY_ADDRESS Key adminKey - calculated value Timestamp expirationTime
-		 * - (LONG_SIZE) Duration autoRenewPeriod - (LONG_SIZE) int64 storage - LONG_SIZE
-		 *
-		 */
-
-		int keySize = 0;
-
-		if (key != null) {
-			keySize = getAccountKeyStorageSize(key);
-		}
-
-		bpr = BASIC_QUERY_RES_HEADER + getStateProofSize(responseType);
-
-		sbpr = BASIC_CONTRACT_INFO_SIZE + keySize;
-
-		FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-				.setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
-
-		return getQueryFeeDataMatrices(feeMatrices);
-
-	}
-
-
 	/**
 	 * This method returns the Fee Matrices for Contract Byte Code Query
 	 */
@@ -474,48 +410,6 @@ public class SmartContractFeeBuilder extends FeeBuilder {
 		bpr = BASIC_QUERY_RES_HEADER + getStateProofSize(responseType);
 
 		sbpr = byteCodeSize;
-
-		FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-				.setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
-
-		return getQueryFeeDataMatrices(feeMatrices);
-
-	}
-
-	/**
-	 *
-	 */
-	public FeeData getContractSolidityIDQueryFeeMatrices(ResponseType responseType) {
-
-		// get the Fee Matrices
-		long bpt = 0;
-		long vpt = 0;
-		long rbs = 0;
-		long sbs = 0;
-		long gas = 0;
-		long tv = 0;
-		long bpr = 0;
-		long sbpr = 0;
-
-
-		/*
-		 * GetBySolidityIDQuery QueryHeader Transaction - CryptoTransfer - (will be taken care in
-		 * Transaction processing) ResponseType - INT_SIZE string solidityID - SOLIDITY_ADDRESS
-		 */
-
-		bpt = BASIC_QUERY_HEADER + SOLIDITY_ADDRESS;
-		/*
-		 *
-		 * Response header NodeTransactionPrecheckCode - 4 bytes ResponseType - 4 bytes
-		 *
-		 * ResponseHeader header = 1; //standard response from node to client, including the requested
-		 * fields: cost, or state proof, or both, or neither AccountID accountID = 2; // a
-		 * cryptocurrency account FileID fileID = 3; // a file ContractID contractID = 4;
-		 *
-		 */
-
-		bpr = BASIC_QUERY_RES_HEADER + getStateProofSize(responseType) + BASIC_ENTITY_ID_SIZE;
-
 
 		FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
 				.setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
@@ -569,41 +463,6 @@ public class SmartContractFeeBuilder extends FeeBuilder {
 		return getQueryFeeDataMatrices(feeMatrices);
 	}
 
-
-	/**
-	 * Renewal Fee Metrics for SmartContract
-	 */
-	public FeeData getSmartContractRenewalFeeMatrices(long autoRenewal, long storageBytes) {
-
-		long bpt = 0;
-		long vpt = 0;
-		long rbs = 0;
-		long sbs = 0;
-		long gas = 0;
-		long tv = 0;
-		long bpr = 0;
-		long sbpr = 0;
-
-
-		/*
-		 * long balance - LONG_SIZE long receiverThreshold - LONG_SIZE long senderThreshold - LONG_SIZE
-		 * boolean receiverSigRequired - BOOL_SIZE Key accountKeys - BASIC_ENTITY_ID_SIZE AccountID
-		 * proxyAccount - BASIC_ENTITY_ID_SIZE long autoRenewPeriod - LONG_SIZE boolean deleted - BOOL_SIZE
-		 */
-
-		rbs = (7 * LONG_SIZE + 2 * BOOL_SIZE + BASIC_ENTITY_ID_SIZE) * autoRenewal;
-
-		// sbs - Storage bytes seconds
-		sbs = storageBytes * autoRenewal;
-
-
-		FeeComponents feeMatricesForTx = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-				.setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
-
-		return getFeeDataMatrices(feeMatricesForTx, DEFAULT_PAYER_ACC_SIG_COUNT, DEFAULT_RBS_NETWORK);
-
-	}
-
 	private long getContractUpdateStorageBytesSec(TransactionBody txBody,
 			Timestamp contractExpiryTime) {
 		long storageSize = 0;
@@ -622,7 +481,6 @@ public class SmartContractFeeBuilder extends FeeBuilder {
 		storageSize = storageSize * seconds;
 		return storageSize;
 	}
-
 
 	public FeeData getContractDeleteTxFeeMatrices(TransactionBody txBody, SigValueObj sigValObj)
 			throws InvalidTxBodyException {

@@ -131,7 +131,7 @@ public class RenewalHelper {
 		if (lastClassifiedTokens.numAssociations() > 0) {
 			final var grpcId = lastClassifiedEntityId.toAccountId();
 			final var currentTokens = tokens.get();
-			for (var tId : lastClassifiedTokens.asIds()) {
+			for (var tId : lastClassifiedTokens.asTokenIds()) {
 				doReturnToTreasury(grpcId, tId, displacements, currentTokens);
 			}
 		}

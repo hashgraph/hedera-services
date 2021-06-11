@@ -122,6 +122,8 @@ import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.ServicesStatsManager;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
@@ -133,6 +135,7 @@ import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.throttling.TxnAwareHandleThrottling;
 import com.hedera.services.txns.ExpandHandleSpan;
 import com.hedera.services.txns.TransitionLogicLookup;
+import com.hedera.services.txns.TransitionRunner;
 import com.hedera.services.txns.submission.BasicSubmissionFlow;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.SyntaxPrecheck;
@@ -521,6 +524,8 @@ public class ServicesContextTest {
 		assertThat(ctx.transactionPrecheck(), instanceOf(TransactionPrecheck.class));
 		assertThat(ctx.queryHeaderValidity(), instanceOf(QueryHeaderValidity.class));
 		assertThat(ctx.entityAutoRenewal(), instanceOf(EntityAutoRenewal.class));
+		assertThat(ctx.typedTokenStore(), instanceOf(TypedTokenStore.class));
+		assertThat(ctx.transitionRunner(), instanceOf(TransitionRunner.class));
 		assertThat(ctx.nodeInfo(), instanceOf(NodeInfo.class));
 		assertThat(ctx.invariants(), instanceOf(InvariantChecks.class));
 		assertThat(ctx.narratedCharging(), instanceOf(NarratedLedgerCharging.class));
@@ -529,6 +534,7 @@ public class ServicesContextTest {
 		assertThat(ctx.nonBlockingHandoff(), instanceOf(NonBlockingHandoff.class));
 		assertThat(ctx.accessorBasedUsages(), instanceOf(AccessorBasedUsages.class));
 		assertThat(ctx.pricedUsageCalculator(), instanceOf(PricedUsageCalculator.class));
+		assertThat(ctx.accountStore(), instanceOf(AccountStore.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

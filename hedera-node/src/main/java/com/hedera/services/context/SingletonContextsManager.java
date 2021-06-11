@@ -57,12 +57,4 @@ public enum SingletonContextsManager implements ContextsManager {
 	public boolean isInitialized(long nodeId) {
 		return contexts.containsKey(nodeId);
 	}
-
-	/**
-	 * Help to indicate whether multiple node running on the same JVM
-	 * @return
-	 */
-	public int getContextsCount (){
-		return contexts.size();
-	}
 }

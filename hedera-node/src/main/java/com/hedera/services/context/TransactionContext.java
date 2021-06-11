@@ -31,6 +31,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 
@@ -53,6 +54,7 @@ public interface TransactionContext {
 	 *
 	 * @param accessor the consensus platform txn to manage context of.
 	 * @param consensusTime when the txn reached consensus.
+	 * @param submittingMember the member that submitted the txn to the network.
 	 */
 	void resetFor(TxnAccessor accessor, Instant consensusTime, long submittingMember);
 
@@ -219,14 +221,14 @@ public interface TransactionContext {
 
 	/**
 	 * Update the topic's running hash and sequence number.
-	 * @param runningHash
-	 * @param sequenceNumber
+	 * @param runningHash the running hash of the topic.
+	 * @param sequenceNumber the sequence number of the topic.
 	 */
 	void setTopicRunningHash(byte[] runningHash, long sequenceNumber);
 
 	/**
 	 * Set this token's new total supply for mint/burn/wipe transaction
-	 * @param newTotalTokenSupply
+	 * @param newTotalTokenSupply new total supply of the token.
 	 */
 	void setNewTotalSupply(long newTotalTokenSupply);
 
@@ -238,6 +240,7 @@ public interface TransactionContext {
 
 	/**
 	 * Returns a triggered TxnAccessor
+	 * @return a triggered TxnAccessor
 	 */
 	TxnAccessor triggeredTxn();
 
@@ -253,4 +256,11 @@ public interface TransactionContext {
 	 * @return {@code List<ExpiringEntity>} for the current expiring entities.
 	 */
 	List<ExpiringEntity> expiringEntities();
+
+	/**
+	 * Set the token transfers that occurred as a result of the active transaction.
+	 *
+	 * @param tokenTransfers the token transfers to record
+	 */
+	void setTokenTransferLists(List<TokenTransferList> tokenTransfers);
 }
