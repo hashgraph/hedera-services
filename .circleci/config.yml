@@ -42,6 +42,186 @@ commands:
 
 
   ######################################################################################################################
+  # Command Name:                     shell_extract_file_into_variable
+  # Command Version:                  1.1
+  #
+  # Parameters:
+  #       before_extraction           a list of steps to be executed prior to extracting the data, optional
+  #       after_extraction            a list of steps to be executed after extracting the data, optional
+  #       src_file_name               the file containing the input data to be read
+  #       dst_variable_name           the name of the bash environment variable used to store the version
+  #
+  #
+  # Description:
+  #
+  #   Extracts the contents of the file as indicated by the `src_file_name` parameter into the variable
+  #   specified by the `dst_variable_name` parameters.
+  #
+  # Command Requirements:
+  #   - perl (>= 5.26.1)
+  #
+  ######################################################################################################################
+  shell_extract_file_into_variable:
+    parameters:
+      before_extraction:
+        type: steps
+        default: [ ]
+      after_extraction:
+        type: steps
+        default: [ ]
+      src_file_name:
+        type: string
+      dst_variable_name:
+        type: string
+    steps:
+      - steps: << parameters.before_extraction >>
+      - run:
+          name: Extract Data from File << parameters.src_file_name >> To Variable << parameters.dst_variable_name >>
+          command: |
+            set -x
+            if [[ ! -f "<< parameters.src_file_name >>" ]]; then exit 0; fi
+            FILE_CONTENT=$(cat "<< parameters.src_file_name >>")
+            echo "export << parameters.dst_variable_name >>=\"${FILE_CONTENT}\"" >> "${BASH_ENV}"
+          when: always
+      - steps: << parameters.after_extraction >>
+
+  ######################################################################################################################
+  # Command Name:                     sonar_check_quality_gate
+  # Command Version:                  1.0
+  #
+  # Parameters:
+  #       repo_name                   the name of the Git repository used during `git_repo_checkout`, default: primary
+  #
+  #
+  # Description:
+  #
+  #   Fails the CircleCI build if the SonarCloud quality gate criteria is not met.
+  #
+  # Command Requirements:
+  #   - perl (>= 5.26.1)
+  #     - Mozilla::CA (>= 20200520) [Perl CPAN Module]
+  #     - JSON::Parse (>= 0.57) [Perl CPAN Module]
+  #
+  ######################################################################################################################
+  sonar_check_quality_gate:
+    parameters:
+      repo_name:
+        type: string
+        default: "primary"
+    steps:
+      - run:
+          name: Check SonarCloud Quality Gate
+          command: |
+            set -x
+            if [[ "${CIRCLE_BRANCH}" == "develop" ]]; then
+              echo "Skipping SonarCloud Quality Gate Enforcement - Branch is Temporarily Excluded (develop)........"
+              exit 0
+            fi
+            if [[ "${CIRCLE_BRANCH}" == "prerelease" ]]; then
+              echo "Skipping SonarCloud Quality Gate Enforcement - Branch is Temporarily Excluded (prerelease)........"
+              exit 0
+            fi
+            REPO_PATH="${HOME}/repos/<< parameters.repo_name >>"
+            if [[ ! -d "${REPO_PATH}" ]]; then exit 15; fi
+            SONAR_QG_SCRIPT="${REPO_PATH}/.circleci/scripts/sonar_check_quality_gate.pl"
+            if [[ ! -f "${SONAR_QG_SCRIPT}" ]]; then exit 38; fi
+            SONAR_REPORT_FILE="${REPO_PATH}/target/sonar/report-task.txt"
+            if [[ ! -f "${SONAR_REPORT_FILE}" ]]; then exit 40; fi
+            export SONAR_TASK_ID="$(cat "${SONAR_REPORT_FILE}" | perl -0777 -e 'while (my $line = <>) { if ($line =~ /ceTaskId=([A-Za-z0-9_-]+)/ig) { print "$1"; } }')"
+            if [[ -z "${SONAR_TASK_ID}" ]]; then exit 41; fi
+            echo "export SONAR_CHECK_EXECUTED=\"1\"" >> "${BASH_ENV}"
+            perl ${SONAR_QG_SCRIPT}
+      - shell_extract_file_into_variable:
+          src_file_name: "/tmp/sonar_dashboard_link.txt"
+          dst_variable_name: "SONAR_DASHBOARD_LINK"
+          after_extraction:
+            - run:
+                name: Setup Slack Channel for Notifications
+                command: |
+                  set -x
+                  if [[ -z "${SONAR_CHECK_EXECUTED}" ]]; then
+                    echo "Skipping Slack notifications because SonarCloud Validation was not performed......"
+                    exit 0;
+                  fi
+                  echo "export SLACK_DEFAULT_CHANNEL=\"${SONAR_SLACK_CHANNEL}\"" >> "${BASH_ENV}"
+                when: on_fail
+            - slack/notify:
+                event: fail
+                custom: |
+                  {
+                      "attachments": [
+                          {
+                              "color": "#c92808",
+                              "blocks": [
+                                  {
+                                      "type": "section",
+                                      "text": {
+                                          "type": "mrkdwn",
+                                          "text": "*SonarCloud Scan Failure*"
+                                      },
+                                      "fields": [
+                                          {
+                                              "type": "mrkdwn",
+                                              "text": "*_Commit Author:_*"
+                                          },
+                                          {
+                                              "type": "mrkdwn",
+                                              "text": "*_Branch:_*"
+                                          },
+                                          {
+                                              "type": "mrkdwn",
+                                              "text": "${CIRCLE_USERNAME}"
+                                          },
+                                          {
+                                              "type": "mrkdwn",
+                                              "text": "${CIRCLE_BRANCH}"
+                                          }
+                                      ]
+                                  },
+                                  {
+                                      "type": "section",
+                                      "fields": [
+                                          {
+                                              "type": "mrkdwn",
+                                              "text": "*_CircleCI Build Number:_*"
+                                          },
+                                          {
+                                              "type": "mrkdwn",
+                                              "text": "*_SonarCloud Analysis:_*"
+                                          },
+                                          {
+                                              "type": "mrkdwn",
+                                              "text": "<${CIRCLE_BUILD_URL}|${CIRCLE_BUILD_NUM}>"
+                                          },
+                                          {
+                                              "type": "mrkdwn",
+                                              "text": "<${SONAR_DASHBOARD_LINK}|${CIRCLE_BRANCH}>"
+                                          }
+                                      ]
+                                  },
+                                  {
+                                      "type": "section",
+                                      "text": {
+                                          "type": "mrkdwn",
+                                          "text": "*_Git Commit:_*\n${CIRCLE_SHA1}"
+                                      }
+                                  },
+                                  {
+                                      "type": "context",
+                                      "elements": [
+                                          {
+                                              "type": "mrkdwn",
+                                              "text": ":rotating_light: Please correct the issues identified by SonarCloud before merging!"
+                                          }
+                                      ]
+                                  }
+                              ]
+                          }
+                      ]
+                  }
+
+
+  ######################################################################################################################
   # Command Name:                     gcp_storage_rsync
   # Command Version:                  1.0
   #
@@ -2176,6 +2356,18 @@ jobs:
           name: prepare log dir
           command: |
             mkdir -p /repo/test-clients/output
+      - run:
+          name: Install tools for Sonar scan
+          command: |
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update && \
+            apt-get install -y openssh-client haveged tar gzip git ca-certificates wget zip unzip make gcc liblwp-protocol-https-perl && \
+            apt-get install -y jq libjq1 libonig4 curl && \
+            echo | cpan && \
+            cpan install CPAN && \
+            cpan install Mozilla::CA && \
+            cpan install JSON::Parse
+
       - run:
           name: mvn install
           # use double quote otherwise the backslash of line continuation will be treated as part of mvn parameter
