@@ -39,7 +39,7 @@ public class BackedAccountLookup implements AccountSigMetaLookup {
 		if (!accounts.contains(id)) {
 			return SafeLookupResult.failure(MISSING_ACCOUNT);
 		}
-		var account = accounts.getUnsafeRef(id);
+		var account = accounts.getImmutableRef(id);
 		return new SafeLookupResult<>(
 				new AccountSigningMetadata(
 						account.getKey(),

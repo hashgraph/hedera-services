@@ -47,6 +47,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class AccountStoreTest {
@@ -125,6 +127,7 @@ class AccountStoreTest {
 
 		// then:
 		assertEquals(expectedReplacement, miscMerkleAccount);
+		verify(accounts, never()).replace(miscMerkleId, expectedReplacement);
 		// and:
 		assertNotSame(miscMerkleAccount.tokens().getIds(), model.getAssociatedTokens());
 	}

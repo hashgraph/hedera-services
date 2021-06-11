@@ -57,7 +57,7 @@ class BackedAccountLookupTest {
 	@Test
 	void usesRefForImpureLookup() {
 		given(accounts.contains(id)).willReturn(true);
-		given(accounts.getUnsafeRef(id)).willReturn(account);
+		given(accounts.getImmutableRef(id)).willReturn(account);
 
 		// when:
 		final var result = subject.safeLookup(id);

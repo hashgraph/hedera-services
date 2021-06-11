@@ -56,7 +56,7 @@ public interface BackingStore<K, A> {
 	 * @param id the id of the relevant account.
 	 * @return a reference to the account.
 	 */
-	A getUnsafeRef(K id);
+	A getImmutableRef(K id);
 
 	/**
 	 * Updates (or creates, if absent) the account with the given id
