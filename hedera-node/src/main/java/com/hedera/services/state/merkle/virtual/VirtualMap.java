@@ -32,8 +32,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hedera.services.state.merkle.virtual.VirtualTreePath.INVALID_PATH;
 import static com.hedera.services.state.merkle.virtual.VirtualTreePath.ROOT_PATH;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.compareTo;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getBreadcrumbs;
 import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getIndexInRank;
 import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getLeftChildPath;
 import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getParentPath;
@@ -374,7 +372,7 @@ public final class VirtualMap
             // leaf.
             final var dirtyLeaves = new ArrayList<>(cache.values());
             final var numDirtyLeaves = dirtyLeaves.size();
-            dirtyLeaves.sort((a, b) -> compareTo(b.getPath(), a.getPath())); // reverse the order
+            dirtyLeaves.sort((a, b) -> Long.compare(b.getPath(), a.getPath())); // reverse the order
 
             // Process the leaves
             for (int i=0; i<numDirtyLeaves; i++) {
@@ -751,9 +749,9 @@ public final class VirtualMap
     private void print(List<List<String>> strings, long path) {
         // Write this node out
         final var rank = getRank(path);
-        final var pnode = compareTo(path, firstLeafPath) < 0;
+        final var pnode = Long.compare(path, firstLeafPath) < 0;
         final var dirtyMark = !pnode && cache2.containsKey(path) ? "*" : "";
-        strings.get(rank).set(getIndexInRank(path), dirtyMark + "(" + (pnode ? "P" : "L") + ", " + getBreadcrumbs(path) + ")" + dirtyMark);
+        strings.get(rank).set(getIndexInRank(path), dirtyMark + "(" + (pnode ? "P" : "L") + ", " + (getIndexInRank(path)) + ")" + dirtyMark);
 
         if (pnode) {
             // Make sure we have another level down to go.

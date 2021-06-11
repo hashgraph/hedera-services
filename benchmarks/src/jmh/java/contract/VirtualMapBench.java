@@ -128,7 +128,7 @@ public class VirtualMapBench {
 //    }
 
     @Benchmark
-    public void update_100PerVirtualMap() {
+    public void update_LimitedPerVirtualMap() {
         inMemoryMap = inMemoryMap.copy();
         for (int j=0; j<25; j++) {
             final var i = rand.nextInt(1_000_000);
@@ -138,7 +138,7 @@ public class VirtualMapBench {
     }
 
     @Benchmark
-    public void update_100PerVirtualMap_Files() {
+    public void update_LimitedPerVirtualMap_Files() {
         final var map = new VirtualMap(ds2);
         for (int j=0; j<25; j++) {
             final var i = rand.nextInt(1_000_000);
