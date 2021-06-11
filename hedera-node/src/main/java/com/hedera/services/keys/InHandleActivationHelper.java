@@ -21,12 +21,9 @@ package com.hedera.services.keys;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.Collections;
 import java.util.List;
@@ -36,7 +33,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.hedera.services.keys.HederaKeyTraversal.visitSimpleKeys;
-import static com.hedera.services.sigs.Rationalization.IN_HANDLE_SUMMARY_FACTORY;
 
 /**
  * Provides information about the Ed25519 keys that compose the Hedera keys
@@ -49,18 +45,12 @@ import static com.hedera.services.sigs.Rationalization.IN_HANDLE_SUMMARY_FACTORY
  * @author Michael Tinker
  */
 public class InHandleActivationHelper {
-	private static final Logger log = LogManager.getLogger(InHandleActivationHelper.class);
-
 	private static final List<JKey> NO_OTHER_PARTIES = null;
 	private static final TxnAccessor NO_LAST_ACCESSOR = null;
 	private static final Function<byte[], TransactionSignature> NO_LAST_SIGS_FN = null;
 
 	static Activation activation = HederaKeyActivation::isActive;
-	static Function<
-			List<TransactionSignature>,
-			Function<byte[], TransactionSignature>> sigsFnSource = HederaKeyActivation::pkToSigMapFrom;
 
-	private final HederaSigningOrder keyOrderer;
 	private final CharacteristicsFactory characteristics;
 	private final Supplier<TxnAccessor> accessorSource;
 
@@ -68,16 +58,10 @@ public class InHandleActivationHelper {
 	private TxnAccessor accessor = NO_LAST_ACCESSOR;
 	private Function<byte[], TransactionSignature> sigsFn = NO_LAST_SIGS_FN;
 
-	public InHandleActivationHelper(
-			HederaSigningOrder keyOrderer,
-			CharacteristicsFactory characteristics,
-			Supplier<TxnAccessor> accessorSource
-	) {
-		this.keyOrderer = keyOrderer;
+	public InHandleActivationHelper(CharacteristicsFactory characteristics, Supplier<TxnAccessor> accessorSource) {
 		this.characteristics = characteristics;
 		this.accessorSource = accessorSource;
 	}
-
 
 	/**
 	 * Returns true if the set of Ed25519 signing keys for the active transaction
@@ -85,6 +69,7 @@ public class InHandleActivationHelper {
 	 * to the active transaction.
 	 *
 	 * @param tests the predicate(s) to use for testing if an Ed25519 key has signed
+	 * @return whether or not the given set of keys are sufficient for signing the active transaction
 	 */
 	public boolean areOtherPartiesActive(BiPredicate<JKey, TransactionSignature> tests) {
 		ensureUpToDate();
@@ -96,7 +81,10 @@ public class InHandleActivationHelper {
 	 * suffice to meet the signing requirements of all Hedera keys prerequisite
 	 * to the schedule referenced by the active transaction.
 	 *
+	 * @param scheduledTxn the scheduled transaction
 	 * @param tests the predicate(s) to use for testing if an Ed25519 key has signed
+	 * @return whether or not the given set of keys are sufficient for signing the schedule
+	 * 		referenced by the active transaction
 	 */
 	public boolean areScheduledPartiesActive(
 			TransactionBody scheduledTxn,
@@ -123,8 +111,9 @@ public class InHandleActivationHelper {
 	}
 
 	/**
-	 * Returns the canonical mapping between Ed25519 public keys and expanded
-	 * signatures for the active transaction.
+	 * Returns the canonical mapping between Ed25519 public keys and expanded signatures for the active transaction.
+	 *
+	 * @return the canonical mapping between Ed25519 public keys and expanded signatures for the active transaction.
 	 */
 	public Function<byte[], TransactionSignature> currentSigsFn() {
 		return sigsFn;
@@ -150,16 +139,13 @@ public class InHandleActivationHelper {
 	private void ensureUpToDate() {
 		var current = accessorSource.get();
 		if (accessor != current) {
-			var otherOrderingResult = keyOrderer.keysForOtherParties(current.getTxn(), IN_HANDLE_SUMMARY_FACTORY);
-			if (otherOrderingResult.hasErrorReport()) {
-				var errorReport = otherOrderingResult.getErrorReport();
-				log.debug("Allowing active other-party sigs: {} ({})!", errorReport, errorReport.getResponseCode());
-				otherParties = Collections.emptyList();
+			final var sigMeta = current.getSigMeta();
+			if (sigMeta.couldRationalizeOthers()) {
+				otherParties = sigMeta.othersReqSigs();
 			} else {
-				otherParties = otherOrderingResult.getOrderedKeys();
+				otherParties = Collections.emptyList();
 			}
-			var sigs = current.getPlatformTxn().getSignatures();
-			sigsFn = sigsFnSource.apply(sigs);
+			sigsFn = sigMeta.pkToVerifiedSigFn();
 			accessor = current;
 		}
 	}

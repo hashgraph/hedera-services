@@ -45,7 +45,7 @@ import java.util.Arrays;
 public class SigMapPubKeyToSigBytes implements PubKeyToSigBytes {
 	private final SignatureMap sigMap;
 
-	SigMapPubKeyToSigBytes(SignatureMap sigMap) {
+	public SigMapPubKeyToSigBytes(SignatureMap sigMap) {
 		this.sigMap = sigMap;
 	}
 

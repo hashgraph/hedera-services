@@ -61,7 +61,7 @@ public class SigningOrderResult<T> {
 	}
 
 	public boolean hasKnownOrder() {
-		return !errorReport.isPresent();
+		return errorReport.isEmpty();
 	}
 
 	public boolean hasErrorReport() {

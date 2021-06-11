@@ -22,11 +22,14 @@ package com.hedera.services.bdd.spec.transactions.crypto;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
-import com.hedera.services.usage.crypto.CryptoTransferUsage;
+import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.crypto.CryptoTransferMeta;
+import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -39,6 +42,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.api.proto.java.TransferList;
+import com.hederahashgraph.fee.FeeObject;
 import com.hederahashgraph.fee.SigValueObj;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -52,6 +56,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -82,6 +87,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 	private Function<HapiApiSpec, TransferList> hbarOnlyProvider = MISSING_HBAR_ONLY_PROVIDER;
 	private Optional<String> tokenWithEmptyTransferAmounts = Optional.empty();
 	private Optional<Pair<String[], Long>> appendedFromTo = Optional.empty();
+	private Optional<AtomicReference<FeeObject>> feesObserver = Optional.empty();
 
 	@Override
 	public HederaFunctionality type() {
@@ -95,6 +101,11 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 
 	public HapiCryptoTransfer breakingNetZeroInvariant() {
 		breakNetZeroTokenChangeInvariant = true;
+		return this;
+	}
+
+	public HapiCryptoTransfer exposingFeesTo(AtomicReference<FeeObject> obs) {
+		feesObserver = Optional.of(obs);
 		return this;
 	}
 
@@ -175,7 +186,8 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 		};
 	}
 
-	public static Function<HapiApiSpec, TransferList> tinyBarsFromToWithInvalidAmounts(String from, String to, long amount) {
+	public static Function<HapiApiSpec, TransferList> tinyBarsFromToWithInvalidAmounts(String from, String to,
+			long amount) {
 		return tinyBarsFromToWithInvalidAmounts(from, to, ignore -> amount);
 	}
 
@@ -258,6 +270,14 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+		if (feesObserver.isPresent()) {
+			return spec.fees().forActivityBasedOpWithDetails(
+					HederaFunctionality.CryptoTransfer,
+					(_txn, _svo) -> usageEstimate(_txn, _svo, spec.fees().tokenTransferUsageMultiplier()),
+					txn,
+					numPayerKeys,
+					feesObserver.get());
+		}
 		return spec.fees().forActivityBasedOp(
 				HederaFunctionality.CryptoTransfer,
 				(_txn, _svo) -> usageEstimate(_txn, _svo, spec.fees().tokenTransferUsageMultiplier()),
@@ -265,10 +285,24 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 				numPayerKeys);
 	}
 
-	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo, int multiplier) {
-		return CryptoTransferUsage.newEstimate(txn, suFrom(svo))
-				.givenTokenMultiplier(multiplier)
-				.get();
+	public static FeeData usageEstimate(TransactionBody txn, SigValueObj svo, int multiplier) {
+		final var op = txn.getCryptoTransfer();
+
+		final var baseMeta = new BaseTransactionMeta(
+				txn.getMemoBytes().size(),
+				op.getTransfers().getAccountAmountsCount());
+
+		int numTokensInvolved = 0, numTokenTransfers = 0;
+		for (var tokenTransfers : op.getTokenTransfersList()) {
+			numTokensInvolved++;
+			numTokenTransfers += tokenTransfers.getTransfersCount();
+		}
+		final var xferMeta = new CryptoTransferMeta(multiplier, numTokensInvolved, numTokenTransfers);
+
+		final var accumulator = new UsageAccumulator();
+		cryptoOpsUsage.cryptoTransferUsage(suFrom(svo), xferMeta, baseMeta, accumulator);
+
+		return AdapterUtils.feeDataFrom(accumulator);
 	}
 
 	@Override
@@ -293,7 +327,8 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 				helper.add(
 						"tokenTransfers",
 						TxnUtils.readableTokenTransfers(txn.getCryptoTransfer().getTokenTransfersList()));
-			} catch (Exception ignore) { }
+			} catch (Exception ignore) {
+			}
 		}
 		return helper;
 	}

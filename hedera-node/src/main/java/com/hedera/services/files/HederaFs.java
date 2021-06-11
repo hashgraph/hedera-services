@@ -56,6 +56,7 @@ public interface HederaFs {
 	 *
 	 * @param contents the data for the file
 	 * @param attr the metadata of the file
+	 * @param sponsor the payer for the creation of the file
 	 * @return a globally unique entity id
 	 * @throws IllegalArgumentException with {@link IllegalArgumentType#FILE_WOULD_BE_EXPIRED} if expiry is past
 	 * @throws IllegalArgumentException with {@link IllegalArgumentType#OVERSIZE_CONTENTS} if the data are too large
@@ -96,6 +97,7 @@ public interface HederaFs {
 	 *
 	 * @param id the file to update
 	 * @param attr the new metadata
+	 * @return an {@link UpdateResult} summarizing the result of the update metadata attempt
 	 * @throws IllegalArgumentException with {@link IllegalArgumentType#UNKNOWN_FILE} if file is missing
 	 * @throws IllegalArgumentException with {@link IllegalArgumentType#DELETED_FILE} if the file is deleted
 	 * @throws IllegalArgumentException with {@link IllegalArgumentType#FILE_WOULD_BE_EXPIRED} if expiry is past
@@ -107,6 +109,7 @@ public interface HederaFs {
 	 *
 	 * @param id the file to update
 	 * @param attr the new metadata
+	 * @return an {@link UpdateResult} summarizing the result of the update metadata attempt
 	 * @throws IllegalArgumentException with {@link IllegalArgumentType#UNKNOWN_FILE} if file is missing
 	 * @throws IllegalArgumentException with {@link IllegalArgumentType#FILE_WOULD_BE_EXPIRED} if expiry is past
 	 */
@@ -129,7 +132,7 @@ public interface HederaFs {
 	 *
 	 * @param id the file to extend
 	 * @param moreContents its proposed extension
-	 * @return an {@link UpdateResult} summarizing the result of the update attempt
+	 * @return an {@link UpdateResult} summarizing the result of the append attempt
 	 * @throws IllegalArgumentException with {@link IllegalArgumentType#UNKNOWN_FILE} if the file is missing
 	 * @throws IllegalArgumentException with {@link IllegalArgumentType#DELETED_FILE} if the file is deleted
 	 * @throws IllegalArgumentException with {@link IllegalArgumentType#OVERSIZE_CONTENTS} if the extended data are too large
@@ -140,6 +143,7 @@ public interface HederaFs {
 	 * Marks the given file as deleted and removes its data from the system.
 	 *
 	 * @param id the file to delete
+	 * @return an {@link UpdateResult} summarizing the result of the delete attempt
 	 * @throws IllegalArgumentException with {@link IllegalArgumentType#UNKNOWN_FILE} if the file is missing
 	 * @throws IllegalArgumentException with {@link IllegalArgumentType#DELETED_FILE} if the file is deleted
 	 */

@@ -26,6 +26,7 @@ import com.hedera.services.keys.SyncActivationCheck;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.PlatformSigOps;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
+import com.hedera.services.sigs.sourcing.SigMapPubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -39,7 +40,6 @@ import java.util.stream.Stream;
 
 import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 import static com.hedera.services.keys.HederaKeyActivation.isActive;
-import static com.hedera.services.sigs.sourcing.DefaultSigBytesProvider.DEFAULT_SIG_BYTES;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static java.util.stream.Collectors.toList;
 
@@ -71,12 +71,13 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 		if (requiredKeys.isEmpty()) {
 			return true;
 		} else {
+			final var accessor = txnCtx.accessor();
 			return check.allKeysAreActive(
 					requiredKeys,
 					syncVerifier,
-					txnCtx.accessor(),
+					accessor,
 					PlatformSigOps::createEd25519PlatformSigsFrom,
-					DEFAULT_SIG_BYTES::allPartiesSigBytesFor,
+					new SigMapPubKeyToSigBytes(accessor.getSigMap()),
 					BodySigningSigFactory::new,
 					(key, sigsFn) -> isActive(key, sigsFn, ONLY_IF_SIG_IS_VALID),
 					HederaKeyActivation::pkToSigMapFrom);

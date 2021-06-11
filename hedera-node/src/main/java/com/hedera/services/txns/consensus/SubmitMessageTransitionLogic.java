@@ -115,7 +115,6 @@ public class SubmitMessageTransitionLogic implements TransitionLogic {
 					op.getMessage().toByteArray(),
 					op.getTopicID(),
 					transactionContext.consensusTime());
-			topics.get().put(topicId, mutableTopic);
 			transactionContext.setTopicRunningHash(mutableTopic.getRunningHash(), mutableTopic.getSequenceNumber());
 			transactionContext.setStatus(SUCCESS);
 		} catch (IOException e) {

@@ -240,12 +240,12 @@
 
   <repositories>
     <repository>
-      <id>com.bintray.jcenter</id>
-      <url>https://jcenter.bintray.com/</url>
-      <name>JCenter</name>
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
+      <id>central</id>
+      <name>Central Repository</name>
+      <url>https://repo.maven.apache.org/maven2</url>
     </repository>
   </repositories>
 

@@ -21,6 +21,7 @@ package com.hedera.test.mocks;
  */
 
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -50,5 +51,10 @@ public enum TestExchangeRates implements HbarCentExchange {
 	@Override
 	public ExchangeRate rate(Timestamp at) {
 		return rates.getCurrentRate();
+	}
+
+	@Override
+	public ExchangeRates fcActiveRates() {
+		return ExchangeRates.fromGrpc(activeRates());
 	}
 }

@@ -23,10 +23,6 @@ package com.hedera.services.keys;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.core.jproto.JThresholdKey;
-import com.hedera.services.legacy.crypto.SignatureStatus;
-import com.hedera.services.sigs.order.HederaSigningOrder;
-import com.hedera.services.sigs.order.SigningOrderResult;
-import com.hedera.services.sigs.order.SigningOrderResultFactory;
 import com.hedera.services.utils.TxnAccessor;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
@@ -62,21 +58,19 @@ public class HederaKeyActivation {
 	 * taken together, activate the payer's Hedera key.
 	 *
 	 * @param accessor the txn to evaluate.
-	 * @param keyOrder a resource to determine the payer's Hedera key.
-	 * @param summaryFactory a resource to summarize the result of the key determination.
-	 * @return whether the payer's Hedera key is active.
+	 * @return whether the payer's Hedera key is active
 	 */
-	public static boolean payerSigIsActive(
-			TxnAccessor accessor,
-			HederaSigningOrder keyOrder,
-			SigningOrderResultFactory<SignatureStatus> summaryFactory
-	) {
-		SigningOrderResult<SignatureStatus> payerSummary = keyOrder.keysForPayer(accessor.getTxn(), summaryFactory);
+	public static boolean payerSigIsActive(TxnAccessor accessor) {
+		final var sigMeta = accessor.getSigMeta();
 
-		return isActive(
-				payerSummary.getPayerKey(),
-				pkToSigMapFrom(accessor.getPlatformTxn().getSignatures()),
-				ONLY_IF_SIG_IS_VALID);
+		if (sigMeta == null) {
+			throw new IllegalArgumentException("Cannot test payer sig activation without rationalized sig meta");
+		}
+		if (!sigMeta.couldRationalizePayer()) {
+			return false;
+		}
+
+		return isActive(sigMeta.payerKey(), sigMeta.pkToVerifiedSigFn(), ONLY_IF_SIG_IS_VALID);
 	}
 
 	/**
@@ -109,13 +103,19 @@ public class HederaKeyActivation {
 		if (!key.hasKeyList() && !key.hasThresholdKey()) {
 			return tests.test(key, sigsFn.apply(key.getEd25519()));
 		} else {
-			List<JKey> children = key.hasKeyList()
+			final List<JKey> children = key.hasKeyList()
 					? key.getKeyList().getKeysList()
 					: key.getThresholdKey().getKeys().getKeysList();
-			int M = key.hasKeyList()
+			final int m = key.hasKeyList()
 					? characteristics.sigsNeededForList((JKeyList)key)
 					: characteristics.sigsNeededForThreshold((JThresholdKey)key);
-			return children.stream().mapToInt(child -> isActive(child, sigsFn, tests) ? 1 : 0).sum() >= M;
+			var n = 0;
+			for (var child : children) {
+				if (isActive(child, sigsFn, tests)) {
+					n++;
+				}
+			}
+			return n >= m;
 		}
 	}
 

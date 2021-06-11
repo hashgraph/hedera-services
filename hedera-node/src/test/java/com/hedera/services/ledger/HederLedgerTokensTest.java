@@ -53,7 +53,7 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void delegatesToSetTokens() {
+	void delegatesToSetTokens() {
 		// setup:
 		var tokens = new MerkleAccountTokens();
 
@@ -65,7 +65,7 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void getsTokenBalance() {
+	void getsTokenBalance() {
 		// given:
 		var balance = subject.getTokenBalance(misc, frozenId);
 
@@ -74,13 +74,13 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void recognizesAccountWithNonZeroTokenBalances() {
+	void recognizesAccountWithNonZeroTokenBalances() {
 		// expect:
 		assertFalse(subject.allTokenBalancesVanish(misc));
 	}
 
 	@Test
-	public void ignoresNonZeroBalanceOfDeletedToken() {
+	void ignoresNonZeroBalanceOfDeletedToken() {
 		given(frozenToken.isDeleted()).willReturn(true);
 		
 		// expect:
@@ -88,21 +88,21 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void throwsIfSubjectHasNoUsableTokenRelsLedger() {
-		subject.setTokenRelsLedger(HederaLedger.UNUSABLE_TOKEN_RELS_LEDGER);
+	void throwsIfSubjectHasNoUsableTokenRelsLedger() {
+		subject.setTokenRelsLedger(null);
 
 		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.allTokenBalancesVanish(deletable));
 	}
 
 	@Test
-	public void recognizesAccountWithZeroTokenBalances() {
+	void recognizesAccountWithZeroTokenBalances() {
 		// expect:
 		assertTrue(subject.allTokenBalancesVanish(deletable));
 	}
 
 	@Test
-	public void refusesToAdjustWrongly() {
+	void refusesToAdjustWrongly() {
 		given(tokenStore.adjustBalance(misc, tokenId, 555))
 				.willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
@@ -116,7 +116,7 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void adjustsIfValid() {
+	void adjustsIfValid() {
 		givenAdjustBalanceUpdatingTokenXfers(any(), any(), anyLong());
 
 		// given:
@@ -131,14 +131,14 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void injectsLedgerToTokenStore() {
+	void injectsLedgerToTokenStore() {
 		// expect:
 		verify(tokenStore).setAccountsLedger(accountsLedger);
 		verify(tokenStore).setHederaLedger(subject);
 	}
 
 	@Test
-	public void delegatesToGetTokens() {
+	void delegatesToGetTokens() {
 		// setup:
 		var tokens = new MerkleAccountTokens();
 
@@ -152,7 +152,7 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void delegatesFreezeOps() {
+	void delegatesFreezeOps() {
 		// when:
 		subject.freeze(misc, frozenId);
 
@@ -167,7 +167,7 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void delegatesKnowingOps() {
+	void delegatesKnowingOps() {
 		// when:
 		subject.grantKyc(misc, frozenId);
 
@@ -182,7 +182,7 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void delegatesTokenChangeDrop() {
+	void delegatesTokenChangeDrop() {
 		subject.numTouches = 2;
 		subject.tokensTouched[0] = tokenWith(111);
 		subject.tokensTouched[1] = tokenWith(222);
@@ -211,7 +211,7 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void onlyRollsbackIfTokenRelsLedgerInTxn() {
+	void onlyRollsbackIfTokenRelsLedgerInTxn() {
 		given(tokenRelsLedger.isInTransaction()).willReturn(false);
 
 		// when:
@@ -221,7 +221,7 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void forwardsTransactionalSemanticsToRelsLedgerIfPresent() {
+	void forwardsTransactionalSemanticsToRelsLedgerIfPresent() {
 		// setup:
 		InOrder inOrder = inOrder(tokenRelsLedger);
 

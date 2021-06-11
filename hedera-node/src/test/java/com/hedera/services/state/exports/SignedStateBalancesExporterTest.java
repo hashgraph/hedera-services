@@ -41,7 +41,11 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.fcmap.internal.FCMLeaf;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -85,47 +89,47 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(LogCaptureExtension.class)
 class SignedStateBalancesExporterTest {
-	FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
-	FCMap<MerkleEntityId, MerkleAccount> accounts = new FCMap<>();
-	FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels = new FCMap<>();
+	private FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
+	private FCMap<MerkleEntityId, MerkleAccount> accounts = new FCMap<>();
+	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels = new FCMap<>();
 
-	MerkleToken token;
-	MerkleToken deletedToken;
+	private MerkleToken token;
+	private MerkleToken deletedToken;
 
-	long ledgerFloat = 1_000;
+	private long ledgerFloat = 1_000;
 
-	long thisNodeBalance = 400;
-	AccountID thisNode = asAccount("0.0.3");
-	long anotherNodeBalance = 100;
-	AccountID anotherNode = asAccount("0.0.4");
-	long firstNonNodeAccountBalance = 250;
-	AccountID firstNonNode = asAccount("0.0.1001");
-	long secondNonNodeAccountBalance = 250;
-	AccountID secondNonNode = asAccount("0.0.1002");
-	AccountID deleted = asAccount("0.0.1003");
+	private long thisNodeBalance = 400;
+	private AccountID thisNode = asAccount("0.0.3");
+	private long anotherNodeBalance = 100;
+	private AccountID anotherNode = asAccount("0.0.4");
+	private long firstNonNodeAccountBalance = 250;
+	private AccountID firstNonNode = asAccount("0.0.1001");
+	private long secondNonNodeAccountBalance = 250;
+	private AccountID secondNonNode = asAccount("0.0.1002");
+	private AccountID deleted = asAccount("0.0.1003");
 
-	TokenID theToken = asToken("0.0.1004");
-	long secondNonNodeTokenBalance = 100;
-	TokenID theDeletedToken = asToken("0.0.1005");
-	long secondNonNodeDeletedTokenBalance = 100;
+	private TokenID theToken = asToken("0.0.1004");
+	private long secondNonNodeTokenBalance = 100;
+	private TokenID theDeletedToken = asToken("0.0.1005");
+	private long secondNonNodeDeletedTokenBalance = 100;
 
-	byte[] sig = "not-really-a-sig".getBytes();
-	byte[] fileHash = "not-really-a-hash".getBytes();
+	private byte[] sig = "not-really-a-sig".getBytes();
+	private byte[] fileHash = "not-really-a-hash".getBytes();
 
-	MerkleAccount thisNodeAccount, anotherNodeAccount, firstNonNodeAccount, secondNonNodeAccount, deletedAccount;
+	private MerkleAccount thisNodeAccount, anotherNodeAccount, firstNonNodeAccount, secondNonNodeAccount, deletedAccount;
 
-	GlobalDynamicProperties dynamicProperties = new MockGlobalDynamicProps();
+	private GlobalDynamicProperties dynamicProperties = new MockGlobalDynamicProps();
 
-	Instant now = Instant.now();
-	Instant shortlyAfter = now.plusSeconds(dynamicProperties.balancesExportPeriodSecs() / 2);
-	Instant anEternityLater = now.plusSeconds(dynamicProperties.balancesExportPeriodSecs() * 2);
+	private Instant now = Instant.now();
+	private Instant shortlyAfter = now.plusSeconds(dynamicProperties.balancesExportPeriodSecs() / 2);
+	private Instant anEternityLater = now.plusSeconds(dynamicProperties.balancesExportPeriodSecs() * 2);
 
-	ServicesState state;
-	PropertySource properties;
-	UnaryOperator<byte[]> signer;
-	SigFileWriter sigFileWriter;
-	FileHashReader hashReader;
-	DirectoryAssurance assurance;
+	private ServicesState state;
+	private PropertySource properties;
+	private UnaryOperator<byte[]> signer;
+	private SigFileWriter sigFileWriter;
+	private FileHashReader hashReader;
+	private DirectoryAssurance assurance;
 
 	@Inject
 	private LogCaptor logCaptor;
@@ -134,7 +138,13 @@ class SignedStateBalancesExporterTest {
 	private SignedStateBalancesExporter subject;
 
 	@BeforeEach
-	public void setUp() throws Exception {
+	void setUp() throws ConstructableRegistryException {
+		// setup:
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+
 		thisNodeAccount = MerkleAccountFactory.newAccount().balance(thisNodeBalance).get();
 		anotherNodeAccount = MerkleAccountFactory.newAccount().balance(anotherNodeBalance).get();
 		firstNonNodeAccount = MerkleAccountFactory.newAccount().balance(firstNonNodeAccountBalance).get();
@@ -197,7 +207,7 @@ class SignedStateBalancesExporterTest {
 	}
 
 	@Test
-	public void logsOnIoException() throws IOException {
+	void logsOnIoException() throws IOException {
 		// setup:
 		var otherDynamicProperties = new MockGlobalDynamicProps() {
 			@Override
@@ -219,7 +229,7 @@ class SignedStateBalancesExporterTest {
 	}
 
 	@Test
-	public void logsOnSigningFailure() {
+	void logsOnSigningFailure() {
 		// setup:
 		var loc = expectedExportLoc();
 
@@ -237,7 +247,7 @@ class SignedStateBalancesExporterTest {
 	}
 
 	@Test
-	public void matchesV2OutputForCsv() throws IOException {
+	void matchesV2OutputForCsv() throws IOException {
 		// setup:
 		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
 		// and:
@@ -309,7 +319,7 @@ class SignedStateBalancesExporterTest {
 	}
 
 	@Test
-	public void usesNewFormatWhenExportingTokenBalances() throws IOException {
+	void usesNewFormatWhenExportingTokenBalances() throws IOException {
 		// setup:
 		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
 		// and:
@@ -350,7 +360,7 @@ class SignedStateBalancesExporterTest {
 	}
 
 	@Test
-	public void usesLegacyFormatWhenNotExportingTokenBalances() throws IOException {
+	void usesLegacyFormatWhenNotExportingTokenBalances() throws IOException {
 		// setup:
 		var otherDynamicProperties = new MockGlobalDynamicProps() {
 			@Override
@@ -387,7 +397,7 @@ class SignedStateBalancesExporterTest {
 	}
 
 	@Test
-	public void testExportingTokenBalancesProto() throws IOException {
+	void testExportingTokenBalancesProto() throws IOException {
 		// setup:
 		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
 		// and:
@@ -431,7 +441,7 @@ class SignedStateBalancesExporterTest {
 	}
 
 	@Test
-	public void protoWriteIoException() throws IOException {
+	void protoWriteIoException() throws IOException {
 		// setup:
 		var otherDynamicProperties = new MockGlobalDynamicProps() {
 			@Override
@@ -454,7 +464,7 @@ class SignedStateBalancesExporterTest {
 
 
 	@Test
-	public void getEmptyAllAccountBalancesFromCorruptedProtoFileImport() throws Exception {
+	void getEmptyAllAccountBalancesFromCorruptedProtoFileImport() throws Exception {
 		// setup:
 		var loc = expectedExportLoc(true);
 
@@ -472,7 +482,7 @@ class SignedStateBalancesExporterTest {
 	}
 
 	@Test
-	public void assuresExpectedProtoFileDir() throws IOException {
+	void assuresExpectedProtoFileDir() throws IOException {
 		// given:
 		subject.directories = assurance;
 
@@ -499,7 +509,7 @@ class SignedStateBalancesExporterTest {
 
 
 	@Test
-	public void errorProtoLogsOnIoException() throws IOException {
+	void errorProtoLogsOnIoException() throws IOException {
 		// given:
 		subject.directories = assurance;
 		var desiredMsg = "Cannot ensure existence of export dir " + "'" + expectedExportDir() + "'!";
@@ -520,7 +530,7 @@ class SignedStateBalancesExporterTest {
 	}
 
 	@Test
-	public void testSingleAccountBalancingSort() {
+	void testSingleAccountBalancingSort() {
 		// given:
 		List<SingleAccountBalances> expectedBalances = theExpectedBalances();
 		List<SingleAccountBalances> sorted = new ArrayList<>();
@@ -539,7 +549,7 @@ class SignedStateBalancesExporterTest {
 	}
 
 	@Test
-	public void summarizesAsExpected() {
+	void summarizesAsExpected() {
 		// given:
 		List<SingleAccountBalances> expectedBalances = theExpectedBalances();
 		// and:
@@ -583,7 +593,7 @@ class SignedStateBalancesExporterTest {
 
 
 	@Test
-	public void assuresExpectedDir() throws IOException {
+	void assuresExpectedDir() throws IOException {
 		// given:
 		subject.directories = assurance;
 
@@ -596,9 +606,12 @@ class SignedStateBalancesExporterTest {
 	}
 
 	@Test
-	public void throwsOnUnexpectedTotalFloat() throws NegativeAccountBalanceException {
+	void throwsOnUnexpectedTotalFloat() throws NegativeAccountBalanceException {
+		// setup:
+		var mutableAnotherNodeAccount = accounts.getForModify(fromAccountId(anotherNode));
+
 		// given:
-		anotherNodeAccount.setBalance(anotherNodeBalance + 1);
+		mutableAnotherNodeAccount.setBalance(anotherNodeBalance + 1);
 
 		// then:
 		assertThrows(IllegalStateException.class,
@@ -606,7 +619,7 @@ class SignedStateBalancesExporterTest {
 	}
 
 	@Test
-	public void errorLogsOnIoException() throws IOException {
+	void errorLogsOnIoException() throws IOException {
 		// given:
 		subject.directories = assurance;
 		var desiredError = "Cannot ensure existence of export dir " + "'" + expectedExportDir() + "'!";
@@ -626,13 +639,13 @@ class SignedStateBalancesExporterTest {
 	}
 
 	@Test
-	public void initsAsExpected() {
+	void initsAsExpected() {
 		// expect:
 		assertEquals(ledgerFloat, subject.expectedFloat);
 	}
 
 	@Test
-	public void exportsWhenPeriodSecsHaveElapsed() {
+	void exportsWhenPeriodSecsHaveElapsed() {
 		Instant startTime = Instant.parse("2021-03-11T10:59:59.0Z");
 
 		subject = new SignedStateBalancesExporter(properties, signer, dynamicProperties);
@@ -666,7 +679,7 @@ class SignedStateBalancesExporterTest {
 	}
 
 	@AfterAll
-	public static void tearDown() throws IOException {
+	static void tearDown() throws IOException {
 		Files.walk(Path.of("src/test/resources/balance0.0.3"))
 				.sorted(Comparator.reverseOrder())
 				.map(Path::toFile)

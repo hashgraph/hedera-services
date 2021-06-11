@@ -51,7 +51,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-public class PlatformSigOpsTest {
+class PlatformSigOpsTest {
 	private final byte[] EMPTY_SIG = new byte[0];
 	private final byte[] MOCK_SIG = "FIRST".getBytes();
 	private final byte[][] MORE_MOCK_SIGS = new byte[][] {
@@ -92,9 +92,9 @@ public class PlatformSigOpsTest {
 			kt.traverseLeaves(leaf -> {
 				ByteString pk = leaf.asKey().getEd25519();
 				if (nextSigIndex.get() == 0) {
-					verify(sigFactory).create(pk, ByteString.copyFrom(MOCK_SIG));
+					verify(sigFactory).create(pk.toByteArray(), MOCK_SIG);
 				} else {
-					verify(sigFactory, never()).create(pk, ByteString.copyFrom(EMPTY_SIG));
+					verify(sigFactory, never()).create(pk.toByteArray(), EMPTY_SIG);
 				}
 				nextSigIndex.addAndGet(1);
 			});
@@ -116,7 +116,7 @@ public class PlatformSigOpsTest {
 			kt.traverseLeaves(leaf -> {
 				ByteString pk = leaf.asKey().getEd25519();
 				byte[] sigBytes = (nextSigIndex.get() == 0) ? MOCK_SIG : MORE_MOCK_SIGS[nextSigIndex.get() - 1];
-				verify(sigFactory).create(pk, ByteString.copyFrom(sigBytes));
+				verify(sigFactory).create(pk.toByteArray(), sigBytes);
 				nextSigIndex.addAndGet(1);
 			});
 		}

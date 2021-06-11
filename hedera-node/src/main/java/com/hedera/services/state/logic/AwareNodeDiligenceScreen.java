@@ -99,7 +99,7 @@ public class AwareNodeDiligenceScreen {
 			return true;
 		}
 
-		var memoValidity = validator.memoCheck(accessor.getTxn().getMemo());
+		var memoValidity = validator.rawMemoCheck(accessor.getMemoUtf8Bytes(), accessor.memoHasZeroByte());
 		if (memoValidity != OK) {
 			txnCtx.setStatus(memoValidity);
 			return true;
@@ -118,7 +118,7 @@ public class AwareNodeDiligenceScreen {
 				readableId(submittingNodeAccount),
 				submittingMember,
 				readableId(designatedNodeAccount),
-				accessor.getSignedTxn4Log());
+				accessor.getSignedTxnWrapper());
 	}
 
 	private void warnOfMismatched(
@@ -131,6 +131,6 @@ public class AwareNodeDiligenceScreen {
 				readableId(submittingNodeAccount),
 				submittingMember,
 				readableId(designatedNodeAccount),
-				accessor.getSignedTxn4Log());
+				accessor.getSignedTxnWrapper());
 	}
 }

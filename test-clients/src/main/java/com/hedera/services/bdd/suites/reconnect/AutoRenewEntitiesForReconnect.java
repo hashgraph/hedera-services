@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.reconnect;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -54,6 +54,7 @@ public class AutoRenewEntitiesForReconnect extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
+				runTransfersBeforeReconnect(),
 				autoRenewAccountGetsDeletedOnReconnectingNodeAsWell(),
 				accountAutoRenewalSuiteCleanup()
 		);
@@ -103,6 +104,26 @@ public class AutoRenewEntitiesForReconnect extends HapiApiSuite {
 	@Override
 	protected Logger getResultsLogger() {
 		return log;
+	}
+
+	/**
+	 * Since reconnect is not supported when node starts from genesis, run some transactions before running correctness
+	 * tests so that a state is saved before reconnect.
+	 *
+	 * @return
+	 */
+	public static HapiApiSpec runTransfersBeforeReconnect() {
+		return defaultHapiSpec("runTransfersBeforeReconnect")
+				.given().when().then(
+						// do some transfers to save a state before reconnect
+						withOpContext((spec, ctxLog) -> {
+							List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
+							for (int i = 0; i < 500; i++) {
+								opsList.add(cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)));
+							}
+							CustomSpecAssert.allRunFor(spec, opsList);
+						})
+				);
 	}
 }
 

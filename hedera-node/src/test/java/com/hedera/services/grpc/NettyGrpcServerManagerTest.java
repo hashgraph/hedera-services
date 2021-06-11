@@ -182,7 +182,9 @@ class NettyGrpcServerManagerTest {
 		// then:
 		verify(mockPause, never()).forMs(startRetryIntervalMs);
 		verify(server).start();
-		assertTrue(logCaptor.warnLogs().isEmpty());
+		if (outsideCircleCi.getAsBoolean()) {
+			assertTrue(logCaptor.warnLogs().isEmpty());
+		}
 	}
 
 	@Test

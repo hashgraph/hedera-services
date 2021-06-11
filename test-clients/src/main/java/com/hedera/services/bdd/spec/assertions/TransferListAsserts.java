@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.assertions;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.fees.TinyBarTransfers;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -53,6 +54,10 @@ public class TransferListAsserts extends BaseErroringAssertsProvider<TransferLis
 
 	public static TransferListAsserts includingDeduction(LongSupplier from, long amount) {
 		return new DeductionAsserts(from, amount);
+	}
+
+	public static TransferListAsserts includingDeduction(String from, long amount) {
+		return new SpecificDeductionAsserts(from, amount);
 	}
 
 	public static TransferListAsserts includingDeduction(String desc, String payer) {
@@ -159,7 +164,7 @@ class NonEmptyTransferAsserts extends TransferListAsserts {
 
 class DeductionAsserts extends TransferListAsserts {
 	public DeductionAsserts(LongSupplier from, long amount) {
-		registerProvider((sepc, o) -> {
+		registerProvider((spec, o) -> {
 			TransferList transfers = (TransferList) o;
 			long num = from.getAsLong();
 			Assert.assertTrue(
@@ -167,6 +172,20 @@ class DeductionAsserts extends TransferListAsserts {
 					transfers.getAccountAmountsList()
 							.stream()
 							.anyMatch(aa -> aa.getAmount() == -amount && aa.getAccountID().getAccountNum() == num));
+		});
+	}
+}
+
+class SpecificDeductionAsserts extends TransferListAsserts {
+	public SpecificDeductionAsserts(String account, long amount) {
+		registerProvider((spec, o) -> {
+			TransferList transfers = (TransferList) o;
+			AccountID payer = asId(account, spec);
+			Assert.assertTrue(
+					String.format("No deduction of -%d tinyBars from %s detected!", amount, account),
+					transfers.getAccountAmountsList()
+							.stream()
+							.anyMatch(aa -> aa.getAmount() == -amount && aa.getAccountID().equals(payer)));
 		});
 	}
 }

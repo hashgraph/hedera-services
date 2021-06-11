@@ -30,14 +30,13 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.builder.RequestBuilder;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
@@ -78,40 +77,26 @@ public class TxnReceipt implements SelfSerializable {
 	EntityId contractId;
 	EntityId scheduleId;
 	ExchangeRates exchangeRates;
-	Long newTotalSupply = -1L;
+	long newTotalSupply = -1L;
 
 	public TxnReceipt() { }
 
-	TxnReceipt(
-			@Nullable String status,
-			@Nullable EntityId accountId,
-			@Nullable EntityId fileId,
-			@Nullable EntityId contractId,
-			@Nullable EntityId tokenId,
-			@Nullable EntityId scheduleId,
-			@Nullable ExchangeRates exchangeRate,
-			@Nullable EntityId topicId,
-			long topicSequenceNumber,
-			@Nullable byte[] topicRunningHash,
-			long runningHashVersion,
-			long newTotalSupply,
-			@Nullable TxnId scheduledTxnId
-	) {
-		this.status = status;
-		this.accountId = accountId;
-		this.fileId = fileId;
-		this.contractId = contractId;
-		this.exchangeRates = exchangeRate;
-		this.topicId = topicId;
-		this.tokenId = tokenId;
-		this.scheduleId = scheduleId;
-		this.topicSequenceNumber = topicSequenceNumber;
-		this.topicRunningHash = ((topicRunningHash != MISSING_RUNNING_HASH) && (topicRunningHash.length > 0))
-				? topicRunningHash
+	public TxnReceipt (Builder builder){
+		this.status = builder.status;
+		this.accountId = builder.accountId;
+		this.fileId = builder.fileId;
+		this.contractId = builder.contractId;
+		this.exchangeRates = builder.exchangeRates;
+		this.topicId = builder.topicId;
+		this.tokenId = builder.tokenId;
+		this.scheduleId = builder.scheduleId;
+		this.topicSequenceNumber = builder.topicSequenceNumber;
+		this.topicRunningHash = ((builder.topicRunningHash != MISSING_RUNNING_HASH) && (builder.topicRunningHash.length > 0))
+				? builder.topicRunningHash
 				: MISSING_RUNNING_HASH;
-		this.runningHashVersion = runningHashVersion;
-		this.newTotalSupply = newTotalSupply;
-		this.scheduledTxnId = scheduledTxnId;
+		this.runningHashVersion = builder.runningHashVersion;
+		this.newTotalSupply = builder.newTotalSupply;
+		this.scheduledTxnId = builder.scheduledTxnId;
 	}
 
 	/* --- SelfSerializable --- */
@@ -264,38 +249,31 @@ public class TxnReceipt implements SelfSerializable {
 	@Override
 	public String toString() {
 		var helper = MoreObjects.toStringHelper(this)
+				.omitNullValues()
 				.add("status", status)
-				.add("exchangeRates", exchangeRates);
-		if (accountId != null) {
-			helper.add("accountCreated", accountId);
-		}
-		if (fileId != null) {
-			helper.add("fileCreated", fileId);
-		}
-		if (tokenId != null) {
-			helper.add("tokenCreated", tokenId);
-		}
-		if (contractId != null) {
-			helper.add("contractCreated", contractId);
-		}
-		if (topicId != null) {
-			helper.add("topicCreated", topicId);
-		}
+				.add("exchangeRates", exchangeRates)
+				.add("accountCreated", accountId)
+				.add("fileCreated", fileId)
+				.add("tokenCreated", tokenId)
+				.add("contractCreated", contractId)
+				.add("topicCreated", topicId)
+				.add("newTotalTokenSupply", newTotalSupply)
+				.add("scheduledTxnId", scheduledTxnId);
 		if (topicRunningHash != MISSING_RUNNING_HASH) {
 			helper.add("topicSeqNo", topicSequenceNumber);
 			helper.add("topicRunningHash", CommonUtils.hex(topicRunningHash));
 			helper.add("runningHashVersion", runningHashVersion);
 		}
-		helper.add("newTotalTokenSupply", newTotalSupply);
-		if (scheduledTxnId != MISSING_SCHEDULED_TXN_ID) {
-			helper.add("scheduledTxnId", scheduledTxnId);
-		}
 		return helper.toString();
 	}
 
-	/* ---  Helpers --- */
+	public void setAccountId(EntityId accountId) {
+		this.accountId = accountId;
+	}
 
+	/* ---  Helpers --- */
 	public static TxnReceipt fromGrpc(TransactionReceipt grpc) {
+		final var effRates = grpc.hasExchangeRate() ? ExchangeRates.fromGrpc(grpc.getExchangeRate()) : null;
 		String status = grpc.getStatus() != null ? grpc.getStatus().name() : null;
 		EntityId accountId = grpc.hasAccountID() ? EntityId.fromGrpcAccountId(grpc.getAccountID()) : null;
 		EntityId jFileID = grpc.hasFileID() ? EntityId.fromGrpcFileId(grpc.getFileID()) : null;
@@ -308,21 +286,21 @@ public class TxnReceipt implements SelfSerializable {
 		TxnId scheduledTxnId = grpc.hasScheduledTransactionID()
 				? TxnId.fromGrpc(grpc.getScheduledTransactionID())
 				: MISSING_SCHEDULED_TXN_ID;
-
-		return new TxnReceipt(
-				status,
-				accountId,
-				jFileID,
-				jContractID,
-				tokenId,
-				scheduleId,
-				ExchangeRates.fromGrpc(grpc.getExchangeRate()),
-				topicId,
-				grpc.getTopicSequenceNumber(),
-				grpc.getTopicRunningHash().toByteArray(),
-				runningHashVersion,
-				newTotalSupply,
-				scheduledTxnId);
+		return TxnReceipt.newBuilder()
+				.setStatus(status)
+				.setAccountId(accountId)
+				.setFileId(jFileID)
+				.setContractId(jContractID)
+				.setTokenId(tokenId)
+				.setScheduleId(scheduleId)
+				.setExchangeRates(effRates)
+				.setTopicId(topicId)
+				.setTopicSequenceNumber(grpc.getTopicSequenceNumber())
+				.setTopicRunningHash(grpc.getTopicRunningHash().toByteArray())
+				.setRunningHashVersion(runningHashVersion)
+				.setNewTotalSupply(newTotalSupply)
+				.setScheduledTxnId(scheduledTxnId)
+				.build();
 	}
 
 	public TransactionReceipt toGrpc() {
@@ -330,8 +308,10 @@ public class TxnReceipt implements SelfSerializable {
 	}
 
 	public static TransactionReceipt convert(TxnReceipt txReceipt) {
-		TransactionReceipt.Builder builder = TransactionReceipt.newBuilder()
-				.setStatus(ResponseCodeEnum.valueOf(txReceipt.getStatus()));
+		final var builder = TransactionReceipt.newBuilder();
+		if (txReceipt.getStatus() != null) {
+				builder.setStatus(ResponseCodeEnum.valueOf(txReceipt.getStatus()));
+		}
 		if (txReceipt.getAccountId() != null) {
 			builder.setAccountID(RequestBuilder.getAccountIdBuild(
 					txReceipt.getAccountId().num(),
@@ -383,59 +363,92 @@ public class TxnReceipt implements SelfSerializable {
 		return builder.build();
 	}
 
-	/* These constructors are only used in tests. */
-	TxnReceipt(
-			@Nullable String status,
-			@Nullable EntityId accountId,
-			@Nullable EntityId fileId,
-			@Nullable EntityId contractId,
-			@Nullable EntityId tokenId,
-			@Nullable EntityId scheduleId,
-			@Nullable ExchangeRates exchangeRates,
-			@Nullable EntityId topicId,
-			long topicSequenceNumber,
-			@Nullable byte[] topicRunningHash
-	) {
-		this(
-				status,
-				accountId,
-				fileId,
-				contractId,
-				tokenId,
-				scheduleId,
-				exchangeRates,
-				topicId,
-				topicSequenceNumber,
-				topicRunningHash,
-				MISSING_RUNNING_HASH_VERSION);
+	public static TxnReceipt.Builder newBuilder(){
+		return new Builder();
 	}
 
-	TxnReceipt(
-			@Nullable String status,
-			@Nullable EntityId accountId,
-			@Nullable EntityId fileId,
-			@Nullable EntityId contractId,
-			@Nullable EntityId tokenId,
-			@Nullable EntityId scheduleId,
-			@Nullable ExchangeRates exchangeRates,
-			@Nullable EntityId topicId,
-			long topicSequenceNumber,
-			@Nullable byte[] topicRunningHash,
-			long    runningHashVersion
-	) {
-		this(
-				status,
-				accountId,
-				fileId,
-				contractId,
-				tokenId,
-				scheduleId,
-				exchangeRates,
-				topicId,
-				topicSequenceNumber,
-				topicRunningHash,
-				runningHashVersion,
-				RELEASE_070_VERSION,
-				MISSING_SCHEDULED_TXN_ID);
+	public static class Builder {
+		private String status;
+		private EntityId accountId;
+		private EntityId fileId;
+		private EntityId contractId;
+		private EntityId tokenId;
+		private EntityId scheduleId;
+		private ExchangeRates exchangeRates;
+		private EntityId topicId;
+		private long topicSequenceNumber;
+		private byte[] topicRunningHash;
+		private long runningHashVersion;
+		private long newTotalSupply;
+		private TxnId scheduledTxnId;
+
+		public Builder setStatus(String status) {
+			this.status = status;
+			return this;
+		}
+
+		public Builder setAccountId(EntityId accountId) {
+			this.accountId = accountId;
+			return this;
+		}
+
+		public Builder setFileId(EntityId fileId) {
+			this.fileId = fileId;
+			return this;
+		}
+
+		public Builder setContractId(EntityId contractId) {
+			this.contractId = contractId;
+			return this;
+		}
+
+		public Builder setTokenId(EntityId tokenId) {
+			this.tokenId = tokenId;
+			return this;
+		}
+
+		public Builder setScheduleId(EntityId scheduleId) {
+			this.scheduleId = scheduleId;
+			return this;
+		}
+
+		public Builder setExchangeRates(ExchangeRates exchangeRates) {
+			this.exchangeRates = exchangeRates;
+			return this;
+		}
+
+		public Builder setTopicId(EntityId topicId) {
+			this.topicId = topicId;
+			return this;
+		}
+
+		public Builder setTopicSequenceNumber(long topicSequenceNumber) {
+			this.topicSequenceNumber = topicSequenceNumber;
+			return this;
+		}
+
+		public Builder setTopicRunningHash(byte[] topicRunningHash) {
+			this.topicRunningHash = topicRunningHash;
+			return this;
+		}
+
+		public Builder setRunningHashVersion(long runningHashVersion) {
+			this.runningHashVersion = runningHashVersion;
+			return this;
+		}
+
+		public Builder setNewTotalSupply(long newTotalSupply) {
+			this.newTotalSupply = newTotalSupply;
+			return this;
+		}
+
+		public Builder setScheduledTxnId(TxnId scheduledTxnId) {
+			this.scheduledTxnId = scheduledTxnId;
+			return this;
+		}
+
+		public TxnReceipt build(){
+			return new TxnReceipt(this);
+		}
 	}
 }

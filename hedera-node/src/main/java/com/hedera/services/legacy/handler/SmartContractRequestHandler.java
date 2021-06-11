@@ -574,11 +574,11 @@ public class SmartContractRequestHandler {
 	/**
 	 * check if a contract with given contractId exists
 	 *
-	 * @param cid
+	 * @param contractID the contract id to check for existence
 	 * @return CONTRACT_DELETED if deleted, INVALID_CONTRACT_ID if doesn't exist, OK otherwise
 	 */
-	public ResponseCodeEnum validateContractExistence(ContractID cid) {
-		return PureValidation.queryableContractStatus(cid, accounts.get());
+	public ResponseCodeEnum validateContractExistence(ContractID contractID) {
+		return PureValidation.queryableContractStatus(contractID, accounts.get());
 	}
 
 	/**

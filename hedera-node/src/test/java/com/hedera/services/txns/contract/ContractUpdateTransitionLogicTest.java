@@ -103,7 +103,7 @@ class ContractUpdateTransitionLogicTest {
 		customizer = mock(HederaAccountCustomizer.class);
 
 		givenValidTxnCtx();
-		given(customizerFactory.customizerFor(contract, contractUpdateTxn.getContractUpdateInstance()))
+		given(customizerFactory.customizerFor(contract, validator, contractUpdateTxn.getContractUpdateInstance()))
 				.willReturn(Pair.of(Optional.empty(), MODIFYING_IMMUTABLE_CONTRACT));
 
 		// when:
@@ -120,7 +120,7 @@ class ContractUpdateTransitionLogicTest {
 		customizer = mock(HederaAccountCustomizer.class);
 
 		givenValidTxnCtx();
-		given(customizerFactory.customizerFor(contract, contractUpdateTxn.getContractUpdateInstance()))
+		given(customizerFactory.customizerFor(contract, validator, contractUpdateTxn.getContractUpdateInstance()))
 				.willReturn(Pair.of(Optional.of(customizer), OK));
 
 		// when:

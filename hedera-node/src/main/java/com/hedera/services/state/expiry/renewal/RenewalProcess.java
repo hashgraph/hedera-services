@@ -44,7 +44,6 @@ public class RenewalProcess {
 	private final RenewalHelper helper;
 	private final RenewalRecordsHelper recordsHelper;
 
-	private long longNow;
 	private Instant cycleTime = null;
 
 	public RenewalProcess(
@@ -71,7 +70,7 @@ public class RenewalProcess {
 	public boolean process(long entityNum) {
 		assertInCycle();
 
-		longNow = cycleTime.getEpochSecond();
+		final var longNow = cycleTime.getEpochSecond();
 		final var classification = helper.classify(entityNum, longNow);
 		if (TERMINAL_CLASSIFICATIONS.contains(classification)) {
 			log.debug("Terminal classification entity num {} ({})", entityNum, classification);
@@ -104,7 +103,7 @@ public class RenewalProcess {
 
 	private void processDetachedAccountGracePeriodOver(MerkleEntityId accountId) {
 		final var tokensDisplaced = helper.removeLastClassifiedAccount();
-		recordsHelper.streamCryptoRemoval(accountId, tokensDisplaced);
+		recordsHelper.streamCryptoRemoval(accountId, tokensDisplaced.getLeft(), tokensDisplaced.getRight());
 	}
 
 	public void endRenewalCycle() {

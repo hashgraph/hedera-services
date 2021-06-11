@@ -128,7 +128,7 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 		} catch (IllegalArgumentException iae) {
 			mapToStatus(iae, txnCtx);
 		} catch (Exception unknown) {
-			log.warn("Unrecognized failure handling {}!", txnCtx.accessor().getSignedTxn4Log(), unknown);
+			log.warn("Unrecognized failure handling {}!", txnCtx.accessor().getSignedTxnWrapper(), unknown);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
 	}
@@ -145,7 +145,7 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 			log.warn(
 					"Unrecognized detail message '{}' handling {}!",
 					iae.getMessage(),
-					txnCtx.accessor().getSignedTxn4Log(),
+					txnCtx.accessor().getSignedTxnWrapper(),
 					untyped);
 			txnCtx.setStatus(FAIL_INVALID);
 		}

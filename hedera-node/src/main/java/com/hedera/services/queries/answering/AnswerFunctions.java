@@ -50,7 +50,7 @@ public class AnswerFunctions {
 		var txnId = query.getTransactionGetRecord().getTransactionID();
 		var record = recordCache.getPriorityRecord(txnId);
 		if (record != null) {
-			return Optional.of(record);
+			return Optional.of(record.asGrpc());
 		} else {
 			try {
 				AccountID id = txnId.getAccountID();

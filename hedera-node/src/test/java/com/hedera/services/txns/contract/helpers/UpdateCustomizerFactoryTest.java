@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -35,15 +36,21 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ADMIN_KT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
 
+@ExtendWith(MockitoExtension.class)
 class UpdateCustomizerFactoryTest {
 	private long curExpiry = 1_234_567L;
 	private long newExpiry = 2 * curExpiry;
@@ -54,11 +61,16 @@ class UpdateCustomizerFactoryTest {
 	private String newMemo = "The commonness of thoughts and images";
 	private Key newAdminKey = TxnHandlingScenario.TOKEN_ADMIN_KT.asKey();
 
-
 	private UpdateCustomizerFactory subject = new UpdateCustomizerFactory();
+
+	@Mock
+	private OptionValidator optionValidator;
 
 	@Test
 	void makesExpectedChanges() {
+		// setup:
+		final var newExpiryTime = Timestamp.newBuilder().setSeconds(newExpiry).build();
+
 		// given:
 		var mutableContract = MerkleAccountFactory.newContract()
 				.accountKeys(MISC_ADMIN_KT.asJKeyUnchecked())
@@ -70,11 +82,13 @@ class UpdateCustomizerFactoryTest {
 				.setAutoRenewPeriod(newAutoRenew)
 				.setProxyAccountID(newProxy)
 				.setMemoWrapper(StringValue.newBuilder().setValue(newMemo))
-				.setExpirationTime(Timestamp.newBuilder().setSeconds(newExpiry))
+				.setExpirationTime(newExpiryTime)
 				.build();
 
+		given(optionValidator.isValidExpiry(newExpiryTime)).willReturn(true);
+
 		// when:
-		var result = subject.customizerFor(mutableContract, op);
+		var result = subject.customizerFor(mutableContract, optionValidator, op);
 		// and when:
 		mutableContract = result.getLeft().get().customizing(mutableContract);
 
@@ -84,6 +98,28 @@ class UpdateCustomizerFactoryTest {
 		assertEquals(newExpiry, mutableContract.getExpiry());
 		assertEquals(newMemo, mutableContract.getMemo());
 		assertEquals(newProxy, mutableContract.getProxy().toGrpcAccountId());
+	}
+
+	@Test
+	void rejectsInvalidExpiryMakesExpectedChanges() {
+		// setup:
+		final var newExpiryTime = Timestamp.newBuilder().setSeconds(newExpiry).build();
+
+		// given:
+		var mutableContract = MerkleAccountFactory.newContract()
+				.accountKeys(MISC_ADMIN_KT.asJKeyUnchecked())
+				.get();
+		// and:
+		var op = ContractUpdateTransactionBody.newBuilder()
+				.setExpirationTime(newExpiryTime)
+				.build();
+
+		// when:
+		var result = subject.customizerFor(mutableContract, optionValidator, op);
+
+		// then:
+		assertTrue(result.getLeft().isEmpty());
+		assertEquals(INVALID_EXPIRATION_TIME, result.getRight());
 	}
 
 	@Test
@@ -99,7 +135,7 @@ class UpdateCustomizerFactoryTest {
 				.build();
 
 		// when:
-		var result = subject.customizerFor(mutableContract, op);
+		var result = subject.customizerFor(mutableContract, optionValidator, op);
 		// and when:
 		mutableContract = result.getLeft().get().customizing(mutableContract);
 
@@ -119,7 +155,7 @@ class UpdateCustomizerFactoryTest {
 				.build();
 
 		// when:
-		var result = subject.customizerFor(mutableContract, op);
+		var result = subject.customizerFor(mutableContract, optionValidator, op);
 
 		// then:
 		assertTrue(result.getLeft().isEmpty());
@@ -138,7 +174,7 @@ class UpdateCustomizerFactoryTest {
 				.build();
 
 		// when:
-		var result = subject.customizerFor(mutableContract, op);
+		var result = subject.customizerFor(mutableContract, optionValidator, op);
 
 		// then:
 		assertTrue(result.getLeft().isEmpty());
@@ -161,7 +197,7 @@ class UpdateCustomizerFactoryTest {
 				.build();
 
 		// when:
-		var result = subject.customizerFor(mutableContract, op);
+		var result = subject.customizerFor(mutableContract, optionValidator, op);
 
 		// then:
 		assertTrue(result.getLeft().isEmpty());
@@ -180,7 +216,7 @@ class UpdateCustomizerFactoryTest {
 						.build();
 
 		// when:
-		var result = subject.customizerFor(immutableContract, op);
+		var result = subject.customizerFor(immutableContract, optionValidator, op);
 
 		// then:
 		assertTrue(result.getLeft().isEmpty());

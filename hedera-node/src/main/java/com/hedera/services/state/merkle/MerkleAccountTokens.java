@@ -33,8 +33,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import static java.util.stream.Collectors.toList;
-
 public class MerkleAccountTokens extends AbstractMerkleLeaf {
 	static final int MAX_CONCEIVABLE_TOKEN_ID_PARTS = Integer.MAX_VALUE;
 
@@ -82,6 +80,10 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 		return new MerkleAccountTokens(ids.copy());
 	}
 
+	public MerkleAccountTokens tmpNonMerkleCopy() {
+		return new MerkleAccountTokens(ids.copy());
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
@@ -98,7 +100,7 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(ids);
+		return ids.hashCode();
 	}
 
 	/* --- Bean --- */
@@ -109,59 +111,12 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 				.toString();
 	}
 
+	String readableTokenIds() {
+		return ids.toReadableIdList();
+	}
+
 	public List<TokenID> asTokenIds() {
-		return ids.getAsIds().stream()
-				.map(id -> TokenID.newBuilder()
-						.setShardNum(id.getShard())
-						.setRealmNum(id.getRealm())
-						.setTokenNum(id.getNum())
-						.build()
-				).collect(toList());
-	}
-
-	/* --- Association ops --- */
-	public int numAssociations() {
-		return ids.size();
-	}
-
-	public boolean includes(TokenID id) {
-		return ids.contains(id);
-	}
-
-	public boolean includes(Id id) {
-		return ids.contains(id);
-	}
-
-	public void associateAll(Set<TokenID> tokenIds) {
-		if (isImmutable()) {
-			throw new IllegalStateException("Cannot associate any tokens to an immutable container");
-		}
-		ids.addAll(tokenIds);
-	}
-
-	public void dissociateAll(Set<TokenID> tokenIds) {
-		if (isImmutable()) {
-			throw new IllegalStateException("Cannot dissociate any tokens from an immutable container");
-		}
-		ids.removeAll(tokenIds);
-	}
-
-	public void updateAssociationsFrom(CopyOnWriteIds newIds) {
-		ids.setNativeIds(newIds.getNativeIds());
-	}
-
-	public void associate(Set<Id> modelIds) {
-		if (isImmutable()) {
-			throw new IllegalStateException("Cannot associate any tokens to an immutable container");
-		}
-		ids.addAllIds(modelIds);
-	}
-
-	public void dissociate(Set<Id> modelIds) {
-		if (isImmutable()) {
-			throw new IllegalStateException("Cannot dissociate any tokens from an immutable container");
-		}
-		ids.removeAllIds(modelIds);
+		return ids.getAsIds();
 	}
 
 	public CopyOnWriteIds getIds() {
@@ -172,7 +127,42 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 		return ids.getNativeIds();
 	}
 
-	String readableTokenIds() {
-		return ids.toReadableIdList();
+	/* --- Association Manipulation --- */
+	public int numAssociations() {
+		return ids.size();
+	}
+
+	public boolean includes(TokenID id) {
+		return ids.contains(id);
+	}
+
+	public void associateAll(Set<TokenID> tokenIds) {
+		throwIfImmutable();
+		ids.addAll(tokenIds);
+	}
+
+	public void dissociateAll(Set<TokenID> tokenIds) {
+		throwIfImmutable();
+		ids.removeAll(tokenIds);
+	}
+
+	public void shareTokensOf(MerkleAccountTokens other) {
+		throwIfImmutable();
+		ids = other.getIds();
+	}
+
+	public void updateAssociationsFrom(CopyOnWriteIds newIds) {
+		throwIfImmutable();
+		ids.setNativeIds(newIds.getNativeIds());
+	}
+
+	public void associate(Set<Id> modelIds) {
+		throwIfImmutable();
+		ids.addAllIds(modelIds);
+	}
+
+	public void dissociate(Set<Id> modelIds) {
+		throwIfImmutable();
+		ids.removeAllIds(modelIds);
 	}
 }

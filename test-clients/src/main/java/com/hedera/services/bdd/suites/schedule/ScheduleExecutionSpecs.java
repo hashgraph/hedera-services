@@ -85,6 +85,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -841,7 +842,14 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
 				).when(
 						scheduleSign(schedule)
 								.alsoSigningWith(adminKey)
-								.hasKnownStatus(NO_NEW_VALID_SIGNATURES),
+								/* In the rare, but possible, case that the the adminKey and submitKey keys overlap
+								 * in their first byte (and that byte is not shared by the DEFAULT_PAYER),
+								 * we will get SOME_SIGNATURES_WERE_INVALID instead of NO_NEW_VALID_SIGNATURES.
+								 *
+								 * So we need this to stabilize CI. But if just testing locally, you may
+								 * only use .hasKnownStatus(NO_NEW_VALID_SIGNATURES) and it will pass
+								 * >99.99% of the time. */
+								.hasKnownStatusFrom(NO_NEW_VALID_SIGNATURES, SOME_SIGNATURES_WERE_INVALID),
 						updateTopic(mutableTopic).submitKey("somebody"),
 						scheduleSign(schedule)
 				).then(

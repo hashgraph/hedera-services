@@ -27,7 +27,6 @@ import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 
 import java.util.List;
 
-import static com.google.protobuf.ByteString.copyFrom;
 import static com.hedera.services.keys.HederaKeyTraversal.visitSimpleKeys;
 
 /**
@@ -73,11 +72,10 @@ public class PlatformSigOps {
 		}
 
 		try {
-			var sigBytes = sigBytesFn.sigBytesFor(ed25519Key.getEd25519());
+			final var keyBytes = ed25519Key.getEd25519();
+			final var sigBytes = sigBytesFn.sigBytesFor(keyBytes);
 			if (sigBytes.length > 0) {
-				var sig = copyFrom(sigBytes);
-				var cryptoKey = copyFrom(ed25519Key.getEd25519());
-				result.getPlatformSigs().add(factory.create(cryptoKey, sig));
+				result.getPlatformSigs().add(factory.create(keyBytes, sigBytes));
 			}
 		} catch (KeyPrefixMismatchException kmpe) {
 			/* Nbd if a signature map is ambiguous for a key linked to a scheduled transaction. */

@@ -80,6 +80,7 @@ public interface FeeCalculator {
 	 * 		the desired renewal period
 	 * @param now
 	 * 		the consensus time of expiration
+	 * @return the corresponding RenewAssessment
 	 */
 	AutoRenewCalcs.RenewAssessment assessCryptoAutoRenewal(
 			MerkleAccount expiredAccount,

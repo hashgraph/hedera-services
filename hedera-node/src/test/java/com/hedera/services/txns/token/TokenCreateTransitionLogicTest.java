@@ -110,7 +110,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void setsFailInvalidIfUnhandledException() {
+	void setsFailInvalidIfUnhandledException() {
 		givenValidTxnCtx();
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
@@ -129,7 +129,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void abortsIfCreationFails() {
+	void abortsIfCreationFails() {
 		givenValidTxnCtx();
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
@@ -148,7 +148,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void abortsIfTokenIdIsMissingInTheResult() {
+	void abortsIfTokenIdIsMissingInTheResult() {
 		givenValidTxnCtx();
 		CreationResult<TokenID> result = mock(CreationResult.class);
 
@@ -169,7 +169,20 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void abortsIfAdjustmentFailsDueToTokenLimitPerAccountExceeded() {
+	void abortsIfInitialExpiryIsInvalid() {
+		givenValidTxnCtx();
+		given(validator.isValidExpiry(any())).willReturn(false);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(txnCtx, never()).setCreated(created);
+		verify(txnCtx).setStatus(INVALID_EXPIRATION_TIME);
+	}
+
+	@Test
+	void abortsIfAdjustmentFailsDueToTokenLimitPerAccountExceeded() {
 		givenValidTxnCtx();
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
@@ -192,7 +205,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void abortsIfAssociationFails() {
+	void abortsIfAssociationFails() {
 		givenValidTxnCtx(false, true);
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
@@ -212,7 +225,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void abortsIfUnfreezeFails() {
+	void abortsIfUnfreezeFails() {
 		givenValidTxnCtx(false, true);
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
@@ -233,7 +246,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void followsHappyPathWithAllKeys() {
+	void followsHappyPathWithAllKeys() {
 		givenValidTxnCtx(true, true);
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
@@ -259,7 +272,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void doesntUnfreezeIfNoKeyIsPresent() {
+	void doesntUnfreezeIfNoKeyIsPresent() {
 		givenValidTxnCtx(true, false);
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
@@ -283,7 +296,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void doesntGrantKycIfNoKeyIsPresent() {
+	void doesntGrantKycIfNoKeyIsPresent() {
 		givenValidTxnCtx(false, true);
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
@@ -307,7 +320,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void hasCorrectApplicability() {
+	void hasCorrectApplicability() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -316,7 +329,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void acceptsValidTxn() {
+	void acceptsValidTxn() {
 		givenValidTxnCtx();
 
 		// expect:
@@ -324,7 +337,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void acceptsMissingAutoRenewAcount() {
+	void acceptsMissingAutoRenewAcount() {
 		givenValidMissingRenewAccount();
 
 		// expect
@@ -332,7 +345,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsMissingSymbol() {
+	void rejectsMissingSymbol() {
 		givenValidTxnCtx();
 		given(validator.tokenSymbolCheck(any())).willReturn(MISSING_TOKEN_SYMBOL);
 
@@ -341,7 +354,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsTooLongSymbol() {
+	void rejectsTooLongSymbol() {
 		givenValidTxnCtx();
 		given(validator.tokenSymbolCheck(any())).willReturn(TOKEN_SYMBOL_TOO_LONG);
 
@@ -350,7 +363,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidSymbol() {
+	void rejectsInvalidSymbol() {
 		givenValidTxnCtx();
 		given(validator.tokenSymbolCheck(any())).willReturn(INVALID_TOKEN_SYMBOL);
 
@@ -359,7 +372,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsMissingName() {
+	void rejectsMissingName() {
 		givenValidTxnCtx();
 		given(validator.tokenNameCheck(any())).willReturn(MISSING_TOKEN_NAME);
 
@@ -368,7 +381,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsTooLongName() {
+	void rejectsTooLongName() {
 		givenValidTxnCtx();
 		given(validator.tokenNameCheck(any())).willReturn(TOKEN_SYMBOL_TOO_LONG);
 
@@ -377,7 +390,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidInitialSupply() {
+	void rejectsInvalidInitialSupply() {
 		givenInvalidInitialSupply();
 
 		// expect:
@@ -385,7 +398,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidDecimals() {
+	void rejectsInvalidDecimals() {
 		givenInvalidDecimals();
 
 		// expect:
@@ -393,7 +406,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsMissingTreasury() {
+	void rejectsMissingTreasury() {
 		givenMissingTreasury();
 
 		// expect:
@@ -401,7 +414,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidAdminKey() {
+	void rejectsInvalidAdminKey() {
 		givenInvalidAdminKey();
 
 		// expect:
@@ -409,7 +422,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidKycKey() {
+	void rejectsInvalidKycKey() {
 		givenInvalidKycKey();
 
 		// expect:
@@ -417,7 +430,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidWipeKey() {
+	void rejectsInvalidWipeKey() {
 		givenInvalidWipeKey();
 
 		// expect:
@@ -425,7 +438,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidSupplyKey() {
+	void rejectsInvalidSupplyKey() {
 		givenInvalidSupplyKey();
 
 		// expect:
@@ -433,7 +446,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectMissingFreezeKeyWithFreezeDefault() {
+	void rejectMissingFreezeKeyWithFreezeDefault() {
 		givenMissingFreezeKeyWithFreezeDefault();
 
 		// expect:
@@ -441,7 +454,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidFreezeKey() {
+	void rejectsInvalidFreezeKey() {
 		givenInvalidFreezeKey();
 
 		// expect:
@@ -449,7 +462,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidAdminKeyBytes() {
+	void rejectsInvalidAdminKeyBytes() {
 		givenInvalidAdminKeyBytes();
 
 		// expect:
@@ -457,7 +470,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidMemo() {
+	void rejectsInvalidMemo() {
 		givenValidTxnCtx();
 		given(validator.memoCheck(any())).willReturn(INVALID_ZERO_BYTE_IN_STRING);
 
@@ -466,7 +479,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidAutoRenewPeriod() {
+	void rejectsInvalidAutoRenewPeriod() {
 		givenValidTxnCtx();
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
 
@@ -475,7 +488,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidExpirationTime() {
+	void rejectsExpiryInPastInPrecheck() {
 		givenInvalidExpirationTime();
 
 		assertEquals(INVALID_EXPIRATION_TIME, subject.semanticCheck().apply(tokenCreateTxn));
@@ -486,6 +499,7 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	private void givenValidTxnCtx(boolean withKyc, boolean withFreeze) {
+		final var expiry = Timestamp.newBuilder().setSeconds(thisSecond + thisSecond).build();
 		var builder = TransactionBody.newBuilder()
 				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
 						.setMemo(memo)
@@ -494,7 +508,7 @@ class TokenCreateTransitionLogicTest {
 						.setTreasury(treasury)
 						.setAdminKey(key)
 						.setAutoRenewAccount(renewAccount)
-						.setExpiry(Timestamp.newBuilder().setSeconds(thisSecond + thisSecond)));
+						.setExpiry(expiry));
 		if (withFreeze) {
 			builder.getTokenCreationBuilder().setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey());
 		}
@@ -506,6 +520,7 @@ class TokenCreateTransitionLogicTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(now);
 		given(store.isCreationPending()).willReturn(true);
+		given(validator.isValidExpiry(expiry)).willReturn(true);
 	}
 
 	private void givenInvalidInitialSupply() {

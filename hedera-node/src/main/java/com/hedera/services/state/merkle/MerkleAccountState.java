@@ -24,6 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
+import com.swirlds.common.MutabilityException;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
@@ -105,20 +106,11 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		expiry = in.readLong();
 		hbarBalance = in.readLong();
 		autoRenewSecs = in.readLong();
-		if (version < RELEASE_090_VERSION) {
-			/* Previous releases included send/receive record thresholds */
-			in.readLong();
-			in.readLong();
-		}
 		memo = in.readNormalisedString(MAX_CONCEIVABLE_MEMO_UTF8_BYTES);
 		deleted = in.readBoolean();
 		smartContract = in.readBoolean();
 		receiverSigRequired = in.readBoolean();
 		proxy = serdes.readNullableSerializable(in);
-		if (version == RELEASE_08x_VERSION) {
-			/* Releases v0.8.0 and v0.8.1 included token information in the account state. */
-			in.readLongArray(MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE);
-		}
 	}
 
 	@Override
@@ -136,6 +128,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 
 	/* --- Copyable --- */
 	public MerkleAccountState copy() {
+		setImmutable(true);
 		return new MerkleAccountState(
 				key,
 				expiry,
@@ -237,38 +230,53 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	}
 
 	public void setKey(JKey key) {
+		assertMutable("key");
 		this.key = key;
 	}
 
 	public void setExpiry(long expiry) {
+		assertMutable("expiry");
 		this.expiry = expiry;
 	}
 
 	public void setHbarBalance(long hbarBalance) {
+		assertMutable("hbarBalance");
 		this.hbarBalance = hbarBalance;
 	}
 
 	public void setAutoRenewSecs(long autoRenewSecs) {
+		assertMutable("autoRenewSecs");
 		this.autoRenewSecs = autoRenewSecs;
 	}
 
 	public void setMemo(String memo) {
+		assertMutable("memo");
 		this.memo = memo;
 	}
 
 	public void setDeleted(boolean deleted) {
+		assertMutable("isSmartContract");
 		this.deleted = deleted;
 	}
 
 	public void setSmartContract(boolean smartContract) {
+		assertMutable("isSmartContract");
 		this.smartContract = smartContract;
 	}
 
 	public void setReceiverSigRequired(boolean receiverSigRequired) {
+		assertMutable("isReceiverSigRequired");
 		this.receiverSigRequired = receiverSigRequired;
 	}
 
 	public void setProxy(EntityId proxy) {
+		assertMutable("proxy");
 		this.proxy = proxy;
+	}
+
+	private void assertMutable(String proximalField) {
+		if (isImmutable()) {
+			throw new MutabilityException("Cannot set " + proximalField + " on an immutable account state!");
+		}
 	}
 }

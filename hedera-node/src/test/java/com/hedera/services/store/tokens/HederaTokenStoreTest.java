@@ -121,55 +121,55 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 
 class HederaTokenStoreTest {
-	EntityIdSource ids;
-	GlobalDynamicProperties properties;
-	FCMap<MerkleEntityId, MerkleToken> tokens;
-	TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
-	TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
-	HederaLedger hederaLedger;
+	private EntityIdSource ids;
+	private GlobalDynamicProperties properties;
+	private FCMap<MerkleEntityId, MerkleToken> tokens;
+	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
+	private HederaLedger hederaLedger;
 
-	MerkleToken token;
-	MerkleToken modifiableToken;
-	MerkleAccount account;
+	private MerkleToken token;
+	private MerkleToken modifiableToken;
+	private MerkleAccount account;
 
-	Key newKey = TxnHandlingScenario.TOKEN_REPLACE_KT.asKey();
-	JKey newFcKey = TxnHandlingScenario.TOKEN_REPLACE_KT.asJKeyUnchecked();
-	Key adminKey, kycKey, freezeKey, supplyKey, wipeKey;
-	String symbol = "NOTHBAR";
-	String newSymbol = "REALLYSOM";
-	String newMemo = "NEWMEMO";
-	String memo = "TOKENMEMO";
-	String name = "TOKENNAME";
-	String newName = "NEWNAME";
-	long expiry = CONSENSUS_NOW + 1_234_567;
-	long newExpiry = CONSENSUS_NOW + 1_432_765;
-	long totalSupply = 1_000_000;
-	long adjustment = 1;
-	int decimals = 10;
-	long treasuryBalance = 50_000, sponsorBalance = 1_000;
-	TokenID misc = IdUtils.asToken("3.2.1");
-	TokenID anotherMisc = IdUtils.asToken("6.4.2");
-	boolean freezeDefault = true;
-	boolean accountsKycGrantedByDefault = false;
-	long autoRenewPeriod = 500_000;
-	long newAutoRenewPeriod = 2_000_000;
-	AccountID autoRenewAccount = IdUtils.asAccount("1.2.5");
-	AccountID newAutoRenewAccount = IdUtils.asAccount("1.2.6");
-	AccountID treasury = IdUtils.asAccount("1.2.3");
-	AccountID newTreasury = IdUtils.asAccount("3.2.1");
-	AccountID sponsor = IdUtils.asAccount("1.2.666");
-	TokenID created = IdUtils.asToken("1.2.666666");
-	TokenID pending = IdUtils.asToken("1.2.555555");
-	int MAX_TOKENS_PER_ACCOUNT = 100;
-	int MAX_TOKEN_SYMBOL_UTF8_BYTES = 10;
-	int MAX_TOKEN_NAME_UTF8_BYTES = 100;
-	Pair<AccountID, TokenID> sponsorMisc = asTokenRel(sponsor, misc);
-	Pair<AccountID, TokenID> treasuryMisc = asTokenRel(treasury, misc);
+	private Key newKey = TxnHandlingScenario.TOKEN_REPLACE_KT.asKey();
+	private JKey newFcKey = TxnHandlingScenario.TOKEN_REPLACE_KT.asJKeyUnchecked();
+	private Key adminKey, kycKey, freezeKey, supplyKey, wipeKey;
+	private String symbol = "NOTHBAR";
+	private String newSymbol = "REALLYSOM";
+	private String newMemo = "NEWMEMO";
+	private String memo = "TOKENMEMO";
+	private String name = "TOKENNAME";
+	private String newName = "NEWNAME";
+	private long expiry = CONSENSUS_NOW + 1_234_567;
+	private long newExpiry = CONSENSUS_NOW + 1_432_765;
+	private long totalSupply = 1_000_000;
+	private long adjustment = 1;
+	private int decimals = 10;
+	private long treasuryBalance = 50_000, sponsorBalance = 1_000;
+	private TokenID misc = IdUtils.asToken("3.2.1");
+	private TokenID anotherMisc = IdUtils.asToken("6.4.2");
+	private boolean freezeDefault = true;
+	private boolean accountsKycGrantedByDefault = false;
+	private long autoRenewPeriod = 500_000;
+	private long newAutoRenewPeriod = 2_000_000;
+	private AccountID autoRenewAccount = IdUtils.asAccount("1.2.5");
+	private AccountID newAutoRenewAccount = IdUtils.asAccount("1.2.6");
+	private AccountID treasury = IdUtils.asAccount("1.2.3");
+	private AccountID newTreasury = IdUtils.asAccount("3.2.1");
+	private AccountID sponsor = IdUtils.asAccount("1.2.666");
+	private TokenID created = IdUtils.asToken("1.2.666666");
+	private TokenID pending = IdUtils.asToken("1.2.555555");
+	private int MAX_TOKENS_PER_ACCOUNT = 100;
+	private int MAX_TOKEN_SYMBOL_UTF8_BYTES = 10;
+	private int MAX_TOKEN_NAME_UTF8_BYTES = 100;
+	private Pair<AccountID, TokenID> sponsorMisc = asTokenRel(sponsor, misc);
+	private Pair<AccountID, TokenID> treasuryMisc = asTokenRel(treasury, misc);
 
-	HederaTokenStore subject;
+	private HederaTokenStore subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		adminKey = TOKEN_ADMIN_KT.asKey();
 		kycKey = TOKEN_KYC_KT.asKey();
 		freezeKey = TOKEN_FREEZE_KT.asKey();
@@ -256,13 +256,13 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void injectsTokenRelsLedger() {
+	void injectsTokenRelsLedger() {
 		// expect:
 		verify(hederaLedger).setTokenRelsLedger(tokenRelsLedger);
 	}
 
 	@Test
-	public void applicationRejectsMissing() {
+	void applicationRejectsMissing() {
 		// setup:
 		var change = mock(Consumer.class);
 
@@ -273,7 +273,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void applicationAlwaysReplacesModifiableToken() {
+	void applicationAlwaysReplacesModifiableToken() {
 		// setup:
 		var change = mock(Consumer.class);
 		var key = fromTokenId(misc);
@@ -282,15 +282,12 @@ class HederaTokenStoreTest {
 
 		willThrow(IllegalStateException.class).given(change).accept(any());
 
-		// when:
-		assertThrows(IllegalArgumentException.class, () -> subject.apply(misc, change));
-
 		// then:
-		verify(tokens).replace(key, token);
+		assertThrows(IllegalArgumentException.class, () -> subject.apply(misc, change));
 	}
 
 	@Test
-	public void applicationWorks() {
+	void applicationWorks() {
 		// setup:
 		var change = mock(Consumer.class);
 		// and:
@@ -302,11 +299,10 @@ class HederaTokenStoreTest {
 		// then:
 		inOrder.verify(tokens).getForModify(fromTokenId(misc));
 		inOrder.verify(change).accept(modifiableToken);
-		inOrder.verify(tokens).replace(fromTokenId(misc), modifiableToken);
 	}
 
 	@Test
-	public void deletionWorksAsExpected() {
+	void deletionWorksAsExpected() {
 		// when:
 		TokenStore.DELETION.accept(token);
 
@@ -315,7 +311,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void deletesAsExpected() {
+	void deletesAsExpected() {
 		// given:
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 
@@ -329,7 +325,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void rejectsDeletionMissingAdminKey() {
+	void rejectsDeletionMissingAdminKey() {
 		// given:
 		given(token.adminKey()).willReturn(Optional.empty());
 
@@ -341,7 +337,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void rejectsDeletionTokenAlreadyDeleted() {
+	void rejectsDeletionTokenAlreadyDeleted() {
 		// given:
 		given(token.isDeleted()).willReturn(true);
 
@@ -353,7 +349,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void rejectsMissingDeletion() {
+	void rejectsMissingDeletion() {
 		// given:
 		var mockSubject = mock(TokenStore.class);
 
@@ -369,13 +365,13 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void getDelegates() {
+	void getDelegates() {
 		// expect:
 		assertSame(token, subject.get(misc));
 	}
 
 	@Test
-	public void getThrowsIseOnMissing() {
+	void getThrowsIseOnMissing() {
 		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
 
 		// expect:
@@ -383,7 +379,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void getCanReturnPending() {
+	void getCanReturnPending() {
 		// setup:
 		subject.pendingId = pending;
 		subject.pendingCreation = token;
@@ -393,13 +389,13 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void existenceCheckUnderstandsPendingIdOnlyAppliesIfCreationPending() {
+	void existenceCheckUnderstandsPendingIdOnlyAppliesIfCreationPending() {
 		// expect:
 		assertFalse(subject.exists(HederaTokenStore.NO_PENDING_ID));
 	}
 
 	@Test
-	public void existenceCheckIncludesPending() {
+	void existenceCheckIncludesPending() {
 		// setup:
 		subject.pendingId = pending;
 
@@ -408,7 +404,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void freezingRejectsMissingAccount() {
+	void freezingRejectsMissingAccount() {
 		given(accountsLedger.exists(sponsor)).willReturn(false);
 
 		// when:
@@ -419,7 +415,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void associatingRejectsDeletedTokens() {
+	void associatingRejectsDeletedTokens() {
 		given(token.isDeleted()).willReturn(true);
 
 		// when:
@@ -430,7 +426,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void associatingRejectsMissingToken() {
+	void associatingRejectsMissingToken() {
 		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
 
 		// when:
@@ -441,7 +437,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void associatingRejectsMissingAccounts() {
+	void associatingRejectsMissingAccounts() {
 		given(accountsLedger.exists(sponsor)).willReturn(false);
 
 		// when:
@@ -452,13 +448,13 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void realAssociationsExist() {
+	void realAssociationsExist() {
 		// expect:
 		assertTrue(subject.associationExists(sponsor, misc));
 	}
 
 	@Test
-	public void noAssociationsWithMissingAccounts() {
+	void noAssociationsWithMissingAccounts() {
 		given(accountsLedger.exists(sponsor)).willReturn(false);
 
 		// expect:
@@ -466,7 +462,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void dissociatingRejectsUnassociatedTokens() {
+	void dissociatingRejectsUnassociatedTokens() {
 		// setup:
 		var tokens = mock(MerkleAccountTokens.class);
 		given(tokens.includes(misc)).willReturn(false);
@@ -480,7 +476,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void dissociatingRejectsTreasuryAccount() {
+	void dissociatingRejectsTreasuryAccount() {
 		// setup:
 		var tokens = mock(MerkleAccountTokens.class);
 		given(tokens.includes(misc)).willReturn(true);
@@ -496,7 +492,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void dissociatingRejectsFrozenAccount() {
+	void dissociatingRejectsFrozenAccount() {
 		// setup:
 		var tokens = mock(MerkleAccountTokens.class);
 		given(tokens.includes(misc)).willReturn(true);
@@ -511,7 +507,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void associatingRejectsAlreadyAssociatedTokens() {
+	void associatingRejectsAlreadyAssociatedTokens() {
 		// setup:
 		var tokens = mock(MerkleAccountTokens.class);
 		given(tokens.includes(misc)).willReturn(true);
@@ -525,7 +521,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void associatingRejectsIfCappedAssociationsLimit() {
+	void associatingRejectsIfCappedAssociationsLimit() {
 		// setup:
 		var tokens = mock(MerkleAccountTokens.class);
 		given(tokens.includes(misc)).willReturn(false);
@@ -543,7 +539,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void associatingHappyPathWorks() {
+	void associatingHappyPathWorks() {
 		// setup:
 		var tokens = mock(MerkleAccountTokens.class);
 		var key = asTokenRel(sponsor, misc);
@@ -569,7 +565,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void dissociatingWorksEvenIfTokenDoesntExistAnymore() {
+	void dissociatingWorksEvenIfTokenDoesntExistAnymore() {
 		// setup:
 		var accountTokens = mock(MerkleAccountTokens.class);
 		var key = asTokenRel(sponsor, misc);
@@ -591,7 +587,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void dissociatingHappyPathWorks() {
+	void dissociatingHappyPathWorks() {
 		// setup:
 		var tokens = mock(MerkleAccountTokens.class);
 		var key = asTokenRel(sponsor, misc);
@@ -612,7 +608,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void dissociatingFailsIfTokenBalanceIsNonzero() {
+	void dissociatingFailsIfTokenBalanceIsNonzero() {
 		// setup:
 		var tokens = mock(MerkleAccountTokens.class);
 		var key = asTokenRel(sponsor, misc);
@@ -634,7 +630,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void dissociatingPermitsFrozenRelIfDeleted() {
+	void dissociatingPermitsFrozenRelIfDeleted() {
 		// setup:
 		var tokens = mock(MerkleAccountTokens.class);
 		var key = asTokenRel(sponsor, misc);
@@ -658,7 +654,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void dissociatingPermitsNonzeroTokenBalanceIfDeleted() {
+	void dissociatingPermitsNonzeroTokenBalanceIfDeleted() {
 		// setup:
 		var tokens = mock(MerkleAccountTokens.class);
 		var key = asTokenRel(sponsor, misc);
@@ -681,7 +677,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void dissociatingPermitsNonzeroTokenBalanceIfExpired() {
+	void dissociatingPermitsNonzeroTokenBalanceIfExpired() {
 		// setup:
 		long balance = 123L;
 		var tokens = mock(MerkleAccountTokens.class);
@@ -706,7 +702,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void grantingKycRejectsMissingAccount() {
+	void grantingKycRejectsMissingAccount() {
 		given(accountsLedger.exists(sponsor)).willReturn(false);
 
 		// when:
@@ -717,7 +713,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void grantingKycRejectsDetachedAccount() {
+	void grantingKycRejectsDetachedAccount() {
 		given(accountsLedger.exists(sponsor)).willReturn(true);
 		given(hederaLedger.isDetached(sponsor)).willReturn(true);
 
@@ -729,7 +725,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void grantingKycRejectsDeletedAccount() {
+	void grantingKycRejectsDeletedAccount() {
 		given(accountsLedger.exists(sponsor)).willReturn(true);
 		given(hederaLedger.isDeleted(sponsor)).willReturn(true);
 
@@ -741,7 +737,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void revokingKycRejectsMissingAccount() {
+	void revokingKycRejectsMissingAccount() {
 		given(accountsLedger.exists(sponsor)).willReturn(false);
 
 		// when:
@@ -752,7 +748,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void wipingRejectsMissingAccount() {
+	void wipingRejectsMissingAccount() {
 		given(accountsLedger.exists(sponsor)).willReturn(false);
 
 		// when:
@@ -763,7 +759,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void wipingRejectsTokenWithNoWipeKey() {
+	void wipingRejectsTokenWithNoWipeKey() {
 		// when:
 		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
 
@@ -775,7 +771,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void wipingRejectsTokenTreasury() {
+	void wipingRejectsTokenTreasury() {
 		long wiping = 3L;
 
 		given(token.hasWipeKey()).willReturn(true);
@@ -790,7 +786,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void wipingWithoutTokenRelationshipFails() {
+	void wipingWithoutTokenRelationshipFails() {
 		// setup:
 		given(token.hasWipeKey()).willReturn(false);
 		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
@@ -806,7 +802,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void wipingWorksWithoutWipeKeyIfCheckSkipped() {
+	void wipingWorksWithoutWipeKeyIfCheckSkipped() {
 		// setup:
 		given(token.hasWipeKey()).willReturn(false);
 		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
@@ -827,7 +823,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void wipingUpdatesTokenXfersAsExpected() {
+	void wipingUpdatesTokenXfersAsExpected() {
 		// setup:
 		given(token.hasWipeKey()).willReturn(true);
 		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
@@ -849,7 +845,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void wipingFailsWithInvalidWipingAmount() {
+	void wipingFailsWithInvalidWipingAmount() {
 		// setup:
 		long wipe = 1_235L;
 
@@ -865,7 +861,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void adjustingRejectsMissingAccount() {
+	void adjustingRejectsMissingAccount() {
 		given(accountsLedger.exists(sponsor)).willReturn(false);
 
 		// when:
@@ -876,7 +872,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void updateRejectsInvalidExpiry() {
+	void updateRejectsInvalidExpiry() {
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 		// given:
 		var op = updateWith(NO_KEYS, true, true, false);
@@ -890,7 +886,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void updateRejectsImmutableToken() {
+	void updateRejectsImmutableToken() {
 		given(token.hasAdminKey()).willReturn(false);
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 		// given:
@@ -904,7 +900,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void canExtendImmutableExpiry() {
+	void canExtendImmutableExpiry() {
 		given(token.hasAdminKey()).willReturn(false);
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 		// given:
@@ -919,7 +915,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void updateRejectsInvalidNewAutoRenew() {
+	void updateRejectsInvalidNewAutoRenew() {
 		given(accountsLedger.exists(newAutoRenewAccount)).willReturn(false);
 		// and:
 		var op = updateWith(NO_KEYS, true, true, false, true, false);
@@ -932,7 +928,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void updateRejectsInvalidNewAutoRenewPeriod() {
+	void updateRejectsInvalidNewAutoRenewPeriod() {
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 		// and:
 		var op = updateWith(NO_KEYS, true, true, false, false, false);
@@ -946,7 +942,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void updateRejectsMissingToken() {
+	void updateRejectsMissingToken() {
 		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
 		// and:
 		givenUpdateTarget(ALL_KEYS);
@@ -962,7 +958,7 @@ class HederaTokenStoreTest {
 
 
 	@Test
-	public void updateRejectsInappropriateKycKey() {
+	void updateRejectsInappropriateKycKey() {
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 		// and:
 		givenUpdateTarget(NO_KEYS);
@@ -977,7 +973,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void updateRejectsInappropriateFreezeKey() {
+	void updateRejectsInappropriateFreezeKey() {
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 		// and:
 		givenUpdateTarget(NO_KEYS);
@@ -992,7 +988,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void updateRejectsInappropriateWipeKey() {
+	void updateRejectsInappropriateWipeKey() {
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 		// and:
 		givenUpdateTarget(NO_KEYS);
@@ -1007,7 +1003,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void updateRejectsInappropriateSupplyKey() {
+	void updateRejectsInappropriateSupplyKey() {
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 		// and:
 		givenUpdateTarget(NO_KEYS);
@@ -1022,7 +1018,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void treasuryRemovalForTokenRemovesKeyWhenEmpty() {
+	void treasuryRemovalForTokenRemovesKeyWhenEmpty() {
 		Set<TokenID> tokenSet = new HashSet<>(Arrays.asList(misc));
 		subject.knownTreasuries.put(treasury, tokenSet);
 
@@ -1034,7 +1030,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void addKnownTreasuryWorks() {
+	void addKnownTreasuryWorks() {
 		subject.addKnownTreasury(treasury, misc);
 
 		// expect:
@@ -1042,7 +1038,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void removeKnownTreasuryWorks() {
+	void removeKnownTreasuryWorks() {
 		Set<TokenID> tokenSet = new HashSet<>(Arrays.asList(misc, anotherMisc));
 		subject.knownTreasuries.put(treasury, tokenSet);
 
@@ -1055,7 +1051,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void isKnownTreasuryWorks() {
+	void isKnownTreasuryWorks() {
 		Set<TokenID> tokenSet = new HashSet<>(Arrays.asList(misc));
 
 		subject.knownTreasuries.put(treasury, tokenSet);
@@ -1065,7 +1061,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void treasuriesServeWorks() {
+	void treasuriesServeWorks() {
 		Set<TokenID> tokenSet = new HashSet<>(List.of(anotherMisc, misc));
 
 		subject.knownTreasuries.put(treasury, tokenSet);
@@ -1081,7 +1077,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void isTreasuryForTokenWorks() {
+	void isTreasuryForTokenWorks() {
 		Set<TokenID> tokenSet = new HashSet<>(Arrays.asList(misc));
 
 		subject.knownTreasuries.put(treasury, tokenSet);
@@ -1091,7 +1087,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void isTreasuryForTokenReturnsFalse() {
+	void isTreasuryForTokenReturnsFalse() {
 		// setup:
 		subject.knownTreasuries.clear();
 		
@@ -1100,13 +1096,13 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void throwsIfKnownTreasuryIsMissing() {
+	void throwsIfKnownTreasuryIsMissing() {
 		// expect:
 		assertThrows(IllegalArgumentException.class, () -> subject.removeKnownTreasuryForToken(null, misc));
 	}
 
 	@Test
-	public void throwsIfInvalidTreasury() {
+	void throwsIfInvalidTreasury() {
 		// setup:
 		subject.knownTreasuries.clear();
 
@@ -1116,7 +1112,7 @@ class HederaTokenStoreTest {
 
 
 	@Test
-	public void updateHappyPathIgnoresZeroExpiry() {
+	void updateHappyPathIgnoresZeroExpiry() {
 		// setup:
 		subject.addKnownTreasury(treasury, misc);
 		Set<TokenID> tokenSet = new HashSet<>();
@@ -1141,7 +1137,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void updateRemovesAdminKeyWhenAppropos() {
+	void updateRemovesAdminKeyWhenAppropos() {
 		// setup:
 		subject.addKnownTreasury(treasury, misc);
 
@@ -1162,7 +1158,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void updateHappyPathWorksForEverythingWithNewExpiry() {
+	void updateHappyPathWorksForEverythingWithNewExpiry() {
 		// setup:
 		subject.addKnownTreasury(treasury, misc);
 
@@ -1195,7 +1191,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void updateHappyPathWorksWithNewMemo() {
+	void updateHappyPathWorksWithNewMemo() {
 		// setup:
 		subject.addKnownTreasury(treasury, misc);
 
@@ -1221,7 +1217,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void updateHappyPathWorksWithNewAutoRenewAccount() {
+	void updateHappyPathWorksWithNewAutoRenewAccount() {
 		// setup:
 		subject.addKnownTreasury(treasury, misc);
 
@@ -1346,7 +1342,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void understandsPendingCreation() {
+	void understandsPendingCreation() {
 		// expect:
 		assertFalse(subject.isCreationPending());
 
@@ -1358,7 +1354,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void adjustingRejectsMissingToken() {
+	void adjustingRejectsMissingToken() {
 		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
 
 		// when:
@@ -1369,7 +1365,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void freezingRejectsUnfreezableToken() {
+	void freezingRejectsUnfreezableToken() {
 		given(token.freezeKey()).willReturn(Optional.empty());
 
 		// when:
@@ -1380,7 +1376,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void grantingRejectsUnknowableToken() {
+	void grantingRejectsUnknowableToken() {
 		given(token.kycKey()).willReturn(Optional.empty());
 
 		// when:
@@ -1414,7 +1410,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void unfreezingInvalidWithoutFreezeKey() {
+	void unfreezingInvalidWithoutFreezeKey() {
 		// when:
 		var status = subject.unfreeze(treasury, misc);
 
@@ -1423,7 +1419,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void performsValidFreeze() {
+	void performsValidFreeze() {
 		givenTokenWithFreezeKey(false);
 
 		// when:
@@ -1439,7 +1435,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void adjustingRejectsDeletedToken() {
+	void adjustingRejectsDeletedToken() {
 		given(token.isDeleted()).willReturn(true);
 
 		// when:
@@ -1450,7 +1446,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void refusesToAdjustFrozenRelationship() {
+	void refusesToAdjustFrozenRelationship() {
 		given(tokenRelsLedger.get(treasuryMisc, IS_FROZEN)).willReturn(true);
 		// when:
 		var status = subject.adjustBalance(treasury, misc, -1);
@@ -1460,7 +1456,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void refusesToAdjustRevokedKycRelationship() {
+	void refusesToAdjustRevokedKycRelationship() {
 		given(tokenRelsLedger.get(treasuryMisc, IS_KYC_GRANTED)).willReturn(false);
 		// when:
 		var status = subject.adjustBalance(treasury, misc, -1);
@@ -1470,7 +1466,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void refusesInvalidAdjustment() {
+	void refusesInvalidAdjustment() {
 		// when:
 		var status = subject.adjustBalance(treasury, misc, -treasuryBalance - 1);
 
@@ -1479,7 +1475,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void performsValidAdjustment() {
+	void performsValidAdjustment() {
 		given(tokens.get(fromTokenId(misc))).willReturn(token);
 
 		// when:
@@ -1490,7 +1486,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void rollbackReclaimsIdAndClears() {
+	void rollbackReclaimsIdAndClears() {
 		// setup:
 		subject.pendingId = created;
 		subject.pendingCreation = token;
@@ -1507,14 +1503,14 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void commitAndRollbackThrowIseIfNoPendingCreation() {
+	void commitAndRollbackThrowIseIfNoPendingCreation() {
 		// expect:
 		assertThrows(IllegalStateException.class, subject::commitCreation);
 		assertThrows(IllegalStateException.class, subject::rollbackCreation);
 	}
 
 	@Test
-	public void commitPutsToMapAndClears() {
+	void commitPutsToMapAndClears() {
 		// setup:
 		subject.pendingId = created;
 		subject.pendingCreation = token;
@@ -1533,7 +1529,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void happyPathWorksWithAutoRenew() {
+	void happyPathWorksWithAutoRenew() {
 		// setup:
 		var expected = new MerkleToken(
 				CONSENSUS_NOW + autoRenewPeriod,
@@ -1572,7 +1568,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void happyPathWorksWithExplicitExpiry() {
+	void happyPathWorksWithExplicitExpiry() {
 		// setup:
 		var expected = new MerkleToken(
 				expiry,
@@ -1605,7 +1601,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void rejectsInvalidAutoRenewAccount() {
+	void rejectsInvalidAutoRenewAccount() {
 		given(accountsLedger.exists(autoRenewAccount)).willReturn(false);
 
 		// given:
@@ -1622,7 +1618,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void rejectsMissingTreasury() {
+	void rejectsMissingTreasury() {
 		given(accountsLedger.exists(treasury)).willReturn(false);
 		// and:
 		var req = fullyValidAttempt()
@@ -1636,7 +1632,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void rejectsDeletedTreasuryAccount() {
+	void rejectsDeletedTreasuryAccount() {
 		given(hederaLedger.isDeleted(treasury)).willReturn(true);
 
 		// and:
@@ -1651,7 +1647,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void allowsZeroInitialSupplyAndDecimals() {
+	void allowsZeroInitialSupplyAndDecimals() {
 		// given:
 		var req = fullyValidAttempt()
 				.setInitialSupply(0L)
@@ -1666,7 +1662,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void allowsToCreateTokenWithTheBiggestAmountInLong() {
+	void allowsToCreateTokenWithTheBiggestAmountInLong() {
 		// given:
 		var req = fullyValidAttempt()
 				.setInitialSupply(9)
@@ -1681,7 +1677,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	public void forcesToTrueAccountsKycGrantedByDefaultWithoutKycKey() {
+	void forcesToTrueAccountsKycGrantedByDefaultWithoutKycKey() {
 		// given:
 		var req = fullyValidAttempt()
 				.clearKycKey()
