@@ -44,7 +44,7 @@ public class PureBackingAccounts implements BackingStore<AccountID, MerkleAccoun
 	}
 
 	@Override
-	public MerkleAccount getUnsafeRef(AccountID id) {
+	public MerkleAccount getImmutableRef(AccountID id) {
 		return delegate.get().get(fromAccountId(id));
 	}
 

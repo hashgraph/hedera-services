@@ -58,7 +58,7 @@ public class HashMapBackingTokenRels implements BackingStore<Pair<AccountID, Tok
 	}
 
 	@Override
-	public MerkleTokenRelStatus getUnsafeRef(Pair<AccountID, TokenID> id) {
+	public MerkleTokenRelStatus getImmutableRef(Pair<AccountID, TokenID> id) {
 		return rels.get(id);
 	}
 }

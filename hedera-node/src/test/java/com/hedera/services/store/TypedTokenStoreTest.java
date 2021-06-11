@@ -49,6 +49,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -111,7 +112,8 @@ class TypedTokenStoreTest {
 		subject.persistTokenRelationship(modelTokenRel);
 
 		// then:
-		verify(tokenRels).replace(miscTokenRelId, expectedReplacementTokenRel);
+		assertEquals(expectedReplacementTokenRel, miscTokenMerkleRel);
+		verify(tokenRels, never()).replace(miscTokenRelId, expectedReplacementTokenRel);
 		// and:
 		verify(transactionRecordService).includeChangesToTokenRel(modelTokenRel);
 	}
@@ -202,7 +204,8 @@ class TypedTokenStoreTest {
 		subject.persistToken(modelToken);
 
 		// then:
-		verify(tokens).replace(merkleTokenId, expectedReplacementToken);
+		assertEquals(expectedReplacementToken, merkleToken);
+		verify(tokens, never()).replace(merkleTokenId, expectedReplacementToken);
 		// and:
 		verify(transactionRecordService).includeChangesToToken(modelToken);
 	}

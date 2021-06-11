@@ -178,7 +178,7 @@ class BackingTokenRelsTest {
 		// then:
 		assertSame(aValue, firstStatus);
 		assertSame(aValue, secondStatus);
-		assertSame(bValue, subject.getUnsafeRef(asTokenRel(b, bt)));
+		assertSame(bValue, subject.getImmutableRef(asTokenRel(b, bt)));
 		// and:
 		verify(rels, times(2)).getForModify(any());
 		verify(rels, times(1)).get(any());

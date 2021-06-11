@@ -103,6 +103,6 @@ class PureBackingAccountsTest {
 		given(map.get(aKey)).willReturn(aValue);
 
 		// expect:
-		assertEquals(aValue, subject.getUnsafeRef(a));
+		assertEquals(aValue, subject.getImmutableRef(a));
 	}
 }

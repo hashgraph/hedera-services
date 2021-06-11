@@ -69,7 +69,7 @@ class TransactionalLedgerTest {
 
 		backingAccounts = mock(BackingStore.class);
 		given(backingAccounts.getRef(1L)).willReturn(account1);
-		given(backingAccounts.getUnsafeRef(1L)).willReturn(account1);
+		given(backingAccounts.getImmutableRef(1L)).willReturn(account1);
 		given(backingAccounts.contains(1L)).willReturn(true);
 		newAccountFactory = () -> new TestAccount();
 

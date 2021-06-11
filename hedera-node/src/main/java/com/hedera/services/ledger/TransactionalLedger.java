@@ -268,7 +268,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	}
 
 	private A toGetterTarget(K id) {
-		return isPendingCreation(id) ? newEntity.get() : entities.getUnsafeRef(id);
+		return isPendingCreation(id) ? newEntity.get() : entities.getImmutableRef(id);
 	}
 
 	private boolean isPendingCreation(K id) {

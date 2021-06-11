@@ -37,8 +37,6 @@ import java.util.function.Function;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.willCallRealMethod;
-import static org.mockito.Mockito.verify;
 
 class DelegatingSigMetadataLookupTest {
 	private JKey freezeKey;
@@ -65,19 +63,6 @@ class DelegatingSigMetadataLookupTest {
 		tokenStore = mock(TokenStore.class);
 
 		subject = SigMetadataLookup.REF_LOOKUP_FACTORY.apply(tokenStore);
-	}
-
-	@Test
-	void forwardsPureLookupByDefault() {
-		final var accountId = IdUtils.asAccount("1.2.3");
-		final var mockLookup = mock(SigMetadataLookup.class);
-
-		willCallRealMethod().given(mockLookup).pureAccountSigningMetaFor(accountId);
-
-		// when:
-		mockLookup.pureAccountSigningMetaFor(accountId);
-
-		verify(mockLookup).accountSigningMetaFor(accountId);
 	}
 
 	@Test

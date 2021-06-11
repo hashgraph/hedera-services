@@ -100,7 +100,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 		}
 
 		var allIds = accounts.idSet();
-		var ledgerFloat = allIds.stream().mapToLong(id -> accounts.getUnsafeRef(id).getBalance()).sum();
+		var ledgerFloat = allIds.stream().mapToLong(id -> accounts.getImmutableRef(id).getBalance()).sum();
 		var msg = String.format("Ledger float is %d tinyBars in %d accounts.", ledgerFloat, allIds.size());
 		log.info(msg);
 	}

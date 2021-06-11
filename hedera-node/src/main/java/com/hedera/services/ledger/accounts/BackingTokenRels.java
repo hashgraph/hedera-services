@@ -85,7 +85,7 @@ public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, 
 	}
 
 	@Override
-	public MerkleTokenRelStatus getUnsafeRef(Pair<AccountID, TokenID> key) {
+	public MerkleTokenRelStatus getImmutableRef(Pair<AccountID, TokenID> key) {
 		return delegate.get().get(fromAccountTokenRel(key));
 	}
 
