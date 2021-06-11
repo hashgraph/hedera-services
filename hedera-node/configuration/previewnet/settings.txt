@@ -11,7 +11,7 @@ lockLogTimeout,                                4000
 maxEventQueueForCons,                          1000
 maxOutgoingSyncs,                              4
 numConnections,                                1000
-reconnect.active,                              1
+reconnect.active,                              0
 reconnect.asyncInputStreamTimeoutMilliseconds, 60000
 reconnect.reconnectWindowSeconds,              300
 showDbStats,                                   0
