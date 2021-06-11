@@ -28,7 +28,6 @@ import com.hedera.services.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.order.HederaSigningOrder;
-import com.hedera.services.sigs.sourcing.SigMapPubKeyToSigBytes;
 import com.hedera.services.sigs.utils.PrecheckUtils;
 import com.hedera.services.sigs.verification.PrecheckKeyReqs;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
@@ -236,7 +235,7 @@ public class SigVerifierRegressionTest {
 		isQueryPayment = PrecheckUtils.queryPaymentTestFor(DEFAULT_NODE);
 		SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
 		precheckKeyReqs = new PrecheckKeyReqs(keyOrder, retryingKeyOrder, isQueryPayment);
-		final var pkToSigFn = new SigMapPubKeyToSigBytes(platformTxn.getSigMap());
+		final var pkToSigFn = platformTxn.getPkToSigsFn();
 		precheckVerifier = new PrecheckVerifier(syncVerifier, precheckKeyReqs, ignore -> pkToSigFn);
 	}
 }

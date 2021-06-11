@@ -22,6 +22,8 @@ package com.hedera.services.utils;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
+import com.hedera.services.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
+import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
@@ -66,10 +68,11 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private SignatureMap sigMap;
 	private TransactionID txnId;
 	private TransactionBody txn;
-	private HederaFunctionality function;
+	private PubKeyToSigBytes pubKeyToSigBytes;
 	private SubmitMessageMeta submitMessageMeta;
 	private CryptoTransferMeta xferUsageMeta;
 	private BaseTransactionMeta txnUsageMeta;
+	private HederaFunctionality function;
 
 	static Function<TransactionBody, HederaFunctionality> functionExtractor = txn -> {
 		try {
@@ -103,6 +106,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 			sigMap = signedTxn.getSigMap();
 			hash = noThrowSha384HashOf(signedTxnBytes.toByteArray());
 		}
+		pubKeyToSigBytes = new PojoSigMapPubKeyToSigBytes(sigMap);
 
 		txn = TransactionBody.parseFrom(txnBytes);
 		memo = txn.getMemo();
@@ -237,6 +241,11 @@ public class SignedTxnAccessor implements TxnAccessor {
 			throw new IllegalStateException("Cannot get ConsensusSubmitMessage metadata for a " + function + " accessor");
 		}
 		return submitMessageMeta;
+	}
+
+	@Override
+	public PubKeyToSigBytes getPkToSigsFn() {
+		return pubKeyToSigBytes;
 	}
 
 	private void setTxnUsageMeta() {

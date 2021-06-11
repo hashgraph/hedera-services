@@ -80,12 +80,14 @@ class SignedTxnAccessorTest {
 		// given:
 		doCallRealMethod().when(subject).setSigMeta(any());
 		doCallRealMethod().when(subject).getSigMeta();
+		doCallRealMethod().when(subject).getPkToSigsFn();
 		doCallRealMethod().when(subject).baseUsageMeta();
 		doCallRealMethod().when(subject).availXferUsageMeta();
 		doCallRealMethod().when(subject).availSubmitUsageMeta();
 
 		// expect:
 		assertThrows(UnsupportedOperationException.class, subject::getSigMeta);
+		assertThrows(UnsupportedOperationException.class, subject::getPkToSigsFn);
 		assertThrows(UnsupportedOperationException.class, subject::baseUsageMeta);
 		assertThrows(UnsupportedOperationException.class, subject::availXferUsageMeta);
 		assertThrows(UnsupportedOperationException.class, subject::availSubmitUsageMeta);
@@ -136,6 +138,7 @@ class SignedTxnAccessorTest {
 		assertEquals(offeredFee, accessor.getOfferedFee());
 		assertArrayEquals(CommonUtils.noThrowSha384HashOf(transaction.toByteArray()), accessor.getHash());
 		assertEquals(expectedMap, accessor.getSigMap());
+		assertArrayEquals("irst".getBytes(), accessor.getPkToSigsFn().sigBytesFor("f".getBytes()));
 		assertArrayEquals(zeroByteMemoUtf8Bytes, accessor.getMemoUtf8Bytes());
 		assertTrue(accessor.memoHasZeroByte());
 		assertEquals(FeeBuilder.getSignatureCount(accessor.getSignedTxnWrapper()), accessor.numSigPairs());

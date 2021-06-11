@@ -81,10 +81,6 @@ public class ScheduleCreateTransitionLogic implements TransitionLogic {
 		this.executor = executor;
 	}
 
-	public ScheduleExecutor getExecutor() {
-		return executor;
-	}
-
 	@Override
 	public void doStateTransition() {
 		try {

@@ -25,7 +25,6 @@ import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.StandardizedPropertySources;
 import com.hedera.services.exceptions.ContextNotFoundException;
-import com.hedera.services.sigs.sourcing.SigMapPubKeyToSigBytes;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -284,8 +283,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	public void expandSignatures(SwirldTransaction platformTxn) {
 		try {
 			final var accessor = ctx.expandHandleSpan().track(platformTxn);
-			final var pkToSigFn = new SigMapPubKeyToSigBytes(accessor.getSigMap());
-			expandIn(accessor, ctx.lookupRetryingKeyOrder(), pkToSigFn);
+			expandIn(accessor, ctx.lookupRetryingKeyOrder(), accessor.getPkToSigsFn());
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("expandSignatures called with non-gRPC txn!", e);
 		} catch (Exception race) {
