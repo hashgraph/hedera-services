@@ -53,7 +53,6 @@ import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.txns.ExpandHandleSpan;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.services.utils.SystemExits;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -67,7 +66,6 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.blob.BinaryObjectStore;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
-import com.swirlds.common.DualState;
 import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.SwirldDualState;
@@ -101,6 +99,7 @@ import static com.hedera.services.ServicesState.RELEASE_0110_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_0120_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_0130_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_0140_VERSION;
+import static com.hedera.services.ServicesState.RELEASE_0150_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_070_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_080_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_090_VERSION;
@@ -286,6 +285,7 @@ class ServicesStateTest {
 		assertEquals(ServicesState.ChildIndices.NUM_0120_CHILDREN, subject.getMinimumChildCount(RELEASE_0120_VERSION));
 		assertEquals(ServicesState.ChildIndices.NUM_0130_CHILDREN, subject.getMinimumChildCount(RELEASE_0130_VERSION));
 		assertEquals(ServicesState.ChildIndices.NUM_0140_CHILDREN, subject.getMinimumChildCount(RELEASE_0140_VERSION));
+		assertEquals(ServicesState.ChildIndices.NUM_0150_CHILDREN, subject.getMinimumChildCount(RELEASE_0150_VERSION));
 
 		Throwable throwable = assertThrows(IllegalArgumentException.class,
 				() -> subject.getMinimumChildCount(invalidVersion));
