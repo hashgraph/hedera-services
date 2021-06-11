@@ -6,86 +6,68 @@ import java.util.Arrays;
 
 import static com.hedera.services.state.merkle.virtual.VirtualTreePath.INVALID_PATH;
 import static com.hedera.services.state.merkle.virtual.VirtualTreePath.ROOT_PATH;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.asPath;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.compareTo;
 import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getIndexInRank;
 import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getLeftChildPath;
 import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getParentPath;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getBreadcrumbs;
 import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getPathForRankAndIndex;
 import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getRank;
 import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getRightChildPath;
+import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getSiblingPath;
 import static com.hedera.services.state.merkle.virtual.VirtualTreePath.isFarRight;
 import static com.hedera.services.state.merkle.virtual.VirtualTreePath.isLeft;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.isParentOf;
 import static com.hedera.services.state.merkle.virtual.VirtualTreePath.isRootPath;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PathTest {
+    // For testing purposes, these constants represent commonly named nodes
+    // that we use in our diagrams. A is the root, B is the left child of root,
+    // C is the right child of root, D is the left child of B, etc.
+    private static final long A = 0;
+    private static final long B = 1;
+    private static final long C = 2;
+    private static final long D = 3;
+    private static final long E = 4;
+    private static final long F = 5;
+    private static final long G = 6;
+    private static final long H = 7;
+    private static final long I = 8;
+    private static final long J = 9;
+    private static final long K = 10;
+
 
     @Test
     void rootPathIsRootTest() {
         final var path = VirtualTreePath.ROOT_PATH;
         assertTrue(isRootPath(path));
-        assertEquals(-1L, getParentPath(path));
-        assertEquals(asPath((byte)1, 0b1), getLeftChildPath(path));
-        assertEquals(asPath((byte)1, 0b0), getRightChildPath(path));
-    }
-
-    @Test
-    void asPathTest() {
-        // rank 1, right hand side of root.
-        final var expected = 0b00000001_00000000_00000000_00000000_00000000_00000000_00000000_00000001L;
-        // Does a basic combination of the two work?
-        assertEquals(expected, asPath((byte)1, 1));
-        // What happens if I pass in breadcrumbs that don't make sense for the rank? It should get cleaned up.
-        assertEquals(expected, asPath((byte)1, 0xFF));
-        // Pathological case of sending breadcrumbs that also invade the rank space.
-        assertEquals(expected, asPath((byte)1, -1L));
-        // Can I get back a root path?
-        assertEquals(ROOT_PATH, asPath((byte)0, -1L));
+        assertEquals(INVALID_PATH, getParentPath(path));
+        assertEquals(1, getLeftChildPath(path));
+        assertEquals(2, getRightChildPath(path));
     }
 
     @Test
     void getRankTest() {
-        for (int i=0; i<255; i++) {
-            assertEquals((byte) i, getRank(asPath((byte) i, -1L)));
-        }
-    }
-
-    @Test
-    void getBreadcrumbsTest() {
-        final byte rank = (byte) 0x23;
-        for (int i=0; i<2048; i++) {
-            final var path = asPath(rank, i);
-            assertEquals(i, getBreadcrumbs(path));
-        }
+        assertEquals(0, getRank(ROOT_PATH));
+        assertEquals(0, getRank(A));
+        assertEquals(1, getRank(B));
+        assertEquals(1, getRank(C));
+        assertEquals(2, getRank(D));
+        assertEquals(2, getRank(E));
+        assertEquals(2, getRank(F));
+        assertEquals(2, getRank(G));
+        assertEquals(3, getRank(H));
+        assertEquals(3, getRank(I));
+        assertEquals(3, getRank(J));
+        assertEquals(3, getRank(K));
     }
 
     @Test
     void isLeftTest() {
-        var path = ROOT_PATH;
-        assertFalse(isLeft(path));
+        assertFalse(isLeft(ROOT_PATH));
 
-        final var pathsOnRight = new long[] {
-                asPath((byte)1, 0b000),
-                asPath((byte)2, 0b010),
-                asPath((byte)2, 0b000),
-                asPath((byte)3, 0b110),
-                asPath((byte)3, 0b100),
-                asPath((byte)3, 0b010),
-                asPath((byte)3, 0b000) };
-
-        final var pathsOnLeft = new long[] {
-                asPath((byte)1, 0b001),
-                asPath((byte)2, 0b011),
-                asPath((byte)2, 0b001),
-                asPath((byte)3, 0b111),
-                asPath((byte)3, 0b101),
-                asPath((byte)3, 0b011),
-                asPath((byte)3, 0b001) };
+        final var pathsOnRight = new long[] { C, E, G, I, K };
+        final var pathsOnLeft = new long[] { B, D, F, H, J };
 
         for (long index : pathsOnLeft) {
             assertTrue(isLeft(index));
@@ -98,26 +80,11 @@ public class PathTest {
 
     @Test
     void isFarRightTest() {
-        var path = ROOT_PATH;
-        assertTrue(isFarRight(path));
+        assertTrue(isFarRight(ROOT_PATH));
 
-        final var pathsOnFarRight = new long[] {
-                asPath((byte)1, 0b000),
-                asPath((byte)2, 0b000),
-                asPath((byte)3, 0b000) };
+        final var pathsOnFarRight = new long[] { C, G };
 
-        final var everythingElse = new long[] {
-                asPath((byte)1, 0b001),
-                asPath((byte)2, 0b011),
-                asPath((byte)2, 0b001),
-                asPath((byte)2, 0b010),
-                asPath((byte)3, 0b110),
-                asPath((byte)3, 0b100),
-                asPath((byte)3, 0b010),
-                asPath((byte)3, 0b111),
-                asPath((byte)3, 0b101),
-                asPath((byte)3, 0b011),
-                asPath((byte)3, 0b001) };
+        final var everythingElse = new long[] { B, D, E, F, H, I, J, K };
 
         for (long index : pathsOnFarRight) {
             assertTrue(isFarRight(index));
@@ -130,56 +97,32 @@ public class PathTest {
 
     @Test
     void getIndexInRankTest() {
-        var path = asPath((byte)3, 0b0111);
-        assertEquals(0, getIndexInRank(path));
-
-        path = asPath((byte)3, 0b0110);
-        assertEquals(1, getIndexInRank(path));
-
-        path = asPath((byte)3, 0b0101);
-        assertEquals(2, getIndexInRank(path));
-
-        path = asPath((byte)3, 0b0100);
-        assertEquals(3, getIndexInRank(path));
-
-        path = asPath((byte)3, 0b0011);
-        assertEquals(4, getIndexInRank(path));
-
-        path = asPath((byte)3, 0b0010);
-        assertEquals(5, getIndexInRank(path));
-
-        path = asPath((byte)3, 0b0001);
-        assertEquals(6, getIndexInRank(path));
-
-        path = asPath((byte)3, 0b0000);
-        assertEquals(7, getIndexInRank(path));
+        assertEquals(0, getIndexInRank(A));
+        assertEquals(0, getIndexInRank(B));
+        assertEquals(1, getIndexInRank(C));
+        assertEquals(0, getIndexInRank(D));
+        assertEquals(1, getIndexInRank(E));
+        assertEquals(2, getIndexInRank(F));
+        assertEquals(3, getIndexInRank(G));
+        assertEquals(0, getIndexInRank(H));
+        assertEquals(1, getIndexInRank(I));
+        assertEquals(2, getIndexInRank(J));
+        assertEquals(3, getIndexInRank(K));
     }
 
     @Test
     void pathForIndex() {
-        var path = asPath((byte)3, 0b0111);
-        assertEquals(path, getPathForRankAndIndex((byte)3, 0));
-
-        path = asPath((byte)3, 0b0110);
-        assertEquals(path, getPathForRankAndIndex((byte)3, 1));
-
-        path = asPath((byte)3, 0b0101);
-        assertEquals(path, getPathForRankAndIndex((byte)3, 2));
-
-        path = asPath((byte)3, 0b0100);
-        assertEquals(path, getPathForRankAndIndex((byte)3, 3));
-
-        path = asPath((byte)3, 0b0011);
-        assertEquals(path, getPathForRankAndIndex((byte)3, 4));
-
-        path = asPath((byte)3, 0b0010);
-        assertEquals(path, getPathForRankAndIndex((byte)3, 5));
-
-        path = asPath((byte)3, 0b0001);
-        assertEquals(path, getPathForRankAndIndex((byte)3, 6));
-
-        path = asPath((byte)3, 0b0000);
-        assertEquals(path, getPathForRankAndIndex((byte)3, 7));
+        assertEquals(A, getPathForRankAndIndex(0, 0));
+        assertEquals(B, getPathForRankAndIndex(1, 0));
+        assertEquals(C, getPathForRankAndIndex(1, 1));
+        assertEquals(D, getPathForRankAndIndex(2, 0));
+        assertEquals(E, getPathForRankAndIndex(2, 1));
+        assertEquals(F, getPathForRankAndIndex(2, 2));
+        assertEquals(G, getPathForRankAndIndex(2, 3));
+        assertEquals(H, getPathForRankAndIndex(3, 0));
+        assertEquals(I, getPathForRankAndIndex(3, 1));
+        assertEquals(J, getPathForRankAndIndex(3, 2));
+        assertEquals(K, getPathForRankAndIndex(3, 3));
     }
 
     @Test
@@ -188,128 +131,63 @@ public class PathTest {
         assertEquals(INVALID_PATH, getParentPath(ROOT_PATH));
 
         // rank 1
-        assertEquals(ROOT_PATH, getParentPath(asPath((byte)1, 0b000)));
-        assertEquals(ROOT_PATH, getParentPath(asPath((byte)1, 0b001)));
+        assertEquals(A, getParentPath(B));
+        assertEquals(A, getParentPath(C));
 
         // rank 2
-        assertEquals(asPath((byte)1, 0b000), getParentPath(asPath((byte)2, 0b000)));
-        assertEquals(asPath((byte)1, 0b000), getParentPath(asPath((byte)2, 0b001)));
-        assertEquals(asPath((byte)1, 0b001), getParentPath(asPath((byte)2, 0b010)));
-        assertEquals(asPath((byte)1, 0b001), getParentPath(asPath((byte)2, 0b011)));
+        assertEquals(B, getParentPath(D));
+        assertEquals(B, getParentPath(E));
+        assertEquals(C, getParentPath(F));
+        assertEquals(C, getParentPath(G));
 
         // rank 3
-        assertEquals(asPath((byte)2, 0b000), getParentPath(asPath((byte)3, 0b000)));
-        assertEquals(asPath((byte)2, 0b000), getParentPath(asPath((byte)3, 0b001)));
-        assertEquals(asPath((byte)2, 0b001), getParentPath(asPath((byte)3, 0b010)));
-        assertEquals(asPath((byte)2, 0b001), getParentPath(asPath((byte)3, 0b011)));
-        assertEquals(asPath((byte)2, 0b010), getParentPath(asPath((byte)3, 0b100)));
-        assertEquals(asPath((byte)2, 0b010), getParentPath(asPath((byte)3, 0b101)));
-        assertEquals(asPath((byte)2, 0b011), getParentPath(asPath((byte)3, 0b110)));
-        assertEquals(asPath((byte)2, 0b011), getParentPath(asPath((byte)3, 0b111)));
+        assertEquals(D, getParentPath(H));
+        assertEquals(D, getParentPath(I));
+        assertEquals(E, getParentPath(J));
+        assertEquals(E, getParentPath(K));
     }
 
     @Test
     public void getLeftChildPathTest() {
         // rank 1
-        assertEquals(asPath((byte)1, 0b001), getLeftChildPath(ROOT_PATH));
+        assertEquals(B, getLeftChildPath(ROOT_PATH));
 
         // rank 2
-        assertEquals(asPath((byte)2, 0b001), getLeftChildPath(asPath((byte)1, 0b000)));
-        assertEquals(asPath((byte)2, 0b011), getLeftChildPath(asPath((byte)1, 0b001)));
+        assertEquals(D, getLeftChildPath(B));
+        assertEquals(F, getLeftChildPath(C));
 
         // rank 3
-        assertEquals(asPath((byte)3, 0b001), getLeftChildPath(asPath((byte)2, 0b000)));
-        assertEquals(asPath((byte)3, 0b011), getLeftChildPath(asPath((byte)2, 0b001)));
-        assertEquals(asPath((byte)3, 0b101), getLeftChildPath(asPath((byte)2, 0b010)));
-        assertEquals(asPath((byte)3, 0b111), getLeftChildPath(asPath((byte)2, 0b011)));
+        assertEquals(H, getLeftChildPath(D));
+        assertEquals(J, getLeftChildPath(E));
     }
 
     @Test
     public void getRightChildPathTest() {
         // rank 1
-        assertEquals(asPath((byte)1, 0b000), getRightChildPath(ROOT_PATH));
+        assertEquals(C, getRightChildPath(ROOT_PATH));
 
         // rank 2
-        assertEquals(asPath((byte)2, 0b000), getRightChildPath(asPath((byte)1, 0b000)));
-        assertEquals(asPath((byte)2, 0b010), getRightChildPath(asPath((byte)1, 0b001)));
+        assertEquals(E, getRightChildPath(B));
+        assertEquals(G, getRightChildPath(C));
 
         // rank 3
-        assertEquals(asPath((byte)3, 0b000), getRightChildPath(asPath((byte)2, 0b000)));
-        assertEquals(asPath((byte)3, 0b010), getRightChildPath(asPath((byte)2, 0b001)));
-        assertEquals(asPath((byte)3, 0b100), getRightChildPath(asPath((byte)2, 0b010)));
-        assertEquals(asPath((byte)3, 0b110), getRightChildPath(asPath((byte)2, 0b011)));
+        assertEquals(I, getRightChildPath(D));
+        assertEquals(K, getRightChildPath(E));
     }
 
     @Test
-    public void isParentOfTest() {
-        // rank 1
-        assertTrue(isParentOf(ROOT_PATH, asPath((byte)1, 0b000)));
-        assertTrue(isParentOf(ROOT_PATH, asPath((byte)1, 0b001)));
+    public void getSiblingPathTest() {
+        assertEquals(INVALID_PATH, getSiblingPath(ROOT_PATH));
+        assertEquals(B, getSiblingPath(C));
+        assertEquals(C, getSiblingPath(B));
+        assertEquals(D, getSiblingPath(E));
+        assertEquals(E, getSiblingPath(D));
+        assertEquals(F, getSiblingPath(G));
+        assertEquals(G, getSiblingPath(F));
+        assertEquals(H, getSiblingPath(I));
+        assertEquals(I, getSiblingPath(H));
+        assertEquals(J, getSiblingPath(K));
+        assertEquals(K, getSiblingPath(J));
 
-        // rank 2
-        assertTrue(isParentOf(ROOT_PATH, asPath((byte)2, 0b000)));
-        assertTrue(isParentOf(ROOT_PATH, asPath((byte)2, 0b001)));
-        assertTrue(isParentOf(ROOT_PATH, asPath((byte)2, 0b010)));
-        assertTrue(isParentOf(ROOT_PATH, asPath((byte)2, 0b011)));
-        assertTrue(isParentOf(asPath((byte)1, 0b000), asPath((byte)2, 0b000)));
-        assertTrue(isParentOf(asPath((byte)1, 0b000), asPath((byte)2, 0b001)));
-        assertTrue(isParentOf(asPath((byte)1, 0b001), asPath((byte)2, 0b010)));
-        assertTrue(isParentOf(asPath((byte)1, 0b001), asPath((byte)2, 0b011)));
-
-        // rank 3
-        assertTrue(isParentOf(ROOT_PATH, asPath((byte)3, 0b000)));
-        assertTrue(isParentOf(ROOT_PATH, asPath((byte)3, 0b001)));
-        assertTrue(isParentOf(ROOT_PATH, asPath((byte)3, 0b010)));
-        assertTrue(isParentOf(ROOT_PATH, asPath((byte)3, 0b011)));
-        assertTrue(isParentOf(ROOT_PATH, asPath((byte)3, 0b100)));
-        assertTrue(isParentOf(ROOT_PATH, asPath((byte)3, 0b101)));
-        assertTrue(isParentOf(ROOT_PATH, asPath((byte)3, 0b110)));
-        assertTrue(isParentOf(ROOT_PATH, asPath((byte)3, 0b111)));
-        assertTrue(isParentOf(asPath((byte)2, 0b000), asPath((byte)3, 0b000)));
-        assertTrue(isParentOf(asPath((byte)2, 0b000), asPath((byte)3, 0b001)));
-        assertTrue(isParentOf(asPath((byte)2, 0b001), asPath((byte)3, 0b010)));
-        assertTrue(isParentOf(asPath((byte)2, 0b001), asPath((byte)3, 0b011)));
-        assertTrue(isParentOf(asPath((byte)2, 0b010), asPath((byte)3, 0b100)));
-        assertTrue(isParentOf(asPath((byte)2, 0b010), asPath((byte)3, 0b101)));
-        assertTrue(isParentOf(asPath((byte)2, 0b011), asPath((byte)3, 0b110)));
-        assertTrue(isParentOf(asPath((byte)2, 0b011), asPath((byte)3, 0b111)));
-    }
-
-    @Test
-    public void comparisonTest() {
-        // Construct a nice list of ordered results. Then try all permutations and make sure
-        // they return the expected answers.
-        final var expected = Arrays.asList(
-                ROOT_PATH,
-                asPath((byte)1, 0b001),
-                asPath((byte)1, 0b000),
-                asPath((byte)2, 0b011),
-                asPath((byte)2, 0b010),
-                asPath((byte)2, 0b001),
-                asPath((byte)2, 0b000),
-                asPath((byte)3, 0b111),
-                asPath((byte)3, 0b110),
-                asPath((byte)3, 0b101),
-                asPath((byte)3, 0b100),
-                asPath((byte)3, 0b011),
-                asPath((byte)3, 0b010),
-                asPath((byte)3, 0b001),
-                asPath((byte)3, 0b000));
-
-        for (int i=0; i<expected.size(); i++) {
-            assertTrue(compareTo(expected.get(i), expected.get(i)) == 0);
-        }
-
-        for (int i=0; i<expected.size() - 1; i++) {
-            for (int j=i+1; j<expected.size(); j++) {
-                assertTrue(compareTo(expected.get(i), expected.get(j)) < 0);
-            }
-        }
-
-        for (int i=expected.size() - 1; i>1; i--) {
-            for (int j=0; j<i-1; j++) {
-                assertTrue(compareTo(expected.get(i), expected.get(j)) > 0);
-            }
-        }
     }
 }
