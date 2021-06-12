@@ -1315,7 +1315,7 @@ workflows:
           filters:
             branches:
               only:
-                - release/0.13
+                - disable-release/0.13
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1432,7 +1432,7 @@ workflows:
           filters:
             branches:
               only:
-                - release/0.13
+                - disable-release/0.13
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1457,7 +1457,7 @@ workflows:
           filters:
             branches:
               only:
-                - release/0.13
+                - disable-release/0.13
     jobs:
       - build-platform-and-services
       - update-start-up-key:
@@ -1506,7 +1506,7 @@ workflows:
           filters:
             branches:
               only:
-                - release/0.13
+                - disable-release/0.13
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1529,7 +1529,7 @@ workflows:
           filters:
             branches:
               only:
-                - release/0.13
+                - disable-release/0.13
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1575,7 +1575,7 @@ workflows:
           filters:
             branches:
               only:
-                - release/0.13
+                - disable-release/0.13
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1598,7 +1598,7 @@ workflows:
           filters:
             branches:
               only:
-                - release/0.13
+                - disable-release/0.13
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1621,7 +1621,7 @@ workflows:
           filters:
             branches:
               only:
-                - release/0.13
+                - disable-release/0.13
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1644,7 +1644,7 @@ workflows:
           filters:
             branches:
               only:
-                - release/0.13
+                - disable-release/0.13
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1667,7 +1667,7 @@ workflows:
             filters:
               branches:
                 only:
-                  - release/0.13
+                  - disable-release/0.13
     jobs:
       - fast-build-artifact:
           context: Slack
@@ -1732,7 +1732,7 @@ workflows:
             filters:
               branches:
                 only:
-                  - release/0.13
+                  - disable-release/0.13
     jobs:
       - fast-build-artifact:
           context: Slack
@@ -1804,7 +1804,7 @@ workflows:
           filters:
             branches:
               only:
-                - release/0.13
+                - disable-release/0.13
     jobs:
       - fast-build-artifact:
           context: Slack
@@ -1880,7 +1880,7 @@ workflows:
           filters:
             branches:
               only:
-                - release/0.13
+                - disable-release/0.13
     jobs:
       - fast-build-artifact:
           context: Slack
