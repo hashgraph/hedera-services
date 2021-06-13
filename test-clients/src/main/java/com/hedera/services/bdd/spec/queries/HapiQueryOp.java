@@ -30,7 +30,6 @@ import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
 import com.hedera.services.bdd.spec.stats.QueryObs;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
-import com.hedera.services.usage.crypto.CryptoTransferUsage;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -59,7 +58,6 @@ import static com.hedera.services.bdd.spec.fees.Payment.Reason.COST_ANSWER_QUERY
 import static com.hedera.services.bdd.spec.queries.QueryUtils.reflectForCost;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.reflectForPrecheck;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransferList;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.txnToString;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -220,9 +218,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 	}
 
 	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo, int multiplier) {
-		return CryptoTransferUsage.newEstimate(txn, suFrom(svo))
-				.givenTokenMultiplier(multiplier)
-				.get();
+		return HapiCryptoTransfer.usageEstimate(txn, svo, multiplier);
 	}
 
 	private Transaction fittedPayment(HapiApiSpec spec) throws Throwable {

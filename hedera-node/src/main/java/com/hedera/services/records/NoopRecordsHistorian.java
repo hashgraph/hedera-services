@@ -21,7 +21,7 @@ package com.hedera.services.records;
  */
 
 import com.hedera.services.state.EntityCreator;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 
 import java.util.Optional;
 
@@ -32,16 +32,16 @@ public enum NoopRecordsHistorian implements AccountRecordsHistorian {
   public void setCreator(EntityCreator creator) { }
 
   @Override
-  public void finalizeTransactionRecord() { }
+  public void finalizeExpirableTransactionRecord() { }
 
   @Override
-  public void saveTransactionRecord() { }
+  public void saveExpirableTransactionRecord() { }
 
   @Override
   public void reviewExistingRecords() { }
 
   @Override
-  public Optional<TransactionRecord> lastCreatedRecord() { return Optional.empty(); }
+  public Optional<ExpirableTxnRecord> lastCreatedRecord() { return Optional.empty(); }
 
   @Override
   public void noteNewExpirationEvents() { }

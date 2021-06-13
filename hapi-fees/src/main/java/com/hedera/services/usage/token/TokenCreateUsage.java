@@ -26,6 +26,7 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import static com.hedera.services.usage.EstimatorUtils.MAX_ENTITY_LIFETIME;
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 
@@ -59,6 +60,7 @@ public class TokenCreateUsage extends TokenTxnUsage<TokenCreateUsage> {
 		var lifetime = op.hasAutoRenewAccount()
 				? op.getAutoRenewPeriod().getSeconds()
 				: ESTIMATOR_UTILS.relativeLifetime(this.op, op.getExpiry().getSeconds());
+		lifetime = Math.min(lifetime, MAX_ENTITY_LIFETIME);
 
 		usageEstimator.addBpt(baseSize);
 		usageEstimator.addRbs(baseSize * lifetime);

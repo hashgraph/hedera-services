@@ -36,33 +36,28 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public class PlatformSigFactoryTest {
-	public static String PK = "Not really a ed25519 public key!";
-	public static String DIFFERENT_PK = "NOT really a ed25519 public key!";
-	public static String SIG = "Not really an ed25519 signature!";
-	public static String DIFFERENT_SIG = "NOT really an ed25519 signature!";
-	public static String DATA = "Not really a Hedera GRPCA transaction!";
-	public static String DIFFERENT_DATA = "NOT really a Hedera GRPCA transaction!";
-	public static String CONTENTS = SIG + DATA;
-	public static String DIFFERENT_CONTENTS = DIFFERENT_SIG + DIFFERENT_DATA;
-	public static byte[] pk = PK.getBytes();
-	public static byte[] differentPk = DIFFERENT_PK.getBytes();
+	private static String PK = "Not really a ed25519 public key!";
+	private static String DIFFERENT_PK = "NOT really a ed25519 public key!";
+	private static String SIG = "Not really an ed25519 signature!";
+	private static String DIFFERENT_SIG = "NOT really an ed25519 signature!";
+	private static String DATA = "Not really a Hedera GRPCA transaction!";
+	private static String DIFFERENT_DATA = "NOT really a Hedera GRPCA transaction!";
+	private static String CONTENTS = SIG + DATA;
+	private static byte[] differentPk = DIFFERENT_PK.getBytes();
+	private static byte[] differentSig = DIFFERENT_SIG.getBytes();
+	private static byte[] differentData = DIFFERENT_DATA.getBytes();
+
 	public static byte[] sig = SIG.getBytes();
-	public static byte[] differentSig = DIFFERENT_SIG.getBytes();
 	public static byte[] data = DATA.getBytes();
-	public static byte[] differentData = DIFFERENT_DATA.getBytes();
+	public static byte[] pk = PK.getBytes();
 	public static TransactionSignature EXPECTED_SIG = new TransactionSignature(
 			CONTENTS.getBytes(),
 			0, sig.length,
 			pk, 0, pk.length,
 			sig.length, data.length);
-	public static TransactionSignature EXPECTED_DIFFERENT_SIG = new TransactionSignature(
-			DIFFERENT_CONTENTS.getBytes(),
-			0, differentSig.length,
-			pk, 0, pk.length,
-			differentSig.length, differentData.length);
 
 	@Test
-	public void createsExpectedSig() {
+	void createsExpectedSig() {
 		// when:
 		TransactionSignature actualSig = PlatformSigFactory.createEd25519(pk, sig, data);
 
@@ -71,7 +66,7 @@ public class PlatformSigFactoryTest {
 	}
 
 	@Test
-	public void differentPksAreUnequal() {
+	void differentPksAreUnequal() {
 		// given:
 		var a = createEd25519(pk, sig, data);
 		var b = createEd25519(differentPk, sig, data);
@@ -81,7 +76,7 @@ public class PlatformSigFactoryTest {
 	}
 
 	@Test
-	public void differentSigsAreUnequal() {
+	void differentSigsAreUnequal() {
 		// given:
 		var a = createEd25519(pk, sig, data);
 		var b = createEd25519(pk, differentSig, data);
@@ -91,7 +86,7 @@ public class PlatformSigFactoryTest {
 	}
 
 	@Test
-	public void equalVaryingMaterialAreEqual() {
+	void equalVaryingMaterialAreEqual() {
 		// given:
 		var a = createEd25519(pk, sig, data);
 		var b = createEd25519(pk, sig, differentData);
@@ -101,7 +96,7 @@ public class PlatformSigFactoryTest {
 	}
 
 	@Test
-	public void differentLensAreUnequal() {
+	void differentLensAreUnequal() {
 		// setup:
 		var a = createEd25519(pk, sig, data);
 
@@ -114,7 +109,7 @@ public class PlatformSigFactoryTest {
 	}
 
 	@Test
-	public void differingItemsMeanUnequal() {
+	void differingItemsMeanUnequal() {
 		// setup:
 		var a = createEd25519(pk, sig, data);
 		var b = createEd25519(pk, differentSig, data);
@@ -128,7 +123,7 @@ public class PlatformSigFactoryTest {
 	}
 
 	@Test
-	public void pkSigReprWorks() {
+	void pkSigReprWorks() {
 		// setup:
 		var a = createEd25519(pk, sig, data);
 		var b = createEd25519(differentPk, differentSig, data);

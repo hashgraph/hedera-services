@@ -34,14 +34,14 @@ import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.order.SigningOrderResultFactory;
-import com.hedera.services.sigs.sourcing.DefaultSigBytesProvider;
-import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.services.sigs.sourcing.SigMapPubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.RationalizedSigMeta;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.factories.txns.CryptoCreateFactory;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -87,7 +87,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.mock;
 
-public class SigOpsRegressionTest {
+class SigOpsRegressionTest {
 	private HederaFs hfs;
 	private MiscRunningAvgs runningAvgs;
 	private MiscSpeedometers speedometers;
@@ -107,7 +107,7 @@ public class SigOpsRegressionTest {
 	private BiPredicate<TransactionBody, HederaFunctionality> targetWaclSigns = (txn, function) ->
 			mockSystemOpPolicies.check(txn, function) != AUTHORIZED;
 
-	public static boolean otherPartySigsAreActive(
+	static boolean otherPartySigsAreActive(
 			PlatformTxnAccessor accessor,
 			HederaSigningOrder keyOrder,
 			SigningOrderResultFactory<SignatureStatus> summaryFactory
@@ -115,7 +115,7 @@ public class SigOpsRegressionTest {
 		return otherPartySigsAreActive(accessor, keyOrder, summaryFactory, DEFAULT_ACTIVATION_CHARACTERISTICS);
 	}
 
-	public static boolean otherPartySigsAreActive(
+	static boolean otherPartySigsAreActive(
 			PlatformTxnAccessor accessor,
 			HederaSigningOrder keyOrder,
 			SigningOrderResultFactory<SignatureStatus> summaryFactory,
@@ -134,7 +134,7 @@ public class SigOpsRegressionTest {
 	}
 
 	@Test
-	public void setsExpectedPlatformSigsForCryptoCreate() throws Throwable {
+	void setsExpectedPlatformSigsForCryptoCreate() throws Throwable {
 		// given:
 		setupFor(CRYPTO_CREATE_RECEIVER_SIG_SCENARIO);
 
@@ -147,7 +147,7 @@ public class SigOpsRegressionTest {
 	}
 
 	@Test
-	public void setsExpectedErrorForBadPayer() throws Throwable {
+	void setsExpectedErrorForBadPayer() throws Throwable {
 		// given:
 		setupFor(INVALID_PAYER_ID_SCENARIO);
 
@@ -160,7 +160,7 @@ public class SigOpsRegressionTest {
 	}
 
 	@Test
-	public void setsExpectedErrorAndSigsForMissingTargetAccount() throws Throwable {
+	void setsExpectedErrorAndSigsForMissingTargetAccount() throws Throwable {
 		// given:
 		setupFor(CRYPTO_UPDATE_MISSING_ACCOUNT_SCENARIO);
 
@@ -173,7 +173,7 @@ public class SigOpsRegressionTest {
 	}
 
 	@Test
-	public void rationalizesExpectedPlatformSigsForCryptoCreate() throws Throwable {
+	void rationalizesExpectedPlatformSigsForCryptoCreate() throws Throwable {
 		// given:
 		setupFor(CRYPTO_CREATE_RECEIVER_SIG_SCENARIO);
 		// and:
@@ -184,13 +184,13 @@ public class SigOpsRegressionTest {
 
 		// then:
 		statusMatches(syncSuccessStatus);
-		assertEquals(expectedSigs, platformTxn.getPlatformTxn().getSignatures());
+		assertEquals(expectedSigs, platformTxn.getSigMeta().verifiedSigs());
 		// and:
 		allVerificationStatusesAre(vs -> !VerificationStatus.UNKNOWN.equals(vs));
 	}
 
 	@Test
-	public void rubberstampsCorrectPlatformSigsForCryptoCreate() throws Throwable {
+	void rubberstampsCorrectPlatformSigsForCryptoCreate() throws Throwable {
 		// given:
 		setupFor(CRYPTO_CREATE_RECEIVER_SIG_SCENARIO);
 		// and:
@@ -208,13 +208,13 @@ public class SigOpsRegressionTest {
 	}
 
 	@Test
-	public void validatesComplexPayerSigActivation() throws Throwable {
+	void validatesComplexPayerSigActivation() throws Throwable {
 		// given:
 		setupFor(CRYPTO_CREATE_COMPLEX_PAYER_RECEIVER_SIG_SCENARIO);
 		// and:
 		List<TransactionSignature> unknownSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
 				List.of(COMPLEX_KEY_ACCOUNT_KT.asJKey(), CryptoCreateFactory.DEFAULT_ACCOUNT_KT.asJKey()),
-				PubKeyToSigBytes.from(platformTxn.getBackwardCompatibleSignedTxn().getSigMap()),
+				new SigMapPubKeyToSigBytes(platformTxn.getSignedTxnWrapper().getSigMap()),
 				new BodySigningSigFactory(platformTxn)
 		).getPlatformSigs();
 		List<TransactionSignature> knownSigs = asKind(List.of(
@@ -233,13 +233,13 @@ public class SigOpsRegressionTest {
 	}
 
 	@Test
-	public void deniesInactiveComplexPayerSig() throws Throwable {
+	void deniesInactiveComplexPayerSig() throws Throwable {
 		// given:
 		setupFor(CRYPTO_CREATE_COMPLEX_PAYER_RECEIVER_SIG_SCENARIO);
 		// and:
 		List<TransactionSignature> unknownSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
 				List.of(COMPLEX_KEY_ACCOUNT_KT.asJKey(), CryptoCreateFactory.DEFAULT_ACCOUNT_KT.asJKey()),
-				PubKeyToSigBytes.from(platformTxn.getBackwardCompatibleSignedTxn().getSigMap()),
+				new SigMapPubKeyToSigBytes(platformTxn.getSignedTxnWrapper().getSigMap()),
 				new BodySigningSigFactory(platformTxn)
 		).getPlatformSigs();
 		List<TransactionSignature> knownSigs = asKind(List.of(
@@ -258,13 +258,13 @@ public class SigOpsRegressionTest {
 	}
 
 	@Test
-	public void validatesComplexOtherPartySigActivation() throws Throwable {
+	void validatesComplexOtherPartySigActivation() throws Throwable {
 		// given:
 		setupFor(CRYPTO_UPDATE_COMPLEX_KEY_ACCOUNT_SCENARIO);
 		// and:
 		List<TransactionSignature> unknownSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
 				List.of(DEFAULT_PAYER_KT.asJKey(), COMPLEX_KEY_ACCOUNT_KT.asJKey()),
-				PubKeyToSigBytes.from(platformTxn.getBackwardCompatibleSignedTxn().getSigMap()),
+				new SigMapPubKeyToSigBytes(platformTxn.getSignedTxnWrapper().getSigMap()),
 				new BodySigningSigFactory(platformTxn)
 		).getPlatformSigs();
 		List<TransactionSignature> knownSigs = asKind(List.of(
@@ -284,13 +284,13 @@ public class SigOpsRegressionTest {
 	}
 
 	@Test
-	public void deniesInactiveComplexOtherPartySig() throws Throwable {
+	void deniesInactiveComplexOtherPartySig() throws Throwable {
 		// given:
 		setupFor(CRYPTO_UPDATE_COMPLEX_KEY_ACCOUNT_SCENARIO);
 		// and:
 		List<TransactionSignature> unknownSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
 				List.of(DEFAULT_PAYER_KT.asJKey(), COMPLEX_KEY_ACCOUNT_KT.asJKey()),
-				PubKeyToSigBytes.from(platformTxn.getBackwardCompatibleSignedTxn().getSigMap()),
+				new SigMapPubKeyToSigBytes(platformTxn.getSignedTxnWrapper().getSigMap()),
 				new BodySigningSigFactory(platformTxn)
 		).getPlatformSigs();
 		List<TransactionSignature> knownSigs = asKind(List.of(
@@ -310,13 +310,13 @@ public class SigOpsRegressionTest {
 	}
 
 	@Test
-	public void deniesSecondInactiveComplexOtherPartySig() throws Throwable {
+	void deniesSecondInactiveComplexOtherPartySig() throws Throwable {
 		// given:
 		setupFor(CRYPTO_UPDATE_COMPLEX_KEY_ACCOUNT_ADD_NEW_KEY_SCENARIO);
 		// and:
 		List<TransactionSignature> unknownSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
 				List.of(DEFAULT_PAYER_KT.asJKey(), COMPLEX_KEY_ACCOUNT_KT.asJKey(), NEW_ACCOUNT_KT.asJKey()),
-				PubKeyToSigBytes.from(platformTxn.getBackwardCompatibleSignedTxn().getSigMap()),
+				new SigMapPubKeyToSigBytes(platformTxn.getSignedTxnWrapper().getSigMap()),
 				new BodySigningSigFactory(platformTxn)
 		).getPlatformSigs();
 		List<TransactionSignature> knownSigs = asKind(List.of(
@@ -344,13 +344,13 @@ public class SigOpsRegressionTest {
 				List.of(
 						DEFAULT_PAYER_KT.asJKey(),
 						CryptoCreateFactory.DEFAULT_ACCOUNT_KT.asJKey()),
-				PubKeyToSigBytes.from(platformTxn.getBackwardCompatibleSignedTxn().getSigMap()),
+				new SigMapPubKeyToSigBytes(platformTxn.getSignedTxnWrapper().getSigMap()),
 				new BodySigningSigFactory(platformTxn)
 		).getPlatformSigs();
 	}
 
 	private boolean allVerificationStatusesAre(Predicate<VerificationStatus> statusPred) {
-		return platformTxn.getPlatformTxn().getSignatures().stream()
+		return platformTxn.getSigMeta().verifiedSigs().stream()
 				.map(TransactionSignature::getSignatureStatus)
 				.allMatch(statusPred);
 	}
@@ -360,16 +360,17 @@ public class SigOpsRegressionTest {
 	}
 
 	private boolean invokePayerSigActivationScenario(List<TransactionSignature> knownSigs) {
-		platformTxn.getPlatformTxn().clear();
-		platformTxn.getPlatformTxn().addAll(knownSigs.toArray(new TransactionSignature[0]));
 		HederaSigningOrder keysOrder = new HederaSigningOrder(
 				new MockEntityNumbers(),
 				defaultLookupsFor(null, () -> accounts, () -> null, ref -> null, ref -> null),
 				updateAccountSigns,
 				targetWaclSigns,
 				new MockGlobalDynamicProps());
+		final var impliedOrdering = keysOrder.keysForPayer(platformTxn.getTxn(), IN_HANDLE_SUMMARY_FACTORY);
+		final var impliedKey = impliedOrdering.getPayerKey();
+		platformTxn.setSigMeta(RationalizedSigMeta.forPayerOnly(impliedKey, new ArrayList<>(knownSigs)));
 
-		return payerSigIsActive(platformTxn, keysOrder, IN_HANDLE_SUMMARY_FACTORY);
+		return payerSigIsActive(platformTxn);
 	}
 
 	private boolean invokeOtherPartySigActivationScenario(List<TransactionSignature> knownSigs) {
@@ -398,10 +399,11 @@ public class SigOpsRegressionTest {
 				targetWaclSigns,
 				new MockGlobalDynamicProps());
 
-		return expandIn(platformTxn, keyOrder, DefaultSigBytesProvider.DEFAULT_SIG_BYTES, BodySigningSigFactory::new);
+		final var pkToSigFn = new SigMapPubKeyToSigBytes(platformTxn.getSigMap());
+		return expandIn(platformTxn, keyOrder, pkToSigFn);
 	}
 
-	private SignatureStatus invokeRationalizationScenario() throws Exception {
+	private SignatureStatus invokeRationalizationScenario() {
 		SyncVerifier syncVerifier = new CryptoEngine()::verifySync;
 		SigMetadataLookup sigMetaLookups = defaultLookupsFor(hfs, () -> accounts, () -> null, ref -> null, ref -> null);
 		HederaSigningOrder keyOrder = new HederaSigningOrder(
@@ -415,8 +417,8 @@ public class SigOpsRegressionTest {
 				platformTxn,
 				syncVerifier,
 				keyOrder,
-				DefaultSigBytesProvider.DEFAULT_SIG_BYTES,
-				BodySigningSigFactory::new);
+				new SigMapPubKeyToSigBytes(platformTxn.getSigMap()),
+				new BodySigningSigFactory(platformTxn));
 	}
 
 	private void setupFor(TxnHandlingScenario scenario) throws Throwable {
@@ -442,7 +444,7 @@ public class SigOpsRegressionTest {
 		} else {
 			PlatformSigsCreationResult payerResult = PlatformSigOps.createEd25519PlatformSigsFrom(
 					payerKeys.getOrderedKeys(),
-					PubKeyToSigBytes.forPayer(platformTxn.getBackwardCompatibleSignedTxn()),
+					new SigMapPubKeyToSigBytes(platformTxn.getSigMap()),
 					new BodySigningSigFactory(platformTxn)
 			);
 			expectedSigs.addAll(payerResult.getPlatformSigs());
@@ -453,7 +455,7 @@ public class SigOpsRegressionTest {
 			} else {
 				PlatformSigsCreationResult otherResult = PlatformSigOps.createEd25519PlatformSigsFrom(
 						otherKeys.getOrderedKeys(),
-						PubKeyToSigBytes.forOtherParties(platformTxn.getBackwardCompatibleSignedTxn()),
+						new SigMapPubKeyToSigBytes(platformTxn.getSigMap()),
 						new BodySigningSigFactory(platformTxn)
 				);
 				if (!otherResult.hasFailed()) {

@@ -78,7 +78,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
 			var id = op.getContractID();
 			var target = contracts.get().get(fromContractId(id));
 
-			var result = customizerFactory.customizerFor(target, op);
+			var result = customizerFactory.customizerFor(target, validator, op);
 			var customizer = result.getLeft();
 			if (customizer.isPresent()) {
 				ledger.customize(asAccount(id), customizer.get());

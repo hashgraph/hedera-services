@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.token;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -30,6 +31,7 @@ import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -73,6 +75,9 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	private static String TOKEN_TREASURY = "treasury";
 	private static final long A_HUNDRED_SECONDS = 100;
 
+	private static final long defaultMaxLifetime =
+			Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
+
 	public static void main(String... args) {
 		new TokenCreateSpecs().runSuiteSync();
 	}
@@ -98,6 +103,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						creationHappyPath(),
 						numAccountsAllowedIsDynamic(),
 						worksAsExpectedWithDefaultTokenId(),
+						cannotCreateWithExcessiveLifetime(),
 				}
 		);
 	}
@@ -107,6 +113,20 @@ public class TokenCreateSpecs extends HapiApiSuite {
 		return defaultHapiSpec("WorksAsExpectedWithDefaultTokenId")
 				.given().when().then(
 						getTokenInfo("0.0.0").hasCostAnswerPrecheck(INVALID_TOKEN_ID)
+				);
+	}
+
+	public HapiApiSpec cannotCreateWithExcessiveLifetime() {
+		final var smallBuffer = 12_345L;
+		final var okExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() - smallBuffer;
+		final var excessiveExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() + smallBuffer;
+		return defaultHapiSpec("CannotCreateWithExcessiveLifetime")
+				.given().when().then(
+						tokenCreate("neverToBe")
+								.expiry(excessiveExpiry)
+								.hasKnownStatus(INVALID_EXPIRATION_TIME),
+						tokenCreate("neverToBe")
+								.expiry(okExpiry)
 				);
 	}
 

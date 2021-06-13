@@ -20,7 +20,6 @@ package com.hedera.services.sigs.factories;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.swirlds.common.crypto.TransactionSignature;
 
 /**
@@ -39,5 +38,5 @@ public interface TxnScopedPlatformSigFactory {
 	 * 		the cryptographic signature to use in creating the platform sig.
 	 * @return a platform sig for the scoped transaction.
 	 */
-	TransactionSignature create(ByteString publicKey, ByteString sigBytes);
+	TransactionSignature create(byte[] publicKey, byte[] sigBytes);
 }

@@ -28,7 +28,7 @@ import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
+import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
@@ -66,8 +66,11 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.CommonUtils;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.fcmap.internal.FCMLeaf;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.ethereum.core.AccountState;
@@ -116,7 +119,7 @@ public class SmartContractRequestHandlerPayableTest {
   SmartContractRequestHandler smartHandler;
   FileServiceHandler fsHandler;
   FCMap<MerkleEntityId, MerkleAccount> fcMap = null;
-  FCMapBackingAccounts backingAccounts;
+  BackingAccounts backingAccounts;
   private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageMap;
   ServicesRepositoryRoot repository;
 
@@ -134,7 +137,7 @@ public class SmartContractRequestHandlerPayableTest {
 
   private ServicesRepositoryRoot getLocalRepositoryInstance() {
     DbSource<byte[]> repDBFile = StorageSourceFactory.from(storageMap);
-    backingAccounts = new FCMapBackingAccounts(() -> fcMap);
+    backingAccounts = new BackingAccounts(() -> fcMap);
     TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
             AccountProperty.class,
             () -> new MerkleAccount(),
@@ -156,6 +159,12 @@ public class SmartContractRequestHandlerPayableTest {
 
   @BeforeEach
   public void setUp() throws Exception {
+    // setup:
+    ConstructableRegistry.registerConstructable(
+            new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
+    ConstructableRegistry.registerConstructable(
+            new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+
     payerAccountId = RequestBuilder.getAccountIdBuild(payerAccount, 0l, 0l);
     nodeAccountId = RequestBuilder.getAccountIdBuild(nodeAccount, 0l, 0l);
     feeCollAccountId = RequestBuilder.getAccountIdBuild(feeCollAccount, 0l, 0l);

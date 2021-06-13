@@ -31,17 +31,16 @@ import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
-import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 
 import static com.hedera.services.utils.EntityIdUtils.readableId;
-import static java.util.stream.Collectors.toMap;
 
 /**
  * Implements a {@link UsagePricesProvider} by loading the required
@@ -71,11 +70,11 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 
 	CurrentAndNextFeeSchedule feeSchedules;
 
-	Timestamp currFunctionUsagePricesExpiry;
-	Timestamp nextFunctionUsagePricesExpiry;
+	private Timestamp currFunctionUsagePricesExpiry;
+	private Timestamp nextFunctionUsagePricesExpiry;
 
-	Map<HederaFunctionality, FeeData> currFunctionUsagePrices;
-	Map<HederaFunctionality, FeeData> nextFunctionUsagePrices;
+	private EnumMap<HederaFunctionality, FeeData> currFunctionUsagePrices;
+	private EnumMap<HederaFunctionality, FeeData> nextFunctionUsagePrices;
 
 	public AwareFcfsUsagePrices(HederaFs hfs, FileNumbers fileNumbers, TransactionContext txnCtx) {
 		this.hfs = hfs;
@@ -106,7 +105,7 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 			var accessor = txnCtx.accessor();
 			return pricesGiven(accessor.getFunction(), accessor.getTxnId().getTransactionValidStart());
 		} catch (Exception e) {
-			log.warn("Using default usage prices to calculate fees for {}!", txnCtx.accessor().getSignedTxn4Log(), e);
+			log.warn("Using default usage prices to calculate fees for {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
 		}
 		return DEFAULT_USAGE_PRICES;
 	}
@@ -163,9 +162,11 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 		return Timestamp.newBuilder().setSeconds(ts.getSeconds()).build();
 	}
 
-	private Map<HederaFunctionality, FeeData> functionUsagePricesFrom(FeeSchedule feeSchedule) {
-		return feeSchedule.getTransactionFeeScheduleList()
-				.stream()
-				.collect(toMap(TransactionFeeSchedule::getHederaFunctionality, TransactionFeeSchedule::getFeeData));
+	private EnumMap<HederaFunctionality, FeeData> functionUsagePricesFrom(FeeSchedule feeSchedule) {
+		final EnumMap<HederaFunctionality, FeeData> ans = new EnumMap<>(HederaFunctionality.class);
+		for (final var tfs : feeSchedule.getTransactionFeeScheduleList()) {
+			ans.put(tfs.getHederaFunctionality(), tfs.getFeeData());
+		}
+		return ans;
 	}
 }

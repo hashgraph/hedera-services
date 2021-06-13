@@ -46,15 +46,33 @@ import static com.hederahashgraph.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class SingletonEstimatorUtilsTest {
-	String memo = "abcdefgh";
-	SigUsage sigUsage = new SigUsage(3, 256, 2);
-	TransferList transfers = TxnUtils.withAdjustments(
+	private long maxLifetime = 100 * 365 * 24 * 60 * 60L;
+	private String memo = "abcdefgh";
+	private SigUsage sigUsage = new SigUsage(3, 256, 2);
+	private TransferList transfers = TxnUtils.withAdjustments(
 			asAccount("0.0.2"), -2,
 			asAccount("0.0.3"), 1,
 			asAccount("0.0.4"), 1);
 
 	@Test
-	public void hasExpectedBaseEstimate() {
+	void byteSecondsUsagePeriodsAreCappedAtOneCentury() {
+		// given:
+		final long oldUsage = 1_234L;
+		final long newUsage = 2_345L;
+		final long oldLifetime = maxLifetime + 1;
+		final long newLifetime = 2 * maxLifetime + 1;
+		// and:
+		final long cappedChange = maxLifetime * (newUsage - oldUsage);
+
+		// when:
+		final var result = ESTIMATOR_UTILS.changeInBsUsage(oldUsage, oldLifetime, newUsage, newLifetime);
+
+		// then:
+		assertEquals(cappedChange, result);
+	}
+
+	@Test
+	void hasExpectedBaseEstimate() {
 		// given:
 		TransactionBody txn = TransactionBody.newBuilder()
 				.setMemo("You won't want to hear this.")
@@ -79,13 +97,13 @@ class SingletonEstimatorUtilsTest {
 	}
 
 	@Test
-	public void hasExpectedBaseNetworkRbs() {
+	void hasExpectedBaseNetworkRbs() {
 		// expect:
 		assertEquals( BASIC_RECEIPT_SIZE * RECEIPT_STORAGE_TIME_SEC, ESTIMATOR_UTILS.baseNetworkRbs());
 	}
 
 	@Test
-	public void partitionsAsExpected() {
+	void partitionsAsExpected() {
 		// expect:
 		assertEquals(
 				A_USAGES_MATRIX,
@@ -93,7 +111,7 @@ class SingletonEstimatorUtilsTest {
 	}
 
 	@Test
-	public void partitionsQueriesAsExpected() {
+	void partitionsQueriesAsExpected() {
 		// expect:
 		assertEquals(
 				A_QUERY_USAGES_MATRIX,
@@ -101,7 +119,7 @@ class SingletonEstimatorUtilsTest {
 	}
 
 	@Test
-	public void understandsStartTime() {
+	void understandsStartTime() {
 		// given:
 		long now = Instant.now().getEpochSecond();
 		long then = 4688462211L;
@@ -117,7 +135,7 @@ class SingletonEstimatorUtilsTest {
 	}
 
 	@Test
-	public void getsBaseRecordBytesForNonTransfer() {
+	void getsBaseRecordBytesForNonTransfer() {
 		// given:
 		TransactionBody txn = TransactionBody.newBuilder()
 				.setMemo(memo)
@@ -133,7 +151,7 @@ class SingletonEstimatorUtilsTest {
 	}
 
 	@Test
-	public void getsBaseRecordBytesForTransfer() {
+	void getsBaseRecordBytesForTransfer() {
 		// given:
 		TransactionBody txn = TransactionBody.newBuilder()
 				.setMemo(memo)
@@ -151,7 +169,7 @@ class SingletonEstimatorUtilsTest {
 	}
 
 	@Test
-	public void avoidsDegeneracy() {
+	void avoidsDegeneracy() {
 		// expect:
 		assertEquals(0, ESTIMATOR_UTILS.nonDegenerateDiv(0, 60));
 		assertEquals(1, ESTIMATOR_UTILS.nonDegenerateDiv(1, 60));

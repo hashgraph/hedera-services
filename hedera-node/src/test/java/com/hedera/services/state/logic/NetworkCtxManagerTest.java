@@ -20,8 +20,10 @@ package com.hedera.services.state.logic;
  * ‍
  */
 
+import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.context.domain.trackers.IssEventStatus;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
@@ -38,6 +40,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.function.BiPredicate;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,32 +49,36 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class NetworkCtxManagerTest {
-	int issResetPeriod = 5;
-	Instant sometime = Instant.ofEpochSecond(1_234_567L);
-	Instant sometimeSameDay = sometime.plusSeconds(issResetPeriod + 1L);
-	Instant sometimeNextDay = sometime.plusSeconds(86_400L);
+	private int issResetPeriod = 5;
+	private Instant sometime = Instant.ofEpochSecond(1_234_567L);
+	private Instant sometimeSameDay = sometime.plusSeconds(issResetPeriod + 1L);
+	private Instant sometimeNextDay = sometime.plusSeconds(86_400L);
+	private final GlobalDynamicProperties mockDynamicProps = new MockGlobalDynamicProps();
 
 	@Mock
-	IssEventInfo issInfo;
+	private IssEventInfo issInfo;
 	@Mock
-	PropertySource properties;
+	private PropertySource properties;
 	@Mock
-	HapiOpCounters opCounters;
+	private HapiOpCounters opCounters;
 	@Mock
-	HbarCentExchange exchange;
+	private HbarCentExchange exchange;
 	@Mock
-	FeeMultiplierSource feeMultiplierSource;
+	private FeeMultiplierSource feeMultiplierSource;
 	@Mock
-	SystemFilesManager systemFilesManager;
+	private SystemFilesManager systemFilesManager;
 	@Mock
-	MerkleNetworkContext networkCtx;
+	private MerkleNetworkContext networkCtx;
 	@Mock
-	FunctionalityThrottling handleThrottling;
+	private FunctionalityThrottling handleThrottling;
+	@Mock
+	private BiPredicate<Instant, Instant> shouldUpdateMidnightRates;
 
-	NetworkCtxManager subject;
+	private NetworkCtxManager subject;
 
 	@BeforeEach
 	void setUp() {
@@ -84,6 +91,7 @@ class NetworkCtxManagerTest {
 				exchange,
 				systemFilesManager,
 				feeMultiplierSource,
+				mockDynamicProps,
 				handleThrottling,
 				() -> networkCtx);
 	}
@@ -97,8 +105,8 @@ class NetworkCtxManagerTest {
 
 		// then:
 		verify(systemFilesManager, never()).loadObservableSystemFiles();
-		verify(networkCtx, never()).resetWithSavedSnapshots(handleThrottling);
-		verify(networkCtx, never()).updateWithSavedCongestionStarts(feeMultiplierSource);
+		verify(networkCtx, never()).resetThrottlingFromSavedSnapshots(handleThrottling);
+		verify(networkCtx, never()).resetMultiplierSourceFromSavedCongestionStarts(feeMultiplierSource);
 		verify(feeMultiplierSource, never()).resetExpectations();
 	}
 
@@ -111,8 +119,8 @@ class NetworkCtxManagerTest {
 
 		// then:
 		verify(systemFilesManager).loadObservableSystemFiles();
-		verify(networkCtx).resetWithSavedSnapshots(handleThrottling);
-		verify(networkCtx).updateWithSavedCongestionStarts(feeMultiplierSource);
+		verify(networkCtx).resetThrottlingFromSavedSnapshots(handleThrottling);
+		verify(networkCtx).resetMultiplierSourceFromSavedCongestionStarts(feeMultiplierSource);
 		verify(feeMultiplierSource).resetExpectations();
 	}
 
@@ -187,7 +195,7 @@ class NetworkCtxManagerTest {
 	}
 
 	@Test
-	void advancesClockAsExpectedWhenPassingMidnight() {
+	void advancesClockAsExpectedWhenPassingMidnightAfterBoundaryCheckIntervalElapsedFromLastCheck() {
 		// setup:
 		var oldMidnightRates = new ExchangeRates(
 				1, 12, 1_234_567L,
@@ -195,8 +203,13 @@ class NetworkCtxManagerTest {
 		var curRates = new ExchangeRates(
 				1, 120, 1_234_567L,
 				1, 150, 2_345_678L);
+		// and:
+		subject.setShouldUpdateMidnightRates(shouldUpdateMidnightRates);
+		Instant lastBoundaryCheck = sometimeNextDay.minusSeconds(mockDynamicProps.ratesMidnightCheckInterval());
 
+		given(shouldUpdateMidnightRates.test(lastBoundaryCheck, sometimeNextDay)).willReturn(true);
 		given(exchange.activeRates()).willReturn(curRates.toGrpc());
+		given(networkCtx.lastMidnightBoundaryCheck()).willReturn(lastBoundaryCheck);
 		given(networkCtx.midnightRates()).willReturn(oldMidnightRates);
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
 
@@ -205,7 +218,60 @@ class NetworkCtxManagerTest {
 
 		// then:
 		verify(networkCtx).setConsensusTimeOfLastHandledTxn(sometimeNextDay);
+		verify(networkCtx).setLastMidnightBoundaryCheck(sometimeNextDay);
 		assertEquals(oldMidnightRates, curRates);
+	}
+
+	@Test
+	void doesntUpdateRatesIfTestDoesntSayTooButDoesUpdateLastMidnightCheck() {
+		// setup:
+		subject.setShouldUpdateMidnightRates(shouldUpdateMidnightRates);
+
+		given(networkCtx.lastMidnightBoundaryCheck())
+				.willReturn(sometimeNextDay.minusSeconds((mockDynamicProps.ratesMidnightCheckInterval())));
+		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
+
+		// when:
+		subject.advanceConsensusClockTo(sometimeNextDay);
+
+		// then:
+		verify(networkCtx).setConsensusTimeOfLastHandledTxn(sometimeNextDay);
+		verify(networkCtx).setLastMidnightBoundaryCheck(sometimeNextDay);
+	}
+
+	@Test
+	void doesntPerformMidnightCheckIfNotInInterval() {
+		// setup:
+		subject.setShouldUpdateMidnightRates(shouldUpdateMidnightRates);
+
+		given(networkCtx.lastMidnightBoundaryCheck())
+				.willReturn(sometimeNextDay.minusSeconds((mockDynamicProps.ratesMidnightCheckInterval() - 1)));
+		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
+
+		// when:
+		subject.advanceConsensusClockTo(sometimeNextDay);
+
+		// then:
+		verify(networkCtx).setConsensusTimeOfLastHandledTxn(sometimeNextDay);
+		verify(networkCtx, never()).setLastMidnightBoundaryCheck(sometimeNextDay);
+		verifyNoInteractions(shouldUpdateMidnightRates);
+	}
+
+	@Test
+	void justUpdatesLastBoundaryCheckWhenItIsNull() {
+		// setup:
+		subject.setShouldUpdateMidnightRates(shouldUpdateMidnightRates);
+
+		given(networkCtx.lastMidnightBoundaryCheck()).willReturn(null);
+		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
+
+		// when:
+		subject.advanceConsensusClockTo(sometimeNextDay);
+
+		// then:
+		verify(networkCtx).setConsensusTimeOfLastHandledTxn(sometimeNextDay);
+		verify(networkCtx).setLastMidnightBoundaryCheck(sometimeNextDay);
+		verifyNoInteractions(shouldUpdateMidnightRates);
 	}
 
 	@Test
@@ -266,5 +332,20 @@ class NetworkCtxManagerTest {
 
 		// then:
 		verify(systemFilesManager).setObservableFilesNotLoaded();
+	}
+
+	@Test
+	void defaultShouldUpdateOnlyTrueOnDifferentUtcDays() {
+		// setup:
+		final var now = Instant.parse("2021-06-07T23:59:59.369613Z");
+		final var thenSameDay = Instant.parse("2021-06-07T23:59:59.99999Z");
+		final var thenNextDay = Instant.parse("2021-06-08T00:00:00.00000Z");
+
+		// given:
+		final var updateTest = subject.getShouldUpdateMidnightRates();
+
+		// then:
+		assertFalse(updateTest.test(now, thenSameDay));
+		assertTrue(updateTest.test(now, thenNextDay));
 	}
 }

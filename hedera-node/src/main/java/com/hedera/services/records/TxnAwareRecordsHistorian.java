@@ -23,7 +23,8 @@ package com.hedera.services.records;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiryManager;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,7 +39,7 @@ import java.util.Optional;
 public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	private static final Logger log = LogManager.getLogger(TxnAwareRecordsHistorian.class);
 
-	private TransactionRecord lastCreatedRecord;
+	private ExpirableTxnRecord lastExpirableRecord;
 
 	private EntityCreator creator;
 
@@ -53,8 +54,8 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	}
 
 	@Override
-	public Optional<TransactionRecord> lastCreatedRecord() {
-		return Optional.ofNullable(lastCreatedRecord);
+	public Optional<ExpirableTxnRecord> lastCreatedRecord() {
+		return Optional.ofNullable(lastExpirableRecord);
 	}
 
 	@Override
@@ -63,23 +64,23 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 	}
 
 	@Override
-	public void finalizeTransactionRecord() {
-		lastCreatedRecord = txnCtx.recordSoFar();
+	public void finalizeExpirableTransactionRecord() {
+		lastExpirableRecord = txnCtx.recordSoFar();
 	}
 
 	@Override
-	public void saveTransactionRecord() {
+	public void saveExpirableTransactionRecord() {
 		long now = txnCtx.consensusTime().getEpochSecond();
 		long submittingMember = txnCtx.submittingSwirldsMember();
 		var accessor = txnCtx.accessor();
-		var payerRecord = creator.createExpiringRecord(
+		var payerRecord = creator.saveExpiringRecord(
 				txnCtx.effectivePayer(),
-				lastCreatedRecord,
+				lastExpirableRecord,
 				now,
 				submittingMember);
 		recordCache.setPostConsensus(
 				accessor.getTxnId(),
-				lastCreatedRecord.getReceipt().getStatus(),
+				ResponseCodeEnum.valueOf(lastExpirableRecord.getReceipt().getStatus()),
 				payerRecord);
 	}
 

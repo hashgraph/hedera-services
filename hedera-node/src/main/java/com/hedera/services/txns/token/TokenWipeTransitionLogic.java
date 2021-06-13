@@ -71,7 +71,7 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 				txnCtx.setNewTotalSupply(store.get(id).totalSupply());
 			}
 		} catch (Exception e) {
-			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
+			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
 	}

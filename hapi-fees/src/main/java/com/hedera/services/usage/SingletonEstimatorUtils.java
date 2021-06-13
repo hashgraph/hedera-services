@@ -100,5 +100,4 @@ public enum SingletonEstimatorUtils implements EstimatorUtils {
 	private int transferListBytes(TransferList transfers) {
 		return BASIC_ACCOUNT_AMT_SIZE * transfers.getAccountAmountsCount();
 	}
-
 }

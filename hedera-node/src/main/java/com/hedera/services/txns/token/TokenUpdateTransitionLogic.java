@@ -42,6 +42,7 @@ import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.txns.validation.TokenListChecks.checkKeys;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -84,7 +85,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 		try {
 			transitionFor(txnCtx.accessor().getTxn().getTokenUpdate());
 		} catch (Exception e) {
-			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
+			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
 			abortWith(FAIL_INVALID);
 		}
 	}
@@ -98,6 +99,11 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 
 		var outcome = OK;
 		MerkleToken token = store.get(id);
+
+		if (op.hasExpiry() && !validator.isValidExpiry(op.getExpiry())) {
+			txnCtx.setStatus(INVALID_EXPIRATION_TIME);
+			return;
+		}
 
 		if (token.adminKey().isEmpty() && !affectsExpiryOnly.test(op)) {
 			txnCtx.setStatus(TOKEN_IS_IMMUTABLE);

@@ -65,7 +65,7 @@ public class TransitionRunner {
 		final var function = accessor.getFunction();
 		final var logic = lookup.lookupFor(function, txn);
 		if (logic.isEmpty()) {
-			log.warn("Transaction w/o applicable transition logic at consensus :: {}", accessor::getSignedTxn4Log);
+			log.warn("Transaction w/o applicable transition logic at consensus :: {}", accessor::getSignedTxnWrapper);
 			txnCtx.setStatus(FAIL_INVALID);
 			return false;
 		} else {
@@ -85,7 +85,7 @@ public class TransitionRunner {
 				final var code = ite.getResponseCode();
 				txnCtx.setStatus(code);
 				if (code == FAIL_INVALID) {
-					log.warn("Avoidable failure in transition logic for {}", accessor.getSignedTxn4Log(), ite);
+					log.warn("Avoidable failure in transition logic for {}", accessor.getSignedTxnWrapper(), ite);
 				}
 			}
 			return true;

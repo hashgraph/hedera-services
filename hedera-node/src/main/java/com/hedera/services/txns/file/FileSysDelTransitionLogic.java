@@ -91,7 +91,7 @@ public class FileSysDelTransitionLogic implements TransitionLogic {
 			}
 			txnCtx.setStatus(SUCCESS);
 		} catch (Exception unknown) {
-			log.warn("Unrecognized failure handling {}!", txnCtx.accessor().getSignedTxn4Log(), unknown);
+			log.warn("Unrecognized failure handling {}!", txnCtx.accessor().getSignedTxnWrapper(), unknown);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
 	}

@@ -94,7 +94,6 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 			if (log.isDebugEnabled()) {
 				log.debug("Modifying to {} new bytes (hash = {}) @ '{}'", value.length, blob.getHash(), path);
 			}
-			pathedBlobs.get().put(meta, blob);
 		} else {
 			var blob = blobFactory.apply(value);
 			if (log.isDebugEnabled()) {

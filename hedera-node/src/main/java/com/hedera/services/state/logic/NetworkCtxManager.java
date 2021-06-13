@@ -21,6 +21,7 @@ package com.hedera.services.state.logic;
  */
 
 import com.hedera.services.context.domain.trackers.IssEventInfo;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
@@ -34,6 +35,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING_ISS;
@@ -52,8 +54,11 @@ public class NetworkCtxManager {
 	private final HbarCentExchange exchange;
 	private final SystemFilesManager systemFilesManager;
 	private final FeeMultiplierSource feeMultiplierSource;
+	private final GlobalDynamicProperties dynamicProperties;
 	private final FunctionalityThrottling handleThrottling;
 	private final Supplier<MerkleNetworkContext> networkCtx;
+
+	private BiPredicate<Instant, Instant> shouldUpdateMidnightRates = (now, then) -> !inSameUtcDay(now, then);
 
 	public NetworkCtxManager(
 			IssEventInfo issInfo,
@@ -62,6 +67,7 @@ public class NetworkCtxManager {
 			HbarCentExchange exchange,
 			SystemFilesManager systemFilesManager,
 			FeeMultiplierSource feeMultiplierSource,
+			GlobalDynamicProperties dynamicProperties,
 			FunctionalityThrottling handleThrottling,
 			Supplier<MerkleNetworkContext> networkCtx
 	) {
@@ -74,6 +80,7 @@ public class NetworkCtxManager {
 		this.systemFilesManager = systemFilesManager;
 		this.feeMultiplierSource = feeMultiplierSource;
 		this.handleThrottling = handleThrottling;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	public void setObservableFilesNotLoaded() {
@@ -86,18 +93,35 @@ public class NetworkCtxManager {
 			log.info("Observable files not yet loaded, doing now.");
 			systemFilesManager.loadObservableSystemFiles();
 			log.info("Loaded observable files. {}", networkCtxNow);
-			networkCtxNow.resetWithSavedSnapshots(handleThrottling);
+			networkCtxNow.resetThrottlingFromSavedSnapshots(handleThrottling);
 			feeMultiplierSource.resetExpectations();
-			networkCtxNow.updateWithSavedCongestionStarts(feeMultiplierSource);
+			networkCtxNow.resetMultiplierSourceFromSavedCongestionStarts(feeMultiplierSource);
 		}
 	}
 
 	public void advanceConsensusClockTo(Instant consensusTime) {
-		var networkCtxNow = networkCtx.get();
-		var lastConsensusTime = networkCtxNow.consensusTimeOfLastHandledTxn();
-		if (lastConsensusTime != null && !inSameUtcDay(lastConsensusTime, consensusTime)) {
-			networkCtxNow.midnightRates().replaceWith(exchange.activeRates());
+		final var networkCtxNow = networkCtx.get();
+		final var lastConsensusTime = networkCtxNow.consensusTimeOfLastHandledTxn();
+		final var lastMidnightBoundaryCheck = networkCtxNow.lastMidnightBoundaryCheck();
+
+		if (lastMidnightBoundaryCheck != null) {
+			final long intervalSecs = dynamicProperties.ratesMidnightCheckInterval();
+			final long elapsedInterval = consensusTime.getEpochSecond() - lastMidnightBoundaryCheck.getEpochSecond();
+
+			/* We only check whether the midnight rates should be updated every intervalSecs in consensus time */
+			if (elapsedInterval >= intervalSecs) {
+				/* If the lastMidnightBoundaryCheck was in a different UTC day, we update the midnight rates */
+				if (shouldUpdateMidnightRates.test(lastMidnightBoundaryCheck, consensusTime)) {
+					networkCtxNow.midnightRates().replaceWith(exchange.activeRates());
+				}
+				/* And mark this as the last time we checked the midnight boundary */
+				networkCtxNow.setLastMidnightBoundaryCheck(consensusTime);
+			}
+		} else {
+			/* The first transaction after genesis will initialize the lastMidnightBoundaryCheck */
+			networkCtxNow.setLastMidnightBoundaryCheck(consensusTime);
 		}
+
 		if (lastConsensusTime == null || consensusTime.getEpochSecond() > lastConsensusTime.getEpochSecond()) {
 			consensusSecondJustChanged = true;
 		} else {
@@ -142,5 +166,13 @@ public class NetworkCtxManager {
 
 	int getIssResetPeriod() {
 		return issResetPeriod;
+	}
+
+	void setShouldUpdateMidnightRates(BiPredicate<Instant, Instant> shouldUpdateMidnightRates) {
+		this.shouldUpdateMidnightRates = shouldUpdateMidnightRates;
+	}
+
+	BiPredicate<Instant, Instant> getShouldUpdateMidnightRates() {
+		return shouldUpdateMidnightRates;
 	}
 }

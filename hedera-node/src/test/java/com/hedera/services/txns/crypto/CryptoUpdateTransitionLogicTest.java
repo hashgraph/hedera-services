@@ -78,7 +78,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
 
-public class CryptoUpdateTransitionLogicTest {
+class CryptoUpdateTransitionLogicTest {
 	final private Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
 	final private long curExpiry = consensusTime.getEpochSecond() + 2L;
 	final private long newExpiry = consensusTime.getEpochSecond() + 7776000L;
@@ -113,7 +113,7 @@ public class CryptoUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void updatesProxyIfPresent() {
+	void updatesProxyIfPresent() {
 		// setup:
 		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 
@@ -133,7 +133,7 @@ public class CryptoUpdateTransitionLogicTest {
 
 
 	@Test
-	public void updatesReceiverSigReqIfPresent() {
+	void updatesReceiverSigReqIfPresent() {
 		// setup:
 		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 
@@ -152,7 +152,7 @@ public class CryptoUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void updatesReceiverSigReqIfTrueInLegacy() {
+	void updatesReceiverSigReqIfTrueInLegacy() {
 		// setup:
 		useLegacyFields = true;
 		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
@@ -172,7 +172,7 @@ public class CryptoUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void updatesExpiryIfPresent() {
+	void updatesExpiryIfPresent() {
 		// setup:
 		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 
@@ -191,7 +191,7 @@ public class CryptoUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void updatesMemoIfPresent() throws Throwable {
+	void updatesMemoIfPresent() throws Throwable {
 		// setup:
 		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 
@@ -209,7 +209,7 @@ public class CryptoUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void updatesAutoRenewIfPresent() throws Throwable {
+	void updatesAutoRenewIfPresent() throws Throwable {
 		// setup:
 		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 
@@ -227,7 +227,7 @@ public class CryptoUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void updatesKeyIfPresent() throws Throwable {
+	void updatesKeyIfPresent() throws Throwable {
 		// setup:
 		ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 
@@ -245,7 +245,7 @@ public class CryptoUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void hasCorrectApplicability() {
+	void hasCorrectApplicability() {
 		givenTxnCtx();
 
 		// expect:
@@ -254,17 +254,17 @@ public class CryptoUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsKeyWithBadEncoding() {
+	void rejectsKeyWithBadEncoding() {
 		rejectsKey(unmappableKey());
 	}
 
 	@Test
-	public void rejectsInvalidKey() {
+	void rejectsInvalidKey() {
 		rejectsKey(emptyKey());
 	}
 
 	@Test
-	public void rejectsInvalidMemo() {
+	void rejectsInvalidMemo() {
 		givenTxnCtx(EnumSet.of(MEMO));
 		given(validator.memoCheck(memo)).willReturn(MEMO_TOO_LONG);
 
@@ -273,16 +273,7 @@ public class CryptoUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidExpiry() {
-		givenTxnCtx();
-		given(validator.isValidExpiry(any())).willReturn(false);
-
-		// expect:
-		assertEquals(INVALID_EXPIRATION_TIME, subject.semanticCheck().apply(cryptoUpdateTxn));
-	}
-
-	@Test
-	public void rejectsInvalidAutoRenewPeriod() {
+	void rejectsInvalidAutoRenewPeriod() {
 		givenTxnCtx();
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
 
@@ -291,7 +282,7 @@ public class CryptoUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void acceptsValidTxn() {
+	void acceptsValidTxn() {
 		givenTxnCtx();
 
 		// expect:
@@ -299,7 +290,7 @@ public class CryptoUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsDetachedAccount() {
+	void rejectsDetachedAccount() {
 		givenTxnCtx();
 		given(ledger.isDetached(target)).willReturn(true);
 
@@ -311,7 +302,19 @@ public class CryptoUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void permitsDetachedIfOnlyExtendingExpiry() {
+	void rejectsInvalidExpiry() {
+		givenTxnCtx();
+		given(validator.isValidExpiry(any())).willReturn(false);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(txnCtx).setStatus(INVALID_EXPIRATION_TIME);
+	}
+
+	@Test
+	void permitsDetachedIfOnlyExtendingExpiry() {
 		givenTxnCtx(EnumSet.of(EXPIRY));
 		given(ledger.isDetached(target)).willReturn(true);
 
@@ -323,7 +326,7 @@ public class CryptoUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsInvalidExpiryForDetached() {
+	void rejectsInvalidExpiryForDetached() {
 		givenTxnCtx(EnumSet.of(EXPIRY), EnumSet.of(EXPIRY));
 		given(ledger.isDetached(target)).willReturn(true);
 		given(ledger.expiry(target)).willReturn(curExpiry);
@@ -336,7 +339,7 @@ public class CryptoUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void rejectsSmartContract() {
+	void rejectsSmartContract() {
 		givenTxnCtx();
 		given(ledger.isSmartContract(target)).willReturn(true);
 
@@ -348,7 +351,7 @@ public class CryptoUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void preemptsMissingAccountException() {
+	void preemptsMissingAccountException() {
 		givenTxnCtx();
 		given(ledger.exists(target)).willReturn(false);
 
@@ -360,7 +363,7 @@ public class CryptoUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void translatesMissingAccountException() {
+	void translatesMissingAccountException() {
 		givenTxnCtx();
 		willThrow(MissingAccountException.class).given(ledger).customize(any(), any());
 
@@ -372,7 +375,7 @@ public class CryptoUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void translatesAccountIsDeletedException() {
+	void translatesAccountIsDeletedException() {
 		givenTxnCtx();
 		willThrow(DeletedAccountException.class).given(ledger).customize(any(), any());
 
@@ -384,7 +387,7 @@ public class CryptoUpdateTransitionLogicTest {
 	}
 
 	@Test
-	public void translatesUnknownException() {
+	void translatesUnknownException() {
 		givenTxnCtx();
 		cryptoUpdateTxn = cryptoUpdateTxn.toBuilder()
 				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder().setKey(unmappableKey()))

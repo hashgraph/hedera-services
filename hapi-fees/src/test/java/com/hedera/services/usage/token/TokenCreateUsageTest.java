@@ -48,30 +48,32 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 public class TokenCreateUsageTest {
-	Key kycKey = KeyUtils.A_COMPLEX_KEY;
-	Key adminKey = KeyUtils.A_THRESHOLD_KEY;
-	Key freezeKey = KeyUtils.A_KEY_LIST;
-	Key supplyKey = KeyUtils.B_COMPLEX_KEY;
-	Key wipeKey = KeyUtils.C_COMPLEX_KEY;
-	long expiry = 2_345_678L;
-	long autoRenewPeriod = 1_234_567L;
-	long now = expiry - autoRenewPeriod;
-	String symbol = "ABCDEFGH";
-	String name = "WhyWhyWHy";
-	String memo = "Cellar door";
-	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
-	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
-	AccountID autoRenewAccount = IdUtils.asAccount("0.0.75231");
+	private long maxLifetime = 100 * 365 * 24 * 60 * 60L;
 
-	TokenCreateTransactionBody op;
-	TransactionBody txn;
+	private Key kycKey = KeyUtils.A_COMPLEX_KEY;
+	private Key adminKey = KeyUtils.A_THRESHOLD_KEY;
+	private Key freezeKey = KeyUtils.A_KEY_LIST;
+	private Key supplyKey = KeyUtils.B_COMPLEX_KEY;
+	private Key wipeKey = KeyUtils.C_COMPLEX_KEY;
+	private long expiry = 2_345_678L;
+	private long autoRenewPeriod = 1_234_567L;
+	private long now = expiry - autoRenewPeriod;
+	private String symbol = "ABCDEFGH";
+	private String name = "WhyWhyWHy";
+	private String memo = "Cellar door";
+	private int numSigs = 3, sigSize = 100, numPayerKeys = 1;
+	private SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
+	private AccountID autoRenewAccount = IdUtils.asAccount("0.0.75231");
 
-	EstimatorFactory factory;
-	TxnUsageEstimator base;
-	TokenCreateUsage subject;
+	private TokenCreateTransactionBody op;
+	private TransactionBody txn;
+
+	private EstimatorFactory factory;
+	private TxnUsageEstimator base;
+	private TokenCreateUsage subject;
 
 	@BeforeEach
-	public void setUp() throws Exception {
+	void setUp() throws Exception {
 		base = mock(TxnUsageEstimator.class);
 		given(base.get()).willReturn(A_USAGES_MATRIX);
 
@@ -82,7 +84,7 @@ public class TokenCreateUsageTest {
 	}
 
 	@Test
-	public void createsExpectedDeltaForExpiryBased() {
+	void createsExpectedDeltaForExpiryBased() {
 		// setup:
 		var expectedBytes = baseSize();
 
@@ -102,7 +104,27 @@ public class TokenCreateUsageTest {
 	}
 
 	@Test
-	public void createsExpectedDeltaForAutoRenewBased() {
+	void createsExpectedCappedDeltaForExpiryBased() {
+		// setup:
+		var expectedBytes = baseSize();
+
+		givenExpiryBasedOp(expiry + 2 * maxLifetime);
+		// and:
+		subject = TokenCreateUsage.newEstimate(txn, sigUsage);
+
+		// when:
+		var actual = subject.get();
+
+		// then:
+		assertEquals(A_USAGES_MATRIX, actual);
+		// and:
+		verify(base).addBpt(expectedBytes);
+		verify(base).addRbs(expectedBytes * maxLifetime);
+		verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+	}
+
+	@Test
+	void createsExpectedDeltaForAutoRenewBased() {
 		// setup:
 		var expectedBytes = baseSize() + BASIC_ENTITY_ID_SIZE;
 
@@ -135,8 +157,12 @@ public class TokenCreateUsageTest {
 	}
 
 	private void givenExpiryBasedOp() {
+		givenExpiryBasedOp(expiry);
+	}
+
+	private void givenExpiryBasedOp(long newExpiry) {
 		op = TokenCreateTransactionBody.newBuilder()
-				.setExpiry(Timestamp.newBuilder().setSeconds(expiry))
+				.setExpiry(Timestamp.newBuilder().setSeconds(newExpiry))
 				.setSymbol(symbol)
 				.setMemo(memo)
 				.setName(name)

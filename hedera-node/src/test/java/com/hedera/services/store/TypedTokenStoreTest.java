@@ -9,15 +9,9 @@ package com.hedera.services.store;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
-<<<<<<< HEAD
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
-=======
  * 
  *      http://www.apache.org/licenses/LICENSE-2.0
  * 
->>>>>>> origin/master
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -55,6 +49,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -117,7 +112,8 @@ class TypedTokenStoreTest {
 		subject.persistTokenRelationship(modelTokenRel);
 
 		// then:
-		verify(tokenRels).replace(miscTokenRelId, expectedReplacementTokenRel);
+		assertEquals(expectedReplacementTokenRel, miscTokenMerkleRel);
+		verify(tokenRels, never()).replace(miscTokenRelId, expectedReplacementTokenRel);
 		// and:
 		verify(transactionRecordService).includeChangesToTokenRel(modelTokenRel);
 	}
@@ -208,7 +204,8 @@ class TypedTokenStoreTest {
 		subject.persistToken(modelToken);
 
 		// then:
-		verify(tokens).replace(merkleTokenId, expectedReplacementToken);
+		assertEquals(expectedReplacementToken, merkleToken);
+		verify(tokens, never()).replace(merkleTokenId, expectedReplacementToken);
 		// and:
 		verify(transactionRecordService).includeChangesToToken(modelToken);
 	}

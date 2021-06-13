@@ -41,7 +41,11 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.fcmap.internal.FCMLeaf;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -97,7 +101,11 @@ public class GetAccountBalanceAnswerTest {
 	private NodeLocalProperties nodeProps;
 
 	@BeforeEach
-	private void setup() {
+	private void setup() throws ConstructableRegistryException {
+		// setup:
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
+
 		deleted = mock(MerkleToken.class);
 		given(deleted.isDeleted()).willReturn(true);
 		given(deleted.decimals()).willReturn(123);

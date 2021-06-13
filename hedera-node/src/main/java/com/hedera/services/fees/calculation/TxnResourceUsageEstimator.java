@@ -46,6 +46,7 @@ public interface TxnResourceUsageEstimator {
 	 * to the given state of the world.
 	 *
 	 * @param txn the txn in question
+	 * @param sigUsage the signature usage
 	 * @param view the state of the world
 	 * @return the estimated resource usage
 	 * @throws InvalidTxBodyException if the txn is malformed

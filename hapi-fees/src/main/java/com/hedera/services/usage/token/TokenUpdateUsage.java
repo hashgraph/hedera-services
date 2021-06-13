@@ -31,6 +31,7 @@ import com.hederahashgraph.fee.FeeBuilder;
 
 import java.util.Optional;
 
+import static com.hedera.services.usage.EstimatorUtils.MAX_ENTITY_LIFETIME;
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 
@@ -132,6 +133,7 @@ public class TokenUpdateUsage extends TokenTxnUsage<TokenUpdateUsage> {
 		long newLifetime = ESTIMATOR_UTILS.relativeLifetime(
 				this.op,
 				Math.max(op.getExpiry().getSeconds(), currentExpiry));
+		newLifetime = Math.min(newLifetime, MAX_ENTITY_LIFETIME);
 		long rbsDelta = Math.max(0, newLifetime * (newMutableRb - currentMutableRb));
 		if (rbsDelta > 0) {
 			usageEstimator.addRbs(rbsDelta);

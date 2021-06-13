@@ -23,6 +23,8 @@ package com.hedera.services.sigs.sourcing;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.keys.KeyTreeLeaf;
@@ -50,50 +52,22 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class SigMapPubKeyToSigBytesTest {
+class SigMapPubKeyToSigBytesTest {
 	private final byte[] EMPTY_SIG = { };
 	private final KeyTree payerKt =
 			KeyTree.withRoot(list(ed25519(true), ed25519(true), ed25519(true), ecdsa384(true), rsa3072(true)));
 	private final KeyTree otherKt =
 			KeyTree.withRoot(list(ed25519(true), ed25519(true), ed25519(true)));
 	private final KeyFactory defaultFactory = KeyFactory.getDefaultInstance();
-	private final KeyFactory overlapFactory = new KeyFactory(OverlappingKeyGenerator.withDefaultOverlaps());
-	private final SigMapGenerator ambigSigMapGen = SigMapGenerator.withAmbiguousPrefixes();
 
 	@Test
-	public void getsExpectedSigBytesForPayer() throws Throwable {
+	void getsExpectedSigBytesForOtherParties() throws Throwable {
 		// given:
 		Transaction signedTxn = newSignedSystemDelete()
 				.payerKt(payerKt)
 				.nonPayerKts(otherKt)
 				.get();
-		PubKeyToSigBytes subject = PubKeyToSigBytes.forPayer(signedTxn);
-
-		// expect:
-		lookupsMatch(payerKt, defaultFactory, CommonUtils.extractTransactionBodyBytes(signedTxn), subject);
-	}
-
-	@Test
-	public void getsExpectedSigBytesForOtherParties() throws Throwable {
-		// given:
-		Transaction signedTxn = newSignedSystemDelete()
-				.payerKt(payerKt)
-				.nonPayerKts(otherKt)
-				.get();
-		PubKeyToSigBytes subject = PubKeyToSigBytes.forOtherParties(signedTxn);
-
-		// expect:
-		lookupsMatch(otherKt, defaultFactory, CommonUtils.extractTransactionBodyBytes(signedTxn), subject);
-	}
-
-	@Test
-	public void getsExpectedSigBytesForAllParties() throws Throwable {
-		// given:
-		Transaction signedTxn = newSignedSystemDelete()
-				.payerKt(payerKt)
-				.nonPayerKts(otherKt)
-				.get();
-		PubKeyToSigBytes subject = PubKeyToSigBytes.forAllParties(signedTxn);
+		PubKeyToSigBytes subject = new SigMapPubKeyToSigBytes(SignedTxnAccessor.uncheckedFrom(signedTxn).getSigMap());
 
 		// expect:
 		lookupsMatch(payerKt, defaultFactory, CommonUtils.extractTransactionBodyBytes(signedTxn), subject);
@@ -101,7 +75,7 @@ public class SigMapPubKeyToSigBytesTest {
 	}
 
 	@Test
-	public void rejectsNonUniqueSigBytes() {
+	void rejectsNonUniqueSigBytes() {
 		// given:
 		String str = "TEST_STRING";
 		byte[] pubKey = str.getBytes(StandardCharsets.UTF_8);

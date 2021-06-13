@@ -30,14 +30,12 @@ import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigStatusOrderResultFactory;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
-import com.hedera.services.sigs.sourcing.PubKeyToSigBytesProvider;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.txns.PlatformTxnFactory;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
 import org.junit.jupiter.api.BeforeAll;
@@ -62,7 +60,7 @@ import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-public class HederaToPlatformSigOpsTest {
+class HederaToPlatformSigOpsTest {
 	static List<JKey> payerKey;
 	static List<JKey> otherKeys;
 	SignatureStatus successStatus;
@@ -71,8 +69,7 @@ public class HederaToPlatformSigOpsTest {
 	SignatureStatus asyncSuccessStatus;
 	SignatureStatus sigCreationFailureStatus;
 	SignatureStatus rationalizingFailureStatus;
-	PubKeyToSigBytes payerSigBytes;
-	PubKeyToSigBytes othersSigBytes;
+	PubKeyToSigBytes allSigBytes;
 	PlatformTxnAccessor platformTxn;
 	HederaSigningOrder keyOrdering;
 
@@ -87,8 +84,7 @@ public class HederaToPlatformSigOpsTest {
 
 	@BeforeEach
 	private void setup() throws Throwable {
-		payerSigBytes = mock(PubKeyToSigBytes.class);
-		othersSigBytes = mock(PubKeyToSigBytes.class);
+		allSigBytes = mock(PubKeyToSigBytes.class);
 		keyOrdering = mock(HederaSigningOrder.class);
 		platformTxn = new PlatformTxnAccessor(PlatformTxnFactory.from(newSignedSystemDelete().get()));
 		successStatus = new SignatureStatus(
@@ -131,8 +127,10 @@ public class HederaToPlatformSigOpsTest {
 		given(keyOrdering.keysForOtherParties(platformTxn.getTxn(), factory))
 				.willReturn(new SigningOrderResult<>(otherKeys));
 		// and:
-		given(payerSigBytes.sigBytesFor(any())).willReturn("1".getBytes());
-		given(othersSigBytes.sigBytesFor(any())).willReturn("2".getBytes()).willReturn("3".getBytes());
+		given(allSigBytes.sigBytesFor(any()))
+				.willReturn("1".getBytes())
+				.willReturn("2".getBytes())
+				.willReturn("3".getBytes());
 	}
 
 	@Test
@@ -141,7 +139,7 @@ public class HederaToPlatformSigOpsTest {
 		wellBehavedOrdersAndSigSourcesPreHandle();
 
 		// when:
-		SignatureStatus status = expandIn(platformTxn, keyOrdering, sigBytesProvider, BodySigningSigFactory::new);
+		SignatureStatus status = expandIn(platformTxn, keyOrdering, allSigBytes);
 
 		// then:
 		assertEquals(successStatus.toString(), status.toString());
@@ -154,7 +152,7 @@ public class HederaToPlatformSigOpsTest {
 				.willReturn(new SigningOrderResult<>(failureStatus));
 
 		// when:
-		SignatureStatus status = expandIn(platformTxn, keyOrdering, sigBytesProvider, BodySigningSigFactory::new);
+		SignatureStatus status = expandIn(platformTxn, keyOrdering, allSigBytes);
 
 		// then:
 		assertEquals(failureStatus.toString(), status.toString());
@@ -167,13 +165,13 @@ public class HederaToPlatformSigOpsTest {
 		given(keyOrdering.keysForOtherParties(platformTxn.getTxn(), PRE_HANDLE_SUMMARY_FACTORY))
 				.willReturn(new SigningOrderResult<>(otherKeys));
 		// and:
-		given(payerSigBytes.sigBytesFor(any())).willReturn("1".getBytes());
-		given(othersSigBytes.sigBytesFor(any()))
+		given(allSigBytes.sigBytesFor(any()))
+				.willReturn("1".getBytes())
 				.willReturn("2".getBytes())
 				.willThrow(KeyPrefixMismatchException.class);
 
 		// when:
-		SignatureStatus status = expandIn(platformTxn, keyOrdering, sigBytesProvider, BodySigningSigFactory::new);
+		SignatureStatus status = expandIn(platformTxn, keyOrdering, allSigBytes);
 
 		// then:
 		assertEquals(successStatus.toString(), status.toString());
@@ -190,12 +188,12 @@ public class HederaToPlatformSigOpsTest {
 				platformTxn,
 				ALWAYS_VALID,
 				keyOrdering,
-				sigBytesProvider,
-				BodySigningSigFactory::new);
+				allSigBytes,
+				new BodySigningSigFactory(platformTxn));
 
 		// then:
 		assertEquals(syncSuccessStatus.toString(), status.toString());
-		assertEquals(expectedSigsWithNoErrors(), platformTxn.getPlatformTxn().getSignatures());
+		assertEquals(expectedSigsWithNoErrors(), platformTxn.getSigMeta().verifiedSigs());
 		assertTrue(allVerificationStatusesAre(VerificationStatus.VALID::equals));
 	}
 
@@ -209,8 +207,8 @@ public class HederaToPlatformSigOpsTest {
 				platformTxn,
 				ALWAYS_VALID,
 				keyOrdering,
-				sigBytesProvider,
-				BodySigningSigFactory::new);
+				allSigBytes,
+				new BodySigningSigFactory(platformTxn));
 
 		// then:
 		assertEquals(rationalizingFailureStatus.toString(), status.toString());
@@ -228,8 +226,8 @@ public class HederaToPlatformSigOpsTest {
 				platformTxn,
 				ALWAYS_VALID,
 				keyOrdering,
-				sigBytesProvider,
-				BodySigningSigFactory::new);
+				allSigBytes,
+				new BodySigningSigFactory(platformTxn));
 
 		// then:
 		assertEquals(rationalizingFailureStatus.toString(), status.toString());
@@ -242,8 +240,8 @@ public class HederaToPlatformSigOpsTest {
 		given(keyOrdering.keysForOtherParties(platformTxn.getTxn(), IN_HANDLE_SUMMARY_FACTORY))
 				.willReturn(new SigningOrderResult<>(otherKeys));
 		// and:
-		given(payerSigBytes.sigBytesFor(any())).willReturn("1".getBytes());
-		given(othersSigBytes.sigBytesFor(any()))
+		given(allSigBytes.sigBytesFor(any()))
+				.willReturn("1".getBytes())
 				.willReturn("2".getBytes())
 				.willThrow(KeyPrefixMismatchException.class);
 
@@ -252,8 +250,8 @@ public class HederaToPlatformSigOpsTest {
 				platformTxn,
 				ALWAYS_VALID,
 				keyOrdering,
-				sigBytesProvider,
-				BodySigningSigFactory::new);
+				allSigBytes,
+				new BodySigningSigFactory(platformTxn));
 
 		// then:
 		assertEquals(sigCreationFailureStatus.toString(), status.toString());
@@ -279,12 +277,12 @@ public class HederaToPlatformSigOpsTest {
 				platformTxn,
 				syncVerifier,
 				keyOrdering,
-				sigBytesProvider,
-				BodySigningSigFactory::new);
+				allSigBytes,
+				new BodySigningSigFactory(platformTxn));
 
 		// then:
 		assertEquals(syncSuccessStatus.toString(), status.toString());
-		assertEquals(expectedSigsWithNoErrors(), platformTxn.getPlatformTxn().getSignatures());
+		assertEquals(expectedSigsWithNoErrors(), platformTxn.getSigMeta().verifiedSigs());
 		assertTrue(allVerificationStatusesAre(VerificationStatus.VALID::equals));
 	}
 
@@ -300,12 +298,12 @@ public class HederaToPlatformSigOpsTest {
 				platformTxn,
 				ALWAYS_VALID,
 				keyOrdering,
-				sigBytesProvider,
-				BodySigningSigFactory::new);
+				allSigBytes,
+				new BodySigningSigFactory(platformTxn));
 
 		// then:
 		assertEquals(syncSuccessStatus.toString(), status.toString());
-		assertEquals(expectedSigsWithNoErrors(), platformTxn.getPlatformTxn().getSignatures());
+		assertEquals(expectedSigsWithNoErrors(), platformTxn.getSigMeta().verifiedSigs());
 		assertTrue(allVerificationStatusesAre(VerificationStatus.VALID::equals));
 	}
 
@@ -326,8 +324,8 @@ public class HederaToPlatformSigOpsTest {
 				platformTxn,
 				syncVerifier,
 				keyOrdering,
-				sigBytesProvider,
-				BodySigningSigFactory::new);
+				allSigBytes,
+				new BodySigningSigFactory(platformTxn));
 
 		// then:
 		assertEquals(asyncSuccessStatus.toString(), status.toString());
@@ -337,7 +335,7 @@ public class HederaToPlatformSigOpsTest {
 	}
 
 	private boolean allVerificationStatusesAre(Predicate<VerificationStatus> statusPred) {
-		return platformTxn.getPlatformTxn().getSignatures().stream()
+		return platformTxn.getSigMeta().verifiedSigs().stream()
 				.map(TransactionSignature::getSignatureStatus)
 				.allMatch(statusPred);
 	}
@@ -359,21 +357,4 @@ public class HederaToPlatformSigOpsTest {
 				sig.getBytes(),
 				platformTxn.getTxnBytes());
 	}
-
-	PubKeyToSigBytesProvider sigBytesProvider = new PubKeyToSigBytesProvider() {
-		@Override
-		public PubKeyToSigBytes payerSigBytesFor(Transaction signedTxn) {
-			return payerSigBytes;
-		}
-
-		@Override
-		public PubKeyToSigBytes otherPartiesSigBytesFor(Transaction signedTxn) {
-			return othersSigBytes;
-		}
-
-		@Override
-		public PubKeyToSigBytes allPartiesSigBytesFor(Transaction signedTxn) {
-			throw new AssertionError("Irrelevant to this operation!");
-		}
-	};
 }

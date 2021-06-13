@@ -104,7 +104,6 @@ public class TopicUpdateTransitionLogic implements TransitionLogic {
 
 		var mutableTopic = topics.get().getForModify(topicId);
 		applyNewFields(op, mutableTopic);
-		topics.get().put(topicId, mutableTopic);
 		transactionContext.setStatus(SUCCESS);
 	}
 

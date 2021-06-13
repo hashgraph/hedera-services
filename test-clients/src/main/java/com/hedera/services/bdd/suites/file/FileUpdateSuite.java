@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.file;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -40,6 +41,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
@@ -56,8 +58,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
  * old test cases.
  */
 public class FileUpdateSuite extends HapiApiSuite {
-
 	private static final Logger log = LogManager.getLogger(FileUpdateSuite.class);
+
+	private static final long defaultMaxLifetime =
+			Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
 
 	public static void main(String... args) {
 		new FileUpdateSuite().runSuiteSync();
@@ -69,6 +73,7 @@ public class FileUpdateSuite extends HapiApiSuite {
     	        vanillaUpdateSucceeds(),
 				updateFeesCompatibleWithCreates(),
 				apiPermissionsChangeDynamically(),
+				cannotUpdateExpirationPastMaxLifetime(),
 		});
 	}
 
@@ -166,6 +171,17 @@ public class FileUpdateSuite extends HapiApiSuite {
 				).then(
 						getFileContents("test").hasContents(ignore -> new4k),
 						getFileInfo("test").hasMemo(secondMemo)
+				);
+	}
+
+	private HapiApiSpec cannotUpdateExpirationPastMaxLifetime() {
+		return defaultHapiSpec("CannotUpdateExpirationPastMaxLifetime")
+				.given(
+						fileCreate("test")
+				).when( ).then(
+						fileUpdate("test")
+								.lifetime(defaultMaxLifetime + 12_345L)
+								.hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE)
 				);
 	}
 

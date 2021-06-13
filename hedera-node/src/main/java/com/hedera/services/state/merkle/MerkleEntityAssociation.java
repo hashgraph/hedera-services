@@ -23,7 +23,6 @@ package com.hedera.services.state.merkle;
 import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.common.FCMKey;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
@@ -33,7 +32,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.IOException;
 
-public class MerkleEntityAssociation extends AbstractMerkleLeaf implements FCMKey {
+public class MerkleEntityAssociation extends AbstractMerkleLeaf {
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xce8d38caab2e51dcL;
 
