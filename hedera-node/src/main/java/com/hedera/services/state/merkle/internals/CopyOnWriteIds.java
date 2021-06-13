@@ -1,5 +1,25 @@
 package com.hedera.services.state.merkle.internals;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.google.common.base.MoreObjects;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -152,7 +172,7 @@ public class CopyOnWriteIds {
 	/**
 	 * Overwrite the managed multiset with the given sequence of {@code (num, realm, shard)} ids.
 	 *
-	 * @param ids
+	 * @param ids the sequence of {@code (num, realm, shard)} ids to overwrite
 	 */
 	public void setNativeIds(long[] ids) {
 		this.ids = ids;
@@ -162,10 +182,10 @@ public class CopyOnWriteIds {
 		return ids;
 	}
 
-	public List<Id> getAsIds() {
-		final List<Id> modelIds = new ArrayList<>();
+	public List<TokenID> getAsIds() {
+		final List<TokenID> modelIds = new ArrayList<>();
 		for (int i = 0, n = size(); i < n; i++) {
-			modelIds.add(asModel(nativeIdAt(i)));
+			modelIds.add(asGrpcTokenId(nativeIdAt(i)));
 		}
 		return modelIds;
 	}

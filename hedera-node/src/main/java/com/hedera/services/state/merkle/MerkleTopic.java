@@ -31,7 +31,6 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.swirlds.common.FCMValue;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
@@ -70,7 +69,7 @@ import static com.swirlds.common.CommonUtils.hex;
  *   replace the Topic in the map.</li>
  * </ul>
  */
-public final class MerkleTopic extends AbstractMerkleLeaf implements FCMValue {
+public final class MerkleTopic extends AbstractMerkleLeaf {
 	private static final Logger log = LogManager.getLogger(MerkleTopic.class);
 
 	public static final int RUNNING_HASH_BYTE_ARRAY_SIZE = 48;
@@ -123,7 +122,9 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements FCMValue {
 	 * @param submitKey
 	 * 		the key (if any) to be able to submitMessage
 	 * @param autoRenewDurationSeconds
+	 * 		the auto-renew duration in seconds
 	 * @param autoRenewAccountId
+	 * 		the account id that pays for auto-renew
 	 * @param expirationTimestamp
 	 * 		when submitMessage will start failing
 	 */
@@ -239,11 +240,11 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements FCMValue {
 	 * Increment the sequence number if this is not the initial transaction on the topic (the create), and update the
 	 * running hash of the Transactions on this topic (submitted messages and modifications of the topic).
 	 *
-	 * @param payer
-	 * @param message
-	 * @param topicId
-	 * @param consensusTimestamp
-	 * @throws IOException
+	 * @param payer the account id to pay for the transaction
+	 * @param message the message submitted to the topic
+	 * @param topicId the topic id to receive the message
+	 * @param consensusTimestamp the consensus timestamp
+	 * @throws IOException when any component fails to write to a temporary stream for computing the running hash
 	 */
 	public void updateRunningHashAndSequenceNumber(
 			AccountID payer,

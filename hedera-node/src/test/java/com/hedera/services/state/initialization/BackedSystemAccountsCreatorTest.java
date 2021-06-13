@@ -125,10 +125,10 @@ class BackedSystemAccountsCreatorTest {
 				accountWith(2),
 				accountWith(3),
 				accountWith(4)));
-		given(backingAccounts.getUnsafeRef(accountWith(1))).willReturn(withExpectedBalance(0));
-		given(backingAccounts.getUnsafeRef(accountWith(2))).willReturn(withExpectedBalance(totalBalance));
-		given(backingAccounts.getUnsafeRef(accountWith(3))).willReturn(withExpectedBalance(0));
-		given(backingAccounts.getUnsafeRef(accountWith(4))).willReturn(withExpectedBalance(0));
+		given(backingAccounts.getImmutableRef(accountWith(1))).willReturn(withExpectedBalance(0));
+		given(backingAccounts.getImmutableRef(accountWith(2))).willReturn(withExpectedBalance(totalBalance));
+		given(backingAccounts.getImmutableRef(accountWith(3))).willReturn(withExpectedBalance(0));
+		given(backingAccounts.getImmutableRef(accountWith(4))).willReturn(withExpectedBalance(0));
 
 		subject = new BackedSystemAccountsCreator(
 				hederaNums,

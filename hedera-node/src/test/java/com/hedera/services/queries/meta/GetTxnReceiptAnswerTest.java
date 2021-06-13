@@ -21,6 +21,7 @@ package com.hedera.services.queries.meta;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordCache;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -31,7 +32,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionGetReceiptQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetReceiptResponse;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -61,14 +61,14 @@ class GetTxnReceiptAnswerTest {
 			.setAccountID(asAccount("0.0.2"))
 			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234L))
 			.build();
-	private TransactionReceipt receipt = TransactionReceipt.newBuilder()
-			.setStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS)
+	private TxnReceipt receipt = TxnReceipt.newBuilder()
+			.setStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS.name())
 			.build();
-	private TransactionReceipt duplicateReceipt = TransactionReceipt.newBuilder()
-			.setStatus(DUPLICATE_TRANSACTION)
+	private TxnReceipt duplicateReceipt = TxnReceipt.newBuilder()
+			.setStatus(DUPLICATE_TRANSACTION.name())
 			.build();
-	private TransactionReceipt unclassifiableReceipt = TransactionReceipt.newBuilder()
-			.setStatus(INVALID_NODE_ACCOUNT)
+	private TxnReceipt unclassifiableReceipt = TxnReceipt.newBuilder()
+			.setStatus(INVALID_NODE_ACCOUNT.name())
 			.build();
 
 	StateView view;
@@ -122,7 +122,7 @@ class GetTxnReceiptAnswerTest {
 	public void returnsDuplicatesIfRequested() {
 		// setup:
 		Query sensibleQuery = queryWith(validTxnId, ANSWER_ONLY, true);
-		var duplicateReceipts = List.of(duplicateReceipt, unclassifiableReceipt);
+		var duplicateReceipts = List.of(duplicateReceipt.toGrpc(), unclassifiableReceipt.toGrpc());
 
 		given(recordCache.getPriorityReceipt(validTxnId)).willReturn(receipt);
 		given(recordCache.getDuplicateReceipts(validTxnId)).willReturn(duplicateReceipts);
@@ -135,7 +135,7 @@ class GetTxnReceiptAnswerTest {
 		assertTrue(opResponse.hasHeader(), "Missing response header!");
 		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
 		assertEquals(ANSWER_ONLY, opResponse.getHeader().getResponseType());
-		assertEquals(receipt, opResponse.getReceipt());
+		assertEquals(receipt.toGrpc(), opResponse.getReceipt());
 		assertEquals(duplicateReceipts, opResponse.getDuplicateTransactionReceiptsList());
 	}
 
@@ -154,7 +154,7 @@ class GetTxnReceiptAnswerTest {
 		assertTrue(opResponse.hasHeader(), "Missing response header!");
 		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
 		assertEquals(ANSWER_ONLY, opResponse.getHeader().getResponseType());
-		assertEquals(receipt, opResponse.getReceipt());
+		assertEquals(receipt.toGrpc(), opResponse.getReceipt());
 		assertTrue(opResponse.getDuplicateTransactionReceiptsList().isEmpty());
 		verify(recordCache, never()).getDuplicateReceipts(any());
 	}

@@ -23,6 +23,7 @@ package com.hedera.services.txns.validation;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -55,6 +56,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -125,8 +127,10 @@ public class ContextOptionValidatorTest {
 	private HFileMeta deletedAttr;
 	private StateView view;
 	private long expiry = 2_000_000L;
+	private long maxLifetime = 3_000_000L;
 	private FileID target = asFile("0.0.123");
 
+	PropertySource properties;
 	GlobalDynamicProperties dynamicProperties;
 
 	@BeforeEach
@@ -141,6 +145,8 @@ public class ContextOptionValidatorTest {
 
 		dynamicProperties = mock(GlobalDynamicProperties.class);
 		given(dynamicProperties.maxMemoUtf8Bytes()).willReturn(100);
+		properties = mock(PropertySource.class);
+		given(properties.getLongProperty("entities.maxLifetime")).willReturn(maxLifetime);
 
 		topics = mock(FCMap.class);
 		deletedMerkleTopic = TopicFactory.newTopic().deleted(true).get();
@@ -156,7 +162,7 @@ public class ContextOptionValidatorTest {
 		deletedAttr = new HFileMeta(true, wacl, expiry);
 		view = mock(StateView.class);
 
-		subject = new ContextOptionValidator(thisNodeAccount, txnCtx, dynamicProperties);
+		subject = new ContextOptionValidator(thisNodeAccount, properties, txnCtx, dynamicProperties);
 	}
 
 	private FileGetInfoResponse.FileInfo asMinimalInfo(HFileMeta meta) throws Exception {
@@ -403,7 +409,20 @@ public class ContextOptionValidatorTest {
 	}
 
 	@Test
-	void allowsAnyFutureExpiry() {
+	void rejectsFutureExpiryImplyingSuperMaxLifetime() {
+		// given:
+		final var excessive = Timestamp.newBuilder()
+				.setSeconds(now.getEpochSecond() + maxLifetime + 1L)
+				.build();
+
+		// expect:
+		assertFalse(subject.isValidExpiry(excessive));
+		// and:
+		verify(txnCtx).consensusTime();
+	}
+
+	@Test
+	void allowsFutureExpiryBeforeMaxLifetime() {
 		// expect:
 		assertTrue(subject.isValidExpiry(
 				Timestamp.newBuilder().setSeconds(now.getEpochSecond()).setNanos(now.getNano() + 1).build()));
@@ -416,6 +435,7 @@ public class ContextOptionValidatorTest {
 		// expect:
 		assertFalse(subject.isValidExpiry(
 				Timestamp.newBuilder().setSeconds(now.getEpochSecond()).setNanos(now.getNano()).build()));
+
 		// and:
 		verify(txnCtx).consensusTime();
 	}
@@ -589,6 +609,12 @@ public class ContextOptionValidatorTest {
 
 		// expect:
 		assertEquals(OK, subject.tokenTransfersLengthCheck(wrapper));
+	}
+
+	@Test
+	void acceptsNoTokenTransfers() {
+		// expect:
+		assertEquals(OK, subject.tokenTransfersLengthCheck(Collections.emptyList()));
 	}
 
 	@Test

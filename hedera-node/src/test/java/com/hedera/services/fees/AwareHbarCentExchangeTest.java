@@ -21,7 +21,7 @@ package com.hedera.services.fees;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -30,88 +30,82 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
+@ExtendWith(MockitoExtension.class)
 class AwareHbarCentExchangeTest {
-	long validStartTime = 1_234_567L;
-	Timestamp validStart = Timestamp.newBuilder()
-		.setSeconds(validStartTime).build();
-	TransactionBody txn = TransactionBody.newBuilder()
-			.setTransactionID(TransactionID.newBuilder()
-					.setTransactionValidStart(validStart)
-					.build())
+	private long crossoverTime = 1_234_567L;
+	private ExchangeRateSet rates = ExchangeRateSet.newBuilder()
+			.setCurrentRate(ExchangeRate.newBuilder()
+					.setHbarEquiv(1).setCentEquiv(12)
+					.setExpirationTime(TimestampSeconds.newBuilder().setSeconds(crossoverTime)))
+			.setNextRate(ExchangeRate.newBuilder()
+					.setExpirationTime(TimestampSeconds.newBuilder().setSeconds(crossoverTime * 2))
+					.setHbarEquiv(1).setCentEquiv(24))
 			.build();
 
-	ExchangeRate current, next;
-	ExchangeRateSet rates;
-	PlatformTxnAccessor accessor;
-	TransactionContext txnCtx;
+	@Mock
+	private TxnAccessor accessor;
+	@Mock
+	private TransactionContext txnCtx;
 
-	AwareHbarCentExchange subject;
+	private AwareHbarCentExchange subject;
 
 	@BeforeEach
-	public void setUp() throws Exception {
-		next = mock(ExchangeRate.class);
-		current = mock(ExchangeRate.class);
-
-		rates = mock(ExchangeRateSet.class);
-		given(rates.getCurrentRate()).willReturn(current);
-		given(rates.getNextRate()).willReturn(next);
-
-		txnCtx = mock(TransactionContext.class);
-		accessor = mock(PlatformTxnAccessor.class);
-
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(accessor.getTxn()).willReturn(txn);
-
+	void setUp() throws Exception {
 		subject = new AwareHbarCentExchange(txnCtx);
+	}
+
+	@Test
+	void updatesWorkWithCurrentRate() {
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accessor.getTxn()).willReturn(beforeTxn);
+
+		// when:
 		subject.updateRates(rates);
-	}
 
-	@Test
-	public void updatesWork() {
 		// expect:
-		assertSame(rates, subject.rates);
+		assertEquals(rates, subject.activeRates());
+		assertEquals(rates.getCurrentRate(), subject.activeRate());
+		assertEquals(rates.getCurrentRate(), subject.rate(beforeCrossTime));
 		// and:
-		assertSame(rates, subject.activeRates());
+		assertEquals(rates, subject.fcActiveRates().toGrpc());
 	}
 
 	@Test
-	public void returnsCurrentRateIfNotExpired() {
-		given(current.getExpirationTime())
-				.willReturn(TimestampSeconds.newBuilder().setSeconds(validStartTime + 1).build());
+	void updatesWorkWithNextRate() {
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accessor.getTxn()).willReturn(afterTxn);
 
 		// when:
-		var ratesNow = subject.rate(Timestamp.newBuilder().setSeconds(validStartTime).build());
+		subject.updateRates(rates);
 
-		// then:
-		assertSame(current, ratesNow);
+		// expect:
+		assertEquals(rates.getNextRate(), subject.activeRate());
+		assertEquals(rates.getNextRate(), subject.rate(afterCrossTime));
+		// and:
+		assertEquals(rates, subject.fcActiveRates().toGrpc());
 	}
 
-	@Test
-	public void returnsNextRateIfNotExpired() {
-		given(current.getExpirationTime())
-				.willReturn(TimestampSeconds.newBuilder().setSeconds(validStartTime - 1).build());
-
-		// when:
-		var ratesNow = subject.rate(Timestamp.newBuilder().setSeconds(validStartTime).build());
-
-		// then:
-		assertSame(next, ratesNow);
-	}
-
-	@Test
-	public void usesValidStartToGetRate() {
-		given(current.getExpirationTime())
-				.willReturn(TimestampSeconds.newBuilder().setSeconds(validStartTime + 1).build());
-
-		// when:
-		var activeRates = subject.activeRate();
-
-		// then:
-		assertSame(current, activeRates);
-	}
+	private Timestamp beforeCrossTime = Timestamp.newBuilder()
+			.setSeconds(crossoverTime - 1).build();
+	private Timestamp afterCrossTime = Timestamp.newBuilder()
+			.setSeconds(crossoverTime).build();
+	private TransactionBody beforeTxn = TransactionBody.newBuilder()
+			.setTransactionID(TransactionID.newBuilder()
+					.setTransactionValidStart(beforeCrossTime)
+					.build())
+			.build();
+	private TransactionBody afterTxn = TransactionBody.newBuilder()
+			.setTransactionID(TransactionID.newBuilder()
+					.setTransactionValidStart(afterCrossTime)
+					.build())
+			.build();
 }

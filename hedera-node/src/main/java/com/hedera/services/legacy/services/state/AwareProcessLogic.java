@@ -23,16 +23,16 @@ package com.hedera.services.legacy.services.state;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.legacy.crypto.SignatureStatus;
-import com.hedera.services.sigs.sourcing.ScopedSigBytesProvider;
+import com.hedera.services.sigs.factories.BodySigningSigFactory;
+import com.hedera.services.sigs.sourcing.SigMapPubKeyToSigBytes;
 import com.hedera.services.state.logic.ServicesTxnManager;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.txns.ProcessLogic;
-import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeObject;
-import com.swirlds.common.Transaction;
+import com.swirlds.common.SwirldTransaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -43,11 +43,6 @@ import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
 import static com.hedera.services.keys.HederaKeyActivation.payerSigIsActive;
 import static com.hedera.services.legacy.crypto.SignatureStatusCode.SUCCESS_VERIFY_ASYNC;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.rationalizeIn;
-import static com.hedera.services.sigs.Rationalization.IN_HANDLE_SUMMARY_FACTORY;
-import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
-import static com.hedera.services.txns.diligence.DuplicateClassification.DUPLICATE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
@@ -85,9 +80,9 @@ public class AwareProcessLogic implements ProcessLogic {
 	}
 
 	@Override
-	public void incorporateConsensusTxn(Transaction platformTxn, Instant consensusTime, long submittingMember) {
+	public void incorporateConsensusTxn(SwirldTransaction platformTxn, Instant consensusTime, long submittingMember) {
 		try {
-			final var accessor = new PlatformTxnAccessor(platformTxn);
+			final var accessor = ctx.expandHandleSpan().accessorFor(platformTxn);
 			Instant effectiveConsensusTime = consensusTime;
 			if (accessor.canTriggerTxn()) {
 				effectiveConsensusTime = consensusTime.minusNanos(1);
@@ -125,7 +120,7 @@ public class AwareProcessLogic implements ProcessLogic {
 			log.error(
 					tpl,
 					context,
-					ctx.txnCtx().accessor().getSignedTxn4Log(),
+					ctx.txnCtx().accessor().getSignedTxnWrapper(),
 					ctx.ledger().currentChangeSet(),
 					e);
 		} catch (Exception unexpected) {
@@ -136,7 +131,7 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	void addRecordToStream() {
 		ctx.recordsHistorian().lastCreatedRecord().ifPresent(finalRecord ->
-				addForStreaming(ctx.txnCtx().accessor().getBackwardCompatibleSignedTxn(),
+				stream(ctx.txnCtx().accessor().getSignedTxnWrapper(),
 						finalRecord, ctx.txnCtx().consensusTime()));
 	}
 
@@ -144,8 +139,8 @@ public class AwareProcessLogic implements ProcessLogic {
 		ctx.networkCtxManager().advanceConsensusClockTo(consensusTime);
 		ctx.networkCtxManager().prepareForIncorporating(accessor.getFunction());
 
-		FeeObject fee = ctx.fees().computeFee(accessor, ctx.txnCtx().activePayerKey(), ctx.currentView());
-		var chargingOutcome = ctx.txnChargingPolicy().applyForTriggered(ctx.charging(), fee);
+		FeeObject fees = ctx.fees().computeFee(accessor, ctx.txnCtx().activePayerKey(), ctx.currentView());
+		var chargingOutcome = ctx.txnChargingPolicy().applyForTriggered(fees);
 		if (chargingOutcome != OK) {
 			ctx.txnCtx().setStatus(chargingOutcome);
 			return;
@@ -163,28 +158,10 @@ public class AwareProcessLogic implements ProcessLogic {
 			ctx.networkCtxManager().prepareForIncorporating(accessor.getFunction());
 		}
 
-		FeeObject fee = ctx.fees().computeFee(accessor, ctx.txnCtx().activePayerKey(), ctx.currentView());
-
-		var recentHistory = ctx.txnHistories().get(accessor.getTxnId());
-		var duplicity = (recentHistory == null)
-				? BELIEVED_UNIQUE
-				: recentHistory.currentDuplicityFor(ctx.txnCtx().submittingSwirldsMember());
-
-		if (ctx.nodeDiligenceScreen().nodeIgnoredDueDiligence(duplicity)) {
-			ctx.txnChargingPolicy().applyForIgnoredDueDiligence(ctx.charging(), fee);
-			return;
-		}
-		if (duplicity == DUPLICATE) {
-			ctx.txnChargingPolicy().applyForDuplicate(ctx.charging(), fee);
-			ctx.txnCtx().setStatus(DUPLICATE_TRANSACTION);
+		if (!ctx.chargingPolicyAgent().applyPolicyFor(accessor)) {
 			return;
 		}
 
-		var chargingOutcome = ctx.txnChargingPolicy().apply(ctx.charging(), fee);
-		if (chargingOutcome != OK) {
-			ctx.txnCtx().setStatus(chargingOutcome);
-			return;
-		}
 		if (SIG_RATIONALIZATION_ERRORS.contains(sigStatus.getResponseCode())) {
 			ctx.txnCtx().setStatus(sigStatus.getResponseCode());
 			return;
@@ -210,7 +187,7 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	private boolean hasActivePayerSig(TxnAccessor accessor) {
 		try {
-			return payerSigIsActive(accessor, ctx.backedKeyOrder(), IN_HANDLE_SUMMARY_FACTORY);
+			return payerSigIsActive(accessor);
 		} catch (Exception edgeCase) {
 			log.warn("Almost inconceivably, when testing payer sig activation:", edgeCase);
 		}
@@ -218,13 +195,12 @@ public class AwareProcessLogic implements ProcessLogic {
 	}
 
 	private SignatureStatus rationalizeWithPreConsensusSigs(TxnAccessor accessor) {
-		var sigProvider = new ScopedSigBytesProvider(accessor);
 		var sigStatus = rationalizeIn(
 				accessor,
 				ctx.syncVerifier(),
 				ctx.backedKeyOrder(),
-				sigProvider,
-				ctx.sigFactoryCreator()::createScopedFactory);
+				new SigMapPubKeyToSigBytes(accessor.getSigMap()),
+				new BodySigningSigFactory(accessor));
 		if (!sigStatus.isError()) {
 			if (sigStatus.getStatusCode() == SUCCESS_VERIFY_ASYNC) {
 				ctx.speedometers().cycleAsyncVerifications();
@@ -235,13 +211,16 @@ public class AwareProcessLogic implements ProcessLogic {
 		return sigStatus;
 	}
 
-	void addForStreaming(
-			com.hederahashgraph.api.proto.java.Transaction grpcTransaction,
-			TransactionRecord transactionRecord,
-			Instant consensusTimeStamp
+	void stream(
+			com.hederahashgraph.api.proto.java.Transaction txn,
+			ExpirableTxnRecord expiringRecord,
+			Instant consensusTime
 	) {
-		var recordStreamObject = new RecordStreamObject(transactionRecord, grpcTransaction, consensusTimeStamp);
-		ctx.updateRecordRunningHash(recordStreamObject.getRunningHash());
-		ctx.recordStreamManager().addRecordStreamObject(recordStreamObject);
+		final var rso = new RecordStreamObject(expiringRecord, txn, consensusTime);
+		ctx.updateRecordRunningHash(rso.getRunningHash());
+		final var handoff = ctx.nonBlockingHandoff();
+		while (!handoff.offer(rso)) {
+			/* Cannot proceed until we have handed off the record. */
+		}
 	}
 }

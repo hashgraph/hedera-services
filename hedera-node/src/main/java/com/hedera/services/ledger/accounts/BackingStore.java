@@ -20,7 +20,6 @@ package com.hedera.services.ledger.accounts;
  * ‍
  */
 
-
 import java.util.Set;
 
 /**
@@ -35,11 +34,6 @@ import java.util.Set;
  * @author Michael Tinker
  */
 public interface BackingStore<K, A> {
-	/**
-	 * Alerts this {@code BackingStore} it should flush any cached mutable references.
-	 */
-	void flushMutableRefs();
-
 	/**
 	 * Alerts this {@code BackingStore} it should reconstruct any auxiliary data structures
 	 * based on its underlying sources. Used in particular for reconnect.
@@ -62,7 +56,7 @@ public interface BackingStore<K, A> {
 	 * @param id the id of the relevant account.
 	 * @return a reference to the account.
 	 */
-	A getUnsafeRef(K id);
+	A getImmutableRef(K id);
 
 	/**
 	 * Updates (or creates, if absent) the account with the given id
@@ -90,6 +84,8 @@ public interface BackingStore<K, A> {
 
 	/**
 	 * Returns the set of extant account ids.
+	 *
+	 * @return the set of extant account ids.
 	 */
 	Set<K> idSet();
 }

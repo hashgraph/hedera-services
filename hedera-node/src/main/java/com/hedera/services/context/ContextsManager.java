@@ -46,6 +46,7 @@ public interface ContextsManager {
 	 * Returns true if the node's context has already been initialized.
 	 *
 	 * @param nodeId which node to check
+	 * @return whether or not the node's context has been initialized.
 	 */
 	boolean isInitialized(long nodeId);
 

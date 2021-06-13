@@ -28,7 +28,7 @@ import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.accounts.FCMapBackingAccounts;
+import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
@@ -70,8 +70,11 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.fee.FeeBuilder;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.fcmap.internal.FCMLeaf;
+import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.core.AccountState;
@@ -156,7 +159,7 @@ public class SmartContractRequestHandlerMiscTest {
     TransactionalLedger<AccountID, AccountProperty, MerkleAccount> delegate = new TransactionalLedger<>(
             AccountProperty.class,
             () -> new MerkleAccount(),
-            new FCMapBackingAccounts(() -> fcMap),
+            new BackingAccounts(() -> fcMap),
             new ChangeSummaryManager<>());
     ledger = new HederaLedger(
             mock(TokenStore.class),
@@ -174,7 +177,13 @@ public class SmartContractRequestHandlerMiscTest {
   }
 
   @BeforeEach
-  public void setUp() throws Exception {
+  void setUp() throws Exception {
+    // setup:
+    ConstructableRegistry.registerConstructable(
+            new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
+    ConstructableRegistry.registerConstructable(
+            new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+
     payerAccountId = RequestBuilder.getAccountIdBuild(payerAccount, 0l, 0l);
     nodeAccountId = RequestBuilder.getAccountIdBuild(nodeAccount, 0l, 0l);
     feeCollAccountId = RequestBuilder.getAccountIdBuild(feeCollAccount, 0l, 0l);
@@ -330,7 +339,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("aa createMapContract: Success")
-  public void aa_createMapContract() {
+  void aa_createMapContract() {
     byte[] contractBytes = createFile(MAPPING_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody(0L, 250000L, null);
 
@@ -375,7 +384,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("ab MapContractSetCall: Success")
-  public void ab_mapContractSetCall() {
+  void ab_mapContractSetCall() {
     // Create the contract
     byte[] contractBytes = createFile(MAPPING_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -417,7 +426,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("ac MapContractGetCall: Success")
-  public void ac_mapContractGetCall() throws Exception {
+  void ac_mapContractGetCall() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(MAPPING_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -472,7 +481,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("ba create CreateTrivial contract: Success")
-  public void ba_createCTContract() throws StorageKeyNotFoundException {
+  void ba_createCTContract() throws StorageKeyNotFoundException {
     byte[] contractBytes = createFile(CREATE_TRIVIAL_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
 
@@ -495,7 +504,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("bb CreateTrivial create call: Success")
-  public void bb_CTCreateCall() {
+  void bb_CTCreateCall() {
     // Create the contract
     byte[] contractBytes = createFile(CREATE_TRIVIAL_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -524,7 +533,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("bc CreateTrivial get value from created contract: Success")
-  public void bc_CTGetIndirectCall() throws Exception {
+  void bc_CTGetIndirectCall() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(CREATE_TRIVIAL_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -562,7 +571,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("bd CreateTrivial get address of created contract: Success")
-  public void bd_CTGetAddressCall() throws Exception {
+  void bd_CTGetAddressCall() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(CREATE_TRIVIAL_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -606,7 +615,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("ca Call to invalid function: fails")
-  public void ca_InvalidFunctionCall() {
+  void ca_InvalidFunctionCall() {
     // Create the contract
     byte[] contractBytes = createFile(MAPPING_STORAGE_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -638,7 +647,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("cb Call to invalid function: fallback")
-  public void cb_FallbackFunctionCall() {
+  void cb_FallbackFunctionCall() {
     // Create the contract
     byte[] contractBytes = createFile(FALLBACK_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -668,7 +677,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("cc Create with invalid initial value: fails")
-  public void cc_InvalidInitialBalance() {
+  void cc_InvalidInitialBalance() {
     long payerBefore = getBalance(payerAccountId);
     long totalBefore = getTotalBalance();
 
@@ -694,7 +703,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("cd Create with valid initial value: succeeds")
-  public void cd_ValidInitialBalance() {
+  void cd_ValidInitialBalance() {
     long payerBefore = getBalance(payerAccountId);
     long totalBefore = getTotalBalance();
 
@@ -723,7 +732,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("da Opcode shl: Success")
-  public void da_OpcodeShl() throws Exception {
+  void da_OpcodeShl() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -751,7 +760,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("db Opcode shr: Success")
-  public void db_OpcodeShr() throws Exception {
+  void db_OpcodeShr() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -780,7 +789,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("dc Opcode sar: Success")
-  public void dc_OpcodeSar() throws Exception {
+  void dc_OpcodeSar() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -809,7 +818,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("dd Opcode extcodehash: Success")
-  public void dd_OpcodeExtCodeHash() throws Exception {
+  void dd_OpcodeExtCodeHash() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -843,7 +852,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("de Opcode extcodehash: Account")
-  public void de_OpcodeExtCodeHashAccount() throws Exception {
+  void de_OpcodeExtCodeHashAccount() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -879,7 +888,7 @@ public class SmartContractRequestHandlerMiscTest {
   // Test a contract created by another contract
   @Test
   @DisplayName("df Opcode extcodehash: Contract-created contract")
-  public void df_OpcodeExtCodeHashCreated() throws Exception {
+  void df_OpcodeExtCodeHashCreated() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(CREATE_TRIVIAL_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -943,7 +952,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("dg Opcode extcodehash: Precompiled contract")
-  public void dg_OpcodeExtCodeHashPrecompiled() throws Exception {
+  void dg_OpcodeExtCodeHashPrecompiled() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -977,7 +986,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("ea maxResultSize success")
-  public void ea_MaxResultSizeSuccess() throws Exception {
+  void ea_MaxResultSizeSuccess() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -1006,7 +1015,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("eb maxResultSize failure")
-  public void eb_MaxResultSizeFailure() throws Exception {
+  void eb_MaxResultSizeFailure() throws Exception {
     // Create the contract
     byte[] contractBytes = createFile(NEW_OPCODES_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();
@@ -1036,7 +1045,7 @@ public class SmartContractRequestHandlerMiscTest {
   }
 
   @AfterEach
-  public void tearDown() throws Exception {
+  void tearDown() throws Exception {
     try {
       repository.close();
     } catch (Throwable tx) {
@@ -1079,7 +1088,7 @@ public class SmartContractRequestHandlerMiscTest {
 
   @Test
   @DisplayName("cr Create In Constructor")
-  public void cr_CreateInConstructor() {
+  void cr_CreateInConstructor() {
     // Create the contract
     byte[] contractBytes = createFile(CREATE_IN_CONSTRUCTOR_BIN, contractFileId);
     TransactionBody body = getCreateTransactionBody();

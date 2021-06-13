@@ -20,10 +20,12 @@ package com.hedera.services.usage.crypto;
  * ‍
  */
 
+import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.QueryUsage;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
+import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
@@ -44,8 +46,35 @@ import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
 public class CryptoOpsUsage {
+	private static final long LONG_BASIC_ENTITY_ID_SIZE = BASIC_ENTITY_ID_SIZE;
+	private static final long LONG_ACCOUNT_AMOUNT_BYTES = USAGE_PROPERTIES.accountAmountBytes();
+
 	static EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
 	static Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
+
+	public void cryptoTransferUsage(
+			SigUsage sigUsage,
+			CryptoTransferMeta xferMeta,
+			BaseTransactionMeta baseMeta,
+			UsageAccumulator accumulator
+	) {
+		accumulator.resetForTransaction(baseMeta, sigUsage);
+
+		final int numXfers = baseMeta.getNumExplicitTransfers();
+		final int numTokenXfers = xferMeta.getNumTokenTransfers();
+		final int tokenMultiplier = xferMeta.getTokenMultiplier();
+		final int numTokensInvolved = xferMeta.getNumTokensInvolved();
+		final int weightedTokensInvolved = tokenMultiplier * numTokensInvolved;
+
+		final int weightedTokenXfers = tokenMultiplier * numTokenXfers;
+		long incBpt = weightedTokensInvolved * LONG_BASIC_ENTITY_ID_SIZE;
+		incBpt += (weightedTokenXfers + numXfers) * LONG_ACCOUNT_AMOUNT_BYTES;
+		accumulator.addBpt(incBpt);
+
+		long incRb = numXfers * LONG_ACCOUNT_AMOUNT_BYTES;
+		incRb += TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(weightedTokensInvolved, weightedTokenXfers);
+		accumulator.addRbs(incRb * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+	}
 
 	public FeeData cryptoInfoUsage(Query cryptoInfoReq, ExtantCryptoContext ctx) {
 		var op = cryptoInfoReq.getCryptoGetInfo();

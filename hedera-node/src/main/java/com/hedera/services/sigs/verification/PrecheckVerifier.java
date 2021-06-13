@@ -25,8 +25,8 @@ import com.hedera.services.sigs.PlatformSigsCreationResult;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
-import com.hedera.services.sigs.sourcing.PubKeyToSigBytesProvider;
 import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.swirlds.common.crypto.TransactionSignature;
 
 import java.util.List;
@@ -52,16 +52,16 @@ import static com.hedera.services.sigs.PlatformSigOps.createEd25519PlatformSigsF
 public class PrecheckVerifier {
 	private final SyncVerifier syncVerifier;
 	private final PrecheckKeyReqs precheckKeyReqs;
-	private final PubKeyToSigBytesProvider provider;
+	private final Function<TxnAccessor, PubKeyToSigBytes> pkToSigFnProvider;
 
 	public PrecheckVerifier(
 			SyncVerifier syncVerifier,
 			PrecheckKeyReqs precheckKeyReqs,
-			PubKeyToSigBytesProvider provider
+			Function<TxnAccessor, PubKeyToSigBytes> pkToSigFnProvider
 	) {
-		this.provider = provider;
 		this.syncVerifier = syncVerifier;
 		this.precheckKeyReqs = precheckKeyReqs;
+		this.pkToSigFnProvider = pkToSigFnProvider;
 	}
 
 	/**
@@ -86,9 +86,9 @@ public class PrecheckVerifier {
 	}
 
 	private List<TransactionSignature> getAvailSigs(List<JKey> reqKeys, SignedTxnAccessor accessor) throws Exception {
-		PubKeyToSigBytes sigBytes = provider.allPartiesSigBytesFor(accessor.getBackwardCompatibleSignedTxn());
+		final var pkToSigFn = pkToSigFnProvider.apply(accessor);
 		TxnScopedPlatformSigFactory sigFactory = new BodySigningSigFactory(accessor);
-		PlatformSigsCreationResult creationResult = createEd25519PlatformSigsFrom(reqKeys, sigBytes, sigFactory);
+		PlatformSigsCreationResult creationResult = createEd25519PlatformSigsFrom(reqKeys, pkToSigFn, sigFactory);
 		if (creationResult.hasFailed()) {
 			throw creationResult.getTerminatingEx();
 		} else {

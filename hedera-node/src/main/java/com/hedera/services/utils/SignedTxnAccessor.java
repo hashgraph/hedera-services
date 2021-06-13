@@ -20,9 +20,11 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
+import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.consensus.SubmitMessageMeta;
+import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -31,11 +33,17 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import org.apache.commons.codec.binary.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.bouncycastle.util.Arrays;
 
 import java.util.function.Function;
 
-import static com.hedera.services.legacy.proto.utils.CommonUtils.sha384HashOf;
+import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.utils.MiscUtils.functionOf;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 
 /**
@@ -44,14 +52,24 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
  * @author Michael Tinker
  */
 public class SignedTxnAccessor implements TxnAccessor {
+	private static final Logger log = LogManager.getLogger(SignedTxnAccessor.class);
+
+	private int sigMapSize;
+	private int numSigPairs;
+	private byte[] hash;
 	private byte[] txnBytes;
-	private byte[] backwardCompatibleSignedTxnBytes;
-	private Transaction backwardCompatibleSignedTxn;
+	private byte[] utf8MemoBytes;
+	private byte[] signedTxnWrapperBytes;
+	private String memo;
+	private boolean memoHasZeroByte;
+	private Transaction signedTxnWrapper;
 	private SignatureMap sigMap;
 	private TransactionID txnId;
 	private TransactionBody txn;
 	private HederaFunctionality function;
-	private ByteString hash;
+	private SubmitMessageMeta submitMessageMeta;
+	private CryptoTransferMeta xferUsageMeta;
+	private BaseTransactionMeta txnUsageMeta;
 
 	static Function<TransactionBody, HederaFunctionality> functionExtractor = txn -> {
 		try {
@@ -64,36 +82,55 @@ public class SignedTxnAccessor implements TxnAccessor {
 	public static SignedTxnAccessor uncheckedFrom(Transaction validSignedTxn) {
 		try {
 			return new SignedTxnAccessor(validSignedTxn);
-		} catch (Exception impossible) { }
-		return null;
+		} catch (Exception illegal) {
+			log.warn("Unexpected use of factory with invalid gRPC transaction", illegal);
+			throw new IllegalArgumentException("Argument 'validSignedTxn' must be a valid signed txn");
+		}
 	}
 
-	public SignedTxnAccessor(byte[] backwardCompatibleSignedTxnBytes) throws InvalidProtocolBufferException {
-		this.backwardCompatibleSignedTxnBytes = backwardCompatibleSignedTxnBytes;
-		backwardCompatibleSignedTxn = Transaction.parseFrom(backwardCompatibleSignedTxnBytes);
+	public SignedTxnAccessor(byte[] signedTxnWrapperBytes) throws InvalidProtocolBufferException {
+		this.signedTxnWrapperBytes = signedTxnWrapperBytes;
+		signedTxnWrapper = Transaction.parseFrom(signedTxnWrapperBytes);
 
-		if (!backwardCompatibleSignedTxn.getSignedTransactionBytes().isEmpty()) {
-			var signedTxn = SignedTransaction.parseFrom(backwardCompatibleSignedTxn.getSignedTransactionBytes());
+		final var signedTxnBytes = signedTxnWrapper.getSignedTransactionBytes();
+		if (signedTxnBytes.isEmpty()) {
+			txnBytes = signedTxnWrapper.getBodyBytes().toByteArray();
+			sigMap = signedTxnWrapper.getSigMap();
+			hash = noThrowSha384HashOf(signedTxnWrapperBytes);
+		} else {
+			final var signedTxn = SignedTransaction.parseFrom(signedTxnBytes);
 			txnBytes = signedTxn.getBodyBytes().toByteArray();
 			sigMap = signedTxn.getSigMap();
-		} else {
-			txnBytes = backwardCompatibleSignedTxn.getBodyBytes().toByteArray();
-			sigMap = backwardCompatibleSignedTxn.getSigMap();
+			hash = noThrowSha384HashOf(signedTxnBytes.toByteArray());
 		}
 
 		txn = TransactionBody.parseFrom(txnBytes);
+		memo = txn.getMemo();
 		txnId = txn.getTransactionID();
-		hash = sha384HashOf(backwardCompatibleSignedTxn);
+		sigMapSize = sigMap.getSerializedSize();
+		numSigPairs = sigMap.getSigPairCount();
+		utf8MemoBytes = StringUtils.getBytesUtf8(memo);
+		memoHasZeroByte = Arrays.contains(utf8MemoBytes, (byte) 0);
+
+		getFunction();
+		setTxnUsageMeta();
+		if (function == CryptoTransfer) {
+			setXferUsageMeta();
+		} else if (function == ConsensusSubmitMessage) {
+			setSubmitUsageMeta();
+		}
 	}
 
-	public SignedTxnAccessor(Transaction backwardCompatibleSignedTxn) throws InvalidProtocolBufferException {
-		this(backwardCompatibleSignedTxn.toByteArray());
+	public SignedTxnAccessor(Transaction signedTxnWrapper) throws InvalidProtocolBufferException {
+		this(signedTxnWrapper.toByteArray());
 	}
 
+	@Override
 	public SignatureMap getSigMap() {
 		return sigMap;
 	}
 
+	@Override
 	public HederaFunctionality getFunction() {
 		if (function == null) {
 			function = functionExtractor.apply(getTxn());
@@ -101,35 +138,63 @@ public class SignedTxnAccessor implements TxnAccessor {
 		return function;
 	}
 
-	public Transaction getSignedTxn4Log() {
-		return backwardCompatibleSignedTxn;
+	@Override
+	public long getOfferedFee() {
+		return txn.getTransactionFee();
 	}
 
+	@Override
 	public byte[] getTxnBytes() {
 		return txnBytes;
 	}
 
-	public Transaction getBackwardCompatibleSignedTxn() {
-		return backwardCompatibleSignedTxn;
+	@Override
+	public Transaction getSignedTxnWrapper() {
+		return signedTxnWrapper;
 	}
 
+	@Override
 	public TransactionBody getTxn() {
 		return txn;
 	}
 
+	@Override
 	public TransactionID getTxnId() {
 		return txnId;
 	}
 
+	@Override
 	public AccountID getPayer() {
 		return getTxnId().getAccountID();
 	}
 
-	public byte[] getBackwardCompatibleSignedTxnBytes() {
-		return backwardCompatibleSignedTxnBytes;
+	@Override
+	public byte[] getSignedTxnWrapperBytes() {
+		return signedTxnWrapperBytes;
 	}
 
-	public ByteString getHash() {
+	@Override
+	public byte[] getMemoUtf8Bytes() {
+		return utf8MemoBytes;
+	}
+
+	@Override
+	public int numSigPairs() {
+		return numSigPairs;
+	}
+
+	@Override
+	public int sigMapSize() {
+		return sigMapSize;
+	}
+
+	@Override
+	public String getMemo() {
+		return memo;
+	}
+
+	@Override
+	public byte[] getHash() {
 		return hash;
 	}
 
@@ -138,11 +203,64 @@ public class SignedTxnAccessor implements TxnAccessor {
 		return getTxn().hasScheduleCreate() || getTxn().hasScheduleSign();
 	}
 
+	@Override
+	public boolean memoHasZeroByte() {
+		return memoHasZeroByte;
+	}
+
+	@Override
 	public boolean isTriggeredTxn() {
 		return false;
 	}
 
+	@Override
 	public ScheduleID getScheduleRef() {
 		throw new UnsupportedOperationException("Only the TriggeredTxnAccessor implementation can refer to a schedule");
+	}
+
+	@Override
+	public BaseTransactionMeta baseUsageMeta() {
+		return txnUsageMeta;
+	}
+
+	@Override
+	public CryptoTransferMeta availXferUsageMeta() {
+		if (function != CryptoTransfer) {
+			throw new IllegalStateException("Cannot get CryptoTransfer metadata for a " + function + " accessor");
+		}
+		return xferUsageMeta;
+	}
+
+	@Override
+	public SubmitMessageMeta availSubmitUsageMeta() {
+		if (function != ConsensusSubmitMessage) {
+			throw new IllegalStateException("Cannot get ConsensusSubmitMessage metadata for a " + function + " accessor");
+		}
+		return submitMessageMeta;
+	}
+
+	private void setTxnUsageMeta() {
+		if (function == CryptoTransfer) {
+			txnUsageMeta = new BaseTransactionMeta(
+					utf8MemoBytes.length,
+					txn.getCryptoTransfer().getTransfers().getAccountAmountsCount());
+		} else {
+			txnUsageMeta = new BaseTransactionMeta(utf8MemoBytes.length, 0);
+		}
+	}
+
+	private void setXferUsageMeta() {
+		var numTokensInvolved = 0;
+		var numTokenTransfers = 0;
+		final var op = txn.getCryptoTransfer();
+		for (var tokenTransfers : op.getTokenTransfersList()) {
+			numTokensInvolved++;
+			numTokenTransfers += tokenTransfers.getTransfersCount();
+		}
+		xferUsageMeta = new CryptoTransferMeta(1, numTokensInvolved, numTokenTransfers);
+	}
+
+	private void setSubmitUsageMeta() {
+		submitMessageMeta = new SubmitMessageMeta(txn.getConsensusSubmitMessage().getMessage().size());
 	}
 }

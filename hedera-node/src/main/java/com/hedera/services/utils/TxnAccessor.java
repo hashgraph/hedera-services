@@ -20,7 +20,9 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
+import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.consensus.SubmitMessageMeta;
+import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -28,37 +30,52 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.common.SwirldTransaction;
 
 /**
  * Defines a type that gives access to several commonly referenced
  * parts of a Hedera Services gRPC {@link Transaction}.
  */
 public interface TxnAccessor {
+    int sigMapSize();
+    int numSigPairs();
     SignatureMap getSigMap();
+    default void setSigMeta(RationalizedSigMeta sigMeta) {
+        throw new UnsupportedOperationException();
+    }
+    default RationalizedSigMeta getSigMeta() {
+        throw new UnsupportedOperationException();
+    }
+    default BaseTransactionMeta baseUsageMeta() {
+        throw new UnsupportedOperationException();
+    }
+    default CryptoTransferMeta availXferUsageMeta() {
+        throw new UnsupportedOperationException();
+    }
+    default SubmitMessageMeta availSubmitUsageMeta() {
+        throw new UnsupportedOperationException();
+    }
 
+    long getOfferedFee();
+    AccountID getPayer();
+    TransactionID getTxnId();
     HederaFunctionality getFunction();
 
-    Transaction getSignedTxn4Log();
+    byte[] getMemoUtf8Bytes();
+    String getMemo();
+    boolean memoHasZeroByte();
 
+    byte[] getHash();
     byte[] getTxnBytes();
-
-    Transaction getBackwardCompatibleSignedTxn();
-
+    byte[] getSignedTxnWrapperBytes();
+    Transaction getSignedTxnWrapper();
     TransactionBody getTxn();
 
-    TransactionID getTxnId();
-
-    AccountID getPayer();
-
-    byte[] getBackwardCompatibleSignedTxnBytes();
-
-    ByteString getHash();
-
     boolean canTriggerTxn();
-
     boolean isTriggeredTxn();
-
     ScheduleID getScheduleRef();
 
-    default com.swirlds.common.Transaction getPlatformTxn() { throw new UnsupportedOperationException(); }
+    default SwirldTransaction getPlatformTxn() {
+        throw new UnsupportedOperationException();
+    }
 }

@@ -25,8 +25,10 @@ import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.AutoRenewCalcs;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -168,7 +170,8 @@ class RenewalProcessTest {
 	@Test
 	void removesExpiredBrokeAccount() {
 		// setup:
-		final List<TokenTransferList> displacements = Collections.emptyList();
+		final Pair<List<EntityId>, List<CurrencyAdjustments>> displacements =
+				Pair.of(Collections.emptyList(), Collections.emptyList());
 
 		given(helper.classify(brokeExpiredAccountNum, now)).willReturn(DETACHED_ACCOUNT_GRACE_PERIOD_OVER);
 		given(helper.removeLastClassifiedAccount()).willReturn(displacements);
@@ -183,7 +186,8 @@ class RenewalProcessTest {
 		verify(helper).removeLastClassifiedAccount();
 		verify(recordsHelper).streamCryptoRemoval(
 				new MerkleEntityId(0, 0, brokeExpiredAccountNum),
-				displacements);
+				Collections.emptyList(),
+				Collections.emptyList());
 	}
 
 	@Test

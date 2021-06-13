@@ -57,7 +57,7 @@ public class ScheduleDeleteTransitionLogic implements TransitionLogic {
 		try {
 			transitionFor(txnCtx.accessor().getTxn().getScheduleDelete());
 		} catch (Exception e) {
-			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
+			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
 	}

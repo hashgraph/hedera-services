@@ -26,11 +26,9 @@ import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,7 +36,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import javax.inject.Inject;
-
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -48,11 +45,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
@@ -88,7 +85,7 @@ class TransitionRunnerTest {
 	void abortsOnMissingLogic() {
 		given(accessor.getFunction()).willReturn(TokenMint);
 		given(accessor.getTxn()).willReturn(mockBody);
-		given(accessor.getSignedTxn4Log()).willReturn(mockTxn);
+		given(accessor.getSignedTxnWrapper()).willReturn(mockTxn);
 		given(lookup.lookupFor(TokenMint, mockBody)).willReturn(Optional.empty());
 
 		// when:
@@ -137,7 +134,7 @@ class TransitionRunnerTest {
 	void logsWarningIfInvalidTxnExceptionWasFailInvalid() {
 		given(accessor.getFunction()).willReturn(TokenMint);
 		given(accessor.getTxn()).willReturn(mockBody);
-		given(accessor.getSignedTxn4Log()).willReturn(mockTxn);
+		given(accessor.getSignedTxnWrapper()).willReturn(mockTxn);
 		given(lookup.lookupFor(TokenMint, mockBody)).willReturn(Optional.of(logic));
 		given(logic.semanticCheck()).willReturn(semanticCheck);
 		given(semanticCheck.apply(mockBody)).willReturn(OK);

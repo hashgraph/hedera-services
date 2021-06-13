@@ -367,8 +367,8 @@
         <enabled>false</enabled>
       </snapshots>
       <id>central</id>
-      <name>bintray</name>
-      <url>https://jcenter.bintray.com</url>
+      <name>Central Repository</name>
+      <url>https://repo.maven.apache.org/maven2</url>
     </repository>
   </repositories>
   <profiles>

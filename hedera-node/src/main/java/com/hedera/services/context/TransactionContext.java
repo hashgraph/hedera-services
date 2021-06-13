@@ -22,6 +22,7 @@ package com.hedera.services.context;
 
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.expiry.ExpiringEntity;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -33,8 +34,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hederahashgraph.api.proto.java.TransferList;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -43,7 +42,7 @@ import java.util.List;
 /**
  * Defines a type that manages transaction-specific context for a node. (That is,
  * context built while processing a consensus transaction.) Most of this context
- * is ultimately captured by a {@link TransactionRecord}, so the core
+ * is ultimately captured by a {@link ExpirableTxnRecord}, so the core
  * responsibility of this type is to construct an appropriate record in method
  * {@code recordSoFar}.
  *
@@ -55,6 +54,7 @@ public interface TransactionContext {
 	 *
 	 * @param accessor the consensus platform txn to manage context of.
 	 * @param consensusTime when the txn reached consensus.
+	 * @param submittingMember the member that submitted the txn to the network.
 	 */
 	void resetFor(TxnAccessor accessor, Instant consensusTime, long submittingMember);
 
@@ -117,22 +117,12 @@ public interface TransactionContext {
 	ResponseCodeEnum status();
 
 	/**
-	 * Constructs and gets a {@link TransactionRecord} which captures the history
+	 * Constructs and gets a {@link ExpirableTxnRecord} which captures the history
 	 * of processing the current txn up to the time of the call.
 	 *
 	 * @return the historical record of processing the current txn thus far.
 	 */
-	TransactionRecord recordSoFar();
-
-	/**
-	 * Returns the last record created by {@link TransactionContext#recordSoFar()},
-	 * with the transfer list and fees updated.
-	 *
-	 * @param listWithNewFees the new transfer list to use in the record.
-	 * @return the updated historical record of processing the current txn thus far.
-	 * @throws IllegalStateException if {@code recordSoFar} has not been called for the active txn.
-	 */
-	TransactionRecord updatedRecordGiven(TransferList listWithNewFees);
+	ExpirableTxnRecord recordSoFar();
 
 	/**
 	 * Gets an accessor to the defined type {@link TxnAccessor}
@@ -231,14 +221,14 @@ public interface TransactionContext {
 
 	/**
 	 * Update the topic's running hash and sequence number.
-	 * @param runningHash
-	 * @param sequenceNumber
+	 * @param runningHash the running hash of the topic.
+	 * @param sequenceNumber the sequence number of the topic.
 	 */
 	void setTopicRunningHash(byte[] runningHash, long sequenceNumber);
 
 	/**
 	 * Set this token's new total supply for mint/burn/wipe transaction
-	 * @param newTotalTokenSupply
+	 * @param newTotalTokenSupply new total supply of the token.
 	 */
 	void setNewTotalSupply(long newTotalTokenSupply);
 
@@ -250,6 +240,7 @@ public interface TransactionContext {
 
 	/**
 	 * Returns a triggered TxnAccessor
+	 * @return a triggered TxnAccessor
 	 */
 	TxnAccessor triggeredTxn();
 

@@ -57,20 +57,15 @@ class AnswerFunctionsTest {
 			.setAccountID(asAccount(payer))
 			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(1_234L))
 			.build();
-	private TransactionID missingTxnId = TransactionID.newBuilder()
-			.setAccountID(asAccount(payer))
-			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(4_321L))
-			.build();
 	private TransactionID absentTxnId = TransactionID.newBuilder()
 			.setAccountID(asAccount("3.2.1"))
 			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(4_321L))
 			.build();
 
 	private ExpirableTxnRecord targetRecord = constructTargetRecord();
-	private TransactionRecord cachedTargetRecord = targetRecord.asGrpc();
+	private ExpirableTxnRecord cachedTargetRecord = targetRecord;
 	private MerkleAccount payerAccount;
 	private String target = payer;
-	private long fee = 1_234L;
 	private StateView view;
 	private RecordCache recordCache;
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
@@ -120,7 +115,7 @@ class AnswerFunctionsTest {
 		Optional<TransactionRecord> record = subject.txnRecord(recordCache, view, validQuery);
 
 		// then:
-		assertEquals(cachedTargetRecord, record.get());
+		assertEquals(cachedTargetRecord.asGrpc(), record.get());
 	}
 
 	@Test
@@ -134,7 +129,7 @@ class AnswerFunctionsTest {
 		Optional<TransactionRecord> record = subject.txnRecord(recordCache, view, validQuery);
 
 		// then:
-		assertEquals(cachedTargetRecord, record.get());
+		assertEquals(cachedTargetRecord.asGrpc(), record.get());
 		verify(accounts, never()).get(any());
 		verify(recordCache, never()).isReceiptPresent(any());
 	}

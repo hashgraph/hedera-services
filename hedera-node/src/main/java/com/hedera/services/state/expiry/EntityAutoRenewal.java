@@ -74,7 +74,7 @@ public class EntityAutoRenewal {
 		final int maxEntitiesToTouch = dynamicProps.autoRenewMaxNumberOfEntitiesToRenewOrDelete();
 		final int maxEntitiesToScan = dynamicProps.autoRenewNumberOfEntitiesToScan();
 		if (networkCtxManager.currentTxnIsFirstInConsensusSecond()) {
-			curNetworkCtx.resetAutoRenewSummaryCounts();
+			curNetworkCtx.clearAutoRenewSummaryCounts();
 		}
 
 		renewalProcess.beginRenewalCycle(instantNow);

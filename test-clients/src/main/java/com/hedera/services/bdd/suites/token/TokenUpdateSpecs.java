@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.token;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -71,6 +72,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	private static final long A_HUNDRED_SECONDS = 100;
 
 	private static String TOKEN_TREASURY = "treasury";
+	private static final long defaultMaxLifetime =
+			Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
 
 	public static void main(String... args) {
 		new TokenUpdateSpecs().runSuiteSync();
@@ -97,8 +100,25 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						updateHappyPath(),
 						validatesMissingAdminKey(),
 						validatesMissingRef(),
+						validatesNewExpiry(),
 				}
 		);
+	}
+
+	private HapiApiSpec validatesNewExpiry() {
+		final var smallBuffer = 12_345L;
+		final var okExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() - smallBuffer;
+		final var excessiveExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() + smallBuffer;
+		return defaultHapiSpec("ValidatesNewExpiry")
+				.given(
+						tokenCreate("tbu")
+				).when().then(
+						tokenUpdate("tbu")
+								.expiry(excessiveExpiry)
+								.hasKnownStatus(INVALID_EXPIRATION_TIME),
+						tokenUpdate("tbu")
+								.expiry(okExpiry)
+				);
 	}
 
 	private HapiApiSpec validatesAlreadyDeletedToken() {

@@ -91,6 +91,10 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			final var target = op.getAccountIDToUpdate();
 			final var customizer = asCustomizer(op);
 
+			if (op.hasExpirationTime() && !validator.isValidExpiry(op.getExpirationTime())) {
+				txnCtx.setStatus(INVALID_EXPIRATION_TIME);
+				return;
+			}
 			final var validity = sanityCheck(target, customizer);
 			if (validity != OK) {
 				txnCtx.setStatus(validity);
@@ -104,7 +108,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 		} catch (DeletedAccountException aide) {
 			txnCtx.setStatus(ACCOUNT_DELETED);
 		} catch (Exception e) {
-			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxn4Log(), e);
+			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
 	}
@@ -194,9 +198,6 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 
 		if (op.hasAutoRenewPeriod() && !validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod())) {
 			return AUTORENEW_DURATION_NOT_IN_RANGE;
-		}
-		if (op.hasExpirationTime() && !validator.isValidExpiry(op.getExpirationTime())) {
-			return INVALID_EXPIRATION_TIME;
 		}
 
 		return OK;

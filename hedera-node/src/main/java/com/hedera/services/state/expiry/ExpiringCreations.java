@@ -20,17 +20,31 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
+import com.hedera.services.context.ServicesContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
 
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
+
+import static com.hedera.services.state.submerkle.EntityId.fromGrpcScheduleId;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 public class ExpiringCreations implements EntityCreator {
 	private RecordCache recordCache;
@@ -55,37 +69,91 @@ public class ExpiringCreations implements EntityCreator {
 	}
 
 	@Override
-	public ExpirableTxnRecord createExpiringRecord(
+	public ExpirableTxnRecord saveExpiringRecord(
 			AccountID payer,
-			TransactionRecord grpcRecord,
-			long now,
+			ExpirableTxnRecord expiringRecord,
+			long consensusTime,
 			long submittingMember
 	) {
-		final var record = buildFrom(grpcRecord, now, submittingMember);
+		final long expiry = consensusTime + dynamicProperties.cacheRecordsTtl();
+		expiringRecord.setExpiry(expiry);
+		expiringRecord.setSubmittingMember(submittingMember);
 
 		if (dynamicProperties.shouldKeepRecordsInState()) {
 			final var key = MerkleEntityId.fromAccountId(payer);
-			addToState(key, record);
-			expiries.trackRecordInState(payer, record.getExpiry());
+			addToState(key, expiringRecord);
+			expiries.trackRecordInState(payer, expiringRecord.getExpiry());
 		} else {
-			recordCache.trackForExpiry(record);
+			recordCache.trackForExpiry(expiringRecord);
 		}
 
-		return record;
+		return expiringRecord;
+	}
+
+	@Override
+	public ExpirableTxnRecord.Builder buildExpiringRecord(
+			long otherNonThresholdFees,
+			byte[] hash,
+			TxnAccessor accessor,
+			Instant consensusTime,
+			TxnReceipt receipt,
+			List<TokenTransferList> explicitTokenTransfers,
+			ServicesContext ctx
+	) {
+		final long amount = ctx.narratedCharging().totalFeesChargedToPayer() + otherNonThresholdFees;
+		final TransferList transfersList = ctx.ledger().netTransfersInTxn();
+		final var tokenTransferList = explicitTokenTransfers != null
+				? explicitTokenTransfers
+				: ctx.ledger().netTokenTransfersInTxn();
+		final var currencyAdjustments = transfersList.getAccountAmountsCount() > 0
+				? CurrencyAdjustments.fromGrpc(transfersList) : null;
+
+		var builder = ExpirableTxnRecord.newBuilder()
+				.setReceipt(receipt)
+				.setTxnHash(hash)
+				.setTxnId(TxnId.fromGrpc(accessor.getTxnId()))
+				.setConsensusTime(RichInstant.fromJava(consensusTime))
+				.setMemo(accessor.getMemo())
+				.setFee(amount)
+				.setTransferList(currencyAdjustments)
+				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null);
+
+		if (!tokenTransferList.isEmpty()) {
+			setTokensAndTokenAdjustments(builder, tokenTransferList);
+		}
+
+		return builder;
+	}
+
+	@Override
+	public ExpirableTxnRecord.Builder buildFailedExpiringRecord(TxnAccessor accessor, Instant consensusTime) {
+		var txnId = accessor.getTxnId();
+
+		return ExpirableTxnRecord.newBuilder()
+				.setTxnId(TxnId.fromGrpc(txnId))
+				.setReceipt(TxnReceipt.newBuilder().setStatus(FAIL_INVALID.name()).build())
+				.setMemo(accessor.getMemo())
+				.setTxnHash(accessor.getHash())
+				.setConsensusTime(RichInstant.fromJava(consensusTime))
+				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null);
+	}
+
+	private void setTokensAndTokenAdjustments(
+			ExpirableTxnRecord.Builder builder,
+			List<TokenTransferList> tokenTransferList
+	) {
+		final List<EntityId> tokens = new ArrayList<>();
+		final List<CurrencyAdjustments> tokenAdjustments = new ArrayList<>();
+		for (TokenTransferList tokenTransfers : tokenTransferList) {
+			tokens.add(EntityId.fromGrpcTokenId(tokenTransfers.getToken()));
+			tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList()));
+		}
+		builder.setTokens(tokens).setTokenAdjustments(tokenAdjustments);
 	}
 
 	private void addToState(MerkleEntityId key, ExpirableTxnRecord record) {
 		final var currentAccounts = accounts.get();
 		final var mutableAccount = currentAccounts.getForModify(key);
 		mutableAccount.records().offer(record);
-		currentAccounts.replace(key, mutableAccount);
-	}
-
-	private ExpirableTxnRecord buildFrom(TransactionRecord grpcRecord, long now, long submittingMember) {
-		final var expiringRecord = ExpirableTxnRecord.fromGprc(grpcRecord);
-		long expiry = now + dynamicProperties.cacheRecordsTtl();
-		expiringRecord.setExpiry(expiry);
-		expiringRecord.setSubmittingMember(submittingMember);
-		return expiringRecord;
 	}
 }

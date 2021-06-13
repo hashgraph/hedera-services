@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.crypto;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyLabel;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
@@ -28,6 +29,7 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Instant;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -44,12 +46,16 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class CryptoUpdateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoUpdateSuite.class);
+
+	private static final long defaultMaxLifetime =
+			Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
 
 	public static void main(String... args) {
 		new CryptoUpdateSuite().runSuiteAsync();
@@ -88,10 +94,23 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						updateFailsIfMissingSigs(),
 						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
 						updateFailsWithContractKey(),
+						updateFailsWithOverlyLongLifetime(),
 				}
 		);
 	}
 
+	private HapiApiSpec updateFailsWithOverlyLongLifetime() {
+		final var smallBuffer = 12_345L;
+		final var excessiveExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() + smallBuffer;
+		return defaultHapiSpec("UpdateFailsWithOverlyLongLifetime")
+				.given(
+						cryptoCreate(TARGET_ACCOUNT)
+				).when().then(
+						cryptoUpdate(TARGET_ACCOUNT)
+								.expiring(excessiveExpiry)
+								.hasKnownStatus(INVALID_EXPIRATION_TIME)
+				);
+	}
 
 	private HapiApiSpec sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign() {
 		String sysAccount = "0.0.977";

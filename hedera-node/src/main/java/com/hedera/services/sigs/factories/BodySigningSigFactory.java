@@ -20,7 +20,6 @@ package com.hedera.services.sigs.factories;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.utils.TxnAccessor;
 import com.swirlds.common.crypto.TransactionSignature;
 
@@ -39,10 +38,7 @@ public class BodySigningSigFactory implements TxnScopedPlatformSigFactory {
 	}
 
 	@Override
-	public TransactionSignature create(ByteString publicKey, ByteString sigBytes) {
-		return PlatformSigFactory.createEd25519(
-				publicKey.toByteArray(),
-				sigBytes.toByteArray(),
-				accessor.getTxnBytes());
+	public TransactionSignature create(byte[] publicKey, byte[] sigBytes) {
+		return PlatformSigFactory.createEd25519(publicKey, sigBytes, accessor.getTxnBytes());
 	}
 }

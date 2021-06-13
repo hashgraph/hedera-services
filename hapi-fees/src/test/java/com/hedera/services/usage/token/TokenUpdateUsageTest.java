@@ -55,37 +55,39 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 public class TokenUpdateUsageTest {
-	long newKeyBytes;
-	Key kycKey = KeyUtils.A_COMPLEX_KEY;
-	Key adminKey = KeyUtils.A_THRESHOLD_KEY;
-	Key freezeKey = KeyUtils.A_KEY_LIST;
-	Key supplyKey = KeyUtils.B_COMPLEX_KEY;
-	Key wipeKey = C_COMPLEX_KEY;
-	long oldExpiry = 2_345_670L;
-	long expiry = 2_345_678L;
-	long oldAutoRenewPeriod = 1_234_567L;
-	long now = oldExpiry - oldAutoRenewPeriod;
-	String oldSymbol = "ABC";
-	String symbol = "ABCDEFGH";
-	String oldName = "WhyWhy";
-	String name = "WhyWhyWhy";
-	String oldMemo = "Calm reigns";
-	String memo = "Calamity strikes";
-	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
-	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
-	AccountID treasury = IdUtils.asAccount("1.2.3");
-	AccountID autoRenewAccount = IdUtils.asAccount("3.2.1");
-	TokenID id = IdUtils.asToken("0.0.75231");
+	private long maxLifetime = 100 * 365 * 24 * 60 * 60L;
 
-	TokenUpdateTransactionBody op;
-	TransactionBody txn;
+	private Key kycKey = KeyUtils.A_COMPLEX_KEY;
+	private Key adminKey = KeyUtils.A_THRESHOLD_KEY;
+	private Key freezeKey = KeyUtils.A_KEY_LIST;
+	private Key supplyKey = KeyUtils.B_COMPLEX_KEY;
+	private Key wipeKey = C_COMPLEX_KEY;
+	private long oldExpiry = 2_345_670L;
+	private long expiry = 2_345_678L;
+	private long absurdExpiry = oldExpiry + 2 * maxLifetime;
+	private long oldAutoRenewPeriod = 1_234_567L;
+	private long now = oldExpiry - oldAutoRenewPeriod;
+	private String oldSymbol = "ABC";
+	private String symbol = "ABCDEFGH";
+	private String oldName = "WhyWhy";
+	private String name = "WhyWhyWhy";
+	private String oldMemo = "Calm reigns";
+	private String memo = "Calamity strikes";
+	private int numSigs = 3, sigSize = 100, numPayerKeys = 1;
+	private SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
+	private AccountID treasury = IdUtils.asAccount("1.2.3");
+	private AccountID autoRenewAccount = IdUtils.asAccount("3.2.1");
+	private TokenID id = IdUtils.asToken("0.0.75231");
 
-	EstimatorFactory factory;
-	TxnUsageEstimator base;
-	TokenUpdateUsage subject;
+	private TokenUpdateTransactionBody op;
+	private TransactionBody txn;
+
+	private EstimatorFactory factory;
+	private TxnUsageEstimator base;
+	private TokenUpdateUsage subject;
 
 	@BeforeEach
-	public void setUp() throws Exception {
+	void setUp() throws Exception {
 		base = mock(TxnUsageEstimator.class);
 		given(base.get()).willReturn(A_USAGES_MATRIX);
 
@@ -96,7 +98,31 @@ public class TokenUpdateUsageTest {
 	}
 
 	@Test
-	public void createsExpectedDeltaForNewLargerKeys() {
+	void createsExpectedCappedLifetimeDeltaForNewLargerKeys() {
+		// setup:
+		var curRb = curSize(A_KEY_LIST);
+		var newRb = newRb();
+		var expectedBytes = newRb + 3 * BASIC_ENTITY_ID_SIZE + 8;
+
+		givenOp(absurdExpiry);
+		// and:
+		givenImpliedSubjectWithSmallerKeys();
+
+		// when:
+		var actual = subject.get();
+
+		// then:
+		assertEquals(A_USAGES_MATRIX, actual);
+		// and:
+		verify(base).addBpt(expectedBytes);
+		verify(base).addRbs((newRb - curRb) * maxLifetime);
+		verify(base).addRbs(
+				TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 2) *
+						USAGE_PROPERTIES.legacyReceiptStorageSecs());
+	}
+
+	@Test
+	void createsExpectedDeltaForNewLargerKeys() {
 		// setup:
 		var curRb = curSize(A_KEY_LIST);
 		var newRb = newRb();
@@ -120,7 +146,7 @@ public class TokenUpdateUsageTest {
 	}
 
 	@Test
-	public void createsExpectedDeltaForNewSmallerKeys() {
+	void createsExpectedDeltaForNewSmallerKeys() {
 		// setup:
 		var newRb = newRb();
 		var expectedBytes = newRb + 3 * BASIC_ENTITY_ID_SIZE + 8;
@@ -140,7 +166,7 @@ public class TokenUpdateUsageTest {
 	}
 
 	@Test
-	public void ignoresNewAutoRenewBytesIfAlreadyUsingAutoRenew() {
+	void ignoresNewAutoRenewBytesIfAlreadyUsingAutoRenew() {
 		// setup:
 		var curRb = curSize(A_KEY_LIST) + BASIC_ENTITY_ID_SIZE;
 		var newRb = newRb();
@@ -165,7 +191,7 @@ public class TokenUpdateUsageTest {
 	}
 
 	@Test
-	public void understandsRemovingAutoRenew() {
+	void understandsRemovingAutoRenew() {
 		// setup:
 		var curRb = curSize(A_KEY_LIST) + BASIC_ENTITY_ID_SIZE;
 		var newRb = newRb() - BASIC_ENTITY_ID_SIZE;
@@ -200,9 +226,12 @@ public class TokenUpdateUsageTest {
 	}
 
 	private void givenImpliedSubjectWithKey(Key oldKey) {
-		newKeyBytes = FeeBuilder.getAccountKeyStorageSize(oldKey) * 5;
+		givenImpliedSubjectWithExpiryAndKey(oldExpiry, oldKey);
+	}
+
+	private void givenImpliedSubjectWithExpiryAndKey(long extantExpiry, Key oldKey) {
 		subject = TokenUpdateUsage.newEstimate(txn, sigUsage)
-				.givenCurrentExpiry(oldExpiry)
+				.givenCurrentExpiry(extantExpiry)
 				.givenCurrentMemo(oldMemo)
 				.givenCurrentName(oldName)
 				.givenCurrentSymbol(oldSymbol)
@@ -226,11 +255,16 @@ public class TokenUpdateUsageTest {
 				+ FeeBuilder.getAccountKeyStorageSize(freezeKey) + BASIC_ENTITY_ID_SIZE;
 	}
 
+
 	private void givenOp() {
+		givenOp(expiry);
+	}
+
+	private void givenOp(long newExpiry) {
 		op = TokenUpdateTransactionBody.newBuilder()
 				.setToken(id)
 				.setMemo(StringValue.newBuilder().setValue(memo).build())
-				.setExpiry(Timestamp.newBuilder().setSeconds(expiry))
+				.setExpiry(Timestamp.newBuilder().setSeconds(newExpiry))
 				.setTreasury(treasury)
 				.setAutoRenewAccount(autoRenewAccount)
 				.setSymbol(symbol)

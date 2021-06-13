@@ -1311,7 +1311,7 @@ workflows:
   GCP-Daily-Services-Crypto-Update-5N-1C:
     triggers:
       - schedule:
-          cron: "35 4 * * *"
+          cron: "45 4 * * *"
           filters:
             branches:
               only:
@@ -1428,7 +1428,7 @@ workflows:
   GCP-Daily-Services-Comp-NetError-4N-1C:
     triggers:
       - schedule:
-          cron: "20 5 * * *"
+          cron: "30 5 * * *"
           filters:
             branches:
               only:
@@ -1453,7 +1453,7 @@ workflows:
   GCP-Daily-Services-Crypto-Migration-5N-1C:
     triggers:
       - schedule:
-          cron: "35 5 * * *"
+          cron: "45 5 * * *"
           filters:
             branches:
               only:
@@ -1508,7 +1508,7 @@ workflows:
   GCP-Daily-Services-Crypto-Restart-4N-1C:
     triggers:
       - schedule:
-          cron: "5 6 * * *"
+          cron: "15 6 * * *"
           filters:
             branches:
               only:
@@ -1531,7 +1531,7 @@ workflows:
   GCP-Daily-Services-Account-Balances-client-validation-6N-1C:
     triggers:
       - schedule:
-          cron: "30 6 * * *"
+          cron: "40 6 * * *"
           filters:
             branches:
               only:
@@ -1555,7 +1555,7 @@ workflows:
   GCP-Daily-Services-Reconnect-6N-4C:
     triggers:
       - schedule:
-          cron: "30 5 * * *"
+          cron: "40 5 * * *"
           filters:
             branches:
               only:
@@ -1579,7 +1579,7 @@ workflows:
   GCP-Daily-Services-Global-3NReconnect-15N-4C:
     triggers:
       - schedule:
-          cron: "30 7 * * *"
+          cron: "40 7 * * *"
           filters:
             branches:
               only:
@@ -1604,7 +1604,7 @@ workflows:
   GCP-Weekly-Services-NetDelay-15N-1C:
     triggers:
       - schedule:
-          cron: "0 5 * * 6"
+          cron: "0 5 * * *"
           filters:
             branches:
               only:
@@ -1627,7 +1627,7 @@ workflows:
   GCP-Daily-Services-Recovery-4N-1C:
     triggers:
       - schedule:
-          cron: "35 6 * * *"
+          cron: "55 6 * * *"
           filters:
             branches:
               only:
@@ -1674,7 +1674,7 @@ workflows:
   GCP-Daily-Services-Comp-Restart-Performance-Hotspot-6N-6C:
     triggers:
       - schedule:
-          cron: "35 6 * * *"
+          cron: "35 7 * * *"
           filters:
             branches:
               only:
@@ -1697,7 +1697,7 @@ workflows:
   GCP-Daily-Services-Comp-Restart-Performance-Random-6N-6C:
     triggers:
       - schedule:
-          cron: "30 4 * * *"
+          cron: "40 4 * * *"
           filters:
             branches:
               only:
@@ -1721,7 +1721,7 @@ workflows:
   GCP-Daily-Services-HTS-Restart-Performance-6N-6C:
     triggers:
       - schedule:
-          cron: "30 8 * * *"
+          cron: "30 4 * * *"
           filters:
             branches:
               only:
@@ -1744,7 +1744,7 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-6N-1C:
     triggers:
       - schedule:
-          cron: "5 7 * * *"
+          cron: "15 7 * * *"
           filters:
             branches:
               only:
@@ -1767,7 +1767,7 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-Correctness-6N-1C:
     triggers:
       - schedule:
-          cron: "15 7 * * *"
+          cron: "25 7 * * *"
           filters:
             branches:
               only:
@@ -1790,7 +1790,7 @@ workflows:
   GCP-Daily-Services-Global-3NReconnect-15N-1C:
     triggers:
       - schedule:
-          cron: "15 7 * * *"
+          cron: "25 7 * * *"
           filters:
             branches:
               only:
@@ -1813,7 +1813,7 @@ workflows:
   GCP-Daily-Services-Comp-3NReconnect-15N-4C:
     triggers:
       - schedule:
-          cron: "15 8 * * *"
+          cron: "25 8 * * *"
           filters:
             branches:
               only:
@@ -2751,7 +2751,7 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "hedera-regression"
+        default: "hedera-regression-test"
       slack_summary_channel:
         type: string
         default: "hedera-regression-summary"
