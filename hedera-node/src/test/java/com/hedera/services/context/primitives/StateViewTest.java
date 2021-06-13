@@ -564,6 +564,19 @@ class StateViewTest {
 	}
 
 	@Test
+	void returnEmptyFileInfoForBinaryObjectDeletedException() {
+		// setup:
+		given(attrs.get(target)).willThrow(new com.swirlds.blob.BinaryObjectDeletedException());
+		given(nodeProps.queryBlobLookupRetries()).willReturn(1);
+
+		// when:
+		var info = subject.infoForFile(target);
+
+		// then:
+		assertTrue(info.isEmpty());
+	}
+
+	@Test
 	void logsAtDebugWhenInterrupted() throws InterruptedException {
 		// setup:
 		final var finalAnswer = new AtomicReference<Optional<FileGetInfoResponse.FileInfo>>();
