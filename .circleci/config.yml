@@ -2390,6 +2390,7 @@ jobs:
       - persist_to_workspace:
           root: /
           paths:
+            - repo/
             - root/.m2
 
   sonar-check:
