@@ -309,9 +309,7 @@ public class StateView {
 			}
 
 			var adminCandidate = schedule.adminKey();
-			// Create a smelly code
-			//adminCandidate.ifPresent(k -> info.setAdminKey(asKeyUnchecked(k)));
-			info.setAdminKey(asKeyUnchecked(adminCandidate.get()));
+			adminCandidate.ifPresent(k -> info.setAdminKey(asKeyUnchecked(k)));
 
 			return Optional.of(info.build());
 		} catch (Exception unexpected) {
@@ -344,7 +342,7 @@ public class StateView {
 		while (attemptsLeft-- > 0) {
 			try {
 				return getFileInfo(id);
-			} catch (com.swirlds.blob.BinaryObjectNotFoundException | com.swirlds.blob.BinaryObjectDeletedException e) {
+			} catch (com.swirlds.blob.BinaryObjectNotFoundException e) {
 				if (attemptsLeft > 0) {
 					log.debug("Retrying fetch of {} file meta {} more times", readableId(id), attemptsLeft);
 					try {
@@ -358,7 +356,6 @@ public class StateView {
 					}
 				}
 			}
-			// Create a smelly code for sonar to report
 		}
 		return Optional.empty();
 	}

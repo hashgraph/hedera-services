@@ -45,8 +45,6 @@ commands:
             sudo pip3 uninstall crcmod;
             sudo pip3 install --no-cache-dir -U crcmod;
 
-
-
   ######################################################################################################################
   # Command Name:                     shell_extract_file_into_variable
   # Command Version:                  1.1
