@@ -23,14 +23,11 @@ package com.hedera.services.sigs.sourcing;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
-import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.keys.KeyTreeLeaf;
-import com.hedera.test.factories.keys.OverlappingKeyGenerator;
 import com.hedera.test.factories.sigs.SigFactory;
-import com.hedera.test.factories.sigs.SigMapGenerator;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -42,20 +39,18 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.hedera.test.factories.keys.NodeFactory.ecdsa384;
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
 import static com.hedera.test.factories.keys.NodeFactory.list;
-import static com.hedera.test.factories.keys.NodeFactory.rsa3072;
 import static com.hedera.test.factories.txns.SystemDeleteFactory.newSignedSystemDelete;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class SigMapPubKeyToSigBytesTest {
+class PojoSigMapPubKeyToSigBytesTest {
 	private final byte[] EMPTY_SIG = { };
 	private final KeyTree payerKt =
-			KeyTree.withRoot(list(ed25519(true), ed25519(true), ed25519(true), ecdsa384(true), rsa3072(true)));
+			KeyTree.withRoot(list(ed25519(true), ed25519(true), ed25519(true), ed25519(true), ed25519(true)));
 	private final KeyTree otherKt =
 			KeyTree.withRoot(list(ed25519(true), ed25519(true), ed25519(true)));
 	private final KeyFactory defaultFactory = KeyFactory.getDefaultInstance();
@@ -67,7 +62,7 @@ class SigMapPubKeyToSigBytesTest {
 				.payerKt(payerKt)
 				.nonPayerKts(otherKt)
 				.get();
-		PubKeyToSigBytes subject = new SigMapPubKeyToSigBytes(SignedTxnAccessor.uncheckedFrom(signedTxn).getSigMap());
+		PubKeyToSigBytes subject = new PojoSigMapPubKeyToSigBytes(SignedTxnAccessor.uncheckedFrom(signedTxn).getSigMap());
 
 		// expect:
 		lookupsMatch(payerKt, defaultFactory, CommonUtils.extractTransactionBodyBytes(signedTxn), subject);
@@ -81,7 +76,7 @@ class SigMapPubKeyToSigBytesTest {
 		byte[] pubKey = str.getBytes(StandardCharsets.UTF_8);
 		SignaturePair sigPair = SignaturePair.newBuilder().setPubKeyPrefix(ByteString.copyFromUtf8(str)).build();
 		SignatureMap sigMap = SignatureMap.newBuilder().addSigPair(sigPair).addSigPair(sigPair).build();
-		SigMapPubKeyToSigBytes sigMapPubKeyToSigBytes = new SigMapPubKeyToSigBytes(sigMap);
+		PojoSigMapPubKeyToSigBytes sigMapPubKeyToSigBytes = new PojoSigMapPubKeyToSigBytes(sigMap);
 
 		// expect:
 		KeyPrefixMismatchException exception = assertThrows(KeyPrefixMismatchException.class, () -> {

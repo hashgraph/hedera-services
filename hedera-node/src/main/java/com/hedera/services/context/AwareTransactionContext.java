@@ -86,7 +86,7 @@ public class AwareTransactionContext implements TransactionContext {
 	private Instant consensusTime;
 	private TxnAccessor accessor;
 	private ResponseCodeEnum statusSoFar;
-	private List<ExpiringEntity> expiringEntities;
+	private List<ExpiringEntity> expiringEntities = new ArrayList<>();
 	private Consumer<TxnReceipt.Builder> receiptConfig = noopReceiptConfig;
 	private Consumer<ExpirableTxnRecord.Builder> recordConfig = noopRecordConfig;
 	private List<TokenTransferList> explicitTokenTransfers;
@@ -104,7 +104,7 @@ public class AwareTransactionContext implements TransactionContext {
 		this.consensusTime = consensusTime;
 		this.submittingMember = submittingMember;
 		this.triggeredTxn = null;
-		this.expiringEntities = new ArrayList<>();
+		this.expiringEntities.clear();
 
 		otherNonThresholdFees = 0L;
 		hash = accessor.getHash();
