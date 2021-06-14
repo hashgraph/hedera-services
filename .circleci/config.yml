@@ -1315,7 +1315,7 @@ workflows:
           filters:
             branches:
               only:
-                - master-plus-sdk-0.15.0
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1432,7 +1432,7 @@ workflows:
           filters:
             branches:
               only:
-                - master-plus-sdk-0.15.0
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1457,7 +1457,7 @@ workflows:
           filters:
             branches:
               only:
-                - master-plus-sdk-0.15.0
+                - master
     jobs:
       - build-platform-and-services
       - update-start-up-key:
@@ -1512,7 +1512,7 @@ workflows:
           filters:
             branches:
               only:
-                - master-plus-sdk-0.15.0
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1535,7 +1535,7 @@ workflows:
           filters:
             branches:
               only:
-                - master-plus-sdk-0.15.0
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1555,11 +1555,11 @@ workflows:
   GCP-Daily-Services-Reconnect-6N-4C:
     triggers:
       - schedule:
-          cron: "20 18 * * *"
+          cron: "40 5 * * *"
           filters:
             branches:
               only:
-                - 01553-M-add-reconnect-migration-test
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1579,11 +1579,11 @@ workflows:
   GCP-Daily-Services-Global-3NReconnect-15N-4C:
     triggers:
       - schedule:
-          cron: "20 18 * * *"
+          cron: "40 7 * * *"
           filters:
             branches:
               only:
-                - 01553-M-add-reconnect-migration-test
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1608,7 +1608,7 @@ workflows:
           filters:
             branches:
               only:
-                - master-plus-sdk-0.15.0
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1631,7 +1631,7 @@ workflows:
           filters:
             branches:
               only:
-                - master-plus-sdk-0.15.0
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1678,7 +1678,7 @@ workflows:
           filters:
             branches:
               only:
-                - master-plus-sdk-0.15.0
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1701,7 +1701,7 @@ workflows:
           filters:
             branches:
               only:
-                - master-plus-sdk-0.15.0
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1725,7 +1725,7 @@ workflows:
           filters:
             branches:
               only:
-                - master-plus-sdk-0.15.0
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1744,11 +1744,11 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-6N-1C:
     triggers:
       - schedule:
-          cron: "20 18 * * *"
+          cron: "15 7 * * *"
           filters:
             branches:
               only:
-                - 01553-M-add-reconnect-migration-test
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1767,11 +1767,11 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-Correctness-6N-1C:
     triggers:
       - schedule:
-          cron: "25 18 * * *"
+          cron: "25 7 * * *"
           filters:
             branches:
               only:
-                - 01553-M-add-reconnect-migration-test
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1790,11 +1790,11 @@ workflows:
   GCP-Daily-Services-Comp-3NReconnect-15N-4C:
     triggers:
       - schedule:
-          cron: "45 18 * * *"
+          cron: "25 8 * * *"
           filters:
             branches:
               only:
-                - 01553-M-add-reconnect-migration-test
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -2315,7 +2315,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression; git checkout 01553-D-add-reconnect-migration-test;
+            cd regression;
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
@@ -2731,7 +2731,7 @@ jobs:
         default: "hedera-regression-test"
       slack_summary_channel:
         type: string
-        default: "hedera-regression-test"
+        default: "hedera-regression-summary"
       workflow-name:
         type: string
         default: ""
