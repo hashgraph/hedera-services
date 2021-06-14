@@ -300,4 +300,9 @@ public class AwareTransactionContext implements TransactionContext {
 	public List<ExpiringEntity> expiringEntities() {
 		return expiringEntities;
 	}
+
+	@Override
+	public void setCreated(List<Long> serialNumbers) {
+		receiptConfig = receipt -> receipt.setSerialNumbers(serialNumbers.stream().mapToLong(l -> l).toArray());
+	}
 }

@@ -21,10 +21,15 @@ package com.hedera.services.store.models;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.enums.TokenSupplyType;
+import com.hedera.services.state.enums.TokenType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+
+import java.util.List;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.utils.MiscUtils.describe;
@@ -51,6 +56,7 @@ public class Token {
 
 	private boolean supplyHasChanged;
 
+	private TokenType type;
 	private long totalSupply;
 	private JKey kycKey;
 	private JKey freezeKey;
@@ -73,6 +79,14 @@ public class Token {
 		validateTrue(amount > 0, FAIL_INVALID, () ->
 				"Cannot mint " + amount + " units of " + this + " from " + treasuryRel);
 		changeSupply(treasuryRel, +amount, INVALID_TOKEN_MINT_AMOUNT);
+	}
+
+	public void mint(TokenRelationship treasuryRel, List<ByteString> metadata) {
+		validateTrue(metadata.size() > 0, FAIL_INVALID, () ->
+				"Cannot mint " + metadata.size() + " numbers of Unique Tokens");
+
+		changeSupply(treasuryRel, metadata.size(), FAIL_INVALID);
+		// TODO add new entities
 	}
 
 	public TokenRelationship newRelationshipWith(Account account) {
@@ -165,6 +179,14 @@ public class Token {
 
 	public Id getId() {
 		return id;
+	}
+
+	public void setType(TokenType type) {
+		this.type = type;
+	}
+
+	public TokenType getType() {
+		return type;
 	}
 
 	/* NOTE: The object methods below are only overridden to improve

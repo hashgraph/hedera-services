@@ -263,4 +263,10 @@ public interface TransactionContext {
 	 * @param tokenTransfers the token transfers to record
 	 */
 	void setTokenTransferLists(List<TokenTransferList> tokenTransfers);
+
+	/**
+	 * Update the serial numbers after minting unique tokens
+	 * @param serialNumbers - the serial numbers used in the mint op
+	 */
+	void setCreated(List<Long> serialNumbers);
 }

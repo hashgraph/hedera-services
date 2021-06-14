@@ -21,6 +21,8 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
@@ -70,7 +72,11 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 		final var treasuryRel = store.loadTokenRelationship(token, token.getTreasury());
 
 		/* --- Do the business logic --- */
-		token.mint(treasuryRel, op.getAmount());
+		if (token.getType() == TokenType.FUNGIBLE_COMMON) {
+			token.mint(treasuryRel, op.getAmount());
+		} else {
+			token.mint(treasuryRel, op.getMetadataList());
+		}
 
 		/* --- Persist the updated models --- */
 		store.persistToken(token);

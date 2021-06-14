@@ -248,6 +248,7 @@ public class TypedTokenStore {
 		token.setFreezeKey(immutableToken.getFreezeKey());
 		token.setSupplyKey(immutableToken.getSupplyKey());
 		token.setFrozenByDefault(immutableToken.accountsAreFrozenByDefault());
+		token.setType(immutableToken.tokenType());
 	}
 
 	private void alertTokenBackingStoreOfNew(TokenRelationship newRel) {
