@@ -159,7 +159,9 @@ public class TxnVerbs {
 	public static HapiTokenMint mintToken(String token, long amount) {
 		return new HapiTokenMint(token, amount);
 	}
-
+	public static HapiTokenMint mintToken(String token, List<ByteString> meta, String txName) {
+		return new HapiTokenMint(token, meta, txName);
+	}
 	public static HapiTokenMint mintToken(String token, List<ByteString> metadata){
 		return new HapiTokenMint(token,  metadata);
 	}

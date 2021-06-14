@@ -43,6 +43,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 	static final Logger log = LogManager.getLogger(HapiTokenMint.class);
@@ -63,6 +64,12 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 	}
 
 	public HapiTokenMint(String token, List<ByteString> metadata){
+		this.token = token;
+		this.metadata = metadata;
+		this.amount = 0;
+	}
+
+	public HapiTokenMint(String token, List<ByteString> metadata, String txNamePrefix){
 		this.token = token;
 		this.metadata = metadata;
 		this.amount = 0;
@@ -110,7 +117,12 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 	}
 
 	@Override
-	protected void updateStateOf(HapiApiSpec spec) {
+	protected void updateStateOf(HapiApiSpec spec) throws Throwable {
+		if (actualStatus != SUCCESS) {
+			return;
+		}
+		lookupSubmissionRecord(spec);
+		spec.registry().saveCreationTime(token, recordOfSubmission.getConsensusTimestamp().getSeconds());
 	}
 
 	@Override

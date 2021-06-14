@@ -166,6 +166,7 @@ public class HederaLedger {
 		tokenStore.setAccountsLedger(accountsLedger);
 		tokenStore.setHederaLedger(this);
 		uniqueTokenStore.setHederaLedger(this);
+		uniqueTokenStore.setAccountsLedger(accountsLedger);
 	}
 
 	public void setTokenRelsLedger(

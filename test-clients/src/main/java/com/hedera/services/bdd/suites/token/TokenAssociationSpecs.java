@@ -91,7 +91,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
+		return List.of(new HapiApiSpec[]{
 						treasuryAssociationIsAutomatic(),
 						dissociateHasExpectedSemantics(),
 						associateHasExpectedSemantics(),
@@ -108,7 +108,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 
 	public HapiApiSpec handlesUseOfDefaultTokenId() {
 		return defaultHapiSpec("HandlesUseOfDefaultTokenId")
-				.given( ).when( ).then(
+				.given().when().then(
 						tokenAssociate(DEFAULT_PAYER, "0.0.0")
 								.hasKnownStatus(INVALID_TOKEN_ID)
 				);
@@ -382,7 +382,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 						basicKeysAndTokens()
 				)).when(
 						tokenCreate("tkn1")
-								.treasury(TOKEN_TREASURY),
+								.treasury(TOKEN_TREASURY).initialSupply(10),
 						tokenDissociate(TOKEN_TREASURY, "tkn1")
 								.hasKnownStatus(ACCOUNT_IS_TREASURY),
 						cryptoCreate("misc"),
@@ -483,23 +483,27 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 	}
 
 	private HapiSpecOperation[] basicKeysAndTokens() {
-		return new HapiSpecOperation[] {
+		return new HapiSpecOperation[]{
 				newKeyNamed("kycKey"),
 				newKeyNamed("freezeKey"),
 				cryptoCreate(TOKEN_TREASURY).balance(0L),
 				tokenCreate(FREEZABLE_TOKEN_ON_BY_DEFAULT)
 						.treasury(TOKEN_TREASURY)
 						.freezeKey("freezeKey")
-						.freezeDefault(true),
+						.freezeDefault(true)
+						.initialSupply(10),
 				tokenCreate(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
 						.treasury(TOKEN_TREASURY)
 						.freezeKey("freezeKey")
-						.freezeDefault(false),
+						.freezeDefault(false)
+						.initialSupply(10),
 				tokenCreate(KNOWABLE_TOKEN)
 						.treasury(TOKEN_TREASURY)
-						.kycKey("kycKey"),
+						.kycKey("kycKey")
+						.initialSupply(10),
 				tokenCreate(VANILLA_TOKEN)
 						.treasury(TOKEN_TREASURY)
+						.initialSupply(10)
 		};
 	}
 

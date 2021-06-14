@@ -37,7 +37,18 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
@@ -68,7 +79,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						symbolChanges(),
+//						symbolChanges(),
 						standardImmutabilitySemanticsHold(),
 						validAutoRenewWorks(),
 						tooLongNameCheckHolds(),
@@ -189,7 +200,6 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						tokenCreate("tbu")
 								.treasury(TOKEN_TREASURY)
 								.freezeDefault(true)
-								.initialSupply(10)
 								.adminKey("adminKey")
 								.kycKey("kycThenFreezeKey")
 								.freezeKey("freezeThenKycKey")

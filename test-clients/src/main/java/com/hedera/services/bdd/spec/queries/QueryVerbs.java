@@ -128,4 +128,5 @@ public class QueryVerbs {
 	}
 
 	public static HapiGetTokenNftInfo getTokenNftInfo(String token, long serialNum) { return new HapiGetTokenNftInfo(token, serialNum); }
+
 }

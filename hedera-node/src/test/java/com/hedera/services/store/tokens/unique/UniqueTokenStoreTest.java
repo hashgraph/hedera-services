@@ -148,14 +148,14 @@ class UniqueTokenStoreTest {
 	@Test
 	void superAdjustBalanceFails() {
 		given(tokenRelsLedger.get(sponsorPair, IS_FROZEN)).willReturn(true);
-		var res = store.mint(singleTokenTxBody(), RichInstant.fromJava(Instant.now()));
+		final var res = store.mint(singleTokenTxBody(), RichInstant.fromJava(Instant.now()));
 		assertEquals(ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN, res.getStatus());
 		verify(token, times(0)).setSerialNum(anyLong());
 	}
 
 	@Test
 	void mintOne() {
-		var res = store.mint(singleTokenTxBody(), RichInstant.fromJava(Instant.now()));
+		final var res = store.mint(singleTokenTxBody(), RichInstant.fromJava(Instant.now()));
 		assertEquals(ResponseCodeEnum.OK, res.getStatus());
 		verify(token, times(1)).setSerialNum(anyLong());
 	}
@@ -163,7 +163,7 @@ class UniqueTokenStoreTest {
 	@Test
 	void verifyPopsLastMintedNums() {
 		given(token.getCurrentSerialNum()).willReturn(5L);
-		var lastSerials = store.mint(multipleTokenTxBody(), RichInstant.fromJava(Instant.now()));
+		final var lastSerials = store.mint(multipleTokenTxBody(), RichInstant.fromJava(Instant.now()));
 		assertEquals(2, lastSerials.getCreated().get().size());
 	}
 
@@ -175,43 +175,43 @@ class UniqueTokenStoreTest {
 //		var jKey = mock(JKey.class);
 //		tkn.setSupplyKey(jKey);
 
-		var tbody = multipleTokenTxBody();
+		final var tbody = multipleTokenTxBody();
 		given(store.get(tokenID)).willReturn(token);
 		given(tokens.getForModify(tokenID)).willReturn(token);
 
-		var res = store.mint(tbody, RichInstant.fromJava(Instant.now()));
+		final var res = store.mint(tbody, RichInstant.fromJava(Instant.now()));
 		assertEquals(ResponseCodeEnum.OK, res.getStatus());
-		var lastSerials = res.getCreated().get();
+		final var lastSerials = res.getCreated().get();
 		assertEquals(2, lastSerials.size());
 		verify(token, times(1)).setSerialNum(anyLong());
 	}
 
 	@Test
 	void mintMany() {
-		var res = store.mint(multipleTokenTxBody(), RichInstant.fromJava(Instant.now()));
+		final var res = store.mint(multipleTokenTxBody(), RichInstant.fromJava(Instant.now()));
 		assertEquals(ResponseCodeEnum.OK, res.getStatus());
 		verify(token, times(1)).setSerialNum(anyLong());
 	}
 
 	@Test
 	void mintManyFail() {
-		var res = store.mint(multipleTokenFailTxBody(), RichInstant.fromJava(Instant.now()));
+		final var res = store.mint(multipleTokenFailTxBody(), RichInstant.fromJava(Instant.now()));
 		assertNotEquals(res, ResponseCodeEnum.OK);
-		verify(token, times(0)).setSerialNum(anyLong());
-		verify(nfTokens, times(0)).put(any(), any());
+		verify(token, times(1)).setSerialNum(anyLong());
+		verify(nfTokens, times(2)).put(any(), any());
 	}
 
 	@Test
 	void mintFailsIfNoSupplyKey() {
 		given(token.hasSupplyKey()).willReturn(false);
-		var res = store.mint(singleTokenTxBody(), RichInstant.fromJava(Instant.now()));
+		final var res = store.mint(singleTokenTxBody(), RichInstant.fromJava(Instant.now()));
 		assertEquals(ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY, res.getStatus());
 		verify(token, times(0)).setSerialNum(anyLong());
 	}
 
 	@Test
 	void wipe() {
-		var res = store.wipe(treasury, tokenID, 1, true);
+		final var res = store.wipe(treasury, tokenID, 1, true);
 		assertNull(res);
 	}
 

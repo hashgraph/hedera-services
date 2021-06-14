@@ -73,7 +73,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-				List.of(new HapiApiSpec[] {
+				List.of(new HapiApiSpec[]{
 								freezeMgmtFailureCasesWork(),
 								freezeMgmtSuccessCasesWork(),
 								kycMgmtFailureCasesWork(),

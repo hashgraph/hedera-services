@@ -47,12 +47,10 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.services.state.merkle.MerkleUniqueTokenId.fromNftID;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 
@@ -103,19 +101,18 @@ public class UniqueTokenStore extends BaseTokenStore implements UniqueStore {
 				provisionalUniqueTokens.add(Pair.of(nftId, nft));
 				lastMintedSerialNumbers.add(serialNum);
 			}
-			if (!checkProvisional(provisionalUniqueTokens)) {
-				return INVALID_TRANSACTION_BODY;
-			}
-			var adjustmentResult = tryAdjustment(merkleToken.treasury().toGrpcAccountId(), tokenId, provisionalUniqueTokens.size());
-			if (!adjustmentResult.equals(OK)) {
-				return adjustmentResult;
-			}
+
 			return OK;
 		});
 		if (!provisionalSanityCheck.equals(OK)) {
 			return CreationResult.failure(provisionalSanityCheck);
 		}
+
 		// Commit logic
+		var superMintResult = super.mint(tokenId, lastMintedSerialNumbers.size());
+		if (!superMintResult.equals(OK)) {
+			return CreationResult.failure(superMintResult);
+		}
 		var token = getTokens().get().getForModify(fromTokenId(tokenId));
 		for (Pair<MerkleUniqueTokenId, MerkleUniqueToken> pair : provisionalUniqueTokens) {
 			var nft = pair.getValue();
@@ -125,13 +122,6 @@ public class UniqueTokenStore extends BaseTokenStore implements UniqueStore {
 		token.setSerialNum(token.getCurrentSerialNum() + lastMintedSerialNumbers.size());
 		getTokens().get().replace(fromTokenId(tokenId), token);
 		return CreationResult.success(lastMintedSerialNumbers);
-	}
-
-	private boolean checkProvisional(List<Pair<MerkleUniqueTokenId, MerkleUniqueToken>> provisionalUniqueTokens) {
-		var provisionalTokenSet = provisionalUniqueTokens.stream()
-				.map(e -> e.getValue().getMemo())
-				.collect(Collectors.toSet());
-		return provisionalTokenSet.size() == provisionalUniqueTokens.size();
 	}
 
 	public boolean nftExists(final NftID id) {
