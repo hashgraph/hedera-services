@@ -1533,6 +1533,7 @@ public class ServicesContext {
 					validator(),
 					globalDynamicProperties(),
 					this::tokens,
+					this::uniqueTokens,
 					tokenRelsLedger);
 		}
 		return tokenStore;

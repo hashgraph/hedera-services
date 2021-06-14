@@ -37,6 +37,11 @@ public class UniqueToken {
 	private Id owner;
 	private byte[] metadata;
 
+	public UniqueToken(Id tokenId, long serialNumber) {
+		this.tokenId = tokenId;
+		this.serialNumber = serialNumber;
+	}
+
 	public UniqueToken(Id tokenId, long serialNumber, RichInstant creationTime, Id owner, byte[] metadata) {
 		this.tokenId = tokenId;
 		this.serialNumber = serialNumber;

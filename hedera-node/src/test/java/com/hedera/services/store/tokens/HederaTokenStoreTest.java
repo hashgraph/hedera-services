@@ -34,7 +34,11 @@ import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.tokens.unique.OwnerIdentifier;
+import com.hedera.services.utils.invertible_fchashmap.FCInvertibleHashMap;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -124,6 +128,7 @@ class HederaTokenStoreTest {
 	private EntityIdSource ids;
 	private GlobalDynamicProperties properties;
 	private FCMap<MerkleEntityId, MerkleToken> tokens;
+	private FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier> uniqueTokens;
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 	private HederaLedger hederaLedger;
@@ -218,12 +223,14 @@ class HederaTokenStoreTest {
 		given(tokens.get(fromTokenId(misc))).willReturn(token);
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(modifiableToken);
 
+		uniqueTokens = (FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier>) mock(FCInvertibleHashMap.class);
+
 		properties = mock(GlobalDynamicProperties.class);
 		given(properties.maxTokensPerAccount()).willReturn(MAX_TOKENS_PER_ACCOUNT);
 		given(properties.maxTokenSymbolUtf8Bytes()).willReturn(MAX_TOKEN_SYMBOL_UTF8_BYTES);
 		given(properties.maxTokenNameUtf8Bytes()).willReturn(MAX_TOKEN_NAME_UTF8_BYTES);
 
-		subject = new HederaTokenStore(ids, TEST_VALIDATOR, properties, () -> tokens, tokenRelsLedger);
+		subject = new HederaTokenStore(ids, TEST_VALIDATOR, properties, () -> tokens, () -> uniqueTokens, tokenRelsLedger);
 		subject.setAccountsLedger(accountsLedger);
 		subject.setHederaLedger(hederaLedger);
 		subject.knownTreasuries.put(treasury, new HashSet<>() {{ add(misc); }});

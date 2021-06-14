@@ -207,6 +207,30 @@ public class TypedTokenStore {
 	}
 
 	/**
+	 * Returns a {@link UniqueToken} model of the requested unique token, with operations that can be used to
+	 * implement business logic in a transaction.
+	 *
+	 * @param tokenId the token class of the unique token
+	 * @param serialNumber the serial number to load
+	 * @return a usable model of the unique token
+	 * @throws InvalidTransactionException if the requested token class is missing, deleted, or expired and pending removal
+	 */
+	public UniqueToken loadUniqueToken(Id tokenId, long serialNumber) {
+		final var tokenKey = new MerkleEntityId(tokenId.getShard(), tokenId.getRealm(), tokenId.getNum());
+		final var merkleToken = tokens.get().get(tokenKey);
+		validateUsable(merkleToken);
+
+		final var uniqueTokenKey = new MerkleUniqueTokenId(new EntityId(tokenId.getShard(), tokenId.getRealm(), tokenId.getNum()), serialNumber);
+		final var merkleUniqueToken = uniqueTokens.get().get(uniqueTokenKey);
+		validateUsable(merkleUniqueToken);
+
+		final var uniqueToken = new UniqueToken(tokenId, serialNumber);
+		initModelFields(uniqueToken, merkleUniqueToken);
+
+		return uniqueToken;
+	}
+
+	/**
 	 * Persists the given token to the Swirlds state, inviting the injected {@link TransactionRecordService}
 	 * to update the {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} of the active transaction
 	 * with these changes.
@@ -242,6 +266,10 @@ public class TypedTokenStore {
 		validateFalse(merkleToken.isDeleted(), TOKEN_WAS_DELETED);
 	}
 
+	private void validateUsable(MerkleUniqueToken merkleUniqueTokenToken) {
+		validateTrue(merkleUniqueTokenToken != null, INVALID_TOKEN_ID);
+	}
+
 	private void mapModelChangesToMutable(Token token, MerkleToken mutableToken) {
 		final var newAutoRenewAccount = token.getAutoRenewAccount();
 		if (newAutoRenewAccount != null) {
@@ -266,13 +294,26 @@ public class TypedTokenStore {
 
 	private void initModelFields(Token token, MerkleToken immutableToken) {
 		token.initTotalSupply(immutableToken.totalSupply());
-		token.initMaxSupply(immutableToken.maxSupply());
+		token.initSupplyConstraints(immutableToken.supplyType(), immutableToken.maxSupply());
 		token.setKycKey(immutableToken.getKycKey());
 		token.setFreezeKey(immutableToken.getFreezeKey());
 		token.setSupplyKey(immutableToken.getSupplyKey());
 		token.setFrozenByDefault(immutableToken.accountsAreFrozenByDefault());
 		token.setType(immutableToken.tokenType());
 		token.setLastUsedSerialNumber(immutableToken.getLastUsedSerialNumber());
+	}
+
+	private void initModelFields(UniqueToken uniqueToken, MerkleUniqueToken immutableUniqueToken) {
+		uniqueToken.setCreationTime(immutableUniqueToken.getCreationTime());
+		uniqueToken.setMetadata(immutableUniqueToken.getMetadata());
+		uniqueToken.setOwner(
+				new Id(
+						immutableUniqueToken.getOwner().shard(),
+						immutableUniqueToken.getOwner().realm(),
+						immutableUniqueToken.getOwner().num()
+				)
+		);
+
 	}
 
 	private void alertTokenBackingStoreOfNew(TokenRelationship newRel) {

@@ -26,6 +26,7 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -64,6 +65,8 @@ class TokenMintTransitionLogicTest {
 	private TransactionContext txnCtx;
 	@Mock
 	private PlatformTxnAccessor accessor;
+	@Mock
+	private OptionValidator validator;
 
 	private TokenRelationship treasuryRel;
 	private TransactionBody tokenMintTxn;
@@ -72,7 +75,7 @@ class TokenMintTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new TokenMintTransitionLogic(store, txnCtx);
+		subject = new TokenMintTransitionLogic(validator, store, txnCtx);
 	}
 
 	@Test

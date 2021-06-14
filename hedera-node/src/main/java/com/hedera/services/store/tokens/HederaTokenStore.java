@@ -30,12 +30,17 @@ import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.HederaStore;
+import com.hedera.services.store.tokens.unique.OwnerIdentifier;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.invertible_fchashmap.FCInvertibleHashMap;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
@@ -66,6 +71,7 @@ import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRAN
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.services.state.merkle.MerkleToken.UNUSED_KEY;
+import static com.hedera.services.state.merkle.MerkleUniqueTokenId.fromNftID;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
 import static com.hedera.services.store.CreationResult.failure;
 import static com.hedera.services.store.CreationResult.success;
@@ -111,6 +117,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties properties;
 	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
+	// Temporary added while Answer service is refactored to use the new Model based design
+	private final Supplier<FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier>> uniqueTokenSupplier;
 	private final TransactionalLedger<
 			Pair<AccountID, TokenID>,
 			TokenRelProperty,
@@ -125,6 +133,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			OptionValidator validator,
 			GlobalDynamicProperties properties,
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
+			Supplier<FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier>> uniqueTokenSupplier,
 			TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger
 	) {
 		super(ids);
@@ -132,6 +141,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		this.validator = validator;
 		this.properties = properties;
 		this.tokenRelsLedger = tokenRelsLedger;
+		this.uniqueTokenSupplier = uniqueTokenSupplier;
 		rebuildViewOfKnownTreasuries();
 	}
 
@@ -385,7 +395,10 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				request.getFreezeDefault(),
 				kycKey.isEmpty(),
 				fromGrpcAccountId(request.getTreasury()));
+		pendingCreation.setTokenType(request.getTokenTypeValue());
+		pendingCreation.setSupplyType(request.getSupplyTypeValue());
 		pendingCreation.setMemo(request.getMemo());
+		pendingCreation.setMaxSupply(request.getMaxSupply());
 		adminKey.ifPresent(pendingCreation::setAdminKey);
 		kycKey.ifPresent(pendingCreation::setKycKey);
 		wipeKey.ifPresent(pendingCreation::setWipeKey);
@@ -398,7 +411,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 		return success(pendingId);
 	}
-
 
 	public void addKnownTreasury(AccountID aId, TokenID tId) {
 		knownTreasuries.computeIfAbsent(aId, ignore -> new HashSet<>()).add(tId);
@@ -706,6 +718,26 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			return validity;
 		}
 		return exists(tId) ? OK : INVALID_TOKEN_ID;
+	}
+
+	@Override
+	public NftID resolve(NftID id) {
+		return uniqueTokenSupplier.get().containsKey(fromNftID(id)) ? id : MISSING_NFT;
+	}
+
+	@Override
+	public MerkleUniqueToken getUniqueToken(final NftID id) {
+		throwIfMissing(id);
+
+		return uniqueTokenSupplier.get().get(fromNftID(id));
+	}
+
+	private void throwIfMissing(NftID id) {
+		if (resolve(id) == MISSING_NFT) {
+			throw new IllegalArgumentException(String.format(
+					"Argument 'id=%s' does not refer to a known unique token!",
+					readableId(id)));
+		}
 	}
 
 	Map<AccountID, Set<TokenID>> getKnownTreasuries() {

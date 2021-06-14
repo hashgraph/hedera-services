@@ -134,8 +134,8 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Identifiabl
 		return owner;
 	}
 
-	public ByteString getMetadata() {
-		return ByteString.copyFrom(metadata);
+	public byte[] getMetadata() {
+		return metadata;
 	}
 
 	public RichInstant getCreationTime() {

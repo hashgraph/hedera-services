@@ -40,6 +40,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.MiscUtils;
@@ -82,6 +83,7 @@ import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.schedule.ExceptionalScheduleStore.NOOP_SCHEDULE_STORE;
 import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
 import static com.hedera.services.store.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
+import static com.hedera.services.store.tokens.TokenStore.MISSING_NFT;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
@@ -329,11 +331,11 @@ public class StateView {
 
 	public Optional<TokenNftInfo> infoForNft(NftID nftID) {
 		try {
-			var exists = uniqueTokenStore.nftExists(nftID);
-			if (!exists) {
+			var id = tokenStore.resolve(nftID);
+			if (id == MISSING_NFT) {
 				return Optional.empty();
 			}
-			var uniqueToken = uniqueTokenStore.get(nftID);
+			var uniqueToken = tokenStore.getUniqueToken(nftID);
 
 			var info = TokenNftInfo.newBuilder()
 					.setNftID(nftID)
@@ -341,7 +343,7 @@ public class StateView {
 					.setCreationTime(Timestamp.newBuilder()
 							.setSeconds(uniqueToken.getCreationTime().getSeconds())
 							.setNanos(uniqueToken.getCreationTime().getNanos()))
-					.setMetadata(uniqueToken.getMetadata());
+					.setMetadata(ByteString.copyFrom(uniqueToken.getMetadata()));
 
 			return Optional.of(info.build());
 		} catch (Exception unexpected) {
@@ -353,7 +355,7 @@ public class StateView {
 		}
 	}
 
-	public boolean nftExists(NftID id) { return uniqueTokenStore.nftExists(id); }
+	public boolean nftExists(NftID id) { return tokenStore.resolve(id) != MISSING_NFT; }
 
 	public Optional<TokenType> tokenType(TokenID tokenID) {
 		try {
