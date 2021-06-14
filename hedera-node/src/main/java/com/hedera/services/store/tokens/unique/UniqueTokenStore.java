@@ -97,9 +97,8 @@ public class UniqueTokenStore extends BaseTokenStore implements UniqueStore {
 			long serialNum = merkleToken.getCurrentSerialNum();
 			for (ByteString el : metadataList) {
 				serialNum++;
-				String metaAsStr = el.toStringUtf8();
 				final var nftId = new MerkleUniqueTokenId(eId, serialNum);
-				final var nft = new MerkleUniqueToken(owner, metaAsStr, creationTime);
+				final var nft = new MerkleUniqueToken(owner, el.toByteArray(), creationTime);
 				provisionalUniqueTokens.add(Pair.of(nftId, nft));
 				lastMintedSerialNumbers.add(serialNum);
 			}
@@ -129,7 +128,7 @@ public class UniqueTokenStore extends BaseTokenStore implements UniqueStore {
 
 	private boolean checkProvisional(List<Pair<MerkleUniqueTokenId, MerkleUniqueToken>> provisionalUniqueTokens) {
 		var provisionalTokenSet = provisionalUniqueTokens.stream()
-				.map(e -> e.getValue().getMemo())
+				.map(e -> e.getValue().getMetadata())
 				.collect(Collectors.toSet());
 		return provisionalTokenSet.size() == provisionalUniqueTokens.size();
 	}

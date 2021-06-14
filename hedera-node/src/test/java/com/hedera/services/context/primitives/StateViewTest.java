@@ -230,7 +230,7 @@ class StateViewTest {
 		given(tokenStore.get(tokenId)).willReturn(token);
 
 		uniqueStore = mock(UniqueStore.class);
-		uniqueToken = new MerkleUniqueToken(new EntityId(1, 2, 3), "has to be bytes", RichInstant.fromJava(resolutionTime));
+		uniqueToken = new MerkleUniqueToken(new EntityId(1, 2, 3), "Some metadata here".getBytes(), RichInstant.fromJava(resolutionTime));
 		given(uniqueStore.nftExists(nftId)).willReturn(true);
 		given(uniqueStore.nftExists(missingNftId)).willReturn(false);
 		given(uniqueStore.get(nftId)).willReturn(uniqueToken);
@@ -409,7 +409,7 @@ class StateViewTest {
 		var info = subject.infoForNft(nftId).get();
 
 		// then:
-		assertEquals(uniqueToken.getMemo(), info.getMetadata().toStringUtf8());
+		assertEquals(uniqueToken.getMetadata(), info.getMetadata());
 		assertEquals(uniqueToken.getCreationTime().toGrpc(), info.getCreationTime());
 		assertEquals(asAccount(uniqueToken.getOwner()), info.getAccountID());
 	}

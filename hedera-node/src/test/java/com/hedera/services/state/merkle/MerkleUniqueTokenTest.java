@@ -25,6 +25,7 @@ import org.mockito.InOrder;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
@@ -36,8 +37,8 @@ public class MerkleUniqueTokenTest {
 
 	private EntityId owner;
 	private EntityId otherOwner;
-	private String memo;
-	private String otherMemo;
+	private byte[] metadata;
+	private byte[] otherMetadata;
 	private RichInstant timestamp;
 	private RichInstant otherTimestamp;
 
@@ -47,12 +48,12 @@ public class MerkleUniqueTokenTest {
 	public void setup() {
 		owner = new EntityId(1, 2, 3);
 		otherOwner = new EntityId(1, 2, 4);
-		memo = "Test NFT";
-		otherMemo = "Test NFT2";
+		metadata = "Test NFT".getBytes();
+		otherMetadata = "Test NFT2".getBytes();
 		timestamp = RichInstant.fromJava(Instant.ofEpochSecond(timestampL));
 		otherTimestamp = RichInstant.fromJava(Instant.ofEpochSecond(1_234_568L));
 
-		subject = new MerkleUniqueToken(owner, memo, timestamp);
+		subject = new MerkleUniqueToken(owner, metadata, timestamp);
 	}
 
 	@AfterEach
@@ -62,10 +63,10 @@ public class MerkleUniqueTokenTest {
 	@Test
 	public void equalsContractWorks() {
 		// given
-		var other = new MerkleUniqueToken(owner, memo, otherTimestamp);
-		var other2 = new MerkleUniqueToken(owner, otherMemo, timestamp);
-		var other3 = new MerkleUniqueToken(otherOwner, memo, timestamp);
-		var identical = new MerkleUniqueToken(owner, memo, timestamp);
+		var other = new MerkleUniqueToken(owner, metadata, otherTimestamp);
+		var other2 = new MerkleUniqueToken(owner, otherMetadata, timestamp);
+		var other3 = new MerkleUniqueToken(otherOwner, metadata, timestamp);
+		var identical = new MerkleUniqueToken(owner, metadata, timestamp);
 
 		// expect
 		assertNotEquals(subject, other);
@@ -77,8 +78,8 @@ public class MerkleUniqueTokenTest {
 	@Test
 	public void hashCodeWorks() {
 		// given:
-		var identical = new MerkleUniqueToken(owner, memo, timestamp);
-		var other = new MerkleUniqueToken(otherOwner, otherMemo, otherTimestamp);
+		var identical = new MerkleUniqueToken(owner, metadata, timestamp);
+		var other = new MerkleUniqueToken(otherOwner, otherMetadata, otherTimestamp);
 
 		// expect:
 		assertNotEquals(subject.hashCode(), other.hashCode());
@@ -91,7 +92,7 @@ public class MerkleUniqueTokenTest {
 		assertEquals("MerkleUniqueToken{" +
 						"owner=" + owner + ", " +
 						"creationTime=" + timestamp + ", " +
-						"memo=" + memo + "}",
+						"metadata=" + Arrays.toString(metadata) + "}",
 				subject.toString());
 	}
 
@@ -122,7 +123,7 @@ public class MerkleUniqueTokenTest {
 		inOrder.verify(out).writeSerializable(owner, true);
 		inOrder.verify(out).writeLong(timestamp.getSeconds());
 		inOrder.verify(out).writeInt(timestamp.getNanos());
-		inOrder.verify(out).writeNormalisedString(memo);
+		inOrder.verify(out).writeByteArray(metadata);
 
 	}
 
@@ -132,7 +133,7 @@ public class MerkleUniqueTokenTest {
 		SerializableDataInputStream in = mock(SerializableDataInputStream.class);
 
 		given(in.readSerializable()).willReturn(owner);
-		given(in.readNormalisedString(anyInt())).willReturn(memo);
+		given(in.readByteArray(anyInt())).willReturn(metadata);
 		given(in.readLong()).willReturn(timestampL);
 		given(in.readInt()).willReturn(0);
 
