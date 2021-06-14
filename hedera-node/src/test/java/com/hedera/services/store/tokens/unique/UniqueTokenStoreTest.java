@@ -94,7 +94,7 @@ class UniqueTokenStoreTest {
 	AccountID sponsor = IdUtils.asAccount("1.2.666");
 	Pair<AccountID, TokenID> sponsorPair = asTokenRel(sponsor, tokenID);
 	long sponsorBalance = 1_000;
-	String memo = "hello";
+	ByteString metadata = ByteString.copyFromUtf8("hello");
 
 
 	@BeforeEach
@@ -103,7 +103,7 @@ class UniqueTokenStoreTest {
 		nftId = mock(MerkleUniqueTokenId.class);
 		nft = mock(MerkleUniqueToken.class);
 		given(nft.getOwner()).willReturn(EntityId.fromGrpcAccountId(treasury));
-		given(nft.getMemo()).willReturn(memo);
+		given(nft.getMetadata()).willReturn(metadata);
 		token = mock(MerkleToken.class);
 		given(token.isDeleted()).willReturn(false);
 		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(sponsor));
@@ -138,7 +138,7 @@ class UniqueTokenStoreTest {
 		store.setAccountsLedger(accountsLedger);
 
 		given(nft.getOwner()).willReturn(EntityId.fromGrpcAccountId(treasury));
-		given(nft.getMemo()).willReturn(memo);
+		given(nft.getMetadata()).willReturn(metadata);
 
 		given(nfTokens.containsKey(fromNftID(misc))).willReturn(true);
 		given(nfTokens.get(fromNftID(misc))).willReturn(nft);

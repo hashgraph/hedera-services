@@ -364,7 +364,7 @@ public class StateView {
 					.setCreationTime(Timestamp.newBuilder()
 							.setSeconds(uniqueToken.getCreationTime().getSeconds())
 							.setNanos(uniqueToken.getCreationTime().getNanos()))
-					.setMetadata(ByteString.copyFromUtf8(uniqueToken.getMemo()));
+					.setMetadata(uniqueToken.getMetadata());
 
 			return Optional.of(info.build());
 		} catch (Exception unexpected) {
