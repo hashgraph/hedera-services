@@ -64,32 +64,13 @@ class ExpandHandleSpanTest {
 	}
 
 	@Test
-	void spanExpiresAsExpected() throws InterruptedException, InvalidProtocolBufferException {
+	void reusesTrackedAccessor() throws InvalidProtocolBufferException {
 		// given:
 		subject = new ExpandHandleSpan(duration, testUnit);
 		// and:
 		final var startAccessor = subject.track(validTxn);
 
 		// when:
-		testUnit.sleep(duration + 1);
-		// and:
-		final var endAccessor = subject.accessorFor(validTxn);
-
-		// then:
-		assertEquals(startAccessor.getPlatformTxn(), endAccessor.getPlatformTxn());
-		assertNotSame(startAccessor, endAccessor);
-	}
-
-	@Test
-	void tracksWithinDuration() throws InterruptedException, InvalidProtocolBufferException {
-		// given:
-		subject = new ExpandHandleSpan(duration, testUnit);
-		// and:
-		final var startAccessor = subject.track(validTxn);
-
-		// when:
-		testUnit.sleep(duration / 10);
-		// and:
 		final var endAccessor = subject.accessorFor(validTxn);
 
 		// then:
