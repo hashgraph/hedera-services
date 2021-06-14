@@ -29,6 +29,7 @@ import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.common.CommonTokenStore;
 import com.hedera.services.store.tokens.unique.UniqueTokenStore;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -40,8 +41,10 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.METADATA_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static junit.framework.TestCase.assertTrue;
@@ -64,6 +67,7 @@ class TokenMintTransitionLogicTest {
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
 	private MerkleToken token;
+	private OptionValidator validator;
 
 	private TransactionBody tokenMintTxn;
 	private TokenMintTransitionLogic subject;
@@ -74,10 +78,11 @@ class TokenMintTransitionLogicTest {
 		uniqueStore = mock(UniqueTokenStore.class);
 		accessor = mock(PlatformTxnAccessor.class);
 		token = mock(MerkleToken.class);
+		validator = mock(OptionValidator.class);
 
 		txnCtx = mock(TransactionContext.class);
 
-		subject = new TokenMintTransitionLogic(tokenStore, uniqueStore, txnCtx);
+		subject = new TokenMintTransitionLogic(validator, tokenStore, uniqueStore, txnCtx);
 	}
 
 	@Test
@@ -198,6 +203,26 @@ class TokenMintTransitionLogicTest {
 		verify(txnCtx).setStatus(INVALID_TOKEN_ID);
 	}
 
+	@Test
+	public void rejectsInvalidMetadata() {
+		givenValidUniqueTxnCtx();
+		given(validator.maxBatchSizeMintCheck(tokenMintTxn.getTokenMint().getMetadataCount())).willReturn(OK);
+		given(validator.nftMetadataCheck(tokenMintTxn.getTokenMint().getMetadata(0).toByteArray())).willReturn(METADATA_TOO_LONG);
+
+		// expect:
+		assertEquals(METADATA_TOO_LONG, subject.semanticCheck().apply(tokenMintTxn));
+	}
+
+	@Test
+	public void rejectsInvalidBatchSize() {
+		givenValidUniqueTxnCtx();
+		given(validator.maxBatchSizeMintCheck(tokenMintTxn.getTokenMint().getMetadataCount())).willReturn(BATCH_SIZE_LIMIT_EXCEEDED);
+
+		// expect:
+		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.semanticCheck().apply(tokenMintTxn));
+
+	}
+
 	private void givenValidTxnCtx(){
 		givenValidCommonTxnCtx();
 	}
@@ -236,19 +261,6 @@ class TokenMintTransitionLogicTest {
 
 		given(uniqueStore.mint(any(), any())).willReturn(CreationResult.success(List.of(1L, 2L)));
 
-	}
-
-	private void givenInvalidUniqueTxnCtx() {
-		tokenMintTxn = TransactionBody.newBuilder()
-				.setTokenMint(TokenMintTransactionBody.newBuilder()
-						.setToken(id)
-						.setAmount(amount))
-				.build();
-		given(accessor.getTxn()).willReturn(tokenMintTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(tokenStore.resolve(id)).willReturn(id);
-		given(tokenStore.get(id)).willReturn(token);
-		given(token.totalSupply()).willReturn(amount);
 	}
 
 	private void givenMissingToken() {

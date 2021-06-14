@@ -31,6 +31,12 @@ public class GlobalDynamicProperties {
 	private final HederaNumbers hederaNums;
 	private final PropertySource properties;
 
+	private int maxNFTMetadataBytes;
+	private int maxBatchSizeBurn;
+	private int maxBatchSizeMint;
+	private int maxNftTransfersLen;
+	private int maxBatchSizeWipe;
+	private int maxNFTQueryRange;
 	private int maxTokensPerAccount;
 	private int maxTokenSymbolUtf8Bytes;
 	private int maxTokenNameUtf8Bytes;
@@ -80,6 +86,11 @@ public class GlobalDynamicProperties {
 
 	public void reload() {
 		shouldKeepRecordsInState = properties.getBooleanProperty("ledger.keepRecordsInState");
+		maxNFTMetadataBytes = properties.getIntProperty("tokens.nfts.maxMetadataBytes");
+		maxBatchSizeBurn = properties.getIntProperty("tokens.nfts.maxBatchSizeBurn");
+		maxBatchSizeMint = properties.getIntProperty("tokens.nfts.maxBatchSizeMint");
+		maxBatchSizeWipe = properties.getIntProperty("tokens.nfts.maxBatchSizeWipe");
+		maxNFTQueryRange = properties.getIntProperty("tokens.nfts.maxQueryRange");
 		maxTokensPerAccount = properties.getIntProperty("tokens.maxPerAccount");
 		maxTokenSymbolUtf8Bytes = properties.getIntProperty("tokens.maxSymbolUtf8Bytes");
 		maxTokenNameUtf8Bytes = properties.getIntProperty("tokens.maxTokenNameUtf8Bytes");
@@ -100,6 +111,7 @@ public class GlobalDynamicProperties {
 		shouldExportTokenBalances = properties.getBooleanProperty("balances.exportTokenBalances");
 		maxTransfersLen = properties.getIntProperty("ledger.transfers.maxLen");
 		maxTokenTransfersLen = properties.getIntProperty("ledger.tokenTransfers.maxLen");
+		maxNftTransfersLen = properties.getIntProperty("ledger.nftTransfers.maxLen");
 		maxMemoUtf8Bytes = properties.getIntProperty("hedera.transaction.maxMemoUtf8Bytes");
 		maxTxnDuration = properties.getLongProperty("hedera.transaction.maxValidDuration");
 		minTxnDuration = properties.getLongProperty("hedera.transaction.minValidDuration");
@@ -124,6 +136,30 @@ public class GlobalDynamicProperties {
 
 	public int maxTokensPerAccount() {
 		return maxTokensPerAccount;
+	}
+
+	public int maxNFTMetadataBytes() {
+		return maxNFTMetadataBytes;
+	}
+
+	public int maxBatchSizeBurn() {
+		return maxBatchSizeBurn;
+	}
+
+	public int maxNftTransfersLen() {
+		return maxNftTransfersLen;
+	}
+
+	public int maxBatchSizeWipe() {
+		return maxBatchSizeWipe;
+	}
+
+	public int maxBatchSizeMint() {
+		return maxBatchSizeMint;
+	}
+
+	public int maxNFTQueryRange() {
+		return maxNFTQueryRange;
 	}
 
 	public int maxTokenSymbolUtf8Bytes() {
