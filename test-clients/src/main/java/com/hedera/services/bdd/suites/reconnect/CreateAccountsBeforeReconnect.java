@@ -67,6 +67,8 @@ public class CreateAccountsBeforeReconnect extends HapiApiSuite {
 		final long accNumber = accountNumber.getAndIncrement();
 		if (accNumber >= ACCOUNT_CREATION_LIMIT) {
 			return getVersionInfo()
+					.fee(ONE_HUNDRED_HBARS)
+					.payingWith(GENESIS)
 					.noLogging();
 		}
 
