@@ -37,7 +37,6 @@ import static com.hedera.services.bdd.spec.utilops.LoadTest.defaultLoadTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 
 public class SubmitMessagesForReconnect extends HapiApiSuite {
@@ -59,6 +58,7 @@ public class SubmitMessagesForReconnect extends HapiApiSuite {
 		return submitMessageTo(topicToSubmit)
 				.message(randomUtf8Bytes(100))
 				.noLogging()
+				.fee(ONE_HBAR)
 				.hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED)
 				.deferStatusResolution();
 	}
