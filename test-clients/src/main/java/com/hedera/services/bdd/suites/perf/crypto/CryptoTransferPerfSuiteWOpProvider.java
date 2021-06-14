@@ -59,6 +59,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class CryptoTransferPerfSuiteWOpProvider extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoTransferPerfSuiteWOpProvider.class);
+
 	public static void main(String... args) {
 		CryptoTransferPerfSuiteWOpProvider suite = new CryptoTransferPerfSuiteWOpProvider();
 		suite.setReportStats(true);
@@ -92,13 +93,13 @@ public class CryptoTransferPerfSuiteWOpProvider extends HapiApiSuite {
 	}
 
 
-	private Function<HapiApiSpec, OpProvider> XfersFactory(){
+	private Function<HapiApiSpec, OpProvider> XfersFactory() {
 		return spec -> new OpProvider() {
 			@Override
 			public List<HapiSpecOperation> suggestedInitializers() {
 				return List.of(
 						cryptoCreate("sender")
-								.balance(10000000000L)
+								.balance(ONE_HUNDRED_HBARS)
 								.hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED),
 						cryptoCreate("receiver")
 								.hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED),
@@ -113,9 +114,8 @@ public class CryptoTransferPerfSuiteWOpProvider extends HapiApiSuite {
 						.hasKnownStatusFrom(SUCCESS, OK, INSUFFICIENT_PAYER_BALANCE
 								, UNKNOWN, TRANSACTION_EXPIRED,
 								INSUFFICIENT_ACCOUNT_BALANCE)
-						.hasRetryPrecheckFrom(BUSY, DUPLICATE_TRANSACTION,
-								PLATFORM_TRANSACTION_NOT_CREATED,
-								INVALID_SIGNATURE, PAYER_ACCOUNT_NOT_FOUND)
+						.hasPrecheckFrom(DUPLICATE_TRANSACTION, OK, INVALID_SIGNATURE)
+						.hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED, PAYER_ACCOUNT_NOT_FOUND)
 						.deferStatusResolution();
 				return Optional.of(op);
 			}
