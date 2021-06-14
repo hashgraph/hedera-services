@@ -84,6 +84,7 @@ class SignedTxnAccessorTest {
 		doCallRealMethod().when(subject).baseUsageMeta();
 		doCallRealMethod().when(subject).availXferUsageMeta();
 		doCallRealMethod().when(subject).availSubmitUsageMeta();
+		doCallRealMethod().when(subject).spanMap();
 
 		// expect:
 		assertThrows(UnsupportedOperationException.class, subject::getSigMeta);
@@ -91,6 +92,7 @@ class SignedTxnAccessorTest {
 		assertThrows(UnsupportedOperationException.class, subject::baseUsageMeta);
 		assertThrows(UnsupportedOperationException.class, subject::availXferUsageMeta);
 		assertThrows(UnsupportedOperationException.class, subject::availSubmitUsageMeta);
+		assertThrows(UnsupportedOperationException.class, subject::spanMap);
 		assertThrows(UnsupportedOperationException.class, () -> subject.setSigMeta(null));
 	}
 
