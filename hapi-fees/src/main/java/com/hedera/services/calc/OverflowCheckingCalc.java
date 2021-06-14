@@ -90,7 +90,7 @@ public class OverflowCheckingCalc {
 				usage.getUniversalBpt() * networkPrices.getBpt(),
 				usage.getNetworkVpt() * networkPrices.getVpt(),
 				usage.getNetworkRbh() * networkPrices.getRbh());
-		return ESTIMATOR_UTILS.nonDegenerateDiv(nominal, FEE_DIVISOR_FACTOR);
+		return constrainedTinycentFee(nominal, networkPrices.getMin(), networkPrices.getMax());
 	}
 
 	private long nodeFeeInTinycents(UsageAccumulator usage, FeeComponents nodePrices) {
@@ -99,13 +99,25 @@ public class OverflowCheckingCalc {
 				usage.getNodeBpr() * nodePrices.getBpr(),
 				usage.getNodeSbpr() * nodePrices.getSbpr(),
 				usage.getNodeVpt() * nodePrices.getVpt());
-		return ESTIMATOR_UTILS.nonDegenerateDiv(nominal, FEE_DIVISOR_FACTOR);
+		return constrainedTinycentFee(nominal, nodePrices.getMin(), nodePrices.getMax());
 	}
 
 	private long serviceFeeInTinycents(UsageAccumulator usage, FeeComponents servicePrices) {
 		final var nominal = safeAccumulateTwo(servicePrices.getConstant(),
 				usage.getServiceRbh() * servicePrices.getRbh(),
 				usage.getServiceSbh() * servicePrices.getSbh());
+		return constrainedTinycentFee(nominal, servicePrices.getMin(), servicePrices.getMax());
+	}
+
+	/* Prices in file 0.0.111 are actually set in units of 1/1000th of a tinycent,
+	* so here we constrain the nominal price by the max/min and then divide by
+	* 1000 (the value of FEE_DIVISOR_FACTOR). */
+	private long constrainedTinycentFee(long nominal, long min, long max) {
+		if (nominal < min) {
+			nominal = min;
+		} else if (nominal > max) {
+			nominal = max;
+		}
 		return ESTIMATOR_UTILS.nonDegenerateDiv(nominal, FEE_DIVISOR_FACTOR);
 	}
 
