@@ -33,10 +33,7 @@ public final class JEd25519KeyConverter implements ArgumentConverter {
 		if (null == input) {
 			return null;
 		}
-		if (!(input instanceof String)) {
-			throw new ArgumentConversionException(input + " is not a string");
-		}
-		var inputString = (String) input;
+		final String inputString = ConverterUtils.toStringInstance(input);
 		return new JEd25519Key(CommonUtils.unhex(inputString));
 	}
 }

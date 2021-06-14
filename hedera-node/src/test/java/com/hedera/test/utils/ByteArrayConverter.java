@@ -35,10 +35,7 @@ public final class ByteArrayConverter implements ArgumentConverter {
 		if (null == input) {
 			return null;
 		}
-		if (!(input instanceof String)) {
-			throw new ArgumentConversionException(input + " is not a string");
-		}
-		var inputString = (String) input;
+		final String inputString = ConverterUtils.toStringInstance(input);
 		return CommonUtils.unhex(inputString);
 	}
 }
