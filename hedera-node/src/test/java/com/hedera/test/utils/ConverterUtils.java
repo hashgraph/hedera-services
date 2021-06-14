@@ -47,9 +47,9 @@ public final class ConverterUtils {
      * {@link ArgumentConversionException}
      * @param inputString
      *              the input to the converter
-     * @param numberOfParts
-     *              the limit to be applied for the split operation, non positive number means it will be applied as many
-     *              times as possible
+     * @param exactNumberOfParts
+     *              exact number of parts from the string to expect, non positive number means it will be applied as
+     *              many times as possible
      * @param delimiter
      *              the regex to be applied for the split operation
      * @param type
@@ -58,12 +58,12 @@ public final class ConverterUtils {
      * */
     public static String[] getPartsIfValid(
             final String inputString,
-            final int numberOfParts,
+            final int exactNumberOfParts,
             final String delimiter,
             final String type) throws ArgumentConversionException {
-        final var parts = inputString.split(delimiter, numberOfParts);
-        if (numberOfParts != parts.length && numberOfParts > 0) {
-            throw new ArgumentConversionException(inputString + " is not a " + numberOfParts + "-part " + type +" ID");
+        final var parts = inputString.split(delimiter, exactNumberOfParts);
+        if (exactNumberOfParts != parts.length && exactNumberOfParts > 0) {
+            throw new ArgumentConversionException(inputString + " is not a " + exactNumberOfParts + "-part " + type +" ID");
         }
         return parts;
     }
