@@ -622,6 +622,23 @@ class StateViewTest {
 		assertEquals(expected, info.get());
 	}
 
+
+	@Test
+	void returnEmptyFileForOtherBinaryObjectException() {
+		// setup:
+		given(attrs.get(target)).willThrow(new com.swirlds.blob.BinaryObjectException());
+
+		// when:
+		var info = subject.infoForFile(target);
+
+		// then:
+		assertTrue(info.isEmpty());
+		final var warnLogs = logCaptor.warnLogs();
+		assertTrue(warnLogs.size() == 1);
+		assertThat(warnLogs.get(0), Matchers.startsWith("Unexpected error occurred when getting info for file"));
+	}
+
+
 	@Test
 	void logsAtDebugWhenInterrupted() throws InterruptedException {
 		// setup:

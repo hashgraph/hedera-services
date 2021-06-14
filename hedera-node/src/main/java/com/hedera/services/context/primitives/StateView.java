@@ -355,6 +355,9 @@ public class StateView {
 						Thread.currentThread().interrupt();
 					}
 				}
+			} catch (com.swirlds.blob.BinaryObjectException e) {
+				log.warn("Unexpected error occurred when getting info for file {}", readableId(id), e);
+				break;
 			}
 		}
 		return Optional.empty();
