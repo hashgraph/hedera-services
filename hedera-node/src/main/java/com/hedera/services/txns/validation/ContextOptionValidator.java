@@ -146,6 +146,71 @@ public class ContextOptionValidator implements OptionValidator {
 	}
 
 	@Override
+	public ResponseCodeEnum nftMetadataCheck(byte[] metadata) {
+		return lengthCheck(
+				metadata.length,
+				properties.maxNFTMetadataBytes(),
+				ResponseCodeEnum.METADATA_TOO_LONG
+		);
+	}
+
+	@Override
+	public ResponseCodeEnum maxBatchSizeMintCheck(int length) {
+		return batchSizeCheck(
+				length,
+				properties.maxBatchSizeMint()
+		);
+	}
+
+	@Override
+	public ResponseCodeEnum maxBatchSizeBurnCheck(int length) {
+		return batchSizeCheck(
+				length,
+				properties.maxBatchSizeBurn()
+		);
+	}
+
+	@Override
+	public ResponseCodeEnum maxNftTransfersLenCheck(int length) {
+		return batchSizeCheck(
+				length,
+				properties.maxNftTransfersLen()
+		);
+	}
+
+	@Override
+	public ResponseCodeEnum maxBatchSizeWipeCheck(int length) {
+		return batchSizeCheck(
+				length,
+				properties.maxBatchSizeWipe()
+		);
+	}
+
+	@Override
+	public ResponseCodeEnum nftMaxQueryRangeCheck(int start, int end) {
+		return lengthCheck(
+				end - start,
+				properties.maxNFTQueryRange(),
+				ResponseCodeEnum.QUERY_RANGE_LIMIT_EXCEEDED
+		);
+	}
+
+	private ResponseCodeEnum batchSizeCheck(int length, int limit) {
+		return lengthCheck(
+				length,
+				limit,
+				ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED
+		);
+	}
+
+	private ResponseCodeEnum lengthCheck(int length, int limit, ResponseCodeEnum onFailure) {
+		if (length > limit) {
+			return onFailure;
+		}
+		return OK;
+	}
+
+	@Override
 	public ResponseCodeEnum queryableTopicStatus(TopicID id, FCMap<MerkleEntityId, MerkleTopic> topics) {
 		MerkleTopic merkleTopic = topics.get(MerkleEntityId.fromTopicId(id));
 

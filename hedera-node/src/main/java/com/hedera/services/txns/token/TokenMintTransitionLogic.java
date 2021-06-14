@@ -20,6 +20,7 @@ package com.hedera.services.txns.token;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -27,6 +28,7 @@ import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.unique.UniqueStore;
 import com.hedera.services.txns.TransitionLogic;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -54,15 +56,18 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
+	private final OptionValidator validator;
 	private final TokenStore commonStore;
 	private final UniqueStore uniqueStore;
 	private final TransactionContext txnCtx;
 
 	public TokenMintTransitionLogic(
+			OptionValidator validator,
 			TokenStore commonStore,
 			UniqueStore uniqueStore,
 			TransactionContext txnCtx
 	) {
+		this.validator = validator;
 		this.commonStore = commonStore;
 		this.uniqueStore = uniqueStore;
 		this.txnCtx = txnCtx;
@@ -118,6 +123,7 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 
 		boolean bothPresent = (op.getAmount() > 0 && op.getMetadataCount() > 0);
 		boolean nonePresent = (op.getAmount() <= 0 && op.getMetadataCount() == 0);
+		boolean onlyMetadataIsPresent = (op.getAmount() <= 0 && op.getMetadataCount() > 0);
 
 		if (nonePresent) {
 			return INVALID_TOKEN_MINT_AMOUNT;
@@ -127,7 +133,20 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 			return INVALID_TRANSACTION_BODY;
 		}
 
-		// TODO add check for batch size
+		if (onlyMetadataIsPresent) {
+			var validity = validator.maxBatchSizeMintCheck(op.getMetadataCount());
+			if (validity != OK) {
+				return validity;
+			}
+
+			for (ByteString bytes : op.getMetadataList()) {
+				validity = validator.nftMetadataCheck(bytes.toByteArray());
+				if (validity != OK) {
+					return validity;
+				}
+			}
+		}
+
 		return OK;
 	}
 }
