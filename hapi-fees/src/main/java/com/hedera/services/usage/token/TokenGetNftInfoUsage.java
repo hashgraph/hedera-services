@@ -39,7 +39,7 @@ public class TokenGetNftInfoUsage extends QueryUsage {
 		return new TokenGetNftInfoUsage(query);
 	}
 
-	public TokenGetNftInfoUsage givenMemo(String memo) {
+	public TokenGetNftInfoUsage givenMetadata(String memo) {
 		updateRb(memo.length());
 		return this;
 	}

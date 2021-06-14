@@ -58,7 +58,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	private TokenType tokenType;
 	private TokenSupplyType supplyType;
 	private int decimals;
-	private long currentSerialNum;
+	private long lastUsedSerialNumber;
 	private long expiry;
 	private long maxSupply;
 	private long totalSupply;
@@ -120,7 +120,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 				this.maxSupply == that.maxSupply &&
 				this.totalSupply == that.totalSupply &&
 				this.decimals == that.decimals &&
-				this.currentSerialNum == that.currentSerialNum &&
+				this.lastUsedSerialNumber == that.lastUsedSerialNumber &&
 				this.accountsFrozenByDefault == that.accountsFrozenByDefault &&
 				this.accountsKycGrantedByDefault == that.accountsKycGrantedByDefault &&
 				Objects.equals(this.symbol, that.symbol) &&
@@ -145,7 +145,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 				maxSupply,
 				totalSupply,
 				decimals,
-				currentSerialNum,
+				lastUsedSerialNumber,
 				adminKey,
 				freezeKey,
 				kycKey,
@@ -176,7 +176,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 				.add("maxSupply", maxSupply)
 				.add("totalSupply", totalSupply)
 				.add("decimals", decimals)
-				.add("currentSerialNum", currentSerialNum)
+				.add("lastUsedSerialNumber", lastUsedSerialNumber)
 				.add("autoRenewAccount", readableAutoRenewAccount())
 				.add("autoRenewPeriod", autoRenewPeriod)
 				.add("adminKey", describe(adminKey))
@@ -229,7 +229,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 			tokenType = TokenType.values()[in.readInt()];
 			supplyType = TokenSupplyType.values()[in.readInt()];
 			maxSupply = in.readLong();
-			currentSerialNum = in.readLong();
+			lastUsedSerialNumber = in.readLong();
 		}
 		if (tokenType == null) {
 			tokenType = TokenType.FUNGIBLE_COMMON;
@@ -261,7 +261,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		out.writeInt(tokenType.ordinal());
 		out.writeInt(supplyType.ordinal());
 		out.writeLong(maxSupply);
-		out.writeLong(currentSerialNum);
+		out.writeLong(lastUsedSerialNumber);
 	}
 
 	/* --- FastCopyable --- */
@@ -280,7 +280,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		fc.setDeleted(deleted);
 		fc.setAutoRenewPeriod(autoRenewPeriod);
 		fc.setAutoRenewAccount(autoRenewAccount);
-		fc.currentSerialNum = currentSerialNum;
+		fc.lastUsedSerialNumber = lastUsedSerialNumber;
 		fc.setTokenType(tokenType);
 		fc.setSupplyType(supplyType);
 		fc.setMaxSupply(maxSupply);
@@ -482,12 +482,12 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		this.accountsFrozenByDefault = accountsFrozenByDefault;
 	}
 
-	public long getCurrentSerialNum() {
-		return currentSerialNum;
+	public long getLastUsedSerialNumber() {
+		return lastUsedSerialNumber;
 	}
 
-	public void setSerialNum(long serialNum){
-		this.currentSerialNum = serialNum;
+	public void setLastUsedSerialNumber(long serialNum){
+		this.lastUsedSerialNumber = serialNum;
 	}
 
 	public TokenType tokenType() {

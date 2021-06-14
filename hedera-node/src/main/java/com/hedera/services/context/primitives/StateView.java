@@ -52,6 +52,7 @@ import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ScheduleInfo;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -59,7 +60,9 @@ import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
+import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -237,6 +240,8 @@ public class StateView {
 			}
 			var token = tokenStore.get(id);
 			var info = TokenInfo.newBuilder()
+					.setTokenTypeValue(token.tokenType().ordinal())
+					.setSupplyTypeValue(token.supplyType().ordinal())
 					.setTokenId(id)
 					.setDeleted(token.isDeleted())
 					.setSymbol(token.symbol())
@@ -244,6 +249,7 @@ public class StateView {
 					.setMemo(token.memo())
 					.setTreasury(token.treasury().toGrpcAccountId())
 					.setTotalSupply(token.totalSupply())
+					.setMaxSupply(token.maxSupply())
 					.setDecimals(token.decimals())
 					.setExpiry(Timestamp.newBuilder().setSeconds(token.expiry()));
 
@@ -321,6 +327,51 @@ public class StateView {
 		}
 	}
 
+	public Optional<TokenNftInfo> infoForNft(NftID nftID) {
+		try {
+			var exists = uniqueTokenStore.nftExists(nftID);
+			if (!exists) {
+				return Optional.empty();
+			}
+			var uniqueToken = uniqueTokenStore.get(nftID);
+
+			var info = TokenNftInfo.newBuilder()
+					.setNftID(nftID)
+					.setAccountID(uniqueToken.getOwner().toGrpcAccountId())
+					.setCreationTime(Timestamp.newBuilder()
+							.setSeconds(uniqueToken.getCreationTime().getSeconds())
+							.setNanos(uniqueToken.getCreationTime().getNanos()))
+					.setMetadata(uniqueToken.getMetadata());
+
+			return Optional.of(info.build());
+		} catch (Exception unexpected) {
+			log.warn(
+					"Unexpected failure getting info for token nft {}!",
+					readableId(nftID),
+					unexpected);
+			return Optional.empty();
+		}
+	}
+
+	public boolean nftExists(NftID id) { return uniqueTokenStore.nftExists(id); }
+
+	public Optional<TokenType> tokenType(TokenID tokenID) {
+		try {
+			var id = tokenStore.resolve(tokenID);
+			if (id == MISSING_TOKEN) {
+				return Optional.empty();
+			}
+			var token = tokenStore.get(id);
+			return Optional.ofNullable(TokenType.forNumber(token.tokenType().ordinal()));
+		} catch (Exception unexpected) {
+			log.warn(
+					"Unexpected failure getting info for token {}!",
+					readableId(tokenID),
+					unexpected);
+			return Optional.empty();
+		}
+	}
+
 	TokenFreezeStatus tfsFor(boolean flag) {
 		return flag ? TokenFreezeStatus.Frozen : TokenFreezeStatus.Unfrozen;
 	}
@@ -392,7 +443,8 @@ public class StateView {
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(account.getAutoRenewSecs()))
 				.setBalance(account.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(account.getExpiry()))
-				.setContractAccountID(asSolidityAddressHex(id));
+				.setContractAccountID(asSolidityAddressHex(id))
+				.setOwnedNfts(account.getNftsOwned());
 		Optional.ofNullable(account.getProxy())
 				.map(EntityId::toGrpcAccountId)
 				.ifPresent(info::setProxyAccountID);

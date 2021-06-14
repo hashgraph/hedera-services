@@ -22,10 +22,12 @@ package com.hedera.services.fees.calculation;
 
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.time.Instant;
+import java.util.Map;
 
 /**
  * Defines a type able to provide the prices (in tinyCents) that must
@@ -43,13 +45,22 @@ public interface UsagePricesProvider {
 	void loadPriceSchedules();
 
 	/**
-	 * Returns the prices in tinyCents that must be paid to
+	 * Returns the prices in a map SubType keys and FeeData values in tinyCents that must be paid to
 	 * consume various resources while processing the active
 	 * transaction.
 	 *
 	 * @return the prices for the active transaction
 	 */
-	FeeData activePrices();
+	Map<SubType, FeeData> activePrices();
+
+	/**
+	 * Returns the prices corresponding to the SubType.NONE in tinyCents that must be paid to
+	 * consume various resources while processing the active
+	 * transaction.
+	 *
+	 * @return the prices for the active transaction
+	 */
+	FeeData defaultActivePrices();
 
 	/**
 	 * Returns the prices in tinyCents that are likely to be
@@ -61,7 +72,19 @@ public interface UsagePricesProvider {
 	 * @param at the expected consensus time for the operation
 	 * @return the estimated prices
 	 */
-	FeeData pricesGiven(HederaFunctionality function, Timestamp at);
+	Map<SubType, FeeData> pricesGiven(HederaFunctionality function, Timestamp at);
+
+	/**
+	 * Returns the prices in tinyCents that are likely to be
+	 * required to consume various resources while processing
+	 * the given operation at the given time. (In principle, the
+	 * price schedules could change in the interim.)
+	 *
+	 * @param function the operation of interest
+	 * @param at the expected consensus time for the operation
+	 * @return the estimated prices
+	 */
+	FeeData defaultPricesGiven(HederaFunctionality function, Timestamp at);
 
 	/**
 	 * Returns a triple whose middle value is a "rollover consensus time"
@@ -71,5 +94,5 @@ public interface UsagePricesProvider {
 	 * @param function the operation of interest
 	 * @return the triple of price sequences
 	 */
-	Triple<FeeData, Instant, FeeData> activePricingSequence(HederaFunctionality function);
+	Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> activePricingSequence(HederaFunctionality function);
 }

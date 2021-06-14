@@ -26,7 +26,9 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TokenType;
 
 import java.util.HashSet;
 import java.util.List;
@@ -44,104 +46,145 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SUPPLY
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DECIMALS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_INITIAL_SUPPLY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 
 public class TokenListChecks {
-    static Predicate<Key> ADMIN_KEY_REMOVAL = ImmutableKeyUtils::signalsKeyRemoval;
+	static Predicate<Key> ADMIN_KEY_REMOVAL = ImmutableKeyUtils::signalsKeyRemoval;
 
-    public static boolean repeatsItself(List<TokenID> tokens) {
-        return new HashSet<>(tokens).size() < tokens.size();
+	public static boolean repeatsItself(List<TokenID> tokens) {
+		return new HashSet<>(tokens).size() < tokens.size();
+	}
+
+	public static ResponseCodeEnum checkTokenTransfers(List<TokenTransferList> tokenTransferLists) {
+		if (tokenTransferLists.isEmpty()) {
+			return OK;
+		}
+
+		Set<TokenID> uniqueTokens = new HashSet<>();
+		for (TokenTransferList tokenTransferList : tokenTransferLists) {
+			if (!tokenTransferList.hasToken()) {
+				return INVALID_TOKEN_ID;
+			}
+
+			var net = 0;
+			uniqueTokens.add(tokenTransferList.getToken());
+
+			var uniqueAccounts = new HashSet<AccountID>();
+			for (AccountAmount adjustment : tokenTransferList.getTransfersList()) {
+				if (!adjustment.hasAccountID()) {
+					return INVALID_ACCOUNT_ID;
+				}
+
+				if (adjustment.getAmount() == 0) {
+					return INVALID_ACCOUNT_AMOUNTS;
+				}
+
+				uniqueAccounts.add(adjustment.getAccountID());
+				net += adjustment.getAmount();
+			}
+
+			if (uniqueAccounts.size() < tokenTransferList.getTransfersCount()) {
+				return ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
+			}
+
+			if (net != 0) {
+				return TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
+			}
+		}
+
+		if (uniqueTokens.size() < tokenTransferLists.size()) {
+			return TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+		}
+
+		return OK;
+	}
+
+    public static ResponseCodeEnum typeCheck(TokenType type, long initialSupply, int decimals) {
+        switch (type) {
+            case FUNGIBLE_COMMON:
+                return fungibleCommonTypeCheck(initialSupply, decimals);
+            case NON_FUNGIBLE_UNIQUE:
+                return nonFungibleUniqueCheck(initialSupply, decimals);
+            default:
+                return NOT_SUPPORTED;
+        }
     }
 
-    public static ResponseCodeEnum checkTokenTransfers(List<TokenTransferList> tokenTransferLists) {
-    	if (tokenTransferLists.isEmpty()) {
-    	    return OK;
+    public static ResponseCodeEnum nonFungibleUniqueCheck(long initialSupply, int decimals) {
+        if (initialSupply != 0) {
+            return INVALID_TOKEN_INITIAL_SUPPLY;
         }
 
-        Set<TokenID> uniqueTokens = new HashSet<>();
-        for (TokenTransferList tokenTransferList : tokenTransferLists) {
-            if (!tokenTransferList.hasToken()) {
-                return INVALID_TOKEN_ID;
-            }
+        return decimals != 0 ? INVALID_TOKEN_DECIMALS : OK;
+    }
 
-            var net = 0;
-            uniqueTokens.add(tokenTransferList.getToken());
-
-            var uniqueAccounts = new HashSet<AccountID>();
-            for (AccountAmount adjustment : tokenTransferList.getTransfersList()) {
-                if (!adjustment.hasAccountID()) {
-                    return INVALID_ACCOUNT_ID;
-                }
-
-                if (adjustment.getAmount() == 0) {
-                    return INVALID_ACCOUNT_AMOUNTS;
-                }
-
-                uniqueAccounts.add(adjustment.getAccountID());
-                net += adjustment.getAmount();
-            }
-
-            if (uniqueAccounts.size() < tokenTransferList.getTransfersCount()) {
-                return ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
-            }
-
-            if (net != 0) {
-                return TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
-            }
+    public static ResponseCodeEnum fungibleCommonTypeCheck(long initialSupply, int decimals) {
+        if (initialSupply < 0) {
+            return INVALID_TOKEN_INITIAL_SUPPLY;
         }
 
-        if (uniqueTokens.size() < tokenTransferLists.size()) {
-            return TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+        return decimals < 0 ? INVALID_TOKEN_DECIMALS : OK;
+    }
+
+    public static ResponseCodeEnum suppliesCheck(long initialSupply, long maxSupply) {
+        if (maxSupply > 0 && initialSupply > maxSupply) {
+            return INVALID_TOKEN_INITIAL_SUPPLY;
         }
 
         return OK;
     }
 
-    public static ResponseCodeEnum initialSupplyAndDecimalsCheck(long initialSupply, int decimals) {
-        if (initialSupply < 0) {
-            return INVALID_TOKEN_INITIAL_SUPPLY;
+    public static ResponseCodeEnum supplyTypeCheck(TokenSupplyType supplyType, long maxSupply) {
+        switch (supplyType) {
+            case INFINITE:
+                return maxSupply != 0 ? INVALID_TOKEN_MAX_SUPPLY : OK;
+            case FINITE:
+                return maxSupply <= 0 ? INVALID_TOKEN_MAX_SUPPLY : OK;
+            default:
+                return NOT_SUPPORTED;
         }
-        return decimals < 0 ? INVALID_TOKEN_DECIMALS : OK;
     }
 
-    public static ResponseCodeEnum checkKeys(
-            boolean hasAdminKey, Key adminKey,
-            boolean hasKycKey, Key kycKey,
-            boolean hasWipeKey, Key wipeKey,
-            boolean hasSupplyKey, Key supplyKey,
-            boolean hasFreezeKey, Key freezeKey
-    ) {
-        ResponseCodeEnum validity = OK;
+	public static ResponseCodeEnum checkKeys(
+			boolean hasAdminKey, Key adminKey,
+			boolean hasKycKey, Key kycKey,
+			boolean hasWipeKey, Key wipeKey,
+			boolean hasSupplyKey, Key supplyKey,
+			boolean hasFreezeKey, Key freezeKey
+	) {
+		ResponseCodeEnum validity = OK;
 
-        if (hasAdminKey && !ADMIN_KEY_REMOVAL.test(adminKey)) {
-            if ((validity = checkKey(adminKey, INVALID_ADMIN_KEY)) != OK) {
-                return validity;
-            }
-        }
-        if (hasKycKey) {
-            if ((validity = checkKey(kycKey, INVALID_KYC_KEY)) != OK) {
-                return validity;
-            }
-        }
-        if (hasWipeKey) {
-            if ((validity = checkKey(wipeKey, INVALID_WIPE_KEY)) != OK) {
-                return validity;
-            }
-        }
-        if (hasSupplyKey) {
-            if ((validity = checkKey(supplyKey, INVALID_SUPPLY_KEY)) != OK) {
-                return validity;
-            }
-        }
-        if (hasFreezeKey) {
-            if ((validity = checkKey(freezeKey, INVALID_FREEZE_KEY)) != OK) {
-                return validity;
-            }
-        }
+		if (hasAdminKey && !ADMIN_KEY_REMOVAL.test(adminKey)) {
+			if ((validity = checkKey(adminKey, INVALID_ADMIN_KEY)) != OK) {
+				return validity;
+			}
+		}
+		if (hasKycKey) {
+			if ((validity = checkKey(kycKey, INVALID_KYC_KEY)) != OK) {
+				return validity;
+			}
+		}
+		if (hasWipeKey) {
+			if ((validity = checkKey(wipeKey, INVALID_WIPE_KEY)) != OK) {
+				return validity;
+			}
+		}
+		if (hasSupplyKey) {
+			if ((validity = checkKey(supplyKey, INVALID_SUPPLY_KEY)) != OK) {
+				return validity;
+			}
+		}
+		if (hasFreezeKey) {
+			if ((validity = checkKey(freezeKey, INVALID_FREEZE_KEY)) != OK) {
+				return validity;
+			}
+		}
 
-        return validity;
-    }
+		return validity;
+	}
 }

@@ -48,7 +48,7 @@ public class TokenGetNftInfoUsageTest {
 	@Test
 	public void assessesEverything() {
 		// given:
-		subject.givenMemo(memo);
+		subject.givenMetadata(memo);
 		// and:
 		var expectedBytes = BASIC_QUERY_RES_HEADER
 				+ NFT_ENTITY_SIZES.fixedBytesInNftRepr()
