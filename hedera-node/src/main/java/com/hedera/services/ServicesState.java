@@ -80,7 +80,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	static final int RELEASE_0120_VERSION = 6;
 	static final int RELEASE_0130_VERSION = 7;
 	static final int RELEASE_0140_VERSION = 8;
-	static final int MERKLE_VERSION = RELEASE_0140_VERSION;
+	static final int RELEASE_0150_VERSION = 9;
+	static final int MERKLE_VERSION = RELEASE_0150_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
 
 	static final String UNSUPPORTED_VERSION_MSG_TPL = "Argument 'version=%d' is invalid!";
@@ -110,6 +111,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		static final int NUM_0120_CHILDREN = 10;
 		static final int NUM_0130_CHILDREN = 10;
 		static final int NUM_0140_CHILDREN = 10;
+		static final int NUM_0150_CHILDREN = 10;
 	}
 
 	ServicesContext ctx;
@@ -141,6 +143,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	@Override
 	public int getMinimumChildCount(int version) {
 		switch (version) {
+			case RELEASE_0150_VERSION:
+				return ChildIndices.NUM_0150_CHILDREN;
 			case RELEASE_0140_VERSION:
 				return ChildIndices.NUM_0140_CHILDREN;
 			case RELEASE_0130_VERSION:

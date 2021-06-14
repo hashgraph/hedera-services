@@ -65,6 +65,8 @@ public class CreateTopicsBeforeReconnect extends HapiApiSuite {
 		final long topic = topicNumber.getAndIncrement();
 		if (topic >= TOPIC_CREATION_LIMIT) {
 			return getVersionInfo()
+					.fee(ONE_HUNDRED_HBARS)
+					.payingWith(GENESIS)
 					.noLogging();
 		}
 

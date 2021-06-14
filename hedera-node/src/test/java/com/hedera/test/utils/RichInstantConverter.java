@@ -21,7 +21,6 @@ package com.hedera.test.utils;
  */
 
 import com.hedera.services.state.submerkle.RichInstant;
-import org.bouncycastle.util.Strings;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.params.converter.ArgumentConversionException;
 import org.junit.jupiter.params.converter.ArgumentConverter;
@@ -36,10 +35,8 @@ public final class RichInstantConverter implements ArgumentConverter {
 		if (null == input) {
 			return null;
 		}
-		if (!(input instanceof String)) {
-			throw new ArgumentConversionException(input + " is not a string");
-		}
-		String[] splits = Strings.split((String) input, '_');
+		final String inputString = ConverterUtils.toStringInstance(input);
+		final var splits = ConverterUtils.getPartsIfValid(inputString, 0, "_", "Instant");
 		return new RichInstant(Long.parseLong(splits[0]), Integer.parseInt(splits[1]));
 	}
 }
