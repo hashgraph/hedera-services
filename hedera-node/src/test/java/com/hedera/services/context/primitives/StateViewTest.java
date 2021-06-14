@@ -519,6 +519,25 @@ class StateViewTest {
 	}
 
 	@Test
+	void returnFileInfoForBinaryObjectNotFoundExceptionAfterRetries() {
+		// setup:
+		given(attrs.get(target))
+				.willThrow(new com.swirlds.blob.BinaryObjectNotFoundException())
+				.willThrow(new com.swirlds.blob.BinaryObjectNotFoundException())
+				.willReturn(metadata);
+		given(nodeProps.queryBlobLookupRetries()).willReturn(2);
+		given(contents.get(target)).willReturn(data);
+
+		// when:
+		var info = subject.infoForFile(target);
+
+		// then:
+		assertTrue(info.isPresent());
+		assertEquals(expected, info.get());
+	}
+
+
+	@Test
 	void assemblesFileInfoForImmutable() {
 		given(attrs.get(target)).willReturn(immutableMetadata);
 		given(contents.get(target)).willReturn(data);
@@ -564,16 +583,43 @@ class StateViewTest {
 	}
 
 	@Test
-	void returnEmptyFileInfoForBinaryObjectDeletedException() {
+	void returnEmptyFileInfoForBinaryObjectDeletedExceptionAfterRetries() {
 		// setup:
-		given(attrs.get(target)).willThrow(new com.swirlds.blob.BinaryObjectDeletedException());
-		given(nodeProps.queryBlobLookupRetries()).willReturn(1);
+		given(attrs.get(target))
+				.willThrow(new com.swirlds.blob.BinaryObjectDeletedException())
+				.willThrow(new com.swirlds.blob.BinaryObjectDeletedException())
+				.willThrow(new com.swirlds.blob.BinaryObjectDeletedException())
+				.willReturn(metadata);
+		given(nodeProps.queryBlobLookupRetries()).willReturn(2);
 
 		// when:
 		var info = subject.infoForFile(target);
 
 		// then:
 		assertTrue(info.isEmpty());
+	}
+
+	@Test
+	void returnFileInfoForBinaryObjectDeletedExceptionAfterRetries() {
+		// setup:
+		expected = expected.toBuilder()
+				.setDeleted(true)
+				.setSize(0)
+				.build();
+		metadata.setDeleted(true);
+
+		given(attrs.get(target))
+				.willThrow(new com.swirlds.blob.BinaryObjectDeletedException())
+				.willThrow(new com.swirlds.blob.BinaryObjectDeletedException())
+				.willReturn(metadata);
+		given(nodeProps.queryBlobLookupRetries()).willReturn(2);
+
+		// when:
+		var info = subject.infoForFile(target);
+
+		// then:
+		assertTrue(info.isPresent());
+		assertEquals(expected, info.get());
 	}
 
 	@Test
