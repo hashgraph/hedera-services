@@ -1327,7 +1327,7 @@ public class ServicesContext {
 				entry(TokenDelete,
 						List.of(new TokenDeleteTransitionLogic(tokenStore(), txnCtx()))),
 				entry(TokenMint,
-						List.of(new TokenMintTransitionLogic(tokenStore(), uniqueStore(), txnCtx()))),
+						List.of(new TokenMintTransitionLogic(validator(), tokenStore(), uniqueStore(), txnCtx()))),
 				entry(TokenBurn,
 						List.of(new TokenBurnTransitionLogic(tokenStore(), txnCtx()))),
 				entry(TokenAccountWipe,

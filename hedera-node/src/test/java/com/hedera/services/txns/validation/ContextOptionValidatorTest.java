@@ -65,12 +65,15 @@ import static com.hedera.test.utils.TxnUtils.withTokenAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.QUERY_RANGE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_START;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.METADATA_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
@@ -538,6 +541,102 @@ public class ContextOptionValidatorTest {
 
 		// expect:
 		assertEquals(OK, subject.tokenSymbolCheck("AS"));
+	}
+
+	@Test
+	void acceptsReasonableWipeBatchSize() {
+		given(dynamicProperties.maxBatchSizeWipe()).willReturn(5);
+
+		// expect:
+		assertEquals(OK, subject.maxBatchSizeWipeCheck(4));
+	}
+
+	@Test
+	void acceptsReasonableBurnBatchSize() {
+		given(dynamicProperties.maxBatchSizeBurn()).willReturn(5);
+
+		// expect:
+		assertEquals(OK, subject.maxBatchSizeBurnCheck(4));
+	}
+
+	@Test
+	void acceptsReasonableMintBatchSize() {
+		given(dynamicProperties.maxBatchSizeMint()).willReturn(5);
+
+		// expect:
+		assertEquals(OK, subject.maxBatchSizeMintCheck(4));
+	}
+
+	@Test
+	void acceptsReasonableNftTransfersLen() {
+		given(dynamicProperties.maxNftTransfersLen()).willReturn(5);
+
+		// expect:
+		assertEquals(OK, subject.maxNftTransfersLenCheck(4));
+	}
+
+	@Test
+	void rejectsTooLargeNftTransfersLen() {
+		given(dynamicProperties.maxNftTransfersLen()).willReturn(5);
+
+		// expect:
+		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.maxNftTransfersLenCheck(500));
+	}
+
+	@Test
+	void acceptsReasonableMaxNFTQueryRange() {
+		given(dynamicProperties.maxNFTQueryRange()).willReturn(5);
+
+		// expect:
+		assertEquals(OK, subject.nftMaxQueryRangeCheck(2, 5));
+	}
+
+	@Test
+	void acceptsReasonableNFTMetadata() {
+		given(dynamicProperties.maxNFTMetadataBytes()).willReturn(5);
+
+		// expect:
+		assertEquals(OK, subject.nftMetadataCheck(new byte[]{1, 2, 3, 4, 5}));
+	}
+
+	@Test
+	void rejectsTooLargeMetadata() {
+		given(dynamicProperties.maxNFTMetadataBytes()).willReturn(5);
+
+		// expect:
+		assertEquals(METADATA_TOO_LONG, subject.nftMetadataCheck(new byte[]{1, 2, 3, 4, 5, 6}));
+	}
+
+	@Test
+	void rejectsInvalidQueryRange() {
+		given(dynamicProperties.maxNFTQueryRange()).willReturn(5);
+
+		// expect:
+		assertEquals(QUERY_RANGE_LIMIT_EXCEEDED, subject.nftMaxQueryRangeCheck(2, 200));
+	}
+
+	@Test
+	void rejectsTooLargeMintBatch() {
+		given(dynamicProperties.maxBatchSizeMint()).willReturn(5);
+
+		// expect:
+		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.maxBatchSizeMintCheck(500));
+	}
+
+	@Test
+	void rejectsTooLargeBurnBatch() {
+		given(dynamicProperties.maxBatchSizeBurn()).willReturn(5);
+
+		// expect:
+		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.maxBatchSizeBurnCheck(500));
+	}
+
+	@Test
+	void rejectsTooLargeWipeBatch() {
+		given(dynamicProperties.maxBatchSizeWipe()).willReturn(5);
+
+		// expect:
+		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.maxBatchSizeWipeCheck(500));
 	}
 
 	@Test

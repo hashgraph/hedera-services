@@ -21,6 +21,7 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.tokens.unique.OwnerIdentifier;
@@ -33,34 +34,31 @@ import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import java.io.IOException;
 import java.util.Objects;
 
-import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
-
 /**
  * Represents an uniqueToken entity. Part of the nft implementation.
  */
 public class MerkleUniqueToken extends AbstractMerkleLeaf implements FCMValue, Identifiable<OwnerIdentifier> {
 
-	public static final int UPPER_BOUND_MEMO_UTF8_BYTES = 1024;
+	public static final int UPPER_BOUND_METADATA_BYTES = 1024;
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x899641dafcc39164L;
 
 	private EntityId owner;
 	private RichInstant creationTime;
-	// TODO: Switch to bytes
-	private String memo = DEFAULT_MEMO;
+	private byte[] metadata;
 
 	/**
 	 * @param owner        The entity which owns the unique token.
-	 * @param memo         Metadata about the token.
+	 * @param metadata     Metadata about the token.
 	 * @param creationTime The consensus time at which the token was created.
 	 */
 	public MerkleUniqueToken(
 			EntityId owner,
-			String memo,
+			byte[] metadata,
 			RichInstant creationTime
 	) {
 		this.owner = owner;
-		this.memo = memo;
+		this.metadata = metadata;
 		this.creationTime = creationTime;
 	}
 
@@ -80,7 +78,7 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements FCMValue, I
 
 		var that = (MerkleUniqueToken) o;
 		return this.owner.equals(that.owner) &&
-				Objects.equals(this.memo, that.memo) &&
+				Objects.deepEquals(this.metadata, that.metadata) &&
 				Objects.equals(creationTime, that.creationTime);
 	}
 
@@ -89,7 +87,7 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements FCMValue, I
 		return Objects.hash(
 				owner,
 				creationTime,
-				memo);
+				metadata);
 	}
 
 	@Override
@@ -97,7 +95,7 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements FCMValue, I
 		return MoreObjects.toStringHelper(MerkleUniqueToken.class)
 				.add("owner", owner)
 				.add("creationTime", creationTime)
-				.add("memo", memo)
+				.add("metadata", metadata)
 				.toString();
 	}
 
@@ -117,28 +115,28 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements FCMValue, I
 	public void deserialize(SerializableDataInputStream in, int i) throws IOException {
 		owner = in.readSerializable();
 		creationTime = RichInstant.from(in);
-		memo = in.readNormalisedString(UPPER_BOUND_MEMO_UTF8_BYTES);
+		metadata = in.readByteArray(UPPER_BOUND_METADATA_BYTES);
 	}
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
 		out.writeSerializable(owner, true);
 		creationTime.serialize(out);
-		out.writeNormalisedString(memo);
+		out.writeByteArray(metadata);
 	}
 
 	/* --- FastCopyable --- */
 	@Override
 	public MerkleUniqueToken copy() {
-		return new MerkleUniqueToken(owner, memo, creationTime);
+		return new MerkleUniqueToken(owner, metadata, creationTime);
 	}
 
 	public EntityId getOwner() {
 		return owner;
 	}
 
-	public String getMemo() {
-		return memo;
+	public ByteString getMetadata() {
+		return ByteString.copyFrom(metadata);
 	}
 
 	public RichInstant getCreationTime() {

@@ -24,17 +24,18 @@ package com.hedera.services.bdd.suites.token;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
@@ -43,7 +44,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
@@ -52,7 +52,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 	private static final org.apache.logging.log4j.Logger log = LogManager.getLogger(UniqueTokenManagementSpecs.class);
 	private static final String TOKEN_NAME = "token";
 	private static final String SUPPLY_KEY = "supplyKey";
-
+	private static final int BIGGER_THAN_LIMIT = 11;
 	public static void main(String... args) {
 		new UniqueTokenManagementSpecs().runSuiteSync();
 	}
@@ -66,8 +66,82 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 						failsWithDeletedToken(),
 						happyPathWithRepeatedMetadata(),
 						failsGetTokenNftInfoWithNoNft(),
+						failsWithDeletedToken(),
+						failsWithLargeBatchSize(),
+						failsWithTooLongMetadata(),
+						failsWithInvalidMetadataFromBatch(),
 				}
 		);
+	}
+
+	private HapiApiSpec failsWithTooLongMetadata() {
+		return defaultHapiSpec("failsWithTooLongMetadata")
+				.given(
+						newKeyNamed(SUPPLY_KEY),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(TOKEN_NAME)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.supplyType(TokenSupplyType.INFINITE)
+								.initialSupply(0)
+								.supplyKey(SUPPLY_KEY)
+								.treasury(TOKEN_TREASURY)
+				).when().then(
+						mintToken(TOKEN_NAME, List.of(
+								metadataOfLength(101)
+						)).hasPrecheck(ResponseCodeEnum.METADATA_TOO_LONG)
+				);
+	}
+
+	private HapiApiSpec failsWithInvalidMetadataFromBatch() {
+		return defaultHapiSpec("failsWithInvalidMetadataFromBatch")
+				.given(
+						newKeyNamed(SUPPLY_KEY),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(TOKEN_NAME)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.supplyType(TokenSupplyType.INFINITE)
+								.initialSupply(0)
+								.supplyKey(SUPPLY_KEY)
+								.treasury(TOKEN_TREASURY)
+				).when().then(
+						mintToken(TOKEN_NAME, List.of(
+								metadataOfLength(101),
+								metadataOfLength(1)
+						)).hasPrecheck(ResponseCodeEnum.METADATA_TOO_LONG)
+				);
+	}
+
+	private HapiApiSpec failsWithLargeBatchSize() {
+		return defaultHapiSpec("failsWithLargeBatchSize")
+				.given(
+						newKeyNamed(SUPPLY_KEY),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(TOKEN_NAME)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.supplyType(TokenSupplyType.INFINITE)
+								.initialSupply(0)
+								.supplyKey(SUPPLY_KEY)
+								.treasury(TOKEN_TREASURY)
+				).when().then(
+						mintToken(TOKEN_NAME, batchOfSize(BIGGER_THAN_LIMIT))
+								.hasPrecheck(ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED)
+				);
+	}
+
+	private List<ByteString> batchOfSize(int size) {
+		var batch = new ArrayList<ByteString>();
+		for (int i = 0; i < size; i++) {
+			 batch.add(metadata("memo" + i));
+		}
+		return batch;
+	}
+
+	private ByteString metadataOfLength(int length) {
+		return ByteString.copyFrom(genRandomBytes(length));
+	}
+
+	private ByteString metadata(String contents) {
+		return ByteString.copyFromUtf8(contents);
 	}
 
 	private HapiApiSpec uniqueTokenHappyPath() {
@@ -80,9 +154,11 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 								.supplyKey(SUPPLY_KEY)
 								.supplyType(TokenSupplyType.INFINITE)
 								.initialSupply(0)
+								.supplyKey(SUPPLY_KEY)
 								.treasury(TOKEN_TREASURY)
 				).when(
-						mintToken(TOKEN_NAME, List.of(ByteString.copyFromUtf8("memo"), ByteString.copyFromUtf8("memo1"))).via("mintTxn")
+						mintToken(TOKEN_NAME,
+								List.of(metadata("memo"), metadata("memo1"))).via("mintTxn")
 				).then(
 
 						getTokenNftInfo(TOKEN_NAME, 1)
@@ -94,7 +170,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 
 						getTokenNftInfo(TOKEN_NAME, 2)
 								.hasSerialNum(2)
-								.hasMetadata(ByteString.copyFromUtf8("memo1"))
+								.hasMetadata(metadata("memo1"))
 								.hasTokenID(TOKEN_NAME)
 								.hasAccountID(TOKEN_TREASURY)
 								.hasValidCreationTime(),
@@ -200,7 +276,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 								.supplyKey(SUPPLY_KEY)
 								.initialSupply(0)
 								.treasury(TOKEN_TREASURY),
-						mintToken(TOKEN_NAME, List.of(ByteString.copyFromUtf8("memo"))).via("mintTxn")
+						mintToken(TOKEN_NAME, List.of(metadata("memo")))
 				).then(
 						getTokenNftInfo(TOKEN_NAME, 0)
 								.hasCostAnswerPrecheck(INVALID_TOKEN_NFT_SERIAL_NUMBER),
@@ -211,7 +287,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 						getTokenNftInfo(TOKEN_NAME, 1)
 								.hasTokenID(TOKEN_NAME)
 								.hasAccountID(TOKEN_TREASURY)
-								.hasMetadata(ByteString.copyFromUtf8("memo"))
+								.hasMetadata(metadata("memo"))
 								.hasSerialNum(1)
 								.hasValidCreationTime()
 				);
@@ -252,4 +328,10 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 		return log;
 	}
 
+	private byte[] genRandomBytes(int numBytes) {
+		byte[] contents = new byte[numBytes];
+		(new Random()).nextBytes(contents);
+		return contents;
+	}
 }
+

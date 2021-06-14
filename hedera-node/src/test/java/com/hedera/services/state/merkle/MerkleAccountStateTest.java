@@ -56,6 +56,7 @@ class MerkleAccountStateTest {
 	long expiry = 1_234_567L;
 	long balance = 555_555L;
 	long autoRenewSecs = 234_567L;
+	long nftsOwned = 1_234L;
 	String memo = "A memo";
 	boolean deleted = true;
 	boolean smartContract = true;
@@ -66,6 +67,7 @@ class MerkleAccountStateTest {
 	long otherExpiry = 7_234_567L;
 	long otherBalance = 666_666L;
 	long otherAutoRenewSecs = 432_765L;
+	long otherNftsOwned = 4_321L;
 	String otherMemo = "Another memo";
 	boolean otherDeleted = false;
 	boolean otherSmartContract = false;
@@ -76,6 +78,7 @@ class MerkleAccountStateTest {
 
 	MerkleAccountState subject;
 	MerkleAccountState release070Subject;
+	MerkleAccountState release090Subject;
 	MerkleAccountState otherSubject;
 
 	@BeforeEach
@@ -92,12 +95,19 @@ class MerkleAccountStateTest {
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy);
+		release090Subject = new MerkleAccountState(
+				key,
+				expiry, balance, autoRenewSecs,
+				memo,
+				deleted, smartContract, receiverSigRequired,
+				proxy);
 		subject = new MerkleAccountState(
 				key,
 				expiry, balance, autoRenewSecs,
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy);
+		subject.setNftsOwned(nftsOwned);
 
 		serdes = mock(DomainSerdes.class);
 		MerkleAccountState.serdes = serdes;
@@ -120,7 +130,9 @@ class MerkleAccountStateTest {
 						"deleted=" + deleted + ", " +
 						"smartContract=" + smartContract + ", " +
 						"receiverSigRequired=" + receiverSigRequired + ", " +
-						"proxy=" + proxy + "}",
+						"proxy=" + proxy + ", " +
+						"nftsOwned=" + nftsOwned + "}",
+
 				subject.toString());
 	}
 
@@ -150,6 +162,10 @@ class MerkleAccountStateTest {
 
 		// then:
 		assertEquals(release070Subject, newSubject);
+		verify(in, times(5)).readLong();
+		verify(in).readNormalisedString(anyInt());
+		verify(in, times(1)).readNormalisedString(anyInt());
+		verify(in, times(3)).readBoolean();
 	}
 
 	@Test
@@ -164,6 +180,7 @@ class MerkleAccountStateTest {
 				.willReturn(expiry)
 				.willReturn(balance)
 				.willReturn(autoRenewSecs);
+
 		given(in.readNormalisedString(anyInt())).willReturn(memo);
 		given(in.readBoolean())
 				.willReturn(deleted)
@@ -175,9 +192,12 @@ class MerkleAccountStateTest {
 		newSubject.deserialize(in, MerkleAccountState.RELEASE_08x_VERSION);
 
 		// then:
-		assertEquals(subject, newSubject);
+		assertEquals(release090Subject, newSubject);
 		// and:
+		verify(in, times(5)).readLong();
 		verify(in).readLongArray(MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE);
+		verify(in).readNormalisedString(anyInt());
+		verify(in, times(3)).readBoolean();
 	}
 
 	@Test
@@ -203,9 +223,12 @@ class MerkleAccountStateTest {
 		newSubject.deserialize(in, MerkleAccountState.RELEASE_090_ALPHA_VERSION);
 
 		// then:
-		assertEquals(subject, newSubject);
+		assertEquals(release090Subject, newSubject);
 		// and:
 		verify(in, never()).readLongArray(MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE);
+		verify(in, times(5)).readLong();
+		verify(in).readNormalisedString(anyInt());
+		verify(in, times(3)).readBoolean();
 	}
 
 	@Test
@@ -231,10 +254,44 @@ class MerkleAccountStateTest {
 		newSubject.deserialize(in, MerkleAccountState.RELEASE_090_VERSION);
 
 		// then:
-		assertEquals(subject, newSubject);
+		assertEquals(release090Subject, newSubject);
 		// and:
 		verify(in, never()).readLongArray(MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE);
 		verify(in, times(3)).readLong();
+		verify(in).readNormalisedString(anyInt());
+		verify(in, times(3)).readBoolean();
+	}
+
+	@Test
+	public void release0150DeserializeWorks() throws IOException {
+		// setup:
+		var in = mock(SerializableDataInputStream.class);
+		// and:
+		var newSubject = new MerkleAccountState();
+
+		given(serdes.readNullable(argThat(in::equals), any(IoReadingFunction.class))).willReturn(key);
+		given(in.readLong())
+				.willReturn(expiry)
+				.willReturn(balance)
+				.willReturn(autoRenewSecs)
+				.willReturn(nftsOwned);
+		given(in.readNormalisedString(anyInt())).willReturn(memo);
+		given(in.readBoolean())
+				.willReturn(deleted)
+				.willReturn(smartContract)
+				.willReturn(receiverSigRequired);
+		given(serdes.readNullableSerializable(in)).willReturn(proxy);
+
+		// when:
+		newSubject.deserialize(in, MerkleAccountState.RELEASE_0150_VERSION);
+
+		// then:
+		assertEquals(subject, newSubject);
+		// and:
+		verify(in, never()).readLongArray(MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE);
+		verify(in, times(4)).readLong();
+		verify(in).readNormalisedString(anyInt());
+		verify(in, times(3)).readBoolean();
 	}
 
 	@Test
@@ -255,6 +312,7 @@ class MerkleAccountStateTest {
 		inOrder.verify(out).writeNormalisedString(memo);
 		inOrder.verify(out, times(3)).writeBoolean(true);
 		inOrder.verify(serdes).writeNullableSerializable(proxy, out);
+		inOrder.verify(out).writeLong(nftsOwned);
 		// and:
 		verify(out, never()).writeLongArray(any());
 	}
@@ -406,7 +464,7 @@ class MerkleAccountStateTest {
 	@Test
 	public void merkleMethodsWork() {
 		// expect;
-		assertEquals(MerkleAccountState.RELEASE_090_VERSION, subject.getVersion());
+		assertEquals(MerkleAccountState.RELEASE_0150_VERSION, subject.getVersion());
 		assertEquals(MerkleAccountState.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 		assertTrue(subject.isLeaf());
 	}
@@ -422,6 +480,7 @@ class MerkleAccountStateTest {
 				memo,
 				deleted, smartContract, receiverSigRequired,
 				proxy);
+		identicalSubject.setNftsOwned(nftsOwned);
 		// and:
 		otherSubject = new MerkleAccountState(
 				otherKey,
@@ -429,6 +488,7 @@ class MerkleAccountStateTest {
 				otherMemo,
 				otherDeleted, otherSmartContract, otherReceiverSigRequired,
 				otherProxy);
+		otherSubject.setNftsOwned(otherNftsOwned);
 
 		// expect:
 		assertNotEquals(subject.hashCode(), defaultSubject.hashCode());

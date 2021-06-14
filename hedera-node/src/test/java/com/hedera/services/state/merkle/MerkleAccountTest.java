@@ -54,6 +54,7 @@ public class MerkleAccountTest {
 	long expiry = 1_234_567L;
 	long balance = 555_555L;
 	long autoRenewSecs = 234_567L;
+	long nftsOwned = 1_234L;
 	long senderThreshold = 1_234L;
 	long receiverThreshold = 4_321L;
 	String memo = "A memo";
@@ -83,6 +84,7 @@ public class MerkleAccountTest {
 	long otherAutoRenewSecs = 432_765L;
 	long otherSenderThreshold = 4_321L;
 	long otherReceiverThreshold = 1_234L;
+	long otherNftsOwned = 1_234L;
 	String otherMemo = "Another memo";
 	boolean otherDeleted = false;
 	boolean otherSmartContract = false;
@@ -215,6 +217,7 @@ public class MerkleAccountTest {
 		subject.setDeleted(otherDeleted);
 		subject.setSmartContract(otherSmartContract);
 		subject.setReceiverSigRequired(otherReceiverSigRequired);
+		subject.setNftsOwned(otherNftsOwned);
 		subject.setMemo(otherMemo);
 		subject.setProxy(otherProxy);
 		subject.setKey(otherKey);
@@ -225,6 +228,7 @@ public class MerkleAccountTest {
 		verify(delegate).setDeleted(otherDeleted);
 		verify(delegate).setSmartContract(otherSmartContract);
 		verify(delegate).setReceiverSigRequired(otherReceiverSigRequired);
+		verify(delegate).setNftsOwned(otherNftsOwned);
 		verify(delegate).setMemo(otherMemo);
 		verify(delegate).setProxy(otherProxy);
 		verify(delegate).setKey(otherKey);

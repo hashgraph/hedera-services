@@ -364,7 +364,7 @@ public class StateView {
 					.setCreationTime(Timestamp.newBuilder()
 							.setSeconds(uniqueToken.getCreationTime().getSeconds())
 							.setNanos(uniqueToken.getCreationTime().getNanos()))
-					.setMetadata(ByteString.copyFromUtf8(uniqueToken.getMemo()));
+					.setMetadata(uniqueToken.getMetadata());
 
 			return Optional.of(info.build());
 		} catch (Exception unexpected) {
@@ -443,7 +443,8 @@ public class StateView {
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(account.getAutoRenewSecs()))
 				.setBalance(account.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(account.getExpiry()))
-				.setContractAccountID(asSolidityAddressHex(id));
+				.setContractAccountID(asSolidityAddressHex(id))
+				.setOwnedNfts(account.getNftsOwned());
 		Optional.ofNullable(account.getProxy())
 				.map(EntityId::toGrpcAccountId)
 				.ifPresent(info::setProxyAccountID);

@@ -47,6 +47,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.services.state.merkle.MerkleUniqueTokenId.fromNftID;
@@ -95,9 +96,8 @@ public class UniqueTokenStore extends BaseTokenStore implements UniqueStore {
 			long serialNum = merkleToken.getCurrentSerialNum();
 			for (ByteString el : metadataList) {
 				serialNum++;
-				String metaAsStr = el.toStringUtf8();
 				final var nftId = new MerkleUniqueTokenId(eId, serialNum);
-				final var nft = new MerkleUniqueToken(owner, metaAsStr, creationTime);
+				final var nft = new MerkleUniqueToken(owner, el.toByteArray(), creationTime);
 				provisionalUniqueTokens.add(Pair.of(nftId, nft));
 				lastMintedSerialNumbers.add(serialNum);
 			}
@@ -122,6 +122,13 @@ public class UniqueTokenStore extends BaseTokenStore implements UniqueStore {
 		token.setSerialNum(token.getCurrentSerialNum() + lastMintedSerialNumbers.size());
 		getTokens().get().replace(fromTokenId(tokenId), token);
 		return CreationResult.success(lastMintedSerialNumbers);
+	}
+
+	private boolean checkProvisional(List<Pair<MerkleUniqueTokenId, MerkleUniqueToken>> provisionalUniqueTokens) {
+		var provisionalTokenSet = provisionalUniqueTokens.stream()
+				.map(e -> e.getValue().getMetadata())
+				.collect(Collectors.toSet());
+		return provisionalTokenSet.size() == provisionalUniqueTokens.size();
 	}
 
 	public boolean nftExists(final NftID id) {
