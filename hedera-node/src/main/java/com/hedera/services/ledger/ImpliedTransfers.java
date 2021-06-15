@@ -18,12 +18,20 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class ImpliedTransfers {
 	private final GlobalDynamicProperties dynamicProperties;
+	private final PureTransferSemanticChecks transferSemanticChecks;
 
-	public ImpliedTransfers(GlobalDynamicProperties dynamicProperties) {
+	public ImpliedTransfers(
+			GlobalDynamicProperties dynamicProperties,
+			PureTransferSemanticChecks transferSemanticChecks
+	) {
 		this.dynamicProperties = dynamicProperties;
+		this.transferSemanticChecks = transferSemanticChecks;
 	}
 
 	public Pair<List<BalanceChange>, Meta> parseFromGrpc(CryptoTransferTransactionBody op) {
+		final var maxHbarAdjusts = dynamicProperties.maxTransferListSize();
+		final var maxTokenAdjusts = dynamicProperties.maxTokenTransferListSize();
+
 		final List<BalanceChange> changes = new ArrayList<>();
 		for (var aa : op.getTransfers().getAccountAmountsList()) {
 			changes.add(hbarAdjust(Id.fromGrpcAccount(aa.getAccountID()), aa.getAmount()));
@@ -34,7 +42,7 @@ public class ImpliedTransfers {
 				changes.add(tokenAdjust(scopingToken, Id.fromGrpcAccount(aa.getAccountID()), aa.getAmount()));
 			}
 		}
-		return Pair.of(changes, new Meta(1, 2, OK));
+		return Pair.of(changes, new Meta(maxHbarAdjusts, maxTokenAdjusts, OK));
 	}
 
 	public static class Meta {

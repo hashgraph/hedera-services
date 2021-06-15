@@ -138,6 +138,7 @@ import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.keys.StandardSyncActivationCheck;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.accounts.BackingStore;
@@ -1601,7 +1602,8 @@ public class ServicesContext {
 					effectiveNodeAccount(),
 					properties(),
 					txnCtx(),
-					globalDynamicProperties());
+					globalDynamicProperties(),
+					new PureTransferSemanticChecks());
 		}
 		return validator;
 	}

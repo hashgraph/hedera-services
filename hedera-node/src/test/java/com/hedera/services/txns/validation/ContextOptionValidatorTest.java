@@ -25,6 +25,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.files.HFileMeta;
+import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -56,7 +57,6 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -66,6 +66,7 @@ import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hedera.test.utils.TxnUtils.withTokenAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
@@ -78,7 +79,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -126,6 +126,7 @@ public class ContextOptionValidatorTest {
 	private HFileMeta attr;
 	private HFileMeta deletedAttr;
 	private StateView view;
+	private PureTransferSemanticChecks transferSemanticChecks;
 	private long expiry = 2_000_000L;
 	private long maxLifetime = 3_000_000L;
 	private FileID target = asFile("0.0.123");
@@ -162,7 +163,10 @@ public class ContextOptionValidatorTest {
 		deletedAttr = new HFileMeta(true, wacl, expiry);
 		view = mock(StateView.class);
 
-		subject = new ContextOptionValidator(thisNodeAccount, properties, txnCtx, dynamicProperties);
+		transferSemanticChecks = mock(PureTransferSemanticChecks.class);
+
+		subject = new ContextOptionValidator(
+				thisNodeAccount, properties, txnCtx, dynamicProperties, transferSemanticChecks);
 	}
 
 	private FileGetInfoResponse.FileInfo asMinimalInfo(HFileMeta meta) throws Exception {
@@ -605,38 +609,12 @@ public class ContextOptionValidatorTest {
 		// setup:
 		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
 
-		given(dynamicProperties.maxTokenTransferListSize()).willReturn(4);
+		given(dynamicProperties.maxTokenTransferListSize()).willReturn(5);
+		given(transferSemanticChecks.validateTokenTransfers(wrapper, 5))
+				.willReturn(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS);
 
 		// expect:
-		assertEquals(OK, subject.tokenTransfersLengthCheck(wrapper));
-	}
-
-	@Test
-	void acceptsNoTokenTransfers() {
-		// expect:
-		assertEquals(OK, subject.tokenTransfersLengthCheck(Collections.emptyList()));
-	}
-
-	@Test
-	void rejectsExceedingTokenTransfersLength() {
-		// setup:
-		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
-
-		given(dynamicProperties.maxTokenTransferListSize()).willReturn(2);
-
-		// expect:
-		assertEquals(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, subject.tokenTransfersLengthCheck(wrapper));
-	}
-
-	@Test
-	void rejectsExceedingTokenTransfersAccountAmountsLength() {
-		// setup:
-		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3, dTId, d, -4);
-
-		given(dynamicProperties.maxTokenTransferListSize()).willReturn(4);
-
-		// expect:
-		assertEquals(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, subject.tokenTransfersLengthCheck(wrapper));
+		assertEquals(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS, subject.tokenTransfersLengthCheck(wrapper));
 	}
 
 	@Test

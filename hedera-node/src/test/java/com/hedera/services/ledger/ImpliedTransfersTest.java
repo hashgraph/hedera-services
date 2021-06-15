@@ -30,6 +30,8 @@ class ImpliedTransfersTest {
 
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private PureTransferSemanticChecks transferSemanticChecks;
 
 	private ImpliedTransfers subject;
 
@@ -62,7 +64,7 @@ class ImpliedTransfersTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new ImpliedTransfers(dynamicProperties);
+		subject = new ImpliedTransfers(dynamicProperties, transferSemanticChecks);
 	}
 
 	@Test
@@ -85,9 +87,6 @@ class ImpliedTransfersTest {
 		// and:
 		final var expectedMeta = new ImpliedTransfers.Meta(maxExplicitHbarAdjusts, maxExplicitTokenAdjusts, OK);
 
-		// given:
-		final var subject = new ImpliedTransfers(dynamicProperties);
-		// and:
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxExplicitHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxExplicitTokenAdjusts);
 
