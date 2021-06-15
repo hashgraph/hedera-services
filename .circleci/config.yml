@@ -2244,7 +2244,7 @@ workflows:
             filters:
               branches:
                 ignore:
-                  - 01589-M-DoAtomicXfersWithModelIds
+                  - /.*-PERF/
             workflow-name: "Continuous-integration"
         - sonar-check:
             context: SonarCloud

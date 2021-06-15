@@ -20,6 +20,7 @@ package com.hedera.services.txns;
  * ‍
  */
 
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -27,6 +28,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.util.List;
 import java.util.Map;
@@ -39,6 +41,9 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.verify;
 
 class TransitionLogicLookupTest {
 	TransitionLogic a = withApplicability(txn -> txn.getTransactionID().getAccountID().equals(asAccount("0.0.2")));
@@ -67,6 +72,25 @@ class TransitionLogicLookupTest {
 	public void identifiesLogic() {
 		// expect:
 		assertEquals(a, subject.lookupFor(CryptoTransfer, aTxn).get());
+	}
+
+	@Test
+	void logicDefaultsToLegacyCheck() {
+		final var txn = TransactionBody.getDefaultInstance();
+		final var accessor = Mockito.mock(TxnAccessor.class);
+		final var semanticCheck = Mockito.mock(Function.class);
+
+		final var subject = Mockito.mock(TransitionLogic.class);
+
+		given(accessor.getTxn()).willReturn(txn);
+		given(subject.semanticCheck()).willReturn(semanticCheck);
+		doCallRealMethod().when(subject).validateSemantics(accessor);
+
+		// when:
+		subject.validateSemantics(accessor);
+
+		// then:
+		verify(semanticCheck).apply(txn);
 	}
 
 	private TransitionLogic withApplicability(Predicate<TransactionBody> p) {

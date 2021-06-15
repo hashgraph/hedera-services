@@ -1,6 +1,9 @@
 package com.hedera.services.ledger;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.grpc.marshalling.ImpliedTransfers;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -22,11 +25,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-class ImpliedTransfersTest {
+class ImpliedTransfersMarshalTest {
 	private CryptoTransferTransactionBody op;
 
 	@Mock
@@ -34,7 +39,7 @@ class ImpliedTransfersTest {
 	@Mock
 	private PureTransferSemanticChecks transferSemanticChecks;
 
-	private ImpliedTransfers subject;
+	private ImpliedTransfersMarshal subject;
 
 	private final Id aModel = new Id(1, 2, 3);
 	private final Id bModel = new Id(2, 3, 4);
@@ -65,7 +70,7 @@ class ImpliedTransfersTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new ImpliedTransfers(dynamicProperties, transferSemanticChecks);
+		subject = new ImpliedTransfersMarshal(dynamicProperties, transferSemanticChecks);
 	}
 
 	@Test
@@ -75,14 +80,14 @@ class ImpliedTransfersTest {
 		given(dynamicProperties.maxTransferListSize()).willReturn(2);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxExplicitTokenAdjusts);
 		// and:
-		final var expectedMeta = new ImpliedTransfers.Meta(
+		final var expectedMeta = new ImpliedTransfersMeta(
 				2, maxExplicitTokenAdjusts, TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
 
 		// when:
-		final var result = subject.parseFromGrpc(op);
+		final var result = subject.marshalFromGrpc(op);
 
 		// then:
-		assertEquals(result.getRight(), expectedMeta);
+		assertEquals(result.getMeta(), expectedMeta);
 	}
 
 	@Test
@@ -103,27 +108,29 @@ class ImpliedTransfersTest {
 				}
 		);
 		// and:
-		final var expectedMeta = new ImpliedTransfers.Meta(maxExplicitHbarAdjusts, maxExplicitTokenAdjusts, OK);
+		final var expectedMeta = new ImpliedTransfersMeta(maxExplicitHbarAdjusts, maxExplicitTokenAdjusts, OK);
 
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxExplicitHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxExplicitTokenAdjusts);
 
 		// when:
-		final var result = subject.parseFromGrpc(op);
+		final var result = subject.marshalFromGrpc(op);
 
 		// then:
-		assertEquals(result.getRight(), expectedMeta);
-		assertEquals(result.getLeft(), expectedChanges);
+		assertEquals(result.getMeta(), expectedMeta);
+		assertEquals(result.getChanges(), expectedChanges);
 	}
 
 	@Test
 	void metaObjectContractSanityChecks() {
 		// given:
-		final var oneMeta = new ImpliedTransfers.Meta(3, 4, OK);
-		final var twoMeta = new ImpliedTransfers.Meta(1, 2, TOKEN_WAS_DELETED);
+		final var oneMeta = new ImpliedTransfersMeta(3, 4, OK);
+		final var twoMeta = new ImpliedTransfersMeta(1, 2, TOKEN_WAS_DELETED);
 		// and:
-		final var oneRepr = "Meta{code=OK, maxExplicitHbarAdjusts=3, maxExplicitTokenAdjusts=4}";
-		final var twoRepr = "Meta{code=TOKEN_WAS_DELETED, maxExplicitHbarAdjusts=1, maxExplicitTokenAdjusts=2}";
+		final var oneRepr = "ImpliedTransfersMeta{code=OK, " +
+				"maxExplicitHbarAdjusts=3, maxExplicitTokenAdjusts=4}";
+		final var twoRepr = "ImpliedTransfersMeta{code=TOKEN_WAS_DELETED, " +
+				"maxExplicitHbarAdjusts=1, maxExplicitTokenAdjusts=2}";
 
 		// expect:
 		assertNotEquals(oneMeta, twoMeta);
@@ -131,6 +138,56 @@ class ImpliedTransfersTest {
 		// and:
 		assertEquals(oneRepr, oneMeta.toString());
 		assertEquals(twoRepr, twoMeta.toString());
+	}
+
+	@Test
+	void impliedXfersObjectContractSanityChecks() {
+		// given:
+		final var twoChanges = List.of(BalanceChange.tokenAdjust(
+				new Id(1, 2, 3),
+				new Id(4, 5, 6),
+				7));
+		final var oneImpliedXfers = ImpliedTransfers.invalid(3, 4, TOKEN_WAS_DELETED);
+		final var twoImpliedXfers = ImpliedTransfers.valid(1, 100, twoChanges);
+		// and:
+		final var oneRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=TOKEN_WAS_DELETED, " +
+				"maxExplicitHbarAdjusts=3, maxExplicitTokenAdjusts=4}, changes=[]}";
+		final var twoRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=OK, maxExplicitHbarAdjusts=1, " +
+				"maxExplicitTokenAdjusts=100}, changes=[BalanceChange{token=Id{shard=1, realm=2, num=3}, " +
+				"account=Id{shard=4, realm=5, num=6}, units=7}]}";
+
+		// expect:
+		assertNotEquals(oneImpliedXfers, twoImpliedXfers);
+		assertNotEquals(oneImpliedXfers.hashCode(), twoImpliedXfers.hashCode());
+		// and:
+		assertEquals(oneRepr, oneImpliedXfers.toString());
+		assertEquals(twoRepr, twoImpliedXfers.toString());
+	}
+
+	@Test
+	void metaRecognizesIdenticalConditions() {
+		// given:
+		final var meta = new ImpliedTransfersMeta(3, 4, OK);
+
+		given(dynamicProperties.maxTransferListSize()).willReturn(3);
+		given(dynamicProperties.maxTokenTransferListSize()).willReturn(4);
+
+		// expect:
+		assertTrue(meta.wasDerivedFrom(dynamicProperties));
+
+		// and:
+		given(dynamicProperties.maxTransferListSize()).willReturn(2);
+		given(dynamicProperties.maxTokenTransferListSize()).willReturn(4);
+
+		// expect:
+		assertFalse(meta.wasDerivedFrom(dynamicProperties));
+
+		// and:
+		given(dynamicProperties.maxTransferListSize()).willReturn(3);
+		given(dynamicProperties.maxTokenTransferListSize()).willReturn(3);
+
+		// expect:
+		assertFalse(meta.wasDerivedFrom(dynamicProperties));
 	}
 
 	private void setupFixtureOp() {

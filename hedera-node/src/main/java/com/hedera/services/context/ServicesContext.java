@@ -133,6 +133,7 @@ import com.hedera.services.grpc.controllers.FreezeController;
 import com.hedera.services.grpc.controllers.NetworkController;
 import com.hedera.services.grpc.controllers.ScheduleController;
 import com.hedera.services.grpc.controllers.TokenController;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.keys.CharacteristicsFactory;
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
@@ -253,7 +254,9 @@ import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.HapiThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.throttling.TxnAwareHandleThrottling;
-import com.hedera.services.txns.ExpandHandleSpan;
+import com.hedera.services.txns.span.ExpandHandleSpan;
+import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.services.txns.span.SpanMapManager;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.txns.TransitionLogic;
@@ -475,11 +478,13 @@ public class ServicesContext {
 	private EntityIdSource ids;
 	private FileController fileGrpc;
 	private HapiOpCounters opCounters;
+	private SpanMapManager spanMapManager;
 	private AnswerFunctions answerFunctions;
 	private ContractAnswers contractAnswers;
 	private SwirldDualState dualState;
 	private OptionValidator validator;
 	private LedgerValidator ledgerValidator;
+	private BackingAccounts backingAccounts;
 	private TokenController tokenGrpc;
 	private MiscRunningAvgs runningAvgs;
 	private ScheduleAnswers scheduleAnswers;
@@ -505,6 +510,7 @@ public class ServicesContext {
 	private ExpiringCreations creator;
 	private NetworkController networkGrpc;
 	private GrpcServerManager grpc;
+	private FeeChargingPolicy txnChargingPolicy;
 	private TxnResponseHelper txnResponseHelper;
 	private BlobStorageSource bytecodeDb;
 	private HapiOpPermissions hapiOpPermissions;
@@ -531,11 +537,9 @@ public class ServicesContext {
 	private TransactionPrecheck transactionPrecheck;
 	private FeeMultiplierSource feeMultiplierSource;
 	private NodeLocalProperties nodeLocalProperties;
-	private FeeChargingPolicy txnChargingPolicy;
 	private TxnAwareRatesManager exchangeRatesManager;
 	private ServicesStatsManager statsManager;
 	private LedgerAccountsSource accountSource;
-	private BackingAccounts backingAccounts;
 	private TransitionLogicLookup transitionLogic;
 	private PricedUsageCalculator pricedUsageCalculator;
 	private TransactionThrottling txnThrottling;
@@ -1319,6 +1323,10 @@ public class ServicesContext {
 	}
 
 	private Function<HederaFunctionality, List<TransitionLogic>> transitions() {
+		final var spanMapAccessor = new ExpandHandleSpanMapAccessor();
+		final var dynamicProperties = globalDynamicProperties();
+		final var transferSemanticChecks = new PureTransferSemanticChecks();
+
 		Map<HederaFunctionality, List<TransitionLogic>> transitionsMap = Map.ofEntries(
 				/* Crypto */
 				entry(CryptoCreate,
@@ -1328,7 +1336,8 @@ public class ServicesContext {
 				entry(CryptoDelete,
 						List.of(new CryptoDeleteTransitionLogic(ledger(), txnCtx()))),
 				entry(CryptoTransfer,
-						List.of(new CryptoTransferTransitionLogic(ledger(), validator(), txnCtx()))),
+						List.of(new CryptoTransferTransitionLogic(
+								ledger(), txnCtx(), dynamicProperties, transferSemanticChecks, spanMapAccessor))),
 				/* File */
 				entry(FileUpdate,
 						List.of(new FileUpdateTransitionLogic(hfs(), entityNums(), validator(), txnCtx()))),
@@ -1705,9 +1714,19 @@ public class ServicesContext {
 
 	public ExpandHandleSpan expandHandleSpan() {
 		if (expandHandleSpan == null) {
-			expandHandleSpan = new ExpandHandleSpan(10, TimeUnit.SECONDS);
+			expandHandleSpan = new ExpandHandleSpan(10, TimeUnit.SECONDS, spanMapManager());
 		}
 		return expandHandleSpan;
+	}
+
+	public SpanMapManager spanMapManager() {
+		if (spanMapManager == null) {
+			final var dynamicProperties = globalDynamicProperties();
+			final var transferSemanticChecks = new PureTransferSemanticChecks();
+			final var marshal = new ImpliedTransfersMarshal(dynamicProperties, transferSemanticChecks);
+			spanMapManager = new SpanMapManager(marshal, dynamicProperties);
+		}
+		return spanMapManager;
 	}
 
 	public FreezeController freezeGrpc() {

@@ -46,7 +46,6 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -57,16 +56,13 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
 import static com.hedera.test.utils.IdUtils.asFile;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
-import static com.hedera.test.utils.TxnUtils.withTokenAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
@@ -602,19 +598,6 @@ public class ContextOptionValidatorTest {
 		// expect:
 		assertEquals(TOKEN_NAME_TOO_LONG, subject.tokenNameCheck("A€"));
 		assertEquals(INVALID_ZERO_BYTE_IN_STRING, subject.tokenNameCheck("\u0000"));
-	}
-
-	@Test
-	void acceptsReasonableTokenTransfersLength() {
-		// setup:
-		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
-
-		given(dynamicProperties.maxTokenTransferListSize()).willReturn(5);
-		given(transferSemanticChecks.validateTokenTransfers(wrapper, 5))
-				.willReturn(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS);
-
-		// expect:
-		assertEquals(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS, subject.tokenTransfersLengthCheck(wrapper));
 	}
 
 	@Test

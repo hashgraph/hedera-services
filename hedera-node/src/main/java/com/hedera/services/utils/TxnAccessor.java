@@ -86,7 +86,7 @@ public interface TxnAccessor {
         throw new UnsupportedOperationException();
     }
 
-    default Map<String, Object> spanMap() {
+    default Map<String, Object> getSpanMap() {
         throw new UnsupportedOperationException();
     }
 }
