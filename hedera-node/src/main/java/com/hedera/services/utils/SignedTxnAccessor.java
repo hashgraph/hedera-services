@@ -40,6 +40,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.Arrays;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
@@ -55,6 +57,8 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
  */
 public class SignedTxnAccessor implements TxnAccessor {
 	private static final Logger log = LogManager.getLogger(SignedTxnAccessor.class);
+
+	private final Map<String, Object> spanMap = new HashMap<>();
 
 	private int sigMapSize;
 	private int numSigPairs;
@@ -256,6 +260,11 @@ public class SignedTxnAccessor implements TxnAccessor {
 		} else {
 			txnUsageMeta = new BaseTransactionMeta(utf8MemoBytes.length, 0);
 		}
+	}
+
+	@Override
+	public Map<String, Object> getSpanMap() {
+		return spanMap;
 	}
 
 	private void setXferUsageMeta() {

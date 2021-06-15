@@ -348,6 +348,10 @@ public class HederaLedger {
 		return validity;
 	}
 
+	public ResponseCodeEnum doZeroSum(List<BalanceChange> balanceChanges) {
+		throw new AssertionError("Not implemented!");
+	}
+
 	public ResponseCodeEnum doAtomicTransfers(CryptoTransferTransactionBody txn) {
 		return zeroSumTransfers(txn.getTransfers(), txn.getTokenTransfersList());
 	}

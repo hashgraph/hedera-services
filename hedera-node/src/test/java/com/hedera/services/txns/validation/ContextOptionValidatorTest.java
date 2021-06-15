@@ -81,7 +81,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-public class ContextOptionValidatorTest {
+class ContextOptionValidatorTest {
 	final private Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
 	final private Instant now = Instant.now();
 	final private AccountID a = AccountID.newBuilder().setAccountNum(9_999L).build();
