@@ -355,7 +355,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 						"  NetworkContext         :: %s\n" +
 						"  AddressBook            :: %s\n" +
 						"  RecordsRunningHashLeaf :: %s\n" +
-						"    ↪ Running hash       :: %s" +
+						"    ↪ Running hash       :: %s\n" +
 						"  UniqueTokens           :: %s",
 				getHash(),
 				accounts().getHash(),
