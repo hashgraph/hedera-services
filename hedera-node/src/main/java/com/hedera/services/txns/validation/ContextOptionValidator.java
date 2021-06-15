@@ -23,7 +23,6 @@ package com.hedera.services.txns.validation;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -67,20 +66,17 @@ public class ContextOptionValidator implements OptionValidator {
 	private final AccountID nodeAccount;
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final PureTransferSemanticChecks transferSemanticChecks;
 
 	public ContextOptionValidator(
 			AccountID nodeAccount,
 			PropertySource properties,
 			TransactionContext txnCtx,
-			GlobalDynamicProperties dynamicProperties,
-			PureTransferSemanticChecks transferSemanticChecks
+			GlobalDynamicProperties dynamicProperties
 	) {
 		maxEntityLifetime = properties.getLongProperty("entities.maxLifetime");
 		this.txnCtx = txnCtx;
 		this.nodeAccount = nodeAccount;
 		this.dynamicProperties = dynamicProperties;
-		this.transferSemanticChecks = transferSemanticChecks;
 	}
 
 	@Override

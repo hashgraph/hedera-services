@@ -25,7 +25,6 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.files.HFileMeta;
-import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -45,7 +44,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -89,7 +87,6 @@ public class ContextOptionValidatorTest {
 	final private AccountID a = AccountID.newBuilder().setAccountNum(9_999L).build();
 	final private MerkleAccount aV = MerkleAccountFactory.newAccount().get();
 	final private AccountID b = AccountID.newBuilder().setAccountNum(8_999L).build();
-	final private AccountID c = AccountID.newBuilder().setAccountNum(7_999L).build();
 	final private AccountID d = AccountID.newBuilder().setAccountNum(6_999L).build();
 	final private AccountID missing = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private AccountID thisNodeAccount = AccountID.newBuilder().setAccountNum(13L).build();
@@ -106,11 +103,6 @@ public class ContextOptionValidatorTest {
 	final private TopicID expiredTopicId = TopicID.newBuilder().setTopicNum(3_456L).build();
 	final private TopicID topicId = TopicID.newBuilder().setTopicNum(4_567L).build();
 
-	final private TokenID aTId = TokenID.newBuilder().setTokenNum(1_234L).build();
-	final private TokenID bTId = TokenID.newBuilder().setTokenNum(2_345L).build();
-	final private TokenID cTId = TokenID.newBuilder().setTokenNum(3_456L).build();
-	final private TokenID dTId = TokenID.newBuilder().setTokenNum(4_567L).build();
-
 	private MerkleTopic deletedMerkleTopic;
 	private MerkleTopic expiredMerkleTopic;
 	private MerkleTopic merkleTopic;
@@ -122,7 +114,6 @@ public class ContextOptionValidatorTest {
 	private HFileMeta attr;
 	private HFileMeta deletedAttr;
 	private StateView view;
-	private PureTransferSemanticChecks transferSemanticChecks;
 	private long expiry = 2_000_000L;
 	private long maxLifetime = 3_000_000L;
 	private FileID target = asFile("0.0.123");
@@ -159,10 +150,8 @@ public class ContextOptionValidatorTest {
 		deletedAttr = new HFileMeta(true, wacl, expiry);
 		view = mock(StateView.class);
 
-		transferSemanticChecks = mock(PureTransferSemanticChecks.class);
-
 		subject = new ContextOptionValidator(
-				thisNodeAccount, properties, txnCtx, dynamicProperties, transferSemanticChecks);
+				thisNodeAccount, properties, txnCtx, dynamicProperties);
 	}
 
 	private FileGetInfoResponse.FileInfo asMinimalInfo(HFileMeta meta) throws Exception {
