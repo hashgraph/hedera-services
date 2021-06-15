@@ -2,7 +2,7 @@
   "currentFeeSchedule" : [ {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "CryptoCreate",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 4498129603,
           "bpt" : 7191161,
@@ -39,12 +39,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "CryptoAccountAutoRenew",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 59972622,
           "bpt" : 95878,
@@ -81,12 +81,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "CryptoUpdate",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 19649656,
           "bpt" : 31414,
@@ -123,12 +123,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "CryptoTransfer",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 9390055,
           "bpt" : 15012,
@@ -165,12 +165,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "CryptoDelete",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 471427939,
           "bpt" : 753672,
@@ -207,12 +207,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "CryptoAddLiveHash",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 5561692202,
           "bpt" : 8891479,
@@ -249,12 +249,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "CryptoDeleteLiveHash",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 468546396,
           "bpt" : 749065,
@@ -291,12 +291,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "CryptoGetLiveHash",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 58926,
           "bpt" : 94,
@@ -333,12 +333,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "CryptoGetAccountRecords",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 22044,
           "bpt" : 35,
@@ -375,12 +375,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "CryptoGetAccountBalance",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 68774,
           "bpt" : 110,
@@ -417,12 +417,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "CryptoGetInfo",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 63990,
           "bpt" : 102,
@@ -459,12 +459,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "CryptoGetStakers",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 15251,
           "bpt" : 24,
@@ -501,12 +501,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ConsensusCreateTopic",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 921577366,
           "bpt" : 1473326,
@@ -543,12 +543,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ConsensusUpdateTopic",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 20193780,
           "bpt" : 32284,
@@ -585,12 +585,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ConsensusDeleteTopic",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 474345144,
           "bpt" : 758336,
@@ -627,12 +627,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ConsensusSubmitMessage",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 9248442,
           "bpt" : 14785,
@@ -669,12 +669,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ConsensusGetTopicInfo",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 64253,
           "bpt" : 103,
@@ -711,12 +711,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TokenCreate",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 32203636093,
           "bpt" : 51483964,
@@ -753,12 +753,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TokenDelete",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 94285588,
           "bpt" : 150734,
@@ -795,12 +795,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TokenUpdate",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 93900697,
           "bpt" : 150119,
@@ -837,12 +837,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TokenMint",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 94092119,
           "bpt" : 150425,
@@ -879,12 +879,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TokenBurn",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 94092119,
           "bpt" : 150425,
@@ -921,12 +921,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TokenAssociateToAccount",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 4574479485,
           "bpt" : 7313222,
@@ -963,12 +963,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TokenDissociateFromAccount",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 4714279388,
           "bpt" : 7536720,
@@ -1005,12 +1005,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TokenGrantKycToAccount",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 94285551,
           "bpt" : 150734,
@@ -1047,12 +1047,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TokenRevokeKycFromAccount",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 94285551,
           "bpt" : 150734,
@@ -1089,12 +1089,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TokenFreezeAccount",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 94285551,
           "bpt" : 150734,
@@ -1131,12 +1131,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TokenUnfreezeAccount",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 94285551,
           "bpt" : 150734,
@@ -1173,12 +1173,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TokenAccountWipe",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 94092119,
           "bpt" : 150425,
@@ -1215,12 +1215,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TokenGetInfo",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 61717,
           "bpt" : 99,
@@ -1257,12 +1257,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ScheduleCreate",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 563513000,
           "bpt" : 900888,
@@ -1299,12 +1299,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ScheduleSign",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 58040915,
           "bpt" : 92790,
@@ -1341,12 +1341,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ScheduleDelete",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 95360774,
           "bpt" : 152453,
@@ -1383,12 +1383,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ScheduleGetInfo",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 53393,
           "bpt" : 85,
@@ -1425,12 +1425,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ContractCreate",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 45218052173,
           "bpt" : 72290115,
@@ -1467,12 +1467,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ContractUpdate",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 2438037058,
           "bpt" : 3897691,
@@ -1509,12 +1509,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ContractDelete",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 664083202,
           "bpt" : 1061670,
@@ -1551,12 +1551,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ContractCall",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 3336515210,
           "bpt" : 5334088,
@@ -1593,12 +1593,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ContractGetInfo",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 71015,
           "bpt" : 114,
@@ -1635,12 +1635,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ContractCallLocal",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 2610100486,
           "bpt" : 4172769,
@@ -1677,12 +1677,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ContractGetBytecode",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 226589259813,
           "bpt" : 362248325,
@@ -1719,12 +1719,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "GetBySolidityID",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 69385,
           "bpt" : 111,
@@ -1761,12 +1761,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ContractGetRecords",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 10093,
           "bpt" : 16,
@@ -1803,12 +1803,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ContractAutoRenew",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 2934015991,
           "bpt" : 4690612,
@@ -1845,12 +1845,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "FileCreate",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 3657315129,
           "bpt" : 5846951,
@@ -1887,12 +1887,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "FileUpdate",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 3663140881,
           "bpt" : 5856265,
@@ -1929,12 +1929,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "FileDelete",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 664083202,
           "bpt" : 1061670,
@@ -1971,12 +1971,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "FileAppend",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 3680730029,
           "bpt" : 5884384,
@@ -2013,12 +2013,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "FileGetContents",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 69308,
           "bpt" : 111,
@@ -2055,12 +2055,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "FileGetInfo",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 71080,
           "bpt" : 114,
@@ -2097,12 +2097,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "GetVersionInfo",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 6519421057,
           "bpt" : 10422601,
@@ -2139,12 +2139,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "GetByKey",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 1,
           "bpt" : 0,
@@ -2181,12 +2181,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TransactionGetReceipt",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 1,
           "bpt" : 0,
@@ -2223,12 +2223,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "SystemDelete",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 0,
           "bpt" : 0,
@@ -2265,12 +2265,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "SystemUndelete",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 0,
           "bpt" : 0,
@@ -2307,12 +2307,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TransactionGetRecord",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 54605,
           "bpt" : 87,
@@ -2349,7 +2349,7 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "expiryTime" : 1645810078
@@ -2358,7 +2358,7 @@
   "nextFeeSchedule" : [ {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "CryptoCreate",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 4498129603,
           "bpt" : 7191161,
@@ -2395,12 +2395,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "CryptoAccountAutoRenew",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 59972622,
           "bpt" : 95878,
@@ -2437,12 +2437,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "CryptoUpdate",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 19649656,
           "bpt" : 31414,
@@ -2479,12 +2479,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "CryptoTransfer",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 9390055,
           "bpt" : 15012,
@@ -2521,12 +2521,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "CryptoDelete",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 471427939,
           "bpt" : 753672,
@@ -2563,12 +2563,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "CryptoAddLiveHash",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 5561692202,
           "bpt" : 8891479,
@@ -2605,12 +2605,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "CryptoDeleteLiveHash",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 468546396,
           "bpt" : 749065,
@@ -2647,12 +2647,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "CryptoGetLiveHash",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 58926,
           "bpt" : 94,
@@ -2689,12 +2689,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "CryptoGetAccountRecords",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 22044,
           "bpt" : 35,
@@ -2731,12 +2731,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "CryptoGetAccountBalance",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 68774,
           "bpt" : 110,
@@ -2773,12 +2773,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "CryptoGetInfo",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 63990,
           "bpt" : 102,
@@ -2815,12 +2815,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "CryptoGetStakers",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 15251,
           "bpt" : 24,
@@ -2857,12 +2857,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ConsensusCreateTopic",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 921577366,
           "bpt" : 1473326,
@@ -2899,12 +2899,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ConsensusUpdateTopic",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 20193780,
           "bpt" : 32284,
@@ -2941,12 +2941,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ConsensusDeleteTopic",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 474345144,
           "bpt" : 758336,
@@ -2983,12 +2983,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ConsensusSubmitMessage",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 9248442,
           "bpt" : 14785,
@@ -3025,12 +3025,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ConsensusGetTopicInfo",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 64253,
           "bpt" : 103,
@@ -3067,12 +3067,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TokenCreate",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 32203636093,
           "bpt" : 51483964,
@@ -3109,12 +3109,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TokenDelete",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 94285588,
           "bpt" : 150734,
@@ -3151,12 +3151,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TokenUpdate",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 93900697,
           "bpt" : 150119,
@@ -3193,12 +3193,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TokenMint",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 94092119,
           "bpt" : 150425,
@@ -3235,12 +3235,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TokenBurn",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 94092119,
           "bpt" : 150425,
@@ -3277,12 +3277,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TokenAssociateToAccount",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 4574479485,
           "bpt" : 7313222,
@@ -3319,12 +3319,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TokenDissociateFromAccount",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 4714279388,
           "bpt" : 7536720,
@@ -3361,12 +3361,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TokenGrantKycToAccount",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 94285551,
           "bpt" : 150734,
@@ -3403,12 +3403,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TokenRevokeKycFromAccount",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 94285551,
           "bpt" : 150734,
@@ -3445,12 +3445,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TokenFreezeAccount",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 94285551,
           "bpt" : 150734,
@@ -3487,12 +3487,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TokenUnfreezeAccount",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 94285551,
           "bpt" : 150734,
@@ -3529,12 +3529,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TokenAccountWipe",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 94092119,
           "bpt" : 150425,
@@ -3571,12 +3571,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TokenGetInfo",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 61717,
           "bpt" : 99,
@@ -3613,12 +3613,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ScheduleCreate",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 563513000,
           "bpt" : 900888,
@@ -3655,12 +3655,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ScheduleSign",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 58040915,
           "bpt" : 92790,
@@ -3697,12 +3697,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ScheduleDelete",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 95360774,
           "bpt" : 152453,
@@ -3739,12 +3739,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ScheduleGetInfo",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 53393,
           "bpt" : 85,
@@ -3781,12 +3781,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ContractCreate",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 45218052173,
           "bpt" : 72290115,
@@ -3823,12 +3823,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ContractUpdate",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 2438037058,
           "bpt" : 3897691,
@@ -3865,12 +3865,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ContractDelete",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 664083202,
           "bpt" : 1061670,
@@ -3907,12 +3907,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ContractCall",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 3336515210,
           "bpt" : 5334088,
@@ -3949,12 +3949,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ContractGetInfo",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 71015,
           "bpt" : 114,
@@ -3991,12 +3991,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ContractCallLocal",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 2610100486,
           "bpt" : 4172769,
@@ -4033,12 +4033,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ContractGetBytecode",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 226589259813,
           "bpt" : 362248325,
@@ -4075,12 +4075,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "GetBySolidityID",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 69385,
           "bpt" : 111,
@@ -4117,12 +4117,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ContractGetRecords",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 10093,
           "bpt" : 16,
@@ -4159,12 +4159,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "ContractAutoRenew",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 2934015991,
           "bpt" : 4690612,
@@ -4201,12 +4201,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "FileCreate",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 3657315129,
           "bpt" : 5846951,
@@ -4243,12 +4243,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "FileUpdate",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 3663140881,
           "bpt" : 5856265,
@@ -4285,12 +4285,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "FileDelete",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 664083202,
           "bpt" : 1061670,
@@ -4327,12 +4327,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "FileAppend",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 3680730029,
           "bpt" : 5884384,
@@ -4369,12 +4369,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "FileGetContents",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 69308,
           "bpt" : 111,
@@ -4411,12 +4411,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "FileGetInfo",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 71080,
           "bpt" : 114,
@@ -4453,12 +4453,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "GetVersionInfo",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 6519421057,
           "bpt" : 10422601,
@@ -4495,12 +4495,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "GetByKey",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 1,
           "bpt" : 0,
@@ -4537,12 +4537,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TransactionGetReceipt",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 1,
           "bpt" : 0,
@@ -4579,12 +4579,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "SystemDelete",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 0,
           "bpt" : 0,
@@ -4621,12 +4621,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "SystemUndelete",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 0,
           "bpt" : 0,
@@ -4663,12 +4663,12 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TransactionGetRecord",
-      "feeData" : {
+      "fees" : [{
         "nodedata" : {
           "constant" : 54605,
           "bpt" : 87,
@@ -4705,7 +4705,7 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
+      }]
     }
   }, {
     "expiryTime" : 1677346078

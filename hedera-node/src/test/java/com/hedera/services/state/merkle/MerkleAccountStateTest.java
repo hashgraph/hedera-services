@@ -28,7 +28,6 @@ import com.hedera.services.state.serdes.IoReadingFunction;
 import com.hedera.services.state.serdes.IoWritingConsumer;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.MiscUtils;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.swirlds.common.MutabilityException;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -118,7 +117,7 @@ class MerkleAccountStateTest {
 						"deleted=" + deleted + ", " +
 						"smartContract=" + smartContract + ", " +
 						"receiverSigRequired=" + receiverSigRequired + ", " +
-						"proxy=" + proxy + "}",
+						"proxy=" + proxy + ", nftsOwned=0}",
 				subject.toString());
 	}
 
@@ -341,7 +340,7 @@ class MerkleAccountStateTest {
 	@Test
 	void merkleMethodsWork() {
 		// expect;
-		assertEquals(MerkleAccountState.RELEASE_090_VERSION, subject.getVersion());
+		assertEquals(MerkleAccountState.RELEASE_0150_VERSION, subject.getVersion());
 		assertEquals(MerkleAccountState.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 		assertTrue(subject.isLeaf());
 	}

@@ -490,7 +490,7 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.DISK_FS, diskFs);
 		subject.setChild(ServicesState.ChildIndices.SCHEDULE_TXS, scheduledTxs);
 		subject.setChild(ServicesState.ChildIndices.RECORD_STREAM_RUNNING_HASH, runningHashLeaf);
-
+		subject.setChild(ServicesState.ChildIndices.UNIQUE_TOKENS, uniqueTokens);
 		// when:
 		subject.init(platform, book);
 
@@ -589,6 +589,7 @@ class ServicesStateTest {
 		given(accounts.getHash()).willReturn(accountsRootHash);
 		given(storage.getHash()).willReturn(storageRootHash);
 		given(tokens.getHash()).willReturn(tokensRootHash);
+		given(uniqueTokens.getHash()).willReturn(uniqueTokensRootHash);
 		given(tokenAssociations.getHash()).willReturn(tokenRelsRootHash);
 		given(networkCtx.getHash()).willReturn(ctxHash);
 		given(networkCtx.toString()).willReturn("Not really a network context representation!");

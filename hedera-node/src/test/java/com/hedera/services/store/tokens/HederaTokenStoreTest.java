@@ -29,6 +29,8 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
+import com.hedera.services.state.enums.TokenSupplyType;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -1554,6 +1556,8 @@ class HederaTokenStoreTest {
 		expected.setKycKey(TOKEN_KYC_KT.asJKeyUnchecked());
 		expected.setWipeKey(MISC_ACCOUNT_KT.asJKeyUnchecked());
 		expected.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked());
+		expected.setTokenType(TokenType.FUNGIBLE_COMMON);
+		expected.setSupplyType(TokenSupplyType.INFINITE);
 		expected.setMemo(memo);
 
 		// given:
@@ -1591,6 +1595,8 @@ class HederaTokenStoreTest {
 		expected.setKycKey(TOKEN_KYC_KT.asJKeyUnchecked());
 		expected.setWipeKey(MISC_ACCOUNT_KT.asJKeyUnchecked());
 		expected.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked());
+		expected.setTokenType(TokenType.FUNGIBLE_COMMON);
+		expected.setSupplyType(TokenSupplyType.INFINITE);
 		expected.setMemo(memo);
 
 		// given:

@@ -21,6 +21,7 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -44,9 +45,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -89,7 +88,7 @@ class TokenMintTransitionLogicTest {
 		given(store.loadToken(id)).willReturn(token);
 		given(token.getTreasury()).willReturn(treasury);
 		given(store.loadTokenRelationship(token, treasury)).willReturn(treasuryRel);
-
+		given(token.getType()).willReturn(TokenType.FUNGIBLE_COMMON);
 		// when:
 		subject.doStateTransition();
 

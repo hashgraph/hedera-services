@@ -215,6 +215,7 @@ public class UsageBasedFeeCalculatorTest {
 
 		given(exchange.rate(at)).willReturn(currentRate);
 		given(usagePrices.pricesGiven(ContractCreate, at)).willReturn(currentPrices);
+		given(usagePrices.defaultPricesGiven(ContractCreate, at)).willReturn(defaultCurrentPrices);
 		// and:
 		long expectedGasPrice =
 				getTinybarsFromTinyCents(currentRate, mockFees.getGas() / FEE_DIVISOR_FACTOR);
@@ -255,6 +256,7 @@ public class UsageBasedFeeCalculatorTest {
 	void estimatesFutureGasPriceInTinybars() {
 		given(exchange.rate(at)).willReturn(currentRate);
 		given(usagePrices.pricesGiven(CryptoCreate, at)).willReturn(currentPrices);
+		given(usagePrices.defaultPricesGiven(CryptoCreate, at)).willReturn(defaultCurrentPrices);
 		// and:
 		long expected = getTinybarsFromTinyCents(currentRate, mockFees.getGas() / FEE_DIVISOR_FACTOR);
 
@@ -268,6 +270,7 @@ public class UsageBasedFeeCalculatorTest {
 	@Test
 	void computesActiveGasPriceInTinybars() {
 		given(exchange.activeRate()).willReturn(currentRate);
+		given(usagePrices.defaultActivePrices()).willReturn(defaultCurrentPrices);
 		// and:
 		long expected = getTinybarsFromTinyCents(currentRate, mockFees.getGas() / FEE_DIVISOR_FACTOR);
 

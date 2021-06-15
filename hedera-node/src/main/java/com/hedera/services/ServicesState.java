@@ -208,7 +208,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			setChild(ChildIndices.TOKEN_ASSOCIATIONS, new FCMap<>());
 			setChild(ChildIndices.DISK_FS, new MerkleDiskFs());
 			setChild(ChildIndices.SCHEDULE_TXS, new FCMap<>());
-
+			setChild(ChildIndices.UNIQUE_TOKENS, new FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier>());
 			/* Initialize the running hash leaf at genesis to an empty hash. */
 			final var firstRunningHash = new RunningHash();
 			firstRunningHash.setHash(emptyHash);
@@ -231,8 +231,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			if (!skipDiskFsHashCheck) {
 				restoredDiskFs.checkHashesAgainstDiskContents();
 			}
-
-			setChild(ChildIndices.UNIQUE_TOKENS, new FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier>());
 		}
 
 		networkCtx().setStateVersion(MERKLE_VERSION);
