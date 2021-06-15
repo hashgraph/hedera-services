@@ -19,7 +19,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -69,7 +68,7 @@ class LedgerBalanceChangesTest {
 		subject.setTokenRelsLedger(tokenRelsLedger);
 	}
 
-	@Test
+//	@Test
 	void happyPathScans() {
 		givenInitialBalances();
 
