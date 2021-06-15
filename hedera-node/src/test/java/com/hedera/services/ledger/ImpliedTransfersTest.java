@@ -20,6 +20,7 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.BDDMockito.given;
@@ -65,6 +66,23 @@ class ImpliedTransfersTest {
 	@BeforeEach
 	void setUp() {
 		subject = new ImpliedTransfers(dynamicProperties, transferSemanticChecks);
+	}
+
+	@Test
+	void validatesXfers() {
+		setupFixtureOp();
+
+		given(dynamicProperties.maxTransferListSize()).willReturn(2);
+		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxExplicitTokenAdjusts);
+		// and:
+		final var expectedMeta = new ImpliedTransfers.Meta(
+				2, maxExplicitTokenAdjusts, TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
+
+		// when:
+		final var result = subject.parseFromGrpc(op);
+
+		// then:
+		assertEquals(result.getRight(), expectedMeta);
 	}
 
 	@Test

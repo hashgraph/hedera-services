@@ -10,11 +10,13 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static com.hedera.services.ledger.BalanceChange.hbarAdjust;
 import static com.hedera.services.ledger.BalanceChange.tokenAdjust;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 
 public class ImpliedTransfers {
 	private final GlobalDynamicProperties dynamicProperties;
@@ -29,8 +31,13 @@ public class ImpliedTransfers {
 	}
 
 	public Pair<List<BalanceChange>, Meta> parseFromGrpc(CryptoTransferTransactionBody op) {
-		final var maxHbarAdjusts = dynamicProperties.maxTransferListSize();
 		final var maxTokenAdjusts = dynamicProperties.maxTokenTransferListSize();
+		final var maxHbarAdjusts = dynamicProperties.maxTransferListSize();
+
+		final var numHbarAdjusts = op.getTransfers().getAccountAmountsCount();
+		if (numHbarAdjusts > maxHbarAdjusts) {
+			return invalidChanges(maxHbarAdjusts, maxTokenAdjusts, TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
+		}
 
 		final List<BalanceChange> changes = new ArrayList<>();
 		for (var aa : op.getTransfers().getAccountAmountsList()) {
@@ -43,6 +50,14 @@ public class ImpliedTransfers {
 			}
 		}
 		return Pair.of(changes, new Meta(maxHbarAdjusts, maxTokenAdjusts, OK));
+	}
+
+	private Pair<List<BalanceChange>, Meta> invalidChanges(
+			int maxHbarAdjusts,
+			int maxTokenAdjusts,
+			ResponseCodeEnum code
+	) {
+		return Pair.of(Collections.emptyList(), new Meta(maxHbarAdjusts, maxTokenAdjusts, code));
 	}
 
 	public static class Meta {
@@ -60,9 +75,21 @@ public class ImpliedTransfers {
 			this.maxExplicitTokenAdjusts = maxExplicitTokenAdjusts;
 		}
 
+		public long getMaxExplicitHbarAdjusts() {
+			return maxExplicitHbarAdjusts;
+		}
+
+		public long getMaxExplicitTokenAdjusts() {
+			return maxExplicitTokenAdjusts;
+		}
+
+		public ResponseCodeEnum code() {
+			return code;
+		}
+
 		/* NOTE: The object methods below are only overridden to improve
-		readability of unit tests; this model object is not used in hash-based
-		collections, so the performance of these methods doesn't matter. */
+				readability of unit tests; this model object is not used in hash-based
+				collections, so the performance of these methods doesn't matter. */
 		@Override
 		public boolean equals(Object obj) {
 			return EqualsBuilder.reflectionEquals(this, obj);
