@@ -23,9 +23,12 @@ package com.hedera.services.ledger;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 
 public class BalanceChange {
 	private final Id token;
@@ -35,6 +38,7 @@ public class BalanceChange {
 	private long newBalance;
 	private TokenID explicitTokenId = null;
 	private AccountID explicitAccountId = null;
+	private ResponseCodeEnum codeForInsufficientBalance = INSUFFICIENT_ACCOUNT_BALANCE;
 
 	private BalanceChange(Id token, Id account, long units) {
 		this.token = token;
@@ -88,6 +92,14 @@ public class BalanceChange {
 
 	public void setExplicitAccountId(AccountID explicitAccountId) {
 		this.explicitAccountId = explicitAccountId;
+	}
+
+	public ResponseCodeEnum codeForInsufficientBalance() {
+		return codeForInsufficientBalance;
+	}
+
+	public void setCodeForInsufficientBalance(ResponseCodeEnum codeForInsufficientBalance) {
+		this.codeForInsufficientBalance = codeForInsufficientBalance;
 	}
 
 	/* NOTE: The object methods below are only overridden to improve readability of unit tests;

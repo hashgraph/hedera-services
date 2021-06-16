@@ -43,6 +43,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -62,7 +63,7 @@ import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -73,6 +74,8 @@ import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class LedgerBalanceChangesTest {
+	private final ResponseCodeEnum overrideIbeCode = INSUFFICIENT_PAYER_BALANCE;
+
 	private BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
 	private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingRels = new HashMapBackingTokenRels();
 
@@ -153,7 +156,7 @@ class LedgerBalanceChangesTest {
 	}
 
 	@Test
-	void rejectsInsufficientBalance() {
+	void rejectsInsufficientBalanceUsingOverrideCode() {
 		givenInitialBalances();
 		backingAccounts.getRef(asGprcAccount(aModel)).setBalanceUnchecked(0L);
 
@@ -165,7 +168,7 @@ class LedgerBalanceChangesTest {
 		subject.commit();
 
 		// then:
-		assertEquals(INSUFFICIENT_ACCOUNT_BALANCE, result);
+		assertEquals(overrideIbeCode, result);
 		// and:
 		assertInitialBalanceUnchanged(0L);
 	}
@@ -388,7 +391,6 @@ class LedgerBalanceChangesTest {
 				backingRels.getImmutableRef(rel(bModel, yetAnotherToken)).getBalance());
 	}
 
-
 	private void givenInitialBalances() {
 		final var aAccount = MerkleAccountFactory.newAccount().balance(aStartBalance).get();
 		backingAccounts.put(asGprcAccount(aModel), aAccount);
@@ -421,7 +423,7 @@ class LedgerBalanceChangesTest {
 	}
 
 	private List<BalanceChange> fixtureChanges() {
-		return List.of(new BalanceChange[] {
+		final var ans = List.of(new BalanceChange[] {
 						BalanceChange.tokenAdjust(yetAnotherToken, aModel, aYetAnotherTokenChange),
 						BalanceChange.hbarAdjust(aModel, aHbarChange),
 						BalanceChange.hbarAdjust(bModel, bHbarChange),
@@ -434,6 +436,8 @@ class LedgerBalanceChangesTest {
 						BalanceChange.tokenAdjust(yetAnotherToken, bModel, bYetAnotherTokenChange),
 				}
 		);
+		ans.get(1).setCodeForInsufficientBalance(overrideIbeCode);
+		return ans;
 	}
 
 	private Pair<AccountID, TokenID> rel(Id account, Id token) {
