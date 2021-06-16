@@ -24,6 +24,7 @@ import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.Test;
 
@@ -187,7 +188,7 @@ class OverflowCheckingCalcTest {
 			.setSbpr(sbpr)
 			.build();
 	private final FeeData mockUsage = ESTIMATOR_UTILS.withDefaultTxnPartitioning(
-			mockUsageVector, network_rbh, 3);
+			mockUsageVector, SubType.DEFAULT, network_rbh, 3);
 
 	public static void copyData(FeeData feeData, UsageAccumulator into) {
 		into.setNumPayerKeys(feeData.getNodedata().getVpt());

@@ -130,8 +130,10 @@ public class Token {
 		final long newTotalSupply = totalSupply + amount;
 		validateTrue(newTotalSupply >= 0, negSupplyCode);
 
-		validateTrue(supplyType == TokenSupplyType.FINITE && maxSupply >= newTotalSupply, TOKEN_MAX_SUPPLY_REACHED, () ->
-				"Cannot mint new supply (" + amount + "). Max supply (" + maxSupply + ") reached");
+		if (supplyType == TokenSupplyType.FINITE) {
+			validateTrue(maxSupply >= newTotalSupply, TOKEN_MAX_SUPPLY_REACHED, () ->
+					"Cannot mint new supply (" + amount + "). Max supply (" + maxSupply + ") reached");
+		}
 
 		final long newTreasuryBalance = treasuryRel.getBalance() + amount;
 		validateTrue(newTreasuryBalance >= 0, INSUFFICIENT_TOKEN_BALANCE);

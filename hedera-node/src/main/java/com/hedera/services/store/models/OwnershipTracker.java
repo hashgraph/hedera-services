@@ -38,6 +38,7 @@ package com.hedera.services.store.models;/*
  * ‍
  */
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,13 +49,15 @@ import java.util.Map;
  */
 public class OwnershipTracker {
 
-	private final Map<Id, List<Change>> changes = new HashMap<>();
+	private Map<Id, List<Change>> changes = new HashMap<>();
 
 	public void add(Id token, Change change) {
 		if (changes.containsKey(token)) {
 			changes.get(token).add(change);
 		} else {
-			changes.put(token, List.of(change));
+			var changeList = new ArrayList<Change>();
+			changeList.add(change);
+			changes.put(token, changeList);
 		}
 	}
 
@@ -64,6 +67,7 @@ public class OwnershipTracker {
 
 	public static Change fromMinting(Id treasury, long serialNumber) {
 		var change = new Change();
+		change.setPreviousOwner(Id.DEFAULT);
 		change.setNewOwner(treasury);
 		change.setSerialNumber(serialNumber);
 		return change;

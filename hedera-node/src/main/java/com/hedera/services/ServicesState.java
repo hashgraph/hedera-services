@@ -193,7 +193,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		} catch (ContextNotFoundException ignoreToInstantiateNewContext) {
 			ctx = new ServicesContext(nodeId, platform, this, properties);
 		}
-		if (getNumberOfChildren() < ChildIndices.NUM_0130_CHILDREN) {
+		if (getNumberOfChildren() < ChildIndices.NUM_0150_CHILDREN) {
 			log.info("Init called on Services node {} WITHOUT Merkle saved state", nodeId);
 			long seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
 			setChild(ChildIndices.NETWORK_CTX, new MerkleNetworkContext(
@@ -209,6 +209,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			setChild(ChildIndices.DISK_FS, new MerkleDiskFs());
 			setChild(ChildIndices.SCHEDULE_TXS, new FCMap<>());
 			setChild(ChildIndices.UNIQUE_TOKENS, new FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier>());
+
 			/* Initialize the running hash leaf at genesis to an empty hash. */
 			final var firstRunningHash = new RunningHash();
 			firstRunningHash.setHash(emptyHash);

@@ -69,6 +69,6 @@ public class TokenMintUsage extends TokenTxnUsage<TokenMintUsage> {
 
 		addEntityBpt();
 		addTokenTransfersRecordRb(1, 1);
-		return usageEstimator.get();
+		return usageEstimator.get(currentSubType);
 	}
 }
