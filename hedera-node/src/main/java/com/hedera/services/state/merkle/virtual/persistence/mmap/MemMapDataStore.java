@@ -92,11 +92,6 @@ public final class MemMapDataStore {
         this.filePrefix = filePrefix == null ? "" : filePrefix;
         this.fileExtension = fileExtension == null ? "" : fileExtension;
         this.size = fileSize / (dataSize + MemMapDataFile.HEADER_SIZE);
-        System.out.println("filePrefix = " + filePrefix);
-        System.out.println("    this.size = " + this.size);
-        System.out.println("    this.dataSize = " + this.dataSize);
-        System.out.println("    fileSize = " + fileSize);
-        System.out.println("    MemMapDataFile.HEADER_SIZE = " + MemMapDataFile.HEADER_SIZE);
     }
 
     /**
@@ -301,33 +296,6 @@ public final class MemMapDataStore {
      */
     public static int slotIndexFromLocation(long location) {
         return(int)location;
-    }
-
-
-    /**
-     * Dump the contents of the file to system out
-     *
-     * @param file index of file
-     */
-    public String debugPrintFile(int file) {
-        MemMapDataFile memMapDataFile = files.get(file);
-        if (memMapDataFile != null) {
-            return memMapDataFile.debugPrintFile();
-        } else {
-            return "File ["+file+"] not found.";
-        }
-    }
-
-    /**
-     * Dump the contents of the file to a window
-     *
-     * @param file index of file
-     */
-    public void debugShowData(int file) {
-        MemMapDataFile memMapDataFile = files.get(file);
-        if (memMapDataFile != null) {
-            memMapDataFile.debugShowData();
-        }
     }
 
     /**
@@ -547,55 +515,6 @@ public final class MemMapDataStore {
          */
         public void sync(){
             mappedBuffer.force();
-        }
-
-        /**
-         * Debug dump file to a string and return
-         *
-         * @return String contents of file
-         */
-        public String debugPrintFile() {
-            StringBuilder sb = new StringBuilder();
-            sb.append("--------------------------------------------------------------------------------------\n");
-            sb.append(file.getName()+"\n");
-            sb.append("--------------------------------------------------------------------------------------\n");
-            mappedBuffer.rewind();
-            final int slotSizeLongs = slotSize/8;
-            outer: for (int i = 0; i < size && i < nextFreeSlotAtEnd; i++) {
-                sb.append(String.format("[%8d] - [",i));
-                for (int j = 0; j < slotSizeLongs; j++) {
-                    if (mappedBuffer.remaining() < 8) {
-                        sb.append("\nFound end of file too early, read ["+i+"] slots, mappedBuffer.remaining()="+mappedBuffer.remaining()+" size="+size);
-                        break outer;
-                    }
-                    sb.append(String.format("%20d, ",mappedBuffer.getLong()));
-                }
-                sb.append("]\n");
-            }
-            sb.append("--------------------------------------------------------------------------------------\n");
-            return sb.toString();
-        }
-
-        public void debugShowData() {
-            final int slotSizeLongs = slotSize/8;
-            long[][] data = new long[size][];
-
-            outer: for (int i = 0; i < size && i < nextFreeSlotAtEnd; i++) {
-                int slotOffset = i * slotSize;
-                long[] slotData = new long[slotSizeLongs];
-                data[i] = slotData;
-                for (int j = 0; j < slotSizeLongs; j++) {
-                    try {
-                        slotData[j] = mappedBuffer.getLong(slotOffset+j);
-                    } catch (BufferUnderflowException e) {
-                        System.err.println("Found end of file too early, read ["+i+"] slots, mappedBuffer.remaining()="+mappedBuffer.remaining()+" size="+size);
-                        e.printStackTrace();
-                        break outer;
-                    }
-                }
-                slotData[0] = slotOffset;
-            }
-            MemMapDataViewer.showData(file.getName(),data);
         }
     }
 }

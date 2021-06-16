@@ -13,7 +13,8 @@ import java.util.List;
 
 public class MemMapDataStoreTest {
     private static final int MB = 1024*1024;
-    private static final Path STORE_PATH = Path.of("store");
+    public static final Path STORE_PATH = Path.of("store");
+    public static final int DATA_SIZE = 32;
 
     @AfterEach
     public void closeAndDeleteDataStore() {
@@ -42,7 +43,7 @@ public class MemMapDataStoreTest {
 
     @Test
     public void createSomeDataAndReadBack() {
-        MemMapDataStore store = new MemMapDataStore(32, 100 * MB, STORE_PATH,"test_","dat");
+        MemMapDataStore store = new MemMapDataStore(DATA_SIZE, 100 * MB, STORE_PATH,"test_","dat");
         store.open(null);
         final int COUNT = 1000;
         List<Long> locations = new ArrayList<>(COUNT);

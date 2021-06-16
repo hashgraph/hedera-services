@@ -11,24 +11,20 @@ import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.LongBuffer;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
+ * Data Store backend for VirtualMap it uses three MemMapDataStores for storing the leaves, parents and paths.
  *
+ * It is thread safe and can be used by multiple-threads. Only one thread can use one of the sub-data stores at a time.
  */
-@SuppressWarnings({"unused", "DuplicatedCode"})
 public final class VirtualMapDataStore {
     /** 1 Mb of bytes */
     private static final int MB = 1024*1024;
     /** The size of a hash we store in bytes, TODO what happens if we change digest? */
-    private static final int HASH_SIZE_BYTES = 384/Byte.SIZE;
+    public static final int HASH_SIZE_BYTES = 384/Byte.SIZE;
 
     /** The number of bytes for a key */
     private final int keySizeBytes;
@@ -104,8 +100,6 @@ public final class VirtualMapDataStore {
         this.keySizeBytes = keySizeBytes;
         this.dataSizeBytes = dataSizeBytes;
         int leafStoreSlotSize = Account.BYTES + keySizeBytes + VirtualTreePath.BYTES + dataSizeBytes + HASH_SIZE_BYTES;
-        System.out.println("leafStoreSlotSize = " + leafStoreSlotSize);
-        System.out.println("leafStoreSlotSize = " + leafStoreSlotSize*10000);
         int parentStoreSlotSize = Account.BYTES + VirtualTreePath.BYTES + HASH_SIZE_BYTES;
         leafStore = new MemMapDataStore(leafStoreSlotSize,dataFileSizeInMb*MB,storageDirectory.resolve("leaves"),"leaves_","dat");
         parentStore = new MemMapDataStore(parentStoreSlotSize,dataFileSizeInMb*MB,storageDirectory.resolve("parents"),"parents_","dat");
@@ -562,84 +556,4 @@ public final class VirtualMapDataStore {
         if (index != null) return index.pathIndex.getIfAbsent(key, MemMapDataStore.NOT_FOUND_LOCATION);
         return MemMapDataStore.NOT_FOUND_LOCATION;
     }
-
-
-    /**
-     * Debug get raw slot data a Path from store
-     *
-     * @param account The account the path belongs to
-     * @param key The long key for the path
-     * @return slot data
-     */
-    public String debugGetPathSlot(Account account, long key) {
-        byte[] data = new byte[pathStore.getDataSize()];
-        synchronized (pathStore) {
-            long slotLocation = findPath(account, key);
-            if (slotLocation != MemMapDataStore.NOT_FOUND_LOCATION) {
-                // read path from slot
-                ByteBuffer buffer = pathStore.accessSlot(slotLocation);
-            }
-            pathStore.debugShowData(MemMapDataStore.fileIndexFromLocation(slotLocation));
-            return "slotFile="+MemMapDataStore.fileIndexFromLocation(slotLocation)+
-                    " slotIndex="+MemMapDataStore.slotIndexFromLocation(slotLocation)+
-                    " slotData="+toLongsString(data)+"\n";
-        }
-    }
-
-
-    public String debugGetParentSlot(Account account, long path) {
-        System.out.println("VirtualMapDataStore.debugGetParentSlot");
-        byte[] data = new byte[parentStore.getDataSize()];
-        synchronized (parentStore) {
-            long slotLocation = findParent(account, path);
-            if (slotLocation != MemMapDataStore.NOT_FOUND_LOCATION) {
-                // read path from slot
-                ByteBuffer buffer = parentStore.accessSlot(slotLocation);
-            }
-            parentStore.debugShowData(MemMapDataStore.fileIndexFromLocation(slotLocation));
-            return "slotFile=" + MemMapDataStore.fileIndexFromLocation(slotLocation) +
-                    " slotIndex=" + MemMapDataStore.slotIndexFromLocation(slotLocation) +
-                    " slotData=" + toLongsString(data) + "\n";
-        }
-    }
-
-    public String debugGetLeafSlot(Account account, VirtualKey key){
-        byte[] data = new byte[leafStore.getDataSize()];
-        synchronized (leafStore) {
-            long slotLocation = findLeaf(account, key);
-            if (slotLocation != MemMapDataStore.NOT_FOUND_LOCATION) {
-                // read path from slot
-                ByteBuffer buffer = leafStore.accessSlot(slotLocation);
-            }
-            leafStore.debugShowData(MemMapDataStore.fileIndexFromLocation(slotLocation));
-            return "slotFile=" + MemMapDataStore.fileIndexFromLocation(slotLocation) +
-                    " slotIndex=" + MemMapDataStore.slotIndexFromLocation(slotLocation) +
-                    " slotData=" + toLongsString(data) + "\n";
-        }
-    }
-
-    public String debugGetLeafSlot(Account account, long path) {
-        byte[] data = new byte[leafStore.getDataSize()];
-        synchronized (leafStore) {
-            long slotLocation = findLeaf(account, path);
-            if (slotLocation != MemMapDataStore.NOT_FOUND_LOCATION) {
-                // read path from slot
-                ByteBuffer buffer = leafStore.accessSlot(slotLocation);
-            }
-            return "slotFile=" + MemMapDataStore.fileIndexFromLocation(slotLocation) +
-                    " slotIndex=" + MemMapDataStore.slotIndexFromLocation(slotLocation) +
-                    " slotData=" + toLongsString(data);
-        }
-    }
-
-    private static String toLongsString(byte[] bytes) {
-        LongBuffer longBuf =
-                ByteBuffer.wrap(bytes)
-                        .order(ByteOrder.BIG_ENDIAN)
-                        .asLongBuffer();
-        long[] array = new long[longBuf.remaining()];
-        longBuf.get(array);
-        return Arrays.toString(array);
-    }
-
 }
