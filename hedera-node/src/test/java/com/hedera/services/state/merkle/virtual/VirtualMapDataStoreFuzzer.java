@@ -133,7 +133,6 @@ public class VirtualMapDataStoreFuzzer {
                     byte[] parentHash = store.loadParentHash(account,i);
                     if (!Arrays.equals(hash,parentHash)){
                         System.err.println("Parent Hash Doesn't Match :: a="+account.accountNum()+" i="+i+" parentHash="+toLongsString(parentHash)+" hash="+toLongsString(hash));
-                        System.err.println(store.debugGetParentSlot(account,i));
                     }
                     break;
                 case 1:
@@ -141,7 +140,6 @@ public class VirtualMapDataStoreFuzzer {
                     record = store.loadLeaf(account,key);
                     if (!Arrays.equals(hash,record.getHash())){
                         System.err.println("Leaf Hash Doesn't Match :: a="+account.accountNum()+" i="+i+" parentHash="+toLongsString(record.getHash())+" hash="+toLongsString(hash));
-                        System.err.println(store.debugGetLeafSlot(account,key));
                     }
                     Assertions.assertEquals(i, record.getPath());
                     Assertions.assertEquals(key, record.getKey());
@@ -152,7 +150,6 @@ public class VirtualMapDataStoreFuzzer {
                     record = store.loadLeaf(account,i);
                     if (!Arrays.equals(hash,record.getHash())){
                         System.err.println("Leaf Hash Doesn't Match :: a="+account.accountNum()+" i="+i+" parentHash="+toLongsString(record.getHash())+" hash="+toLongsString(hash));
-                        System.err.println(store.debugGetLeafSlot(account,i));
                     }
                     Assertions.assertEquals(i, record.getPath());
                     Assertions.assertEquals(key, record.getKey());
