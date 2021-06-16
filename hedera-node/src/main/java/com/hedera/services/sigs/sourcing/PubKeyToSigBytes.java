@@ -20,8 +20,6 @@ package com.hedera.services.sigs.sourcing;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.SignatureMap;
-
 /**
  * Defines a type that is a source of the cryptographic signatures associated to
  * given public keys. It is useful to define an explicit type for this simple behavior,
@@ -33,11 +31,6 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
  * </ol>
  * A {@code PubKeyToSigBytes} implementation lets us obtain the third ingredient
  * given the second.
- *
- * <b>NOTE:</b> This interface also provides static factories to obtain appropriate
- * implementations of its type given a {@link SignatureMap}.
- *
- * @author Michael Tinker
  */
 public interface PubKeyToSigBytes {
 	byte[] EMPTY_SIG = {};

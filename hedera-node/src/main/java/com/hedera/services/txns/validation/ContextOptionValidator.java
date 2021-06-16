@@ -115,10 +115,8 @@ public class ContextOptionValidator implements OptionValidator {
 	public boolean isValidAutoRenewPeriod(Duration autoRenewPeriod) {
 		long duration = autoRenewPeriod.getSeconds();
 
-		if (duration < dynamicProperties.minAutoRenewDuration() || duration > dynamicProperties.maxAutoRenewDuration()) {
-			return false;
-		}
-		return true;
+		return duration >= dynamicProperties.minAutoRenewDuration() &&
+				duration <= dynamicProperties.maxAutoRenewDuration();
 	}
 
 	@Override

@@ -68,6 +68,8 @@ public class CreateTokensBeforeReconnect extends HapiApiSuite {
 		final long token = tokenNumber.getAndIncrement();
 		if (token >= TOKEN_CREATION_LIMIT) {
 			return getVersionInfo()
+					.fee(ONE_HUNDRED_HBARS)
+					.payingWith(GENESIS)
 					.noLogging();
 		}
 

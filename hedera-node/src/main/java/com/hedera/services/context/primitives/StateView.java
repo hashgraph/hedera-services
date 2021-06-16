@@ -395,7 +395,7 @@ public class StateView {
 		while (attemptsLeft-- > 0) {
 			try {
 				return getFileInfo(id);
-			} catch (com.swirlds.blob.BinaryObjectNotFoundException e) {
+			} catch (com.swirlds.blob.BinaryObjectNotFoundException | com.swirlds.blob.BinaryObjectDeletedException e) {
 				if (attemptsLeft > 0) {
 					log.debug("Retrying fetch of {} file meta {} more times", readableId(id), attemptsLeft);
 					try {
@@ -408,6 +408,9 @@ public class StateView {
 						Thread.currentThread().interrupt();
 					}
 				}
+			} catch (com.swirlds.blob.BinaryObjectException e) {
+				log.warn("Unexpected error occurred when getting info for file {}", readableId(id), e);
+				break;
 			}
 		}
 		return Optional.empty();

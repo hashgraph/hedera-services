@@ -74,6 +74,8 @@ public class CreateSchedulesBeforeReconnect extends HapiApiSuite {
 	private HapiSpecOperation generateScheduleCreateOperation() {
 		if (scheduleNumber.getAndIncrement() > SCHEDULE_CREATION_LIMIT) {
 			return getVersionInfo()
+					.fee(ONE_HUNDRED_HBARS)
+					.payingWith(GENESIS)
 					.noLogging();
 		}
 

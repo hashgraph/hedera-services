@@ -73,6 +73,7 @@ class MerkleAccountTokensTest {
 		// given:
 		final var someSet = Set.of(asToken("1.2.3"));
 		final var someModelSet = Set.of(aId);
+		final var someIds = subject.getIds();
 
 		// when:
 		final var subjectCopy = subject.copy();
@@ -84,7 +85,7 @@ class MerkleAccountTokensTest {
 		Assertions.assertThrows(MutabilityException.class, () -> subject.dissociateAll(someSet));
 		Assertions.assertThrows(MutabilityException.class, () -> subject.dissociate(someModelSet));
 		Assertions.assertThrows(MutabilityException.class, () -> subject.shareTokensOf(subjectCopy));
-		Assertions.assertThrows(MutabilityException.class, () -> subject.updateAssociationsFrom(subject.getIds()));
+		Assertions.assertThrows(MutabilityException.class, () -> subject.updateAssociationsFrom(someIds));
 	}
 
 	@Test

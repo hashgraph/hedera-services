@@ -65,6 +65,8 @@ public class CreateFilesBeforeReconnect extends HapiApiSuite {
 		final long file = fileNumber.getAndIncrement();
 		if (file >= FILE_CREATION_LIMIT) {
 			return getVersionInfo()
+					.fee(ONE_HUNDRED_HBARS)
+					.payingWith(GENESIS)
 					.noLogging();
 		}
 

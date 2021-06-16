@@ -524,6 +524,25 @@ class StateViewTest {
 	}
 
 	@Test
+	void returnFileInfoForBinaryObjectNotFoundExceptionAfterRetries() {
+		// setup:
+		given(attrs.get(target))
+				.willThrow(new com.swirlds.blob.BinaryObjectNotFoundException())
+				.willThrow(new com.swirlds.blob.BinaryObjectNotFoundException())
+				.willReturn(metadata);
+		given(nodeProps.queryBlobLookupRetries()).willReturn(2);
+		given(contents.get(target)).willReturn(data);
+
+		// when:
+		var info = subject.infoForFile(target);
+
+		// then:
+		assertTrue(info.isPresent());
+		assertEquals(expected, info.get());
+	}
+
+
+	@Test
 	void assemblesFileInfoForImmutable() {
 		given(attrs.get(target)).willReturn(immutableMetadata);
 		given(contents.get(target)).willReturn(data);
@@ -567,6 +586,63 @@ class StateViewTest {
 		// then:
 		assertTrue(info.isEmpty());
 	}
+
+	@Test
+	void returnEmptyFileInfoForBinaryObjectDeletedExceptionAfterRetries() {
+		// setup:
+		given(attrs.get(target))
+				.willThrow(new com.swirlds.blob.BinaryObjectDeletedException())
+				.willThrow(new com.swirlds.blob.BinaryObjectDeletedException())
+				.willThrow(new com.swirlds.blob.BinaryObjectDeletedException())
+				.willReturn(metadata);
+		given(nodeProps.queryBlobLookupRetries()).willReturn(2);
+
+		// when:
+		var info = subject.infoForFile(target);
+
+		// then:
+		assertTrue(info.isEmpty());
+	}
+
+	@Test
+	void returnFileInfoForBinaryObjectDeletedExceptionAfterRetries() {
+		// setup:
+		expected = expected.toBuilder()
+				.setDeleted(true)
+				.setSize(0)
+				.build();
+		metadata.setDeleted(true);
+
+		given(attrs.get(target))
+				.willThrow(new com.swirlds.blob.BinaryObjectDeletedException())
+				.willThrow(new com.swirlds.blob.BinaryObjectDeletedException())
+				.willReturn(metadata);
+		given(nodeProps.queryBlobLookupRetries()).willReturn(2);
+
+		// when:
+		var info = subject.infoForFile(target);
+
+		// then:
+		assertTrue(info.isPresent());
+		assertEquals(expected, info.get());
+	}
+
+
+	@Test
+	void returnEmptyFileForOtherBinaryObjectException() {
+		// setup:
+		given(attrs.get(target)).willThrow(new com.swirlds.blob.BinaryObjectException());
+
+		// when:
+		var info = subject.infoForFile(target);
+
+		// then:
+		assertTrue(info.isEmpty());
+		final var warnLogs = logCaptor.warnLogs();
+		assertTrue(warnLogs.size() == 1);
+		assertThat(warnLogs.get(0), Matchers.startsWith("Unexpected error occurred when getting info for file"));
+	}
+
 
 	@Test
 	void logsAtDebugWhenInterrupted() throws InterruptedException {

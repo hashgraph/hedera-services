@@ -20,6 +20,7 @@ package com.hedera.services.utils;
  * ‍
  */
 
+import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
@@ -40,6 +41,9 @@ public interface TxnAccessor {
     int sigMapSize();
     int numSigPairs();
     SignatureMap getSigMap();
+    default PubKeyToSigBytes getPkToSigsFn() {
+        throw new UnsupportedOperationException();
+    }
     default void setSigMeta(RationalizedSigMeta sigMeta) {
         throw new UnsupportedOperationException();
     }
