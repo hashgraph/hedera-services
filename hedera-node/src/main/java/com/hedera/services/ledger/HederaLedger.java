@@ -304,6 +304,10 @@ public class HederaLedger {
 		return true;
 	}
 
+	public boolean isKnownTreasury(AccountID aId) {
+		return tokenStore.isKnownTreasury(aId);
+	}
+
 	public ResponseCodeEnum adjustTokenBalance(AccountID aId, TokenID tId, long adjustment) {
 		return tokenStore.adjustBalance(aId, tId, adjustment);
 	}
@@ -352,26 +356,13 @@ public class HederaLedger {
 	public ResponseCodeEnum doZeroSum(List<BalanceChange> changes) {
 		var validity = OK;
 		for (var change : changes) {
-			final var accountId = change.accountId();
 			if (change.isForHbar())	 {
 				validity = plausibilityOf(change);
-				if (validity != OK) {
-					break;
-				}
 			} else {
-				var tokenId = tokenStore.resolve(change.tokenId());
-				if (tokenId == MISSING_TOKEN) {
-					validity = INVALID_TOKEN_ID;
-				}
-				if (validity == OK) {
-					validity = adjustTokenBalance(accountId, tokenId, change.units());
-					if (validity == INSUFFICIENT_TOKEN_BALANCE) {
-						validity = change.codeForInsufficientBalance();
-					}
-				}
-				if (validity != OK) {
-					break;
-				}
+				validity = tryTokenChange(change);
+			}
+			if (validity != OK) {
+				break;
 			}
 		}
 
@@ -381,16 +372,6 @@ public class HederaLedger {
 			dropPendingTokenChanges();
 		}
 		return validity;
-	}
-
-	private void adjustHbarUnchecked(List<BalanceChange> changes) {
-		for (var change : changes) {
-			if (change.isForHbar())	{
-				final var accountId = change.accountId();
-				setBalance(accountId, change.getNewBalance());
-				updateXfers(accountId, change.units(), netTransfers);
-			}
-		}
 	}
 
 	/* -- ACCOUNT META MANIPULATION -- */
@@ -609,7 +590,28 @@ public class HederaLedger {
 		} while (lastZeroRemoved != -1);
 	}
 
-	public boolean isKnownTreasury(AccountID aId) {
-		return tokenStore.isKnownTreasury(aId);
+	private ResponseCodeEnum tryTokenChange(BalanceChange change) {
+		var validity = OK;
+		var tokenId = tokenStore.resolve(change.tokenId());
+		if (tokenId == MISSING_TOKEN) {
+			validity = INVALID_TOKEN_ID;
+		}
+		if (validity == OK) {
+			validity = adjustTokenBalance(change.accountId(), tokenId, change.units());
+			if (validity == INSUFFICIENT_TOKEN_BALANCE) {
+				validity = change.codeForInsufficientBalance();
+			}
+		}
+		return validity;
+	}
+
+	private void adjustHbarUnchecked(List<BalanceChange> changes) {
+		for (var change : changes) {
+			if (change.isForHbar())	{
+				final var accountId = change.accountId();
+				setBalance(accountId, change.getNewBalance());
+				updateXfers(accountId, change.units(), netTransfers);
+			}
+		}
 	}
 }

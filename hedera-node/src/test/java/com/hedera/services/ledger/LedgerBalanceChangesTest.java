@@ -70,7 +70,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
-
 @ExtendWith(MockitoExtension.class)
 class LedgerBalanceChangesTest {
 	private final ResponseCodeEnum overrideIbeCode = INSUFFICIENT_PAYER_BALANCE;

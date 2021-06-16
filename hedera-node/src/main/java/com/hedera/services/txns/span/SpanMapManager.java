@@ -53,9 +53,7 @@ public class SpanMapManager {
 
 	private void rationalizeImpliedTransfers(TxnAccessor accessor) {
 		final var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
-		if (impliedTransfers.getMeta().wasDerivedFrom(dynamicProperties)) {
-			return;
-		} else {
+		if (!impliedTransfers.getMeta().wasDerivedFrom(dynamicProperties)) {
 			expandImpliedTransfers(accessor);
 		}
 	}
