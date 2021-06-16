@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -98,7 +99,7 @@ class BalanceChangeTest {
 	}
 
 	@Test
-	void overrideIbeCodeWorks() {
+	void overrideIbeCodeWorksForHbar() {
 		// given:
 		final var hbarChange = BalanceChange.hbarAdjust(a, delta);
 
@@ -110,5 +111,20 @@ class BalanceChangeTest {
 
 		// then:
 		assertEquals(INSUFFICIENT_PAYER_BALANCE, hbarChange.codeForInsufficientBalance());
+	}
+
+	@Test
+	void overrideIbeCodeWorksForToken() {
+		// given:
+		final var tokenChange = BalanceChange.tokenAdjust(t, a, delta);
+
+		// expect:
+		assertEquals(INSUFFICIENT_TOKEN_BALANCE, tokenChange.codeForInsufficientBalance());
+
+		// when:
+		tokenChange.setCodeForInsufficientBalance(INSUFFICIENT_PAYER_BALANCE);
+
+		// then:
+		assertEquals(INSUFFICIENT_PAYER_BALANCE, tokenChange.codeForInsufficientBalance());
 	}
 }

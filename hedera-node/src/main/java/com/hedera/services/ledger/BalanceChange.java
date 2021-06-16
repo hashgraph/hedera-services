@@ -29,16 +29,17 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 
 public class BalanceChange {
 	private final Id token;
 	private final Id account;
 	private final long units;
+	private ResponseCodeEnum codeForInsufficientBalance = INSUFFICIENT_ACCOUNT_BALANCE;
 
 	private long newBalance;
 	private TokenID explicitTokenId = null;
 	private AccountID explicitAccountId = null;
-	private ResponseCodeEnum codeForInsufficientBalance = INSUFFICIENT_ACCOUNT_BALANCE;
 
 	private BalanceChange(Id token, Id account, long units) {
 		this.token = token;
@@ -51,7 +52,9 @@ public class BalanceChange {
 	}
 
 	public static BalanceChange tokenAdjust(Id token, Id account, long units) {
-		return new BalanceChange(token, account, units);
+		final var tokenChange = new BalanceChange(token, account, units);
+		tokenChange.setCodeForInsufficientBalance(INSUFFICIENT_TOKEN_BALANCE);
+		return tokenChange;
 	}
 
 	public boolean isForHbar() {

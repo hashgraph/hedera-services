@@ -23,6 +23,7 @@ package com.hedera.services.txns;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -34,10 +35,18 @@ import java.util.function.Function;
  * @author Michael Tinker
  */
 public class TransitionLogicLookup {
+	private final EnumMap<HederaFunctionality, Optional<TransitionLogic>> unambiguousLookups =
+			new EnumMap<>(HederaFunctionality.class);
 	private final Function<HederaFunctionality, List<TransitionLogic>> transitions;
 
 	public TransitionLogicLookup(Function<HederaFunctionality, List<TransitionLogic>> transitions) {
 		this.transitions = transitions;
+		for (var function : HederaFunctionality.class.getEnumConstants()) {
+			final var allTransitions = transitions.apply(function);
+			if (allTransitions != null && allTransitions.size() == 1) {
+				unambiguousLookups.put(function, Optional.of(allTransitions.get(0)));
+			}
+		}
 	}
 
 	/**
@@ -47,6 +56,9 @@ public class TransitionLogicLookup {
 	 * @return relevant transition logic, if it exists.
 	 */
 	public Optional<TransitionLogic> lookupFor(HederaFunctionality function, TransactionBody txn) {
+		if (unambiguousLookups.containsKey(function)) {
+			return unambiguousLookups.get(function);
+		}
 		return Optional.ofNullable(transitions.apply(function))
 				.flatMap(transitions -> from(transitions, txn));
 	}
