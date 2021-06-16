@@ -10,6 +10,8 @@ public class BalanceChange {
 	private final Id account;
 	private final long units;
 
+	private long newBalance;
+
 	private BalanceChange(Id token, Id account, long units) {
 		this.token = token;
 		this.account = account;
@@ -25,12 +27,32 @@ public class BalanceChange {
 	}
 
 	public boolean isForHbar() {
-		throw new AssertionError("Not implemented!");
+		return token == null;
+	}
+
+	public Id token() {
+		return token;
+	}
+
+	public Id account() {
+		return account;
+	}
+
+	public long units() {
+		return units;
+	}
+
+	public long getNewBalance() {
+		return newBalance;
+	}
+
+	public void setNewBalance(long newBalance) {
+		this.newBalance = newBalance;
 	}
 
 	/* NOTE: The object methods below are only overridden to improve
-	readability of unit tests; this model object is not used in hash-based
-	collections, so the performance of these methods doesn't matter. */
+			readability of unit tests; this model object is not used in hash-based
+			collections, so the performance of these methods doesn't matter. */
 	@Override
 	public boolean equals(Object obj) {
 		return EqualsBuilder.reflectionEquals(this, obj);

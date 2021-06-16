@@ -22,30 +22,20 @@ package com.hedera.services.txns.crypto;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.DeletedAccountException;
-import com.hedera.services.exceptions.DetachedAccountException;
-import com.hedera.services.exceptions.InsufficientFundsException;
-import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.TxnAccessor;
-import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Objects;
 import java.util.function.Predicate;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -84,41 +74,19 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 	@Override
 	public void doStateTransition() {
 		try {
-			var op = txnCtx.accessor().getTxn().getCryptoTransfer();
-			var outcome = ledger.doAtomicTransfers(op);
+			final var accessor = txnCtx.accessor();
+			final var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
+
+			Objects.requireNonNull(impliedTransfers);
+
+			final var changes = impliedTransfers.getChanges();
+			var outcome = ledger.doZeroSum(changes);
+
 			txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
 		} catch (Exception e) {
 			log.warn("Avoidable exception!", e);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
-	}
-
-	public static ResponseCodeEnum tryTransfers(HederaLedger ledger, TransferList transfers) {
-		if (!hasOnlyCryptoAccounts(ledger, transfers)) {
-			return INVALID_ACCOUNT_ID;
-		}
-		try {
-			ledger.doTransfers(transfers);
-		} catch (MissingAccountException mae) {
-			return ACCOUNT_ID_DOES_NOT_EXIST;
-		} catch (DeletedAccountException aide) {
-			return ACCOUNT_DELETED;
-		} catch (InsufficientFundsException ife) {
-			return INSUFFICIENT_ACCOUNT_BALANCE;
-		} catch (DetachedAccountException dae) {
-			return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-		}
-		return OK;
-	}
-
-	static boolean hasOnlyCryptoAccounts(HederaLedger ledger, TransferList transfers) {
-		for (AccountAmount aa : transfers.getAccountAmountsList()) {
-			var id = aa.getAccountID();
-			if (!ledger.exists(id) || ledger.isSmartContract(id)) {
-				return false;
-			}
-		}
-		return true;
 	}
 
 	@Override

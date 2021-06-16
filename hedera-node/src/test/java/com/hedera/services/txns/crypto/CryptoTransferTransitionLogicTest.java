@@ -22,13 +22,11 @@ package com.hedera.services.txns.crypto;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.DeletedAccountException;
-import com.hedera.services.exceptions.DetachedAccountException;
-import com.hedera.services.exceptions.InsufficientFundsException;
-import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
+import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -44,18 +42,11 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.util.List;
 
-import static com.hedera.services.txns.crypto.CryptoTransferTransitionLogic.tryTransfers;
 import static com.hedera.test.utils.IdUtils.adjustFrom;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -64,7 +55,6 @@ import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.BDDMockito.willThrow;
 
 class CryptoTransferTransitionLogicTest {
 	final private int maxHbarAdjusts = 5;
@@ -138,18 +128,19 @@ class CryptoTransferTransitionLogicTest {
 	}
 
 	@Test
-	void hasOnlyCryptoHandlesMissingAccounts() {
-		given(ledger.exists(asAccount("0.0.75231"))).willReturn(false);
+	void usesLedgerNetZero() {
+		final var a = new Id(1, 2, 3);
+		final var b = new Id(2, 3, 4);
+		final var impliedTransfers = ImpliedTransfers.valid(
+				maxHbarAdjusts, maxTokenAdjusts, List.of(
+						BalanceChange.hbarAdjust(a, +100),
+						BalanceChange.hbarAdjust(b, -100)
+				));
 
-		// expect:
-		assertFalse(CryptoTransferTransitionLogic.hasOnlyCryptoAccounts(ledger, xfers.getTransfers()));
-	}
-
-	@Test
-	void capturesInvalidXfers() {
 		givenValidTxnCtx();
 		// and:
-		given(ledger.doAtomicTransfers(xfers)).willReturn(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
+		given(spanMapAccessor.getImpliedTransfers(accessor)).willReturn(impliedTransfers);
+		given(ledger.doZeroSum(impliedTransfers.getChanges())).willReturn(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
 
 		// when:
 		subject.doStateTransition();
@@ -159,68 +150,8 @@ class CryptoTransferTransitionLogicTest {
 	}
 
 	@Test
-	void requiresOnlyCryptoAccounts() {
-		givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
-		given(ledger.isSmartContract(any())).willReturn(true);
-
-		// expect:
-		assertEquals(INVALID_ACCOUNT_ID, tryTransfers(ledger, xfers.getTransfers()));
-	}
-
-	@Test
-	void translatesDetachedAccountException() {
-		givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
-		willThrow(DetachedAccountException.class).given(ledger).doTransfers(any());
-
-		// expect:
-		assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, tryTransfers(ledger, xfers.getTransfers()));
-	}
-
-	@Test
-	void translatesMissingAccountException() {
-		givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
-		willThrow(MissingAccountException.class).given(ledger).doTransfers(any());
-
-		// expect:
-		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, tryTransfers(ledger, xfers.getTransfers()));
-	}
-
-	@Test
-	void followsHappyPath() {
-		givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
-
-		// when:
-		subject.doStateTransition();
-
-		// expect:
-		verify(ledger).doAtomicTransfers(cryptoTransferTxn.getCryptoTransfer());
-		// and:
-		verify(txnCtx).setStatus(SUCCESS);
-	}
-
-	@Test
-	void translatesAccountDeletedException() {
-		givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
-		// and:
-		willThrow(DeletedAccountException.class).given(ledger).doTransfers(any());
-
-		// expect:
-		assertEquals(ACCOUNT_DELETED, tryTransfers(ledger, xfers.getTransfers()));
-	}
-
-	@Test
-	void translatesInsufficientFundsException() {
-		givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
-		willThrow(InsufficientFundsException.class).given(ledger).doTransfers(any());
-
-		// expect:
-		assertEquals(INSUFFICIENT_ACCOUNT_BALANCE, tryTransfers(ledger, xfers.getTransfers()));
-	}
-
-	@Test
 	void translatesUnknownException() {
 		givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
-		willThrow(RuntimeException.class).given(ledger).doAtomicTransfers(any());
 
 		// when:
 		subject.doStateTransition();
@@ -238,7 +169,6 @@ class CryptoTransferTransitionLogicTest {
 		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
 	}
 
-
 	private void givenValidTxnCtx(TransferList wrapper) {
 		cryptoTransferTxn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
@@ -249,7 +179,6 @@ class CryptoTransferTransitionLogicTest {
 				).build();
 		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(ledger.doAtomicTransfers(cryptoTransferTxn.getCryptoTransfer())).willReturn(SUCCESS);
 	}
 
 	private void givenValidTxnCtx() {
@@ -258,7 +187,6 @@ class CryptoTransferTransitionLogicTest {
 				.build();
 		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(ledger.doAtomicTransfers(xfers)).willReturn(SUCCESS);
 	}
 
 	private TransactionID ourTxnId() {

@@ -4,7 +4,9 @@ import com.hedera.services.store.models.Id;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BalanceChangeTest {
 	private final Id a = new Id(1, 2, 3);
@@ -27,5 +29,15 @@ class BalanceChangeTest {
 		// and:
 		assertEquals(hbarRepr, hbarChange.toString());
 		assertEquals(tokenRepr, tokenChange.toString());
+	}
+
+	@Test
+	void recognizesIfForHbar() {
+		// given:
+		final var hbarChange = BalanceChange.hbarAdjust(a, delta);
+		final var tokenChange = BalanceChange.tokenAdjust(t, a, delta);
+
+		assertTrue(hbarChange.isForHbar());
+		assertFalse(tokenChange.isForHbar());
 	}
 }
