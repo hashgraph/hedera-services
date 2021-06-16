@@ -23,7 +23,10 @@ import java.util.stream.Stream;
 
 public class VirtualMapDataStoreTest {
     private static final int MB = 1024*1024;
-    private static final Path STORE_PATH = Path.of("store");
+    public static final Path STORE_PATH = MemMapDataStoreTest.STORE_PATH;
+    public static final int KEY_SIZE_BYTES = 32;
+    public static final int DATA_SIZE_BYTES = 32;
+
     static {
         System.out.println("STORE_PATH = " + STORE_PATH.toAbsolutePath());
     }
@@ -65,7 +68,7 @@ public class VirtualMapDataStoreTest {
     public void createSomeDataAndReadBack() {
         final int ACCOUNT_COUNT = 10;
         final int COUNT = 10_000;
-        VirtualMapDataStore store = new VirtualMapDataStore(STORE_PATH,32,32,3);
+        VirtualMapDataStore store = new VirtualMapDataStore(STORE_PATH, KEY_SIZE_BYTES, DATA_SIZE_BYTES,3);
         store.open();
         System.out.println("Files.exists(STORE_PATH) = " + Files.exists(STORE_PATH));
         // create some data for a number of accounts
@@ -354,7 +357,6 @@ public class VirtualMapDataStoreTest {
                     // read parent
                     byte[] parentHash = store.loadParentHash(account,i);
                     Assertions.assertArrayEquals(hash, parentHash,() -> {
-                        System.out.println(store.debugGetParentSlot(account,i));
                         return "a="+account.accountNum()+" i="+i+" parentHash="+toLongsString(parentHash)+" hash="+toLongsString(hash)+"\n";
                     });
                     break;
@@ -362,7 +364,6 @@ public class VirtualMapDataStoreTest {
                     // read leaf by key
                     record = store.loadLeaf(account,key);
                     Assertions.assertArrayEquals(hash, record.getHash(),() -> {
-                        System.out.println(store.debugGetLeafSlot(account,key));
                         return "a="+account.accountNum()+" i="+i+" leafHash="+toLongsString(record.getHash())+" hash="+toLongsString(hash)+"\n";
                     });
                     Assertions.assertEquals(i, record.getPath());
@@ -373,7 +374,6 @@ public class VirtualMapDataStoreTest {
                     // read leaf by path
                     record = store.loadLeaf(account,i);
                     Assertions.assertArrayEquals(hash, record.getHash(),() -> {
-                        System.out.println(store.debugGetLeafSlot(account,i));
                         return "a="+account.accountNum()+" i="+i+" leafHash="+toLongsString(record.getHash())+" hash="+toLongsString(hash)+"\n";
                     });
                     Assertions.assertEquals(i, record.getPath());
@@ -385,18 +385,6 @@ public class VirtualMapDataStoreTest {
                     long path = store.loadPath(account, i);
                     Assertions.assertEquals(i,path);
                     break;
-//                case 4:
-//                    // write parent
-//                    store.saveParentHash(account, i, hash);
-//                    break;
-//                case 5:
-//                    // write leaf
-//                    store.saveLeaf(account, new VirtualRecord(hash,i, new VirtualKey(get32Bytes(i)), new VirtualValue(get32Bytes(i))));
-//                    break;
-//                case 6:
-//                    // write path
-//                    store.savePath(account, i,i);
-//                    break;
             }
         });
 
