@@ -33,7 +33,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
  * Encapsulates the result of translating a gRPC CryptoTransfer into a list of
- * balance changes (ℏ or token unit), as well as the validity of 
+ * balance changes (ℏ or token unit), as well as the validity of these changes.
+ *
+ * Note that if the {@link ImpliedTransfersMeta#code()} is not {@code OK}, the
+ * list of changes will always be empty.
  */
 public class ImpliedTransfers {
 	private final ImpliedTransfersMeta meta;

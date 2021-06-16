@@ -33,6 +33,16 @@ import static com.hedera.services.ledger.BalanceChange.hbarAdjust;
 import static com.hedera.services.ledger.BalanceChange.tokenAdjust;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+/**
+ * Contains the logic to translate from a gRPC CryptoTransfer operation
+ * to a validated list of balance changes, both ℏ and token unit.
+ *
+ * Once custom fees are implemented for HIP-18, this translation will
+ * become somewhat more complicated, since it will need to analyze the
+ * token transfers for any custom fee payments that need to be made.
+ *
+ * (C.f. https://github.com/hashgraph/hedera-services/issues/1587)
+ */
 public class ImpliedTransfersMarshal {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final PureTransferSemanticChecks transferSemanticChecks;

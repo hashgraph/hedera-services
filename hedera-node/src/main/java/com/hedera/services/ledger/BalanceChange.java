@@ -31,6 +31,19 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 
+/**
+ * Process object that encapsulates a balance change, either ℏ or token unit.
+ *
+ * Includes an optional override for the {@link ResponseCodeEnum} to be used
+ * in the case that the change is determined to result to an insufficient balance;
+ * and a field to contain the new balance that will result from the change.
+ * (This field is helpful to simplify work done in {@link HederaLedger}.)
+ *
+ * The {@code explicitTokenId} and {@code explicitAccountId} fields are
+ * temporary, needed to interact with the {@link com.hedera.services.ledger.accounts.BackingAccounts}
+ * and {@link com.hedera.services.ledger.accounts.BackingTokenRels} components
+ * whose APIs still use gRPC types.
+ */
 public class BalanceChange {
 	private final Id token;
 	private final Id account;
