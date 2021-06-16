@@ -61,6 +61,7 @@ public class TokenMintUsageTest {
 	public void setUp() throws Exception {
 		base = mock(TxnUsageEstimator.class);
 		given(base.get()).willReturn(A_USAGES_MATRIX);
+		given(base.get(SubType.TOKEN_FUNGIBLE_COMMON)).willReturn(A_USAGES_MATRIX);
 
 		factory = mock(EstimatorFactory.class);
 		given(factory.get(any(), any(), any())).willReturn(base);
