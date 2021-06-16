@@ -1,17 +1,25 @@
 package com.hedera.services.state.merkle.virtual;
 
+import com.google.common.base.Stopwatch;
 import com.hedera.services.state.merkle.virtual.persistence.VirtualRecord;
 import com.hedera.services.state.merkle.virtual.persistence.mmap.VirtualMapDataStore;
-import com.swirlds.common.crypto.Hash;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.LongBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class VirtualMapDataStoreTest {
     private static final int MB = 1024*1024;
@@ -19,6 +27,7 @@ public class VirtualMapDataStoreTest {
     static {
         System.out.println("STORE_PATH = " + STORE_PATH.toAbsolutePath());
     }
+    private static final Random RANDOM = new Random(1234);
 
     @BeforeEach
     public void deleteAnyOld() {
@@ -32,6 +41,7 @@ public class VirtualMapDataStoreTest {
                 System.err.println("Failed to delete test store directory");
                 e.printStackTrace();
             }
+            System.out.println("Deleted data files");
         }
     }
 
@@ -108,7 +118,9 @@ public class VirtualMapDataStoreTest {
         final int ACCOUNT_COUNT = 10;
         final int COUNT = 10_000;
         VirtualMapDataStore store = new VirtualMapDataStore(STORE_PATH,32,32,2);
+
         store.open();
+
         // create some data for a number of accounts
         for (int a = 0; a < ACCOUNT_COUNT; a++) {
             Account account = new Account(0,0,a);
@@ -127,7 +139,10 @@ public class VirtualMapDataStoreTest {
 
         // read back and check that data
         store = new VirtualMapDataStore(STORE_PATH,32,32, 2);
+        Stopwatch stopwatch = Stopwatch.createStarted();
         store.open();
+        stopwatch.stop(); // optional
+        System.out.println("Time elapsed: "+ (stopwatch.elapsed(TimeUnit.MILLISECONDS)/1000d)+" seconds");
         for (int a = 0; a < ACCOUNT_COUNT; a++) {
             Account account = new Account(0,0,a);
             for (int i = 0; i < COUNT; i++) {
@@ -247,52 +262,216 @@ public class VirtualMapDataStoreTest {
 //        store.close();
 //    }
 
+    @Test
+    public void createSomeDataAndReadBackConcurrent() {
+        final int ACCOUNT_COUNT = 10;
+        final int COUNT = 10_000;
+        VirtualMapDataStore store = new VirtualMapDataStore(STORE_PATH,32,32,3);
+        store.open();
+        System.out.println("Files.exists(STORE_PATH) = " + Files.exists(STORE_PATH));
+        // create some data for a number of accounts
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        IntStream.range(0, ACCOUNT_COUNT).parallel().forEach(a -> {
+            Account account = new Account(0,0,a);
+            Stream.of(0,1,2).parallel().forEach(op -> {
+                switch (op) {
+                    case 0:
+                        IntStream.range(0, COUNT).parallel().forEach(i -> {
+                            byte[] hash = hash(i);
+                            // write parent
+                            store.saveParentHash(account, i, hash);
+                        });
+                        break;
+                    case 1:
+                        IntStream.range(0, COUNT).parallel().forEach(i -> {
+                            byte[] hash = hash(i);
+                            // write leaf
+                            store.saveLeaf(account, new VirtualRecord(hash,i, new VirtualKey(get32Bytes(i)), new VirtualValue(get32Bytes(i))));
+                        });
+                        break;
+                    case 2:
+                        // write parent
+                        IntStream.range(0, COUNT).parallel().forEach(i -> {
+                            // write path
+                            store.savePath(account, i,i);
+                        });
+                        break;
+                }
+            });
+        });
+        stopwatch.stop(); // optional
+        System.out.println("Create 10,000 leaves, parents and paths took : "+ (stopwatch.elapsed(TimeUnit.MILLISECONDS)/1000d)+" seconds");
 
+        System.out.println("check counts");
+        // check counts
+        for (int a = 0; a < ACCOUNT_COUNT; a++) {
+            Account account = new Account(0, 0, a);
+            Assertions.assertEquals(COUNT, store.leafCount(account));
+        }
+
+        System.out.println("check all the data");
+        // check all the data
+        for (int a = 0; a < ACCOUNT_COUNT; a++) {
+            Account account = new Account(0,0,a);
+            for (int i = 0; i < COUNT; i++) {
+                byte[] hash = hash(i);
+                VirtualKey key = new VirtualKey(get32Bytes(i));
+                VirtualValue value = new VirtualValue(get32Bytes(i));
+
+                // read parent
+                byte[] parentHash = store.loadParentHash(account,i);
+                Assertions.assertArrayEquals(parentHash, hash, "a="+account.accountNum()+" i="+i+" parentHash="+toLongsString(parentHash)+" hash="+toLongsString(hash));
+                // read leaf by key
+                VirtualRecord record = store.loadLeaf(account,key);
+                Assertions.assertArrayEquals(record.getHash(), hash,"a="+account.accountNum()+" i="+i+" record.getHash()="+toLongsString(record.getHash())+" hash="+toLongsString(hash));
+                Assertions.assertEquals(record.getPath(), i);
+                Assertions.assertEquals(record.getKey(), key);
+                Assertions.assertEquals(record.getValue(), value);
+                // read leaf by path
+                record = store.loadLeaf(account,i);
+                Assertions.assertArrayEquals(record.getHash(), hash, "a="+account.accountNum()+" i="+i+" record.getHash()="+toLongsString(record.getHash())+" hash="+toLongsString(hash));
+                Assertions.assertEquals(record.getPath(), i);
+                Assertions.assertEquals(record.getKey(), key);
+                Assertions.assertEquals(record.getValue(), value);
+                // load path
+                long path = store.loadPath(account, i);
+                Assertions.assertEquals(path, i);
+            }
+        }
+
+        System.out.println("do a bunch of concurrent reads and updates");
+        // do a bunch of concurrent reads and updates
+        RANDOM.ints(10_000,0, COUNT).parallel().forEach(i -> {
+            Account account = new Account(0,0,RANDOM.nextInt(ACCOUNT_COUNT));
+            byte[] hash = hash(i);
+            VirtualKey key = new VirtualKey(get32Bytes(i));
+            VirtualValue value = new VirtualValue(get32Bytes(i));
+            VirtualRecord record;
+            System.out.print(',');
+
+            switch(RANDOM.nextInt(3)) {
+                case 0:
+                    // read parent
+                    byte[] parentHash = store.loadParentHash(account,i);
+                    Assertions.assertArrayEquals(hash, parentHash,() -> {
+                        System.out.println(store.debugGetParentSlot(account,i));
+                        return "a="+account.accountNum()+" i="+i+" parentHash="+toLongsString(parentHash)+" hash="+toLongsString(hash)+"\n";
+                    });
+                    break;
+                case 1:
+                    // read leaf by key
+                    record = store.loadLeaf(account,key);
+                    Assertions.assertArrayEquals(hash, record.getHash(),() -> {
+                        System.out.println(store.debugGetLeafSlot(account,key));
+                        return "a="+account.accountNum()+" i="+i+" leafHash="+toLongsString(record.getHash())+" hash="+toLongsString(hash)+"\n";
+                    });
+                    Assertions.assertEquals(i, record.getPath());
+                    Assertions.assertEquals(key, record.getKey());
+                    Assertions.assertEquals(value, record.getValue());
+                    break;
+                case 2:
+                    // read leaf by path
+                    record = store.loadLeaf(account,i);
+                    Assertions.assertArrayEquals(hash, record.getHash(),() -> {
+                        System.out.println(store.debugGetLeafSlot(account,i));
+                        return "a="+account.accountNum()+" i="+i+" leafHash="+toLongsString(record.getHash())+" hash="+toLongsString(hash)+"\n";
+                    });
+                    Assertions.assertEquals(i, record.getPath());
+                    Assertions.assertEquals(key, record.getKey());
+                    Assertions.assertEquals(value, record.getValue());
+                    break;
+                case 3:
+                    // load path
+                    long path = store.loadPath(account, i);
+                    Assertions.assertEquals(i,path);
+                    break;
+//                case 4:
+//                    // write parent
+//                    store.saveParentHash(account, i, hash);
+//                    break;
+//                case 5:
+//                    // write leaf
+//                    store.saveLeaf(account, new VirtualRecord(hash,i, new VirtualKey(get32Bytes(i)), new VirtualValue(get32Bytes(i))));
+//                    break;
+//                case 6:
+//                    // write path
+//                    store.savePath(account, i,i);
+//                    break;
+            }
+        });
+
+        System.out.println("\n----------------------------------\nDONE");
+        store.close();
+    }
+
+    /**
+     * Create a byte containing the given value as 4 longs
+     * 
+     * @param value the value to store in array
+     * @return byte array of 4 longs
+     */
     private byte[] get32Bytes(int value) {
+        byte b0 = (byte)(value >>> 24);
+        byte b1 = (byte)(value >>> 16);
+        byte b2 = (byte)(value >>> 8);
+        byte b3 = (byte)value;
         return new byte[] {
-                28,
-                23,
-                119,
-                29,
-                92,
-                13,
-                83,
-                110,
-                (byte)(value >>> 24),
-                (byte)(value >>> 16),
-                (byte)(value >>> 8),
-                (byte)value,
-                (byte)(value >>> 24),
-                (byte)(value >>> 16),
-                (byte)(value >>> 8),
-                (byte)value,
-                (byte)(value >>> 24),
-                (byte)(value >>> 16),
-                (byte)(value >>> 8),
-                (byte)value,
-                (byte)(value >>> 24),
-                (byte)(value >>> 16),
-                (byte)(value >>> 8),
-                (byte)value,
-                (byte)(value >>> 24),
-                (byte)(value >>> 16),
-                (byte)(value >>> 8),
-                (byte)value,
-                (byte)(value >>> 24),
-                (byte)(value >>> 16),
-                (byte)(value >>> 8),
-                (byte)value
+                0,0,0,0,b0,b1,b2,b3,
+                0,0,0,0,b0,b1,b2,b3,
+                0,0,0,0,b0,b1,b2,b3,
+                0,0,0,0,b0,b1,b2,b3
         };
     }
 
 
     /**
-     * Creates a hash containing a int
-     * @return
+     * Creates a hash containing a int repeated 6 times as longs
+     * 
+     * @return byte array of 6 longs
      */
     private byte[] hash(int value) {
-        byte[] hashData = new byte[384/8];
-        System.arraycopy(get32Bytes(value),0, hashData,0,32);
-        return hashData;
+        byte b0 = (byte)(value >>> 24);
+        byte b1 = (byte)(value >>> 16);
+        byte b2 = (byte)(value >>> 8);
+        byte b3 = (byte)value;
+        return new byte[] {
+                0,0,0,0,b0,b1,b2,b3,
+                0,0,0,0,b0,b1,b2,b3,
+                0,0,0,0,b0,b1,b2,b3,
+                0,0,0,0,b0,b1,b2,b3,
+                0,0,0,0,b0,b1,b2,b3,
+                0,0,0,0,b0,b1,b2,b3
+        };
+    }
+
+    private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
+    public static String toHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder("["+bytes.length+"b]");
+        for (int j = 0; j < bytes.length; j++) {
+            int v = bytes[j] & 0xFF;
+            sb.append(HEX_ARRAY[v >>> 4]);
+            sb.append(HEX_ARRAY[v & 0x0F]);
+        }
+        return sb.toString().toUpperCase();
+    }
+//
+//    public static String toLongsString(byte[] bytes) {
+//        IntBuffer intBuf =
+//                ByteBuffer.wrap(bytes)
+//                        .order(ByteOrder.BIG_ENDIAN)
+//                        .asIntBuffer();
+//        int[] array = new int[intBuf.remaining()];
+//        intBuf.get(array);
+//        return Arrays.toString(array);
+//    }
+    
+    public static String toLongsString(byte[] bytes) {
+        LongBuffer longBuf =
+                ByteBuffer.wrap(bytes)
+                        .order(ByteOrder.BIG_ENDIAN)
+                        .asLongBuffer();
+        long[] array = new long[longBuf.remaining()];
+        longBuf.get(array);
+        return Arrays.toString(array);
     }
 }

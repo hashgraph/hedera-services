@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -91,6 +92,20 @@ public final class MemMapDataStore {
         this.filePrefix = filePrefix == null ? "" : filePrefix;
         this.fileExtension = fileExtension == null ? "" : fileExtension;
         this.size = fileSize / (dataSize + MemMapDataFile.HEADER_SIZE);
+        System.out.println("filePrefix = " + filePrefix);
+        System.out.println("    this.size = " + this.size);
+        System.out.println("    this.dataSize = " + this.dataSize);
+        System.out.println("    fileSize = " + fileSize);
+        System.out.println("    MemMapDataFile.HEADER_SIZE = " + MemMapDataFile.HEADER_SIZE);
+    }
+
+    /**
+     * Get the specified data size in bytes.
+     *
+     * @return data size in bytes
+     */
+    public int getDataSize() {
+        return dataSize;
     }
 
     /**
@@ -288,6 +303,33 @@ public final class MemMapDataStore {
         return(int)location;
     }
 
+
+    /**
+     * Dump the contents of the file to system out
+     *
+     * @param file index of file
+     */
+    public String debugPrintFile(int file) {
+        MemMapDataFile memMapDataFile = files.get(file);
+        if (memMapDataFile != null) {
+            return memMapDataFile.debugPrintFile();
+        } else {
+            return "File ["+file+"] not found.";
+        }
+    }
+
+    /**
+     * Dump the contents of the file to a window
+     *
+     * @param file index of file
+     */
+    public void debugShowData(int file) {
+        MemMapDataFile memMapDataFile = files.get(file);
+        if (memMapDataFile != null) {
+            memMapDataFile.debugShowData();
+        }
+    }
+
     /**
      * Memory Mapped File key value store, with a maximum number of items it can store and a max size for any item.
      *
@@ -304,7 +346,7 @@ public final class MemMapDataStore {
         /** constant used for slot header to mean that slot is used */
         private static final byte USED = 1;
         /** constant used for size of slot header in bytes */
-        static final int HEADER_SIZE = 1;
+        static final int HEADER_SIZE = 8;
         /** Number of key/values pairs to store in the file */
         private final int size;
         /** The file we are storing the data in */
@@ -475,7 +517,7 @@ public final class MemMapDataStore {
             int slotIndex;
             if (nextFreeSlotAtEnd < size) {
                 slotIndex = nextFreeSlotAtEnd;
-                nextFreeSlotAtEnd = nextFreeSlotAtEnd + 1;
+                nextFreeSlotAtEnd++;
             } else {
                 slotIndex = freeSlotsForReuse.pop();
             }
@@ -505,6 +547,55 @@ public final class MemMapDataStore {
          */
         public void sync(){
             mappedBuffer.force();
+        }
+
+        /**
+         * Debug dump file to a string and return
+         *
+         * @return String contents of file
+         */
+        public String debugPrintFile() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("--------------------------------------------------------------------------------------\n");
+            sb.append(file.getName()+"\n");
+            sb.append("--------------------------------------------------------------------------------------\n");
+            mappedBuffer.rewind();
+            final int slotSizeLongs = slotSize/8;
+            outer: for (int i = 0; i < size && i < nextFreeSlotAtEnd; i++) {
+                sb.append(String.format("[%8d] - [",i));
+                for (int j = 0; j < slotSizeLongs; j++) {
+                    if (mappedBuffer.remaining() < 8) {
+                        sb.append("\nFound end of file too early, read ["+i+"] slots, mappedBuffer.remaining()="+mappedBuffer.remaining()+" size="+size);
+                        break outer;
+                    }
+                    sb.append(String.format("%20d, ",mappedBuffer.getLong()));
+                }
+                sb.append("]\n");
+            }
+            sb.append("--------------------------------------------------------------------------------------\n");
+            return sb.toString();
+        }
+
+        public void debugShowData() {
+            final int slotSizeLongs = slotSize/8;
+            long[][] data = new long[size][];
+
+            outer: for (int i = 0; i < size && i < nextFreeSlotAtEnd; i++) {
+                int slotOffset = i * slotSize;
+                long[] slotData = new long[slotSizeLongs];
+                data[i] = slotData;
+                for (int j = 0; j < slotSizeLongs; j++) {
+                    try {
+                        slotData[j] = mappedBuffer.getLong(slotOffset+j);
+                    } catch (BufferUnderflowException e) {
+                        System.err.println("Found end of file too early, read ["+i+"] slots, mappedBuffer.remaining()="+mappedBuffer.remaining()+" size="+size);
+                        e.printStackTrace();
+                        break outer;
+                    }
+                }
+                slotData[0] = slotOffset;
+            }
+            MemMapDataViewer.showData(file.getName(),data);
         }
     }
 }
