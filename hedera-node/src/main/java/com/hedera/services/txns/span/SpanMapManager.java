@@ -26,6 +26,25 @@ import com.hedera.services.utils.TxnAccessor;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 
+/**
+ * Responsible for managing the properties in a {@link TxnAccessor#getSpanMap()}.
+ * This management happens in two steps:
+ * <ol>
+ *     <li>In {@link SpanMapManager#expandSpan(TxnAccessor)}, the span map is
+ *     "expanded" to include the results of any work that can likely be reused
+ *     in {@code handleTransaction}</li>.
+ *     <li>In {@link SpanMapManager#rationalizeSpan(TxnAccessor)}, the span map
+ *     "rationalized" to be sure that any pre-computed work can still be reused
+ *     safely.</li>
+ * </ol>
+ *
+ * The only entry currently in the span map is the {@link com.hedera.services.grpc.marshalling.ImpliedTransfers}
+ * produced by the {@link ImpliedTransfersMarshal}; this improves performance for
+ * CrypoTransfers specifically.
+ *
+ * Other operations will certainly be able to benefit from the same infrastructure
+ * over time.
+ */
 public class SpanMapManager {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final ImpliedTransfersMarshal impliedTransfersMarshal;

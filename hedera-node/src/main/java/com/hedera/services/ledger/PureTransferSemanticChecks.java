@@ -91,7 +91,7 @@ public class PureTransferSemanticChecks {
 			return TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 		}
 
-		int count = 0;
+		var count = 0;
 		for (var scopedTransfers : tokenTransfersList) {
 			int transferCounts = scopedTransfers.getTransfersCount();
 			if (transferCounts == 0) {
@@ -112,7 +112,7 @@ public class PureTransferSemanticChecks {
 		if (tokenTransfersList.isEmpty()) {
 			return OK;
 		}
-		var validity = OK;
+		ResponseCodeEnum validity;
 		final Set<TokenID> uniqueTokens = new HashSet<>();
 		for (var tokenTransfers : tokenTransfersList) {
 			validity = validateScopedTransferSemantics(uniqueTokens, tokenTransfers);

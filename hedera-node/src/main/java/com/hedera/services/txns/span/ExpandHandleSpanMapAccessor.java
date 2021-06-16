@@ -23,6 +23,9 @@ package com.hedera.services.txns.span;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.utils.TxnAccessor;
 
+/**
+ * Minimal helper class for getting/setting entries in a span map.
+ */
 public class ExpandHandleSpanMapAccessor {
 	static final String VALIDATED_TRANSFERS_KEY = "validatedTransfers";
 
