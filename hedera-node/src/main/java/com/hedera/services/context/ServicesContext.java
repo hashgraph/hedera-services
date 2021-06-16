@@ -554,9 +554,11 @@ public class ServicesContext {
 	private GlobalDynamicProperties globalDynamicProperties;
 	private FunctionalityThrottling hapiThrottling;
 	private FunctionalityThrottling handleThrottling;
+	private ImpliedTransfersMarshal impliedTransfersMarshal;
 	private AwareNodeDiligenceScreen nodeDiligenceScreen;
 	private InHandleActivationHelper activationHelper;
 	private PlatformSubmissionManager submissionManager;
+	private PureTransferSemanticChecks transferSemanticChecks;
 	private SmartContractRequestHandler contracts;
 	private TxnAwareSoliditySigsVerifier soliditySigsVerifier;
 	private ValidatingCallbackInterceptor apiPermissionsReloading;
@@ -724,6 +726,13 @@ public class ServicesContext {
 			handleThrottling = new TxnAwareHandleThrottling(txnCtx(), new DeterministicThrottling(() -> 1));
 		}
 		return handleThrottling;
+	}
+
+	public ImpliedTransfersMarshal impliedTransfersMarshal() {
+		if (impliedTransfersMarshal == null) {
+			impliedTransfersMarshal = new ImpliedTransfersMarshal(globalDynamicProperties(), transferSemanticChecks());
+		}
+		return impliedTransfersMarshal;
 	}
 
 	public AwareNodeDiligenceScreen nodeDiligenceScreen() {
@@ -1324,8 +1333,6 @@ public class ServicesContext {
 
 	private Function<HederaFunctionality, List<TransitionLogic>> transitions() {
 		final var spanMapAccessor = new ExpandHandleSpanMapAccessor();
-		final var dynamicProperties = globalDynamicProperties();
-		final var transferSemanticChecks = new PureTransferSemanticChecks();
 
 		Map<HederaFunctionality, List<TransitionLogic>> transitionsMap = Map.ofEntries(
 				/* Crypto */
@@ -1337,7 +1344,12 @@ public class ServicesContext {
 						List.of(new CryptoDeleteTransitionLogic(ledger(), txnCtx()))),
 				entry(CryptoTransfer,
 						List.of(new CryptoTransferTransitionLogic(
-								ledger(), txnCtx(), dynamicProperties, transferSemanticChecks, spanMapAccessor))),
+								ledger(),
+								txnCtx(),
+								globalDynamicProperties(),
+								impliedTransfersMarshal(),
+								transferSemanticChecks(),
+								spanMapAccessor))),
 				/* File */
 				entry(FileUpdate,
 						List.of(new FileUpdateTransitionLogic(hfs(), entityNums(), validator(), txnCtx()))),
@@ -1720,10 +1732,7 @@ public class ServicesContext {
 
 	public SpanMapManager spanMapManager() {
 		if (spanMapManager == null) {
-			final var dynamicProperties = globalDynamicProperties();
-			final var transferSemanticChecks = new PureTransferSemanticChecks();
-			final var marshal = new ImpliedTransfersMarshal(dynamicProperties, transferSemanticChecks);
-			spanMapManager = new SpanMapManager(marshal, dynamicProperties);
+			spanMapManager = new SpanMapManager(impliedTransfersMarshal(), globalDynamicProperties());
 		}
 		return spanMapManager;
 	}
@@ -1830,6 +1839,13 @@ public class ServicesContext {
 					Collections.emptyList());
 		}
 		return grpc;
+	}
+
+	public PureTransferSemanticChecks transferSemanticChecks() {
+		if (transferSemanticChecks == null) {
+			transferSemanticChecks = new PureTransferSemanticChecks();
+		}
+		return transferSemanticChecks;
 	}
 
 	public SmartContractRequestHandler contracts() {

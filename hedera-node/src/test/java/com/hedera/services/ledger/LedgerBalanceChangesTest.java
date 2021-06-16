@@ -233,7 +233,6 @@ class LedgerBalanceChangesTest {
 	void happyPathScans() {
 		givenInitialBalances();
 
-
 		// when:
 		TransferList inProgress;
 		List<TokenTransferList> inProgressTokens;

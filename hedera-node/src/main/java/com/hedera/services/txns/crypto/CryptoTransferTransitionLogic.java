@@ -22,6 +22,8 @@ package com.hedera.services.txns.crypto;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.grpc.marshalling.ImpliedTransfers;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.txns.TransitionLogic;
@@ -32,7 +34,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Objects;
 import java.util.function.Predicate;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -54,6 +55,7 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 	private final HederaLedger ledger;
 	private final TransactionContext txnCtx;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final ImpliedTransfersMarshal impliedTransfersMarshal;
 	private final PureTransferSemanticChecks transferSemanticChecks;
 	private final ExpandHandleSpanMapAccessor spanMapAccessor;
 
@@ -61,6 +63,7 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 			HederaLedger ledger,
 			TransactionContext txnCtx,
 			GlobalDynamicProperties dynamicProperties,
+			ImpliedTransfersMarshal impliedTransfersMarshal,
 			PureTransferSemanticChecks transferSemanticChecks,
 			ExpandHandleSpanMapAccessor spanMapAccessor
 	) {
@@ -69,24 +72,35 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 		this.spanMapAccessor = spanMapAccessor;
 		this.dynamicProperties = dynamicProperties;
 		this.transferSemanticChecks = transferSemanticChecks;
+		this.impliedTransfersMarshal = impliedTransfersMarshal;
 	}
 
 	@Override
 	public void doStateTransition() {
 		try {
 			final var accessor = txnCtx.accessor();
-			final var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
+			final var impliedTransfers = finalImpliedTransfersFor(accessor);
 
-			Objects.requireNonNull(impliedTransfers);
-
-			final var changes = impliedTransfers.getChanges();
-			var outcome = ledger.doZeroSum(changes);
+			var outcome = impliedTransfers.getMeta().code();
+			if (outcome == OK) {
+				final var changes = impliedTransfers.getChanges();
+				outcome = ledger.doZeroSum(changes);
+			}
 
 			txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
 		} catch (Exception e) {
-			log.warn("Avoidable exception!", e);
+			log.warn("Avoidable exception in CryptoTransfer state transition", e);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
+	}
+
+	private ImpliedTransfers finalImpliedTransfersFor(TxnAccessor accessor) {
+		var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
+		if (impliedTransfers == null) {
+			final var op = accessor.getTxn().getCryptoTransfer();
+			impliedTransfers = impliedTransfersMarshal.marshalFromGrpc(op);
+		}
+		return impliedTransfers;
 	}
 
 	@Override
@@ -98,10 +112,12 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 	public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
 		final var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
 		if (impliedTransfers != null) {
-			/* This accessor represents a consensus transaction whose expand-handle span we've been managing */
+			/* Accessor is for a consensus transaction with a expand-handle span
+			* we've been managing in the normal way. */
 			return impliedTransfers.getMeta().code();
 		} else {
-			/* This accessor represents a transaction in precheck, not yet submitted to the network */
+			/* Accessor is for either (1) a transaction in precheck or (2) a scheduled
+			transaction that reached consensus without a managed expand-handle span. */
 			final var op = accessor.getTxn().getCryptoTransfer();
 			final var maxHbarAdjusts = dynamicProperties.maxTransferListSize();
 			final var maxTokenAdjusts = dynamicProperties.maxTokenTransferListSize();

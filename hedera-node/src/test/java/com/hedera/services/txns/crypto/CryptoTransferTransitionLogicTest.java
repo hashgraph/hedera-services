@@ -23,6 +23,7 @@ package com.hedera.services.txns.crypto;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
@@ -38,6 +39,9 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.List;
@@ -47,15 +51,19 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
+
+@ExtendWith(MockitoExtension.class)
 class CryptoTransferTransitionLogicTest {
 	final private int maxHbarAdjusts = 5;
 	final private int maxTokenAdjusts = 10;
@@ -64,29 +72,96 @@ class CryptoTransferTransitionLogicTest {
 	final private AccountID b = AccountID.newBuilder().setAccountNum(8_999L).build();
 	final private AccountID c = AccountID.newBuilder().setAccountNum(7_999L).build();
 
+	@Mock
 	private HederaLedger ledger;
-	private TransactionBody cryptoTransferTxn;
+	@Mock
 	private TransactionContext txnCtx;
-	private PlatformTxnAccessor accessor;
-	private CryptoTransferTransitionLogic subject;
+	@Mock
 	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private ImpliedTransfersMarshal impliedTransfersMarshal;
+	@Mock
 	private PureTransferSemanticChecks transferSemanticChecks;
+	@Mock
 	private ExpandHandleSpanMapAccessor spanMapAccessor;
+	@Mock
+	private PlatformTxnAccessor accessor;
+
+	private TransactionBody cryptoTransferTxn;
+
+	private CryptoTransferTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
-		txnCtx = mock(TransactionContext.class);
-		ledger = mock(HederaLedger.class);
-		accessor = mock(PlatformTxnAccessor.class);
-		spanMapAccessor = mock(ExpandHandleSpanMapAccessor.class);
-		dynamicProperties = mock(GlobalDynamicProperties.class);
-		transferSemanticChecks = mock(PureTransferSemanticChecks.class);
-
-		given(ledger.isSmartContract(any())).willReturn(false);
-		given(ledger.exists(any())).willReturn(true);
-
 		subject = new CryptoTransferTransitionLogic(
-				ledger, txnCtx, dynamicProperties, transferSemanticChecks, spanMapAccessor);
+				ledger, txnCtx, dynamicProperties, impliedTransfersMarshal, transferSemanticChecks, spanMapAccessor);
+	}
+
+	@Test
+	void happyPathUsesLedgerNetZero() {
+		final var a = new Id(1, 2, 3);
+		final var b = new Id(2, 3, 4);
+		final var impliedTransfers = ImpliedTransfers.valid(
+				maxHbarAdjusts, maxTokenAdjusts, List.of(
+						BalanceChange.hbarAdjust(a, +100),
+						BalanceChange.hbarAdjust(b, -100)
+				));
+
+		givenValidTxnCtx();
+		// and:
+		given(spanMapAccessor.getImpliedTransfers(accessor)).willReturn(impliedTransfers);
+		given(ledger.doZeroSum(impliedTransfers.getChanges())).willReturn(INSUFFICIENT_ACCOUNT_BALANCE);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(txnCtx).setStatus(INSUFFICIENT_ACCOUNT_BALANCE);
+	}
+
+	@Test
+	void recomputesImpliedTransfersIfNotAvailableInSpan() {
+		final var a = new Id(1, 2, 3);
+		final var b = new Id(2, 3, 4);
+		final var impliedTransfers = ImpliedTransfers.valid(
+				maxHbarAdjusts, maxTokenAdjusts, List.of(
+						BalanceChange.hbarAdjust(a, +100),
+						BalanceChange.hbarAdjust(b, -100)
+				));
+
+		givenValidTxnCtx();
+		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
+		// and:
+		given(impliedTransfersMarshal.marshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
+				.willReturn(impliedTransfers);
+		given(ledger.doZeroSum(impliedTransfers.getChanges()))
+				.willReturn(OK);
+
+		// when:
+		subject.doStateTransition();
+
+
+		// then:
+		verify(txnCtx).setStatus(SUCCESS);
+	}
+
+	@Test
+	void shortCircuitsToImpliedTransfersValidityIfNotAvailableInSpan() {
+		final var impliedTransfers = ImpliedTransfers.invalid(
+				maxHbarAdjusts, maxTokenAdjusts, TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
+
+		givenValidTxnCtx();
+		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
+		// and:
+		given(impliedTransfersMarshal.marshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
+				.willReturn(impliedTransfers);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(txnCtx).setStatus(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
+		verifyNoInteractions(ledger);
 	}
 
 	@Test
@@ -128,28 +203,6 @@ class CryptoTransferTransitionLogicTest {
 	}
 
 	@Test
-	void usesLedgerNetZero() {
-		final var a = new Id(1, 2, 3);
-		final var b = new Id(2, 3, 4);
-		final var impliedTransfers = ImpliedTransfers.valid(
-				maxHbarAdjusts, maxTokenAdjusts, List.of(
-						BalanceChange.hbarAdjust(a, +100),
-						BalanceChange.hbarAdjust(b, -100)
-				));
-
-		givenValidTxnCtx();
-		// and:
-		given(spanMapAccessor.getImpliedTransfers(accessor)).willReturn(impliedTransfers);
-		given(ledger.doZeroSum(impliedTransfers.getChanges())).willReturn(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
-	}
-
-	@Test
 	void translatesUnknownException() {
 		givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
 
@@ -177,15 +230,12 @@ class CryptoTransferTransitionLogicTest {
 								.setTransfers(wrapper)
 								.build()
 				).build();
-		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
 	}
 
 	private void givenValidTxnCtx() {
 		cryptoTransferTxn = TransactionBody.newBuilder()
 				.setCryptoTransfer(xfers)
 				.build();
-		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 	}
 
