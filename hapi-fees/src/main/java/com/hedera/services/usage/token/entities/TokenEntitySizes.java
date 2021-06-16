@@ -9,9 +9,9 @@ package com.hedera.services.usage.token.entities;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,6 +22,7 @@ package com.hedera.services.usage.token.entities;
 
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
@@ -31,10 +32,10 @@ public enum TokenEntitySizes {
 
 	/* { deleted, accountsFrozenByDefault, accountsKycGrantedByDefault } */
 	static int NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION = 3;
-	/* { decimals } */
-	static int NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 1;
-	/* { expiry, totalSupply, autoRenewPeriod } */
-	static int NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 3;
+	/* { decimals, tokenType, supplyType } */
+	static int NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 3;
+	/* { expiry, maxSupply, totalSupply, autoRenewPeriod, currentSerialNum } */
+	static int NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 5;
 	/* { treasury } */
 	static int NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 1;
 
@@ -49,8 +50,13 @@ public enum TokenEntitySizes {
 		return fixedBytesInTokenRepr() + symbol.length() + name.length();
 	}
 
-	public int bytesUsedToRecordTokenTransfers(int numTokens, int numTransfers) {
-		return numTokens * BASIC_ENTITY_ID_SIZE + numTransfers * USAGE_PROPERTIES.accountAmountBytes();
+	public int bytesUsedToRecordTokenTransfers(int numTokens, int fungibleNumTransfers, int uniqueNumTransfers) {
+		return numTokens * BASIC_ENTITY_ID_SIZE + fungibleNumTransfers * USAGE_PROPERTIES.accountAmountBytes()
+				+ uniqueNumTransfers * USAGE_PROPERTIES.nftTransferBytes();
+	}
+
+	public long bytesUsedForUniqueTokenTransfers(int numTokens) {
+		return numTokens * (BASIC_RICH_INSTANT_SIZE + BASIC_ENTITY_ID_SIZE + LONG_SIZE + BASIC_ENTITY_ID_SIZE);
 	}
 
 	public int bytesUsedPerAccountRelationship() {

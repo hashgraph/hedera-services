@@ -22,12 +22,16 @@ package com.hedera.services.queries.token;
 
 public class TokenAnswers {
 	private final GetTokenInfoAnswer tokenInfo;
+	private final GetTokenNftInfoAnswer nftInfo;
 
-	public TokenAnswers(GetTokenInfoAnswer tokenInfo) {
+	public TokenAnswers(GetTokenInfoAnswer tokenInfo, GetTokenNftInfoAnswer nftInfo) {
 		this.tokenInfo = tokenInfo;
+		this.nftInfo = nftInfo;
 	}
 
 	public GetTokenInfoAnswer getTokenInfo() {
 		return tokenInfo;
 	}
+
+	public GetTokenNftInfoAnswer getNftInfoAnswer() { return nftInfo; }
 }

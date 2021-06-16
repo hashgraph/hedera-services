@@ -29,6 +29,7 @@ public class Id {
 	private final long shard;
 	private final long realm;
 	private final long num;
+	static Id DEFAULT = new Id(0, 0, 0);
 
 	public Id(long shard, long realm, long num) {
 		this.shard = shard;

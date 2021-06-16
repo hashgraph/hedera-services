@@ -10,7 +10,7 @@
                         "ScheduleCreate",
                         "CryptoCreate", "CryptoTransfer", "CryptoUpdate", "CryptoDelete", "CryptoGetInfo", "CryptoGetAccountRecords",
                         "ConsensusCreateTopic", "ConsensusSubmitMessage", "ConsensusUpdateTopic", "ConsensusDeleteTopic", "ConsensusGetTopicInfo",
-                        "TokenGetInfo",
+                        "TokenGetInfo", "TokenGetNftInfo",
                         "ScheduleDelete", "ScheduleGetInfo",
                         "FileGetContents", "FileGetInfo",
                         "ContractUpdate", "ContractDelete", "ContractGetInfo", "ContractGetBytecode", "ContractGetRecords", "ContractCallLocal", 

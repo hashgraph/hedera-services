@@ -24,9 +24,11 @@ import com.hedera.services.fees.calculation.AutoRenewCalcs;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.SubType;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.time.Instant;
+import java.util.Map;
 
 public class TestAutoRenewCalcs extends AutoRenewCalcs {
 	public TestAutoRenewCalcs() {
@@ -44,7 +46,7 @@ public class TestAutoRenewCalcs extends AutoRenewCalcs {
 	}
 
 	@Override
-	public void setCryptoAutoRenewPriceSeq(Triple<FeeData, Instant, FeeData> cryptoAutoRenewPriceSeq) {
+	public void setCryptoAutoRenewPriceSeq(Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> cryptoAutoRenewPriceSeq) {
 		/* No-op */
 	}
 }

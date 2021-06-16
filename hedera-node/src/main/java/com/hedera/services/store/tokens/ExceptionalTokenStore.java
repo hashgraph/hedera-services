@@ -25,8 +25,10 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.CreationResult;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -99,7 +101,22 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
+	public ResponseCodeEnum adjustBalance(AccountID senderAId, AccountID receiverAId, TokenID tId, long serialNumber) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public CreationResult<TokenID> createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public NftID resolve(NftID id) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public MerkleUniqueToken getUniqueToken(NftID id) {
 		throw new UnsupportedOperationException();
 	}
 

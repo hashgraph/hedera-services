@@ -22,6 +22,8 @@ package com.hedera.services.store.models;
 
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.enums.TokenSupplyType;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +34,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class TokenTest {
 	private final JKey someKey = TxnHandlingScenario.TOKEN_SUPPLY_KT.asJKeyUnchecked();
@@ -130,6 +134,8 @@ class TokenTest {
 
 	@Test
 	void cantBurnOrMintWithoutSupplyKey() {
+		subject.setSupplyKey(null);
+		subject.setType(TokenType.FUNGIBLE_COMMON);
 		assertFailsWith(() -> subject.burn(treasuryRel, 1L), TOKEN_HAS_NO_SUPPLY_KEY);
 		assertFailsWith(() -> subject.mint(treasuryRel, 1L), TOKEN_HAS_NO_SUPPLY_KEY);
 	}
@@ -138,6 +144,8 @@ class TokenTest {
 	void cannotChangeTreasuryBalanceToNegative() {
 		// given:
 		subject.setSupplyKey(someKey);
+		subject.setType(TokenType.FUNGIBLE_COMMON);
+		subject.initSupplyConstraints(TokenSupplyType.FINITE, 10000);
 
 		assertFailsWith(() -> subject.burn(treasuryRel, initialTreasuryBalance + 1), INSUFFICIENT_TOKEN_BALANCE);
 	}
@@ -149,6 +157,7 @@ class TokenTest {
 
 		// given:
 		subject.setSupplyKey(someKey);
+		subject.setType(TokenType.FUNGIBLE_COMMON);
 
 		assertFailsWith(() -> subject.mint(treasuryRel, overflowMint), INVALID_TOKEN_MINT_AMOUNT);
 		assertFailsWith(() -> subject.burn(treasuryRel, initialSupply + 1), INVALID_TOKEN_BURN_AMOUNT);
@@ -156,6 +165,8 @@ class TokenTest {
 
 	@Test
 	void burnsAsExpected() {
+		subject.setType(TokenType.FUNGIBLE_COMMON);
+		subject.initSupplyConstraints(TokenSupplyType.FINITE, 20000L);
 		final long burnAmount = 100L;
 
 		// given:
@@ -173,7 +184,8 @@ class TokenTest {
 	@Test
 	void mintsAsExpected() {
 		final long mintAmount = 100L;
-
+		subject.setType(TokenType.FUNGIBLE_COMMON);
+		subject.initSupplyConstraints(TokenSupplyType.FINITE, 100000);
 		// given:
 		subject.setSupplyKey(someKey);
 

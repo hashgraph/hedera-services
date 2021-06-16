@@ -140,7 +140,8 @@ public class ContextOptionValidator implements OptionValidator {
 		int count = 0;
 		for (var tokenTransferList : tokenTransferLists) {
 			int transferCounts = tokenTransferList.getTransfersCount();
-			if (transferCounts == 0) {
+			int nftTransferCount = tokenTransferList.getNftTransfersCount();
+			if (transferCounts == 0 && nftTransferCount == 0) {
 				return EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 			}
 
@@ -151,6 +152,71 @@ public class ContextOptionValidator implements OptionValidator {
 			}
 		}
 
+		return OK;
+	}
+
+	@Override
+	public ResponseCodeEnum nftMetadataCheck(byte[] metadata) {
+		return lengthCheck(
+				metadata.length,
+				dynamicProperties.maxNFTMetadataBytes(),
+				ResponseCodeEnum.METADATA_TOO_LONG
+		);
+	}
+
+	@Override
+	public ResponseCodeEnum maxBatchSizeMintCheck(int length) {
+		return batchSizeCheck(
+				length,
+				dynamicProperties.maxBatchSizeMint()
+		);
+	}
+
+	@Override
+	public ResponseCodeEnum maxBatchSizeBurnCheck(int length) {
+		return batchSizeCheck(
+				length,
+				dynamicProperties.maxBatchSizeBurn()
+		);
+	}
+
+	@Override
+	public ResponseCodeEnum maxNftTransfersLenCheck(int length) {
+		return batchSizeCheck(
+				length,
+				dynamicProperties.maxNftTransfersLen()
+		);
+	}
+
+	@Override
+	public ResponseCodeEnum maxBatchSizeWipeCheck(int length) {
+		return batchSizeCheck(
+				length,
+				dynamicProperties.maxBatchSizeWipe()
+		);
+	}
+
+	@Override
+	public ResponseCodeEnum nftMaxQueryRangeCheck(int start, int end) {
+		return lengthCheck(
+				end - start,
+				dynamicProperties.maxNFTQueryRange(),
+				ResponseCodeEnum.QUERY_RANGE_LIMIT_EXCEEDED
+		);
+	}
+
+	private ResponseCodeEnum batchSizeCheck(int length, int limit) {
+		return lengthCheck(
+				length,
+				limit,
+				ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED
+		);
+	}
+
+	private ResponseCodeEnum lengthCheck(int length, int limit, ResponseCodeEnum onFailure) {
+		if (length > limit) {
+			return onFailure;
+		}
 		return OK;
 	}
 

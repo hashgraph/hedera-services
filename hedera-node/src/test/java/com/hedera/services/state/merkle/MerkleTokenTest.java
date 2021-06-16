@@ -22,6 +22,8 @@ package com.hedera.services.state.merkle;
 
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.enums.TokenSupplyType;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.serdes.IoReadingFunction;
 import com.hedera.services.state.serdes.IoWritingConsumer;
@@ -99,6 +101,8 @@ class MerkleTokenTest {
 		subject.setSupplyKey(supplyKey);
 		subject.setDeleted(isDeleted);
 		subject.setMemo(memo);
+		subject.setTokenType(TokenType.FUNGIBLE_COMMON);
+		subject.setSupplyType(TokenSupplyType.INFINITE);
 
 		serdes = mock(DomainSerdes.class);
 		MerkleToken.serdes = serdes;
@@ -179,8 +183,11 @@ class MerkleTokenTest {
 		given(fin.readLong())
 				.willReturn(subject.expiry())
 				.willReturn(subject.autoRenewPeriod())
-				.willReturn(subject.totalSupply());
-		given(fin.readInt()).willReturn(subject.decimals());
+				.willReturn(subject.totalSupply())
+				.willReturn(subject.getLastUsedSerialNumber());
+		given(fin.readInt()).willReturn(subject.decimals())
+				.willReturn(TokenType.FUNGIBLE_COMMON.ordinal())
+				.willReturn(TokenSupplyType.INFINITE.ordinal());
 		given(fin.readBoolean())
 				.willReturn(isDeleted)
 				.willReturn(subject.accountsAreFrozenByDefault());
@@ -497,12 +504,19 @@ class MerkleTokenTest {
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(identicalSubject);
 		identicalSubject.setDeleted(isDeleted);
+		identicalSubject.setTokenType(TokenType.FUNGIBLE_COMMON);
+		identicalSubject.setSupplyType(TokenSupplyType.INFINITE);
+		identicalSubject.setMaxSupply(subject.maxSupply());
+		identicalSubject.setLastUsedSerialNumber(subject.getLastUsedSerialNumber());
 
 		// and:
 		other = new MerkleToken(
 				otherExpiry, otherTotalSupply, otherDecimals, otherSymbol, otherName,
 				otherFreezeDefault, otherAccountsKycGrantedByDefault, otherTreasury);
-
+		other.setTokenType(TokenType.FUNGIBLE_COMMON);
+		other.setSupplyType(TokenSupplyType.INFINITE);
+		other.setMaxSupply(subject.maxSupply());
+		other.setLastUsedSerialNumber(subject.getLastUsedSerialNumber());
 		// expect:
 		assertNotEquals(subject.hashCode(), defaultSubject.hashCode());
 		assertNotEquals(subject.hashCode(), other.hashCode());
@@ -521,14 +535,18 @@ class MerkleTokenTest {
 	public void toStringWorks() {
 		// expect:
 		assertEquals("MerkleToken{" +
+						"tokenType="+ subject.tokenType() + ", " +
+					    "supplyType=" + subject.supplyType() + ", " +
 					    "deleted=" + isDeleted + ", " +
 						"expiry=" + expiry + ", " +
 						"symbol=" + symbol + ", " +
 						"name=" + name + ", " +
 						"memo=" + memo + ", " +
 						"treasury=" + treasury.toAbbrevString() + ", " +
+						"maxSupply=" + subject.maxSupply() + ", " +
 						"totalSupply=" + totalSupply + ", " +
 						"decimals=" + decimals + ", " +
+						"lastUsedSerialNumber=" + subject.getLastUsedSerialNumber() +", " +
 						"autoRenewAccount=" + autoRenewAccount.toAbbrevString() + ", " +
 						"autoRenewPeriod=" + autoRenewPeriod + ", " +
 						"adminKey=" + describe(adminKey) + ", " +

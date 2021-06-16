@@ -76,6 +76,7 @@ public class AccountStore {
 		account.setExpiry(merkleAccount.getExpiry());
 		account.initBalance(merkleAccount.getBalance());
 		account.setAssociatedTokens(merkleAccount.tokens().getIds().copy());
+		account.setOwnedNfts(merkleAccount.getNftsOwned());
 
 		return account;
 	}

@@ -28,16 +28,18 @@ import static org.mockito.BDDMockito.mock;
 
 class TokenAnswersTest {
 	GetTokenInfoAnswer tokenInfo;
+	GetTokenNftInfoAnswer nftInfo;
 
 	@BeforeEach
 	private void setup() {
 		tokenInfo = mock(GetTokenInfoAnswer.class);
+		nftInfo = mock(GetTokenNftInfoAnswer.class);
 	}
 
 	@Test
 	void getsQueryBalance() {
 		// given:
-		TokenAnswers subject = new TokenAnswers(tokenInfo);
+		TokenAnswers subject = new TokenAnswers(tokenInfo, nftInfo);
 
 		// expect:
 		assertSame(tokenInfo, subject.getTokenInfo());

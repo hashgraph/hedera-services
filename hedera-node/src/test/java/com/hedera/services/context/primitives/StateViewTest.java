@@ -24,6 +24,8 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.enums.TokenSupplyType;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -207,6 +209,9 @@ class StateViewTest {
 		token.setExpiry(expiry);
 		token.setAutoRenewPeriod(autoRenewPeriod);
 		token.setDeleted(true);
+		token.setTokenType(TokenType.FUNGIBLE_COMMON);
+		token.setSupplyType(TokenSupplyType.FINITE);
+
 		given(tokenStore.resolve(tokenId)).willReturn(tokenId);
 		given(tokenStore.resolve(missingTokenId)).willReturn(TokenStore.MISSING_TOKEN);
 		given(tokenStore.get(tokenId)).willReturn(token);

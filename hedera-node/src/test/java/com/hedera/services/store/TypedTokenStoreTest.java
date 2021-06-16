@@ -28,11 +28,15 @@ import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.store.tokens.unique.OwnerIdentifier;
+import com.hedera.services.utils.invertible_fchashmap.FCInvertibleHashMap;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.fcmap.FCMap;
@@ -41,6 +45,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.function.Supplier;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -59,6 +65,8 @@ class TypedTokenStoreTest {
 	@Mock
 	private FCMap<MerkleEntityId, MerkleToken> tokens;
 	@Mock
+	private FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier> uniqueTokens;
+	@Mock
 	private TransactionRecordService transactionRecordService;
 	@Mock
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
@@ -73,7 +81,7 @@ class TypedTokenStoreTest {
 		setupTokenRel();
 
 		subject = new TypedTokenStore(
-				accountStore, transactionRecordService, () -> tokens, () -> tokenRels, backingTokenRels);
+				accountStore, transactionRecordService, () -> tokens, () -> uniqueTokens, () -> tokenRels, backingTokenRels);
 	}
 
 	/* --- Token relationship loading --- */

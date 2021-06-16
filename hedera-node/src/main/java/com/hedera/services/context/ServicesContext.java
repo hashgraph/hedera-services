@@ -88,6 +88,7 @@ import com.hedera.services.fees.calculation.schedule.txns.ScheduleDeleteResource
 import com.hedera.services.fees.calculation.schedule.txns.ScheduleSignResourceUsage;
 import com.hedera.services.fees.calculation.system.txns.FreezeResourceUsage;
 import com.hedera.services.fees.calculation.token.queries.GetTokenInfoResourceUsage;
+import com.hedera.services.fees.calculation.token.queries.GetTokenNftInfoResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenAssociateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenBurnResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenCreateResourceUsage;
@@ -182,6 +183,7 @@ import com.hedera.services.queries.meta.MetaAnswers;
 import com.hedera.services.queries.schedule.GetScheduleInfoAnswer;
 import com.hedera.services.queries.schedule.ScheduleAnswers;
 import com.hedera.services.queries.token.GetTokenInfoAnswer;
+import com.hedera.services.queries.token.GetTokenNftInfoAnswer;
 import com.hedera.services.queries.token.TokenAnswers;
 import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.records.AccountRecordsHistorian;
@@ -224,6 +226,8 @@ import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.migration.StateMigrations;
 import com.hedera.services.state.migration.StdStateMigrations;
 import com.hedera.services.state.submerkle.EntityId;
@@ -245,6 +249,7 @@ import com.hedera.services.store.schedule.HederaScheduleStore;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.tokens.unique.OwnerIdentifier;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.throttling.DeterministicThrottling;
@@ -316,6 +321,7 @@ import com.hedera.services.usage.schedule.ScheduleOpsUsage;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
+import com.hedera.services.utils.invertible_fchashmap.FCInvertibleHashMap;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -564,6 +570,7 @@ public class ServicesContext {
 	private AtomicReference<FCMap<MerkleEntityId, MerkleSchedule>> queryableSchedules;
 	private AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage;
 	private AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations;
+	private AtomicReference<FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier>> queryableUniqueTokens;
 
 	/* Context-free infrastructure. */
 	private static Pause pause;
@@ -599,6 +606,7 @@ public class ServicesContext {
 		queryableTokens().set(tokens());
 		queryableTokenAssociations().set(tokenAssociations());
 		queryableSchedules().set(schedules());
+		queryableUniqueTokens().set(uniqueTokens());
 	}
 
 	public SwirldDualState getDualState() {
@@ -940,6 +948,7 @@ public class ServicesContext {
 					accountStore(),
 					new TransactionRecordService(txnCtx()),
 					this::tokens,
+					this::uniqueTokens,
 					this::tokenAssociations,
 					(BackingTokenRels) backingTokenRels());
 		}
@@ -982,7 +991,8 @@ public class ServicesContext {
 	public TokenAnswers tokenAnswers() {
 		if (tokenAnswers == null) {
 			tokenAnswers = new TokenAnswers(
-					new GetTokenInfoAnswer()
+					new GetTokenInfoAnswer(),
+					new GetTokenNftInfoAnswer()
 			);
 		}
 		return tokenAnswers;
@@ -1060,7 +1070,9 @@ public class ServicesContext {
 							/* Token */
 							new GetTokenInfoResourceUsage(),
 							/* Schedule */
-							new GetScheduleInfoResourceUsage(scheduleOpsUsage)
+							new GetScheduleInfoResourceUsage(scheduleOpsUsage),
+							/* NftInfo */
+							new GetTokenNftInfoResourceUsage()
 					),
 					txnUsageEstimators(
 							cryptoOpsUsage, fileOpsUsage, fileFees, cryptoFees, contractFees, scheduleOpsUsage)
@@ -1380,7 +1392,7 @@ public class ServicesContext {
 				entry(TokenDelete,
 						List.of(new TokenDeleteTransitionLogic(tokenStore(), txnCtx()))),
 				entry(TokenMint,
-						List.of(new TokenMintTransitionLogic(typedTokenStore(), txnCtx()))),
+						List.of(new TokenMintTransitionLogic(validator(), typedTokenStore(), txnCtx()))),
 				entry(TokenBurn,
 						List.of(new TokenBurnTransitionLogic(typedTokenStore(), txnCtx()))),
 				entry(TokenAccountWipe,
@@ -1520,6 +1532,7 @@ public class ServicesContext {
 					validator(),
 					globalDynamicProperties(),
 					this::tokens,
+					this::uniqueTokens,
 					tokenRelsLedger);
 		}
 		return tokenStore;
@@ -1998,6 +2011,14 @@ public class ServicesContext {
 		return queryableSchedules;
 	}
 
+	public AtomicReference<FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier>> queryableUniqueTokens() {
+		if (queryableUniqueTokens == null) {
+			queryableUniqueTokens = new AtomicReference<>(uniqueTokens());
+		}
+
+		return queryableUniqueTokens;
+	}
+
 	public UsagePricesProvider usagePrices() {
 		if (usagePrices == null) {
 			usagePrices = new AwareFcfsUsagePrices(hfs(), fileNums(), txnCtx());
@@ -2107,6 +2128,10 @@ public class ServicesContext {
 
 	public FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations() {
 		return state.tokenAssociations();
+	}
+
+	public FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier> uniqueTokens() {
+		return state.uniqueTokens();
 	}
 
 	public FCMap<MerkleEntityId, MerkleSchedule> schedules() {

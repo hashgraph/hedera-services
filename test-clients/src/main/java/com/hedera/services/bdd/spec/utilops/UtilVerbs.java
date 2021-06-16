@@ -62,6 +62,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Setting;
@@ -446,15 +447,18 @@ public class UtilVerbs {
 
 	private static void reduceFeeComponentsFor(FeeSchedule.Builder feeSchedule, HederaFunctionality function,
 			long maxNodeFee, long maxNetworkFee, long maxServiceFee) {
-		var feeData = feeSchedule.getTransactionFeeScheduleBuilderList()
+		var feesList = feeSchedule.getTransactionFeeScheduleBuilderList()
 				.stream()
 				.filter(tfs -> tfs.getHederaFunctionality() == function)
 				.findAny()
 				.get()
-				.getFeeDataBuilder();
-		feeData.getNodedataBuilder().setMax(maxNodeFee);
-		feeData.getNetworkdataBuilder().setMax(maxNetworkFee);
-		feeData.getServicedataBuilder().setMax(maxServiceFee);
+				.getFeesBuilderList();
+
+		for (FeeData.Builder builder : feesList) {
+			builder.getNodedataBuilder().setMax(maxNodeFee);
+			builder.getNetworkdataBuilder().setMax(maxNetworkFee);
+			builder.getServicedataBuilder().setMax(maxServiceFee);
+		}
 	}
 
 	public static HapiSpecOperation uploadDefaultFeeSchedules(String payer) {

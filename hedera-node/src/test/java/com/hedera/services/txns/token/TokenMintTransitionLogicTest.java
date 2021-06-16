@@ -21,11 +21,13 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -43,9 +45,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -64,6 +64,8 @@ class TokenMintTransitionLogicTest {
 	private TransactionContext txnCtx;
 	@Mock
 	private PlatformTxnAccessor accessor;
+	@Mock
+	private OptionValidator validator;
 
 	private TokenRelationship treasuryRel;
 	private TransactionBody tokenMintTxn;
@@ -72,7 +74,7 @@ class TokenMintTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new TokenMintTransitionLogic(store, txnCtx);
+		subject = new TokenMintTransitionLogic(validator, store, txnCtx);
 	}
 
 	@Test
@@ -86,7 +88,7 @@ class TokenMintTransitionLogicTest {
 		given(store.loadToken(id)).willReturn(token);
 		given(token.getTreasury()).willReturn(treasury);
 		given(store.loadTokenRelationship(token, treasury)).willReturn(treasuryRel);
-
+		given(token.getType()).willReturn(TokenType.FUNGIBLE_COMMON);
 		// when:
 		subject.doStateTransition();
 

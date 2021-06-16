@@ -27,11 +27,17 @@ import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.store.models.UniqueToken;
+import com.hedera.services.store.tokens.unique.OwnerIdentifier;
+import com.hedera.services.utils.invertible_fchashmap.FCInvertibleHashMap;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcmap.FCMap;
@@ -50,7 +56,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
  * Loads and saves token-related entities to and from the Swirlds state, hiding
  * the details of Merkle types from client code by providing an interface in
  * terms of model objects whose methods can perform validated business logic.
- *
+ * <p>
  * When loading an token, fails fast by throwing an {@link InvalidTransactionException}
  * if the token is not usable in normal business logic. There are three such
  * cases:
@@ -63,7 +69,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
  * namely, in an update transaction whose only purpose is to manually renew
  * the expired token. Such update transactions must use a dedicated
  * expiry-extension service, which will be implemented before TokenUpdate.
- *
+ * <p>
  * When saving a token or token relationship, invites an injected
  * {@link TransactionRecordService} to inspect the entity for changes that
  * may need to be included in the record of the transaction.
@@ -72,6 +78,7 @@ public class TypedTokenStore {
 	private final AccountStore accountStore;
 	private final TransactionRecordService transactionRecordService;
 	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
+	private final Supplier<FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier>> uniqueTokens;
 	private final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels;
 	/* Only needed for interoperability with legacy HTS during refactor */
 	private final BackingTokenRels backingTokenRels;
@@ -80,11 +87,13 @@ public class TypedTokenStore {
 			AccountStore accountStore,
 			TransactionRecordService transactionRecordService,
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
+			Supplier<FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier>> uniqueTokens,
 			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels,
 			BackingTokenRels backingTokenRels
 	) {
 		this.tokens = tokens;
 		this.tokenRels = tokenRels;
+		this.uniqueTokens = uniqueTokens;
 		this.accountStore = accountStore;
 		this.transactionRecordService = transactionRecordService;
 
@@ -94,7 +103,7 @@ public class TypedTokenStore {
 	/**
 	 * Returns a model of the requested token relationship, with operations that
 	 * can be used to implement business logic in a transaction.
-	 *
+	 * <p>
 	 * The arguments <i>should</i> be model objects that were returned by the
 	 * {@link TypedTokenStore#loadToken(Id)} and {@link AccountStore#loadAccount(Id)}
 	 * methods, respectively, since it will very rarely (or never) be correct
@@ -106,13 +115,10 @@ public class TypedTokenStore {
 	 * in order for its changes to be applied to the Swirlds state, and included in the
 	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
 	 *
-	 * @param token
-	 * 		the token in the relationship to load
-	 * @param account
-	 * 		the account in the relationship to load
+	 * @param token   the token in the relationship to load
+	 * @param account the account in the relationship to load
 	 * @return a usable model of the token-account relationship
-	 * @throws InvalidTransactionException
-	 * 		if the requested relationship does not exist
+	 * @throws InvalidTransactionException if the requested relationship does not exist
 	 */
 	public TokenRelationship loadTokenRelationship(Token token, Account account) {
 		final var tokenId = token.getId();
@@ -139,8 +145,7 @@ public class TypedTokenStore {
 	 * {@link TransactionRecordService} to update the {@link com.hedera.services.state.submerkle.ExpirableTxnRecord}
 	 * of the active transaction with these changes.
 	 *
-	 * @param tokenRelationship
-	 * 		the token relationship to save
+	 * @param tokenRelationship the token relationship to save
 	 */
 	public void persistTokenRelationship(TokenRelationship tokenRelationship) {
 		final var tokenId = tokenRelationship.getToken().getId();
@@ -166,6 +171,16 @@ public class TypedTokenStore {
 	}
 
 	/**
+	 * Invites the injected {@link TransactionRecordService} to include the changes to the exported transaction record
+	 * Currently, the only implemented tracker is the {@link OwnershipTracker} which records the changes to the ownership of {@link UniqueToken}
+	 *
+	 * @param ownershipTracker holds changes to {@link UniqueToken} ownership
+	 */
+	public void persistTrackers(OwnershipTracker ownershipTracker) {
+		transactionRecordService.includeOwnershipChanges(ownershipTracker);
+	}
+
+	/**
 	 * Returns a model of the requested token, with operations that can be used to
 	 * implement business logic in a transaction.
 	 *
@@ -174,11 +189,9 @@ public class TypedTokenStore {
 	 * in order for its changes to be applied to the Swirlds state, and included in the
 	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
 	 *
-	 * @param id
-	 * 		the token to load
+	 * @param id the token to load
 	 * @return a usable model of the token
-	 * @throws InvalidTransactionException
-	 * 		if the requested token is missing, deleted, or expired and pending removal
+	 * @throws InvalidTransactionException if the requested token is missing, deleted, or expired and pending removal
 	 */
 	public Token loadToken(Id id) {
 		final var key = new MerkleEntityId(id.getShard(), id.getRealm(), id.getNum());
@@ -194,12 +207,35 @@ public class TypedTokenStore {
 	}
 
 	/**
+	 * Returns a {@link UniqueToken} model of the requested unique token, with operations that can be used to
+	 * implement business logic in a transaction.
+	 *
+	 * @param tokenId the token class of the unique token
+	 * @param serialNumber the serial number to load
+	 * @return a usable model of the unique token
+	 * @throws InvalidTransactionException if the requested token class is missing, deleted, or expired and pending removal
+	 */
+	public UniqueToken loadUniqueToken(Id tokenId, long serialNumber) {
+		final var tokenKey = new MerkleEntityId(tokenId.getShard(), tokenId.getRealm(), tokenId.getNum());
+		final var merkleToken = tokens.get().get(tokenKey);
+		validateUsable(merkleToken);
+
+		final var uniqueTokenKey = new MerkleUniqueTokenId(new EntityId(tokenId.getShard(), tokenId.getRealm(), tokenId.getNum()), serialNumber);
+		final var merkleUniqueToken = uniqueTokens.get().get(uniqueTokenKey);
+		validateUsable(merkleUniqueToken);
+
+		final var uniqueToken = new UniqueToken(tokenId, serialNumber);
+		initModelFields(uniqueToken, merkleUniqueToken);
+
+		return uniqueToken;
+	}
+
+	/**
 	 * Persists the given token to the Swirlds state, inviting the injected {@link TransactionRecordService}
 	 * to update the {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} of the active transaction
 	 * with these changes.
 	 *
-	 * @param token
-	 * 		the token to save
+	 * @param token the token to save
 	 */
 	public void persistToken(Token token) {
 		final var id = token.getId();
@@ -208,6 +244,15 @@ public class TypedTokenStore {
 
 		final var mutableToken = currentTokens.getForModify(key);
 		mapModelChangesToMutable(token, mutableToken);
+
+		if (token.hasMintedUniqueTokens()) {
+			for (UniqueToken uniqueToken : token.mintedUniqueTokens()) {
+				final var merkleUniqueId = new MerkleUniqueTokenId(new EntityId(uniqueToken.getTokenId()), uniqueToken.getSerialNumber());
+				final var merkleUniqueToken = new MerkleUniqueToken(new EntityId(uniqueToken.getOwner()), uniqueToken.getMetadata(), uniqueToken.getCreationTime());
+				uniqueTokens.get().put(merkleUniqueId, merkleUniqueToken);
+			}
+			accountStore.persistAccount(token.getTreasury());
+		}
 
 		transactionRecordService.includeChangesToToken(token);
 	}
@@ -221,6 +266,10 @@ public class TypedTokenStore {
 		validateFalse(merkleToken.isDeleted(), TOKEN_WAS_DELETED);
 	}
 
+	private void validateUsable(MerkleUniqueToken merkleUniqueTokenToken) {
+		validateTrue(merkleUniqueTokenToken != null, INVALID_TOKEN_ID);
+	}
+
 	private void mapModelChangesToMutable(Token token, MerkleToken mutableToken) {
 		final var newAutoRenewAccount = token.getAutoRenewAccount();
 		if (newAutoRenewAccount != null) {
@@ -229,6 +278,7 @@ public class TypedTokenStore {
 		mutableToken.setTreasury(new EntityId(token.getTreasury().getId()));
 		mutableToken.setTotalSupply(token.getTotalSupply());
 		mutableToken.setAccountsFrozenByDefault(token.isFrozenByDefault());
+		mutableToken.setLastUsedSerialNumber(token.getLastUsedSerialNumber());
 	}
 
 	private void initModelAccounts(Token token, EntityId _treasuryId, @Nullable EntityId _autoRenewId) {
@@ -244,10 +294,26 @@ public class TypedTokenStore {
 
 	private void initModelFields(Token token, MerkleToken immutableToken) {
 		token.initTotalSupply(immutableToken.totalSupply());
+		token.initSupplyConstraints(immutableToken.supplyType(), immutableToken.maxSupply());
 		token.setKycKey(immutableToken.getKycKey());
 		token.setFreezeKey(immutableToken.getFreezeKey());
 		token.setSupplyKey(immutableToken.getSupplyKey());
 		token.setFrozenByDefault(immutableToken.accountsAreFrozenByDefault());
+		token.setType(immutableToken.tokenType());
+		token.setLastUsedSerialNumber(immutableToken.getLastUsedSerialNumber());
+	}
+
+	private void initModelFields(UniqueToken uniqueToken, MerkleUniqueToken immutableUniqueToken) {
+		uniqueToken.setCreationTime(immutableUniqueToken.getCreationTime());
+		uniqueToken.setMetadata(immutableUniqueToken.getMetadata());
+		uniqueToken.setOwner(
+				new Id(
+						immutableUniqueToken.getOwner().shard(),
+						immutableUniqueToken.getOwner().realm(),
+						immutableUniqueToken.getOwner().num()
+				)
+		);
+
 	}
 
 	private void alertTokenBackingStoreOfNew(TokenRelationship newRel) {

@@ -20,6 +20,7 @@ package com.hedera.services.bdd.spec.transactions;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicCreate;
@@ -157,6 +158,12 @@ public class TxnVerbs {
 	}
 	public static HapiTokenMint mintToken(String token, long amount) {
 		return new HapiTokenMint(token, amount);
+	}
+	public static HapiTokenMint mintToken(String token, List<ByteString> meta, String txName) {
+		return new HapiTokenMint(token, meta, txName);
+	}
+	public static HapiTokenMint mintToken(String token, List<ByteString> metadata){
+		return new HapiTokenMint(token,  metadata);
 	}
 	public static HapiTokenBurn burnToken(String token, long amount) {
 		return new HapiTokenBurn(token, amount);

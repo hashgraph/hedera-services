@@ -40,6 +40,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.MiscUtils;
@@ -52,6 +53,7 @@ import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ScheduleInfo;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -59,7 +61,9 @@ import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
+import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -79,6 +83,7 @@ import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.schedule.ExceptionalScheduleStore.NOOP_SCHEDULE_STORE;
 import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
 import static com.hedera.services.store.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
+import static com.hedera.services.store.tokens.TokenStore.MISSING_NFT;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
@@ -237,6 +242,8 @@ public class StateView {
 			}
 			var token = tokenStore.get(id);
 			var info = TokenInfo.newBuilder()
+					.setTokenTypeValue(token.tokenType().ordinal())
+					.setSupplyTypeValue(token.supplyType().ordinal())
 					.setTokenId(id)
 					.setDeleted(token.isDeleted())
 					.setSymbol(token.symbol())
@@ -244,6 +251,7 @@ public class StateView {
 					.setMemo(token.memo())
 					.setTreasury(token.treasury().toGrpcAccountId())
 					.setTotalSupply(token.totalSupply())
+					.setMaxSupply(token.maxSupply())
 					.setDecimals(token.decimals())
 					.setExpiry(Timestamp.newBuilder().setSeconds(token.expiry()));
 
@@ -316,6 +324,51 @@ public class StateView {
 			log.warn(
 					"Unexpected failure getting info for schedule {}!",
 					readableId(scheduleID),
+					unexpected);
+			return Optional.empty();
+		}
+	}
+
+	public Optional<TokenNftInfo> infoForNft(NftID nftID) {
+		try {
+			var id = tokenStore.resolve(nftID);
+			if (id == MISSING_NFT) {
+				return Optional.empty();
+			}
+			var uniqueToken = tokenStore.getUniqueToken(nftID);
+
+			var info = TokenNftInfo.newBuilder()
+					.setNftID(nftID)
+					.setAccountID(uniqueToken.getOwner().toGrpcAccountId())
+					.setCreationTime(Timestamp.newBuilder()
+							.setSeconds(uniqueToken.getCreationTime().getSeconds())
+							.setNanos(uniqueToken.getCreationTime().getNanos()))
+					.setMetadata(ByteString.copyFrom(uniqueToken.getMetadata()));
+
+			return Optional.of(info.build());
+		} catch (Exception unexpected) {
+			log.warn(
+					"Unexpected failure getting info for token nft {}!",
+					readableId(nftID),
+					unexpected);
+			return Optional.empty();
+		}
+	}
+
+	public boolean nftExists(NftID id) { return tokenStore.resolve(id) != MISSING_NFT; }
+
+	public Optional<TokenType> tokenType(TokenID tokenID) {
+		try {
+			var id = tokenStore.resolve(tokenID);
+			if (id == MISSING_TOKEN) {
+				return Optional.empty();
+			}
+			var token = tokenStore.get(id);
+			return Optional.ofNullable(TokenType.forNumber(token.tokenType().ordinal()));
+		} catch (Exception unexpected) {
+			log.warn(
+					"Unexpected failure getting info for token {}!",
+					readableId(tokenID),
 					unexpected);
 			return Optional.empty();
 		}
@@ -395,7 +448,8 @@ public class StateView {
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(account.getAutoRenewSecs()))
 				.setBalance(account.getBalance())
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(account.getExpiry()))
-				.setContractAccountID(asSolidityAddressHex(id));
+				.setContractAccountID(asSolidityAddressHex(id))
+				.setOwnedNfts(account.getNftsOwned());
 		Optional.ofNullable(account.getProxy())
 				.map(EntityId::toGrpcAccountId)
 				.ifPresent(info::setProxyAccountID);
