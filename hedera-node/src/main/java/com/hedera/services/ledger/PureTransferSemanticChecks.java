@@ -20,6 +20,7 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -43,6 +44,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static java.math.BigInteger.ZERO;
 
+/**
+ * Given a maximum number of ℏ and token unit balance changes in a CryptoTransfer,
+ * validates the actual transfers requested in such a transaction.
+ *
+ * Since in the normal transaction lifecycle, this logic will be performed
+ * during {@link com.hedera.services.txns.span.SpanMapManager#expandSpan(TxnAccessor)},
+ * we can accept some inefficient use of gRPC types.
+ */
 public class PureTransferSemanticChecks {
 	public ResponseCodeEnum fullPureValidation(
 			int maxHbarAdjusts,
@@ -69,7 +78,7 @@ public class PureTransferSemanticChecks {
 		return validateTokenTransferSemantics(tokenAdjustsList);
 	}
 
-	public ResponseCodeEnum validateTokenTransferSizes(
+	ResponseCodeEnum validateTokenTransferSizes(
 			List<TokenTransferList> tokenTransfersList,
 			int maxListLen
 	) {
@@ -103,30 +112,42 @@ public class PureTransferSemanticChecks {
 		if (tokenTransfersList.isEmpty()) {
 			return OK;
 		}
-		Set<TokenID> uniqueTokens = new HashSet<>();
+		var validity = OK;
+		final Set<TokenID> uniqueTokens = new HashSet<>();
 		for (var tokenTransfers : tokenTransfersList) {
-			if (!tokenTransfers.hasToken()) {
-				return INVALID_TOKEN_ID;
-			}
-			uniqueTokens.add(tokenTransfers.getToken());
-			final var adjusts = tokenTransfers.getTransfersList();
-			for (var adjust : adjusts) {
-				if (!adjust.hasAccountID()) {
-					return INVALID_ACCOUNT_ID;
-				}
-				if (adjust.getAmount() == 0) {
-					return INVALID_ACCOUNT_AMOUNTS;
-				}
-			}
-			if (hasRepeatedAccount(adjusts)) {
-				return ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
-			}
-			if (!isNetZeroAdjustment(adjusts)) {
-				return TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
+			validity = validateScopedTransferSemantics(uniqueTokens, tokenTransfers);
+			if (validity != OK) {
+				return validity;
 			}
 		}
 		if (uniqueTokens.size() < tokenTransfersList.size()) {
 			return TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+		}
+		return OK;
+	}
+
+	private ResponseCodeEnum validateScopedTransferSemantics(
+			Set<TokenID> uniqueTokens,
+			TokenTransferList tokenTransfers
+	) {
+		if (!tokenTransfers.hasToken()) {
+			return INVALID_TOKEN_ID;
+		}
+		uniqueTokens.add(tokenTransfers.getToken());
+		final var adjusts = tokenTransfers.getTransfersList();
+		for (var adjust : adjusts) {
+			if (!adjust.hasAccountID()) {
+				return INVALID_ACCOUNT_ID;
+			}
+			if (adjust.getAmount() == 0) {
+				return INVALID_ACCOUNT_AMOUNTS;
+			}
+		}
+		if (hasRepeatedAccount(adjusts)) {
+			return ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
+		}
+		if (!isNetZeroAdjustment(adjusts)) {
+			return TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 		}
 		return OK;
 	}

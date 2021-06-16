@@ -54,6 +54,9 @@ class BalanceChangeTest {
 		// and:
 		assertEquals(hbarRepr, hbarChange.toString());
 		assertEquals(tokenRepr, tokenChange.toString());
+		// and:
+		assertSame(a, hbarChange.account());
+		assertSame(t, tokenChange.token());
 	}
 
 	@Test

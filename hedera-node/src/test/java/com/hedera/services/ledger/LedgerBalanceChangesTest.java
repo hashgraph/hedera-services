@@ -53,6 +53,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcmap.internal.FCMLeaf;
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -193,7 +194,7 @@ class LedgerBalanceChangesTest {
 	void rejectsDeletedAccount() {
 		givenInitialBalances();
 		// and:
-		backingAccounts.getRef(asGprcAccount(cModel)).setDeleted(true);
+		backingAccounts.getRef(asGprcAccount(bModel)).setDeleted(true);
 
 		// when:
 		subject.begin();
@@ -304,6 +305,15 @@ class LedgerBalanceChangesTest {
 		// and:
 		assertEquals(expectedXfers(), inProgress);
 		assertEquals(expectedTokenXfers(), inProgressTokens);
+	}
+
+	@Test
+	void understandsTreasuries() {
+		givenInitialBalances();
+
+		// expect:
+		Assertions.assertTrue(subject.isKnownTreasury(asGprcAccount(aModel)));
+		Assertions.assertFalse(subject.isKnownTreasury(asGprcAccount(bModel)));
 	}
 
 	private TransferList expectedXfers() {

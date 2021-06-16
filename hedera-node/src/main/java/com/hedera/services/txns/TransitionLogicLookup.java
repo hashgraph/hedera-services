@@ -57,7 +57,11 @@ public class TransitionLogicLookup {
 	 */
 	public Optional<TransitionLogic> lookupFor(HederaFunctionality function, TransactionBody txn) {
 		if (unambiguousLookups.containsKey(function)) {
-			return unambiguousLookups.get(function);
+			final var onlyCandidate = unambiguousLookups.get(function);
+			if (onlyCandidate.isPresent() && onlyCandidate.get().applicability().test(txn)) {
+				return onlyCandidate;
+			}
+			return Optional.empty();
 		}
 		return Optional.ofNullable(transitions.apply(function))
 				.flatMap(transitions -> from(transitions, txn));
