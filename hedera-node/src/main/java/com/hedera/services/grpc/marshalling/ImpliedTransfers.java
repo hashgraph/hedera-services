@@ -32,7 +32,8 @@ import java.util.List;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
- * Encapsulates
+ * Encapsulates the result of translating a gRPC CryptoTransfer into a list of
+ * balance changes (ℏ or token unit), as well as the validity of 
  */
 public class ImpliedTransfers {
 	private final ImpliedTransfersMeta meta;
