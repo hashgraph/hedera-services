@@ -142,7 +142,8 @@ public class ContextOptionValidator implements OptionValidator {
 		int count = 0;
 		for (var tokenTransferList : tokenTransferLists) {
 			int transferCounts = tokenTransferList.getTransfersCount();
-			if (transferCounts == 0) {
+			int nftTransferCount = tokenTransferList.getNftTransfersCount();
+			if (transferCounts == 0 && nftTransferCount == 0) {
 				return EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 			}
 

@@ -34,6 +34,7 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.AddressBook;
@@ -333,6 +334,18 @@ public class MiscUtils {
 						aa.getAmount() < 0 ? "->" : "<-",
 						aa.getAmount() < 0 ? "-" : "+",
 						BigInteger.valueOf(aa.getAmount()).abs().toString()))
+				.collect(toList())
+				.toString();
+	}
+
+	public static String readableNftTransferList(TokenTransferList tokenTransferList) {
+		return tokenTransferList.getNftTransfersList()
+				.stream()
+				.map(nftTransfer -> String.format(
+						"%s %s %s",
+						Long.valueOf(nftTransfer.getSerialNumber()).toString(),
+						EntityIdUtils.readableId(nftTransfer.getSenderAccountID()),
+						EntityIdUtils.readableId(nftTransfer.getReceiverAccountID())))
 				.collect(toList())
 				.toString();
 	}

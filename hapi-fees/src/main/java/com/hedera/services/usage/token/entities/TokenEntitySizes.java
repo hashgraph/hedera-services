@@ -50,8 +50,9 @@ public enum TokenEntitySizes {
 		return fixedBytesInTokenRepr() + symbol.length() + name.length();
 	}
 
-	public int bytesUsedToRecordTokenTransfers(int numTokens, int numTransfers) {
-		return numTokens * BASIC_ENTITY_ID_SIZE + numTransfers * USAGE_PROPERTIES.accountAmountBytes();
+	public int bytesUsedToRecordTokenTransfers(int numTokens, int fungibleNumTransfers, int uniqueNumTransfers) {
+		return numTokens * BASIC_ENTITY_ID_SIZE + fungibleNumTransfers * USAGE_PROPERTIES.accountAmountBytes()
+				+ uniqueNumTransfers * USAGE_PROPERTIES.nftTransferBytes();
 	}
 
 	public long bytesUsedForUniqueTokenTransfers(int numTokens) {

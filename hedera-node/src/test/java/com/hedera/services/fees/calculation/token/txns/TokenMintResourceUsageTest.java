@@ -24,6 +24,8 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.token.TokenMintUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.SubType;
+import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,14 +61,16 @@ class TokenMintResourceUsageTest {
 
 		tokenMintTxn = mock(TransactionBody.class);
 		given(tokenMintTxn.hasTokenMint()).willReturn(true);
+		given(tokenMintTxn.getTokenMint()).willReturn(TokenMintTransactionBody.newBuilder().build());
 
 		nonTokenMintTxn = mock(TransactionBody.class);
 		given(nonTokenMintTxn.hasTokenMint()).willReturn(false);
 
 		usage = mock(TokenMintUsage.class);
+		given(usage.givenSubType(SubType.DEFAULT)).willReturn(usage);
 		given(usage.get()).willReturn(expected);
 
-		factory = (BiFunction<TransactionBody, SigUsage, TokenMintUsage>)mock(BiFunction.class);
+		factory = (BiFunction<TransactionBody, SigUsage, TokenMintUsage>) mock(BiFunction.class);
 		given(factory.apply(tokenMintTxn, sigUsage)).willReturn(usage);
 
 		TokenMintResourceUsage.factory = factory;

@@ -63,12 +63,14 @@ public class TokenMintUsage extends TokenTxnUsage<TokenMintUsage> {
 			usageEstimator.addRbs(bytesToAdd);
 			var tokenSize = op.getMetadataList().size();
 			usageEstimator.addRbs(tokenEntitySizes.bytesUsedForUniqueTokenTransfers(tokenSize));
+			addTokenTransfersRecordRb(1, 0, tokenSize);
 		} else if (currentSubType == SubType.TOKEN_FUNGIBLE_COMMON) {
 			addAmountBpt();
+			addTokenTransfersRecordRb(1, 1, 0);
 		}
 
 		addEntityBpt();
-		addTokenTransfersRecordRb(1, 1);
+
 		return usageEstimator.get(currentSubType);
 	}
 }
