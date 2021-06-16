@@ -32,7 +32,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
  * <ol>
  *     <li>In {@link SpanMapManager#expandSpan(TxnAccessor)}, the span map is
  *     "expanded" to include the results of any work that can likely be reused
- *     in {@code handleTransaction}</li>.
+ *     in {@code handleTransaction}.</li>
  *     <li>In {@link SpanMapManager#rationalizeSpan(TxnAccessor)}, the span map
  *     "rationalized" to be sure that any pre-computed work can still be reused
  *     safely.</li>
