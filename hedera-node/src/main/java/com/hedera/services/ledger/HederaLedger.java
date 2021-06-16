@@ -352,20 +352,19 @@ public class HederaLedger {
 	public ResponseCodeEnum doZeroSum(List<BalanceChange> changes) {
 		var validity = OK;
 		for (var change : changes) {
-			final var tmpId = change.account().asGrpcAccount();
+			final var accountId = change.accountId();
 			if (change.isForHbar())	 {
 				validity = plausibilityOf(change);
 				if (validity != OK) {
 					break;
 				}
 			} else {
-				var tmpTokenId = change.token().asGrpcToken();
-				tmpTokenId = tokenStore.resolve(tmpTokenId);
-				if (tmpTokenId == MISSING_TOKEN) {
+				var tokenId = tokenStore.resolve(change.tokenId());
+				if (tokenId == MISSING_TOKEN) {
 					validity = INVALID_TOKEN_ID;
 				}
 				if (validity == OK) {
-					validity = adjustTokenBalance(tmpId, tmpTokenId, change.units());
+					validity = adjustTokenBalance(accountId, tokenId, change.units());
 				}
 				if (validity != OK) {
 					break;
@@ -384,9 +383,9 @@ public class HederaLedger {
 	private void adjustHbarUnchecked(List<BalanceChange> changes) {
 		for (var change : changes) {
 			if (change.isForHbar())	{
-				final var tmpId = change.account().asGrpcAccount();
-				setBalance(tmpId, change.getNewBalance());
-				updateXfers(tmpId, change.units(), netTransfers);
+				final var accountId = change.accountId();
+				setBalance(accountId, change.getNewBalance());
+				updateXfers(accountId, change.units(), netTransfers);
 			}
 		}
 	}
@@ -491,7 +490,7 @@ public class HederaLedger {
 	}
 
 	private ResponseCodeEnum plausibilityOf(BalanceChange change) {
-		final var id = change.account().asGrpcAccount();
+		final var id = change.accountId();
 		if (!exists(id) || isSmartContract(id)) {
 			return INVALID_ACCOUNT_ID;
 		}
