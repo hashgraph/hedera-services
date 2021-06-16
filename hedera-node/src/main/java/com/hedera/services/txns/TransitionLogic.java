@@ -78,6 +78,13 @@ public interface TransitionLogic {
 		return SEMANTIC_RUBBER_STAMP;
 	}
 
+	/**
+	 * Validate the transaction represented by the given {@link TxnAccessor},
+	 * returning a {@link ResponseCodeEnum}.
+	 *
+	 * @param accessor the transaction to be validated
+	 * @return {@code OK} if the transaction is valid, otherwise an appropriate error code
+	 */
 	default ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
 		return semanticCheck().apply(accessor.getTxn());
 	}

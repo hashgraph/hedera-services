@@ -64,7 +64,6 @@ import java.util.List;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -235,7 +234,7 @@ class LedgerBalanceChangesTest {
 	}
 
 	@Test
-	void rejectsInsufficientTokenBalance() {
+	void rejectsInsufficientTokenBalanceWithOverrideCode() {
 		givenInitialBalances();
 		// and:
 		backingRels.getRef(rel(bModel, token)).setBalance(0L);
@@ -247,13 +246,13 @@ class LedgerBalanceChangesTest {
 		subject.commit();
 
 		// then:
-		assertEquals(INSUFFICIENT_TOKEN_BALANCE, result);
+		assertEquals(overrideIbeCode, result);
 		// and:
 		assertInitialTokenBalanceUnchanged(0L);
 	}
 
 	@Test
-	void happyPathScans() {
+	void happyPathRecordsTransfersAndChangesBalancesAsExpected() {
 		givenInitialBalances();
 
 		// when:
@@ -437,6 +436,7 @@ class LedgerBalanceChangesTest {
 				}
 		);
 		ans.get(1).setCodeForInsufficientBalance(overrideIbeCode);
+		ans.get(6).setCodeForInsufficientBalance(overrideIbeCode);
 		return ans;
 	}
 

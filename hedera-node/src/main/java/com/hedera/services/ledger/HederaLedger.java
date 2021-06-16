@@ -71,6 +71,7 @@ import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAdjustment;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -364,6 +365,9 @@ public class HederaLedger {
 				}
 				if (validity == OK) {
 					validity = adjustTokenBalance(accountId, tokenId, change.units());
+					if (validity == INSUFFICIENT_TOKEN_BALANCE) {
+						validity = change.codeForInsufficientBalance();
+					}
 				}
 				if (validity != OK) {
 					break;
