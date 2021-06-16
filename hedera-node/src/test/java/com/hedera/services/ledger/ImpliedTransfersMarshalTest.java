@@ -143,13 +143,18 @@ class ImpliedTransfersMarshalTest {
 
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxExplicitHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxExplicitTokenAdjusts);
+		given(transferSemanticChecks.fullPureValidation(
+				maxExplicitHbarAdjusts,
+				maxExplicitTokenAdjusts,
+				op.getTransfers(),
+				op.getTokenTransfersList())).willReturn(OK);
 
 		// when:
 		final var result = subject.marshalFromGrpc(op);
 
 		// then:
-		assertEquals(result.getMeta(), expectedMeta);
-		assertEquals(result.getChanges(), expectedChanges);
+		assertEquals(expectedMeta, result.getMeta());
+		assertEquals(expectedChanges, result.getChanges());
 	}
 
 	@Test
