@@ -21,7 +21,7 @@ swirlds-platform-regression. It also has the set up steps for GCP.
 # **Overview**
 The Java Regression Suite (JRS) runs on a remote machine. It relies on two types of json files, i.e., Regression configuration json and experiment configuration json described below.
 
-##### **File Types**
+## **File Types**
 1. Regression configuration JSON : It usually starts with `GCP`. Based on the credentials after [GCP setup](#gcp_setup), it holds information of 
      - `cloud` cloud configuration that includes the private keys, regions in which nodes need to be instantiated etc.,
      - `experiments` experiments to run
@@ -52,13 +52,13 @@ In order to avoid duplication of data, both JSONs support inheritance from `pare
 It should be created under `swirlds-platform/regression/configs/services/suites/personal/GCP-Personal-XXX.json` (XXX is name of the developer)
 
 <a name="naming-conventions"></a>
-##### **Naming Conventions for the JSONs** 
+## **Naming Conventions for the JSONs** 
 Naming conventions described in [file](https://github.com/swirlds/swirlds-platform-regression/blob/develop/docs/regression-test-naming-standards.md) are required to be followed for Regression configuration JSON and Experiment configuration JSON. 
 Any new naming conventions need to be added to the file if required.
 
 
 <a name="instructions"></a>
-##### **Instructions for kicking off Regression**
+## **Instructions for kicking off Regression**
 - Open terminal
 - Clone `hedera-services` and `swirlds-platform` repositories
 - `cd ~/swirlds-platform/regression; 
