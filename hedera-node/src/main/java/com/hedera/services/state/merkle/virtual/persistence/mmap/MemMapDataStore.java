@@ -410,7 +410,7 @@ public final class MemMapDataStore {
             for (int i = (size-1); i >= 0; i--) {
                 file.seek(slotOffset);
                 // read size from file
-                short size = file.readByte();
+                long size = file.readLong();
                 if (size != EMPTY) {
                     // we found some real data
                     foundFirstData = true;

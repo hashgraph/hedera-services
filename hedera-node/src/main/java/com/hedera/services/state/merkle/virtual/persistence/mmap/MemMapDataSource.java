@@ -5,6 +5,7 @@ import com.hedera.services.state.merkle.virtual.VirtualKey;
 import com.hedera.services.state.merkle.virtual.VirtualValue;
 import com.hedera.services.state.merkle.virtual.persistence.VirtualDataSource;
 import com.hedera.services.state.merkle.virtual.persistence.VirtualRecord;
+import com.swirlds.common.crypto.Hash;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -19,7 +20,7 @@ public final class MemMapDataSource implements VirtualDataSource {
     }
 
     @Override
-    public byte[] loadParentHash(long parentPath) {
+    public Hash loadParentHash(long parentPath) {
         return store.loadParentHash(account, parentPath);
     }
 
@@ -39,7 +40,7 @@ public final class MemMapDataSource implements VirtualDataSource {
     }
 
     @Override
-    public void saveParent(long parentPath, byte[] hash) {
+    public void saveParent(long parentPath, Hash hash) {
         store.saveParentHash(account, parentPath, hash);
     }
 
