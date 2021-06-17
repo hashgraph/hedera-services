@@ -74,7 +74,7 @@ class SpanMapManagerTest {
 		given(accessor.getTxn()).willReturn(pretendXferTxn);
 		given(accessor.getSpanMap()).willReturn(span);
 		given(accessor.getFunction()).willReturn(CryptoTransfer);
-		given(impliedTransfersMarshal.marshalFromGrpc(pretendXferTxn.getCryptoTransfer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer()))
 				.willReturn(someImpliedXfers);
 
 		// when:
@@ -96,7 +96,7 @@ class SpanMapManagerTest {
 		subject.rationalizeSpan(accessor);
 
 		// then:
-		verify(impliedTransfersMarshal, never()).marshalFromGrpc(any());
+		verify(impliedTransfersMarshal, never()).unmarshalFromGrpc(any());
 		assertSame(someImpliedXfers, spanMapAccessor.getImpliedTransfers(accessor));
 	}
 
@@ -108,14 +108,14 @@ class SpanMapManagerTest {
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxTokenAdjusts + 1);
 		spanMapAccessor.setImpliedTransfers(accessor, someImpliedXfers);
-		given(impliedTransfersMarshal.marshalFromGrpc(pretendXferTxn.getCryptoTransfer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer()))
 				.willReturn(someOtherImpliedXfers);
 
 		// when:
 		subject.rationalizeSpan(accessor);
 
 		// then:
-		verify(impliedTransfersMarshal).marshalFromGrpc(pretendXferTxn.getCryptoTransfer());
+		verify(impliedTransfersMarshal).unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer());
 		assertSame(someOtherImpliedXfers, spanMapAccessor.getImpliedTransfers(accessor));
 	}
 }

@@ -67,13 +67,10 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CON
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
-import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAdjustment;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
@@ -359,7 +356,7 @@ public class HederaLedger {
 			if (change.isForHbar())	 {
 				validity = plausibilityOf(change);
 			} else {
-				validity = tryTokenChange(change);
+				validity = tokenStore.tryTokenChange(change);
 			}
 			if (validity != OK) {
 				break;
@@ -588,21 +585,6 @@ public class HederaLedger {
 				}
 			}
 		} while (lastZeroRemoved != -1);
-	}
-
-	private ResponseCodeEnum tryTokenChange(BalanceChange change) {
-		var validity = OK;
-		var tokenId = tokenStore.resolve(change.tokenId());
-		if (tokenId == MISSING_TOKEN) {
-			validity = INVALID_TOKEN_ID;
-		}
-		if (validity == OK) {
-			validity = adjustTokenBalance(change.accountId(), tokenId, change.units());
-			if (validity == INSUFFICIENT_TOKEN_BALANCE) {
-				validity = change.codeForInsufficientBalance();
-			}
-		}
-		return validity;
 	}
 
 	private void adjustHbarUnchecked(List<BalanceChange> changes) {

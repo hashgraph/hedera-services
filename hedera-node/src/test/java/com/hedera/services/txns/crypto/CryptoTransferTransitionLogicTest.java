@@ -132,7 +132,7 @@ class CryptoTransferTransitionLogicTest {
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
 		// and:
-		given(impliedTransfersMarshal.marshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
 				.willReturn(impliedTransfers);
 		given(ledger.doZeroSum(impliedTransfers.getChanges()))
 				.willReturn(OK);
@@ -153,7 +153,7 @@ class CryptoTransferTransitionLogicTest {
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
 		// and:
-		given(impliedTransfersMarshal.marshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
 				.willReturn(impliedTransfers);
 
 		// when:

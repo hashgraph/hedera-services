@@ -46,13 +46,13 @@ import java.time.Instant;
  * validation result.
  */
 public class ImpliedTransfersMeta {
-	private final long maxExplicitHbarAdjusts;
-	private final long maxExplicitTokenAdjusts;
+	private final int maxExplicitHbarAdjusts;
+	private final int maxExplicitTokenAdjusts;
 	private final ResponseCodeEnum code;
 
 	public ImpliedTransfersMeta(
-			long maxExplicitHbarAdjusts,
-			long maxExplicitTokenAdjusts,
+			int maxExplicitHbarAdjusts,
+			int maxExplicitTokenAdjusts,
 			ResponseCodeEnum code
 	) {
 		this.code = code;
@@ -63,14 +63,6 @@ public class ImpliedTransfersMeta {
 	public boolean wasDerivedFrom(GlobalDynamicProperties dynamicProperties) {
 		return maxExplicitHbarAdjusts == dynamicProperties.maxTransferListSize() &&
 				maxExplicitTokenAdjusts == dynamicProperties.maxTokenTransferListSize();
-	}
-
-	public long getMaxExplicitHbarAdjusts() {
-		return maxExplicitHbarAdjusts;
-	}
-
-	public long getMaxExplicitTokenAdjusts() {
-		return maxExplicitTokenAdjusts;
 	}
 
 	public ResponseCodeEnum code() {

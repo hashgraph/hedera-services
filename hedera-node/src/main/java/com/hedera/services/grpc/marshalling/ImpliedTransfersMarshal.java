@@ -55,7 +55,7 @@ public class ImpliedTransfersMarshal {
 		this.transferSemanticChecks = transferSemanticChecks;
 	}
 
-	public ImpliedTransfers marshalFromGrpc(CryptoTransferTransactionBody op) {
+	public ImpliedTransfers unmarshalFromGrpc(CryptoTransferTransactionBody op) {
 		final var maxTokenAdjusts = dynamicProperties.maxTokenTransferListSize();
 		final var maxHbarAdjusts = dynamicProperties.maxTransferListSize();
 

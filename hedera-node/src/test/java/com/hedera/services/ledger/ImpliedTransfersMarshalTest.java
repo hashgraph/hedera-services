@@ -109,7 +109,7 @@ class ImpliedTransfersMarshalTest {
 				op.getTokenTransfersList())).willReturn(TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
 
 		// when:
-		final var result = subject.marshalFromGrpc(op);
+		final var result = subject.unmarshalFromGrpc(op);
 
 		// then:
 		assertEquals(result.getMeta(), expectedMeta);
@@ -150,7 +150,7 @@ class ImpliedTransfersMarshalTest {
 				op.getTokenTransfersList())).willReturn(OK);
 
 		// when:
-		final var result = subject.marshalFromGrpc(op);
+		final var result = subject.unmarshalFromGrpc(op);
 
 		// then:
 		assertEquals(expectedMeta, result.getMeta());
