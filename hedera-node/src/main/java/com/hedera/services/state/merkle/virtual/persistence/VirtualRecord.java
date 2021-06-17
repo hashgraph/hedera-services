@@ -2,7 +2,7 @@ package com.hedera.services.state.merkle.virtual.persistence;
 
 import com.hedera.services.state.merkle.virtual.VirtualKey;
 import com.hedera.services.state.merkle.virtual.VirtualValue;
-import com.swirlds.common.crypto.CryptoFactory;
+import com.swirlds.common.crypto.Hash;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -12,10 +12,8 @@ import java.util.concurrent.Future;
 /**
  */
 public final class VirtualRecord {
-    private static final byte[] NULL_HASH = CryptoFactory.getInstance().getNullHash().getValue();
-
     private long path;
-    private CompletableFuture<byte[]> hash;
+    private Future<Hash> futureHash;
     private final VirtualKey key;
     private VirtualValue value;
     private boolean dirty = false;
@@ -28,9 +26,8 @@ public final class VirtualRecord {
      * @param key The key. Cannot be null.
      * @param value The value. May be null.
      */
-    public VirtualRecord(byte[] hash, long path, VirtualKey key, VirtualValue value) {
-        this.hash = new CompletableFuture<>();
-        this.hash.complete(Objects.requireNonNull(hash));
+    public VirtualRecord(Hash hash, long path, VirtualKey key, VirtualValue value) {
+        this.futureHash = complete(hash);
         this.path = path;
         this.key = Objects.requireNonNull(key);
         this.value = value;
@@ -55,9 +52,9 @@ public final class VirtualRecord {
      *
      * @return The non-null hash.
      */
-    public byte[] getHash() {
+    public Hash getHash() {
         try {
-            return hash.get();
+            return futureHash.get();
         } catch (InterruptedException | ExecutionException e) {
             // TODO not sure what to do here.
             e.printStackTrace();
@@ -65,8 +62,8 @@ public final class VirtualRecord {
         }
     }
 
-    public Future<byte[]> getFutureHash() {
-        return hash;
+    public Future<Hash> getFutureHash() {
+        return futureHash;
     }
 
     /**
@@ -91,8 +88,17 @@ public final class VirtualRecord {
         this.value = value;
         this.dirty = true;
 
-        this.hash = new CompletableFuture<>();
-        hash.complete(value == null ? NULL_HASH : value.getHash());
+        futureHash = complete(value == null ? null : value.getHash());
+    }
+
+    private Future<Hash> complete(Hash hash) {
+        if (hash == null) {
+            return null;
+        }
+
+        final var f = new CompletableFuture<Hash>();
+        f.complete(hash);
+        return f;
     }
 
     public boolean isDirty() {

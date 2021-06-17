@@ -2,6 +2,7 @@ package com.hedera.services.state.merkle.virtual.persistence;
 
 import com.hedera.services.state.merkle.virtual.VirtualKey;
 import com.hedera.services.state.merkle.virtual.VirtualValue;
+import com.swirlds.common.crypto.Hash;
 
 import java.io.Closeable;
 
@@ -9,13 +10,13 @@ import java.io.Closeable;
  * Defines the datasource for persisting information about the virtual tree to disk.
  */
 public interface VirtualDataSource extends Closeable {
-    public byte[] loadParentHash(long parentPath);
+    public Hash loadParentHash(long parentPath);
     public VirtualRecord loadLeaf(long leafPath);
     public VirtualRecord loadLeaf(VirtualKey leafKey);
 
     public VirtualValue getLeafValue(VirtualKey leafKey);
 
-    public void saveParent(long parentPath, byte[] hash);
+    public void saveParent(long parentPath, Hash hash);
     public void saveLeaf(VirtualRecord leaf);
 
     public void deleteParent(long parentPath);

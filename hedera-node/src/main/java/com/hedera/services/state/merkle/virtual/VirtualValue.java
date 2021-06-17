@@ -1,5 +1,8 @@
 package com.hedera.services.state.merkle.virtual;
 
+import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.crypto.Hash;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -20,7 +23,7 @@ public final class VirtualValue {
      * If we separated out Keys and Values as two different types, then
      * we'd only have this for values, not for keys.
      */
-    private final byte[] hash;
+    private final Hash hash;
 
     /**
      * Creates a new ByteChunk with the given array. Makes a safe copy of the array.
@@ -33,7 +36,7 @@ public final class VirtualValue {
         }
 
         this.data = Arrays.copyOf(source, 32);
-        this.hash = Arrays.copyOf(data, 48);
+        this.hash = new ValueHash(source);
     }
 
     /**
@@ -53,7 +56,6 @@ public final class VirtualValue {
     public byte[] asByteArray() {
         return Arrays.copyOf(data, 32);
     }
-
 
     /**
      * Write the data bytes to the current position in byte buffer. This saves a copy.
@@ -77,12 +79,18 @@ public final class VirtualValue {
         return Arrays.hashCode(this.data);
     }
 
-    public byte[] getHash() {
+    public Hash getHash() {
         return hash;
     }
 
     @Override
     public String toString() {
         return new String(data);
+    }
+
+    private static final class ValueHash extends Hash {
+        public ValueHash(byte[] data) {
+            super(Arrays.copyOf(data, 48), DigestType.SHA_384, true, false);
+        }
     }
 }

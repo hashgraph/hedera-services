@@ -5,6 +5,8 @@ import com.hedera.services.state.merkle.virtual.VirtualKey;
 import com.hedera.services.state.merkle.virtual.VirtualTreePath;
 import com.hedera.services.state.merkle.virtual.VirtualValue;
 import com.hedera.services.state.merkle.virtual.persistence.VirtualRecord;
+import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.crypto.Hash;
 import org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
@@ -290,8 +292,7 @@ public final class VirtualMapDataStore {
      * @param path The path of the parent to find and load
      * @return a loaded VirtualTreeInternal with path and hash set or null if not found
      */
-    public byte[] loadParentHash(Account account, long path) {
-        byte[] hashBytes = null;
+    public Hash loadParentHash(Account account, long path) {
         synchronized (parentStore) {
             long slotLocation = findParent(account, path);
             if (slotLocation != MemMapDataStore.NOT_FOUND_LOCATION) {
@@ -300,11 +301,12 @@ public final class VirtualMapDataStore {
                 // Path -- VirtualTreePath.BYTES
                 buffer.position(buffer.position() + Account.BYTES + VirtualTreePath.BYTES); // jump over
                 // Hash -- HASH_SIZE_BYTES
-                hashBytes = new byte[HASH_SIZE_BYTES];
+                byte[] hashBytes = new byte[HASH_SIZE_BYTES];
                 buffer.get(hashBytes);
+                return new VirtualHash(hashBytes);
             }
         }
-        return hashBytes;
+        return null;
     }
 
     /**
@@ -355,7 +357,7 @@ public final class VirtualMapDataStore {
             // Hash
             byte[] hashBytes = new byte[HASH_SIZE_BYTES];
             buffer.get(hashBytes);
-            return new VirtualRecord(hashBytes, path, new VirtualKey(keyBytes), new VirtualValue(valueBytes));
+            return new VirtualRecord(new VirtualHash(hashBytes), path, new VirtualKey(keyBytes), new VirtualValue(valueBytes));
         }
         return null;
     }
@@ -393,7 +395,7 @@ public final class VirtualMapDataStore {
      * @param parentPath The path of the parent to save
      * @param hash The hash the node that would have been at that path
      */
-    public void saveParentHash(Account account, long parentPath, byte[] hash) {
+    public void saveParentHash(Account account, long parentPath, Hash hash) {
         synchronized (parentStore) {
             // if already stored and if so it is an update
             long slotLocation = findParent(account, parentPath);
@@ -412,7 +414,7 @@ public final class VirtualMapDataStore {
             // Path -- VirtualTreePath.BYTES
             buffer.putLong(parentPath);
             // Hash -- HASH_SIZE_BYTES
-            buffer.put(hash);
+            buffer.put(hash.getValue());
         }
     }
 
@@ -446,7 +448,7 @@ public final class VirtualMapDataStore {
             // Value -- dataSizeBytes
             leaf.getValue().writeToByteBuffer(buffer);
             // Hash -- dataSizeBytes
-            buffer.put(leaf.getHash());
+            buffer.put(leaf.getHash().getValue());
         }
     }
 
@@ -556,4 +558,11 @@ public final class VirtualMapDataStore {
         if (index != null) return index.pathIndex.getIfAbsent(key, MemMapDataStore.NOT_FOUND_LOCATION);
         return MemMapDataStore.NOT_FOUND_LOCATION;
     }
+
+    private static final class VirtualHash extends Hash {
+        protected VirtualHash(byte[] value) {
+            super(value, DigestType.SHA_384, true, false);
+        }
+    }
 }
+
