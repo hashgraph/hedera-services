@@ -22,9 +22,11 @@
 3. Agree to the terms. 
    
 ![terms-agreement.png](../assets/terms-agreement.png)
+
 4. Click on `Select a Project` on the top most menu. 
    
 ![select-project.png](../assets/select-project.png)
+
 5. Select `Swirlds.com -> Hedera Regression`. If you do not see `Hedera Regression` click on the “ALL” tab and follow the folders down till you find `Hedera Regression`.
 
 ![choose-from-folders.png](../assets/choose-from-folders.png)
@@ -40,9 +42,12 @@ To run regression from your computer you will need to install gcloud on your com
 4. It provides a link to login. Follow the link in browser (make sure you are logged into browser with your hedera.com gmail account).
     - Click Allow, if `Google Cloud SDK wants to access the Google Account`. 
     - Copy Code you are given.
-      ![copy-code.png](../assets/copy-code.png)
-    - Paste into the waiting field on command prompt. 
-      ![link-in-browser.png](../assets/link-in-browser.png)
+    - Paste into the waiting field on command prompt.
+
+![copy-code.png](../assets/copy-code.png)
+
+![link-in-browser.png](../assets/link-in-browser.png)
+
 5. Pick the cloud project to use as `hedera-regression`.
 6. Configure default compute region, by selecting `Y` and pick `us-east1-c`.
 
@@ -77,6 +82,7 @@ JRS provisions instances for the regression tests. If in any case, we need to cr
       - Provide number of test clients for client instance group.
         
 ![create-instances-manually](../assets/create-instances-manually.png) 
+
 4. Click on Create.
 5. Click on `VM Instances` on left-hand menu to see individual instances and get IP addresses.
    
