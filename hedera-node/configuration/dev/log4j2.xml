@@ -50,6 +50,8 @@
     <MarkerFilter marker="SNAPSHOT_MANAGER" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
     <MarkerFilter marker="EVENT_PARSER" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
     <MarkerFilter marker="STATE_TO_DISK" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+
+    <MarkerFilter marker="DISABLED"               onMatch="DENY"   onMismatch="DENY" />
   </Filters>
 
   <Appenders>
