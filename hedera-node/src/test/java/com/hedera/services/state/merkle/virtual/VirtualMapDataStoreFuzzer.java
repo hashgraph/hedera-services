@@ -3,6 +3,7 @@ package com.hedera.services.state.merkle.virtual;
 import com.google.common.base.Stopwatch;
 import com.hedera.services.state.merkle.virtual.persistence.VirtualRecord;
 import com.hedera.services.state.merkle.virtual.persistence.mmap.VirtualMapDataStore;
+import com.swirlds.common.crypto.Hash;
 import org.junit.jupiter.api.Assertions;
 
 import java.io.File;
@@ -13,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
@@ -53,14 +55,14 @@ public class VirtualMapDataStoreFuzzer {
                 switch (op) {
                     case 0:
                         IntStream.range(0, COUNT).parallel().forEach(i -> {
-                            byte[] hash = hash(i);
+                            var hash = hash(i);
                             // write parent
                             store.saveParentHash(account, i, hash);
                         });
                         break;
                     case 1:
                         IntStream.range(0, COUNT).parallel().forEach(i -> {
-                            byte[] hash = hash(i);
+                            var hash = hash(i);
                             // write leaf
                             store.saveLeaf(account, new VirtualRecord(hash,i, new VirtualKey(get32Bytes(i)), new VirtualValue(get32Bytes(i))));
                         });
@@ -90,22 +92,22 @@ public class VirtualMapDataStoreFuzzer {
         for (int a = 0; a < ACCOUNT_COUNT; a++) {
             Account account = new Account(0,0,a);
             for (int i = 0; i < COUNT; i++) {
-                byte[] hash = hash(i);
+                var hash = hash(i);
                 VirtualKey key = new VirtualKey(get32Bytes(i));
                 VirtualValue value = new VirtualValue(get32Bytes(i));
 
                 // read parent
-                byte[] parentHash = store.loadParentHash(account,i);
-                Assertions.assertArrayEquals(parentHash, hash, "a="+account.accountNum()+" i="+i+" parentHash="+toLongsString(parentHash)+" hash="+toLongsString(hash));
+                var parentHash = store.loadParentHash(account,i);
+                Assertions.assertEquals(parentHash, hash, "a="+account.accountNum()+" i="+i+" parentHash="+toLongsString(parentHash)+" hash="+toLongsString(hash));
                 // read leaf by key
                 VirtualRecord record = store.loadLeaf(account,key);
-                Assertions.assertArrayEquals(record.getHash(), hash,"a="+account.accountNum()+" i="+i+" record.getHash()="+toLongsString(record.getHash())+" hash="+toLongsString(hash));
+                Assertions.assertEquals(record.getHash(), hash,"a="+account.accountNum()+" i="+i+" record.getHash()="+toLongsString(record.getHash())+" hash="+toLongsString(hash));
                 Assertions.assertEquals(record.getPath(), i);
                 Assertions.assertEquals(record.getKey(), key);
                 Assertions.assertEquals(record.getValue(), value);
                 // read leaf by path
                 record = store.loadLeaf(account,i);
-                Assertions.assertArrayEquals(record.getHash(), hash, "a="+account.accountNum()+" i="+i+" record.getHash()="+toLongsString(record.getHash())+" hash="+toLongsString(hash));
+                Assertions.assertEquals(record.getHash(), hash, "a="+account.accountNum()+" i="+i+" record.getHash()="+toLongsString(record.getHash())+" hash="+toLongsString(hash));
                 Assertions.assertEquals(record.getPath(), i);
                 Assertions.assertEquals(record.getKey(), key);
                 Assertions.assertEquals(record.getValue(), value);
@@ -122,7 +124,7 @@ public class VirtualMapDataStoreFuzzer {
         final long OPS = 100_000_000l;
         RANDOM.ints(OPS,0, COUNT).parallel().forEach(i -> {
             Account account = new Account(0,0,RANDOM.nextInt(ACCOUNT_COUNT));
-            byte[] hash = hash(i);
+            var hash = hash(i);
             VirtualKey key = new VirtualKey(get32Bytes(i));
             VirtualValue value = new VirtualValue(get32Bytes(i));
             VirtualRecord record;
@@ -130,15 +132,15 @@ public class VirtualMapDataStoreFuzzer {
             switch(RANDOM.nextInt(7)) {
                 case 0:
                     // read parent
-                    byte[] parentHash = store.loadParentHash(account,i);
-                    if (!Arrays.equals(hash,parentHash)){
+                    var parentHash = store.loadParentHash(account,i);
+                    if (!Objects.equals(hash,parentHash)){
                         System.err.println("Parent Hash Doesn't Match :: a="+account.accountNum()+" i="+i+" parentHash="+toLongsString(parentHash)+" hash="+toLongsString(hash));
                     }
                     break;
                 case 1:
                     // read leaf by key
                     record = store.loadLeaf(account,key);
-                    if (!Arrays.equals(hash,record.getHash())){
+                    if (!Objects.equals(hash,record.getHash())){
                         System.err.println("Leaf Hash Doesn't Match :: a="+account.accountNum()+" i="+i+" parentHash="+toLongsString(record.getHash())+" hash="+toLongsString(hash));
                     }
                     Assertions.assertEquals(i, record.getPath());
@@ -148,7 +150,7 @@ public class VirtualMapDataStoreFuzzer {
                 case 2:
                     // read leaf by path
                     record = store.loadLeaf(account,i);
-                    if (!Arrays.equals(hash,record.getHash())){
+                    if (!Objects.equals(hash,record.getHash())){
                         System.err.println("Leaf Hash Doesn't Match :: a="+account.accountNum()+" i="+i+" parentHash="+toLongsString(record.getHash())+" hash="+toLongsString(hash));
                     }
                     Assertions.assertEquals(i, record.getPath());
@@ -207,22 +209,23 @@ public class VirtualMapDataStoreFuzzer {
      *
      * @return byte array of 6 longs
      */
-    private static byte[] hash(int value) {
+    private static Hash hash(int value) {
         byte b0 = (byte)(value >>> 24);
         byte b1 = (byte)(value >>> 16);
         byte b2 = (byte)(value >>> 8);
         byte b3 = (byte)value;
-        return new byte[] {
+        return new Hash(new byte[] {
                 0,0,0,0,b0,b1,b2,b3,
                 0,0,0,0,b0,b1,b2,b3,
                 0,0,0,0,b0,b1,b2,b3,
                 0,0,0,0,b0,b1,b2,b3,
                 0,0,0,0,b0,b1,b2,b3,
                 0,0,0,0,b0,b1,b2,b3
-        };
+        });
     }
 
-    public static String toLongsString(byte[] bytes) {
+    public static String toLongsString(Hash hash) {
+        final var bytes = hash.getValue();
         LongBuffer longBuf =
                 ByteBuffer.wrap(bytes)
                         .order(ByteOrder.BIG_ENDIAN)

@@ -83,12 +83,12 @@ public class VirtualMapTest {
         final var ds = new InMemoryDataSource();
         var v = new VirtualMap(ds);
 
-        v = v.copy();
         final var expected = new HashMap<VirtualKey, VirtualValue>();
         for (int i=0; i<256; i++) {
             if (i > 0 && i % 8 == 0) {
-                v.commit();
-                v = v.copy();
+                final var old = v;
+                v = old.copy();
+                old.release();
             }
 
             final var key = asKey(i + "");
@@ -127,16 +127,17 @@ public class VirtualMapTest {
             final var value = asValue((i + 1_000_000) + "");
             v.putValue(key, value);
         }
-        v.commit();
-
         final var rand = new Random();
 
-        v = v.copy();
+        var old = v;
+        v = old.copy();
+        old.release();
         final var expected = new HashMap<VirtualKey, VirtualValue>();
         for (int i=0; i<1_000_000; i++) {
-            if (i > 0 && i % 25 == 0) {
-                v.commit();
-                v = v.copy();
+            if (i > 0 && i % 25000 == 0) {
+                old = v;
+                v = old.copy();
+                old.release();
             }
 
             final var r = rand.nextInt(1_000_000);
@@ -172,9 +173,10 @@ public class VirtualMapTest {
 
         final var expected = new HashMap<VirtualKey, VirtualValue>();
         for (int i=0; i<1_000_000; i++) {
-            if (i > 0 && i % 15 == 0) {
-                v.commit();
-                v = v.copy();
+            if (i > 0 && i % 25_000 == 0) {
+                var old = v;
+                v = old.copy();
+                old.release();
             }
             final var key = asKey(i);
             final var value = asValue((i + 100_000_000));
@@ -254,13 +256,13 @@ public class VirtualMapTest {
     private static final class InMemoryDataSource implements VirtualDataSource {
         private Map<VirtualKey, VirtualRecord> leaves = new HashMap<>();
         private Map<Long, VirtualRecord> leavesByPath = new HashMap<>();
-        private Map<Long, byte[]> parents = new HashMap<>();
+        private Map<Long, Hash> parents = new HashMap<>();
         private long firstLeafPath = INVALID_PATH;
         private long lastLeafPath = INVALID_PATH;
         private boolean closed = false;
 
         @Override
-        public byte[] loadParentHash(long parentPath) {
+        public Hash loadParentHash(long parentPath) {
             return parents.get(parentPath);
         }
 
@@ -281,7 +283,7 @@ public class VirtualMapTest {
         }
 
         @Override
-        public void saveParent(long parentPath, byte[] hash) {
+        public void saveParent(long parentPath, Hash hash) {
             parents.put(parentPath, hash);
         }
 
