@@ -318,7 +318,10 @@ public final class VirtualMap
 
     @Override
     public Hash getHash() {
-        return getRootHash();
+        // In case it hasn't been computed yet, recompute it
+        recomputeHash();
+        final var rh = getRootHash();
+        return rh == null ? NULL_HASH : rh; // Really should never be null by this point...
     }
 
     @Override
