@@ -155,24 +155,6 @@ class LedgerBalanceChangesTest {
 	}
 
 	@Test
-	void rejectsInsufficientBalanceUsingOverrideCode() {
-		givenInitialBalances();
-		backingAccounts.getRef(asGprcAccount(aModel)).setBalanceUnchecked(0L);
-
-		// when:
-		subject.begin();
-		// and:
-		final var result = subject.doZeroSum(fixtureChanges());
-
-		subject.commit();
-
-		// then:
-		assertEquals(overrideIbeCode, result);
-		// and:
-		assertInitialBalanceUnchanged(0L);
-	}
-
-	@Test
 	void rejectsDetachedAccount() {
 		givenInitialBalances();
 		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
@@ -231,24 +213,6 @@ class LedgerBalanceChangesTest {
 		assertEquals(INVALID_TOKEN_ID, result);
 		// and:
 		assertInitialBalanceUnchanged();
-	}
-
-	@Test
-	void rejectsInsufficientTokenBalanceWithOverrideCode() {
-		givenInitialBalances();
-		// and:
-		backingRels.getRef(rel(bModel, token)).setBalance(0L);
-
-		// when:
-		subject.begin();
-		// and:
-		final var result = subject.doZeroSum(fixtureChanges());
-		subject.commit();
-
-		// then:
-		assertEquals(overrideIbeCode, result);
-		// and:
-		assertInitialTokenBalanceUnchanged(0L);
 	}
 
 	@Test
@@ -444,8 +408,6 @@ class LedgerBalanceChangesTest {
 						BalanceChange.tokenAdjust(yetAnotherToken, bModel, bYetAnotherTokenChange),
 				}
 		);
-		ans.get(1).setCodeForInsufficientBalance(overrideIbeCode);
-		ans.get(6).setCodeForInsufficientBalance(overrideIbeCode);
 		return ans;
 	}
 

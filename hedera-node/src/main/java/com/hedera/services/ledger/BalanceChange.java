@@ -48,26 +48,25 @@ public class BalanceChange {
 	private final Id token;
 	private final Id account;
 	private final long units;
-	private ResponseCodeEnum codeForInsufficientBalance = INSUFFICIENT_ACCOUNT_BALANCE;
+	private ResponseCodeEnum codeForInsufficientBalance;
 
 	private long newBalance;
 	private TokenID explicitTokenId = null;
 	private AccountID explicitAccountId = null;
 
-	private BalanceChange(Id token, Id account, long units) {
+	private BalanceChange(final Id token, final Id account, final long units, final ResponseCodeEnum code) {
 		this.token = token;
 		this.account = account;
 		this.units = units;
+		this.codeForInsufficientBalance = code;
 	}
 
-	public static BalanceChange hbarAdjust(Id account, long units) {
-		return new BalanceChange(null, account, units);
+	public static BalanceChange hbarAdjust(final Id account, final long units) {
+		return new BalanceChange(null, account, units, INSUFFICIENT_ACCOUNT_BALANCE);
 	}
 
-	public static BalanceChange tokenAdjust(Id token, Id account, long units) {
-		final var tokenChange = new BalanceChange(token, account, units);
-		tokenChange.setCodeForInsufficientBalance(INSUFFICIENT_TOKEN_BALANCE);
-		return tokenChange;
+	public static BalanceChange tokenAdjust(final Id token, final Id account, final long units) {
+		return new BalanceChange(token, account, units, INSUFFICIENT_TOKEN_BALANCE);
 	}
 
 	public boolean isForHbar() {
@@ -90,7 +89,7 @@ public class BalanceChange {
 		return newBalance;
 	}
 
-	public void setNewBalance(long newBalance) {
+	public void setNewBalance(final long newBalance) {
 		this.newBalance = newBalance;
 	}
 
@@ -114,16 +113,12 @@ public class BalanceChange {
 		return codeForInsufficientBalance;
 	}
 
-	public void setCodeForInsufficientBalance(ResponseCodeEnum codeForInsufficientBalance) {
-		this.codeForInsufficientBalance = codeForInsufficientBalance;
-	}
-
 	/* NOTE: The object methods below are only overridden to improve readability of unit tests;
 	this model object is not used in hash-based collections, so the performance of these
 	methods doesn't matter. */
 
 	@Override
-	public boolean equals(Object obj) {
+	public boolean equals(final Object obj) {
 		return EqualsBuilder.reflectionEquals(this, obj);
 	}
 
