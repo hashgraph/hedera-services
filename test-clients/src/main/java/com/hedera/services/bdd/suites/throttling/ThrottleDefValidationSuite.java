@@ -118,7 +118,7 @@ public class ThrottleDefValidationSuite extends HapiApiSuite {
 	private HapiApiSpec throttleDefsRejectUnauthorizedPayers() {
 		return defaultHapiSpec("ThrottleDefsRejectUnauthorizedPayers")
 				.given(
-						cryptoCreate("civilian")
+						cryptoCreate("civilian").balance(ONE_HUNDRED_HBARS)
 				).when( ).then(
 						fileUpdate(THROTTLE_DEFS)
 								.contents("BOOM")
