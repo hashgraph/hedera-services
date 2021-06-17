@@ -20,6 +20,7 @@ package com.hedera.services.context;
  * ‍
  */
 
+import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -263,4 +264,11 @@ public interface TransactionContext {
 	 * @param tokenTransfers the token transfers to record
 	 */
 	void setTokenTransferLists(List<TokenTransferList> tokenTransfers);
+
+	/**
+	 * Set the custom fees charged as a result of the active transaction.
+	 *
+	 * @param customFeesCharged the custom fees charged
+	 */
+	void setCustomFeesCharged(List<BalanceChange> customFeesCharged);
 }

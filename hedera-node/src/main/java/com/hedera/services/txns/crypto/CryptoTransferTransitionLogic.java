@@ -88,6 +88,7 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 			}
 
 			txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
+			txnCtx.setCustomFeesCharged(impliedTransfers.getChanges());
 		} catch (Exception e) {
 			log.warn("Avoidable exception in CryptoTransfer state transition", e);
 			txnCtx.setStatus(FAIL_INVALID);

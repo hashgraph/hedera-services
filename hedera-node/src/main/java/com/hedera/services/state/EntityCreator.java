@@ -21,6 +21,7 @@ package com.hedera.services.state;
  */
 
 import com.hedera.services.context.ServicesContext;
+import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -88,7 +89,8 @@ public interface EntityCreator {
 			Instant consensusTime,
 			TxnReceipt receipt,
 			List<TokenTransferList> explicitTokenTransfers,
-			ServicesContext ctx);
+			ServicesContext ctx,
+			List<BalanceChange> customFeesCharged);
 
 	/**
 	 * Build a {@link ExpirableTxnRecord.Builder} for a transaction failed to commit

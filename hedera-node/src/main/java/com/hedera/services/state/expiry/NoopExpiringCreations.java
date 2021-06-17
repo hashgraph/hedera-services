@@ -21,6 +21,7 @@ package com.hedera.services.state.expiry;
  */
 
 import com.hedera.services.context.ServicesContext;
+import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.EntityCreator;
@@ -58,7 +59,8 @@ public enum NoopExpiringCreations implements EntityCreator {
 			Instant consensusTime,
 			TxnReceipt receipt,
 			List<TokenTransferList> explicitTokenTransfers,
-			ServicesContext ctx
+			ServicesContext ctx,
+			List<BalanceChange> customFeesCharged
 	) {
 		throw new UnsupportedOperationException();
 	}
