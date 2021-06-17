@@ -48,8 +48,7 @@ As defined in the example below, set up your personal JSON with the following de
 2. `keyLocation` provide the location of `pem` file. Please ensure the `.pem` extension is added to your private key.
 3. `login` should match your hedera email address prefix
 
-![cloud-config](./assets/cloud-config.png)
-
+![cloud-config](../assets/cloud-config.png)
 
 <a name="manual-creation"></a>
 
