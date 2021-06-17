@@ -25,6 +25,7 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.junit.jupiter.api.Test;
 
+import static com.hedera.services.ledger.BalanceChange.NO_TOKEN_FOR_HBAR_ADJUST;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -67,5 +68,11 @@ class BalanceChangeTest {
 
 		assertTrue(hbarChange.isForHbar());
 		assertFalse(tokenChange.isForHbar());
+	}
+
+	@Test
+	void noTokenForHbarAdjust() {
+		final var hbarChange = IdUtils.hbarChange(a, delta);
+		assertSame(NO_TOKEN_FOR_HBAR_ADJUST, hbarChange.tokenId());
 	}
 }

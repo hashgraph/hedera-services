@@ -46,6 +46,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
  * whose APIs still use gRPC types.
  */
 public class BalanceChange {
+	static final TokenID NO_TOKEN_FOR_HBAR_ADJUST = TokenID.getDefaultInstance();
+
 	private final Id token;
 	private final Id account;
 	private final long units;
@@ -92,7 +94,7 @@ public class BalanceChange {
 	}
 
 	public TokenID tokenId() {
-		return (tokenId != null) ? tokenId : token.asGrpcToken();
+		return (tokenId != null) ? tokenId : NO_TOKEN_FOR_HBAR_ADJUST;
 	}
 
 	public AccountID accountId() {
