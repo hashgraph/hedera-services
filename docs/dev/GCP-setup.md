@@ -1,22 +1,22 @@
 # GCP SetUp for JRS Testing
 # **Table of Contents**
 
-- [Pre-setup](#pre-setup)
+- [Pre set up](#pre-setup)
 - [Initial set up](#initial-setup)
-- [gcloud setup](#gcloud-setup)
-- [Set up personal JSON](#json-setup)
-- [Creating instance manually](#manual-creation)
-- [Delete instance manually](#delete-manually)
+- [Gcloud set up](#gcloud-setup)
+- [Personal JSON set up for regression](#json-setup)
+- [Creating instances manually](#manual-creation)
+- [Deleting instance manually](#delete-manually)
 
 <a name="pre-setup"></a>
 
-# **Pre SetUp**
+# **Pre set up**
 1. Follow directions in e-mail `Welcome to your new Google Account for Hashgraph` from `google workspace team`. You will need either a physical security or google to use your cell phone for 2FA
 2. Send you public key you are planning to use to GCP admin in order to make sure you can access all machines
 
 <a name="initial-setup"></a>
 
-# **Initial SetUp**
+# **Initial set up**
 1. Go to `console.cloud.google.com`
 2. Select your `hedera.com` email address to use
 3. Agree to the ToS
@@ -25,7 +25,7 @@
 
 <a name="gcloud-setup"></a>
 
-# **Gcloud SetUp**
+# **Gcloud set up**
 To run regression from your computer you will need to install gcloud on your computer
 
 1. Follow the instructions to install the sdk for your OS at [LINK](https://cloud.google.com/sdk/docs/install) 
@@ -42,7 +42,7 @@ To run regression from your computer you will need to install gcloud on your com
 
 <a name="json-setup"></a>
 
-# **Personal JSON SetUp for Regression**
+# **Personal JSON set up for regression**
 As defined in the example below, set up your personal JSON with the following details
 1. `name` should be GCP-Personal-<USER_NAME>
 2. `keyLocation` provide the location of `pem` file. Please ensure the `.pem` extension is added to your private key.
@@ -72,8 +72,8 @@ JRS provisions instances for the regression tests. If in any case, we need to cr
 5. Click on `VM Instances` on left-hand menu to see individual instances and get IP addresses.
    
 **NOTE:** Two separate instance groups should be created for servers and clients for services regression.
-
 **NOTE:** Individual instances inside an instance group can't be deleted. You must delete the group from `Instance Groups` page
+
 <a name="delete-manually"></a>
 
 # **Deleting instances manually**
