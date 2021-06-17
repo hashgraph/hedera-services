@@ -3,6 +3,8 @@ package com.hedera.services.state.merkle.virtual;
 import com.google.common.base.Stopwatch;
 import com.hedera.services.state.merkle.virtual.persistence.VirtualRecord;
 import com.hedera.services.state.merkle.virtual.persistence.mmap.VirtualMapDataStore;
+import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.crypto.Hash;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -75,11 +77,11 @@ public class VirtualMapDataStoreTest {
         for (int a = 0; a < ACCOUNT_COUNT; a++) {
             Account account = new Account(0,0,a);
             for (int i = 0; i < COUNT; i++) {
-                byte[] hash = hash(i);
+                var hash = hash(i);
                 // write parent
                 store.saveParentHash(account, i, hash);
                 // write leaf
-                store.saveLeaf(account, new VirtualRecord(hash,i, new VirtualKey(get32Bytes(i)), new VirtualValue(get32Bytes(i))));
+                store.saveLeaf(account, new VirtualRecord(hash, i, new VirtualKey(get32Bytes(i)), new VirtualValue(get32Bytes(i))));
                 // write path
                 store.savePath(account, i,i);
             }
@@ -88,22 +90,22 @@ public class VirtualMapDataStoreTest {
         for (int a = 0; a < ACCOUNT_COUNT; a++) {
             Account account = new Account(0,0,a);
             for (int i = 0; i < COUNT; i++) {
-                byte[] hash = hash(i);
+                var hash = hash(i);
                 VirtualKey key = new VirtualKey(get32Bytes(i));
                 VirtualValue value = new VirtualValue(get32Bytes(i));
 
                 // read parent
-                byte[] parentHash = store.loadParentHash(account,i);
-                Assertions.assertArrayEquals(parentHash, hash);
+                var parentHash = store.loadParentHash(account,i);
+                Assertions.assertEquals(parentHash, hash);
                 // read leaf by key
                 VirtualRecord record = store.loadLeaf(account,key);
-                Assertions.assertArrayEquals(record.getHash(), hash);
+                Assertions.assertEquals(record.getHash(), hash);
                 Assertions.assertEquals(record.getPath(), i);
                 Assertions.assertEquals(record.getKey(), key);
                 Assertions.assertEquals(record.getValue(), value);
                 // read leaf by path
                 record = store.loadLeaf(account,i);
-                Assertions.assertArrayEquals(record.getHash(), hash);
+                Assertions.assertEquals(record.getHash(), hash);
                 Assertions.assertEquals(record.getPath(), i);
                 Assertions.assertEquals(record.getKey(), key);
                 Assertions.assertEquals(record.getValue(), value);
@@ -128,7 +130,7 @@ public class VirtualMapDataStoreTest {
         for (int a = 0; a < ACCOUNT_COUNT; a++) {
             Account account = new Account(0,0,a);
             for (int i = 0; i < COUNT; i++) {
-                byte[] hash = hash(i);
+                var hash = hash(i);
                 // write parent
                 store.saveParentHash(account, i, hash);
                 // write leaf
@@ -149,22 +151,22 @@ public class VirtualMapDataStoreTest {
         for (int a = 0; a < ACCOUNT_COUNT; a++) {
             Account account = new Account(0,0,a);
             for (int i = 0; i < COUNT; i++) {
-                byte[] hash = hash(i);
+                var hash = hash(i);
                 VirtualKey key = new VirtualKey(get32Bytes(i));
                 VirtualValue value = new VirtualValue(get32Bytes(i));
 
                 // read parent
-                byte[] parentHash = store.loadParentHash(account,i);
-                Assertions.assertArrayEquals(parentHash, hash);
+                var parentHash = store.loadParentHash(account,i);
+                Assertions.assertEquals(parentHash, hash);
                 // read leaf by key
                 VirtualRecord record = store.loadLeaf(account,key);
-                Assertions.assertArrayEquals(record.getHash(), hash);
+                Assertions.assertEquals(record.getHash(), hash);
                 Assertions.assertEquals(record.getPath(), i);
                 Assertions.assertEquals(record.getKey(), key);
                 Assertions.assertEquals(record.getValue(), value);
                 // read leaf by path
                 record = store.loadLeaf(account,i);
-                Assertions.assertArrayEquals(record.getHash(), hash);
+                Assertions.assertEquals(record.getHash(), hash);
                 Assertions.assertEquals(record.getPath(), i);
                 Assertions.assertEquals(record.getKey(), key);
                 Assertions.assertEquals(record.getValue(), value);
@@ -280,14 +282,14 @@ public class VirtualMapDataStoreTest {
                 switch (op) {
                     case 0:
                         IntStream.range(0, COUNT).parallel().forEach(i -> {
-                            byte[] hash = hash(i);
+                            var hash = hash(i);
                             // write parent
                             store.saveParentHash(account, i, hash);
                         });
                         break;
                     case 1:
                         IntStream.range(0, COUNT).parallel().forEach(i -> {
-                            byte[] hash = hash(i);
+                            var hash = hash(i);
                             // write leaf
                             store.saveLeaf(account, new VirtualRecord(hash,i, new VirtualKey(get32Bytes(i)), new VirtualValue(get32Bytes(i))));
                         });
@@ -317,22 +319,22 @@ public class VirtualMapDataStoreTest {
         for (int a = 0; a < ACCOUNT_COUNT; a++) {
             Account account = new Account(0,0,a);
             for (int i = 0; i < COUNT; i++) {
-                byte[] hash = hash(i);
+                var hash = hash(i);
                 VirtualKey key = new VirtualKey(get32Bytes(i));
                 VirtualValue value = new VirtualValue(get32Bytes(i));
 
                 // read parent
-                byte[] parentHash = store.loadParentHash(account,i);
-                Assertions.assertArrayEquals(parentHash, hash, "a="+account.accountNum()+" i="+i+" parentHash="+toLongsString(parentHash)+" hash="+toLongsString(hash));
+                var parentHash = store.loadParentHash(account,i);
+                Assertions.assertEquals(parentHash, hash, "a="+account.accountNum()+" i="+i+" parentHash="+toLongsString(parentHash)+" hash="+toLongsString(hash));
                 // read leaf by key
                 VirtualRecord record = store.loadLeaf(account,key);
-                Assertions.assertArrayEquals(record.getHash(), hash,"a="+account.accountNum()+" i="+i+" record.getHash()="+toLongsString(record.getHash())+" hash="+toLongsString(hash));
+                Assertions.assertEquals(record.getHash(), hash,"a="+account.accountNum()+" i="+i+" record.getHash()="+toLongsString(record.getHash())+" hash="+toLongsString(hash));
                 Assertions.assertEquals(record.getPath(), i);
                 Assertions.assertEquals(record.getKey(), key);
                 Assertions.assertEquals(record.getValue(), value);
                 // read leaf by path
                 record = store.loadLeaf(account,i);
-                Assertions.assertArrayEquals(record.getHash(), hash, "a="+account.accountNum()+" i="+i+" record.getHash()="+toLongsString(record.getHash())+" hash="+toLongsString(hash));
+                Assertions.assertEquals(record.getHash(), hash, "a="+account.accountNum()+" i="+i+" record.getHash()="+toLongsString(record.getHash())+" hash="+toLongsString(hash));
                 Assertions.assertEquals(record.getPath(), i);
                 Assertions.assertEquals(record.getKey(), key);
                 Assertions.assertEquals(record.getValue(), value);
@@ -346,7 +348,7 @@ public class VirtualMapDataStoreTest {
         // do a bunch of concurrent reads and updates
         RANDOM.ints(10_000,0, COUNT).parallel().forEach(i -> {
             Account account = new Account(0,0,RANDOM.nextInt(ACCOUNT_COUNT));
-            byte[] hash = hash(i);
+            var hash = hash(i);
             VirtualKey key = new VirtualKey(get32Bytes(i));
             VirtualValue value = new VirtualValue(get32Bytes(i));
             VirtualRecord record;
@@ -355,15 +357,15 @@ public class VirtualMapDataStoreTest {
             switch(RANDOM.nextInt(3)) {
                 case 0:
                     // read parent
-                    byte[] parentHash = store.loadParentHash(account,i);
-                    Assertions.assertArrayEquals(hash, parentHash,() -> {
+                    var parentHash = store.loadParentHash(account,i);
+                    Assertions.assertEquals(hash, parentHash,() -> {
                         return "a="+account.accountNum()+" i="+i+" parentHash="+toLongsString(parentHash)+" hash="+toLongsString(hash)+"\n";
                     });
                     break;
                 case 1:
                     // read leaf by key
                     record = store.loadLeaf(account,key);
-                    Assertions.assertArrayEquals(hash, record.getHash(),() -> {
+                    Assertions.assertEquals(hash, record.getHash(),() -> {
                         return "a="+account.accountNum()+" i="+i+" leafHash="+toLongsString(record.getHash())+" hash="+toLongsString(hash)+"\n";
                     });
                     Assertions.assertEquals(i, record.getPath());
@@ -373,7 +375,7 @@ public class VirtualMapDataStoreTest {
                 case 2:
                     // read leaf by path
                     record = store.loadLeaf(account,i);
-                    Assertions.assertArrayEquals(hash, record.getHash(),() -> {
+                    Assertions.assertEquals(hash, record.getHash(),() -> {
                         return "a="+account.accountNum()+" i="+i+" leafHash="+toLongsString(record.getHash())+" hash="+toLongsString(hash)+"\n";
                     });
                     Assertions.assertEquals(i, record.getPath());
@@ -394,7 +396,7 @@ public class VirtualMapDataStoreTest {
 
     /**
      * Create a byte containing the given value as 4 longs
-     * 
+     *
      * @param value the value to store in array
      * @return byte array of 4 longs
      */
@@ -414,46 +416,26 @@ public class VirtualMapDataStoreTest {
 
     /**
      * Creates a hash containing a int repeated 6 times as longs
-     * 
+     *
      * @return byte array of 6 longs
      */
-    private byte[] hash(int value) {
+    private Hash hash(int value) {
         byte b0 = (byte)(value >>> 24);
         byte b1 = (byte)(value >>> 16);
         byte b2 = (byte)(value >>> 8);
         byte b3 = (byte)value;
-        return new byte[] {
+        return new TestHash(new byte[] {
                 0,0,0,0,b0,b1,b2,b3,
                 0,0,0,0,b0,b1,b2,b3,
                 0,0,0,0,b0,b1,b2,b3,
                 0,0,0,0,b0,b1,b2,b3,
                 0,0,0,0,b0,b1,b2,b3,
                 0,0,0,0,b0,b1,b2,b3
-        };
+        });
     }
 
-    private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
-    public static String toHex(byte[] bytes) {
-        StringBuilder sb = new StringBuilder("["+bytes.length+"b]");
-        for (int j = 0; j < bytes.length; j++) {
-            int v = bytes[j] & 0xFF;
-            sb.append(HEX_ARRAY[v >>> 4]);
-            sb.append(HEX_ARRAY[v & 0x0F]);
-        }
-        return sb.toString().toUpperCase();
-    }
-//
-//    public static String toLongsString(byte[] bytes) {
-//        IntBuffer intBuf =
-//                ByteBuffer.wrap(bytes)
-//                        .order(ByteOrder.BIG_ENDIAN)
-//                        .asIntBuffer();
-//        int[] array = new int[intBuf.remaining()];
-//        intBuf.get(array);
-//        return Arrays.toString(array);
-//    }
-    
-    public static String toLongsString(byte[] bytes) {
+    public static String toLongsString(Hash hash) {
+        final var bytes = hash.getValue();
         LongBuffer longBuf =
                 ByteBuffer.wrap(bytes)
                         .order(ByteOrder.BIG_ENDIAN)
@@ -461,5 +443,11 @@ public class VirtualMapDataStoreTest {
         long[] array = new long[longBuf.remaining()];
         longBuf.get(array);
         return Arrays.toString(array);
+    }
+
+    private static final class TestHash extends Hash {
+        public TestHash(byte[] bytes) {
+            super(bytes, DigestType.SHA_384, true, false);
+        }
     }
 }
