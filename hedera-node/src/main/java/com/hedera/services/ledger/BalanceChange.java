@@ -27,6 +27,10 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import proto.CustomFeesOuterClass;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -139,5 +143,44 @@ public class BalanceChange {
 				.add("account", account)
 				.add("units", units)
 				.toString();
+	}
+
+	/* --- Helpers --- */
+
+	public CustomFeesOuterClass.CustomFeeCharged toGrpc() {
+		var grpc = CustomFeesOuterClass.CustomFeeCharged.newBuilder()
+				.setFeeCollector(account.asGrpcAccount())
+				.setUnitsCharged(units);
+		if (isForHbar()) {
+			return grpc.build();
+		}
+		return grpc.setTokenId(token.asGrpcToken()).build();
+	}
+
+	public static List<BalanceChange> fromGrpc(CustomFeesOuterClass.CustomFeesCharged grpc) {
+		return grpc.getCustomFeesChargedList()
+				.stream()
+				.map(i -> fromGrpc(i))
+				.collect(Collectors.toList());
+	}
+
+	public static BalanceChange fromGrpc(CustomFeesOuterClass.CustomFeeCharged customFeesCharged) {
+		if (customFeesCharged.getTokenId() != null) {
+			return BalanceChange.tokenAdjust(Id.fromGrpcToken(customFeesCharged.getTokenId()),
+					Id.fromGrpcAccount(customFeesCharged.getFeeCollector()),
+					customFeesCharged.getUnitsCharged());
+		}
+		return BalanceChange.hbarAdjust(Id.fromGrpcAccount(customFeesCharged.getFeeCollector()),
+				customFeesCharged.getUnitsCharged());
+	}
+
+	public static CustomFeesOuterClass.CustomFeesCharged toGrpc(List<BalanceChange> balanceChanges) {
+		return CustomFeesOuterClass.CustomFeesCharged.newBuilder()
+				.addAllCustomFeesCharged(
+						balanceChanges
+								.stream()
+								.map(i -> i.toGrpc())
+								.collect(Collectors.toList()))
+				.build();
 	}
 }
