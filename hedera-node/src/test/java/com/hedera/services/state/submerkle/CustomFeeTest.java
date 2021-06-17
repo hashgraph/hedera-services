@@ -9,6 +9,8 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -35,13 +37,83 @@ class CustomFeeTest {
 	private SerializableDataOutputStream dos;
 
 	@Test
-	void liveFireSerdesWorkForFixed() {
+	void liveFireSerdesWorkForFractional() throws IOException {
+		// setup:
+		final var subject = CustomFee.fractionalFee(
+				validNumerator,
+				validDenominator,
+				minimumUnitsToCollect,
+				maximumUnitsToCollect,
+				feeCollector);
+		// and:
+		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		final var dos = new SerializableDataOutputStream(baos);
+
 		// given:
+		subject.serialize(dos);
+		dos.flush();
+		// and:
+		final var bytes = baos.toByteArray();
+		final ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+		final var din = new SerializableDataInputStream(bais);
+
+		// when:
+		final var newSubject = new CustomFee();
+		newSubject.deserialize(din, CustomFee.MERKLE_VERSION);
+
+		// then:
+		assertEquals(subject.getFractionalFeeSpec(), newSubject.getFractionalFeeSpec());
+		assertEquals(subject.getFeeCollector(), newSubject.getFeeCollector());
+	}
+
+	@Test
+	void liveFireSerdesWorkForFixed() throws IOException {
+		// setup:
 		final var fixedSubject = CustomFee.fixedFee(fixedUnitsToCollect, denom, feeCollector);
 		// and:
+		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		final var dos = new SerializableDataOutputStream(baos);
 
+		// given:
+		fixedSubject.serialize(dos);
+		dos.flush();
+		// and:
+		final var bytes = baos.toByteArray();
+		final ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+		final var din = new SerializableDataInputStream(bais);
 
+		// when:
+		final var newSubject = new CustomFee();
+		newSubject.deserialize(din, CustomFee.MERKLE_VERSION);
 
+		// then:
+		assertEquals(fixedSubject.getFixedFeeSpec(), newSubject.getFixedFeeSpec());
+		assertEquals(fixedSubject.getFeeCollector(), newSubject.getFeeCollector());
+	}
+
+	@Test
+	void liveFireSerdesWorkForFixedWithNullDenom() throws IOException {
+		// setup:
+		final var fixedSubject = CustomFee.fixedFee(fixedUnitsToCollect, null, feeCollector);
+		// and:
+		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		final var dos = new SerializableDataOutputStream(baos);
+
+		// given:
+		fixedSubject.serialize(dos);
+		dos.flush();
+		// and:
+		final var bytes = baos.toByteArray();
+		final ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+		final var din = new SerializableDataInputStream(bais);
+
+		// when:
+		final var newSubject = new CustomFee();
+		newSubject.deserialize(din, CustomFee.MERKLE_VERSION);
+
+		// then:
+		assertEquals(fixedSubject.getFixedFeeSpec(), newSubject.getFixedFeeSpec());
+		assertEquals(fixedSubject.getFeeCollector(), newSubject.getFeeCollector());
 	}
 
 	@Test
