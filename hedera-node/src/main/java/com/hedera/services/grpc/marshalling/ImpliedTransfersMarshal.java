@@ -67,20 +67,13 @@ public class ImpliedTransfersMarshal {
 
 		final List<BalanceChange> changes = new ArrayList<>();
 		for (var aa : op.getTransfers().getAccountAmountsList()) {
-			final var grpcAccountId = aa.getAccountID();
-			final var hbarChange = hbarAdjust(Id.fromGrpcAccount(grpcAccountId), aa.getAmount());
-			hbarChange.setExplicitAccountId(grpcAccountId);
-			changes.add(hbarChange);
+			changes.add(hbarAdjust(aa));
 		}
 		for (var scopedTransfers : op.getTokenTransfersList()) {
 			final var grpcTokenId = scopedTransfers.getToken();
 			final var scopingToken = Id.fromGrpcToken(grpcTokenId);
 			for (var aa : scopedTransfers.getTransfersList()) {
-				final var grpcAccountId = aa.getAccountID();
-				final var tokenChange = tokenAdjust(scopingToken, Id.fromGrpcAccount(grpcAccountId), aa.getAmount());
-				tokenChange.setExplicitTokenId(grpcTokenId);
-				tokenChange.setExplicitAccountId(grpcAccountId);
-				changes.add(tokenChange);
+				changes.add(tokenAdjust(scopingToken, grpcTokenId, aa));
 			}
 		}
 

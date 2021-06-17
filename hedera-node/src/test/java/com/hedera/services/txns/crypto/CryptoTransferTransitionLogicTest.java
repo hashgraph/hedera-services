@@ -24,10 +24,8 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
-import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
-import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -49,6 +47,7 @@ import java.util.List;
 import static com.hedera.test.utils.IdUtils.adjustFrom;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
+import static com.hedera.test.utils.IdUtils.hbarChange;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
@@ -99,12 +98,12 @@ class CryptoTransferTransitionLogicTest {
 
 	@Test
 	void happyPathUsesLedgerNetZero() {
-		final var a = new Id(1, 2, 3);
-		final var b = new Id(2, 3, 4);
+		final var a = asAccount("1.2.3");
+		final var b = asAccount("2.3.4");
 		final var impliedTransfers = ImpliedTransfers.valid(
 				maxHbarAdjusts, maxTokenAdjusts, List.of(
-						BalanceChange.hbarAdjust(a, +100),
-						BalanceChange.hbarAdjust(b, -100)
+						hbarChange(a, +100),
+						hbarChange(b, -100)
 				));
 
 		givenValidTxnCtx();
@@ -121,12 +120,12 @@ class CryptoTransferTransitionLogicTest {
 
 	@Test
 	void recomputesImpliedTransfersIfNotAvailableInSpan() {
-		final var a = new Id(1, 2, 3);
-		final var b = new Id(2, 3, 4);
+		final var a = asAccount("1.2.3");
+		final var b = asAccount("2.3.4");
 		final var impliedTransfers = ImpliedTransfers.valid(
 				maxHbarAdjusts, maxTokenAdjusts, List.of(
-						BalanceChange.hbarAdjust(a, +100),
-						BalanceChange.hbarAdjust(b, -100)
+						hbarChange(a, +100),
+						hbarChange(b, -100)
 				));
 
 		givenValidTxnCtx();

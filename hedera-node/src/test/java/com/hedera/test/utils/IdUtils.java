@@ -20,7 +20,9 @@ package com.hedera.test.utils;
  * ‍
  */
 
+import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -122,5 +124,13 @@ public class IdUtils {
 				.setAccountID(account)
 				.setAmount(amount)
 				.build();
+	}
+
+	public static BalanceChange hbarChange(final AccountID account, final long amount) {
+		return BalanceChange.hbarAdjust(adjustFrom(account, amount));
+	}
+
+	public static BalanceChange tokenChange(final Id token, final AccountID account, final long amount) {
+		return BalanceChange.tokenAdjust(token, token.asGrpcToken(), adjustFrom(account, amount));
 	}
 }
