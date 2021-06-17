@@ -29,8 +29,6 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.io.IOException;
 
@@ -106,20 +104,14 @@ public class MerkleEntityId extends AbstractMerkleLeaf {
 		}
 
 		var that = (MerkleEntityId)o;
-		return new EqualsBuilder()
-				.append(shard, that.shard)
-				.append(realm, that.realm)
-				.append(num, that.num)
-				.isEquals();
+		return this.shard == that.shard && this.realm == that.realm && this.num == that.num;
 	}
 
 	@Override
 	public int hashCode() {
-		return new HashCodeBuilder(17, 37)
-				.append(shard)
-				.append(realm)
-				.append(num)
-				.toHashCode();
+		int result = Long.hashCode(shard);
+		result = 31 * result + Long.hashCode(realm);
+		return 31 * result + Long.hashCode(num);
 	}
 
 	/* --- FastCopyable --- */

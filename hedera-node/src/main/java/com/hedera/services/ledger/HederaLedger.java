@@ -40,7 +40,6 @@ import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -69,11 +68,13 @@ import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
-import static com.hedera.services.txns.crypto.CryptoTransferTransitionLogic.tryTransfers;
 import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAdjustment;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 
 /**
  * Provides a ledger for Hedera Services crypto and smart contract
@@ -303,6 +304,10 @@ public class HederaLedger {
 		return true;
 	}
 
+	public boolean isKnownTreasury(AccountID aId) {
+		return tokenStore.isKnownTreasury(aId);
+	}
+
 	public ResponseCodeEnum adjustTokenBalance(AccountID aId, TokenID tId, long adjustment) {
 		return tokenStore.adjustBalance(aId, tId, adjustment);
 	}
@@ -348,45 +353,24 @@ public class HederaLedger {
 		return validity;
 	}
 
-	public ResponseCodeEnum doAtomicTransfers(CryptoTransferTransactionBody txn) {
-		return zeroSumTransfers(txn.getTransfers(), txn.getTokenTransfersList());
-	}
-
-	private ResponseCodeEnum zeroSumTransfers(
-			TransferList hbarTransfers,
-			List<TokenTransferList> allTokenTransfers
-	) {
+	public ResponseCodeEnum doZeroSum(List<BalanceChange> changes) {
 		var validity = OK;
-		for (TokenTransferList tokenTransfers : allTokenTransfers) {
-			var id = tokenStore.resolve(tokenTransfers.getToken());
-			if (id == MISSING_TOKEN) {
-				validity = INVALID_TOKEN_ID;
-			}
-			if (validity == OK) {
-				var adjustments = tokenTransfers.getTransfersList();
-				for (AccountAmount adjustment : adjustments) {
-					validity = adjustTokenBalance(adjustment.getAccountID(), id, adjustment.getAmount());
-					if (validity != OK) {
-						break;
-					}
-				}
+		for (var change : changes) {
+			if (change.isForHbar())	 {
+				validity = plausibilityOf(change);
+			} else {
+				validity = tryTokenChange(change);
 			}
 			if (validity != OK) {
 				break;
 			}
 		}
+
 		if (validity == OK) {
-			validity = checkNetOfTokenTransfers();
-		}
-		if (validity == OK) {
-			if (hbarTransfers.getAccountAmountsCount() > 0) {
-				validity = tryTransfers(this, hbarTransfers);
-			}
-		}
-		if (validity != OK) {
+			adjustHbarUnchecked(changes);
+		} else {
 			dropPendingTokenChanges();
 		}
-
 		return validity;
 	}
 
@@ -489,6 +473,26 @@ public class HederaLedger {
 		return (balance + adjustment >= 0);
 	}
 
+	private ResponseCodeEnum plausibilityOf(BalanceChange change) {
+		final var id = change.accountId();
+		if (!exists(id) || isSmartContract(id)) {
+			return INVALID_ACCOUNT_ID;
+		}
+		if ((boolean) accountsLedger.get(id, IS_DELETED)) {
+			return ACCOUNT_DELETED;
+		}
+		if (isDetached(id)) {
+			return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+		}
+		final var balance = getBalance(id);
+		final var newBalance = balance + change.units();
+		if (newBalance < 0L) {
+			return change.codeForInsufficientBalance();
+		}
+		change.setNewBalance(newBalance);
+		return OK;
+	}
+
 	private long computeNewBalance(AccountID id, long adjustment) {
 		if ((boolean) accountsLedger.get(id, IS_DELETED)) {
 			throw new DeletedAccountException(id);
@@ -565,21 +569,6 @@ public class HederaLedger {
 		return AccountAmount.newBuilder().setAccountID(account).setAmount(amount);
 	}
 
-	private ResponseCodeEnum checkNetOfTokenTransfers() {
-		if (numTouches == 0) {
-			return OK;
-		}
-		for (int i = 0; i < numTouches; i++) {
-			var token = tokensTouched[i];
-			if (i == 0 || !token.equals(tokensTouched[i - 1])) {
-				if (!isNetZeroAdjustment(netTokenTransfers.get(token))) {
-					return TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
-				}
-			}
-		}
-		return OK;
-	}
-
 	private void clearNetTokenTransfers() {
 		for (int i = 0; i < numTouches; i++) {
 			netTokenTransfers.get(tokensTouched[i]).clearAccountAmounts();
@@ -601,7 +590,28 @@ public class HederaLedger {
 		} while (lastZeroRemoved != -1);
 	}
 
-	public boolean isKnownTreasury(AccountID aId) {
-		return tokenStore.isKnownTreasury(aId);
+	private ResponseCodeEnum tryTokenChange(BalanceChange change) {
+		var validity = OK;
+		var tokenId = tokenStore.resolve(change.tokenId());
+		if (tokenId == MISSING_TOKEN) {
+			validity = INVALID_TOKEN_ID;
+		}
+		if (validity == OK) {
+			validity = adjustTokenBalance(change.accountId(), tokenId, change.units());
+			if (validity == INSUFFICIENT_TOKEN_BALANCE) {
+				validity = change.codeForInsufficientBalance();
+			}
+		}
+		return validity;
+	}
+
+	private void adjustHbarUnchecked(List<BalanceChange> changes) {
+		for (var change : changes) {
+			if (change.isForHbar())	{
+				final var accountId = change.accountId();
+				setBalance(accountId, change.getNewBalance());
+				updateXfers(accountId, change.units(), netTransfers);
+			}
+		}
 	}
 }
