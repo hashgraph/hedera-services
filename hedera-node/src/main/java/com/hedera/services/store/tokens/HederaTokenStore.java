@@ -32,6 +32,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.HederaStore;
 import com.hedera.services.store.tokens.unique.OwnerIdentifier;
@@ -51,6 +52,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -85,6 +87,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
@@ -339,6 +342,43 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	@Override
+	public ResponseCodeEnum adjustBalance(AccountID senderAId, AccountID receiverAId, TokenID tId, long serialNumber) {
+		var validity = sanityChecked(senderAId, receiverAId, tId, token -> tryAdjustment(senderAId, receiverAId, tId, serialNumber));
+		if (validity == OK) {
+			var nftId = NftID.newBuilder().setTokenID(tId).setSerialNumber(serialNumber).build();
+			if (nftExists(nftId)) {
+				get(nftId).setOwner(EntityId.fromGrpcAccountId(receiverAId));
+
+				adjustOwnedNfts(senderAId, false);
+				adjustOwnedNfts(receiverAId, true);
+			} else {
+				validity = INVALID_NFT_ID;
+			}
+		}
+
+		return validity;
+	}
+
+	public boolean nftExists(final NftID id) {
+		return uniqueTokenSupplier.get().containsKey(fromNftID(id));
+	}
+
+	public MerkleUniqueToken get(final NftID id) {
+		throwIfMissing(id);
+		return uniqueTokenSupplier.get().get(fromNftID(id));
+	}
+
+	public void adjustOwnedNfts(AccountID aId, Boolean isAdded) {
+		var merkleAccount = hederaLedger.get(aId);
+		long nftsOwned = merkleAccount.getNftsOwned();
+		if (Boolean.TRUE.equals(isAdded)) {
+			merkleAccount.setNftsOwned(nftsOwned + 1);
+		} else {
+			merkleAccount.setNftsOwned(nftsOwned - 1);
+		}
+	}
+
+	@Override
 	public ResponseCodeEnum wipe(AccountID aId, TokenID tId, long amount, boolean skipKeyCheck) {
 		return sanityChecked(aId, tId, token -> {
 			if (!skipKeyCheck && !token.hasWipeKey()) {
@@ -433,13 +473,12 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	private ResponseCodeEnum tryAdjustment(AccountID aId, TokenID tId, long adjustment) {
+		var resultFrozenOrKYC = checkRelFrozenOrKYC(Arrays.asList(aId), tId);
+		if (!resultFrozenOrKYC.equals(OK)) {
+			return resultFrozenOrKYC;
+		}
+
 		var relationship = asTokenRel(aId, tId);
-		if ((boolean) tokenRelsLedger.get(relationship, IS_FROZEN)) {
-			return ACCOUNT_FROZEN_FOR_TOKEN;
-		}
-		if (!(boolean) tokenRelsLedger.get(relationship, IS_KYC_GRANTED)) {
-			return ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
-		}
 		long balance = (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
 		long newBalance = balance + adjustment;
 		if (newBalance < 0) {
@@ -448,6 +487,43 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		tokenRelsLedger.set(relationship, TOKEN_BALANCE, newBalance);
 		hederaLedger.updateTokenXfers(tId, aId, adjustment);
 		return OK;
+	}
+
+	private ResponseCodeEnum tryAdjustment(AccountID senderAId, AccountID receiverAId, TokenID tId, long serialNumber) {
+		var relationshipSender = asTokenRel(senderAId, tId);
+		var relationshipReceiver = asTokenRel(receiverAId, tId);
+
+		var resultFrozenOrKYC = checkRelFrozenOrKYC(Arrays.asList(senderAId, receiverAId), tId);
+		if (!resultFrozenOrKYC.equals(OK)) {
+			return resultFrozenOrKYC;
+		}
+
+		long balanceSender = (long) tokenRelsLedger.get(relationshipSender, TOKEN_BALANCE);
+		long balanceReceiver = (long) tokenRelsLedger.get(relationshipReceiver, TOKEN_BALANCE);
+		if (balanceSender <= 0) {
+			return INSUFFICIENT_TOKEN_BALANCE;
+		}
+		tokenRelsLedger.set(relationshipSender, TOKEN_BALANCE, balanceSender - 1);
+		tokenRelsLedger.set(relationshipReceiver, TOKEN_BALANCE, balanceReceiver + 1);
+		hederaLedger.updateTokenXfers(tId, senderAId, receiverAId, serialNumber);
+
+		return OK;
+	}
+
+	protected ResponseCodeEnum checkRelFrozenOrKYC(List<AccountID> aIdList, TokenID tId) {
+		var result = OK;
+
+		for (AccountID aId : aIdList) {
+			var relationship = asTokenRel(aId, tId);
+			if ((boolean) tokenRelsLedger.get(relationship, IS_FROZEN)) {
+				return ACCOUNT_FROZEN_FOR_TOKEN;
+			}
+			if (!(boolean) tokenRelsLedger.get(relationship, IS_KYC_GRANTED)) {
+				return ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+			}
+		}
+
+		return result;
 	}
 
 	private boolean isValidAutoRenewPeriod(long secs) {
@@ -694,7 +770,11 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			TokenID tId,
 			Function<MerkleToken, ResponseCodeEnum> action
 	) {
-		var validity = checkExistence(aId, tId);
+		var validity = checkAccountUsability(aId);
+		if (validity != OK) {
+			return validity;
+		}
+		validity = checkTokenExistence(tId);
 		if (validity != OK) {
 			return validity;
 		}
@@ -712,11 +792,43 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		return action.apply(token);
 	}
 
+	private ResponseCodeEnum sanityChecked(AccountID senderAId, AccountID receiverAId, TokenID tId,
+										   Function<MerkleToken, ResponseCodeEnum> action) {
+		var validity = checkAccountUsability(senderAId);
+		if (validity != OK) {
+			return validity;
+		}
+		validity = checkAccountUsability(receiverAId);
+		if (validity != OK) {
+			return validity;
+		}
+		validity = checkTokenExistence(tId);
+		if (validity != OK) {
+			return validity;
+		}
+
+		var token = get(tId);
+		if (token.isDeleted()) {
+			return TOKEN_WAS_DELETED;
+		}
+
+		var key = asTokenRel(senderAId, tId);
+		if (!tokenRelsLedger.exists(key)) {
+			return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+		}
+
+		return action.apply(token);
+	}
+
 	private ResponseCodeEnum checkExistence(AccountID aId, TokenID tId) {
 		var validity = checkAccountUsability(aId);
 		if (validity != OK) {
 			return validity;
 		}
+		return exists(tId) ? OK : INVALID_TOKEN_ID;
+	}
+
+	private ResponseCodeEnum checkTokenExistence(TokenID tId) {
 		return exists(tId) ? OK : INVALID_TOKEN_ID;
 	}
 

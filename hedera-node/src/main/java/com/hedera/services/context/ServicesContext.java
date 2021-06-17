@@ -195,7 +195,6 @@ import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.security.ops.SystemOpPolicies;
 import com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup;
 import com.hedera.services.sigs.order.HederaSigningOrder;
-import com.hedera.services.sigs.sourcing.SigMapPubKeyToSigBytes;
 import com.hedera.services.sigs.verification.PrecheckKeyReqs;
 import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.sigs.verification.SyncVerifier;
@@ -323,6 +322,7 @@ import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
 import com.hedera.services.utils.invertible_fchashmap.FCInvertibleHashMap;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -1235,8 +1235,7 @@ public class ServicesContext {
 		if (precheckVerifier == null) {
 			Predicate<TransactionBody> isQueryPayment = queryPaymentTestFor(effectiveNodeAccount());
 			PrecheckKeyReqs reqs = new PrecheckKeyReqs(keyOrder(), lookupRetryingKeyOrder(), isQueryPayment);
-			precheckVerifier = new PrecheckVerifier(
-					syncVerifier(), reqs, accessor -> new SigMapPubKeyToSigBytes(accessor.getSigMap()));
+			precheckVerifier = new PrecheckVerifier(syncVerifier(), reqs, TxnAccessor::getPkToSigsFn);
 		}
 		return precheckVerifier;
 	}

@@ -35,7 +35,7 @@ public abstract class CryptoTxnUsage<T extends CryptoTxnUsage<T>> extends TxnUsa
 		super(cryptoOp, usageEstimator);
 	}
 
-	void addTokenTransfersRecordRb(int numTokens, int numTransfers) {
-		addRecordRb(tokenEntitySizes.bytesUsedToRecordTokenTransfers(numTokens, numTransfers));
+	void addTokenTransfersRecordRb(int numTokens, int fungibleNumTransfers, int uniqueNumTransfers) {
+		addRecordRb(tokenEntitySizes.bytesUsedToRecordTokenTransfers(numTokens, fungibleNumTransfers, uniqueNumTransfers));
 	}
 }

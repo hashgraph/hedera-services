@@ -21,6 +21,7 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -199,6 +200,11 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTest {
 						.addAccountAmounts(
 								AccountAmount.newBuilder()
 										.setAccountID(IdUtils.asAccount("0.0.3"))));
+		// and:
+		given(tokenStore.get(tokenId)).willReturn(token);
+		given(tokenStore.get(frozenId).tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
+		given(tokenStore.get(tokenId).tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
+
 		// when:
 		subject.dropPendingTokenChanges();
 

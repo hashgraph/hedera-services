@@ -34,7 +34,7 @@ import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.order.SigningOrderResultFactory;
-import com.hedera.services.sigs.sourcing.SigMapPubKeyToSigBytes;
+import com.hedera.services.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -214,7 +214,7 @@ class SigOpsRegressionTest {
 		// and:
 		List<TransactionSignature> unknownSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
 				List.of(COMPLEX_KEY_ACCOUNT_KT.asJKey(), CryptoCreateFactory.DEFAULT_ACCOUNT_KT.asJKey()),
-				new SigMapPubKeyToSigBytes(platformTxn.getSignedTxnWrapper().getSigMap()),
+				platformTxn.getPkToSigsFn(),
 				new BodySigningSigFactory(platformTxn)
 		).getPlatformSigs();
 		List<TransactionSignature> knownSigs = asKind(List.of(
@@ -239,7 +239,7 @@ class SigOpsRegressionTest {
 		// and:
 		List<TransactionSignature> unknownSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
 				List.of(COMPLEX_KEY_ACCOUNT_KT.asJKey(), CryptoCreateFactory.DEFAULT_ACCOUNT_KT.asJKey()),
-				new SigMapPubKeyToSigBytes(platformTxn.getSignedTxnWrapper().getSigMap()),
+				platformTxn.getPkToSigsFn(),
 				new BodySigningSigFactory(platformTxn)
 		).getPlatformSigs();
 		List<TransactionSignature> knownSigs = asKind(List.of(
@@ -264,7 +264,7 @@ class SigOpsRegressionTest {
 		// and:
 		List<TransactionSignature> unknownSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
 				List.of(DEFAULT_PAYER_KT.asJKey(), COMPLEX_KEY_ACCOUNT_KT.asJKey()),
-				new SigMapPubKeyToSigBytes(platformTxn.getSignedTxnWrapper().getSigMap()),
+				platformTxn.getPkToSigsFn(),
 				new BodySigningSigFactory(platformTxn)
 		).getPlatformSigs();
 		List<TransactionSignature> knownSigs = asKind(List.of(
@@ -290,7 +290,7 @@ class SigOpsRegressionTest {
 		// and:
 		List<TransactionSignature> unknownSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
 				List.of(DEFAULT_PAYER_KT.asJKey(), COMPLEX_KEY_ACCOUNT_KT.asJKey()),
-				new SigMapPubKeyToSigBytes(platformTxn.getSignedTxnWrapper().getSigMap()),
+				platformTxn.getPkToSigsFn(),
 				new BodySigningSigFactory(platformTxn)
 		).getPlatformSigs();
 		List<TransactionSignature> knownSigs = asKind(List.of(
@@ -316,7 +316,7 @@ class SigOpsRegressionTest {
 		// and:
 		List<TransactionSignature> unknownSigs = PlatformSigOps.createEd25519PlatformSigsFrom(
 				List.of(DEFAULT_PAYER_KT.asJKey(), COMPLEX_KEY_ACCOUNT_KT.asJKey(), NEW_ACCOUNT_KT.asJKey()),
-				new SigMapPubKeyToSigBytes(platformTxn.getSignedTxnWrapper().getSigMap()),
+				platformTxn.getPkToSigsFn(),
 				new BodySigningSigFactory(platformTxn)
 		).getPlatformSigs();
 		List<TransactionSignature> knownSigs = asKind(List.of(
@@ -344,7 +344,7 @@ class SigOpsRegressionTest {
 				List.of(
 						DEFAULT_PAYER_KT.asJKey(),
 						CryptoCreateFactory.DEFAULT_ACCOUNT_KT.asJKey()),
-				new SigMapPubKeyToSigBytes(platformTxn.getSignedTxnWrapper().getSigMap()),
+				platformTxn.getPkToSigsFn(),
 				new BodySigningSigFactory(platformTxn)
 		).getPlatformSigs();
 	}
@@ -399,7 +399,7 @@ class SigOpsRegressionTest {
 				targetWaclSigns,
 				new MockGlobalDynamicProps());
 
-		final var pkToSigFn = new SigMapPubKeyToSigBytes(platformTxn.getSigMap());
+		final var pkToSigFn = new PojoSigMapPubKeyToSigBytes(platformTxn.getSigMap());
 		return expandIn(platformTxn, keyOrder, pkToSigFn);
 	}
 
@@ -417,7 +417,7 @@ class SigOpsRegressionTest {
 				platformTxn,
 				syncVerifier,
 				keyOrder,
-				new SigMapPubKeyToSigBytes(platformTxn.getSigMap()),
+				platformTxn.getPkToSigsFn(),
 				new BodySigningSigFactory(platformTxn));
 	}
 
@@ -444,7 +444,7 @@ class SigOpsRegressionTest {
 		} else {
 			PlatformSigsCreationResult payerResult = PlatformSigOps.createEd25519PlatformSigsFrom(
 					payerKeys.getOrderedKeys(),
-					new SigMapPubKeyToSigBytes(platformTxn.getSigMap()),
+					new PojoSigMapPubKeyToSigBytes(platformTxn.getSigMap()),
 					new BodySigningSigFactory(platformTxn)
 			);
 			expectedSigs.addAll(payerResult.getPlatformSigs());
@@ -455,7 +455,7 @@ class SigOpsRegressionTest {
 			} else {
 				PlatformSigsCreationResult otherResult = PlatformSigOps.createEd25519PlatformSigsFrom(
 						otherKeys.getOrderedKeys(),
-						new SigMapPubKeyToSigBytes(platformTxn.getSigMap()),
+						new PojoSigMapPubKeyToSigBytes(platformTxn.getSigMap()),
 						new BodySigningSigFactory(platformTxn)
 				);
 				if (!otherResult.hasFailed()) {

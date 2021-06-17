@@ -21,7 +21,6 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.google.protobuf.ByteString;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.tokens.unique.OwnerIdentifier;
@@ -128,6 +127,10 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Identifiabl
 	@Override
 	public MerkleUniqueToken copy() {
 		return new MerkleUniqueToken(owner, metadata, creationTime);
+	}
+
+	public void setOwner(EntityId owner) {
+		this.owner = owner;
 	}
 
 	public EntityId getOwner() {

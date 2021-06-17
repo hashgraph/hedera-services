@@ -86,6 +86,41 @@ class OverflowCheckingCalcTest {
 	}
 
 	@Test
+	void ceilingIsEnforced() {
+		// given:
+		final var cappedFees = FeeBuilder.getFeeObject(mockLowCeilPrices, mockUsage, mockRate, multiplier);
+		// and:
+		final var usage = new UsageAccumulator();
+		copyData(mockUsage, usage);
+
+		// when:
+		final var refactoredFees = subject.fees(usage, mockLowCeilPrices, mockRate, multiplier);
+
+		// then:
+		assertEquals(cappedFees.getNodeFee(), refactoredFees.getNodeFee());
+		assertEquals(cappedFees.getNetworkFee(), refactoredFees.getNetworkFee());
+		assertEquals(cappedFees.getServiceFee(), refactoredFees.getServiceFee());
+	}
+
+	@Test
+	void floorIsEnforced() {
+		// given:
+		final var cappedFees = FeeBuilder.getFeeObject(mockHighFloorPrices, mockUsage, mockRate, multiplier);
+		// and:
+		final var usage = new UsageAccumulator();
+		copyData(mockUsage, usage);
+
+		// when:
+		final var refactoredFees = subject.fees(usage, mockHighFloorPrices, mockRate, multiplier);
+
+		// then:
+		assertEquals(cappedFees.getNodeFee(), refactoredFees.getNodeFee());
+		assertEquals(cappedFees.getNetworkFee(), refactoredFees.getNetworkFee());
+		assertEquals(cappedFees.getServiceFee(), refactoredFees.getServiceFee());
+	}
+
+
+	@Test
 	void safeAccumulateTwoWorks() {
 		// expect:
 		assertThrows(IllegalArgumentException.class,
@@ -152,6 +187,23 @@ class OverflowCheckingCalcTest {
 	}
 
 	private final long multiplier = 2L;
+	private final long veryHighFloorFee = Long.MAX_VALUE / 2;
+	private final FeeComponents mockLowCeilFees = FeeComponents.newBuilder()
+			.setMax(1234567L)
+			.setConstant(1_234_567L)
+			.setBpr(1_000_000L)
+			.setBpt(2_000_000L)
+			.setRbh(3_000_000L)
+			.setSbh(4_000_000L)
+			.build();
+	private final FeeComponents mockHighFloorFees = FeeComponents.newBuilder()
+			.setMin(veryHighFloorFee)
+			.setConstant(1_234_567L)
+			.setBpr(1_000_000L)
+			.setBpt(2_000_000L)
+			.setRbh(3_000_000L)
+			.setSbh(4_000_000L)
+			.build();
 	private final FeeComponents mockFees = FeeComponents.newBuilder()
 			.setMax(Long.MAX_VALUE)
 			.setConstant(1_234_567L)
@@ -170,6 +222,17 @@ class OverflowCheckingCalcTest {
 			.setNodedata(mockFees)
 			.setServicedata(mockFees)
 			.build();
+	private FeeData mockLowCeilPrices = FeeData.newBuilder()
+			.setNetworkdata(mockLowCeilFees)
+			.setNodedata(mockLowCeilFees)
+			.setServicedata(mockLowCeilFees)
+			.build();
+	private FeeData mockHighFloorPrices = FeeData.newBuilder()
+			.setNetworkdata(mockHighFloorFees)
+			.setNodedata(mockHighFloorFees)
+			.setServicedata(mockHighFloorFees)
+			.build();
+
 	private final long one = 1;
 	private final long bpt = 2;
 	private final long vpt = 3;

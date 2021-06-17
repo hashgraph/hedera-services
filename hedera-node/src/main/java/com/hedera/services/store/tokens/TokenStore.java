@@ -55,14 +55,24 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 	List<TokenID> listOfTokensServed(AccountID treasury);
 
 	ResponseCodeEnum wipe(AccountID aId, TokenID tId, long wipingAmount, boolean skipKeyCheck);
+
 	ResponseCodeEnum freeze(AccountID aId, TokenID tId);
+
 	ResponseCodeEnum update(TokenUpdateTransactionBody changes, long now);
+
 	ResponseCodeEnum unfreeze(AccountID aId, TokenID tId);
+
 	ResponseCodeEnum grantKyc(AccountID aId, TokenID tId);
+
 	ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId);
+
 	ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens);
+
 	ResponseCodeEnum dissociate(AccountID aId, List<TokenID> tokens);
+
 	ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment);
+
+	ResponseCodeEnum adjustBalance(AccountID senderAId, AccountID receiverAId, TokenID tId, long serialNumber);
 
 	CreationResult<TokenID> createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now);
 
@@ -70,6 +80,10 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 		return exists(id) ? id : MISSING_TOKEN;
 	}
 	NftID resolve (NftID id);
+
+	MerkleUniqueToken getUniqueToken(NftID id);
+
+	NftID resolve(NftID id);
 
 	MerkleUniqueToken getUniqueToken(NftID id);
 

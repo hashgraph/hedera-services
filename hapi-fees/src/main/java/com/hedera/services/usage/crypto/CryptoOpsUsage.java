@@ -72,7 +72,7 @@ public class CryptoOpsUsage {
 		accumulator.addBpt(incBpt);
 
 		long incRb = numXfers * LONG_ACCOUNT_AMOUNT_BYTES;
-		incRb += TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(weightedTokensInvolved, weightedTokenXfers);
+		incRb += TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(weightedTokensInvolved, weightedTokenXfers, 0);
 		accumulator.addRbs(incRb * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 

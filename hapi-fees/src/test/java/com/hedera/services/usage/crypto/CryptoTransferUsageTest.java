@@ -1,4 +1,4 @@
-package com.hedera.services.usage.token;
+package com.hedera.services.usage.crypto;
 
 /*-
  * ‌
@@ -9,9 +9,9 @@ package com.hedera.services.usage.token;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,17 +23,24 @@ package com.hedera.services.usage.token;
 import com.hedera.services.test.IdUtils;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.TxnUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
+import com.hedera.services.usage.TxnUsage;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
+import static com.hedera.services.test.IdUtils.asAccount;
 import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
@@ -42,20 +49,24 @@ import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.times;
 
-public class TokenWipeUsageTest {
+public class CryptoTransferUsageTest {
 	long now = 1_234_567L;
 	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
 	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
-	TokenID id = IdUtils.asToken("0.0.75231");
 
+	AccountID a = asAccount("1.2.3");
+	AccountID b = asAccount("2.3.4");
+	AccountID c = asAccount("3.4.5");
+	TokenID anId = IdUtils.asToken("0.0.75231");
+	TokenID anotherId = IdUtils.asToken("0.0.75232");
+
+	CryptoTransferTransactionBody op;
 	TransactionBody txn;
-	TokenWipeAccountTransactionBody op;
 
 	EstimatorFactory factory;
 	TxnUsageEstimator base;
-	TokenWipeUsage subject;
+	CryptoTransferUsage subject;
 
 	@BeforeEach
 	public void setUp() throws Exception {
@@ -69,28 +80,62 @@ public class TokenWipeUsageTest {
 	}
 
 	@Test
-	public void createsExpectedDelta() {
+	public void createsExpectedDeltaForTransferLists() {
+		// setup:
+		int M = 60;
+
 		givenOp();
 		// and:
-		subject = TokenWipeUsage.newEstimate(txn, sigUsage);
+		subject = CryptoTransferUsage.newEstimate(txn, sigUsage);
 
 		// when:
-		var actual = subject.get();
+		var actual = subject.givenTokenMultiplier(M).get();
 
 		// then:
 		assertEquals(A_USAGES_MATRIX, actual);
 		// and:
-		verify(base, times(2)).addBpt(FeeBuilder.BASIC_ENTITY_ID_SIZE);
-		verify(base).addBpt(8);
+		verify(base).addBpt(M * FeeBuilder.BASIC_ENTITY_ID_SIZE
+				+ 3 * M * (FeeBuilder.BASIC_ENTITY_ID_SIZE + 8)
+				+ M * FeeBuilder.BASIC_ENTITY_ID_SIZE
+				+ 2 * M * (FeeBuilder.BASIC_ENTITY_ID_SIZE + 8)
+				+ M * FeeBuilder.BASIC_ENTITY_ID_SIZE
+				+ 2 * M * (FeeBuilder.BASIC_ENTITY_ID_SIZE + 8)
+				+ 3 * (FeeBuilder.BASIC_ENTITY_ID_SIZE + 8));
 		verify(base).addRbs(
-				TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 1, 0) *
+				TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(3 * M, 7 * M, 0 * M) *
 						USAGE_PROPERTIES.legacyReceiptStorageSecs());
+		verify(base).addRbs((3 * USAGE_PROPERTIES.accountAmountBytes()) * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
 	private void givenOp() {
-		op = TokenWipeAccountTransactionBody.newBuilder()
-				.setToken(id)
+		var hbarAdjusts = TransferList.newBuilder()
+				.addAccountAmounts(adjustFrom(a, -100))
+				.addAccountAmounts(adjustFrom(b, 50))
+				.addAccountAmounts(adjustFrom(c, 50))
 				.build();
+		op = CryptoTransferTransactionBody.newBuilder()
+				.setTransfers(hbarAdjusts)
+				.addTokenTransfers(TokenTransferList.newBuilder()
+						.setToken(anotherId)
+						.addAllTransfers(List.of(
+								adjustFrom(a, -50),
+								adjustFrom(b, 25),
+								adjustFrom(c, 25)
+						)))
+				.addTokenTransfers(TokenTransferList.newBuilder()
+						.setToken(anId)
+						.addAllTransfers(List.of(
+								adjustFrom(b, -100),
+								adjustFrom(c, 100)
+						)))
+				.addTokenTransfers(TokenTransferList.newBuilder()
+						.setToken(anotherId)
+						.addAllTransfers(List.of(
+								adjustFrom(a, -15),
+								adjustFrom(b, 15)
+						)))
+				.build();
+
 		setTxn();
 	}
 
@@ -99,7 +144,14 @@ public class TokenWipeUsageTest {
 				.setTransactionID(TransactionID.newBuilder()
 						.setTransactionValidStart(Timestamp.newBuilder()
 								.setSeconds(now)))
-				.setTokenWipe(op)
+				.setCryptoTransfer(op)
+				.build();
+	}
+
+	private AccountAmount adjustFrom(AccountID account, long amount) {
+		return AccountAmount.newBuilder()
+				.setAmount(amount)
+				.setAccountID(account)
 				.build();
 	}
 }

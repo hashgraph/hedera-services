@@ -101,6 +101,11 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
+	public ResponseCodeEnum adjustBalance(AccountID senderAId, AccountID receiverAId, TokenID tId, long serialNumber) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public CreationResult<TokenID> createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now) {
 		throw new UnsupportedOperationException();
 	}

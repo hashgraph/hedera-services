@@ -22,5 +22,8 @@ package com.hedera.services.usage;
 
 public interface UsageProperties {
 	int accountAmountBytes();
+
+	int nftTransferBytes();
+
 	long legacyReceiptStorageSecs();
 }

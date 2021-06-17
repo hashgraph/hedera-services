@@ -115,10 +115,8 @@ public class ContextOptionValidator implements OptionValidator {
 	public boolean isValidAutoRenewPeriod(Duration autoRenewPeriod) {
 		long duration = autoRenewPeriod.getSeconds();
 
-		if (duration < dynamicProperties.minAutoRenewDuration() || duration > dynamicProperties.maxAutoRenewDuration()) {
-			return false;
-		}
-		return true;
+		return duration >= dynamicProperties.minAutoRenewDuration() &&
+				duration <= dynamicProperties.maxAutoRenewDuration();
 	}
 
 	@Override
@@ -142,7 +140,8 @@ public class ContextOptionValidator implements OptionValidator {
 		int count = 0;
 		for (var tokenTransferList : tokenTransferLists) {
 			int transferCounts = tokenTransferList.getTransfersCount();
-			if (transferCounts == 0) {
+			int nftTransferCount = tokenTransferList.getNftTransfersCount();
+			if (transferCounts == 0 && nftTransferCount == 0) {
 				return EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 			}
 

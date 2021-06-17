@@ -46,16 +46,19 @@ public class TokenMintResourceUsage implements TxnResourceUsageEstimator {
 	public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
 		Optional<TokenType> tokenType = view.tokenType(txn.getTokenMint().getToken());
 
-		SubType subType;
-		switch (tokenType.get()) {
-			case FUNGIBLE_COMMON:
-				subType = SubType.TOKEN_FUNGIBLE_COMMON;
-				break;
-			case NON_FUNGIBLE_UNIQUE:
-				subType = SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
-				break;
-			default:
-				subType = SubType.DEFAULT;
+		SubType subType = SubType.DEFAULT;
+
+		if (tokenType.isPresent()) {
+			switch (tokenType.get()) {
+				case FUNGIBLE_COMMON:
+					subType = SubType.TOKEN_FUNGIBLE_COMMON;
+					break;
+				case NON_FUNGIBLE_UNIQUE:
+					subType = SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+					break;
+				default:
+					subType = SubType.DEFAULT;
+			}
 		}
 
 		var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());

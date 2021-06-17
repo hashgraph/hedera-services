@@ -25,6 +25,7 @@ import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
@@ -60,6 +61,7 @@ public class TokenMintUsageTest {
 	public void setUp() throws Exception {
 		base = mock(TxnUsageEstimator.class);
 		given(base.get()).willReturn(A_USAGES_MATRIX);
+		given(base.get(SubType.TOKEN_FUNGIBLE_COMMON)).willReturn(A_USAGES_MATRIX);
 
 		factory = mock(EstimatorFactory.class);
 		given(factory.get(any(), any(), any())).willReturn(base);
@@ -72,6 +74,7 @@ public class TokenMintUsageTest {
 		givenOp();
 		// and:
 		subject = TokenMintUsage.newEstimate(txn, sigUsage);
+		subject.givenSubType(SubType.TOKEN_FUNGIBLE_COMMON);
 
 		// when:
 		var actual = subject.get();
@@ -81,7 +84,7 @@ public class TokenMintUsageTest {
 		// and:
 		verify(base).addBpt(FeeBuilder.BASIC_ENTITY_ID_SIZE);
 		verify(base).addRbs(
-				TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 1) *
+				TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 1, 0) *
 						USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 

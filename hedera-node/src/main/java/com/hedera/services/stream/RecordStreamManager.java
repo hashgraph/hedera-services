@@ -134,6 +134,7 @@ public class RecordStreamManager {
 					.setCapacity(nodeLocalProperties.recordStreamQueueCapacity())
 					.setForwardTo(streamFileWriter)
 					.setThreadName("writeQueueThread")
+					.setComponent("recordStream")
 					.build();
 		}
 
@@ -149,6 +150,7 @@ public class RecordStreamManager {
 				.setCapacity(nodeLocalProperties.recordStreamQueueCapacity())
 				.setForwardTo(hashCalculator)
 				.setThreadName("hashQueueThread")
+				.setComponent("recordStream")
 				.build();
 
 		multiStream = new MultiStream<>(
