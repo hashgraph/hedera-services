@@ -168,6 +168,9 @@ public class TxnVerbs {
 	public static HapiTokenBurn burnToken(String token, long amount) {
 		return new HapiTokenBurn(token, amount);
 	}
+	public static HapiTokenBurn burnToken(String token, List<Long> serialNumbers){
+		return new HapiTokenBurn(token, serialNumbers);
+	}
 
 	/* SCHEDULE */
 	public static <T extends HapiTxnOp<T>> HapiScheduleCreate<T> scheduleCreate(String scheduled, HapiTxnOp<T> txn) {

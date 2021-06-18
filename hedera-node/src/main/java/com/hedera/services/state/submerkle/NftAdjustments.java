@@ -83,7 +83,6 @@ public class NftAdjustments implements SelfSerializable {
 	@Override
 	public int hashCode() {
 		int result = Long.hashCode(RUNTIME_CONSTRUCTABLE_ID);
-		result = result * 31 + Integer.hashCode(MERKLE_VERSION);
 		result = result * 31 + senderAccIds.hashCode();
 		result = result * 31 + receiverAccIds.hashCode();
 		return result * 31 + Arrays.hashCode(serialNums);

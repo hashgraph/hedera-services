@@ -321,8 +321,8 @@ import com.hedera.services.usage.schedule.ScheduleOpsUsage;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
-import com.hedera.services.utils.invertible_fchashmap.FCInvertibleHashMap;
 import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.invertible_fchashmap.FCInvertibleHashMap;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -1392,9 +1392,9 @@ public class ServicesContext {
 				entry(TokenDelete,
 						List.of(new TokenDeleteTransitionLogic(tokenStore(), txnCtx()))),
 				entry(TokenMint,
-						List.of(new TokenMintTransitionLogic(validator(), typedTokenStore(), txnCtx()))),
+						List.of(new TokenMintTransitionLogic(validator(), accountStore(), typedTokenStore(), txnCtx()))),
 				entry(TokenBurn,
-						List.of(new TokenBurnTransitionLogic(typedTokenStore(), txnCtx()))),
+						List.of(new TokenBurnTransitionLogic(validator(), accountStore(), typedTokenStore(), txnCtx()))),
 				entry(TokenAccountWipe,
 						List.of(new TokenWipeTransitionLogic(tokenStore(), txnCtx()))),
 				entry(TokenAssociateToAccount,

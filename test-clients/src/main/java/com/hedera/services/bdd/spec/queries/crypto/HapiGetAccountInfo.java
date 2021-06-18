@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -57,6 +58,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	Optional<BiConsumer<AccountInfo, Logger>> customLog = Optional.empty();
 	Optional<LongConsumer> exposingExpiryTo = Optional.empty();
 	Optional<LongConsumer> exposingBalanceTo = Optional.empty();
+	Optional<Long> ownedNfts = Optional.empty();
 
 	public HapiGetAccountInfo(String account) {
 		this.account = account;
@@ -101,6 +103,11 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 		return this;
 	}
 
+	public HapiGetAccountInfo hasOwnedNfts(long ownedNftsLen) {
+		this.ownedNfts = Optional.of(ownedNftsLen);
+		return this;
+	}
+
 	@Override
 	protected HapiGetAccountInfo self() {
 		return this;
@@ -117,6 +124,9 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 		var actualTokenRels = response.getCryptoGetInfo().getAccountInfo().getTokenRelationshipsList();
 		ExpectedTokenRel.assertExpectedRels(account, relationships, actualTokenRels, spec);
 		ExpectedTokenRel.assertNoUnexpectedRels(account, absentRelationships, actualTokenRels, spec);
+
+		var actualOwnedNfts = response.getCryptoGetInfo().getAccountInfo().getOwnedNfts();
+		Assert.assertEquals(ownedNfts.get().longValue(), actualOwnedNfts);
 	}
 
 
@@ -138,7 +148,6 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 		if (registryEntry.isPresent()) {
 			spec.registry().saveAccountInfo(registryEntry.get(), response.getCryptoGetInfo().getAccountInfo());
 		}
-
 	}
 
 	@Override

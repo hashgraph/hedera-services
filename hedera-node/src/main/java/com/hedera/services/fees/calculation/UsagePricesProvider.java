@@ -45,7 +45,7 @@ public interface UsagePricesProvider {
 	void loadPriceSchedules();
 
 	/**
-	 * Returns the prices in a map SubType keys and FeeData values in tinyCents that must be paid to
+	 * Returns the prices in a map SubType keys and FeeData values in 1/1000th of a tinyCent that must be paid to
 	 * consume various resources while processing the active
 	 * transaction.
 	 *
