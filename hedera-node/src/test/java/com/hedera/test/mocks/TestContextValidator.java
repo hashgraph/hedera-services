@@ -28,12 +28,9 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
-
-import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -85,11 +82,6 @@ public enum TestContextValidator implements OptionValidator {
 
 	@Override
 	public boolean isAcceptableTransfersLength(TransferList accountAmounts) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public ResponseCodeEnum tokenTransfersLengthCheck(List<TokenTransferList> tokenTransferLists) {
 		throw new UnsupportedOperationException();
 	}
 

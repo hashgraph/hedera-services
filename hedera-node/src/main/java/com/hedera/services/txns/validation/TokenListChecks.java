@@ -21,83 +21,29 @@ package com.hedera.services.txns.validation;
  */
 
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Predicate;
 
 import static com.hedera.services.txns.validation.PureValidation.checkKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DECIMALS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_INITIAL_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 
 public class TokenListChecks {
     static Predicate<Key> ADMIN_KEY_REMOVAL = ImmutableKeyUtils::signalsKeyRemoval;
 
     public static boolean repeatsItself(List<TokenID> tokens) {
         return new HashSet<>(tokens).size() < tokens.size();
-    }
-
-    public static ResponseCodeEnum checkTokenTransfers(List<TokenTransferList> tokenTransferLists) {
-    	if (tokenTransferLists.isEmpty()) {
-    	    return OK;
-        }
-
-        Set<TokenID> uniqueTokens = new HashSet<>();
-        for (TokenTransferList tokenTransferList : tokenTransferLists) {
-            if (!tokenTransferList.hasToken()) {
-                return INVALID_TOKEN_ID;
-            }
-
-            var net = 0;
-            uniqueTokens.add(tokenTransferList.getToken());
-
-            var uniqueAccounts = new HashSet<AccountID>();
-            for (AccountAmount adjustment : tokenTransferList.getTransfersList()) {
-                if (!adjustment.hasAccountID()) {
-                    return INVALID_ACCOUNT_ID;
-                }
-
-                if (adjustment.getAmount() == 0) {
-                    return INVALID_ACCOUNT_AMOUNTS;
-                }
-
-                uniqueAccounts.add(adjustment.getAccountID());
-                net += adjustment.getAmount();
-            }
-
-            if (uniqueAccounts.size() < tokenTransferList.getTransfersCount()) {
-                return ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
-            }
-
-            if (net != 0) {
-                return TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
-            }
-        }
-
-        if (uniqueTokens.size() < tokenTransferLists.size()) {
-            return TOKEN_ID_REPEATED_IN_TOKEN_LIST;
-        }
-
-        return OK;
     }
 
     public static ResponseCodeEnum initialSupplyAndDecimalsCheck(long initialSupply, int decimals) {

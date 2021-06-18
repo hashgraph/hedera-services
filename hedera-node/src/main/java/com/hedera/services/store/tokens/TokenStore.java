@@ -20,6 +20,7 @@ package com.hedera.services.store.tokens;
  * ‍
  */
 
+import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.Store;
@@ -32,6 +33,7 @@ import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
@@ -83,5 +85,20 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 
 		apply(id, DELETION);
 		return OK;
+	}
+
+	default ResponseCodeEnum tryTokenChange(BalanceChange change) {
+		var validity = OK;
+		var tokenId = resolve(change.tokenId());
+		if (tokenId == MISSING_TOKEN) {
+			validity = INVALID_TOKEN_ID;
+		}
+		if (validity == OK) {
+			validity = adjustBalance(change.accountId(), tokenId, change.units());
+			if (validity == INSUFFICIENT_TOKEN_BALANCE) {
+				validity = change.codeForInsufficientBalance();
+			}
+		}
+		return validity;
 	}
 }
