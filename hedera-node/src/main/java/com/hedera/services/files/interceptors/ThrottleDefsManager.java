@@ -64,7 +64,7 @@ public class ThrottleDefsManager implements FileUpdateInterceptor {
 
 	static final int APPLICABLE_PRIORITY = 0;
 
-	EnumSet<HederaFunctionality> expectedOps = ExpectedCustomThrottles.OPS_FOR_RELEASE_0130;
+	EnumSet<HederaFunctionality> expectedOps = ExpectedCustomThrottles.OPS_FOR_RELEASE_0160;
 
 	private final FileNumbers fileNums;
 	private final Supplier<AddressBook> addressBook;
