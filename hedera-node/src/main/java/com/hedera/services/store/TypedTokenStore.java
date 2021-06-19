@@ -33,6 +33,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
@@ -42,9 +43,14 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
 /**
  * Loads and saves token-related entities to and from the Swirlds state, hiding
@@ -96,7 +102,7 @@ public class TypedTokenStore {
 	 * can be used to implement business logic in a transaction.
 	 *
 	 * The arguments <i>should</i> be model objects that were returned by the
-	 * {@link TypedTokenStore#loadToken(Id)} and {@link AccountStore#loadAccount(Id)}
+	 * {@link TypedTokenStore#loadToken(Id, boolean)} and {@link AccountStore#loadAccount(Id)}
 	 * methods, respectively, since it will very rarely (or never) be correct
 	 * to do business logic on a relationship whose token or account have not
 	 * been validated as usable.
@@ -163,6 +169,50 @@ public class TypedTokenStore {
 		}
 
 		transactionRecordService.includeChangesToTokenRel(tokenRelationship);
+	}/**
+	 * Removes the given token relationship to the Swirlds state
+	 *
+	 * @param tokenId
+	 * @param accountId
+	 */
+	public void removeTokenRelationship(final Id tokenId, final Id accountId) {
+		final var key = buildKey(accountId, tokenId);
+		tokenRels.get().remove(key);
+	}
+
+	/**
+	 * Adjusts the balances that would need to be done if dissociating from an account with token balance.
+	 * @param tokenId
+	 * @param accountId
+	 */
+	public long adjustBalancesOnDissociate(final Id tokenId, final Id accountId) {
+		final var mutableTokenRel = getMerkleTokenRelStatus(accountId, tokenId, false);
+		var merkleToken = getMerkleToken(tokenId);
+
+		validateTrue(merkleToken != null, INVALID_TOKEN_ID);
+
+		final var treasury = merkleToken.treasury();
+		final var treasuryId = new Id(treasury.shard(), treasury.realm(),treasury.num());
+
+		validateFalse(!merkleToken.isDeleted() && treasuryId.equals(accountId), ACCOUNT_IS_TREASURY);
+		validateFalse(!merkleToken.isDeleted() && mutableTokenRel.isFrozen(), ACCOUNT_FROZEN_FOR_TOKEN);
+
+		var balance = mutableTokenRel.getBalance();
+		if(balance > 0) {
+			var expiry = Timestamp.newBuilder().setSeconds(merkleToken.expiry()).build();
+			var isTokenExpired = !accountStore.getValidator().isValidExpiry(expiry);
+			validateFalse(!merkleToken.isDeleted() && !isTokenExpired, TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+			// transfer balance to treasury
+			final var treasuryAccount = accountStore.loadAccount(treasuryId);
+			final var token = loadToken(tokenId, false);
+			final var account = accountStore.loadAccount(accountId);
+			if(!merkleToken.isDeleted()) {
+				/* Must be expired; return balance to treasury account. */
+				adjustTokenBalance(treasuryAccount, token, balance);
+				adjustTokenBalance(account, token, -balance);
+			}
+		}
+		return balance;
 	}
 
 	/**
@@ -180,11 +230,9 @@ public class TypedTokenStore {
 	 * @throws InvalidTransactionException
 	 * 		if the requested token is missing, deleted, or expired and pending removal
 	 */
-	public Token loadToken(Id id) {
-		final var key = new MerkleEntityId(id.getShard(), id.getRealm(), id.getNum());
-		final var merkleToken = tokens.get().get(key);
-
-		validateUsable(merkleToken);
+	public Token loadToken(Id id, boolean deleteCheck) {
+		final var merkleToken = getMerkleToken(id);
+		validateUsable(merkleToken, deleteCheck);
 
 		final var token = new Token(id);
 		initModelAccounts(token, merkleToken.treasury(), merkleToken.autoRenewAccount());
@@ -212,6 +260,50 @@ public class TypedTokenStore {
 		transactionRecordService.includeChangesToToken(token);
 	}
 
+	/**
+	 * Updates the balance of the Account in tokenUnits
+	 * @param account the account to adjust the balance for
+	 * @param token the denominating Token
+	 * @param adjustment token units to tbe adjusted by. Can be negative or positive.
+	 */
+	public void adjustTokenBalance(Account account, Token token, long adjustment) {
+		final var tokenId = token.getId();
+		final var accountId = account.getId();
+		var merkleToken = getMerkleToken(tokenId);
+
+		validateTrue(merkleToken != null, INVALID_TOKEN_ID);
+
+		accountStore.loadAccount(accountId);
+		var merkleTokenRelStatus =  getMerkleTokenRelStatus(accountId, tokenId, true);
+
+		validateFalse(!merkleToken.isDeleted() && merkleTokenRelStatus.isFrozen(), ACCOUNT_FROZEN_FOR_TOKEN);
+		validateTrue(merkleTokenRelStatus.isKycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
+
+		long balance = merkleTokenRelStatus.getBalance();
+		long newBalance = balance + adjustment;
+		validateTrue(newBalance >= 0, INSUFFICIENT_TOKEN_BALANCE);
+		merkleTokenRelStatus.setBalance(newBalance);
+	}
+
+	private MerkleTokenRelStatus getMerkleTokenRelStatus(final Id accountId, final Id tokenId, final boolean forModify) {
+		final var key = buildKey(accountId, tokenId);
+		final var currentTokenRels = tokenRels.get();
+		final var merkleTokenRelStatus = forModify ? currentTokenRels.getForModify(key) : currentTokenRels.get(key);
+		validateUsable(merkleTokenRelStatus);
+		return merkleTokenRelStatus;
+	}
+
+	private MerkleEntityAssociation buildKey(final Id accountId, final Id tokenId) {
+		return new MerkleEntityAssociation(
+				accountId.getShard(), accountId.getRealm(), accountId.getNum(),
+				tokenId.getShard(), tokenId.getRealm(), tokenId.getNum());
+	}
+
+	private MerkleToken getMerkleToken(final Id tokenId) {
+		final var merkleEntityId = new MerkleEntityId(tokenId.getShard(), tokenId.getRealm(), tokenId.getNum());
+		return tokens.get().get(merkleEntityId);
+	}
+
 	private void validateUsable(MerkleTokenRelStatus merkleTokenRelStatus) {
 		validateTrue(merkleTokenRelStatus != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 	}
@@ -220,6 +312,12 @@ public class TypedTokenStore {
 		validateTrue(merkleToken != null, INVALID_TOKEN_ID);
 		validateFalse(merkleToken.isDeleted(), TOKEN_WAS_DELETED);
 	}
+
+	private void validateUsable(MerkleToken merkleToken, boolean deleteCheck) {
+		validateTrue(merkleToken != null, INVALID_TOKEN_ID);
+		validateFalse( deleteCheck && merkleToken.isDeleted(), TOKEN_WAS_DELETED);
+	}
+
 
 	private void mapModelChangesToMutable(Token token, MerkleToken mutableToken) {
 		final var newAutoRenewAccount = token.getAutoRenewAccount();

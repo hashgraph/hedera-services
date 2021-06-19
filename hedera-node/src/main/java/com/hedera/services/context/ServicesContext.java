@@ -1411,7 +1411,7 @@ public class ServicesContext {
 						List.of(new TokenAssociateTransitionLogic(
 								accountStore(), typedTokenStore(), txnCtx(), globalDynamicProperties()))),
 				entry(TokenDissociateFromAccount,
-						List.of(new TokenDissociateTransitionLogic(tokenStore(), txnCtx()))),
+						List.of(new TokenDissociateTransitionLogic(accountStore(), typedTokenStore(), ledger(), txnCtx()))),
 				/* Schedule */
 				entry(ScheduleCreate,
 						List.of(new ScheduleCreateTransitionLogic(

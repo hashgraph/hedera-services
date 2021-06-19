@@ -21,7 +21,13 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.Token;
+import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -30,70 +36,90 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.util.List;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
 
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class TokenDissociateTransitionLogicTest {
-	private AccountID account = IdUtils.asAccount("1.2.4");
-	private TokenID id = IdUtils.asToken("1.2.3");
+	private AccountID account = IdUtils.asAccount("0.0.2");
+	private TokenID firstToken = IdUtils.asToken("1.2.3");
+	private TokenID secondToken = IdUtils.asToken("2.3.4");
+	private Id accountId = new Id(0, 0, 2);
+	private Id firstTokenId = new Id(1, 2, 3);
+	private Id secondTokenId = new Id(2, 3, 4);
 
-	private TokenStore tokenStore;
+	@Mock
+	private Account modelAccount;
+	@Mock
+	private Token firstModelToken;
+	@Mock
+	private Token secondModelToken;
+	@Mock
+	private TokenRelationship firstModelTokenRel;
+	@Mock
+	private TokenRelationship secondModelTokenRel;
+	@Mock
+	private TypedTokenStore tokenStore;
+	@Mock
+	private AccountStore accountStore;
+	@Mock
 	private TransactionContext txnCtx;
+	@Mock
 	private PlatformTxnAccessor accessor;
+	@Mock
+	private HederaLedger ledger;
 
 	private TransactionBody tokenDissociateTxn;
 	private TokenDissociateTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
-		tokenStore = mock(TokenStore.class);
-		accessor = mock(PlatformTxnAccessor.class);
-
-		txnCtx = mock(TransactionContext.class);
-
-		subject = new TokenDissociateTransitionLogic(tokenStore, txnCtx);
+		subject = new TokenDissociateTransitionLogic(accountStore, tokenStore, ledger, txnCtx);
 	}
 
 	@Test
-	public void capturesInvalidDissociate() {
+	void appliesExpectedTransition() {
+		// setup:
+		InOrder inOrder = Mockito.inOrder(modelAccount, accountStore, tokenStore);
+
 		givenValidTxnCtx();
+		given(accessor.getTxn()).willReturn(tokenDissociateTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accountStore.loadAccount(accountId)).willReturn(modelAccount);
+		given(modelAccount.getId()).willReturn(accountId);
+		given(firstModelToken.getId()).willReturn(firstTokenId);
+		given(secondModelToken.getId()).willReturn(secondTokenId);
+		given(tokenStore.loadToken(firstTokenId, false)).willReturn(firstModelToken);
+		given(tokenStore.loadToken(secondTokenId, false)).willReturn(secondModelToken);
+		given(firstModelToken.newRelationshipWith(modelAccount)).willReturn(firstModelTokenRel);
+		given(secondModelToken.newRelationshipWith(modelAccount)).willReturn(secondModelTokenRel);
 		// and:
-		given(tokenStore.dissociate(account, List.of(id))).willReturn(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+		List<Token> tokens = List.of(firstModelToken, secondModelToken);
 
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(txnCtx).setStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
-	}
-
-	@Test
-	public void followsHappyPath() {
-		givenValidTxnCtx();
-		// and:
-		given(tokenStore.dissociate(account, List.of(id))).willReturn(OK);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(tokenStore).dissociate(account, List.of(id));
-		verify(txnCtx).setStatus(SUCCESS);
+		inOrder.verify(modelAccount).dissociateWith(tokens);
+		inOrder.verify(accountStore).persistAccount(modelAccount);
+		inOrder.verify(tokenStore).removeTokenRelationship(firstTokenId, accountId);
+		inOrder.verify(tokenStore).removeTokenRelationship(secondTokenId, accountId);
 	}
 
 	@Test
@@ -103,20 +129,6 @@ class TokenDissociateTransitionLogicTest {
 		// expect:
 		assertTrue(subject.applicability().test(tokenDissociateTxn));
 		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
-	}
-
-	@Test
-	public void setsFailInvalidIfUnhandledException() {
-		givenValidTxnCtx();
-		// and:
-		given(tokenStore.dissociate(any(), anyList()))
-				.willThrow(IllegalArgumentException.class);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(FAIL_INVALID);
 	}
 
 	@Test
@@ -147,11 +159,10 @@ class TokenDissociateTransitionLogicTest {
 		tokenDissociateTxn = TransactionBody.newBuilder()
 				.setTokenDissociate(TokenDissociateTransactionBody.newBuilder()
 						.setAccount(account)
-						.addTokens(id))
+						.addAllTokens(List.of(firstToken, secondToken)))
 				.build();
 		given(accessor.getTxn()).willReturn(tokenDissociateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(tokenStore.resolve(id)).willReturn(id);
 	}
 
 	private void givenMissingAccount() {
@@ -164,8 +175,8 @@ class TokenDissociateTransitionLogicTest {
 		tokenDissociateTxn = TransactionBody.newBuilder()
 				.setTokenDissociate(TokenDissociateTransactionBody.newBuilder()
 						.setAccount(account)
-						.addTokens(id)
-						.addTokens(id))
+						.addTokens(firstToken)
+						.addTokens(firstToken))
 				.build();
 	}
 }

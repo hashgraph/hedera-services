@@ -146,7 +146,7 @@ class TypedTokenStoreTest {
 		givenToken(merkleTokenId, merkleToken);
 
 		// when:
-		final var actualToken = subject.loadToken(tokenId);
+		final var actualToken = subject.loadToken(tokenId, true);
 
 		// then:
 		/* JKey does not override equals properly, have to compare string representations here */
@@ -194,7 +194,7 @@ class TypedTokenStoreTest {
 		givenModifiableToken(merkleTokenId, merkleToken);
 
 		// when:
-		final var modelToken = subject.loadToken(tokenId);
+		final var modelToken = subject.loadToken(tokenId, true);
 		// and:
 		modelToken.setTotalSupply(tokenSupply * 2);
 		modelToken.setAutoRenewAccount(treasuryAccount);
@@ -227,7 +227,7 @@ class TypedTokenStoreTest {
 	}
 
 	private void assertTokenLoadFailsWith(ResponseCodeEnum status) {
-		var ex = assertThrows(InvalidTransactionException.class, () -> subject.loadToken(tokenId));
+		var ex = assertThrows(InvalidTransactionException.class, () -> subject.loadToken(tokenId, true));
 		assertEquals(status, ex.getResponseCode());
 	}
 

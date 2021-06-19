@@ -87,7 +87,7 @@ public class TokenAssociateTransitionLogic implements TransitionLogic {
 		final var account = accountStore.loadAccount(accountId);
 		final List<Token> tokens = new ArrayList<>();
 		for (final var tokenId : tokenIds) {
-			final var token = tokenStore.loadToken(tokenId);
+			final var token = tokenStore.loadToken(tokenId, true);
 			tokens.add(token);
 		}
 

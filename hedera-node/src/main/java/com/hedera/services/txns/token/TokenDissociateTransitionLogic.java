@@ -21,6 +21,11 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.Token;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -29,6 +34,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -49,26 +56,56 @@ public class TokenDissociateTransitionLogic implements TransitionLogic {
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
-	private final TokenStore store;
+	private final AccountStore accountStore;
+	private final TypedTokenStore tokenStore;
+	private final HederaLedger ledger;
 	private final TransactionContext txnCtx;
 
 	public TokenDissociateTransitionLogic(
-			TokenStore store,
+			AccountStore accountStore,
+			TypedTokenStore tokenStore,
+			HederaLedger ledger,
 			TransactionContext txnCtx
 	) {
-		this.store = store;
+		this.accountStore = accountStore;
+		this.tokenStore = tokenStore;
+		this.ledger = ledger;
 		this.txnCtx = txnCtx;
 	}
 
 	@Override
 	public void doStateTransition() {
-		try {
-			var op = txnCtx.accessor().getTxn().getTokenDissociate();
-			var outcome = store.dissociate(op.getAccount(), op.getTokensList());
-			txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
-		} catch (Exception e) {
-			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
-			txnCtx.setStatus(FAIL_INVALID);
+		/* --- Translate from gRPC types --- */
+		final var op = txnCtx.accessor().getTxn().getTokenDissociate();
+		/* First the account */
+		final var grpcId = op.getAccount();
+		final var accountId = new Id(grpcId.getShardNum(), grpcId.getRealmNum(), grpcId.getAccountNum());
+		/* And then the tokens */
+		final List<Id> tokenIds = new ArrayList<>();
+		for (final var _grpcId : op.getTokensList()) {
+			tokenIds.add(new Id(_grpcId.getShardNum(), _grpcId.getRealmNum(), _grpcId.getTokenNum()));
+		}
+
+		/* --- Load the model objects --- */
+		final var account = accountStore.loadAccount(accountId);
+		final List<Token> tokens = new ArrayList<>();
+		for (final var tokenId : tokenIds) {
+			final var token = tokenStore.loadToken(tokenId, false);
+			final long balanceAdjusted = tokenStore.adjustBalancesOnDissociate(token.getId(), account.getId());
+			if(balanceAdjusted != 0) {
+				ledger.updateTokenXfers(tokenId.asGrpcToken(), token.getTreasury().getId().asGrpcAccount(), balanceAdjusted);
+				ledger.updateTokenXfers(tokenId.asGrpcToken(), account.getId().asGrpcAccount(), -balanceAdjusted);
+			}
+			tokens.add(token);
+		}
+
+		/* --- Do the business logic --- */
+		account.dissociateWith(tokens);
+
+		/* --- Persist the updated models --- */
+		accountStore.persistAccount(account);
+		for (final var token : tokens) {
+			tokenStore.removeTokenRelationship(token.getId(), account.getId());
 		}
 	}
 
