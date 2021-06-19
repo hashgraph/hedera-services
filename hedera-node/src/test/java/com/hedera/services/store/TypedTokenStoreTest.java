@@ -221,8 +221,8 @@ class TypedTokenStoreTest {
 	@Test
 	void freezeAndGrantKycOperationsWork() {
 		// setup:
-		final var accountID = miscAccount.getId().asGrpcAccount();
-		final var tokenID = token.getId().asGrpcToken();
+		final var accountID = miscId.asGrpcAccount();
+		final var tokenID = tokenId.asGrpcToken();
 
 		givenToken(merkleTokenId, merkleToken);
 		givenModifiableRelationship(miscTokenRelId, miscTokenMerkleRel);
@@ -248,8 +248,8 @@ class TypedTokenStoreTest {
 	@Test
 	void freezeAndGrantKycOperationsOnTokenWithNoFreezeKeyAndGrantKycKeyFails() {
 		// setup:
-		final var accountID = miscAccount.getId().asGrpcAccount();
-		final var tokenID = token.getId().asGrpcToken();
+		final var accountID = miscId.asGrpcAccount();
+		final var tokenID = tokenId.asGrpcToken();
 
 		merkleToken.setFreezeKey(UNUSED_KEY);
 		merkleToken.setKycKey(UNUSED_KEY);

@@ -123,12 +123,7 @@ public class TypedTokenStore {
 	public TokenRelationship loadTokenRelationship(Token token, Account account) {
 		final var tokenId = token.getId();
 		final var accountId = account.getId();
-		final var key = new MerkleEntityAssociation(
-				accountId.getShard(), accountId.getRealm(), accountId.getNum(),
-				tokenId.getShard(), tokenId.getRealm(), tokenId.getNum());
-		final var merkleTokenRel = tokenRels.get().get(key);
-
-		validateUsable(merkleTokenRel);
+		final var merkleTokenRel = getMerkleTokenRelStatus(accountId, tokenId, false);
 
 		final var tokenRelationship = new TokenRelationship(token, account);
 		tokenRelationship.initBalance(merkleTokenRel.getBalance());
@@ -151,9 +146,7 @@ public class TypedTokenStore {
 	public void persistTokenRelationship(TokenRelationship tokenRelationship) {
 		final var tokenId = tokenRelationship.getToken().getId();
 		final var accountId = tokenRelationship.getAccount().getId();
-		final var key = new MerkleEntityAssociation(
-				accountId.getShard(), accountId.getRealm(), accountId.getNum(),
-				tokenId.getShard(), tokenId.getRealm(), tokenId.getNum());
+		final var key = buildKey(accountId, tokenId);
 		final var currentTokenRels = tokenRels.get();
 
 		final var isNewRel = tokenRelationship.isNotYetPersisted();
@@ -182,6 +175,8 @@ public class TypedTokenStore {
 	 *
 	 * @param id
 	 * 		the token to load
+	 * @param deleteCheck
+	 * 		flag to check if the merkleToken is deleted
 	 * @return a usable model of the token
 	 * @throws InvalidTransactionException
 	 * 		if the requested token is missing, deleted, or expired and pending removal
