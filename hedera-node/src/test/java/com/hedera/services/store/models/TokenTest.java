@@ -24,6 +24,7 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -192,6 +193,20 @@ class TokenTest {
 
 		assertNotEquals(subject, otherToken);
 		assertNotEquals(subject.hashCode(), otherToken.hashCode());
+	}
+
+	@Test
+	void toGrpcIdAsExpected() {
+		// given:
+		final var subjectGrpcId = TokenID.newBuilder().setShardNum(1).setRealmNum(2).setTokenNum(3).build();
+
+		// when:
+		var tokenGrpcId = subject.toGrpcId();
+
+		// expect:
+		assertEquals(subjectGrpcId.getShardNum(), tokenGrpcId.getShardNum());
+		assertEquals(subjectGrpcId.getRealmNum(), tokenGrpcId.getRealmNum());
+		assertEquals(subjectGrpcId.getTokenNum(), tokenGrpcId.getTokenNum());
 	}
 
 	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {

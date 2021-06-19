@@ -21,8 +21,7 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -32,16 +31,12 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
@@ -50,8 +45,7 @@ class TokenGrantKycTransitionLogicTest {
 	private TokenID tokenId = IdUtils.asToken("0.0.12345");
 	private AccountID account = IdUtils.asAccount("0.0.54321");
 
-	private TokenStore tokenStore;
-	private HederaLedger ledger;
+	private TypedTokenStore tokenStore;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
 
@@ -60,40 +54,24 @@ class TokenGrantKycTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		ledger = mock(HederaLedger.class);
-		tokenStore = mock(TokenStore.class);
+		tokenStore = mock(TypedTokenStore.class);
 		accessor = mock(PlatformTxnAccessor.class);
 
 		txnCtx = mock(TransactionContext.class);
 
-		subject = new TokenGrantKycTransitionLogic(tokenStore, ledger, txnCtx);
-	}
-
-	@Test
-	public void capturesInvalidGrantKyc() {
-		givenValidTxnCtx();
-		// and:
-		given(ledger.grantKyc(account, tokenId)).willReturn(TOKEN_HAS_NO_KYC_KEY);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(TOKEN_HAS_NO_KYC_KEY);
+		subject = new TokenGrantKycTransitionLogic(tokenStore, txnCtx);
 	}
 
 	@Test
 	public void followsHappyPath() {
 		givenValidTxnCtx();
 		// and:
-		given(ledger.grantKyc(account, tokenId)).willReturn(OK);
 
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(ledger).grantKyc(account, tokenId);
-		verify(txnCtx).setStatus(SUCCESS);
+		verify(tokenStore).grantKyc(account, tokenId);
 	}
 
 	@Test
@@ -103,19 +81,6 @@ class TokenGrantKycTransitionLogicTest {
 		// expect:
 		assertTrue(subject.applicability().test(tokenGrantKycTxn));
 		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
-	}
-
-	@Test
-	public void setsFailInvalidIfUnhandledException() {
-		givenValidTxnCtx();
-		// and:
-		given(ledger.grantKyc(any(), any())).willThrow(IllegalArgumentException.class);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(FAIL_INVALID);
 	}
 
 	@Test
@@ -150,7 +115,6 @@ class TokenGrantKycTransitionLogicTest {
 				.build();
 		given(accessor.getTxn()).willReturn(tokenGrantKycTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(tokenStore.resolve(tokenId)).willReturn(tokenId);
 	}
 
 	private void givenMissingToken() {

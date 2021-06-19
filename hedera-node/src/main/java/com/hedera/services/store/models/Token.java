@@ -23,6 +23,7 @@ package com.hedera.services.store.models;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -191,5 +192,13 @@ public class Token {
 				.add("frozenByDefault", frozenByDefault)
 				.add("supplyKey", describe(supplyKey))
 				.toString();
+	}
+
+	public TokenID toGrpcId() {
+		return TokenID.newBuilder()
+				.setRealmNum(id.getRealm())
+				.setShardNum(id.getShard())
+				.setTokenNum(id.getNum())
+				.build();
 	}
 }

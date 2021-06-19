@@ -22,6 +22,7 @@ package com.hedera.services.txns.token;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -44,31 +45,21 @@ public class TokenFreezeTransitionLogic implements TransitionLogic {
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
-	private final TokenStore tokenStore;
-	private final HederaLedger ledger;
+	private final TypedTokenStore tokenStore;
 	private final TransactionContext txnCtx;
 
 	public TokenFreezeTransitionLogic(
-			TokenStore tokenStore,
-			HederaLedger ledger,
+			TypedTokenStore tokenStore,
 			TransactionContext txnCtx
 	) {
 		this.txnCtx = txnCtx;
-		this.ledger = ledger;
 		this.tokenStore = tokenStore;
 	}
 
 	@Override
 	public void doStateTransition() {
-		try {
-			var op = txnCtx.accessor().getTxn().getTokenFreeze();
-			var token = tokenStore.resolve(op.getToken());
-			var outcome	= ledger.freeze(op.getAccount(), token);
-			txnCtx.setStatus(outcome == OK ? SUCCESS : outcome);
-		} catch (Exception e) {
-			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
-			txnCtx.setStatus(FAIL_INVALID);
-		}
+		var op = txnCtx.accessor().getTxn().getTokenFreeze();
+		tokenStore.freeze(op.getAccount(), op.getToken());
 	}
 
 	@Override

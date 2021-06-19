@@ -22,6 +22,7 @@ package com.hedera.services.store.models;
 
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -90,6 +91,20 @@ class AccountTest {
 
 		// expect:
 		assertEquals(expectedFinalTokens, assocTokens.toReadableIdList());
+	}
+
+	@Test
+	void toGrpcIdAsExpected() {
+		// given:
+		final var subjectGrpcId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(12345).build();
+
+		// when :
+		var accountGrpcId = subject.toGrpcId();
+
+		// expect:
+		assertEquals(subjectGrpcId.getShardNum(), accountGrpcId.getShardNum());
+		assertEquals(subjectGrpcId.getRealmNum(), accountGrpcId.getRealmNum());
+		assertEquals(subjectGrpcId.getAccountNum(), accountGrpcId.getAccountNum());
 	}
 
 	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
