@@ -15,6 +15,7 @@ import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -273,8 +274,7 @@ class CustomFeeTest {
 		// given:
 		final var desiredFracRepr = "FractionalFeeSpec{numerator=5, denominator=100, " +
 				"minimumUnitsToCollect=1, maximumUnitsToCollect=55}";
-		final var desiredFixedRepr = "FixedFeeSpec{unitsToCollect=7, " +
-				"tokenDenomination=EntityId{shard=1, realm=2, num=3}}";
+		final var desiredFixedRepr = "FixedFeeSpec{unitsToCollect=7, tokenDenomination=1.2.3}";
 
 		// expect:
 		assertEquals(desiredFixedRepr, fixedSpec.toString());
@@ -323,5 +323,110 @@ class CustomFeeTest {
 		// expect:
 		assertDoesNotThrow(fractionalSpec::hashCode);
 		assertDoesNotThrow(fixedSpec::hashCode);
+	}
+
+	@Test
+	void fixedFeeEqualsWorks() {
+		// given:
+		final var aFixedSpec = new CustomFee.FixedFeeSpec(fixedUnitsToCollect, denom);
+		final var bFixedSpec = new CustomFee.FixedFeeSpec(fixedUnitsToCollect, denom);
+		final var cFixedSpec = new CustomFee.FixedFeeSpec(fixedUnitsToCollect + 1, denom);
+		final var dFixedSpec = new CustomFee.FixedFeeSpec(fixedUnitsToCollect, null);
+		final var eFixedSpec = aFixedSpec;
+
+		// expect:
+		assertEquals(aFixedSpec, bFixedSpec);
+		assertEquals(aFixedSpec, eFixedSpec);
+		assertNotEquals(aFixedSpec, null);
+		assertNotEquals(aFixedSpec, new Object());
+		assertNotEquals(aFixedSpec, cFixedSpec);
+		assertNotEquals(aFixedSpec, dFixedSpec);
+	}
+
+	@Test
+	void fractionalFeeEqualsWorks() {
+		// setup:
+		long n = 3;
+		long d = 7;
+		long min = 22;
+		long max = 99;
+
+		// given:
+		final var aFractionalSpec = new CustomFee.FractionalFeeSpec(n, d, min, max);
+		final var bFractionalSpec = new CustomFee.FractionalFeeSpec(n + 1, d, min, max);
+		final var cFractionalSpec = new CustomFee.FractionalFeeSpec(n, d + 1, min, max);
+		final var dFractionalSpec = new CustomFee.FractionalFeeSpec(n, d, min + 1, max);
+		final var eFractionalSpec = new CustomFee.FractionalFeeSpec(n, d, min, max + 1);
+		final var fFractionalSpec = new CustomFee.FractionalFeeSpec(n, d, min, max);
+		final var gFractionalSpec = aFractionalSpec;
+
+		// expect:
+		assertEquals(aFractionalSpec, fFractionalSpec);
+		assertEquals(aFractionalSpec, gFractionalSpec);
+		assertNotEquals(aFractionalSpec, null);
+		assertNotEquals(aFractionalSpec, new Object());
+		assertNotEquals(aFractionalSpec, bFractionalSpec);
+		assertNotEquals(aFractionalSpec, cFractionalSpec);
+		assertNotEquals(aFractionalSpec, dFractionalSpec);
+		assertNotEquals(aFractionalSpec, eFractionalSpec);
+	}
+
+	@Test
+	void customFeeEqualsWorks() {
+		// setup:
+		long n = 3;
+		long d = 7;
+		long min = 22;
+		long max = 99;
+		// and:
+		final var aFeeCollector = new EntityId(1, 2, 3);
+		final var bFeeCollector = new EntityId(2, 3, 4);
+
+		// given:
+		final var aCustomFee = CustomFee.fixedFee(fixedUnitsToCollect, denom, aFeeCollector);
+		final var bCustomFee = CustomFee.fixedFee(fixedUnitsToCollect + 1, denom, aFeeCollector);
+		final var cCustomFee = CustomFee.fixedFee(fixedUnitsToCollect, denom, bFeeCollector);
+		final var dCustomFee = CustomFee.fractionalFee(n, d, min, max, aFeeCollector);
+		final var eCustomFee = aCustomFee;
+		final var fCustomFee = CustomFee.fixedFee(fixedUnitsToCollect, denom, aFeeCollector);
+
+		// expect:
+		assertEquals(aCustomFee, eCustomFee);
+		assertEquals(aCustomFee, fCustomFee);
+		assertNotEquals(aCustomFee, null);
+		assertNotEquals(aCustomFee, new Object());
+		assertNotEquals(aCustomFee, bCustomFee);
+		assertNotEquals(aCustomFee, cCustomFee);
+		assertNotEquals(aCustomFee, dCustomFee);
+		// and:
+		assertEquals(aCustomFee.hashCode(), fCustomFee.hashCode());
+	}
+
+	@Test
+	void toStringWorks() {
+		// setup:
+		final var denom = new EntityId(111, 222, 333);
+		final var fractionalFee = CustomFee.fractionalFee(
+				validNumerator,
+				validDenominator,
+				minimumUnitsToCollect,
+				maximumUnitsToCollect,
+				feeCollector);
+		final var fixedHbarFee = CustomFee.fixedFee(fixedUnitsToCollect, null, feeCollector);
+		final var fixedHtsFee = CustomFee.fixedFee(fixedUnitsToCollect, denom, feeCollector);
+
+		// given:
+		final var expectedFractional = "CustomFee{feeType=FRACTIONAL_FEE, fractionalFee=FractionalFeeSpec{numerator=5, " +
+				"denominator=100, minimumUnitsToCollect=1, maximumUnitsToCollect=55}, " +
+				"feeCollector=EntityId{shard=4, realm=5, num=6}}";
+		final var expectedFixedHbar = "CustomFee{feeType=FIXED_FEE, fixedFee=FixedFeeSpec{unitsToCollect=7, " +
+				"tokenDenomination=ℏ}, feeCollector=EntityId{shard=4, realm=5, num=6}}";
+		final var expectedFixedHts = "CustomFee{feeType=FIXED_FEE, fixedFee=FixedFeeSpec{unitsToCollect=7, " +
+				"tokenDenomination=111.222.333}, feeCollector=EntityId{shard=4, realm=5, num=6}}";
+
+		// expect:
+		assertEquals(expectedFractional, fractionalFee.toString());
+		assertEquals(expectedFixedHts, fixedHtsFee.toString());
+		assertEquals(expectedFixedHbar, fixedHbarFee.toString());
 	}
 }

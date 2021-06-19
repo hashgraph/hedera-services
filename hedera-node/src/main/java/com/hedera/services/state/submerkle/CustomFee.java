@@ -1,18 +1,54 @@
 package com.hedera.services.state.submerkle;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.google.common.base.MoreObjects;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.io.IOException;
 import java.util.Objects;
 
+/**
+ * Represents a custom fee attached to an HTS token type. Custom fees are
+ * charged during a CryptoTransfer that moves units of the token type. They
+ * are always paid by the same account that pays the ordinary Hedera fees
+ * to account 0.0.98 and the submitting node's account.
+ *
+ * A custom fee must give a fee collection account to receive the charged
+ * fees. The amount to be charged is specified by either a fixed or
+ * fractional term.
+ *
+ * A <i>fixed fee</i> may have units of either ℏ or an arbitrary HTS token.
+ *
+ * A <i>fractional fee</i> always has the same units as the token type
+ * defining the custom fee. It specifies the fraction of the units
+ * moved that should go to the fee collection account, along with an
+ * optional minimum and maximum number of units to be charged.
+ */
 public class CustomFee implements SelfSerializable {
-	static final byte FIXED_CODE = (byte)(1 << 0);
-	static final byte FRACTIONAL_CODE = (byte)(1 << 1);
+	static final byte FIXED_CODE = (byte) (1 << 0);
+	static final byte FRACTIONAL_CODE = (byte) (1 << 1);
 
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xf65baa433940f137L;
@@ -78,6 +114,38 @@ public class CustomFee implements SelfSerializable {
 
 	public FractionalFeeSpec getFractionalFeeSpec() {
 		return fractionalFeeSpec;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null || !obj.getClass().equals(CustomFee.class)) {
+			return false;
+		}
+
+		final var that = (CustomFee) obj;
+		return this.feeType == that.feeType &&
+				Objects.equals(this.feeCollector, that.feeCollector) &&
+				Objects.equals(this.fixedFeeSpec, that.fixedFeeSpec) &&
+				Objects.equals(this.fractionalFeeSpec, that.fractionalFeeSpec);
+	}
+
+	@Override
+	public int hashCode() {
+		return HashCodeBuilder.reflectionHashCode(this);
+	}
+
+	@Override
+	public String toString() {
+		return MoreObjects.toStringHelper(CustomFee.class)
+				.omitNullValues()
+				.add("feeType", feeType)
+				.add("fixedFee", fixedFeeSpec)
+				.add("fractionalFee", fractionalFeeSpec)
+				.add("feeCollector", feeCollector)
+				.toString();
 	}
 
 	@Override
@@ -148,25 +216,36 @@ public class CustomFee implements SelfSerializable {
 			this.maximumUnitsToCollect = maximumUnitsToCollect;
 		}
 
-		long getNumerator() {
+		public long getNumerator() {
 			return numerator;
 		}
 
-		long getDenominator() {
+		public long getDenominator() {
 			return denominator;
 		}
 
-		long getMinimumUnitsToCollect() {
+		public long getMinimumUnitsToCollect() {
 			return minimumUnitsToCollect;
 		}
 
-		long getMaximumUnitsToCollect() {
+		public long getMaximumUnitsToCollect() {
 			return maximumUnitsToCollect;
 		}
 
 		@Override
 		public boolean equals(Object obj) {
-			return EqualsBuilder.reflectionEquals(this, obj);
+			if (this == obj) {
+				return true;
+			}
+			if (obj == null || !obj.getClass().equals(FractionalFeeSpec.class)) {
+				return false;
+			}
+
+			final var that = (FractionalFeeSpec) obj;
+			return this.numerator == that.numerator &&
+					this.denominator == that.denominator &&
+					this.minimumUnitsToCollect == that.minimumUnitsToCollect &&
+					this.maximumUnitsToCollect == that.maximumUnitsToCollect;
 		}
 
 		@Override
@@ -195,17 +274,26 @@ public class CustomFee implements SelfSerializable {
 			this.tokenDenomination = tokenDenomination;
 		}
 
-		long getUnitsToCollect() {
+		public long getUnitsToCollect() {
 			return unitsToCollect;
 		}
 
-		EntityId getTokenDenomination() {
+		public EntityId getTokenDenomination() {
 			return tokenDenomination;
 		}
 
 		@Override
 		public boolean equals(Object obj) {
-			return EqualsBuilder.reflectionEquals(this, obj);
+			if (this == obj) {
+				return true;
+			}
+			if (obj == null || !obj.getClass().equals(FixedFeeSpec.class)) {
+				return false;
+			}
+
+			final var that = (FixedFeeSpec) obj;
+			return this.unitsToCollect == that.unitsToCollect &&
+					Objects.equals(this.tokenDenomination, that.tokenDenomination);
 		}
 
 		@Override
@@ -217,7 +305,7 @@ public class CustomFee implements SelfSerializable {
 		public String toString() {
 			return MoreObjects.toStringHelper(FixedFeeSpec.class)
 					.add("unitsToCollect", unitsToCollect)
-					.add("tokenDenomination", tokenDenomination)
+					.add("tokenDenomination", tokenDenomination == null ? "ℏ" : tokenDenomination.toAbbrevString())
 					.toString();
 		}
 	}
