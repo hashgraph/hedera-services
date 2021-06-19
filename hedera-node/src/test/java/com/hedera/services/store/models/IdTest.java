@@ -20,6 +20,8 @@ package com.hedera.services.store.models;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -59,5 +61,29 @@ class IdTest {
 		assertNotEquals(aId, null);
 		assertNotEquals(aId, new Object());
 		assertEquals(aId, aId);
+	}
+
+	@Test
+	void toGrpcIdAsExpected() {
+		//
+		long shard = 123;
+		long realm = 456;
+		long num = 789;
+
+		final var id = new Id(shard, realm, num);
+		final var tokenGrpcId = TokenID.newBuilder().setShardNum(shard).setRealmNum(realm).setTokenNum(num).build();
+		final var AccountGrpcId = AccountID.newBuilder().setShardNum(shard).setRealmNum(realm).setAccountNum(num).build();
+
+		// when:
+		var tokenID = id.asGrpcToken();
+		var accountID = id.asGrpcAccount();
+
+		// expect:
+		assertEquals(tokenGrpcId.getShardNum(), tokenID.getShardNum());
+		assertEquals(tokenGrpcId.getRealmNum(), tokenID.getRealmNum());
+		assertEquals(tokenGrpcId.getTokenNum(), tokenID.getTokenNum());
+		assertEquals(AccountGrpcId.getShardNum(), accountID.getShardNum());
+		assertEquals(AccountGrpcId.getRealmNum(), accountID.getRealmNum());
+		assertEquals(AccountGrpcId.getAccountNum(), accountID.getAccountNum());
 	}
 }

@@ -195,20 +195,6 @@ class TokenTest {
 		assertNotEquals(subject.hashCode(), otherToken.hashCode());
 	}
 
-	@Test
-	void toGrpcIdAsExpected() {
-		// given:
-		final var subjectGrpcId = TokenID.newBuilder().setShardNum(1).setRealmNum(2).setTokenNum(3).build();
-
-		// when:
-		var tokenGrpcId = subject.toGrpcId();
-
-		// expect:
-		assertEquals(subjectGrpcId.getShardNum(), tokenGrpcId.getShardNum());
-		assertEquals(subjectGrpcId.getRealmNum(), tokenGrpcId.getRealmNum());
-		assertEquals(subjectGrpcId.getTokenNum(), tokenGrpcId.getTokenNum());
-	}
-
 	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
 		var ex = assertThrows(InvalidTransactionException.class, something::run);
 		assertEquals(status, ex.getResponseCode());

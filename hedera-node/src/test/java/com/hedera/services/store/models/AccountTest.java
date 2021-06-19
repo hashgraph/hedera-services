@@ -93,20 +93,6 @@ class AccountTest {
 		assertEquals(expectedFinalTokens, assocTokens.toReadableIdList());
 	}
 
-	@Test
-	void toGrpcIdAsExpected() {
-		// given:
-		final var subjectGrpcId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(12345).build();
-
-		// when :
-		var accountGrpcId = subject.toGrpcId();
-
-		// expect:
-		assertEquals(subjectGrpcId.getShardNum(), accountGrpcId.getShardNum());
-		assertEquals(subjectGrpcId.getRealmNum(), accountGrpcId.getRealmNum());
-		assertEquals(subjectGrpcId.getAccountNum(), accountGrpcId.getAccountNum());
-	}
-
 	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
 		var ex = assertThrows(InvalidTransactionException.class, something::run);
 		assertEquals(status, ex.getResponseCode());

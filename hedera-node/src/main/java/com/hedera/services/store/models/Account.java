@@ -93,14 +93,6 @@ public class Account {
 		return associatedTokens;
 	}
 
-	public AccountID toGrpcId() {
-		return AccountID.newBuilder()
-				.setRealmNum(id.getRealm())
-				.setShardNum(id.getShard())
-				.setAccountNum(id.getNum())
-				.build();
-	}
-
 	/* NOTE: The object methods below are only overridden to improve
 	readability of unit tests; this model object is not used in hash-based
 	collections, so the performance of these methods doesn't matter. */

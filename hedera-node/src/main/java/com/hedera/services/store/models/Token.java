@@ -193,12 +193,4 @@ public class Token {
 				.add("supplyKey", describe(supplyKey))
 				.toString();
 	}
-
-	public TokenID toGrpcId() {
-		return TokenID.newBuilder()
-				.setRealmNum(id.getRealm())
-				.setShardNum(id.getShard())
-				.setTokenNum(id.getNum())
-				.build();
-	}
 }
