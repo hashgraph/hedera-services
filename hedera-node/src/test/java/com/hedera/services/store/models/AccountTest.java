@@ -22,7 +22,6 @@ package com.hedera.services.store.models;
 
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
