@@ -43,11 +43,15 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -210,6 +214,61 @@ class TypedTokenStoreTest {
 		verify(transactionRecordService).includeChangesToToken(modelToken);
 	}
 
+	@Test
+	void adjustTokenBalanceWorks() {
+		// setup:
+		givenToken(merkleTokenId, merkleToken);
+		givenModifiableRelationship(miscTokenRelId, miscTokenMerkleRel);
+		given(accountStore.loadAccount(any())).willReturn(miscAccount);
+
+		// when:
+		subject.adjustTokenBalance(miscAccount, token, 100);
+
+		// then:
+		assertEquals(balance+100, miscTokenMerkleRel.getBalance());
+
+		// and When:
+		subject.adjustTokenBalance(miscAccount, token, -100);
+
+		// then:
+		assertEquals(balance, miscTokenMerkleRel.getBalance());
+	}
+
+	@Test
+	void adjustTokenBalanceFailsWhenNotEnoughTokenBalance() {
+		// setup:
+		givenToken(merkleTokenId, merkleToken);
+		givenModifiableRelationship(miscTokenRelId, miscTokenMerkleRel);
+		given(accountStore.loadAccount(any())).willReturn(miscAccount);
+
+		// then:
+		assertTokenBalanceUpdateFailsWith(INSUFFICIENT_TOKEN_BALANCE, miscAccount, token, -(balance+100));
+	}
+
+	@Test
+	void adjustTokenBalanceFailsWhenKycNotGranted() {
+		// setup:
+		givenToken(merkleTokenId, merkleToken);
+		givenModifiableRelationship(miscTokenRelId, miscTokenMerkleRel);
+		given(accountStore.loadAccount(any())).willReturn(miscAccount);
+		miscTokenMerkleRel.setKycGranted(false);
+
+		// then:
+		assertTokenBalanceUpdateFailsWith(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN, miscAccount, token, 100);
+	}
+
+	@Test
+	void adjustTokenBalanceFailsWhenFrozenAndNotDeleted() {
+		// setup:
+		givenToken(merkleTokenId, merkleToken);
+		givenModifiableRelationship(miscTokenRelId, miscTokenMerkleRel);
+		given(accountStore.loadAccount(any())).willReturn(miscAccount);
+		miscTokenMerkleRel.setFrozen(true);
+
+		// then:
+		assertTokenBalanceUpdateFailsWith(ACCOUNT_FROZEN_FOR_TOKEN, miscAccount, token, 100);
+	}
+
 	private void givenRelationship(MerkleEntityAssociation anAssoc, MerkleTokenRelStatus aRelationship) {
 		given(tokenRels.get(anAssoc)).willReturn(aRelationship);
 	}
@@ -228,6 +287,11 @@ class TypedTokenStoreTest {
 
 	private void assertTokenLoadFailsWith(ResponseCodeEnum status) {
 		var ex = assertThrows(InvalidTransactionException.class, () -> subject.loadToken(tokenId, true));
+		assertEquals(status, ex.getResponseCode());
+	}
+
+	private void assertTokenBalanceUpdateFailsWith(ResponseCodeEnum status, Account account, Token token, long adjustment) {
+		var ex = assertThrows(InvalidTransactionException.class, () -> subject.adjustTokenBalance(account, token, adjustment));
 		assertEquals(status, ex.getResponseCode());
 	}
 
