@@ -79,7 +79,7 @@ public class SpanMapManager {
 
 	private void expandImpliedTransfers(TxnAccessor accessor) {
 		final var op = accessor.getTxn().getCryptoTransfer();
-		final var impliedTransfers = impliedTransfersMarshal.marshalFromGrpc(op);
+		final var impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op);
 
 		spanMapAccessor.setImpliedTransfers(accessor, impliedTransfers);
 	}

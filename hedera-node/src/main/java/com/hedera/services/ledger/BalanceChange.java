@@ -22,6 +22,7 @@ package com.hedera.services.ledger;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.store.models.Id;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -49,41 +50,39 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
  * whose APIs still use gRPC types.
  */
 public class BalanceChange {
+	static final TokenID NO_TOKEN_FOR_HBAR_ADJUST = TokenID.getDefaultInstance();
+
 	private final Id token;
 	private final Id account;
 	private final long units;
-	private ResponseCodeEnum codeForInsufficientBalance = INSUFFICIENT_ACCOUNT_BALANCE;
+	private ResponseCodeEnum codeForInsufficientBalance;
 
 	private long newBalance;
-	private TokenID explicitTokenId = null;
-	private AccountID explicitAccountId = null;
+	private TokenID tokenId = null;
+	private AccountID accountId;
 
-	private BalanceChange(Id token, Id account, long units) {
+	private BalanceChange(final Id token, final AccountAmount aa, final ResponseCodeEnum code) {
 		this.token = token;
-		this.account = account;
-		this.units = units;
+		final var account = aa.getAccountID();
+		this.accountId = account;
+		final var id = Id.fromGrpcAccount(account);
+		this.account = id;
+		this.units = aa.getAmount();
+		this.codeForInsufficientBalance = code;
 	}
 
-	public static BalanceChange hbarAdjust(Id account, long units) {
-		return new BalanceChange(null, account, units);
+	public static BalanceChange hbarAdjust(final AccountAmount aa) {
+		return new BalanceChange(null, aa, INSUFFICIENT_ACCOUNT_BALANCE);
 	}
 
-	public static BalanceChange tokenAdjust(Id token, Id account, long units) {
-		final var tokenChange = new BalanceChange(token, account, units);
-		tokenChange.setCodeForInsufficientBalance(INSUFFICIENT_TOKEN_BALANCE);
+	public static BalanceChange tokenAdjust(final Id token, final TokenID tokenId, final AccountAmount aa) {
+		final var tokenChange = new BalanceChange(token, aa, INSUFFICIENT_TOKEN_BALANCE);
+		tokenChange.tokenId = tokenId;
 		return tokenChange;
 	}
 
 	public boolean isForHbar() {
 		return token == null;
-	}
-
-	public Id token() {
-		return token;
-	}
-
-	public Id account() {
-		return account;
 	}
 
 	public long units() {
@@ -94,32 +93,20 @@ public class BalanceChange {
 		return newBalance;
 	}
 
-	public void setNewBalance(long newBalance) {
+	public void setNewBalance(final long newBalance) {
 		this.newBalance = newBalance;
 	}
 
 	public TokenID tokenId() {
-		return (explicitTokenId != null) ? explicitTokenId : token.asGrpcToken();
+		return (tokenId != null) ? tokenId : NO_TOKEN_FOR_HBAR_ADJUST;
 	}
 
 	public AccountID accountId() {
-		return (explicitAccountId != null) ? explicitAccountId : account.asGrpcAccount();
-	}
-
-	public void setExplicitTokenId(TokenID explicitTokenId) {
-		this.explicitTokenId = explicitTokenId;
-	}
-
-	public void setExplicitAccountId(AccountID explicitAccountId) {
-		this.explicitAccountId = explicitAccountId;
+		return accountId;
 	}
 
 	public ResponseCodeEnum codeForInsufficientBalance() {
 		return codeForInsufficientBalance;
-	}
-
-	public void setCodeForInsufficientBalance(ResponseCodeEnum codeForInsufficientBalance) {
-		this.codeForInsufficientBalance = codeForInsufficientBalance;
 	}
 
 	/* NOTE: The object methods below are only overridden to improve readability of unit tests;
@@ -127,7 +114,7 @@ public class BalanceChange {
 	methods doesn't matter. */
 
 	@Override
-	public boolean equals(Object obj) {
+	public boolean equals(final Object obj) {
 		return EqualsBuilder.reflectionEquals(this, obj);
 	}
 
@@ -165,13 +152,15 @@ public class BalanceChange {
 	}
 
 	public static BalanceChange fromGrpc(CustomFeesOuterClass.CustomFeeCharged customFeesCharged) {
+		AccountAmount aa = AccountAmount.newBuilder()
+				.setAccountID(customFeesCharged.getFeeCollector())
+				.setAmount(customFeesCharged.getUnitsCharged()).build();
 		if (customFeesCharged.getTokenId() != null) {
-			return BalanceChange.tokenAdjust(Id.fromGrpcToken(customFeesCharged.getTokenId()),
-					Id.fromGrpcAccount(customFeesCharged.getFeeCollector()),
-					customFeesCharged.getUnitsCharged());
+			return tokenAdjust(Id.fromGrpcToken(customFeesCharged.getTokenId()),
+					customFeesCharged.getTokenId(),
+					aa);
 		}
-		return BalanceChange.hbarAdjust(Id.fromGrpcAccount(customFeesCharged.getFeeCollector()),
-				customFeesCharged.getUnitsCharged());
+		return hbarAdjust(aa);
 	}
 
 	public static CustomFeesOuterClass.CustomFeesCharged toGrpc(List<BalanceChange> balanceChanges) {

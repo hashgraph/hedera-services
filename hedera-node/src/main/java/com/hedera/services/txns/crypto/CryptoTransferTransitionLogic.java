@@ -99,7 +99,7 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 		var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
 		if (impliedTransfers == null) {
 			final var op = accessor.getTxn().getCryptoTransfer();
-			impliedTransfers = impliedTransfersMarshal.marshalFromGrpc(op);
+			impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op);
 		}
 		return impliedTransfers;
 	}

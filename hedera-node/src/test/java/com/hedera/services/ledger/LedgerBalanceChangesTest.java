@@ -62,6 +62,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.hbarChange;
+import static com.hedera.test.utils.IdUtils.tokenChange;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -121,7 +124,7 @@ class LedgerBalanceChangesTest {
 	@Test
 	void rejectsContractInAccountAmounts() {
 		givenInitialBalances();
-		backingAccounts.getRef(asGprcAccount(aModel)).setSmartContract(true);
+		backingAccounts.getRef(aModel).setSmartContract(true);
 
 		// when:
 		subject.begin();
@@ -139,7 +142,7 @@ class LedgerBalanceChangesTest {
 	@Test
 	void rejectsMissingAccount() {
 		givenInitialBalances();
-		backingAccounts.remove(asGprcAccount(aModel));
+		backingAccounts.remove(aModel);
 
 		// when:
 		subject.begin();
@@ -152,24 +155,6 @@ class LedgerBalanceChangesTest {
 		assertEquals(INVALID_ACCOUNT_ID, result);
 		// and:
 		assertInitialBalanceUnchanged(-1L);
-	}
-
-	@Test
-	void rejectsInsufficientBalanceUsingOverrideCode() {
-		givenInitialBalances();
-		backingAccounts.getRef(asGprcAccount(aModel)).setBalanceUnchecked(0L);
-
-		// when:
-		subject.begin();
-		// and:
-		final var result = subject.doZeroSum(fixtureChanges());
-
-		subject.commit();
-
-		// then:
-		assertEquals(overrideIbeCode, result);
-		// and:
-		assertInitialBalanceUnchanged(0L);
 	}
 
 	@Test
@@ -194,7 +179,7 @@ class LedgerBalanceChangesTest {
 	void rejectsDeletedAccount() {
 		givenInitialBalances();
 		// and:
-		backingAccounts.getRef(asGprcAccount(bModel)).setDeleted(true);
+		backingAccounts.getRef(bModel).setDeleted(true);
 
 		// when:
 		subject.begin();
@@ -234,24 +219,6 @@ class LedgerBalanceChangesTest {
 	}
 
 	@Test
-	void rejectsInsufficientTokenBalanceWithOverrideCode() {
-		givenInitialBalances();
-		// and:
-		backingRels.getRef(rel(bModel, token)).setBalance(0L);
-
-		// when:
-		subject.begin();
-		// and:
-		final var result = subject.doZeroSum(fixtureChanges());
-		subject.commit();
-
-		// then:
-		assertEquals(overrideIbeCode, result);
-		// and:
-		assertInitialTokenBalanceUnchanged(0L);
-	}
-
-	@Test
 	void happyPathRecordsTransfersAndChangesBalancesAsExpected() {
 		givenInitialBalances();
 
@@ -271,13 +238,13 @@ class LedgerBalanceChangesTest {
 		// and:
 		assertEquals(
 				aStartBalance + aHbarChange,
-				backingAccounts.getImmutableRef(asGprcAccount(aModel)).getBalance());
+				backingAccounts.getImmutableRef(aModel).getBalance());
 		assertEquals(
 				bStartBalance + bHbarChange,
-				backingAccounts.getImmutableRef(asGprcAccount(bModel)).getBalance());
+				backingAccounts.getImmutableRef(bModel).getBalance());
 		assertEquals(
 				cStartBalance + cHbarChange,
-				backingAccounts.getImmutableRef(asGprcAccount(cModel)).getBalance());
+				backingAccounts.getImmutableRef(cModel).getBalance());
 		// and:
 		assertEquals(
 				bTokenStartBalance + bTokenChange,
@@ -312,15 +279,15 @@ class LedgerBalanceChangesTest {
 		givenInitialBalances();
 
 		// expect:
-		Assertions.assertTrue(subject.isKnownTreasury(asGprcAccount(aModel)));
-		Assertions.assertFalse(subject.isKnownTreasury(asGprcAccount(bModel)));
+		Assertions.assertTrue(subject.isKnownTreasury(aModel));
+		Assertions.assertFalse(subject.isKnownTreasury(bModel));
 	}
 
 	private TransferList expectedXfers() {
 		return TransferList.newBuilder()
-				.addAccountAmounts(aaBuilderWith(asGprcAccount(aModel), aHbarChange))
-				.addAccountAmounts(aaBuilderWith(asGprcAccount(bModel), bHbarChange))
-				.addAccountAmounts(aaBuilderWith(asGprcAccount(cModel), cHbarChange))
+				.addAccountAmounts(aaBuilderWith(aModel, aHbarChange))
+				.addAccountAmounts(aaBuilderWith(bModel, bHbarChange))
+				.addAccountAmounts(aaBuilderWith(cModel, cHbarChange))
 				.build();
 	}
 
@@ -328,19 +295,19 @@ class LedgerBalanceChangesTest {
 		return List.of(
 				TokenTransferList.newBuilder()
 						.setToken(asGprcToken(token))
-						.addTransfers(aaBuilderWith(asGprcAccount(bModel), bTokenChange))
-						.addTransfers(aaBuilderWith(asGprcAccount(cModel), cTokenChange))
+						.addTransfers(aaBuilderWith(bModel, bTokenChange))
+						.addTransfers(aaBuilderWith(cModel, cTokenChange))
 						.build(),
 				TokenTransferList.newBuilder()
 						.setToken(asGprcToken(anotherToken))
-						.addTransfers(aaBuilderWith(asGprcAccount(aModel), aAnotherTokenChange))
-						.addTransfers(aaBuilderWith(asGprcAccount(bModel), bAnotherTokenChange))
-						.addTransfers(aaBuilderWith(asGprcAccount(cModel), cAnotherTokenChange))
+						.addTransfers(aaBuilderWith(aModel, aAnotherTokenChange))
+						.addTransfers(aaBuilderWith(bModel, bAnotherTokenChange))
+						.addTransfers(aaBuilderWith(cModel, cAnotherTokenChange))
 						.build(),
 				TokenTransferList.newBuilder()
 						.setToken(asGprcToken(yetAnotherToken))
-						.addTransfers(aaBuilderWith(asGprcAccount(aModel), aYetAnotherTokenChange))
-						.addTransfers(aaBuilderWith(asGprcAccount(bModel), bYetAnotherTokenChange))
+						.addTransfers(aaBuilderWith(aModel, aYetAnotherTokenChange))
+						.addTransfers(aaBuilderWith(bModel, bYetAnotherTokenChange))
 						.build()
 		);
 	}
@@ -365,14 +332,14 @@ class LedgerBalanceChangesTest {
 		if (modifiedABalance >= 0L) {
 			assertEquals(
 					modifiedABalance,
-					backingAccounts.getImmutableRef(asGprcAccount(aModel)).getBalance());
+					backingAccounts.getImmutableRef(aModel).getBalance());
 		}
 		assertEquals(
 				bStartBalance,
-				backingAccounts.getImmutableRef(asGprcAccount(bModel)).getBalance());
+				backingAccounts.getImmutableRef(bModel).getBalance());
 		assertEquals(
 				cStartBalance,
-				backingAccounts.getImmutableRef(asGprcAccount(cModel)).getBalance());
+				backingAccounts.getImmutableRef(cModel).getBalance());
 		// and:
 		assertEquals(
 				modifiedBTokenBalance,
@@ -401,11 +368,11 @@ class LedgerBalanceChangesTest {
 
 	private void givenInitialBalances() {
 		final var aAccount = MerkleAccountFactory.newAccount().balance(aStartBalance).get();
-		backingAccounts.put(asGprcAccount(aModel), aAccount);
+		backingAccounts.put(aModel, aAccount);
 		final var bAccount = MerkleAccountFactory.newAccount().balance(bStartBalance).get();
-		backingAccounts.put(asGprcAccount(bModel), bAccount);
+		backingAccounts.put(bModel, bAccount);
 		final var cAccount = MerkleAccountFactory.newAccount().balance(cStartBalance).get();
-		backingAccounts.put(asGprcAccount(cModel), cAccount);
+		backingAccounts.put(cModel, cAccount);
 
 		Pair<AccountID, TokenID> bTokenKey = rel(bModel, token);
 		final var bTokenRel = new MerkleTokenRelStatus(bTokenStartBalance, false, true);
@@ -432,25 +399,23 @@ class LedgerBalanceChangesTest {
 
 	private List<BalanceChange> fixtureChanges() {
 		final var ans = List.of(new BalanceChange[] {
-						BalanceChange.tokenAdjust(yetAnotherToken, aModel, aYetAnotherTokenChange),
-						BalanceChange.hbarAdjust(aModel, aHbarChange),
-						BalanceChange.hbarAdjust(bModel, bHbarChange),
-						BalanceChange.tokenAdjust(anotherToken, aModel, aAnotherTokenChange),
-						BalanceChange.tokenAdjust(anotherToken, cModel, cAnotherTokenChange),
-						BalanceChange.hbarAdjust(cModel, cHbarChange),
-						BalanceChange.tokenAdjust(token, bModel, bTokenChange),
-						BalanceChange.tokenAdjust(token, cModel, cTokenChange),
-						BalanceChange.tokenAdjust(anotherToken, bModel, bAnotherTokenChange),
-						BalanceChange.tokenAdjust(yetAnotherToken, bModel, bYetAnotherTokenChange),
+						tokenChange(yetAnotherToken, aModel, aYetAnotherTokenChange),
+						hbarChange(aModel, aHbarChange),
+						hbarChange(bModel, bHbarChange),
+						tokenChange(anotherToken, aModel, aAnotherTokenChange),
+						tokenChange(anotherToken, cModel, cAnotherTokenChange),
+						hbarChange(cModel, cHbarChange),
+						tokenChange(token, bModel, bTokenChange),
+						tokenChange(token, cModel, cTokenChange),
+						tokenChange(anotherToken, bModel, bAnotherTokenChange),
+						tokenChange(yetAnotherToken, bModel, bYetAnotherTokenChange),
 				}
 		);
-		ans.get(1).setCodeForInsufficientBalance(overrideIbeCode);
-		ans.get(6).setCodeForInsufficientBalance(overrideIbeCode);
 		return ans;
 	}
 
-	private Pair<AccountID, TokenID> rel(Id account, Id token) {
-		return Pair.of(asGprcAccount(account), asGprcToken(token));
+	private Pair<AccountID, TokenID> rel(AccountID account, Id token) {
+		return Pair.of(account, asGprcToken(token));
 	}
 
 	private AccountID asGprcAccount(Id id) {
@@ -469,15 +434,15 @@ class LedgerBalanceChangesTest {
 				.build();
 	}
 
-	private MerkleToken tokenWithTreasury(Id treasury) {
+	private MerkleToken tokenWithTreasury(AccountID treasury) {
 		final var token = new MerkleToken();
-		token.setTreasury(new EntityId(treasury.getShard(), treasury.getRealm(), treasury.getNum()));
+		token.setTreasury(new EntityId(treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
 		return token;
 	}
 
-	private final Id aModel = new Id(1, 2, 3);
-	private final Id bModel = new Id(2, 3, 4);
-	private final Id cModel = new Id(3, 4, 5);
+	private final AccountID aModel = asAccount("1.2.3");
+	private final AccountID bModel = asAccount("2.3.4");
+	private final AccountID cModel = asAccount("3.4.5");
 	private final Id token = new Id(0, 0, 75231);
 	private final Id anotherToken = new Id(0, 0, 75232);
 	private final Id yetAnotherToken = new Id(0, 0, 75233);

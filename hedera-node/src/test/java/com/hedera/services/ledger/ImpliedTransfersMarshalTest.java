@@ -41,6 +41,8 @@ import java.util.List;
 import static com.hedera.test.utils.IdUtils.adjustFrom;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
+import static com.hedera.test.utils.IdUtils.hbarChange;
+import static com.hedera.test.utils.IdUtils.tokenChange;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
@@ -61,9 +63,9 @@ class ImpliedTransfersMarshalTest {
 
 	private ImpliedTransfersMarshal subject;
 
-	private final Id aModel = new Id(1, 2, 3);
-	private final Id bModel = new Id(2, 3, 4);
-	private final Id cModel = new Id(3, 4, 5);
+	private final AccountID aModel = asAccount("1.2.3");
+	private final AccountID bModel = asAccount("2.3.4");
+	private final AccountID cModel = asAccount("3.4.5");
 	private final Id token = new Id(0, 0, 75231);
 	private final Id anotherToken = new Id(0, 0, 75232);
 	private final Id yetAnotherToken = new Id(0, 0, 75233);
@@ -109,7 +111,7 @@ class ImpliedTransfersMarshalTest {
 				op.getTokenTransfersList())).willReturn(TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
 
 		// when:
-		final var result = subject.marshalFromGrpc(op);
+		final var result = subject.unmarshalFromGrpc(op);
 
 		// then:
 		assertEquals(result.getMeta(), expectedMeta);
@@ -120,24 +122,18 @@ class ImpliedTransfersMarshalTest {
 		setupFixtureOp();
 		// and:
 		final List<BalanceChange> expectedChanges = List.of(new BalanceChange[] {
-						BalanceChange.hbarAdjust(aModel, aHbarChange),
-						BalanceChange.hbarAdjust(bModel, bHbarChange),
-						BalanceChange.hbarAdjust(cModel, cHbarChange),
-						BalanceChange.tokenAdjust(anotherToken, aModel, aAnotherTokenChange),
-						BalanceChange.tokenAdjust(anotherToken, bModel, bAnotherTokenChange),
-						BalanceChange.tokenAdjust(anotherToken, cModel, cAnotherTokenChange),
-						BalanceChange.tokenAdjust(token, bModel, bTokenChange),
-						BalanceChange.tokenAdjust(token, cModel, cTokenChange),
-						BalanceChange.tokenAdjust(yetAnotherToken, aModel, aYetAnotherTokenChange),
-						BalanceChange.tokenAdjust(yetAnotherToken, bModel, bYetAnotherTokenChange),
+				hbarChange(aModel, aHbarChange),
+				hbarChange(bModel, bHbarChange),
+				hbarChange(cModel, cHbarChange),
+				tokenChange(anotherToken, aModel, aAnotherTokenChange),
+				tokenChange(anotherToken, bModel, bAnotherTokenChange),
+				tokenChange(anotherToken, cModel, cAnotherTokenChange),
+				tokenChange(token, bModel, bTokenChange),
+				tokenChange(token, cModel, cTokenChange),
+				tokenChange(yetAnotherToken, aModel, aYetAnotherTokenChange),
+				tokenChange(yetAnotherToken, bModel, bYetAnotherTokenChange),
 				}
 		);
-		for (var change : expectedChanges) {
-			if (!change.isForHbar()) {
-				change.setExplicitTokenId(change.tokenId());
-			}
-			change.setExplicitAccountId(change.accountId());
-		}
 		// and:
 		final var expectedMeta = new ImpliedTransfersMeta(maxExplicitHbarAdjusts, maxExplicitTokenAdjusts, OK);
 
@@ -150,7 +146,7 @@ class ImpliedTransfersMarshalTest {
 				op.getTokenTransfersList())).willReturn(OK);
 
 		// when:
-		final var result = subject.marshalFromGrpc(op);
+		final var result = subject.unmarshalFromGrpc(op);
 
 		// then:
 		assertEquals(expectedMeta, result.getMeta());
@@ -179,9 +175,9 @@ class ImpliedTransfersMarshalTest {
 	@Test
 	void impliedXfersObjectContractSanityChecks() {
 		// given:
-		final var twoChanges = List.of(BalanceChange.tokenAdjust(
+		final var twoChanges = List.of(tokenChange(
 				new Id(1, 2, 3),
-				new Id(4, 5, 6),
+				asAccount("4.5.6"),
 				7));
 		final var oneImpliedXfers = ImpliedTransfers.invalid(3, 4, TOKEN_WAS_DELETED);
 		final var twoImpliedXfers = ImpliedTransfers.valid(1, 100, twoChanges);
