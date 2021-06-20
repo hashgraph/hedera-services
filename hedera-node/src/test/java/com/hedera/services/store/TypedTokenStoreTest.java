@@ -33,6 +33,7 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.fcmap.FCMap;
@@ -44,15 +45,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -269,6 +273,79 @@ class TypedTokenStoreTest {
 		assertTokenBalanceUpdateFailsWith(ACCOUNT_FROZEN_FOR_TOKEN, miscAccount, token, 100);
 	}
 
+	@Test
+	void adjustBalancesOnDissociateFailsIfNonZeroBalance() {
+		// setup:
+		OptionValidator mockValidator = mock(OptionValidator.class);
+		givenToken(merkleTokenId, merkleToken);
+		givenRelationship(miscTokenRelId, miscTokenMerkleRel);
+		given(accountStore.getValidator()).willReturn(mockValidator);
+		given(mockValidator.isValidExpiry(any())).willReturn(true);
+
+		// when:
+		assertAdjustBalancesOnDissociateFailsWith(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES, miscId, tokenId);
+	}
+
+	@Test
+	void adjustBalancesOnDissociateFailsForTreasury() {
+		// setup:
+		OptionValidator mockValidator = mock(OptionValidator.class);
+		givenToken(merkleTokenId, merkleToken);
+		givenRelationship(treasuryTokenRelId, treasuryTokenMerkleRel);
+
+		// when:
+		assertAdjustBalancesOnDissociateFailsWith(ACCOUNT_IS_TREASURY, treasuryId, tokenId);
+	}
+
+	@Test
+	void adjustBalancesOnDissociateFailsForForzenAccount() {
+		// setup:
+		OptionValidator mockValidator = mock(OptionValidator.class);
+		givenToken(merkleTokenId, merkleToken);
+		givenRelationship(miscTokenRelId, miscTokenMerkleRel);
+		miscTokenMerkleRel.setFrozen(true);
+
+		// when:
+		assertAdjustBalancesOnDissociateFailsWith(ACCOUNT_FROZEN_FOR_TOKEN, miscId, tokenId);
+	}
+
+	@Test
+	void adjustBalanceOnDissociateWorks() {
+		// setup:
+		OptionValidator mockValidator = mock(OptionValidator.class);
+		givenToken(merkleTokenId, merkleToken);
+		givenRelationship(miscTokenRelId, miscTokenMerkleRel);
+		givenModifiableRelationship(miscTokenRelId, miscTokenMerkleRel);
+		givenModifiableRelationship(treasuryTokenRelId, treasuryTokenMerkleRel);
+		given(accountStore.loadAccount(treasuryId)).willReturn(treasuryAccount);
+		given(accountStore.loadAccount(miscId)).willReturn(miscAccount);
+		given(accountStore.loadAccount(autoRenewId)).willReturn(autoRenewAccount);
+		given(accountStore.getValidator()).willReturn(mockValidator);
+		given(mockValidator.isValidExpiry(any())).willReturn(false);
+
+		// when:
+		var balanceAdjusted = subject.adjustBalancesOnDissociate(tokenId, miscId);
+
+		// then:
+		assertEquals(balance, balanceAdjusted);
+		assertEquals(0, miscTokenMerkleRel.getBalance());
+		assertEquals(balance + balanceAdjusted, treasuryTokenMerkleRel.getBalance());
+	}
+
+	@Test
+	void removeTokenRelationshipWorks() {
+		// setup:
+		var key = new MerkleEntityAssociation(
+				miscId.getShard(), miscId.getRealm(), miscId.getNum(),
+				tokenId.getShard(), tokenId.getRealm(), tokenId.getNum());
+
+		// when:
+		subject.removeTokenRelationship(tokenId, miscId);
+
+		// then:
+		verify(tokenRels).remove(key);
+	}
+
 	private void givenRelationship(MerkleEntityAssociation anAssoc, MerkleTokenRelStatus aRelationship) {
 		given(tokenRels.get(anAssoc)).willReturn(aRelationship);
 	}
@@ -292,6 +369,11 @@ class TypedTokenStoreTest {
 
 	private void assertTokenBalanceUpdateFailsWith(ResponseCodeEnum status, Account account, Token token, long adjustment) {
 		var ex = assertThrows(InvalidTransactionException.class, () -> subject.adjustTokenBalance(account, token, adjustment));
+		assertEquals(status, ex.getResponseCode());
+	}
+
+	private void assertAdjustBalancesOnDissociateFailsWith(ResponseCodeEnum status, Id accountId, Id tokenId) {
+		var ex = assertThrows(InvalidTransactionException.class, () -> subject.adjustBalancesOnDissociate(tokenId, accountId));
 		assertEquals(status, ex.getResponseCode());
 	}
 
@@ -323,6 +405,7 @@ class TypedTokenStoreTest {
 
 	private void setupTokenRel() {
 		miscTokenMerkleRel = new MerkleTokenRelStatus(balance, frozen, kycGranted);
+		treasuryTokenMerkleRel = new MerkleTokenRelStatus(balance, frozen, kycGranted);
 		miscTokenRel.initBalance(balance);
 		miscTokenRel.setFrozen(frozen);
 		miscTokenRel.setKycGranted(kycGranted);
@@ -358,8 +441,12 @@ class TypedTokenStoreTest {
 	private final MerkleEntityAssociation miscTokenRelId = new MerkleEntityAssociation(
 			0, 0, miscAccountNum,
 			0, 0, tokenNum);
+	private final MerkleEntityAssociation treasuryTokenRelId = new MerkleEntityAssociation(
+			0, 0, treasuryAccountNum,
+			0, 0, tokenNum);
 	private final TokenRelationship miscTokenRel = new TokenRelationship(token, miscAccount);
 
 	private MerkleToken merkleToken;
 	private MerkleTokenRelStatus miscTokenMerkleRel;
+	private MerkleTokenRelStatus treasuryTokenMerkleRel;
 }
