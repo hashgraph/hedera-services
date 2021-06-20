@@ -20,7 +20,7 @@ package com.hedera.services.ledger;
  * ‍
  */
 
-import com.hedera.services.store.models.Id;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.junit.jupiter.api.Test;
@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class BalanceChangeTest {
 	private final AccountID a = asAccount("1.2.3");
 	private final long delta = -1_234L;
-	private final Id t = new Id(1, 2, 3);
+	private final EntityId t = new EntityId(1, 2, 3);
 
 	@Test
 	void objectContractSanityChecks() {
@@ -44,9 +44,9 @@ class BalanceChangeTest {
 		final var hbarChange = IdUtils.hbarChange(a, delta);
 		final var tokenChange = IdUtils.tokenChange(t, a, delta);
 		// and:
-		final var hbarRepr = "BalanceChange{token=ℏ, account=Id{shard=1, realm=2, num=3}, units=-1234}";
-		final var tokenRepr = "BalanceChange{token=Id{shard=1, realm=2, num=3}, " +
-				"account=Id{shard=1, realm=2, num=3}, units=-1234}";
+		final var hbarRepr = "BalanceChange{token=ℏ, account=EntityId{shard=1, realm=2, num=3}, units=-1234}";
+		final var tokenRepr = "BalanceChange{token=EntityId{shard=1, realm=2, num=3}, " +
+				"account=EntityId{shard=1, realm=2, num=3}, units=-1234}";
 
 		// expect:
 		assertNotEquals(hbarChange, tokenChange);
@@ -57,7 +57,7 @@ class BalanceChangeTest {
 		// and:
 		assertSame(a, hbarChange.accountId());
 		assertEquals(delta, hbarChange.units());
-		assertEquals(t.asGrpcToken(), tokenChange.tokenId());
+		assertEquals(t.toGrpcTokenId(), tokenChange.tokenId());
 	}
 
 	@Test

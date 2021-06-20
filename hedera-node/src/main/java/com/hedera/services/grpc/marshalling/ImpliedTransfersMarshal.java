@@ -23,7 +23,7 @@ package com.hedera.services.grpc.marshalling;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
-import com.hedera.services.store.models.Id;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 
 import java.util.ArrayList;
@@ -71,7 +71,7 @@ public class ImpliedTransfersMarshal {
 		}
 		for (var scopedTransfers : op.getTokenTransfersList()) {
 			final var grpcTokenId = scopedTransfers.getToken();
-			final var scopingToken = Id.fromGrpcToken(grpcTokenId);
+			final var scopingToken = EntityId.fromGrpcTokenId(grpcTokenId);
 			for (var aa : scopedTransfers.getTransfersList()) {
 				changes.add(tokenAdjust(scopingToken, grpcTokenId, aa));
 			}

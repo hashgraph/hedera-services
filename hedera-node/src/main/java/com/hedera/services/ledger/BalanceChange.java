@@ -21,15 +21,19 @@ package com.hedera.services.ledger;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.store.models.Id;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.io.SerializableDataInputStream;
+import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import proto.CustomFeesOuterClass;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -49,23 +53,26 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
  * and {@link com.hedera.services.ledger.accounts.BackingTokenRels} components
  * whose APIs still use gRPC types.
  */
-public class BalanceChange {
+public class BalanceChange implements SelfSerializable {
+	static final int MERKLE_VERSION = 1;
+	static final long RUNTIME_CONSTRUCTABLE_ID = 0xd8b56ce46e56a466L;
+
 	static final TokenID NO_TOKEN_FOR_HBAR_ADJUST = TokenID.getDefaultInstance();
 
-	private final Id token;
-	private final Id account;
-	private final long units;
+	private EntityId token;
+	private EntityId account;
+	private long units;
 	private ResponseCodeEnum codeForInsufficientBalance;
 
 	private long newBalance;
 	private TokenID tokenId = null;
 	private AccountID accountId;
 
-	private BalanceChange(final Id token, final AccountAmount aa, final ResponseCodeEnum code) {
+	private BalanceChange(final EntityId token, final AccountAmount aa, final ResponseCodeEnum code) {
 		this.token = token;
 		final var account = aa.getAccountID();
 		this.accountId = account;
-		final var id = Id.fromGrpcAccount(account);
+		final var id = EntityId.fromGrpcAccountId(account);
 		this.account = id;
 		this.units = aa.getAmount();
 		this.codeForInsufficientBalance = code;
@@ -75,7 +82,7 @@ public class BalanceChange {
 		return new BalanceChange(null, aa, INSUFFICIENT_ACCOUNT_BALANCE);
 	}
 
-	public static BalanceChange tokenAdjust(final Id token, final TokenID tokenId, final AccountAmount aa) {
+	public static BalanceChange tokenAdjust(final EntityId token, final TokenID tokenId, final AccountAmount aa) {
 		final var tokenChange = new BalanceChange(token, aa, INSUFFICIENT_TOKEN_BALANCE);
 		tokenChange.tokenId = tokenId;
 		return tokenChange;
@@ -136,12 +143,12 @@ public class BalanceChange {
 
 	public CustomFeesOuterClass.CustomFeeCharged toGrpc() {
 		var grpc = CustomFeesOuterClass.CustomFeeCharged.newBuilder()
-				.setFeeCollector(account.asGrpcAccount())
+				.setFeeCollector(account.toGrpcAccountId())
 				.setUnitsCharged(units);
 		if (isForHbar()) {
 			return grpc.build();
 		}
-		return grpc.setTokenId(token.asGrpcToken()).build();
+		return grpc.setTokenId(token.toGrpcTokenId()).build();
 	}
 
 	public static List<BalanceChange> fromGrpc(CustomFeesOuterClass.CustomFeesCharged grpc) {
@@ -156,7 +163,7 @@ public class BalanceChange {
 				.setAccountID(customFeesCharged.getFeeCollector())
 				.setAmount(customFeesCharged.getUnitsCharged()).build();
 		if (customFeesCharged.getTokenId() != null) {
-			return tokenAdjust(Id.fromGrpcToken(customFeesCharged.getTokenId()),
+			return tokenAdjust(EntityId.fromGrpcTokenId(customFeesCharged.getTokenId()),
 					customFeesCharged.getTokenId(),
 					aa);
 		}
@@ -171,5 +178,30 @@ public class BalanceChange {
 								.map(i -> i.toGrpc())
 								.collect(Collectors.toList()))
 				.build();
+	}
+
+	/* SelfSerializable methods */
+	@Override
+	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+		account = in.readSerializable();
+		token = in.readSerializable();
+		units = in.readLong();
+	}
+
+	@Override
+	public void serialize(SerializableDataOutputStream out) throws IOException {
+		out.writeSerializable(account, true);
+		out.writeSerializable(token, true);
+		out.writeLong(units);
+	}
+
+	@Override
+	public long getClassId() {
+		return RUNTIME_CONSTRUCTABLE_ID;
+	}
+
+	@Override
+	public int getVersion() {
+		return MERKLE_VERSION;
 	}
 }

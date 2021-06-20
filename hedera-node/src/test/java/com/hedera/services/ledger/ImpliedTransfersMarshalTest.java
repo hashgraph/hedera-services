@@ -24,7 +24,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
-import com.hedera.services.store.models.Id;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -66,9 +66,9 @@ class ImpliedTransfersMarshalTest {
 	private final AccountID aModel = asAccount("1.2.3");
 	private final AccountID bModel = asAccount("2.3.4");
 	private final AccountID cModel = asAccount("3.4.5");
-	private final Id token = new Id(0, 0, 75231);
-	private final Id anotherToken = new Id(0, 0, 75232);
-	private final Id yetAnotherToken = new Id(0, 0, 75233);
+	private final EntityId token = new EntityId(0, 0, 75231);
+	private final EntityId anotherToken = new EntityId(0, 0, 75232);
+	private final EntityId yetAnotherToken = new EntityId(0, 0, 75233);
 	private final TokenID anId = asToken("0.0.75231");
 	private final TokenID anotherId = asToken("0.0.75232");
 	private final TokenID yetAnotherId = asToken("0.0.75233");
@@ -176,7 +176,7 @@ class ImpliedTransfersMarshalTest {
 	void impliedXfersObjectContractSanityChecks() {
 		// given:
 		final var twoChanges = List.of(tokenChange(
-				new Id(1, 2, 3),
+				new EntityId(1, 2, 3),
 				asAccount("4.5.6"),
 				7));
 		final var oneImpliedXfers = ImpliedTransfers.invalid(3, 4, TOKEN_WAS_DELETED);
@@ -185,8 +185,8 @@ class ImpliedTransfersMarshalTest {
 		final var oneRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=TOKEN_WAS_DELETED, " +
 				"maxExplicitHbarAdjusts=3, maxExplicitTokenAdjusts=4}, changes=[]}";
 		final var twoRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=OK, maxExplicitHbarAdjusts=1, " +
-				"maxExplicitTokenAdjusts=100}, changes=[BalanceChange{token=Id{shard=1, realm=2, num=3}, " +
-				"account=Id{shard=4, realm=5, num=6}, units=7}]}";
+				"maxExplicitTokenAdjusts=100}, changes=[BalanceChange{token=EntityId{shard=1, realm=2, num=3}, " +
+				"account=EntityId{shard=4, realm=5, num=6}, units=7}]}";
 
 		// expect:
 		assertNotEquals(oneImpliedXfers, twoImpliedXfers);
