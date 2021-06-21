@@ -360,7 +360,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				adjustOwnedNfts(senderAId, false);
 				adjustOwnedNfts(receiverAId, true);
 				this.uniqueTokenOwnership.get().disassociate(fromGrpcAccountId(senderAId), merkleUniqueTokenId);
-				this.uniqueTokenOwnership.get().associate(fromGrpcAccountId(senderAId), merkleUniqueTokenId);
+				this.uniqueTokenOwnership.get().associate(fromGrpcAccountId(receiverAId), merkleUniqueTokenId);
 			} else {
 				validity = INVALID_NFT_ID;
 			}
