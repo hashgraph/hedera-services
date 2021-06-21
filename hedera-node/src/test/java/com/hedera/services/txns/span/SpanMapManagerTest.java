@@ -100,7 +100,7 @@ class SpanMapManagerTest {
 		subject.rationalizeSpan(accessor);
 
 		// then:
-		verify(impliedTransfersMarshal, never()).unmarshalFromGrpc(any(), accessor.getPayer());
+		verify(impliedTransfersMarshal, never()).unmarshalFromGrpc(any(), any());
 		assertSame(someImpliedXfers, spanMapAccessor.getImpliedTransfers(accessor));
 	}
 
