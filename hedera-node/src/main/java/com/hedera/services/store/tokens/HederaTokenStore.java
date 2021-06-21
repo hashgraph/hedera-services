@@ -30,6 +30,7 @@ import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.submerkle.CustomFee;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.HederaStore;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -76,11 +77,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -92,6 +96,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static java.util.stream.Collectors.toList;
@@ -400,9 +405,51 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 		if (request.hasCustomFees()) {
 			pendingCreation.setFeeScheduleFrom(request.getCustomFees());
+			validity = validateFeeSchedule(pendingCreation.getFeeSchedule());
+			if(validity != OK) {
+				return failure(validity);
+			}
 		}
 
 		return success(pendingId);
+	}
+
+	private ResponseCodeEnum validateFeeSchedule(final List<CustomFee> feeSchedule) {
+		if(feeSchedule.size() > properties.maxCustomFeesAllowed()) {
+			return CUSTOM_FEES_LIST_TOO_LONG;
+		}
+
+		for(CustomFee customFee : feeSchedule) {
+			var accountID = customFee.getFeeCollector().toGrpcAccountId();
+			/* validate if the feeCollector is a valid account ID */
+			var feeCollectorValidity = usableOrElse(
+					accountID, INVALID_CUSTOM_FEE_COLLECTOR);
+
+			if (feeCollectorValidity != OK) {
+				return INVALID_CUSTOM_FEE_COLLECTOR;
+			}
+
+			/* validate if the token Id given in the fixed fee is a valid token ID and is associated with the feeCollector */
+			if (customFee.getFixedFeeSpec() != null) {
+				var tokenID = customFee.getFixedFeeSpec().getTokenDenomination().toGrpcTokenId();
+				if (resolve(tokenID) == MISSING_TOKEN) {
+					return INVALID_TOKEN_ID_IN_CUSTOM_FEES;
+				}
+
+				if(!hederaLedger.getAssociatedTokens(accountID).includes(tokenID)) {
+					return TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
+				}
+			}
+
+			/* validate the fraction in fractionalFee */
+			if (customFee.getFractionalFeeSpec() != null) {
+				// TODO:
+				var denominator = customFee.getFractionalFeeSpec().getDenominator();
+			}
+
+		}
+
+		return OK;
 	}
 
 

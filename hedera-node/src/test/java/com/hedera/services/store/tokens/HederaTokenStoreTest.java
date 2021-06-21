@@ -21,6 +21,7 @@ package com.hedera.services.store.tokens;
  */
 
 import com.google.protobuf.StringValue;
+import com.google.protobuf.UInt64Value;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -34,11 +35,13 @@ import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.submerkle.CustomFee;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -52,7 +55,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
+import proto.CustomFeesOuterClass;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -158,6 +163,8 @@ class HederaTokenStoreTest {
 	private AccountID treasury = IdUtils.asAccount("1.2.3");
 	private AccountID newTreasury = IdUtils.asAccount("3.2.1");
 	private AccountID sponsor = IdUtils.asAccount("1.2.666");
+	private AccountID feeCollector = IdUtils.asAccount("1.2.777");
+	private AccountID anotherFeeCollector = IdUtils.asAccount("1.2.888");
 	private TokenID created = IdUtils.asToken("1.2.666666");
 	private TokenID pending = IdUtils.asToken("1.2.555555");
 	private int MAX_TOKENS_PER_ACCOUNT = 100;
@@ -165,6 +172,40 @@ class HederaTokenStoreTest {
 	private int MAX_TOKEN_NAME_UTF8_BYTES = 100;
 	private Pair<AccountID, TokenID> sponsorMisc = asTokenRel(sponsor, misc);
 	private Pair<AccountID, TokenID> treasuryMisc = asTokenRel(treasury, misc);
+	private CustomFeesOuterClass.FixedFee fixedFeeInTokenUnits = CustomFeesOuterClass.FixedFee.newBuilder()
+			.setTokenId(anotherMisc)
+			.setUnitsToCollect(100)
+			.build();
+	private CustomFeesOuterClass.FixedFee fixedFeeInHbar = CustomFeesOuterClass.FixedFee.newBuilder()
+			.setUnitsToCollect(100)
+			.build();
+	private Fraction fraction = Fraction.newBuilder().setNumerator(15).setDenominator(100).build();
+	private CustomFeesOuterClass.FractionalFee fractionalFee = CustomFeesOuterClass.FractionalFee.newBuilder()
+			.setFractionOfUnitsToCollect(fraction)
+			.setMaximumUnitsToCollect(UInt64Value.of(50))
+			.setMinimumUnitsToCollect(10)
+			.build();
+	private CustomFeesOuterClass.CustomFee grpcCustomFixedFee_1 = CustomFeesOuterClass.CustomFee.newBuilder()
+			.setFeeCollector(feeCollector)
+			.setFixedFee(fixedFeeInHbar)
+			.build();
+	private CustomFee customFixedFee_1 =
+			CustomFee.fixedFee(100, null, EntityId.fromGrpcAccountId(feeCollector));
+	private CustomFeesOuterClass.CustomFee grpcCustomFixedFee_2 = CustomFeesOuterClass.CustomFee.newBuilder()
+			.setFeeCollector(anotherFeeCollector)
+			.setFixedFee(fixedFeeInTokenUnits)
+			.build();
+	private CustomFee customFixedFee_2 = 
+	private CustomFeesOuterClass.CustomFee grpcCustomFractionalFee_3 = CustomFeesOuterClass.CustomFee.newBuilder()
+			.setFeeCollector(feeCollector)
+			.setFractionalFee(fractionalFee)
+			.build();
+	private CustomFeesOuterClass.CustomFees customFees = CustomFeesOuterClass.CustomFees.newBuilder()
+			.setCustomFees(0, grpcCustomFixedFee_1)
+			.setCustomFees(1, grpcCustomFixedFee_2)
+			.setCustomFees(2, grpcCustomFractionalFee_3)
+			.build();
+	private List<CustomFee> customFeeList = new ArrayList<>();
 
 	private HederaTokenStore subject;
 
@@ -1585,6 +1626,7 @@ class HederaTokenStoreTest {
 		expected.setWipeKey(MISC_ACCOUNT_KT.asJKeyUnchecked());
 		expected.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked());
 		expected.setMemo(memo);
+		expected.setFeeSchedule();
 
 		// given:
 		var req = fullyValidAttempt().build();
@@ -1705,7 +1747,8 @@ class HederaTokenStoreTest {
 				.setInitialSupply(totalSupply)
 				.setTreasury(treasury)
 				.setDecimals(decimals)
-				.setFreezeDefault(freezeDefault);
+				.setFreezeDefault(freezeDefault)
+				.setCustomFees(customFees);
 	}
 
 	private Duration enduring(long secs) {
