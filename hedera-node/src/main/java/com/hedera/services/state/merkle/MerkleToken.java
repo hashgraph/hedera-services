@@ -471,7 +471,11 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	}
 
 	public void setFeeScheduleFrom(CustomFeesOuterClass.CustomFees grpcFeeSchedule) {
-		feeSchedule = grpcFeeSchedule.getCustomFeesList().stream().map(CustomFee::fromGrpc).collect(toList());
+		feeSchedule = customFeesFromGrpc(grpcFeeSchedule);
+	}
+
+	public static List<CustomFee> customFeesFromGrpc(CustomFeesOuterClass.CustomFees grpcFeeSchedule) {
+		return	grpcFeeSchedule.getCustomFeesList().stream().map(CustomFee::fromGrpc).collect(toList());
 	}
 
 	public List<CustomFee> getFeeSchedule() {

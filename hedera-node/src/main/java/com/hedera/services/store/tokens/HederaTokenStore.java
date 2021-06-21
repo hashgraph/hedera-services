@@ -30,7 +30,6 @@ import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.submerkle.CustomFee;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.HederaStore;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -46,6 +45,7 @@ import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import proto.CustomFeesOuterClass;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -78,6 +78,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TRE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
@@ -103,8 +104,6 @@ import static java.util.stream.Collectors.toList;
 
 /**
  * Provides a managing store for arbitrary tokens.
- *
- * @author Michael Tinker
  */
 public class HederaTokenStore extends HederaStore implements TokenStore {
 	private static final Logger log = LogManager.getLogger(HederaTokenStore.class);
@@ -404,49 +403,55 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		}
 
 		if (request.hasCustomFees()) {
-			pendingCreation.setFeeScheduleFrom(request.getCustomFees());
-			validity = validateFeeSchedule(pendingCreation.getFeeSchedule());
-			if(validity != OK) {
+			validity = validateFeeSchedule(request.getCustomFees().getCustomFeesList());
+			if (validity != OK) {
 				return failure(validity);
 			}
+			pendingCreation.setFeeScheduleFrom(request.getCustomFees());
 		}
 
 		return success(pendingId);
 	}
 
-	private ResponseCodeEnum validateFeeSchedule(final List<CustomFee> feeSchedule) {
-		if(feeSchedule.size() > properties.maxCustomFeesAllowed()) {
+	private ResponseCodeEnum validateFeeSchedule(List<CustomFeesOuterClass.CustomFee> feeSchedule) {
+		if (feeSchedule.size() > properties.maxCustomFeesAllowed()) {
 			return CUSTOM_FEES_LIST_TOO_LONG;
 		}
 
-		for(CustomFee customFee : feeSchedule) {
-			var accountID = customFee.getFeeCollector().toGrpcAccountId();
-			/* validate if the feeCollector is a valid account ID */
-			var feeCollectorValidity = usableOrElse(
-					accountID, INVALID_CUSTOM_FEE_COLLECTOR);
+		for (var customFee : feeSchedule) {
+			final var feeCollector = customFee.getFeeCollector();
+			/* Validate if the feeCollector is a valid account ID */
+			final var feeCollectorValidity = usableOrElse(feeCollector, INVALID_CUSTOM_FEE_COLLECTOR);
 
 			if (feeCollectorValidity != OK) {
 				return INVALID_CUSTOM_FEE_COLLECTOR;
 			}
 
-			/* validate if the token Id given in the fixed fee is a valid token ID and is associated with the feeCollector */
-			if (customFee.getFixedFeeSpec() != null) {
-				var tokenID = customFee.getFixedFeeSpec().getTokenDenomination().toGrpcTokenId();
-				if (resolve(tokenID) == MISSING_TOKEN) {
-					return INVALID_TOKEN_ID_IN_CUSTOM_FEES;
+			/* Validate if the token id given in the fixed fee is a valid token ID and is associated with the feeCollector */
+			if (customFee.hasFixedFee()) {
+				final var fixedFee = customFee.getFixedFee();
+				if (fixedFee.hasTokenId()) {
+					final var denom = fixedFee.getTokenId();
+					if (resolve(denom) == MISSING_TOKEN) {
+						return INVALID_TOKEN_ID_IN_CUSTOM_FEES;
+					}
+					if (!associationExists(feeCollector, denom)) {
+						return TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
+					}
 				}
+			} else if (customFee.hasFractionalFee()) {
+				// TODO: ...
+				/* validate the fraction in fractionalFee */
 
-				if(!hederaLedger.getAssociatedTokens(accountID).includes(tokenID)) {
-					return TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
-				}
+				/* QUESTION - Should fee collectors for fractional fees automatically be associated to the newly created token?
+				 *
+				 * (This will require their keys to sign the TokenCreate transaction.) */
+
+				final var fractionalSpec = customFee.getFractionalFee();
+				final var fraction = fractionalSpec.getFractionOfUnitsToCollect();
+			} else {
+				return CUSTOM_FEE_NOT_FULLY_SPECIFIED;
 			}
-
-			/* validate the fraction in fractionalFee */
-			if (customFee.getFractionalFeeSpec() != null) {
-				// TODO:
-				var denominator = customFee.getFractionalFeeSpec().getDenominator();
-			}
-
 		}
 
 		return OK;
