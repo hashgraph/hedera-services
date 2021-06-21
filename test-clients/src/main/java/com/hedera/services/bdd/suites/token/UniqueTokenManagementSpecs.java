@@ -23,8 +23,10 @@ package com.hedera.services.bdd.suites.token;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -39,6 +41,7 @@ import java.util.Random;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -56,10 +59,13 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public class UniqueTokenManagementSpecs extends HapiApiSuite {
     private static final org.apache.logging.log4j.Logger log = LogManager.getLogger(UniqueTokenManagementSpecs.class);
+    private static final String A_TOKEN = "TokenA";
     private static final String NFT = "nft";
     private static final String FUNGIBLE_TOKEN = "fungible";
     private static final String SUPPLY_KEY = "supplyKey";
+    private static final String FIRST_USER = "Client1";
     private static final int BIGGER_THAN_LIMIT = 11;
+
     public static void main(String... args) {
         new UniqueTokenManagementSpecs().runSuiteSync();
     }
@@ -78,6 +84,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                         failsWithTooLongMetadata(),
                         failsWithInvalidMetadataFromBatch(),
                         distinguishesFeeSubTypes(),
+                        uniqueTokenMintReceiptCheck(),
                 }
         );
     }
@@ -366,6 +373,41 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                                 .hasAccountID(TOKEN_TREASURY)
                                 .hasTokenID(NFT)
                                 .hasValidCreationTime()
+                );
+    }
+
+    private HapiApiSpec uniqueTokenMintReceiptCheck() {
+        return defaultHapiSpec("UniqueTokenMintReceiptCheck")
+                .given(
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(FIRST_USER),
+                        newKeyNamed("supplyKey"),
+                        tokenCreate(A_TOKEN)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0)
+                                .supplyKey("supplyKey")
+                                .treasury(TOKEN_TREASURY)
+                )
+                .when(
+                        mintToken(A_TOKEN, List.of(ByteString.copyFromUtf8("memo"))).via("mintTransferTxn")
+                )
+                .then(
+                        UtilVerbs.withOpContext((spec, opLog) -> {
+                            var mintNft = getTxnRecord("mintTransferTxn");
+                            allRunFor(spec, mintNft);
+                            var tokenTransferLists = mintNft.getResponseRecord().getTokenTransferListsList();
+                            Assert.assertEquals(1, tokenTransferLists.size());
+                            tokenTransferLists.stream().forEach(tokenTransferList -> {
+                                Assert.assertEquals(1, tokenTransferList.getNftTransfersList().size());
+                                tokenTransferList.getNftTransfersList().stream().forEach(nftTransfers -> {
+                                    Assert.assertEquals(AccountID.getDefaultInstance(), nftTransfers.getSenderAccountID());
+                                    Assert.assertEquals(TxnUtils.asId(TOKEN_TREASURY, spec), nftTransfers.getReceiverAccountID());
+                                    Assert.assertEquals(1L, nftTransfers.getSerialNumber());
+                                });
+                            });
+                        }),
+                        getTxnRecord("mintTransferTxn").logged(),
+                        getReceipt("mintTransferTxn").logged()
                 );
     }
 

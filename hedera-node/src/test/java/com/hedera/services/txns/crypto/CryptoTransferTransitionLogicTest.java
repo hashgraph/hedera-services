@@ -66,6 +66,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -349,6 +350,7 @@ public class CryptoTransferTransitionLogicTest {
 	private void withRubberstampingValidator() {
 		given(validator.isAcceptableTransfersLength(any())).willReturn(true);
 		given(validator.tokenTransfersLengthCheck(any())).willReturn(OK);
+		given(validator.maxNftTransfersLenCheck(anyInt())).willReturn(OK);
 	}
 
 	CryptoTransferTransactionBody xfers = CryptoTransferTransactionBody.newBuilder()

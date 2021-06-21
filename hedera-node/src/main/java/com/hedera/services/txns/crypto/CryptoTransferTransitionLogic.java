@@ -144,6 +144,15 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 			return validity;
 		}
 
+		var maxNftTransfers = 0;
+		for (var tokenTransferList : op.getTokenTransfersList()) {
+			maxNftTransfers += tokenTransferList.getNftTransfersList().size();
+		}
+		validity = validator.maxNftTransfersLenCheck(maxNftTransfers);
+		if (validity != OK) {
+			return validity;
+		}
+
 		return checkTokenTransfers(op.getTokenTransfersList());
 	}
 
