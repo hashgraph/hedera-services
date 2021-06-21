@@ -334,23 +334,4 @@ public class CustomFee implements SelfSerializable {
 					.toString();
 		}
 	}
-
-	public static CustomFee mapFromGrpc(final CustomFeesOuterClass.CustomFee customFeeFromRequest) {
-		if(customFeeFromRequest.hasFixedFee()) {
-			var fixedFeeFromRequest = customFeeFromRequest.getFixedFee();
-			return CustomFee.fixedFee(
-					fixedFeeFromRequest.getUnitsToCollect(),
-					EntityId.fromGrpcTokenId(fixedFeeFromRequest.getTokenId()),
-					EntityId.fromGrpcAccountId(customFeeFromRequest.getFeeCollector()));
-		} else {
-			var fractionalFeeFromRequest = customFeeFromRequest.getFractionalFee();
-			var fractionFromRequest = fractionalFeeFromRequest.getFractionOfUnitsToCollect();
-			return CustomFee.fractionalFee(
-					fractionFromRequest.getNumerator(),
-					fractionFromRequest.getDenominator(),
-					fractionalFeeFromRequest.getMinimumUnitsToCollect(),
-					fractionalFeeFromRequest.getMaximumUnitsToCollect().getValue(),
-					EntityId.fromGrpcAccountId(customFeeFromRequest.getFeeCollector()));
-		}
-	}
 }
