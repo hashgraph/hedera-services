@@ -155,7 +155,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	public void rebuildViews() {
 		knownTreasuries.clear();
 		rebuildViewOfKnownTreasuries();
-		rebuildViewOfUniqueRelations();
+//		rebuildViewOfUniqueRelations();
 	}
 
 	private void rebuildViewOfKnownTreasuries() {

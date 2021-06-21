@@ -65,7 +65,7 @@ class TypedTokenStoreTest {
 	@Mock
 	private FCMap<MerkleEntityId, MerkleToken> tokens;
 	@Mock
-	private FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier> uniqueTokens;
+	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens;
 	@Mock
 	private TransactionRecordService transactionRecordService;
 	@Mock
