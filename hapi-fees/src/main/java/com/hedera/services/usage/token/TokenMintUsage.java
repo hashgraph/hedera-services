@@ -61,7 +61,7 @@ public class TokenMintUsage extends TokenTxnUsage<TokenMintUsage> {
 			}
 			usageEstimator.addBpt(bytesToAdd);
 			usageEstimator.addRbs(bytesToAdd);
-			var tokenSize = op.getMetadataList().size();
+			var tokenSize = op.getMetadataCount();
 			usageEstimator.addRbs(tokenEntitySizes.bytesUsedForUniqueTokenTransfers(tokenSize));
 			addTokenTransfersRecordRb(1, 0, tokenSize);
 		} else if (currentSubType == SubType.TOKEN_FUNGIBLE_COMMON) {
@@ -70,7 +70,6 @@ public class TokenMintUsage extends TokenTxnUsage<TokenMintUsage> {
 		}
 
 		addEntityBpt();
-
 		return usageEstimator.get(currentSubType);
 	}
 }

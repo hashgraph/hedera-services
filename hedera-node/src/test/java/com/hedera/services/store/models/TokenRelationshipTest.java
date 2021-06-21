@@ -58,8 +58,8 @@ class TokenRelationshipTest {
 		// given:
 		final var desired = "TokenRelationship{notYetPersisted=true, " +
 				"account=Account{id=Id{shard=1, realm=0, num=1234}, expiry=0, balance=0, deleted=false, " +
-				"tokens=<N/A>}, token=Token{id=Id{shard=0, realm=0, num=1234}, type=null, treasury=null, autoRenewAccount=null, " +
-				"kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0}, balance=1234, " +
+				"tokens=<N/A>}, token=Token{id=Id{shard=0, realm=0, num=1234}, treasury=null, autoRenewAccount=null, " +
+				"kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>}, balance=1234, " +
 				"balanceChange=0, frozen=false, kycGranted=false}";
 
 		// expect:

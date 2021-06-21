@@ -251,7 +251,12 @@ public class TypedTokenStore {
 				final var merkleUniqueToken = new MerkleUniqueToken(new EntityId(uniqueToken.getOwner()), uniqueToken.getMetadata(), uniqueToken.getCreationTime());
 				uniqueTokens.get().put(merkleUniqueId, merkleUniqueToken);
 			}
-			accountStore.persistAccount(token.getTreasury());
+		}
+		if (token.hasBurnedUniqueTokens()){
+			for (final UniqueToken uniqueToken : token.burnedUniqueTokens()) {
+				final var uniqueId = new MerkleUniqueTokenId(new EntityId(uniqueToken.getTokenId()), uniqueToken.getSerialNumber());
+				uniqueTokens.get().remove(uniqueId);
+			}
 		}
 
 		transactionRecordService.includeChangesToToken(token);
