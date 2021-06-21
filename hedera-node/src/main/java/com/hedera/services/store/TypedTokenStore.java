@@ -78,7 +78,7 @@ public class TypedTokenStore {
 	private final AccountStore accountStore;
 	private final TransactionRecordService transactionRecordService;
 	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
-	private final Supplier<FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier>> uniqueTokens;
+	private final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens;
 	private final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels;
 	/* Only needed for interoperability with legacy HTS during refactor */
 	private final BackingTokenRels backingTokenRels;
@@ -87,7 +87,7 @@ public class TypedTokenStore {
 			AccountStore accountStore,
 			TransactionRecordService transactionRecordService,
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
-			Supplier<FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier>> uniqueTokens,
+			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens,
 			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels,
 			BackingTokenRels backingTokenRels
 	) {

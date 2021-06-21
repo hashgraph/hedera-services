@@ -249,7 +249,6 @@ import com.hedera.services.store.schedule.HederaScheduleStore;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.unique.OwnerIdentifier;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.throttling.DeterministicThrottling;
@@ -570,7 +569,7 @@ public class ServicesContext {
 	private AtomicReference<FCMap<MerkleEntityId, MerkleSchedule>> queryableSchedules;
 	private AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage;
 	private AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations;
-	private AtomicReference<FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier>> queryableUniqueTokens;
+	private AtomicReference<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> queryableUniqueTokens;
 
 	/* Context-free infrastructure. */
 	private static Pause pause;
@@ -2011,7 +2010,7 @@ public class ServicesContext {
 		return queryableSchedules;
 	}
 
-	public AtomicReference<FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier>> queryableUniqueTokens() {
+	public AtomicReference<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> queryableUniqueTokens() {
 		if (queryableUniqueTokens == null) {
 			queryableUniqueTokens = new AtomicReference<>(uniqueTokens());
 		}
@@ -2130,7 +2129,7 @@ public class ServicesContext {
 		return state.tokenAssociations();
 	}
 
-	public FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier> uniqueTokens() {
+	public FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens() {
 		return state.uniqueTokens();
 	}
 

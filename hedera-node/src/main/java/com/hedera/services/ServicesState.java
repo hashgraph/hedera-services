@@ -409,7 +409,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return getChild(ChildIndices.RECORD_STREAM_RUNNING_HASH);
 	}
 
-	public FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier> uniqueTokens() {
+	public FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens() {
 		return getChild(ChildIndices.UNIQUE_TOKENS);
 	}
 }

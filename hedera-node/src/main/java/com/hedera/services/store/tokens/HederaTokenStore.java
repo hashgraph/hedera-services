@@ -47,6 +47,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
+import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -121,12 +122,14 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	private final GlobalDynamicProperties properties;
 	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
 	// Temporary added while Answer service is refactored to use the new Model based design
-	private final Supplier<FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier>> uniqueTokenSupplier;
+	private final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokenSupplier;
 	private final TransactionalLedger<
 			Pair<AccountID, TokenID>,
 			TokenRelProperty,
 			MerkleTokenRelStatus> tokenRelsLedger;
 	Map<AccountID, Set<TokenID>> knownTreasuries = new HashMap<>();
+	FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenOwnership;
+	FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations;
 
 	TokenID pendingId = NO_PENDING_ID;
 	MerkleToken pendingCreation;
@@ -136,7 +139,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			OptionValidator validator,
 			GlobalDynamicProperties properties,
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
-			Supplier<FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier>> uniqueTokenSupplier,
+			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokenSupplier,
 			TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger
 	) {
 		super(ids);
@@ -152,11 +155,21 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	public void rebuildViews() {
 		knownTreasuries.clear();
 		rebuildViewOfKnownTreasuries();
+		rebuildViewOfUniqueRelations();
 	}
 
 	private void rebuildViewOfKnownTreasuries() {
 		tokens.get().forEach((key, value) ->
 				addKnownTreasury(value.treasury().toGrpcAccountId(), key.toTokenId()));
+	}
+
+	public void rebuildViewOfUniqueRelations() {
+		var uniqueTokens = uniqueTokenSupplier.get();
+		var keys = uniqueTokens.keySet();
+		for (MerkleUniqueTokenId key : keys) {
+			uniqueTokenAssociations.associate(key.tokenId(), key);
+			uniqueTokenOwnership.associate(uniqueTokens.get(key).getOwner(), key);
+		}
 	}
 
 	@Override
