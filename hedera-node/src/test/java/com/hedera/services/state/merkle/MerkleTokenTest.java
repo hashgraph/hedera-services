@@ -69,6 +69,7 @@ class MerkleTokenTest {
 	private JKey wipeKey, otherWipeKey;
 	private JKey supplyKey, otherSupplyKey;
 	private JKey kycKey, otherKycKey;
+	private JKey customFeeKey, otherCustomFeeKey;
 	private String symbol = "NotAnHbar", otherSymbol = "NotAnHbarEither";
 	private String name = "NotAnHbarName", otherName = "NotAnHbarNameEither";
 	private String memo = "NotAMemo", otherMemo = "NotAMemoEither";
@@ -92,6 +93,7 @@ class MerkleTokenTest {
 		adminKey = new JEd25519Key("not-a-real-admin-key".getBytes());
 		kycKey = new JEd25519Key("not-a-real-kyc-key".getBytes());
 		freezeKey = new JEd25519Key("not-a-real-freeze-key".getBytes());
+		customFeeKey = new JEd25519Key("not-a-real-custom-fee-key".getBytes());
 		otherAdminKey = new JEd25519Key("not-a-real-admin-key-either".getBytes());
 		otherKycKey = new JEd25519Key("not-a-real-kyc-key-either".getBytes());
 		otherFreezeKey = new JEd25519Key("not-a-real-freeze-key-either".getBytes());
@@ -99,6 +101,7 @@ class MerkleTokenTest {
 		supplyKey = new JEd25519Key("not-a-real-supply-key".getBytes());
 		otherWipeKey = new JEd25519Key("not-a-real-wipe-key-either".getBytes());
 		otherSupplyKey = new JEd25519Key("not-a-real-supply-key-either".getBytes());
+		otherCustomFeeKey = new JEd25519Key("not-a-real-custom-fee-key-either".getBytes());
 
 		subject = new MerkleToken(
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
@@ -108,6 +111,7 @@ class MerkleTokenTest {
 		subject.setKycKey(kycKey);
 		subject.setWipeKey(wipeKey);
 		subject.setSupplyKey(supplyKey);
+		subject.setCustomFeeKey(customFeeKey);
 		subject.setDeleted(isDeleted);
 		subject.setMemo(memo);
 		subject.setFeeScheduleFrom(grpcFeeSchedule);
@@ -158,6 +162,8 @@ class MerkleTokenTest {
 				argThat(supplyKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
 		inOrder.verify(serdes).writeNullable(
 				argThat(wipeKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
+		inOrder.verify(serdes).writeNullable(
+				argThat(customFeeKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
 		inOrder.verify(out).writeNormalisedString(memo);
 		inOrder.verify(out).writeSerializableList(feeSchedule, true, true);
 	}
@@ -177,6 +183,7 @@ class MerkleTokenTest {
 		// setup:
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
 		subject.setFeeSchedule(Collections.emptyList());
+		subject.setCustomFeeKey(null);
 
 		given(serdes.readNullableSerializable(any())).willReturn(autoRenewAccount);
 		given(serdes.deserializeKey(fin)).willReturn(adminKey);
@@ -221,7 +228,8 @@ class MerkleTokenTest {
 				.willReturn(freezeKey)
 				.willReturn(kycKey)
 				.willReturn(supplyKey)
-				.willReturn(wipeKey);
+				.willReturn(wipeKey)
+				.willReturn(customFeeKey);
 		given(fin.readNormalisedString(anyInt()))
 				.willReturn(symbol)
 				.willReturn(name)
@@ -253,6 +261,7 @@ class MerkleTokenTest {
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
 		subject.setFeeSchedule(Collections.emptyList());
 		subject.setMemo(MerkleAccountState.DEFAULT_MEMO);
+		subject.setCustomFeeKey(null);
 
 		given(serdes.readNullableSerializable(any())).willReturn(autoRenewAccount);
 		given(serdes.deserializeKey(fin)).willReturn(adminKey);
@@ -536,6 +545,7 @@ class MerkleTokenTest {
 		token.setWipeKey(wipeKey);
 		token.setSupplyKey(supplyKey);
 		token.setKycKey(kycKey);
+		token.setCustomFeeKey(customFeeKey);
 		token.setAutoRenewAccount(autoRenewAccount);
 		token.setAutoRenewPeriod(autoRenewPeriod);
 		token.setMemo(memo);
@@ -581,6 +591,7 @@ class MerkleTokenTest {
 				", wipeKey=ed25519: \"not-a-real-wipe-key\"\n" +
 				", supplyKey=ed25519: \"not-a-real-supply-key\"\n" +
 				", freezeKey=ed25519: \"not-a-real-freeze-key\"\n" +
+				", customFeeKey=ed25519: \"not-a-real-custom-fee-key\"\n" +
 				", accountsKycGrantedByDefault=true, accountsFrozenByDefault=true, " +
 				"feeSchedules=[CustomFee{feeType=FIXED_FEE, fixedFee=FixedFeeSpec{unitsToCollect=7, tokenDenomination=1" +
 				".2.3}, feeCollector=EntityId{shard=4, realm=5, num=6}}, CustomFee{feeType=FRACTIONAL_FEE, " +
