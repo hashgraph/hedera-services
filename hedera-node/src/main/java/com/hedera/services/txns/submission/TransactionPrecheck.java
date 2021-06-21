@@ -24,10 +24,9 @@ import com.hedera.services.context.CurrentPlatformStatus;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.utils.SignedTxnAccessor;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.EnumSet;
@@ -37,7 +36,6 @@ import static com.hedera.services.txns.submission.PresolvencyFlaws.WELL_KNOWN_FL
 import static com.hedera.services.txns.submission.PresolvencyFlaws.responseForFlawed;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
@@ -110,7 +108,7 @@ public class TransactionPrecheck {
 			return responseForFlawed(syntaxStatus);
 		}
 
-		final var semanticStatus = checkSemantics(accessor.getFunction(), txn, characteristics);
+		final var semanticStatus = checkSemantics(accessor, characteristics);
 		if (semanticStatus != OK) {
 			return responseForFlawed(semanticStatus);
 		}
@@ -137,13 +135,12 @@ public class TransactionPrecheck {
 	}
 
 	private ResponseCodeEnum checkSemantics(
-			HederaFunctionality function,
-			TransactionBody txn,
+			TxnAccessor accessor,
 			EnumSet<Characteristic> characteristics
 	) {
 		return characteristics.contains(Characteristic.MUST_BE_CRYPTO_TRANSFER)
-				? stagedPrechecks.validateSemantics(CryptoTransfer, txn, INSUFFICIENT_TX_FEE)
-				: stagedPrechecks.validateSemantics(function, txn, NOT_SUPPORTED);
+				? stagedPrechecks.validateSemantics(accessor, CryptoTransfer, INSUFFICIENT_TX_FEE)
+				: stagedPrechecks.validateSemantics(accessor, accessor.getFunction(), NOT_SUPPORTED);
 	}
 
 	private enum Characteristic {

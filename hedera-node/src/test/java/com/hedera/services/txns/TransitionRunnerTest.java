@@ -26,7 +26,6 @@ import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,7 +36,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import javax.inject.Inject;
 import java.util.Optional;
-import java.util.function.Function;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -63,8 +61,6 @@ class TransitionRunnerTest {
 	private TxnAccessor accessor;
 	@Mock
 	private TransitionLogic logic;
-	@Mock
-	private Function<TransactionBody, ResponseCodeEnum> semanticCheck;
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
@@ -102,8 +98,7 @@ class TransitionRunnerTest {
 		given(accessor.getFunction()).willReturn(TokenMint);
 		given(accessor.getTxn()).willReturn(mockBody);
 		given(lookup.lookupFor(TokenMint, mockBody)).willReturn(Optional.of(logic));
-		given(logic.semanticCheck()).willReturn(semanticCheck);
-		given(semanticCheck.apply(mockBody)).willReturn(INVALID_TOKEN_ID);
+		given(logic.validateSemantics(accessor)).willReturn(INVALID_TOKEN_ID);
 
 		// when:
 		var result = subject.tryTransition(accessor);
@@ -118,8 +113,7 @@ class TransitionRunnerTest {
 		given(accessor.getFunction()).willReturn(TokenMint);
 		given(accessor.getTxn()).willReturn(mockBody);
 		given(lookup.lookupFor(TokenMint, mockBody)).willReturn(Optional.of(logic));
-		given(logic.semanticCheck()).willReturn(semanticCheck);
-		given(semanticCheck.apply(mockBody)).willReturn(OK);
+		given(logic.validateSemantics(accessor)).willReturn(OK);
 		willThrow(new InvalidTransactionException(INVALID_TOKEN_MINT_AMOUNT)).given(logic).doStateTransition();
 
 		// when:
@@ -136,8 +130,7 @@ class TransitionRunnerTest {
 		given(accessor.getTxn()).willReturn(mockBody);
 		given(accessor.getSignedTxnWrapper()).willReturn(mockTxn);
 		given(lookup.lookupFor(TokenMint, mockBody)).willReturn(Optional.of(logic));
-		given(logic.semanticCheck()).willReturn(semanticCheck);
-		given(semanticCheck.apply(mockBody)).willReturn(OK);
+		given(logic.validateSemantics(accessor)).willReturn(OK);
 		willThrow(new InvalidTransactionException("Yikes!", FAIL_INVALID)).given(logic).doStateTransition();
 
 		// when:
@@ -156,8 +149,7 @@ class TransitionRunnerTest {
 		given(accessor.getFunction()).willReturn(TokenMint);
 		given(accessor.getTxn()).willReturn(mockBody);
 		given(lookup.lookupFor(TokenMint, mockBody)).willReturn(Optional.of(logic));
-		given(logic.semanticCheck()).willReturn(semanticCheck);
-		given(semanticCheck.apply(mockBody)).willReturn(OK);
+		given(logic.validateSemantics(accessor)).willReturn(OK);
 
 		// when:
 		var result = subject.tryTransition(accessor);

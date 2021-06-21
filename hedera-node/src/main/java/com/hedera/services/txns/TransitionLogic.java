@@ -20,6 +20,7 @@ package com.hedera.services.txns;
  * ‍
  */
 
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -75,5 +76,16 @@ public interface TransitionLogic {
 	 */
 	default Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
 		return SEMANTIC_RUBBER_STAMP;
+	}
+
+	/**
+	 * Validate the transaction represented by the given {@link TxnAccessor},
+	 * returning a {@link ResponseCodeEnum}.
+	 *
+	 * @param accessor the transaction to be validated
+	 * @return {@code OK} if the transaction is valid, otherwise an appropriate error code
+	 */
+	default ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
+		return semanticCheck().apply(accessor.getTxn());
 	}
 }

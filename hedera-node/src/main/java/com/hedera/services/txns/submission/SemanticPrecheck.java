@@ -20,11 +20,10 @@ package com.hedera.services.txns.submission;
  * ‍
  */
 
-import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.TransitionLogicLookup;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 
 /**
  * Tests if the specific HAPI function requested by a {@code Transaction} is well-formed; note
@@ -39,8 +38,9 @@ public class SemanticPrecheck {
 		this.transitionLogic = transitionLogic;
 	}
 
-	ResponseCodeEnum validate(HederaFunctionality function, TransactionBody txn, ResponseCodeEnum failureType) {
-		final var logic = transitionLogic.lookupFor(function, txn);
-		return logic.map(TransitionLogic::semanticCheck).map(f -> f.apply(txn)).orElse(failureType);
+	ResponseCodeEnum validate(TxnAccessor accessor, HederaFunctionality requiredFunction, ResponseCodeEnum failureType) {
+		final var txn = accessor.getTxn();
+		final var logic = transitionLogic.lookupFor(requiredFunction, txn);
+		return logic.map(l -> l.validateSemantics(accessor)).orElse(failureType);
 	}
 }

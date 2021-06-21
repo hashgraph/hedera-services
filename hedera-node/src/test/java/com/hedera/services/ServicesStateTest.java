@@ -53,7 +53,7 @@ import com.hedera.services.store.tokens.unique.OwnerIdentifier;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttling.FunctionalityThrottling;
-import com.hedera.services.txns.ExpandHandleSpan;
+import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.invertible_fchashmap.FCInvertibleHashMap;
