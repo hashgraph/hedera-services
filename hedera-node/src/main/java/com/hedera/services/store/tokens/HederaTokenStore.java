@@ -128,8 +128,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			TokenRelProperty,
 			MerkleTokenRelStatus> tokenRelsLedger;
 	Map<AccountID, Set<TokenID>> knownTreasuries = new HashMap<>();
-	FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenOwnership;
-	FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations;
+	Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenOwnership;
+	Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations;
 
 	TokenID pendingId = NO_PENDING_ID;
 	MerkleToken pendingCreation;
@@ -140,6 +140,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			GlobalDynamicProperties properties,
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
 			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokenSupplier,
+			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> accountOwnership,
+			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> tokenAssociations,
 			TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger
 	) {
 		super(ids);
@@ -147,7 +149,9 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		this.validator = validator;
 		this.properties = properties;
 		this.tokenRelsLedger = tokenRelsLedger;
+		this.uniqueTokenOwnership = accountOwnership;
 		this.uniqueTokenSupplier = uniqueTokenSupplier;
+		this.uniqueTokenAssociations = tokenAssociations;
 		rebuildViewOfKnownTreasuries();
 	}
 
@@ -155,21 +159,11 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	public void rebuildViews() {
 		knownTreasuries.clear();
 		rebuildViewOfKnownTreasuries();
-		rebuildViewOfUniqueRelations();
 	}
 
 	private void rebuildViewOfKnownTreasuries() {
 		tokens.get().forEach((key, value) ->
 				addKnownTreasury(value.treasury().toGrpcAccountId(), key.toTokenId()));
-	}
-
-	public void rebuildViewOfUniqueRelations() {
-		var uniqueTokens = uniqueTokenSupplier.get();
-		var keys = uniqueTokens.keySet();
-		for (MerkleUniqueTokenId key : keys) {
-			uniqueTokenAssociations.associate(key.tokenId(), key);
-			uniqueTokenOwnership.associate(uniqueTokens.get(key).getOwner(), key);
-		}
 	}
 
 	@Override

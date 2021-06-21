@@ -251,6 +251,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		ctx.update(this);
 		ctx.rebuildBackingStoresIfPresent();
 		ctx.rebuildStoreViewsIfPresent();
+		ctx.rebuildOwnershipsAndAssociations();
 
 		/* Use any payer records stored in state to rebuild the recent transaction
 		 * history. This history has two main uses: Purging expired records, and

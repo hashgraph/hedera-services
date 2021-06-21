@@ -320,7 +320,6 @@ import com.hedera.services.usage.schedule.ScheduleOpsUsage;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
-import com.hedera.services.utils.invertible_fchashmap.FCInvertibleHashMap;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -341,6 +340,7 @@ import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
+import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -570,6 +570,8 @@ public class ServicesContext {
 	private AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage;
 	private AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations;
 	private AtomicReference<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> queryableUniqueTokens;
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenOwnership = new FCOneToManyRelation<>();
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations = new FCOneToManyRelation<>();
 
 	/* Context-free infrastructure. */
 	private static Pause pause;
@@ -1532,6 +1534,8 @@ public class ServicesContext {
 					globalDynamicProperties(),
 					this::tokens,
 					this::uniqueTokens,
+					this::uniqueTokenAccountOwnerships,
+					this::uniqueTokenAssociations,
 					tokenRelsLedger);
 		}
 		return tokenStore;
@@ -2127,6 +2131,29 @@ public class ServicesContext {
 
 	public FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations() {
 		return state.tokenAssociations();
+	}
+
+	public void rebuildOwnershipsAndAssociations() {
+		var uniqueTokens= state.uniqueTokens();
+		var keys = uniqueTokens.keySet();
+		for (MerkleUniqueTokenId key : keys) {
+			this.uniqueTokenAssociations.associate(key.tokenId(), key);
+			this.uniqueTokenOwnership.associate(uniqueTokens.get(key).getOwner(), key);
+		}
+	}
+
+	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations() {
+		if (this.uniqueTokenAssociations == null) {
+			rebuildOwnershipsAndAssociations();
+		}
+		return this.uniqueTokenAssociations;
+	}
+
+	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAccountOwnerships() {
+		if (this.uniqueTokenOwnership == null) {
+			rebuildOwnershipsAndAssociations();
+		}
+		return this.uniqueTokenOwnership;
 	}
 
 	public FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens() {
