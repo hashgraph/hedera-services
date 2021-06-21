@@ -184,6 +184,7 @@ public class BaseHederaLedgerTest {
 		token = mock(MerkleToken.class);
 		given(token.freezeKey()).willReturn(Optional.empty());
 
+		nftsLedger = mock(TransactionalLedger.class);
 		accountsLedger = mock(TransactionalLedger.class);
 		tokenRelsLedger = mock(TransactionalLedger.class);
 		addToLedger(misc, MISC_BALANCE, Map.of(
@@ -212,6 +213,7 @@ public class BaseHederaLedgerTest {
 
 		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);
+		subject.setNftsLedger(nftsLedger);
 	}
 
 	protected void givenAdjustBalanceUpdatingTokenXfers(AccountID misc, TokenID tokenId, long i) {

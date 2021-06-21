@@ -21,6 +21,7 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
@@ -70,13 +71,16 @@ class BalanceChangeTest {
 	}
 
 	@Test
-	void recognizesIfForHbar() {
+	void recognizesFungibleTypes() {
 		// given:
 		final var hbarChange = IdUtils.hbarChange(a, delta);
 		final var tokenChange = IdUtils.tokenChange(t, a, delta);
 
 		assertTrue(hbarChange.isForHbar());
 		assertFalse(tokenChange.isForHbar());
+		// and:
+		assertFalse(hbarChange.isForNft());
+		assertFalse(tokenChange.isForNft());
 	}
 
 	@Test
@@ -102,5 +106,8 @@ class BalanceChangeTest {
 		assertEquals(b, nftChange.counterPartyAccountId());
 		assertEquals(t.asGrpcToken(), nftChange.tokenId());
 		assertEquals(serialNo, nftChange.serialNo());
+		// and:
+		assertTrue(nftChange.isForNft());
+		assertEquals(new NftId(t.getShard(), t.getRealm(), t.getNum(), serialNo), nftChange.nftId());
 	}
 }

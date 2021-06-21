@@ -227,11 +227,12 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	void forwardsTransactionalSemanticsToRelsLedgerIfPresent() {
+	void forwardsTransactionalSemanticsToTokenLedgersIfPresent() {
 		// setup:
-		InOrder inOrder = inOrder(tokenRelsLedger);
+		InOrder inOrder = inOrder(tokenRelsLedger, nftsLedger);
 
 		given(tokenRelsLedger.isInTransaction()).willReturn(true);
+		given(nftsLedger.isInTransaction()).willReturn(true);
 
 		// when:
 		subject.begin();
@@ -243,8 +244,15 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTest {
 		inOrder.verify(tokenRelsLedger).begin();
 		inOrder.verify(tokenRelsLedger).isInTransaction();
 		inOrder.verify(tokenRelsLedger).commit();
+		inOrder.verify(nftsLedger).begin();
+		inOrder.verify(nftsLedger).isInTransaction();
+		inOrder.verify(nftsLedger).commit();
+		// and:
 		inOrder.verify(tokenRelsLedger).begin();
 		inOrder.verify(tokenRelsLedger).isInTransaction();
 		inOrder.verify(tokenRelsLedger).rollback();
+		inOrder.verify(nftsLedger).begin();
+		inOrder.verify(nftsLedger).isInTransaction();
+		inOrder.verify(nftsLedger).rollback();
 	}
 }

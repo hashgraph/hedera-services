@@ -31,6 +31,7 @@ import java.util.List;
 
 import static com.hedera.services.ledger.BalanceChange.changingHbar;
 import static com.hedera.services.ledger.BalanceChange.changingFtUnits;
+import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
@@ -74,6 +75,9 @@ public class ImpliedTransfersMarshal {
 			final var scopingToken = Id.fromGrpcToken(grpcTokenId);
 			for (var aa : scopedTransfers.getTransfersList()) {
 				changes.add(changingFtUnits(scopingToken, grpcTokenId, aa));
+			}
+			for (var oc : scopedTransfers.getNftTransfersList()) {
+				changes.add(changingNftOwnership(scopingToken, grpcTokenId, oc));
 			}
 		}
 

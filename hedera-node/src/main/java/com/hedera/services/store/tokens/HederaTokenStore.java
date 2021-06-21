@@ -54,7 +54,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -70,6 +69,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
@@ -184,6 +184,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 	@Override
 	public void setHederaLedger(HederaLedger hederaLedger) {
+		hederaLedger.setNftsLedger(nftsLedger);
 		hederaLedger.setTokenRelsLedger(tokenRelsLedger);
 		super.setHederaLedger(hederaLedger);
 	}
@@ -343,49 +344,24 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	@Override
 	public ResponseCodeEnum changeOwner(NftId nftId, AccountID from, AccountID to) {
 		return sanityChecked(from, to, nftId.tokenId(), token -> {
+			if (!nftsLedger.exists(nftId)) {
+				return INVALID_NFT_ID;
+			}
 			final var owner = (EntityId) nftsLedger.get(nftId, OWNER);
 			if (!owner.matches(from)) {
 				return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 			}
-			throw new AssertionError("Not implemented!");
+
+			long fromNftsOwned = (long) accountsLedger.get(from, NUM_NFTS_OWNED);
+			long toNftsOwned = (long) accountsLedger.get(to, NUM_NFTS_OWNED);
+			nftsLedger.set(nftId, OWNER, EntityId.fromGrpcAccountId(to));
+			accountsLedger.set(from, NUM_NFTS_OWNED, fromNftsOwned - 1);
+			accountsLedger.set(to, NUM_NFTS_OWNED, toNftsOwned + 1);
+
+			hederaLedger.updateOwnershipChanges(nftId, from, to);
+
+			return OK;
 		});
-	}
-
-	@Override
-	public ResponseCodeEnum adjustBalance(AccountID senderAId, AccountID receiverAId, TokenID tId, long serialNumber) {
-		var validity = sanityChecked(senderAId, receiverAId, tId, token ->
-				tryAdjustment(senderAId, receiverAId, tId, serialNumber));
-		if (validity == OK) {
-			var nftId = NftID.newBuilder().setTokenID(tId).setSerialNumber(serialNumber).build();
-			if (nftExists(nftId)) {
-				get(nftId).setOwner(EntityId.fromGrpcAccountId(receiverAId));
-				adjustOwnedNfts(senderAId, false);
-				adjustOwnedNfts(receiverAId, true);
-			} else {
-				validity = INVALID_NFT_ID;
-			}
-		}
-
-		return validity;
-	}
-
-	private boolean nftExists(final NftID id) {
-		return uniqueTokenSupplier.get().containsKey(fromNftID(id));
-	}
-
-	public MerkleUniqueToken get(final NftID id) {
-		throwIfMissing(id);
-		return uniqueTokenSupplier.get().get(fromNftID(id));
-	}
-
-	private void adjustOwnedNfts(AccountID aId, Boolean isAdded) {
-		var merkleAccount = hederaLedger.get(aId);
-		long nftsOwned = merkleAccount.getNftsOwned();
-		if (Boolean.TRUE.equals(isAdded)) {
-			merkleAccount.setNftsOwned(nftsOwned + 1);
-		} else {
-			merkleAccount.setNftsOwned(nftsOwned - 1);
-		}
 	}
 
 	@Override
@@ -462,11 +438,11 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		return success(pendingId);
 	}
 
-	public void addKnownTreasury(AccountID aId, TokenID tId) {
+	void addKnownTreasury(AccountID aId, TokenID tId) {
 		knownTreasuries.computeIfAbsent(aId, ignore -> new HashSet<>()).add(tId);
 	}
 
-	public void removeKnownTreasuryForToken(AccountID aId, TokenID tId) {
+	void removeKnownTreasuryForToken(AccountID aId, TokenID tId) {
 		throwIfKnownTreasuryIsMissing(aId);
 		knownTreasuries.get(aId).remove(tId);
 		if (knownTreasuries.get(aId).isEmpty()) {
@@ -483,7 +459,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	private ResponseCodeEnum tryAdjustment(AccountID aId, TokenID tId, long adjustment) {
-		var resultFrozenOrKYC = checkRelFrozenOrKYC(Arrays.asList(aId), tId);
+		var resultFrozenOrKYC = checkRelFrozenAndKycProps(aId, tId);
 		if (!resultFrozenOrKYC.equals(OK)) {
 			return resultFrozenOrKYC;
 		}
@@ -499,36 +475,13 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		return OK;
 	}
 
-	private ResponseCodeEnum tryAdjustment(AccountID senderAId, AccountID receiverAId, TokenID tId, long serialNumber) {
-		var relationshipSender = asTokenRel(senderAId, tId);
-		var relationshipReceiver = asTokenRel(receiverAId, tId);
-
-		var resultFrozenOrKYC = checkRelFrozenOrKYC(Arrays.asList(senderAId, receiverAId), tId);
-		if (!resultFrozenOrKYC.equals(OK)) {
-			return resultFrozenOrKYC;
+	private ResponseCodeEnum checkRelFrozenAndKycProps(AccountID aId, TokenID tId) {
+		var relationship = asTokenRel(aId, tId);
+		if ((boolean) tokenRelsLedger.get(relationship, IS_FROZEN)) {
+			return ACCOUNT_FROZEN_FOR_TOKEN;
 		}
-
-		long balanceSender = (long) tokenRelsLedger.get(relationshipSender, TOKEN_BALANCE);
-		long balanceReceiver = (long) tokenRelsLedger.get(relationshipReceiver, TOKEN_BALANCE);
-		if (balanceSender <= 0) {
-			return INSUFFICIENT_TOKEN_BALANCE;
-		}
-		tokenRelsLedger.set(relationshipSender, TOKEN_BALANCE, balanceSender - 1);
-		tokenRelsLedger.set(relationshipReceiver, TOKEN_BALANCE, balanceReceiver + 1);
-		hederaLedger.updateTokenXfers(tId, senderAId, receiverAId, serialNumber);
-
-		return OK;
-	}
-
-	private ResponseCodeEnum checkRelFrozenOrKYC(List<AccountID> aIdList, TokenID tId) {
-		for (AccountID aId : aIdList) {
-			var relationship = asTokenRel(aId, tId);
-			if ((boolean) tokenRelsLedger.get(relationship, IS_FROZEN)) {
-				return ACCOUNT_FROZEN_FOR_TOKEN;
-			}
-			if (!(boolean) tokenRelsLedger.get(relationship, IS_KYC_GRANTED)) {
-				return ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
-			}
+		if (!(boolean) tokenRelsLedger.get(relationship, IS_KYC_GRANTED)) {
+			return ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 		}
 		return OK;
 	}

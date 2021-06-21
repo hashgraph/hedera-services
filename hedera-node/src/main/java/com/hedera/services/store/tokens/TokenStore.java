@@ -75,8 +75,6 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 
 	ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment);
 
-	ResponseCodeEnum adjustBalance(AccountID senderAId, AccountID receiverAId, TokenID tId, long serialNumber);
-
 	ResponseCodeEnum changeOwner(NftId nftId, AccountID from, AccountID to);
 
 	CreationResult<TokenID> createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now);
@@ -113,9 +111,13 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 			validity = INVALID_TOKEN_ID;
 		}
 		if (validity == OK) {
-			validity = adjustBalance(change.accountId(), tokenId, change.units());
-			if (validity == INSUFFICIENT_TOKEN_BALANCE) {
-				validity = change.codeForInsufficientBalance();
+			if (change.isForNft()) {
+				validity = changeOwner(change.nftId(), change.accountId(), change.counterPartyAccountId());
+			} else {
+				validity = adjustBalance(change.accountId(), tokenId, change.units());
+				if (validity == INSUFFICIENT_TOKEN_BALANCE) {
+					validity = change.codeForInsufficientBalance();
+				}
 			}
 		}
 		return validity;

@@ -22,6 +22,7 @@ package com.hedera.services.ledger;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
@@ -56,6 +57,7 @@ public class BalanceChange {
 	private ResponseCodeEnum codeForInsufficientBalance;
 
 	private long newBalance;
+	private NftId nftId = null;
 	private TokenID tokenId = null;
 	private AccountID accountId;
 	private AccountID counterPartyAccountId = null;
@@ -92,18 +94,28 @@ public class BalanceChange {
 	}
 
 	public static BalanceChange changingNftOwnership(Id token, TokenID tokenId, NftTransfer nftTransfer) {
+		final var serialNo = nftTransfer.getSerialNumber();
 		final var nftChange = new BalanceChange(
 				token,
 				nftTransfer.getSenderAccountID(),
 				nftTransfer.getReceiverAccountID(),
-				nftTransfer.getSerialNumber(),
+				serialNo,
 				SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
+		nftChange.nftId = new NftId(token.getShard(), token.getRealm(), token.getNum(), serialNo);
 		nftChange.tokenId = tokenId;
 		return nftChange;
 	}
 
 	public boolean isForHbar() {
 		return token == null;
+	}
+
+	public boolean isForNft() {
+		return token != null && counterPartyAccountId != null;
+	}
+
+	public NftId nftId() {
+		return nftId;
 	}
 
 	public long units() {

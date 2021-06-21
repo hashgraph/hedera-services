@@ -178,12 +178,18 @@ public class HederaLedger {
 		if (tokenRelsLedger != null) {
 			tokenRelsLedger.begin();
 		}
+		if (nftsLedger != null) {
+			nftsLedger.begin();
+		}
 	}
 
 	public void rollback() {
 		accountsLedger.rollback();
 		if (tokenRelsLedger != null && tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.rollback();
+		}
+		if (nftsLedger != null && nftsLedger.isInTransaction()) {
+			nftsLedger.rollback();
 		}
 		netTransfers.clear();
 		clearNetTokenTransfers();
@@ -197,6 +203,9 @@ public class HederaLedger {
 		historian.noteNewExpirationEvents();
 		if (tokenRelsLedger != null && tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.commit();
+		}
+		if (nftsLedger != null && nftsLedger.isInTransaction()) {
+			nftsLedger.commit();
 		}
 		netTransfers.clear();
 		clearNetTokenTransfers();
@@ -221,12 +230,12 @@ public class HederaLedger {
 		for (int i = 0; i < numTouches; i++) {
 			var token = tokensTouched[i];
 			if (i == 0 || !token.equals(tokensTouched[i - 1])) {
-				var netTransfersHere = netTokenTransfers.get(token);
-				purgeZeroAdjustments(netTransfersHere);
-				if (isFungibleToken(token)) {
+				final var fungibleTransfersHere = netTokenTransfers.get(token);
+				if (fungibleTransfersHere != null) {
+					purgeZeroAdjustments(fungibleTransfersHere);
 					all.add(TokenTransferList.newBuilder()
 							.setToken(token)
-							.addAllTransfers(netTransfersHere.getAccountAmountsList())
+							.addAllTransfers(fungibleTransfersHere.getAccountAmountsList())
 							.build());
 				} else {
 					var uniqueTransfersHere = uniqueTokenTransfers.get(token);
@@ -562,10 +571,11 @@ public class HederaLedger {
 		updateXfers(aId, amount, xfers);
 	}
 
-	public void updateTokenXfers(TokenID tId, AccountID senderId, AccountID receiverId, long serialNumber) {
+	public void updateOwnershipChanges(NftId nftId, AccountID from, AccountID to) {
+		final var tId = nftId.tokenId();
 		tokensTouched[numTouches++] = tId;
 		var xfers = uniqueTokenTransfers.computeIfAbsent(tId, ignore -> TokenTransferList.newBuilder());
-		xfers.addNftTransfers(nftTransferBuilderWith(senderId, receiverId, serialNumber));
+		xfers.addNftTransfers(nftTransferBuilderWith(from, to, nftId.serialNo()));
 	}
 
 	private void updateXfers(AccountID account, long amount, TransferList.Builder xfers) {
@@ -600,8 +610,14 @@ public class HederaLedger {
 	}
 
 	private void clearNetTokenTransfers() {
+		TransferList.Builder fungibleBuilder;
 		for (int i = 0; i < numTouches; i++) {
-			netTokenTransfers.get(tokensTouched[i]).clearAccountAmounts();
+			fungibleBuilder = netTokenTransfers.get(tokensTouched[i]);
+			if (fungibleBuilder != null) {
+				fungibleBuilder.clearAccountAmounts();
+			} else {
+				uniqueTokenTransfers.get(tokensTouched[i]).clearNftTransfers();
+			}
 		}
 		numTouches = 0;
 	}

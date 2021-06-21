@@ -67,6 +67,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 
 import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
+import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.hbarChange;
 import static com.hedera.test.utils.IdUtils.nftXfer;
@@ -122,6 +123,8 @@ class LedgerBalanceChangesTest {
 		tokens.put(tokenKey, fungibleTokenWithTreasury(aModel));
 		tokens.put(anotherTokenKey, fungibleTokenWithTreasury(aModel));
 		tokens.put(yetAnotherTokenKey, fungibleTokenWithTreasury(aModel));
+		tokens.put(aNftKey, nonFungibleTokenWithTreasury(aModel));
+		tokens.put(bNftKey, nonFungibleTokenWithTreasury(bModel));
 		tokenStore = new HederaTokenStore(
 				ids,
 				validator,
@@ -315,6 +318,15 @@ class LedgerBalanceChangesTest {
 	private List<TokenTransferList> expectedTokenXfers() {
 		return List.of(
 				TokenTransferList.newBuilder()
+						.setToken(asGprcToken(aNft))
+						.addNftTransfers(nftXfer(aModel, bModel, aSerialNo))
+						.build(),
+				TokenTransferList.newBuilder()
+						.setToken(asGprcToken(bNft))
+						.addNftTransfers(nftXfer(bModel, cModel, aSerialNo))
+						.addNftTransfers(nftXfer(cModel, aModel, bSerialNo))
+						.build(),
+				TokenTransferList.newBuilder()
 						.setToken(asGprcToken(token))
 						.addTransfers(aaBuilderWith(bModel, bTokenChange))
 						.addTransfers(aaBuilderWith(cModel, cTokenChange))
@@ -412,6 +424,35 @@ class LedgerBalanceChangesTest {
 		Pair<AccountID, TokenID> bYaTokenKey = rel(bModel, yetAnotherToken);
 		final var bYaTokenRel = new MerkleTokenRelStatus(bYetAnotherTokenBalance, false, true);
 		backingRels.put(bYaTokenKey, bYaTokenRel);
+
+		Pair<AccountID, TokenID> aaNftTokenKey = rel(aModel, aNft);
+		final var aaNftTokenRel = new MerkleTokenRelStatus(0, false, true);
+		backingRels.put(aaNftTokenKey, aaNftTokenRel);
+		Pair<AccountID, TokenID> abNftTokenKey = rel(aModel, bNft);
+		final var abNftTokenRel = new MerkleTokenRelStatus(0, false, true);
+		backingRels.put(abNftTokenKey, abNftTokenRel);
+		Pair<AccountID, TokenID> baNftTokenKey = rel(bModel, aNft);
+		final var baNftTokenRel = new MerkleTokenRelStatus(0, false, true);
+		backingRels.put(baNftTokenKey, baNftTokenRel);
+		Pair<AccountID, TokenID> bbNftTokenKey = rel(bModel, bNft);
+		final var bbNftTokenRel = new MerkleTokenRelStatus(0, false, true);
+		backingRels.put(bbNftTokenKey, bbNftTokenRel);
+		Pair<AccountID, TokenID> caNftTokenKey = rel(cModel, aNft);
+		final var caNftTokenRel = new MerkleTokenRelStatus(0, false, true);
+		backingRels.put(caNftTokenKey, caNftTokenRel);
+		Pair<AccountID, TokenID> cbNftTokenKey = rel(cModel, bNft);
+		final var cbNftTokenRel = new MerkleTokenRelStatus(0, false, true);
+		backingRels.put(cbNftTokenKey, cbNftTokenRel);
+
+		backingNfts.put(
+				aaNft,
+				new MerkleUniqueToken(EntityId.fromGrpcAccountId(aModel), "aa".getBytes(), MISSING_INSTANT));
+		backingNfts.put(
+				baNft,
+				new MerkleUniqueToken(EntityId.fromGrpcAccountId(bModel), "ba".getBytes(), MISSING_INSTANT));
+		backingNfts.put(
+				bbNft,
+				new MerkleUniqueToken(EntityId.fromGrpcAccountId(cModel), "bb".getBytes(), MISSING_INSTANT));
 	}
 
 	private List<BalanceChange> fixtureChanges() {
@@ -453,6 +494,13 @@ class LedgerBalanceChangesTest {
 		return token;
 	}
 
+	private MerkleToken nonFungibleTokenWithTreasury(AccountID treasury) {
+		final var token = new MerkleToken();
+		token.setTreasury(new EntityId(treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
+		token.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE);
+		return token;
+	}
+
 	private final long aSerialNo = 1_234L;
 	private final long bSerialNo = 2_234L;
 	private final AccountID aModel = asAccount("1.2.3");
@@ -463,6 +511,11 @@ class LedgerBalanceChangesTest {
 	private final Id yetAnotherToken = new Id(0, 0, 75233);
 	private final Id aNft = new Id(0, 0, 9999);
 	private final Id bNft = new Id(0, 0, 10000);
+	private final NftId aaNft = new NftId(aNft.getShard(), aNft.getRealm(), aNft.getNum(), aSerialNo);
+	private final NftId baNft = new NftId(bNft.getShard(), bNft.getRealm(), bNft.getNum(), aSerialNo);
+	private final NftId bbNft = new NftId(bNft.getShard(), bNft.getRealm(), bNft.getNum(), bSerialNo);
+	private final MerkleEntityId aNftKey = new MerkleEntityId(0, 0, 9999);
+	private final MerkleEntityId bNftKey = new MerkleEntityId(0, 0, 10000);
 	private final MerkleEntityId tokenKey = new MerkleEntityId(0, 0, 75231);
 	private final MerkleEntityId anotherTokenKey = new MerkleEntityId(0, 0, 75232);
 	private final MerkleEntityId yetAnotherTokenKey = new MerkleEntityId(0, 0, 75233);

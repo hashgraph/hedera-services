@@ -73,6 +73,7 @@ import java.util.function.Consumer;
 
 import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
@@ -92,12 +93,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TRE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
@@ -210,6 +214,7 @@ class HederaTokenStoreTest {
 
 		nftsLedger = (TransactionalLedger<NftId, NftProperty, MerkleUniqueToken>) mock(TransactionalLedger.class);
 		given(nftsLedger.get(aNft, NftProperty.OWNER)).willReturn(EntityId.fromGrpcAccountId(sponsor));
+		given(nftsLedger.exists(aNft)).willReturn(true);
 
 		accountsLedger = (TransactionalLedger<AccountID, AccountProperty, MerkleAccount>) mock(TransactionalLedger.class);
 		given(accountsLedger.exists(treasury)).willReturn(true);
@@ -285,6 +290,7 @@ class HederaTokenStoreTest {
 	void injectsTokenRelsLedger() {
 		// expect:
 		verify(hederaLedger).setTokenRelsLedger(tokenRelsLedger);
+		verify(hederaLedger).setNftsLedger(nftsLedger);
 	}
 
 	@Test
@@ -437,7 +443,7 @@ class HederaTokenStoreTest {
 		var status = subject.freeze(sponsor, misc);
 
 		// expect:
-		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, status);
+		assertEquals(INVALID_ACCOUNT_ID, status);
 	}
 
 	@Test
@@ -470,7 +476,7 @@ class HederaTokenStoreTest {
 		var status = subject.associate(sponsor, List.of(misc));
 
 		// expect:
-		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, status);
+		assertEquals(INVALID_ACCOUNT_ID, status);
 	}
 
 	@Test
@@ -735,7 +741,7 @@ class HederaTokenStoreTest {
 		var status = subject.grantKyc(sponsor, misc);
 
 		// expect:
-		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, status);
+		assertEquals(INVALID_ACCOUNT_ID, status);
 	}
 
 	@Test
@@ -770,7 +776,7 @@ class HederaTokenStoreTest {
 		var status = subject.revokeKyc(sponsor, misc);
 
 		// expect:
-		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, status);
+		assertEquals(INVALID_ACCOUNT_ID, status);
 	}
 
 	@Test
@@ -781,7 +787,7 @@ class HederaTokenStoreTest {
 		var status = subject.wipe(sponsor, misc, adjustment, false);
 
 		// expect:
-		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, status);
+		assertEquals(INVALID_ACCOUNT_ID, status);
 	}
 
 	@Test
@@ -894,7 +900,7 @@ class HederaTokenStoreTest {
 		var status = subject.adjustBalance(sponsor, misc, 1);
 
 		// expect:
-		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, status);
+		assertEquals(INVALID_ACCOUNT_ID, status);
 	}
 
 	@Test
@@ -905,7 +911,29 @@ class HederaTokenStoreTest {
 		var status = subject.changeOwner(aNft, sponsor, counterparty);
 
 		// expect:
-		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, status);
+		assertEquals(INVALID_ACCOUNT_ID, status);
+	}
+
+	@Test
+	void changingOwnerRejectsMissingNftInstance() {
+		given(nftsLedger.exists(aNft)).willReturn(false);
+
+		// when:
+		var status = subject.changeOwner(aNft, sponsor, counterparty);
+
+		// expect:
+		assertEquals(INVALID_NFT_ID, status);
+	}
+
+	@Test
+	void changingOwnerRejectsUnassociatedReceiver() {
+		given(tokenRelsLedger.exists(counterpartyNft)).willReturn(false);
+
+		// when:
+		var status = subject.changeOwner(aNft, sponsor, counterparty);
+
+		// expect:
+		assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, status);
 	}
 
 	@Test
@@ -916,7 +944,26 @@ class HederaTokenStoreTest {
 		var status = subject.changeOwner(aNft, sponsor, counterparty);
 
 		// expect:
-		assertEquals(ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, status);
+		assertEquals(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, status);
+	}
+
+	@Test
+	void changingOwnerDoesTheExpected() {
+		// setup:
+		long startSponsorNfts = 5, startCounterpartyNfts = 8;
+
+		given(accountsLedger.get(sponsor, NUM_NFTS_OWNED)).willReturn(startSponsorNfts);
+		given(accountsLedger.get(counterparty, NUM_NFTS_OWNED)).willReturn(startCounterpartyNfts);
+
+		// when:
+		var status = subject.changeOwner(aNft, sponsor, counterparty);
+
+		// expect:
+		assertEquals(OK, status);
+		verify(nftsLedger).set(aNft, NftProperty.OWNER, EntityId.fromGrpcAccountId(counterparty));
+		verify(accountsLedger).set(sponsor, AccountProperty.NUM_NFTS_OWNED, startSponsorNfts - 1);
+		verify(accountsLedger).set(counterparty, AccountProperty.NUM_NFTS_OWNED, startCounterpartyNfts + 1);
+		verify(hederaLedger).updateOwnershipChanges(aNft, sponsor, counterparty);
 	}
 
 	@Test
