@@ -25,19 +25,24 @@ import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.token.TokenMintUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.SubType;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.SigValueObj;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Optional;
 import java.util.function.BiFunction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
+import static org.mockito.Mockito.verify;
 
 class TokenMintResourceUsageTest {
 	private TransactionBody nonTokenMintTxn;
@@ -53,15 +58,20 @@ class TokenMintResourceUsageTest {
 	StateView view;
 	TokenMintUsage usage;
 	TokenMintResourceUsage subject;
+	TokenMintTransactionBody transactionBody;
+	TokenID token;
 
 	@BeforeEach
 	private void setup() throws Throwable {
 		expected = mock(FeeData.class);
 		view = mock(StateView.class);
+		transactionBody = mock(TokenMintTransactionBody.class);
+		token = mock(TokenID.class);
 
 		tokenMintTxn = mock(TransactionBody.class);
 		given(tokenMintTxn.hasTokenMint()).willReturn(true);
-		given(tokenMintTxn.getTokenMint()).willReturn(TokenMintTransactionBody.newBuilder().build());
+		given(tokenMintTxn.getTokenMint()).willReturn(transactionBody);
+		given(transactionBody.getToken()).willReturn(token);
 
 		nonTokenMintTxn = mock(TransactionBody.class);
 		given(nonTokenMintTxn.hasTokenMint()).willReturn(false);
@@ -88,8 +98,20 @@ class TokenMintResourceUsageTest {
 	@Test
 	public void delegatesToCorrectEstimate() throws Exception {
 		// expect:
+		given(view.tokenType(token)).willReturn(Optional.of(TokenType.FUNGIBLE_COMMON));
+		given(factory.apply(any(), any())).willReturn(usage);
+		given(usage.givenSubType(any())).willReturn(usage);
+
 		assertEquals(
 				expected,
 				subject.usageGiven(tokenMintTxn, obj, view));
+		verify(usage).givenSubType(SubType.TOKEN_FUNGIBLE_COMMON);
+
+		given(view.tokenType(token)).willReturn(Optional.of(TokenType.NON_FUNGIBLE_UNIQUE));
+		assertEquals(
+				expected,
+				subject.usageGiven(tokenMintTxn, obj, view));
+		verify(usage).givenSubType(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
+
 	}
 }

@@ -73,6 +73,14 @@ public class OwnershipTracker {
 		return change;
 	}
 
+	public static Change fromBurning(Id treasury, long serialNumber) {
+		Change change = new Change();
+		change.setNewOwner(Id.DEFAULT);
+		change.setPreviousOwner(treasury);
+		change.setSerialNumber(serialNumber);
+		return change;
+	}
+
 	/**
 	 * Encapsulates one set of Change of a given {@link UniqueToken}
 	 */

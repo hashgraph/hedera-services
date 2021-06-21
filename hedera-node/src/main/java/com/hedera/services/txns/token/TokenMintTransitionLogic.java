@@ -57,15 +57,18 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 	private final OptionValidator validator;
 	private final TypedTokenStore tokenStore;
 	private final TransactionContext txnCtx;
+	private final AccountStore accountStore;
 
 	public TokenMintTransitionLogic(
 			OptionValidator validator,
+			AccountStore accountStore,
 			TypedTokenStore tokenStore,
 			TransactionContext txnCtx
 	) {
 		this.validator = validator;
 		this.tokenStore = tokenStore;
 		this.txnCtx = txnCtx;
+		this.accountStore = accountStore;
 	}
 
 	@Override
@@ -93,6 +96,7 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 		tokenStore.persistToken(token);
 		tokenStore.persistTokenRelationship(treasuryRel);
 		tokenStore.persistTrackers(ownershipTracker);
+		accountStore.persistAccount(token.getTreasury());
 	}
 
 	@Override

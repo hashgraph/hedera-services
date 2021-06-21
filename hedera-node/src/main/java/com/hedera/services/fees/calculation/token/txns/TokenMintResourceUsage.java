@@ -22,6 +22,7 @@ package com.hedera.services.fees.calculation.token.txns;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
+import com.hedera.services.fees.calculation.utils.ResourceUsageSubtypeHelper;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.token.TokenMintUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -45,22 +46,7 @@ public class TokenMintResourceUsage implements TxnResourceUsageEstimator {
 	@Override
 	public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
 		Optional<TokenType> tokenType = view.tokenType(txn.getTokenMint().getToken());
-
-		SubType subType = SubType.DEFAULT;
-
-		if (tokenType.isPresent()) {
-			switch (tokenType.get()) {
-				case FUNGIBLE_COMMON:
-					subType = SubType.TOKEN_FUNGIBLE_COMMON;
-					break;
-				case NON_FUNGIBLE_UNIQUE:
-					subType = SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
-					break;
-				default:
-					subType = SubType.DEFAULT;
-			}
-		}
-
+		SubType subType = ResourceUsageSubtypeHelper.determineTokenType(tokenType);
 		var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
 		var estimate = factory.apply(txn, sigUsage).givenSubType(subType);
 		return estimate.get();

@@ -20,14 +20,20 @@ package com.hedera.services.store.models;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+import java.time.Instant;
+import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -37,6 +43,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_S
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class TokenTest {
 	private final JKey someKey = TxnHandlingScenario.TOKEN_SUPPLY_KT.asJKeyUnchecked();
@@ -179,6 +190,36 @@ class TokenTest {
 		assertEquals(initialSupply - burnAmount, subject.getTotalSupply());
 		assertEquals(-burnAmount, treasuryRel.getBalanceChange());
 		assertEquals(initialTreasuryBalance - burnAmount, treasuryRel.getBalance());
+	}
+
+	@Test
+	void burnsUniqueAsExpected(){
+		subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
+		subject.initSupplyConstraints(TokenSupplyType.FINITE, 20000L);
+		subject.setSupplyKey(someKey);
+
+		var ownershipTracker = mock(OwnershipTracker.class);
+		subject.burn(ownershipTracker, treasuryRel, List.of(1L));
+		assertEquals(initialSupply - 1, subject.getTotalSupply());
+		assertEquals(-1, treasuryRel.getBalanceChange());
+		verify(ownershipTracker).add(eq(subject.getId()), any());
+		assertEquals(true, subject.hasBurnedUniqueTokens());
+		assertEquals(1, subject.burnedUniqueTokens().get(0).getSerialNumber());
+	}
+
+	@Test
+	void mintsUniqueAsExpected(){
+		subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
+		subject.initSupplyConstraints(TokenSupplyType.FINITE, 20000L);
+		subject.setSupplyKey(someKey);
+
+		var ownershipTracker = mock(OwnershipTracker.class);
+		subject.mint(ownershipTracker, treasuryRel, List.of(ByteString.copyFromUtf8("memo")), RichInstant.fromJava(Instant.now()));
+		assertEquals(initialSupply + 1, subject.getTotalSupply());
+		assertEquals(1, treasuryRel.getBalanceChange());
+		verify(ownershipTracker).add(eq(subject.getId()), Mockito.any());
+		assertTrue(subject.hasMintedUniqueTokens());
+		assertEquals(1, subject.mintedUniqueTokens().get(0).getSerialNumber());
 	}
 
 	@Test
