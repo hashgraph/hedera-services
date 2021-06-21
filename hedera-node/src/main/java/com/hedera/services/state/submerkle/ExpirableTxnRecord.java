@@ -55,8 +55,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	static final int RELEASE_070_VERSION = 1;
 	static final int RELEASE_080_VERSION = 2;
 	static final int RELEASE_0120_VERSION = 3;
-	static final int RELEASE_0150_VERSION = 4;
-	static final int MERKLE_VERSION = RELEASE_0150_VERSION;
+	static final int RELEASE_0160_VERSION = 4;
+	static final int MERKLE_VERSION = RELEASE_0160_VERSION;
 
 	static final int MAX_MEMO_BYTES = 32 * 1_024;
 	static final int MAX_TXN_HASH_BYTES = 1_024;
@@ -141,7 +141,9 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			int n = customFeesCharged.size();
 			var readable = IntStream.range(0, n)
 					.mapToObj(i -> String.format(
-							"(%s)", i))
+							"(%s, %s, %s)", customFeesCharged.get(i).account().toAbbrevString(),
+							customFeesCharged.get(i).token().toAbbrevString(),
+							customFeesCharged.get(i).units()))
 					.collect(joining(", "));
 			helper.add("customFeesCharged", readable);
 		}
@@ -252,7 +254,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			scheduleRef = serdes.readNullableSerializable(in);
 		}
 
-		if (version > RELEASE_0150_VERSION) {
+		if (version >= RELEASE_0160_VERSION) {
 			customFeesCharged = in.readSerializableList(MAX_CUSTOM_FEES_BALANCE_CHANGES);
 		}
 	}
@@ -330,6 +332,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	public void setSubmittingMember(long submittingMember) {
 		this.submittingMember = submittingMember;
 	}
+
+	public List<CustomFeesBalanceChange> getCustomFeesCharged() { return customFeesCharged; }
 
 	/* --- FastCopyable --- */
 
