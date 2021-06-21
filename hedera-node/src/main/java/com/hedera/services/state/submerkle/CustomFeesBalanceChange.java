@@ -24,7 +24,6 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.ledger.HederaLedger;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -53,12 +52,13 @@ public class CustomFeesBalanceChange implements SelfSerializable {
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xd8b56ce46e56a466L;
 
-	static final TokenID NO_TOKEN_FOR_HBAR_ADJUST = TokenID.getDefaultInstance();
-
 	private EntityId token;
 	private EntityId account;
 	private long units;
 
+	CustomFeesBalanceChange() {
+		/* For RuntimeConstructable */
+	}
 
 	private CustomFeesBalanceChange(final EntityId token, final AccountAmount aa) {
 		this.token = token;
@@ -86,6 +86,13 @@ public class CustomFeesBalanceChange implements SelfSerializable {
 		return units;
 	}
 
+	public EntityId token() {
+		return token;
+	}
+
+	public EntityId account() {
+		return account;
+	}
 
 	public static CustomFeesBalanceChange hbarAdjust(final AccountAmount aa) {
 		return new CustomFeesBalanceChange(null, aa);
@@ -131,6 +138,16 @@ public class CustomFeesBalanceChange implements SelfSerializable {
 		return grpc.setTokenId(token.toGrpcTokenId()).build();
 	}
 
+	public static CustomFeesOuterClass.CustomFeesCharged toGrpc(List<CustomFeesBalanceChange> balanceChanges) {
+		return CustomFeesOuterClass.CustomFeesCharged.newBuilder()
+				.addAllCustomFeesCharged(
+						balanceChanges
+								.stream()
+								.map(i -> i.toGrpc())
+								.collect(Collectors.toList()))
+				.build();
+	}
+
 	public static List<CustomFeesBalanceChange> fromGrpc(CustomFeesOuterClass.CustomFeesCharged grpc) {
 		return grpc.getCustomFeesChargedList()
 				.stream()
@@ -146,16 +163,6 @@ public class CustomFeesBalanceChange implements SelfSerializable {
 			return tokenAdjust(EntityId.fromGrpcTokenId(customFeesCharged.getTokenId()), aa);
 		}
 		return hbarAdjust(aa);
-	}
-
-	public static CustomFeesOuterClass.CustomFeesCharged toGrpc(List<CustomFeesBalanceChange> balanceChanges) {
-		return CustomFeesOuterClass.CustomFeesCharged.newBuilder()
-				.addAllCustomFeesCharged(
-						balanceChanges
-								.stream()
-								.map(i -> i.toGrpc())
-								.collect(Collectors.toList()))
-				.build();
 	}
 
 	/* SelfSerializable methods */
