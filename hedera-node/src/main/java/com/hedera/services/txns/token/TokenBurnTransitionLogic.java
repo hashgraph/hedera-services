@@ -64,7 +64,7 @@ public class TokenBurnTransitionLogic implements TransitionLogic {
 		final var targetId = new Id(grpcId.getShardNum(), grpcId.getRealmNum(), grpcId.getTokenNum());
 
 		/* --- Load the model objects --- */
-		final var token = store.loadToken(targetId, true);
+		final var token = store.loadToken(targetId);
 		final var treasuryRel = store.loadTokenRelationship(token, token.getTreasury());
 
 		/* --- Do the business logic --- */

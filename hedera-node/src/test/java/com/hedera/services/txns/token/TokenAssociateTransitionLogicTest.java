@@ -99,8 +99,8 @@ class TokenAssociateTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(tokenAssociateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(accountStore.loadAccount(accountId)).willReturn(modelAccount);
-		given(tokenStore.loadToken(firstTokenId, true)).willReturn(firstModelToken);
-		given(tokenStore.loadToken(secondTokenId, true)).willReturn(secondModelToken);
+		given(tokenStore.loadToken(firstTokenId)).willReturn(firstModelToken);
+		given(tokenStore.loadToken(secondTokenId)).willReturn(secondModelToken);
 		given(firstModelToken.newRelationshipWith(modelAccount)).willReturn(firstModelTokenRel);
 		given(secondModelToken.newRelationshipWith(modelAccount)).willReturn(secondModelTokenRel);
 		given(dynamicProperties.maxTokensPerAccount()).willReturn(123);
