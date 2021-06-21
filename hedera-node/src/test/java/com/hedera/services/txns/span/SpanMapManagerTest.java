@@ -23,6 +23,7 @@ package com.hedera.services.txns.span;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.txns.CustomFeeSchedules;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,11 +63,14 @@ class SpanMapManagerTest {
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 
+	@Mock
+	private CustomFeeSchedules customFeeSchedules;
+
 	private SpanMapManager subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new SpanMapManager(impliedTransfersMarshal, dynamicProperties);
+		subject = new SpanMapManager(impliedTransfersMarshal, dynamicProperties, customFeeSchedules);
 	}
 
 	@Test
@@ -74,7 +78,7 @@ class SpanMapManagerTest {
 		given(accessor.getTxn()).willReturn(pretendXferTxn);
 		given(accessor.getSpanMap()).willReturn(span);
 		given(accessor.getFunction()).willReturn(CryptoTransfer);
-		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), accessor.getPayer()))
 				.willReturn(someImpliedXfers);
 
 		// when:
@@ -96,7 +100,7 @@ class SpanMapManagerTest {
 		subject.rationalizeSpan(accessor);
 
 		// then:
-		verify(impliedTransfersMarshal, never()).unmarshalFromGrpc(any());
+		verify(impliedTransfersMarshal, never()).unmarshalFromGrpc(any(), accessor.getPayer());
 		assertSame(someImpliedXfers, spanMapAccessor.getImpliedTransfers(accessor));
 	}
 
@@ -108,14 +112,14 @@ class SpanMapManagerTest {
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxTokenAdjusts + 1);
 		spanMapAccessor.setImpliedTransfers(accessor, someImpliedXfers);
-		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), accessor.getPayer()))
 				.willReturn(someOtherImpliedXfers);
 
 		// when:
 		subject.rationalizeSpan(accessor);
 
 		// then:
-		verify(impliedTransfersMarshal).unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer());
+		verify(impliedTransfersMarshal).unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), accessor.getPayer());
 		assertSame(someOtherImpliedXfers, spanMapAccessor.getImpliedTransfers(accessor));
 	}
 }

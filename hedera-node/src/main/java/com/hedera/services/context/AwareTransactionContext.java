@@ -20,11 +20,11 @@ package com.hedera.services.context;
  * ‍
  */
 
-import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.submerkle.CustomFeesBalanceChange;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.SolidityFnResult;
@@ -91,7 +91,7 @@ public class AwareTransactionContext implements TransactionContext {
 	private Consumer<TxnReceipt.Builder> receiptConfig = noopReceiptConfig;
 	private Consumer<ExpirableTxnRecord.Builder> recordConfig = noopRecordConfig;
 	private List<TokenTransferList> explicitTokenTransfers;
-	private List<BalanceChange> customFeesCharged;
+	private List<CustomFeesBalanceChange> customFeesCharged;
 
 	boolean hasComputedRecordSoFar;
 	ExpirableTxnRecord.Builder recordSoFar = ExpirableTxnRecord.newBuilder();
@@ -128,7 +128,7 @@ public class AwareTransactionContext implements TransactionContext {
 	}
 
 	@Override
-	public void setCustomFeesCharged(List<BalanceChange> customFeesCharged){
+	public void setCustomFeesCharged(List<CustomFeesBalanceChange> customFeesCharged){
 		this.customFeesCharged = customFeesCharged;
 	}
 

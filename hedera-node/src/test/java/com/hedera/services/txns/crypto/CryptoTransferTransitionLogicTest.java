@@ -42,6 +42,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.test.utils.IdUtils.adjustFrom;
@@ -104,7 +105,9 @@ class CryptoTransferTransitionLogicTest {
 				maxHbarAdjusts, maxTokenAdjusts, List.of(
 						hbarChange(a, +100),
 						hbarChange(b, -100)
-				));
+				),
+				new ArrayList<>(),
+				new ArrayList<>());
 
 		givenValidTxnCtx();
 		// and:
@@ -126,12 +129,14 @@ class CryptoTransferTransitionLogicTest {
 				maxHbarAdjusts, maxTokenAdjusts, List.of(
 						hbarChange(a, +100),
 						hbarChange(b, -100)
-				));
+				),
+				new ArrayList<>(),
+				new ArrayList<>());
 
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
 		// and:
-		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer(), accessor.getPayer()))
 				.willReturn(impliedTransfers);
 		given(ledger.doZeroSum(impliedTransfers.getAllBalanceChanges()))
 				.willReturn(OK);
@@ -152,7 +157,7 @@ class CryptoTransferTransitionLogicTest {
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
 		// and:
-		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer(), accessor.getPayer()))
 				.willReturn(impliedTransfers);
 
 		// when:

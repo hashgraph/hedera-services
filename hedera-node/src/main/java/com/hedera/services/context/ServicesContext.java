@@ -254,9 +254,7 @@ import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.HapiThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.throttling.TxnAwareHandleThrottling;
-import com.hedera.services.txns.span.ExpandHandleSpan;
-import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.services.txns.span.SpanMapManager;
+import com.hedera.services.txns.CustomFeeSchedules;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.txns.TransitionLogic;
@@ -289,6 +287,9 @@ import com.hedera.services.txns.schedule.ScheduleCreateTransitionLogic;
 import com.hedera.services.txns.schedule.ScheduleDeleteTransitionLogic;
 import com.hedera.services.txns.schedule.ScheduleExecutor;
 import com.hedera.services.txns.schedule.ScheduleSignTransitionLogic;
+import com.hedera.services.txns.span.ExpandHandleSpan;
+import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.services.txns.span.SpanMapManager;
 import com.hedera.services.txns.submission.BasicSubmissionFlow;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.SemanticPrecheck;
@@ -354,7 +355,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -572,6 +572,7 @@ public class ServicesContext {
 	private AtomicReference<FCMap<MerkleEntityId, MerkleSchedule>> queryableSchedules;
 	private AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage;
 	private AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations;
+	private CustomFeeSchedules activeCustomFeeSchedules;
 
 	/* Context-free infrastructure. */
 	private static Pause pause;
@@ -731,14 +732,17 @@ public class ServicesContext {
 
 	public ImpliedTransfersMarshal impliedTransfersMarshal() {
 		if (impliedTransfersMarshal == null) {
-			impliedTransfersMarshal = new ImpliedTransfersMarshal(globalDynamicProperties(), transferSemanticChecks(), feeCollectors());
+			impliedTransfersMarshal = new ImpliedTransfersMarshal(globalDynamicProperties(), transferSemanticChecks(), customFeeSchedules());
 		}
 		return impliedTransfersMarshal;
 	}
 
-	private List<AccountID> feeCollectors() {
-		/* yet to be implemented */
-		return  new ArrayList<>();
+	private CustomFeeSchedules customFeeSchedules() {
+		/* TODO : yet to be implemented */
+		if (activeCustomFeeSchedules == null) {
+			return activeCustomFeeSchedules;
+		}
+		return activeCustomFeeSchedules;
 	}
 
 	public AwareNodeDiligenceScreen nodeDiligenceScreen() {
@@ -1738,7 +1742,7 @@ public class ServicesContext {
 
 	public SpanMapManager spanMapManager() {
 		if (spanMapManager == null) {
-			spanMapManager = new SpanMapManager(impliedTransfersMarshal(), globalDynamicProperties());
+			spanMapManager = new SpanMapManager(impliedTransfersMarshal(), globalDynamicProperties(), customFeeSchedules());
 		}
 		return spanMapManager;
 	}

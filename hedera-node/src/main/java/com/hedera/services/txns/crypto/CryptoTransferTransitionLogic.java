@@ -88,7 +88,7 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 			}
 
 			txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
-			txnCtx.setCustomFeesCharged(impliedTransfers.getCustomFeesChanges());
+			txnCtx.setCustomFeesCharged(impliedTransfers.getCustomFeesBalanceChanges());
 		} catch (Exception e) {
 			log.warn("Avoidable exception in CryptoTransfer state transition", e);
 			txnCtx.setStatus(FAIL_INVALID);
@@ -99,7 +99,7 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 		var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
 		if (impliedTransfers == null) {
 			final var op = accessor.getTxn().getCryptoTransfer();
-			impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op);
+			impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op, accessor.getPayer());
 		}
 		return impliedTransfers;
 	}

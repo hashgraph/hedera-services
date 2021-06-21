@@ -22,7 +22,6 @@ package com.hedera.services.state.submerkle;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -48,7 +47,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	public static final long UNKNOWN_SUBMITTING_MEMBER = -1;
 	static final List<EntityId> NO_TOKENS = null;
 	static final List<CurrencyAdjustments> NO_TOKEN_ADJUSTMENTS = null;
-	static final List<BalanceChange> NO_CUSTOM_FEES = null;
+	static final List<CustomFeesBalanceChange> NO_CUSTOM_FEES = null;
 	static final EntityId NO_SCHEDULE_REF = null;
 
 	private static final byte[] MISSING_TXN_HASH = new byte[0];
@@ -83,7 +82,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	private List<EntityId> tokens = NO_TOKENS;
 	private List<CurrencyAdjustments> tokenAdjustments = NO_TOKEN_ADJUSTMENTS;
 	private EntityId scheduleRef = NO_SCHEDULE_REF;
-	private List<BalanceChange> customFeesCharged = NO_CUSTOM_FEES;
+	private List<CustomFeesBalanceChange> customFeesCharged = NO_CUSTOM_FEES;
 
 	@Override
 	public void release() {
@@ -373,7 +372,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				.setTokens(tokens)
 				.setTokenAdjustments(tokenAdjustments)
 				.setScheduleRef(record.hasScheduleRef() ? fromGrpcScheduleId(record.getScheduleRef()) : null)
-				.setCustomFeesCharged(record.hasCustomFeesCharged() ? BalanceChange.fromGrpc(record.getCustomFeesCharged()) : null)
+				.setCustomFeesCharged(record.hasCustomFeesCharged() ? CustomFeesBalanceChange.fromGrpc(record.getCustomFeesCharged()) : null)
 				.build();
 	}
 
@@ -425,7 +424,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		}
 
 		if (customFeesCharged != NO_CUSTOM_FEES) {
-			grpc.setCustomFeesCharged(BalanceChange.toGrpc(customFeesCharged));
+			grpc.setCustomFeesCharged(CustomFeesBalanceChange.toGrpc(customFeesCharged));
 		}
 
 		return grpc.build();
@@ -448,7 +447,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		private List<EntityId> tokens;
 		private List<CurrencyAdjustments> tokenAdjustments;
 		private EntityId scheduleRef;
-		private List<BalanceChange> customFeesCharged;
+		private List<CustomFeesBalanceChange> customFeesCharged;
 
 		public Builder setFee(long fee) {
 			this.fee = fee;
@@ -510,7 +509,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			return this;
 		}
 
-		public Builder setCustomFeesCharged(List<BalanceChange> customFeesCharged) {
+		public Builder setCustomFeesCharged(List<CustomFeesBalanceChange> customFeesCharged) {
 			this.customFeesCharged = customFeesCharged;
 			return this;
 		}

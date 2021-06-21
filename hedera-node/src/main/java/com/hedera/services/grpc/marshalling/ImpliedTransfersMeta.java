@@ -22,13 +22,17 @@ package com.hedera.services.grpc.marshalling;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.state.submerkle.CustomFee;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.SwirldDualState;
 import com.swirlds.common.SwirldTransaction;
+import javafx.util.Pair;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
  * Encapsulates the validity of a CryptoTransfer transaction, given a choice of
@@ -49,20 +53,24 @@ public class ImpliedTransfersMeta {
 	private final int maxExplicitHbarAdjusts;
 	private final int maxExplicitTokenAdjusts;
 	private final ResponseCodeEnum code;
+	private final List<Pair<EntityId, List<CustomFee>>> customFeeSchedulesUsedInMarshal;
 
 	public ImpliedTransfersMeta(
 			int maxExplicitHbarAdjusts,
 			int maxExplicitTokenAdjusts,
-			ResponseCodeEnum code
+			ResponseCodeEnum code,
+			List<Pair<EntityId, List<CustomFee>>> customFeeSchedulesUsedInMarshal
 	) {
 		this.code = code;
 		this.maxExplicitHbarAdjusts = maxExplicitHbarAdjusts;
 		this.maxExplicitTokenAdjusts = maxExplicitTokenAdjusts;
+		this.customFeeSchedulesUsedInMarshal = customFeeSchedulesUsedInMarshal;
 	}
 
-	public boolean wasDerivedFrom(GlobalDynamicProperties dynamicProperties) {
+	public boolean wasDerivedFrom(GlobalDynamicProperties dynamicProperties, List<Pair<EntityId, List<CustomFee>>> activeCustomFeeSchedules) {
 		return maxExplicitHbarAdjusts == dynamicProperties.maxTransferListSize() &&
-				maxExplicitTokenAdjusts == dynamicProperties.maxTokenTransferListSize();
+				maxExplicitTokenAdjusts == dynamicProperties.maxTokenTransferListSize() &&
+				customFeeSchedulesUsedInMarshal.equals(activeCustomFeeSchedules);
 	}
 
 	public ResponseCodeEnum code() {
@@ -88,6 +96,7 @@ public class ImpliedTransfersMeta {
 				.add("code", code)
 				.add("maxExplicitHbarAdjusts", maxExplicitHbarAdjusts)
 				.add("maxExplicitTokenAdjusts", maxExplicitTokenAdjusts)
+				.add("customFeeSchedulesUsedInMarshal", customFeeSchedulesUsedInMarshal)
 				.toString();
 	}
 }

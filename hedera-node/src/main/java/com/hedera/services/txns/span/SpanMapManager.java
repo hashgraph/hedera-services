@@ -22,6 +22,7 @@ package com.hedera.services.txns.span;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.txns.CustomFeeSchedules;
 import com.hedera.services.utils.TxnAccessor;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -49,13 +50,16 @@ public class SpanMapManager {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final ImpliedTransfersMarshal impliedTransfersMarshal;
 	private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
+	private final CustomFeeSchedules customFeeSchedules;
 
 	public SpanMapManager(
 			ImpliedTransfersMarshal impliedTransfersMarshal,
-			GlobalDynamicProperties dynamicProperties
+			GlobalDynamicProperties dynamicProperties,
+			CustomFeeSchedules customFeeSchedules
 	) {
 		this.impliedTransfersMarshal = impliedTransfersMarshal;
 		this.dynamicProperties = dynamicProperties;
+		this.customFeeSchedules = customFeeSchedules;
 	}
 
 	public void expandSpan(TxnAccessor accessor) {
@@ -72,14 +76,16 @@ public class SpanMapManager {
 
 	private void rationalizeImpliedTransfers(TxnAccessor accessor) {
 		final var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
-		if (!impliedTransfers.getMeta().wasDerivedFrom(dynamicProperties)) {
+		/*TODO : Need to re-compute based on FCMap implementation in ServicesContext*/
+		final var activeCustomFeeSchedules = impliedTransfers.getCustomFeesChanges();
+		if (!impliedTransfers.getMeta().wasDerivedFrom(dynamicProperties, activeCustomFeeSchedules)) {
 			expandImpliedTransfers(accessor);
 		}
 	}
 
 	private void expandImpliedTransfers(TxnAccessor accessor) {
 		final var op = accessor.getTxn().getCryptoTransfer();
-		final var impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op);
+		final var impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op, accessor.getPayer());
 
 		spanMapAccessor.setImpliedTransfers(accessor, impliedTransfers);
 	}

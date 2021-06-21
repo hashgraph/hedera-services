@@ -26,16 +26,8 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import proto.CustomFeesOuterClass;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -48,15 +40,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
  * and a field to contain the new balance that will result from the change.
  * (This field is helpful to simplify work done in {@link HederaLedger}.)
  *
- * The {@code explicitTokenId} and {@code explicitAccountId} fields are
+ * The {@code tokenId} and {@code accountId} fields are
  * temporary, needed to interact with the {@link com.hedera.services.ledger.accounts.BackingAccounts}
  * and {@link com.hedera.services.ledger.accounts.BackingTokenRels} components
  * whose APIs still use gRPC types.
  */
-public class BalanceChange implements SelfSerializable {
-	static final int MERKLE_VERSION = 1;
-	static final long RUNTIME_CONSTRUCTABLE_ID = 0xd8b56ce46e56a466L;
-
+public class BalanceChange {
 	static final TokenID NO_TOKEN_FOR_HBAR_ADJUST = TokenID.getDefaultInstance();
 
 	private EntityId token;
@@ -78,13 +67,31 @@ public class BalanceChange implements SelfSerializable {
 		this.codeForInsufficientBalance = code;
 	}
 
+	private BalanceChange(final EntityId account, final long amount, final ResponseCodeEnum code) {
+		this.token = null;
+		this.account = account;
+		this.accountId = account.toGrpcAccountId();
+		this.units = amount;
+		this.codeForInsufficientBalance = code;
+	}
+
 	public static BalanceChange hbarAdjust(final AccountAmount aa) {
 		return new BalanceChange(null, aa, INSUFFICIENT_ACCOUNT_BALANCE);
+	}
+
+	public static BalanceChange hbarAdjust(final EntityId id, long amount) {
+		return new BalanceChange(id, amount, INSUFFICIENT_ACCOUNT_BALANCE);
 	}
 
 	public static BalanceChange tokenAdjust(final EntityId token, final TokenID tokenId, final AccountAmount aa) {
 		final var tokenChange = new BalanceChange(token, aa, INSUFFICIENT_TOKEN_BALANCE);
 		tokenChange.tokenId = tokenId;
+		return tokenChange;
+	}
+
+	public static BalanceChange tokenAdjust(final EntityId account, final EntityId token,  final long amount) {
+		final var tokenChange = new BalanceChange(account, amount, INSUFFICIENT_TOKEN_BALANCE);
+		tokenChange.token = token;
 		return tokenChange;
 	}
 
@@ -137,71 +144,5 @@ public class BalanceChange implements SelfSerializable {
 				.add("account", account)
 				.add("units", units)
 				.toString();
-	}
-
-	/* --- Helpers --- */
-
-	public CustomFeesOuterClass.CustomFeeCharged toGrpc() {
-		var grpc = CustomFeesOuterClass.CustomFeeCharged.newBuilder()
-				.setFeeCollector(account.toGrpcAccountId())
-				.setUnitsCharged(units);
-		if (isForHbar()) {
-			return grpc.build();
-		}
-		return grpc.setTokenId(token.toGrpcTokenId()).build();
-	}
-
-	public static List<BalanceChange> fromGrpc(CustomFeesOuterClass.CustomFeesCharged grpc) {
-		return grpc.getCustomFeesChargedList()
-				.stream()
-				.map(i -> fromGrpc(i))
-				.collect(Collectors.toList());
-	}
-
-	public static BalanceChange fromGrpc(CustomFeesOuterClass.CustomFeeCharged customFeesCharged) {
-		AccountAmount aa = AccountAmount.newBuilder()
-				.setAccountID(customFeesCharged.getFeeCollector())
-				.setAmount(customFeesCharged.getUnitsCharged()).build();
-		if (customFeesCharged.getTokenId() != null) {
-			return tokenAdjust(EntityId.fromGrpcTokenId(customFeesCharged.getTokenId()),
-					customFeesCharged.getTokenId(),
-					aa);
-		}
-		return hbarAdjust(aa);
-	}
-
-	public static CustomFeesOuterClass.CustomFeesCharged toGrpc(List<BalanceChange> balanceChanges) {
-		return CustomFeesOuterClass.CustomFeesCharged.newBuilder()
-				.addAllCustomFeesCharged(
-						balanceChanges
-								.stream()
-								.map(i -> i.toGrpc())
-								.collect(Collectors.toList()))
-				.build();
-	}
-
-	/* SelfSerializable methods */
-	@Override
-	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		account = in.readSerializable();
-		token = in.readSerializable();
-		units = in.readLong();
-	}
-
-	@Override
-	public void serialize(SerializableDataOutputStream out) throws IOException {
-		out.writeSerializable(account, true);
-		out.writeSerializable(token, true);
-		out.writeLong(units);
-	}
-
-	@Override
-	public long getClassId() {
-		return RUNTIME_CONSTRUCTABLE_ID;
-	}
-
-	@Override
-	public int getVersion() {
-		return MERKLE_VERSION;
 	}
 }

@@ -20,9 +20,9 @@ package com.hedera.services.context;
  * ‍
  */
 
-import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.expiry.ExpiringEntity;
+import com.hedera.services.state.submerkle.CustomFeesBalanceChange;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -270,5 +270,5 @@ public interface TransactionContext {
 	 *
 	 * @param customFeesCharged the custom fees charged
 	 */
-	void setCustomFeesCharged(List<BalanceChange> customFeesCharged);
+	void setCustomFeesCharged(List<CustomFeesBalanceChange> customFeesCharged);
 }

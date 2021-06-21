@@ -22,7 +22,11 @@ package com.hedera.services.grpc.marshalling;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.state.submerkle.CustomFee;
+import com.hedera.services.state.submerkle.CustomFeesBalanceChange;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import javafx.util.Pair;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -41,22 +45,27 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class ImpliedTransfers {
 	private final ImpliedTransfersMeta meta;
 	private final List<BalanceChange> changes;
-	private final List<BalanceChange> customFeesChanges;
+	private final List<Pair<EntityId, List<CustomFee>>> customFeesChanges;
+	private List<CustomFeesBalanceChange> customFeesBalanceChanges;
 
-	private ImpliedTransfers(ImpliedTransfersMeta meta, List<BalanceChange> changes, List<BalanceChange> customFeesChanges) {
+	private ImpliedTransfers(ImpliedTransfersMeta meta, List<BalanceChange> changes,
+			List<Pair<EntityId, List<CustomFee>>> customFeesChanges,
+			List<CustomFeesBalanceChange> customFeeBalanceChanges) {
 		this.meta = meta;
 		this.changes = changes;
 		this.customFeesChanges = customFeesChanges;
+		this.customFeesBalanceChanges = customFeeBalanceChanges;
 	}
 
 	public static ImpliedTransfers valid(
 			int maxHbarAdjusts,
 			int maxTokenAdjusts,
 			List<BalanceChange> changes,
-			List<BalanceChange> customFeesChanges
+			List<Pair<EntityId, List<CustomFee>>> customFeesChanges,
+			List<CustomFeesBalanceChange> customFeeBalanceChanges
 	) {
-		final var meta = new ImpliedTransfersMeta(maxHbarAdjusts, maxTokenAdjusts, OK);
-		return new ImpliedTransfers(meta, changes, customFeesChanges);
+		final var meta = new ImpliedTransfersMeta(maxHbarAdjusts, maxTokenAdjusts, OK, customFeesChanges);
+		return new ImpliedTransfers(meta, changes, customFeesChanges, customFeeBalanceChanges);
 	}
 
 	public static ImpliedTransfers invalid(
@@ -64,8 +73,8 @@ public class ImpliedTransfers {
 			int maxTokenAdjusts,
 			ResponseCodeEnum code
 	) {
-		final var meta = new ImpliedTransfersMeta(maxHbarAdjusts, maxTokenAdjusts, code);
-		return new ImpliedTransfers(meta, Collections.emptyList(), Collections.emptyList());
+		final var meta = new ImpliedTransfersMeta(maxHbarAdjusts, maxTokenAdjusts, code, Collections.emptyList());
+		return new ImpliedTransfers(meta, Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
 	}
 
 	public ImpliedTransfersMeta getMeta() {
@@ -76,8 +85,12 @@ public class ImpliedTransfers {
 		return changes;
 	}
 
-	public List<BalanceChange> getCustomFeesChanges(){
+	public List<Pair<EntityId, List<CustomFee>>> getCustomFeesChanges(){
 		return customFeesChanges;
+	}
+
+	public List<CustomFeesBalanceChange> getCustomFeesBalanceChanges() {
+		return customFeesBalanceChanges;
 	}
 
 	/* NOTE: The object methods below are only overridden to improve
