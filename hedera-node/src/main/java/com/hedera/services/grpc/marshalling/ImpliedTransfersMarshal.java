@@ -24,6 +24,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 
 import java.util.ArrayList;
@@ -46,13 +47,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class ImpliedTransfersMarshal {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final PureTransferSemanticChecks transferSemanticChecks;
+	private final List<AccountID> feeCollectors;
 
 	public ImpliedTransfersMarshal(
 			GlobalDynamicProperties dynamicProperties,
-			PureTransferSemanticChecks transferSemanticChecks
+			PureTransferSemanticChecks transferSemanticChecks,
+			List<AccountID> feeCollectors
 	) {
 		this.dynamicProperties = dynamicProperties;
 		this.transferSemanticChecks = transferSemanticChecks;
+		this.feeCollectors = feeCollectors;
 	}
 
 	public ImpliedTransfers unmarshalFromGrpc(CryptoTransferTransactionBody op) {
@@ -66,17 +70,24 @@ public class ImpliedTransfersMarshal {
 		}
 
 		final List<BalanceChange> changes = new ArrayList<>();
+		final List<BalanceChange> customFeesChanges = new ArrayList<>();
 		for (var aa : op.getTransfers().getAccountAmountsList()) {
 			changes.add(hbarAdjust(aa));
+			if (feeCollectors.contains(aa.getAccountID())) {
+				customFeesChanges.add(hbarAdjust(aa));
+			}
 		}
 		for (var scopedTransfers : op.getTokenTransfersList()) {
 			final var grpcTokenId = scopedTransfers.getToken();
 			final var scopingToken = EntityId.fromGrpcTokenId(grpcTokenId);
 			for (var aa : scopedTransfers.getTransfersList()) {
 				changes.add(tokenAdjust(scopingToken, grpcTokenId, aa));
+				if (feeCollectors.contains(aa.getAccountID())) {
+					customFeesChanges.add(tokenAdjust(scopingToken, grpcTokenId, aa));
+				}
 			}
 		}
 
-		return ImpliedTransfers.valid(maxHbarAdjusts, maxTokenAdjusts, changes);
+		return ImpliedTransfers.valid(maxHbarAdjusts, maxTokenAdjusts, changes, customFeesChanges);
 	}
 }

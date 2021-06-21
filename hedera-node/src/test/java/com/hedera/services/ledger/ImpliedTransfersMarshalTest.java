@@ -36,6 +36,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collections;
 import java.util.List;
 
 import static com.hedera.test.utils.IdUtils.adjustFrom;
@@ -92,7 +93,7 @@ class ImpliedTransfersMarshalTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new ImpliedTransfersMarshal(dynamicProperties, transferSemanticChecks);
+		subject = new ImpliedTransfersMarshal(dynamicProperties, transferSemanticChecks, Collections.emptyList());
 	}
 
 	@Test
@@ -150,7 +151,7 @@ class ImpliedTransfersMarshalTest {
 
 		// then:
 		assertEquals(expectedMeta, result.getMeta());
-		assertEquals(expectedChanges, result.getChanges());
+		assertEquals(expectedChanges, result.getAllBalanceChanges());
 	}
 
 	@Test
@@ -180,7 +181,7 @@ class ImpliedTransfersMarshalTest {
 				asAccount("4.5.6"),
 				7));
 		final var oneImpliedXfers = ImpliedTransfers.invalid(3, 4, TOKEN_WAS_DELETED);
-		final var twoImpliedXfers = ImpliedTransfers.valid(1, 100, twoChanges);
+		final var twoImpliedXfers = ImpliedTransfers.valid(1, 100, twoChanges, Collections.emptyList());
 		// and:
 		final var oneRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=TOKEN_WAS_DELETED, " +
 				"maxExplicitHbarAdjusts=3, maxExplicitTokenAdjusts=4}, changes=[]}";

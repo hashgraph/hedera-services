@@ -354,6 +354,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -730,9 +731,14 @@ public class ServicesContext {
 
 	public ImpliedTransfersMarshal impliedTransfersMarshal() {
 		if (impliedTransfersMarshal == null) {
-			impliedTransfersMarshal = new ImpliedTransfersMarshal(globalDynamicProperties(), transferSemanticChecks());
+			impliedTransfersMarshal = new ImpliedTransfersMarshal(globalDynamicProperties(), transferSemanticChecks(), feeCollectors());
 		}
 		return impliedTransfersMarshal;
+	}
+
+	private List<AccountID> feeCollectors() {
+		/* yet to be implemented */
+		return  new ArrayList<>();
 	}
 
 	public AwareNodeDiligenceScreen nodeDiligenceScreen() {

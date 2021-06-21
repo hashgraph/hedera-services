@@ -109,7 +109,7 @@ class CryptoTransferTransitionLogicTest {
 		givenValidTxnCtx();
 		// and:
 		given(spanMapAccessor.getImpliedTransfers(accessor)).willReturn(impliedTransfers);
-		given(ledger.doZeroSum(impliedTransfers.getChanges())).willReturn(INSUFFICIENT_ACCOUNT_BALANCE);
+		given(ledger.doZeroSum(impliedTransfers.getAllBalanceChanges())).willReturn(INSUFFICIENT_ACCOUNT_BALANCE);
 
 		// when:
 		subject.doStateTransition();
@@ -133,7 +133,7 @@ class CryptoTransferTransitionLogicTest {
 		// and:
 		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
 				.willReturn(impliedTransfers);
-		given(ledger.doZeroSum(impliedTransfers.getChanges()))
+		given(ledger.doZeroSum(impliedTransfers.getAllBalanceChanges()))
 				.willReturn(OK);
 
 		// when:

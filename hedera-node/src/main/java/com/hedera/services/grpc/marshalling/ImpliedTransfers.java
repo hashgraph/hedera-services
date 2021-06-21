@@ -41,19 +41,22 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class ImpliedTransfers {
 	private final ImpliedTransfersMeta meta;
 	private final List<BalanceChange> changes;
+	private final List<BalanceChange> customFeesChanges;
 
-	private ImpliedTransfers(ImpliedTransfersMeta meta, List<BalanceChange> changes) {
+	private ImpliedTransfers(ImpliedTransfersMeta meta, List<BalanceChange> changes, List<BalanceChange> customFeesChanges) {
 		this.meta = meta;
 		this.changes = changes;
+		this.customFeesChanges = customFeesChanges;
 	}
 
 	public static ImpliedTransfers valid(
 			int maxHbarAdjusts,
 			int maxTokenAdjusts,
-			List<BalanceChange> changes
+			List<BalanceChange> changes,
+			List<BalanceChange> customFeesChanges
 	) {
 		final var meta = new ImpliedTransfersMeta(maxHbarAdjusts, maxTokenAdjusts, OK);
-		return new ImpliedTransfers(meta, changes);
+		return new ImpliedTransfers(meta, changes, customFeesChanges);
 	}
 
 	public static ImpliedTransfers invalid(
@@ -62,15 +65,19 @@ public class ImpliedTransfers {
 			ResponseCodeEnum code
 	) {
 		final var meta = new ImpliedTransfersMeta(maxHbarAdjusts, maxTokenAdjusts, code);
-		return new ImpliedTransfers(meta, Collections.emptyList());
+		return new ImpliedTransfers(meta, Collections.emptyList(), Collections.emptyList());
 	}
 
 	public ImpliedTransfersMeta getMeta() {
 		return meta;
 	}
 
-	public List<BalanceChange> getChanges() {
+	public List<BalanceChange> getAllBalanceChanges() {
 		return changes;
+	}
+
+	public List<BalanceChange> getCustomFeesChanges(){
+		return customFeesChanges;
 	}
 
 	/* NOTE: The object methods below are only overridden to improve
@@ -91,6 +98,7 @@ public class ImpliedTransfers {
 		return MoreObjects.toStringHelper(ImpliedTransfers.class)
 				.add("meta", meta)
 				.add("changes", changes)
+				.add("customFeesChanges", customFeesChanges)
 				.toString();
 	}
 }
