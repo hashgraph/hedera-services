@@ -25,6 +25,7 @@ import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -72,8 +73,9 @@ public class TokenBurnUsageTest {
 		givenOp();
 		// and:
 		subject = TokenBurnUsage.newEstimate(txn, sigUsage);
-
-		// when:
+		subject.givenSubType(SubType.TOKEN_FUNGIBLE_COMMON);
+		given(base.get(SubType.TOKEN_FUNGIBLE_COMMON)).willReturn(A_USAGES_MATRIX);
+		// when:2
 		var actual = subject.get();
 
 		// then:
