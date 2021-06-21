@@ -76,6 +76,7 @@ import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.services.state.merkle.MerkleToken.UNUSED_KEY;
 import static com.hedera.services.state.merkle.MerkleUniqueTokenId.fromNftID;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
+import static com.hedera.services.state.submerkle.EntityId.fromGrpcTokenId;
 import static com.hedera.services.store.CreationResult.failure;
 import static com.hedera.services.store.CreationResult.success;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
@@ -355,9 +356,11 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			var nftId = NftID.newBuilder().setTokenID(tId).setSerialNumber(serialNumber).build();
 			if (nftExists(nftId)) {
 				get(nftId).setOwner(EntityId.fromGrpcAccountId(receiverAId));
-
+				var merkleUniqueTokenId = new MerkleUniqueTokenId(fromGrpcTokenId(tId), serialNumber);
 				adjustOwnedNfts(senderAId, false);
 				adjustOwnedNfts(receiverAId, true);
+				this.uniqueTokenOwnership.get().disassociate(fromGrpcAccountId(senderAId), merkleUniqueTokenId);
+				this.uniqueTokenOwnership.get().associate(fromGrpcAccountId(senderAId), merkleUniqueTokenId);
 			} else {
 				validity = INVALID_NFT_ID;
 			}
