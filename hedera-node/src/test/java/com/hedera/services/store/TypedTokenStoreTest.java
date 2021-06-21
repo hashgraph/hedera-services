@@ -35,18 +35,15 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
-import com.hedera.services.store.tokens.unique.OwnerIdentifier;
-import com.hedera.services.utils.invertible_fchashmap.FCInvertibleHashMap;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.function.Supplier;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -67,6 +64,10 @@ class TypedTokenStoreTest {
 	@Mock
 	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens;
 	@Mock
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenOwnerships;
+	@Mock
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations;
+	@Mock
 	private TransactionRecordService transactionRecordService;
 	@Mock
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
@@ -81,7 +82,7 @@ class TypedTokenStoreTest {
 		setupTokenRel();
 
 		subject = new TypedTokenStore(
-				accountStore, transactionRecordService, () -> tokens, () -> uniqueTokens, () -> tokenRels, backingTokenRels);
+				accountStore, transactionRecordService, () -> tokens, () -> uniqueTokens, () -> uniqueTokenOwnerships, () -> uniqueTokenAssociations, () -> tokenRels, backingTokenRels);
 	}
 
 	/* --- Token relationship loading --- */

@@ -21,6 +21,8 @@ package com.hedera.services.records;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.state.merkle.MerkleUniqueTokenId;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
@@ -31,6 +33,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.swirlds.fchashmap.FCOneToManyRelation;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -109,7 +112,7 @@ public class TransactionRecordService {
 	 * Update the record of the active transaction with the ownership changes produced in the context of the current transaction
 	 * @param ownershipTracker the model of ownership changes
 	 */
-	public void includeOwnershipChanges(OwnershipTracker ownershipTracker) {
+	public void includeOwnershipChanges(OwnershipTracker ownershipTracker, FCOneToManyRelation<EntityId, MerkleUniqueTokenId> ownershipAssociation) {
 		if (ownershipTracker.isEmpty()) {
 			return;
 		}
@@ -136,6 +139,15 @@ public class TransactionRecordService {
 								.setShardNum(newOwner.getShard())
 								.setRealmNum(newOwner.getRealm())
 								.setAccountNum(newOwner.getNum())).build());
+				var merkleUniqueTokenId = new MerkleUniqueTokenId(
+						EntityId.fromGrpcTokenId(tokenID),
+						change.getSerialNumber());
+				ownershipAssociation.disassociate(
+						new EntityId(previousOwner),
+						merkleUniqueTokenId);
+				ownershipAssociation.associate(
+						new EntityId(newOwner),
+						merkleUniqueTokenId);
 			}
 			transferLists.add(TokenTransferList.newBuilder()
 					.setToken(tokenID)

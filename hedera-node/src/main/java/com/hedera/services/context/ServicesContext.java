@@ -950,6 +950,8 @@ public class ServicesContext {
 					new TransactionRecordService(txnCtx()),
 					this::tokens,
 					this::uniqueTokens,
+					this::uniqueTokenAccountOwnerships,
+					this::uniqueTokenAssociations,
 					this::tokenAssociations,
 					(BackingTokenRels) backingTokenRels());
 		}
