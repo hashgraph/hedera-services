@@ -377,6 +377,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		var kycKey = asUsableFcKey(request.getKycKey());
 		var wipeKey = asUsableFcKey(request.getWipeKey());
 		var supplyKey = asUsableFcKey(request.getSupplyKey());
+		var customFeesKey = asUsableFcKey(request.getCustomFeesKey());
 
 		var expiry = expiryOf(request, now);
 		pendingId = ids.newTokenId(sponsor);
@@ -395,6 +396,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		wipeKey.ifPresent(pendingCreation::setWipeKey);
 		freezeKey.ifPresent(pendingCreation::setFreezeKey);
 		supplyKey.ifPresent(pendingCreation::setSupplyKey);
+		customFeesKey.ifPresent(pendingCreation::setCustomFeesKey);
 		if (request.hasAutoRenewAccount()) {
 			pendingCreation.setAutoRenewAccount(fromGrpcAccountId(request.getAutoRenewAccount()));
 			pendingCreation.setAutoRenewPeriod(request.getAutoRenewPeriod().getSeconds());
