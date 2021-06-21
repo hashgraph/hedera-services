@@ -25,6 +25,7 @@ import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.submerkle.CustomFee;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -40,6 +41,7 @@ import com.swirlds.common.AddressBook;
 import com.swirlds.common.CommonUtils;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.commons.codec.DecoderException;
+import proto.CustomFeesOuterClass;
 
 import java.math.BigInteger;
 import java.time.Instant;
@@ -362,6 +364,14 @@ public class MiscUtils {
 			}
 			return Optional.of(fcKey);
 		} catch (DecoderException ignore) {
+			return Optional.empty();
+		}
+	}
+
+	public static Optional<CustomFee> asUsableCustomFee(final CustomFeesOuterClass.CustomFee customFeeFromRequest) {
+		try {
+			return Optional.of(CustomFee.mapFromGrpc(customFeeFromRequest));
+		} catch (Exception ignore) {
 			return Optional.empty();
 		}
 	}

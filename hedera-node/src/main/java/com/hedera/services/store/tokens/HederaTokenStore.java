@@ -30,6 +30,7 @@ import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.submerkle.CustomFee;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.HederaStore;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -45,7 +46,9 @@ import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import proto.CustomFeesOuterClass;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -71,6 +74,7 @@ import static com.hedera.services.store.CreationResult.failure;
 import static com.hedera.services.store.CreationResult.success;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
+import static com.hedera.services.utils.MiscUtils.asUsableCustomFee;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
@@ -394,6 +398,16 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		if (request.hasAutoRenewAccount()) {
 			pendingCreation.setAutoRenewAccount(fromGrpcAccountId(request.getAutoRenewAccount()));
 			pendingCreation.setAutoRenewPeriod(request.getAutoRenewPeriod().getSeconds());
+		}
+
+		if (request.hasCustomFees()) {
+			var customFeesFromRequest = request.getCustomFees().getCustomFeesList();
+			List<CustomFee> customFees = new ArrayList<>();
+			for (CustomFeesOuterClass.CustomFee customFeeFromRequest : customFeesFromRequest) {
+				var customFee = asUsableCustomFee(customFeeFromRequest);
+				customFee.ifPresent(customFees::add);
+			}
+			pendingCreation.setCustomFees(customFees);
 		}
 
 		return success(pendingId);

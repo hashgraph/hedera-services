@@ -25,6 +25,7 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import proto.CustomFeesOuterClass;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -307,6 +308,25 @@ public class CustomFee implements SelfSerializable {
 					.add("unitsToCollect", unitsToCollect)
 					.add("tokenDenomination", tokenDenomination == null ? "ℏ" : tokenDenomination.toAbbrevString())
 					.toString();
+		}
+	}
+
+	public static CustomFee mapFromGrpc(final CustomFeesOuterClass.CustomFee customFeeFromRequest) {
+		if(customFeeFromRequest.hasFixedFee()) {
+			var fixedFeeFromRequest = customFeeFromRequest.getFixedFee();
+			return CustomFee.fixedFee(
+					fixedFeeFromRequest.getUnitsToCollect(),
+					EntityId.fromGrpcTokenId(fixedFeeFromRequest.getTokenId()),
+					EntityId.fromGrpcAccountId(customFeeFromRequest.getFeeCollector()));
+		} else {
+			var fractionalFeeFromRequest = customFeeFromRequest.getFractionalFee();
+			var fractionFromRequest = fractionalFeeFromRequest.getFractionOfUnitsToCollect();
+			return CustomFee.fractionalFee(
+					fractionFromRequest.getNumerator(),
+					fractionFromRequest.getDenominator(),
+					fractionalFeeFromRequest.getMinimumUnitsToCollect(),
+					fractionalFeeFromRequest.getMaximumUnitsToCollect().getValue(),
+					EntityId.fromGrpcAccountId(customFeeFromRequest.getFeeCollector()));
 		}
 	}
 }
