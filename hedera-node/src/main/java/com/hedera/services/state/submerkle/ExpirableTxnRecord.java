@@ -140,10 +140,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		if (customFeesCharged != NO_CUSTOM_FEES) {
 			int n = customFeesCharged.size();
 			var readable = IntStream.range(0, n)
-					.mapToObj(i -> String.format(
-							"(%s, %s, %s)", customFeesCharged.get(i).account().toAbbrevString(),
-							customFeesCharged.get(i).token().toAbbrevString(),
-							customFeesCharged.get(i).units()))
+					.mapToObj(i -> String.format("(%s)", customFeesCharged.get(i)))
 					.collect(joining(", "));
 			helper.add("customFeesCharged", readable);
 		}
