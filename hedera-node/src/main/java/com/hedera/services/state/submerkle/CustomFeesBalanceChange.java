@@ -56,7 +56,7 @@ public class CustomFeesBalanceChange implements SelfSerializable {
 	private EntityId account;
 	private long units;
 
-	CustomFeesBalanceChange() {
+	public CustomFeesBalanceChange() {
 		/* For RuntimeConstructable */
 	}
 
