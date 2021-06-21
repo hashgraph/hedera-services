@@ -23,32 +23,39 @@ package com.hedera.services.state.merkle;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
+import com.hedera.services.state.submerkle.CustomFee;
 import com.hedera.services.state.submerkle.EntityId;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import proto.CustomFeesOuterClass;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 import static com.hedera.services.utils.MiscUtils.describe;
+import static java.util.Collections.unmodifiableList;
+import static java.util.stream.Collectors.toList;
 
 public class MerkleToken extends AbstractMerkleLeaf {
 	static final int PRE_RELEASE_0120_VERSION = 1;
 	static final int RELEASE_0120_VERSION = 2;
+	static final int RELEASE_0160_VERSION = 3;
 
-	static final int MERKLE_VERSION = RELEASE_0120_VERSION;
+	static final int MERKLE_VERSION = RELEASE_0160_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xd23ce8814b35fc2fL;
 
 	static DomainSerdes serdes = new DomainSerdes();
 
-	public static final long UNUSED_AUTO_RENEW_PERIOD = -1L;
+	private static final long UNUSED_AUTO_RENEW_PERIOD = -1L;
+	private static final int UPPER_BOUND_MEMO_UTF8_BYTES = 1024;
+
 	public static final JKey UNUSED_KEY = null;
-	public static final EntityId UNUSED_AUTO_RENEW_ACCOUNT = null;
-	public static final int UPPER_BOUND_MEMO_UTF8_BYTES = 1024;
 	public static final int UPPER_BOUND_SYMBOL_UTF8_BYTES = 1024;
 	public static final int UPPER_BOUND_TOKEN_NAME_UTF8_BYTES = 1024;
 
@@ -68,7 +75,8 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	private boolean accountsFrozenByDefault;
 	private boolean accountsKycGrantedByDefault;
 	private EntityId treasury;
-	private EntityId autoRenewAccount = UNUSED_AUTO_RENEW_ACCOUNT;
+	private EntityId autoRenewAccount = null;
+	private List<CustomFee> feeSchedule = Collections.emptyList();
 
 	public MerkleToken() {
 		/* No-op. */
@@ -121,7 +129,8 @@ public class MerkleToken extends AbstractMerkleLeaf {
 				equalUpToDecodability(this.supplyKey, that.supplyKey) &&
 				equalUpToDecodability(this.adminKey, that.adminKey) &&
 				equalUpToDecodability(this.freezeKey, that.freezeKey) &&
-				equalUpToDecodability(this.kycKey, that.kycKey);
+				equalUpToDecodability(this.kycKey, that.kycKey) &&
+				Objects.equals(this.feeSchedule, that.feeSchedule);
 	}
 
 	@Override
@@ -143,13 +152,15 @@ public class MerkleToken extends AbstractMerkleLeaf {
 				accountsKycGrantedByDefault,
 				treasury,
 				autoRenewAccount,
-				autoRenewPeriod);
+				autoRenewPeriod,
+				feeSchedule);
 	}
 
 	/* --- Bean --- */
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(MerkleToken.class)
+				.omitNullValues()
 				.add("deleted", deleted)
 				.add("expiry", expiry)
 				.add("symbol", symbol)
@@ -167,6 +178,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 				.add("freezeKey", describe(freezeKey))
 				.add("accountsKycGrantedByDefault", accountsKycGrantedByDefault)
 				.add("accountsFrozenByDefault", accountsFrozenByDefault)
+				.add("feeSchedules", feeSchedule)
 				.toString();
 	}
 
@@ -206,6 +218,10 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		if (version >= RELEASE_0120_VERSION) {
 			memo = in.readNormalisedString(UPPER_BOUND_MEMO_UTF8_BYTES);
 		}
+		if (version >= RELEASE_0160_VERSION) {
+			feeSchedule = unmodifiableList(
+					in.readSerializableList(Integer.MAX_VALUE, true, CustomFee::new));
+		}
 	}
 
 	@Override
@@ -227,6 +243,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		serdes.writeNullable(supplyKey, out, serdes::serializeKey);
 		serdes.writeNullable(wipeKey, out, serdes::serializeKey);
 		out.writeNormalisedString(memo);
+		out.writeSerializableList(feeSchedule, true, true);
 	}
 
 	/* --- FastCopyable --- */
@@ -243,6 +260,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 				treasury);
 		fc.setMemo(memo);
 		fc.setDeleted(deleted);
+		fc.setFeeSchedule(feeSchedule);
 		fc.setAutoRenewPeriod(autoRenewPeriod);
 		fc.setAutoRenewAccount(autoRenewAccount);
 		if (adminKey != UNUSED_KEY) {
@@ -393,7 +411,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	}
 
 	public boolean hasAutoRenewAccount() {
-		return autoRenewAccount != UNUSED_AUTO_RENEW_ACCOUNT;
+		return autoRenewAccount != null;
 	}
 
 	public void setAutoRenewAccount(EntityId autoRenewAccount) {
@@ -436,5 +454,13 @@ public class MerkleToken extends AbstractMerkleLeaf {
 
 	public void setAccountsFrozenByDefault(boolean accountsFrozenByDefault) {
 		this.accountsFrozenByDefault = accountsFrozenByDefault;
+	}
+
+	public void setFeeSchedule(List<CustomFee> feeSchedule) {
+		this.feeSchedule = unmodifiableList(feeSchedule);
+	}
+
+	public void setFeeScheduleFrom(CustomFeesOuterClass.CustomFees grpcFeeSchedule) {
+		feeSchedule = grpcFeeSchedule.getCustomFeesList().stream().map(CustomFee::fromGrpc).collect(toList());
 	}
 }
