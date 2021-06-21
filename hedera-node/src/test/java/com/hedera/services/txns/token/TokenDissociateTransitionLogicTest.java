@@ -105,8 +105,8 @@ class TokenDissociateTransitionLogicTest {
 		given(modelAccount.getId()).willReturn(accountId);
 		given(firstModelToken.getId()).willReturn(firstTokenId);
 		given(secondModelToken.getId()).willReturn(secondTokenId);
-		given(tokenStore.loadToken(firstTokenId, false)).willReturn(firstModelToken);
-		given(tokenStore.loadToken(secondTokenId, false)).willReturn(secondModelToken);
+		given(tokenStore.loadPossiblyDeletedToken(firstTokenId)).willReturn(firstModelToken);
+		given(tokenStore.loadPossiblyDeletedToken(secondTokenId)).willReturn(secondModelToken);
 		given(firstModelToken.newRelationshipWith(modelAccount)).willReturn(firstModelTokenRel);
 		given(secondModelToken.newRelationshipWith(modelAccount)).willReturn(secondModelTokenRel);
 		// and:

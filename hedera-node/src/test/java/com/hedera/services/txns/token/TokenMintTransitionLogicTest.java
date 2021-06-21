@@ -83,7 +83,7 @@ class TokenMintTransitionLogicTest {
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(tokenMintTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(store.loadToken(id, true)).willReturn(token);
+		given(store.loadToken(id)).willReturn(token);
 		given(token.getTreasury()).willReturn(treasury);
 		given(store.loadTokenRelationship(token, treasury)).willReturn(treasuryRel);
 

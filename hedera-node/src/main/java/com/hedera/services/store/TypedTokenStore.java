@@ -102,8 +102,8 @@ public class TypedTokenStore {
 	 * can be used to implement business logic in a transaction.
 	 *
 	 * The arguments <i>should</i> be model objects that were returned by the
-	 * {@link TypedTokenStore#loadToken(Id, boolean)} and {@link AccountStore#loadAccount(Id)}
-	 * methods, respectively, since it will very rarely (or never) be correct
+	 * {@link TypedTokenStore#loadToken(Id)} or {@link TypedTokenStore#loadPossiblyDeletedToken(Id)}
+	 * and {@link AccountStore#loadAccount(Id)} methods, respectively, since it will very rarely (or never) be correct
 	 * to do business logic on a relationship whose token or account have not
 	 * been validated as usable.
 	 *
@@ -199,7 +199,7 @@ public class TypedTokenStore {
 			validateFalse(!merkleToken.isDeleted() && !isTokenExpired, TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
 			// transfer balance to treasury
 			final var treasuryAccount = accountStore.loadAccount(treasuryId);
-			final var token = loadToken(tokenId, false);
+			final var token = loadPossiblyDeletedToken(tokenId);
 			final var account = accountStore.loadAccount(accountId);
 			if(!merkleToken.isDeleted()) {
 				/* Must be expired; return balance to treasury account. */
@@ -221,15 +221,41 @@ public class TypedTokenStore {
 	 *
 	 * @param id
 	 * 		the token to load
-	 * @param deleteCheck
-	 * 		flag to check if the merkleToken is deleted
 	 * @return a usable model of the token
 	 * @throws InvalidTransactionException
 	 * 		if the requested token is missing, deleted, or expired and pending removal
 	 */
-	public Token loadToken(Id id, boolean deleteCheck) {
+	public Token loadToken(Id id) {
 		final var merkleToken = getMerkleToken(id);
-		validateUsable(merkleToken, deleteCheck);
+		validateUsable(merkleToken);
+
+		final var token = new Token(id);
+		initModelAccounts(token, merkleToken.treasury(), merkleToken.autoRenewAccount());
+		initModelFields(token, merkleToken);
+
+		return token;
+	}
+
+	/**
+	 * Returns a model of the requested token which is possibly deleted, with operations that can be used to
+	 * implement business logic in a transaction.
+	 *
+	 * <b>IMPORTANT:</b> Changes to the returned model are not automatically persisted
+	 * to state! The altered model must be passed to {@link TypedTokenStore#persistToken(Token)}
+	 * in order for its changes to be applied to the Swirlds state, and included in the
+	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
+	 *
+	 * @param id
+	 *		the token to load
+	 * @return a usable model of the token
+	 * @throws InvalidTransactionException
+	 *		if the requested token is missing, deleted, or expired and pending removal
+	 * @param id
+	 * @return
+	 */
+	public Token loadPossiblyDeletedToken(Id id) {
+		final var merkleToken = getMerkleToken(id);
+		validateTrue(merkleToken != null, INVALID_TOKEN_ID);
 
 		final var token = new Token(id);
 		initModelAccounts(token, merkleToken.treasury(), merkleToken.autoRenewAccount());
@@ -308,11 +334,6 @@ public class TypedTokenStore {
 	private void validateUsable(MerkleToken merkleToken) {
 		validateTrue(merkleToken != null, INVALID_TOKEN_ID);
 		validateFalse(merkleToken.isDeleted(), TOKEN_WAS_DELETED);
-	}
-
-	private void validateUsable(MerkleToken merkleToken, boolean deleteCheck) {
-		validateTrue(merkleToken != null, INVALID_TOKEN_ID);
-		validateFalse( deleteCheck && merkleToken.isDeleted(), TOKEN_WAS_DELETED);
 	}
 
 	private void mapModelChangesToMutable(Token token, MerkleToken mutableToken) {
