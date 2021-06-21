@@ -135,7 +135,8 @@ public class TransactionRecordService {
 						.setReceiverAccountID(AccountID.newBuilder()
 								.setShardNum(newOwner.getShard())
 								.setRealmNum(newOwner.getRealm())
-								.setAccountNum(newOwner.getNum())).build());
+								.setAccountNum(newOwner.getNum()))
+						.setSerialNumber(change.getSerialNumber()).build());
 			}
 			transferLists.add(TokenTransferList.newBuilder()
 					.setToken(tokenID)

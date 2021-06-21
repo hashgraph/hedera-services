@@ -20,6 +20,7 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -54,11 +55,14 @@ import static java.math.BigInteger.ZERO;
  */
 public class PureTransferSemanticChecks {
 	public ResponseCodeEnum fullPureValidation(
-			int maxHbarAdjusts,
-			int maxTokenAdjusts,
 			TransferList hbarAdjustsWrapper,
-			List<TokenTransferList> tokenAdjustsList
+			List<TokenTransferList> tokenAdjustsList,
+			GlobalDynamicProperties dynamicProperties
 	) {
+		final var maxHbarAdjusts = dynamicProperties.maxTransferListSize();
+		final var maxTokenAdjusts = dynamicProperties.maxTokenTransferListSize();
+		final var maxOwnershipChanges = dynamicProperties.maxNftTransfersLen();
+
 		final var hbarAdjusts = hbarAdjustsWrapper.getAccountAmountsList();
 
 		if (hasRepeatedAccount(hbarAdjusts)) {
@@ -71,7 +75,7 @@ public class PureTransferSemanticChecks {
 			return TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 		}
 
-		final var tokenValidity = validateTokenTransferSizes(tokenAdjustsList, maxTokenAdjusts);
+		final var tokenValidity = validateTokenTransferSizes(tokenAdjustsList, maxTokenAdjusts, maxOwnershipChanges);
 		if (tokenValidity != OK) {
 			return tokenValidity;
 		}
@@ -80,7 +84,8 @@ public class PureTransferSemanticChecks {
 
 	ResponseCodeEnum validateTokenTransferSizes(
 			List<TokenTransferList> tokenTransfersList,
-			int maxListLen
+			int maxListLen,
+			int maxOwnershipChanges
 	) {
 		final int numScopedTransfers = tokenTransfersList.size();
 		if (numScopedTransfers == 0) {

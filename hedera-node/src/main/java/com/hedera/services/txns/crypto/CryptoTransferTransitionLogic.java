@@ -119,10 +119,8 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 			/* Accessor is for either (1) a transaction in precheck or (2) a scheduled
 			transaction that reached consensus without a managed expand-handle span. */
 			final var op = accessor.getTxn().getCryptoTransfer();
-			final var maxHbarAdjusts = dynamicProperties.maxTransferListSize();
-			final var maxTokenAdjusts = dynamicProperties.maxTokenTransferListSize();
 			return transferSemanticChecks.fullPureValidation(
-					maxHbarAdjusts, maxTokenAdjusts, op.getTransfers(), op.getTokenTransfersList());
+					op.getTransfers(), op.getTokenTransfersList(), dynamicProperties);
 		}
 	}
 }

@@ -61,7 +61,7 @@ public class ImpliedTransfersMarshal {
 		final var maxHbarAdjusts = dynamicProperties.maxTransferListSize();
 
 		final var validity = transferSemanticChecks.fullPureValidation(
-				maxHbarAdjusts, maxTokenAdjusts, op.getTransfers(), op.getTokenTransfersList());
+				op.getTransfers(), op.getTokenTransfersList(), dynamicProperties);
 		if (validity != OK) {
 			return ImpliedTransfers.invalid(maxHbarAdjusts, maxTokenAdjusts, validity);
 		}

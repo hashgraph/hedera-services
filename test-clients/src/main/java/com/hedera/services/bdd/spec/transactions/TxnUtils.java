@@ -38,6 +38,7 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
@@ -368,9 +369,10 @@ public class TxnUtils {
 
 	public static String readableTokenTransfers(List<TokenTransferList> tokenTransfers) {
 		return tokenTransfers.stream()
-				.map(scopedXfers -> String.format("%s(%s)",
+				.map(scopedXfers -> String.format("%s(%s)(%s)",
 						asTokenString(scopedXfers.getToken()),
-						readableTransferList(scopedXfers.getTransfersList())))
+						readableTransferList(scopedXfers.getTransfersList()),
+						readableNftTransferList(scopedXfers.getNftTransfersList())))
 				.collect(joining(", "));
 	}
 
@@ -387,6 +389,19 @@ public class TxnUtils {
 						aa.getAmount() < 0 ? "->" : "<-",
 						aa.getAmount() < 0 ? "-" : "+",
 						BigInteger.valueOf(aa.getAmount()).abs().toString()))
+				.collect(toList())
+				.toString();
+	}
+
+	public static String readableNftTransferList(List<NftTransfer> adjustments) {
+		return adjustments
+				.stream()
+				.map(nftTranfer -> String.format(
+						"serialNumber:%s senderAccountID:%s receiverAccountId:%s",
+						nftTranfer.getSerialNumber(),
+						HapiPropertySource.asAccountString(nftTranfer.getSenderAccountID()),
+						HapiPropertySource.asAccountString(nftTranfer.getReceiverAccountID())
+				))
 				.collect(toList())
 				.toString();
 	}

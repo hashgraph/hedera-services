@@ -112,10 +112,9 @@ class ImpliedTransfersMarshalTest {
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxExplicitTokenAdjusts);
 		// and:
 		given(transferSemanticChecks.fullPureValidation(
-				maxExplicitHbarAdjusts,
-				maxExplicitTokenAdjusts,
 				op.getTransfers(),
-				op.getTokenTransfersList())).willReturn(TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
+				op.getTokenTransfersList(),
+				dynamicProperties)).willReturn(TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
 
 		// when:
 		final var result = subject.unmarshalFromGrpc(op);
@@ -150,10 +149,9 @@ class ImpliedTransfersMarshalTest {
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxExplicitHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxExplicitTokenAdjusts);
 		given(transferSemanticChecks.fullPureValidation(
-				maxExplicitHbarAdjusts,
-				maxExplicitTokenAdjusts,
 				op.getTransfers(),
-				op.getTokenTransfersList())).willReturn(OK);
+				op.getTokenTransfersList(),
+				dynamicProperties)).willReturn(OK);
 
 		// when:
 		final var result = subject.unmarshalFromGrpc(op);

@@ -20,13 +20,17 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
 import java.util.List;
@@ -50,9 +54,11 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 
+@ExtendWith(MockitoExtension.class)
 class PureTransferSemanticChecksTest {
 	final private int maxHbarAdjusts = 5;
 	final private int maxTokenAdjusts = 10;
+	final private int maxOwnershipChanges = 3;
 	final private AccountID a = AccountID.newBuilder().setAccountNum(9_999L).build();
 	final private AccountID b = AccountID.newBuilder().setAccountNum(8_999L).build();
 	final private AccountID c = AccountID.newBuilder().setAccountNum(7_999L).build();
@@ -61,6 +67,9 @@ class PureTransferSemanticChecksTest {
 	final private TokenID bTId = TokenID.newBuilder().setTokenNum(2_345L).build();
 	final private TokenID cTId = TokenID.newBuilder().setTokenNum(3_456L).build();
 	final private TokenID dTId = TokenID.newBuilder().setTokenNum(4_567L).build();
+
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	PureTransferSemanticChecks subject = new PureTransferSemanticChecks();
 
@@ -73,26 +82,25 @@ class PureTransferSemanticChecksTest {
 		subject = mock(PureTransferSemanticChecks.class);
 		InOrder inOrder = Mockito.inOrder(subject);
 
+		given(dynamicProperties.maxTransferListSize()).willReturn(maxHbarAdjusts);
+		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxTokenAdjusts);
+		// and:
 		given(subject.isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList())).willReturn(true);
 		given(subject.isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts)).willReturn(true);
-		given(subject.validateTokenTransferSizes(tokenAdjusts, maxTokenAdjusts)).willReturn(OK);
+		given(subject.validateTokenTransferSizes(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges)).willReturn(OK);
 		given(subject.validateTokenTransferSemantics(tokenAdjusts)).willReturn(OK);
 		// and:
 		doCallRealMethod().when(subject)
-				.fullPureValidation(
-						maxHbarAdjusts,
-						maxTokenAdjusts,
-						hbarAdjusts,
-						tokenAdjusts);
+				.fullPureValidation(hbarAdjusts, tokenAdjusts, dynamicProperties);
 
 		// when:
-		final var result = subject.fullPureValidation(maxHbarAdjusts, maxTokenAdjusts, hbarAdjusts, tokenAdjusts);
+		final var result = subject.fullPureValidation(hbarAdjusts, tokenAdjusts, dynamicProperties);
 
 		// then:
 		inOrder.verify(subject).hasRepeatedAccount(hbarAdjusts.getAccountAmountsList());
 		inOrder.verify(subject).isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList());
 		inOrder.verify(subject).isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts);
-		inOrder.verify(subject).validateTokenTransferSizes(tokenAdjusts, maxTokenAdjusts);
+		inOrder.verify(subject).validateTokenTransferSizes(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges);
 		inOrder.verify(subject).validateTokenTransferSemantics(tokenAdjusts);
 		// and:
 		assertEquals(OK, result);
@@ -106,20 +114,19 @@ class PureTransferSemanticChecksTest {
 		// and:
 		subject = mock(PureTransferSemanticChecks.class);
 
+		given(dynamicProperties.maxTransferListSize()).willReturn(maxHbarAdjusts);
+		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxTokenAdjusts);
+		// and:
 		given(subject.isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList())).willReturn(true);
 		given(subject.isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts)).willReturn(true);
-		given(subject.validateTokenTransferSizes(tokenAdjusts, maxTokenAdjusts))
+		given(subject.validateTokenTransferSizes(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges))
 				.willReturn(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
 		// and:
 		doCallRealMethod().when(subject)
-				.fullPureValidation(
-						maxHbarAdjusts,
-						maxTokenAdjusts,
-						hbarAdjusts,
-						tokenAdjusts);
+				.fullPureValidation(hbarAdjusts, tokenAdjusts, dynamicProperties);
 
 		// when:
-		final var result = subject.fullPureValidation(maxHbarAdjusts, maxTokenAdjusts, hbarAdjusts, tokenAdjusts);
+		final var result = subject.fullPureValidation(hbarAdjusts, tokenAdjusts, dynamicProperties);
 
 		// then:
 		assertEquals(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, result);
@@ -133,20 +140,18 @@ class PureTransferSemanticChecksTest {
 		// and:
 		subject = mock(PureTransferSemanticChecks.class);
 
+		given(dynamicProperties.maxTransferListSize()).willReturn(maxHbarAdjusts);
+		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxTokenAdjusts);
+		// and:
 		given(subject.isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList())).willReturn(true);
 		given(subject.isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts)).willReturn(true);
-		given(subject.validateTokenTransferSizes(tokenAdjusts, maxTokenAdjusts)).willReturn(OK);
+		given(subject.validateTokenTransferSizes(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges)).willReturn(OK);
 		given(subject.validateTokenTransferSemantics(tokenAdjusts)).willReturn(TOKEN_ID_REPEATED_IN_TOKEN_LIST);
 		// and:
-		doCallRealMethod().when(subject)
-				.fullPureValidation(
-						maxHbarAdjusts,
-						maxTokenAdjusts,
-						hbarAdjusts,
-						tokenAdjusts);
+		doCallRealMethod().when(subject).fullPureValidation(hbarAdjusts, tokenAdjusts, dynamicProperties);
 
 		// when:
-		final var result = subject.fullPureValidation(maxHbarAdjusts, maxTokenAdjusts, hbarAdjusts, tokenAdjusts);
+		final var result = subject.fullPureValidation(hbarAdjusts, tokenAdjusts, dynamicProperties);
 
 		// then:
 		assertEquals(TOKEN_ID_REPEATED_IN_TOKEN_LIST, result);
@@ -159,8 +164,9 @@ class PureTransferSemanticChecksTest {
 		final var tokenAdjusts = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
 
 		// expect:
-		assertEquals(INVALID_ACCOUNT_AMOUNTS, subject.fullPureValidation(
-				100, 100, hbarAdjusts, tokenAdjusts));
+		assertEquals(
+				INVALID_ACCOUNT_AMOUNTS,
+				subject.fullPureValidation(hbarAdjusts, tokenAdjusts, dynamicProperties));
 	}
 
 	@Test
@@ -170,8 +176,9 @@ class PureTransferSemanticChecksTest {
 		final var tokenAdjusts = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
 
 		// expect:
-		assertEquals(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS, subject.fullPureValidation(
-				100, 100, hbarAdjusts, tokenAdjusts));
+		assertEquals(
+				ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS,
+				subject.fullPureValidation(hbarAdjusts, tokenAdjusts, dynamicProperties));
 	}
 
 	@Test
@@ -181,8 +188,9 @@ class PureTransferSemanticChecksTest {
 		final var tokenAdjusts = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
 
 		// expect:
-		assertEquals(TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, subject.fullPureValidation(
-				1, 100, hbarAdjusts, tokenAdjusts));
+		assertEquals(
+				TRANSFER_LIST_SIZE_LIMIT_EXCEEDED,
+				subject.fullPureValidation(hbarAdjusts, tokenAdjusts, dynamicProperties));
 	}
 
 	@Test
@@ -200,7 +208,7 @@ class PureTransferSemanticChecksTest {
 		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
 
 		// when:
-		final var result = subject.validateTokenTransferSizes(wrapper, 4);
+		final var result = subject.validateTokenTransferSizes(wrapper, 4, 2);
 
 		// expect:
 		assertEquals(OK, result);
@@ -209,7 +217,7 @@ class PureTransferSemanticChecksTest {
 	@Test
 	void acceptsNoTokenTransfers() {
 		// given:
-		final var result = subject.validateTokenTransferSizes(Collections.emptyList(), 10);
+		final var result = subject.validateTokenTransferSizes(Collections.emptyList(), 10, 2);
 
 		// expect:
 		assertEquals(OK, result);
@@ -313,7 +321,7 @@ class PureTransferSemanticChecksTest {
 		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
 
 		// when:
-		final var result = subject.validateTokenTransferSizes(wrapper, 2);
+		final var result = subject.validateTokenTransferSizes(wrapper, 2, 2);
 
 		// then:
 		assertEquals(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, result);
@@ -325,7 +333,7 @@ class PureTransferSemanticChecksTest {
 		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3, dTId, d, -4);
 
 		// when:
-		final var result = subject.validateTokenTransferSizes(wrapper, 4);
+		final var result = subject.validateTokenTransferSizes(wrapper, 4, 2);
 
 		// then:
 		assertEquals(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, result);
@@ -339,7 +347,7 @@ class PureTransferSemanticChecksTest {
 				.build());
 
 		// when:
-		final var result = subject.validateTokenTransferSizes(wrapper, 10);
+		final var result = subject.validateTokenTransferSizes(wrapper, 10, 2);
 
 		// then:
 		assertEquals(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS, result);

@@ -30,6 +30,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.TxnAccessor;
@@ -144,11 +145,13 @@ public class ExpiringCreations implements EntityCreator {
 	) {
 		final List<EntityId> tokens = new ArrayList<>();
 		final List<CurrencyAdjustments> tokenAdjustments = new ArrayList<>();
+		final List<NftAdjustments> nftTokenAdjustments = new ArrayList<>();
 		for (TokenTransferList tokenTransfers : tokenTransferList) {
 			tokens.add(EntityId.fromGrpcTokenId(tokenTransfers.getToken()));
 			tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList()));
+			nftTokenAdjustments.add(NftAdjustments.fromGrpc(tokenTransfers.getNftTransfersList()));
 		}
-		builder.setTokens(tokens).setTokenAdjustments(tokenAdjustments);
+		builder.setTokens(tokens).setTokenAdjustments(tokenAdjustments).setNftTokenAdjustments(nftTokenAdjustments);
 	}
 
 	private void addToState(MerkleEntityId key, ExpirableTxnRecord record) {
