@@ -24,6 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -31,6 +32,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 
 /**
  * Process object that encapsulates a balance change, either ℏ or token unit .
@@ -56,8 +58,9 @@ public class BalanceChange {
 	private long newBalance;
 	private TokenID tokenId = null;
 	private AccountID accountId;
+	private AccountID counterPartyAccountId = null;
 
-	private BalanceChange(final Id token, final AccountAmount aa, final ResponseCodeEnum code) {
+	private BalanceChange(Id token, AccountAmount aa, ResponseCodeEnum code) {
 		this.token = token;
 
 		this.accountId = aa.getAccountID();
@@ -67,27 +70,47 @@ public class BalanceChange {
 		this.codeForInsufficientBalance = code;
 	}
 
-	public static BalanceChange hbarAdjust(final AccountAmount aa) {
+	private BalanceChange(Id token, AccountID sender, AccountID receiver, long serialNo, ResponseCodeEnum code) {
+		this.token = token;
+
+		this.accountId = sender;
+		this.counterPartyAccountId = receiver;
+		this.account = Id.fromGrpcAccount(accountId);
+		this.units = serialNo;
+
+		this.codeForInsufficientBalance = code;
+	}
+
+	public static BalanceChange changingHbar(AccountAmount aa) {
 		return new BalanceChange(null, aa, INSUFFICIENT_ACCOUNT_BALANCE);
 	}
 
-	public static BalanceChange fungibleTokenAdjust(final Id token, final TokenID tokenId, final AccountAmount aa) {
+	public static BalanceChange changingFtUnits(Id token, TokenID tokenId, AccountAmount aa) {
 		final var tokenChange = new BalanceChange(token, aa, INSUFFICIENT_TOKEN_BALANCE);
 		tokenChange.tokenId = tokenId;
 		return tokenChange;
 	}
 
-//	public static BalanceChange nonfungibleTokenAdjust(final Id token, final TokenID tokenId, final long serialNo) {
-//		final var tokenChange = new BalanceChange(token, aa, INSUFFICIENT_TOKEN_BALANCE);
-//		tokenChange.tokenId = tokenId;
-//		return tokenChange;
-//	}
+	public static BalanceChange changingNftOwnership(Id token, TokenID tokenId, NftTransfer nftTransfer) {
+		final var nftChange = new BalanceChange(
+				token,
+				nftTransfer.getSenderAccountID(),
+				nftTransfer.getReceiverAccountID(),
+				nftTransfer.getSerialNumber(),
+				SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
+		nftChange.tokenId = tokenId;
+		return nftChange;
+	}
 
 	public boolean isForHbar() {
 		return token == null;
 	}
 
 	public long units() {
+		return units;
+	}
+
+	public long serialNo() {
 		return units;
 	}
 
@@ -105,6 +128,10 @@ public class BalanceChange {
 
 	public AccountID accountId() {
 		return accountId;
+	}
+
+	public AccountID counterPartyAccountId() {
+		return counterPartyAccountId;
 	}
 
 	public ResponseCodeEnum codeForInsufficientBalance() {
@@ -127,10 +154,19 @@ public class BalanceChange {
 
 	@Override
 	public String toString() {
-		return MoreObjects.toStringHelper(BalanceChange.class)
-				.add("token", token == null ? "ℏ" : token)
-				.add("account", account)
-				.add("units", units)
-				.toString();
+		if (counterPartyAccountId == null) {
+			return MoreObjects.toStringHelper(BalanceChange.class)
+					.add("token", token == null ? "ℏ" : token)
+					.add("account", account)
+					.add("units", units)
+					.toString();
+		} else {
+			return MoreObjects.toStringHelper(BalanceChange.class)
+					.add("nft", token)
+					.add("serialNo", serialNo())
+					.add("from", account)
+					.add("to", Id.fromGrpcAccount(counterPartyAccountId))
+					.toString();
+		}
 	}
 }

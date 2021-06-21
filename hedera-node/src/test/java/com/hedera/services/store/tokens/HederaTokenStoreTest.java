@@ -26,6 +26,7 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
@@ -39,6 +40,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.unique.OwnerIdentifier;
 import com.hedera.services.utils.invertible_fchashmap.FCInvertibleHashMap;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -132,12 +134,13 @@ class HederaTokenStoreTest {
 	private FCMap<MerkleEntityId, MerkleToken> tokens;
 	private FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier> uniqueTokens;
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 	private HederaLedger hederaLedger;
 
 	private MerkleToken token;
 	private MerkleToken modifiableToken;
-	private MerkleAccount account;
+	private MerkleToken nonfungibleToken;
 
 	private Key newKey = TxnHandlingScenario.TOKEN_REPLACE_KT.asKey();
 	private JKey newFcKey = TxnHandlingScenario.TOKEN_REPLACE_KT.asJKeyUnchecked();
@@ -155,6 +158,7 @@ class HederaTokenStoreTest {
 	private int decimals = 10;
 	private long treasuryBalance = 50_000, sponsorBalance = 1_000;
 	private TokenID misc = IdUtils.asToken("3.2.1");
+	private TokenID nonfungible = IdUtils.asToken("4.3.2");
 	private TokenID anotherMisc = IdUtils.asToken("6.4.2");
 	private boolean freezeDefault = true;
 	private boolean accountsKycGrantedByDefault = false;
@@ -165,13 +169,17 @@ class HederaTokenStoreTest {
 	private AccountID treasury = IdUtils.asAccount("1.2.3");
 	private AccountID newTreasury = IdUtils.asAccount("3.2.1");
 	private AccountID sponsor = IdUtils.asAccount("1.2.666");
+	private AccountID counterparty = IdUtils.asAccount("1.2.777");
 	private TokenID created = IdUtils.asToken("1.2.666666");
 	private TokenID pending = IdUtils.asToken("1.2.555555");
 	private int MAX_TOKENS_PER_ACCOUNT = 100;
 	private int MAX_TOKEN_SYMBOL_UTF8_BYTES = 10;
 	private int MAX_TOKEN_NAME_UTF8_BYTES = 100;
 	private Pair<AccountID, TokenID> sponsorMisc = asTokenRel(sponsor, misc);
+	private Pair<AccountID, TokenID> sponsorNft = asTokenRel(sponsor, nonfungible);
+	private Pair<AccountID, TokenID> counterpartyNft = asTokenRel(counterparty, nonfungible);
 	private Pair<AccountID, TokenID> treasuryMisc = asTokenRel(treasury, misc);
+	private NftId aNft = new NftId(4, 3, 2, 1_234);
 
 	private HederaTokenStore subject;
 
@@ -193,24 +201,30 @@ class HederaTokenStoreTest {
 		given(token.hasAdminKey()).willReturn(true);
 		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
 
+		nonfungibleToken = new MerkleToken();
+
 		ids = mock(EntityIdSource.class);
 		given(ids.newTokenId(sponsor)).willReturn(created);
 
-		account = mock(MerkleAccount.class);
-
 		hederaLedger = mock(HederaLedger.class);
+
+		nftsLedger = (TransactionalLedger<NftId, NftProperty, MerkleUniqueToken>) mock(TransactionalLedger.class);
+		given(nftsLedger.get(aNft, NftProperty.OWNER)).willReturn(EntityId.fromGrpcAccountId(sponsor));
 
 		accountsLedger = (TransactionalLedger<AccountID, AccountProperty, MerkleAccount>) mock(TransactionalLedger.class);
 		given(accountsLedger.exists(treasury)).willReturn(true);
 		given(accountsLedger.exists(autoRenewAccount)).willReturn(true);
 		given(accountsLedger.exists(newAutoRenewAccount)).willReturn(true);
 		given(accountsLedger.exists(sponsor)).willReturn(true);
+		given(accountsLedger.exists(counterparty)).willReturn(true);
 		given(accountsLedger.get(treasury, IS_DELETED)).willReturn(false);
 		given(accountsLedger.get(autoRenewAccount, IS_DELETED)).willReturn(false);
 		given(accountsLedger.get(newAutoRenewAccount, IS_DELETED)).willReturn(false);
 
 		tokenRelsLedger = mock(TransactionalLedger.class);
 		given(tokenRelsLedger.exists(sponsorMisc)).willReturn(true);
+		given(tokenRelsLedger.exists(sponsorNft)).willReturn(true);
+		given(tokenRelsLedger.exists(counterpartyNft)).willReturn(true);
 		given(tokenRelsLedger.get(sponsorMisc, TOKEN_BALANCE)).willReturn(sponsorBalance);
 		given(tokenRelsLedger.get(sponsorMisc, IS_FROZEN)).willReturn(false);
 		given(tokenRelsLedger.get(sponsorMisc, IS_KYC_GRANTED)).willReturn(true);
@@ -222,7 +236,9 @@ class HederaTokenStoreTest {
 		tokens = (FCMap<MerkleEntityId, MerkleToken>) mock(FCMap.class);
 		given(tokens.get(fromTokenId(created))).willReturn(token);
 		given(tokens.containsKey(fromTokenId(misc))).willReturn(true);
+		given(tokens.containsKey(fromTokenId(nonfungible))).willReturn(true);
 		given(tokens.get(fromTokenId(misc))).willReturn(token);
+		given(tokens.get(fromTokenId(nonfungible))).willReturn(nonfungibleToken);
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(modifiableToken);
 
 		uniqueTokens = (FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier>) mock(FCInvertibleHashMap.class);
@@ -232,7 +248,8 @@ class HederaTokenStoreTest {
 		given(properties.maxTokenSymbolUtf8Bytes()).willReturn(MAX_TOKEN_SYMBOL_UTF8_BYTES);
 		given(properties.maxTokenNameUtf8Bytes()).willReturn(MAX_TOKEN_NAME_UTF8_BYTES);
 
-		subject = new HederaTokenStore(ids, TEST_VALIDATOR, properties, () -> tokens, () -> uniqueTokens, tokenRelsLedger);
+		subject = new HederaTokenStore(
+				ids, TEST_VALIDATOR, properties, () -> tokens, () -> uniqueTokens, tokenRelsLedger, nftsLedger);
 		subject.setAccountsLedger(accountsLedger);
 		subject.setHederaLedger(hederaLedger);
 		subject.knownTreasuries.put(treasury, new HashSet<>() {{ add(misc); }});
@@ -878,6 +895,28 @@ class HederaTokenStoreTest {
 
 		// expect:
 		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, status);
+	}
+
+	@Test
+	void changingOwnerRejectsMissingSender() {
+		given(accountsLedger.exists(sponsor)).willReturn(false);
+
+		// when:
+		var status = subject.changeOwner(aNft, sponsor, counterparty);
+
+		// expect:
+		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, status);
+	}
+
+	@Test
+	void changingOwnerRejectsIllegitimateOwner() {
+		given(nftsLedger.get(aNft, NftProperty.OWNER)).willReturn(EntityId.fromGrpcAccountId(counterparty));
+
+		// when:
+		var status = subject.changeOwner(aNft, sponsor, counterparty);
+
+		// expect:
+		assertEquals(ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, status);
 	}
 
 	@Test

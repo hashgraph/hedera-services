@@ -27,6 +27,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.CreationResult;
+import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -102,6 +103,11 @@ public enum ExceptionalTokenStore implements TokenStore {
 
 	@Override
 	public ResponseCodeEnum adjustBalance(AccountID senderAId, AccountID receiverAId, TokenID tId, long serialNumber) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public ResponseCodeEnum changeOwner(NftId nftId, AccountID from, AccountID to) {
 		throw new UnsupportedOperationException();
 	}
 

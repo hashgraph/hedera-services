@@ -29,8 +29,8 @@ import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.hedera.services.ledger.BalanceChange.hbarAdjust;
-import static com.hedera.services.ledger.BalanceChange.tokenAdjust;
+import static com.hedera.services.ledger.BalanceChange.changingHbar;
+import static com.hedera.services.ledger.BalanceChange.changingFtUnits;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
@@ -67,13 +67,13 @@ public class ImpliedTransfersMarshal {
 
 		final List<BalanceChange> changes = new ArrayList<>();
 		for (var aa : op.getTransfers().getAccountAmountsList()) {
-			changes.add(hbarAdjust(aa));
+			changes.add(changingHbar(aa));
 		}
 		for (var scopedTransfers : op.getTokenTransfersList()) {
 			final var grpcTokenId = scopedTransfers.getToken();
 			final var scopingToken = Id.fromGrpcToken(grpcTokenId);
 			for (var aa : scopedTransfers.getTransfersList()) {
-				changes.add(tokenAdjust(scopingToken, grpcTokenId, aa));
+				changes.add(changingFtUnits(scopingToken, grpcTokenId, aa));
 			}
 		}
 

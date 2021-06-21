@@ -29,6 +29,7 @@ import com.hedera.services.exceptions.NonZeroNetTransfersException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
@@ -36,7 +37,9 @@ import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -126,6 +129,7 @@ public class HederaLedger {
 	private final AccountRecordsHistorian historian;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
+	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = null;
 	private TransactionalLedger<
 			Pair<AccountID, TokenID>,
 			TokenRelProperty,
@@ -157,11 +161,16 @@ public class HederaLedger {
 		tokenStore.setHederaLedger(this);
 	}
 
+	public void setNftsLedger(TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger) {
+		this.nftsLedger = nftsLedger;
+	}
+
 	public void setTokenRelsLedger(
 			TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger
 	) {
 		this.tokenRelsLedger = tokenRelsLedger;
 	}
+
 
 	/* -- TRANSACTIONAL SEMANTICS -- */
 	public void begin() {
@@ -213,19 +222,20 @@ public class HederaLedger {
 			var token = tokensTouched[i];
 			if (i == 0 || !token.equals(tokensTouched[i - 1])) {
 				var netTransfersHere = netTokenTransfers.get(token);
-				var uniqueTransfersHere = uniqueTokenTransfers.get(token);
 				purgeZeroAdjustments(netTransfersHere);
-
-				if (!isFungibleToken(token) && uniqueTransfersHere != null) {
-					all.add(TokenTransferList.newBuilder()
-							.setToken(token)
-							.addAllNftTransfers(uniqueTransfersHere.getNftTransfersList())
-							.build());
-				} else {
+				if (isFungibleToken(token)) {
 					all.add(TokenTransferList.newBuilder()
 							.setToken(token)
 							.addAllTransfers(netTransfersHere.getAccountAmountsList())
 							.build());
+				} else {
+					var uniqueTransfersHere = uniqueTokenTransfers.get(token);
+					if (uniqueTransfersHere != null) {
+						all.add(TokenTransferList.newBuilder()
+								.setToken(token)
+								.addAllNftTransfers(uniqueTransfersHere.getNftTransfersList())
+								.build());
+					}
 				}
 			}
 		}
@@ -321,10 +331,6 @@ public class HederaLedger {
 		return tokenStore.adjustBalance(aId, tId, adjustment);
 	}
 
-	public ResponseCodeEnum adjustTokenBalance(AccountID senderAId, AccountID receiverAId, TokenID tId, long serialNumber) {
-		return tokenStore.adjustBalance(senderAId, receiverAId, tId, serialNumber);
-	}
-
 	public ResponseCodeEnum grantKyc(AccountID aId, TokenID tId) {
 		return tokenStore.grantKyc(aId, tId);
 	}
@@ -369,10 +375,9 @@ public class HederaLedger {
 	public ResponseCodeEnum doZeroSum(List<BalanceChange> changes) {
 		var validity = OK;
 		for (var change : changes) {
-			if (change.isForHbar())	 {
+			if (change.isForHbar()) {
 				validity = plausibilityOf(change);
 			} else {
-                                /* TODO - support NFTs */
 				validity = tokenStore.tryTokenChange(change);
 			}
 			if (validity != OK) {
@@ -617,7 +622,7 @@ public class HederaLedger {
 
 	private void adjustHbarUnchecked(List<BalanceChange> changes) {
 		for (var change : changes) {
-			if (change.isForHbar())	{
+			if (change.isForHbar()) {
 				final var accountId = change.accountId();
 				setBalance(accountId, change.getNewBalance());
 				updateXfers(accountId, change.units(), netTransfers);

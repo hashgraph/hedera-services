@@ -9,9 +9,9 @@ package com.hedera.services.ledger;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,10 +38,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
+import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
+import static com.hedera.services.store.models.Id.fromGrpcToken;
 import static com.hedera.test.utils.IdUtils.adjustFrom;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.IdUtils.hbarChange;
+import static com.hedera.test.utils.IdUtils.nftXfer;
 import static com.hedera.test.utils.IdUtils.tokenChange;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
@@ -72,6 +75,8 @@ class ImpliedTransfersMarshalTest {
 	private final TokenID anId = asToken("0.0.75231");
 	private final TokenID anotherId = asToken("0.0.75232");
 	private final TokenID yetAnotherId = asToken("0.0.75233");
+	private final TokenID firstNft = asToken("0.0.9999");
+	private final TokenID secondNft = asToken("0.0.10000");
 	private final AccountID a = asAccount("1.2.3");
 	private final AccountID b = asAccount("2.3.4");
 	private final AccountID c = asAccount("3.4.5");
@@ -86,6 +91,8 @@ class ImpliedTransfersMarshalTest {
 	private final long cTokenChange = +100L;
 	private final long aYetAnotherTokenChange = -15L;
 	private final long bYetAnotherTokenChange = +15L;
+	private final long aSerialNo = 12_345L;
+	private final long bSerialNo = 12_345L;
 
 	private final int maxExplicitHbarAdjusts = 5;
 	private final int maxExplicitTokenAdjusts = 50;
@@ -122,16 +129,19 @@ class ImpliedTransfersMarshalTest {
 		setupFixtureOp();
 		// and:
 		final List<BalanceChange> expectedChanges = List.of(new BalanceChange[] {
-				hbarChange(aModel, aHbarChange),
-				hbarChange(bModel, bHbarChange),
-				hbarChange(cModel, cHbarChange),
-				tokenChange(anotherToken, aModel, aAnotherTokenChange),
-				tokenChange(anotherToken, bModel, bAnotherTokenChange),
-				tokenChange(anotherToken, cModel, cAnotherTokenChange),
-				tokenChange(token, bModel, bTokenChange),
-				tokenChange(token, cModel, cTokenChange),
-				tokenChange(yetAnotherToken, aModel, aYetAnotherTokenChange),
-				tokenChange(yetAnotherToken, bModel, bYetAnotherTokenChange),
+						hbarChange(aModel, aHbarChange),
+						hbarChange(bModel, bHbarChange),
+						hbarChange(cModel, cHbarChange),
+						tokenChange(anotherToken, aModel, aAnotherTokenChange),
+						tokenChange(anotherToken, bModel, bAnotherTokenChange),
+						tokenChange(anotherToken, cModel, cAnotherTokenChange),
+						tokenChange(token, bModel, bTokenChange),
+						tokenChange(token, cModel, cTokenChange),
+						tokenChange(yetAnotherToken, aModel, aYetAnotherTokenChange),
+						tokenChange(yetAnotherToken, bModel, bYetAnotherTokenChange),
+						changingNftOwnership(fromGrpcToken(firstNft), firstNft, nftXfer(a, b, aSerialNo)),
+						changingNftOwnership(fromGrpcToken(secondNft), secondNft, nftXfer(b, c, aSerialNo)),
+						changingNftOwnership(fromGrpcToken(secondNft), secondNft, nftXfer(c, a, bSerialNo)),
 				}
 		);
 		// and:
@@ -248,6 +258,15 @@ class ImpliedTransfersMarshalTest {
 						.addAllTransfers(List.of(
 								adjustFrom(a, -15),
 								adjustFrom(b, 15)
+						)))
+				.addTokenTransfers(TokenTransferList.newBuilder()
+						.setToken(firstNft)
+						.addNftTransfers(nftXfer(a, b, aSerialNo)))
+				.addTokenTransfers(TokenTransferList.newBuilder()
+						.setToken(secondNft)
+						.addAllNftTransfers(List.of(
+								nftXfer(b, c, aSerialNo),
+								nftXfer(c, a, bSerialNo)
 						)))
 				.build();
 	}

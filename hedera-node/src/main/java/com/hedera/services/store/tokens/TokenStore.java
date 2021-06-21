@@ -25,6 +25,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.Store;
+import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -75,6 +76,8 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 	ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment);
 
 	ResponseCodeEnum adjustBalance(AccountID senderAId, AccountID receiverAId, TokenID tId, long serialNumber);
+
+	ResponseCodeEnum changeOwner(NftId nftId, AccountID from, AccountID to);
 
 	CreationResult<TokenID> createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now);
 

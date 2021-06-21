@@ -143,6 +143,7 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.BackingAccounts;
+import com.hedera.services.ledger.accounts.BackingNfts;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.PureBackingAccounts;
@@ -150,6 +151,7 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
+import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.handler.FreezeHandler;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
@@ -247,6 +249,7 @@ import com.hedera.services.stats.ServicesStatsManager;
 import com.hedera.services.stats.SpeedometerFactory;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.HederaScheduleStore;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
@@ -259,9 +262,6 @@ import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.HapiThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.throttling.TxnAwareHandleThrottling;
-import com.hedera.services.txns.span.ExpandHandleSpan;
-import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.services.txns.span.SpanMapManager;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.txns.TransitionLogic;
@@ -294,6 +294,9 @@ import com.hedera.services.txns.schedule.ScheduleCreateTransitionLogic;
 import com.hedera.services.txns.schedule.ScheduleDeleteTransitionLogic;
 import com.hedera.services.txns.schedule.ScheduleExecutor;
 import com.hedera.services.txns.schedule.ScheduleSignTransitionLogic;
+import com.hedera.services.txns.span.ExpandHandleSpan;
+import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.services.txns.span.SpanMapManager;
 import com.hedera.services.txns.submission.BasicSubmissionFlow;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.SemanticPrecheck;
@@ -576,6 +579,7 @@ public class ServicesContext {
 	private AtomicReference<FCMap<MerkleEntityId, MerkleAccount>> queryableAccounts;
 	private AtomicReference<FCMap<MerkleEntityId, MerkleSchedule>> queryableSchedules;
 	private AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage;
+	private AtomicReference<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> queryableNfts;
 	private AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations;
 	private AtomicReference<FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier>> queryableUniqueTokens;
 
@@ -614,6 +618,7 @@ public class ServicesContext {
 		queryableTokenAssociations().set(tokenAssociations());
 		queryableSchedules().set(schedules());
 		queryableUniqueTokens().set(uniqueTokens());
+		queryableNfts().set(nfts());
 	}
 
 	public SwirldDualState getDualState() {
@@ -1542,6 +1547,13 @@ public class ServicesContext {
 
 	public TokenStore tokenStore() {
 		if (tokenStore == null) {
+			final var backingNfts = new BackingNfts(this::nfts);
+			TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger =
+					new TransactionalLedger<>(
+							NftProperty.class,
+							MerkleUniqueToken::new,
+							backingNfts,
+							new ChangeSummaryManager<>());
 			TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger =
 					new TransactionalLedger<>(
 							TokenRelProperty.class,
@@ -1555,7 +1567,8 @@ public class ServicesContext {
 					globalDynamicProperties(),
 					this::tokens,
 					this::uniqueTokens,
-					tokenRelsLedger);
+					tokenRelsLedger,
+					nftsLedger);
 		}
 		return tokenStore;
 	}
@@ -2043,15 +2056,20 @@ public class ServicesContext {
 		if (queryableSchedules == null) {
 			queryableSchedules = new AtomicReference<>(schedules());
 		}
-
 		return queryableSchedules;
+	}
+
+	public AtomicReference<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> queryableNfts() {
+		if (queryableNfts == null) {
+			queryableNfts = new AtomicReference<>(nfts());
+		}
+		return queryableNfts;
 	}
 
 	public AtomicReference<FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier>> queryableUniqueTokens() {
 		if (queryableUniqueTokens == null) {
 			queryableUniqueTokens = new AtomicReference<>(uniqueTokens());
 		}
-
 		return queryableUniqueTokens;
 	}
 
@@ -2161,6 +2179,11 @@ public class ServicesContext {
 	public FCMap<MerkleEntityId, MerkleToken> tokens() {
 		return state.tokens();
 	}
+
+	public FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts() {
+		return state.nfts();
+	}
+
 
 	public FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations() {
 		return state.tokenAssociations();

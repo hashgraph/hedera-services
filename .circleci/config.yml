@@ -2244,7 +2244,7 @@ workflows:
             filters:
               branches:
                 ignore:
-                  - /.*-PERF/
+                  - refactored-nfts-plus-master
             workflow-name: "Continuous-integration"
 #        - sonar-check:
 #            context: SonarCloud

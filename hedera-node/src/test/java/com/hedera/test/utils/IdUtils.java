@@ -27,6 +27,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -35,7 +36,6 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import java.util.stream.Stream;
 
 public class IdUtils {
-
 	public static TokenID tokenWith(long num) {
 		return TokenID.newBuilder()
 				.setShardNum(0)
@@ -127,10 +127,18 @@ public class IdUtils {
 	}
 
 	public static BalanceChange hbarChange(final AccountID account, final long amount) {
-		return BalanceChange.hbarAdjust(adjustFrom(account, amount));
+		return BalanceChange.changingHbar(adjustFrom(account, amount));
 	}
 
 	public static BalanceChange tokenChange(final Id token, final AccountID account, final long amount) {
-		return BalanceChange.tokenAdjust(token, token.asGrpcToken(), adjustFrom(account, amount));
+		return BalanceChange.changingFtUnits(token, token.asGrpcToken(), adjustFrom(account, amount));
+	}
+
+	public static NftTransfer nftXfer(AccountID from, AccountID to, long serialNo) {
+		return  NftTransfer.newBuilder()
+				.setSenderAccountID(from)
+				.setReceiverAccountID(to)
+				.setSerialNumber(serialNo)
+				.build();
 	}
 }

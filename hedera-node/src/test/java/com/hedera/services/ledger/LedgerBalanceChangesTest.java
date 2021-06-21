@@ -9,9 +9,9 @@ package com.hedera.services.ledger;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,26 +24,30 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.BackingStore;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.HashMapBackingAccounts;
+import com.hedera.services.ledger.accounts.HashMapBackingNfts;
 import com.hedera.services.ledger.accounts.HashMapBackingTokenRels;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
+import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -62,12 +66,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
+import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.hbarChange;
+import static com.hedera.test.utils.IdUtils.nftXfer;
 import static com.hedera.test.utils.IdUtils.tokenChange;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -76,8 +81,7 @@ import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class LedgerBalanceChangesTest {
-	private final ResponseCodeEnum overrideIbeCode = INSUFFICIENT_PAYER_BALANCE;
-
+	private BackingStore<NftId, MerkleUniqueToken> backingNfts = new HashMapBackingNfts();
 	private BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
 	private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingRels = new HashMapBackingTokenRels();
 
@@ -88,6 +92,7 @@ class LedgerBalanceChangesTest {
 			Pair<AccountID, TokenID>,
 			TokenRelProperty,
 			MerkleTokenRelStatus> tokenRelsLedger;
+	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 
 	@Mock
 	private EntityIdSource ids;
@@ -108,14 +113,23 @@ class LedgerBalanceChangesTest {
 				AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>());
 		tokenRelsLedger = new TransactionalLedger<>(
 				TokenRelProperty.class, MerkleTokenRelStatus::new, backingRels, new ChangeSummaryManager<>());
+		nftsLedger = new TransactionalLedger<>(
+				NftProperty.class, MerkleUniqueToken::new, backingNfts, new ChangeSummaryManager<>());
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
-		tokens.put(tokenKey, tokenWithTreasury(aModel));
-		tokens.put(anotherTokenKey, tokenWithTreasury(aModel));
-		tokens.put(yetAnotherTokenKey, tokenWithTreasury(aModel));
-		tokenStore = new HederaTokenStore(ids, validator, dynamicProperties, () -> tokens, tokenRelsLedger);
+		tokens.put(tokenKey, fungibleTokenWithTreasury(aModel));
+		tokens.put(anotherTokenKey, fungibleTokenWithTreasury(aModel));
+		tokens.put(yetAnotherTokenKey, fungibleTokenWithTreasury(aModel));
+		tokenStore = new HederaTokenStore(
+				ids,
+				validator,
+				dynamicProperties,
+				() -> tokens,
+				null,
+				tokenRelsLedger,
+				nftsLedger);
 
 		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProperties, accountsLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);
@@ -123,7 +137,7 @@ class LedgerBalanceChangesTest {
 
 	@Test
 	void rejectsContractInAccountAmounts() {
-		givenInitialBalances();
+		givenInitialBalancesAndOwnership();
 		backingAccounts.getRef(aModel).setSmartContract(true);
 
 		// when:
@@ -141,7 +155,7 @@ class LedgerBalanceChangesTest {
 
 	@Test
 	void rejectsMissingAccount() {
-		givenInitialBalances();
+		givenInitialBalancesAndOwnership();
 		backingAccounts.remove(aModel);
 
 		// when:
@@ -159,7 +173,7 @@ class LedgerBalanceChangesTest {
 
 	@Test
 	void rejectsDetachedAccount() {
-		givenInitialBalances();
+		givenInitialBalancesAndOwnership();
 		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
 
 		// when:
@@ -177,7 +191,7 @@ class LedgerBalanceChangesTest {
 
 	@Test
 	void rejectsDeletedAccount() {
-		givenInitialBalances();
+		givenInitialBalancesAndOwnership();
 		// and:
 		backingAccounts.getRef(bModel).setDeleted(true);
 
@@ -197,14 +211,21 @@ class LedgerBalanceChangesTest {
 	void rejectsMissingToken() {
 		// setup:
 		tokens.clear();
-		tokens.put(anotherTokenKey.copy(), tokenWithTreasury(aModel));
-		tokens.put(yetAnotherTokenKey.copy(), tokenWithTreasury(aModel));
-		tokenStore = new HederaTokenStore(ids, validator, dynamicProperties, () -> tokens, tokenRelsLedger);
+		tokens.put(anotherTokenKey.copy(), fungibleTokenWithTreasury(aModel));
+		tokens.put(yetAnotherTokenKey.copy(), fungibleTokenWithTreasury(aModel));
+		tokenStore = new HederaTokenStore(
+				ids,
+				validator,
+				dynamicProperties,
+				() -> tokens,
+				null,
+				tokenRelsLedger,
+				nftsLedger);
 
 		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProperties, accountsLedger);
 		subject.setTokenRelsLedger(tokenRelsLedger);
 
-		givenInitialBalances();
+		givenInitialBalancesAndOwnership();
 
 		// when:
 		subject.begin();
@@ -220,7 +241,7 @@ class LedgerBalanceChangesTest {
 
 	@Test
 	void happyPathRecordsTransfersAndChangesBalancesAsExpected() {
-		givenInitialBalances();
+		givenInitialBalancesAndOwnership();
 
 		// when:
 		TransferList inProgress;
@@ -276,7 +297,7 @@ class LedgerBalanceChangesTest {
 
 	@Test
 	void understandsTreasuries() {
-		givenInitialBalances();
+		givenInitialBalancesAndOwnership();
 
 		// expect:
 		Assertions.assertTrue(subject.isKnownTreasury(aModel));
@@ -314,10 +335,6 @@ class LedgerBalanceChangesTest {
 
 	private AccountAmount.Builder aaBuilderWith(AccountID account, long amount) {
 		return AccountAmount.newBuilder().setAccountID(account).setAmount(amount);
-	}
-
-	private void assertInitialTokenBalanceUnchanged(long modifiedBTokenBalance) {
-		assertInitialBalanceUnchanged(aStartBalance, modifiedBTokenBalance);
 	}
 
 	private void assertInitialBalanceUnchanged() {
@@ -366,7 +383,7 @@ class LedgerBalanceChangesTest {
 				backingRels.getImmutableRef(rel(bModel, yetAnotherToken)).getBalance());
 	}
 
-	private void givenInitialBalances() {
+	private void givenInitialBalancesAndOwnership() {
 		final var aAccount = MerkleAccountFactory.newAccount().balance(aStartBalance).get();
 		backingAccounts.put(aModel, aAccount);
 		final var bAccount = MerkleAccountFactory.newAccount().balance(bStartBalance).get();
@@ -409,6 +426,9 @@ class LedgerBalanceChangesTest {
 						tokenChange(token, cModel, cTokenChange),
 						tokenChange(anotherToken, bModel, bAnotherTokenChange),
 						tokenChange(yetAnotherToken, bModel, bYetAnotherTokenChange),
+						changingNftOwnership(aNft, aNft.asGrpcToken(), nftXfer(aModel, bModel, aSerialNo)),
+						changingNftOwnership(bNft, bNft.asGrpcToken(), nftXfer(bModel, cModel, aSerialNo)),
+						changingNftOwnership(bNft, bNft.asGrpcToken(), nftXfer(cModel, aModel, bSerialNo)),
 				}
 		);
 		return ans;
@@ -416,14 +436,6 @@ class LedgerBalanceChangesTest {
 
 	private Pair<AccountID, TokenID> rel(AccountID account, Id token) {
 		return Pair.of(account, asGprcToken(token));
-	}
-
-	private AccountID asGprcAccount(Id id) {
-		return AccountID.newBuilder()
-				.setShardNum(id.getShard())
-				.setRealmNum(id.getRealm())
-				.setAccountNum(id.getNum())
-				.build();
 	}
 
 	private TokenID asGprcToken(Id id) {
@@ -434,18 +446,23 @@ class LedgerBalanceChangesTest {
 				.build();
 	}
 
-	private MerkleToken tokenWithTreasury(AccountID treasury) {
+	private MerkleToken fungibleTokenWithTreasury(AccountID treasury) {
 		final var token = new MerkleToken();
 		token.setTreasury(new EntityId(treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
+		token.setTokenType(TokenType.FUNGIBLE_COMMON);
 		return token;
 	}
 
+	private final long aSerialNo = 1_234L;
+	private final long bSerialNo = 2_234L;
 	private final AccountID aModel = asAccount("1.2.3");
 	private final AccountID bModel = asAccount("2.3.4");
 	private final AccountID cModel = asAccount("3.4.5");
 	private final Id token = new Id(0, 0, 75231);
 	private final Id anotherToken = new Id(0, 0, 75232);
 	private final Id yetAnotherToken = new Id(0, 0, 75233);
+	private final Id aNft = new Id(0, 0, 9999);
+	private final Id bNft = new Id(0, 0, 10000);
 	private final MerkleEntityId tokenKey = new MerkleEntityId(0, 0, 75231);
 	private final MerkleEntityId anotherTokenKey = new MerkleEntityId(0, 0, 75232);
 	private final MerkleEntityId yetAnotherTokenKey = new MerkleEntityId(0, 0, 75233);
