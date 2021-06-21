@@ -85,6 +85,36 @@ class MerkleTokenTest {
 	private EntityId otherAutoRenewAccount = new EntityId(4, 3, 2);
 	private boolean isDeleted = true, otherIsDeleted = false;
 
+	private final long validNumerator = 5;
+	private final long validDenominator = 100;
+	private final long fixedUnitsToCollect = 7;
+	private final long minimumUnitsToCollect = 1;
+	private final long maximumUnitsToCollect = 55;
+	private final EntityId denom = new EntityId(1,2, 3);
+	private final EntityId feeCollector = new EntityId(4,5, 6);
+	final CustomFeesOuterClass.CustomFee fractionalFee = CustomFeesOuterClass.CustomFee.newBuilder()
+			.setFeeCollector(feeCollector.toGrpcAccountId())
+			.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
+					.setFractionOfUnitsToCollect(Fraction.newBuilder()
+							.setNumerator(validNumerator)
+							.setDenominator(validDenominator)
+							.build())
+					.setMinimumUnitsToCollect(minimumUnitsToCollect)
+					.setMaximumUnitsToCollect(UInt64Value.newBuilder().setValue(maximumUnitsToCollect).build())
+			).build();
+	final CustomFeesOuterClass.CustomFee fixedFee = CustomFeesOuterClass.CustomFee.newBuilder()
+			.setFeeCollector(feeCollector.toGrpcAccountId())
+			.setFixedFee(CustomFeesOuterClass.FixedFee.newBuilder()
+					.setTokenId(denom.toGrpcTokenId())
+					.setUnitsToCollect(fixedUnitsToCollect)
+			).build();
+	final CustomFeesOuterClass.CustomFees grpcFeeSchedule = CustomFeesOuterClass.CustomFees.newBuilder()
+			.addCustomFees(fixedFee)
+			.addCustomFees(fractionalFee)
+			.build();
+	final List<CustomFee> feeSchedule = grpcFeeSchedule.getCustomFeesList().stream()
+			.map(CustomFee::fromGrpc).collect(toList());
+
 	private MerkleToken subject;
 	private MerkleToken other;
 
@@ -651,34 +681,4 @@ class MerkleTokenTest {
 		// then:
 		assertEquals(subject, newSubject);
 	}
-
-	private final long validNumerator = 5;
-	private final long validDenominator = 100;
-	private final long fixedUnitsToCollect = 7;
-	private final long minimumUnitsToCollect = 1;
-	private final long maximumUnitsToCollect = 55;
-	private final EntityId denom = new EntityId(1,2, 3);
-	private final EntityId feeCollector = new EntityId(4,5, 6);
-	final CustomFeesOuterClass.CustomFee fractionalFee = CustomFeesOuterClass.CustomFee.newBuilder()
-			.setFeeCollector(feeCollector.toGrpcAccountId())
-			.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
-					.setFractionOfUnitsToCollect(Fraction.newBuilder()
-							.setNumerator(validNumerator)
-							.setDenominator(validDenominator)
-							.build())
-					.setMinimumUnitsToCollect(minimumUnitsToCollect)
-					.setMaximumUnitsToCollect(UInt64Value.newBuilder().setValue(maximumUnitsToCollect).build())
-			).build();
-	final CustomFeesOuterClass.CustomFee fixedFee = CustomFeesOuterClass.CustomFee.newBuilder()
-			.setFeeCollector(feeCollector.toGrpcAccountId())
-			.setFixedFee(CustomFeesOuterClass.FixedFee.newBuilder()
-					.setTokenId(denom.toGrpcTokenId())
-					.setUnitsToCollect(fixedUnitsToCollect)
-			).build();
-	final CustomFeesOuterClass.CustomFees grpcFeeSchedule = CustomFeesOuterClass.CustomFees.newBuilder()
-			.addCustomFees(fixedFee)
-			.addCustomFees(fractionalFee)
-			.build();
-	final List<CustomFee> feeSchedule = grpcFeeSchedule.getCustomFeesList().stream()
-			.map(CustomFee::fromGrpc).collect(toList());
 }
