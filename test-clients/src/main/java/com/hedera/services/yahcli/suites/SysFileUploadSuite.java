@@ -31,10 +31,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
 
+import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
@@ -44,10 +46,19 @@ public class SysFileUploadSuite extends HapiApiSuite {
 
 	private final long sysFileId;
 	private final String srcDir;
+	private final boolean isDryRun;
 	private final Map<String, String> specConfig;
 
-	public SysFileUploadSuite(final String srcDir, final Map<String, String> specConfig, final String sysFile) {
+	private ByteString uploadData;
+
+	public SysFileUploadSuite(
+			final String srcDir,
+			final Map<String, String> specConfig,
+			final String sysFile,
+			final boolean isDryRun
+	) {
 		this.srcDir = srcDir;
+		this.isDryRun = isDryRun;
 		this.specConfig = specConfig;
 		this.sysFileId = Utils.rationalized(sysFile);
 	}
@@ -59,15 +70,14 @@ public class SysFileUploadSuite extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-				uploadSysFiles(),
-		});
+		uploadData = appropriateContents(sysFileId);
+		return isDryRun ? Collections.emptyList() : List.of(new HapiApiSpec[] { uploadSysFiles(), });
 	}
 
 	private HapiApiSpec uploadSysFiles() {
-		final ByteString uploadData = appropriateContents(sysFileId);
+		final var name = String.format("UploadSystemFile-%s", sysFileId);
 
-		return HapiApiSpec.customHapiSpec(String.format("UploadSystemFile-%s", sysFileId)).withProperties(
+		return customHapiSpec(name).withProperties(
 				specConfig
 		).given().when().then(
 				updateLargeFile(
@@ -91,10 +101,24 @@ public class SysFileUploadSuite extends HapiApiSuite {
 		String name = serde.preferredFileName();
 		String loc = srcDir + File.separator + name;
 		try {
-			var stylized = Files.readString(Paths.get(loc));
-			return ByteString.copyFrom(serde.toValidatedRawFile(stylized));
+			final var stylized = Files.readString(Paths.get(loc));
+			final var contents = ByteString.copyFrom(serde.toValidatedRawFile(stylized));
+			if (isDryRun) {
+				final var contentsLoc = binVersionOfPath(loc);
+				Files.write(Paths.get(contentsLoc), contents.toByteArray());
+			}
+			return contents;
 		} catch (IOException e) {
 			throw new IllegalStateException("Cannot read update file @ '" + loc + "'!", e);
+		}
+	}
+
+	private String binVersionOfPath(String loc) {
+		int lastDot = loc.lastIndexOf(".");
+		if (lastDot == -1) {
+			return loc + ".bin";
+		} else {
+			return loc.substring(0, lastDot) + ".bin";
 		}
 	}
 }
