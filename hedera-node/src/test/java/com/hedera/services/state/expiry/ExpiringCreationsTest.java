@@ -31,6 +31,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.serdes.DomainSerdesTest;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
+import com.hedera.services.state.submerkle.CustomFeesBalanceChange;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.TxnAccessor;
@@ -119,6 +120,11 @@ class ExpiringCreationsTest {
 
 	private final TxnReceipt receipt = TxnReceipt.newBuilder().setStatus(SUCCESS.name()).build();
 
+	private final EntityId customFeeToken = new EntityId(0, 0, 123);
+	private final EntityId customFeeCollector = new EntityId(0, 0, 124);
+	private final List<CustomFeesBalanceChange> customFeesCharged = List.of(new CustomFeesBalanceChange(customFeeCollector, customFeeToken, 123L));
+
+
 	@BeforeEach
 	void setup() {
 		subject = new ExpiringCreations(expiries, dynamicProperties, () -> accounts);
@@ -198,7 +204,7 @@ class ExpiringCreationsTest {
 
 		//when:
 		ExpirableTxnRecord.Builder builder =
-				subject.buildExpiringRecord(100L, hash, accessor, timestamp, receipt, null, ctx, null);
+				subject.buildExpiringRecord(100L, hash, accessor, timestamp, receipt, null, ctx, customFeesCharged);
 		ExpirableTxnRecord actualRecord = builder.build();
 
 		//then:
@@ -225,6 +231,9 @@ class ExpiringCreationsTest {
 		for (int i = 0; i < tokenTransferListExpected.size(); i++) {
 			assertEquals(tokenTransferListExpected.get(i), actualRecord.getTokenAdjustments().get(i));
 		}
+
+		assertEquals(1, actualRecord.getCustomFeesCharged().size());
+		assertEquals(customFeesCharged.get(0), actualRecord.getCustomFeesCharged().get(0));
 	}
 
 	@Test

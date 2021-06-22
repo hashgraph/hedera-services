@@ -99,13 +99,13 @@ public class ImpliedTransfersMarshal {
 			changes.addAll(customFeeChanges);
 			customFeeBalanceChangesForRecord.addAll(getListOfBalanceChangesForCustomFees(customFeeChanges));
 		}
-		return ImpliedTransfers.valid(maxHbarAdjusts, maxTokenAdjusts, changes,
-				customFeesChanges, customFeeBalanceChangesForRecord);
+		return ImpliedTransfers.valid(maxHbarAdjusts, maxTokenAdjusts, changes, customFeesChanges,
+				customFeeBalanceChangesForRecord);
 	}
 
 	private List<CustomFeesBalanceChange> getListOfBalanceChangesForCustomFees(List<BalanceChange> customFeeChanges) {
 		List<CustomFeesBalanceChange> balanceChange = new ArrayList<>();
-		for(BalanceChange change : customFeeChanges){
+		for (BalanceChange change : customFeeChanges) {
 			balanceChange.add(new CustomFeesBalanceChange(
 					EntityId.fromGrpcAccountId(change.accountId()),
 					change.isForHbar() ? null : EntityId.fromGrpcTokenId(change.tokenId()),
@@ -119,29 +119,43 @@ public class ImpliedTransfersMarshal {
 		List<BalanceChange> customFeeChanges = new ArrayList<>();
 		for (CustomFee fees : customFeesOfToken) {
 			if (fees.getFeeType() == CustomFee.FeeType.FIXED_FEE) {
-				if (fees.getFixedFeeSpec().getTokenDenomination() == null) {
-					customFeeChanges.add(hbarAdjust(fees.getFeeCollector(),
-							fees.getFixedFeeSpec().getUnitsToCollect()));
-					customFeeChanges.add(hbarAdjust(payerId, -fees.getFixedFeeSpec().getUnitsToCollect()));
-				} else {
-					customFeeChanges.add(tokenAdjust(fees.getFeeCollector(),
-							fees.getFixedFeeSpec().getTokenDenomination(),
-							fees.getFixedFeeSpec().getUnitsToCollect()));
-					customFeeChanges.add(tokenAdjust(payerId,
-							fees.getFixedFeeSpec().getTokenDenomination(),
-							-fees.getFixedFeeSpec().getUnitsToCollect()));
-				}
+				customFeeChanges.addAll(addFixedFeesToCustomFeeChanges(fees, payerId));
 			} else if (fees.getFeeType() == CustomFee.FeeType.FRACTIONAL_FEE) {
-				long fee =
-						(fees.getFractionalFeeSpec().getNumerator() / fees.getFractionalFeeSpec().getDenominator()) * totalAmount;
-				customFeeChanges.add(tokenAdjust(fees.getFeeCollector(),
-						scopingToken,
-						fee));
-				customFeeChanges.add(tokenAdjust(payerId,
-						scopingToken,
-						-fee));
+				customFeeChanges.addAll(getFractionalFeeBalanceChanges(fees, payerId, totalAmount, scopingToken));
 			}
 		}
 		return customFeeChanges;
+	}
+
+	private List<BalanceChange> getFractionalFeeBalanceChanges(CustomFee fees,
+			EntityId payerId, long totalAmount, EntityId scopingToken) {
+		List<BalanceChange> fractionalFeeBalanceChanges = new ArrayList<>();
+		long fee =
+				(fees.getFractionalFeeSpec().getNumerator() * totalAmount / fees.getFractionalFeeSpec().getDenominator());
+		long feesToCollect = Math.max(fee, fees.getFractionalFeeSpec().getMinimumUnitsToCollect());
+
+		if (fees.getFractionalFeeSpec().getMaximumUnitsToCollect() > 0) {
+			feesToCollect = Math.min(feesToCollect, fees.getFractionalFeeSpec().getMaximumUnitsToCollect());
+		}
+		fractionalFeeBalanceChanges.add(tokenAdjust(fees.getFeeCollector(), scopingToken, feesToCollect));
+		fractionalFeeBalanceChanges.add(tokenAdjust(payerId, scopingToken, -feesToCollect));
+		return fractionalFeeBalanceChanges;
+	}
+
+	private List<BalanceChange> addFixedFeesToCustomFeeChanges(CustomFee fees, EntityId payerId) {
+		List<BalanceChange> fixedFeeBalanceChanges = new ArrayList<>();
+		if (fees.getFixedFeeSpec().getTokenDenomination() == null) {
+			fixedFeeBalanceChanges.add(hbarAdjust(fees.getFeeCollector(),
+					fees.getFixedFeeSpec().getUnitsToCollect()));
+			fixedFeeBalanceChanges.add(hbarAdjust(payerId, -fees.getFixedFeeSpec().getUnitsToCollect()));
+		} else {
+			fixedFeeBalanceChanges.add(tokenAdjust(fees.getFeeCollector(),
+					fees.getFixedFeeSpec().getTokenDenomination(),
+					fees.getFixedFeeSpec().getUnitsToCollect()));
+			fixedFeeBalanceChanges.add(tokenAdjust(payerId,
+					fees.getFixedFeeSpec().getTokenDenomination(),
+					-fees.getFixedFeeSpec().getUnitsToCollect()));
+		}
+		return fixedFeeBalanceChanges;
 	}
 }

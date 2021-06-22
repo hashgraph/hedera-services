@@ -9,9 +9,9 @@ package com.hedera.services.state.submerkle;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,9 +21,7 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.ledger.HederaLedger;
 import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -36,17 +34,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Process object that encapsulates a balance change, either ℏ or token unit.
- *
- * Includes an optional override for the {@link ResponseCodeEnum} to be used
- * in the case that the change is determined to result to an insufficient balance;
- * and a field to contain the new balance that will result from the change.
- * (This field is helpful to simplify work done in {@link HederaLedger}.)
- *
- * The {@code tokenId} and {@code accountId} fields are
- * temporary, needed to interact with the {@link com.hedera.services.ledger.accounts.BackingAccounts}
- * and {@link com.hedera.services.ledger.accounts.BackingTokenRels} components
- * whose APIs still use gRPC types.
+ * Process self serializable object that encapsulates a balance change, either ℏ or token unit.
+ * This is useful for setting custom fees balance changes in {@link ExpirableTxnRecord}.
  */
 public class CustomFeesBalanceChange implements SelfSerializable {
 	static final int MERKLE_VERSION = 1;
@@ -165,7 +154,8 @@ public class CustomFeesBalanceChange implements SelfSerializable {
 		return hbarAdjust(aa);
 	}
 
-	/* SelfSerializable methods */
+	/* ----- SelfSerializable methods ------ */
+
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		account = in.readSerializable();
