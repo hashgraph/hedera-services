@@ -70,6 +70,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 	Optional<String> expectedFreezeKey = Optional.empty();
 	Optional<String> expectedSupplyKey = Optional.empty();
 	Optional<String> expectedWipeKey = Optional.empty();
+	Optional<String> expectedCustomFeeKey = Optional.empty();
 	Optional<Boolean> expectedDeletion = Optional.empty();
 	Optional<TokenKycStatus> expectedKycDefault = Optional.empty();
 	Optional<TokenFreezeStatus>	expectedFreezeDefault = Optional.empty();
@@ -154,6 +155,10 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 	}
 	public HapiGetTokenInfo hasWipeKey(String name) {
 		expectedWipeKey = Optional.of(name);
+		return this;
+	}
+	public HapiGetTokenInfo hasCustomFeeKey(String name) {
+		expectedCustomFeeKey = Optional.of(name);
 		return this;
 	}
 	public HapiGetTokenInfo isDeleted() {
@@ -265,6 +270,13 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 				expectedWipeKey,
 				(n, r) -> r.getWipeKey(n),
 				"Wrong token wipe key!",
+				registry);
+
+		assertFor(
+				actualInfo.getCustomFeesKey(),
+				expectedCustomFeeKey,
+				(n, r) -> r.getKey(n),
+				"Wrong custom fees key!",
 				registry);
 
 		assertFor(

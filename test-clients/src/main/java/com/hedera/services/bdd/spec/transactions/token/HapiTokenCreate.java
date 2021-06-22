@@ -72,6 +72,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	private Optional<String> name = Optional.empty();
 	private Optional<String> treasury = Optional.empty();
 	private Optional<String> adminKey = Optional.empty();
+	private Optional<String> customFeeKey = Optional.empty();
 	private Optional<Boolean> freezeDefault = Optional.empty();
 	private Optional<String> autoRenewAccount = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> symbolFn = Optional.empty();
@@ -171,6 +172,11 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 		return this;
 	}
 
+	public HapiTokenCreate customFeeKey(String name) {
+		this.customFeeKey = Optional.of(name);
+		return this;
+	}
+
 	public HapiTokenCreate treasury(String treasury) {
 		this.treasury = Optional.of(treasury);
 		return this;
@@ -222,6 +228,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 							adminKey.ifPresent(k -> b.setAdminKey(spec.registry().getKey(k)));
 							freezeKey.ifPresent(k -> b.setFreezeKey(spec.registry().getKey(k)));
 							supplyKey.ifPresent(k -> b.setSupplyKey(spec.registry().getKey(k)));
+							customFeeKey.ifPresent(k -> b.setCustomFeesKey(spec.registry().getKey(k)));
 							if (autoRenewAccount.isPresent()) {
 								var id = TxnUtils.asId(autoRenewAccount.get(), spec);
 								b.setAutoRenewAccount(id);
@@ -291,8 +298,10 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 			if (op.hasFreezeKey()) {
 				registry.saveFreezeKey(token, op.getFreezeKey());
 			}
-		} catch (InvalidProtocolBufferException impossible) {
-		}
+			if (op.hasCustomFeesKey()) {
+				registry.saveCustomFeesKey(token, op.getCustomFeesKey());
+			}
+		} catch (InvalidProtocolBufferException impossible) { }
 
 		if (advertiseCreation) {
 			String banner = "\n\n" + bannerWith(

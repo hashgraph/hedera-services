@@ -211,7 +211,7 @@ class MerkleTokenTest {
 	@Test
 	void getterWorks() {
 		// expect:
-		assertEquals(feeSchedule, subject.getFeeSchedule());
+		assertEquals(feeSchedule, subject.customFeeSchedule());
 	}
 
 	@Test

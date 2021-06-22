@@ -273,13 +273,17 @@ public class StateView {
 				info.setAutoRenewPeriod(Duration.newBuilder().setSeconds(token.autoRenewPeriod()));
 			}
 
-			final var feeSchedule = token.getFeeSchedule();
+			final var feeSchedule = token.customFeeSchedule();
 			if (!feeSchedule.isEmpty()) {
 				final var customFeesBuilder = info.getCustomFeesBuilder();
 				feeSchedule.stream()
 						.map(CustomFee::asGrpc)
 						.forEach(customFeesBuilder::addCustomFees);
 				info.setCustomFees(customFeesBuilder);
+			}
+
+			if (token.hasCustomFeeKey()) {
+				info.setCustomFeesKey(asKeyUnchecked(token.getCustomFeeKey()));
 			}
 
 			return Optional.of(info.build());

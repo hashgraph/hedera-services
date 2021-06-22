@@ -119,7 +119,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						worksAsExpectedWithDefaultTokenId(),
 						cannotCreateWithExcessiveLifetime(),
 						/* HIP-18 */
-						creationWorksWithCustomFeeSchedule(),
+						onlyValidCustomFeeScheduleCanBeCreated(),
 				}
 		);
 	}
@@ -344,7 +344,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 				);
 	}
 
-	public HapiApiSpec creationWorksWithCustomFeeSchedule() {
+	public HapiApiSpec onlyValidCustomFeeScheduleCanBeCreated() {
 		final var hbarAmount = 1_234L;
 		final var htsAmount = 2_345L;
 		final var numerator = 1;
@@ -359,8 +359,11 @@ public class TokenCreateSpecs extends HapiApiSuite {
 		final var tokenCollector = "fractionalFee";
 		final var invalidEntityId = "1.2.786";
 
-		return defaultHapiSpec("CreationWorksWithCustomFeeSchedule")
+		final var customFeeKey = "antique";
+
+		return defaultHapiSpec("OnlyValidCustomFeeScheduleCanBeCreated")
 				.given(
+						newKeyNamed(customFeeKey),
 						cryptoCreate(htsCollector),
 						cryptoCreate(hbarCollector),
 						cryptoCreate(tokenCollector),
@@ -402,6 +405,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.overridingProps(Map.of("tokens.maxCustomFeesAllowed", "10")),
 						tokenCreate(token)
 								.treasury(tokenCollector)
+								.customFeeKey(customFeeKey)
 								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
 								.withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
 								.withCustom(fractionalFee(
@@ -410,6 +414,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 										tokenCollector))
 				).then(
 						getTokenInfo(token)
+								.hasCustomFeeKey(customFeeKey)
 								.hasCustom(fixedHbarFeeInSchedule(hbarAmount, hbarCollector))
 								.hasCustom(fixedHtsFeeInSchedule(htsAmount, feeDenom, htsCollector))
 								.hasCustom(fractionalFeeInSchedule(

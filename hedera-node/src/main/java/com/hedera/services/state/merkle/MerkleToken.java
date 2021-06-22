@@ -450,6 +450,18 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		return freezeKey;
 	}
 
+	public void setCustomFeeKey(JKey customFeeKey) {
+		this.customFeeKey = customFeeKey;
+	}
+
+	public JKey getCustomFeeKey() {
+		return customFeeKey;
+	}
+
+	public boolean hasCustomFeeKey() {
+		return customFeeKey != null;
+	}
+
 	public void setTotalSupply(long totalSupply) {
 		this.totalSupply = totalSupply;
 	}
@@ -478,11 +490,8 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		return	grpcFeeSchedule.getCustomFeesList().stream().map(CustomFee::fromGrpc).collect(toList());
 	}
 
-	public List<CustomFee> getFeeSchedule() {
+	public List<CustomFee> customFeeSchedule() {
 		return feeSchedule;
 	}
 
-	public void setCustomFeeKey(JKey customFeeKey) {
-		this.customFeeKey = customFeeKey;
-	}
 }

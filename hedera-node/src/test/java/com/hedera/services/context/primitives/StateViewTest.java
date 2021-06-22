@@ -202,6 +202,7 @@ class StateViewTest {
 				new EntityId(1, 2, 3));
 		token.setMemo(tokenMemo);
 		token.setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey());
+		token.setCustomFeeKey(MISC_ACCOUNT_KT.asJKey());
 		token.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asJKey());
 		token.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asJKey());
 		token.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKey());
@@ -396,6 +397,8 @@ class StateViewTest {
 
 	@Test
 	void getsTokenInfo() {
+		// setup:
+		final var miscKey = MISC_ACCOUNT_KT.asKey();
 		// when:
 		var info = subject.infoForToken(tokenId).get();
 
@@ -408,11 +411,12 @@ class StateViewTest {
 		assertEquals(token.treasury().toGrpcAccountId(), info.getTreasury());
 		assertEquals(token.totalSupply(), info.getTotalSupply());
 		assertEquals(token.decimals(), info.getDecimals());
-		assertEquals(token.getFeeSchedule(), MerkleToken.customFeesFromGrpc(info.getCustomFees()));
+		assertEquals(token.customFeeSchedule(), MerkleToken.customFeesFromGrpc(info.getCustomFees()));
+		assertEquals(miscKey, info.getCustomFeesKey());
 		assertEquals(TOKEN_ADMIN_KT.asKey(), info.getAdminKey());
 		assertEquals(TOKEN_FREEZE_KT.asKey(), info.getFreezeKey());
 		assertEquals(TOKEN_KYC_KT.asKey(), info.getKycKey());
-		assertEquals(MISC_ACCOUNT_KT.asKey(), info.getWipeKey());
+		assertEquals(miscKey, info.getWipeKey());
 		assertEquals(autoRenew, info.getAutoRenewAccount());
 		assertEquals(Duration.newBuilder().setSeconds(autoRenewPeriod).build(), info.getAutoRenewPeriod());
 		assertEquals(Timestamp.newBuilder().setSeconds(expiry).build(), info.getExpiry());
@@ -639,7 +643,7 @@ class StateViewTest {
 		// then:
 		assertTrue(info.isEmpty());
 		final var warnLogs = logCaptor.warnLogs();
-		assertTrue(warnLogs.size() == 1);
+		assertEquals(1, warnLogs.size());
 		assertThat(warnLogs.get(0), Matchers.startsWith("Unexpected error occurred when getting info for file"));
 	}
 
