@@ -21,8 +21,8 @@ package com.hedera.services.grpc.marshalling;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.state.submerkle.CustomFee;
 import com.hedera.services.state.submerkle.CustomFeesBalanceChange;
 import com.hedera.services.state.submerkle.EntityId;
@@ -33,7 +33,6 @@ import javafx.util.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static com.hedera.services.ledger.BalanceChange.hbarAdjust;
 import static com.hedera.services.ledger.BalanceChange.tokenAdjust;
@@ -98,17 +97,21 @@ public class ImpliedTransfersMarshal {
 			List<BalanceChange> customFeeChanges = computeBalanceChangeForCustomFee(scopingToken, payerId, amount,
 					customFeesOfToken);
 			changes.addAll(customFeeChanges);
-			customFeeBalanceChangesForRecord = getListOfBalanceChangesForCustomFees(customFeeChanges);
+			customFeeBalanceChangesForRecord.addAll(getListOfBalanceChangesForCustomFees(customFeeChanges));
 		}
 		return ImpliedTransfers.valid(maxHbarAdjusts, maxTokenAdjusts, changes,
 				customFeesChanges, customFeeBalanceChangesForRecord);
 	}
 
 	private List<CustomFeesBalanceChange> getListOfBalanceChangesForCustomFees(List<BalanceChange> customFeeChanges) {
-		return customFeeChanges.stream().map(e -> new CustomFeesBalanceChange(
-				EntityId.fromGrpcAccountId(e.accountId()),
-				EntityId.fromGrpcTokenId(e.tokenId()),
-				e.units())).collect(Collectors.toList());
+		List<CustomFeesBalanceChange> balanceChange = new ArrayList<>();
+		for(BalanceChange change : customFeeChanges){
+			balanceChange.add(new CustomFeesBalanceChange(
+					EntityId.fromGrpcAccountId(change.accountId()),
+					change.isForHbar() ? null : EntityId.fromGrpcTokenId(change.tokenId()),
+					change.units()));
+		}
+		return balanceChange;
 	}
 
 	private List<BalanceChange> computeBalanceChangeForCustomFee(EntityId scopingToken, EntityId payerId,
