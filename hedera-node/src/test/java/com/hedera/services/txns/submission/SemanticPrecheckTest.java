@@ -24,7 +24,6 @@ import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.TransitionLogicLookup;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Assertions;
@@ -35,7 +34,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
-import java.util.function.Function;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
@@ -56,8 +54,6 @@ class SemanticPrecheckTest {
 	private TransitionLogic transitionLogic;
 	@Mock
 	private TransitionLogicLookup transitionLogicLookup;
-	@Mock
-	private Function<TransactionBody, ResponseCodeEnum> semanticsCheck;
 
 	private SemanticPrecheck subject;
 
@@ -70,25 +66,22 @@ class SemanticPrecheckTest {
 	void usesDiscoveredLogicCheck() {
 		given(transitionLogicLookup.lookupFor(CryptoTransfer, xferAccessor.getTxn()))
 				.willReturn(Optional.of(transitionLogic));
-		given(transitionLogic.semanticCheck())
-				.willReturn(semanticsCheck);
-		given(semanticsCheck.apply(xferAccessor.getTxn()))
-				.willReturn(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
+		given(transitionLogic.validateSemantics(xferAccessor)).willReturn(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
 
 		// when:
-		var result = subject.validate(xferAccessor.getFunction(), xferAccessor.getTxn(), NOT_SUPPORTED);
+		var result = subject.validate(xferAccessor, xferAccessor.getFunction(), NOT_SUPPORTED);
 
 		// then:
 		Assertions.assertEquals(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS, result);
 	}
 
 	@Test
-	void defaultsToNotSupported() {
+	void defaultsToGiven() {
 		given(transitionLogicLookup.lookupFor(CryptoTransfer, xferAccessor.getTxn()))
 				.willReturn(Optional.empty());
 
 		// when:
-		var result = subject.validate(xferAccessor.getFunction(), xferAccessor.getTxn(), INSUFFICIENT_TX_FEE);
+		var result = subject.validate(xferAccessor, xferAccessor.getFunction(), INSUFFICIENT_TX_FEE);
 
 		// then:
 		Assertions.assertEquals(INSUFFICIENT_TX_FEE, result);

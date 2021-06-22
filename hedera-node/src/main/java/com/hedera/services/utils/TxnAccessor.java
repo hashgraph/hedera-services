@@ -33,6 +33,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.SwirldTransaction;
 
+import java.util.Map;
+
 /**
  * Defines a type that gives access to several commonly referenced
  * parts of a Hedera Services gRPC {@link Transaction}.
@@ -50,6 +52,7 @@ public interface TxnAccessor {
     default RationalizedSigMeta getSigMeta() {
         throw new UnsupportedOperationException();
     }
+
     default BaseTransactionMeta baseUsageMeta() {
         throw new UnsupportedOperationException();
     }
@@ -80,6 +83,10 @@ public interface TxnAccessor {
     ScheduleID getScheduleRef();
 
     default SwirldTransaction getPlatformTxn() {
+        throw new UnsupportedOperationException();
+    }
+
+    default Map<String, Object> getSpanMap() {
         throw new UnsupportedOperationException();
     }
 }

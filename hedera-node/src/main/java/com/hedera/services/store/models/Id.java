@@ -21,20 +21,39 @@ package com.hedera.services.store.models;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 
 /**
  * Represents the id of a Hedera entity (account, topic, token, contract, file, or schedule).
  */
 public class Id {
+	public static final Id DEFAULT = new Id(0, 0, 0);
+
 	private final long shard;
 	private final long realm;
 	private final long num;
-	static Id DEFAULT = new Id(0, 0, 0);
 
 	public Id(long shard, long realm, long num) {
 		this.shard = shard;
 		this.realm = realm;
 		this.num = num;
+	}
+
+	public TokenID asGrpcToken() {
+		return TokenID.newBuilder()
+				.setShardNum(getShard())
+				.setRealmNum(getRealm())
+				.setTokenNum(getNum())
+				.build();
+	}
+
+	public static Id fromGrpcAccount(AccountID id) {
+		return new Id(id.getShardNum(), id.getRealmNum(), id.getAccountNum());
+	}
+
+	public static Id fromGrpcToken(TokenID id) {
+		return new Id(id.getShardNum(), id.getRealmNum(), id.getTokenNum());
 	}
 
 	public long getShard() {

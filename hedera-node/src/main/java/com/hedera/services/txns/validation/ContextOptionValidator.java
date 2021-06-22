@@ -30,7 +30,6 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.fcmap.FCMap;
@@ -41,11 +40,9 @@ import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.Arrays;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
@@ -54,7 +51,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 
 /**
  * Implements an {@link OptionValidator} that relies an injected instance
@@ -122,37 +118,6 @@ public class ContextOptionValidator implements OptionValidator {
 	@Override
 	public boolean isAcceptableTransfersLength(TransferList accountAmounts) {
 		return accountAmounts.getAccountAmountsCount() <= dynamicProperties.maxTransferListSize();
-	}
-
-	@Override
-	public ResponseCodeEnum tokenTransfersLengthCheck(List<TokenTransferList> tokenTransferLists) {
-		final int tokenTransferListsSize = tokenTransferLists.size();
-		if (tokenTransferListsSize == 0) {
-			return OK;
-		}
-
-		int maxLen = dynamicProperties.maxTokenTransferListSize();
-
-		if (tokenTransferListsSize > maxLen) {
-			return TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
-		}
-
-		int count = 0;
-		for (var tokenTransferList : tokenTransferLists) {
-			int transferCounts = tokenTransferList.getTransfersCount();
-			int nftTransferCount = tokenTransferList.getNftTransfersCount();
-			if (transferCounts == 0 && nftTransferCount == 0) {
-				return EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
-			}
-
-			count += transferCounts;
-
-			if (count > maxLen) {
-				return TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
-			}
-		}
-
-		return OK;
 	}
 
 	@Override

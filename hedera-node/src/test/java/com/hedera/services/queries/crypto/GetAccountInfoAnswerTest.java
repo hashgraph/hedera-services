@@ -186,6 +186,7 @@ class GetAccountInfoAnswerTest {
 				StateView.EMPTY_TOPICS_SUPPLIER,
 				() -> accounts,
 				StateView.EMPTY_STORAGE_SUPPLIER,
+				StateView.EMPTY_NFTS_SUPPLIER,
 				() -> tokenRels,
 				null,
 				nodeProps);

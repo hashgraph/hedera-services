@@ -466,7 +466,6 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.hasTokenBalance(A_TOKEN, 0),
 						getAccountBalance(FIRST_USER)
 								.hasTokenBalance(A_TOKEN, 1),
-
 						getTokenNftInfo(A_TOKEN, 1)
 								.hasSerialNum(1)
 								.hasMetadata(ByteString.copyFromUtf8("memo"))
@@ -604,8 +603,8 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				)
 				.when(
 						cryptoTransfer(
-								movingUnique(1, A_TOKEN).between(FIRST_USER, SECOND_USER),
-								moving(100, B_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+								movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, SECOND_USER),
+								moving(101, B_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
 						)
 								.hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE)
 				)

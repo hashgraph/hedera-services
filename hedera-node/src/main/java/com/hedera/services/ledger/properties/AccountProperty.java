@@ -149,6 +149,17 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return MerkleAccount::getProxy;
 		}
 	},
+	NUM_NFTS_OWNED {
+		@Override
+		public BiConsumer<MerkleAccount, Object> setter() {
+			return (a, n) -> a.setNftsOwned((long) n);
+		}
+
+		@Override
+		public Function<MerkleAccount, Object> getter() {
+			return MerkleAccount::getNftsOwned;
+		}
+	},
 	TOKENS {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
