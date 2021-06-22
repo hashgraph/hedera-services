@@ -304,7 +304,7 @@ class LedgerBalanceChangesTest {
 
 		// expect:
 		Assertions.assertTrue(subject.isKnownTreasury(aModel));
-		Assertions.assertFalse(subject.isKnownTreasury(bModel));
+		Assertions.assertFalse(subject.isKnownTreasury(cModel));
 	}
 
 	private TransferList expectedXfers() {
@@ -426,22 +426,22 @@ class LedgerBalanceChangesTest {
 		backingRels.put(bYaTokenKey, bYaTokenRel);
 
 		Pair<AccountID, TokenID> aaNftTokenKey = rel(aModel, aNft);
-		final var aaNftTokenRel = new MerkleTokenRelStatus(0, false, true);
+		final var aaNftTokenRel = new MerkleTokenRelStatus(2, false, true);
 		backingRels.put(aaNftTokenKey, aaNftTokenRel);
 		Pair<AccountID, TokenID> abNftTokenKey = rel(aModel, bNft);
-		final var abNftTokenRel = new MerkleTokenRelStatus(0, false, true);
+		final var abNftTokenRel = new MerkleTokenRelStatus(2, false, true);
 		backingRels.put(abNftTokenKey, abNftTokenRel);
 		Pair<AccountID, TokenID> baNftTokenKey = rel(bModel, aNft);
-		final var baNftTokenRel = new MerkleTokenRelStatus(0, false, true);
+		final var baNftTokenRel = new MerkleTokenRelStatus(2, false, true);
 		backingRels.put(baNftTokenKey, baNftTokenRel);
 		Pair<AccountID, TokenID> bbNftTokenKey = rel(bModel, bNft);
-		final var bbNftTokenRel = new MerkleTokenRelStatus(0, false, true);
+		final var bbNftTokenRel = new MerkleTokenRelStatus(2, false, true);
 		backingRels.put(bbNftTokenKey, bbNftTokenRel);
 		Pair<AccountID, TokenID> caNftTokenKey = rel(cModel, aNft);
-		final var caNftTokenRel = new MerkleTokenRelStatus(0, false, true);
+		final var caNftTokenRel = new MerkleTokenRelStatus(2, false, true);
 		backingRels.put(caNftTokenKey, caNftTokenRel);
 		Pair<AccountID, TokenID> cbNftTokenKey = rel(cModel, bNft);
-		final var cbNftTokenRel = new MerkleTokenRelStatus(0, false, true);
+		final var cbNftTokenRel = new MerkleTokenRelStatus(2, false, true);
 		backingRels.put(cbNftTokenKey, cbNftTokenRel);
 
 		backingNfts.put(

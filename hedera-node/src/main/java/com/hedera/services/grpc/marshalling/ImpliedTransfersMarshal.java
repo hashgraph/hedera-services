@@ -57,13 +57,17 @@ public class ImpliedTransfersMarshal {
 	}
 
 	public ImpliedTransfers unmarshalFromGrpc(CryptoTransferTransactionBody op) {
-		final var maxTokenAdjusts = dynamicProperties.maxTokenTransferListSize();
 		final var maxHbarAdjusts = dynamicProperties.maxTransferListSize();
+		final var maxTokenAdjusts = dynamicProperties.maxTokenTransferListSize();
+		final var maxOwnershipChanges = dynamicProperties.maxNftTransfersLen();
+
+		final var validationProps = new ImpliedTransfersMeta.ValidationProps(
+				maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges);
 
 		final var validity = transferSemanticChecks.fullPureValidation(
-				op.getTransfers(), op.getTokenTransfersList(), dynamicProperties);
+				op.getTransfers(), op.getTokenTransfersList(), validationProps);
 		if (validity != OK) {
-			return ImpliedTransfers.invalid(maxHbarAdjusts, maxTokenAdjusts, validity);
+			return ImpliedTransfers.invalid(validationProps, validity);
 		}
 
 		final List<BalanceChange> changes = new ArrayList<>();
@@ -81,6 +85,6 @@ public class ImpliedTransfersMarshal {
 			}
 		}
 
-		return ImpliedTransfers.valid(maxHbarAdjusts, maxTokenAdjusts, changes);
+		return ImpliedTransfers.valid(validationProps, changes);
 	}
 }

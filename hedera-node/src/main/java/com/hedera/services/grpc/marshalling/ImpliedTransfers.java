@@ -48,20 +48,18 @@ public class ImpliedTransfers {
 	}
 
 	public static ImpliedTransfers valid(
-			int maxHbarAdjusts,
-			int maxTokenAdjusts,
+			ImpliedTransfersMeta.ValidationProps validationProps,
 			List<BalanceChange> changes
 	) {
-		final var meta = new ImpliedTransfersMeta(maxHbarAdjusts, maxTokenAdjusts, OK);
+		final var meta = new ImpliedTransfersMeta(validationProps, OK);
 		return new ImpliedTransfers(meta, changes);
 	}
 
 	public static ImpliedTransfers invalid(
-			int maxHbarAdjusts,
-			int maxTokenAdjusts,
+			ImpliedTransfersMeta.ValidationProps validationProps,
 			ResponseCodeEnum code
 	) {
-		final var meta = new ImpliedTransfersMeta(maxHbarAdjusts, maxTokenAdjusts, code);
+		final var meta = new ImpliedTransfersMeta(validationProps, code);
 		return new ImpliedTransfers(meta, Collections.emptyList());
 	}
 

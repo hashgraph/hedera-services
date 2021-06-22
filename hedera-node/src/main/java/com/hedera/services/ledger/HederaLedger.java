@@ -259,6 +259,10 @@ public class HederaLedger {
 				sb.append("\n--- TOKEN RELATIONSHIPS ---\n")
 						.append(tokenRelsLedger.changeSetSoFar());
 			}
+			if (nftsLedger != null) {
+				sb.append("\n--- NFTS ---\n")
+						.append(nftsLedger.changeSetSoFar());
+			}
 			return sb.toString();
 		} else {
 			return NO_ACTIVE_TXN_CHANGE_SET;

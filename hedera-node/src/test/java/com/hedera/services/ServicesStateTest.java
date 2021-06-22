@@ -154,6 +154,8 @@ class ServicesStateTest {
 	private FCMap<MerkleEntityId, MerkleAccount> accountsCopy;
 	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageCopy;
 	private FCMap<MerkleEntityId, MerkleToken> tokens;
+	private FCMap<MerkleUniqueTokenId, MerkleUniqueTokenId> nfts;
+	private FCMap<MerkleUniqueTokenId, MerkleUniqueTokenId> nftsCopy;
 	private FCMap<MerkleEntityId, MerkleSchedule> scheduledTxs;
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociationsCopy;
@@ -218,6 +220,8 @@ class ServicesStateTest {
 
 		topics = mock(FCMap.class);
 		tokens = mock(FCMap.class);
+		nfts = mock(FCMap.class);
+		nftsCopy = mock(FCMap.class);
 		tokensCopy = mock(FCMap.class);
 		tokenAssociations = mock(FCMap.class);
 		tokenAssociationsCopy = mock(FCMap.class);
@@ -229,7 +233,6 @@ class ServicesStateTest {
 		recordsHash = mock(Hash.class);
 		given(runningHash.getHash()).willReturn(recordsHash);
 		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
-
 		storage = mock(FCMap.class);
 		accounts = mock(FCMap.class);
 		topicsCopy = mock(FCMap.class);
@@ -240,6 +243,7 @@ class ServicesStateTest {
 		uniqueTokensCopy = mock(FCInvertibleHashMap.class);
 		runningHashLeafCopy = mock(RecordsRunningHashLeaf.class);
 
+		given(nfts.copy()).willReturn(nftsCopy);
 		given(topics.copy()).willReturn(topicsCopy);
 		given(storage.copy()).willReturn(storageCopy);
 		given(accounts.copy()).willReturn(accountsCopy);
@@ -420,6 +424,7 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.SCHEDULE_TXS, scheduledTxs);
 		subject.setChild(ServicesState.ChildIndices.RECORD_STREAM_RUNNING_HASH, runningHashLeaf);
 		subject.setChild(ServicesState.ChildIndices.UNIQUE_TOKENS, uniqueTokens);
+		subject.setChild(ServicesState.ChildIndices.NFTS, nfts);
 
 		// when:
 		subject.init(platform, book);
@@ -459,6 +464,7 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.SCHEDULE_TXS, scheduledTxs);
 		subject.setChild(ServicesState.ChildIndices.RECORD_STREAM_RUNNING_HASH, runningHashLeaf);
 		subject.setChild(ServicesState.ChildIndices.UNIQUE_TOKENS, uniqueTokens);
+		subject.setChild(ServicesState.ChildIndices.NFTS, nfts);
 
 		// when:
 		subject.init(platform, book);
@@ -491,13 +497,14 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.SCHEDULE_TXS, scheduledTxs);
 		subject.setChild(ServicesState.ChildIndices.RECORD_STREAM_RUNNING_HASH, runningHashLeaf);
 		subject.setChild(ServicesState.ChildIndices.UNIQUE_TOKENS, uniqueTokens);
+		subject.setChild(ServicesState.ChildIndices.NFTS, nfts);
 		// when:
 		subject.init(platform, book);
 
 		// then:
 		InOrder inOrder = inOrder(
 				scheduledTxs, runningHashLeaf, diskFs, ctx, mockDigest,
-				accounts, storage, topics, tokens, tokenAssociations, networkCtx, book);
+				accounts, storage, topics, tokens, tokenAssociations, networkCtx, book, nfts);
 		inOrder.verify(diskFs).checkHashesAgainstDiskContents();
 		inOrder.verify(ctx).setRecordsInitialHash(recordsHash);
 		inOrder.verify(accounts).getHash();
@@ -510,6 +517,7 @@ class ServicesStateTest {
 		inOrder.verify(networkCtx).getHash();
 		inOrder.verify(book).getHash();
 		inOrder.verify(runningHashLeaf).getHash();
+		inOrder.verify(nfts).getHash();
 		inOrder.verify(ctx).update(subject);
 		// and:
 		assertThat(
@@ -540,6 +548,7 @@ class ServicesStateTest {
 		// and:
 		Hash overallHash = new Hash("a!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!df".getBytes());
 		Hash uniqueTokensRootHash = new Hash("asdhasdhasdhasdhasdhasdhasdhasdhasdhasdhasdhasdh".getBytes());
+		Hash nftsRootHash = new Hash("wxyzwxyzwxyzwxyzwxyzwxyzwxyzwxyzwxyzwxyzwxyzwxyz".getBytes());
 
 		// and:
 		subject.setChild(ServicesState.ChildIndices.TOPICS, topics);
@@ -551,9 +560,9 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
 		subject.setChild(ServicesState.ChildIndices.DISK_FS, diskFs);
 		subject.setChild(ServicesState.ChildIndices.SCHEDULE_TXS, scheduledTxs);
-
 		subject.setChild(ServicesState.ChildIndices.RECORD_STREAM_RUNNING_HASH, runningHashLeaf);
 		subject.setChild(ServicesState.ChildIndices.UNIQUE_TOKENS, uniqueTokens);
+		subject.setChild(ServicesState.ChildIndices.NFTS, nfts);
 		// and:
 		var expected = String.format("[SwirldState Hashes]\n" +
 						"  Overall                :: %s\n" +
@@ -568,7 +577,8 @@ class ServicesStateTest {
 						"  AddressBook            :: %s\n" +
 						"  RecordsRunningHashLeaf :: %s\n" +
 						"    ↪ Running hash       :: %s\n" +
-						"  UniqueTokens           :: %s",
+						"  UniqueTokens           :: %s\n" +
+						"  Nfts                   :: %s",
 
 				overallHash,
 				accountsRootHash,
@@ -582,7 +592,8 @@ class ServicesStateTest {
 				bookHash,
 				runningHashLeafHash,
 				hashInRunningHash,
-				uniqueTokensRootHash);
+				uniqueTokensRootHash,
+				nftsRootHash);
 		subject.setHash(overallHash);
 
 		given(topics.getHash()).willReturn(topicRootHash);
@@ -596,6 +607,7 @@ class ServicesStateTest {
 		given(book.getHash()).willReturn(bookHash);
 		given(diskFs.getHash()).willReturn(specialFileSystemHash);
 		given(scheduledTxs.getHash()).willReturn(scheduledTxsRootHash);
+		given(nfts.getHash()).willReturn(nftsRootHash);
 
 		given(runningHashLeaf.getHash()).willReturn(runningHashLeafHash);
 		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
@@ -623,6 +635,7 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.SCHEDULE_TXS, scheduledTxs);
 		subject.setChild(ServicesState.ChildIndices.RECORD_STREAM_RUNNING_HASH, runningHashLeaf);
 		subject.setChild(ServicesState.ChildIndices.UNIQUE_TOKENS, uniqueTokens);
+		subject.setChild(ServicesState.ChildIndices.NFTS, nfts);
 		subject.nodeId = self;
 		subject.ctx = ctx;
 
@@ -644,6 +657,7 @@ class ServicesStateTest {
 		assertSame(scheduledTxsCopy, copy.scheduleTxs());
 		assertSame(runningHashLeafCopy, copy.runningHashLeaf());
 		assertSame(uniqueTokensCopy, copy.uniqueTokens());
+		assertSame(nftsCopy, copy.nfts());
 	}
 
 	@Test

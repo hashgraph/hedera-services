@@ -324,7 +324,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				diskFs().copy(),
 				scheduleTxs().copy(),
 				runningHashLeaf().copy(),
-				uniqueTokens().copy()
+				uniqueTokens().copy(),
+				nfts().copy()
 		), this);
 	}
 
@@ -355,7 +356,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 						"  AddressBook            :: %s\n" +
 						"  RecordsRunningHashLeaf :: %s\n" +
 						"    ↪ Running hash       :: %s\n" +
-						"  UniqueTokens           :: %s",
+						"  UniqueTokens           :: %s\n" +
+						"  Nfts                   :: %s\n",
 				getHash(),
 				accounts().getHash(),
 				storage().getHash(),
@@ -368,7 +370,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				addressBook().getHash(),
 				runningHashLeaf().getHash(),
 				runningHashLeaf().getRunningHash().getHash(),
-				uniqueTokens().getHash()));
+				uniqueTokens().getHash(),
+				nfts().getHash()));
 	}
 
 	public FCMap<MerkleEntityId, MerkleAccount> accounts() {

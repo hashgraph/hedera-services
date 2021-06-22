@@ -24,6 +24,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.txns.TransitionLogic;
@@ -118,9 +119,13 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 		} else {
 			/* Accessor is for either (1) a transaction in precheck or (2) a scheduled
 			transaction that reached consensus without a managed expand-handle span. */
+			final var validationProps = new ImpliedTransfersMeta.ValidationProps(
+				dynamicProperties.maxTransferListSize(),
+				dynamicProperties.maxTokenTransferListSize(),
+				dynamicProperties.maxNftTransfersLen());
 			final var op = accessor.getTxn().getCryptoTransfer();
 			return transferSemanticChecks.fullPureValidation(
-					op.getTransfers(), op.getTokenTransfersList(), dynamicProperties);
+					op.getTransfers(), op.getTokenTransfersList(), validationProps);
 		}
 	}
 }

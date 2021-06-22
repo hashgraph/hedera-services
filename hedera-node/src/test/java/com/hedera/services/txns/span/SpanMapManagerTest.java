@@ -23,6 +23,7 @@ package com.hedera.services.txns.span;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,11 +47,16 @@ import static org.mockito.Mockito.verify;
 class SpanMapManagerTest {
 	private final int maxHbarAdjusts = 1;
 	private final int maxTokenAdjusts = 2;
+	private final int maxOwnershipChanges = 3;
+	private final ImpliedTransfersMeta.ValidationProps validationProps = new ImpliedTransfersMeta.ValidationProps(
+			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges);
+	private final ImpliedTransfersMeta.ValidationProps otherValidationProps = new ImpliedTransfersMeta.ValidationProps(
+			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges + 1);
 	private final TransactionBody pretendXferTxn = TransactionBody.getDefaultInstance();
 	private final ImpliedTransfers someImpliedXfers = ImpliedTransfers.invalid(
-			maxHbarAdjusts, maxTokenAdjusts, ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
+			validationProps, ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
 	private final ImpliedTransfers someOtherImpliedXfers = ImpliedTransfers.invalid(
-			maxHbarAdjusts, maxTokenAdjusts + 1, ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
+			otherValidationProps, ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
 	private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
 
 	private Map<String, Object> span = new HashMap<>();
@@ -90,6 +96,7 @@ class SpanMapManagerTest {
 		given(accessor.getFunction()).willReturn(CryptoTransfer);
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxTokenAdjusts);
+		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxOwnershipChanges);
 		spanMapAccessor.setImpliedTransfers(accessor, someImpliedXfers);
 
 		// when:

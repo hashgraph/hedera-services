@@ -343,20 +343,38 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 	@Override
 	public ResponseCodeEnum changeOwner(NftId nftId, AccountID from, AccountID to) {
-		return sanityChecked(from, to, nftId.tokenId(), token -> {
+		final var tId = nftId.tokenId();
+		return sanityChecked(from, to, tId, token -> {
 			if (!nftsLedger.exists(nftId)) {
 				return INVALID_NFT_ID;
 			}
+
+			final var fromFreezeAndKycValidity = checkRelFrozenAndKycProps(from, tId);
+			if (fromFreezeAndKycValidity != OK) {
+				return fromFreezeAndKycValidity;
+			}
+			final var toFreezeAndKycValidity = checkRelFrozenAndKycProps(to, tId);
+			if (toFreezeAndKycValidity != OK) {
+				return toFreezeAndKycValidity;
+			}
+
 			final var owner = (EntityId) nftsLedger.get(nftId, OWNER);
 			if (!owner.matches(from)) {
 				return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 			}
 
-			long fromNftsOwned = (long) accountsLedger.get(from, NUM_NFTS_OWNED);
-			long toNftsOwned = (long) accountsLedger.get(to, NUM_NFTS_OWNED);
+			final var nftType = nftId.tokenId();
+			final var fromRel = asTokenRel(from, nftType);
+			final var toRel = asTokenRel(to, nftType);
+			final var fromNftsOwned = (long) accountsLedger.get(from, NUM_NFTS_OWNED);
+			final var fromThisNftsOwned = (long) tokenRelsLedger.get(fromRel, TOKEN_BALANCE);
+			final var toNftsOwned = (long) accountsLedger.get(to, NUM_NFTS_OWNED);
+			final var toThisNftsOwned = (long) tokenRelsLedger.get(asTokenRel(to, nftType), TOKEN_BALANCE);
 			nftsLedger.set(nftId, OWNER, EntityId.fromGrpcAccountId(to));
 			accountsLedger.set(from, NUM_NFTS_OWNED, fromNftsOwned - 1);
 			accountsLedger.set(to, NUM_NFTS_OWNED, toNftsOwned + 1);
+			tokenRelsLedger.set(fromRel, TOKEN_BALANCE, fromThisNftsOwned - 1);
+			tokenRelsLedger.set(toRel, TOKEN_BALANCE, toThisNftsOwned + 1);
 
 			hederaLedger.updateOwnershipChanges(nftId, from, to);
 
@@ -459,9 +477,9 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	private ResponseCodeEnum tryAdjustment(AccountID aId, TokenID tId, long adjustment) {
-		var resultFrozenOrKYC = checkRelFrozenAndKycProps(aId, tId);
-		if (!resultFrozenOrKYC.equals(OK)) {
-			return resultFrozenOrKYC;
+		var freezeAndKycValidity = checkRelFrozenAndKycProps(aId, tId);
+		if (!freezeAndKycValidity.equals(OK)) {
+			return freezeAndKycValidity;
 		}
 
 		var relationship = asTokenRel(aId, tId);

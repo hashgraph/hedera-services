@@ -24,6 +24,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
@@ -66,6 +67,9 @@ import static org.mockito.Mockito.verifyNoInteractions;
 class CryptoTransferTransitionLogicTest {
 	final private int maxHbarAdjusts = 5;
 	final private int maxTokenAdjusts = 10;
+	final private int maxOwnershipChanges = 15;
+	private final ImpliedTransfersMeta.ValidationProps validationProps = new ImpliedTransfersMeta.ValidationProps(
+			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges);
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private AccountID a = AccountID.newBuilder().setAccountNum(9_999L).build();
 	final private AccountID b = AccountID.newBuilder().setAccountNum(8_999L).build();
@@ -101,7 +105,7 @@ class CryptoTransferTransitionLogicTest {
 		final var a = asAccount("1.2.3");
 		final var b = asAccount("2.3.4");
 		final var impliedTransfers = ImpliedTransfers.valid(
-				maxHbarAdjusts, maxTokenAdjusts, List.of(
+				validationProps, List.of(
 						hbarChange(a, +100),
 						hbarChange(b, -100)
 				));
@@ -123,7 +127,7 @@ class CryptoTransferTransitionLogicTest {
 		final var a = asAccount("1.2.3");
 		final var b = asAccount("2.3.4");
 		final var impliedTransfers = ImpliedTransfers.valid(
-				maxHbarAdjusts, maxTokenAdjusts, List.of(
+				validationProps, List.of(
 						hbarChange(a, +100),
 						hbarChange(b, -100)
 				));
@@ -147,7 +151,7 @@ class CryptoTransferTransitionLogicTest {
 	@Test
 	void shortCircuitsToImpliedTransfersValidityIfNotAvailableInSpan() {
 		final var impliedTransfers = ImpliedTransfers.invalid(
-				maxHbarAdjusts, maxTokenAdjusts, TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
+				validationProps, TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
 
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
@@ -167,7 +171,7 @@ class CryptoTransferTransitionLogicTest {
 	void reusesPrecomputedFailureIfImpliedTransfersInSpan() {
 		// setup:
 		final var impliedTransfers = ImpliedTransfers.invalid(
-				maxHbarAdjusts, maxTokenAdjusts, TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
+				validationProps, TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
 
 		given(spanMapAccessor.getImpliedTransfers(accessor)).willReturn(impliedTransfers);
 
@@ -185,14 +189,13 @@ class CryptoTransferTransitionLogicTest {
 
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxTokenAdjusts);
+		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxOwnershipChanges);
 		given(accessor.getTxn()).willReturn(pretendXferTxn);
 		given(transferSemanticChecks.fullPureValidation(
-				maxHbarAdjusts,
-				maxTokenAdjusts,
 				pretendXferTxn.getCryptoTransfer().getTransfers(),
-				pretendXferTxn.getCryptoTransfer().getTokenTransfersList())
-		)
-				.willReturn(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
+				pretendXferTxn.getCryptoTransfer().getTokenTransfersList(),
+				validationProps)
+		).willReturn(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
 
 		// when:
 		final var validity = subject.validateSemantics(accessor);

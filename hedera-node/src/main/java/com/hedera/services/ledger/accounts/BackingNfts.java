@@ -24,6 +24,8 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.store.models.NftId;
 import com.swirlds.fcmap.FCMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -32,6 +34,8 @@ import java.util.function.Supplier;
 import static com.hedera.services.state.merkle.MerkleUniqueTokenId.fromNftId;
 
 public class BackingNfts implements BackingStore<NftId, MerkleUniqueToken> {
+	static final Logger log = LogManager.getLogger(BackingNfts.class);
+
 	private final Set<NftId> existing = new HashSet<>();
 
 	private final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> delegate;
@@ -81,5 +85,13 @@ public class BackingNfts implements BackingStore<NftId, MerkleUniqueToken> {
 	@Override
 	public Set<NftId> idSet() {
 		return existing;
+	}
+
+	public void addToExistingNfts(NftId nftId)	{
+		existing.add(nftId);
+	}
+
+	public void removeFromExistingNfts(NftId nftId) {
+		existing.remove(nftId);
 	}
 }

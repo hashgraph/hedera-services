@@ -38,7 +38,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -128,5 +130,18 @@ class BackingNftsTest {
 		// then:
 		assertEquals(Set.of(bNftId), subject.idSet());
 		verify(delegate).remove(aKey);
+	}
+
+	@Test
+	void canAddAndRemoveFromIdSetOnly() {
+		// when:
+		subject.removeFromExistingNfts(aNftId);
+		subject.addToExistingNfts(cNftId);
+
+		// then:
+		assertEquals(Set.of(bNftId, cNftId), subject.idSet());
+		// and:
+		verify(delegate, never()).put(any(), any());
+		verify(delegate, never()).remove(any());
 	}
 }

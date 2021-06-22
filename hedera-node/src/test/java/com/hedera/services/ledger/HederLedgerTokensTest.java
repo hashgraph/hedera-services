@@ -242,16 +242,16 @@ public class HederLedgerTokensTest extends BaseHederaLedgerTest {
 
 		// then:
 		inOrder.verify(tokenRelsLedger).begin();
+		inOrder.verify(nftsLedger).begin();
 		inOrder.verify(tokenRelsLedger).isInTransaction();
 		inOrder.verify(tokenRelsLedger).commit();
-		inOrder.verify(nftsLedger).begin();
 		inOrder.verify(nftsLedger).isInTransaction();
 		inOrder.verify(nftsLedger).commit();
 		// and:
 		inOrder.verify(tokenRelsLedger).begin();
+		inOrder.verify(nftsLedger).begin();
 		inOrder.verify(tokenRelsLedger).isInTransaction();
 		inOrder.verify(tokenRelsLedger).rollback();
-		inOrder.verify(nftsLedger).begin();
 		inOrder.verify(nftsLedger).isInTransaction();
 		inOrder.verify(nftsLedger).rollback();
 	}

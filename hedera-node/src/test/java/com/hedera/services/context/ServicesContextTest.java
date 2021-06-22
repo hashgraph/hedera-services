@@ -71,6 +71,7 @@ import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
+import com.hedera.services.ledger.accounts.BackingNfts;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
@@ -551,6 +552,7 @@ public class ServicesContextTest {
 		assertThat(ctx.spanMapManager(), instanceOf(SpanMapManager.class));
 		assertThat(ctx.impliedTransfersMarshal(), instanceOf(ImpliedTransfersMarshal.class));
 		assertThat(ctx.transferSemanticChecks(), instanceOf(PureTransferSemanticChecks.class));
+		assertThat(ctx.backingNfts(), instanceOf(BackingNfts.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

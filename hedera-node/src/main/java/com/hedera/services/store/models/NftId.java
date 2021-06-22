@@ -20,6 +20,7 @@ package com.hedera.services.store.models;
  * ‍
  */
 
+import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.TokenID;
 
 public class NftId {
@@ -57,6 +58,16 @@ public class NftId {
 				.setRealmNum(realm)
 				.setTokenNum(num)
 				.build();
+	}
+
+	@Override
+	public String toString() {
+		return MoreObjects.toStringHelper(NftId.class)
+				.add("shard", shard)
+				.add("realm", realm)
+				.add("num", num)
+				.add("serialNo", serialNo)
+				.toString();
 	}
 
 	@Override

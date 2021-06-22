@@ -237,6 +237,12 @@ class HederaTokenStoreTest {
 		given(tokenRelsLedger.get(treasuryMisc, TOKEN_BALANCE)).willReturn(treasuryBalance);
 		given(tokenRelsLedger.get(treasuryMisc, IS_FROZEN)).willReturn(false);
 		given(tokenRelsLedger.get(treasuryMisc, IS_KYC_GRANTED)).willReturn(true);
+		given(tokenRelsLedger.get(sponsorNft, TOKEN_BALANCE)).willReturn(123L);
+		given(tokenRelsLedger.get(sponsorNft, IS_FROZEN)).willReturn(false);
+		given(tokenRelsLedger.get(sponsorNft, IS_KYC_GRANTED)).willReturn(true);
+		given(tokenRelsLedger.get(counterpartyNft, TOKEN_BALANCE)).willReturn(123L);
+		given(tokenRelsLedger.get(counterpartyNft, IS_FROZEN)).willReturn(false);
+		given(tokenRelsLedger.get(counterpartyNft, IS_KYC_GRANTED)).willReturn(true);
 
 		tokens = (FCMap<MerkleEntityId, MerkleToken>) mock(FCMap.class);
 		given(tokens.get(fromTokenId(created))).willReturn(token);
@@ -951,9 +957,12 @@ class HederaTokenStoreTest {
 	void changingOwnerDoesTheExpected() {
 		// setup:
 		long startSponsorNfts = 5, startCounterpartyNfts = 8;
+		long startSponsorANfts = 4, startCounterpartyANfts = 1;
 
 		given(accountsLedger.get(sponsor, NUM_NFTS_OWNED)).willReturn(startSponsorNfts);
 		given(accountsLedger.get(counterparty, NUM_NFTS_OWNED)).willReturn(startCounterpartyNfts);
+		given(tokenRelsLedger.get(sponsorNft, TOKEN_BALANCE)).willReturn(startSponsorANfts);
+		given(tokenRelsLedger.get(counterpartyNft, TOKEN_BALANCE)).willReturn(startCounterpartyANfts);
 
 		// when:
 		var status = subject.changeOwner(aNft, sponsor, counterparty);
@@ -961,8 +970,11 @@ class HederaTokenStoreTest {
 		// expect:
 		assertEquals(OK, status);
 		verify(nftsLedger).set(aNft, NftProperty.OWNER, EntityId.fromGrpcAccountId(counterparty));
-		verify(accountsLedger).set(sponsor, AccountProperty.NUM_NFTS_OWNED, startSponsorNfts - 1);
-		verify(accountsLedger).set(counterparty, AccountProperty.NUM_NFTS_OWNED, startCounterpartyNfts + 1);
+		verify(accountsLedger).set(sponsor, NUM_NFTS_OWNED, startSponsorNfts - 1);
+		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts + 1);
+		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts + 1);
+		verify(tokenRelsLedger).set(sponsorNft, TOKEN_BALANCE, startSponsorANfts - 1);
+		verify(tokenRelsLedger).set(counterpartyNft, TOKEN_BALANCE, startCounterpartyANfts + 1);
 		verify(hederaLedger).updateOwnershipChanges(aNft, sponsor, counterparty);
 	}
 

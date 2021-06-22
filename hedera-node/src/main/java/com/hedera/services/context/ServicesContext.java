@@ -458,13 +458,14 @@ public class ServicesContext {
 	private HederaFs hfs;
 	private NodeInfo nodeInfo;
 	private StateView currentView;
+	private TokenStore tokenStore;
 	private AnswerFlow answerFlow;
 	private HcsAnswers hcsAnswers;
 	private FileNumbers fileNums;
 	private FileAnswers fileAnswers;
 	private MetaAnswers metaAnswers;
 	private RecordCache recordCache;
-	private TokenStore tokenStore;
+	private BackingNfts backingNfts;
 	private AccountStore accountStore;
 	private TokenAnswers tokenAnswers;
 	private HederaLedger ledger;
@@ -844,6 +845,7 @@ public class ServicesContext {
 					() -> queryableTopics().get(),
 					() -> queryableAccounts().get(),
 					() -> queryableStorage().get(),
+					() -> queryableNfts().get(),
 					() -> queryableTokenAssociations().get(),
 					this::diskFs,
 					nodeLocalProperties());
@@ -859,6 +861,7 @@ public class ServicesContext {
 					this::topics,
 					this::accounts,
 					this::storage,
+					this::nfts,
 					this::tokenAssociations,
 					this::diskFs,
 					nodeLocalProperties());
@@ -967,9 +970,11 @@ public class ServicesContext {
 					accountStore(),
 					new TransactionRecordService(txnCtx()),
 					this::tokens,
+					this::nfts,
 					this::uniqueTokens,
 					this::tokenAssociations,
-					(BackingTokenRels) backingTokenRels());
+					(BackingTokenRels) backingTokenRels(),
+					backingNfts());
 		}
 		return typedTokenStore;
 	}
@@ -1545,14 +1550,20 @@ public class ServicesContext {
 		return globalDynamicProperties;
 	}
 
+	public BackingNfts backingNfts() {
+		if (backingNfts == null) {
+			backingNfts = new BackingNfts(this::nfts);
+		}
+		return backingNfts;
+	}
+
 	public TokenStore tokenStore() {
 		if (tokenStore == null) {
-			final var backingNfts = new BackingNfts(this::nfts);
 			TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger =
 					new TransactionalLedger<>(
 							NftProperty.class,
 							MerkleUniqueToken::new,
-							backingNfts,
+							backingNfts(),
 							new ChangeSummaryManager<>());
 			TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger =
 					new TransactionalLedger<>(

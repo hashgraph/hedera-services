@@ -38,9 +38,10 @@ import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
-import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.MiscUtils;
@@ -80,6 +81,7 @@ import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccou
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.state.submerkle.EntityId.fromGrpcTokenId;
 import static com.hedera.services.store.schedule.ExceptionalScheduleStore.NOOP_SCHEDULE_STORE;
 import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
 import static com.hedera.services.store.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
@@ -121,6 +123,11 @@ public class StateView {
 	public static final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> EMPTY_TOKEN_ASSOCS_SUPPLIER =
 			() -> EMPTY_TOKEN_ASSOCIATIONS;
 
+	public static final FCMap<MerkleUniqueTokenId, MerkleUniqueToken> EMPTY_NFTS =
+			new FCMap<>();
+	public static final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> EMPTY_NFTS_SUPPLIER =
+			() -> EMPTY_NFTS;
+
 	public static final StateView EMPTY_VIEW = new StateView(
 			EMPTY_TOPICS_SUPPLIER,
 			EMPTY_ACCOUNTS_SUPPLIER,
@@ -130,6 +137,9 @@ public class StateView {
 	Map<byte[], byte[]> contractBytecode;
 	Map<FileID, byte[]> fileContents;
 	Map<FileID, HFileMeta> fileAttrs;
+
+	private Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts;
+
 	private final TokenStore tokenStore;
 	private final ScheduleStore scheduleStore;
 	private final Supplier<MerkleDiskFs> diskFs;
@@ -145,8 +155,16 @@ public class StateView {
 			NodeLocalProperties properties,
 			Supplier<MerkleDiskFs> diskFs
 	) {
-		this(NOOP_TOKEN_STORE, NOOP_SCHEDULE_STORE, topics, accounts, EMPTY_STORAGE_SUPPLIER,
-				EMPTY_TOKEN_ASSOCS_SUPPLIER, diskFs, properties);
+		this(
+				NOOP_TOKEN_STORE,
+				NOOP_SCHEDULE_STORE,
+				topics,
+				accounts,
+				EMPTY_STORAGE_SUPPLIER,
+				EMPTY_NFTS_SUPPLIER,
+				EMPTY_TOKEN_ASSOCS_SUPPLIER,
+				diskFs,
+				properties);
 	}
 
 	public StateView(
@@ -157,7 +175,15 @@ public class StateView {
 			NodeLocalProperties properties,
 			Supplier<MerkleDiskFs> diskFs
 	) {
-		this(tokenStore, scheduleStore, topics, accounts, EMPTY_STORAGE_SUPPLIER, EMPTY_TOKEN_ASSOCS_SUPPLIER, diskFs,
+		this(
+				tokenStore,
+				scheduleStore,
+				topics,
+				accounts,
+				EMPTY_STORAGE_SUPPLIER,
+				EMPTY_NFTS_SUPPLIER,
+				EMPTY_TOKEN_ASSOCS_SUPPLIER,
+				diskFs,
 				properties);
 	}
 
@@ -167,10 +193,12 @@ public class StateView {
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> storage,
+			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts,
 			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations,
 			Supplier<MerkleDiskFs> diskFs,
 			NodeLocalProperties properties
 	) {
+		this.nfts = nfts;
 		this.topics = topics;
 		this.accounts = accounts;
 		this.tokenStore = tokenStore;
@@ -329,33 +357,25 @@ public class StateView {
 		}
 	}
 
-	public Optional<TokenNftInfo> infoForNft(NftID nftID) {
-		try {
-			var id = tokenStore.resolve(nftID);
-			if (id == MISSING_NFT) {
-				return Optional.empty();
-			}
-			var uniqueToken = tokenStore.getUniqueToken(nftID);
-
-			var info = TokenNftInfo.newBuilder()
-					.setNftID(nftID)
-					.setAccountID(uniqueToken.getOwner().toGrpcAccountId())
-					.setCreationTime(Timestamp.newBuilder()
-							.setSeconds(uniqueToken.getCreationTime().getSeconds())
-							.setNanos(uniqueToken.getCreationTime().getNanos()))
-					.setMetadata(ByteString.copyFrom(uniqueToken.getMetadata()));
-
-			return Optional.of(info.build());
-		} catch (Exception unexpected) {
-			log.warn(
-					"Unexpected failure getting info for token nft {}!",
-					readableId(nftID),
-					unexpected);
+	public Optional<TokenNftInfo> infoForNft(NftID target) {
+		final var currentNfts = nfts.get();
+		final var targetKey = new MerkleUniqueTokenId(fromGrpcTokenId(target.getTokenID()), target.getSerialNumber());
+		if (!currentNfts.containsKey(targetKey)) {
 			return Optional.empty();
 		}
+		final var targetNft = currentNfts.get(targetKey);
+		final var info = TokenNftInfo.newBuilder()
+				.setNftID(target)
+				.setAccountID(targetNft.getOwner().toGrpcAccountId())
+				.setCreationTime(targetNft.getCreationTime().toGrpc())
+				.setMetadata(ByteString.copyFrom(targetNft.getMetadata()))
+				.build();
+		return Optional.of(info);
 	}
 
-	public boolean nftExists(NftID id) { return tokenStore.resolve(id) != MISSING_NFT; }
+	public boolean nftExists(NftID id) {
+		return tokenStore.resolve(id) != MISSING_NFT;
+	}
 
 	public Optional<TokenType> tokenType(TokenID tokenID) {
 		try {
@@ -510,5 +530,9 @@ public class StateView {
 
 	public Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations() {
 		return tokenAssociations;
+	}
+
+	void setNfts(Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts) {
+		this.nfts = nfts;
 	}
 }

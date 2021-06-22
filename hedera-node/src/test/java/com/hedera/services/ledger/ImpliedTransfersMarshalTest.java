@@ -96,6 +96,9 @@ class ImpliedTransfersMarshalTest {
 
 	private final int maxExplicitHbarAdjusts = 5;
 	private final int maxExplicitTokenAdjusts = 50;
+	private final int maxExplicitOwnershipChanges = 45;
+	private final ImpliedTransfersMeta.ValidationProps validationProps = new ImpliedTransfersMeta.ValidationProps(
+		maxExplicitHbarAdjusts, maxExplicitTokenAdjusts, maxExplicitOwnershipChanges);
 
 	@BeforeEach
 	void setUp() {
@@ -105,16 +108,16 @@ class ImpliedTransfersMarshalTest {
 	@Test
 	void validatesXfers() {
 		setupFixtureOp();
-		final var expectedMeta = new ImpliedTransfersMeta(
-				maxExplicitHbarAdjusts, maxExplicitTokenAdjusts, TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
+		final var expectedMeta = new ImpliedTransfersMeta(validationProps, TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
 
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxExplicitHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxExplicitTokenAdjusts);
+		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxExplicitOwnershipChanges);
 		// and:
 		given(transferSemanticChecks.fullPureValidation(
 				op.getTransfers(),
 				op.getTokenTransfersList(),
-				dynamicProperties)).willReturn(TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
+				validationProps)).willReturn(TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
 
 		// when:
 		final var result = subject.unmarshalFromGrpc(op);
@@ -144,14 +147,15 @@ class ImpliedTransfersMarshalTest {
 				}
 		);
 		// and:
-		final var expectedMeta = new ImpliedTransfersMeta(maxExplicitHbarAdjusts, maxExplicitTokenAdjusts, OK);
+		final var expectedMeta = new ImpliedTransfersMeta(validationProps, OK);
 
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxExplicitHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxExplicitTokenAdjusts);
+		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxExplicitOwnershipChanges);
 		given(transferSemanticChecks.fullPureValidation(
 				op.getTransfers(),
 				op.getTokenTransfersList(),
-				dynamicProperties)).willReturn(OK);
+				validationProps)).willReturn(OK);
 
 		// when:
 		final var result = subject.unmarshalFromGrpc(op);
@@ -164,13 +168,17 @@ class ImpliedTransfersMarshalTest {
 	@Test
 	void metaObjectContractSanityChecks() {
 		// given:
-		final var oneMeta = new ImpliedTransfersMeta(3, 4, OK);
-		final var twoMeta = new ImpliedTransfersMeta(1, 2, TOKEN_WAS_DELETED);
+		final var anotherValidationProps = new ImpliedTransfersMeta.ValidationProps(
+				maxExplicitHbarAdjusts - 1,
+				maxExplicitTokenAdjusts + 1,
+				maxExplicitOwnershipChanges / 3);
+		final var oneMeta = new ImpliedTransfersMeta(validationProps, OK);
+		final var twoMeta = new ImpliedTransfersMeta(anotherValidationProps, TOKEN_WAS_DELETED);
 		// and:
-		final var oneRepr = "ImpliedTransfersMeta{code=OK, " +
-				"maxExplicitHbarAdjusts=3, maxExplicitTokenAdjusts=4}";
-		final var twoRepr = "ImpliedTransfersMeta{code=TOKEN_WAS_DELETED, " +
-				"maxExplicitHbarAdjusts=1, maxExplicitTokenAdjusts=2}";
+		final var oneRepr = "ImpliedTransfersMeta{code=OK, maxExplicitHbarAdjusts=5, " +
+				"maxExplicitTokenAdjusts=50, maxExplicitOwnershipChanges=45}";
+		final var twoRepr = "ImpliedTransfersMeta{code=TOKEN_WAS_DELETED, maxExplicitHbarAdjusts=4, " +
+				"maxExplicitTokenAdjusts=51, maxExplicitOwnershipChanges=15}";
 
 		// expect:
 		assertNotEquals(oneMeta, twoMeta);
@@ -187,13 +195,14 @@ class ImpliedTransfersMarshalTest {
 				new Id(1, 2, 3),
 				asAccount("4.5.6"),
 				7));
-		final var oneImpliedXfers = ImpliedTransfers.invalid(3, 4, TOKEN_WAS_DELETED);
-		final var twoImpliedXfers = ImpliedTransfers.valid(1, 100, twoChanges);
+		final var oneImpliedXfers = ImpliedTransfers.invalid(validationProps, TOKEN_WAS_DELETED);
+		final var twoImpliedXfers = ImpliedTransfers.valid(validationProps, twoChanges);
 		// and:
 		final var oneRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=TOKEN_WAS_DELETED, " +
-				"maxExplicitHbarAdjusts=3, maxExplicitTokenAdjusts=4}, changes=[]}";
-		final var twoRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=OK, maxExplicitHbarAdjusts=1, " +
-				"maxExplicitTokenAdjusts=100}, changes=[BalanceChange{token=Id{shard=1, realm=2, num=3}, " +
+				"maxExplicitHbarAdjusts=5, maxExplicitTokenAdjusts=50, maxExplicitOwnershipChanges=45}, changes=[]}";
+		final var twoRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=OK, maxExplicitHbarAdjusts=5, " +
+				"maxExplicitTokenAdjusts=50, maxExplicitOwnershipChanges=45}, " +
+				"changes=[BalanceChange{token=Id{shard=1, realm=2, num=3}, " +
 				"account=Id{shard=4, realm=5, num=6}, units=7}]}";
 
 		// expect:
@@ -207,25 +216,28 @@ class ImpliedTransfersMarshalTest {
 	@Test
 	void metaRecognizesIdenticalConditions() {
 		// given:
-		final var meta = new ImpliedTransfersMeta(3, 4, OK);
+		final var meta = new ImpliedTransfersMeta(validationProps, OK);
 
-		given(dynamicProperties.maxTransferListSize()).willReturn(3);
-		given(dynamicProperties.maxTokenTransferListSize()).willReturn(4);
-
+		given(dynamicProperties.maxTransferListSize()).willReturn(validationProps.getMaxHbarAdjusts());
+		given(dynamicProperties.maxTokenTransferListSize()).willReturn(validationProps.getMaxTokenAdjusts());
+		given(dynamicProperties.maxNftTransfersLen()).willReturn(validationProps.getMaxOwnershipChanges());
 		// expect:
 		assertTrue(meta.wasDerivedFrom(dynamicProperties));
 
 		// and:
-		given(dynamicProperties.maxTransferListSize()).willReturn(2);
-		given(dynamicProperties.maxTokenTransferListSize()).willReturn(4);
-
+		given(dynamicProperties.maxTransferListSize()).willReturn(validationProps.getMaxHbarAdjusts() + 1);
 		// expect:
 		assertFalse(meta.wasDerivedFrom(dynamicProperties));
 
 		// and:
-		given(dynamicProperties.maxTransferListSize()).willReturn(3);
-		given(dynamicProperties.maxTokenTransferListSize()).willReturn(3);
+		given(dynamicProperties.maxTransferListSize()).willReturn(validationProps.getMaxHbarAdjusts());
+		given(dynamicProperties.maxTokenTransferListSize()).willReturn(validationProps.getMaxTokenAdjusts() + 1);
+		// expect:
+		assertFalse(meta.wasDerivedFrom(dynamicProperties));
 
+		// and:
+		given(dynamicProperties.maxTokenTransferListSize()).willReturn(validationProps.getMaxTokenAdjusts());
+		given(dynamicProperties.maxNftTransfersLen()).willReturn(validationProps.getMaxOwnershipChanges() + 1);
 		// expect:
 		assertFalse(meta.wasDerivedFrom(dynamicProperties));
 	}

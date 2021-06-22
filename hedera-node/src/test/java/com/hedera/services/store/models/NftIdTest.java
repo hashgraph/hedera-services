@@ -58,4 +58,16 @@ class NftIdTest {
 		assertNotEquals(subject, eSubject);
 		assertNotEquals(subject.hashCode(), eSubject.hashCode());
 	}
+
+	@Test
+	void toStringWorks() {
+		// setup:
+		final var desired = "NftId{shard=1, realm=2, num=3, serialNo=4}";
+
+		// given:
+		final var subject = new NftId(shard, realm, num, serialNo);
+
+		// expect:
+		assertEquals(desired, subject.toString());
+	}
 }

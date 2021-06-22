@@ -89,7 +89,6 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 						failsWithTooLongMetadata(),
 						failsWithInvalidMetadataFromBatch(),
 						distinguishesFeeSubTypes(),
-
 						burnHappyPath(),
 						failsOnInvalidSerialNumber(),
 						respectsBurnBatchConstraints(),
