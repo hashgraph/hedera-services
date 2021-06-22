@@ -45,15 +45,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class ImpliedTransfers {
 	private final ImpliedTransfersMeta meta;
 	private final List<BalanceChange> changes;
-	private final List<Pair<EntityId, List<CustomFee>>> customFeesChanges;
-	private List<CustomFeesBalanceChange> customFeesBalanceChanges;
+	private final List<Pair<EntityId, List<CustomFee>>> entityCustomFees;
+	private final List<CustomFeesBalanceChange> customFeesBalanceChanges;
 
 	private ImpliedTransfers(ImpliedTransfersMeta meta, List<BalanceChange> changes,
-			List<Pair<EntityId, List<CustomFee>>> customFeesChanges,
+			List<Pair<EntityId, List<CustomFee>>> entityCustomFees,
 			List<CustomFeesBalanceChange> customFeeBalanceChanges) {
 		this.meta = meta;
 		this.changes = changes;
-		this.customFeesChanges = customFeesChanges;
+		this.entityCustomFees = entityCustomFees;
 		this.customFeesBalanceChanges = customFeeBalanceChanges;
 	}
 
@@ -61,11 +61,11 @@ public class ImpliedTransfers {
 			int maxHbarAdjusts,
 			int maxTokenAdjusts,
 			List<BalanceChange> changes,
-			List<Pair<EntityId, List<CustomFee>>> customFeesChanges,
+			List<Pair<EntityId, List<CustomFee>>> entityCustomFees,
 			List<CustomFeesBalanceChange> customFeeBalanceChanges
 	) {
-		final var meta = new ImpliedTransfersMeta(maxHbarAdjusts, maxTokenAdjusts, OK, customFeesChanges);
-		return new ImpliedTransfers(meta, changes, customFeesChanges, customFeeBalanceChanges);
+		final var meta = new ImpliedTransfersMeta(maxHbarAdjusts, maxTokenAdjusts, OK, entityCustomFees);
+		return new ImpliedTransfers(meta, changes, entityCustomFees, customFeeBalanceChanges);
 	}
 
 	public static ImpliedTransfers invalid(
@@ -85,8 +85,8 @@ public class ImpliedTransfers {
 		return changes;
 	}
 
-	public List<Pair<EntityId, List<CustomFee>>> getCustomFeesChanges() {
-		return customFeesChanges;
+	public List<Pair<EntityId, List<CustomFee>>> getEntityCustomFees() {
+		return entityCustomFees;
 	}
 
 	public List<CustomFeesBalanceChange> getCustomFeesBalanceChanges() {
@@ -111,7 +111,8 @@ public class ImpliedTransfers {
 		return MoreObjects.toStringHelper(ImpliedTransfers.class)
 				.add("meta", meta)
 				.add("changes", changes)
-				.add("customFeesChanges", customFeesChanges)
+				.add("entityCustomFees", entityCustomFees)
+				.add("customFeesBalanceChanges", customFeesBalanceChanges)
 				.toString();
 	}
 }

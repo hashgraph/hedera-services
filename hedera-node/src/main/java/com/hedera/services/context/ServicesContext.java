@@ -947,9 +947,8 @@ public class ServicesContext {
 
 	/**
 	 * Returns the singleton {@link TypedTokenStore} used in {@link ServicesState#handleTransaction(long, boolean,
-	 * Instant,
-	 * Instant, SwirldTransaction, SwirldDualState)} to load, save, and create tokens in the Swirlds application state.
-	 * It decouples the {@code handleTransaction} logic from the details of the Merkle state.
+	 * Instant, Instant, SwirldTransaction, SwirldDualState)} to load, save, and create tokens in the Swirlds
+	 * application state. It decouples the {@code handleTransaction} logic from the details of the Merkle state.
 	 *
 	 * Here "singleton" means that, no matter how many fast-copies are made of the {@link ServicesState}, the mutable
 	 * instance receiving the {@code handleTransaction} call will always use the same {@code typedTokenStore} instance.
@@ -975,8 +974,7 @@ public class ServicesContext {
 	/**
 	 * Returns the singleton {@link AccountStore} used in {@link ServicesState#handleTransaction(long, boolean, Instant,
 	 * Instant, SwirldTransaction, SwirldDualState)} to load, save, and create accounts from the Swirlds application
-	 * state.
-	 * It decouples the {@code handleTransaction} logic from the details of the Merkle state.
+	 * state. It decouples the {@code handleTransaction} logic from the details of the Merkle state.
 	 *
 	 * @return the singleton AccountStore
 	 */

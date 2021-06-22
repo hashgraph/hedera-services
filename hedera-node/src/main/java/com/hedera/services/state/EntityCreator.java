@@ -80,6 +80,8 @@ public interface EntityCreator {
 	 * 		explicit list of token transfers
 	 * @param ctx
 	 * 		services context
+	 * @param ctx
+	 * 		custom fees charged
 	 * @return a {@link ExpirableTxnRecord.Builder} for the finalized record
 	 */
 	ExpirableTxnRecord.Builder buildExpiringRecord(

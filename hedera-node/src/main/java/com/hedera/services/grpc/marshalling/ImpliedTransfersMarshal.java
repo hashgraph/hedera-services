@@ -74,7 +74,7 @@ public class ImpliedTransfersMarshal {
 		}
 
 		final List<BalanceChange> changes = new ArrayList<>();
-		final List<Pair<EntityId, List<CustomFee>>> customFeesChanges = new ArrayList<>();
+		final List<Pair<EntityId, List<CustomFee>>> entityCustomFees = new ArrayList<>();
 		List<CustomFeesBalanceChange> customFeeBalanceChangesForRecord = new ArrayList<>();
 		for (var aa : op.getTransfers().getAccountAmountsList()) {
 			changes.add(hbarAdjust(aa));
@@ -92,13 +92,13 @@ public class ImpliedTransfersMarshal {
 			}
 
 			List<CustomFee> customFeesOfToken = customFeeSchedules.lookupScheduleFor(scopingToken);
-			customFeesChanges.add(new Pair<>(scopingToken, customFeesOfToken));
+			entityCustomFees.add(new Pair<>(scopingToken, customFeesOfToken));
 			List<BalanceChange> customFeeChanges = computeBalanceChangeForCustomFee(scopingToken, payerId, amount,
 					customFeesOfToken);
 			changes.addAll(customFeeChanges);
 			customFeeBalanceChangesForRecord.addAll(getListOfBalanceChangesForCustomFees(customFeeChanges));
 		}
-		return ImpliedTransfers.valid(maxHbarAdjusts, maxTokenAdjusts, changes, customFeesChanges,
+		return ImpliedTransfers.valid(maxHbarAdjusts, maxTokenAdjusts, changes, entityCustomFees,
 				customFeeBalanceChangesForRecord);
 	}
 

@@ -36,20 +36,16 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * Encapsulates the validity of a CryptoTransfer transaction, given a choice of
- * two parameters: the maximum allowed number of ℏ adjustments, and the maximum
- * allowed number of token unit adjustments.
+ * Encapsulates the validity of a CryptoTransfer transaction, given a choice of two parameters: the maximum
+ * allowed number of ℏ adjustments, and the maximum allowed number of token unit adjustments.
  *
- * Note that we need to remember these two parameters in order to safely reuse
- * this validation across "span" between the
- * {@link com.hedera.services.ServicesState#expandSignatures(SwirldTransaction)}
- * and {@link com.hedera.services.ServicesState#handleTransaction(long, boolean, Instant, Instant, SwirldTransaction,
- * SwirldDualState)}
- * callbacks.
+ * Note that we need to remember these two parameters in order to safely reuse this validation across "span"
+ * between the {@link com.hedera.services.ServicesState#expandSignatures(SwirldTransaction)} and
+ * {@link com.hedera.services.ServicesState#handleTransaction(long, boolean, Instant, Instant,
+ * SwirldTransaction, SwirldDualState)} callbacks.
  *
- * This is because either parameter <i>could</i> change due to an update of
- * file 0.0.121 between the two callbacks. So we have to double-check that
- * neither <i>did</i> change before reusing the work captured by this
+ * This is because either parameter <i>could</i> change due to an update of file 0.0.121 between the two
+ * callbacks. So we have to double-check that neither <i>did</i> change before reusing the work captured by this
  * validation result.
  */
 public class ImpliedTransfersMeta {

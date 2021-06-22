@@ -71,6 +71,9 @@ class ImpliedTransfersMarshalTest {
 	@Mock
 	private CustomFeeSchedules customFeeSchedules;
 
+	@Mock
+	private CustomFeeSchedules newCustomFeeSchedules;
+
 	private ImpliedTransfersMarshal subject;
 
 	private final AccountID aModel = asAccount("1.2.3");
@@ -107,6 +110,8 @@ class ImpliedTransfersMarshalTest {
 	private final EntityId customFeeCollector = new EntityId(0, 0, 124);
 	final List<Pair<EntityId, List<CustomFee>>> customFeesChanges = List.of(
 			new Pair<>(customFeeToken, new ArrayList<>()));
+	final List<Pair<EntityId, List<CustomFee>>> newCustomFeeChanges = List.of(
+			new Pair<>(customFeeToken, List.of(CustomFee.fixedFee(10L, customFeeToken, customFeeCollector))));
 	private final List<CustomFeesBalanceChange> customFeeBalanceChanges = List.of(
 			new CustomFeesBalanceChange(customFeeCollector, customFeeToken, 123L));
 
@@ -199,7 +204,7 @@ class ImpliedTransfersMarshalTest {
 		// then:
 		assertEquals(expectedMeta, result.getMeta());
 		assertEquals(expectedChanges, result.getAllBalanceChanges());
-		assertEquals(expectedCustomFeeChanges, result.getCustomFeesChanges());
+		assertEquals(expectedCustomFeeChanges, result.getEntityCustomFees());
 		assertEquals(expectedCustomFeeBalanceChanges, result.getCustomFeesBalanceChanges());
 	}
 
@@ -264,8 +269,8 @@ class ImpliedTransfersMarshalTest {
 		assertTrue(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules));
 
 		//modify customFeeChanges to see test fails
-		given(customFeeSchedules.lookupScheduleFor(any())).willReturn(Collections.emptyList());
-		assertTrue(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules));
+		given(newCustomFeeSchedules.lookupScheduleFor(any())).willReturn(newCustomFeeChanges.get(0).getValue());
+		assertFalse(meta.wasDerivedFrom(dynamicProperties, newCustomFeeSchedules));
 
 		// and:
 		given(dynamicProperties.maxTransferListSize()).willReturn(2);
@@ -324,7 +329,7 @@ class ImpliedTransfersMarshalTest {
 		// then:
 		assertEquals(expectedMeta, result.getMeta());
 		assertEquals(expectedChanges, result.getAllBalanceChanges());
-		assertEquals(expectedCustomFeeChanges, result.getCustomFeesChanges());
+		assertEquals(expectedCustomFeeChanges, result.getEntityCustomFees());
 		assertEquals(expectedCustomFeeBalanceChanges, result.getCustomFeesBalanceChanges());
 	}
 
@@ -368,7 +373,7 @@ class ImpliedTransfersMarshalTest {
 		// then:
 		assertEquals(expectedMeta, result.getMeta());
 		assertEquals(expectedChanges, result.getAllBalanceChanges());
-		assertEquals(expectedCustomFeeChanges, result.getCustomFeesChanges());
+		assertEquals(expectedCustomFeeChanges, result.getEntityCustomFees());
 		assertEquals(expectedCustomFeeBalanceChanges, result.getCustomFeesBalanceChanges());
 	}
 
