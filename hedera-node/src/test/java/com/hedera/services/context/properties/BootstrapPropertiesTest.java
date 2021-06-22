@@ -145,7 +145,7 @@ class BootstrapPropertiesTest {
 			entry("tokens.maxPerAccount", 1_000),
 			entry("tokens.maxSymbolUtf8Bytes", 100),
 			entry("tokens.maxTokenNameUtf8Bytes",100),
-			entry("tokens.maxCustomFeesAllowed", 5),
+			entry("tokens.maxCustomFeesAllowed", 10),
 			entry("files.maxSizeKb", 1024),
 			entry("fees.tokenTransferUsageMultiplier", 380),
 			entry("cache.records.ttl", 180),
