@@ -26,6 +26,9 @@ import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
+import com.hedera.services.state.submerkle.CustomFee;
+import com.hedera.services.state.submerkle.CustomFeesBalanceChange;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -35,6 +38,7 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
+import javafx.util.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -148,6 +152,44 @@ class CryptoTransferTransitionLogicTest {
 		// then:
 		verify(txnCtx).setStatus(SUCCESS);
 	}
+
+	@Test
+	void verifyIfCustomFeesBalanceChangesSet() {
+		// setup :
+		final var a = EntityId.fromGrpcAccountId(asAccount("1.2.3"));
+		final var b = EntityId.fromGrpcAccountId(asAccount("2.3.4"));
+		final var c = EntityId.fromGrpcTokenId(asToken("4.5.6"));
+
+		// and :
+		final var customFeesBalanceChange = List.of(
+				new CustomFeesBalanceChange(a, 10L));
+		final var customFee = List.of(CustomFee.fixedFee(20L, null, a));
+		final List<Pair<EntityId, List<CustomFee>>> customFees = List.of(new Pair<>(c, customFee));
+		final var impliedTransfers = ImpliedTransfers.valid(
+				maxHbarAdjusts, maxTokenAdjusts, List.of(
+						hbarChange(a.toGrpcAccountId(), +100),
+						hbarChange(b.toGrpcAccountId(), -100)
+				),
+				customFees,
+				customFeesBalanceChange);
+
+		givenValidTxnCtx();
+		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
+		// and:
+		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer(), accessor.getPayer()))
+				.willReturn(impliedTransfers);
+		given(ledger.doZeroSum(impliedTransfers.getAllBalanceChanges()))
+				.willReturn(OK);
+
+		// when:
+		subject.doStateTransition();
+
+
+		// then:
+		verify(txnCtx).setStatus(SUCCESS);
+		verify(txnCtx).setCustomFeesCharged(customFeesBalanceChange);
+	}
+
 
 	@Test
 	void shortCircuitsToImpliedTransfersValidityIfNotAvailableInSpan() {

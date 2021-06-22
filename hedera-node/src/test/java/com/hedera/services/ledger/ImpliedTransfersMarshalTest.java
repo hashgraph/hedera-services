@@ -329,6 +329,50 @@ class ImpliedTransfersMarshalTest {
 		assertEquals(expectedCustomFeeBalanceChanges, result.getCustomFeesBalanceChanges());
 	}
 
+	@Test
+	void getsExpectedListWithFixedCustomFeeNonNullDenomination() {
+		op = CryptoTransferTransactionBody.newBuilder()
+				.addTokenTransfers(TokenTransferList.newBuilder()
+						.setToken(anotherId)
+						.addAllTransfers(List.of(
+								adjustFrom(a, cHbarChange)
+						))).build();
+		// and:
+		final var expectedChanges = List.of(new BalanceChange[] {
+				tokenChange(anotherToken, aModel, cHbarChange),
+				tokenChange(token, aModel, 20L),
+				tokenChange(token, payer, -20L) });
+
+		final var customFee = getFixedCustomFeeNonNullDenom();
+		final var expectedCustomFeeChanges =
+				List.of(new Pair<>(anotherToken, customFee));
+		final var expectedCustomFeeBalanceChanges = List.of(
+				new CustomFeesBalanceChange(EntityId.fromGrpcAccountId(aModel), token, 20L),
+				new CustomFeesBalanceChange(EntityId.fromGrpcAccountId(payer), token, -20L));
+
+		// and:
+		final var expectedMeta = new ImpliedTransfersMeta(maxExplicitHbarAdjusts, maxExplicitTokenAdjusts,
+				OK, expectedCustomFeeChanges);
+
+		given(dynamicProperties.maxTransferListSize()).willReturn(maxExplicitHbarAdjusts);
+		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxExplicitTokenAdjusts);
+		given(transferSemanticChecks.fullPureValidation(
+				maxExplicitHbarAdjusts,
+				maxExplicitTokenAdjusts,
+				op.getTransfers(),
+				op.getTokenTransfersList())).willReturn(OK);
+		given(customFeeSchedules.lookupScheduleFor(anotherToken)).willReturn(customFee);
+
+		// when:
+		final var result = subject.unmarshalFromGrpc(op, payer);
+
+		// then:
+		assertEquals(expectedMeta, result.getMeta());
+		assertEquals(expectedChanges, result.getAllBalanceChanges());
+		assertEquals(expectedCustomFeeChanges, result.getCustomFeesChanges());
+		assertEquals(expectedCustomFeeBalanceChanges, result.getCustomFeesBalanceChanges());
+	}
+
 	private void setupFixtureOp() {
 		var hbarAdjusts = TransferList.newBuilder()
 				.addAccountAmounts(adjustFrom(a, -100))
@@ -362,6 +406,12 @@ class ImpliedTransfersMarshalTest {
 	private List<CustomFee> getFixedCustomFee() {
 		return List.of(
 				CustomFee.fixedFee(20L, null, feeCollector)
+		);
+	}
+
+	private List<CustomFee> getFixedCustomFeeNonNullDenom() {
+		return List.of(
+				CustomFee.fixedFee(20L, token, feeCollector)
 		);
 	}
 
