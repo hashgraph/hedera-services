@@ -52,19 +52,25 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
-import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fractionalFeeInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.incompleteCustomFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHbarFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHtsFeeInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fractionalFeeInSchedule;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordSystemProperty;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DECIMALS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_INITIAL_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
@@ -74,6 +80,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 
 public class TokenCreateSpecs extends HapiApiSuite {
@@ -350,14 +357,49 @@ public class TokenCreateSpecs extends HapiApiSuite {
 		final var hbarCollector = "hbarFee";
 		final var htsCollector = "demonFee";
 		final var tokenCollector = "fractionalFee";
+		final var invalidEntityId = "1.2.786";
 
 		return defaultHapiSpec("CreationWorksWithCustomFeeSchedule")
 				.given(
 						cryptoCreate(htsCollector),
 						cryptoCreate(hbarCollector),
 						cryptoCreate(tokenCollector),
-						tokenCreate(feeDenom).treasury(htsCollector)
+						tokenCreate(feeDenom).treasury(htsCollector),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(GENESIS)
+								.overridingProps(Map.of("tokens.maxCustomFeesAllowed", "1"))
 				).when(
+						tokenCreate(token)
+								.treasury(tokenCollector)
+								.withCustom(fractionalFee(
+										numerator, 0,
+										minimumToCollect, OptionalLong.of(maximumToCollect),
+										tokenCollector))
+								.hasKnownStatus(FRACTION_DIVIDES_BY_ZERO),
+						tokenCreate(token)
+								.treasury(tokenCollector)
+								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
+								.withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
+								.hasKnownStatus(CUSTOM_FEES_LIST_TOO_LONG),
+						tokenCreate(token)
+								.treasury(tokenCollector)
+								.withCustom(fixedHbarFee(hbarAmount, invalidEntityId))
+								.hasKnownStatus(INVALID_CUSTOM_FEE_COLLECTOR),
+						tokenCreate(token)
+								.treasury(tokenCollector)
+								.withCustom(fixedHtsFee(htsAmount, invalidEntityId, htsCollector))
+								.hasKnownStatus(INVALID_TOKEN_ID_IN_CUSTOM_FEES),
+						tokenCreate(token)
+								.treasury(tokenCollector)
+								.withCustom(fixedHtsFee(htsAmount, feeDenom, hbarCollector))
+								.hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR),
+						tokenCreate(token)
+								.treasury(tokenCollector)
+								.withCustom(incompleteCustomFee(hbarCollector))
+								.hasKnownStatus(CUSTOM_FEE_NOT_FULLY_SPECIFIED),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(GENESIS)
+								.overridingProps(Map.of("tokens.maxCustomFeesAllowed", "10")),
 						tokenCreate(token)
 								.treasury(tokenCollector)
 								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
