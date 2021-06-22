@@ -242,6 +242,10 @@ public class UtilVerbs {
 		return new RunLoadTest(opSource);
 	}
 
+	public static NoOp noOp() {
+		return new NoOp();
+	}
+
 	public static LogMessage logIt(String msg) {
 		return new LogMessage(msg);
 	}
@@ -760,10 +764,5 @@ public class UtilVerbs {
 				.stream()
 				.map(aa -> new AbstractMap.SimpleEntry<>(asAccountString(aa.getAccountID()), aa.getAmount()))
 				.collect(Collectors.groupingBy(Map.Entry::getKey, Collectors.summingLong(Map.Entry::getValue)));
-	}
-
-	public static boolean isNotThrottleProp(Setting setting) {
-		var name = setting.getName();
-		return !name.startsWith("hapi.throttling");
 	}
 }
