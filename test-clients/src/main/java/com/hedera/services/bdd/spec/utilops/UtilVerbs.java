@@ -242,8 +242,8 @@ public class UtilVerbs {
 		return new RunLoadTest(opSource);
 	}
 
-	public static Noop noop() {
-		return new Noop();
+	public static NoOp noOp() {
+		return new NoOp();
 	}
 
 	public static LogMessage logIt(String msg) {

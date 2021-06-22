@@ -113,8 +113,8 @@ public class SysFileUploadSuite extends HapiApiSuite {
 		}
 	}
 
-	private String binVersionOfPath(String loc) {
-		int lastDot = loc.lastIndexOf(".");
+	private String binVersionOfPath(final String loc) {
+		final int lastDot = loc.lastIndexOf(".");
 		if (lastDot == -1) {
 			return loc + ".bin";
 		} else {
