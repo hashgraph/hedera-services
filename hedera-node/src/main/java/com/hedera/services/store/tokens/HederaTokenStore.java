@@ -428,7 +428,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				return INVALID_CUSTOM_FEE_COLLECTOR;
 			}
 
-			/* Validate if the token id given in the fixed fee is a valid token ID and is associated with the feeCollector */
+			/* Validate if the token id given in the fixed fee is a valid token ID and is associated with the
+			feeCollector */
 			if (customFee.hasFixedFee()) {
 				final var fixedFee = customFee.getFixedFee();
 				if (fixedFee.hasTokenId()) {
@@ -441,15 +442,12 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 					}
 				}
 			} else if (customFee.hasFractionalFee()) {
-				/* validate the fraction in fractionalFee */
 
-				/* TODO: QUESTION - Should fee collectors for fractional fees automatically be associated to the newly created token?
-				 *
-				 * (This will require their keys to sign the TokenCreate transaction.) */
-
+				/* TODO: Should fee collectors for fractional fees automatically be associated to the newly
+				    created token?  (This will require their keys to sign the TokenCreate transaction.) */
 				final var fractionalSpec = customFee.getFractionalFee();
 				final var fraction = fractionalSpec.getFractionOfUnitsToCollect();
-				if(fraction.getDenominator() == 0) {
+				if (fraction.getDenominator() == 0) {
 					return FRACTION_DIVIDES_BY_ZERO;
 				}
 			} else {
@@ -459,7 +457,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 		return OK;
 	}
-
 
 	public void addKnownTreasury(AccountID aId, TokenID tId) {
 		knownTreasuries.computeIfAbsent(aId, ignore -> new HashSet<>()).add(tId);

@@ -151,7 +151,7 @@ class HederaTokenStoreTest {
 	private String memo = "TOKENMEMO";
 	private String name = "TOKENNAME";
 	private String newName = "NEWNAME";
-	private long maxCustomFees = 4;
+	private int maxCustomFees = 4;
 	private long expiry = CONSENSUS_NOW + 1_234_567;
 	private long newExpiry = CONSENSUS_NOW + 1_432_765;
 	private long totalSupply = 1_000_000;
@@ -213,7 +213,7 @@ class HederaTokenStoreTest {
 	private CustomFeesOuterClass.CustomFees grpcUnderspecifiedCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
 			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder().setFeeCollector(feeCollector))
 			.build();
-	private CustomFeesOuterClass.CustomFees grpcInvliadFractionCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
+	private CustomFeesOuterClass.CustomFees grpcZeroDenomFractionCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
 			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder().setFeeCollector(feeCollector).setFractionalFee(
 					CustomFeesOuterClass.FractionalFee.newBuilder().setFractionOfUnitsToCollect(invalidFraction).build()
 			)).build();
@@ -1586,7 +1586,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void rejectsTooManyFeeSchedules() {
-		given(properties.maxCustomFeesAllowed()).willReturn(1L);
+		given(properties.maxCustomFeesAllowed()).willReturn(1);
 
 		// given:
 		var req = fullyValidAttempt().build();
@@ -1659,7 +1659,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void rejectsInvalidFractionInFractionalFee() {
-		var req = fullyValidAttempt().setCustomFees(grpcInvliadFractionCustomFees).build();
+		var req = fullyValidAttempt().setCustomFees(grpcZeroDenomFractionCustomFees).build();
 
 		// when:
 		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);

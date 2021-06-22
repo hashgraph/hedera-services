@@ -83,7 +83,6 @@ public class GlobalDynamicProperties {
 	public void reload() {
 		shouldKeepRecordsInState = properties.getBooleanProperty("ledger.keepRecordsInState");
 		maxTokensPerAccount = properties.getIntProperty("tokens.maxPerAccount");
-		maxCustomFeesAllowed = properties.getIntProperty("tokes.maxCustomFeesAllowed");
 		maxTokenSymbolUtf8Bytes = properties.getIntProperty("tokens.maxSymbolUtf8Bytes");
 		maxTokenNameUtf8Bytes = properties.getIntProperty("tokens.maxTokenNameUtf8Bytes");
 		maxAccountNum = properties.getLongProperty("ledger.maxAccountNum");
@@ -124,13 +123,14 @@ public class GlobalDynamicProperties {
 		congestionMultipliers = properties.getCongestionMultiplierProperty("fees.percentCongestionMultipliers");
 		feesMinCongestionPeriod = properties.getIntProperty("fees.minCongestionPeriod");
 		ratesMidnightCheckInterval = properties.getLongProperty("rates.midnightCheckInterval");
+		maxCustomFeesAllowed = properties.getIntProperty("tokens.maxCustomFeesAllowed");
 	}
 
 	public int maxTokensPerAccount() {
 		return maxTokensPerAccount;
 	}
 
-	public long maxCustomFeesAllowed() {
+	public int maxCustomFeesAllowed() {
 		return maxCustomFeesAllowed;
 	}
 
