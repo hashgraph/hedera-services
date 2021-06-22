@@ -45,6 +45,7 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_RECEIPT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class SingletonEstimatorUtilsTest {
 	private long maxLifetime = 100 * 365 * 24 * 60 * 60L;
@@ -109,6 +110,26 @@ class SingletonEstimatorUtilsTest {
 		assertEquals(
 				A_USAGES_MATRIX,
 				ESTIMATOR_UTILS.withDefaultTxnPartitioning(A_USAGE_VECTOR, SubType.DEFAULT, NETWORK_RBH, NUM_PAYER_KEYS));
+	}
+
+	@Test
+	void partitionsAreDifferentWithSubtype() {
+		//expect
+		assertNotEquals(
+				A_USAGES_MATRIX,
+				ESTIMATOR_UTILS.withDefaultTxnPartitioning(
+						A_USAGE_VECTOR,
+						SubType.TOKEN_FUNGIBLE_COMMON,
+						NETWORK_RBH,
+						NUM_PAYER_KEYS));
+		//and
+		assertNotEquals(
+				A_USAGES_MATRIX,
+				ESTIMATOR_UTILS.withDefaultTxnPartitioning(
+						A_USAGE_VECTOR,
+						SubType.TOKEN_NON_FUNGIBLE_UNIQUE,
+						NETWORK_RBH,
+						NUM_PAYER_KEYS));
 	}
 
 	@Test
