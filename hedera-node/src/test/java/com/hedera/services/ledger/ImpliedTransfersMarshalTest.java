@@ -108,7 +108,7 @@ class ImpliedTransfersMarshalTest {
 
 	private final EntityId customFeeToken = new EntityId(0, 0, 123);
 	private final EntityId customFeeCollector = new EntityId(0, 0, 124);
-	final List<Pair<EntityId, List<CustomFee>>> customFeesChanges = List.of(
+	final List<Pair<EntityId, List<CustomFee>>> entityCustomFees = List.of(
 			new Pair<>(customFeeToken, new ArrayList<>()));
 	final List<Pair<EntityId, List<CustomFee>>> newCustomFeeChanges = List.of(
 			new Pair<>(customFeeToken, List.of(CustomFee.fixedFee(10L, customFeeToken, customFeeCollector))));
@@ -211,7 +211,7 @@ class ImpliedTransfersMarshalTest {
 	@Test
 	void metaObjectContractSanityChecks() {
 		// given:
-		final var oneMeta = new ImpliedTransfersMeta(3, 4, OK, customFeesChanges);
+		final var oneMeta = new ImpliedTransfersMeta(3, 4, OK, entityCustomFees);
 		final var twoMeta = new ImpliedTransfersMeta(1, 2, TOKEN_WAS_DELETED, Collections.emptyList());
 		// and:
 		final var oneRepr = "ImpliedTransfersMeta{code=OK, " +
@@ -237,17 +237,19 @@ class ImpliedTransfersMarshalTest {
 				7));
 		final var oneImpliedXfers = ImpliedTransfers.invalid(3, 4, TOKEN_WAS_DELETED);
 		final var twoImpliedXfers = ImpliedTransfers.valid(1, 100, twoChanges,
-				customFeesChanges, customFeeBalanceChanges);
+				entityCustomFees, customFeeBalanceChanges);
 		// and:
 		final var oneRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=TOKEN_WAS_DELETED, " +
 				"maxExplicitHbarAdjusts=3, maxExplicitTokenAdjusts=4, customFeeSchedulesUsedInMarshal=[]}, changes=[], " +
-				"customFeesChanges=[]}";
+				"entityCustomFees=[], customFeesBalanceChanges=[]}";
 		final var twoRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=OK, maxExplicitHbarAdjusts=1, " +
 				"maxExplicitTokenAdjusts=100, customFeeSchedulesUsedInMarshal=[EntityId{shard=0, realm=0, " +
 				"num=123}=[]]}, " +
 				"changes=[BalanceChange{token=EntityId{shard=1, realm=2, num=3}, account=EntityId{shard=4, realm=5, " +
 				"num=6}, " +
-				"units=7}], customFeesChanges=[EntityId{shard=0, realm=0, num=123}=[]]}";
+				"units=7}], entityCustomFees=[EntityId{shard=0, realm=0, num=123}=[]], " +
+				"customFeesBalanceChanges=[CustomFeesBalanceChange{token=EntityId{shard=0, realm=0, num=123}, " +
+				"account=EntityId{shard=0, realm=0, num=124}, units=123}]}";
 
 		// expect:
 		assertNotEquals(oneImpliedXfers, twoImpliedXfers);
@@ -260,7 +262,7 @@ class ImpliedTransfersMarshalTest {
 	@Test
 	void metaRecognizesIdenticalConditions() {
 		// given:
-		final var meta = new ImpliedTransfersMeta(3, 4, OK, customFeesChanges);
+		final var meta = new ImpliedTransfersMeta(3, 4, OK, entityCustomFees);
 
 		given(dynamicProperties.maxTransferListSize()).willReturn(3);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(4);
