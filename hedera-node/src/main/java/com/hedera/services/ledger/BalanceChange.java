@@ -92,6 +92,7 @@ public class BalanceChange {
 	public static BalanceChange tokenAdjust(final EntityId account, final EntityId token,  final long amount) {
 		final var tokenChange = new BalanceChange(account, amount, INSUFFICIENT_TOKEN_BALANCE);
 		tokenChange.token = token;
+		tokenChange.tokenId = token.toGrpcTokenId();
 		return tokenChange;
 	}
 

@@ -105,8 +105,16 @@ class ImpliedTransfersMarshalTest {
 
 	private final EntityId customFeeToken = new EntityId(0, 0, 123);
 	private final EntityId customFeeCollector = new EntityId(0, 0, 124);
-	final List<Pair<EntityId, List<CustomFee>>> customFeesChanges = List.of(new Pair<>(customFeeToken, new ArrayList<>()));
-	private final List<CustomFeesBalanceChange> customFeeBalanceChanges = List.of(new CustomFeesBalanceChange(customFeeCollector, customFeeToken, 123L));
+	final List<Pair<EntityId, List<CustomFee>>> customFeesChanges = List.of(
+			new Pair<>(customFeeToken, new ArrayList<>()));
+	private final List<CustomFeesBalanceChange> customFeeBalanceChanges = List.of(
+			new CustomFeesBalanceChange(customFeeCollector, customFeeToken, 123L));
+
+	private final long numerator = 2L;
+	private final long denominator = 100L;
+	private final long minimumUnitsToCollect = 20L;
+	private final long maximumUnitsToCollect = 100L;
+	EntityId feeCollector = EntityId.fromGrpcAccountId(aModel);
 
 	@BeforeEach
 	void setUp() {
@@ -141,25 +149,25 @@ class ImpliedTransfersMarshalTest {
 		setupFixtureOp();
 		// and:
 		final List<BalanceChange> expectedChanges = List.of(new BalanceChange[] {
-				hbarChange(aModel, aHbarChange),
-				hbarChange(bModel, bHbarChange),
-				hbarChange(cModel, cHbarChange),
-				tokenChange(anotherToken, aModel, aAnotherTokenChange),
-				tokenChange(anotherToken, bModel, bAnotherTokenChange),
-				tokenChange(anotherToken, cModel, cAnotherTokenChange),
-				hbarChange(aModel, customFeeChangeToFeeCollector),
-				hbarChange(payer, customFeeChangeFromPayer),
-				tokenChange(token, bModel, bTokenChange),
-				tokenChange(token, cModel, cTokenChange),
-				hbarChange(aModel, customFeeChangeToFeeCollector),
-				hbarChange(payer, customFeeChangeFromPayer),
-				tokenChange(yetAnotherToken, aModel, aYetAnotherTokenChange),
-				tokenChange(yetAnotherToken, bModel, bYetAnotherTokenChange),
-				hbarChange(aModel, customFeeChangeToFeeCollector),
-				hbarChange(payer, customFeeChangeFromPayer)
+						hbarChange(aModel, aHbarChange),
+						hbarChange(bModel, bHbarChange),
+						hbarChange(cModel, cHbarChange),
+						tokenChange(anotherToken, aModel, aAnotherTokenChange),
+						tokenChange(anotherToken, bModel, bAnotherTokenChange),
+						tokenChange(anotherToken, cModel, cAnotherTokenChange),
+						hbarChange(aModel, customFeeChangeToFeeCollector),
+						hbarChange(payer, customFeeChangeFromPayer),
+						tokenChange(token, bModel, bTokenChange),
+						tokenChange(token, cModel, cTokenChange),
+						hbarChange(aModel, customFeeChangeToFeeCollector),
+						hbarChange(payer, customFeeChangeFromPayer),
+						tokenChange(yetAnotherToken, aModel, aYetAnotherTokenChange),
+						tokenChange(yetAnotherToken, bModel, bYetAnotherTokenChange),
+						hbarChange(aModel, customFeeChangeToFeeCollector),
+						hbarChange(payer, customFeeChangeFromPayer)
 				}
 		);
-		final List<CustomFee> customFee = getCustomFee();
+		final List<CustomFee> customFee = getFixedCustomFee();
 		final List<Pair<EntityId, List<CustomFee>>> expectedCustomFeeChanges =
 				List.of(new Pair<>(anotherToken, customFee),
 						new Pair<>(token, customFee),
@@ -227,10 +235,13 @@ class ImpliedTransfersMarshalTest {
 				customFeesChanges, customFeeBalanceChanges);
 		// and:
 		final var oneRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=TOKEN_WAS_DELETED, " +
-				"maxExplicitHbarAdjusts=3, maxExplicitTokenAdjusts=4, customFeeSchedulesUsedInMarshal=[]}, changes=[], customFeesChanges=[]}";
+				"maxExplicitHbarAdjusts=3, maxExplicitTokenAdjusts=4, customFeeSchedulesUsedInMarshal=[]}, changes=[], " +
+				"customFeesChanges=[]}";
 		final var twoRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=OK, maxExplicitHbarAdjusts=1, " +
-				"maxExplicitTokenAdjusts=100, customFeeSchedulesUsedInMarshal=[EntityId{shard=0, realm=0, num=123}=[]]}, " +
-				"changes=[BalanceChange{token=EntityId{shard=1, realm=2, num=3}, account=EntityId{shard=4, realm=5, num=6}, " +
+				"maxExplicitTokenAdjusts=100, customFeeSchedulesUsedInMarshal=[EntityId{shard=0, realm=0, " +
+				"num=123}=[]]}, " +
+				"changes=[BalanceChange{token=EntityId{shard=1, realm=2, num=3}, account=EntityId{shard=4, realm=5, " +
+				"num=6}, " +
 				"units=7}], customFeesChanges=[EntityId{shard=0, realm=0, num=123}=[]]}";
 
 		// expect:
@@ -272,6 +283,52 @@ class ImpliedTransfersMarshalTest {
 		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeesChanges));
 	}
 
+	@Test
+	void getsExpectedListWithFractionalCustomFee() {
+		op = CryptoTransferTransactionBody.newBuilder()
+				.addTokenTransfers(TokenTransferList.newBuilder()
+						.setToken(anotherId)
+						.addAllTransfers(List.of(
+								adjustFrom(a, cHbarChange)
+						))).build();
+		// and:
+		final var expectedFractionalFee = Math.min(
+				Math.max(numerator * cHbarChange / denominator, minimumUnitsToCollect), maximumUnitsToCollect);
+		final var expectedChanges = List.of(new BalanceChange[] {
+				tokenChange(anotherToken, aModel, cHbarChange),
+				tokenChange(anotherToken, aModel, expectedFractionalFee),
+				tokenChange(anotherToken, payer, -expectedFractionalFee) });
+
+		final var customFee = getFractionalCustomFee();
+		final var expectedCustomFeeChanges =
+				List.of(new Pair<>(anotherToken, customFee));
+		final var expectedCustomFeeBalanceChanges = List.of(
+				new CustomFeesBalanceChange(EntityId.fromGrpcAccountId(aModel), anotherToken, expectedFractionalFee),
+				new CustomFeesBalanceChange(EntityId.fromGrpcAccountId(payer), anotherToken, -expectedFractionalFee));
+
+		// and:
+		final var expectedMeta = new ImpliedTransfersMeta(maxExplicitHbarAdjusts, maxExplicitTokenAdjusts,
+				OK, expectedCustomFeeChanges);
+
+		given(dynamicProperties.maxTransferListSize()).willReturn(maxExplicitHbarAdjusts);
+		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxExplicitTokenAdjusts);
+		given(transferSemanticChecks.fullPureValidation(
+				maxExplicitHbarAdjusts,
+				maxExplicitTokenAdjusts,
+				op.getTransfers(),
+				op.getTokenTransfersList())).willReturn(OK);
+		given(customFeeSchedules.lookupScheduleFor(any())).willReturn(customFee);
+
+		// when:
+		final var result = subject.unmarshalFromGrpc(op, payer);
+
+		// then:
+		assertEquals(expectedMeta, result.getMeta());
+		assertEquals(expectedChanges, result.getAllBalanceChanges());
+		assertEquals(expectedCustomFeeChanges, result.getCustomFeesChanges());
+		assertEquals(expectedCustomFeeBalanceChanges, result.getCustomFeesBalanceChanges());
+	}
+
 	private void setupFixtureOp() {
 		var hbarAdjusts = TransferList.newBuilder()
 				.addAccountAmounts(adjustFrom(a, -100))
@@ -302,9 +359,16 @@ class ImpliedTransfersMarshalTest {
 				.build();
 	}
 
-	private List<CustomFee> getCustomFee() {
+	private List<CustomFee> getFixedCustomFee() {
 		return List.of(
-				CustomFee.fixedFee(20L, null, EntityId.fromGrpcAccountId(aModel))
+				CustomFee.fixedFee(20L, null, feeCollector)
+		);
+	}
+
+	private List<CustomFee> getFractionalCustomFee() {
+		return List.of(
+				CustomFee.fractionalFee(numerator, denominator, minimumUnitsToCollect, maximumUnitsToCollect,
+						feeCollector)
 		);
 	}
 }
