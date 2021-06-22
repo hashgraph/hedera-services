@@ -610,7 +610,7 @@ public class HederaLedger {
 
 	private NftTransfer.Builder nftTransferBuilderWith(AccountID senderId, AccountID receiverId, long serialNumber) {
 		var nftTransfer = NftTransfer.newBuilder().setReceiverAccountID(receiverId).setSerialNumber(serialNumber);
-		return (senderId != null) ? nftTransfer.setSenderAccountID(senderId) : nftTransfer;
+		return nftTransfer.setSenderAccountID(senderId);
 	}
 
 	private void clearNetTokenTransfers() {

@@ -93,10 +93,6 @@ public class PureTransferSemanticChecks {
 			return OK;
 		}
 
-		if (numScopedTransfers > maxListLen) {
-			return TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
-		}
-
 		var count = 0;
 		var numOwnershipChanges = 0;
 		for (var scopedTransfers : tokenTransfersList) {
