@@ -25,6 +25,7 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import proto.CustomFeesOuterClass;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -98,6 +99,30 @@ public class CustomFee implements SelfSerializable {
 		Objects.requireNonNull(feeCollector);
 		final var spec = new FixedFeeSpec(unitsToCollect, tokenDenomination);
 		return new CustomFee(FeeType.FIXED_FEE, feeCollector, spec, null);
+	}
+
+	public static CustomFee fromGrpc(CustomFeesOuterClass.CustomFee source) {
+		final var feeCollector = EntityId.fromGrpcAccountId(source.getFeeCollector());
+		if (source.hasFixedFee()) {
+			EntityId denom = null;
+			final var fixedSource = source.getFixedFee();
+			if (fixedSource.hasTokenId()) {
+				denom = EntityId.fromGrpcTokenId(fixedSource.getTokenId());
+			}
+			return fixedFee(fixedSource.getUnitsToCollect(), denom, feeCollector);
+		} else {
+			final var fractionalSource = source.getFractionalFee();
+			final var fraction = fractionalSource.getFractionOfUnitsToCollect();
+			final var effectiveMax = fractionalSource.hasMaximumUnitsToCollect()
+					? fractionalSource.getMaximumUnitsToCollect().getValue()
+					: Long.MAX_VALUE;
+			return fractionalFee(
+					fraction.getNumerator(),
+					fraction.getDenominator(),
+					fractionalSource.getMinimumUnitsToCollect(),
+					effectiveMax,
+					feeCollector);
+		}
 	}
 
 	public EntityId getFeeCollector() {
