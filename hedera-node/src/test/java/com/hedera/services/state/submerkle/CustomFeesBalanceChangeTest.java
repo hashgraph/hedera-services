@@ -152,6 +152,19 @@ class CustomFeesBalanceChangeTest {
 	}
 
 	@Test
+	void testToGrpcForHbar(){
+		// given:
+		final var subject = new CustomFeesBalanceChange(account, units);
+		// then:
+		CustomFeesOuterClass.CustomFeeCharged grpc = subject.toGrpc();
+
+		//expect:
+		assertEquals(subject.account().toGrpcAccountId(), grpc.getFeeCollector());
+		assertFalse(grpc.hasTokenId());
+		assertEquals(subject.units(), grpc.getUnitsCharged());
+	}
+
+	@Test
 	void testToGrpcWithBalanceChanges(){
 		// given:
 		final var subject = new CustomFeesBalanceChange(account, token, units);
@@ -190,5 +203,35 @@ class CustomFeesBalanceChangeTest {
 		assertEquals(expectedBalanceChange.get(0).account(), account);
 		assertEquals(expectedBalanceChange.get(0).token(), token);
 		assertEquals(expectedBalanceChange.get(0).units(), units);
+	}
+
+	@Test
+	void testFromGrpcForHbarAdjust(){
+		// given:
+		final var feeCharged = CustomFeesOuterClass.CustomFeeCharged
+				.newBuilder()
+				.setFeeCollector(account.toGrpcAccountId())
+				.setUnitsCharged(units)
+				.build();
+		final var grpc = CustomFeesOuterClass.CustomFeesCharged
+				.newBuilder()
+				.addCustomFeesCharged(feeCharged)
+				.build();
+
+		//expect:
+		final var expectedBalanceChange = CustomFeesBalanceChange.fromGrpc(grpc);
+		assertEquals(expectedBalanceChange.size(), 1);
+		assertEquals(expectedBalanceChange.get(0).account(), account);
+		assertEquals(expectedBalanceChange.get(0).token(), null);
+		assertEquals(expectedBalanceChange.get(0).units(), units);
+	}
+
+	@Test
+	void merkleMethodsWork() {
+		// given:
+		final var subject = new CustomFeesBalanceChange();
+
+		assertEquals(CustomFeesBalanceChange.MERKLE_VERSION, subject.getVersion());
+		assertEquals(CustomFeesBalanceChange.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 }

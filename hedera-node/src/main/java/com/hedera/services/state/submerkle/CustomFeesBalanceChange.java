@@ -148,7 +148,7 @@ public class CustomFeesBalanceChange implements SelfSerializable {
 		AccountAmount aa = AccountAmount.newBuilder()
 				.setAccountID(customFeesCharged.getFeeCollector())
 				.setAmount(customFeesCharged.getUnitsCharged()).build();
-		if (customFeesCharged.getTokenId() != null) {
+		if (customFeesCharged.hasTokenId()) {
 			return tokenAdjust(EntityId.fromGrpcTokenId(customFeesCharged.getTokenId()), aa);
 		}
 		return hbarAdjust(aa);
