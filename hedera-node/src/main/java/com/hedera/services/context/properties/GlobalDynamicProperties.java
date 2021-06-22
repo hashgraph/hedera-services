@@ -32,7 +32,7 @@ public class GlobalDynamicProperties {
 	private final PropertySource properties;
 
 	private int maxTokensPerAccount;
-	private long maxCustomFeesAllowed;
+	private int maxCustomFeesAllowed;
 	private int maxTokenSymbolUtf8Bytes;
 	private int maxTokenNameUtf8Bytes;
 	private int maxFileSizeKb;
@@ -83,7 +83,7 @@ public class GlobalDynamicProperties {
 	public void reload() {
 		shouldKeepRecordsInState = properties.getBooleanProperty("ledger.keepRecordsInState");
 		maxTokensPerAccount = properties.getIntProperty("tokens.maxPerAccount");
-		maxCustomFeesAllowed = properties.getLongProperty("tonkes.maxCustomFeesAllowed");
+		maxCustomFeesAllowed = properties.getIntProperty("tokes.maxCustomFeesAllowed");
 		maxTokenSymbolUtf8Bytes = properties.getIntProperty("tokens.maxSymbolUtf8Bytes");
 		maxTokenNameUtf8Bytes = properties.getIntProperty("tokens.maxTokenNameUtf8Bytes");
 		maxAccountNum = properties.getLongProperty("ledger.maxAccountNum");

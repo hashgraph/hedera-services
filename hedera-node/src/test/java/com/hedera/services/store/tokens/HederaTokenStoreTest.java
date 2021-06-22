@@ -89,6 +89,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
@@ -186,6 +187,7 @@ class HederaTokenStoreTest {
 			.setUnitsToCollect(100)
 			.build();
 	private Fraction fraction = Fraction.newBuilder().setNumerator(15).setDenominator(100).build();
+	private Fraction invalidFraction = Fraction.newBuilder().setNumerator(15).setDenominator(0).build();
 	private CustomFeesOuterClass.FractionalFee fractionalFee = CustomFeesOuterClass.FractionalFee.newBuilder()
 			.setFractionOfUnitsToCollect(fraction)
 			.setMaximumUnitsToCollect(UInt64Value.of(50))
@@ -211,6 +213,10 @@ class HederaTokenStoreTest {
 	private CustomFeesOuterClass.CustomFees grpcUnderspecifiedCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
 			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder().setFeeCollector(feeCollector))
 			.build();
+	private CustomFeesOuterClass.CustomFees grpcInvliadFractionCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
+			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder().setFeeCollector(feeCollector).setFractionalFee(
+					CustomFeesOuterClass.FractionalFee.newBuilder().setFractionOfUnitsToCollect(invalidFraction).build()
+			)).build();
 	private List<CustomFee> customFees = MerkleToken.customFeesFromGrpc(grpcCustomFees);
 
 	private HederaTokenStore subject;
@@ -1648,6 +1654,18 @@ class HederaTokenStoreTest {
 
 		// expect:
 		assertEquals(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR, result.getStatus());
+		assertTrue(result.getCreated().isEmpty());
+	}
+
+	@Test
+	void rejectsInvalidFractionInFractionalFee() {
+		var req = fullyValidAttempt().setCustomFees(grpcInvliadFractionCustomFees).build();
+
+		// when:
+		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		// expect:
+		assertEquals(FRACTION_DIVIDES_BY_ZERO, result.getStatus());
 		assertTrue(result.getCreated().isEmpty());
 	}
 

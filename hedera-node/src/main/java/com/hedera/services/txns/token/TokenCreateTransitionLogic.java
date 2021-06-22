@@ -106,7 +106,6 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 
 		var treasury = op.getTreasury();
 		var status = OK;
-		// TODO : also associate the feeCollector in case of fractionalFee
 		status = store.associate(treasury, List.of(created));
 		if (status != OK) {
 			abortWith(status);

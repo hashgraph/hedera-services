@@ -220,7 +220,7 @@ public class CustomFee implements SelfSerializable {
 		return MERKLE_VERSION;
 	}
 
-	public static class FractionalFeeSpec {
+	static class FractionalFeeSpec {
 		private final long numerator;
 		private final long denominator;
 		private final long minimumUnitsToCollect;
@@ -289,7 +289,7 @@ public class CustomFee implements SelfSerializable {
 		}
 	}
 
-	public static class FixedFeeSpec {
+	static class FixedFeeSpec {
 		private final long unitsToCollect;
 		/* If null, fee is collected in ℏ */
 		private final EntityId tokenDenomination;

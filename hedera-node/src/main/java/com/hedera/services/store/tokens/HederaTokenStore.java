@@ -79,6 +79,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
@@ -440,15 +441,17 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 					}
 				}
 			} else if (customFee.hasFractionalFee()) {
-				// TODO: ...
 				/* validate the fraction in fractionalFee */
 
-				/* QUESTION - Should fee collectors for fractional fees automatically be associated to the newly created token?
+				/* TODO: QUESTION - Should fee collectors for fractional fees automatically be associated to the newly created token?
 				 *
 				 * (This will require their keys to sign the TokenCreate transaction.) */
 
 				final var fractionalSpec = customFee.getFractionalFee();
 				final var fraction = fractionalSpec.getFractionOfUnitsToCollect();
+				if(fraction.getDenominator() == 0) {
+					return FRACTION_DIVIDES_BY_ZERO;
+				}
 			} else {
 				return CUSTOM_FEE_NOT_FULLY_SPECIFIED;
 			}
