@@ -36,10 +36,14 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
+import proto.CustomFeesOuterClass;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
@@ -72,6 +76,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 	Optional<String> expectedAutoRenewAccount = Optional.empty();
 	OptionalLong expectedAutoRenewPeriod = OptionalLong.empty();
 	Optional<Boolean> expectedExpiry = Optional.empty();
+	List<BiConsumer<HapiApiSpec, CustomFeesOuterClass.CustomFees>> expectedFees = new ArrayList<>();
 
 	@Override
 	public HederaFunctionality type() {
@@ -159,6 +164,10 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		expectedDeletion = Optional.of(Boolean.FALSE);
 		return this;
 	}
+	public HapiGetTokenInfo hasCustom(BiConsumer<HapiApiSpec, CustomFeesOuterClass.CustomFees> feeAssertion) {
+		expectedFees.add(feeAssertion);
+		return this;
+	}
 
 	@Override
 	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
@@ -215,6 +224,11 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 					actualInfo.getTreasury());
 		}
 
+		final var actualFees = actualInfo.getCustomFees();
+		for (var expectedFee : expectedFees) {
+			expectedFee.accept(spec, actualFees);
+		}
+
 		expectedMemo.ifPresent(s -> Assert.assertEquals(
 				"Wrong memo!",
 				s,
@@ -259,7 +273,6 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 				(n, r) -> r.getKycKey(n),
 				"Wrong token KYC key!",
 				registry);
-
 		assertFor(
 				actualInfo.getSupplyKey(),
 				expectedSupplyKey,

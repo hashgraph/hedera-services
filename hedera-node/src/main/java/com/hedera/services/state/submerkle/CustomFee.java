@@ -146,9 +146,11 @@ public class CustomFee implements SelfSerializable {
 					.setFractionOfUnitsToCollect(Fraction.newBuilder()
 							.setNumerator(spec.getNumerator())
 							.setDenominator(spec.getDenominator()))
-					.setMinimumUnitsToCollect(spec.getMinimumUnitsToCollect())
-					.setMaximumUnitsToCollect(UInt64Value.newBuilder()
-							.setValue(spec.getMaximumUnitsToCollect()));
+					.setMinimumUnitsToCollect(spec.getMinimumUnitsToCollect());
+			if (spec.getMaximumUnitsToCollect() != Long.MAX_VALUE) {
+				fracBuilder.setMaximumUnitsToCollect(UInt64Value.newBuilder()
+						.setValue(spec.getMaximumUnitsToCollect()));
+			}
 			builder.setFractionalFee(fracBuilder);
 		}
 		return builder.build();

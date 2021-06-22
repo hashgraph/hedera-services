@@ -161,6 +161,33 @@ class CustomFeeTest {
 	}
 
 	@Test
+	void grpcReprWorksForFractionalNoMax() {
+		// setup:
+		final var expected = CustomFeesOuterClass.CustomFee.newBuilder()
+				.setFeeCollector(feeCollector.toGrpcAccountId())
+				.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
+						.setFractionOfUnitsToCollect(Fraction.newBuilder()
+								.setNumerator(validNumerator)
+								.setDenominator(validDenominator))
+						.setMinimumUnitsToCollect(minimumUnitsToCollect)
+				).build();
+
+		// given:
+		final var fractionalFee = CustomFee.fractionalFee(
+				validNumerator,
+				validDenominator,
+				minimumUnitsToCollect,
+				Long.MAX_VALUE,
+				feeCollector);
+
+		// when:
+		final var actual = fractionalFee.asGrpc();
+
+		// then:
+		assertEquals(expected, actual);
+	}
+
+	@Test
 	void grpcConversionWorksForFractional() {
 		// setup:
 		final var expectedExplicitMaxSubject = CustomFee.fractionalFee(

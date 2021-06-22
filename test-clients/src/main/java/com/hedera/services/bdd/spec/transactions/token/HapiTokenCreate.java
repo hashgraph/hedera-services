@@ -39,6 +39,7 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import proto.CustomFeesOuterClass;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -75,6 +76,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	private Optional<String> autoRenewAccount = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> symbolFn = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> nameFn = Optional.empty();
+	private final List<Function<HapiApiSpec, CustomFeesOuterClass.CustomFee>> feeScheduleSuppliers = new ArrayList<>();
 
 	@Override
 	public HederaFunctionality type() {
@@ -87,7 +89,12 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 
 	public void setTokenPrefix(String prefix) {
 		token = prefix + token;
-        }
+	}
+
+	public HapiTokenCreate withCustom(Function<HapiApiSpec, CustomFeesOuterClass.CustomFee> supplier) {
+		feeScheduleSuppliers.add(supplier);
+		return this;
+	}
 
 	public HapiTokenCreate entityMemo(String memo) {
 		this.entityMemo = Optional.of(memo);
@@ -228,6 +235,12 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 								var treasuryId = TxnUtils.asId(a, spec);
 								b.setTreasury(treasuryId);
 							});
+							if (!feeScheduleSuppliers.isEmpty()) {
+								final var fb = b.getCustomFeesBuilder();
+								for (var supplier : feeScheduleSuppliers) {
+									fb.addCustomFees(supplier.apply(spec));
+								}
+							}
 						});
 		return b -> b.setTokenCreation(opBody);
 	}
@@ -278,7 +291,8 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 			if (op.hasFreezeKey()) {
 				registry.saveFreezeKey(token, op.getFreezeKey());
 			}
-		} catch (InvalidProtocolBufferException impossible) { }
+		} catch (InvalidProtocolBufferException impossible) {
+		}
 
 		if (advertiseCreation) {
 			String banner = "\n\n" + bannerWith(

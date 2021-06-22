@@ -34,6 +34,7 @@ import org.apache.logging.log4j.Logger;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -48,6 +49,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fractionalFeeInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHbarFeeInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHtsFeeInSchedule;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordSystemProperty;
@@ -104,6 +111,8 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						numAccountsAllowedIsDynamic(),
 						worksAsExpectedWithDefaultTokenId(),
 						cannotCreateWithExcessiveLifetime(),
+						/* HIP-18 */
+						creationWorksWithCustomFeeSchedule(),
 				}
 		);
 	}
@@ -325,6 +334,46 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						tokenCreate("primary")
 								.entityMemo("N\u0000!!!")
 								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING)
+				);
+	}
+
+	public HapiApiSpec creationWorksWithCustomFeeSchedule() {
+		final var hbarAmount = 1_234L;
+		final var htsAmount = 2_345L;
+		final var numerator = 1;
+		final var denominator = 10;
+		final var minimumToCollect = 5;
+		final var maximumToCollect = 50;
+
+		final var token = "withCustomSchedules";
+		final var feeDenom = "demon";
+		final var hbarCollector = "hbarFee";
+		final var htsCollector = "demonFee";
+		final var tokenCollector = "fractionalFee";
+
+		return defaultHapiSpec("CreationWorksWithCustomFeeSchedule")
+				.given(
+						cryptoCreate(htsCollector),
+						cryptoCreate(hbarCollector),
+						cryptoCreate(tokenCollector),
+						tokenCreate(feeDenom).treasury(htsCollector)
+				).when(
+						tokenCreate(token)
+								.treasury(tokenCollector)
+								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
+								.withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
+								.withCustom(fractionalFee(
+										numerator, denominator,
+										minimumToCollect, OptionalLong.of(maximumToCollect),
+										tokenCollector))
+				).then(
+						getTokenInfo(token)
+								.hasCustom(fixedHbarFeeInSchedule(hbarAmount, hbarCollector))
+								.hasCustom(fixedHtsFeeInSchedule(htsAmount, feeDenom, htsCollector))
+								.hasCustom(fractionalFeeInSchedule(
+										numerator, denominator,
+										minimumToCollect, OptionalLong.of(maximumToCollect),
+										tokenCollector))
 				);
 	}
 
