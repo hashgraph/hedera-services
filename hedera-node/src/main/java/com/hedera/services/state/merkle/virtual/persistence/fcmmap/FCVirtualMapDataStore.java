@@ -1,10 +1,7 @@
 package com.hedera.services.state.merkle.virtual.persistence.fcmmap;
 
 import com.hedera.services.state.merkle.virtual.Account;
-import com.hedera.services.state.merkle.virtual.VirtualKey;
 import com.hedera.services.state.merkle.virtual.VirtualTreePath;
-import com.hedera.services.state.merkle.virtual.VirtualValue;
-import com.hedera.services.state.merkle.virtual.persistence.VirtualRecord;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -29,15 +26,17 @@ public final class FCVirtualMapDataStore<VMK extends ByteBufferSerializable, LK 
     /** 1 Mb of bytes */
     private static final int MB = 1024*1024;
     /** The size of a hash we store in bytes, TODO what happens if we change digest? */
-    public static final int HASH_SIZE_BYTES = 384/Byte.SIZE;
+    public static final int HASH_SIZE_BYTES = DigestType.SHA_384.digestLength();
 
     //==================================================================================================================
     // Config
 
-    /** The number of bytes for a key */
-    private final int keySizeBytes;
-    /** The number of bytes for a data value */
-    private final int dataSizeBytes;
+    /** The number of bytes for a virtual map key "VMK" when serialized to a ByteBuffer */
+    private final int virtualMapKeySizeBytes;
+    /** The number of bytes for a leaf key "LK" when serialized to a ByteBuffer */
+    private final int leafKeySizeBytes;
+    /** The number of bytes for a leaf data value "LD" when serialized to a ByteBuffer */
+    private final int leafDataSizeBytes;
     /** The size of each mem mapped storage file in MB */
     private final int dataFileSizeInMb;
     /** The path of the directory to store storage files */
@@ -72,15 +71,6 @@ public final class FCVirtualMapDataStore<VMK extends ByteBufferSerializable, LK 
      * Hash -- HASH_SIZE_BYTES
      */
     private final FCMemMapDataStore parentStore;
-    /**
-     * Store for all the paths
-     *
-     * Contains:
-     * Account -- Account.BYTES
-     * Key -- 1 long
-     * Path -- VirtualTreePath.BYTES
-     */
-    private final FCMemMapDataStore pathStore;
 
     //==================================================================================================================
     // Indexes
@@ -107,29 +97,36 @@ public final class FCVirtualMapDataStore<VMK extends ByteBufferSerializable, LK 
      * Create new VirtualMapDataStore
      *
      * @param storageDirectory The path of the directory to store storage files
-     * @param keySizeBytes The number of bytes for a key
-     * @param dataSizeBytes The number of bytes for a data value
+     * @param virtualMapKeySizeBytes The number of bytes for a virtual map key "VMK", when serialized to ByteBuffer
+     * @param leafKeySizeBytes The number of bytes for a leaf key "LK", when serialized to ByteBuffer
+     * @param leafDataSizeBytes The number of bytes for a leaf data value "LD", when serialized to ByteBuffer
      * @param dataFileSizeInMb The size of each mem mapped storage file in MB
      */
-    public FCVirtualMapDataStore(Path storageDirectory, int keySizeBytes, int dataSizeBytes, int dataFileSizeInMb,
+    public FCVirtualMapDataStore(Path storageDirectory, int virtualMapKeySizeBytes, int leafKeySizeBytes, int leafDataSizeBytes, int dataFileSizeInMb,
                                  Supplier<FCSlotIndex<VmkAndPath<VMK>>> vmkSlotIndexSupplier,
                                  Supplier<FCSlotIndex<VmkAndLeafKey<VMK,LK>>> leafSlotIndexSupplier,
                                  Supplier<VMK> virtualMapKeyConstructor,Supplier<LK> leafKeyConstructor,
                                  Supplier<LD> leafDataConstructor) {
         // store config
         this.storageDirectory = storageDirectory;
-        this.keySizeBytes = keySizeBytes;
-        this.dataSizeBytes = dataSizeBytes;
+        this.virtualMapKeySizeBytes = virtualMapKeySizeBytes;
+        this.leafKeySizeBytes = leafKeySizeBytes;
+        this.leafDataSizeBytes = leafDataSizeBytes;
         this.dataFileSizeInMb = dataFileSizeInMb;
         this.virtualMapKeyConstructor = virtualMapKeyConstructor;
         this.leafKeyConstructor = leafKeyConstructor;
         this.leafDataConstructor = leafDataConstructor;
         // create data stores
-        int leafStoreSlotSize = Account.BYTES + keySizeBytes + VirtualTreePath.BYTES + dataSizeBytes + HASH_SIZE_BYTES;
-        int parentStoreSlotSize = Account.BYTES + VirtualTreePath.BYTES + HASH_SIZE_BYTES;
+        int leafStoreSlotSize =
+                virtualMapKeySizeBytes + leafKeySizeBytes +// size of VmkAndLeafKey<VMK,LK>
+                HASH_SIZE_BYTES + // TODO this should include the digest type, and think about how we change the digest to larger digests
+                leafDataSizeBytes; // size of LD
+        int parentStoreSlotSize =
+                virtualMapKeySizeBytes + Long.BYTES + // size of VmkAndPath<VMK>
+                HASH_SIZE_BYTES; // TODO this should include the digest type, and think about how we change the digest to larger digests
+
         leafStore = new FCMemMapDataStore(leafStoreSlotSize,dataFileSizeInMb*MB,storageDirectory.resolve("leaves"),"leaves_","dat");
         parentStore = new FCMemMapDataStore(parentStoreSlotSize,dataFileSizeInMb*MB,storageDirectory.resolve("parents"),"parents_","dat");
-        pathStore = new FCMemMapDataStore(Account.BYTES + Long.BYTES + VirtualTreePath.BYTES,dataFileSizeInMb*MB,storageDirectory.resolve("paths"),"paths_","dat");
         // create indexes
         parentIndex = vmkSlotIndexSupplier.get();
         leafIndex = leafSlotIndexSupplier.get();
@@ -150,8 +147,9 @@ public final class FCVirtualMapDataStore<VMK extends ByteBufferSerializable, LK 
         isImmutable = false;
         // copy config
         this.storageDirectory = dataStoreToCopy.storageDirectory;
-        this.keySizeBytes = dataStoreToCopy.keySizeBytes;
-        this.dataSizeBytes = dataStoreToCopy.dataSizeBytes;
+        this.virtualMapKeySizeBytes = dataStoreToCopy.virtualMapKeySizeBytes;
+        this.leafKeySizeBytes = dataStoreToCopy.leafKeySizeBytes;
+        this.leafDataSizeBytes = dataStoreToCopy.leafDataSizeBytes;
         this.dataFileSizeInMb = dataStoreToCopy.dataFileSizeInMb;
         this.virtualMapKeyConstructor = dataStoreToCopy.virtualMapKeyConstructor;
         this.leafKeyConstructor = dataStoreToCopy.leafKeyConstructor;
@@ -163,8 +161,6 @@ public final class FCVirtualMapDataStore<VMK extends ByteBufferSerializable, LK 
         // reuse data stores
         leafStore = dataStoreToCopy.leafStore;
         parentStore = dataStoreToCopy.parentStore;
-        pathStore = dataStoreToCopy.pathStore;
-
     }
 
 
@@ -199,10 +195,6 @@ public final class FCVirtualMapDataStore<VMK extends ByteBufferSerializable, LK 
         synchronized (parentStore) {
             parentStore.close();
         }
-        // close path store
-        synchronized (pathStore) {
-            pathStore.close();
-        }
         // TODO what else here
     }
 
@@ -220,8 +212,8 @@ public final class FCVirtualMapDataStore<VMK extends ByteBufferSerializable, LK 
     public void open(){
         // This could be faster if we open each in a thread.
         // open leaf store
-//        synchronized (leafStore) {
-//            leafStore.open((location, fileAtSlot) -> {
+        synchronized (leafStore) {
+            leafStore.open((location, fileAtSlot) -> {
 //                try {
 //                    final Account account = new Account(fileAtSlot.readLong(), fileAtSlot.readLong(), fileAtSlot.readLong());
 //                    ObjectLongHashMap<VirtualKey> indexMap = index(account, true).leafIndex;
@@ -238,11 +230,11 @@ public final class FCVirtualMapDataStore<VMK extends ByteBufferSerializable, LK 
 //                } catch (IOException e) {
 //                    e.printStackTrace(); // TODO something better here, this should only happen if our files are corrupt
 //                }
-//            });
-//        }
-//        // open parents store
-//        synchronized (parentStore) {
-//            parentStore.open((location, fileAtSlot) -> {
+            });
+        }
+        // open parents store
+        synchronized (parentStore) {
+            parentStore.open((location, fileAtSlot) -> {
 //                try {
 //                    final Account account = new Account(fileAtSlot.readLong(), fileAtSlot.readLong(), fileAtSlot.readLong());
 //                    final long path = fileAtSlot.readLong();
@@ -251,21 +243,8 @@ public final class FCVirtualMapDataStore<VMK extends ByteBufferSerializable, LK 
 //                } catch (IOException e) {
 //                    e.printStackTrace(); // TODO something better here, this should only happen if our files are corrupt
 //                }
-//            });
-//        }
-//        // open path store
-//        synchronized (pathStore) {
-//            pathStore.open((location, fileAtSlot) -> {
-//                try {
-//                    final Account account = new Account(fileAtSlot.readLong(), fileAtSlot.readLong(), fileAtSlot.readLong());
-//                    final long key = fileAtSlot.readLong();
-//                    LongLongHashMap indexMap = index(account, true).pathIndex;
-//                    indexMap.put(key, location);
-//                } catch (IOException e) {
-//                    e.printStackTrace(); // TODO something better here, this should only happen if our files are corrupt
-//                }
-//            });
-//        }
+            });
+        }
     }
 
     /**
@@ -280,10 +259,6 @@ public final class FCVirtualMapDataStore<VMK extends ByteBufferSerializable, LK 
         // sync parent store
         synchronized (parentStore) {
             parentStore.sync();
-        }
-        // sync path store
-        synchronized (pathStore) {
-            pathStore.sync();
         }
         // TODO add syncing for index
         // parentIndex
@@ -357,7 +332,7 @@ public final class FCVirtualMapDataStore<VMK extends ByteBufferSerializable, LK 
             // Account -- Account.BYTES
             buffer.position(buffer.position() + Account.BYTES); // jump over
             // Key -- keySizeBytes
-            byte[] keyBytes = new byte[keySizeBytes];
+            byte[] keyBytes = new byte[leafKeySizeBytes];
             buffer.get(keyBytes);
             // Path -- VirtualTreePath.BYTES
             long path = buffer.getLong(); // skip it!
@@ -490,7 +465,7 @@ public final class FCVirtualMapDataStore<VMK extends ByteBufferSerializable, LK 
             }
             // write parent into slot
             ByteBuffer buffer = parentStore.accessSlot(slotLocation);
-            // write map key
+            // write VmkAndPath
             key.write(buffer);
             // Hash -- HASH_SIZE_BYTES
             buffer.put(hash.getValue());
