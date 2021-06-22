@@ -79,11 +79,11 @@ public class ImpliedTransfersMarshal {
 		for (var aa : op.getTransfers().getAccountAmountsList()) {
 			changes.add(hbarAdjust(aa));
 		}
-		EntityId payerId = EntityId.fromGrpcAccountId(payer);
+		var payerId = EntityId.fromGrpcAccountId(payer);
 		for (var scopedTransfers : op.getTokenTransfersList()) {
 			final var grpcTokenId = scopedTransfers.getToken();
 			final var scopingToken = EntityId.fromGrpcTokenId(grpcTokenId);
-			long amount = 0L;
+			var amount = 0L;
 			for (var aa : scopedTransfers.getTransfersList()) {
 				changes.add(tokenAdjust(scopingToken, grpcTokenId, aa));
 				if (aa.getAmount() > 0) {

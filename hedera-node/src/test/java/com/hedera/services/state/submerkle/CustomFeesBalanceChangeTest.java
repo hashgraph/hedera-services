@@ -118,7 +118,7 @@ class CustomFeesBalanceChangeTest {
 	}
 
 	@Test
-	public void gettersWork() {
+	void gettersWork() {
 		//given
 		final var  subject = new CustomFeesBalanceChange(account, token, units);
 		// expect:
@@ -198,11 +198,11 @@ class CustomFeesBalanceChangeTest {
 				.build();
 
 		//expect:
-		final var expectedBalanceChange = CustomFeesBalanceChange.fromGrpc(grpc);
-		assertEquals(expectedBalanceChange.size(), 1);
-		assertEquals(expectedBalanceChange.get(0).account(), account);
-		assertEquals(expectedBalanceChange.get(0).token(), token);
-		assertEquals(expectedBalanceChange.get(0).units(), units);
+		final var balanceChange = CustomFeesBalanceChange.fromGrpc(grpc);
+		assertEquals(1, balanceChange.size());
+		assertEquals(account, balanceChange.get(0).account());
+		assertEquals(token, balanceChange.get(0).token());
+		assertEquals(units, balanceChange.get(0).units());
 	}
 
 	@Test
@@ -219,11 +219,11 @@ class CustomFeesBalanceChangeTest {
 				.build();
 
 		//expect:
-		final var expectedBalanceChange = CustomFeesBalanceChange.fromGrpc(grpc);
-		assertEquals(expectedBalanceChange.size(), 1);
-		assertEquals(expectedBalanceChange.get(0).account(), account);
-		assertEquals(expectedBalanceChange.get(0).token(), null);
-		assertEquals(expectedBalanceChange.get(0).units(), units);
+		final var balanceChange = CustomFeesBalanceChange.fromGrpc(grpc);
+		assertEquals(1, balanceChange.size());
+		assertEquals(account, balanceChange.get(0).account());
+		assertEquals(null, balanceChange.get(0).token());
+		assertEquals(units, balanceChange.get(0).units());
 	}
 
 	@Test

@@ -25,7 +25,7 @@ public class FCMCustomFeeSchedules implements CustomFeeSchedules {
 		if (!tokens.get().containsKey(tokenId.asMerkle())) {
 			return new ArrayList<>();
 		}
-		MerkleToken merkleToken = tokens.get().get(tokenId.asMerkle());
+		final var merkleToken = tokens.get().get(tokenId.asMerkle());
 		return merkleToken.getFeeSchedule();
 	}
 }

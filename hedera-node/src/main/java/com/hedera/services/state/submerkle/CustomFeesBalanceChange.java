@@ -88,8 +88,7 @@ public class CustomFeesBalanceChange implements SelfSerializable {
 	}
 
 	public static CustomFeesBalanceChange tokenAdjust(final EntityId token, final AccountAmount aa) {
-		final var tokenChange = new CustomFeesBalanceChange(token, aa);
-		return tokenChange;
+		return new CustomFeesBalanceChange(token, aa);
 	}
 
 	/* NOTE: The object methods below are only overridden to improve readability of unit tests;
@@ -132,7 +131,7 @@ public class CustomFeesBalanceChange implements SelfSerializable {
 				.addAllCustomFeesCharged(
 						balanceChanges
 								.stream()
-								.map(i -> i.toGrpc())
+								.map(CustomFeesBalanceChange::toGrpc)
 								.collect(Collectors.toList()))
 				.build();
 	}
@@ -140,7 +139,7 @@ public class CustomFeesBalanceChange implements SelfSerializable {
 	public static List<CustomFeesBalanceChange> fromGrpc(CustomFeesOuterClass.CustomFeesCharged grpc) {
 		return grpc.getCustomFeesChargedList()
 				.stream()
-				.map(i -> fromGrpc(i))
+				.map(CustomFeesBalanceChange::fromGrpc)
 				.collect(Collectors.toList());
 	}
 
