@@ -1684,11 +1684,12 @@ workflows:
   GCP-Daily-Services-Crypto-Restart-4N-1C:
     triggers:
       - schedule:
-          cron: "15 6 * * *"
+          cron: "46 13 * * *"
           filters:
             branches:
               only:
-                - master
+#                - master
+                - 01641-M-restart-NPE-failure
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -2245,6 +2246,7 @@ workflows:
               branches:
                 ignore:
                   - /.*-PERF/
+                  - 01641-M-restart-NPE-failure
             workflow-name: "Continuous-integration"
         - sonar-check:
             context: SonarCloud
