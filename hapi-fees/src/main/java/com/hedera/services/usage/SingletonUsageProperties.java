@@ -23,19 +23,32 @@ package com.hedera.services.usage;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 
+/**
+ * Enum implements {@link UsageProperties} that returns the account amount, nft transfer usage in terms of bytes and
+ * storage of receipt in ledger in seconds.
+ * */
 public enum SingletonUsageProperties implements UsageProperties {
 	USAGE_PROPERTIES;
 
 	@Override
+	/**
+	 * Gives the bytes usage for account amount
+	 * */
 	public int accountAmountBytes() {
 		return LONG_SIZE + BASIC_ENTITY_ID_SIZE;
 	}
 
+	/**
+	 * Gives the bytes usage for nft transfers
+	 * */
 	@Override
 	public int nftTransferBytes() {
 		return LONG_SIZE + 2 * BASIC_ENTITY_ID_SIZE;
 	}
 
+	/**
+	 * Gives the length in seconds for storage of receipt
+	 * */
 	@Override
 	public long legacyReceiptStorageSecs() {
 		return 180;

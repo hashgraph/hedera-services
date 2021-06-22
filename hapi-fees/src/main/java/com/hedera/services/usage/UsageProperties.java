@@ -20,6 +20,10 @@ package com.hedera.services.usage;
  * ‍
  */
 
+/**
+ * All implementing classes for this interface must define the usage in terms of account amount in bytes, nft transfer
+ * in bytes and storage of receipt in seconds.
+ * */
 public interface UsageProperties {
 	int accountAmountBytes();
 
