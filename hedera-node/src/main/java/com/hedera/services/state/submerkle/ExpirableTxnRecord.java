@@ -61,7 +61,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	static final int MAX_MEMO_BYTES = 32 * 1_024;
 	static final int MAX_TXN_HASH_BYTES = 1_024;
 	static final int MAX_INVOLVED_TOKENS = 10;
-	static final int MAX_CUSTOM_FEES_BALANCE_CHANGES = 10;
+	static final int MAX_CUSTOM_FEES_BALANCE_CHANGES = 20;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8b9ede7ca8d8db93L;
 
 	static DomainSerdes serdes = new DomainSerdes();

@@ -22,7 +22,7 @@ package com.hedera.services.txns.span;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
-import com.hedera.services.txns.CustomFeeSchedules;
+import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.utils.TxnAccessor;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -76,9 +76,7 @@ public class SpanMapManager {
 
 	private void rationalizeImpliedTransfers(TxnAccessor accessor) {
 		final var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
-		/*TODO : Need to re-compute based on FCMap implementation in ServicesContext*/
-		final var activeCustomFeeSchedules = impliedTransfers.getCustomFeesChanges();
-		if (!impliedTransfers.getMeta().wasDerivedFrom(dynamicProperties, activeCustomFeeSchedules)) {
+		if (!impliedTransfers.getMeta().wasDerivedFrom(dynamicProperties, customFeeSchedules)) {
 			expandImpliedTransfers(accessor);
 		}
 	}

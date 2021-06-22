@@ -27,7 +27,7 @@ import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.state.submerkle.CustomFee;
 import com.hedera.services.state.submerkle.CustomFeesBalanceChange;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.txns.CustomFeeSchedules;
+import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -261,26 +261,25 @@ class ImpliedTransfersMarshalTest {
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(4);
 
 		// expect:
-		assertTrue(meta.wasDerivedFrom(dynamicProperties, customFeesChanges));
+		assertTrue(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules));
 
 		//modify customFeeChanges to see test fails
-		final var modifiedList = new ArrayList<>(customFeesChanges);
-		modifiedList.add(new Pair<>(token, Collections.emptyList()));
-		assertFalse(meta.wasDerivedFrom(dynamicProperties, modifiedList));
+		given(customFeeSchedules.lookupScheduleFor(any())).willReturn(Collections.emptyList());
+		assertTrue(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules));
 
 		// and:
 		given(dynamicProperties.maxTransferListSize()).willReturn(2);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(4);
 
 		// expect:
-		assertFalse(meta.wasDerivedFrom(dynamicProperties, Collections.emptyList()));
+		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules));
 
 		// and:
 		given(dynamicProperties.maxTransferListSize()).willReturn(3);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(3);
 
 		// expect:
-		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeesChanges));
+		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules));
 	}
 
 	@Test

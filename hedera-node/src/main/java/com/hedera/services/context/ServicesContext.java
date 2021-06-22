@@ -254,7 +254,7 @@ import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.HapiThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.throttling.TxnAwareHandleThrottling;
-import com.hedera.services.txns.CustomFeeSchedules;
+import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.txns.TransitionLogic;
@@ -289,6 +289,7 @@ import com.hedera.services.txns.schedule.ScheduleExecutor;
 import com.hedera.services.txns.schedule.ScheduleSignTransitionLogic;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.services.txns.customfees.FCMCustomFeeSchedules;
 import com.hedera.services.txns.span.SpanMapManager;
 import com.hedera.services.txns.submission.BasicSubmissionFlow;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
@@ -572,7 +573,7 @@ public class ServicesContext {
 	private AtomicReference<FCMap<MerkleEntityId, MerkleSchedule>> queryableSchedules;
 	private AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage;
 	private AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations;
-	private CustomFeeSchedules activeCustomFeeSchedules;
+	private FCMCustomFeeSchedules activeCustomFeeSchedules;
 
 	/* Context-free infrastructure. */
 	private static Pause pause;
@@ -738,9 +739,8 @@ public class ServicesContext {
 	}
 
 	private CustomFeeSchedules customFeeSchedules() {
-		/* TODO : yet to be implemented */
 		if (activeCustomFeeSchedules == null) {
-			return activeCustomFeeSchedules;
+			activeCustomFeeSchedules = new FCMCustomFeeSchedules(this::tokens);
 		}
 		return activeCustomFeeSchedules;
 	}

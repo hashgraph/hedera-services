@@ -26,7 +26,7 @@ import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.state.submerkle.CustomFee;
 import com.hedera.services.state.submerkle.CustomFeesBalanceChange;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.txns.CustomFeeSchedules;
+import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import javafx.util.Pair;
@@ -52,7 +52,6 @@ public class ImpliedTransfersMarshal {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final PureTransferSemanticChecks transferSemanticChecks;
 	private final CustomFeeSchedules customFeeSchedules;
-	private List<CustomFeesBalanceChange> customFeeBalanceChanges;
 
 	public ImpliedTransfersMarshal(
 			GlobalDynamicProperties dynamicProperties,

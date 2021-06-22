@@ -477,4 +477,8 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	public void setCustomFeeKey(JKey customFeeKey) {
 		this.customFeeKey = customFeeKey;
 	}
+
+	public List<CustomFee> getFeeSchedule() {
+		return feeSchedule;
+	}
 }

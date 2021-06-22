@@ -281,6 +281,7 @@ class ExpirableTxnRecordTest {
 	@Test
 	void v0160DeserializeWorks() throws IOException {
 		// setup:
+		subject = subjectRecordWithTokenTransfersAndScheduleRefCustomFees();
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
 
 		given(serdes.readNullableSerializable(fin))
@@ -315,7 +316,7 @@ class ExpirableTxnRecordTest {
 		deserializedRecord.deserialize(fin, ExpirableTxnRecord.RELEASE_0160_VERSION);
 
 		// then:
-		//assertEquals(subject, deserializedRecord);
+		assertEquals(subject, deserializedRecord);
 	}
 
 	@Test
