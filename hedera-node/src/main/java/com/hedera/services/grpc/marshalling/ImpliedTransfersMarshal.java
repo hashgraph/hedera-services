@@ -230,7 +230,9 @@ public class ImpliedTransfersMarshal {
 		if (existingBalanceChanges.containsKey(key)) {
 			var balChange = existingBalanceChanges.get(key);
 			balChange.adjustUnits(fees);
-			balChange.setCodeForInsufficientBalance(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE);
+			if (isPayer) {
+				balChange.setCodeForInsufficientBalance(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE);
+			}
 			return true;
 		}
 		return false;
