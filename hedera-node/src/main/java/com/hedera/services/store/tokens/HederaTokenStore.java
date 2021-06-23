@@ -77,6 +77,7 @@ import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.services.state.merkle.MerkleToken.UNUSED_KEY;
 import static com.hedera.services.state.merkle.MerkleUniqueTokenId.fromNftID;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
+import static com.hedera.services.state.submerkle.EntityId.fromGrpcTokenId;
 import static com.hedera.services.store.CreationResult.failure;
 import static com.hedera.services.store.CreationResult.success;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
@@ -125,6 +126,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
 	// Temporary added while Answer service is refactored to use the new Model based design
 	private final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokenSupplier;
+	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAccountOwnerships;
 	private final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 	private final TransactionalLedger<
 			Pair<AccountID, TokenID>,
@@ -141,6 +143,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			GlobalDynamicProperties properties,
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
 			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokenSupplier,
+			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAccountOwnerships,
 			TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
 			TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger
 	) {
@@ -151,6 +154,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		this.nftsLedger = nftsLedger;
 		this.tokenRelsLedger = tokenRelsLedger;
 		this.uniqueTokenSupplier = uniqueTokenSupplier;
+		this.uniqueTokenAccountOwnerships = uniqueTokenAccountOwnerships;
 		rebuildViewOfKnownTreasuries();
 	}
 
@@ -374,6 +378,15 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			accountsLedger.set(to, NUM_NFTS_OWNED, toNftsOwned + 1);
 			tokenRelsLedger.set(fromRel, TOKEN_BALANCE, fromThisNftsOwned - 1);
 			tokenRelsLedger.set(toRel, TOKEN_BALANCE, toThisNftsOwned + 1);
+
+			var muti = new MerkleUniqueTokenId(fromGrpcTokenId(nftId.tokenId()), nftId.serialNo());
+			this.uniqueTokenAccountOwnerships.get().disassociate(
+					fromGrpcAccountId(from),
+					muti);
+
+			this.uniqueTokenAccountOwnerships.get().associate(
+					fromGrpcAccountId(from),
+					muti);
 
 			hederaLedger.updateOwnershipChanges(nftId, from, to);
 

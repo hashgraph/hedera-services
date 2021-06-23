@@ -579,9 +579,10 @@ public class ServicesContext {
 	private AtomicReference<FCMap<MerkleEntityId, MerkleAccount>> queryableAccounts;
 	private AtomicReference<FCMap<MerkleEntityId, MerkleSchedule>> queryableSchedules;
 	private AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage;
-	private AtomicReference<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> queryableNfts;
-	private AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations;
 	private AtomicReference<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> queryableUniqueTokens;
+	private AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations;
+	private AtomicReference<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> queryableUniqueTokenAssociations;
+	private AtomicReference<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> queryableUniqueTokenAccountOwnerships;
 	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenOwnership = new FCOneToManyRelation<>();
 	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations = new FCOneToManyRelation<>();
 
@@ -847,6 +848,8 @@ public class ServicesContext {
 					() -> queryableStorage().get(),
 					() -> queryableUniqueTokens().get(),
 					() -> queryableTokenAssociations().get(),
+					() -> queryableUniqueTokenAssociations().get(),
+					() -> queryableUniqueTokenAccountOwnerships().get(),
 					this::diskFs,
 					nodeLocalProperties());
 		}
@@ -863,6 +866,8 @@ public class ServicesContext {
 					this::storage,
 					this::uniqueTokens,
 					this::tokenAssociations,
+					this::uniqueTokenAssociations,
+					this::uniqueTokenAccountOwnerships,
 					this::diskFs,
 					nodeLocalProperties());
 		}
@@ -1579,6 +1584,7 @@ public class ServicesContext {
 					globalDynamicProperties(),
 					this::tokens,
 					this::uniqueTokens,
+					this::uniqueTokenAccountOwnerships,
 					tokenRelsLedger,
 					nftsLedger);
 		}
@@ -2078,6 +2084,20 @@ public class ServicesContext {
 		return queryableUniqueTokens;
 	}
 
+	public AtomicReference<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> queryableUniqueTokenAssociations() {
+		if (queryableUniqueTokenAssociations == null) {
+			queryableUniqueTokenAssociations = new AtomicReference<>(uniqueTokenAssociations());
+		}
+		return queryableUniqueTokenAssociations;
+	}
+
+	public AtomicReference<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> queryableUniqueTokenAccountOwnerships() {
+		if (queryableUniqueTokenAccountOwnerships == null) {
+			queryableUniqueTokenAccountOwnerships = new AtomicReference<>(uniqueTokenAccountOwnerships());
+		}
+		return queryableUniqueTokenAccountOwnerships;
+	}
+
 	public UsagePricesProvider usagePrices() {
 		if (usagePrices == null) {
 			usagePrices = new AwareFcfsUsagePrices(hfs(), fileNums(), txnCtx());
@@ -2192,28 +2212,24 @@ public class ServicesContext {
 	public void rebuildOwnershipsAndAssociations() {
 		var uniqueTokens= state.uniqueTokens();
 		var keys = uniqueTokens.keySet();
+		this.uniqueTokenAssociations = new FCOneToManyRelation<>();
+		this.uniqueTokenOwnership = new FCOneToManyRelation<>();
 		for (MerkleUniqueTokenId key : keys) {
 			this.uniqueTokenAssociations.associate(key.tokenId(), key);
 			this.uniqueTokenOwnership.associate(uniqueTokens.get(key).getOwner(), key);
 		}
 	}
 
+	public FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens() {
+		return state.uniqueTokens();
+	}
+
 	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations() {
-		if (this.uniqueTokenAssociations == null) {
-			rebuildOwnershipsAndAssociations();
-		}
 		return this.uniqueTokenAssociations;
 	}
 
 	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAccountOwnerships() {
-		if (this.uniqueTokenOwnership == null) {
-			rebuildOwnershipsAndAssociations();
-		}
 		return this.uniqueTokenOwnership;
-	}
-
-	public FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens() {
-		return state.uniqueTokens();
 	}
 
 	public FCMap<MerkleEntityId, MerkleSchedule> schedules() {

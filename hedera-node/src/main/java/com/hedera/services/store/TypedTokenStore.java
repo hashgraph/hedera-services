@@ -197,10 +197,31 @@ public class TypedTokenStore {
 	 * 		holds changes to {@link UniqueToken} ownership
 	 */
 	public void persistTrackers(OwnershipTracker ownershipTracker) {
-		transactionRecordService.includeOwnershipChanges(
-				ownershipTracker,
-				this.uniqueOwnership.get()
-		);
+		applyOwnershipChanges(ownershipTracker);
+		transactionRecordService.includeOwnershipChanges(ownershipTracker);
+	}
+
+	private void applyOwnershipChanges(OwnershipTracker ownershipTracker) {
+		var allChanges = ownershipTracker.getChanges();
+		allChanges.forEach((token, changes) -> {
+			TokenID tokenID = TokenID.newBuilder()
+					.setShardNum(token.getShard())
+					.setRealmNum(token.getRealm())
+					.setTokenNum(token.getNum())
+					.build();
+
+			changes.forEach(change -> {
+				var merkleUniqueTokenId = new MerkleUniqueTokenId(
+						EntityId.fromGrpcTokenId(tokenID),
+						change.getSerialNumber());
+				this.uniqueOwnership.get().disassociate(
+						new EntityId(change.getPreviousOwner()),
+						merkleUniqueTokenId);
+				this.uniqueOwnership.get().associate(
+						new EntityId(change.getNewOwner()),
+						merkleUniqueTokenId);
+			});
+		});
 	}
 
 	/**
@@ -229,34 +250,6 @@ public class TypedTokenStore {
 		initModelFields(token, merkleToken);
 
 		return token;
-	}
-
-	/**
-	 * Returns a {@link UniqueToken} model of the requested unique token, with operations that can be used to
-	 * implement business logic in a transaction.
-	 *
-	 * @param tokenId
-	 * 		the token class of the unique token
-	 * @param serialNumber
-	 * 		the serial number to load
-	 * @return a usable model of the unique token
-	 * @throws InvalidTransactionException
-	 * 		if the requested token class is missing, deleted, or expired and pending removal
-	 */
-	public UniqueToken loadUniqueToken(Id tokenId, long serialNumber) {
-		final var tokenKey = new MerkleEntityId(tokenId.getShard(), tokenId.getRealm(), tokenId.getNum());
-		final var merkleToken = tokens.get().get(tokenKey);
-		validateUsable(merkleToken);
-
-		final var uniqueTokenKey = new MerkleUniqueTokenId(
-				new EntityId(tokenId.getShard(), tokenId.getRealm(), tokenId.getNum()), serialNumber);
-		final var merkleUniqueToken = uniqueTokens.get().get(uniqueTokenKey);
-		validateUsable(merkleUniqueToken);
-
-		final var uniqueToken = new UniqueToken(tokenId, serialNumber);
-		initModelFields(uniqueToken, merkleUniqueToken);
-
-		return uniqueToken;
 	}
 
 	/**

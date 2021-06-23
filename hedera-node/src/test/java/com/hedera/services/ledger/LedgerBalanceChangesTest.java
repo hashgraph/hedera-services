@@ -39,6 +39,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -54,6 +55,7 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import com.swirlds.fcmap.internal.FCMLeaf;
 import org.apache.commons.lang3.tuple.Pair;
@@ -88,6 +90,8 @@ class LedgerBalanceChangesTest {
 
 	private TokenStore tokenStore;
 	private FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
+	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens = new FCMap<>();
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAccountOwnerships = new FCOneToManyRelation<>();
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private TransactionalLedger<
 			Pair<AccountID, TokenID>,
@@ -130,7 +134,8 @@ class LedgerBalanceChangesTest {
 				validator,
 				dynamicProperties,
 				() -> tokens,
-				null,
+				() -> uniqueTokens,
+				() -> uniqueTokenAccountOwnerships,
 				tokenRelsLedger,
 				nftsLedger);
 
@@ -221,6 +226,7 @@ class LedgerBalanceChangesTest {
 				validator,
 				dynamicProperties,
 				() -> tokens,
+				null,
 				null,
 				tokenRelsLedger,
 				nftsLedger);

@@ -35,6 +35,7 @@ import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
@@ -46,6 +47,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.fchashmap.FCOneToManyRelation;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Collections;
@@ -99,6 +101,7 @@ public class BaseHederaLedgerTest {
 	protected AccountID rand = AccountID.newBuilder().setAccountNum(2_345).build();
 	protected AccountID deleted = AccountID.newBuilder().setAccountNum(3_456).build();
 	protected AccountID detached = AccountID.newBuilder().setAccountNum(4_567).build();
+	protected FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAccountOwnerships;
 
 	protected void commonSetup() {
 		creator = mock(ExpiringCreations.class);

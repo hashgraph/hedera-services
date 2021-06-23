@@ -112,7 +112,7 @@ public class TransactionRecordService {
 	 * Update the record of the active transaction with the ownership changes produced in the context of the current transaction
 	 * @param ownershipTracker the model of ownership changes
 	 */
-	public void includeOwnershipChanges(OwnershipTracker ownershipTracker, FCOneToManyRelation<EntityId, MerkleUniqueTokenId> ownershipAssociation) {
+	public void includeOwnershipChanges(OwnershipTracker ownershipTracker) {
 		if (ownershipTracker.isEmpty()) {
 			return;
 		}
@@ -140,15 +140,6 @@ public class TransactionRecordService {
 								.setRealmNum(newOwner.getRealm())
 								.setAccountNum(newOwner.getNum()))
 						.setSerialNumber(change.getSerialNumber()).build());
-				var merkleUniqueTokenId = new MerkleUniqueTokenId(
-						EntityId.fromGrpcTokenId(tokenID),
-						change.getSerialNumber());
-				ownershipAssociation.disassociate(
-						new EntityId(previousOwner),
-						merkleUniqueTokenId);
-				ownershipAssociation.associate(
-						new EntityId(newOwner),
-						merkleUniqueTokenId);
 			}
 			transferLists.add(TokenTransferList.newBuilder()
 					.setToken(tokenID)
