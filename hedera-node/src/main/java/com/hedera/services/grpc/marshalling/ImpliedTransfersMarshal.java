@@ -201,11 +201,8 @@ public class ImpliedTransfersMarshal {
 			Map<Pair<Id, Id>, BalanceChange> existingBalanceChanges,
 			List<BalanceChange> customFeeChanges, long fees,
 			BalanceChange customFee, boolean isPayer) {
-		if (isPayer) {
-			customFee.setCodeForInsufficientBalance(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE);
-		}
 		boolean isPresent = adjustUnitsIfKeyPresent(pair, existingBalanceChanges, fees, isPayer);
-		addBalanceChangeIfNotPresent(isPresent, customFeeChanges, existingBalanceChanges, pair, customFee);
+		addBalanceChangeIfNotPresent(isPresent, customFeeChanges, existingBalanceChanges, pair, customFee, isPayer);
 	}
 
 
@@ -214,8 +211,11 @@ public class ImpliedTransfersMarshal {
 	 */
 	private void addBalanceChangeIfNotPresent(boolean isPresent, List<BalanceChange> customFeeChanges,
 			Map<Pair<Id, Id>, BalanceChange> existingBalanceChanges,
-			Pair<Id, Id> pair, BalanceChange customFee) {
+			Pair<Id, Id> pair, BalanceChange customFee, boolean isPayer) {
 		if (!isPresent) {
+			if (isPayer) {
+				customFee.setCodeForInsufficientBalance(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE);
+			}
 			customFeeChanges.add(customFee);
 			existingBalanceChanges.put(pair, customFee);
 		}
