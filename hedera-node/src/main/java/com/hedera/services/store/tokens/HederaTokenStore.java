@@ -385,7 +385,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 					muti);
 
 			this.uniqueTokenAccountOwnerships.get().associate(
-					fromGrpcAccountId(from),
+					fromGrpcAccountId(to),
 					muti);
 
 			hederaLedger.updateOwnershipChanges(nftId, from, to);
