@@ -49,6 +49,7 @@ public class BalanceChange {
 	static final TokenID NO_TOKEN_FOR_HBAR_ADJUST = TokenID.getDefaultInstance();
 
 	private EntityId token;
+
 	private EntityId account;
 	private long units;
 	private ResponseCodeEnum codeForInsufficientBalance;
@@ -73,6 +74,10 @@ public class BalanceChange {
 		this.accountId = account.toGrpcAccountId();
 		this.units = amount;
 		this.codeForInsufficientBalance = code;
+	}
+
+	public void adjustUnits(final long units) {
+		this.units += units;
 	}
 
 	public static BalanceChange hbarAdjust(final AccountAmount aa) {
@@ -118,6 +123,14 @@ public class BalanceChange {
 
 	public AccountID accountId() {
 		return accountId;
+	}
+
+	public EntityId getAccount() {
+		return account;
+	}
+
+	public EntityId getToken() {
+		return token;
 	}
 
 	public ResponseCodeEnum codeForInsufficientBalance() {

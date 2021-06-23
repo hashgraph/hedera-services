@@ -38,7 +38,7 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import javafx.util.Pair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -164,7 +164,7 @@ class CryptoTransferTransitionLogicTest {
 		final var customFeesBalanceChange = List.of(
 				new CustomFeesBalanceChange(a, 10L));
 		final var customFee = List.of(CustomFee.fixedFee(20L, null, a));
-		final List<Pair<EntityId, List<CustomFee>>> customFees = List.of(new Pair<>(c, customFee));
+		final List<Pair<EntityId, List<CustomFee>>> customFees = List.of(Pair.of(c, customFee));
 		final var impliedTransfers = ImpliedTransfers.valid(
 				maxHbarAdjusts, maxTokenAdjusts, List.of(
 						hbarChange(a.toGrpcAccountId(), +100),
