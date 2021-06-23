@@ -60,19 +60,10 @@ public interface SlotStore {
     /**
      * Get direct access to the slot in the base storage
      *
-     * @param location slot location of the data to get
-     * @return the could be a direct buffer onto real storage or a shared reused buffer
+     * @param location the file and slot location of the data to get
+     * @return the real ByteBuffer containing the data positioned and marked at the data location
      */
     ByteBuffer accessSlot(long location);
-
-    /**
-     * Return a slot that was obtained by access, this may be the point when it is written to disk depending on
-     * implementation.
-     *
-     * @param location slot location of the data to get
-     * @param buffer the buffer obtained by accessSlot()
-     */
-    void returnSlot(long location, ByteBuffer buffer);
 
     /**
      * Finds a new slot ready for use

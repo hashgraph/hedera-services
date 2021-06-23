@@ -3,7 +3,6 @@ package com.hedera.services.state.merkle.virtual;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
-import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
@@ -21,7 +20,7 @@ public class SequentialVsRandom {
         deleteAnyOld();
         Files.createDirectories(STORE_PATH);
         final int SLOT_SIZE_BYTES = 1024;
-        final int TEST_SIZE_SLOTS = 1024 * (1024+512);
+        final int TEST_SIZE_SLOTS = 1024 * (512);
         final int TEST_SIZE_MB = (SLOT_SIZE_BYTES*TEST_SIZE_SLOTS)/(1024*1024);
         // create random data
         byte[][] data = new byte[TEST_SIZE_SLOTS][];
@@ -56,17 +55,15 @@ public class SequentialVsRandom {
         }
         {
             Path seqFile = STORE_PATH.resolve("seq3.dat");
-            SeekableByteChannel channel = Files.newByteChannel(seqFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+            SeekableByteChannel channel = Files.newByteChannel(seqFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE,
+                    StandardOpenOption.TRUNCATE_EXISTING);
             ByteBuffer buffer = ByteBuffer.allocateDirect(SLOT_SIZE_BYTES);
             long START1 = System.currentTimeMillis();
             for (int i = 0; i < TEST_SIZE_SLOTS; i++) {
                 buffer.rewind();
                 buffer.put(data[i]);
                 buffer.rewind();
-                while (buffer.remaining() > 0) {
-                    int n = channel.write(buffer);
-                    if (n <= 0) throw new RuntimeException("no bytes written");
-                }
+                channel.write(buffer);
             }
             long END1 = System.currentTimeMillis();
             channel.close();

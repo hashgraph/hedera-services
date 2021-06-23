@@ -7,7 +7,7 @@ import com.swirlds.common.FastCopyable;
  *
  * @param <K> type for key into index
  */
-public interface FCSlotIndex<K> extends FastCopyable {
+public interface FCSlotIndex<K> extends FastCopyable<FCSlotIndex<K>> {
     /** Special Location for when not found */
     public static final long NOT_FOUND_LOCATION = Long.MAX_VALUE;
 
@@ -20,7 +20,4 @@ public interface FCSlotIndex<K> extends FastCopyable {
     public long removeSlot(K key);
 
     public int keyCount();
-
-    @Override
-    FCSlotIndex<K> copy();
 }
