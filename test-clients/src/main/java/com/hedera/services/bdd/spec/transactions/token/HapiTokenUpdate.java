@@ -67,7 +67,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 	private Optional<String> newWipeKey = Optional.empty();
 	private Optional<String> newSupplyKey = Optional.empty();
 	private Optional<String> newFreezeKey = Optional.empty();
-	private Optional<String> newCustomFeeKey = Optional.empty();
+	private Optional<String> newCustomFeesKey = Optional.empty();
 	private Optional<String> newSymbol = Optional.empty();
 	private Optional<String> newName = Optional.empty();
 	private Optional<String> newTreasury = Optional.empty();
@@ -112,8 +112,8 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 		return this;
 	}
 
-	public HapiTokenUpdate customFeeKey(String name) {
-		newCustomFeeKey = Optional.of(name);
+	public HapiTokenUpdate customFeesKey(String name) {
+		newCustomFeesKey = Optional.of(name);
 		return this;
 	}
 
@@ -262,7 +262,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 							newWipeKey.ifPresent(k -> b.setWipeKey(spec.registry().getKey(k)));
 							newKycKey.ifPresent(k -> b.setKycKey(spec.registry().getKey(k)));
 							newFreezeKey.ifPresent(k -> b.setFreezeKey(spec.registry().getKey(k)));
-							newCustomFeeKey.ifPresent(k -> b.setCustomFeesKey(spec.registry().getKey(k)));
+							newCustomFeesKey.ifPresent(k -> b.setCustomFeesKey(spec.registry().getKey(k)));
 							if (autoRenewAccount.isPresent()) {
 								var autoRenewId = TxnUtils.asId(autoRenewAccount.get(), spec);
 								b.setAutoRenewAccount(autoRenewId);
@@ -319,7 +319,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 		newSupplyKey.ifPresent(n -> registry.saveSupplyKey(token, registry.getKey(n)));
 		newWipeKey.ifPresent(n -> registry.saveWipeKey(token, registry.getKey(n)));
 		newKycKey.ifPresent(n -> registry.saveKycKey(token, registry.getKey(n)));
-		newCustomFeeKey.ifPresent(n -> registry.saveCustomFeesKey(token, registry.getKey(n)));
+		newCustomFeesKey.ifPresent(n -> registry.saveCustomFeesKey(token, registry.getKey(n)));
 	}
 
 	@Override

@@ -598,13 +598,13 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 		final var maximumToCollect = 50;
 
 		final var token = "withCustomSchedules";
-		final var feeDenom = "demon";
+		final var feeDenom = "denom";
 		final var hbarCollector = "hbarFee";
-		final var htsCollector = "demonFee";
+		final var htsCollector = "denomFee";
 		final var tokenCollector = "fractionalFee";
 		final var invalidEntityId = "1.2.786";
 
-		final var customFeeKey = "antique";
+		final var customFeesKey = "antique";
 
 		final var newHbarAmount = 17_234L;
 		final var newHtsAmount = 27_345L;
@@ -613,23 +613,23 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 		final var newMinimumToCollect = 57;
 		final var newMaximumToCollect = 507;
 
-		final var newFeeDenom = "newDemon";
+		final var newFeeDenom = "newDenom";
 		final var newHbarCollector = "newHbarFee";
-		final var newHtsCollector = "newDemonFee";
+		final var newHtsCollector = "newDenomFee";
 		final var newTokenCollector = "newFractionalFee";
 
-		final var newCustomFeeKey = "modern";
+		final var newCustomFeesKey = "modern";
 
 		return defaultFailingHapiSpec("OnlyValidCustomFeeScheduleCanBeUpdated")
 				.given(
-						newKeyNamed(customFeeKey),
+						newKeyNamed(customFeesKey),
 						cryptoCreate(htsCollector),
 						cryptoCreate(hbarCollector),
 						cryptoCreate(tokenCollector),
 						tokenCreate(feeDenom).treasury(htsCollector),
 						tokenCreate(token)
 								.treasury(tokenCollector)
-								.customFeeKey(customFeeKey)
+								.customFeesKey(customFeesKey)
 								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
 								.withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
 								.withCustom(fractionalFee(
@@ -674,7 +674,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.overridingProps(Map.of("tokens.maxCustomFeesAllowed", "10")),
 						tokenUpdate(token)
 								.treasury(newTokenCollector)
-								.customFeeKey(newCustomFeeKey)
+								.customFeesKey(newCustomFeesKey)
 								.withCustom(fixedHbarFee(newHbarAmount, newHbarCollector))
 								.withCustom(fixedHtsFee(newHtsAmount, newFeeDenom, newHtsCollector))
 								.withCustom(fractionalFee(
@@ -684,7 +684,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						)
 				.then(
 						getTokenInfo(token)
-								.hasCustomFeeKey(newCustomFeeKey)
+								.hasCustomFeesKey(newCustomFeesKey)
 								.hasCustom(fixedHbarFeeInSchedule(newHbarAmount, newHbarCollector))
 								.hasCustom(fixedHtsFeeInSchedule(newHtsAmount, newFeeDenom, newHtsCollector))
 								.hasCustom(fractionalFeeInSchedule(
