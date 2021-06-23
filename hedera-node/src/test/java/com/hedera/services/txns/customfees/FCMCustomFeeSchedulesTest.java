@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 @ExtendWith(MockitoExtension.class)
-public class FCMCustomFeeSchedulesTest {
+class FCMCustomFeeSchedulesTest {
 	private FCMCustomFeeSchedules subject;
 	FCMap<MerkleEntityId, MerkleToken> tokenFCMap = new FCMap<>();
 

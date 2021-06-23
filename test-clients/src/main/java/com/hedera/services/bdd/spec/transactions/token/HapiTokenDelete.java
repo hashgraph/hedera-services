@@ -127,6 +127,9 @@ public class HapiTokenDelete extends HapiTxnOp<HapiTokenDelete> {
 		if (registry.hasFreezeKey(token)) {
 			registry.forgetFreezeKey(token);
 		}
+		if (registry.hasCustomFeesKey(token)) {
+			registry.forgetCustomFeesKey(token);
+		}
 	}
 
 	@Override
