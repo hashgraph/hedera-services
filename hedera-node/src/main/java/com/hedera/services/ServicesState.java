@@ -116,8 +116,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		static final int NUM_0130_CHILDREN = 10;
 		static final int NUM_0140_CHILDREN = 10;
 		static final int UNIQUE_TOKENS = 10;
-		static final int NFTS = 11;
-		static final int NUM_0150_CHILDREN = 12;
+		static final int NUM_0150_CHILDREN = 11;
 	}
 
 	ServicesContext ctx;
@@ -209,8 +208,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			setChild(ChildIndices.TOKEN_ASSOCIATIONS, new FCMap<>());
 			setChild(ChildIndices.DISK_FS, new MerkleDiskFs());
 			setChild(ChildIndices.SCHEDULE_TXS, new FCMap<>());
-			setChild(ChildIndices.UNIQUE_TOKENS, new FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier>());
-			setChild(ChildIndices.NFTS, new FCMap<>());
+			setChild(ChildIndices.UNIQUE_TOKENS, new FCMap<MerkleUniqueTokenId, MerkleUniqueToken>());
 
 			/* Initialize the running hash leaf at genesis to an empty hash. */
 			final var firstRunningHash = new RunningHash();
@@ -325,8 +323,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				diskFs().copy(),
 				scheduleTxs().copy(),
 				runningHashLeaf().copy(),
-				uniqueTokens().copy(),
-				nfts().copy()
+				uniqueTokens().copy()
 		), this);
 	}
 
@@ -357,8 +354,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 						"  AddressBook            :: %s\n" +
 						"  RecordsRunningHashLeaf :: %s\n" +
 						"    ↪ Running hash       :: %s\n" +
-						"  UniqueTokens           :: %s\n" +
-						"  Nfts                   :: %s\n",
+						"  UniqueTokens           :: %s\n",
 				getHash(),
 				accounts().getHash(),
 				storage().getHash(),
@@ -371,8 +367,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				addressBook().getHash(),
 				runningHashLeaf().getHash(),
 				runningHashLeaf().getRunningHash().getHash(),
-				uniqueTokens().getHash(),
-				nfts().getHash()));
+				uniqueTokens().getHash()));
 	}
 
 	public FCMap<MerkleEntityId, MerkleAccount> accounts() {
@@ -417,9 +412,5 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	public FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens() {
 		return getChild(ChildIndices.UNIQUE_TOKENS);
-	}
-
-	public FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts() {
-		return getChild(ChildIndices.NFTS);
 	}
 }

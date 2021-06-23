@@ -254,7 +254,6 @@ import com.hedera.services.store.schedule.HederaScheduleStore;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.unique.OwnerIdentifier;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.throttling.DeterministicThrottling;
@@ -329,7 +328,6 @@ import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
 import com.hedera.services.utils.TxnAccessor;
-import com.hedera.services.utils.invertible_fchashmap.FCInvertibleHashMap;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -622,7 +620,6 @@ public class ServicesContext {
 		queryableTokenAssociations().set(tokenAssociations());
 		queryableSchedules().set(schedules());
 		queryableUniqueTokens().set(uniqueTokens());
-		queryableNfts().set(nfts());
 	}
 
 	public SwirldDualState getDualState() {
@@ -973,7 +970,6 @@ public class ServicesContext {
 					accountStore(),
 					new TransactionRecordService(txnCtx()),
 					this::tokens,
-					this::nfts,
 					this::uniqueTokens,
 					this::uniqueTokenAccountOwnerships,
 					this::uniqueTokenAssociations,
@@ -1557,7 +1553,7 @@ public class ServicesContext {
 
 	public BackingNfts backingNfts() {
 		if (backingNfts == null) {
-			backingNfts = new BackingNfts(this::nfts);
+			backingNfts = new BackingNfts(this::uniqueTokens);
 		}
 		return backingNfts;
 	}
@@ -1583,8 +1579,6 @@ public class ServicesContext {
 					globalDynamicProperties(),
 					this::tokens,
 					this::uniqueTokens,
-					this::uniqueTokenAccountOwnerships,
-					this::uniqueTokenAssociations,
 					tokenRelsLedger,
 					nftsLedger);
 		}
@@ -2077,13 +2071,6 @@ public class ServicesContext {
 		return queryableSchedules;
 	}
 
-	public AtomicReference<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> queryableNfts() {
-		if (queryableNfts == null) {
-			queryableNfts = new AtomicReference<>(nfts());
-		}
-		return queryableNfts;
-	}
-
 	public AtomicReference<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> queryableUniqueTokens() {
 		if (queryableUniqueTokens == null) {
 			queryableUniqueTokens = new AtomicReference<>(uniqueTokens());
@@ -2197,11 +2184,6 @@ public class ServicesContext {
 	public FCMap<MerkleEntityId, MerkleToken> tokens() {
 		return state.tokens();
 	}
-
-	public FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts() {
-		return state.nfts();
-	}
-
 
 	public FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations() {
 		return state.tokenAssociations();

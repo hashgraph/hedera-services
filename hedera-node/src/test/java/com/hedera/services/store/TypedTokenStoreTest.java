@@ -79,6 +79,8 @@ class TypedTokenStoreTest {
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
 	@Mock
 	private BackingTokenRels backingTokenRels;
+	@Mock
+	private BackingNfts backingNfts;
 
 	private TypedTokenStore subject;
 
@@ -93,6 +95,7 @@ class TypedTokenStoreTest {
 				() -> tokens,
 				() -> uniqueTokens,
 				() -> uniqueTokenOwnerships,
+				() -> uniqueTokenAssociations,
 				() -> tokenRels,
 				backingTokenRels,
 				backingNfts);
@@ -246,8 +249,8 @@ class TypedTokenStoreTest {
 		verify(tokens, never()).replace(merkleTokenId, expectedReplacementToken);
 		// and:
 		verify(transactionRecordService).includeChangesToToken(modelToken);
-		verify(nfts).put(expectedNewUniqTokenId, expectedNewUniqToken);
-		verify(nfts).remove(expectedPastUniqTokenId);
+		verify(uniqueTokens).put(expectedNewUniqTokenId, expectedNewUniqToken);
+		verify(uniqueTokens).remove(expectedPastUniqTokenId);
 		verify(backingNfts).addToExistingNfts(new NftId(0, 0, tokenNum, mintedSerialNo));
 		verify(backingNfts).removeFromExistingNfts(new NftId(0, 0, tokenNum, burnedSerialNo));
 	}

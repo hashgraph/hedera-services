@@ -204,12 +204,12 @@ public class ServicesContextTest {
 	FCMap<MerkleEntityId, MerkleAccount> accounts;
 	FCMap<MerkleEntityId, MerkleSchedule> schedules;
 	FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
-	FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts;
+	FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens;
 	FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
 
 	@BeforeEach
 	void setup() {
-		nfts = mock(FCMap.class);
+		uniqueTokens = mock(FCMap.class);
 		topics = mock(FCMap.class);
 		tokens = mock(FCMap.class);
 		tokenAssociations = mock(FCMap.class);
@@ -227,7 +227,7 @@ public class ServicesContextTest {
 		given(state.tokens()).willReturn(tokens);
 		given(state.tokenAssociations()).willReturn(tokenAssociations);
 		given(state.scheduleTxs()).willReturn(schedules);
-		given(state.nfts()).willReturn(nfts);
+		given(state.uniqueTokens()).willReturn(uniqueTokens);
 		crypto = mock(Cryptography.class);
 		platform = mock(Platform.class);
 		given(platform.getSelfId()).willReturn(new NodeId(false, 0L));
@@ -247,7 +247,7 @@ public class ServicesContextTest {
 		var newTokens = mock(FCMap.class);
 		var newTokenRels = mock(FCMap.class);
 		var newSchedules = mock(FCMap.class);
-		var newNfts = mock(FCMap.class);
+		var newUniqueTokens = mock(FCMap.class);
 
 		given(newState.accounts()).willReturn(newAccounts);
 		given(newState.topics()).willReturn(newTopics);
@@ -255,7 +255,7 @@ public class ServicesContextTest {
 		given(newState.storage()).willReturn(newStorage);
 		given(newState.tokenAssociations()).willReturn(newTokenRels);
 		given(newState.scheduleTxs()).willReturn(newSchedules);
-		given(newState.nfts()).willReturn(newNfts);
+		given(newState.uniqueTokens()).willReturn(newUniqueTokens);
 		// given:
 		var subject = new ServicesContext(nodeId, platform, state, propertySources);
 		// and:
@@ -265,7 +265,7 @@ public class ServicesContextTest {
 		var tokensRef = subject.queryableTokens();
 		var tokenRelsRef = subject.queryableTokenAssociations();
 		var schedulesRef = subject.queryableSchedules();
-		var nftsRef = subject.queryableNfts();
+		var uniqueTokensRef = subject.queryableUniqueTokens();
 
 		// when:
 		subject.update(newState);
@@ -278,7 +278,7 @@ public class ServicesContextTest {
 		assertSame(tokensRef, subject.queryableTokens());
 		assertSame(tokenRelsRef, subject.queryableTokenAssociations());
 		assertSame(schedulesRef, subject.queryableSchedules());
-		assertSame(nftsRef, subject.queryableNfts());
+		assertSame(uniqueTokensRef, subject.queryableUniqueTokens());
 		// and:
 		assertSame(newAccounts, subject.queryableAccounts().get());
 		assertSame(newTopics, subject.queryableTopics().get());
@@ -286,7 +286,7 @@ public class ServicesContextTest {
 		assertSame(newTokens, subject.queryableTokens().get());
 		assertSame(newTokenRels, subject.queryableTokenAssociations().get());
 		assertSame(newSchedules, subject.queryableSchedules().get());
-		assertSame(newNfts, subject.queryableNfts().get());
+		assertSame(newUniqueTokens, subject.queryableUniqueTokens().get());
 	}
 
 	@Test

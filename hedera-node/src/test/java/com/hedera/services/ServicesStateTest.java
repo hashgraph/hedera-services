@@ -49,14 +49,12 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
-import com.hedera.services.store.tokens.unique.OwnerIdentifier;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttling.FunctionalityThrottling;
-import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.ProcessLogic;
+import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.services.utils.invertible_fchashmap.FCInvertibleHashMap;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -154,15 +152,13 @@ class ServicesStateTest {
 	private FCMap<MerkleEntityId, MerkleAccount> accountsCopy;
 	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storageCopy;
 	private FCMap<MerkleEntityId, MerkleToken> tokens;
-	private FCMap<MerkleUniqueTokenId, MerkleUniqueTokenId> nfts;
-	private FCMap<MerkleUniqueTokenId, MerkleUniqueTokenId> nftsCopy;
 	private FCMap<MerkleEntityId, MerkleSchedule> scheduledTxs;
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociationsCopy;
 	private FCMap<MerkleEntityId, MerkleToken> tokensCopy;
 	private FCMap<MerkleEntityId, MerkleSchedule> scheduledTxsCopy;
-	private FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier> uniqueTokens;
-	private FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier> uniqueTokensCopy;
+	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens;
+	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokensCopy;
 	private MerkleDiskFs diskFs;
 	private MerkleDiskFs diskFsCopy;
 	private RecordsRunningHashLeaf runningHashLeaf;
@@ -220,12 +216,10 @@ class ServicesStateTest {
 
 		topics = mock(FCMap.class);
 		tokens = mock(FCMap.class);
-		nfts = mock(FCMap.class);
-		nftsCopy = mock(FCMap.class);
 		tokensCopy = mock(FCMap.class);
 		tokenAssociations = mock(FCMap.class);
 		tokenAssociationsCopy = mock(FCMap.class);
-		uniqueTokens = mock(FCInvertibleHashMap.class);
+		uniqueTokens = mock(FCMap.class);
 		diskFs = mock(MerkleDiskFs.class);
 		scheduledTxs = mock(FCMap.class);
 		runningHashLeaf = mock(RecordsRunningHashLeaf.class);
@@ -240,10 +234,9 @@ class ServicesStateTest {
 		accountsCopy = mock(FCMap.class);
 		diskFsCopy = mock(MerkleDiskFs.class);
 		scheduledTxsCopy = mock(FCMap.class);
-		uniqueTokensCopy = mock(FCInvertibleHashMap.class);
+		uniqueTokensCopy = mock(FCMap.class);
 		runningHashLeafCopy = mock(RecordsRunningHashLeaf.class);
 
-		given(nfts.copy()).willReturn(nftsCopy);
 		given(topics.copy()).willReturn(topicsCopy);
 		given(storage.copy()).willReturn(storageCopy);
 		given(accounts.copy()).willReturn(accountsCopy);
@@ -424,7 +417,6 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.SCHEDULE_TXS, scheduledTxs);
 		subject.setChild(ServicesState.ChildIndices.RECORD_STREAM_RUNNING_HASH, runningHashLeaf);
 		subject.setChild(ServicesState.ChildIndices.UNIQUE_TOKENS, uniqueTokens);
-		subject.setChild(ServicesState.ChildIndices.NFTS, nfts);
 
 		// when:
 		subject.init(platform, book);
@@ -464,7 +456,6 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.SCHEDULE_TXS, scheduledTxs);
 		subject.setChild(ServicesState.ChildIndices.RECORD_STREAM_RUNNING_HASH, runningHashLeaf);
 		subject.setChild(ServicesState.ChildIndices.UNIQUE_TOKENS, uniqueTokens);
-		subject.setChild(ServicesState.ChildIndices.NFTS, nfts);
 
 		// when:
 		subject.init(platform, book);
@@ -497,14 +488,13 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.SCHEDULE_TXS, scheduledTxs);
 		subject.setChild(ServicesState.ChildIndices.RECORD_STREAM_RUNNING_HASH, runningHashLeaf);
 		subject.setChild(ServicesState.ChildIndices.UNIQUE_TOKENS, uniqueTokens);
-		subject.setChild(ServicesState.ChildIndices.NFTS, nfts);
 		// when:
 		subject.init(platform, book);
 
 		// then:
 		InOrder inOrder = inOrder(
 				scheduledTxs, runningHashLeaf, diskFs, ctx, mockDigest,
-				accounts, storage, topics, tokens, tokenAssociations, networkCtx, book, nfts);
+				accounts, storage, topics, tokens, tokenAssociations, networkCtx, book, uniqueTokens);
 		inOrder.verify(diskFs).checkHashesAgainstDiskContents();
 		inOrder.verify(ctx).setRecordsInitialHash(recordsHash);
 		inOrder.verify(accounts).getHash();
@@ -517,7 +507,7 @@ class ServicesStateTest {
 		inOrder.verify(networkCtx).getHash();
 		inOrder.verify(book).getHash();
 		inOrder.verify(runningHashLeaf).getHash();
-		inOrder.verify(nfts).getHash();
+		inOrder.verify(uniqueTokens).getHash();
 		inOrder.verify(ctx).update(subject);
 		// and:
 		assertThat(
@@ -548,7 +538,6 @@ class ServicesStateTest {
 		// and:
 		Hash overallHash = new Hash("a!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!dfa!df".getBytes());
 		Hash uniqueTokensRootHash = new Hash("asdhasdhasdhasdhasdhasdhasdhasdhasdhasdhasdhasdh".getBytes());
-		Hash nftsRootHash = new Hash("wxyzwxyzwxyzwxyzwxyzwxyzwxyzwxyzwxyzwxyzwxyzwxyz".getBytes());
 
 		// and:
 		subject.setChild(ServicesState.ChildIndices.TOPICS, topics);
@@ -562,7 +551,6 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.SCHEDULE_TXS, scheduledTxs);
 		subject.setChild(ServicesState.ChildIndices.RECORD_STREAM_RUNNING_HASH, runningHashLeaf);
 		subject.setChild(ServicesState.ChildIndices.UNIQUE_TOKENS, uniqueTokens);
-		subject.setChild(ServicesState.ChildIndices.NFTS, nfts);
 		// and:
 		var expected = String.format("[SwirldState Hashes]\n" +
 						"  Overall                :: %s\n" +
@@ -577,8 +565,7 @@ class ServicesStateTest {
 						"  AddressBook            :: %s\n" +
 						"  RecordsRunningHashLeaf :: %s\n" +
 						"    ↪ Running hash       :: %s\n" +
-						"  UniqueTokens           :: %s\n" +
-						"  Nfts                   :: %s",
+						"  UniqueTokens           :: %s",
 
 				overallHash,
 				accountsRootHash,
@@ -592,8 +579,7 @@ class ServicesStateTest {
 				bookHash,
 				runningHashLeafHash,
 				hashInRunningHash,
-				uniqueTokensRootHash,
-				nftsRootHash);
+				uniqueTokensRootHash);
 		subject.setHash(overallHash);
 
 		given(topics.getHash()).willReturn(topicRootHash);
@@ -607,7 +593,6 @@ class ServicesStateTest {
 		given(book.getHash()).willReturn(bookHash);
 		given(diskFs.getHash()).willReturn(specialFileSystemHash);
 		given(scheduledTxs.getHash()).willReturn(scheduledTxsRootHash);
-		given(nfts.getHash()).willReturn(nftsRootHash);
 
 		given(runningHashLeaf.getHash()).willReturn(runningHashLeafHash);
 		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
@@ -635,7 +620,6 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.SCHEDULE_TXS, scheduledTxs);
 		subject.setChild(ServicesState.ChildIndices.RECORD_STREAM_RUNNING_HASH, runningHashLeaf);
 		subject.setChild(ServicesState.ChildIndices.UNIQUE_TOKENS, uniqueTokens);
-		subject.setChild(ServicesState.ChildIndices.NFTS, nfts);
 		subject.nodeId = self;
 		subject.ctx = ctx;
 
@@ -657,7 +641,6 @@ class ServicesStateTest {
 		assertSame(scheduledTxsCopy, copy.scheduleTxs());
 		assertSame(runningHashLeafCopy, copy.runningHashLeaf());
 		assertSame(uniqueTokensCopy, copy.uniqueTokens());
-		assertSame(nftsCopy, copy.nfts());
 	}
 
 	@Test

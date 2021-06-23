@@ -36,6 +36,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.store.models.UniqueToken;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fchashmap.FCOneToManyRelation;
@@ -281,17 +282,15 @@ public class TypedTokenStore {
 						new EntityId(uniqueToken.getTokenId()), uniqueToken.getSerialNumber());
 				final var merkleUniqueToken = new MerkleUniqueToken(
 						new EntityId(uniqueToken.getOwner()), uniqueToken.getMetadata(), uniqueToken.getCreationTime());
-				uniqueTokens.get().put(mintKey, merkleUniqueToken);
 				currentNfts.put(mintKey, merkleUniqueToken);
 				backingNfts.addToExistingNfts(mintKey.asNftId());
 			}
 		}
 		if (token.hasBurnedUniqueTokens()) {
-			final var currentNfts = nfts.get();
+			final var currentNfts = uniqueTokens.get();
 			for (var uniqueToken : token.burnedUniqueTokens()) {
 				final var burnKey = new MerkleUniqueTokenId(
 						new EntityId(uniqueToken.getTokenId()), uniqueToken.getSerialNumber());
-				uniqueTokens.get().remove(burnKey);
 				currentNfts.remove(burnKey);
 				backingNfts.removeFromExistingNfts(burnKey.asNftId());
 			}
