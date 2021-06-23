@@ -3,6 +3,7 @@ package com.hedera.services.state.merkle.virtual;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
@@ -55,15 +56,17 @@ public class SequentialVsRandom {
         }
         {
             Path seqFile = STORE_PATH.resolve("seq3.dat");
-            SeekableByteChannel channel = Files.newByteChannel(seqFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE,
-                    StandardOpenOption.TRUNCATE_EXISTING);
+            SeekableByteChannel channel = Files.newByteChannel(seqFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
             ByteBuffer buffer = ByteBuffer.allocateDirect(SLOT_SIZE_BYTES);
             long START1 = System.currentTimeMillis();
             for (int i = 0; i < TEST_SIZE_SLOTS; i++) {
                 buffer.rewind();
                 buffer.put(data[i]);
                 buffer.rewind();
-                channel.write(buffer);
+                while (buffer.remaining() > 0) {
+                    int n = channel.write(buffer);
+                    if (n <= 0) throw new RuntimeException("no bytes written");
+                }
             }
             long END1 = System.currentTimeMillis();
             channel.close();
