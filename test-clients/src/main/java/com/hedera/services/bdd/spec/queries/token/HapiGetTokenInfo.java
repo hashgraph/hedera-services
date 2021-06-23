@@ -36,10 +36,14 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
+import proto.CustomFeesOuterClass;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
@@ -66,12 +70,14 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 	Optional<String> expectedFreezeKey = Optional.empty();
 	Optional<String> expectedSupplyKey = Optional.empty();
 	Optional<String> expectedWipeKey = Optional.empty();
+	Optional<String> expectedCustomFeeKey = Optional.empty();
 	Optional<Boolean> expectedDeletion = Optional.empty();
 	Optional<TokenKycStatus> expectedKycDefault = Optional.empty();
 	Optional<TokenFreezeStatus>	expectedFreezeDefault = Optional.empty();
 	Optional<String> expectedAutoRenewAccount = Optional.empty();
 	OptionalLong expectedAutoRenewPeriod = OptionalLong.empty();
 	Optional<Boolean> expectedExpiry = Optional.empty();
+	List<BiConsumer<HapiApiSpec, CustomFeesOuterClass.CustomFees>> expectedFees = new ArrayList<>();
 
 	@Override
 	public HederaFunctionality type() {
@@ -151,12 +157,20 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		expectedWipeKey = Optional.of(name);
 		return this;
 	}
+	public HapiGetTokenInfo hasCustomFeeKey(String name) {
+		expectedCustomFeeKey = Optional.of(name);
+		return this;
+	}
 	public HapiGetTokenInfo isDeleted() {
 		expectedDeletion = Optional.of(Boolean.TRUE);
 		return this;
 	}
 	public HapiGetTokenInfo isNotDeleted() {
 		expectedDeletion = Optional.of(Boolean.FALSE);
+		return this;
+	}
+	public HapiGetTokenInfo hasCustom(BiConsumer<HapiApiSpec, CustomFeesOuterClass.CustomFees> feeAssertion) {
+		expectedFees.add(feeAssertion);
 		return this;
 	}
 
@@ -215,6 +229,11 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 					actualInfo.getTreasury());
 		}
 
+		final var actualFees = actualInfo.getCustomFees();
+		for (var expectedFee : expectedFees) {
+			expectedFee.accept(spec, actualFees);
+		}
+
 		expectedMemo.ifPresent(s -> Assert.assertEquals(
 				"Wrong memo!",
 				s,
@@ -254,12 +273,18 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 				registry);
 
 		assertFor(
+				actualInfo.getCustomFeesKey(),
+				expectedCustomFeeKey,
+				(n, r) -> r.getKey(n),
+				"Wrong custom fees key!",
+				registry);
+
+		assertFor(
 				actualInfo.getKycKey(),
 				expectedKycKey,
 				(n, r) -> r.getKycKey(n),
 				"Wrong token KYC key!",
 				registry);
-
 		assertFor(
 				actualInfo.getSupplyKey(),
 				expectedSupplyKey,
