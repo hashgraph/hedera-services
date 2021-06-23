@@ -21,9 +21,16 @@ package com.hedera.services.txns.span;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.utils.TxnAccessor;
+import com.hederahashgraph.api.proto.java.TokenID;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 
@@ -84,6 +91,24 @@ public class SpanMapManager {
 	private void expandImpliedTransfers(TxnAccessor accessor) {
 		final var op = accessor.getTxn().getCryptoTransfer();
 		final var impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op, accessor.getPayer());
+
+		final var xferMeta = accessor.availXferUsageMeta();
+
+		List<BalanceChange> balanceChanges = impliedTransfers.getAllBalanceChanges();
+		int totalTokenTransfers = 0;
+		int totalHbarTransfers = 0;
+		Set<TokenID> tokenIDset = new HashSet<>();
+		for(BalanceChange bc : balanceChanges) {
+			if(bc.isForHbar()) {
+				totalHbarTransfers++;
+			} else {
+				totalTokenTransfers++;
+				tokenIDset.add(bc.tokenId());
+			}
+		}
+		xferMeta.setTotalTokensInvolved(tokenIDset.size());
+		xferMeta.setTotalTokenTransfers(totalTokenTransfers);
+		xferMeta.setTotalHbarTransfers(totalHbarTransfers);
 
 		spanMapAccessor.setImpliedTransfers(accessor, impliedTransfers);
 	}

@@ -23,30 +23,55 @@ package com.hedera.services.usage.crypto;
 public class CryptoTransferMeta {
 	private int tokenMultiplier = 1;
 
-	private final int numTokensInvolved;
-	private final int numTokenTransfers;
+	private int totalTokensInvolved;
+	private int totalTokenTransfers;
+	private int totalHbarTransfers;
 
-	public CryptoTransferMeta(int tokenMultiplier, int numTokensInvolved, int numTokenTransfers) {
+	public CryptoTransferMeta(int tokenMultiplier, int totalTokensInvolved, int totalTokenTransfers) {
 		this.tokenMultiplier = tokenMultiplier;
-		this.numTokensInvolved = numTokensInvolved;
-		this.numTokenTransfers = numTokenTransfers;
+		this.totalTokensInvolved = totalTokensInvolved;
+		this.totalTokenTransfers = totalTokenTransfers;
+		this.totalHbarTransfers = 0;
 	}
 
-	public CryptoTransferMeta(int numTokensInvolved, int numTokenTransfers) {
-		this.numTokensInvolved = numTokensInvolved;
-		this.numTokenTransfers = numTokenTransfers;
+	public CryptoTransferMeta(int totalTokenInvolved, int totalTokenTransfers) {
+		this.totalTokensInvolved = totalTokenInvolved;
+		this.totalTokenTransfers = totalTokenTransfers;
+		this.totalHbarTransfers = 0;
+	}
+
+	public CryptoTransferMeta(int tokenMultiplier, int totalTokenInvolved, int totalTokenTransfers, int numCustomFeeHbarTransfers) {
+		this.tokenMultiplier = tokenMultiplier;
+		this.totalTokensInvolved = totalTokenInvolved;
+		this.totalTokenTransfers = totalTokenTransfers;
+		this.totalHbarTransfers = numCustomFeeHbarTransfers;
 	}
 
 	public int getTokenMultiplier() {
 		return tokenMultiplier;
 	}
 
-	public int getNumTokensInvolved() {
-		return numTokensInvolved;
+	public int getTotalTokensInvolved() {
+		return totalTokensInvolved;
 	}
 
-	public int getNumTokenTransfers() {
-		return numTokenTransfers;
+	public int getTotalTokenTransfers() {
+		return totalTokenTransfers;
+	}
+
+	public int getTotalHbarTransfers() {
+		return totalHbarTransfers;
+	}
+
+	public void setTotalTokensInvolved(final int totalTokenInvolved) {
+		this.totalTokensInvolved = totalTokenInvolved;
+	}
+
+	public void setTotalTokenTransfers(final int totalTokenTransfers) {
+		this.totalTokenTransfers = totalTokenTransfers;
+	}
+	public void setTotalHbarTransfers(final int totalHbarTransfers) {
+		this.totalHbarTransfers = totalHbarTransfers;
 	}
 
 	public void setTokenMultiplier(int tokenMultiplier) {

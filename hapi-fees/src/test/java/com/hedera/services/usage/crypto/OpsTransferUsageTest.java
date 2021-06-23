@@ -54,17 +54,17 @@ class OpsTransferUsageTest {
 		final var expected = FeeData.newBuilder()
 				.setNetworkdata(FeeComponents.newBuilder()
 						.setConstant(1)
-						.setBpt(18047)
+						.setBpt(17951)
 						.setVpt(3)
 						.setRbh(1))
 				.setNodedata(FeeComponents.newBuilder()
 						.setConstant(1)
-						.setBpt(18047)
+						.setBpt(17951)
 						.setVpt(1)
 						.setBpr(4))
 				.setServicedata(FeeComponents.newBuilder()
 						.setConstant(1)
-						.setRbh(904))
+						.setRbh(900))
 				.build();
 
 		// when:

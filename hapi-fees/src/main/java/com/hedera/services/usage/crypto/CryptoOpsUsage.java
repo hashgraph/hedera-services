@@ -60,10 +60,10 @@ public class CryptoOpsUsage {
 	) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 
-		final int numXfers = baseMeta.getNumExplicitTransfers();
-		final int numTokenXfers = xferMeta.getNumTokenTransfers();
+		final int numXfers = xferMeta.getTotalHbarTransfers();
+		final int numTokenXfers = xferMeta.getTotalTokenTransfers();
 		final int tokenMultiplier = xferMeta.getTokenMultiplier();
-		final int numTokensInvolved = xferMeta.getNumTokensInvolved();
+		final int numTokensInvolved = xferMeta.getTotalTokensInvolved();
 		final int weightedTokensInvolved = tokenMultiplier * numTokensInvolved;
 
 		final int weightedTokenXfers = tokenMultiplier * numTokenXfers;

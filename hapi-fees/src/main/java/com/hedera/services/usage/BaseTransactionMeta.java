@@ -22,7 +22,7 @@ package com.hedera.services.usage;
 
 public class BaseTransactionMeta {
 	private final int memoUtf8Bytes;
-	private final int numExplicitTransfers;
+	private final int numExplicitTransfers;  // Should this field still be here?
 
 	public BaseTransactionMeta(int memoUtf8Bytes, int numExplicitTransfers) {
 		this.memoUtf8Bytes = memoUtf8Bytes;
