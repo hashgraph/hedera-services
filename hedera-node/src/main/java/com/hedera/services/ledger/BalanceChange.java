@@ -21,7 +21,7 @@ package com.hedera.services.ledger;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -48,9 +48,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 public class BalanceChange {
 	static final TokenID NO_TOKEN_FOR_HBAR_ADJUST = TokenID.getDefaultInstance();
 
-	private EntityId token;
+	private Id token;
 
-	private EntityId account;
+	private Id account;
 	private long units;
 	private ResponseCodeEnum codeForInsufficientBalance;
 
@@ -58,20 +58,20 @@ public class BalanceChange {
 	private TokenID tokenId = null;
 	private AccountID accountId;
 
-	private BalanceChange(final EntityId token, final AccountAmount aa, final ResponseCodeEnum code) {
+	private BalanceChange(final Id token, final AccountAmount aa, final ResponseCodeEnum code) {
 		this.token = token;
 		final var account = aa.getAccountID();
 		this.accountId = account;
-		final var id = EntityId.fromGrpcAccountId(account);
+		final var id = Id.fromGrpcAccount(account);
 		this.account = id;
 		this.units = aa.getAmount();
 		this.codeForInsufficientBalance = code;
 	}
 
-	private BalanceChange(final EntityId account, final long amount, final ResponseCodeEnum code) {
+	private BalanceChange(final Id account, final long amount, final ResponseCodeEnum code) {
 		this.token = null;
 		this.account = account;
-		this.accountId = account.toGrpcAccountId();
+		this.accountId = account.asGrpcAccount();
 		this.units = amount;
 		this.codeForInsufficientBalance = code;
 	}
@@ -84,20 +84,20 @@ public class BalanceChange {
 		return new BalanceChange(null, aa, INSUFFICIENT_ACCOUNT_BALANCE);
 	}
 
-	public static BalanceChange hbarAdjust(final EntityId id, long amount) {
+	public static BalanceChange hbarAdjust(final Id id, long amount) {
 		return new BalanceChange(id, amount, INSUFFICIENT_ACCOUNT_BALANCE);
 	}
 
-	public static BalanceChange tokenAdjust(final EntityId token, final TokenID tokenId, final AccountAmount aa) {
+	public static BalanceChange tokenAdjust(final Id token, final TokenID tokenId, final AccountAmount aa) {
 		final var tokenChange = new BalanceChange(token, aa, INSUFFICIENT_TOKEN_BALANCE);
 		tokenChange.tokenId = tokenId;
 		return tokenChange;
 	}
 
-	public static BalanceChange tokenAdjust(final EntityId account, final EntityId token,  final long amount) {
+	public static BalanceChange tokenAdjust(final Id account, final Id token,  final long amount) {
 		final var tokenChange = new BalanceChange(account, amount, INSUFFICIENT_TOKEN_BALANCE);
 		tokenChange.token = token;
-		tokenChange.tokenId = token.toGrpcTokenId();
+		tokenChange.tokenId = token.asGrpcToken();
 		return tokenChange;
 	}
 
@@ -125,11 +125,11 @@ public class BalanceChange {
 		return accountId;
 	}
 
-	public EntityId getAccount() {
+	public Id getAccount() {
 		return account;
 	}
 
-	public EntityId getToken() {
+	public Id getToken() {
 		return token;
 	}
 

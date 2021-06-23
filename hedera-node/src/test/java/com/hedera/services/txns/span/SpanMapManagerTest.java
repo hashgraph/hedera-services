@@ -25,7 +25,7 @@ import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.state.submerkle.AssessedCustomFee;
 import com.hedera.services.state.submerkle.CustomFee;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -59,14 +59,15 @@ class SpanMapManagerTest {
 	private final ImpliedTransfers someOtherImpliedXfers = ImpliedTransfers.invalid(
 			maxHbarAdjusts, maxTokenAdjusts + 1, ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
 
-	private final EntityId customFeeToken = new EntityId(0, 0, 123);
-	private final EntityId customFeeCollector = new EntityId(0, 0, 124);
-	final List<Pair<EntityId, List<CustomFee>>> entityCustomFees = List.of(
+	private final Id customFeeToken = new Id(0, 0, 123);
+	private final Id customFeeCollector = new Id(0, 0, 124);
+	final List<Pair<Id, List<CustomFee>>> entityCustomFees = List.of(
 			Pair.of(customFeeToken, new ArrayList<>()));
-	final List<Pair<EntityId, List<CustomFee>>> newCustomFeeChanges = List.of(
-			Pair.of(customFeeToken, List.of(CustomFee.fixedFee(10L, customFeeToken, customFeeCollector))));
+	final List<Pair<Id, List<CustomFee>>> newCustomFeeChanges = List.of(
+			Pair.of(customFeeToken, List.of(CustomFee.fixedFee(10L, customFeeToken.asEntityId(),
+					customFeeCollector.asEntityId()))));
 	private final List<AssessedCustomFee> assessedCustomFees = List.of(
-			new AssessedCustomFee(customFeeCollector, customFeeToken, 123L));
+			new AssessedCustomFee(customFeeCollector.asEntityId(), customFeeToken.asEntityId(), 123L));
 	private final ImpliedTransfers validImpliedTransfers = ImpliedTransfers.valid(
 			maxHbarAdjusts, maxTokenAdjusts, new ArrayList<>(), entityCustomFees, assessedCustomFees);
 	private final ImpliedTransfers feeChangedImpliedTransfers = ImpliedTransfers.valid(

@@ -396,16 +396,16 @@ class LedgerBalanceChangesTest {
 
 	private List<BalanceChange> fixtureChanges() {
 		final var ans = List.of(new BalanceChange[] {
-						tokenChange(yetAnotherToken, aModel, aYetAnotherTokenChange),
+						tokenChange(yetAnotherToken.asId(), aModel, aYetAnotherTokenChange),
 						hbarChange(aModel, aHbarChange),
 						hbarChange(bModel, bHbarChange),
-						tokenChange(anotherToken, aModel, aAnotherTokenChange),
-						tokenChange(anotherToken, cModel, cAnotherTokenChange),
+						tokenChange(anotherToken.asId(), aModel, aAnotherTokenChange),
+						tokenChange(anotherToken.asId(), cModel, cAnotherTokenChange),
 						hbarChange(cModel, cHbarChange),
-						tokenChange(token, bModel, bTokenChange),
-						tokenChange(token, cModel, cTokenChange),
-						tokenChange(anotherToken, bModel, bAnotherTokenChange),
-						tokenChange(yetAnotherToken, bModel, bYetAnotherTokenChange),
+						tokenChange(token.asId(), bModel, bTokenChange),
+						tokenChange(token.asId(), cModel, cTokenChange),
+						tokenChange(anotherToken.asId(), bModel, bAnotherTokenChange),
+						tokenChange(yetAnotherToken.asId(), bModel, bYetAnotherTokenChange),
 				}
 		);
 		return ans;

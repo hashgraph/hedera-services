@@ -22,6 +22,7 @@ package com.hedera.services.state.submerkle;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.UInt64Value;
+import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.Fraction;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -158,6 +159,10 @@ public class CustomFee implements SelfSerializable {
 
 	public EntityId getFeeCollector() {
 		return feeCollector;
+	}
+
+	public Id getFeeCollectorAsId() {
+		return feeCollector.asId();
 	}
 
 	public FeeType getFeeType() {
