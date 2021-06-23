@@ -371,6 +371,8 @@ public final class FCVirtualMapDataStoreImpl<PK extends SelfSerializable, PD ext
             // data
             LD leafData = leafDataConstructor.get();
             leafData.deserialize(inputStream, 1); //TODO is version 1 right?
+            // return buffer
+            leafStore.returnSlot(slotLocation,buffer);
             return leafData;
         }
         return null;
@@ -405,6 +407,8 @@ public final class FCVirtualMapDataStoreImpl<PK extends SelfSerializable, PD ext
             leafPath.serialize(outputStream);
             // write key data
             leafData.serialize(outputStream);
+            // return buffer
+            leafStore.returnSlot(slotLocation,buffer);
         }
     }
 
@@ -453,6 +457,8 @@ public final class FCVirtualMapDataStoreImpl<PK extends SelfSerializable, PD ext
                 // parent data
                 PD parentData = parentDataConstructor.get();
                 parentData.deserialize(inputStream, 1); //TODO should this be version 1?
+                // return buffer
+                leafStore.returnSlot(slotLocation,buffer);
                 return parentData;
             }
         }
@@ -486,7 +492,8 @@ public final class FCVirtualMapDataStoreImpl<PK extends SelfSerializable, PD ext
             p = buffer.position();
             // write parent data
             parentData.serialize(outputStream);
-
+            // return buffer
+            leafStore.returnSlot(slotLocation,buffer);
         }
     }
 
