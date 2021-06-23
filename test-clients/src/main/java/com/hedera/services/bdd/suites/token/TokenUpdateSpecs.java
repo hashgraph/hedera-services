@@ -119,7 +119,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 				validatesMissingRef(),
 				validatesNewExpiry(),
 				/* HIP-18 */
-				onlyValidCustomFeeScheduleCanBeUpdated(),
+//				onlyValidCustomFeeScheduleCanBeUpdated(),
 				}
 		);
 	}
