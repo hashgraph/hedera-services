@@ -155,19 +155,19 @@ class ImpliedTransfersMarshalTest {
 		setupFixtureOp();
 		// and:
 		final List<BalanceChange> expectedChanges = List.of(new BalanceChange[] {
-						hbarChange(aModel, aHbarChange + customFeeChangeToFeeCollector),
+						hbarChange(aModel,
+								aHbarChange + customFeeChangeToFeeCollector + customFeeChangeToFeeCollector + customFeeChangeToFeeCollector),
 						hbarChange(bModel, bHbarChange),
 						hbarChange(cModel, cHbarChange),
 						tokenChange(anotherToken, aModel, aAnotherTokenChange),
 						tokenChange(anotherToken, bModel, bAnotherTokenChange),
 						tokenChange(anotherToken, cModel, cAnotherTokenChange),
-						hbarChange(payer, 0),
+						hbarChange(payer,
+								customFeeChangeFromPayer + customFeeChangeFromPayer + customFeeChangeFromPayer),
 						tokenChange(token, bModel, bTokenChange),
 						tokenChange(token, cModel, cTokenChange),
-						hbarChange(payer, 0),
 						tokenChange(yetAnotherToken, aModel, aYetAnotherTokenChange),
 						tokenChange(yetAnotherToken, bModel, bYetAnotherTokenChange),
-						hbarChange(payer, customFeeChangeFromPayer)
 				}
 		);
 		final List<CustomFee> customFee = getFixedCustomFee();
@@ -210,7 +210,8 @@ class ImpliedTransfersMarshalTest {
 		final var twoMeta = new ImpliedTransfersMeta(1, 2, TOKEN_WAS_DELETED, Collections.emptyList());
 		// and:
 		final var oneRepr = "ImpliedTransfersMeta{code=OK, maxExplicitHbarAdjusts=3, " +
-				"maxExplicitTokenAdjusts=4, customFeeSchedulesUsedInMarshal=[(EntityId{shard=0, realm=0, num=123},[])]}";
+				"maxExplicitTokenAdjusts=4, customFeeSchedulesUsedInMarshal=[(EntityId{shard=0, realm=0, num=123},[])" +
+				"]}";
 		final var twoRepr = "ImpliedTransfersMeta{code=TOKEN_WAS_DELETED, " +
 				"maxExplicitHbarAdjusts=1, maxExplicitTokenAdjusts=2, customFeeSchedulesUsedInMarshal=[]}";
 
@@ -234,12 +235,15 @@ class ImpliedTransfersMarshalTest {
 				entityCustomFees, customFeeBalanceChanges);
 		// and:
 		final var oneRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=TOKEN_WAS_DELETED, " +
-				"maxExplicitHbarAdjusts=3, maxExplicitTokenAdjusts=4, customFeeSchedulesUsedInMarshal=[]}, changes=[]," +
+				"maxExplicitHbarAdjusts=3, maxExplicitTokenAdjusts=4, customFeeSchedulesUsedInMarshal=[]}, " +
+				"changes=[]," +
 				" " +
 				"entityCustomFees=[], customFeesBalanceChanges=[]}";
 		final var twoRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=OK, maxExplicitHbarAdjusts=1, " +
-				"maxExplicitTokenAdjusts=100, customFeeSchedulesUsedInMarshal=[(EntityId{shard=0, realm=0, num=123},[])]}, " +
-				"changes=[BalanceChange{token=EntityId{shard=1, realm=2, num=3}, account=EntityId{shard=4, realm=5, num=6}, " +
+				"maxExplicitTokenAdjusts=100, customFeeSchedulesUsedInMarshal=[(EntityId{shard=0, realm=0, num=123},[])" +
+				"]}, " +
+				"changes=[BalanceChange{token=EntityId{shard=1, realm=2, num=3}, account=EntityId{shard=4, realm=5, " +
+				"num=6}, " +
 				"units=7}], entityCustomFees=[(EntityId{shard=0, realm=0, num=123},[])]," +
 				" customFeesBalanceChanges=[CustomFeesBalanceChange{token=EntityId{shard=0, realm=0, num=123}, " +
 				"account=EntityId{shard=0, realm=0, num=124}, units=123}]}";
@@ -336,9 +340,10 @@ class ImpliedTransfersMarshalTest {
 						))).build();
 		// and:
 
-		var exception = assertThrows(IllegalArgumentException.class, () -> CustomFee.fractionalFee(numerator, 0, minimumUnitsToCollect,
+		var exception = assertThrows(IllegalArgumentException.class,
+				() -> CustomFee.fractionalFee(numerator, 0, minimumUnitsToCollect,
 						maximumUnitsToCollect, feeCollector));
-		assertEquals( "Division by zero is not allowed",exception.getMessage());
+		assertEquals("Division by zero is not allowed", exception.getMessage());
 	}
 
 	@Test
