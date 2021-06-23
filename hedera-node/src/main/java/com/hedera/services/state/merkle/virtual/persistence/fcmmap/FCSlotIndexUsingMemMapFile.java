@@ -1,5 +1,6 @@
 package com.hedera.services.state.merkle.virtual.persistence.fcmmap;
 
+import com.hedera.services.state.merkle.virtual.persistence.FCSlotIndex;
 import sun.misc.Unsafe;
 
 import java.io.BufferedReader;

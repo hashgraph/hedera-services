@@ -77,7 +77,7 @@ public class FCVirtualMapDataStoreTest {
                         8,HASH_DATA_SIZE,
                         8,8,HASH_DATA_SIZE+1024,
                         FCSlotIndexUsingFCHashMap::new, FCSlotIndexUsingFCHashMap::new, FCSlotIndexUsingFCHashMap::new,
-                        Hash::new, TestLeafData::new);
+                        Hash::new, TestLeafData::new, MemMapSlotStore::new);
 
         store.open();
         System.out.println("Files.exists(STORE_PATH) = " + Files.exists(STORE_PATH));
@@ -146,7 +146,7 @@ public class FCVirtualMapDataStoreTest {
                 8,HASH_DATA_SIZE,
                 8,8,HASH_DATA_SIZE+1024,
                 FCSlotIndexUsingFCHashMap::new, FCSlotIndexUsingFCHashMap::new, FCSlotIndexUsingFCHashMap::new,
-                Hash::new, TestLeafData::new);
+                Hash::new, TestLeafData::new, MemMapSlotStore::new);
 
         store.open();
         // create some data for a number of accounts
