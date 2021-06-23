@@ -143,7 +143,7 @@ public class ImpliedTransfersMarshal {
 	 * @param customFeeChanges
 	 * @return
 	 */
-	private List<BalanceChange> addFractionalFeeBalanceChanges(CustomFee fees,
+	private void addFractionalFeeBalanceChanges(CustomFee fees,
 			EntityId payerId, long totalAmount, EntityId scopingToken,
 			List<BalanceChange> customFeeChanges) {
 		long fee =
@@ -155,7 +155,6 @@ public class ImpliedTransfersMarshal {
 		}
 		customFeeChanges.add(tokenAdjust(fees.getFeeCollector(), scopingToken, feesToCollect));
 		customFeeChanges.add(tokenAdjust(payerId, scopingToken, -feesToCollect));
-		return customFeeChanges;
 	}
 
 	/**
@@ -168,7 +167,7 @@ public class ImpliedTransfersMarshal {
 	 * @param customFeeChanges
 	 * @return
 	 */
-	private List<BalanceChange> addFixedFeeBalanceChanges(CustomFee fees, EntityId payerId,
+	private void addFixedFeeBalanceChanges(CustomFee fees, EntityId payerId,
 			List<BalanceChange> customFeeChanges) {
 		if (fees.getFixedFeeSpec().getTokenDenomination() == null) {
 			customFeeChanges.add(hbarAdjust(fees.getFeeCollector(),
@@ -182,7 +181,6 @@ public class ImpliedTransfersMarshal {
 					fees.getFixedFeeSpec().getTokenDenomination(),
 					-fees.getFixedFeeSpec().getUnitsToCollect()));
 		}
-		return customFeeChanges;
 	}
 
 	/**
@@ -194,7 +192,7 @@ public class ImpliedTransfersMarshal {
 	 * @param customFeeBalanceChangesForRecord
 	 * @return
 	 */
-	private List<CustomFeesBalanceChange> getListOfBalanceChangesForCustomFees(List<BalanceChange> customFeeChanges,
+	private void getListOfBalanceChangesForCustomFees(List<BalanceChange> customFeeChanges,
 			List<CustomFeesBalanceChange> customFeeBalanceChangesForRecord) {
 		for (BalanceChange change : customFeeChanges) {
 			customFeeBalanceChangesForRecord.add(new CustomFeesBalanceChange(
@@ -202,6 +200,5 @@ public class ImpliedTransfersMarshal {
 					change.isForHbar() ? null : EntityId.fromGrpcTokenId(change.tokenId()),
 					change.units()));
 		}
-		return customFeeBalanceChangesForRecord;
 	}
 }
