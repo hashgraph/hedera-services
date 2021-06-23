@@ -1,6 +1,5 @@
 package com.hedera.services.state.merkle.virtual.persistence.fcmmap;
 
-import com.hedera.services.state.merkle.virtual.persistence.FCSlotIndex;
 import com.swirlds.fchashmap.FCHashMap;
 
 /**
