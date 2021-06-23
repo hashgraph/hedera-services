@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
  * A data store backed by a series of files in a directory. Each of those files is made up of slots.
  * Each slot can store {@code dataSize} bytes worth of data.
  */
-public final class FCMemMapDataStore {
+public final class MemMapSlotStore {
     /** Special Location for when not found */
     public static final long NOT_FOUND_LOCATION = Long.MAX_VALUE;
     /**
@@ -38,6 +38,8 @@ public final class FCMemMapDataStore {
     private final int size;
     /** Tracks whether this file is open or not */
     private boolean open = false;
+    /** Number of references to this data store */
+    private int references = 0;
 
     /**
      * List of all of our storage files. This is lazily created so we can default to the right array size.
@@ -58,7 +60,7 @@ public final class FCMemMapDataStore {
      *  - file size of 512Mb
      *  - location of "{working_dir}/data/jp_db"
      */
-    public FCMemMapDataStore() {
+    public MemMapSlotStore() {
         this(1024,512, Path.of("data/jp_db"),"store_", "dat");
     }
 
@@ -71,7 +73,7 @@ public final class FCMemMapDataStore {
      * @param filePrefix The prefix for each storage file
      * @param fileExtension The extension for each storage file, for example "dat"
      */
-    public FCMemMapDataStore(int dataSize, int fileSize, Path storageDirectory, String filePrefix, String fileExtension) {
+    public MemMapSlotStore(int dataSize, int fileSize, Path storageDirectory, String filePrefix, String fileExtension) {
         if (fileSize <= 0) {
             throw new IllegalArgumentException("fileSize must be strictly positive");
         }
@@ -148,10 +150,24 @@ public final class FCMemMapDataStore {
     }
 
     /**
-     * Flush all data to disk and close all files
+     * Add a reference to be tracked to this data store
+     */
+    public void addReference() {
+        references ++;
+    }
+
+    /**
+     * Add a reference to be tracked to this data store
+     */
+    public void removeReference() {
+        references --;
+    }
+
+    /**
+     * Flush all data to disk and close all files only if there are no references to this data store
      */
     public void close() {
-        if (open) {
+        if (open && references == 0) {
             // Note: files is never null when we are in the open state.
             for (MemMapDataFile file : files) {
                 try {
@@ -160,9 +176,9 @@ public final class FCMemMapDataStore {
                     e.printStackTrace();
                 }
             }
+            open = false;
+            files = null;
         }
-        open = false;
-        files = null;
     }
 
     /**
@@ -515,5 +531,18 @@ public final class FCMemMapDataStore {
         public void sync(){
             mappedBuffer.force();
         }
+    }
+
+    /**
+     * Interface for a visitor that visits each used slot in a MemMapDataFile during startup using a random access file
+     */
+    public interface SlotVisitor {
+        /**
+         * Visit a slot in a random access file
+         *
+         * @param location the location for the slot we are visiting
+         * @param fileAtSlot the file containing the slot, with position set to the begining of slots data in the file
+         */
+        void visitSlot(long location, RandomAccessFile fileAtSlot);
     }
 }
