@@ -190,6 +190,17 @@ public final class MemMapSlotStore implements SlotStore {
     }
 
     /**
+     * Return a slot that was obtained by access, this may be the point when it is written to disk depending on
+     * implementation.
+     *
+     * @param location slot location of the data to get
+     * @param buffer the buffer obtained by accessSlot()
+     */
+    public void returnSlot(long location, ByteBuffer buffer) {
+        // not needed for memory mapped files.
+    }
+
+    /**
      * Finds a new slot ready for use
      *
      * @return File and slot location for a new location to store into
