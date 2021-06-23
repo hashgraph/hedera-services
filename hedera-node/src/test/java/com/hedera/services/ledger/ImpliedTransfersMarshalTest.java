@@ -55,6 +55,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -240,7 +241,8 @@ class ImpliedTransfersMarshalTest {
 				entityCustomFees, customFeeBalanceChanges);
 		// and:
 		final var oneRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=TOKEN_WAS_DELETED, " +
-				"maxExplicitHbarAdjusts=3, maxExplicitTokenAdjusts=4, customFeeSchedulesUsedInMarshal=[]}, changes=[], " +
+				"maxExplicitHbarAdjusts=3, maxExplicitTokenAdjusts=4, customFeeSchedulesUsedInMarshal=[]}, changes=[]," +
+				" " +
 				"entityCustomFees=[], customFeesBalanceChanges=[]}";
 		final var twoRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=OK, maxExplicitHbarAdjusts=1, " +
 				"maxExplicitTokenAdjusts=100, customFeeSchedulesUsedInMarshal=[EntityId{shard=0, realm=0, " +
@@ -333,6 +335,21 @@ class ImpliedTransfersMarshalTest {
 		assertEquals(expectedChanges, result.getAllBalanceChanges());
 		assertEquals(expectedCustomFeeChanges, result.getEntityCustomFees());
 		assertEquals(expectedCustomFeeBalanceChanges, result.getCustomFeesBalanceChanges());
+	}
+
+	@Test
+	void throwsForFractionalZeroDenominator() {
+		op = CryptoTransferTransactionBody.newBuilder()
+				.addTokenTransfers(TokenTransferList.newBuilder()
+						.setToken(anotherId)
+						.addAllTransfers(List.of(
+								adjustFrom(a, cHbarChange)
+						))).build();
+		// and:
+
+		var exception = assertThrows(IllegalArgumentException.class, () -> CustomFee.fractionalFee(numerator, 0, minimumUnitsToCollect,
+						maximumUnitsToCollect, feeCollector));
+		assertEquals( "Division by zero is not allowed",exception.getMessage());
 	}
 
 	@Test
