@@ -493,5 +493,4 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	public List<CustomFee> customFeeSchedule() {
 		return feeSchedule;
 	}
-
 }

@@ -26,6 +26,9 @@ import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
+import com.hedera.services.state.submerkle.CustomFee;
+import com.hedera.services.state.submerkle.AssessedCustomFee;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -35,6 +38,7 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,6 +46,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.test.utils.IdUtils.adjustFrom;
@@ -104,12 +109,14 @@ class CryptoTransferTransitionLogicTest {
 				maxHbarAdjusts, maxTokenAdjusts, List.of(
 						hbarChange(a, +100),
 						hbarChange(b, -100)
-				));
+				),
+				new ArrayList<>(),
+				new ArrayList<>());
 
 		givenValidTxnCtx();
 		// and:
 		given(spanMapAccessor.getImpliedTransfers(accessor)).willReturn(impliedTransfers);
-		given(ledger.doZeroSum(impliedTransfers.getChanges())).willReturn(INSUFFICIENT_ACCOUNT_BALANCE);
+		given(ledger.doZeroSum(impliedTransfers.getAllBalanceChanges())).willReturn(INSUFFICIENT_ACCOUNT_BALANCE);
 
 		// when:
 		subject.doStateTransition();
@@ -126,14 +133,16 @@ class CryptoTransferTransitionLogicTest {
 				maxHbarAdjusts, maxTokenAdjusts, List.of(
 						hbarChange(a, +100),
 						hbarChange(b, -100)
-				));
+				),
+				new ArrayList<>(),
+				new ArrayList<>());
 
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
 		// and:
-		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer(), accessor.getPayer()))
 				.willReturn(impliedTransfers);
-		given(ledger.doZeroSum(impliedTransfers.getChanges()))
+		given(ledger.doZeroSum(impliedTransfers.getAllBalanceChanges()))
 				.willReturn(OK);
 
 		// when:
@@ -145,6 +154,44 @@ class CryptoTransferTransitionLogicTest {
 	}
 
 	@Test
+	void verifyIfAssessedCustomFeesSet() {
+		// setup :
+		final var a = EntityId.fromGrpcAccountId(asAccount("1.2.3"));
+		final var b = EntityId.fromGrpcAccountId(asAccount("2.3.4"));
+		final var c = EntityId.fromGrpcTokenId(asToken("4.5.6"));
+
+		// and :
+		final var customFeesBalanceChange = List.of(
+				new AssessedCustomFee(a, 10L));
+		final var customFee = List.of(CustomFee.fixedFee(20L, null, a));
+		final List<Pair<EntityId, List<CustomFee>>> customFees = List.of(Pair.of(c, customFee));
+		final var impliedTransfers = ImpliedTransfers.valid(
+				maxHbarAdjusts, maxTokenAdjusts, List.of(
+						hbarChange(a.toGrpcAccountId(), +100),
+						hbarChange(b.toGrpcAccountId(), -100)
+				),
+				customFees,
+				customFeesBalanceChange);
+
+		givenValidTxnCtx();
+		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
+		// and:
+		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer(), accessor.getPayer()))
+				.willReturn(impliedTransfers);
+		given(ledger.doZeroSum(impliedTransfers.getAllBalanceChanges()))
+				.willReturn(OK);
+
+		// when:
+		subject.doStateTransition();
+
+
+		// then:
+		verify(txnCtx).setStatus(SUCCESS);
+		verify(txnCtx).setCustomFeesCharged(customFeesBalanceChange);
+	}
+
+
+	@Test
 	void shortCircuitsToImpliedTransfersValidityIfNotAvailableInSpan() {
 		final var impliedTransfers = ImpliedTransfers.invalid(
 				maxHbarAdjusts, maxTokenAdjusts, TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
@@ -152,7 +199,7 @@ class CryptoTransferTransitionLogicTest {
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
 		// and:
-		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer(), accessor.getPayer()))
 				.willReturn(impliedTransfers);
 
 		// when:
