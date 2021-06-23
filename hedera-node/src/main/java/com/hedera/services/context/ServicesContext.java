@@ -1392,7 +1392,7 @@ public class ServicesContext {
 						List.of(new TokenUpdateTransitionLogic(
 								validator(), tokenStore(), ledger(), txnCtx(), HederaTokenStore::affectsExpiryAtMost))),
 				entry(TokenFreezeAccount,
-						List.of(new TokenFreezeTransitionLogic(tokenStore(), ledger(), txnCtx()))),
+						List.of(new TokenFreezeTransitionLogic(typedTokenStore(), accountStore(), txnCtx()))),
 				entry(TokenUnfreezeAccount,
 						List.of(new TokenUnfreezeTransitionLogic(tokenStore(), ledger(), txnCtx()))),
 				entry(TokenGrantKycToAccount,

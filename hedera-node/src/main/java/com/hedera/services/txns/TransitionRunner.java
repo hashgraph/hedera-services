@@ -32,6 +32,7 @@ import java.util.EnumSet;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -41,7 +42,7 @@ public class TransitionRunner {
 	private static final Logger log = LogManager.getLogger(TransitionRunner.class);
 
 	private static final EnumSet<HederaFunctionality> refactoredOps = EnumSet.of(
-			TokenMint, TokenBurn,
+			TokenMint, TokenBurn, TokenFreezeAccount,
 			TokenAssociateToAccount
 	);
 
