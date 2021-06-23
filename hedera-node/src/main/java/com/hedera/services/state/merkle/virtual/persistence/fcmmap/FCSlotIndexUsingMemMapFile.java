@@ -12,7 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Collectors;
 
-public final class FCMemMapFileSlotIndex<K> implements FCSlotIndex<K> {
+public final class FCSlotIndexUsingMemMapFile<K> implements FCSlotIndex<K> {
 
     /**
      * We assume try and get the page size and us default of 4k if we fail as that is standard on linux
@@ -84,7 +84,7 @@ public final class FCMemMapFileSlotIndex<K> implements FCSlotIndex<K> {
     //==================================================================================================================
     // Constructors
 
-    public FCMemMapFileSlotIndex(Path storageDirectory, String name, int numOfBins, int numOfFiles) throws IOException {
+    public FCSlotIndexUsingMemMapFile(Path storageDirectory, String name, int numOfBins, int numOfFiles) throws IOException {
         if (!positivePowerOfTwo(numOfFiles)) throw new IllegalArgumentException("numOfFiles["+numOfFiles+"] must be a positive power of two.");
         if (!positivePowerOfTwo(numOfBins)) throw new IllegalArgumentException("numOfBins["+numOfBins+"] must be a positive power of two.");
         if (numOfBins > (2*numOfFiles)) throw new IllegalArgumentException("numOfBins["+numOfBins+"] must be at least twice the size of numOfFiles["+numOfFiles+"].");
@@ -114,7 +114,7 @@ public final class FCMemMapFileSlotIndex<K> implements FCSlotIndex<K> {
      *
      * @param toCopy The FCFileMap to copy to this new version leaving it immutable.
      */
-    private FCMemMapFileSlotIndex(FCMemMapFileSlotIndex<K> toCopy) {
+    private FCSlotIndexUsingMemMapFile(FCSlotIndexUsingMemMapFile<K> toCopy) {
         // the copy that we are copying from becomes immutable as only the newest copy can be mutable
         toCopy.isImmutable = true;
         // set our incremental version
@@ -135,10 +135,10 @@ public final class FCMemMapFileSlotIndex<K> implements FCSlotIndex<K> {
     // FastCopy Implementation
 
     @Override
-    public FCMemMapFileSlotIndex copy() {
+    public FCSlotIndexUsingMemMapFile copy() {
         this.throwIfImmutable();
         this.throwIfReleased();
-        return new FCMemMapFileSlotIndex(this);
+        return new FCSlotIndexUsingMemMapFile(this);
     }
 
     @Override
@@ -177,6 +177,11 @@ public final class FCMemMapFileSlotIndex<K> implements FCSlotIndex<K> {
 
     //==================================================================================================================
     // FCSlotIndex Implementation
+
+    @Override
+    public void setKeySizeBytes(int size) {
+
+    }
 
     @Override
     public long getSlot(K key) {
