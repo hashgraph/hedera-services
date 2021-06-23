@@ -808,26 +808,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		return exists(tId) ? OK : INVALID_TOKEN_ID;
 	}
 
-	@Override
-	public NftID resolve(NftID id) {
-		return uniqueTokenSupplier.get().containsKey(fromNftID(id)) ? id : MISSING_NFT;
-	}
-
-	@Override
-	public MerkleUniqueToken getUniqueToken(final NftID id) {
-		throwIfMissing(id);
-
-		return uniqueTokenSupplier.get().get(fromNftID(id));
-	}
-
-	private void throwIfMissing(NftID id) {
-		if (resolve(id) == MISSING_NFT) {
-			throw new IllegalArgumentException(String.format(
-					"Argument 'id=%s' does not refer to a known unique token!",
-					readableId(id)));
-		}
-	}
-
 	Map<AccountID, Set<TokenID>> getKnownTreasuries() {
 		return knownTreasuries;
 	}

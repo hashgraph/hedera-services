@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.hederahashgraph.fee.FeeBuilder.getFeeObject;
 import static com.hederahashgraph.fee.FeeBuilder.getSignatureCount;
 import static com.hederahashgraph.fee.FeeBuilder.getSignatureSize;
 import static com.hederahashgraph.fee.FeeBuilder.getTotalFeeforRequest;
@@ -139,7 +140,23 @@ public class FeeCalculator {
 			AtomicReference<FeeObject> obs
 	) throws Throwable {
 		FeeData activityMetrics = metricsFor(txn, numPayerSigs, metricsCalculator);
-		return forOp(op, SubType.DEFAULT, activityMetrics);
+		return forOpWithDetails(op, SubType.DEFAULT, activityMetrics, obs);
+	}
+
+	public long forOpWithDetails(
+			HederaFunctionality op,
+			SubType subType,
+			FeeData knownActivity,
+			AtomicReference<FeeObject> obs
+	) {
+		try {
+			final var activityPrices = opFeeData.get(op).get(subType);
+			final var fees = getFeeObject(activityPrices, knownActivity, provider.rates());
+			obs.set(fees);
+			return getTotalFeeforRequest(activityPrices, knownActivity, provider.rates());
+		} catch (Throwable t) {
+			throw new IllegalArgumentException("Calculation not observable!", t);
+		}
 	}
 
 	public long forActivityBasedOp(

@@ -126,19 +126,16 @@ public class StateView {
 
 	public static final FCMap<MerkleUniqueTokenId, MerkleUniqueToken> EMPTY_NFTS =
 			new FCMap<>();
-
-	public static final FCOneToManyRelation<EntityId, MerkleUniqueTokenId> EMPTY_UNIQUE_TOKEN_ASSOCS =
-			new FCOneToManyRelation<>();
-
-	public static final FCOneToManyRelation<EntityId, MerkleUniqueTokenId> EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS =
-			new FCOneToManyRelation<>();
-
 	public static final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> EMPTY_NFTS_SUPPLIER =
 			() -> EMPTY_NFTS;
 
+	public static final FCOneToManyRelation<EntityId, MerkleUniqueTokenId> EMPTY_UNIQUE_TOKEN_ASSOCS =
+			new FCOneToManyRelation<>();
 	public static final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> EMPTY_UNIQUE_TOKEN_ASSOCS_SUPPLIER =
 			() -> EMPTY_UNIQUE_TOKEN_ASSOCS;
 
+	public static final FCOneToManyRelation<EntityId, MerkleUniqueTokenId> EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS =
+			new FCOneToManyRelation<>();
 	public static final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS_SUPPLIER =
 			() -> EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS;
 
@@ -398,7 +395,7 @@ public class StateView {
 	}
 
 	public boolean nftExists(NftID id) {
-		return tokenStore.resolve(id) != MISSING_NFT;
+		return uniqueTokens.get().containsKey(new MerkleUniqueTokenId(fromGrpcTokenId(id.getTokenID()), id.getSerialNumber()));
 	}
 
 	public Optional<TokenType> tokenType(TokenID tokenID) {
