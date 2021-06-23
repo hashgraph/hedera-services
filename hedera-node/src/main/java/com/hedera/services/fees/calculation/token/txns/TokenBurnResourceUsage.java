@@ -22,13 +22,17 @@ package com.hedera.services.fees.calculation.token.txns;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
+import com.hedera.services.fees.calculation.utils.ResourceUsageSubtypeHelper;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.token.TokenBurnUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.SubType;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 
+import java.util.Optional;
 import java.util.function.BiFunction;
 
 public class TokenBurnResourceUsage implements TxnResourceUsageEstimator {
@@ -41,8 +45,10 @@ public class TokenBurnResourceUsage implements TxnResourceUsageEstimator {
 
 	@Override
 	public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
+		Optional<TokenType> tokenType = view.tokenType(txn.getTokenBurn().getToken());
+		SubType subType = ResourceUsageSubtypeHelper.determineTokenType(tokenType);
 		var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
-		var estimate = factory.apply(txn, sigUsage);
+		var estimate = factory.apply(txn, sigUsage).givenSubType(subType);
 		return estimate.get();
 	}
 }

@@ -1,4 +1,4 @@
-package com.hedera.services.txns;
+package com.hedera.services.txns.span;
 
 /*-
  * ‌
@@ -52,22 +52,39 @@ import java.util.concurrent.TimeUnit;
  * </ol>
  */
 public class ExpandHandleSpan {
+	private final SpanMapManager spanMapManager;
 	private final Cache<SwirldTransaction, PlatformTxnAccessor> accessorCache;
 
-	public ExpandHandleSpan(long duration, TimeUnit timeUnit) {
+	public ExpandHandleSpan(
+			long duration,
+			TimeUnit timeUnit,
+			SpanMapManager spanMapManager
+	) {
+		this.spanMapManager = spanMapManager;
 		this.accessorCache = CacheBuilder.newBuilder()
 				.expireAfterWrite(duration, timeUnit)
 				.build();
 	}
 
 	public PlatformTxnAccessor track(SwirldTransaction transaction) throws InvalidProtocolBufferException {
-		final var accessor = new PlatformTxnAccessor(transaction);
+		final var accessor = spanAccessorFor(transaction);
 		accessorCache.put(transaction, accessor);
 		return accessor;
 	}
 
 	public PlatformTxnAccessor accessorFor(SwirldTransaction transaction) throws InvalidProtocolBufferException {
 		final var cachedAccessor = accessorCache.getIfPresent(transaction);
-		return cachedAccessor != null ? cachedAccessor : new PlatformTxnAccessor(transaction);
+		if (cachedAccessor != null) {
+			spanMapManager.rationalizeSpan(cachedAccessor);
+			return cachedAccessor;
+		} else {
+			return spanAccessorFor(transaction);
+		}
+	}
+
+	private PlatformTxnAccessor spanAccessorFor(SwirldTransaction transaction) throws InvalidProtocolBufferException {
+		final var accessor = new PlatformTxnAccessor(transaction);
+		spanMapManager.expandSpan(accessor);
+		return accessor;
 	}
 }

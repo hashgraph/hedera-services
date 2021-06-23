@@ -65,10 +65,13 @@ import com.hedera.services.grpc.controllers.FreezeController;
 import com.hedera.services.grpc.controllers.NetworkController;
 import com.hedera.services.grpc.controllers.ScheduleController;
 import com.hedera.services.grpc.controllers.TokenController;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.keys.CharacteristicsFactory;
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.PureTransferSemanticChecks;
+import com.hedera.services.ledger.accounts.BackingNfts;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
@@ -114,6 +117,8 @@ import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.migration.StdStateMigrations;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
@@ -133,9 +138,10 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttling.HapiThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.throttling.TxnAwareHandleThrottling;
-import com.hedera.services.txns.ExpandHandleSpan;
+import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.TransitionLogicLookup;
 import com.hedera.services.txns.TransitionRunner;
+import com.hedera.services.txns.span.SpanMapManager;
 import com.hedera.services.txns.submission.BasicSubmissionFlow;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.SyntaxPrecheck;
@@ -196,12 +202,14 @@ public class ServicesContextTest {
 	FCMap<MerkleEntityId, MerkleTopic> topics;
 	FCMap<MerkleEntityId, MerkleToken> tokens;
 	FCMap<MerkleEntityId, MerkleAccount> accounts;
-	FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
-	FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
 	FCMap<MerkleEntityId, MerkleSchedule> schedules;
+	FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
+	FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts;
+	FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
 
 	@BeforeEach
 	void setup() {
+		nfts = mock(FCMap.class);
 		topics = mock(FCMap.class);
 		tokens = mock(FCMap.class);
 		tokenAssociations = mock(FCMap.class);
@@ -219,6 +227,7 @@ public class ServicesContextTest {
 		given(state.tokens()).willReturn(tokens);
 		given(state.tokenAssociations()).willReturn(tokenAssociations);
 		given(state.scheduleTxs()).willReturn(schedules);
+		given(state.nfts()).willReturn(nfts);
 		crypto = mock(Cryptography.class);
 		platform = mock(Platform.class);
 		given(platform.getSelfId()).willReturn(new NodeId(false, 0L));
@@ -238,6 +247,7 @@ public class ServicesContextTest {
 		var newTokens = mock(FCMap.class);
 		var newTokenRels = mock(FCMap.class);
 		var newSchedules = mock(FCMap.class);
+		var newNfts = mock(FCMap.class);
 
 		given(newState.accounts()).willReturn(newAccounts);
 		given(newState.topics()).willReturn(newTopics);
@@ -245,6 +255,7 @@ public class ServicesContextTest {
 		given(newState.storage()).willReturn(newStorage);
 		given(newState.tokenAssociations()).willReturn(newTokenRels);
 		given(newState.scheduleTxs()).willReturn(newSchedules);
+		given(newState.nfts()).willReturn(newNfts);
 		// given:
 		var subject = new ServicesContext(nodeId, platform, state, propertySources);
 		// and:
@@ -254,6 +265,7 @@ public class ServicesContextTest {
 		var tokensRef = subject.queryableTokens();
 		var tokenRelsRef = subject.queryableTokenAssociations();
 		var schedulesRef = subject.queryableSchedules();
+		var nftsRef = subject.queryableNfts();
 
 		// when:
 		subject.update(newState);
@@ -266,6 +278,7 @@ public class ServicesContextTest {
 		assertSame(tokensRef, subject.queryableTokens());
 		assertSame(tokenRelsRef, subject.queryableTokenAssociations());
 		assertSame(schedulesRef, subject.queryableSchedules());
+		assertSame(nftsRef, subject.queryableNfts());
 		// and:
 		assertSame(newAccounts, subject.queryableAccounts().get());
 		assertSame(newTopics, subject.queryableTopics().get());
@@ -273,6 +286,7 @@ public class ServicesContextTest {
 		assertSame(newTokens, subject.queryableTokens().get());
 		assertSame(newTokenRels, subject.queryableTokenAssociations().get());
 		assertSame(newSchedules, subject.queryableSchedules().get());
+		assertSame(newNfts, subject.queryableNfts().get());
 	}
 
 	@Test
@@ -535,6 +549,10 @@ public class ServicesContextTest {
 		assertThat(ctx.accessorBasedUsages(), instanceOf(AccessorBasedUsages.class));
 		assertThat(ctx.pricedUsageCalculator(), instanceOf(PricedUsageCalculator.class));
 		assertThat(ctx.accountStore(), instanceOf(AccountStore.class));
+		assertThat(ctx.spanMapManager(), instanceOf(SpanMapManager.class));
+		assertThat(ctx.impliedTransfersMarshal(), instanceOf(ImpliedTransfersMarshal.class));
+		assertThat(ctx.transferSemanticChecks(), instanceOf(PureTransferSemanticChecks.class));
+		assertThat(ctx.backingNfts(), instanceOf(BackingNfts.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

@@ -108,6 +108,10 @@ public class EntityId implements SelfSerializable {
 		return shard == that.shard && realm == that.realm && num == that.num;
 	}
 
+	public boolean matches(AccountID aId) {
+		return shard == aId.getShardNum() && realm == aId.getRealmNum() && num == aId.getAccountNum();
+	}
+
 	@Override
 	public int hashCode() {
 		return Objects.hash(shard, realm, num);

@@ -70,7 +70,7 @@ public class TransitionRunner {
 			return false;
 		} else {
 			final var transition = logic.get();
-			final var validity = transition.semanticCheck().apply(txn);
+			final var validity = transition.validateSemantics(accessor);
 			if (validity != OK) {
 				txnCtx.setStatus(validity);
 				return false;

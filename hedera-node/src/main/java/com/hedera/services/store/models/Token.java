@@ -59,6 +59,7 @@ public class Token {
 
 	private boolean supplyHasChanged;
 	private final List<UniqueToken> mintedUniqueTokens = new ArrayList<>();
+	private final List<UniqueToken> burnedUniqueTokens = new ArrayList<>();
 
 	private TokenType type;
 	private TokenSupplyType supplyType;
@@ -92,7 +93,29 @@ public class Token {
 		changeSupply(treasuryRel, +amount, INVALID_TOKEN_MINT_AMOUNT);
 	}
 
-	public OwnershipTracker mint(OwnershipTracker ownershipTracker, TokenRelationship treasuryRel, List<ByteString> metadata, final RichInstant creationTime) {
+	public void burn(
+			final OwnershipTracker ownershipTracker,
+			final TokenRelationship treasuryRelationship,
+			final List<Long> serialNumbers
+	){
+		validateTrue( type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID, () ->
+				"Non fungible burn can be invoked only on Non fungible tokens!");
+		validateTrue( serialNumbers.size() > 0 , FAIL_INVALID, ()->
+				"Non fungible burn cannot be invoked with no serial numbers");
+		for (final long serialNum : serialNumbers) {
+			ownershipTracker.add(id, OwnershipTracker.fromBurning(id, serialNum));
+			burnedUniqueTokens.add(new UniqueToken(id, serialNum));
+		}
+		treasury.setOwnedNfts(treasury.getOwnedNfts() - serialNumbers.size());
+		changeSupply(treasuryRelationship, -serialNumbers.size(), FAIL_INVALID);
+	}
+
+	public void mint(
+			final OwnershipTracker ownershipTracker,
+			final TokenRelationship treasuryRel,
+			final List<ByteString> metadata,
+			final RichInstant creationTime
+	) {
 		validateTrue(metadata.size() > 0, FAIL_INVALID, () ->
 				"Cannot mint " + metadata.size() + " numbers of Unique Tokens");
 		validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID, () ->
@@ -102,12 +125,11 @@ public class Token {
 
 		for (ByteString m : metadata) {
 			lastUsedSerialNumber++;
-			UniqueToken uniqueToken = new UniqueToken(id, lastUsedSerialNumber, creationTime, treasury.getId(), m.toByteArray());
+			var uniqueToken = new UniqueToken(id, lastUsedSerialNumber, creationTime, treasury.getId(), m.toByteArray());
 			mintedUniqueTokens.add(uniqueToken);
-			treasury.incrementOwnedNfts();
 			ownershipTracker.add(id, OwnershipTracker.fromMinting(treasury.getId(), lastUsedSerialNumber));
 		}
-		return ownershipTracker;
+		treasury.setOwnedNfts(treasury.getOwnedNfts() + metadata.size());
 	}
 
 	public TokenRelationship newRelationshipWith(Account account) {
@@ -236,6 +258,10 @@ public class Token {
 		return !mintedUniqueTokens.isEmpty();
 	}
 
+	public boolean hasBurnedUniqueTokens() { return !burnedUniqueTokens.isEmpty(); }
+
+	public List<UniqueToken> burnedUniqueTokens() { return burnedUniqueTokens; }
+
 	public List<UniqueToken> mintedUniqueTokens() {
 		return mintedUniqueTokens;
 	}
@@ -257,14 +283,12 @@ public class Token {
 	public String toString() {
 		return MoreObjects.toStringHelper(Token.class)
 				.add("id", id)
-				.add("type", type)
 				.add("treasury", treasury)
 				.add("autoRenewAccount", autoRenewAccount)
 				.add("kycKey", describe(kycKey))
 				.add("freezeKey", describe(freezeKey))
 				.add("frozenByDefault", frozenByDefault)
 				.add("supplyKey", describe(supplyKey))
-				.add("currentSerialNumber", lastUsedSerialNumber)
 				.toString();
 	}
 }

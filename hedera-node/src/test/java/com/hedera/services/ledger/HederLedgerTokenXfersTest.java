@@ -20,28 +20,18 @@ package com.hedera.services.ledger;
  * ‍
  */
 
-import com.hedera.services.state.enums.TokenType;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
-import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
-import static com.hedera.test.utils.IdUtils.adjustFrom;
 import static com.hedera.test.utils.IdUtils.tokenWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
@@ -49,7 +39,7 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
 
-public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
+class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 	@BeforeEach
 	private void setup() {
 		commonSetup();
@@ -57,115 +47,7 @@ public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void requiresAllNetZeroTransfers() {
-		// setup
-		given(tokenStore.get(tokenId)).willReturn(token);
-		given(tokenStore.get(tokenId).tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
-		givenAdjustBalanceUpdatingTokenXfers(any(), any(), anyLong());
-
-		// when:
-		var outcome = subject.doAtomicTransfers(unmatchedTokenTransfers);
-		// and:
-		var netXfers = subject.netTokenTransfersInTxn();
-
-		// then:
-		assertEquals(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN, outcome);
-		// and:
-		assertTrue(netXfers.isEmpty());
-	}
-
-	@Test
-	public void atomicZeroSumTokenTransferRejectsMissingId() {
-		given(tokenStore.adjustBalance(any(), any(), anyLong())).willReturn(OK);
-
-		// when:
-		var outcome = subject.doAtomicTransfers(missingIdTokenTransfers);
-		// and:
-		var netXfers = subject.netTokenTransfersInTxn();
-
-		// then:
-		assertEquals(INVALID_TOKEN_ID, outcome);
-		// and:
-		assertTrue(netXfers.isEmpty());
-	}
-
-	@Test
-	public void tokenTransfersRollbackIfInvalidHbars() {
-		// setup
-		given(tokenStore.get(tokenId)).willReturn(token);
-		given(tokenStore.get(frozenId).tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
-		given(tokenStore.get(tokenId).tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
-		given(tokenStore.adjustBalance(any(), any(), anyLong())).willReturn(OK);
-		given(accountsLedger.get(rand, IS_SMART_CONTRACT)).willReturn(true);
-
-		// when:
-		var outcome = subject.doAtomicTransfers(validTokenXfersPlusInvalidHbarXfers);
-		// and:
-		var netXfers = subject.netTokenTransfersInTxn();
-
-		// then:
-		assertEquals(INVALID_ACCOUNT_ID, outcome);
-		// and:
-		assertTrue(netXfers.isEmpty());
-	}
-
-	@Test
-	public void happyPathZeroSumTokenTransfers() {
-		// setup
-		given(tokenStore.get(tokenId)).willReturn(token);
-		given(tokenStore.get(frozenId).tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
-		given(tokenStore.get(tokenId).tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
-		givenAdjustBalanceUpdatingTokenXfers(any(), any(), anyLong());
-
-		// when:
-		var outcome = subject.doAtomicTransfers(multipleValidTokenTransfers);
-		// and:
-		var netXfers = subject.netTokenTransfersInTxn();
-
-		// then:
-		assertEquals(OK, outcome);
-		// and:
-		assertEquals(frozenId, netXfers.get(0).getToken());
-		assertEquals(
-				List.of(aa(misc, 1_000), aa(rand, -1_000)),
-				netXfers.get(0).getTransfersList());
-		assertEquals(tokenId, netXfers.get(1).getToken());
-		assertEquals(
-				List.of(aa(misc, 1_000), aa(rand, -1_000)),
-				netXfers.get(1).getTransfersList());
-	}
-
-	@Test
-	public void happyPathZeroSumTokenTransfersWithHbar() {
-		// setup
-		given(tokenStore.get(tokenId)).willReturn(token);
-		given(tokenStore.get(frozenId).tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
-		given(tokenStore.get(tokenId).tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
-		givenAdjustBalanceUpdatingTokenXfers(any(), any(), anyLong());
-
-		// when:
-		var outcome = subject.doAtomicTransfers(multipleValidTokenTransfersPlusHbars);
-		// and:
-		var netXfers = subject.netTokenTransfersInTxn();
-
-		// then:
-		assertEquals(OK, outcome);
-		// and:
-		assertEquals(frozenId, netXfers.get(0).getToken());
-		assertEquals(
-				List.of(aa(misc, 1_000), aa(rand, -1_000)),
-				netXfers.get(0).getTransfersList());
-		assertEquals(tokenId, netXfers.get(1).getToken());
-		assertEquals(
-				List.of(aa(misc, 1_000), aa(rand, -1_000)),
-				netXfers.get(1).getTransfersList());
-		// and:
-		verify(accountsLedger).set(misc, BALANCE, MISC_BALANCE - 123);
-		verify(accountsLedger).set(rand, BALANCE, RAND_BALANCE + 123);
-	}
-
-	@Test
-	public void tokenTransferHappyPathWOrks() {
+	void tokenTransferHappyPathWOrks() {
 		// setup
 		given(subject.adjustTokenBalance(misc, tokenId, -1_000)).willReturn(OK);
 		given(subject.adjustTokenBalance(rand, tokenId, 1_000)).willReturn(OK);
@@ -179,7 +61,7 @@ public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void tokenTransferRevertsChangesOnFirstAdjust() {
+	void tokenTransferRevertsChangesOnFirstAdjust() {
 		// setup
 		given(tokenStore.adjustBalance(misc, tokenId, -555))
 				.willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
@@ -196,7 +78,7 @@ public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void tokenTransferRevertsChangesOnSecondAdjust() {
+	void tokenTransferRevertsChangesOnSecondAdjust() {
 		// setup
 		given(tokenStore.adjustBalance(misc, tokenId, -555))
 				.willReturn(OK);
@@ -216,10 +98,8 @@ public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void tokenTransferHappyPath() {
+	void tokenTransferHappyPath() {
 		// setup
-		given(tokenStore.get(tokenId)).willReturn(token);
-		given(tokenStore.get(tokenId).tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
 		givenAdjustBalanceUpdatingTokenXfers(misc, tokenId, -555);
 		givenAdjustBalanceUpdatingTokenXfers(rand, tokenId, 555);
 
@@ -234,7 +114,7 @@ public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 	}
 
 	@Test
-	public void resetsTokenTransferTrackingAfterRollback() {
+	void resetsTokenTransferTrackingAfterRollback() {
 		// setup:
 		subject.begin();
 		// and:
@@ -254,10 +134,6 @@ public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 						.addAccountAmounts(
 								AccountAmount.newBuilder()
 										.setAccountID(IdUtils.asAccount("0.0.3"))));
-		// and:
-		given(tokenStore.get(tokenId)).willReturn(token);
-		given(tokenStore.get(frozenId).tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
-		given(tokenStore.get(tokenId).tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
 
 		// when:
 		subject.rollback();
@@ -267,71 +143,4 @@ public class HederLedgerTokenXfersTest extends BaseHederaLedgerTest {
 		assertEquals(0, subject.netTokenTransfers.get(tokenWith(111)).getAccountAmountsCount());
 		assertEquals(0, subject.netTokenTransfers.get(tokenWith(222)).getAccountAmountsCount());
 	}
-
-	CryptoTransferTransactionBody unmatchedTokenTransfers = CryptoTransferTransactionBody.newBuilder()
-			.addTokenTransfers(TokenTransferList.newBuilder()
-					.setToken(tokenId)
-					.addAllTransfers(List.of(
-							adjustFrom(misc, +2_000),
-							adjustFrom(rand, -1_000)
-					)))
-			.build();
-	CryptoTransferTransactionBody missingIdTokenTransfers = CryptoTransferTransactionBody.newBuilder()
-			.addTokenTransfers(TokenTransferList.newBuilder()
-					.setToken(missingId)
-					.addAllTransfers(List.of(
-							adjustFrom(misc, +1_000),
-							adjustFrom(rand, -1_000)
-					)))
-			.build();
-	CryptoTransferTransactionBody multipleValidTokenTransfers = CryptoTransferTransactionBody.newBuilder()
-			.addTokenTransfers(TokenTransferList.newBuilder()
-					.setToken(frozenId)
-					.addAllTransfers(List.of(
-							adjustFrom(misc, +1_000),
-							adjustFrom(rand, -1_000)
-					)))
-			.addTokenTransfers(TokenTransferList.newBuilder()
-					.setToken(tokenId)
-					.addAllTransfers(List.of(
-							adjustFrom(misc, +1_000),
-							adjustFrom(rand, -1_000)
-					)))
-			.build();
-	CryptoTransferTransactionBody multipleValidTokenTransfersPlusHbars = CryptoTransferTransactionBody.newBuilder()
-			.addTokenTransfers(TokenTransferList.newBuilder()
-					.setToken(frozenId)
-					.addAllTransfers(List.of(
-							adjustFrom(misc, +1_000),
-							adjustFrom(rand, -1_000)
-					)))
-			.addTokenTransfers(TokenTransferList.newBuilder()
-					.setToken(tokenId)
-					.addAllTransfers(List.of(
-							adjustFrom(misc, +1_000),
-							adjustFrom(rand, -1_000)
-					)))
-			.setTransfers(TransferList.newBuilder()
-					.addAccountAmounts(adjustFrom(rand, +123))
-					.addAccountAmounts(adjustFrom(misc, -123))
-					.build())
-			.build();
-	CryptoTransferTransactionBody validTokenXfersPlusInvalidHbarXfers = CryptoTransferTransactionBody.newBuilder()
-			.addTokenTransfers(TokenTransferList.newBuilder()
-					.setToken(frozenId)
-					.addAllTransfers(List.of(
-							adjustFrom(misc, +1_000),
-							adjustFrom(rand, -1_000)
-					)))
-			.addTokenTransfers(TokenTransferList.newBuilder()
-					.setToken(tokenId)
-					.addAllTransfers(List.of(
-							adjustFrom(misc, +1_000),
-							adjustFrom(rand, -1_000)
-					)))
-			.setTransfers(TransferList.newBuilder()
-					.addAccountAmounts(adjustFrom(rand, +123))
-					.addAccountAmounts(adjustFrom(misc, -123))
-					.build())
-			.build();
 }

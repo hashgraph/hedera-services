@@ -134,7 +134,8 @@ public class TransactionRecordService {
 						.setReceiverAccountID(AccountID.newBuilder()
 								.setShardNum(newOwner.getShard())
 								.setRealmNum(newOwner.getRealm())
-								.setAccountNum(newOwner.getNum())).build());
+								.setAccountNum(newOwner.getNum()))
+						.setSerialNumber(change.getSerialNumber()).build());
 				var merkleUniqueTokenId = new MerkleUniqueTokenId(
 						EntityId.fromGrpcTokenId(tokenID),
 						change.getSerialNumber());

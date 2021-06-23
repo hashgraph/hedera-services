@@ -31,6 +31,8 @@ import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -41,6 +43,7 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -48,6 +51,7 @@ import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
@@ -73,6 +77,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 
 import static com.hedera.services.state.merkle.MerkleScheduleTest.scheduleCreateTxnWith;
+import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
@@ -341,7 +346,7 @@ class StateViewTest {
 		assertEquals(SCHEDULE_ADMIN_KT.asKey(), info.getAdminKey());
 		assertEquals(expectedScheduledTxn, info.getScheduledTransactionBody());
 		assertEquals(schedule.scheduledTransactionId(), info.getScheduledTransactionID());
-		assertEquals(RichInstant.fromJava(resolutionTime).toGrpc(), info.getDeletionTime());
+		assertEquals(fromJava(resolutionTime).toGrpc(), info.getDeletionTime());
 	}
 
 	@Test
@@ -352,7 +357,7 @@ class StateViewTest {
 		var info = gotten.get();
 
 		// then:
-		assertEquals(RichInstant.fromJava(resolutionTime).toGrpc(), info.getExecutionTime());
+		assertEquals(fromJava(resolutionTime).toGrpc(), info.getExecutionTime());
 	}
 
 	@Test
@@ -710,4 +715,44 @@ class StateViewTest {
 		// then:
 		assertTrue(Arrays.equals(data, stuff.get()));
 	}
+
+	@Test
+	void rejectsMissingNft() {
+		// when:
+		final var optionalNftInfo = subject.infoForNft(targetNftId);
+
+		// then:
+		assertTrue(optionalNftInfo.isEmpty());
+	}
+
+	@Test
+	void getNftsAsExpected() {
+		// setup:
+		final var delegate = new FCMap<MerkleUniqueTokenId, MerkleUniqueToken>();
+		delegate.put(targetNftKey, targetNft);
+		// and:
+		subject.setNfts(() -> delegate);
+
+		// when:
+		final var optionalNftInfo = subject.infoForNft(targetNftId);
+
+		// then:
+		assertTrue(optionalNftInfo.isPresent());
+		// and:
+		final var info = optionalNftInfo.get();
+		assertEquals(targetNftId, info.getNftID());
+		assertEquals(owner.toGrpcAccountId(), info.getAccountID());
+		assertEquals(fromJava(nftCreation).toGrpc(), info.getCreationTime());
+		assertArrayEquals(nftMeta, info.getMetadata().toByteArray());
+	}
+
+	private final Instant nftCreation = Instant.ofEpochSecond(1_234_567L, 8);
+	private final byte[] nftMeta = "abcdefgh".getBytes();
+	private final EntityId owner = new EntityId(4, 5, 6);
+	private final NftID targetNftId = NftID.newBuilder()
+			.setTokenID(IdUtils.asToken("1.2.3"))
+			.setSerialNumber(4L)
+			.build();
+	private final MerkleUniqueTokenId targetNftKey = new MerkleUniqueTokenId(new EntityId(1, 2, 3), 4);
+	private final MerkleUniqueToken targetNft = new MerkleUniqueToken(owner, nftMeta, fromJava(nftCreation));
 }

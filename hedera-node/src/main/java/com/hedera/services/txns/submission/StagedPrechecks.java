@@ -22,6 +22,7 @@ package com.hedera.services.txns.submission;
 
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -62,8 +63,12 @@ public class StagedPrechecks {
 		return systemPrecheck.screen(accessor);
 	}
 
-	ResponseCodeEnum validateSemantics(HederaFunctionality function, TransactionBody txn, ResponseCodeEnum failureType) {
-		return semanticPrecheck.validate(function, txn, failureType);
+	ResponseCodeEnum validateSemantics(
+			TxnAccessor accessor,
+			HederaFunctionality requiredFunction,
+			ResponseCodeEnum failureType
+	) {
+		return semanticPrecheck.validate(accessor, requiredFunction, failureType);
 	}
 
 	TxnValidityAndFeeReq assessSolvencySansSvcFees(SignedTxnAccessor accessor) {

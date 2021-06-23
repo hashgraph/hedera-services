@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.SwirldTransaction;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.function.Function;
 
@@ -42,6 +43,7 @@ import static com.hedera.services.utils.PlatformTxnAccessor.uncheckedAccessorFor
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -60,6 +62,22 @@ class PlatformTxnAccessorTest {
 			.setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
 			.setMemo("Hi!")
 			.build();
+
+	@Test
+	void hasSpanMap() throws InvalidProtocolBufferException {
+		// setup:
+		Transaction signedTxnWithBody = Transaction.newBuilder()
+				.setBodyBytes(someTxn.toByteString())
+				.build();
+		SwirldTransaction platformTxn =
+				new SwirldTransaction(signedTxnWithBody.toByteArray());
+
+		// given:
+		SignedTxnAccessor subject = new PlatformTxnAccessor(platformTxn);
+
+		// expect:
+		assertThat(subject.getSpanMap(), instanceOf(HashMap.class));
+	}
 
 	@Test
 	void sigMetaGetterSetterCheck() throws InvalidProtocolBufferException {
