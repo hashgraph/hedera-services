@@ -27,6 +27,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 
 /**
  * Encapsulates the state and operations of a Hedera account-token relationship.
@@ -105,6 +106,11 @@ public class TokenRelationship {
 
 	public void setKycGranted(boolean kycGranted) {
 		this.kycGranted = kycGranted;
+	}
+
+	public void updateKycGranted(boolean value) {
+		validateTrue(token.hasKycKey(), TOKEN_HAS_NO_KYC_KEY);
+		this.kycGranted = value;
 	}
 
 	public long getBalanceChange() {
