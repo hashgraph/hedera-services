@@ -21,7 +21,7 @@ public interface FCVirtualMapDataStore<PK extends SelfSerializable, PD extends S
         extends FastCopyable<FCVirtualMapDataStore<PK, PD, LK, LP, LD>> {
 
     /** Open storage */
-    void open();
+    void open() throws IOException;
 
     /** Sync any changes to disk, used during testing */
     void sync();
