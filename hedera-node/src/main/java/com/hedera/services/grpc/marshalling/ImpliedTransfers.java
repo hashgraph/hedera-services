@@ -22,8 +22,8 @@ package com.hedera.services.grpc.marshalling;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.state.submerkle.AssessedCustomFee;
 import com.hedera.services.state.submerkle.CustomFee;
-import com.hedera.services.state.submerkle.CustomFeesBalanceChange;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -45,16 +45,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class ImpliedTransfers {
 	private final ImpliedTransfersMeta meta;
 	private final List<BalanceChange> changes;
-	private final List<Pair<EntityId, List<CustomFee>>> entityCustomFees;
-	private final List<CustomFeesBalanceChange> customFeesBalanceChanges;
+	private final List<Pair<EntityId, List<CustomFee>>> involvedTokenFeeSchedules;
+	private final List<AssessedCustomFee> assessedCustomFees;
 
 	private ImpliedTransfers(ImpliedTransfersMeta meta, List<BalanceChange> changes,
 			List<Pair<EntityId, List<CustomFee>>> entityCustomFees,
-			List<CustomFeesBalanceChange> customFeeBalanceChanges) {
+			List<AssessedCustomFee> assessedCustomFees) {
 		this.meta = meta;
 		this.changes = changes;
-		this.entityCustomFees = entityCustomFees;
-		this.customFeesBalanceChanges = customFeeBalanceChanges;
+		this.involvedTokenFeeSchedules = entityCustomFees;
+		this.assessedCustomFees = assessedCustomFees;
 	}
 
 	public static ImpliedTransfers valid(
@@ -62,10 +62,10 @@ public class ImpliedTransfers {
 			int maxTokenAdjusts,
 			List<BalanceChange> changes,
 			List<Pair<EntityId, List<CustomFee>>> entityCustomFees,
-			List<CustomFeesBalanceChange> customFeeBalanceChanges
+			List<AssessedCustomFee> assessedCustomFees
 	) {
 		final var meta = new ImpliedTransfersMeta(maxHbarAdjusts, maxTokenAdjusts, OK, entityCustomFees);
-		return new ImpliedTransfers(meta, changes, entityCustomFees, customFeeBalanceChanges);
+		return new ImpliedTransfers(meta, changes, entityCustomFees, assessedCustomFees);
 	}
 
 	public static ImpliedTransfers invalid(
@@ -85,12 +85,12 @@ public class ImpliedTransfers {
 		return changes;
 	}
 
-	public List<Pair<EntityId, List<CustomFee>>> getEntityCustomFees() {
-		return entityCustomFees;
+	public List<Pair<EntityId, List<CustomFee>>> getInvolvedTokenFeeSchedules() {
+		return involvedTokenFeeSchedules;
 	}
 
-	public List<CustomFeesBalanceChange> getCustomFeesBalanceChanges() {
-		return customFeesBalanceChanges;
+	public List<AssessedCustomFee> getAssessedCustomFees() {
+		return assessedCustomFees;
 	}
 
 	/* NOTE: The object methods below are only overridden to improve
@@ -111,8 +111,8 @@ public class ImpliedTransfers {
 		return MoreObjects.toStringHelper(ImpliedTransfers.class)
 				.add("meta", meta)
 				.add("changes", changes)
-				.add("entityCustomFees", entityCustomFees)
-				.add("customFeesBalanceChanges", customFeesBalanceChanges)
+				.add("involvedTokenFeeSchedules", involvedTokenFeeSchedules)
+				.add("assessedCustomFees", assessedCustomFees)
 				.toString();
 	}
 }

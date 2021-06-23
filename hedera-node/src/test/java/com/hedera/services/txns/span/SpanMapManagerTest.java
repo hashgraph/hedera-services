@@ -23,8 +23,8 @@ package com.hedera.services.txns.span;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.state.submerkle.AssessedCustomFee;
 import com.hedera.services.state.submerkle.CustomFee;
-import com.hedera.services.state.submerkle.CustomFeesBalanceChange;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.utils.TxnAccessor;
@@ -65,12 +65,12 @@ class SpanMapManagerTest {
 			Pair.of(customFeeToken, new ArrayList<>()));
 	final List<Pair<EntityId, List<CustomFee>>> newCustomFeeChanges = List.of(
 			Pair.of(customFeeToken, List.of(CustomFee.fixedFee(10L, customFeeToken, customFeeCollector))));
-	private final List<CustomFeesBalanceChange> customFeeBalanceChanges = List.of(
-			new CustomFeesBalanceChange(customFeeCollector, customFeeToken, 123L));
+	private final List<AssessedCustomFee> assessedCustomFees = List.of(
+			new AssessedCustomFee(customFeeCollector, customFeeToken, 123L));
 	private final ImpliedTransfers validImpliedTransfers = ImpliedTransfers.valid(
-			maxHbarAdjusts, maxTokenAdjusts, new ArrayList<>(), entityCustomFees, customFeeBalanceChanges);
+			maxHbarAdjusts, maxTokenAdjusts, new ArrayList<>(), entityCustomFees, assessedCustomFees);
 	private final ImpliedTransfers feeChangedImpliedTransfers = ImpliedTransfers.valid(
-			maxHbarAdjusts, maxTokenAdjusts + 1, new ArrayList<>(), newCustomFeeChanges, customFeeBalanceChanges);
+			maxHbarAdjusts, maxTokenAdjusts + 1, new ArrayList<>(), newCustomFeeChanges, assessedCustomFees);
 
 	private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
 

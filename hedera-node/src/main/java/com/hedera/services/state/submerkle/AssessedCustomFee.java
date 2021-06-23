@@ -34,10 +34,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Process self serializable object that encapsulates a balance change, either ℏ or token unit.
+ * Process self serializable object that represents an assessed custom fee, which may or may not result in a balance
+ * change, depending on if the payer can afford it.
  * This is useful for setting custom fees balance changes in {@link ExpirableTxnRecord}.
  */
-public class CustomFeesBalanceChange implements SelfSerializable {
+public class AssessedCustomFee implements SelfSerializable {
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xd8b56ce46e56a466L;
 
@@ -45,23 +46,23 @@ public class CustomFeesBalanceChange implements SelfSerializable {
 	private EntityId account;
 	private long units;
 
-	public CustomFeesBalanceChange() {
+	public AssessedCustomFee() {
 		/* For RuntimeConstructable */
 	}
 
-	private CustomFeesBalanceChange(final EntityId token, final AccountAmount aa) {
+	private AssessedCustomFee(final EntityId token, final AccountAmount aa) {
 		this.token = token;
 		this.account = EntityId.fromGrpcAccountId(aa.getAccountID());
 		this.units = aa.getAmount();
 	}
 
-	public CustomFeesBalanceChange(final EntityId account, final long amount) {
+	public AssessedCustomFee(final EntityId account, final long amount) {
 		this.token = null;
 		this.account = account;
 		this.units = amount;
 	}
 
-	public CustomFeesBalanceChange(final EntityId account, final EntityId token, final long amount) {
+	public AssessedCustomFee(final EntityId account, final EntityId token, final long amount) {
 		this.token = token;
 		this.account = account;
 		this.units = amount;
@@ -83,12 +84,12 @@ public class CustomFeesBalanceChange implements SelfSerializable {
 		return account;
 	}
 
-	public static CustomFeesBalanceChange hbarAdjust(final AccountAmount aa) {
-		return new CustomFeesBalanceChange(null, aa);
+	public static AssessedCustomFee hbarAdjust(final AccountAmount aa) {
+		return new AssessedCustomFee(null, aa);
 	}
 
-	public static CustomFeesBalanceChange tokenAdjust(final EntityId token, final AccountAmount aa) {
-		return new CustomFeesBalanceChange(token, aa);
+	public static AssessedCustomFee tokenAdjust(final EntityId token, final AccountAmount aa) {
+		return new AssessedCustomFee(token, aa);
 	}
 
 	/* NOTE: The object methods below are only overridden to improve readability of unit tests;
@@ -107,7 +108,7 @@ public class CustomFeesBalanceChange implements SelfSerializable {
 
 	@Override
 	public String toString() {
-		return MoreObjects.toStringHelper(CustomFeesBalanceChange.class)
+		return MoreObjects.toStringHelper(AssessedCustomFee.class)
 				.add("token", token == null ? "ℏ" : token)
 				.add("account", account)
 				.add("units", units)
@@ -126,24 +127,24 @@ public class CustomFeesBalanceChange implements SelfSerializable {
 		return grpc.setTokenId(token.toGrpcTokenId()).build();
 	}
 
-	public static CustomFeesOuterClass.CustomFeesCharged toGrpc(List<CustomFeesBalanceChange> balanceChanges) {
+	public static CustomFeesOuterClass.CustomFeesCharged toGrpc(List<AssessedCustomFee> balanceChanges) {
 		return CustomFeesOuterClass.CustomFeesCharged.newBuilder()
 				.addAllCustomFeesCharged(
 						balanceChanges
 								.stream()
-								.map(CustomFeesBalanceChange::toGrpc)
+								.map(AssessedCustomFee::toGrpc)
 								.collect(Collectors.toList()))
 				.build();
 	}
 
-	public static List<CustomFeesBalanceChange> fromGrpc(CustomFeesOuterClass.CustomFeesCharged grpc) {
+	public static List<AssessedCustomFee> fromGrpc(CustomFeesOuterClass.CustomFeesCharged grpc) {
 		return grpc.getCustomFeesChargedList()
 				.stream()
-				.map(CustomFeesBalanceChange::fromGrpc)
+				.map(AssessedCustomFee::fromGrpc)
 				.collect(Collectors.toList());
 	}
 
-	public static CustomFeesBalanceChange fromGrpc(CustomFeesOuterClass.CustomFeeCharged customFeesCharged) {
+	public static AssessedCustomFee fromGrpc(CustomFeesOuterClass.CustomFeeCharged customFeesCharged) {
 		AccountAmount aa = AccountAmount.newBuilder()
 				.setAccountID(customFeesCharged.getFeeCollector())
 				.setAmount(customFeesCharged.getUnitsCharged()).build();

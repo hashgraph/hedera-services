@@ -43,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-class CustomFeesBalanceChangeTest {
+class AssessedCustomFeesTest {
 	private final EntityId account = new EntityId(4,5,6);
 	private final long units = -1_234L;
 	private final EntityId token = new EntityId(1, 2, 3);
@@ -59,8 +59,8 @@ class CustomFeesBalanceChangeTest {
 		final var hbarChange = IdUtils.hbarChangeForCustomFees(account.toGrpcAccountId(), units);
 		final var tokenChange = IdUtils.tokenChangeForCustomFees(token, account.toGrpcAccountId(), units);
 		// and:
-		final var hbarRepr = "CustomFeesBalanceChange{token=ℏ, account=EntityId{shard=4, realm=5, num=6}, units=-1234}";
-		final var tokenRepr = "CustomFeesBalanceChange{token=EntityId{shard=1, realm=2, num=3}, account=EntityId{shard=4, realm=5, num=6}, units=-1234}";
+		final var hbarRepr = "AssessedCustomFee{token=ℏ, account=EntityId{shard=4, realm=5, num=6}, units=-1234}";
+		final var tokenRepr = "AssessedCustomFee{token=EntityId{shard=1, realm=2, num=3}, account=EntityId{shard=4, realm=5, num=6}, units=-1234}";
 
 		// expect:
 		assertNotEquals(hbarChange, tokenChange);
@@ -82,7 +82,7 @@ class CustomFeesBalanceChangeTest {
 		InOrder inOrder = Mockito.inOrder(dos);
 
 		// given:
-		final var subject = new CustomFeesBalanceChange(account, token, units);
+		final var subject = new AssessedCustomFee(account, token, units);
 
 		// when:
 		subject.serialize(dos);
@@ -97,7 +97,7 @@ class CustomFeesBalanceChangeTest {
 	@Test
 	void deserializeWorksAsExpected() throws IOException {
 		// setup:
-		final var expectedBalanceChange = new CustomFeesBalanceChange(account, token, units);
+		final var expectedBalanceChange = new AssessedCustomFee(account, token, units);
 
 		given(din.readSerializable())
 				.willReturn(account)
@@ -105,10 +105,10 @@ class CustomFeesBalanceChangeTest {
 		given(din.readLong()).willReturn(units);
 
 		// given:
-		final var subject = new CustomFeesBalanceChange();
+		final var subject = new AssessedCustomFee();
 
 		// when:
-		subject.deserialize(din, CustomFeesBalanceChange.MERKLE_VERSION);
+		subject.deserialize(din, AssessedCustomFee.MERKLE_VERSION);
 
 		// then:
 		assertNotNull(subject);
@@ -120,7 +120,7 @@ class CustomFeesBalanceChangeTest {
 	@Test
 	void gettersWork() {
 		//given
-		final var  subject = new CustomFeesBalanceChange(account, token, units);
+		final var  subject = new AssessedCustomFee(account, token, units);
 		// expect:
 		assertEquals(account, subject.account());
 		assertEquals(token, subject.token());
@@ -141,7 +141,7 @@ class CustomFeesBalanceChangeTest {
 	@Test
 	void testToGrpc(){
 		// given:
-		final var subject = new CustomFeesBalanceChange(account, token, units);
+		final var subject = new AssessedCustomFee(account, token, units);
 		// then:
 		CustomFeesOuterClass.CustomFeeCharged grpc = subject.toGrpc();
 
@@ -154,7 +154,7 @@ class CustomFeesBalanceChangeTest {
 	@Test
 	void testToGrpcForHbar(){
 		// given:
-		final var subject = new CustomFeesBalanceChange(account, units);
+		final var subject = new AssessedCustomFee(account, units);
 		// then:
 		CustomFeesOuterClass.CustomFeeCharged grpc = subject.toGrpc();
 
@@ -167,8 +167,8 @@ class CustomFeesBalanceChangeTest {
 	@Test
 	void testToGrpcWithBalanceChanges(){
 		// given:
-		final var subject = new CustomFeesBalanceChange(account, token, units);
-		List<CustomFeesBalanceChange> balanceChanges = new ArrayList<>();
+		final var subject = new AssessedCustomFee(account, token, units);
+		List<AssessedCustomFee> balanceChanges = new ArrayList<>();
 		balanceChanges.add(subject);
 
 		// then:
@@ -198,7 +198,7 @@ class CustomFeesBalanceChangeTest {
 				.build();
 
 		//expect:
-		final var balanceChange = CustomFeesBalanceChange.fromGrpc(grpc);
+		final var balanceChange = AssessedCustomFee.fromGrpc(grpc);
 		assertEquals(1, balanceChange.size());
 		assertEquals(account, balanceChange.get(0).account());
 		assertEquals(token, balanceChange.get(0).token());
@@ -219,7 +219,7 @@ class CustomFeesBalanceChangeTest {
 				.build();
 
 		//expect:
-		final var balanceChange = CustomFeesBalanceChange.fromGrpc(grpc);
+		final var balanceChange = AssessedCustomFee.fromGrpc(grpc);
 		assertEquals(1, balanceChange.size());
 		assertEquals(account, balanceChange.get(0).account());
 		assertEquals(null, balanceChange.get(0).token());
@@ -229,9 +229,9 @@ class CustomFeesBalanceChangeTest {
 	@Test
 	void merkleMethodsWork() {
 		// given:
-		final var subject = new CustomFeesBalanceChange();
+		final var subject = new AssessedCustomFee();
 
-		assertEquals(CustomFeesBalanceChange.MERKLE_VERSION, subject.getVersion());
-		assertEquals(CustomFeesBalanceChange.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
+		assertEquals(AssessedCustomFee.MERKLE_VERSION, subject.getVersion());
+		assertEquals(AssessedCustomFee.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 }

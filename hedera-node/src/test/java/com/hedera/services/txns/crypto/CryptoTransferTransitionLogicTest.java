@@ -27,7 +27,7 @@ import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.state.submerkle.CustomFee;
-import com.hedera.services.state.submerkle.CustomFeesBalanceChange;
+import com.hedera.services.state.submerkle.AssessedCustomFee;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -154,7 +154,7 @@ class CryptoTransferTransitionLogicTest {
 	}
 
 	@Test
-	void verifyIfCustomFeesBalanceChangesSet() {
+	void verifyIfAssessedCustomFeesSet() {
 		// setup :
 		final var a = EntityId.fromGrpcAccountId(asAccount("1.2.3"));
 		final var b = EntityId.fromGrpcAccountId(asAccount("2.3.4"));
@@ -162,7 +162,7 @@ class CryptoTransferTransitionLogicTest {
 
 		// and :
 		final var customFeesBalanceChange = List.of(
-				new CustomFeesBalanceChange(a, 10L));
+				new AssessedCustomFee(a, 10L));
 		final var customFee = List.of(CustomFee.fixedFee(20L, null, a));
 		final List<Pair<EntityId, List<CustomFee>>> customFees = List.of(Pair.of(c, customFee));
 		final var impliedTransfers = ImpliedTransfers.valid(

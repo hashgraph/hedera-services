@@ -71,8 +71,8 @@ class FCMCustomFeeSchedulesTest {
 		final var missingTokenFees = subject.lookupScheduleFor(missingToken);
 
 		//expect:
-		Assertions.assertEquals(tokenAValue.getFeeSchedule(), tokenAFees);
-		Assertions.assertEquals(tokenBValue.getFeeSchedule(), tokenBFees);
+		Assertions.assertEquals(tokenAValue.customFeeSchedule(), tokenAFees);
+		Assertions.assertEquals(tokenBValue.customFeeSchedule(), tokenBFees);
 		Assertions.assertEquals(new ArrayList<>(), missingTokenFees);
 	}
 

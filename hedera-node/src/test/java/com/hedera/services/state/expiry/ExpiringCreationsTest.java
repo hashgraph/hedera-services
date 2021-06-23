@@ -30,8 +30,8 @@ import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.serdes.DomainSerdesTest;
+import com.hedera.services.state.submerkle.AssessedCustomFee;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
-import com.hedera.services.state.submerkle.CustomFeesBalanceChange;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.TxnAccessor;
@@ -122,7 +122,7 @@ class ExpiringCreationsTest {
 
 	private final EntityId customFeeToken = new EntityId(0, 0, 123);
 	private final EntityId customFeeCollector = new EntityId(0, 0, 124);
-	private final List<CustomFeesBalanceChange> customFeesCharged = List.of(new CustomFeesBalanceChange(customFeeCollector, customFeeToken, 123L));
+	private final List<AssessedCustomFee> customFeesCharged = List.of(new AssessedCustomFee(customFeeCollector, customFeeToken, 123L));
 
 
 	@BeforeEach

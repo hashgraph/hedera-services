@@ -47,7 +47,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	public static final long UNKNOWN_SUBMITTING_MEMBER = -1;
 	static final List<EntityId> NO_TOKENS = null;
 	static final List<CurrencyAdjustments> NO_TOKEN_ADJUSTMENTS = null;
-	static final List<CustomFeesBalanceChange> NO_CUSTOM_FEES = null;
+	static final List<AssessedCustomFee> NO_CUSTOM_FEES = null;
 	static final EntityId NO_SCHEDULE_REF = null;
 
 	private static final byte[] MISSING_TXN_HASH = new byte[0];
@@ -61,7 +61,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	static final int MAX_MEMO_BYTES = 32 * 1_024;
 	static final int MAX_TXN_HASH_BYTES = 1_024;
 	static final int MAX_INVOLVED_TOKENS = 10;
-	static final int MAX_CUSTOM_FEES_BALANCE_CHANGES = 20;
+	static final int MAX_ASSESSED_CUSTOM_FEES_CHANGES = 20;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8b9ede7ca8d8db93L;
 
 	static DomainSerdes serdes = new DomainSerdes();
@@ -82,7 +82,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	private List<EntityId> tokens = NO_TOKENS;
 	private List<CurrencyAdjustments> tokenAdjustments = NO_TOKEN_ADJUSTMENTS;
 	private EntityId scheduleRef = NO_SCHEDULE_REF;
-	private List<CustomFeesBalanceChange> customFeesCharged = NO_CUSTOM_FEES;
+	private List<AssessedCustomFee> customFeesCharged = NO_CUSTOM_FEES;
 
 	@Override
 	public void release() {
@@ -252,7 +252,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		}
 
 		if (version >= RELEASE_0160_VERSION) {
-			customFeesCharged = in.readSerializableList(MAX_CUSTOM_FEES_BALANCE_CHANGES);
+			customFeesCharged = in.readSerializableList(MAX_ASSESSED_CUSTOM_FEES_CHANGES);
 		}
 	}
 
@@ -330,7 +330,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		this.submittingMember = submittingMember;
 	}
 
-	public List<CustomFeesBalanceChange> getCustomFeesCharged() { return customFeesCharged; }
+	public List<AssessedCustomFee> getCustomFeesCharged() { return customFeesCharged; }
 
 	/* --- FastCopyable --- */
 
@@ -373,7 +373,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				.setTokens(tokens)
 				.setTokenAdjustments(tokenAdjustments)
 				.setScheduleRef(record.hasScheduleRef() ? fromGrpcScheduleId(record.getScheduleRef()) : null)
-				.setCustomFeesCharged(record.hasCustomFeesCharged() ? CustomFeesBalanceChange.fromGrpc(record.getCustomFeesCharged()) : null)
+				.setCustomFeesCharged(record.hasCustomFeesCharged() ? AssessedCustomFee.fromGrpc(record.getCustomFeesCharged()) : null)
 				.build();
 	}
 
@@ -425,7 +425,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		}
 
 		if (customFeesCharged != NO_CUSTOM_FEES) {
-			grpc.setCustomFeesCharged(CustomFeesBalanceChange.toGrpc(customFeesCharged));
+			grpc.setCustomFeesCharged(AssessedCustomFee.toGrpc(customFeesCharged));
 		}
 
 		return grpc.build();
@@ -448,7 +448,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		private List<EntityId> tokens;
 		private List<CurrencyAdjustments> tokenAdjustments;
 		private EntityId scheduleRef;
-		private List<CustomFeesBalanceChange> customFeesCharged;
+		private List<AssessedCustomFee> customFeesCharged;
 
 		public Builder setFee(long fee) {
 			this.fee = fee;
@@ -510,7 +510,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			return this;
 		}
 
-		public Builder setCustomFeesCharged(List<CustomFeesBalanceChange> customFeesCharged) {
+		public Builder setCustomFeesCharged(List<AssessedCustomFee> customFeesCharged) {
 			this.customFeesCharged = customFeesCharged;
 			return this;
 		}

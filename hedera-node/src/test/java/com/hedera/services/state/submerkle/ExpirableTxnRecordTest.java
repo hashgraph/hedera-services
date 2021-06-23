@@ -40,8 +40,7 @@ import org.mockito.Mockito;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.List;
-
-import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MAX_CUSTOM_FEES_BALANCE_CHANGES;
+import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MAX_ASSESSED_CUSTOM_FEES_CHANGES;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MAX_INVOLVED_TOKENS;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.UNKNOWN_SUBMITTING_MEMBER;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
@@ -84,7 +83,7 @@ class ExpirableTxnRecordTest {
 					withAdjustments(sponsor, -1L, beneficiary, 1L, magician, 1000L).getAccountAmountsList())
 			.build();
 	ScheduleID scheduleID = IdUtils.asSchedule("5.6.7");
-	CustomFeesBalanceChange balanceChange = new CustomFeesBalanceChange(feeCollector, token, units);
+	AssessedCustomFee balanceChange = new AssessedCustomFee(feeCollector, token, units);
 
 	ExpirableTxnRecord subject;
 
@@ -142,7 +141,7 @@ class ExpirableTxnRecordTest {
 						.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
 						.addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers))
 						.setScheduleRef(scheduleID)
-						.setCustomFeesCharged(CustomFeesBalanceChange.toGrpc(List.of(balanceChange)))
+						.setCustomFeesCharged(AssessedCustomFee.toGrpc(List.of(balanceChange)))
 						.build());
 		s.setExpiry(expiry);
 		s.setSubmittingMember(submittingMember);
@@ -307,7 +306,7 @@ class ExpirableTxnRecordTest {
 				.willReturn(subject.getSubmittingMember());
 		given(serdes.readNullableString(fin, ExpirableTxnRecord.MAX_MEMO_BYTES))
 				.willReturn(subject.getMemo());
-		given(fin.readSerializableList(MAX_CUSTOM_FEES_BALANCE_CHANGES))
+		given(fin.readSerializableList(MAX_ASSESSED_CUSTOM_FEES_CHANGES))
 				.willReturn(List.of(subject.getCustomFeesCharged().get(0)));
 		// and:
 		var deserializedRecord = new ExpirableTxnRecord();
@@ -398,7 +397,7 @@ class ExpirableTxnRecordTest {
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, " +
 				"tokenAdjustments=1.2.3(CurrencyAdjustments{readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), " +
 				"1.2.4(CurrencyAdjustments{readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), " +
-				"customFeesCharged=(CustomFeesBalanceChange{token=EntityId{shard=1, realm=2, num=9}, " +
+				"customFeesCharged=(AssessedCustomFee{token=EntityId{shard=1, realm=2, num=9}, " +
 				"account=EntityId{shard=1, realm=2, num=8}, units=123})}";
 
 		// expect:

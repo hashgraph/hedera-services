@@ -24,8 +24,8 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
+import com.hedera.services.state.submerkle.AssessedCustomFee;
 import com.hedera.services.state.submerkle.CustomFee;
-import com.hedera.services.state.submerkle.CustomFeesBalanceChange;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -113,8 +113,8 @@ class ImpliedTransfersMarshalTest {
 			Pair.of(customFeeToken, new ArrayList<>()));
 	final List<Pair<EntityId, List<CustomFee>>> newCustomFeeChanges = List.of(
 			Pair.of(customFeeToken, List.of(CustomFee.fixedFee(10L, customFeeToken, customFeeCollector))));
-	private final List<CustomFeesBalanceChange> customFeeBalanceChanges = List.of(
-			new CustomFeesBalanceChange(customFeeCollector, customFeeToken, 123L));
+	private final List<AssessedCustomFee> assessedCustomFees = List.of(
+			new AssessedCustomFee(customFeeCollector, customFeeToken, 123L));
 
 	private final long numerator = 2L;
 	private final long denominator = 100L;
@@ -175,10 +175,10 @@ class ImpliedTransfersMarshalTest {
 				List.of(Pair.of(anotherToken, customFee),
 						Pair.of(token, customFee),
 						Pair.of(yetAnotherToken, customFee));
-		final List<CustomFeesBalanceChange> expectedCustomFeeBalanceChanges = List.of(
-				new CustomFeesBalanceChange(EntityId.fromGrpcAccountId(aModel), customFeeChangeToFeeCollector),
-				new CustomFeesBalanceChange(EntityId.fromGrpcAccountId(aModel), customFeeChangeToFeeCollector),
-				new CustomFeesBalanceChange(EntityId.fromGrpcAccountId(aModel), customFeeChangeToFeeCollector));
+		final List<AssessedCustomFee> expectedAssessedCustomFees = List.of(
+				new AssessedCustomFee(EntityId.fromGrpcAccountId(aModel), customFeeChangeToFeeCollector),
+				new AssessedCustomFee(EntityId.fromGrpcAccountId(aModel), customFeeChangeToFeeCollector),
+				new AssessedCustomFee(EntityId.fromGrpcAccountId(aModel), customFeeChangeToFeeCollector));
 
 		// and:
 		final var expectedMeta = new ImpliedTransfersMeta(maxExplicitHbarAdjusts, maxExplicitTokenAdjusts,
@@ -199,8 +199,8 @@ class ImpliedTransfersMarshalTest {
 		// then:
 		assertEquals(expectedMeta, result.getMeta());
 		assertEquals(expectedChanges, result.getAllBalanceChanges());
-		assertEquals(expectedCustomFeeChanges, result.getEntityCustomFees());
-		assertEquals(expectedCustomFeeBalanceChanges, result.getCustomFeesBalanceChanges());
+		assertEquals(expectedCustomFeeChanges, result.getInvolvedTokenFeeSchedules());
+		assertEquals(expectedAssessedCustomFees, result.getAssessedCustomFees());
 	}
 
 	@Test
@@ -232,20 +232,20 @@ class ImpliedTransfersMarshalTest {
 				7));
 		final var oneImpliedXfers = ImpliedTransfers.invalid(3, 4, TOKEN_WAS_DELETED);
 		final var twoImpliedXfers = ImpliedTransfers.valid(1, 100, twoChanges,
-				entityCustomFees, customFeeBalanceChanges);
+				entityCustomFees, assessedCustomFees);
 		// and:
 		final var oneRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=TOKEN_WAS_DELETED, " +
 				"maxExplicitHbarAdjusts=3, maxExplicitTokenAdjusts=4, customFeeSchedulesUsedInMarshal=[]}, " +
 				"changes=[]," +
 				" " +
-				"entityCustomFees=[], customFeesBalanceChanges=[]}";
+				"involvedTokenFeeSchedules=[], assessedCustomFees=[]}";
 		final var twoRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=OK, maxExplicitHbarAdjusts=1, " +
 				"maxExplicitTokenAdjusts=100, customFeeSchedulesUsedInMarshal=[(EntityId{shard=0, realm=0, num=123},[])" +
 				"]}, " +
 				"changes=[BalanceChange{token=EntityId{shard=1, realm=2, num=3}, account=EntityId{shard=4, realm=5, " +
 				"num=6}, " +
-				"units=7}], entityCustomFees=[(EntityId{shard=0, realm=0, num=123},[])]," +
-				" customFeesBalanceChanges=[CustomFeesBalanceChange{token=EntityId{shard=0, realm=0, num=123}, " +
+				"units=7}], involvedTokenFeeSchedules=[(EntityId{shard=0, realm=0, num=123},[])]," +
+				" assessedCustomFees=[AssessedCustomFee{token=EntityId{shard=0, realm=0, num=123}, " +
 				"account=EntityId{shard=0, realm=0, num=124}, units=123}]}";
 
 		// expect:
@@ -304,8 +304,8 @@ class ImpliedTransfersMarshalTest {
 		final var customFee = getFractionalCustomFee();
 		final var expectedCustomFeeChanges =
 				List.of(Pair.of(anotherToken, customFee));
-		final var expectedCustomFeeBalanceChanges = List.of(
-				new CustomFeesBalanceChange(EntityId.fromGrpcAccountId(aModel), anotherToken, expectedFractionalFee));
+		final var expectedAssessedCustomFees = List.of(
+				new AssessedCustomFee(EntityId.fromGrpcAccountId(aModel), anotherToken, expectedFractionalFee));
 
 		// and:
 		final var expectedMeta = new ImpliedTransfersMeta(maxExplicitHbarAdjusts, maxExplicitTokenAdjusts,
@@ -326,8 +326,8 @@ class ImpliedTransfersMarshalTest {
 		// then:
 		assertEquals(expectedMeta, result.getMeta());
 		assertEquals(expectedChanges, result.getAllBalanceChanges());
-		assertEquals(expectedCustomFeeChanges, result.getEntityCustomFees());
-		assertEquals(expectedCustomFeeBalanceChanges, result.getCustomFeesBalanceChanges());
+		assertEquals(expectedCustomFeeChanges, result.getInvolvedTokenFeeSchedules());
+		assertEquals(expectedAssessedCustomFees, result.getAssessedCustomFees());
 	}
 
 	@Test
@@ -363,8 +363,8 @@ class ImpliedTransfersMarshalTest {
 		final var customFee = getFixedCustomFeeNonNullDenom();
 		final var expectedCustomFeeChanges =
 				List.of(Pair.of(anotherToken, customFee));
-		final var expectedCustomFeeBalanceChanges = List.of(
-				new CustomFeesBalanceChange(EntityId.fromGrpcAccountId(aModel), token, 20L));
+		final var expectedAssessedCustomFees = List.of(
+				new AssessedCustomFee(EntityId.fromGrpcAccountId(aModel), token, 20L));
 
 		// and:
 		final var expectedMeta = new ImpliedTransfersMeta(maxExplicitHbarAdjusts, maxExplicitTokenAdjusts,
@@ -385,8 +385,8 @@ class ImpliedTransfersMarshalTest {
 		// then:
 		assertEquals(expectedMeta, result.getMeta());
 		assertEquals(expectedChanges, result.getAllBalanceChanges());
-		assertEquals(expectedCustomFeeChanges, result.getEntityCustomFees());
-		assertEquals(expectedCustomFeeBalanceChanges, result.getCustomFeesBalanceChanges());
+		assertEquals(expectedCustomFeeChanges, result.getInvolvedTokenFeeSchedules());
+		assertEquals(expectedAssessedCustomFees, result.getAssessedCustomFees());
 	}
 
 	private void setupFixtureOp() {
