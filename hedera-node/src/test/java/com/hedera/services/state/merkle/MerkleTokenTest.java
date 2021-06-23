@@ -20,24 +20,34 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
+import com.google.protobuf.UInt64Value;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.serdes.IoReadingFunction;
 import com.hedera.services.state.serdes.IoWritingConsumer;
+import com.hedera.services.state.submerkle.CustomFee;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hederahashgraph.api.proto.java.Fraction;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
+import proto.CustomFeesOuterClass;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
 
 import static com.hedera.services.state.merkle.MerkleTopic.serdes;
-import static com.hedera.services.utils.MiscUtils.describe;
+import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -46,6 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -53,34 +64,66 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.times;
 
 class MerkleTokenTest {
-	JKey adminKey, otherAdminKey;
-	JKey freezeKey, otherFreezeKey;
-	JKey wipeKey, otherWipeKey;
-	JKey supplyKey, otherSupplyKey;
-	JKey kycKey, otherKycKey;
-	String symbol = "NotAnHbar", otherSymbol = "NotAnHbarEither";
-	String name = "NotAnHbarName", otherName = "NotAnHbarNameEither";
-	String memo = "NotAMemo", otherMemo = "NotAMemoEither";
-	int decimals = 2, otherDecimals = 3;
-	long expiry = Instant.now().getEpochSecond() + 1_234_567, otherExpiry = expiry + 2_345_678;
-	long autoRenewPeriod = 1_234_567, otherAutoRenewPeriod = 2_345_678;
-	long totalSupply = 1_000_000, otherTotalSupply = 1_000_001;
-	boolean freezeDefault = true, otherFreezeDefault = false;
-	boolean accountsKycGrantedByDefault = true, otherAccountsKycGrantedByDefault = false;
-	EntityId treasury = new EntityId(1, 2, 3),
-			otherTreasury = new EntityId(3, 2, 1);
-	EntityId autoRenewAccount = new EntityId(2, 3, 4),
-			otherAutoRenewAccount = new EntityId(4, 3, 2);
-	boolean isDeleted = true, otherIsDeleted = false;
+	private JKey adminKey, otherAdminKey;
+	private JKey freezeKey, otherFreezeKey;
+	private JKey wipeKey, otherWipeKey;
+	private JKey supplyKey, otherSupplyKey;
+	private JKey kycKey, otherKycKey;
+	private JKey customFeeKey, otherCustomFeeKey;
+	private String symbol = "NotAnHbar", otherSymbol = "NotAnHbarEither";
+	private String name = "NotAnHbarName", otherName = "NotAnHbarNameEither";
+	private String memo = "NotAMemo", otherMemo = "NotAMemoEither";
+	private int decimals = 2, otherDecimals = 3;
+	private long expiry = 1_234_567, otherExpiry = expiry + 2_345_678;
+	private long autoRenewPeriod = 1_234_567, otherAutoRenewPeriod = 2_345_678;
+	private long totalSupply = 1_000_000, otherTotalSupply = 1_000_001;
+	private boolean freezeDefault = true, otherFreezeDefault = false;
+	private boolean accountsKycGrantedByDefault = true, otherAccountsKycGrantedByDefault = false;
+	private EntityId treasury = new EntityId(1, 2, 3);
+	private EntityId otherTreasury = new EntityId(3, 2, 1);
+	private EntityId autoRenewAccount = new EntityId(2, 3, 4);
+	private EntityId otherAutoRenewAccount = new EntityId(4, 3, 2);
+	private boolean isDeleted = true, otherIsDeleted = false;
 
-	MerkleToken subject;
-	MerkleToken other;
+	private final long validNumerator = 5;
+	private final long validDenominator = 100;
+	private final long fixedUnitsToCollect = 7;
+	private final long minimumUnitsToCollect = 1;
+	private final long maximumUnitsToCollect = 55;
+	private final EntityId denom = new EntityId(1,2, 3);
+	private final EntityId feeCollector = new EntityId(4,5, 6);
+	final CustomFeesOuterClass.CustomFee fractionalFee = CustomFeesOuterClass.CustomFee.newBuilder()
+			.setFeeCollector(feeCollector.toGrpcAccountId())
+			.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
+					.setFractionOfUnitsToCollect(Fraction.newBuilder()
+							.setNumerator(validNumerator)
+							.setDenominator(validDenominator)
+							.build())
+					.setMinimumUnitsToCollect(minimumUnitsToCollect)
+					.setMaximumUnitsToCollect(UInt64Value.newBuilder().setValue(maximumUnitsToCollect).build())
+			).build();
+	final CustomFeesOuterClass.CustomFee fixedFee = CustomFeesOuterClass.CustomFee.newBuilder()
+			.setFeeCollector(feeCollector.toGrpcAccountId())
+			.setFixedFee(CustomFeesOuterClass.FixedFee.newBuilder()
+					.setTokenId(denom.toGrpcTokenId())
+					.setUnitsToCollect(fixedUnitsToCollect)
+			).build();
+	final CustomFeesOuterClass.CustomFees grpcFeeSchedule = CustomFeesOuterClass.CustomFees.newBuilder()
+			.addCustomFees(fixedFee)
+			.addCustomFees(fractionalFee)
+			.build();
+	final List<CustomFee> feeSchedule = grpcFeeSchedule.getCustomFeesList().stream()
+			.map(CustomFee::fromGrpc).collect(toList());
+
+	private MerkleToken subject;
+	private MerkleToken other;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		adminKey = new JEd25519Key("not-a-real-admin-key".getBytes());
 		kycKey = new JEd25519Key("not-a-real-kyc-key".getBytes());
 		freezeKey = new JEd25519Key("not-a-real-freeze-key".getBytes());
+		customFeeKey = new JEd25519Key("not-a-real-custom-fee-key".getBytes());
 		otherAdminKey = new JEd25519Key("not-a-real-admin-key-either".getBytes());
 		otherKycKey = new JEd25519Key("not-a-real-kyc-key-either".getBytes());
 		otherFreezeKey = new JEd25519Key("not-a-real-freeze-key-either".getBytes());
@@ -88,6 +131,7 @@ class MerkleTokenTest {
 		supplyKey = new JEd25519Key("not-a-real-supply-key".getBytes());
 		otherWipeKey = new JEd25519Key("not-a-real-wipe-key-either".getBytes());
 		otherSupplyKey = new JEd25519Key("not-a-real-supply-key-either".getBytes());
+		otherCustomFeeKey = new JEd25519Key("not-a-real-custom-fee-key-either".getBytes());
 
 		subject = new MerkleToken(
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
@@ -97,26 +141,28 @@ class MerkleTokenTest {
 		subject.setKycKey(kycKey);
 		subject.setWipeKey(wipeKey);
 		subject.setSupplyKey(supplyKey);
+		subject.setCustomFeeKey(customFeeKey);
 		subject.setDeleted(isDeleted);
 		subject.setMemo(memo);
+		subject.setFeeScheduleFrom(grpcFeeSchedule);
 
 		serdes = mock(DomainSerdes.class);
 		MerkleToken.serdes = serdes;
 	}
 
 	@AfterEach
-	public void cleanup() {
+	void cleanup() {
 		MerkleToken.serdes = new DomainSerdes();
 	}
 
 	@Test
-	public void deleteIsNoop() {
+	void deleteIsNoop() {
 		// expect:
 		assertDoesNotThrow(subject::release);
 	}
 
 	@Test
-	public void serializeWorks() throws IOException {
+	void serializeWorks() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 		// and:
@@ -146,11 +192,14 @@ class MerkleTokenTest {
 				argThat(supplyKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
 		inOrder.verify(serdes).writeNullable(
 				argThat(wipeKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
+		inOrder.verify(serdes).writeNullable(
+				argThat(customFeeKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
 		inOrder.verify(out).writeNormalisedString(memo);
+		inOrder.verify(out).writeSerializableList(feeSchedule, true, true);
 	}
 
 	@Test
-	public void copyWorks() {
+	void copyWorks() {
 		// given:
 		var copySubject = subject.copy();
 
@@ -160,9 +209,17 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void v0120DeserializeWorks() throws IOException {
+	void getterWorks() {
+		// expect:
+		assertEquals(feeSchedule, subject.customFeeSchedule());
+	}
+
+	@Test
+	void v0120DeserializeWorks() throws IOException {
 		// setup:
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
+		subject.setFeeSchedule(Collections.emptyList());
+		subject.setCustomFeeKey(null);
 
 		given(serdes.readNullableSerializable(any())).willReturn(autoRenewAccount);
 		given(serdes.deserializeKey(fin)).willReturn(adminKey);
@@ -189,6 +246,45 @@ class MerkleTokenTest {
 		var read = new MerkleToken();
 
 		// when:
+		read.deserialize(fin, MerkleToken.RELEASE_0120_VERSION);
+
+		// then:
+		assertEquals(subject, read);
+	}
+
+	@Test
+	void v0160DeserializeWorks() throws IOException {
+		// setup:
+		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
+
+		given(serdes.readNullableSerializable(any())).willReturn(autoRenewAccount);
+		given(serdes.deserializeKey(fin)).willReturn(adminKey);
+		given(serdes.readNullable(argThat(fin::equals), any(IoReadingFunction.class)))
+				.willReturn(adminKey)
+				.willReturn(freezeKey)
+				.willReturn(kycKey)
+				.willReturn(supplyKey)
+				.willReturn(wipeKey)
+				.willReturn(customFeeKey);
+		given(fin.readNormalisedString(anyInt()))
+				.willReturn(symbol)
+				.willReturn(name)
+				.willReturn(memo);
+		given(fin.readLong())
+				.willReturn(subject.expiry())
+				.willReturn(subject.autoRenewPeriod())
+				.willReturn(subject.totalSupply());
+		given(fin.readInt()).willReturn(subject.decimals());
+		given(fin.readBoolean())
+				.willReturn(isDeleted)
+				.willReturn(subject.accountsAreFrozenByDefault());
+		given(fin.readSerializable()).willReturn(subject.treasury());
+		given(fin.<CustomFee>readSerializableList(eq(Integer.MAX_VALUE), eq(true), any()))
+				.willReturn(feeSchedule);
+		// and:
+		var read = new MerkleToken();
+
+		// when:
 		read.deserialize(fin, MerkleToken.MERKLE_VERSION);
 
 		// then:
@@ -196,10 +292,12 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void pre0120DeserializeWorks() throws IOException {
+	void pre0120DeserializeWorks() throws IOException {
 		// setup:
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
+		subject.setFeeSchedule(Collections.emptyList());
 		subject.setMemo(MerkleAccountState.DEFAULT_MEMO);
+		subject.setCustomFeeKey(null);
 
 		given(serdes.readNullableSerializable(any())).willReturn(autoRenewAccount);
 		given(serdes.deserializeKey(fin)).willReturn(adminKey);
@@ -232,7 +330,7 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void objectContractHoldsForDifferentMemos() {
+	void objectContractHoldsForDifferentMemos() {
 		// given:
 		other = new MerkleToken(
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
@@ -246,7 +344,7 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void objectContractHoldsForDifferentTotalSupplies() {
+	void objectContractHoldsForDifferentTotalSupplies() {
 		// given:
 		other = new MerkleToken(
 				expiry, otherTotalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
@@ -259,7 +357,7 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void objectContractHoldsForDifferentDecimals() {
+	void objectContractHoldsForDifferentDecimals() {
 		// given:
 		other = new MerkleToken(
 				expiry, totalSupply, otherDecimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
@@ -272,7 +370,7 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void objectContractHoldsForDifferentWipeKey() {
+	void objectContractHoldsForDifferentWipeKey() {
 		// given:
 		other = new MerkleToken(
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
@@ -286,7 +384,7 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void objectContractHoldsForDifferentSupply() {
+	void objectContractHoldsForDifferentSupply() {
 		// given:
 		other = new MerkleToken(
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
@@ -300,7 +398,7 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void objectContractHoldsForDifferentDeleted() {
+	void objectContractHoldsForDifferentDeleted() {
 		// given:
 		other = new MerkleToken(
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
@@ -314,7 +412,7 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void objectContractHoldsForDifferentAdminKey() {
+	void objectContractHoldsForDifferentAdminKey() {
 		// given:
 		other = new MerkleToken(
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
@@ -328,7 +426,7 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void objectContractHoldsForDifferentAutoRenewPeriods() {
+	void objectContractHoldsForDifferentAutoRenewPeriods() {
 		// given:
 		other = new MerkleToken(
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
@@ -342,7 +440,7 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void objectContractHoldsForDifferentAutoRenewAccounts() {
+	void objectContractHoldsForDifferentAutoRenewAccounts() {
 		// given:
 		other = new MerkleToken(
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
@@ -356,7 +454,7 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void objectContractHoldsForDifferentExpiries() {
+	void objectContractHoldsForDifferentExpiries() {
 		// given:
 		other = new MerkleToken(
 				otherExpiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
@@ -369,7 +467,7 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void objectContractHoldsForDifferentSymbol() {
+	void objectContractHoldsForDifferentSymbol() {
 		// given:
 		other = new MerkleToken(
 				expiry, totalSupply, decimals, otherSymbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
@@ -382,7 +480,7 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void objectContractHoldsForDifferentName() {
+	void objectContractHoldsForDifferentName() {
 		// given:
 		other = new MerkleToken(
 				expiry, totalSupply, decimals, symbol, otherName, freezeDefault, accountsKycGrantedByDefault, treasury);
@@ -394,7 +492,7 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void objectContractHoldsForDifferentFreezeDefault() {
+	void objectContractHoldsForDifferentFreezeDefault() {
 		// given:
 		other = new MerkleToken(
 				expiry, totalSupply, decimals, symbol, name, otherFreezeDefault, accountsKycGrantedByDefault, treasury);
@@ -407,7 +505,7 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void objectContractHoldsForDifferentaccountsKycGrantedByDefault() {
+	void objectContractHoldsForDifferentaccountsKycGrantedByDefault() {
 		// given:
 		other = new MerkleToken(
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, otherAccountsKycGrantedByDefault, treasury);
@@ -420,7 +518,7 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void objectContractHoldsForDifferentTreasury() {
+	void objectContractHoldsForDifferentTreasury() {
 		// given:
 		other = new MerkleToken(
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, otherTreasury);
@@ -433,7 +531,7 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void objectContractHoldsForDifferentKycKeys() {
+	void objectContractHoldsForDifferentKycKeys() {
 		// given:
 		other = new MerkleToken(
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
@@ -455,7 +553,7 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void objectContractHoldsForDifferentFreezeKeys() {
+	void objectContractHoldsForDifferentFreezeKeys() {
 		// given:
 		other = new MerkleToken(
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
@@ -483,13 +581,15 @@ class MerkleTokenTest {
 		token.setWipeKey(wipeKey);
 		token.setSupplyKey(supplyKey);
 		token.setKycKey(kycKey);
+		token.setCustomFeeKey(customFeeKey);
 		token.setAutoRenewAccount(autoRenewAccount);
 		token.setAutoRenewPeriod(autoRenewPeriod);
 		token.setMemo(memo);
+		token.setFeeSchedule(feeSchedule);
 	}
 
 	@Test
-	public void hashCodeContractMet() {
+	void hashCodeContractMet() {
 		// given:
 		var defaultSubject = new MerkleAccountState();
 		// and:
@@ -510,7 +610,7 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void equalsWorksWithExtremes() {
+	void equalsWorksWithExtremes() {
 		// expect:
 		assertEquals(subject, subject);
 		assertNotEquals(subject, null);
@@ -518,31 +618,28 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void toStringWorks() {
+	void toStringWorks() {
+		// setup:
+		final var desired = "MerkleToken{deleted=true, expiry=1234567, symbol=NotAnHbar, name=NotAnHbarName, " +
+				"memo=NotAMemo, treasury=1.2.3, totalSupply=1000000, decimals=2, autoRenewAccount=2.3.4, " +
+				"autoRenewPeriod=1234567, adminKey=ed25519: \"not-a-real-admin-key\"\n" +
+				", kycKey=ed25519: \"not-a-real-kyc-key\"\n" +
+				", wipeKey=ed25519: \"not-a-real-wipe-key\"\n" +
+				", supplyKey=ed25519: \"not-a-real-supply-key\"\n" +
+				", freezeKey=ed25519: \"not-a-real-freeze-key\"\n" +
+				", customFeeKey=ed25519: \"not-a-real-custom-fee-key\"\n" +
+				", accountsKycGrantedByDefault=true, accountsFrozenByDefault=true, " +
+				"feeSchedules=[CustomFee{feeType=FIXED_FEE, fixedFee=FixedFeeSpec{unitsToCollect=7, tokenDenomination=1" +
+				".2.3}, feeCollector=EntityId{shard=4, realm=5, num=6}}, CustomFee{feeType=FRACTIONAL_FEE, " +
+				"fractionalFee=FractionalFeeSpec{numerator=5, denominator=100, minimumUnitsToCollect=1, " +
+				"maximumUnitsToCollect=55}, feeCollector=EntityId{shard=4, realm=5, num=6}}]}";
+
 		// expect:
-		assertEquals("MerkleToken{" +
-					    "deleted=" + isDeleted + ", " +
-						"expiry=" + expiry + ", " +
-						"symbol=" + symbol + ", " +
-						"name=" + name + ", " +
-						"memo=" + memo + ", " +
-						"treasury=" + treasury.toAbbrevString() + ", " +
-						"totalSupply=" + totalSupply + ", " +
-						"decimals=" + decimals + ", " +
-						"autoRenewAccount=" + autoRenewAccount.toAbbrevString() + ", " +
-						"autoRenewPeriod=" + autoRenewPeriod + ", " +
-						"adminKey=" + describe(adminKey) + ", " +
-						"kycKey=" + describe(kycKey) + ", " +
-						"wipeKey=" + describe(wipeKey) + ", " +
-						"supplyKey=" + describe(supplyKey) + ", " +
-						"freezeKey=" + describe(freezeKey) + ", " +
-						"accountsKycGrantedByDefault=" + accountsKycGrantedByDefault + ", " +
-						"accountsFrozenByDefault=" + freezeDefault + "}",
-				subject.toString());
+		assertEquals(desired, subject.toString());
 	}
 
 	@Test
-	public void merkleMethodsWork() {
+	void merkleMethodsWork() {
 		// expect;
 		assertEquals(MerkleToken.MERKLE_VERSION, subject.getVersion());
 		assertEquals(MerkleToken.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
@@ -550,7 +647,7 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void adjustsTotalSupplyWhenValid() {
+	void adjustsTotalSupplyWhenValid() {
 		// when:
 		subject.adjustTotalSupplyBy(500_000);
 
@@ -559,8 +656,35 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void throwsIaeIfTotalSupplyGoesNegative() {
+	void throwsIaeIfTotalSupplyGoesNegative() {
 		// expect:
 		assertThrows(IllegalArgumentException.class, () -> subject.adjustTotalSupplyBy(-1_500_000));
+	}
+
+	@Test
+	void liveFireSerdeWorks() throws IOException, ConstructableRegistryException {
+		// setup:
+		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		final var dos = new SerializableDataOutputStream(baos);
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(CustomFee.class, CustomFee::new));
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(EntityId.class, EntityId::new));
+		MerkleToken.serdes = new DomainSerdes();
+
+		// given:
+		subject.serialize(dos);
+		dos.flush();
+		// and:
+		final var bytes = baos.toByteArray();
+		final ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+		final var din = new SerializableDataInputStream(bais);
+
+		// when:
+		final var newSubject = new MerkleToken();
+		newSubject.deserialize(din, MerkleToken.MERKLE_VERSION);
+
+		// then:
+		assertEquals(subject, newSubject);
 	}
 }

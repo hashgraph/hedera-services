@@ -133,11 +133,13 @@ import com.hedera.services.grpc.controllers.FreezeController;
 import com.hedera.services.grpc.controllers.NetworkController;
 import com.hedera.services.grpc.controllers.ScheduleController;
 import com.hedera.services.grpc.controllers.TokenController;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.keys.CharacteristicsFactory;
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.keys.StandardSyncActivationCheck;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.accounts.BackingStore;
@@ -252,7 +254,7 @@ import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.HapiThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.throttling.TxnAwareHandleThrottling;
-import com.hedera.services.txns.ExpandHandleSpan;
+import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.txns.TransitionLogic;
@@ -285,6 +287,10 @@ import com.hedera.services.txns.schedule.ScheduleCreateTransitionLogic;
 import com.hedera.services.txns.schedule.ScheduleDeleteTransitionLogic;
 import com.hedera.services.txns.schedule.ScheduleExecutor;
 import com.hedera.services.txns.schedule.ScheduleSignTransitionLogic;
+import com.hedera.services.txns.span.ExpandHandleSpan;
+import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.services.txns.customfees.FCMCustomFeeSchedules;
+import com.hedera.services.txns.span.SpanMapManager;
 import com.hedera.services.txns.submission.BasicSubmissionFlow;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.SemanticPrecheck;
@@ -474,11 +480,13 @@ public class ServicesContext {
 	private EntityIdSource ids;
 	private FileController fileGrpc;
 	private HapiOpCounters opCounters;
+	private SpanMapManager spanMapManager;
 	private AnswerFunctions answerFunctions;
 	private ContractAnswers contractAnswers;
 	private SwirldDualState dualState;
 	private OptionValidator validator;
 	private LedgerValidator ledgerValidator;
+	private BackingAccounts backingAccounts;
 	private TokenController tokenGrpc;
 	private MiscRunningAvgs runningAvgs;
 	private ScheduleAnswers scheduleAnswers;
@@ -504,6 +512,7 @@ public class ServicesContext {
 	private ExpiringCreations creator;
 	private NetworkController networkGrpc;
 	private GrpcServerManager grpc;
+	private FeeChargingPolicy txnChargingPolicy;
 	private TxnResponseHelper txnResponseHelper;
 	private BlobStorageSource bytecodeDb;
 	private HapiOpPermissions hapiOpPermissions;
@@ -530,11 +539,9 @@ public class ServicesContext {
 	private TransactionPrecheck transactionPrecheck;
 	private FeeMultiplierSource feeMultiplierSource;
 	private NodeLocalProperties nodeLocalProperties;
-	private FeeChargingPolicy txnChargingPolicy;
 	private TxnAwareRatesManager exchangeRatesManager;
 	private ServicesStatsManager statsManager;
 	private LedgerAccountsSource accountSource;
-	private BackingAccounts backingAccounts;
 	private TransitionLogicLookup transitionLogic;
 	private PricedUsageCalculator pricedUsageCalculator;
 	private TransactionThrottling txnThrottling;
@@ -549,9 +556,11 @@ public class ServicesContext {
 	private GlobalDynamicProperties globalDynamicProperties;
 	private FunctionalityThrottling hapiThrottling;
 	private FunctionalityThrottling handleThrottling;
+	private ImpliedTransfersMarshal impliedTransfersMarshal;
 	private AwareNodeDiligenceScreen nodeDiligenceScreen;
 	private InHandleActivationHelper activationHelper;
 	private PlatformSubmissionManager submissionManager;
+	private PureTransferSemanticChecks transferSemanticChecks;
 	private SmartContractRequestHandler contracts;
 	private TxnAwareSoliditySigsVerifier soliditySigsVerifier;
 	private ValidatingCallbackInterceptor apiPermissionsReloading;
@@ -564,6 +573,7 @@ public class ServicesContext {
 	private AtomicReference<FCMap<MerkleEntityId, MerkleSchedule>> queryableSchedules;
 	private AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage;
 	private AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations;
+	private FCMCustomFeeSchedules activeCustomFeeSchedules;
 
 	/* Context-free infrastructure. */
 	private static Pause pause;
@@ -719,6 +729,21 @@ public class ServicesContext {
 			handleThrottling = new TxnAwareHandleThrottling(txnCtx(), new DeterministicThrottling(() -> 1));
 		}
 		return handleThrottling;
+	}
+
+	public ImpliedTransfersMarshal impliedTransfersMarshal() {
+		if (impliedTransfersMarshal == null) {
+			impliedTransfersMarshal = new ImpliedTransfersMarshal(globalDynamicProperties(), transferSemanticChecks(),
+					customFeeSchedules());
+		}
+		return impliedTransfersMarshal;
+	}
+
+	private CustomFeeSchedules customFeeSchedules() {
+		if (activeCustomFeeSchedules == null) {
+			activeCustomFeeSchedules = new FCMCustomFeeSchedules(this::tokens);
+		}
+		return activeCustomFeeSchedules;
 	}
 
 	public AwareNodeDiligenceScreen nodeDiligenceScreen() {
@@ -921,9 +946,9 @@ public class ServicesContext {
 	}
 
 	/**
-	 * Returns the singleton {@link TypedTokenStore} used in {@link ServicesState#handleTransaction(long, boolean, Instant,
-	 * Instant, SwirldTransaction, SwirldDualState)} to load, save, and create tokens in the Swirlds application state.
-	 * It decouples the {@code handleTransaction} logic from the details of the Merkle state.
+	 * Returns the singleton {@link TypedTokenStore} used in {@link ServicesState#handleTransaction(long, boolean,
+	 * Instant, Instant, SwirldTransaction, SwirldDualState)} to load, save, and create tokens in the Swirlds
+	 * application state. It decouples the {@code handleTransaction} logic from the details of the Merkle state.
 	 *
 	 * Here "singleton" means that, no matter how many fast-copies are made of the {@link ServicesState}, the mutable
 	 * instance receiving the {@code handleTransaction} call will always use the same {@code typedTokenStore} instance.
@@ -948,8 +973,8 @@ public class ServicesContext {
 
 	/**
 	 * Returns the singleton {@link AccountStore} used in {@link ServicesState#handleTransaction(long, boolean, Instant,
-	 * Instant, SwirldTransaction, SwirldDualState)} to load, save, and create accounts from the Swirlds application state.
-	 * It decouples the {@code handleTransaction} logic from the details of the Merkle state.
+	 * Instant, SwirldTransaction, SwirldDualState)} to load, save, and create accounts from the Swirlds application
+	 * state. It decouples the {@code handleTransaction} logic from the details of the Merkle state.
 	 *
 	 * @return the singleton AccountStore
 	 */
@@ -1318,6 +1343,8 @@ public class ServicesContext {
 	}
 
 	private Function<HederaFunctionality, List<TransitionLogic>> transitions() {
+		final var spanMapAccessor = new ExpandHandleSpanMapAccessor();
+
 		Map<HederaFunctionality, List<TransitionLogic>> transitionsMap = Map.ofEntries(
 				/* Crypto */
 				entry(CryptoCreate,
@@ -1327,7 +1354,13 @@ public class ServicesContext {
 				entry(CryptoDelete,
 						List.of(new CryptoDeleteTransitionLogic(ledger(), txnCtx()))),
 				entry(CryptoTransfer,
-						List.of(new CryptoTransferTransitionLogic(ledger(), validator(), txnCtx()))),
+						List.of(new CryptoTransferTransitionLogic(
+								ledger(),
+								txnCtx(),
+								globalDynamicProperties(),
+								impliedTransfersMarshal(),
+								transferSemanticChecks(),
+								spanMapAccessor))),
 				/* File */
 				entry(FileUpdate,
 						List.of(new FileUpdateTransitionLogic(hfs(), entityNums(), validator(), txnCtx()))),
@@ -1703,9 +1736,17 @@ public class ServicesContext {
 
 	public ExpandHandleSpan expandHandleSpan() {
 		if (expandHandleSpan == null) {
-			expandHandleSpan = new ExpandHandleSpan(10, TimeUnit.SECONDS);
+			expandHandleSpan = new ExpandHandleSpan(10, TimeUnit.SECONDS, spanMapManager());
 		}
 		return expandHandleSpan;
+	}
+
+	public SpanMapManager spanMapManager() {
+		if (spanMapManager == null) {
+			spanMapManager = new SpanMapManager(impliedTransfersMarshal(), globalDynamicProperties(),
+					customFeeSchedules());
+		}
+		return spanMapManager;
 	}
 
 	public FreezeController freezeGrpc() {
@@ -1810,6 +1851,13 @@ public class ServicesContext {
 					Collections.emptyList());
 		}
 		return grpc;
+	}
+
+	public PureTransferSemanticChecks transferSemanticChecks() {
+		if (transferSemanticChecks == null) {
+			transferSemanticChecks = new PureTransferSemanticChecks();
+		}
+		return transferSemanticChecks;
 	}
 
 	public SmartContractRequestHandler contracts() {
@@ -2124,7 +2172,8 @@ public class ServicesContext {
 	/**
 	 * return the directory to which record stream files should be write
 	 *
-	 * @param source the node local properties that contain the record logging directory
+	 * @param source
+	 * 		the node local properties that contain the record logging directory
 	 * @return the direct file folder for writing record stream files
 	 */
 	public String getRecordStreamDirectory(NodeLocalProperties source) {

@@ -220,6 +220,7 @@ public class BootstrapProperties implements PropertySource {
 			"tokens.maxPerAccount",
 			"tokens.maxSymbolUtf8Bytes",
 			"tokens.maxTokenNameUtf8Bytes",
+			"tokens.maxCustomFeesAllowed",
 			"consensus.message.maxBytesAllowed"
 	);
 
@@ -341,6 +342,7 @@ public class BootstrapProperties implements PropertySource {
 			entry("netty.prod.keepAliveTime", AS_LONG),
 			entry("netty.prod.keepAliveTimeout", AS_LONG),
 			entry("tokens.maxPerAccount", AS_INT),
+			entry("tokens.maxCustomFeesAllowed", AS_INT),
 			entry("tokens.maxSymbolUtf8Bytes", AS_INT),
 			entry("tokens.maxTokenNameUtf8Bytes", AS_INT),
 			entry("contracts.localCall.estRetBytes", AS_INT),

@@ -83,6 +83,8 @@
     <MarkerFilter marker="MERKLE_HASHING"         onMatch="DENY"   onMismatch="NEUTRAL"/>
     <MarkerFilter marker="MERKLE_GENERATION"      onMatch="DENY"   onMismatch="NEUTRAL"/>
     <MarkerFilter marker="MERKLE_LOCKS"           onMatch="DENY"   onMismatch="NEUTRAL"/>
+
+    <MarkerFilter marker="DISABLED"               onMatch="DENY"   onMismatch="DENY" />
   </Filters>
 
   <Appenders>

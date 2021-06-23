@@ -28,6 +28,7 @@ import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
+import com.hedera.services.state.submerkle.AssessedCustomFee;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -98,7 +99,8 @@ public class ExpiringCreations implements EntityCreator {
 			Instant consensusTime,
 			TxnReceipt receipt,
 			List<TokenTransferList> explicitTokenTransfers,
-			ServicesContext ctx
+			ServicesContext ctx,
+			List<AssessedCustomFee> customFeesCharged
 	) {
 		final long amount = ctx.narratedCharging().totalFeesChargedToPayer() + otherNonThresholdFees;
 		final TransferList transfersList = ctx.ledger().netTransfersInTxn();
@@ -116,7 +118,8 @@ public class ExpiringCreations implements EntityCreator {
 				.setMemo(accessor.getMemo())
 				.setFee(amount)
 				.setTransferList(currencyAdjustments)
-				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null);
+				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null)
+				.setCustomFeesCharged(customFeesCharged);
 
 		if (!tokenTransferList.isEmpty()) {
 			setTokensAndTokenAdjustments(builder, tokenTransferList);
