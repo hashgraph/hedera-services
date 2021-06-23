@@ -110,32 +110,20 @@ public class ImpliedTransfersMarshal {
 
 	/**
 	 * Compute the balance changes for custom fees to be added to all balance changes in transfer list
-	 *
-	 * @param scopingToken
-	 * 		token Id that is being transferred
-	 * @param payerId
-	 * 		payer Id for the transaction
-	 * @param totalAmount
-	 * 		total amount being transferred in transfer transaction
-	 * @param customFeesOfToken
-	 * 		list of custom fees for the token
-	 * @param indexesMap
-	 * @param customFeeBalanceChangesForRecord
-	 * @return
 	 */
 	private List<BalanceChange> computeBalanceChangeForCustomFee(EntityId scopingToken,
 			EntityId payerId,
 			long totalAmount, List<CustomFee> customFeesOfToken,
-			Map<Pair<EntityId, EntityId>, BalanceChange> indexesMap,
+			Map<Pair<EntityId, EntityId>, BalanceChange> existingBalanceChanges,
 			List<CustomFeesBalanceChange> customFeeBalanceChangesForRecord) {
 		List<BalanceChange> customFeeChanges = new ArrayList<>();
 		for (CustomFee fees : customFeesOfToken) {
 			if (fees.getFeeType() == CustomFee.FeeType.FIXED_FEE) {
-				addFixedFeeBalanceChanges(fees, payerId, customFeeChanges, indexesMap,
+				addFixedFeeBalanceChanges(fees, payerId, customFeeChanges, existingBalanceChanges,
 						customFeeBalanceChangesForRecord);
 			} else if (fees.getFeeType() == CustomFee.FeeType.FRACTIONAL_FEE) {
-				addFractionalFeeBalanceChanges(fees, payerId, totalAmount, scopingToken, customFeeChanges, indexesMap,
-						customFeeBalanceChangesForRecord);
+				addFractionalFeeBalanceChanges(fees, payerId, totalAmount, scopingToken, customFeeChanges,
+						existingBalanceChanges, customFeeBalanceChangesForRecord);
 			}
 		}
 		return customFeeChanges;
@@ -143,24 +131,11 @@ public class ImpliedTransfersMarshal {
 
 	/**
 	 * Calculate fractional fee balance changes for the custom fees
-	 *
-	 * @param fees
-	 * 		custom fees
-	 * @param payerId
-	 * 		payer id for the transaction
-	 * @param totalAmount
-	 * 		total hbar/token amount that is transferred
-	 * @param scopingToken
-	 * 		tokenId that is being transferred
-	 * @param customFeeChanges
-	 * @param existingBalanceChange
-	 * @param customFeeBalanceChangesForRecord
-	 * @return
 	 */
 	private void addFractionalFeeBalanceChanges(CustomFee fees,
 			EntityId payerId, long totalAmount, EntityId scopingToken,
 			List<BalanceChange> customFeeChanges,
-			Map<Pair<EntityId, EntityId>, BalanceChange> existingBalanceChange,
+			Map<Pair<EntityId, EntityId>, BalanceChange> existingBalanceChanges,
 			List<CustomFeesBalanceChange> customFeeBalanceChangesForRecord) {
 		long fee =
 				(fees.getFractionalFeeSpec().getNumerator() * totalAmount / fees.getFractionalFeeSpec().getDenominator());
@@ -171,11 +146,11 @@ public class ImpliedTransfersMarshal {
 		}
 
 		modifyBalanceChange(Pair.of(fees.getFeeCollector(), scopingToken),
-				existingBalanceChange, customFeeChanges, feesToCollect,
+				existingBalanceChanges, customFeeChanges, feesToCollect,
 				tokenAdjust(fees.getFeeCollector(), scopingToken, feesToCollect));
 
 		modifyBalanceChange(Pair.of(payerId, scopingToken),
-				existingBalanceChange, customFeeChanges, -feesToCollect,
+				existingBalanceChanges, customFeeChanges, -feesToCollect,
 				tokenAdjust(payerId, scopingToken, -feesToCollect));
 
 		customFeeBalanceChangesForRecord.add(new CustomFeesBalanceChange(fees.getFeeCollector(),
@@ -185,37 +160,28 @@ public class ImpliedTransfersMarshal {
 
 	/**
 	 * Calculate Fixed fee balance changes for the custom fees
-	 *
-	 * @param fees
-	 * 		custom fees
-	 * @param payerId
-	 * 		payer id for the transaction
-	 * @param customFeeChanges
-	 * @param existingBalanceChange
-	 * @param customFeeBalanceChangesForRecord
-	 * @return
 	 */
 	private void addFixedFeeBalanceChanges(CustomFee fees, EntityId payerId,
 			List<BalanceChange> customFeeChanges,
-			Map<Pair<EntityId, EntityId>, BalanceChange> existingBalanceChange,
+			Map<Pair<EntityId, EntityId>, BalanceChange> existingBalanceChanges,
 			List<CustomFeesBalanceChange> customFeeBalanceChangesForRecord) {
 		if (fees.getFixedFeeSpec().getTokenDenomination() == null) {
 			modifyBalanceChange(Pair.of(fees.getFeeCollector(), EntityId.MISSING_ENTITY_ID),
-					existingBalanceChange, customFeeChanges, fees.getFixedFeeSpec().getUnitsToCollect(),
+					existingBalanceChanges, customFeeChanges, fees.getFixedFeeSpec().getUnitsToCollect(),
 					hbarAdjust(fees.getFeeCollector(), fees.getFixedFeeSpec().getUnitsToCollect()));
 
 			modifyBalanceChange(Pair.of(payerId, EntityId.MISSING_ENTITY_ID),
-					existingBalanceChange, customFeeChanges, -fees.getFixedFeeSpec().getUnitsToCollect(),
+					existingBalanceChanges, customFeeChanges, -fees.getFixedFeeSpec().getUnitsToCollect(),
 					hbarAdjust(payerId, -fees.getFixedFeeSpec().getUnitsToCollect()));
 			customFeeBalanceChangesForRecord.add(new CustomFeesBalanceChange(fees.getFeeCollector(),
 					null, fees.getFixedFeeSpec().getUnitsToCollect()));
 		} else {
 			modifyBalanceChange(Pair.of(fees.getFeeCollector(), fees.getFixedFeeSpec().getTokenDenomination()),
-					existingBalanceChange, customFeeChanges, fees.getFixedFeeSpec().getUnitsToCollect(),
+					existingBalanceChanges, customFeeChanges, fees.getFixedFeeSpec().getUnitsToCollect(),
 					tokenAdjust(fees.getFeeCollector(), fees.getFixedFeeSpec().getTokenDenomination(),
 							fees.getFixedFeeSpec().getUnitsToCollect()));
 			modifyBalanceChange(Pair.of(payerId, fees.getFixedFeeSpec().getTokenDenomination()),
-					existingBalanceChange, customFeeChanges, -fees.getFixedFeeSpec().getUnitsToCollect(),
+					existingBalanceChanges, customFeeChanges, -fees.getFixedFeeSpec().getUnitsToCollect(),
 					tokenAdjust(payerId, fees.getFixedFeeSpec().getTokenDenomination(),
 							-fees.getFixedFeeSpec().getUnitsToCollect()));
 			customFeeBalanceChangesForRecord.add(new CustomFeesBalanceChange(fees.getFeeCollector(),
@@ -227,53 +193,36 @@ public class ImpliedTransfersMarshal {
 	/**
 	 * Modify the units if the key is already present in the existing balance changes map.
 	 * If not add a new balance change to the map.
-	 *
-	 * @param pair
-	 * @param existingBalanceChange
-	 * @param customFeeChanges
-	 * @param fees
-	 * @param customFee
 	 */
 	private void modifyBalanceChange(Pair<EntityId, EntityId> pair,
-			Map<Pair<EntityId, EntityId>, BalanceChange> existingBalanceChange,
+			Map<Pair<EntityId, EntityId>, BalanceChange> existingBalanceChanges,
 			List<BalanceChange> customFeeChanges, long fees,
 			BalanceChange customFee) {
-		boolean isPresent = adjustUnitsIfKeyPresent(pair, existingBalanceChange, fees);
-		addBalanceChangeIfNotPresent(isPresent, customFeeChanges, existingBalanceChange, pair, customFee);
+		boolean isPresent = adjustUnitsIfKeyPresent(pair, existingBalanceChanges, fees);
+		addBalanceChangeIfNotPresent(isPresent, customFeeChanges, existingBalanceChanges, pair, customFee);
 	}
 
 
 	/**
 	 * Add balance change object to the existing balance changes map only if the key is not present
-	 *
-	 * @param isPresent
-	 * @param customFeeChanges
-	 * @param existingBalanceChange
-	 * @param pair
-	 * @param customFee
 	 */
 	private void addBalanceChangeIfNotPresent(boolean isPresent, List<BalanceChange> customFeeChanges,
-			Map<Pair<EntityId, EntityId>, BalanceChange> existingBalanceChange,
+			Map<Pair<EntityId, EntityId>, BalanceChange> existingBalanceChanges,
 			Pair<EntityId, EntityId> pair, BalanceChange customFee) {
 		if (!isPresent) {
 			customFeeChanges.add(customFee);
-			existingBalanceChange.put(pair, customFee);
+			existingBalanceChanges.put(pair, customFee);
 		}
 	}
 
 	/**
 	 * If the key is already present in existing balance chance changes map , modify the units of balance change
 	 * by adding the new fees
-	 *
-	 * @param key
-	 * @param indexesMap
-	 * @param fees
-	 * @return
 	 */
 	private boolean adjustUnitsIfKeyPresent(Pair<EntityId, EntityId> key,
-			Map<Pair<EntityId, EntityId>, BalanceChange> indexesMap, long fees) {
-		if (indexesMap.containsKey(key)) {
-			var balChange = indexesMap.get(key);
+			Map<Pair<EntityId, EntityId>, BalanceChange> existingBalanceChanges, long fees) {
+		if (existingBalanceChanges.containsKey(key)) {
+			var balChange = existingBalanceChanges.get(key);
 			balChange.adjustUnits(fees);
 			return true;
 		}
