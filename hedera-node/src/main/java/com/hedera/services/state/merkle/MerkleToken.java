@@ -48,7 +48,6 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	static final int PRE_RELEASE_0120_VERSION = 1;
 	static final int RELEASE_0120_VERSION = 2;
 	static final int RELEASE_0160_VERSION = 3;
-	static final int RELEASE_0160_VERSION = 3;
 
 	static final int MERKLE_VERSION = RELEASE_0160_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xd23ce8814b35fc2fL;

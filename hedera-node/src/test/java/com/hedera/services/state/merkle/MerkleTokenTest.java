@@ -49,6 +49,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.hedera.services.state.merkle.MerkleTopic.serdes;
+import static com.hedera.services.utils.MiscUtils.describe;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -196,9 +197,11 @@ class MerkleTokenTest {
 				argThat(supplyKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
 		inOrder.verify(serdes).writeNullable(
 				argThat(wipeKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
+		inOrder.verify(out).writeNormalisedString(memo);
+		inOrder.verify(out, times(2)).writeInt(0);
+		inOrder.verify(out, times(2)).writeLong(0);
 		inOrder.verify(serdes).writeNullable(
 				argThat(customFeeKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
-		inOrder.verify(out).writeNormalisedString(memo);
 		inOrder.verify(out).writeSerializableList(feeSchedule, true, true);
 	}
 
@@ -280,8 +283,13 @@ class MerkleTokenTest {
 		given(fin.readLong())
 				.willReturn(subject.expiry())
 				.willReturn(subject.autoRenewPeriod())
-				.willReturn(subject.totalSupply());
-		given(fin.readInt()).willReturn(subject.decimals());
+				.willReturn(subject.totalSupply())
+				.willReturn(subject.maxSupply())
+				.willReturn(subject.getLastUsedSerialNumber());
+		given(fin.readInt())
+				.willReturn(subject.decimals())
+				.willReturn(subject.tokenType().ordinal())
+				.willReturn(subject.supplyType().ordinal());
 		given(fin.readBoolean())
 				.willReturn(isDeleted)
 				.willReturn(subject.accountsAreFrozenByDefault());
