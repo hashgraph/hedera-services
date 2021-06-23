@@ -50,6 +50,7 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.IdUtils.hbarChange;
 import static com.hedera.test.utils.IdUtils.tokenChange;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
@@ -157,14 +158,14 @@ class ImpliedTransfersMarshalTest {
 		// and:
 		final List<BalanceChange> expectedChanges = List.of(new BalanceChange[] {
 						hbarChange(aModel,
-								aHbarChange + customFeeChangeToFeeCollector + customFeeChangeToFeeCollector + customFeeChangeToFeeCollector),
+								aHbarChange + (3 * customFeeChangeToFeeCollector)),
 						hbarChange(bModel, bHbarChange),
 						hbarChange(cModel, cHbarChange),
 						tokenChange(anotherToken, aModel, aAnotherTokenChange),
 						tokenChange(anotherToken, bModel, bAnotherTokenChange),
 						tokenChange(anotherToken, cModel, cAnotherTokenChange),
-						hbarChange(payer,
-								customFeeChangeFromPayer + customFeeChangeFromPayer + customFeeChangeFromPayer),
+						updateCodeForInsufficientBalance(hbarChange(payer,
+								3 * customFeeChangeFromPayer)),
 						tokenChange(token, bModel, bTokenChange),
 						tokenChange(token, cModel, cTokenChange),
 						tokenChange(yetAnotherToken, aModel, aYetAnotherTokenChange),
@@ -241,12 +242,11 @@ class ImpliedTransfersMarshalTest {
 				" " +
 				"involvedTokenFeeSchedules=[], assessedCustomFees=[]}";
 		final var twoRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=OK, maxExplicitHbarAdjusts=1, " +
-				"maxExplicitTokenAdjusts=100, customFeeSchedulesUsedInMarshal=[(Id{shard=0, realm=0, num=123},[])" +
-				"]}, " +
-				"changes=[BalanceChange{token=Id{shard=1, realm=2, num=3}, account=Id{shard=4, realm=5, " +
-				"num=6}, " +
-				"units=7}], involvedTokenFeeSchedules=[(Id{shard=0, realm=0, num=123},[])]," +
-				" assessedCustomFees=[AssessedCustomFee{token=EntityId{shard=0, realm=0, num=123}, " +
+				"maxExplicitTokenAdjusts=100, customFeeSchedulesUsedInMarshal=[(Id{shard=0, realm=0, num=123},[])]}," +
+				" changes=[BalanceChange{token=Id{shard=1, realm=2, num=3}, account=Id{shard=4, realm=5, num=6}," +
+				" units=7, codeForInsufficientBalance=INSUFFICIENT_TOKEN_BALANCE}], " +
+				"involvedTokenFeeSchedules=[(Id{shard=0, realm=0, num=123},[])], " +
+				"assessedCustomFees=[AssessedCustomFee{token=EntityId{shard=0, realm=0, num=123}, " +
 				"account=EntityId{shard=0, realm=0, num=124}, units=123}]}";
 
 		// expect:
@@ -300,13 +300,14 @@ class ImpliedTransfersMarshalTest {
 				Math.max(numerator * cHbarChange / denominator, minimumUnitsToCollect), maximumUnitsToCollect);
 		final var expectedChanges = List.of(new BalanceChange[] {
 				tokenChange(anotherToken, aModel, cHbarChange + expectedFractionalFee),
-				tokenChange(anotherToken, payer, -expectedFractionalFee) });
+				updateCodeForInsufficientBalance(tokenChange(anotherToken, payer, -expectedFractionalFee)) });
 
 		final var customFee = getFractionalCustomFee();
 		final var expectedCustomFeeChanges =
 				List.of(Pair.of(anotherToken, customFee));
 		final var expectedAssessedCustomFees = List.of(
-				new AssessedCustomFee(EntityId.fromGrpcAccountId(aModel), anotherToken.asEntityId(), expectedFractionalFee));
+				new AssessedCustomFee(EntityId.fromGrpcAccountId(aModel), anotherToken.asEntityId(),
+						expectedFractionalFee));
 
 		// and:
 		final var expectedMeta = new ImpliedTransfersMeta(maxExplicitHbarAdjusts, maxExplicitTokenAdjusts,
@@ -359,7 +360,7 @@ class ImpliedTransfersMarshalTest {
 		final var expectedChanges = List.of(new BalanceChange[] {
 				tokenChange(anotherToken, aModel, cHbarChange),
 				tokenChange(token, aModel, 20L),
-				tokenChange(token, payer, -20L) });
+				updateCodeForInsufficientBalance(tokenChange(token, payer, -20L)) });
 
 		final var customFee = getFixedCustomFeeNonNullDenom();
 		final var expectedCustomFeeChanges =
@@ -437,5 +438,10 @@ class ImpliedTransfersMarshalTest {
 				CustomFee.fractionalFee(numerator, denominator, minimumUnitsToCollect, maximumUnitsToCollect,
 						feeCollector)
 		);
+	}
+
+	private BalanceChange updateCodeForInsufficientBalance(BalanceChange change) {
+		change.setCodeForInsufficientBalance(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE);
+		return change;
 	}
 }

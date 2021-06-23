@@ -156,6 +156,7 @@ public class BalanceChange {
 				.add("token", token == null ? "ℏ" : token)
 				.add("account", account)
 				.add("units", units)
+				.add("codeForInsufficientBalance", codeForInsufficientBalance)
 				.toString();
 	}
 
