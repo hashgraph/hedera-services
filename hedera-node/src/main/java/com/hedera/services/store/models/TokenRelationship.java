@@ -102,7 +102,7 @@ public class TokenRelationship {
 
 	public void updateForzen(boolean value) {
 		validateTrue(token.hasFreezeKey(), TOKEN_HAS_NO_FREEZE_KEY);
-			this.frozen = value;
+		this.frozen = value;
 	}
 
 	public boolean isKycGranted() {
