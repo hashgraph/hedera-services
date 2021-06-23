@@ -1,6 +1,8 @@
 package com.hedera.services.state.merkle.virtual.persistence.fcmmap;
 
+import com.hedera.services.state.merkle.virtual.persistence.FCSlotIndex;
 import com.hedera.services.state.merkle.virtual.persistence.FCVirtualMapDataStore;
+import com.hedera.services.state.merkle.virtual.persistence.SlotStore;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
@@ -24,7 +26,7 @@ import java.util.function.Supplier;
  * @param <LK> The type for leaf keys, must implement SelfSerializable
  * @param <LD> The type for leaf data, must implement SelfSerializable
  */
-@SuppressWarnings({"DuplicatedCode", "jol"})
+@SuppressWarnings({"DuplicatedCode"})
 public final class FCVirtualMapDataStoreImpl<PK extends SelfSerializable, PD extends SelfSerializable,
         LK extends SelfSerializable, LP extends SelfSerializable, LD extends SelfSerializable>
         implements FCVirtualMapDataStore<PK, PD, LK, LP, LD> {
@@ -57,9 +59,9 @@ public final class FCVirtualMapDataStoreImpl<PK extends SelfSerializable, PD ext
     // Data Stores
 
     /** Store for all the tree leaves */
-    private final MemMapSlotStore leafStore;
+    private final SlotStore leafStore;
     /** Store for all the tree parents */
-    private final MemMapSlotStore parentStore;
+    private final SlotStore parentStore;
 
     //==================================================================================================================
     // Indexes
@@ -78,6 +80,8 @@ public final class FCVirtualMapDataStoreImpl<PK extends SelfSerializable, PD ext
     private boolean isReleased = false;
     /** If this data store is immutable(read only) */
     private boolean isImmutable = false;
+    /** True if this store is open */
+    private boolean isOpen = false;
 
     //==================================================================================================================
     // Constructors
@@ -100,7 +104,8 @@ public final class FCVirtualMapDataStoreImpl<PK extends SelfSerializable, PD ext
                                      Supplier<FCSlotIndex<LP>> leafPathSlotIndexSupplier,
                                      Supplier<FCSlotIndex<LK>> leafSlotIndexSupplier,
                                      Supplier<PD> parentDataConstructor,
-                                     Supplier<LD> leafDataConstructor) {
+                                     Supplier<LD> leafDataConstructor,
+                                     Supplier<SlotStore> slotStoreConstructor) {
         // store config
         this.storageDirectory = storageDirectory;
         this.dataFileSizeInMb = dataFileSizeInMb;
@@ -118,8 +123,8 @@ public final class FCVirtualMapDataStoreImpl<PK extends SelfSerializable, PD ext
                 parentKeySizeBytes +// size of PK
                 parentDataSizeBytes; // size of PD
 
-        leafStore = new MemMapSlotStore(leafStoreSlotSize,dataFileSizeInMb*MB,storageDirectory.resolve("leaves"),"leaves_","dat");
-        parentStore = new MemMapSlotStore(parentStoreSlotSize,dataFileSizeInMb*MB,storageDirectory.resolve("parents"),"parents_","dat");
+        leafStore = slotStoreConstructor.get();
+        parentStore = slotStoreConstructor.get();
         // create indexes
         parentIndex = parentSlotIndexSupplier.get();
         parentIndex.setKeySizeBytes(parentKeySizeBytes);
@@ -151,6 +156,7 @@ public final class FCVirtualMapDataStoreImpl<PK extends SelfSerializable, PD ext
         this.leafPathSizeBytes = dataStoreToCopy.leafPathSizeBytes;
         this.leafStoreSlotSize = dataStoreToCopy.leafStoreSlotSize;
         this.parentStoreSlotSize = dataStoreToCopy.parentStoreSlotSize;
+        this.isOpen = dataStoreToCopy.isOpen;
         // fast copy indexes
         parentIndex = dataStoreToCopy.parentIndex.copy();
         leafIndex = dataStoreToCopy.leafIndex.copy();
@@ -170,6 +176,7 @@ public final class FCVirtualMapDataStoreImpl<PK extends SelfSerializable, PD ext
     public FCVirtualMapDataStoreImpl<PK, PD, LK, LP, LD> copy() {
         this.throwIfImmutable();
         this.throwIfReleased();
+        if (!isOpen) throw new IllegalStateException("Only open stores can be fast copied.");
         return new FCVirtualMapDataStoreImpl<>(this);
     }
 
@@ -185,6 +192,7 @@ public final class FCVirtualMapDataStoreImpl<PK extends SelfSerializable, PD ext
     @Override
     public void release() {
         isReleased = true;
+        isOpen = false;
         // release indexes
         parentIndex.release();
         leafIndex.release();
@@ -213,11 +221,12 @@ public final class FCVirtualMapDataStoreImpl<PK extends SelfSerializable, PD ext
      * Open all storage files and read the indexes.
      */
     @Override
-    public void open(){
-        // This could be faster if we open each in a thread.
+    public void open() throws IOException {
+        if (isOpen) throw new IOException("Store is already open.");
+        // TODO This could be faster if we open each in a thread.
         // open leaf store
         synchronized (leafStore) {
-            leafStore.open((location, fileAtSlot) -> {
+            leafStore.open(leafStoreSlotSize,dataFileSizeInMb*MB,storageDirectory.resolve("leaves"),"leaves_","dat", (location, fileAtSlot) -> {
 //                try {
 //                    final Account account = new Account(fileAtSlot.readLong(), fileAtSlot.readLong(), fileAtSlot.readLong());
 //                    ObjectLongHashMap<VirtualKey> indexMap = index(account, true).leafIndex;
@@ -238,7 +247,7 @@ public final class FCVirtualMapDataStoreImpl<PK extends SelfSerializable, PD ext
         }
         // open parents store
         synchronized (parentStore) {
-            parentStore.open((location, fileAtSlot) -> {
+            parentStore.open(parentStoreSlotSize,dataFileSizeInMb*MB,storageDirectory.resolve("parents"),"parents_","dat", (location, fileAtSlot) -> {
 //                try {
 //                    final Account account = new Account(fileAtSlot.readLong(), fileAtSlot.readLong(), fileAtSlot.readLong());
 //                    final long path = fileAtSlot.readLong();
@@ -249,6 +258,7 @@ public final class FCVirtualMapDataStoreImpl<PK extends SelfSerializable, PD ext
 //                }
             });
         }
+        isOpen = true;
     }
 
     /**

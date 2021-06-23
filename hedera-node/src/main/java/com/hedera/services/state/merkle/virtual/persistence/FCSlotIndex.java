@@ -1,4 +1,4 @@
-package com.hedera.services.state.merkle.virtual.persistence.fcmmap;
+package com.hedera.services.state.merkle.virtual.persistence;
 
 import com.swirlds.common.FastCopyable;
 
