@@ -1394,7 +1394,7 @@ public class ServicesContext {
 				entry(TokenFreezeAccount,
 						List.of(new TokenFreezeTransitionLogic(typedTokenStore(), accountStore(), txnCtx()))),
 				entry(TokenUnfreezeAccount,
-						List.of(new TokenUnfreezeTransitionLogic(tokenStore(), ledger(), txnCtx()))),
+						List.of(new TokenUnfreezeTransitionLogic(typedTokenStore(), accountStore(), txnCtx()))),
 				entry(TokenGrantKycToAccount,
 						List.of(new TokenGrantKycTransitionLogic(tokenStore(), ledger(), txnCtx()))),
 				entry(TokenRevokeKycFromAccount,
