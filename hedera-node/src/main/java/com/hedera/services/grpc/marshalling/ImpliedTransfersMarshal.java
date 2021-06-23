@@ -39,6 +39,7 @@ import java.util.Map;
 import static com.hedera.services.ledger.BalanceChange.hbarAdjust;
 import static com.hedera.services.ledger.BalanceChange.tokenAdjust;
 import static com.hedera.services.store.models.Id.MISSING_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
@@ -148,11 +149,11 @@ public class ImpliedTransfersMarshal {
 
 		modifyBalanceChange(Pair.of(fees.getFeeCollectorAsId(), scopingToken),
 				existingBalanceChanges, customFeeChanges, feesToCollect,
-				tokenAdjust(fees.getFeeCollectorAsId(), scopingToken, feesToCollect));
+				tokenAdjust(fees.getFeeCollectorAsId(), scopingToken, feesToCollect), false);
 
 		modifyBalanceChange(Pair.of(payerId, scopingToken),
 				existingBalanceChanges, customFeeChanges, -feesToCollect,
-				tokenAdjust(payerId, scopingToken, -feesToCollect));
+				tokenAdjust(payerId, scopingToken, -feesToCollect), true);
 
 		assessedCustomFeesForRecord.add(new AssessedCustomFee(fees.getFeeCollector(),
 				scopingToken.asEntityId(),
@@ -169,22 +170,23 @@ public class ImpliedTransfersMarshal {
 		if (fees.getFixedFeeSpec().getTokenDenomination() == null) {
 			modifyBalanceChange(Pair.of(fees.getFeeCollectorAsId(), MISSING_ID),
 					existingBalanceChanges, customFeeChanges, fees.getFixedFeeSpec().getUnitsToCollect(),
-					hbarAdjust(fees.getFeeCollectorAsId(), fees.getFixedFeeSpec().getUnitsToCollect()));
+					hbarAdjust(fees.getFeeCollectorAsId(), fees.getFixedFeeSpec().getUnitsToCollect()), false);
 
 			modifyBalanceChange(Pair.of(payerId, MISSING_ID),
 					existingBalanceChanges, customFeeChanges, -fees.getFixedFeeSpec().getUnitsToCollect(),
-					hbarAdjust(payerId, -fees.getFixedFeeSpec().getUnitsToCollect()));
+					hbarAdjust(payerId, -fees.getFixedFeeSpec().getUnitsToCollect()), true);
 			assessedCustomFeesForRecord.add(new AssessedCustomFee(fees.getFeeCollector(),
 					null, fees.getFixedFeeSpec().getUnitsToCollect()));
 		} else {
-			modifyBalanceChange(Pair.of(fees.getFeeCollectorAsId(), fees.getFixedFeeSpec().getTokenDenomination().asId()),
+			modifyBalanceChange(
+					Pair.of(fees.getFeeCollectorAsId(), fees.getFixedFeeSpec().getTokenDenomination().asId()),
 					existingBalanceChanges, customFeeChanges, fees.getFixedFeeSpec().getUnitsToCollect(),
 					tokenAdjust(fees.getFeeCollectorAsId(), fees.getFixedFeeSpec().getTokenDenomination().asId(),
-							fees.getFixedFeeSpec().getUnitsToCollect()));
+							fees.getFixedFeeSpec().getUnitsToCollect()), false);
 			modifyBalanceChange(Pair.of(payerId, fees.getFixedFeeSpec().getTokenDenomination().asId()),
 					existingBalanceChanges, customFeeChanges, -fees.getFixedFeeSpec().getUnitsToCollect(),
 					tokenAdjust(payerId, fees.getFixedFeeSpec().getTokenDenomination().asId(),
-							-fees.getFixedFeeSpec().getUnitsToCollect()));
+							-fees.getFixedFeeSpec().getUnitsToCollect()), true);
 			assessedCustomFeesForRecord.add(new AssessedCustomFee(fees.getFeeCollector(),
 					fees.getFixedFeeSpec().getTokenDenomination(),
 					fees.getFixedFeeSpec().getUnitsToCollect()));
@@ -198,8 +200,11 @@ public class ImpliedTransfersMarshal {
 	private void modifyBalanceChange(Pair<Id, Id> pair,
 			Map<Pair<Id, Id>, BalanceChange> existingBalanceChanges,
 			List<BalanceChange> customFeeChanges, long fees,
-			BalanceChange customFee) {
-		boolean isPresent = adjustUnitsIfKeyPresent(pair, existingBalanceChanges, fees);
+			BalanceChange customFee, boolean isPayer) {
+		if (isPayer) {
+			customFee.setCodeForInsufficientBalance(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE);
+		}
+		boolean isPresent = adjustUnitsIfKeyPresent(pair, existingBalanceChanges, fees, isPayer);
 		addBalanceChangeIfNotPresent(isPresent, customFeeChanges, existingBalanceChanges, pair, customFee);
 	}
 
@@ -221,10 +226,11 @@ public class ImpliedTransfersMarshal {
 	 * by adding the new fees
 	 */
 	private boolean adjustUnitsIfKeyPresent(Pair<Id, Id> key,
-			Map<Pair<Id, Id>, BalanceChange> existingBalanceChanges, long fees) {
+			Map<Pair<Id, Id>, BalanceChange> existingBalanceChanges, long fees, boolean isPayer) {
 		if (existingBalanceChanges.containsKey(key)) {
 			var balChange = existingBalanceChanges.get(key);
 			balChange.adjustUnits(fees);
+			balChange.setCodeForInsufficientBalance(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE);
 			return true;
 		}
 		return false;

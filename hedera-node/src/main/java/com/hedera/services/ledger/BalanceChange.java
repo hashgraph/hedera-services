@@ -53,7 +53,6 @@ public class BalanceChange {
 	private Id account;
 	private long units;
 	private ResponseCodeEnum codeForInsufficientBalance;
-
 	private long newBalance;
 	private TokenID tokenId = null;
 	private AccountID accountId;
@@ -158,5 +157,9 @@ public class BalanceChange {
 				.add("account", account)
 				.add("units", units)
 				.toString();
+	}
+
+	public void setCodeForInsufficientBalance(ResponseCodeEnum codeForInsufficientBalance) {
+		this.codeForInsufficientBalance = codeForInsufficientBalance;
 	}
 }
