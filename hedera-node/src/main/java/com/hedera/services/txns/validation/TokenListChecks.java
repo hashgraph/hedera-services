@@ -34,6 +34,7 @@ import java.util.function.Predicate;
 
 import static com.hedera.services.txns.validation.PureValidation.checkKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SUPPLY_KEY;
@@ -98,40 +99,46 @@ public class TokenListChecks {
         }
     }
 
-	public static ResponseCodeEnum checkKeys(
-			boolean hasAdminKey, Key adminKey,
-			boolean hasKycKey, Key kycKey,
-			boolean hasWipeKey, Key wipeKey,
-			boolean hasSupplyKey, Key supplyKey,
-			boolean hasFreezeKey, Key freezeKey
-	) {
-		ResponseCodeEnum validity = OK;
+    public static ResponseCodeEnum checkKeys(
+            boolean hasAdminKey, Key adminKey,
+            boolean hasKycKey, Key kycKey,
+            boolean hasWipeKey, Key wipeKey,
+            boolean hasSupplyKey, Key supplyKey,
+            boolean hasFreezeKey, Key freezeKey,
+            boolean hasCustomFeeKey, Key customFeeKey
+    ) {
+        ResponseCodeEnum validity = OK;
 
-		if (hasAdminKey && !ADMIN_KEY_REMOVAL.test(adminKey)) {
-			if ((validity = checkKey(adminKey, INVALID_ADMIN_KEY)) != OK) {
-				return validity;
-			}
-		}
-		if (hasKycKey) {
-			if ((validity = checkKey(kycKey, INVALID_KYC_KEY)) != OK) {
-				return validity;
-			}
-		}
-		if (hasWipeKey) {
-			if ((validity = checkKey(wipeKey, INVALID_WIPE_KEY)) != OK) {
-				return validity;
-			}
-		}
-		if (hasSupplyKey) {
-			if ((validity = checkKey(supplyKey, INVALID_SUPPLY_KEY)) != OK) {
-				return validity;
-			}
-		}
-		if (hasFreezeKey) {
-			if ((validity = checkKey(freezeKey, INVALID_FREEZE_KEY)) != OK) {
-				return validity;
-			}
-		}
+        if (hasAdminKey && !ADMIN_KEY_REMOVAL.test(adminKey)) {
+            if ((validity = checkKey(adminKey, INVALID_ADMIN_KEY)) != OK) {
+                return validity;
+            }
+        }
+        if (hasKycKey) {
+            if ((validity = checkKey(kycKey, INVALID_KYC_KEY)) != OK) {
+                return validity;
+            }
+        }
+        if (hasWipeKey) {
+            if ((validity = checkKey(wipeKey, INVALID_WIPE_KEY)) != OK) {
+                return validity;
+            }
+        }
+        if (hasSupplyKey) {
+            if ((validity = checkKey(supplyKey, INVALID_SUPPLY_KEY)) != OK) {
+                return validity;
+            }
+        }
+        if (hasFreezeKey) {
+            if ((validity = checkKey(freezeKey, INVALID_FREEZE_KEY)) != OK) {
+                return validity;
+            }
+        }
+        if (hasCustomFeeKey) {
+            if ((validity = checkKey(customFeeKey, INVALID_CUSTOM_FEE_KEY)) != OK) {
+                return validity;
+            }
+        }
 
 		return validity;
 	}

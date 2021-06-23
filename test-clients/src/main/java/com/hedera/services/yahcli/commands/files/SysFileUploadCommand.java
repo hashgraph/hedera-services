@@ -44,6 +44,10 @@ public class SysFileUploadCommand implements Callable<Integer> {
 			defaultValue = "{network}/sysfiles/")
 	private String srcDir;
 
+	@CommandLine.Option(names = { "--dry-run" },
+			description = "only write the serialized form of the system file to disk, do not send a FileUpdate")
+	private boolean dryRun;
+
 	@CommandLine.Parameters(
 			arity = "1",
 			paramLabel = "<sysfile>",
@@ -58,7 +62,7 @@ public class SysFileUploadCommand implements Callable<Integer> {
 		srcDir = resolvedDir(srcDir, config);
 		activeSrcDir.set(srcDir);
 
-		var delegate = new SysFileUploadSuite(srcDir, config.asSpecConfig(), sysFile);
+		var delegate = new SysFileUploadSuite(srcDir, config.asSpecConfig(), sysFile, dryRun);
 		delegate.runSuiteSync();
 
 		return 0;

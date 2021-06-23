@@ -21,6 +21,7 @@ package com.hedera.services.context.primitives;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.UInt64Value;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -49,6 +50,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NftID;
@@ -65,6 +67,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import proto.CustomFeesOuterClass;
 
 import javax.inject.Inject;
 import java.time.Instant;
@@ -206,6 +209,7 @@ class StateViewTest {
 				new EntityId(1, 2, 3));
 		token.setMemo(tokenMemo);
 		token.setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey());
+		token.setCustomFeeKey(MISC_ACCOUNT_KT.asJKey());
 		token.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asJKey());
 		token.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asJKey());
 		token.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKey());
@@ -216,6 +220,7 @@ class StateViewTest {
 		token.setDeleted(true);
 		token.setTokenType(TokenType.FUNGIBLE_COMMON);
 		token.setSupplyType(TokenSupplyType.FINITE);
+		token.setFeeScheduleFrom(grpcCustomFees);
 
 		given(tokenStore.resolve(tokenId)).willReturn(tokenId);
 		given(tokenStore.resolve(missingTokenId)).willReturn(TokenStore.MISSING_TOKEN);
@@ -402,6 +407,8 @@ class StateViewTest {
 
 	@Test
 	void getsTokenInfo() {
+		// setup:
+		final var miscKey = MISC_ACCOUNT_KT.asKey();
 		// when:
 		var info = subject.infoForToken(tokenId).get();
 
@@ -414,10 +421,12 @@ class StateViewTest {
 		assertEquals(token.treasury().toGrpcAccountId(), info.getTreasury());
 		assertEquals(token.totalSupply(), info.getTotalSupply());
 		assertEquals(token.decimals(), info.getDecimals());
+		assertEquals(token.customFeeSchedule(), MerkleToken.customFeesFromGrpc(info.getCustomFees()));
+		assertEquals(miscKey, info.getCustomFeesKey());
 		assertEquals(TOKEN_ADMIN_KT.asKey(), info.getAdminKey());
 		assertEquals(TOKEN_FREEZE_KT.asKey(), info.getFreezeKey());
 		assertEquals(TOKEN_KYC_KT.asKey(), info.getKycKey());
-		assertEquals(MISC_ACCOUNT_KT.asKey(), info.getWipeKey());
+		assertEquals(miscKey, info.getWipeKey());
 		assertEquals(autoRenew, info.getAutoRenewAccount());
 		assertEquals(Duration.newBuilder().setSeconds(autoRenewPeriod).build(), info.getAutoRenewPeriod());
 		assertEquals(Timestamp.newBuilder().setSeconds(expiry).build(), info.getExpiry());
@@ -644,7 +653,7 @@ class StateViewTest {
 		// then:
 		assertTrue(info.isEmpty());
 		final var warnLogs = logCaptor.warnLogs();
-		assertTrue(warnLogs.size() == 1);
+		assertEquals(1, warnLogs.size());
 		assertThat(warnLogs.get(0), Matchers.startsWith("Unexpected error occurred when getting info for file"));
 	}
 
@@ -755,4 +764,35 @@ class StateViewTest {
 			.build();
 	private final MerkleUniqueTokenId targetNftKey = new MerkleUniqueTokenId(new EntityId(1, 2, 3), 4);
 	private final MerkleUniqueToken targetNft = new MerkleUniqueToken(owner, nftMeta, fromJava(nftCreation));
+
+	private CustomFeesOuterClass.FixedFee fixedFeeInTokenUnits = CustomFeesOuterClass.FixedFee.newBuilder()
+			.setTokenId(tokenId)
+			.setUnitsToCollect(100)
+			.build();
+	private CustomFeesOuterClass.FixedFee fixedFeeInHbar = CustomFeesOuterClass.FixedFee.newBuilder()
+			.setUnitsToCollect(100)
+			.build();
+	private Fraction fraction = Fraction.newBuilder().setNumerator(15).setDenominator(100).build();
+	private CustomFeesOuterClass.FractionalFee fractionalFee = CustomFeesOuterClass.FractionalFee.newBuilder()
+			.setFractionOfUnitsToCollect(fraction)
+			.setMaximumUnitsToCollect(UInt64Value.of(50))
+			.setMinimumUnitsToCollect(10)
+			.build();
+	private CustomFeesOuterClass.CustomFee customFixedFeeInHbar = CustomFeesOuterClass.CustomFee.newBuilder()
+			.setFeeCollector(payerAccountId)
+			.setFixedFee(fixedFeeInHbar)
+			.build();
+	private CustomFeesOuterClass.CustomFee customFixedFeeInHts = CustomFeesOuterClass.CustomFee.newBuilder()
+			.setFeeCollector(payerAccountId)
+			.setFixedFee(fixedFeeInTokenUnits)
+			.build();
+	private CustomFeesOuterClass.CustomFee customFractionalFee = CustomFeesOuterClass.CustomFee.newBuilder()
+			.setFeeCollector(payerAccountId)
+			.setFractionalFee(fractionalFee)
+			.build();
+	private CustomFeesOuterClass.CustomFees grpcCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
+			.addCustomFees(customFixedFeeInHbar)
+			.addCustomFees(customFixedFeeInHts)
+			.addCustomFees(customFractionalFee)
+			.build();
 }
