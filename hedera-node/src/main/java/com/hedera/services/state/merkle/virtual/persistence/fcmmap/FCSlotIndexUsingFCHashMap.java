@@ -7,20 +7,23 @@ import com.swirlds.fchashmap.FCHashMap;
  *
  * @param <K> data type for key
  */
-public class FCHashMapFCSlotIndex<K> implements FCSlotIndex<K> {
+public class FCSlotIndexUsingFCHashMap<K> implements FCSlotIndex<K> {
     private FCHashMap<K,Long> map;
 
-    public FCHashMapFCSlotIndex() {
+    public FCSlotIndexUsingFCHashMap() {
         this.map = map = new FCHashMap<>();
     }
 
-    public FCHashMapFCSlotIndex(FCHashMapFCSlotIndex<K> toCopy) {
+    public FCSlotIndexUsingFCHashMap(FCSlotIndexUsingFCHashMap<K> toCopy) {
         map = toCopy.map.copy();
     }
 
     @Override
+    public void setKeySizeBytes(int size) {} // not needed
+
+    @Override
     public long getSlot(K key) {
-        return map.get(key);
+        return map.getOrDefault(key, FCSlotIndex.NOT_FOUND_LOCATION);
     }
 
     @Override
@@ -40,7 +43,7 @@ public class FCHashMapFCSlotIndex<K> implements FCSlotIndex<K> {
 
     @Override
     public FCSlotIndex<K> copy() {
-        return new FCHashMapFCSlotIndex<>(this);
+        return new FCSlotIndexUsingFCHashMap<>(this);
     }
 
     @Override
