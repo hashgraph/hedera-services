@@ -197,31 +197,7 @@ public class TypedTokenStore {
 	 * 		holds changes to {@link UniqueToken} ownership
 	 */
 	public void persistTrackers(OwnershipTracker ownershipTracker) {
-		applyOwnershipChanges(ownershipTracker);
 		transactionRecordService.includeOwnershipChanges(ownershipTracker);
-	}
-
-	private void applyOwnershipChanges(OwnershipTracker ownershipTracker) {
-		var allChanges = ownershipTracker.getChanges();
-		allChanges.forEach((token, changes) -> {
-			TokenID tokenID = TokenID.newBuilder()
-					.setShardNum(token.getShard())
-					.setRealmNum(token.getRealm())
-					.setTokenNum(token.getNum())
-					.build();
-
-			changes.forEach(change -> {
-				var merkleUniqueTokenId = new MerkleUniqueTokenId(
-						EntityId.fromGrpcTokenId(tokenID),
-						change.getSerialNumber());
-				this.uniqueOwnership.get().disassociate(
-						new EntityId(change.getPreviousOwner()),
-						merkleUniqueTokenId);
-				this.uniqueOwnership.get().associate(
-						new EntityId(change.getNewOwner()),
-						merkleUniqueTokenId);
-			});
-		});
 	}
 
 	/**
@@ -270,21 +246,29 @@ public class TypedTokenStore {
 
 		if (token.hasMintedUniqueTokens()) {
 			final var currentNfts = uniqueTokens.get();
+			final var currentUniqueTokenAssociations = uniqueTokenAssociations.get();
+			final var currentUniqueTokenAccountOwnerships = uniqueOwnership.get();
 			for (var uniqueToken : token.mintedUniqueTokens()) {
 				final var mintKey = new MerkleUniqueTokenId(
 						new EntityId(uniqueToken.getTokenId()), uniqueToken.getSerialNumber());
 				final var merkleUniqueToken = new MerkleUniqueToken(
 						new EntityId(uniqueToken.getOwner()), uniqueToken.getMetadata(), uniqueToken.getCreationTime());
 				currentNfts.put(mintKey, merkleUniqueToken);
+				currentUniqueTokenAccountOwnerships.associate(new EntityId(uniqueToken.getOwner()), mintKey);
+				currentUniqueTokenAssociations.associate(new EntityId(uniqueToken.getTokenId()), mintKey);
 				backingNfts.addToExistingNfts(mintKey.asNftId());
 			}
 		}
 		if (token.hasBurnedUniqueTokens()) {
 			final var currentNfts = uniqueTokens.get();
+			final var currentUniqueTokenAssociations = uniqueTokenAssociations.get();
+			final var currentUniqueTokenAccountOwnerships = uniqueOwnership.get();
 			for (var uniqueToken : token.burnedUniqueTokens()) {
 				final var burnKey = new MerkleUniqueTokenId(
 						new EntityId(uniqueToken.getTokenId()), uniqueToken.getSerialNumber());
 				currentNfts.remove(burnKey);
+				currentUniqueTokenAccountOwnerships.disassociate(new EntityId(uniqueToken.getOwner()), burnKey);
+				currentUniqueTokenAssociations.disassociate(new EntityId(uniqueToken.getTokenId()), burnKey);
 				backingNfts.removeFromExistingNfts(burnKey.asNftId());
 			}
 		}
