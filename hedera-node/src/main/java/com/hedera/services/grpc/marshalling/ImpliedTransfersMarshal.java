@@ -96,7 +96,7 @@ public class ImpliedTransfersMarshal {
 			List<BalanceChange> customFeeChanges = computeBalanceChangeForCustomFee(scopingToken, payerId, amount,
 					customFeesOfToken);
 			changes.addAll(customFeeChanges);
-			customFeeBalanceChangesForRecord.addAll(getListOfBalanceChangesForCustomFees(customFeeChanges));
+			getListOfBalanceChangesForCustomFees(customFeeChanges, customFeeBalanceChangesForRecord);
 		}
 		return ImpliedTransfers.valid(maxHbarAdjusts, maxTokenAdjusts, changes, entityCustomFees,
 				customFeeBalanceChangesForRecord);
@@ -104,10 +104,15 @@ public class ImpliedTransfersMarshal {
 
 	/**
 	 * Compute the balance changes for custom fees to be added to all balance changes in transfer list
-	 * @param scopingToken token Id that is being transferred
-	 * @param payerId payer Id for the transaction
-	 * @param totalAmount total amount being transferred in transfer transaction
-	 * @param customFeesOfToken list of custom fees for the token
+	 *
+	 * @param scopingToken
+	 * 		token Id that is being transferred
+	 * @param payerId
+	 * 		payer Id for the transaction
+	 * @param totalAmount
+	 * 		total amount being transferred in transfer transaction
+	 * @param customFeesOfToken
+	 * 		list of custom fees for the token
 	 * @return
 	 */
 	private List<BalanceChange> computeBalanceChangeForCustomFee(EntityId scopingToken, EntityId payerId,
@@ -115,9 +120,10 @@ public class ImpliedTransfersMarshal {
 		List<BalanceChange> customFeeChanges = new ArrayList<>();
 		for (CustomFee fees : customFeesOfToken) {
 			if (fees.getFeeType() == CustomFee.FeeType.FIXED_FEE) {
-				customFeeChanges.addAll(getFixedFeeBalanceChanges(fees, payerId));
+				addFixedFeeBalanceChanges(fees, payerId, customFeeChanges);
 			} else if (fees.getFeeType() == CustomFee.FeeType.FRACTIONAL_FEE) {
-				customFeeChanges.addAll(getFractionalFeeBalanceChanges(fees, payerId, totalAmount, scopingToken));
+				addFractionalFeeBalanceChanges(fees, payerId, totalAmount, scopingToken,
+						customFeeChanges);
 			}
 		}
 		return customFeeChanges;
@@ -125,15 +131,21 @@ public class ImpliedTransfersMarshal {
 
 	/**
 	 * Calculate fractional fee balance changes for the custom fees
-	 * @param fees custom fees
-	 * @param payerId payer id for the transaction
-	 * @param totalAmount total hbar/token amount that is transferred
-	 * @param scopingToken tokenId that is being transferred
+	 *
+	 * @param fees
+	 * 		custom fees
+	 * @param payerId
+	 * 		payer id for the transaction
+	 * @param totalAmount
+	 * 		total hbar/token amount that is transferred
+	 * @param scopingToken
+	 * 		tokenId that is being transferred
+	 * @param customFeeChanges
 	 * @return
 	 */
-	private List<BalanceChange> getFractionalFeeBalanceChanges(CustomFee fees,
-			EntityId payerId, long totalAmount, EntityId scopingToken) {
-		List<BalanceChange> fractionalFeeBalanceChanges = new ArrayList<>();
+	private List<BalanceChange> addFractionalFeeBalanceChanges(CustomFee fees,
+			EntityId payerId, long totalAmount, EntityId scopingToken,
+			List<BalanceChange> customFeeChanges) {
 		long fee =
 				(fees.getFractionalFeeSpec().getNumerator() * totalAmount / fees.getFractionalFeeSpec().getDenominator());
 		long feesToCollect = Math.max(fee, fees.getFractionalFeeSpec().getMinimumUnitsToCollect());
@@ -141,32 +153,36 @@ public class ImpliedTransfersMarshal {
 		if (fees.getFractionalFeeSpec().getMaximumUnitsToCollect() > 0) {
 			feesToCollect = Math.min(feesToCollect, fees.getFractionalFeeSpec().getMaximumUnitsToCollect());
 		}
-		fractionalFeeBalanceChanges.add(tokenAdjust(fees.getFeeCollector(), scopingToken, feesToCollect));
-		fractionalFeeBalanceChanges.add(tokenAdjust(payerId, scopingToken, -feesToCollect));
-		return fractionalFeeBalanceChanges;
+		customFeeChanges.add(tokenAdjust(fees.getFeeCollector(), scopingToken, feesToCollect));
+		customFeeChanges.add(tokenAdjust(payerId, scopingToken, -feesToCollect));
+		return customFeeChanges;
 	}
 
 	/**
 	 * Calculate Fixed fee balance changes for the custom fees
-	 * @param fees custom fees
-	 * @param payerId payer id for the transaction
+	 *
+	 * @param fees
+	 * 		custom fees
+	 * @param payerId
+	 * 		payer id for the transaction
+	 * @param customFeeChanges
 	 * @return
 	 */
-	private List<BalanceChange> getFixedFeeBalanceChanges(CustomFee fees, EntityId payerId) {
-		List<BalanceChange> fixedFeeBalanceChanges = new ArrayList<>();
+	private List<BalanceChange> addFixedFeeBalanceChanges(CustomFee fees, EntityId payerId,
+			List<BalanceChange> customFeeChanges) {
 		if (fees.getFixedFeeSpec().getTokenDenomination() == null) {
-			fixedFeeBalanceChanges.add(hbarAdjust(fees.getFeeCollector(),
+			customFeeChanges.add(hbarAdjust(fees.getFeeCollector(),
 					fees.getFixedFeeSpec().getUnitsToCollect()));
-			fixedFeeBalanceChanges.add(hbarAdjust(payerId, -fees.getFixedFeeSpec().getUnitsToCollect()));
+			customFeeChanges.add(hbarAdjust(payerId, -fees.getFixedFeeSpec().getUnitsToCollect()));
 		} else {
-			fixedFeeBalanceChanges.add(tokenAdjust(fees.getFeeCollector(),
+			customFeeChanges.add(tokenAdjust(fees.getFeeCollector(),
 					fees.getFixedFeeSpec().getTokenDenomination(),
 					fees.getFixedFeeSpec().getUnitsToCollect()));
-			fixedFeeBalanceChanges.add(tokenAdjust(payerId,
+			customFeeChanges.add(tokenAdjust(payerId,
 					fees.getFixedFeeSpec().getTokenDenomination(),
 					-fees.getFixedFeeSpec().getUnitsToCollect()));
 		}
-		return fixedFeeBalanceChanges;
+		return customFeeChanges;
 	}
 
 	/**
@@ -175,16 +191,17 @@ public class ImpliedTransfersMarshal {
 	 *
 	 * @param customFeeChanges
 	 * 		custom fees balance changes
+	 * @param customFeeBalanceChangesForRecord
 	 * @return
 	 */
-	private List<CustomFeesBalanceChange> getListOfBalanceChangesForCustomFees(List<BalanceChange> customFeeChanges) {
-		List<CustomFeesBalanceChange> balanceChange = new ArrayList<>();
+	private List<CustomFeesBalanceChange> getListOfBalanceChangesForCustomFees(List<BalanceChange> customFeeChanges,
+			List<CustomFeesBalanceChange> customFeeBalanceChangesForRecord) {
 		for (BalanceChange change : customFeeChanges) {
-			balanceChange.add(new CustomFeesBalanceChange(
+			customFeeBalanceChangesForRecord.add(new CustomFeesBalanceChange(
 					EntityId.fromGrpcAccountId(change.accountId()),
 					change.isForHbar() ? null : EntityId.fromGrpcTokenId(change.tokenId()),
 					change.units()));
 		}
-		return balanceChange;
+		return customFeeBalanceChangesForRecord;
 	}
 }
