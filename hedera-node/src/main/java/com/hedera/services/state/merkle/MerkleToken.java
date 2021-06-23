@@ -450,6 +450,18 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		return freezeKey;
 	}
 
+	public void setCustomFeeKey(JKey customFeeKey) {
+		this.customFeeKey = customFeeKey;
+	}
+
+	public JKey getCustomFeeKey() {
+		return customFeeKey;
+	}
+
+	public boolean hasCustomFeeKey() {
+		return customFeeKey != null;
+	}
+
 	public void setTotalSupply(long totalSupply) {
 		this.totalSupply = totalSupply;
 	}
@@ -471,14 +483,18 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	}
 
 	public void setFeeScheduleFrom(CustomFeesOuterClass.CustomFees grpcFeeSchedule) {
-		feeSchedule = grpcFeeSchedule.getCustomFeesList().stream().map(CustomFee::fromGrpc).collect(toList());
+		feeSchedule = customFeesFromGrpc(grpcFeeSchedule);
 	}
 
-	public void setCustomFeeKey(JKey customFeeKey) {
-		this.customFeeKey = customFeeKey;
+	public static List<CustomFee> customFeesFromGrpc(CustomFeesOuterClass.CustomFees grpcFeeSchedule) {
+		return	grpcFeeSchedule.getCustomFeesList().stream().map(CustomFee::fromGrpc).collect(toList());
 	}
 
 	public List<CustomFee> getFeeSchedule() {
+		return feeSchedule;
+	}
+
+	public List<CustomFee> customFeeSchedule() {
 		return feeSchedule;
 	}
 }

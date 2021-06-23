@@ -209,6 +209,12 @@ class MerkleTokenTest {
 	}
 
 	@Test
+	void getterWorks() {
+		// expect:
+		assertEquals(feeSchedule, subject.customFeeSchedule());
+	}
+
+	@Test
 	void v0120DeserializeWorks() throws IOException {
 		// setup:
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);

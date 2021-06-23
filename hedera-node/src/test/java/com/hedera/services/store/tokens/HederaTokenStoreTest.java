@@ -21,6 +21,7 @@ package com.hedera.services.store.tokens;
  */
 
 import com.google.protobuf.StringValue;
+import com.google.protobuf.UInt64Value;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -34,11 +35,13 @@ import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.submerkle.CustomFee;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -52,6 +55,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
+import proto.CustomFeesOuterClass;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -83,11 +87,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
@@ -98,6 +107,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -141,6 +151,7 @@ class HederaTokenStoreTest {
 	private String memo = "TOKENMEMO";
 	private String name = "TOKENNAME";
 	private String newName = "NEWNAME";
+	private int maxCustomFees = 4;
 	private long expiry = CONSENSUS_NOW + 1_234_567;
 	private long newExpiry = CONSENSUS_NOW + 1_432_765;
 	private long totalSupply = 1_000_000;
@@ -158,6 +169,8 @@ class HederaTokenStoreTest {
 	private AccountID treasury = IdUtils.asAccount("1.2.3");
 	private AccountID newTreasury = IdUtils.asAccount("3.2.1");
 	private AccountID sponsor = IdUtils.asAccount("1.2.666");
+	private AccountID feeCollector = treasury;
+	private AccountID anotherFeeCollector = IdUtils.asAccount("1.2.777");
 	private TokenID created = IdUtils.asToken("1.2.666666");
 	private TokenID pending = IdUtils.asToken("1.2.555555");
 	private int MAX_TOKENS_PER_ACCOUNT = 100;
@@ -165,6 +178,46 @@ class HederaTokenStoreTest {
 	private int MAX_TOKEN_NAME_UTF8_BYTES = 100;
 	private Pair<AccountID, TokenID> sponsorMisc = asTokenRel(sponsor, misc);
 	private Pair<AccountID, TokenID> treasuryMisc = asTokenRel(treasury, misc);
+	private Pair<AccountID, TokenID> anotherFeeCollectorMisc = asTokenRel(anotherFeeCollector, misc);
+	private CustomFeesOuterClass.FixedFee fixedFeeInTokenUnits = CustomFeesOuterClass.FixedFee.newBuilder()
+			.setTokenId(misc)
+			.setUnitsToCollect(100)
+			.build();
+	private CustomFeesOuterClass.FixedFee fixedFeeInHbar = CustomFeesOuterClass.FixedFee.newBuilder()
+			.setUnitsToCollect(100)
+			.build();
+	private Fraction fraction = Fraction.newBuilder().setNumerator(15).setDenominator(100).build();
+	private Fraction invalidFraction = Fraction.newBuilder().setNumerator(15).setDenominator(0).build();
+	private CustomFeesOuterClass.FractionalFee fractionalFee = CustomFeesOuterClass.FractionalFee.newBuilder()
+			.setFractionOfUnitsToCollect(fraction)
+			.setMaximumUnitsToCollect(UInt64Value.of(50))
+			.setMinimumUnitsToCollect(10)
+			.build();
+	private CustomFeesOuterClass.CustomFee customFixedFeeInHbar = CustomFeesOuterClass.CustomFee.newBuilder()
+			.setFeeCollector(feeCollector)
+			.setFixedFee(fixedFeeInHbar)
+			.build();
+	private CustomFeesOuterClass.CustomFee customFixedFeeInHts = CustomFeesOuterClass.CustomFee.newBuilder()
+			.setFeeCollector(anotherFeeCollector)
+			.setFixedFee(fixedFeeInTokenUnits)
+			.build();
+	private CustomFeesOuterClass.CustomFee customFractionalFee = CustomFeesOuterClass.CustomFee.newBuilder()
+			.setFeeCollector(feeCollector)
+			.setFractionalFee(fractionalFee)
+			.build();
+	private CustomFeesOuterClass.CustomFees grpcCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
+			.addCustomFees(customFixedFeeInHbar)
+			.addCustomFees(customFixedFeeInHts)
+			.addCustomFees(customFractionalFee)
+			.build();
+	private CustomFeesOuterClass.CustomFees grpcUnderspecifiedCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
+			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder().setFeeCollector(feeCollector))
+			.build();
+	private CustomFeesOuterClass.CustomFees grpcZeroDenomFractionCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
+			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder().setFeeCollector(feeCollector).setFractionalFee(
+					CustomFeesOuterClass.FractionalFee.newBuilder().setFractionOfUnitsToCollect(invalidFraction).build()
+			)).build();
+	private List<CustomFee> customFees = MerkleToken.customFeesFromGrpc(grpcCustomFees);
 
 	private HederaTokenStore subject;
 
@@ -195,6 +248,7 @@ class HederaTokenStoreTest {
 
 		accountsLedger = (TransactionalLedger<AccountID, AccountProperty, MerkleAccount>) mock(TransactionalLedger.class);
 		given(accountsLedger.exists(treasury)).willReturn(true);
+		given(accountsLedger.exists(anotherFeeCollector)).willReturn(true);
 		given(accountsLedger.exists(autoRenewAccount)).willReturn(true);
 		given(accountsLedger.exists(newAutoRenewAccount)).willReturn(true);
 		given(accountsLedger.exists(sponsor)).willReturn(true);
@@ -208,6 +262,7 @@ class HederaTokenStoreTest {
 		given(tokenRelsLedger.get(sponsorMisc, IS_FROZEN)).willReturn(false);
 		given(tokenRelsLedger.get(sponsorMisc, IS_KYC_GRANTED)).willReturn(true);
 		given(tokenRelsLedger.exists(treasuryMisc)).willReturn(true);
+		given(tokenRelsLedger.exists(anotherFeeCollectorMisc)).willReturn(true);
 		given(tokenRelsLedger.get(treasuryMisc, TOKEN_BALANCE)).willReturn(treasuryBalance);
 		given(tokenRelsLedger.get(treasuryMisc, IS_FROZEN)).willReturn(false);
 		given(tokenRelsLedger.get(treasuryMisc, IS_KYC_GRANTED)).willReturn(true);
@@ -222,6 +277,7 @@ class HederaTokenStoreTest {
 		given(properties.maxTokensPerAccount()).willReturn(MAX_TOKENS_PER_ACCOUNT);
 		given(properties.maxTokenSymbolUtf8Bytes()).willReturn(MAX_TOKEN_SYMBOL_UTF8_BYTES);
 		given(properties.maxTokenNameUtf8Bytes()).willReturn(MAX_TOKEN_NAME_UTF8_BYTES);
+		given(properties.maxCustomFeesAllowed()).willReturn(maxCustomFees);
 
 		subject = new HederaTokenStore(ids, TEST_VALIDATOR, properties, () -> tokens, tokenRelsLedger);
 		subject.setAccountsLedger(accountsLedger);
@@ -1529,6 +1585,91 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	void rejectsTooManyFeeSchedules() {
+		given(properties.maxCustomFeesAllowed()).willReturn(1);
+
+		// given:
+		var req = fullyValidAttempt().build();
+
+		// when:
+		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		// expect:
+		assertEquals(CUSTOM_FEES_LIST_TOO_LONG, result.getStatus());
+		assertTrue(result.getCreated().isEmpty());
+	}
+
+	@Test
+	void rejectsUnderspecifiedFeeSchedules() {
+		// given:
+		var req = fullyValidAttempt().setCustomFees(grpcUnderspecifiedCustomFees).build();
+
+		// when:
+		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		// expect:
+		assertEquals(CUSTOM_FEE_NOT_FULLY_SPECIFIED, result.getStatus());
+		assertTrue(result.getCreated().isEmpty());
+	}
+
+	@Test
+	void rejectsInvalidFeeCollector() {
+		given(accountsLedger.exists(anotherFeeCollector)).willReturn(false);
+
+		// given:
+		var req = fullyValidAttempt().build();
+
+		// when:
+		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		// expect:
+		assertEquals(INVALID_CUSTOM_FEE_COLLECTOR, result.getStatus());
+		assertTrue(result.getCreated().isEmpty());
+	}
+
+	@Test
+	void rejectsMissingTokenDenomination() {
+		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
+
+		// given:
+		var req = fullyValidAttempt().build();
+
+		// when:
+		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		// expect:
+		assertEquals(INVALID_TOKEN_ID_IN_CUSTOM_FEES, result.getStatus());
+		assertTrue(result.getCreated().isEmpty());
+	}
+
+	@Test
+	void rejectsUnassociatedFeeCollector() {
+		given(tokenRelsLedger.exists(anotherFeeCollectorMisc)).willReturn(false);
+
+		// given:
+		var req = fullyValidAttempt().build();
+
+		// when:
+		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		// expect:
+		assertEquals(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR, result.getStatus());
+		assertTrue(result.getCreated().isEmpty());
+	}
+
+	@Test
+	void rejectsInvalidFractionInFractionalFee() {
+		var req = fullyValidAttempt().setCustomFees(grpcZeroDenomFractionCustomFees).build();
+
+		// when:
+		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		// expect:
+		assertEquals(FRACTION_DIVIDES_BY_ZERO, result.getStatus());
+		assertTrue(result.getCreated().isEmpty());
+	}
+
+	@Test
 	void happyPathWorksWithAutoRenew() {
 		// setup:
 		var expected = new MerkleToken(
@@ -1548,6 +1689,7 @@ class HederaTokenStoreTest {
 		expected.setWipeKey(MISC_ACCOUNT_KT.asJKeyUnchecked());
 		expected.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked());
 		expected.setMemo(memo);
+		expected.setFeeSchedule(customFees);
 
 		// given:
 		var req = fullyValidAttempt()
@@ -1587,7 +1729,7 @@ class HederaTokenStoreTest {
 		expected.setMemo(memo);
 
 		// given:
-		var req = fullyValidAttempt().build();
+		var req = fullyValidAttempt().clearCustomFees().build();
 
 		// when:
 		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
@@ -1650,6 +1792,7 @@ class HederaTokenStoreTest {
 	void allowsZeroInitialSupplyAndDecimals() {
 		// given:
 		var req = fullyValidAttempt()
+				.clearCustomFees()
 				.setInitialSupply(0L)
 				.setDecimals(0)
 				.build();
@@ -1665,6 +1808,7 @@ class HederaTokenStoreTest {
 	void allowsToCreateTokenWithTheBiggestAmountInLong() {
 		// given:
 		var req = fullyValidAttempt()
+				.clearCustomFees()
 				.setInitialSupply(9)
 				.setDecimals(18)
 				.build();
@@ -1680,6 +1824,7 @@ class HederaTokenStoreTest {
 	void forcesToTrueAccountsKycGrantedByDefaultWithoutKycKey() {
 		// given:
 		var req = fullyValidAttempt()
+				.clearCustomFees()
 				.clearKycKey()
 				.build();
 
@@ -1705,7 +1850,8 @@ class HederaTokenStoreTest {
 				.setInitialSupply(totalSupply)
 				.setTreasury(treasury)
 				.setDecimals(decimals)
-				.setFreezeDefault(freezeDefault);
+				.setFreezeDefault(freezeDefault)
+				.setCustomFees(grpcCustomFees);
 	}
 
 	private Duration enduring(long secs) {

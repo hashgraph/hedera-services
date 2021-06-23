@@ -91,6 +91,103 @@ class CustomFeeTest {
 	}
 
 	@Test
+	void grpcReprWorksForFixedHbar() {
+		// setup:
+		final var expected = CustomFeesOuterClass.CustomFee.newBuilder()
+				.setFeeCollector(feeCollector.toGrpcAccountId())
+				.setFixedFee(CustomFeesOuterClass.FixedFee.newBuilder()
+						.setUnitsToCollect(fixedUnitsToCollect)
+				).build();
+
+		// given:
+		final var hbarFee = CustomFee.fixedFee(fixedUnitsToCollect, null, feeCollector);
+
+		// when:
+		final var actual = hbarFee.asGrpc();
+
+		// then:
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	void grpcReprWorksForFixedHts() {
+		final var grpcDenom = IdUtils.asToken("1.2.3");
+
+		// setup:
+		final var expected = CustomFeesOuterClass.CustomFee.newBuilder()
+				.setFeeCollector(feeCollector.toGrpcAccountId())
+				.setFixedFee(CustomFeesOuterClass.FixedFee.newBuilder()
+						.setTokenId(grpcDenom)
+						.setUnitsToCollect(fixedUnitsToCollect)
+				).build();
+
+		// given:
+		final var htsFee = CustomFee.fixedFee(fixedUnitsToCollect, EntityId.fromGrpcTokenId(grpcDenom), feeCollector);
+
+		// when:
+		final var actual = htsFee.asGrpc();
+
+		// then:
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	void grpcReprWorksForFractional() {
+		// setup:
+		final var expected = CustomFeesOuterClass.CustomFee.newBuilder()
+				.setFeeCollector(feeCollector.toGrpcAccountId())
+				.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
+						.setFractionOfUnitsToCollect(Fraction.newBuilder()
+								.setNumerator(validNumerator)
+								.setDenominator(validDenominator))
+						.setMinimumUnitsToCollect(minimumUnitsToCollect)
+						.setMaximumUnitsToCollect(UInt64Value.newBuilder()
+								.setValue(maximumUnitsToCollect))
+				).build();
+
+		// given:
+		final var fractionalFee = CustomFee.fractionalFee(
+				validNumerator,
+				validDenominator,
+				minimumUnitsToCollect,
+				maximumUnitsToCollect,
+				feeCollector);
+
+		// when:
+		final var actual = fractionalFee.asGrpc();
+
+		// then:
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	void grpcReprWorksForFractionalNoMax() {
+		// setup:
+		final var expected = CustomFeesOuterClass.CustomFee.newBuilder()
+				.setFeeCollector(feeCollector.toGrpcAccountId())
+				.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
+						.setFractionOfUnitsToCollect(Fraction.newBuilder()
+								.setNumerator(validNumerator)
+								.setDenominator(validDenominator))
+						.setMinimumUnitsToCollect(minimumUnitsToCollect)
+				).build();
+
+		// given:
+		final var fractionalFee = CustomFee.fractionalFee(
+				validNumerator,
+				validDenominator,
+				minimumUnitsToCollect,
+				Long.MAX_VALUE,
+				feeCollector);
+
+		// when:
+		final var actual = fractionalFee.asGrpc();
+
+		// then:
+		assertEquals(expected, actual);
+	}
+
+	@Test
 	void grpcConversionWorksForFractional() {
 		// setup:
 		final var expectedExplicitMaxSubject = CustomFee.fractionalFee(

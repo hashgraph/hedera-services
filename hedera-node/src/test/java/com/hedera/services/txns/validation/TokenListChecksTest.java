@@ -34,7 +34,7 @@ import static org.mockito.BDDMockito.mock;
 
 class TokenListChecksTest {
 	@Test
-	public void permitsAdminKeyRemoval() {
+	void permitsAdminKeyRemoval() {
 		// setup:
 		Predicate<Key> adminKeyRemoval = mock(Predicate.class);
 		TokenListChecks.ADMIN_KEY_REMOVAL = adminKeyRemoval;
@@ -44,6 +44,7 @@ class TokenListChecksTest {
 		// when:
 		var validity = TokenListChecks.checkKeys(
 				true, Key.getDefaultInstance(),
+				false, Key.getDefaultInstance(),
 				false, Key.getDefaultInstance(),
 				false, Key.getDefaultInstance(),
 				false, Key.getDefaultInstance(),
