@@ -58,6 +58,9 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fix
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.incompleteCustomFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHbarFeeInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHtsFeeInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fractionalFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
@@ -603,6 +606,20 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 
 		final var customFeeKey = "antique";
 
+		final var newHbarAmount = 17_234L;
+		final var newHtsAmount = 27_345L;
+		final var newNumerator = 17;
+		final var newDenominator = 107;
+		final var newMinimumToCollect = 57;
+		final var newMaximumToCollect = 507;
+
+		final var newFeeDenom = "newDemon";
+		final var newHbarCollector = "newHbarFee";
+		final var newHtsCollector = "newDemonFee";
+		final var newTokenCollector = "newFractionalFee";
+
+		final var newCustomFeeKey = "modern";
+
 		return defaultFailingHapiSpec("OnlyValidCustomFeeScheduleCanBeUpdated")
 				.given(
 						newKeyNamed(customFeeKey),
@@ -651,9 +668,30 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						tokenUpdate(token)
 								.treasury(tokenCollector)
 								.withCustom(incompleteCustomFee(hbarCollector))
-								.hasKnownStatus(CUSTOM_FEE_NOT_FULLY_SPECIFIED)
+								.hasKnownStatus(CUSTOM_FEE_NOT_FULLY_SPECIFIED),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(GENESIS)
+								.overridingProps(Map.of("tokens.maxCustomFeesAllowed", "10")),
+						tokenUpdate(token)
+								.treasury(newTokenCollector)
+								.customFeeKey(newCustomFeeKey)
+								.withCustom(fixedHbarFee(newHbarAmount, newHbarCollector))
+								.withCustom(fixedHtsFee(newHtsAmount, newFeeDenom, newHtsCollector))
+								.withCustom(fractionalFee(
+										newNumerator, newDenominator,
+										newMinimumToCollect, OptionalLong.of(newMaximumToCollect),
+										newTokenCollector))
 						)
-				.then();
+				.then(
+						getTokenInfo(token)
+								.hasCustomFeeKey(newCustomFeeKey)
+								.hasCustom(fixedHbarFeeInSchedule(newHbarAmount, newHbarCollector))
+								.hasCustom(fixedHtsFeeInSchedule(newHtsAmount, newFeeDenom, newHtsCollector))
+								.hasCustom(fractionalFeeInSchedule(
+										newNumerator, newDenominator,
+										newMinimumToCollect, OptionalLong.of(newMaximumToCollect),
+										newTokenCollector))
+				);
 	}
 
 	@Override
