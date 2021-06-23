@@ -50,6 +50,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 
 class TokenFreezeTransitionLogicTest {
 	private long tokenNum = 12345L;
@@ -93,6 +94,7 @@ class TokenFreezeTransitionLogicTest {
 
 		// verify:
 		assertFailsWith(() -> subject.doStateTransition(), TOKEN_HAS_NO_FREEZE_KEY);
+		verify(tokenStore, never()).persistTokenRelationship(tokenRelationship);
 	}
 
 	@Test
@@ -106,6 +108,7 @@ class TokenFreezeTransitionLogicTest {
 
 		// then:
 		verify(tokenRelationship).updateForzen(true);
+		verify(tokenStore).persistTokenRelationship(tokenRelationship);
 	}
 
 	@Test
