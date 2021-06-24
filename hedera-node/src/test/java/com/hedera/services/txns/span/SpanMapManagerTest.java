@@ -27,6 +27,7 @@ import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.AssessedCustomFee;
 import com.hedera.services.state.submerkle.CustomFee;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.utils.TxnAccessor;
@@ -47,7 +48,6 @@ import java.util.Map;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -55,7 +55,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SpanMapManagerTest {
@@ -67,19 +66,20 @@ class SpanMapManagerTest {
 	private final ImpliedTransfers someOtherImpliedXfers = ImpliedTransfers.invalid(
 			maxHbarAdjusts, maxTokenAdjusts + 1, ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
 
-	private final EntityId customFeeToken = new EntityId(0, 0, 123);
-	private final EntityId customFeeCollector = new EntityId(0, 0, 124);
-	final List<Pair<EntityId, List<CustomFee>>> entityCustomFees = List.of(
+	private final Id customFeeToken = new Id(0, 0, 123);
+	private final Id customFeeCollector = new Id(0, 0, 124);
+	final List<Pair<Id, List<CustomFee>>> entityCustomFees = List.of(
 			Pair.of(customFeeToken, new ArrayList<>()));
-	final List<Pair<EntityId, List<CustomFee>>> newCustomFeeChanges = List.of(
-			Pair.of(customFeeToken, List.of(CustomFee.fixedFee(10L, customFeeToken, customFeeCollector))));
+	final List<Pair<Id, List<CustomFee>>> newCustomFeeChanges = List.of(
+			Pair.of(customFeeToken, List.of(CustomFee.fixedFee(10L, customFeeToken.asEntityId(),
+					customFeeCollector.asEntityId()))));
 	private final List<AssessedCustomFee> assessedCustomFees = List.of(
-			new AssessedCustomFee(customFeeCollector, customFeeToken, 123L));
+			new AssessedCustomFee(customFeeCollector.asEntityId(), customFeeToken.asEntityId(), 123L));
 
 	private final AccountID acctID = asAccount("1.2.3");
 	private final EntityId tokenID = new EntityId(4, 6, 6);
 	private final BalanceChange hbarChange = IdUtils.hbarChange(acctID, 1_000L);
-	private final BalanceChange tokenChange = IdUtils.tokenChange(tokenID, acctID, 2_000L);
+	private final BalanceChange tokenChange = IdUtils.tokenChange(tokenID.asId(), acctID, 2_000L);
 	private final List<BalanceChange> balanceChanges = List.of( hbarChange, tokenChange);
 
 	private final ImpliedTransfers validImpliedTransfers = ImpliedTransfers.valid(

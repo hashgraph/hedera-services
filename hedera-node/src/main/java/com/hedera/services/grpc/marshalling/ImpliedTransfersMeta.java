@@ -23,7 +23,7 @@ package com.hedera.services.grpc.marshalling;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.submerkle.CustomFee;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.SwirldDualState;
@@ -52,13 +52,13 @@ public class ImpliedTransfersMeta {
 	private final int maxExplicitHbarAdjusts;
 	private final int maxExplicitTokenAdjusts;
 	private final ResponseCodeEnum code;
-	private final List<Pair<EntityId, List<CustomFee>>> customFeeSchedulesUsedInMarshal;
+	private final List<Pair<Id, List<CustomFee>>> customFeeSchedulesUsedInMarshal;
 
 	public ImpliedTransfersMeta(
 			int maxExplicitHbarAdjusts,
 			int maxExplicitTokenAdjusts,
 			ResponseCodeEnum code,
-			List<Pair<EntityId, List<CustomFee>>> customFeeSchedulesUsedInMarshal
+			List<Pair<Id, List<CustomFee>>> customFeeSchedulesUsedInMarshal
 	) {
 		this.code = code;
 		this.maxExplicitHbarAdjusts = maxExplicitHbarAdjusts;
@@ -74,7 +74,7 @@ public class ImpliedTransfersMeta {
 		}
 		for (var pair : customFeeSchedulesUsedInMarshal) {
 			var customFees = pair.getValue();
-			var newCustomFees = customFeeSchedules.lookupScheduleFor(pair.getKey());
+			var newCustomFees = customFeeSchedules.lookupScheduleFor(pair.getKey().asEntityId());
 			if (!customFees.equals(newCustomFees)) {
 				return false;
 			}

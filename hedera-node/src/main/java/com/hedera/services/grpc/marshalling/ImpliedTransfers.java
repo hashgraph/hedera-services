@@ -24,7 +24,7 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.AssessedCustomFee;
 import com.hedera.services.state.submerkle.CustomFee;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -45,11 +45,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class ImpliedTransfers {
 	private final ImpliedTransfersMeta meta;
 	private final List<BalanceChange> changes;
-	private final List<Pair<EntityId, List<CustomFee>>> involvedTokenFeeSchedules;
+	private final List<Pair<Id, List<CustomFee>>> involvedTokenFeeSchedules;
 	private final List<AssessedCustomFee> assessedCustomFees;
 
 	private ImpliedTransfers(ImpliedTransfersMeta meta, List<BalanceChange> changes,
-			List<Pair<EntityId, List<CustomFee>>> entityCustomFees,
+			List<Pair<Id, List<CustomFee>>> entityCustomFees,
 			List<AssessedCustomFee> assessedCustomFees) {
 		this.meta = meta;
 		this.changes = changes;
@@ -61,7 +61,7 @@ public class ImpliedTransfers {
 			int maxHbarAdjusts,
 			int maxTokenAdjusts,
 			List<BalanceChange> changes,
-			List<Pair<EntityId, List<CustomFee>>> entityCustomFees,
+			List<Pair<Id, List<CustomFee>>> entityCustomFees,
 			List<AssessedCustomFee> assessedCustomFees
 	) {
 		final var meta = new ImpliedTransfersMeta(maxHbarAdjusts, maxTokenAdjusts, OK, entityCustomFees);
@@ -85,7 +85,7 @@ public class ImpliedTransfers {
 		return changes;
 	}
 
-	public List<Pair<EntityId, List<CustomFee>>> getInvolvedTokenFeeSchedules() {
+	public List<Pair<Id, List<CustomFee>>> getInvolvedTokenFeeSchedules() {
 		return involvedTokenFeeSchedules;
 	}
 

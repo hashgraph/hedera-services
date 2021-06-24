@@ -9,9 +9,9 @@ package com.hedera.services.ledger;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,7 +20,7 @@ package com.hedera.services.ledger;
  * ‍
  */
 
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.models.Id;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.junit.jupiter.api.Test;
@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class BalanceChangeTest {
 	private final AccountID a = asAccount("1.2.3");
 	private final long delta = -1_234L;
-	private final EntityId t = new EntityId(1, 2, 3);
+	private final Id t = new Id(1, 2, 3);
 
 	@Test
 	void objectContractSanityChecks() {
@@ -44,9 +44,10 @@ class BalanceChangeTest {
 		final var hbarChange = IdUtils.hbarChange(a, delta);
 		final var tokenChange = IdUtils.tokenChange(t, a, delta);
 		// and:
-		final var hbarRepr = "BalanceChange{token=ℏ, account=EntityId{shard=1, realm=2, num=3}, units=-1234}";
-		final var tokenRepr = "BalanceChange{token=EntityId{shard=1, realm=2, num=3}, " +
-				"account=EntityId{shard=1, realm=2, num=3}, units=-1234}";
+		final var hbarRepr = "BalanceChange{token=ℏ, account=Id{shard=1, realm=2, num=3}, units=-1234, " +
+				"codeForInsufficientBalance=INSUFFICIENT_ACCOUNT_BALANCE}";
+		final var tokenRepr = "BalanceChange{token=Id{shard=1, realm=2, num=3}, account=Id{shard=1, realm=2, num=3}, " +
+				"units=-1234, codeForInsufficientBalance=INSUFFICIENT_TOKEN_BALANCE}";
 
 		// expect:
 		assertNotEquals(hbarChange, tokenChange);
@@ -57,7 +58,7 @@ class BalanceChangeTest {
 		// and:
 		assertSame(a, hbarChange.accountId());
 		assertEquals(delta, hbarChange.units());
-		assertEquals(t.toGrpcTokenId(), tokenChange.tokenId());
+		assertEquals(t.asGrpcToken(), tokenChange.tokenId());
 	}
 
 	@Test

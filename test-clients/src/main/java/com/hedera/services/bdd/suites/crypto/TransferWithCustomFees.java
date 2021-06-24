@@ -88,7 +88,7 @@ public class TransferWithCustomFees extends HapiApiSuite {
 						tokenCreate(token)
 								.treasury(tokenOwner)
 								.initialSupply(tokenTotal)
-								.customFeeKey(customFeeKey)
+//								.customFeeKey(customFeeKey)
 								.withCustom(fixedHbarFee(hbarFee, hbarCollector)),
 
 						tokenAssociate(tokenReceiver, token)

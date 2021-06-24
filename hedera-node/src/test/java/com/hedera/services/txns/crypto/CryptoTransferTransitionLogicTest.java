@@ -26,9 +26,9 @@ import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
-import com.hedera.services.state.submerkle.CustomFee;
 import com.hedera.services.state.submerkle.AssessedCustomFee;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.CustomFee;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -156,19 +156,19 @@ class CryptoTransferTransitionLogicTest {
 	@Test
 	void verifyIfAssessedCustomFeesSet() {
 		// setup :
-		final var a = EntityId.fromGrpcAccountId(asAccount("1.2.3"));
-		final var b = EntityId.fromGrpcAccountId(asAccount("2.3.4"));
-		final var c = EntityId.fromGrpcTokenId(asToken("4.5.6"));
+		final var a = Id.fromGrpcAccount(asAccount("1.2.3"));
+		final var b = Id.fromGrpcAccount(asAccount("2.3.4"));
+		final var c = Id.fromGrpcToken(asToken("4.5.6"));
 
 		// and :
 		final var customFeesBalanceChange = List.of(
-				new AssessedCustomFee(a, 10L));
-		final var customFee = List.of(CustomFee.fixedFee(20L, null, a));
-		final List<Pair<EntityId, List<CustomFee>>> customFees = List.of(Pair.of(c, customFee));
+				new AssessedCustomFee(a.asEntityId(), 10L));
+		final var customFee = List.of(CustomFee.fixedFee(20L, null, a.asEntityId()));
+		final List<Pair<Id, List<CustomFee>>> customFees = List.of(Pair.of(c, customFee));
 		final var impliedTransfers = ImpliedTransfers.valid(
 				maxHbarAdjusts, maxTokenAdjusts, List.of(
-						hbarChange(a.toGrpcAccountId(), +100),
-						hbarChange(b.toGrpcAccountId(), -100)
+						hbarChange(a.asGrpcAccount(), +100),
+						hbarChange(b.asGrpcAccount(), -100)
 				),
 				customFees,
 				customFeesBalanceChange);
