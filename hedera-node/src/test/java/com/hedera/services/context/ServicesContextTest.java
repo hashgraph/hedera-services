@@ -306,13 +306,13 @@ public class ServicesContextTest {
 	@Test
 	void queryableUniqueTokenAssociationsReturnsProperReference() {
 		var subject = new ServicesContext(nodeId, platform, state, propertySources);
-		compareFCOTMR(mock(FCOneToManyRelation.class), subject.queryableUniqueTokenAssociations().get());
+		compareFCOTMR(subject.uniqueTokenAssociations(), subject.queryableUniqueTokenAssociations().get());
 	}
 
 	@Test
 	void queryableUniqueTokenAccountOwnershipsReturnsProperReference() {
 		var subject = new ServicesContext(nodeId, platform, state, propertySources);
-		compareFCOTMR(mock(FCOneToManyRelation.class), subject.queryableUniqueTokenAccountOwnerships().get());
+		compareFCOTMR(subject.uniqueOwnershipAssociations(), subject.queryableUniqueTokenAccountOwnerships().get());
 	}
 
 	@Test
