@@ -89,7 +89,7 @@ class SpanMapManagerTest {
 
 	private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
 
-	private CryptoTransferMeta xferMeta = new CryptoTransferMeta(1, 0, 0 ,0);
+	private CryptoTransferMeta xferMeta = new CryptoTransferMeta(1, 1, 1);
 
 	private Map<String, Object> span = new HashMap<>();
 
@@ -109,6 +109,7 @@ class SpanMapManagerTest {
 	@BeforeEach
 	void setUp() {
 		subject = new SpanMapManager(impliedTransfersMarshal, dynamicProperties, customFeeSchedules);
+		xferMeta.setCustomFeeTokenTransfers(1);
 	}
 
 	@Test
@@ -135,14 +136,15 @@ class SpanMapManagerTest {
 		given(accessor.availXferUsageMeta()).willReturn(xferMeta);
 		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), accessor.getPayer()))
 				.willReturn(mockImpliedTransfers);
-		given(mockImpliedTransfers.getAllBalanceChanges()).willReturn(balanceChanges);
+//		given(mockImpliedTransfers.getAllBalanceChanges()).willReturn(balanceChanges);
 
 		// when:
 		subject.expandSpan(accessor);
 
 		// then:
-		assertEquals(1, xferMeta.getTotalTokensInvolved());
-		assertEquals(1, xferMeta.getTotalHbarTransfers());
+		assertEquals(1, xferMeta.getNumTokenTransfers());
+		assertEquals(1, xferMeta.getNumTokensInvolved());
+		assertEquals(0, xferMeta.getCustomFeeHbarTransfers());
 	}
 
 	@Test

@@ -24,6 +24,8 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.state.submerkle.AssessedCustomFee;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -94,21 +96,21 @@ public class SpanMapManager {
 
 		final var xferMeta = accessor.availXferUsageMeta();
 
-		List<BalanceChange> balanceChanges = impliedTransfers.getAllBalanceChanges();
-		var totalTokenTransfers = 0;
-		var totalHbarTransfers = 0;
-		Set<TokenID> tokenIDset = new HashSet<>();
-		for(BalanceChange bc : balanceChanges) {
-			if(bc.isForHbar()) {
-				totalHbarTransfers++;
+		List<AssessedCustomFee> assessedCustomFees = impliedTransfers.getAssessedCustomFees();
+		var customFeeTokenTransfers = 0;
+		var customFeeHbarTransfers = 0;
+		Set<EntityId> tokenIDset = new HashSet<>();
+		for(AssessedCustomFee acf : assessedCustomFees) {
+			if(acf.isForHbar()) {
+				customFeeHbarTransfers++;
 			} else {
-				totalTokenTransfers++;
-				tokenIDset.add(bc.tokenId());
+				customFeeTokenTransfers++;
+				tokenIDset.add(acf.token());
 			}
 		}
-		xferMeta.setTotalTokensInvolved(tokenIDset.size());
-		xferMeta.setTotalTokenTransfers(totalTokenTransfers);
-		xferMeta.setTotalHbarTransfers(totalHbarTransfers);
+		xferMeta.setCustomFeeTokenTransfers(customFeeTokenTransfers);
+		xferMeta.setCustomFeeTokensInvolved(tokenIDset.size());
+		xferMeta.setCustomFeeTokenTransfers(customFeeHbarTransfers);
 
 		spanMapAccessor.setImpliedTransfers(accessor, impliedTransfers);
 	}

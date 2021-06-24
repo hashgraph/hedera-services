@@ -35,6 +35,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 
@@ -54,7 +55,6 @@ public class TransferWithCustomFees extends HapiApiSuite {
 	}
 
 	public HapiApiSpec transferWithCustomFeeScheduleHappyPath() {
-		final var hbarAmount = 1_000_000L;
 		final var hbarFee = 1_000L;
 		final var tokenTotal = 1_000L;
 		final var htsFee = 100L;
@@ -77,7 +77,7 @@ public class TransferWithCustomFees extends HapiApiSuite {
 						cryptoCreate(tokenReceiver),
 
 						cryptoCreate(tokenOwner)
-								.balance(hbarAmount),
+								.balance(ONE_MILLION_HBARS),
 
 						tokenCreate(feeDenom)
 								.treasury(tokenOwner)
@@ -87,8 +87,8 @@ public class TransferWithCustomFees extends HapiApiSuite {
 
 						tokenCreate(token)
 								.treasury(tokenOwner)
+								.adminKey(GENESIS)
 								.initialSupply(tokenTotal)
-//								.customFeeKey(customFeeKey)
 								.withCustom(fixedHbarFee(hbarFee, hbarCollector)),
 
 						tokenAssociate(tokenReceiver, token)

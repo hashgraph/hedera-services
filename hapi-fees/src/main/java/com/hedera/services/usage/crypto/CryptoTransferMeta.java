@@ -23,58 +23,60 @@ package com.hedera.services.usage.crypto;
 public class CryptoTransferMeta {
 	private int tokenMultiplier = 1;
 
-	private int totalTokensInvolved;
-	private int totalTokenTransfers;
-	private int totalHbarTransfers;
+	private final int numTokensInvolved;
+	private final int numTokenTransfers;
 
-	public CryptoTransferMeta(int tokenMultiplier, int totalTokensInvolved, int totalTokenTransfers) {
+	// Short term solution to not cause existing fee calculation to fail
+	private int customFeeTokensInvolved;
+	private int customFeeHbarTransfers;
+	private int customFeeTokenTransfers;
+
+	public CryptoTransferMeta(int tokenMultiplier, int numTokensInvolved, int numTokenTransfers) {
 		this.tokenMultiplier = tokenMultiplier;
-		this.totalTokensInvolved = totalTokensInvolved;
-		this.totalTokenTransfers = totalTokenTransfers;
-		this.totalHbarTransfers = 0;
+		this.numTokensInvolved = numTokensInvolved;
+		this.numTokenTransfers = numTokenTransfers;
 	}
 
-	public CryptoTransferMeta(int totalTokenInvolved, int totalTokenTransfers) {
-		this.totalTokensInvolved = totalTokenInvolved;
-		this.totalTokenTransfers = totalTokenTransfers;
-		this.totalHbarTransfers = 0;
-	}
-
-	public CryptoTransferMeta(int tokenMultiplier, int totalTokenInvolved, int totalTokenTransfers, int totalHbarTransfers) {
-		this.tokenMultiplier = tokenMultiplier;
-		this.totalTokensInvolved = totalTokenInvolved;
-		this.totalTokenTransfers = totalTokenTransfers;
-		this.totalHbarTransfers = totalHbarTransfers;
+	public CryptoTransferMeta(int numTokensInvolved, int numTokenTransfers) {
+		this.numTokensInvolved = numTokensInvolved;
+		this.numTokenTransfers = numTokenTransfers;
 	}
 
 	public int getTokenMultiplier() {
 		return tokenMultiplier;
 	}
 
-	public int getTotalTokensInvolved() {
-		return totalTokensInvolved;
+	public int getNumTokensInvolved() {
+		return numTokensInvolved;
 	}
 
-	public int getTotalTokenTransfers() {
-		return totalTokenTransfers;
+	public int getNumTokenTransfers() {
+		return numTokenTransfers;
 	}
-
-	public int getTotalHbarTransfers() {
-		return totalHbarTransfers;
-	}
-
-	public void setTotalTokensInvolved(final int totalTokenInvolved) {
-		this.totalTokensInvolved = totalTokenInvolved;
-	}
-
-	public void setTotalTokenTransfers(final int totalTokenTransfers) {
-		this.totalTokenTransfers = totalTokenTransfers;
-	}
-	public void setTotalHbarTransfers(final int totalHbarTransfers) {
-		this.totalHbarTransfers = totalHbarTransfers;
-	}
-
 	public void setTokenMultiplier(int tokenMultiplier) {
 		this.tokenMultiplier = tokenMultiplier;
+	}
+
+	public void setCustomFeeTokensInvolved(final int customFeeTokensInvolved) {
+		this.customFeeTokensInvolved = customFeeTokensInvolved;
+	}
+
+	public int getCustomFeeTokensInvolved() {
+		return customFeeTokensInvolved;
+	}
+
+	public void setCustomFeeTokenTransfers(final int customFeeTokenTransfers) {
+		this.customFeeTokenTransfers = customFeeTokenTransfers;
+	}
+
+	public int getCustomFeeTokenTransfers() {
+		return customFeeTokenTransfers;
+	}
+	public void setCustomFeeHbarTransfers(final int customFeeHbarTransfers) {
+		this.customFeeHbarTransfers = customFeeHbarTransfers;
+	}
+
+	public int getCustomFeeHbarTransfers() {
+		return customFeeHbarTransfers;
 	}
 }

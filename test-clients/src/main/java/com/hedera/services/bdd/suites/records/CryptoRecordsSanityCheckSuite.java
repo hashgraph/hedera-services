@@ -133,10 +133,12 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
 						cryptoTransfer(tinyBarsFromTo("payer", "receiver", BALANCE / 2))
 								.payingWith("payer")
 								.via("txn1")
+								.fee(ONE_HUNDRED_HBARS)
 								.deferStatusResolution(),
 						cryptoTransfer(tinyBarsFromTo("payer", "receiver", BALANCE / 2))
 								.payingWith("payer")
 								.via("txn2")
+								.fee(ONE_HUNDRED_HBARS)
 								.hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE),
 						sleepFor(1_000L)
 

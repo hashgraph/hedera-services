@@ -179,12 +179,14 @@ public class TokenTransactSpecs extends HapiApiSuite {
 										.between("firstTreasury", "beneficiary")
 						).payingWith("payer")
 								.signedBy("payer", "firstTreasury")
+								.fee(ONE_HUNDRED_HBARS)
 								.hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE),
 						cryptoTransfer(
 								moving(1, A_TOKEN).between("firstTreasury", "beneficiary"),
 								movingHbar(ONE_HUNDRED_HBARS).between("firstTreasury", "beneficiary")
 						).payingWith("payer")
 								.signedBy("payer", "firstTreasury")
+								.fee(ONE_HUNDRED_HBARS)
 								.hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE)
 				);
 	}
@@ -246,6 +248,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								movingHbar(1_000).between("sponsor", "firstTreasury")
 						).payingWith("payer")
 								.signedBy("payer", "firstTreasury", "beneficiary", "sponsor")
+								.fee(ONE_HUNDRED_HBARS)
 								.hasKnownStatus(INVALID_SIGNATURE),
 						cryptoTransfer(
 								moving(100, A_TOKEN).between("firstTreasury", "beneficiary"),
@@ -253,19 +256,24 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								movingHbar(1_000).between("sponsor", "firstTreasury")
 						).payingWith("payer")
 								.signedBy("payer", "firstTreasury", "secondTreasury", "sponsor")
+								.fee(ONE_HUNDRED_HBARS)
 								.hasKnownStatus(INVALID_SIGNATURE),
 						cryptoTransfer(
 								moving(100, A_TOKEN).between("firstTreasury", "beneficiary"),
 								moving(100, B_TOKEN).between("secondTreasury", "beneficiary"),
 								movingHbar(1_000).between("sponsor", "firstTreasury")
 						).payingWith("payer")
+								.fee(ONE_HUNDRED_HBARS)
 								.signedBy("payer", "firstTreasury", "secondTreasury", "beneficiary")
 								.hasKnownStatus(INVALID_SIGNATURE),
 						cryptoTransfer(
 								moving(100, A_TOKEN).between("firstTreasury", "beneficiary"),
 								moving(100, B_TOKEN).between("secondTreasury", "beneficiary"),
-								movingHbar(1_000).between("sponsor", "firstTreasury")
-						).payingWith("payer")
+								movingHbar(1_000).between("sponsor", "firstTreasury"))
+
+								.fee(ONE_HUNDRED_HBARS)
+								.payingWith("payer")
+
 				);
 	}
 
@@ -292,6 +300,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								movingHbar(ONE_HBAR).between("beneficiary", "firstTreasury")
 						).payingWith("payer")
 								.signedBy("firstTreasury", "payer", "beneficiary")
+								.fee(ONE_HUNDRED_HBARS)
 								.via("transactTxn"),
 						getAccountBalance("firstTreasury")
 								.hasTinyBars(changeFromSnapshot("treasuryBefore", +1 * ONE_HBAR))
@@ -324,8 +333,10 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						cryptoTransfer(
 								moving(100, A_TOKEN).between("firstTreasury", "beneficiary"),
 								moving(10, B_TOKEN).between("secondTreasury", "beneficiary"),
-								movingHbar(1).between("beneficiary", "tbd")
-						).hasKnownStatus(ACCOUNT_DELETED)
+								movingHbar(1).between("beneficiary", "tbd"))
+								.fee(ONE_HUNDRED_HBARS)
+								.hasKnownStatus(ACCOUNT_DELETED)
+
 				).then(
 						getAccountBalance("firstTreasury")
 								.logged()

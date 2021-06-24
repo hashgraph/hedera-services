@@ -38,28 +38,56 @@ class CryptoTransferMetaTest {
 
 	@Test
 	void setterP3Works() {
-		// given:
 		final var subject = new CryptoTransferMeta(1, 2, 3);
 
 		// when:
-		subject.setTotalHbarTransfers(10);
-		subject.setTotalTokenTransfers(5);
+		subject.setTokenMultiplier(5);
 
 		// then:
-		assertEquals(10, subject.getTotalHbarTransfers());
-		assertEquals(5, subject.getTotalTokenTransfers());
+		assertEquals(5, subject.getTokenMultiplier());
+		assertEquals(3, subject.getNumTokenTransfers());
+		assertEquals(2, subject.getNumTokensInvolved());
 	}
 
 	@Test
-	void setterP4Works() {
-		// given:
-		final var subject = new CryptoTransferMeta(1, 2, 3,4 );
+	void settersWorks() {
+		final var subject = new CryptoTransferMeta(1, 2, 3);
 
 		// when:
-		subject.setTotalTokensInvolved(1);
+		subject.setCustomFeeHbarTransfers(10);
+		subject.setCustomFeeTokenTransfers(5);
+		subject.setCustomFeeTokensInvolved(2);
 
 		// then:
-		assertEquals(1, subject.getTotalTokensInvolved());
+		assertEquals(2, subject.getCustomFeeTokensInvolved());
+		assertEquals(5, subject.getCustomFeeTokenTransfers());
+		assertEquals(10, subject.getCustomFeeHbarTransfers());
 	}
+
+//	@Test
+//	void setterP3Works() {
+//		// given:
+//		final var subject = new CryptoTransferMeta(1, 2, 3);
+//
+//		// when:
+//		subject.setTotalHbarTransfers(10);
+//		subject.setTotalTokenTransfers(5);
+//
+//		// then:
+//		assertEquals(10, subject.getTotalHbarTransfers());
+//		assertEquals(5, subject.getTotalTokenTransfers());
+//	}
+//
+//	@Test
+//	void setterP4Works() {
+//		// given:
+//		final var subject = new CryptoTransferMeta(1, 2, 3,4 );
+//
+//		// when:
+//		subject.setTotalTokensInvolved(1);
+//
+//		// then:
+//		assertEquals(1, subject.getTotalTokensInvolved());
+//	}
 
 }

@@ -111,42 +111,52 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						tokenAssociate("f", "A", "B", "C"),
 						cryptoTransfer(tinyBarsFromTo("a", "b", 1))
 								.via("pureCrypto")
+								.fee(ONE_HUNDRED_HBARS)
 								.payingWith("a"),
 						cryptoTransfer(moving(1, "A").between("a", "b"))
 								.via("oneTokenTwoAccounts")
+								.fee(ONE_HUNDRED_HBARS)
 								.payingWith("a"),
 						cryptoTransfer(moving(2, "A").distributing("a", "b", "c"))
 								.via("oneTokenThreeAccounts")
+								.fee(ONE_HUNDRED_HBARS)
 								.payingWith("a"),
 						cryptoTransfer(moving(3, "A").distributing("a", "b", "c", "d"))
 								.via("oneTokenFourAccounts")
+								.fee(ONE_HUNDRED_HBARS)
 								.payingWith("a"),
 						cryptoTransfer(moving(4, "A").distributing("a", "b", "c", "d", "e"))
 								.via("oneTokenFiveAccounts")
+								.fee(ONE_HUNDRED_HBARS)
 								.payingWith("a"),
 						cryptoTransfer(moving(5, "A").distributing("a", "b", "c", "d", "e", "f"))
 								.via("oneTokenSixAccounts")
+								.fee(ONE_HUNDRED_HBARS)
 								.payingWith("a"),
 						cryptoTransfer(
 								moving(1, "A").between("a", "c"),
 								moving(1, "B").between("b", "d"))
 								.via("twoTokensFourAccounts")
+								.fee(ONE_HUNDRED_HBARS)
 								.payingWith("a"),
 						cryptoTransfer(
 								moving(1, "A").between("a", "c"),
 								moving(2, "B").distributing("b", "d", "e"))
 								.via("twoTokensFiveAccounts")
+								.fee(ONE_HUNDRED_HBARS)
 								.payingWith("a"),
 						cryptoTransfer(
 								moving(1, "A").between("a", "c"),
 								moving(3, "B").distributing("b", "d", "e", "f"))
 								.via("twoTokensSixAccounts")
+								.fee(ONE_HUNDRED_HBARS)
 								.payingWith("a"),
 						cryptoTransfer(
 								moving(1, "A").between("a", "d"),
 								moving(1, "B").between("b", "e"),
 								moving(1, "C").between("c", "f"))
 								.via("threeTokensSixAccounts")
+								.fee(ONE_HUNDRED_HBARS)
 								.payingWith("a")
 				).then(
 						withOpContext((spec, opLog) -> {
@@ -268,7 +278,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 				).when().then(
 						cryptoTransfer(
 								tinyBarsFromTo("payer", NODE, 1_000_000L)
-						).payingWith("payer").numPayerSigs(14)
+						).payingWith("payer").numPayerSigs(14).fee(ONE_HUNDRED_HBARS)
 				);
 	}
 
@@ -300,6 +310,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								forKey("payer", payerSigs),
 								forKey("receiver", receiverSigs)
 						).hasKnownStatus(SUCCESS)
+						.fee(ONE_HUNDRED_HBARS)
 				);
 	}
 
