@@ -52,6 +52,10 @@ In order to avoid duplication of data, both JSONs support inheritance from `pare
 **NOTE:** For any developer to run tests, a personal Regression JSON should be created with their personal cloud configuration details.
 It should be created under `swirlds-platform/regression/configs/services/suites/personal/GCP-Personal-XXX.json` (XXX is name of the developer)
 
+**NOTE:** `name` field in any Regression JSON should be of limited length. While creating instances timestamp is added to this name and GCP has limitation on the length of the name constructed for creating instances.
+Providing very long `name` will cause failure to create instances.
+
+
 **Example of a Personal JSON**
 ```
 {
