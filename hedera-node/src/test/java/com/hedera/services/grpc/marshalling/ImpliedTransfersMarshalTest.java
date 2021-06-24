@@ -241,12 +241,12 @@ class ImpliedTransfersMarshalTest {
 				"maxExplicitHbarAdjusts=3, maxExplicitTokenAdjusts=4, customFeeSchedulesUsedInMarshal=[]}, " +
 				"changes=[]," +
 				" " +
-				"involvedTokenFeeSchedules=[], assessedCustomFees=[]}";
+				"tokenFeeSchedules=[], assessedCustomFees=[]}";
 		final var twoRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=OK, maxExplicitHbarAdjusts=1, " +
 				"maxExplicitTokenAdjusts=100, customFeeSchedulesUsedInMarshal=[(Id{shard=0, realm=0, num=123},[])]}," +
 				" changes=[BalanceChange{token=Id{shard=1, realm=2, num=3}, account=Id{shard=4, realm=5, num=6}," +
 				" units=7, codeForInsufficientBalance=INSUFFICIENT_TOKEN_BALANCE}], " +
-				"involvedTokenFeeSchedules=[(Id{shard=0, realm=0, num=123},[])], " +
+				"tokenFeeSchedules=[(Id{shard=0, realm=0, num=123},[])], " +
 				"assessedCustomFees=[AssessedCustomFee{token=EntityId{shard=0, realm=0, num=123}, " +
 				"account=EntityId{shard=0, realm=0, num=124}, units=123}]}";
 

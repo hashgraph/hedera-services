@@ -114,7 +114,7 @@ public class ImpliedTransfers {
 		return MoreObjects.toStringHelper(ImpliedTransfers.class)
 				.add("meta", meta)
 				.add("changes", changes)
-				.add("involvedTokenFeeSchedules", tokenFeeSchedules)
+				.add("tokenFeeSchedules", tokenFeeSchedules)
 				.add("assessedCustomFees", assessedCustomFees)
 				.toString();
 	}
