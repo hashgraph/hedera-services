@@ -108,8 +108,8 @@ public class ThrottleBucket {
 	 *
 	 * @param n network size
 	 *
-	 * @return Pair of Deterministic Throttle and List of HederaFunctionality and the count of operations
-	 * required from the throttle.
+	 * @return @return a throttle with 1/n-th the capacity of this bucket, and a list of how many logical
+	 * operations each assigned function will use from the throttle
 	 *
 	 * @throws IllegalStateException if this bucket was constructed with invalid throttle groups
 	 */

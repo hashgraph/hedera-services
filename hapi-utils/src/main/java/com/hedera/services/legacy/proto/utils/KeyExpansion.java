@@ -56,7 +56,7 @@ public class KeyExpansion {
   /**
    * Generates a KeyList key from a list of keys.
    *
-   * @param keys List of Keys
+   * @param keys list of keys
    * @return generated KeyList key
    */
   public static Key genKeyList(List<Key> keys) {
@@ -86,8 +86,8 @@ public class KeyExpansion {
   /**
    * Generates a threshold key from a list of keys.
    *
-   * @param keys List of Keys
-   * @param threshold Threshold
+   * @param keys list of keys
+   * @param threshold threshold
    *
    * @return generated threshold key
    */
@@ -299,9 +299,9 @@ public class KeyExpansion {
   /**
    * Expands a key to a given level of depth, only keys needed for signing are expanded.
    *
-   * @param key Key
-   * @param depth Depth
-   * @param expandedKeys List of Expanded Keys
+   * @param key key
+   * @param depth depth
+   * @param expandedKeys list of expanded keys
    */
   public static void expandKeyMinimum4Signing(Key key, int depth, List<Key> expandedKeys) {
     if (!(key.hasThresholdKey() || key.hasKeyList())) {

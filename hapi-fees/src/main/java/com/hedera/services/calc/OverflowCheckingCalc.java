@@ -60,7 +60,7 @@ public class OverflowCheckingCalc {
 	 * @param rate the exchange rate between ℏ and ¢
 	 * @param multiplier a scale factor determined by congestion pricing
 	 *
-	 * @return Fee Object containing the node, network, and service fees.
+	 * @return fee object containing the node, network, and service fees
 	 * @throws IllegalArgumentException if any step of the calculation overflows
 	 */
 	public FeeObject fees(UsageAccumulator usage, FeeData prices, ExchangeRate rate, long multiplier) {

@@ -54,8 +54,8 @@ public class CommonUtils {
   /**
    * Sleep given seconds.
    *
-   * @param timeInMillis Time to Sleep in Milliseconds
-   * @throws InterruptedException when Thread Sleep Interruption
+   * @param timeInMillis time to sleep in milliseconds
+   * @throws InterruptedException when thread sleep interruption
    */
   public static void napMillis(long timeInMillis) throws InterruptedException {
     Thread.sleep(timeInMillis);
@@ -64,9 +64,9 @@ public class CommonUtils {
   /**
    * Sleep given seconds.
    *
-   * @param timeInSec Time to Sleep in Seconds
+   * @param timeInSec time to sleep in seconds
    *
-   * @throws InterruptedException when Thread Sleep Interruption
+   * @throws InterruptedException when thread sleep interruption
    */
   public static void nap(int timeInSec)  throws InterruptedException {
     Thread.sleep(timeInSec * 1000L);
@@ -83,7 +83,7 @@ public class CommonUtils {
    * @param path the file path to write bytes
    * @param data the byte array data
    *
-   * @throws IOException when Error with IO
+   * @throws IOException when error with IO
    */
   public static void writeToFile(String path, byte[] data) throws IOException {
     writeToFile(path, data, false);
@@ -92,11 +92,11 @@ public class CommonUtils {
   /**
    * Write bytes to a file.
    *
-   * @param path File Write Path
-   * @param data Byte Array Representation of Data to Write
+   * @param path file write path
+   * @param data byte array representation of data to write
    * @param append append to existing file if true
    *
-   * @throws IOException when Error with IO
+   * @throws IOException when error with IO
    */
   public static void writeToFile(String path, byte[] data, boolean append) throws IOException {
     File f = new File(path);
@@ -117,7 +117,7 @@ public class CommonUtils {
    *
    * @param path the file path to write bytes
    * @param data the byte array data
-   * @throws IOException when Error with IO
+   * @throws IOException when error with IO
    */
   public static void writeToFileUTF8(String path, String data) throws IOException {
     byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
@@ -127,10 +127,10 @@ public class CommonUtils {
   /**
    * Write string to a file using UTF_8 encoding.
    *
-   * @param data Data Represented as String
-   * @param path File Write Path
+   * @param data data represented as string
+   * @param path file write path
    * @param append append to existing file if true
-   * @throws IOException when Error with IO
+   * @throws IOException when error with IO
    */
   public static void writeToFileUTF8(String path, String data, boolean append) throws IOException {
     byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
@@ -154,7 +154,7 @@ public class CommonUtils {
    *
    * @param object the Java object to be serialized
    * @return converted bytes
-   * @throws IOException when Error with IO
+   * @throws IOException when error with IO
    */
   public static byte[] convertToBytes(Object object) throws IOException {
     try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -171,7 +171,7 @@ public class CommonUtils {
    * @param length number of bytes to copy
    * @param bytes source byte array
    *
-   * @return Copied Byte Array
+   * @return copied byte array
    */
   public static byte[] copyBytes(int start, int length, byte[] bytes) {
     byte[] rv = new byte[length];
@@ -182,15 +182,15 @@ public class CommonUtils {
   }
 
   /**
-   * Reads a Resource File.
+   * Reads a resource file
    *
    * @param filePath the resource file to be read
    * @param myClass the calling class
-   * @param <T> Type to Read Binary Into
+   * @param <T> type to read binary into
    *
-   * @return Type T from the Binary Input
-   * @throws IOException when Error with IO
-   * @throws URISyntaxException when Invalid URI Syntax
+   * @return type T from the binary input
+   * @throws IOException when error with IO
+   * @throws URISyntaxException when invalid URI syntax
    */
   public static <T> byte[] readBinaryFileAsResource(String filePath, Class<T> myClass)
       throws IOException, URISyntaxException {
@@ -201,10 +201,10 @@ public class CommonUtils {
   /**
    * Generates a human readable string for grpc transaction.
    *
-   * @param grpcTransaction GRPC Transaction
+   * @param grpcTransaction GRPC transaction
    *
    * @return generated readable string
-   * @throws InvalidProtocolBufferException when Protocol Buffer is Invalid
+   * @throws InvalidProtocolBufferException when protocol buffer is invalid
    */
   public static String toReadableString(Transaction grpcTransaction) throws InvalidProtocolBufferException {
     String rv = null;
@@ -221,10 +221,10 @@ public class CommonUtils {
   /**
    * Generates a short human readable string for grpc transaction.
    *
-   * @param grpcTransaction GRPC Transaction
+   * @param grpcTransaction GRPC transaction
    *
    * @return generated readable string
-   * @throws InvalidProtocolBufferException when Protocol Buffer is Invalid
+   * @throws InvalidProtocolBufferException when protocol buffer is invalid
    */
   public static String toReadableTransactionID(
           Transaction grpcTransaction) throws InvalidProtocolBufferException {

@@ -35,8 +35,8 @@ public class SignatureGenerator {
    * @param msgBytes to be signed
    * @param priv private key
    * @return signature in hex format
-   * @throws InvalidKeyException If the key is invalid
-   * @throws SignatureException If there is an error in the signature.
+   * @throws InvalidKeyException if the key is invalid
+   * @throws SignatureException if there is an error in the signature
    */
   public static String signBytes(byte[] msgBytes, PrivateKey priv) throws InvalidKeyException, SignatureException {
     byte[] sigBytes = null;

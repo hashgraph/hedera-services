@@ -48,7 +48,7 @@ public class ProtoCommonUtils {
   /**
    * Gets the current UTC instant.
    *
-   * @return Current UTC Instant.
+   * @return current UTC instant
    */
   public static Instant getCurrentInstantUTC() {
     return Instant.now(Clock.systemUTC());

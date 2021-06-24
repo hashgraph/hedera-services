@@ -52,7 +52,7 @@ public class TransitionLogicLookup {
 	/**
 	 * Returns the {@link TransitionLogic}, if any, relevant to the given txn.
 	 *
-	 * @param function to apply.
+	 * @param function to apply
 	 * @param txn the txn to find logic for.
 	 * @return relevant transition logic, if it exists.
 	 */

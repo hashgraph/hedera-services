@@ -111,23 +111,23 @@ public class RequestBuilder {
   }
 
   /**
-   * Generates a Transaction with a CryptoUpdateTransactionBody Object Pre-Built by Caller.
+   * Generates a transaction with a CryptoUpdateTransactionBody object pre-built by caller
    *
-   * @param accountID Account ID
-   * @param payerAccountNum Payer Account Number
-   * @param payerRealmNum Payer Realm Number
-   * @param payerShardNum Payer Shard Number
-   * @param nodeAccountNum Node Account Number
-   * @param nodeRealmNum Node Realm Number
-   * @param nodeShardNum Node Shard Number
-   * @param transactionFee Transaction Fee
-   * @param startTime Start Time
-   * @param transactionDuration Transaction Duration
-   * @param generateRecord Generate Record Boolean
-   * @param memo Memo
-   * @param cryptoUpdate Crypto Update Transaction Body
+   * @param accountID account ID
+   * @param payerAccountNum payer account number
+   * @param payerRealmNum payer realm number
+   * @param payerShardNum payer shard number
+   * @param nodeAccountNum node account number
+   * @param nodeRealmNum node realm number
+   * @param nodeShardNum node shard number
+   * @param transactionFee transaction fee
+   * @param startTime start time
+   * @param transactionDuration transaction duration
+   * @param generateRecord generate record boolean
+   * @param memo memo
+   * @param cryptoUpdate crypto update transaction body
    *
-   * @return Transaction for Account Update.
+   * @return transaction for account update
    */
   public static Transaction getAccountUpdateRequest(AccountID accountID, Long payerAccountNum,
       Long payerRealmNum,
@@ -290,24 +290,24 @@ public class RequestBuilder {
   }
 
   /**
-   * Builds a File Create Transaction.
+   * Builds a file create transaction
    *
-   * @param payerAccountNum Payer Account Number
-   * @param payerRealmNum Payer Realm Number
-   * @param payerShardNum Payer Shard Number
-   * @param nodeAccountNum Node Account Number
-   * @param nodeRealmNum Node Realm Number
-   * @param nodeShardNum Node Shard Number
-   * @param transactionFee Transaction Fee
-   * @param timestamp Timestamp
-   * @param transactionDuration Transaction Duration
-   * @param generateRecord Generate Record Boolean
-   * @param memo Memo
-   * @param fileData Content of the File
-   * @param fileExpirationTime Expiration for the File
-   * @param waclKeyList WACL Keys
+   * @param payerAccountNum payer account number
+   * @param payerRealmNum payer realm number
+   * @param payerShardNum payer shard number
+   * @param nodeAccountNum node account number
+   * @param nodeRealmNum node realm number
+   * @param nodeShardNum node shard number
+   * @param transactionFee transaction fee
+   * @param timestamp timestamp
+   * @param transactionDuration transaction duration
+   * @param generateRecord generate record boolean
+   * @param memo memo
+   * @param fileData content of the file
+   * @param fileExpirationTime expiration for the file
+   * @param waclKeyList WACL keys
    *
-   * @return Transaction for File Create.
+   * @return transaction for file create
    */
   public static Transaction getFileCreateBuilder(Long payerAccountNum, Long payerRealmNum,
       Long payerShardNum, Long nodeAccountNum, Long nodeRealmNum, Long nodeShardNum,
@@ -329,23 +329,23 @@ public class RequestBuilder {
   }
 
   /**
-   * Builds a File Append Transaction.
+   * Builds a file append transaction
    *
-   * @param payerAccountNum Payer Account Number
-   * @param payerRealmNum Payer Realm Number
-   * @param payerShardNum Payer Shard Number
-   * @param nodeAccountNum Node Account Number
-   * @param nodeRealmNum Node Realm Number
-   * @param nodeShardNum Node Shard Number
-   * @param transactionFee Transaction Fee
-   * @param timestamp Timestamp
-   * @param transactionDuration Transaction Duration
-   * @param generateRecord Generate Record Boolean
-   * @param memo Memo
-   * @param fileData File Data to be Appended
-   * @param fileId File ID or Hash of the Transaction that Created the File
+   * @param payerAccountNum payer account number
+   * @param payerRealmNum payer realm number
+   * @param payerShardNum payer shard number
+   * @param nodeAccountNum node account number
+   * @param nodeRealmNum node realm number
+   * @param nodeShardNum node shard number
+   * @param transactionFee transaction fee
+   * @param timestamp timestamp
+   * @param transactionDuration transaction duration
+   * @param generateRecord generate record boolean
+   * @param memo memo
+   * @param fileData file data to be appended
+   * @param fileId bile ID or hash of the transaction that created the file
    *
-   * @return Transaction for File Append.
+   * @return transaction for file append
    */
   public static Transaction getFileAppendBuilder(Long payerAccountNum, Long payerRealmNum,
       Long payerShardNum,
@@ -367,25 +367,25 @@ public class RequestBuilder {
   }
 
   /**
-   * Builds a File Update Transaction.
+   * Builds a file update transaction
    *
-   * @param payerAccountNum Payer Account Number
-   * @param payerRealmNum Payer Realm Number
-   * @param payerShardNum Payer Shard Number
-   * @param nodeAccountNum Node Account Number
-   * @param nodeRealmNum Node Realm Number
-   * @param nodeShardNum Node Shard Number
-   * @param transactionFee Transaction Fee
-   * @param timestamp Timestamp
-   * @param fileExpTime File Expiration Time
-   * @param transactionDuration Transaction Duration
-   * @param generateRecord Generate Record Boolean
-   * @param memo Memo
-   * @param data Data
-   * @param fid File ID
-   * @param keys Key List
+   * @param payerAccountNum payer account number
+   * @param payerRealmNum payer realm number
+   * @param payerShardNum payer shard number
+   * @param nodeAccountNum node account number
+   * @param nodeRealmNum node realm number
+   * @param nodeShardNum node shard number
+   * @param transactionFee transaction fee
+   * @param timestamp timestamp
+   * @param fileExpTime file expiration time
+   * @param transactionDuration transaction duration
+   * @param generateRecord generate record boolean
+   * @param memo memo
+   * @param data data
+   * @param fid file ID
+   * @param keys key list
    *
-   * @return Transaction for File Update.
+   * @return transaction for file update
    */
   public static Transaction getFileUpdateBuilder(Long payerAccountNum, Long payerRealmNum,
       Long payerShardNum,
@@ -408,22 +408,22 @@ public class RequestBuilder {
   }
 
   /**
-   * Builds a File Deletion Transaction.
+   * Builds a file deletion transaction
    *
-   * @param payerAccountNum Payer Account Number
-   * @param payerRealmNum Payer Realm Number
-   * @param payerShardNum Payer Share Number
-   * @param nodeAccountNum Node Account Number
-   * @param nodeRealmNum Node Realm Number
-   * @param nodeShardNum Node Shard Number
-   * @param transactionFee Transaction Fee
-   * @param timestamp Timestamp
-   * @param transactionDuration Transaction Duration
-   * @param generateRecord Generate Record Boolean
-   * @param memo Memo
+   * @param payerAccountNum payer account number
+   * @param payerRealmNum payer realm number
+   * @param payerShardNum payer share number
+   * @param nodeAccountNum node account number
+   * @param nodeRealmNum node realm number
+   * @param nodeShardNum node shard number
+   * @param transactionFee transaction fee
+   * @param timestamp timestamp
+   * @param transactionDuration transaction duration
+   * @param generateRecord generate record boolean
+   * @param memo memo
    * @param fileID file ID
    *
-   * @return Transaction for File Deletion
+   * @return transaction for file deletion
    */
   public static Transaction getFileDeleteBuilder(Long payerAccountNum, Long payerRealmNum,
       Long payerShardNum,
