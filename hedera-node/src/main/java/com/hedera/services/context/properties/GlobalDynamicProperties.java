@@ -32,6 +32,7 @@ public class GlobalDynamicProperties {
 	private final PropertySource properties;
 
 	private int maxTokensPerAccount;
+	private int maxCustomFeesAllowed;
 	private int maxTokenSymbolUtf8Bytes;
 	private int maxTokenNameUtf8Bytes;
 	private int maxFileSizeKb;
@@ -122,10 +123,15 @@ public class GlobalDynamicProperties {
 		congestionMultipliers = properties.getCongestionMultiplierProperty("fees.percentCongestionMultipliers");
 		feesMinCongestionPeriod = properties.getIntProperty("fees.minCongestionPeriod");
 		ratesMidnightCheckInterval = properties.getLongProperty("rates.midnightCheckInterval");
+		maxCustomFeesAllowed = properties.getIntProperty("tokens.maxCustomFeesAllowed");
 	}
 
 	public int maxTokensPerAccount() {
 		return maxTokensPerAccount;
+	}
+
+	public int maxCustomFeesAllowed() {
+		return maxCustomFeesAllowed;
 	}
 
 	public int maxTokenSymbolUtf8Bytes() {

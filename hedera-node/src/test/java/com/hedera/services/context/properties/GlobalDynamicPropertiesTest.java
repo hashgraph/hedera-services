@@ -99,6 +99,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(29, subject.feesMinCongestionPeriod());
 		assertEquals(31, subject.autoRenewNumberOfEntitiesToScan());
 		assertEquals(32, subject.autoRenewMaxNumberOfEntitiesToRenewOrDelete());
+		assertEquals(35, subject.maxCustomFeesAllowed());
 	}
 
 	@Test
@@ -175,6 +176,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(30, subject.feesMinCongestionPeriod());
 		assertEquals(32, subject.autoRenewNumberOfEntitiesToScan());
 		assertEquals(33, subject.autoRenewMaxNumberOfEntitiesToRenewOrDelete());
+		assertEquals(36, subject.maxCustomFeesAllowed());
 	}
 
 	@Test
@@ -248,6 +250,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("autorenew.maxNumberOfEntitiesToRenewOrDelete")).willReturn(i + 31);
 		given(properties.getLongProperty("autorenew.gracePeriod")).willReturn(i + 32L);
 		given(properties.getLongProperty("rates.midnightCheckInterval")).willReturn(i + 33L);
+		given(properties.getIntProperty("tokens.maxCustomFeesAllowed")).willReturn(i + 34);
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {
