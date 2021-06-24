@@ -280,22 +280,6 @@ public class HapiSpecRegistry {
 		put(name + "Freeze", key, Key.class);
 	}
 
-	public void saveCustomFeesKey(String name, Key key) {
-		put(name + "CustomFees", key, Key.class);
-	}
-
-	public Key getCustomFeesKey(String name) {
-		return get(name + "CustomFees", Key.class);
-	}
-
-	public boolean hasCustomFeesKey(String name) {
-		return registry.containsKey(full(name + "CustomFees", Key.class));
-	}
-
-	public void forgetCustomFeesKey(String name) {
-		remove(name + "CustomFees", Key.class);
-	}
-
 	public boolean hasFreezeKey(String name) {
 		return has(name + "Freeze", Key.class);
 	}
