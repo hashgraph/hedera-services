@@ -72,7 +72,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	private Optional<String> name = Optional.empty();
 	private Optional<String> treasury = Optional.empty();
 	private Optional<String> adminKey = Optional.empty();
-	private Optional<String> customFeeKey = Optional.empty();
+	private Optional<String> customFeesKey = Optional.empty();
 	private Optional<Boolean> freezeDefault = Optional.empty();
 	private Optional<String> autoRenewAccount = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> symbolFn = Optional.empty();
@@ -172,8 +172,8 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 		return this;
 	}
 
-	public HapiTokenCreate customFeeKey(String name) {
-		this.customFeeKey = Optional.of(name);
+	public HapiTokenCreate customFeesKey(String name) {
+		this.customFeesKey = Optional.of(name);
 		return this;
 	}
 
@@ -228,7 +228,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 							adminKey.ifPresent(k -> b.setAdminKey(spec.registry().getKey(k)));
 							freezeKey.ifPresent(k -> b.setFreezeKey(spec.registry().getKey(k)));
 							supplyKey.ifPresent(k -> b.setSupplyKey(spec.registry().getKey(k)));
-							customFeeKey.ifPresent(k -> b.setCustomFeesKey(spec.registry().getKey(k)));
+							customFeesKey.ifPresent(k -> b.setCustomFeesKey(spec.registry().getKey(k)));
 							if (autoRenewAccount.isPresent()) {
 								var id = TxnUtils.asId(autoRenewAccount.get(), spec);
 								b.setAutoRenewAccount(id);

@@ -9,9 +9,9 @@ package com.hedera.services.ledger;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -43,7 +43,6 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -67,7 +66,6 @@ import static com.hedera.test.utils.IdUtils.hbarChange;
 import static com.hedera.test.utils.IdUtils.tokenChange;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -76,7 +74,6 @@ import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class LedgerBalanceChangesTest {
-	private final ResponseCodeEnum overrideIbeCode = INSUFFICIENT_PAYER_BALANCE;
 
 	private BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
 	private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingRels = new HashMapBackingTokenRels();
@@ -294,18 +291,18 @@ class LedgerBalanceChangesTest {
 	private List<TokenTransferList> expectedTokenXfers() {
 		return List.of(
 				TokenTransferList.newBuilder()
-						.setToken(asGprcToken(token))
+						.setToken(token.toGrpcTokenId())
 						.addTransfers(aaBuilderWith(bModel, bTokenChange))
 						.addTransfers(aaBuilderWith(cModel, cTokenChange))
 						.build(),
 				TokenTransferList.newBuilder()
-						.setToken(asGprcToken(anotherToken))
+						.setToken(anotherToken.toGrpcTokenId())
 						.addTransfers(aaBuilderWith(aModel, aAnotherTokenChange))
 						.addTransfers(aaBuilderWith(bModel, bAnotherTokenChange))
 						.addTransfers(aaBuilderWith(cModel, cAnotherTokenChange))
 						.build(),
 				TokenTransferList.newBuilder()
-						.setToken(asGprcToken(yetAnotherToken))
+						.setToken(yetAnotherToken.toGrpcTokenId())
 						.addTransfers(aaBuilderWith(aModel, aYetAnotherTokenChange))
 						.addTransfers(aaBuilderWith(bModel, bYetAnotherTokenChange))
 						.build()
@@ -399,23 +396,23 @@ class LedgerBalanceChangesTest {
 
 	private List<BalanceChange> fixtureChanges() {
 		final var ans = List.of(new BalanceChange[] {
-						tokenChange(yetAnotherToken, aModel, aYetAnotherTokenChange),
+						tokenChange(yetAnotherToken.asId(), aModel, aYetAnotherTokenChange),
 						hbarChange(aModel, aHbarChange),
 						hbarChange(bModel, bHbarChange),
-						tokenChange(anotherToken, aModel, aAnotherTokenChange),
-						tokenChange(anotherToken, cModel, cAnotherTokenChange),
+						tokenChange(anotherToken.asId(), aModel, aAnotherTokenChange),
+						tokenChange(anotherToken.asId(), cModel, cAnotherTokenChange),
 						hbarChange(cModel, cHbarChange),
-						tokenChange(token, bModel, bTokenChange),
-						tokenChange(token, cModel, cTokenChange),
-						tokenChange(anotherToken, bModel, bAnotherTokenChange),
-						tokenChange(yetAnotherToken, bModel, bYetAnotherTokenChange),
+						tokenChange(token.asId(), bModel, bTokenChange),
+						tokenChange(token.asId(), cModel, cTokenChange),
+						tokenChange(anotherToken.asId(), bModel, bAnotherTokenChange),
+						tokenChange(yetAnotherToken.asId(), bModel, bYetAnotherTokenChange),
 				}
 		);
 		return ans;
 	}
 
-	private Pair<AccountID, TokenID> rel(AccountID account, Id token) {
-		return Pair.of(account, asGprcToken(token));
+	private Pair<AccountID, TokenID> rel(AccountID account, EntityId token) {
+		return Pair.of(account, token.toGrpcTokenId());
 	}
 
 	private AccountID asGprcAccount(Id id) {
@@ -443,9 +440,9 @@ class LedgerBalanceChangesTest {
 	private final AccountID aModel = asAccount("1.2.3");
 	private final AccountID bModel = asAccount("2.3.4");
 	private final AccountID cModel = asAccount("3.4.5");
-	private final Id token = new Id(0, 0, 75231);
-	private final Id anotherToken = new Id(0, 0, 75232);
-	private final Id yetAnotherToken = new Id(0, 0, 75233);
+	private final EntityId token = new EntityId(0, 0, 75231);
+	private final EntityId anotherToken = new EntityId(0, 0, 75232);
+	private final EntityId yetAnotherToken = new EntityId(0, 0, 75233);
 	private final MerkleEntityId tokenKey = new MerkleEntityId(0, 0, 75231);
 	private final MerkleEntityId anotherTokenKey = new MerkleEntityId(0, 0, 75232);
 	private final MerkleEntityId yetAnotherTokenKey = new MerkleEntityId(0, 0, 75233);

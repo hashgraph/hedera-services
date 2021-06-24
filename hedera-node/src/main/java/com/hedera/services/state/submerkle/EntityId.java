@@ -221,4 +221,8 @@ public class EntityId implements SelfSerializable {
 	public MerkleEntityId asMerkle() {
 		return new MerkleEntityId(shard, realm, num);
 	}
+
+	public Id asId() {
+		return new Id(shard, realm, num);
+	}
 }
