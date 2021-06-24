@@ -90,6 +90,15 @@ public class TokenRelationship {
 		setBalanceTo(balance);
 	}
 
+	/**
+	 * Update the balance of this relationship's ({@code FUNGIBLE_COMMMON}) token
+	 * held by the account after a Wipe operation.
+	 *
+	 * This <b>does</b> change the return value of {@link TokenRelationship#getBalanceChange()}.
+	 *
+	 * @param balance
+	 * 		the updated balance of the relationship
+	 */
 	public void setBalanceAfterWipe(long balance) {
 		setBalanceTo(balance);
 	}
