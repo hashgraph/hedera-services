@@ -25,6 +25,7 @@
     <git-commit-id.version>2.2.4</git-commit-id.version>
     <ant-contrib.version>1.0b3</ant-contrib.version>
     <ant-nodeps.version>1.8.1</ant-nodeps.version>
+    <jmh.version>1.32</jmh.version>
   </properties>
 
   <build>
@@ -370,6 +371,17 @@
           <artifactId>annotations</artifactId>
           <version>12.0</version>
       </dependency>
+    <dependency>
+      <groupId>org.openjdk.jmh</groupId>
+      <artifactId>jmh-core</artifactId>
+      <version>${jmh.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.openjdk.jmh</groupId>
+      <artifactId>jmh-generator-annprocess</artifactId>
+      <version>${jmh.version}</version>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
 
   <repositories>

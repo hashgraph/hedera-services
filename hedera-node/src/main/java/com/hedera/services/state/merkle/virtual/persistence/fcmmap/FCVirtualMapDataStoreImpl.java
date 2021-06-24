@@ -116,9 +116,9 @@ public final class FCVirtualMapDataStoreImpl<PK extends SelfSerializable, PD ext
         this.leafPathSizeBytes = leafPathSizeBytes;
         // create data stores
         this.leafStoreSlotSize =
-                leafKeySizeBytes +// size of LK
-                leafPathSizeBytes +// size of LP
-                leafDataSizeBytes; // size of LD
+                Integer.BYTES + leafKeySizeBytes +// size of version int and LK
+                Integer.BYTES + leafPathSizeBytes +// size of version int and  LP
+                Integer.BYTES + leafDataSizeBytes; // size of version int and  LD
         this.parentStoreSlotSize =
                 parentKeySizeBytes +// size of PK
                 parentDataSizeBytes; // size of PD
@@ -365,12 +365,13 @@ public final class FCVirtualMapDataStoreImpl<PK extends SelfSerializable, PD ext
     private LD loadLeafImpl(long slotLocation) throws IOException {
         if (slotLocation != MemMapSlotStore.NOT_FOUND_LOCATION) {
             ByteBuffer buffer = leafStore.accessSlot(slotLocation);
-            SerializableDataInputStream inputStream = new SerializableDataInputStream(new ByteBufferInputStream(buffer));
             // key and path
-            buffer.position(buffer.position() + leafKeySizeBytes + leafPathSizeBytes); // jump over
+            buffer.position(buffer.position() + Integer.BYTES + leafKeySizeBytes + Integer.BYTES + leafPathSizeBytes); // jump over
+            SerializableDataInputStream inputStream = new SerializableDataInputStream(new ByteBufferInputStream(buffer));
             // data
             LD leafData = leafDataConstructor.get();
-            leafData.deserialize(inputStream, 1); //TODO is version 1 right?
+            int version = inputStream.readInt();
+            leafData.deserialize(inputStream, version);
             // return buffer
             leafStore.returnSlot(slotLocation,buffer);
             return leafData;
@@ -402,10 +403,13 @@ public final class FCVirtualMapDataStoreImpl<PK extends SelfSerializable, PD ext
             SerializableDataOutputStream outputStream = new SerializableDataOutputStream(
                     new ByteBufferOutputStream(buffer, leafStoreSlotSize));
             // write key
+            outputStream.writeInt(leafKey.getVersion());
             leafKey.serialize(outputStream);
             // write path
+            outputStream.writeInt(leafPath.getVersion());
             leafPath.serialize(outputStream);
             // write key data
+            outputStream.writeInt(leafData.getVersion());
             leafData.serialize(outputStream);
             // return buffer
             leafStore.returnSlot(slotLocation,buffer);
