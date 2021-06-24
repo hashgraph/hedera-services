@@ -270,5 +270,5 @@ public interface TransactionContext {
 	 *
 	 * @param customFeesCharged the custom fees charged
 	 */
-	void setCustomFeesCharged(List<AssessedCustomFee> customFeesCharged);
+	void setAssessedCustomFees(List<AssessedCustomFee> customFeesCharged);
 }
