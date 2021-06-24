@@ -114,7 +114,6 @@ public class AssessedCustomFee implements SelfSerializable {
 	}
 
 	/* --- Helpers --- */
-
 	public CustomFeesOuterClass.AssessedCustomFee toGrpc() {
 		var grpc = CustomFeesOuterClass.AssessedCustomFee.newBuilder()
 				.setFeeCollectorAccountId(account.toGrpcAccountId())
@@ -137,7 +136,6 @@ public class AssessedCustomFee implements SelfSerializable {
 	}
 
 	/* ----- SelfSerializable methods ------ */
-
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		account = in.readSerializable();

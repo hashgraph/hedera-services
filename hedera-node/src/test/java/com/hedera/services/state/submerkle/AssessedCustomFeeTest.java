@@ -21,6 +21,9 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.hedera.test.utils.IdUtils;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.Test;
@@ -31,6 +34,8 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import proto.CustomFeesOuterClass;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import static junit.framework.TestCase.assertFalse;
@@ -41,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-class AssessedCustomFeesTest {
+class AssessedCustomFeeTest {
 	private final EntityId account = new EntityId(4,5,6);
 	private final long units = -1_234L;
 	private final EntityId token = new EntityId(1, 2, 3);
@@ -72,6 +77,65 @@ class AssessedCustomFeesTest {
 		assertEquals(account, hbarChange.account());
 		assertEquals(units, hbarChange.units());
 		assertEquals(token, tokenChange.token());
+	}
+
+	@Test
+	void liveFireSerdeWorksForHtsFee() throws IOException, ConstructableRegistryException {
+		// setup:
+		final var account = new EntityId(1, 2, 3);
+		final var token = new EntityId(2, 3, 4);
+		final var amount = 345L;
+		final var subject = new AssessedCustomFee(account, token, amount);
+		// and:
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(EntityId.class, EntityId::new));
+		// and:
+		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		final var dos = new SerializableDataOutputStream(baos);
+
+		// given:
+		subject.serialize(dos);
+		dos.flush();
+		// and:
+		final var bytes = baos.toByteArray();
+		final ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+		final var din = new SerializableDataInputStream(bais);
+
+		// when:
+		final var newSubject = new AssessedCustomFee();
+		newSubject.deserialize(din, AssessedCustomFee.MERKLE_VERSION);
+
+		// then:
+		assertEquals(subject, newSubject);
+	}
+
+	@Test
+	void liveFireSerdeWorksForHbarFee() throws IOException, ConstructableRegistryException {
+		// setup:
+		final var account = new EntityId(1, 2, 3);
+		final var amount = 345L;
+		final var subject = new AssessedCustomFee(account, amount);
+		// and:
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(EntityId.class, EntityId::new));
+		// and:
+		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		final var dos = new SerializableDataOutputStream(baos);
+
+		// given:
+		subject.serialize(dos);
+		dos.flush();
+		// and:
+		final var bytes = baos.toByteArray();
+		final ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+		final var din = new SerializableDataInputStream(bais);
+
+		// when:
+		final var newSubject = new AssessedCustomFee();
+		newSubject.deserialize(din, AssessedCustomFee.MERKLE_VERSION);
+
+		// then:
+		assertEquals(subject, newSubject);
 	}
 
 	@Test

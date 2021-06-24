@@ -158,7 +158,7 @@ public class CustomFee implements SelfSerializable {
 		return feeCollector;
 	}
 
-	public Id getFeeCollectorAccountIdAsId() {
+	public Id getFeeCollectorAsId() {
 		return feeCollector.asId();
 	}
 
@@ -268,8 +268,8 @@ public class CustomFee implements SelfSerializable {
 			if (denominator == 0) {
 				throw new IllegalArgumentException("Division by zero is not allowed");
 			}
-			this.numerator = numerator;
-			this.denominator = denominator;
+			this.numerator = Math.abs(numerator);
+			this.denominator = Math.abs(denominator);
 			this.minimumUnitsToCollect = minimumUnitsToCollect;
 			this.maximumUnitsToCollect = maximumUnitsToCollect;
 		}

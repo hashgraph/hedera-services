@@ -140,6 +140,7 @@ class MerkleTokenTest {
 		subject.setDeleted(isDeleted);
 		subject.setMemo(memo);
 		subject.setFeeScheduleFrom(grpcFeeSchedule);
+		subject.setFeeScheduleMutable(true);
 
 		serdes = mock(DomainSerdes.class);
 		MerkleToken.serdes = serdes;
@@ -189,6 +190,7 @@ class MerkleTokenTest {
 				argThat(wipeKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
 		inOrder.verify(out).writeNormalisedString(memo);
 		inOrder.verify(out).writeSerializableList(feeSchedule, true, true);
+		inOrder.verify(out).writeBoolean(subject.isFeeScheduleMutable());
 	}
 
 	@Test
@@ -212,6 +214,7 @@ class MerkleTokenTest {
 		// setup:
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
 		subject.setFeeSchedule(Collections.emptyList());
+		subject.setFeeScheduleMutable(false);
 
 		given(serdes.readNullableSerializable(any())).willReturn(autoRenewAccount);
 		given(serdes.deserializeKey(fin)).willReturn(adminKey);
@@ -268,7 +271,8 @@ class MerkleTokenTest {
 		given(fin.readInt()).willReturn(subject.decimals());
 		given(fin.readBoolean())
 				.willReturn(isDeleted)
-				.willReturn(subject.accountsAreFrozenByDefault());
+				.willReturn(subject.accountsAreFrozenByDefault())
+				.willReturn(subject.isFeeScheduleMutable());
 		given(fin.readSerializable()).willReturn(subject.treasury());
 		given(fin.<CustomFee>readSerializableList(eq(Integer.MAX_VALUE), eq(true), any()))
 				.willReturn(feeSchedule);
@@ -277,43 +281,6 @@ class MerkleTokenTest {
 
 		// when:
 		read.deserialize(fin, MerkleToken.MERKLE_VERSION);
-
-		// then:
-		assertEquals(subject, read);
-	}
-
-	@Test
-	void pre0120DeserializeWorks() throws IOException {
-		// setup:
-		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
-		subject.setFeeSchedule(Collections.emptyList());
-		subject.setMemo(MerkleAccountState.DEFAULT_MEMO);
-
-		given(serdes.readNullableSerializable(any())).willReturn(autoRenewAccount);
-		given(serdes.deserializeKey(fin)).willReturn(adminKey);
-		given(serdes.readNullable(argThat(fin::equals), any(IoReadingFunction.class)))
-				.willReturn(adminKey)
-				.willReturn(freezeKey)
-				.willReturn(kycKey)
-				.willReturn(supplyKey)
-				.willReturn(wipeKey);
-		given(fin.readNormalisedString(anyInt()))
-				.willReturn(symbol)
-				.willReturn(name);
-		given(fin.readLong())
-				.willReturn(subject.expiry())
-				.willReturn(subject.autoRenewPeriod())
-				.willReturn(subject.totalSupply());
-		given(fin.readInt()).willReturn(subject.decimals());
-		given(fin.readBoolean())
-				.willReturn(isDeleted)
-				.willReturn(subject.accountsAreFrozenByDefault());
-		given(fin.readSerializable()).willReturn(subject.treasury());
-		// and:
-		var read = new MerkleToken();
-
-		// when:
-		read.deserialize(fin, MerkleToken.PRE_RELEASE_0120_VERSION);
 
 		// then:
 		assertEquals(subject, read);
@@ -586,6 +553,7 @@ class MerkleTokenTest {
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(identicalSubject);
 		identicalSubject.setDeleted(isDeleted);
+		identicalSubject.setFeeScheduleMutable(true);
 
 		// and:
 		other = new MerkleToken(
@@ -620,7 +588,7 @@ class MerkleTokenTest {
 				"feeSchedules=[CustomFee{feeType=FIXED_FEE, fixedFee=FixedFeeSpec{unitsToCollect=7, tokenDenomination=1" +
 				".2.3}, feeCollector=EntityId{shard=4, realm=5, num=6}}, CustomFee{feeType=FRACTIONAL_FEE, " +
 				"fractionalFee=FractionalFeeSpec{numerator=5, denominator=100, minimumUnitsToCollect=1, " +
-				"maximumUnitsToCollect=55}, feeCollector=EntityId{shard=4, realm=5, num=6}}]}";
+				"maximumUnitsToCollect=55}, feeCollector=EntityId{shard=4, realm=5, num=6}}], feeScheduleMutable=true}";
 
 		// expect:
 		assertEquals(desired, subject.toString());

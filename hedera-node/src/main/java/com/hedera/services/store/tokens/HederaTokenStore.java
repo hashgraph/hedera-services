@@ -78,6 +78,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TRE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -402,11 +403,13 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		}
 
 		if (request.hasCustomFees()) {
-			validity = validateFeeSchedule(request.getCustomFees().getCustomFeesList());
+			final var customFees = request.getCustomFees();
+			validity = validateFeeSchedule(customFees.getCustomFeesList());
 			if (validity != OK) {
 				return failure(validity);
 			}
-			pendingCreation.setFeeScheduleFrom(request.getCustomFees());
+			pendingCreation.setFeeScheduleFrom(customFees);
+			pendingCreation.setFeeScheduleMutable(customFees.getCanUpdateWithAdminKey());
 		}
 
 		return success(pendingId);
@@ -419,17 +422,17 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 		for (var customFee : feeSchedule) {
 			final var feeCollector = customFee.getFeeCollectorAccountId();
-			/* Validate if the feeCollector is a valid account ID */
 			final var feeCollectorValidity = usableOrElse(feeCollector, INVALID_CUSTOM_FEE_COLLECTOR);
 
 			if (feeCollectorValidity != OK) {
 				return INVALID_CUSTOM_FEE_COLLECTOR;
 			}
 
-			/* Validate if the token id given in the fixed fee is a valid token ID and is associated with the
-			feeCollector */
 			if (customFee.hasFixedFee()) {
 				final var fixedFee = customFee.getFixedFee();
+				if (fixedFee.getAmount() <= 0) {
+					return CUSTOM_FEE_MUST_BE_POSITIVE;
+				}
 				if (fixedFee.hasDenominatingTokenId()) {
 					final var denom = fixedFee.getDenominatingTokenId();
 					if (resolve(denom) == MISSING_TOKEN) {
@@ -440,7 +443,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 					}
 				}
 			} else if (customFee.hasFractionalFee()) {
-
 				/* TODO: Should fee collectors for fractional fees automatically be associated to the newly
 				    created token?  (This will require their keys to sign the TokenCreate transaction.) */
 				final var fractionalSpec = customFee.getFractionalFee();
@@ -448,12 +450,22 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				if (fraction.getDenominator() == 0) {
 					return FRACTION_DIVIDES_BY_ZERO;
 				}
+				if (!signsMatch(fraction.getNumerator(), fraction.getDenominator())) {
+					return CUSTOM_FEE_MUST_BE_POSITIVE;
+				}
+				if (fractionalSpec.getMaximumAmount() < 0 || fractionalSpec.getMinimumAmount() < 0) {
+					return CUSTOM_FEE_MUST_BE_POSITIVE;
+				}
 			} else {
 				return CUSTOM_FEE_NOT_FULLY_SPECIFIED;
 			}
 		}
 
 		return OK;
+	}
+
+	private boolean signsMatch(long a, long b) {
+		return (a < 0 && b < 0) || (a > 0 && b > 0);
 	}
 
 	public void addKnownTreasury(AccountID aId, TokenID tId) {

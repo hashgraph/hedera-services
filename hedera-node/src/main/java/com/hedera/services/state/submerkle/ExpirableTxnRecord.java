@@ -92,7 +92,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	public ExpirableTxnRecord() {
 	}
 
-	public ExpirableTxnRecord (Builder builder){
+	public ExpirableTxnRecord(Builder builder) {
 		this.receipt = builder.receipt;
 		this.txnHash = builder.txnHash;
 		this.txnId = builder.txnId;
@@ -268,7 +268,9 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 	/* --- Object --- */
 
-	public EntityId getScheduleRef() { return scheduleRef; }
+	public EntityId getScheduleRef() {
+		return scheduleRef;
+	}
 
 	public List<EntityId> getTokens() {
 		return tokens;
@@ -330,7 +332,9 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		this.submittingMember = submittingMember;
 	}
 
-	public List<AssessedCustomFee> getCustomFeesCharged() { return customFeesCharged; }
+	public List<AssessedCustomFee> getCustomFeesCharged() {
+		return customFeesCharged;
+	}
 
 	/* --- FastCopyable --- */
 
@@ -370,9 +374,12 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				.setConsensusTime(RichInstant.fromGrpc(record.getConsensusTimestamp()))
 				.setMemo(record.getMemo())
 				.setFee(record.getTransactionFee())
-				.setTransferList(record.hasTransferList() ? CurrencyAdjustments.fromGrpc(record.getTransferList()) : null)
-				.setContractCallResult(record.hasContractCallResult() ? SolidityFnResult.fromGrpc(record.getContractCallResult()) : null)
-				.setContractCreateResult(record.hasContractCreateResult() ? SolidityFnResult.fromGrpc(record.getContractCreateResult()) : null)
+				.setTransferList(
+						record.hasTransferList() ? CurrencyAdjustments.fromGrpc(record.getTransferList()) : null)
+				.setContractCallResult(record.hasContractCallResult() ? SolidityFnResult.fromGrpc(
+						record.getContractCallResult()) : null)
+				.setContractCreateResult(record.hasContractCreateResult() ? SolidityFnResult.fromGrpc(
+						record.getContractCreateResult()) : null)
 				.setTokens(tokens)
 				.setTokenAdjustments(tokenAdjustments)
 				.setScheduleRef(record.hasScheduleRef() ? fromGrpcScheduleId(record.getScheduleRef()) : null)
@@ -434,7 +441,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		return grpc.build();
 	}
 
-	public static Builder newBuilder(){
+	public static Builder newBuilder() {
 		return new Builder();
 	}
 
@@ -518,11 +525,11 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			return this;
 		}
 
-		public ExpirableTxnRecord build(){
+		public ExpirableTxnRecord build() {
 			return new ExpirableTxnRecord(this);
 		}
 
-		public Builder clear(){
+		public Builder clear() {
 			fee = 0;
 			txnId = null;
 			txnHash = MISSING_TXN_HASH;
