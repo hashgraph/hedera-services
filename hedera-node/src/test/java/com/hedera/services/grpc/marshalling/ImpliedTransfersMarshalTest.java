@@ -202,7 +202,7 @@ class ImpliedTransfersMarshalTest {
 		// then:
 		assertEquals(expectedMeta, result.getMeta());
 		assertEquals(expectedChanges, result.getAllBalanceChanges());
-		assertEquals(expectedCustomFeeChanges, result.getInvolvedTokenFeeSchedules());
+		assertEquals(expectedCustomFeeChanges, result.getTokenFeeSchedules());
 		assertEquals(expectedAssessedCustomFees, result.getAssessedCustomFees());
 	}
 
@@ -429,7 +429,7 @@ class ImpliedTransfersMarshalTest {
 		// then:
 		assertEquals(expectedMeta, result.getMeta());
 		assertEquals(expectedChanges, result.getAllBalanceChanges());
-		assertEquals(expectedCustomFeeChanges, result.getInvolvedTokenFeeSchedules());
+		assertEquals(expectedCustomFeeChanges, result.getTokenFeeSchedules());
 		assertEquals(expectedAssessedCustomFees, result.getAssessedCustomFees());
 	}
 
@@ -488,7 +488,7 @@ class ImpliedTransfersMarshalTest {
 		// then:
 		assertEquals(expectedMeta, result.getMeta());
 		assertEquals(expectedChanges, result.getAllBalanceChanges());
-		assertEquals(expectedCustomFeeChanges, result.getInvolvedTokenFeeSchedules());
+		assertEquals(expectedCustomFeeChanges, result.getTokenFeeSchedules());
 		assertEquals(expectedAssessedCustomFees, result.getAssessedCustomFees());
 	}
 
