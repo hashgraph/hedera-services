@@ -258,13 +258,21 @@ class StateViewTest {
 		StateView.tokenRelsFn = mockTokenRelsFn;
 		given(mockTokenRelsFn.apply(any(), any())).willReturn(Collections.emptyList());
 
+		final var uniqueTokenAccountOwnerships = new FCMap<MerkleUniqueTokenId, MerkleUniqueToken>();
+		uniqueTokenAccountOwnerships.put(targetNftKey, targetNft);
+
 		subject = new StateView(
 				tokenStore,
 				scheduleStore,
 				StateView.EMPTY_TOPICS_SUPPLIER,
 				() -> contracts,
-				nodeProps,
-				() -> diskFs);
+				StateView.EMPTY_STORAGE_SUPPLIER,
+				() -> uniqueTokenAccountOwnerships,
+				StateView.EMPTY_TOKEN_ASSOCS_SUPPLIER,
+				StateView.EMPTY_UNIQUE_TOKEN_ASSOCS_SUPPLIER,
+				StateView.EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS_SUPPLIER,
+				() -> diskFs,
+				nodeProps);
 		subject.fileAttrs = attrs;
 		subject.fileContents = contents;
 		subject.contractBytecode = bytecode;
@@ -281,6 +289,13 @@ class StateViewTest {
 		// expect:
 		assertTrue(subject.tokenExists(tokenId));
 		assertFalse(subject.tokenExists(missingTokenId));
+	}
+
+	@Test
+	void nftExistsWorks() {
+		// expect:
+		assertTrue(subject.nftExists(targetNftId));
+		assertFalse(subject.nftExists(missingNftId));
 	}
 
 	@Test
@@ -728,7 +743,7 @@ class StateViewTest {
 	@Test
 	void rejectsMissingNft() {
 		// when:
-		final var optionalNftInfo = subject.infoForNft(targetNftId);
+		final var optionalNftInfo = subject.infoForNft(missingNftId);
 
 		// then:
 		assertTrue(optionalNftInfo.isEmpty());
@@ -736,12 +751,6 @@ class StateViewTest {
 
 	@Test
 	void getNftsAsExpected() {
-		// setup:
-		final var delegate = new FCMap<MerkleUniqueTokenId, MerkleUniqueToken>();
-		delegate.put(targetNftKey, targetNft);
-		// and:
-		subject.setNfts(() -> delegate);
-
 		// when:
 		final var optionalNftInfo = subject.infoForNft(targetNftId);
 
@@ -761,6 +770,10 @@ class StateViewTest {
 	private final NftID targetNftId = NftID.newBuilder()
 			.setTokenID(IdUtils.asToken("1.2.3"))
 			.setSerialNumber(4L)
+			.build();
+	private final NftID missingNftId = NftID.newBuilder()
+			.setTokenID(IdUtils.asToken("1.7.9"))
+			.setSerialNumber(5L)
 			.build();
 	private final MerkleUniqueTokenId targetNftKey = new MerkleUniqueTokenId(new EntityId(1, 2, 3), 4);
 	private final MerkleUniqueToken targetNft = new MerkleUniqueToken(owner, nftMeta, fromJava(nftCreation));

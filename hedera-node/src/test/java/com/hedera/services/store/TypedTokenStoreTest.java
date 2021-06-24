@@ -39,10 +39,9 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
-import com.hedera.services.store.tokens.unique.OwnerIdentifier;
-import com.hedera.services.utils.invertible_fchashmap.FCInvertibleHashMap;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -67,11 +66,13 @@ class TypedTokenStoreTest {
 	@Mock
 	private FCMap<MerkleEntityId, MerkleToken> tokens;
 	@Mock
-	private FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier> uniqueTokens;
+	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens;
+	@Mock
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenOwnerships;
+	@Mock
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations;
 	@Mock
 	private TransactionRecordService transactionRecordService;
-	@Mock
-	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts;
 	@Mock
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
 	@Mock
@@ -90,8 +91,9 @@ class TypedTokenStoreTest {
 				accountStore,
 				transactionRecordService,
 				() -> tokens,
-				() -> nfts,
 				() -> uniqueTokens,
+				() -> uniqueTokenOwnerships,
+				() -> uniqueTokenAssociations,
 				() -> tokenRels,
 				backingTokenRels,
 				backingNfts);
@@ -245,8 +247,12 @@ class TypedTokenStoreTest {
 		verify(tokens, never()).replace(merkleTokenId, expectedReplacementToken);
 		// and:
 		verify(transactionRecordService).includeChangesToToken(modelToken);
-		verify(nfts).put(expectedNewUniqTokenId, expectedNewUniqToken);
-		verify(nfts).remove(expectedPastUniqTokenId);
+		verify(uniqueTokens).put(expectedNewUniqTokenId, expectedNewUniqToken);
+		verify(uniqueTokens).remove(expectedPastUniqTokenId);
+		verify(uniqueTokenAssociations).associate(new EntityId(modelToken.getId()), expectedNewUniqTokenId);
+		verify(uniqueTokenAssociations).disassociate(new EntityId(modelToken.getId()), expectedPastUniqTokenId);
+		verify(uniqueTokenOwnerships).associate(treasuryId, expectedNewUniqTokenId);
+		verify(uniqueTokenOwnerships).disassociate(treasuryId, expectedPastUniqTokenId);
 		verify(backingNfts).addToExistingNfts(new NftId(0, 0, tokenNum, mintedSerialNo));
 		verify(backingNfts).removeFromExistingNfts(new NftId(0, 0, tokenNum, burnedSerialNo));
 	}

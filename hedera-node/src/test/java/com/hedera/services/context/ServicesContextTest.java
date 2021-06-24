@@ -120,7 +120,9 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.migration.StdStateMigrations;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.validation.BasedLedgerValidator;
 import com.hedera.services.stats.HapiOpCounters;
@@ -158,6 +160,7 @@ import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
+import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.junit.jupiter.api.BeforeEach;
@@ -204,12 +207,16 @@ public class ServicesContextTest {
 	FCMap<MerkleEntityId, MerkleAccount> accounts;
 	FCMap<MerkleEntityId, MerkleSchedule> schedules;
 	FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
-	FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts;
+	FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens;
 	FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
+	FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations;
+	FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations;
 
 	@BeforeEach
 	void setup() {
-		nfts = mock(FCMap.class);
+		uniqueTokens = mock(FCMap.class);
+		uniqueTokenAssociations = mock(FCOneToManyRelation.class);
+		uniqueOwnershipAssociations = mock(FCOneToManyRelation.class);
 		topics = mock(FCMap.class);
 		tokens = mock(FCMap.class);
 		tokenAssociations = mock(FCMap.class);
@@ -227,7 +234,7 @@ public class ServicesContextTest {
 		given(state.tokens()).willReturn(tokens);
 		given(state.tokenAssociations()).willReturn(tokenAssociations);
 		given(state.scheduleTxs()).willReturn(schedules);
-		given(state.nfts()).willReturn(nfts);
+		given(state.uniqueTokens()).willReturn(uniqueTokens);
 		crypto = mock(Cryptography.class);
 		platform = mock(Platform.class);
 		given(platform.getSelfId()).willReturn(new NodeId(false, 0L));
@@ -247,7 +254,7 @@ public class ServicesContextTest {
 		var newTokens = mock(FCMap.class);
 		var newTokenRels = mock(FCMap.class);
 		var newSchedules = mock(FCMap.class);
-		var newNfts = mock(FCMap.class);
+		var newUniqueTokens = mock(FCMap.class);
 
 		given(newState.accounts()).willReturn(newAccounts);
 		given(newState.topics()).willReturn(newTopics);
@@ -255,7 +262,7 @@ public class ServicesContextTest {
 		given(newState.storage()).willReturn(newStorage);
 		given(newState.tokenAssociations()).willReturn(newTokenRels);
 		given(newState.scheduleTxs()).willReturn(newSchedules);
-		given(newState.nfts()).willReturn(newNfts);
+		given(newState.uniqueTokens()).willReturn(newUniqueTokens);
 		// given:
 		var subject = new ServicesContext(nodeId, platform, state, propertySources);
 		// and:
@@ -265,7 +272,7 @@ public class ServicesContextTest {
 		var tokensRef = subject.queryableTokens();
 		var tokenRelsRef = subject.queryableTokenAssociations();
 		var schedulesRef = subject.queryableSchedules();
-		var nftsRef = subject.queryableNfts();
+		var uniqueTokensRef = subject.queryableUniqueTokens();
 
 		// when:
 		subject.update(newState);
@@ -278,7 +285,7 @@ public class ServicesContextTest {
 		assertSame(tokensRef, subject.queryableTokens());
 		assertSame(tokenRelsRef, subject.queryableTokenAssociations());
 		assertSame(schedulesRef, subject.queryableSchedules());
-		assertSame(nftsRef, subject.queryableNfts());
+		assertSame(uniqueTokensRef, subject.queryableUniqueTokens());
 		// and:
 		assertSame(newAccounts, subject.queryableAccounts().get());
 		assertSame(newTopics, subject.queryableTopics().get());
@@ -286,7 +293,26 @@ public class ServicesContextTest {
 		assertSame(newTokens, subject.queryableTokens().get());
 		assertSame(newTokenRels, subject.queryableTokenAssociations().get());
 		assertSame(newSchedules, subject.queryableSchedules().get());
-		assertSame(newNfts, subject.queryableNfts().get());
+		assertSame(newUniqueTokens, subject.queryableUniqueTokens().get());
+	}
+
+	void compareFCOTMR(FCOneToManyRelation expected, FCOneToManyRelation actual) {
+		assertEquals(expected.getKeySet(), actual.getKeySet());
+		expected.getKeySet().forEach(key -> {
+			assertEquals(expected.getList(key), actual.getList(key));
+		});
+	}
+
+	@Test
+	void queryableUniqueTokenAssociationsReturnsProperReference() {
+		var subject = new ServicesContext(nodeId, platform, state, propertySources);
+		compareFCOTMR(subject.uniqueTokenAssociations(), subject.queryableUniqueTokenAssociations().get());
+	}
+
+	@Test
+	void queryableUniqueTokenAccountOwnershipsReturnsProperReference() {
+		var subject = new ServicesContext(nodeId, platform, state, propertySources);
+		compareFCOTMR(subject.uniqueOwnershipAssociations(), subject.queryableUniqueOwnershipAssociations().get());
 	}
 
 	@Test
@@ -413,6 +439,37 @@ public class ServicesContextTest {
 		// then:
 		verify(tokenRels).rebuildFromSources();
 		verify(backingAccounts).rebuildFromSources();
+	}
+
+	@Test
+	void rebuildOwnershipsAndAssociationsWorks() {
+		var token = new EntityId(0, 0, 54321);
+		var owner = new EntityId(0, 0, 12345);
+		var realUniqueTokens = new FCMap<MerkleUniqueTokenId, MerkleUniqueToken>();
+
+		MerkleUniqueToken mut = new MerkleUniqueToken(owner, "some-metadata".getBytes(), RichInstant.fromJava(Instant.now()));
+		MerkleUniqueTokenId muti = new MerkleUniqueTokenId(token, 2);
+
+		var expectedUTA = new FCOneToManyRelation<EntityId, MerkleUniqueTokenId>();
+		expectedUTA.associate(token, muti);
+
+		var expectedUTAO = new FCOneToManyRelation<EntityId, MerkleUniqueTokenId>();
+		expectedUTAO.associate(owner, muti);
+
+		realUniqueTokens.put(muti, mut);
+		given(state.uniqueTokens()).willReturn(realUniqueTokens);
+
+		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
+
+		ctx.rebuildOwnershipsAndAssociations();
+		assertEquals(expectedUTA.getKeySet(), ctx.uniqueTokenAssociations().getKeySet());
+		assertEquals(expectedUTAO.getKeySet(), ctx.uniqueOwnershipAssociations().getKeySet());
+		expectedUTA.getKeySet().forEach(key -> {
+			assertEquals(expectedUTA.getList(key), ctx.uniqueTokenAssociations().getList(key));
+		});
+		expectedUTAO.getKeySet().forEach(key -> {
+			assertEquals(expectedUTAO.getList(key), ctx.uniqueOwnershipAssociations().getList(key));
+		});
 	}
 
 	@Test

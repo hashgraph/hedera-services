@@ -66,6 +66,7 @@ import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TokenType;
+import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -86,7 +87,6 @@ import static com.hedera.services.state.submerkle.EntityId.fromGrpcTokenId;
 import static com.hedera.services.store.schedule.ExceptionalScheduleStore.NOOP_SCHEDULE_STORE;
 import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
 import static com.hedera.services.store.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
-import static com.hedera.services.store.tokens.TokenStore.MISSING_NFT;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
@@ -124,10 +124,20 @@ public class StateView {
 	public static final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> EMPTY_TOKEN_ASSOCS_SUPPLIER =
 			() -> EMPTY_TOKEN_ASSOCIATIONS;
 
-	public static final FCMap<MerkleUniqueTokenId, MerkleUniqueToken> EMPTY_NFTS =
+	public static final FCMap<MerkleUniqueTokenId, MerkleUniqueToken> EMPTY_UNIQUE_TOKENS =
 			new FCMap<>();
-	public static final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> EMPTY_NFTS_SUPPLIER =
-			() -> EMPTY_NFTS;
+	public static final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> EMPTY_UNIQUE_TOKENS_SUPPLIER =
+			() -> EMPTY_UNIQUE_TOKENS;
+
+	public static final FCOneToManyRelation<EntityId, MerkleUniqueTokenId> EMPTY_UNIQUE_TOKEN_ASSOCS =
+			new FCOneToManyRelation<>();
+	public static final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> EMPTY_UNIQUE_TOKEN_ASSOCS_SUPPLIER =
+			() -> EMPTY_UNIQUE_TOKEN_ASSOCS;
+
+	public static final FCOneToManyRelation<EntityId, MerkleUniqueTokenId> EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS =
+			new FCOneToManyRelation<>();
+	public static final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS_SUPPLIER =
+			() -> EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS;
 
 	public static final StateView EMPTY_VIEW = new StateView(
 			EMPTY_TOPICS_SUPPLIER,
@@ -139,14 +149,16 @@ public class StateView {
 	Map<FileID, byte[]> fileContents;
 	Map<FileID, HFileMeta> fileAttrs;
 
-	private Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts;
-
 	private final TokenStore tokenStore;
 	private final ScheduleStore scheduleStore;
 	private final Supplier<MerkleDiskFs> diskFs;
 	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 	private final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations;
+
+	private Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens;
+	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations;
+	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAccountOwnerships;
 
 	private final NodeLocalProperties properties;
 
@@ -162,8 +174,10 @@ public class StateView {
 				topics,
 				accounts,
 				EMPTY_STORAGE_SUPPLIER,
-				EMPTY_NFTS_SUPPLIER,
+				EMPTY_UNIQUE_TOKENS_SUPPLIER,
 				EMPTY_TOKEN_ASSOCS_SUPPLIER,
+				EMPTY_UNIQUE_TOKEN_ASSOCS_SUPPLIER,
+				EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS_SUPPLIER,
 				diskFs,
 				properties);
 	}
@@ -182,8 +196,10 @@ public class StateView {
 				topics,
 				accounts,
 				EMPTY_STORAGE_SUPPLIER,
-				EMPTY_NFTS_SUPPLIER,
+				EMPTY_UNIQUE_TOKENS_SUPPLIER,
 				EMPTY_TOKEN_ASSOCS_SUPPLIER,
+				EMPTY_UNIQUE_TOKEN_ASSOCS_SUPPLIER,
+				EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS_SUPPLIER,
 				diskFs,
 				properties);
 	}
@@ -194,17 +210,21 @@ public class StateView {
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> storage,
-			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts,
+			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens,
 			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations,
+			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations,
+			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAccountOwnerships,
 			Supplier<MerkleDiskFs> diskFs,
 			NodeLocalProperties properties
 	) {
-		this.nfts = nfts;
 		this.topics = topics;
 		this.accounts = accounts;
 		this.tokenStore = tokenStore;
-		this.tokenAssociations = tokenAssociations;
+		this.uniqueTokens = uniqueTokens;
 		this.scheduleStore = scheduleStore;
+		this.tokenAssociations = tokenAssociations;
+		this.uniqueTokenAssociations = uniqueTokenAssociations;
+		this.uniqueTokenAccountOwnerships = uniqueTokenAccountOwnerships;
 
 		Map<String, byte[]> blobStore = unmodifiableMap(new FcBlobsBytesStore(MerkleOptionalBlob::new, storage));
 
@@ -372,7 +392,7 @@ public class StateView {
 	}
 
 	public Optional<TokenNftInfo> infoForNft(NftID target) {
-		final var currentNfts = nfts.get();
+		final var currentNfts = uniqueTokens.get();
 		final var targetKey = new MerkleUniqueTokenId(fromGrpcTokenId(target.getTokenID()), target.getSerialNumber());
 		if (!currentNfts.containsKey(targetKey)) {
 			return Optional.empty();
@@ -388,7 +408,7 @@ public class StateView {
 	}
 
 	public boolean nftExists(NftID id) {
-		return tokenStore.resolve(id) != MISSING_NFT;
+		return uniqueTokens.get().containsKey(new MerkleUniqueTokenId(fromGrpcTokenId(id.getTokenID()), id.getSerialNumber()));
 	}
 
 	public Optional<TokenType> tokenType(TokenID tokenID) {
@@ -544,9 +564,5 @@ public class StateView {
 
 	public Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations() {
 		return tokenAssociations;
-	}
-
-	void setNfts(Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> nfts) {
-		this.nfts = nfts;
 	}
 }

@@ -254,7 +254,6 @@ import com.hedera.services.store.schedule.HederaScheduleStore;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.unique.OwnerIdentifier;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.throttling.DeterministicThrottling;
@@ -329,7 +328,6 @@ import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
 import com.hedera.services.utils.TxnAccessor;
-import com.hedera.services.utils.invertible_fchashmap.FCInvertibleHashMap;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -349,6 +347,7 @@ import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
+import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -580,9 +579,12 @@ public class ServicesContext {
 	private AtomicReference<FCMap<MerkleEntityId, MerkleAccount>> queryableAccounts;
 	private AtomicReference<FCMap<MerkleEntityId, MerkleSchedule>> queryableSchedules;
 	private AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage;
-	private AtomicReference<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> queryableNfts;
+	private AtomicReference<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> queryableUniqueTokens;
 	private AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations;
-	private AtomicReference<FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier>> queryableUniqueTokens;
+	private AtomicReference<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> queryableUniqueTokenAssociations;
+	private AtomicReference<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> queryableUniqueOwnershipAssociations;
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations = new FCOneToManyRelation<>();
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations = new FCOneToManyRelation<>();
 
 	/* Context-free infrastructure. */
 	private static Pause pause;
@@ -619,7 +621,6 @@ public class ServicesContext {
 		queryableTokenAssociations().set(tokenAssociations());
 		queryableSchedules().set(schedules());
 		queryableUniqueTokens().set(uniqueTokens());
-		queryableNfts().set(nfts());
 	}
 
 	public SwirldDualState getDualState() {
@@ -845,8 +846,10 @@ public class ServicesContext {
 					() -> queryableTopics().get(),
 					() -> queryableAccounts().get(),
 					() -> queryableStorage().get(),
-					() -> queryableNfts().get(),
+					() -> queryableUniqueTokens().get(),
 					() -> queryableTokenAssociations().get(),
+					() -> queryableUniqueTokenAssociations().get(),
+					() -> queryableUniqueOwnershipAssociations().get(),
 					this::diskFs,
 					nodeLocalProperties());
 		}
@@ -861,8 +864,10 @@ public class ServicesContext {
 					this::topics,
 					this::accounts,
 					this::storage,
-					this::nfts,
+					this::uniqueTokens,
 					this::tokenAssociations,
+					this::uniqueTokenAssociations,
+					this::uniqueOwnershipAssociations,
 					this::diskFs,
 					nodeLocalProperties());
 		}
@@ -970,8 +975,9 @@ public class ServicesContext {
 					accountStore(),
 					new TransactionRecordService(txnCtx()),
 					this::tokens,
-					this::nfts,
 					this::uniqueTokens,
+					this::uniqueOwnershipAssociations,
+					this::uniqueTokenAssociations,
 					this::tokenAssociations,
 					(BackingTokenRels) backingTokenRels(),
 					backingNfts());
@@ -1552,7 +1558,7 @@ public class ServicesContext {
 
 	public BackingNfts backingNfts() {
 		if (backingNfts == null) {
-			backingNfts = new BackingNfts(this::nfts);
+			backingNfts = new BackingNfts(this::uniqueTokens);
 		}
 		return backingNfts;
 	}
@@ -1577,7 +1583,7 @@ public class ServicesContext {
 					validator(),
 					globalDynamicProperties(),
 					this::tokens,
-					this::uniqueTokens,
+					this::uniqueOwnershipAssociations,
 					tokenRelsLedger,
 					nftsLedger);
 		}
@@ -2070,18 +2076,25 @@ public class ServicesContext {
 		return queryableSchedules;
 	}
 
-	public AtomicReference<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> queryableNfts() {
-		if (queryableNfts == null) {
-			queryableNfts = new AtomicReference<>(nfts());
-		}
-		return queryableNfts;
-	}
-
-	public AtomicReference<FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier>> queryableUniqueTokens() {
+	public AtomicReference<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> queryableUniqueTokens() {
 		if (queryableUniqueTokens == null) {
 			queryableUniqueTokens = new AtomicReference<>(uniqueTokens());
 		}
 		return queryableUniqueTokens;
+	}
+
+	public AtomicReference<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> queryableUniqueTokenAssociations() {
+		if (queryableUniqueTokenAssociations == null) {
+			queryableUniqueTokenAssociations = new AtomicReference<>(uniqueTokenAssociations());
+		}
+		return queryableUniqueTokenAssociations;
+	}
+
+	public AtomicReference<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> queryableUniqueOwnershipAssociations() {
+		if (queryableUniqueOwnershipAssociations == null) {
+			queryableUniqueOwnershipAssociations = new AtomicReference<>(uniqueOwnershipAssociations());
+		}
+		return queryableUniqueOwnershipAssociations;
 	}
 
 	public UsagePricesProvider usagePrices() {
@@ -2191,17 +2204,31 @@ public class ServicesContext {
 		return state.tokens();
 	}
 
-	public FCMap<MerkleUniqueTokenId, MerkleUniqueToken> nfts() {
-		return state.nfts();
-	}
-
-
 	public FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations() {
 		return state.tokenAssociations();
 	}
 
-	public FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier> uniqueTokens() {
+	public void rebuildOwnershipsAndAssociations() {
+		var uniqueTokens= state.uniqueTokens();
+		var keys = uniqueTokens.keySet();
+		this.uniqueTokenAssociations = new FCOneToManyRelation<>();
+		this.uniqueOwnershipAssociations = new FCOneToManyRelation<>();
+		for (MerkleUniqueTokenId key : keys) {
+			this.uniqueTokenAssociations.associate(key.tokenId(), key);
+			this.uniqueOwnershipAssociations.associate(uniqueTokens.get(key).getOwner(), key);
+		}
+	}
+
+	public FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens() {
 		return state.uniqueTokens();
+	}
+
+	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations() {
+		return this.uniqueTokenAssociations;
+	}
+
+	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations() {
+		return this.uniqueOwnershipAssociations;
 	}
 
 	public FCMap<MerkleEntityId, MerkleSchedule> schedules() {

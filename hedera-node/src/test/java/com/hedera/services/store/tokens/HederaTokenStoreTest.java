@@ -43,8 +43,6 @@ import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.CustomFee;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.store.tokens.unique.OwnerIdentifier;
-import com.hedera.services.utils.invertible_fchashmap.FCInvertibleHashMap;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -56,6 +54,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
+import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
@@ -146,7 +145,8 @@ class HederaTokenStoreTest {
 	private EntityIdSource ids;
 	private GlobalDynamicProperties properties;
 	private FCMap<MerkleEntityId, MerkleToken> tokens;
-	private FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier> uniqueTokens;
+	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens;
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAccountOwnerships;
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
@@ -307,7 +307,8 @@ class HederaTokenStoreTest {
 		given(tokens.get(fromTokenId(nonfungible))).willReturn(nonfungibleToken);
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(modifiableToken);
 
-		uniqueTokens = (FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier>) mock(FCInvertibleHashMap.class);
+		uniqueTokens = (FCMap<MerkleUniqueTokenId, MerkleUniqueToken>) mock(FCMap.class);
+		uniqueTokenAccountOwnerships = (FCOneToManyRelation<EntityId, MerkleUniqueTokenId>) mock(FCOneToManyRelation.class);
 
 		properties = mock(GlobalDynamicProperties.class);
 		given(properties.maxTokensPerAccount()).willReturn(MAX_TOKENS_PER_ACCOUNT);
@@ -316,7 +317,7 @@ class HederaTokenStoreTest {
 		given(properties.maxCustomFeesAllowed()).willReturn(maxCustomFees);
 
 		subject = new HederaTokenStore(
-				ids, TEST_VALIDATOR, properties, () -> tokens, () -> uniqueTokens, tokenRelsLedger, nftsLedger);
+				ids, TEST_VALIDATOR, properties, () -> tokens, () -> uniqueTokenAccountOwnerships, tokenRelsLedger, nftsLedger);
 		subject.setAccountsLedger(accountsLedger);
 		subject.setHederaLedger(hederaLedger);
 		subject.knownTreasuries.put(treasury, new HashSet<>() {{ add(misc); }});
@@ -1014,6 +1015,9 @@ class HederaTokenStoreTest {
 		// setup:
 		long startSponsorNfts = 5, startCounterpartyNfts = 8;
 		long startSponsorANfts = 4, startCounterpartyANfts = 1;
+		var sender = EntityId.fromGrpcAccountId(sponsor);
+		var receiver = EntityId.fromGrpcAccountId(counterparty);
+		var muti = new MerkleUniqueTokenId(EntityId.fromGrpcTokenId(aNft.tokenId()), aNft.serialNo());
 
 		given(accountsLedger.get(sponsor, NUM_NFTS_OWNED)).willReturn(startSponsorNfts);
 		given(accountsLedger.get(counterparty, NUM_NFTS_OWNED)).willReturn(startCounterpartyNfts);
@@ -1025,7 +1029,9 @@ class HederaTokenStoreTest {
 
 		// expect:
 		assertEquals(OK, status);
-		verify(nftsLedger).set(aNft, NftProperty.OWNER, EntityId.fromGrpcAccountId(counterparty));
+		verify(nftsLedger).set(aNft, NftProperty.OWNER, receiver);
+		verify(uniqueTokenAccountOwnerships).disassociate(sender, muti);
+		verify(uniqueTokenAccountOwnerships).associate(receiver, muti);
 		verify(accountsLedger).set(sponsor, NUM_NFTS_OWNED, startSponsorNfts - 1);
 		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts + 1);
 		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts + 1);
