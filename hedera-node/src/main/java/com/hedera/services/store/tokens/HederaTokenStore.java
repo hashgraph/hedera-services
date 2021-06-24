@@ -562,6 +562,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		Optional<JKey> newWipeKey = changes.hasWipeKey() ? asUsableFcKey(changes.getWipeKey()) : Optional.empty();
 		Optional<JKey> newSupplyKey = changes.hasSupplyKey() ? asUsableFcKey(changes.getSupplyKey()) : Optional.empty();
 		Optional<JKey> newFreezeKey = changes.hasFreezeKey() ? asUsableFcKey(changes.getFreezeKey()) : Optional.empty();
+		Optional<JKey> newCustomFeesKey = changes.hasCustomFeesKey() ? asUsableFcKey(changes.getCustomFeesKey()) : Optional.empty();
 
 		var appliedValidity = new AtomicReference<>(OK);
 		apply(tId, token -> {
@@ -623,6 +624,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			if (changes.hasWipeKey()) {
 				token.setWipeKey(asFcKeyUnchecked(changes.getWipeKey()));
 			}
+			newCustomFeesKey.ifPresent(token::setCustomFeeKey);
 			if (hasNewSymbol) {
 				var newSymbol = changes.getSymbol();
 				token.setSymbol(newSymbol);
@@ -643,6 +645,13 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			var expiry = changes.getExpiry().getSeconds();
 			if (expiry != 0) {
 				token.setExpiry(expiry);
+			}
+			if (changes.hasCustomFees()) {
+				appliedValidity.set(validateFeeSchedule(changes.getCustomFees().getCustomFeesList()));
+				if (OK != appliedValidity.get()) {
+					return;
+				}
+				token.setFeeScheduleFrom(changes.getCustomFees());
 			}
 		});
 		return appliedValidity.get();
