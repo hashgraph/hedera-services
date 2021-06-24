@@ -173,7 +173,7 @@ public class FileServiceIT {
     createStubs();
   }
 
-  protected void readGenesisInfo() throws URISyntaxException, IOException {
+  protected void readGenesisInfo() throws IOException {
     Map<String, List<AccountKeyListObj>> keyFromFile = TestHelper.getKeyFromFile(INITIAL_ACCOUNTS_FILE);
 
     // Get Genesis Account key Pair
@@ -230,8 +230,7 @@ public class FileServiceIT {
   }
 
   @Test
-  public void test02CreateFile()
-      throws InvalidKeySpecException, DecoderException, InvalidKeyException, NoSuchAlgorithmException, UnsupportedEncodingException, SignatureException, Exception {
+  public void test02CreateFile() throws Exception {
     log.info("@@@ upload file at: " + localPath + "; file size in byte = " + fileData.size());
     log.info("host : " + host);
     log.info("node number : " + defaultListeningNodeAccountID.getAccountNum() );
@@ -775,8 +774,7 @@ public class FileServiceIT {
    *
    * @return key pairs of the given account
    */
-  protected static List<KeyPair> getAccountKeyPairs(AccountID accountID)
-      throws InvalidKeySpecException, DecoderException {
+  protected static List<KeyPair> getAccountKeyPairs(AccountID accountID) {
     List<KeyPair> keypairs;
     keypairs = account2keyMap.get(accountID);
     return keypairs;
