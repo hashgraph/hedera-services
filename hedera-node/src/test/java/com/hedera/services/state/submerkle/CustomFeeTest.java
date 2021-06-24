@@ -212,16 +212,6 @@ class CustomFeeTest {
 						.setMinimumAmount(minimumUnitsToCollect)
 						.setMaximumAmount(maximumUnitsToCollect)
 				).build();
-		final var grpcWithExplicitMaxAndDoubleNegAmount = CustomFeesOuterClass.CustomFee.newBuilder()
-				.setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
-				.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
-						.setFractionalAmount(Fraction.newBuilder()
-								.setNumerator(-validNumerator)
-								.setDenominator(-validDenominator)
-								.build())
-						.setMinimumAmount(minimumUnitsToCollect)
-						.setMaximumAmount(maximumUnitsToCollect)
-				).build();
 		final var grpcWithoutExplicitMax = CustomFeesOuterClass.CustomFee.newBuilder()
 				.setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
 				.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
@@ -234,12 +224,10 @@ class CustomFeeTest {
 
 		// when:
 		final var explicitMaxSubject = CustomFee.fromGrpc(grpcWithExplicitMax);
-		final var explicitMaxAndDoubleNegSubject = CustomFee.fromGrpc(grpcWithExplicitMaxAndDoubleNegAmount);
 		final var noExplicitMaxSubject = CustomFee.fromGrpc(grpcWithoutExplicitMax);
 
 		// then:
 		assertEquals(expectedExplicitMaxSubject, explicitMaxSubject);
-		assertEquals(expectedExplicitMaxSubject, explicitMaxAndDoubleNegSubject);
 		assertEquals(expectedNoExplicitMaxSubject, noExplicitMaxSubject);
 	}
 
