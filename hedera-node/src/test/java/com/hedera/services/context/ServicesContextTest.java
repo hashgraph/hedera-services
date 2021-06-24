@@ -208,15 +208,15 @@ public class ServicesContextTest {
 	FCMap<MerkleEntityId, MerkleSchedule> schedules;
 	FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
 	FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens;
-	FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAccountOwnerships;
-	FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations;
 	FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
+	FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations;
+	FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations;
 
 	@BeforeEach
 	void setup() {
 		uniqueTokens = mock(FCMap.class);
-		uniqueTokenAccountOwnerships = mock(FCOneToManyRelation.class);
 		uniqueTokenAssociations = mock(FCOneToManyRelation.class);
+		uniqueOwnershipAssociations = mock(FCOneToManyRelation.class);
 		topics = mock(FCMap.class);
 		tokens = mock(FCMap.class);
 		tokenAssociations = mock(FCMap.class);
@@ -444,12 +444,12 @@ public class ServicesContextTest {
 
 		ctx.rebuildOwnershipsAndAssociations();
 		assertEquals(expectedUTA.getKeySet(), ctx.uniqueTokenAssociations().getKeySet());
-		assertEquals(expectedUTAO.getKeySet(), ctx.uniqueTokenAccountOwnerships().getKeySet());
+		assertEquals(expectedUTAO.getKeySet(), ctx.uniqueOwnershipAssociations().getKeySet());
 		expectedUTA.getKeySet().forEach(key -> {
 			assertEquals(expectedUTA.getList(key), ctx.uniqueTokenAssociations().getList(key));
 		});
 		expectedUTAO.getKeySet().forEach(key -> {
-			assertEquals(expectedUTAO.getList(key), ctx.uniqueTokenAccountOwnerships().getList(key));
+			assertEquals(expectedUTAO.getList(key), ctx.uniqueOwnershipAssociations().getList(key));
 		});
 	}
 

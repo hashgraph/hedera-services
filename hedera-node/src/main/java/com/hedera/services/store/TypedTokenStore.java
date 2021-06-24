@@ -82,10 +82,14 @@ public class TypedTokenStore {
 	private final AccountStore accountStore;
 	private final TransactionRecordService transactionRecordService;
 	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
-	private final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens;
-	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueOwnership;
-	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations;
 	private final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels;
+
+	/* Data Structures for Tokens of type Non-Fungible Unique  */
+	private final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens;
+	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations;
+	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueOwnershipAssociations;
+
+
 	/* Only needed for interoperability with legacy HTS during refactor */
 	private final BackingNfts backingNfts;
 	private final BackingTokenRels backingTokenRels;
@@ -95,15 +99,15 @@ public class TypedTokenStore {
 			TransactionRecordService transactionRecordService,
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
 			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens,
-			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueOwnership,
+			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueOwnershipAssociations,
 			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations,
 			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels,
 			BackingTokenRels backingTokenRels,
 			BackingNfts backingNfts
 	) {
 		this.tokens = tokens;
-		this.uniqueOwnership = uniqueOwnership;
 		this.uniqueTokenAssociations = uniqueTokenAssociations;
+		this.uniqueOwnershipAssociations = uniqueOwnershipAssociations;
 		this.tokenRels = tokenRels;
 		this.uniqueTokens = uniqueTokens;
 		this.accountStore = accountStore;
@@ -253,7 +257,7 @@ public class TypedTokenStore {
 						new EntityId(uniqueToken.getOwner()), uniqueToken.getMetadata(), uniqueToken.getCreationTime());
 				uniqueTokens.get().put(merkleUniqueTokenId, merkleUniqueToken);
 				uniqueTokenAssociations.get().associate(new EntityId(uniqueToken.getTokenId()), merkleUniqueTokenId);
-				uniqueOwnership.get().associate(treasury, merkleUniqueTokenId);
+				uniqueOwnershipAssociations.get().associate(treasury, merkleUniqueTokenId);
 				backingNfts.addToExistingNfts(merkleUniqueTokenId.asNftId());
 			}
 		}
@@ -263,7 +267,7 @@ public class TypedTokenStore {
 						new EntityId(uniqueToken.getTokenId()), uniqueToken.getSerialNumber());
 				uniqueTokens.get().remove(merkleUniqueTokenId);
 				uniqueTokenAssociations.get().disassociate(new EntityId(uniqueToken.getTokenId()), merkleUniqueTokenId);
-				uniqueOwnership.get().disassociate(treasury, merkleUniqueTokenId);
+				uniqueOwnershipAssociations.get().disassociate(treasury, merkleUniqueTokenId);
 				backingNfts.removeFromExistingNfts(merkleUniqueTokenId.asNftId());
 			}
 		}

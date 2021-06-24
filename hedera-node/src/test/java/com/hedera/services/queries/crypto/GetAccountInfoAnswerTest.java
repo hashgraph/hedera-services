@@ -186,7 +186,7 @@ class GetAccountInfoAnswerTest {
 				StateView.EMPTY_TOPICS_SUPPLIER,
 				() -> accounts,
 				StateView.EMPTY_STORAGE_SUPPLIER,
-				StateView.EMPTY_NFTS_SUPPLIER,
+				StateView.EMPTY_UNIQUE_TOKENS_SUPPLIER,
 				() -> tokenRels,
 				StateView.EMPTY_UNIQUE_TOKEN_ASSOCS_SUPPLIER,
 				StateView.EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS_SUPPLIER,

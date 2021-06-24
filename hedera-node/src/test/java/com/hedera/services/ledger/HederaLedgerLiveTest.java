@@ -67,8 +67,6 @@ import static org.mockito.BDDMockito.verify;
 
 public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 	long thisSecond = 1_234_567L;
-	FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAccountOwnerships;
-
 	@BeforeEach
 	void setup() {
 		commonSetup();
@@ -79,8 +77,7 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 				new HashMapBackingAccounts(),
 				new ChangeSummaryManager<>());
 		FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
-		FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens = new FCMap<>();
-		uniqueTokenAccountOwnerships = new FCOneToManyRelation<>();
+		FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAccountOwnerships = new FCOneToManyRelation<>();
 
 		nftsLedger = new TransactionalLedger<>(
 				NftProperty.class,
@@ -98,7 +95,6 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 				TestContextValidator.TEST_VALIDATOR,
 				new MockGlobalDynamicProps(),
 				() -> tokens,
-				() -> uniqueTokens,
 				() -> uniqueTokenAccountOwnerships,
 				tokenRelsLedger,
 				nftsLedger);

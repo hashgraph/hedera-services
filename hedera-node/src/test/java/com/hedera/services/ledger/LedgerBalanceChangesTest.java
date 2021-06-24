@@ -84,14 +84,13 @@ import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class LedgerBalanceChangesTest {
-	private BackingStore<NftId, MerkleUniqueToken> backingNfts = new HashMapBackingNfts();
-	private BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
-	private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingRels = new HashMapBackingTokenRels();
+	private final BackingStore<NftId, MerkleUniqueToken> backingNfts = new HashMapBackingNfts();
+	private final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
+	private final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingRels = new HashMapBackingTokenRels();
 
 	private TokenStore tokenStore;
-	private FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
-	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens = new FCMap<>();
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAccountOwnerships = new FCOneToManyRelation<>();
+	private final FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
+	private final FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations = new FCOneToManyRelation<>();
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private TransactionalLedger<
 			Pair<AccountID, TokenID>,
@@ -134,8 +133,7 @@ class LedgerBalanceChangesTest {
 				validator,
 				dynamicProperties,
 				() -> tokens,
-				() -> uniqueTokens,
-				() -> uniqueTokenAccountOwnerships,
+				() -> uniqueOwnershipAssociations,
 				tokenRelsLedger,
 				nftsLedger);
 
@@ -226,8 +224,7 @@ class LedgerBalanceChangesTest {
 				validator,
 				dynamicProperties,
 				() -> tokens,
-				null,
-				null,
+				() -> uniqueOwnershipAssociations,
 				tokenRelsLedger,
 				nftsLedger);
 
@@ -462,23 +459,20 @@ class LedgerBalanceChangesTest {
 	}
 
 	private List<BalanceChange> fixtureChanges() {
-		final var ans = List.of(new BalanceChange[] {
-						tokenChange(yetAnotherToken, aModel, aYetAnotherTokenChange),
-						hbarChange(aModel, aHbarChange),
-						hbarChange(bModel, bHbarChange),
-						tokenChange(anotherToken, aModel, aAnotherTokenChange),
-						tokenChange(anotherToken, cModel, cAnotherTokenChange),
-						hbarChange(cModel, cHbarChange),
-						tokenChange(token, bModel, bTokenChange),
-						tokenChange(token, cModel, cTokenChange),
-						tokenChange(anotherToken, bModel, bAnotherTokenChange),
-						tokenChange(yetAnotherToken, bModel, bYetAnotherTokenChange),
-						changingNftOwnership(aNft, aNft.asGrpcToken(), nftXfer(aModel, bModel, aSerialNo)),
-						changingNftOwnership(bNft, bNft.asGrpcToken(), nftXfer(bModel, cModel, aSerialNo)),
-						changingNftOwnership(bNft, bNft.asGrpcToken(), nftXfer(cModel, aModel, bSerialNo)),
-				}
-		);
-		return ans;
+		return List.of(
+				tokenChange(yetAnotherToken, aModel, aYetAnotherTokenChange),
+				hbarChange(aModel, aHbarChange),
+				hbarChange(bModel, bHbarChange),
+				tokenChange(anotherToken, aModel, aAnotherTokenChange),
+				tokenChange(anotherToken, cModel, cAnotherTokenChange),
+				hbarChange(cModel, cHbarChange),
+				tokenChange(token, bModel, bTokenChange),
+				tokenChange(token, cModel, cTokenChange),
+				tokenChange(anotherToken, bModel, bAnotherTokenChange),
+				tokenChange(yetAnotherToken, bModel, bYetAnotherTokenChange),
+				changingNftOwnership(aNft, aNft.asGrpcToken(), nftXfer(aModel, bModel, aSerialNo)),
+				changingNftOwnership(bNft, bNft.asGrpcToken(), nftXfer(bModel, cModel, aSerialNo)),
+				changingNftOwnership(bNft, bNft.asGrpcToken(), nftXfer(cModel, aModel, bSerialNo)));
 	}
 
 	private Pair<AccountID, TokenID> rel(AccountID account, Id token) {

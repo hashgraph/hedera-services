@@ -87,7 +87,6 @@ import static com.hedera.services.state.submerkle.EntityId.fromGrpcTokenId;
 import static com.hedera.services.store.schedule.ExceptionalScheduleStore.NOOP_SCHEDULE_STORE;
 import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
 import static com.hedera.services.store.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
-import static com.hedera.services.store.tokens.TokenStore.MISSING_NFT;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
@@ -125,10 +124,10 @@ public class StateView {
 	public static final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> EMPTY_TOKEN_ASSOCS_SUPPLIER =
 			() -> EMPTY_TOKEN_ASSOCIATIONS;
 
-	public static final FCMap<MerkleUniqueTokenId, MerkleUniqueToken> EMPTY_NFTS =
+	public static final FCMap<MerkleUniqueTokenId, MerkleUniqueToken> EMPTY_UNIQUE_TOKENS =
 			new FCMap<>();
-	public static final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> EMPTY_NFTS_SUPPLIER =
-			() -> EMPTY_NFTS;
+	public static final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> EMPTY_UNIQUE_TOKENS_SUPPLIER =
+			() -> EMPTY_UNIQUE_TOKENS;
 
 	public static final FCOneToManyRelation<EntityId, MerkleUniqueTokenId> EMPTY_UNIQUE_TOKEN_ASSOCS =
 			new FCOneToManyRelation<>();
@@ -150,16 +149,16 @@ public class StateView {
 	Map<FileID, byte[]> fileContents;
 	Map<FileID, HFileMeta> fileAttrs;
 
-	private Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens;
-	private Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations;
-	private Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAccountOwnerships;
-
 	private final TokenStore tokenStore;
 	private final ScheduleStore scheduleStore;
 	private final Supplier<MerkleDiskFs> diskFs;
 	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 	private final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations;
+
+	private Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens;
+	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations;
+	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAccountOwnerships;
 
 	private final NodeLocalProperties properties;
 
@@ -175,7 +174,7 @@ public class StateView {
 				topics,
 				accounts,
 				EMPTY_STORAGE_SUPPLIER,
-				EMPTY_NFTS_SUPPLIER,
+				EMPTY_UNIQUE_TOKENS_SUPPLIER,
 				EMPTY_TOKEN_ASSOCS_SUPPLIER,
 				EMPTY_UNIQUE_TOKEN_ASSOCS_SUPPLIER,
 				EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS_SUPPLIER,
@@ -197,7 +196,7 @@ public class StateView {
 				topics,
 				accounts,
 				EMPTY_STORAGE_SUPPLIER,
-				EMPTY_NFTS_SUPPLIER,
+				EMPTY_UNIQUE_TOKENS_SUPPLIER,
 				EMPTY_TOKEN_ASSOCS_SUPPLIER,
 				EMPTY_UNIQUE_TOKEN_ASSOCS_SUPPLIER,
 				EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS_SUPPLIER,

@@ -582,9 +582,9 @@ public class ServicesContext {
 	private AtomicReference<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> queryableUniqueTokens;
 	private AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations;
 	private AtomicReference<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> queryableUniqueTokenAssociations;
-	private AtomicReference<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> queryableUniqueTokenAccountOwnerships;
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenOwnership = new FCOneToManyRelation<>();
+	private AtomicReference<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> queryableUniqueOwnershipAssociations;
 	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations = new FCOneToManyRelation<>();
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations = new FCOneToManyRelation<>();
 
 	/* Context-free infrastructure. */
 	private static Pause pause;
@@ -867,7 +867,7 @@ public class ServicesContext {
 					this::uniqueTokens,
 					this::tokenAssociations,
 					this::uniqueTokenAssociations,
-					this::uniqueTokenAccountOwnerships,
+					this::uniqueOwnershipAssociations,
 					this::diskFs,
 					nodeLocalProperties());
 		}
@@ -976,7 +976,7 @@ public class ServicesContext {
 					new TransactionRecordService(txnCtx()),
 					this::tokens,
 					this::uniqueTokens,
-					this::uniqueTokenAccountOwnerships,
+					this::uniqueOwnershipAssociations,
 					this::uniqueTokenAssociations,
 					this::tokenAssociations,
 					(BackingTokenRels) backingTokenRels(),
@@ -1583,8 +1583,7 @@ public class ServicesContext {
 					validator(),
 					globalDynamicProperties(),
 					this::tokens,
-					this::uniqueTokens,
-					this::uniqueTokenAccountOwnerships,
+					this::uniqueOwnershipAssociations,
 					tokenRelsLedger,
 					nftsLedger);
 		}
@@ -2092,10 +2091,10 @@ public class ServicesContext {
 	}
 
 	public AtomicReference<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> queryableUniqueTokenAccountOwnerships() {
-		if (queryableUniqueTokenAccountOwnerships == null) {
-			queryableUniqueTokenAccountOwnerships = new AtomicReference<>(uniqueTokenAccountOwnerships());
+		if (queryableUniqueOwnershipAssociations == null) {
+			queryableUniqueOwnershipAssociations = new AtomicReference<>(uniqueOwnershipAssociations());
 		}
-		return queryableUniqueTokenAccountOwnerships;
+		return queryableUniqueOwnershipAssociations;
 	}
 
 	public UsagePricesProvider usagePrices() {
@@ -2213,10 +2212,10 @@ public class ServicesContext {
 		var uniqueTokens= state.uniqueTokens();
 		var keys = uniqueTokens.keySet();
 		this.uniqueTokenAssociations = new FCOneToManyRelation<>();
-		this.uniqueTokenOwnership = new FCOneToManyRelation<>();
+		this.uniqueOwnershipAssociations = new FCOneToManyRelation<>();
 		for (MerkleUniqueTokenId key : keys) {
 			this.uniqueTokenAssociations.associate(key.tokenId(), key);
-			this.uniqueTokenOwnership.associate(uniqueTokens.get(key).getOwner(), key);
+			this.uniqueOwnershipAssociations.associate(uniqueTokens.get(key).getOwner(), key);
 		}
 	}
 
@@ -2228,8 +2227,8 @@ public class ServicesContext {
 		return this.uniqueTokenAssociations;
 	}
 
-	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAccountOwnerships() {
-		return this.uniqueTokenOwnership;
+	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations() {
+		return this.uniqueOwnershipAssociations;
 	}
 
 	public FCMap<MerkleEntityId, MerkleSchedule> schedules() {
