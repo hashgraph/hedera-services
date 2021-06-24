@@ -21,12 +21,17 @@ package com.hedera.services.store.models;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.txns.validation.OptionValidator;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
 /**
  * Encapsulates the state and operations of a Hedera account-token relationship.
@@ -89,6 +94,29 @@ public class TokenRelationship {
 
 		balanceChange += (balance - this.balance);
 		this.balance = balance;
+	}
+
+	private void adjustBalance(long adjustment) {
+		balanceChange += adjustment;
+		this.balance += adjustment;
+	}
+
+	public void validateAndDissociate(final OptionValidator validator,
+			TokenRelationship treasuryRelationShip) {
+		final var treasury = token.getTreasury();
+		validateFalse(!token.isDeleted() && treasury.getId().equals(account.getId()), ACCOUNT_IS_TREASURY);
+		validateFalse(!token.isDeleted() && isFrozen(), ACCOUNT_FROZEN_FOR_TOKEN);
+
+		if(balance > 0) {
+			final var expiry = Timestamp.newBuilder().setSeconds(token.getExpiry()).build();
+			final var isTokenExpired = !validator.isValidExpiry(expiry);
+			validateFalse(!token.isDeleted() && !isTokenExpired, TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+			if(!token.isDeleted()) {
+				/* Must be expired; return balance to treasury account. */
+				treasuryRelationShip.adjustBalance(balance);
+				this.adjustBalance(-balance);
+			}
+		}
 	}
 
 	public boolean isFrozen() {

@@ -21,6 +21,7 @@ package com.hedera.services.records;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -28,7 +29,10 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class TransactionRecordService {
 	private final TransactionContext txnCtx;
@@ -57,7 +61,7 @@ public class TransactionRecordService {
 
 	/**
 	 * Update the record of the active transaction with the changes to the
-	 * given token relationship. Only balance changes need to be included in
+	 * given token relationships. Only balance changes need to be included in
 	 * the record.
 	 *
 	 * <b>IMPORTANT:</b> In general, the {@code TransactionRecordService} must
@@ -66,30 +70,35 @@ public class TransactionRecordService {
 	 * with just a refactor of burn and mint, the below implementation suffices
 	 * for now.
 	 *
-	 * @param tokenRel
-	 * 		the model of a changed token relationship
+	 * @param tokenRels
+	 * 		List of the model of a changed token relationship
 	 */
-	public void includeChangesToTokenRel(TokenRelationship tokenRel) {
-		if (tokenRel.getBalanceChange() == 0L) {
-			return;
+	public void includeChangesToTokenRel(List<TokenRelationship> tokenRels) {
+		Map<Id, TokenTransferList.Builder> transferListMap = new HashMap<>();
+		for(var tokenRel : tokenRels) {
+			if (tokenRel.getBalanceChange() == 0L) {
+				continue;
+			}
+			final var tokenId = tokenRel.getToken().getId();
+			final var accountId = tokenRel.getAccount().getId();
+
+			var tokenTransferListBuilder = transferListMap.getOrDefault(tokenId,
+					TokenTransferList.newBuilder().setToken(TokenID.newBuilder()
+							.setShardNum(tokenId.getShard())
+							.setRealmNum(tokenId.getRealm())
+							.setTokenNum(tokenId.getNum())));
+
+			tokenTransferListBuilder.addTransfers(AccountAmount.newBuilder()
+					.setAccountID(AccountID.newBuilder()
+							.setShardNum(accountId.getShard())
+							.setRealmNum(accountId.getRealm())
+							.setAccountNum(accountId.getNum()))
+					.setAmount(tokenRel.getBalanceChange()));
+			transferListMap.put(tokenId, tokenTransferListBuilder);
 		}
 
-		final var tokenId = tokenRel.getToken().getId();
-		final var accountId = tokenRel.getAccount().getId();
-		final var supplyChangeXfers = List.of(
-				TokenTransferList.newBuilder()
-						.setToken(TokenID.newBuilder()
-								.setShardNum(tokenId.getShard())
-								.setRealmNum(tokenId.getRealm())
-								.setTokenNum(tokenId.getNum()))
-						.addTransfers(AccountAmount.newBuilder()
-								.setAccountID(AccountID.newBuilder()
-										.setShardNum(accountId.getShard())
-										.setRealmNum(accountId.getRealm())
-										.setAccountNum(accountId.getNum()))
-								.setAmount(tokenRel.getBalanceChange()))
-						.build()
+		txnCtx.setTokenTransferLists(
+				transferListMap.values().stream().map(TokenTransferList.Builder::build).collect(Collectors.toList())
 		);
-		txnCtx.setTokenTransferLists(supplyChangeXfers);
 	}
 }

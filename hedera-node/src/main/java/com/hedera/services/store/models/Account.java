@@ -34,6 +34,7 @@ import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 
 /**
  * Encapsulates the state and operations of a Hedera account.
@@ -82,6 +83,16 @@ public class Account {
 		}
 
 		associatedTokens.addAllIds(uniqueIds);
+	}
+
+	public void dissociateWith(List<Token> tokens) {
+		final Set<Id> uniqueIds = new HashSet<>();
+		for (var token : tokens) {
+			final var id = token.getId();
+			validateTrue(associatedTokens.contains(id), TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+			uniqueIds.add(id);
+		}
+		associatedTokens.removeAllIds(uniqueIds);
 	}
 
 	public Id getId() {

@@ -22,35 +22,50 @@ package com.hedera.services.store.models;
 
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.txns.validation.ContextOptionValidator;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 class TokenRelationshipTest {
 	private final Id tokenId = new Id(0, 0, 1234);
 	private final Id accountId = new Id(1, 0, 1234);
+	private final Id treasuryId = new Id(1, 0, 4321);
 	private final long balance = 1_234L;
 	private final JKey kycKey = TxnHandlingScenario.TOKEN_KYC_KT.asJKeyUnchecked();
 	private final JKey freezeKey = TxnHandlingScenario.TOKEN_FREEZE_KT.asJKeyUnchecked();
 
 	private Token token;
 	private Account account;
+	private OptionValidator validator;
 
 	private TokenRelationship subject;
+	TokenRelationship treasuryRealtionship;
 
 	@BeforeEach
 	void setUp() {
 		token = new Token(tokenId);
 		account = new Account(accountId);
+		Account treasury = new Account(treasuryId);
+		validator = mock(ContextOptionValidator.class);
 		
 		subject = new TokenRelationship(token, account);
+		treasuryRealtionship = new TokenRelationship(token, treasury);
+		token.setTreasury(treasury);
 		subject.initBalance(balance);
+		treasuryRealtionship.setBalance(balance);
 	}
 
 	@Test
@@ -58,9 +73,10 @@ class TokenRelationshipTest {
 		// given:
 		final var desired = "TokenRelationship{notYetPersisted=true, " +
 				"account=Account{id=Id{shard=1, realm=0, num=1234}, expiry=0, balance=0, deleted=false, " +
-				"tokens=<N/A>}, token=Token{id=Id{shard=0, realm=0, num=1234}, treasury=null, autoRenewAccount=null, " +
-				"kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>}, balance=1234, " +
-				"balanceChange=0, frozen=false, kycGranted=false}";
+				"tokens=<N/A>}, token=Token{id=Id{shard=0, realm=0, num=1234}, " +
+				"treasury=Account{id=Id{shard=1, realm=0, num=4321}, expiry=0, balance=0, deleted=false, tokens=<N/A>}," +
+				" autoRenewAccount=null, kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>}," +
+				" balance=1234, balanceChange=0, frozen=false, kycGranted=false}";
 
 		// expect:
 		assertEquals(desired, subject.toString());
@@ -132,6 +148,46 @@ class TokenRelationshipTest {
 
 		// then:
 		assertEquals(1, subject.getBalanceChange());
+	}
+
+	@Test
+	void dissociateWithTreasuryFails() {
+		assertFailsWith(() -> treasuryRealtionship.validateAndDissociate(validator, treasuryRealtionship), ACCOUNT_IS_TREASURY);
+	}
+
+	@Test
+	void dissociateWithFrozenRelationshipFails() {
+		// given:
+		subject.setFrozen(true);
+
+		// verify:
+		assertFailsWith(() -> subject.validateAndDissociate(validator, treasuryRealtionship), ACCOUNT_FROZEN_FOR_TOKEN);
+		assertEquals(balance, subject.getBalance());
+		assertEquals(balance, treasuryRealtionship.getBalance());
+	}
+
+	@Test
+	void dissociateWithNonZeroBalanceFails() {
+		// given:
+		given(validator.isValidExpiry(any())).willReturn(true);
+
+		// verify:
+		assertFailsWith(() -> subject.validateAndDissociate(validator, treasuryRealtionship), TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+		assertEquals(balance, subject.getBalance());
+		assertEquals(balance, treasuryRealtionship.getBalance());
+	}
+
+	@Test
+	void dissociationTransfersBalanceAsExpectedToTreasuryOfExpiredToken() {
+		// given:
+		given(validator.isValidExpiry(any())).willReturn(false);
+
+		// when:
+		subject.validateAndDissociate(validator, treasuryRealtionship);
+
+		// then:
+		assertEquals(0, subject.getBalance());
+		assertEquals(2*balance, treasuryRealtionship.getBalance());
 	}
 
 	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {

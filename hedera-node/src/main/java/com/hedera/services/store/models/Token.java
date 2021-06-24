@@ -58,6 +58,8 @@ public class Token {
 	private boolean frozenByDefault;
 	private Account treasury;
 	private Account autoRenewAccount;
+	private boolean isDeleted;
+	private long expiry;
 
 	public Token(Id id) {
 		this.id = id;
@@ -167,9 +169,25 @@ public class Token {
 		return id;
 	}
 
+	public boolean isDeleted() {
+		return isDeleted;
+	}
+
+	public void setIsDeleted(final boolean deleted) {
+		isDeleted = deleted;
+	}
+
+	public long getExpiry() {
+		return expiry;
+	}
+
+	public void setExpiry(final long expiry) {
+		this.expiry = expiry;
+	}
+
 	/* NOTE: The object methods below are only overridden to improve
-	readability of unit tests; this model object is not used in hash-based
-	collections, so the performance of these methods doesn't matter. */
+			readability of unit tests; this model object is not used in hash-based
+			collections, so the performance of these methods doesn't matter. */
 	@Override
 	public boolean equals(Object obj) {
 		return EqualsBuilder.reflectionEquals(this, obj);

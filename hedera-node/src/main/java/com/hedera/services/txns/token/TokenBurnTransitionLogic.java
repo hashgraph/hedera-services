@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -72,7 +73,7 @@ public class TokenBurnTransitionLogic implements TransitionLogic {
 
 		/* --- Persist the updated models --- */
 		store.persistToken(token);
-		store.persistTokenRelationship(treasuryRel);
+		store.persistTokenRelationships(List.of(treasuryRel));
 	}
 
 	@Override

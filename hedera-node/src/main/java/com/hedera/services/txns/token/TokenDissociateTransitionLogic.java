@@ -21,7 +21,10 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
@@ -29,14 +32,14 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.txns.validation.TokenListChecks.repeatsItself;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 
 /**
@@ -49,26 +52,53 @@ public class TokenDissociateTransitionLogic implements TransitionLogic {
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
-	private final TokenStore store;
+	private final AccountStore accountStore;
+	private final TypedTokenStore tokenStore;
 	private final TransactionContext txnCtx;
 
 	public TokenDissociateTransitionLogic(
-			TokenStore store,
+			TypedTokenStore tokenStore,
+			AccountStore accountStore,
 			TransactionContext txnCtx
 	) {
-		this.store = store;
+		this.accountStore = accountStore;
+		this.tokenStore = tokenStore;
 		this.txnCtx = txnCtx;
 	}
 
 	@Override
 	public void doStateTransition() {
-		try {
-			var op = txnCtx.accessor().getTxn().getTokenDissociate();
-			var outcome = store.dissociate(op.getAccount(), op.getTokensList());
-			txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
-		} catch (Exception e) {
-			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
-			txnCtx.setStatus(FAIL_INVALID);
+		/* --- Translate from gRPC types --- */
+		var op = txnCtx.accessor().getTxn().getTokenDissociate();
+		/* First the account */
+		final var grpcId = op.getAccount();
+		final var accountId = new Id(grpcId.getShardNum(), grpcId.getRealmNum(), grpcId.getAccountNum());
+		/* And then the tokens */
+		final List<Id> tokenIds = new ArrayList<>();
+		for (final var _grpcId : op.getTokensList()) {
+			tokenIds.add(new Id(_grpcId.getShardNum(), _grpcId.getRealmNum(), _grpcId.getTokenNum()));
+		}
+
+		/* --- Load the model objects --- */
+		final var account = accountStore.loadAccount(accountId);
+		final List<TokenRelationship> tokenRelationships = new ArrayList<>();
+		for (final var tokenId : tokenIds) {
+			final var token = tokenStore.loadPossiblyDeletedToken(tokenId);
+			var tokenRelationShip = tokenStore.loadTokenRelationship(token, account);
+			tokenRelationships.add(tokenRelationShip);
+		}
+
+		/* --- Do the business logic --- */
+		for(TokenRelationship tokenRelationship : tokenRelationships) {
+			var token = tokenRelationship.getToken();
+			var treasury = token.getTreasury();
+			var treasuryRelationShip = tokenStore.loadTokenRelationship(token, treasury);
+			tokenRelationship.validateAndDissociate(accountStore.getValidator(), treasuryRelationShip);
+			account.dissociateWith(List.of(token));
+
+			/* --- Persist the updated models --- */
+			accountStore.persistAccount(account);
+			tokenStore.persistTokenRelationships(List.of(treasuryRelationShip, tokenRelationship));
 		}
 	}
 

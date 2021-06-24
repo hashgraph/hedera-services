@@ -42,6 +42,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
+
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -109,13 +111,13 @@ class TypedTokenStoreTest {
 		modelTokenRel.setFrozen(!frozen);
 		modelTokenRel.setKycGranted(!kycGranted);
 		// and:
-		subject.persistTokenRelationship(modelTokenRel);
+		subject.persistTokenRelationships(List.of(modelTokenRel));
 
 		// then:
 		assertEquals(expectedReplacementTokenRel, miscTokenMerkleRel);
 		verify(tokenRels, never()).replace(miscTokenRelId, expectedReplacementTokenRel);
 		// and:
-		verify(transactionRecordService).includeChangesToTokenRel(modelTokenRel);
+		verify(transactionRecordService).includeChangesToTokenRel(List.of(modelTokenRel));
 	}
 
 	@Test
@@ -130,12 +132,12 @@ class TypedTokenStoreTest {
 		newTokenRel.setKycGranted(true);
 		newTokenRel.setBalance(balance * 2);
 		// and:
-		subject.persistTokenRelationship(newTokenRel);
+		subject.persistTokenRelationships(List.of(newTokenRel));
 
 		// then:
 		verify(tokenRels).put(miscTokenRelId, expectedNewTokenRel);
 		// and:
-		verify(transactionRecordService).includeChangesToTokenRel(newTokenRel);
+		verify(transactionRecordService).includeChangesToTokenRel(List.of(newTokenRel));
 	}
 
 	/* --- Token loading --- */
@@ -165,6 +167,21 @@ class TypedTokenStoreTest {
 	@Test
 	void failsLoadingMissingToken() {
 		assertTokenLoadFailsWith(INVALID_TOKEN_ID);
+	}
+
+	@Test
+	void failsLoadingMissingTokenWithloadPossiblyDeletedToken() {
+		assertloadPossiblyDeletedTokenFailsWith(INVALID_TOKEN_ID);
+	}
+
+	@Test
+	void successfullyLoadDeletedToken() {
+		givenToken(merkleTokenId, merkleToken);
+		merkleToken.setDeleted(true);
+
+		var deltedToken = subject.loadPossiblyDeletedToken(tokenId);
+
+		assertEquals(token.getId(), deltedToken.getId());
 	}
 
 	@Test
@@ -200,6 +217,8 @@ class TypedTokenStoreTest {
 		modelToken.setAutoRenewAccount(treasuryAccount);
 		modelToken.setTreasury(autoRenewAccount);
 		modelToken.setFrozenByDefault(!freezeDefault);
+		modelToken.setIsDeleted(false);
+		modelToken.setExpiry(expiry);
 		// and:
 		subject.persistToken(modelToken);
 
@@ -231,6 +250,11 @@ class TypedTokenStoreTest {
 		assertEquals(status, ex.getResponseCode());
 	}
 
+	private void assertloadPossiblyDeletedTokenFailsWith(ResponseCodeEnum status) {
+		var ex = assertThrows(InvalidTransactionException.class, () -> subject.loadPossiblyDeletedToken(tokenId));
+		assertEquals(status, ex.getResponseCode());
+	}
+
 	private void assertMiscRelLoadFailsWith(ResponseCodeEnum status) {
 		var ex = assertThrows(InvalidTransactionException.class,
 				() -> subject.loadTokenRelationship(token, miscAccount));
@@ -255,6 +279,8 @@ class TypedTokenStoreTest {
 		token.setSupplyKey(supplyKey);
 		token.setFreezeKey(freezeKey);
 		token.setFrozenByDefault(freezeDefault);
+		token.setIsDeleted(false);
+		token.setExpiry(expiry);
 	}
 
 	private void setupTokenRel() {

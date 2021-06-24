@@ -32,13 +32,11 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -92,7 +90,7 @@ class TransactionRecordServiceTest {
 		tokenRel.setBalance(123L);
 
 		// when:
-		subject.includeChangesToTokenRel(tokenRel);
+		subject.includeChangesToTokenRel(List.of(tokenRel));
 
 		// then:
 		verify(txnCtx).setTokenTransferLists(List.of(TokenTransferList.newBuilder()
@@ -112,7 +110,7 @@ class TransactionRecordServiceTest {
 		tokenRel.initBalance(123L);
 
 		// when:
-		subject.includeChangesToTokenRel(tokenRel);
+		subject.includeChangesToTokenRel(List.of(tokenRel));
 
 		// then:
 		verify(txnCtx, never()).setTokenTransferLists(any());
