@@ -812,7 +812,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			return TOKEN_WAS_DELETED;
 		}
 
-		var key = asTokenRel(receiverAId, tId);
+		var key = asTokenRel(senderAId, tId);
 		if (!tokenRelsLedger.exists(key)) {
 			return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 		}

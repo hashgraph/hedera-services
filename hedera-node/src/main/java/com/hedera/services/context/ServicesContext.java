@@ -88,7 +88,6 @@ import com.hedera.services.fees.calculation.schedule.txns.ScheduleDeleteResource
 import com.hedera.services.fees.calculation.schedule.txns.ScheduleSignResourceUsage;
 import com.hedera.services.fees.calculation.system.txns.FreezeResourceUsage;
 import com.hedera.services.fees.calculation.token.queries.GetTokenInfoResourceUsage;
-import com.hedera.services.fees.calculation.token.queries.GetTokenNftInfoResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenAssociateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenBurnResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenCreateResourceUsage;
@@ -322,7 +321,6 @@ import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
 import com.hedera.services.utils.TxnAccessor;
-import com.hedera.services.utils.invertible_fchashmap.FCInvertibleHashMap;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -991,8 +989,7 @@ public class ServicesContext {
 	public TokenAnswers tokenAnswers() {
 		if (tokenAnswers == null) {
 			tokenAnswers = new TokenAnswers(
-					new GetTokenInfoAnswer(),
-					new GetTokenNftInfoAnswer()
+					new GetTokenInfoAnswer()
 			);
 		}
 		return tokenAnswers;
@@ -1532,7 +1529,6 @@ public class ServicesContext {
 					validator(),
 					globalDynamicProperties(),
 					this::tokens,
-					this::uniqueTokens,
 					tokenRelsLedger);
 		}
 		return tokenStore;
@@ -2011,14 +2007,6 @@ public class ServicesContext {
 		return queryableSchedules;
 	}
 
-	public AtomicReference<FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier>> queryableUniqueTokens() {
-		if (queryableUniqueTokens == null) {
-			queryableUniqueTokens = new AtomicReference<>(uniqueTokens());
-		}
-
-		return queryableUniqueTokens;
-	}
-
 	public UsagePricesProvider usagePrices() {
 		if (usagePrices == null) {
 			usagePrices = new AwareFcfsUsagePrices(hfs(), fileNums(), txnCtx());
@@ -2128,10 +2116,6 @@ public class ServicesContext {
 
 	public FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations() {
 		return state.tokenAssociations();
-	}
-
-	public FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier> uniqueTokens() {
-		return state.uniqueTokens();
 	}
 
 	public FCMap<MerkleEntityId, MerkleSchedule> schedules() {

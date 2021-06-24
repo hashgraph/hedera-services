@@ -274,12 +274,14 @@ public class Token {
 	public String toString() {
 		return MoreObjects.toStringHelper(Token.class)
 				.add("id", id)
+				.add("type", type)
 				.add("treasury", treasury)
 				.add("autoRenewAccount", autoRenewAccount)
 				.add("kycKey", describe(kycKey))
 				.add("freezeKey", describe(freezeKey))
 				.add("frozenByDefault", frozenByDefault)
 				.add("supplyKey", describe(supplyKey))
+				.add("currentSerialNumber", lastUsedSerialNumber)
 				.toString();
 	}
 }

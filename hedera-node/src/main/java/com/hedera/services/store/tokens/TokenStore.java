@@ -83,6 +83,10 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 
 	MerkleUniqueToken getUniqueToken(NftID id);
 
+	NftID resolve(NftID id);
+
+	MerkleUniqueToken getUniqueToken(NftID id);
+
 	default ResponseCodeEnum delete(TokenID id) {
 		var idRes = resolve(id);
 		if (idRes == MISSING_TOKEN) {
