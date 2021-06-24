@@ -126,6 +126,14 @@
         <enabled>true</enabled>
       </snapshots>
     </repository>
+    <repository>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>alpha-sdk</id>
+      <name>OSSRH</name>
+      <url>https://oss.sonatype.org/content/repositories/comswirlds-1112</url>
+    </repository>
   </repositories>
   <distributionManagement>
     <snapshotRepository>
