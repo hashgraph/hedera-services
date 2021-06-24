@@ -258,13 +258,21 @@ class StateViewTest {
 		StateView.tokenRelsFn = mockTokenRelsFn;
 		given(mockTokenRelsFn.apply(any(), any())).willReturn(Collections.emptyList());
 
+		final var uniqueTokenAccountOwnerships = new FCMap<MerkleUniqueTokenId, MerkleUniqueToken>();
+		uniqueTokenAccountOwnerships.put(targetNftKey, targetNft);
+
 		subject = new StateView(
 				tokenStore,
 				scheduleStore,
 				StateView.EMPTY_TOPICS_SUPPLIER,
 				() -> contracts,
-				nodeProps,
-				() -> diskFs);
+				StateView.EMPTY_STORAGE_SUPPLIER,
+				() -> uniqueTokenAccountOwnerships,
+				StateView.EMPTY_TOKEN_ASSOCS_SUPPLIER,
+				StateView.EMPTY_UNIQUE_TOKEN_ASSOCS_SUPPLIER,
+				StateView.EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS_SUPPLIER,
+				() -> diskFs,
+				nodeProps);
 		subject.fileAttrs = attrs;
 		subject.fileContents = contents;
 		subject.contractBytecode = bytecode;
@@ -285,11 +293,6 @@ class StateViewTest {
 
 	@Test
 	void nftExistsWorks() {
-		// given:
-		final var delegate = new FCMap<MerkleUniqueTokenId, MerkleUniqueToken>();
-		delegate.put(targetNftKey, targetNft);
-		// and:
-		subject.setNfts(() -> delegate);
 		// expect:
 		assertTrue(subject.nftExists(targetNftId));
 		assertFalse(subject.nftExists(missingNftId));
@@ -740,7 +743,7 @@ class StateViewTest {
 	@Test
 	void rejectsMissingNft() {
 		// when:
-		final var optionalNftInfo = subject.infoForNft(targetNftId);
+		final var optionalNftInfo = subject.infoForNft(missingNftId);
 
 		// then:
 		assertTrue(optionalNftInfo.isEmpty());
@@ -748,12 +751,6 @@ class StateViewTest {
 
 	@Test
 	void getNftsAsExpected() {
-		// setup:
-		final var delegate = new FCMap<MerkleUniqueTokenId, MerkleUniqueToken>();
-		delegate.put(targetNftKey, targetNft);
-		// and:
-		subject.setNfts(() -> delegate);
-
 		// when:
 		final var optionalNftInfo = subject.infoForNft(targetNftId);
 

@@ -253,6 +253,8 @@ public class ServicesContextTest {
 		var newStorage = mock(FCMap.class);
 		var newTokens = mock(FCMap.class);
 		var newTokenRels = mock(FCMap.class);
+		var newUniqueTokenAssociations = mock(FCOneToManyRelation.class);
+		var newUniqueTokenAccountOwnerships = mock(FCOneToManyRelation.class);
 		var newSchedules = mock(FCMap.class);
 		var newUniqueTokens = mock(FCMap.class);
 
@@ -273,6 +275,8 @@ public class ServicesContextTest {
 		var tokenRelsRef = subject.queryableTokenAssociations();
 		var schedulesRef = subject.queryableSchedules();
 		var uniqueTokensRef = subject.queryableUniqueTokens();
+		var uniqueTokenAssociationsRef = subject.queryableUniqueTokenAssociations();
+		var uniqueTokenAccountOwnershipsRef = subject.queryableUniqueTokenAccountOwnerships();
 
 		// when:
 		subject.update(newState);
@@ -286,14 +290,25 @@ public class ServicesContextTest {
 		assertSame(tokenRelsRef, subject.queryableTokenAssociations());
 		assertSame(schedulesRef, subject.queryableSchedules());
 		assertSame(uniqueTokensRef, subject.queryableUniqueTokens());
+		assertSame(uniqueTokenAssociationsRef, subject.queryableUniqueTokenAssociations());
+		assertSame(uniqueTokenAccountOwnershipsRef, subject.queryableUniqueTokenAccountOwnerships());
 		// and:
 		assertSame(newAccounts, subject.queryableAccounts().get());
 		assertSame(newTopics, subject.queryableTopics().get());
 		assertSame(newStorage, subject.queryableStorage().get());
 		assertSame(newTokens, subject.queryableTokens().get());
 		assertSame(newTokenRels, subject.queryableTokenAssociations().get());
+		compareFCOTMR(newUniqueTokenAssociations, subject.queryableUniqueTokenAssociations().get());
+		compareFCOTMR(newUniqueTokenAccountOwnerships, subject.queryableUniqueTokenAccountOwnerships().get());
 		assertSame(newSchedules, subject.queryableSchedules().get());
 		assertSame(newUniqueTokens, subject.queryableUniqueTokens().get());
+	}
+
+	void compareFCOTMR(FCOneToManyRelation expected, FCOneToManyRelation actual) {
+		assertEquals(expected.getKeySet(), actual.getKeySet());
+		expected.getKeySet().forEach(key -> {
+			assertEquals(expected.getList(key), actual.getList(key));
+		});
 	}
 
 	@Test

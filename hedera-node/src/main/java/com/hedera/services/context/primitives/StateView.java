@@ -565,8 +565,4 @@ public class StateView {
 	public Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations() {
 		return tokenAssociations;
 	}
-
-	void setNfts(Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens) {
-		this.uniqueTokens = uniqueTokens;
-	}
 }
