@@ -21,7 +21,7 @@ public class SequentialVsRandom {
         deleteAnyOld();
         Files.createDirectories(STORE_PATH);
         final int SLOT_SIZE_BYTES = 1024;
-        final int TEST_SIZE_SLOTS = 1024 * (512);
+        final int TEST_SIZE_SLOTS = 1024 * (1024+512);
         final int TEST_SIZE_MB = (SLOT_SIZE_BYTES*TEST_SIZE_SLOTS)/(1024*1024);
         // create random data
         byte[][] data = new byte[TEST_SIZE_SLOTS][];

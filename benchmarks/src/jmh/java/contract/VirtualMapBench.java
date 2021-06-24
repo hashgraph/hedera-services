@@ -54,7 +54,7 @@ import static com.hedera.services.state.merkle.virtual.VirtualTreePath.INVALID_P
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
 public class VirtualMapBench {
-    private InMemoryDataSource ds = new InMemoryDataSource();
+  /*  private InMemoryDataSource ds = new InMemoryDataSource();
     private MemMapDataSource ds2;
     private VirtualMapDataStore store;
     private Random rand = new Random();
@@ -406,5 +406,5 @@ public class VirtualMapBench {
             }
             closed = true;
         }
-    }
+    }*/
 }
