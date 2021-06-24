@@ -4,16 +4,20 @@ import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.virtual.persistence.FCSlotIndex;
 import com.hedera.services.state.merkle.virtual.persistence.FCVirtualMapDataStore;
 import com.hedera.services.state.merkle.virtual.persistence.SlotStore;
-import com.hedera.services.state.submerkle.EntityId;
-import com.swirlds.common.constructable.ClassConstructorPair;
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import org.openjdk.jmh.annotations.*;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -24,8 +28,8 @@ import static com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCVirt
  * Microbenchmark tests for the FCVirtualMapDataStore.
  */
 @State(Scope.Thread)
-@Warmup(iterations = 1, time = 2, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 1, time = 5, timeUnit = TimeUnit.SECONDS)
+@Warmup(iterations = 0, time = 1, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 1, time = 10, timeUnit = TimeUnit.MILLISECONDS)
 @Fork(1)
 //@Warmup(iterations = 1, time = 10, timeUnit = TimeUnit.SECONDS)
 //@Measurement(iterations = 1, time = 15, timeUnit = TimeUnit.SECONDS)
@@ -49,18 +53,13 @@ public class FCVirtualMapDataStoreBench {
         private String slotStoreImpl;
 
         // state
-        public FCVirtualMapDataStore<SerializableLong, SerializableAccount, SerializableLong, MerkleAccountState> store;
+        public FCVirtualMapDataStore<SerializableLong, Hash, SerializableAccount, SerializableLong, MerkleAccountState> store;
         public Random random = new Random(1234);
         public int iteration = 0;
 
         @Setup(Level.Iteration)
         public void setup() {
             System.out.println("FCVirtualMapDataStoreBench.cleanAndCreate");
-            try {
-                ConstructableRegistry.registerConstructable(new ClassConstructorPair(EntityId.class,EntityId::new));
-            } catch (ConstructableRegistryException e) {
-                e.printStackTrace();
-            }
             try {
                 // delete any old store
                 deleteDirectoryAndContents(STORE_PATH);
@@ -74,11 +73,11 @@ public class FCVirtualMapDataStoreBench {
                 // measure the size of a MerkleAccountState
                 int sizeOfMerkleAccountState = measureLengthOfSerializable(createRandomMerkleAccountState(1, random));
                 // create and open store
-                store = new FCVirtualMapDataStoreImpl<SerializableLong, SerializableAccount, SerializableLong, MerkleAccountState>(STORE_PATH, 250,
-                        8,
+                store = new FCVirtualMapDataStoreImpl<SerializableLong, Hash, SerializableAccount, SerializableLong, MerkleAccountState>(STORE_PATH, 10,
+                        8, HASH_DATA_SIZE,
                         8 * 3, 8, sizeOfMerkleAccountState,
                         longSlotIndexProvider, longSlotIndexProvider, accountIndexProvider,
-                        MerkleAccountState::new, slotStoreSupplier);
+                        Hash::new, MerkleAccountState::new, slotStoreSupplier);
                 store.open();
                 // reset iteration counter
                 iteration = 0;
@@ -102,7 +101,7 @@ public class FCVirtualMapDataStoreBench {
         public void setup() {
             super.setup();
             try {
-                for (int i = 0; i < 10_000_000; i++) {
+                for (int i = 0; i < 1000; i++) {
                     store.saveLeaf(
                             new SerializableAccount(i,i,i),
                             new SerializableLong(i), createRandomMerkleAccountState(i, random));
@@ -124,9 +123,12 @@ public class FCVirtualMapDataStoreBench {
 
     @Benchmark
     public void _1_randomLoadLeafByPath(FullState state) throws Exception {
+        System.out.println("state.store.leafCount() = " + state.store.leafCount());
         int index = state.random.nextInt(1000);
         MerkleAccountState merkleAccountState = state.store.loadLeafByPath(new SerializableLong(index));
+        System.out.println("merkleAccountState = " + merkleAccountState);
         if (merkleAccountState == null || merkleAccountState.balance() != index) System.err.println("Got wrong value back");
     }
+
 
 }
