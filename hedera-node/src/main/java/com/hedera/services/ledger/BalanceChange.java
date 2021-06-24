@@ -40,7 +40,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
  * and a field to contain the new balance that will result from the change.
  * (This field is helpful to simplify work done in {@link HederaLedger}.)
  *
- * The {@code explicitTokenId} and {@code explicitAccountId} fields are
+ * The {@code tokenId} and {@code accountId} fields are
  * temporary, needed to interact with the {@link com.hedera.services.ledger.accounts.BackingAccounts}
  * and {@link com.hedera.services.ledger.accounts.BackingTokenRels} components
  * whose APIs still use gRPC types.
@@ -48,11 +48,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 public class BalanceChange {
 	static final TokenID NO_TOKEN_FOR_HBAR_ADJUST = TokenID.getDefaultInstance();
 
-	private final Id token;
-	private final Id account;
-	private final long units;
-	private ResponseCodeEnum codeForInsufficientBalance;
+	private Id token;
 
+	private Id account;
+	private long units;
+	private ResponseCodeEnum codeForInsufficientBalance;
 	private long newBalance;
 	private TokenID tokenId = null;
 	private AccountID accountId;
@@ -67,13 +67,36 @@ public class BalanceChange {
 		this.codeForInsufficientBalance = code;
 	}
 
+	private BalanceChange(final Id account, final long amount, final ResponseCodeEnum code) {
+		this.token = null;
+		this.account = account;
+		this.accountId = account.asGrpcAccount();
+		this.units = amount;
+		this.codeForInsufficientBalance = code;
+	}
+
+	public void adjustUnits(final long units) {
+		this.units += units;
+	}
+
 	public static BalanceChange hbarAdjust(final AccountAmount aa) {
 		return new BalanceChange(null, aa, INSUFFICIENT_ACCOUNT_BALANCE);
+	}
+
+	public static BalanceChange hbarAdjust(final Id id, long amount) {
+		return new BalanceChange(id, amount, INSUFFICIENT_ACCOUNT_BALANCE);
 	}
 
 	public static BalanceChange tokenAdjust(final Id token, final TokenID tokenId, final AccountAmount aa) {
 		final var tokenChange = new BalanceChange(token, aa, INSUFFICIENT_TOKEN_BALANCE);
 		tokenChange.tokenId = tokenId;
+		return tokenChange;
+	}
+
+	public static BalanceChange tokenAdjust(final Id account, final Id token,  final long amount) {
+		final var tokenChange = new BalanceChange(account, amount, INSUFFICIENT_TOKEN_BALANCE);
+		tokenChange.token = token;
+		tokenChange.tokenId = token.asGrpcToken();
 		return tokenChange;
 	}
 
@@ -101,6 +124,14 @@ public class BalanceChange {
 		return accountId;
 	}
 
+	public Id getAccount() {
+		return account;
+	}
+
+	public Id getToken() {
+		return token;
+	}
+
 	public ResponseCodeEnum codeForInsufficientBalance() {
 		return codeForInsufficientBalance;
 	}
@@ -125,6 +156,11 @@ public class BalanceChange {
 				.add("token", token == null ? "ℏ" : token)
 				.add("account", account)
 				.add("units", units)
+				.add("codeForInsufficientBalance", codeForInsufficientBalance)
 				.toString();
+	}
+
+	public void setCodeForInsufficientBalance(ResponseCodeEnum codeForInsufficientBalance) {
+		this.codeForInsufficientBalance = codeForInsufficientBalance;
 	}
 }

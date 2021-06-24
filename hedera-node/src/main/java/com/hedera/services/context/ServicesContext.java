@@ -254,9 +254,7 @@ import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.HapiThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.throttling.TxnAwareHandleThrottling;
-import com.hedera.services.txns.span.ExpandHandleSpan;
-import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.services.txns.span.SpanMapManager;
+import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.txns.TransitionLogic;
@@ -289,6 +287,10 @@ import com.hedera.services.txns.schedule.ScheduleCreateTransitionLogic;
 import com.hedera.services.txns.schedule.ScheduleDeleteTransitionLogic;
 import com.hedera.services.txns.schedule.ScheduleExecutor;
 import com.hedera.services.txns.schedule.ScheduleSignTransitionLogic;
+import com.hedera.services.txns.span.ExpandHandleSpan;
+import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.services.txns.customfees.FCMCustomFeeSchedules;
+import com.hedera.services.txns.span.SpanMapManager;
 import com.hedera.services.txns.submission.BasicSubmissionFlow;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.SemanticPrecheck;
@@ -571,6 +573,7 @@ public class ServicesContext {
 	private AtomicReference<FCMap<MerkleEntityId, MerkleSchedule>> queryableSchedules;
 	private AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage;
 	private AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations;
+	private FCMCustomFeeSchedules activeCustomFeeSchedules;
 
 	/* Context-free infrastructure. */
 	private static Pause pause;
@@ -730,9 +733,17 @@ public class ServicesContext {
 
 	public ImpliedTransfersMarshal impliedTransfersMarshal() {
 		if (impliedTransfersMarshal == null) {
-			impliedTransfersMarshal = new ImpliedTransfersMarshal(globalDynamicProperties(), transferSemanticChecks());
+			impliedTransfersMarshal = new ImpliedTransfersMarshal(globalDynamicProperties(), transferSemanticChecks(),
+					customFeeSchedules());
 		}
 		return impliedTransfersMarshal;
+	}
+
+	private CustomFeeSchedules customFeeSchedules() {
+		if (activeCustomFeeSchedules == null) {
+			activeCustomFeeSchedules = new FCMCustomFeeSchedules(this::tokens);
+		}
+		return activeCustomFeeSchedules;
 	}
 
 	public AwareNodeDiligenceScreen nodeDiligenceScreen() {
@@ -935,9 +946,9 @@ public class ServicesContext {
 	}
 
 	/**
-	 * Returns the singleton {@link TypedTokenStore} used in {@link ServicesState#handleTransaction(long, boolean, Instant,
-	 * Instant, SwirldTransaction, SwirldDualState)} to load, save, and create tokens in the Swirlds application state.
-	 * It decouples the {@code handleTransaction} logic from the details of the Merkle state.
+	 * Returns the singleton {@link TypedTokenStore} used in {@link ServicesState#handleTransaction(long, boolean,
+	 * Instant, Instant, SwirldTransaction, SwirldDualState)} to load, save, and create tokens in the Swirlds
+	 * application state. It decouples the {@code handleTransaction} logic from the details of the Merkle state.
 	 *
 	 * Here "singleton" means that, no matter how many fast-copies are made of the {@link ServicesState}, the mutable
 	 * instance receiving the {@code handleTransaction} call will always use the same {@code typedTokenStore} instance.
@@ -962,8 +973,8 @@ public class ServicesContext {
 
 	/**
 	 * Returns the singleton {@link AccountStore} used in {@link ServicesState#handleTransaction(long, boolean, Instant,
-	 * Instant, SwirldTransaction, SwirldDualState)} to load, save, and create accounts from the Swirlds application state.
-	 * It decouples the {@code handleTransaction} logic from the details of the Merkle state.
+	 * Instant, SwirldTransaction, SwirldDualState)} to load, save, and create accounts from the Swirlds application
+	 * state. It decouples the {@code handleTransaction} logic from the details of the Merkle state.
 	 *
 	 * @return the singleton AccountStore
 	 */
@@ -1732,7 +1743,8 @@ public class ServicesContext {
 
 	public SpanMapManager spanMapManager() {
 		if (spanMapManager == null) {
-			spanMapManager = new SpanMapManager(impliedTransfersMarshal(), globalDynamicProperties());
+			spanMapManager = new SpanMapManager(impliedTransfersMarshal(), globalDynamicProperties(),
+					customFeeSchedules());
 		}
 		return spanMapManager;
 	}
@@ -2160,7 +2172,8 @@ public class ServicesContext {
 	/**
 	 * return the directory to which record stream files should be write
 	 *
-	 * @param source the node local properties that contain the record logging directory
+	 * @param source
+	 * 		the node local properties that contain the record logging directory
 	 * @return the direct file folder for writing record stream files
 	 */
 	public String getRecordStreamDirectory(NodeLocalProperties source) {
