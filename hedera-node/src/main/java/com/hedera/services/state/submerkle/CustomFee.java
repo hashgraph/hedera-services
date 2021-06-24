@@ -268,11 +268,11 @@ public class CustomFee implements SelfSerializable {
 			if (denominator == 0) {
 				throw new IllegalArgumentException("Division by zero is not allowed");
 			}
-			if (numerator < 0 || denominator < 0) {
+			if (numerator < 0 || denominator < 0 || minimumUnitsToCollect < 0) {
 				throw new IllegalArgumentException("Negative values are not allowed");
 			}
-			if (minimumUnitsToCollect < 0 || maximumUnitsToCollect < minimumUnitsToCollect) {
-				throw new IllegalArgumentException("Negative values are not allowed");
+			if (maximumUnitsToCollect < minimumUnitsToCollect) {
+				throw new IllegalArgumentException("maximumUnitsToCollect cannot be less than minimumUnitsToCollect");
 			}
 			this.numerator = numerator;
 			this.denominator = denominator;
