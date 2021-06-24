@@ -959,6 +959,9 @@ class HederaTokenStoreTest {
 		// setup:
 		long startSponsorNfts = 5, startCounterpartyNfts = 8;
 		long startSponsorANfts = 4, startCounterpartyANfts = 1;
+		var sender = EntityId.fromGrpcAccountId(sponsor);
+		var receiver = EntityId.fromGrpcAccountId(counterparty);
+		var muti = new MerkleUniqueTokenId(EntityId.fromGrpcTokenId(aNft.tokenId()), aNft.serialNo());
 
 		given(accountsLedger.get(sponsor, NUM_NFTS_OWNED)).willReturn(startSponsorNfts);
 		given(accountsLedger.get(counterparty, NUM_NFTS_OWNED)).willReturn(startCounterpartyNfts);
@@ -970,7 +973,9 @@ class HederaTokenStoreTest {
 
 		// expect:
 		assertEquals(OK, status);
-		verify(nftsLedger).set(aNft, NftProperty.OWNER, EntityId.fromGrpcAccountId(counterparty));
+		verify(nftsLedger).set(aNft, NftProperty.OWNER, receiver);
+		verify(uniqueTokenAccountOwnerships).disassociate(sender, muti);
+		verify(uniqueTokenAccountOwnerships).associate(receiver, muti);
 		verify(accountsLedger).set(sponsor, NUM_NFTS_OWNED, startSponsorNfts - 1);
 		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts + 1);
 		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts + 1);

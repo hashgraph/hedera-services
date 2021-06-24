@@ -344,6 +344,7 @@ class ServicesStateTest {
 		inOrder.verify(ctx).update(subject);
 		inOrder.verify(ctx).rebuildBackingStoresIfPresent();
 		inOrder.verify(ctx).rebuildStoreViewsIfPresent();
+		inOrder.verify(ctx).rebuildOwnershipsAndAssociations();
 		inOrder.verify(historian).reviewExistingRecords();
 		inOrder.verify(expiryManager).reviewExistingShortLivedEntities();
 		inOrder.verify(networkCtxManager).setObservableFilesNotLoaded();

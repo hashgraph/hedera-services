@@ -279,6 +279,18 @@ class StateViewTest {
 	}
 
 	@Test
+	void nftExistsWorks() {
+		// given:
+		final var delegate = new FCMap<MerkleUniqueTokenId, MerkleUniqueToken>();
+		delegate.put(targetNftKey, targetNft);
+		// and:
+		subject.setNfts(() -> delegate);
+		// expect:
+		assertTrue(subject.nftExists(targetNftId));
+		assertFalse(subject.nftExists(missingNftId));
+	}
+
+	@Test
 	void scheduleExistsWorks() {
 		// expect:
 		assertTrue(subject.scheduleExists(scheduleId));
@@ -752,6 +764,10 @@ class StateViewTest {
 	private final NftID targetNftId = NftID.newBuilder()
 			.setTokenID(IdUtils.asToken("1.2.3"))
 			.setSerialNumber(4L)
+			.build();
+	private final NftID missingNftId = NftID.newBuilder()
+			.setTokenID(IdUtils.asToken("1.7.9"))
+			.setSerialNumber(5L)
 			.build();
 	private final MerkleUniqueTokenId targetNftKey = new MerkleUniqueTokenId(new EntityId(1, 2, 3), 4);
 	private final MerkleUniqueToken targetNft = new MerkleUniqueToken(owner, nftMeta, fromJava(nftCreation));

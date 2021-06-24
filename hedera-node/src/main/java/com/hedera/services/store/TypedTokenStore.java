@@ -252,8 +252,8 @@ public class TypedTokenStore {
 				final var merkleUniqueToken = new MerkleUniqueToken(
 						new EntityId(uniqueToken.getOwner()), uniqueToken.getMetadata(), uniqueToken.getCreationTime());
 				uniqueTokens.get().put(merkleUniqueTokenId, merkleUniqueToken);
-				uniqueTokenAssociations.get().associate(treasury, merkleUniqueTokenId);
-				uniqueOwnership.get().associate(new EntityId(uniqueToken.getTokenId()), merkleUniqueTokenId);
+				uniqueTokenAssociations.get().associate(new EntityId(uniqueToken.getTokenId()), merkleUniqueTokenId);
+				uniqueOwnership.get().associate(treasury, merkleUniqueTokenId);
 				backingNfts.addToExistingNfts(merkleUniqueTokenId.asNftId());
 			}
 		}
@@ -262,8 +262,8 @@ public class TypedTokenStore {
 				final var merkleUniqueTokenId = new MerkleUniqueTokenId(
 						new EntityId(uniqueToken.getTokenId()), uniqueToken.getSerialNumber());
 				uniqueTokens.get().remove(merkleUniqueTokenId);
-				uniqueTokenAssociations.get().disassociate(treasury, merkleUniqueTokenId);
-				uniqueOwnership.get().disassociate(new EntityId(uniqueToken.getTokenId()), merkleUniqueTokenId);
+				uniqueTokenAssociations.get().disassociate(new EntityId(uniqueToken.getTokenId()), merkleUniqueTokenId);
+				uniqueOwnership.get().disassociate(treasury, merkleUniqueTokenId);
 				backingNfts.removeFromExistingNfts(merkleUniqueTokenId.asNftId());
 			}
 		}
@@ -278,10 +278,6 @@ public class TypedTokenStore {
 	private void validateUsable(MerkleToken merkleToken) {
 		validateTrue(merkleToken != null, INVALID_TOKEN_ID);
 		validateFalse(merkleToken.isDeleted(), TOKEN_WAS_DELETED);
-	}
-
-	private void validateUsable(MerkleUniqueToken merkleUniqueTokenToken) {
-		validateTrue(merkleUniqueTokenToken != null, INVALID_TOKEN_ID);
 	}
 
 	private void mapModelChangesToMutable(Token token, MerkleToken mutableToken) {
@@ -315,19 +311,6 @@ public class TypedTokenStore {
 		token.setFrozenByDefault(immutableToken.accountsAreFrozenByDefault());
 		token.setType(immutableToken.tokenType());
 		token.setLastUsedSerialNumber(immutableToken.getLastUsedSerialNumber());
-	}
-
-	private void initModelFields(UniqueToken uniqueToken, MerkleUniqueToken immutableUniqueToken) {
-		uniqueToken.setCreationTime(immutableUniqueToken.getCreationTime());
-		uniqueToken.setMetadata(immutableUniqueToken.getMetadata());
-		uniqueToken.setOwner(
-				new Id(
-						immutableUniqueToken.getOwner().shard(),
-						immutableUniqueToken.getOwner().realm(),
-						immutableUniqueToken.getOwner().num()
-				)
-		);
-
 	}
 
 	private void alertTokenBackingStoreOfNew(TokenRelationship newRel) {

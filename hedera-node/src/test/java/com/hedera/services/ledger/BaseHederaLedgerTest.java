@@ -101,7 +101,6 @@ public class BaseHederaLedgerTest {
 	protected AccountID rand = AccountID.newBuilder().setAccountNum(2_345).build();
 	protected AccountID deleted = AccountID.newBuilder().setAccountNum(3_456).build();
 	protected AccountID detached = AccountID.newBuilder().setAccountNum(4_567).build();
-	protected FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAccountOwnerships;
 
 	protected void commonSetup() {
 		creator = mock(ExpiringCreations.class);

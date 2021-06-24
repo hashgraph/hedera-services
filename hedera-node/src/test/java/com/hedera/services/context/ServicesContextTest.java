@@ -120,7 +120,9 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.migration.StdStateMigrations;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.validation.BasedLedgerValidator;
 import com.hedera.services.stats.HapiOpCounters;
@@ -158,6 +160,7 @@ import com.swirlds.common.PlatformStatus;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
+import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.junit.jupiter.api.BeforeEach;
@@ -205,11 +208,15 @@ public class ServicesContextTest {
 	FCMap<MerkleEntityId, MerkleSchedule> schedules;
 	FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
 	FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens;
+	FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAccountOwnerships;
+	FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations;
 	FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
 
 	@BeforeEach
 	void setup() {
 		uniqueTokens = mock(FCMap.class);
+		uniqueTokenAccountOwnerships = mock(FCOneToManyRelation.class);
+		uniqueTokenAssociations = mock(FCOneToManyRelation.class);
 		topics = mock(FCMap.class);
 		tokens = mock(FCMap.class);
 		tokenAssociations = mock(FCMap.class);
@@ -413,6 +420,37 @@ public class ServicesContextTest {
 		// then:
 		verify(tokenRels).rebuildFromSources();
 		verify(backingAccounts).rebuildFromSources();
+	}
+
+	@Test
+	void rebuildOwnershipsAndAssociationsWorks() {
+		var token = new EntityId(0, 0, 54321);
+		var owner = new EntityId(0, 0, 12345);
+		var realUniqueTokens = new FCMap<MerkleUniqueTokenId, MerkleUniqueToken>();
+
+		MerkleUniqueToken mut = new MerkleUniqueToken(owner, "some-metadata".getBytes(), RichInstant.fromJava(Instant.now()));
+		MerkleUniqueTokenId muti = new MerkleUniqueTokenId(token, 2);
+
+		var expectedUTA = new FCOneToManyRelation<EntityId, MerkleUniqueTokenId>();
+		expectedUTA.associate(token, muti);
+
+		var expectedUTAO = new FCOneToManyRelation<EntityId, MerkleUniqueTokenId>();
+		expectedUTAO.associate(owner, muti);
+
+		realUniqueTokens.put(muti, mut);
+		given(state.uniqueTokens()).willReturn(realUniqueTokens);
+
+		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
+
+		ctx.rebuildOwnershipsAndAssociations();
+		assertEquals(expectedUTA.getKeySet(), ctx.uniqueTokenAssociations().getKeySet());
+		assertEquals(expectedUTAO.getKeySet(), ctx.uniqueTokenAccountOwnerships().getKeySet());
+		expectedUTA.getKeySet().forEach(key -> {
+			assertEquals(expectedUTA.getList(key), ctx.uniqueTokenAssociations().getList(key));
+		});
+		expectedUTAO.getKeySet().forEach(key -> {
+			assertEquals(expectedUTAO.getList(key), ctx.uniqueTokenAccountOwnerships().getList(key));
+		});
 	}
 
 	@Test
