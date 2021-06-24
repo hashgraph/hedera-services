@@ -103,7 +103,7 @@ public class TypedTokenStore {
 	 * been validated as usable.
 	 *
 	 * <b>IMPORTANT:</b> Changes to the returned model are not automatically persisted
-	 * to state! The altered model must be passed to {@link TypedTokenStore#persistTokenRelationships(List<TokenRelationship>)}
+	 * to state! The altered model must be passed to {@link TypedTokenStore#persistTokenRelationships(List)}
 	 * in order for its changes to be applied to the Swirlds state, and included in the
 	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
 	 *
@@ -202,7 +202,7 @@ public class TypedTokenStore {
 	 * @param id
 	 * 		the token to load
 	 * @return a usable model of the token
-	 * @return	InvalidTransactionException
+	 * @throws 	InvalidTransactionException
 	 * 		if the requested token is missing
 	 */
 	public Token loadPossiblyDeletedToken(Id id) {
