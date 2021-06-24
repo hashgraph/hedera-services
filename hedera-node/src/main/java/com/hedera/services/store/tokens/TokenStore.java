@@ -79,9 +79,6 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 	default TokenID resolve(TokenID id) {
 		return exists(id) ? id : MISSING_TOKEN;
 	}
-	NftID resolve (NftID id);
-
-	MerkleUniqueToken getUniqueToken(NftID id);
 
 	NftID resolve(NftID id);
 
