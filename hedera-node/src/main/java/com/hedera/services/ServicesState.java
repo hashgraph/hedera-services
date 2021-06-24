@@ -446,4 +446,12 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations() {
 		return uniqueOwnershipAssociations;
 	}
+
+	void setUniqueTokenAssociations(FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations) {
+		this.uniqueTokenAssociations = uniqueTokenAssociations;
+	}
+
+	void setUniqueOwnershipAssociations(FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations) {
+		this.uniqueOwnershipAssociations = uniqueOwnershipAssociations;
+	}
 }

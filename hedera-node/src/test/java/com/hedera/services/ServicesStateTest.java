@@ -691,6 +691,8 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.SCHEDULE_TXS, scheduledTxs);
 		subject.setChild(ServicesState.ChildIndices.RECORD_STREAM_RUNNING_HASH, runningHashLeaf);
 		subject.setChild(ServicesState.ChildIndices.UNIQUE_TOKENS, uniqueTokens);
+		subject.setUniqueTokenAssociations(uniqueTokenAssociations);
+		subject.setUniqueOwnershipAssociations(uniqueOwnershipAssociations);
 		subject.nodeId = self;
 		subject.ctx = ctx;
 
