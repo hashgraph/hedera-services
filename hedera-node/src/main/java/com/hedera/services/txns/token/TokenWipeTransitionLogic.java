@@ -21,7 +21,9 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
@@ -32,12 +34,10 @@ import org.apache.logging.log4j.Logger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 /**
  * Provides the state transition for wiping [part of] a token balance.
@@ -49,31 +49,41 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
-	private final TokenStore store;
+	private final TypedTokenStore tokenStore;
+	private final AccountStore accountStore;
 	private final TransactionContext txnCtx;
 
 	public TokenWipeTransitionLogic(
-			TokenStore store,
+			TypedTokenStore tokenStore,
+			AccountStore accountStore,
 			TransactionContext txnCtx
 	) {
-		this.store = store;
+		this.tokenStore = tokenStore;
 		this.txnCtx = txnCtx;
+		this.accountStore = accountStore;
 	}
 
 	@Override
 	public void doStateTransition() {
-		try {
-			var op = txnCtx.accessor().getTxn().getTokenWipe();
-			var outcome = store.wipe(op.getAccount(), store.resolve(op.getToken()), op.getAmount(),false);
-			var id = store.resolve(op.getToken());
-			txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
-			if(outcome == OK) {
-				txnCtx.setNewTotalSupply(store.get(id).totalSupply());
-			}
-		} catch (Exception e) {
-			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
-			txnCtx.setStatus(FAIL_INVALID);
-		}
+		/* --- Translate from gRPC types --- */
+		final var op = txnCtx.accessor().getTxn().getTokenWipe();
+		final var grpcTokenId = op.getToken();
+		final var grpcAccountId = op.getAccount();
+		final var tokenId = new Id(grpcTokenId.getShardNum(), grpcTokenId.getRealmNum(), grpcTokenId.getTokenNum());
+		final var accountId = new Id(grpcAccountId.getShardNum(), grpcAccountId.getRealmNum(), grpcAccountId.getAccountNum());
+
+
+		/* --- Load the model objects --- */
+		var token = tokenStore.loadToken(tokenId);
+		var account = accountStore.loadAccount(accountId);
+		var tokenRelationship = tokenStore.loadTokenRelationship(token, account);
+
+		/* --- Do the business logic --- */
+		token.wipe(tokenRelationship, op.getAmount(), false);
+
+		/* --- Persist the updated models --- */
+		tokenStore.persistTokenRelationship(tokenRelationship);
+		tokenStore.persistToken(token);
 	}
 
 

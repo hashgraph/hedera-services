@@ -450,6 +450,10 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		return freezeKey;
 	}
 
+	public JKey getWipeKey() {
+		return wipeKey;
+	}
+
 	public void setCustomFeeKey(JKey customFeeKey) {
 		this.customFeeKey = customFeeKey;
 	}

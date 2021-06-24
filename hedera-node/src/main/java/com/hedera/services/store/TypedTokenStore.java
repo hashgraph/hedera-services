@@ -247,6 +247,7 @@ public class TypedTokenStore {
 		token.setKycKey(immutableToken.getKycKey());
 		token.setFreezeKey(immutableToken.getFreezeKey());
 		token.setSupplyKey(immutableToken.getSupplyKey());
+		token.setWipeKey(immutableToken.getWipeKey());
 		token.setFrozenByDefault(immutableToken.accountsAreFrozenByDefault());
 	}
 

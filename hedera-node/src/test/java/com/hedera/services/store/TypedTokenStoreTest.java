@@ -188,6 +188,7 @@ class TypedTokenStoreTest {
 		expectedReplacementToken.setSupplyKey(supplyKey);
 		expectedReplacementToken.setFreezeKey(freezeKey);
 		expectedReplacementToken.setKycKey(kycKey);
+		expectedReplacementToken.setWipeKey(wipeKey);
 		expectedReplacementToken.setAccountsFrozenByDefault(!freezeDefault);
 
 		givenToken(merkleTokenId, merkleToken);
@@ -247,6 +248,7 @@ class TypedTokenStoreTest {
 		merkleToken.setSupplyKey(supplyKey);
 		merkleToken.setKycKey(kycKey);
 		merkleToken.setFreezeKey(freezeKey);
+		merkleToken.setWipeKey(wipeKey);
 
 		token.setTreasury(treasuryAccount);
 		token.setAutoRenewAccount(autoRenewAccount);
@@ -254,6 +256,7 @@ class TypedTokenStoreTest {
 		token.setKycKey(kycKey);
 		token.setSupplyKey(supplyKey);
 		token.setFreezeKey(freezeKey);
+		token.setWipeKey(wipeKey);
 		token.setFrozenByDefault(freezeDefault);
 	}
 
@@ -280,6 +283,7 @@ class TypedTokenStoreTest {
 	private final JKey kycKey = TxnHandlingScenario.TOKEN_KYC_KT.asJKeyUnchecked();
 	private final JKey freezeKey = TxnHandlingScenario.TOKEN_FREEZE_KT.asJKeyUnchecked();
 	private final JKey supplyKey = TxnHandlingScenario.TOKEN_SUPPLY_KT.asJKeyUnchecked();
+	private final JKey wipeKey = TxnHandlingScenario.TOKEN_SUPPLY_KT.asJKeyUnchecked();
 	private final long tokenNum = 4_234L;
 	private final long tokenSupply = 777L;
 	private final String name = "Testing123";

@@ -21,85 +21,97 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.Token;
+import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.BDDMockito.any;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 
 class TokenWipeTransitionLogicTest {
-    private AccountID account = IdUtils.asAccount("1.2.4");
-    private TokenID id = IdUtils.asToken("1.2.3");
+    private long tokenNum = 12345L;
+    private long accountNum = 54321L;
     private long wipeAmount = 100;
-    private long totalAmount = 1000L;
+    private AccountID accountID = IdUtils.asAccount("0.0." + accountNum);
+    private TokenID tokenID = IdUtils.asToken("0.0." + tokenNum);
+    private Id accountId = new Id(0,0,accountNum);
+    private Id tokenId = new Id(0,0,tokenNum);
 
-    private TokenStore tokenStore;
+    private AccountStore accountStore;
+    private TypedTokenStore tokenStore;
     private TransactionContext txnCtx;
     private PlatformTxnAccessor accessor;
-    private MerkleToken token;
+    private Account account;
+    private Token token;
+    private TokenRelationship tokenRelationship;
 
     private TransactionBody tokenWipeTxn;
     private TokenWipeTransitionLogic subject;
 
     @BeforeEach
     private void setup() {
-        tokenStore = mock(TokenStore.class);
+        tokenStore = mock(TypedTokenStore.class);
+        accountStore = mock(AccountStore.class);
         accessor = mock(PlatformTxnAccessor.class);
-        token = mock(MerkleToken.class);
+        account = mock(Account.class);
+        token = mock(Token.class);
+        tokenRelationship = mock(TokenRelationship.class);
 
         txnCtx = mock(TransactionContext.class);
 
-        subject = new TokenWipeTransitionLogic(tokenStore, txnCtx);
+        subject = new TokenWipeTransitionLogic(tokenStore, accountStore, txnCtx);
     }
 
     @Test
     public void capturesInvalidWipe() {
         givenValidTxnCtx();
         // and:
-        given(tokenStore.wipe(account, id, wipeAmount, false)).willReturn(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+        doThrow(new InvalidTransactionException(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT))
+                .when(tokenStore).loadTokenRelationship(token, account);
 
-        // when:
-        subject.doStateTransition();
-
-        // then:
-        verify(txnCtx).setStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+        // verify:
+        assertFailsWith(() -> subject.doStateTransition(), TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+        verify(token, never()).wipe(tokenRelationship, wipeAmount, false);
+        verify(tokenStore, never()).persistTokenRelationship(tokenRelationship);
+        verify(tokenStore, never()).persistToken(token);
     }
 
     @Test
     public void followsHappyPath() {
         givenValidTxnCtx();
-        // and:
-        given(tokenStore.wipe(account, id, wipeAmount, false)).willReturn(OK);
 
         // when:
         subject.doStateTransition();
 
         // then:
-        verify(tokenStore).wipe(account, id, wipeAmount, false);
-        verify(txnCtx).setStatus(SUCCESS);
-        verify(txnCtx).setNewTotalSupply(totalAmount);
+        verify(token).wipe(tokenRelationship, wipeAmount, false);
+        verify(tokenStore).persistTokenRelationship(tokenRelationship);
+        verify(tokenStore).persistToken(token);
     }
 
     @Test
@@ -109,20 +121,6 @@ class TokenWipeTransitionLogicTest {
         // expect:
         assertTrue(subject.applicability().test(tokenWipeTxn));
         assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
-    }
-
-    @Test
-    public void setsFailInvalidIfUnhandledException() {
-        givenValidTxnCtx();
-        // and:
-        given(tokenStore.wipe(any(), any(), anyLong(), anyBoolean()))
-                .willThrow(IllegalArgumentException.class);
-
-        // when:
-        subject.doStateTransition();
-
-        // then:
-        verify(txnCtx).setStatus(FAIL_INVALID);
     }
 
     @Test
@@ -165,18 +163,25 @@ class TokenWipeTransitionLogicTest {
         assertEquals(INVALID_WIPING_AMOUNT, subject.semanticCheck().apply(tokenWipeTxn));
     }
 
+    private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
+        var ex = assertThrows(InvalidTransactionException.class, something::run);
+        assertEquals(status, ex.getResponseCode());
+    }
+
     private void givenValidTxnCtx() {
         tokenWipeTxn = TransactionBody.newBuilder()
                 .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
-                        .setToken(id)
-                        .setAccount(account)
+                        .setToken(tokenID)
+                        .setAccount(accountID)
                         .setAmount(wipeAmount))
                 .build();
         given(accessor.getTxn()).willReturn(tokenWipeTxn);
         given(txnCtx.accessor()).willReturn(accessor);
-        given(tokenStore.resolve(id)).willReturn(id);
-        given(tokenStore.get(id)).willReturn(token);
-        given(token.totalSupply()).willReturn(totalAmount);
+        given(accountStore.loadAccount(accountId)).willReturn(account);
+        given(tokenStore.loadToken(tokenId)).willReturn(token);
+        given(tokenStore.loadTokenRelationship(token, account)).willReturn(tokenRelationship);
+        given(tokenRelationship.getAccount()).willReturn(account);
+        given(tokenRelationship.getToken()).willReturn(token);
     }
 
     private void givenMissingToken() {
@@ -188,15 +193,15 @@ class TokenWipeTransitionLogicTest {
     private void givenMissingAccount() {
         tokenWipeTxn = TransactionBody.newBuilder()
                 .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
-                        .setToken(id))
+                        .setToken(tokenID))
                 .build();
     }
 
     private void givenInvalidZeroWipeAmount() {
         tokenWipeTxn = TransactionBody.newBuilder()
                 .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
-                        .setToken(id)
-                        .setAccount(account)
+                        .setToken(tokenID)
+                        .setAccount(accountID)
                         .setAmount(0))
                 .build();
     }
@@ -204,8 +209,8 @@ class TokenWipeTransitionLogicTest {
     private void givenInvalidNegativeWipeAmount() {
         tokenWipeTxn = TransactionBody.newBuilder()
                 .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
-                        .setToken(id)
-                        .setAccount(account)
+                        .setToken(tokenID)
+                        .setAccount(accountID)
                         .setAmount(-1))
                 .build();
     }

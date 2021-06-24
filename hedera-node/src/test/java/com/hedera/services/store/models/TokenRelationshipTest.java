@@ -134,6 +134,17 @@ class TokenRelationshipTest {
 		assertEquals(1, subject.getBalanceChange());
 	}
 
+	@Test
+	void setBalanceAfterWipeWorks() {
+		// when:
+		subject.setBalanceAfterWipe(balance+1);
+
+		// then:
+		assertEquals(1, subject.getBalanceChange());
+		assertEquals(balance+1, subject.getBalance());
+
+	}
+
 	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
 		var ex = assertThrows(InvalidTransactionException.class, something::run);
 		assertEquals(status, ex.getResponseCode());

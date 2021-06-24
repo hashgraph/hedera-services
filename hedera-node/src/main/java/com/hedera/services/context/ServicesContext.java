@@ -1417,7 +1417,7 @@ public class ServicesContext {
 				entry(TokenBurn,
 						List.of(new TokenBurnTransitionLogic(typedTokenStore(), txnCtx()))),
 				entry(TokenAccountWipe,
-						List.of(new TokenWipeTransitionLogic(tokenStore(), txnCtx()))),
+						List.of(new TokenWipeTransitionLogic(typedTokenStore(), accountStore(), txnCtx()))),
 				entry(TokenAssociateToAccount,
 						List.of(new TokenAssociateTransitionLogic(
 								accountStore(), typedTokenStore(), txnCtx(), globalDynamicProperties()))),

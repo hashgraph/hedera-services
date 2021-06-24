@@ -87,8 +87,11 @@ public class TokenRelationship {
 		validateTrue(!token.hasFreezeKey() || !frozen, ACCOUNT_FROZEN_FOR_TOKEN);
 		validateTrue(!token.hasKycKey() || kycGranted, ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
 
-		balanceChange += (balance - this.balance);
-		this.balance = balance;
+		setBalanceTo(balance);
+	}
+
+	public void setBalanceAfterWipe(long balance) {
+		setBalanceTo(balance);
 	}
 
 	public boolean isFrozen() {
@@ -129,6 +132,11 @@ public class TokenRelationship {
 
 	public void setNotYetPersisted(boolean notYetPersisted) {
 		this.notYetPersisted = notYetPersisted;
+	}
+
+	private void setBalanceTo(long balance) {
+		balanceChange += (balance - this.balance);
+		this.balance = balance;
 	}
 
 	/* The object methods below are only overridden to improve

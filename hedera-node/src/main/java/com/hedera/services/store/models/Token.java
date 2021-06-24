@@ -26,13 +26,17 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.utils.MiscUtils.describe;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 
 /**
  * Encapsulates the state and operations of a Hedera token.
@@ -55,6 +59,7 @@ public class Token {
 	private JKey kycKey;
 	private JKey freezeKey;
 	private JKey supplyKey;
+	private JKey wipeKey;
 	private boolean frozenByDefault;
 	private Account treasury;
 	private Account autoRenewAccount;
@@ -73,6 +78,32 @@ public class Token {
 		validateTrue(amount > 0, FAIL_INVALID, () ->
 				"Cannot mint " + amount + " units of " + this + " from " + treasuryRel);
 		changeSupply(treasuryRel, +amount, INVALID_TOKEN_MINT_AMOUNT);
+	}
+
+	/**
+	 * Wipe the specified amount of token units from the Account.
+	 * This will also change the totalSupply of the token.
+	 *
+	 * @param tokenRelationship the token-account relationship that the tokens are wiped from.
+	 * @param amount The amount of token units to wipe
+	 * @param skipKeyCheck to check if wipeKey is present
+	 */
+	public void wipe(final TokenRelationship tokenRelationship, final long amount,
+			final boolean skipKeyCheck) {
+		validateFalse(!skipKeyCheck && !hasWipeKey(), TOKEN_HAS_NO_WIPE_KEY);
+		validateFalse(
+				treasury.getId().equals(tokenRelationship.getAccount().getId()), CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT);
+
+		var balance = tokenRelationship.getBalance();
+		validateTrue(amount > 0, FAIL_INVALID, () ->
+				"Cannot wipe " + amount + " units of " + this + " from " + tokenRelationship);
+		validateFalse(amount > balance, INVALID_WIPING_AMOUNT);
+
+		var newBalance = balance - amount;
+		tokenRelationship.setBalanceAfterWipe(newBalance);
+		setTotalSupply(
+				getTotalSupply() - amount
+		);
 	}
 
 	public TokenRelationship newRelationshipWith(Account account) {
@@ -145,6 +176,14 @@ public class Token {
 
 	public boolean hasFreezeKey() {
 		return freezeKey != null;
+	}
+
+	public void setWipeKey(JKey wipeKey) {
+		this.wipeKey = wipeKey;
+	}
+
+	public boolean hasWipeKey() {
+		return wipeKey != null;
 	}
 
 	public boolean hasKycKey() {

@@ -30,6 +30,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.EnumSet;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
@@ -41,7 +42,7 @@ public class TransitionRunner {
 	private static final Logger log = LogManager.getLogger(TransitionRunner.class);
 
 	private static final EnumSet<HederaFunctionality> refactoredOps = EnumSet.of(
-			TokenMint, TokenBurn,
+			TokenMint, TokenBurn, TokenAccountWipe,
 			TokenAssociateToAccount
 	);
 

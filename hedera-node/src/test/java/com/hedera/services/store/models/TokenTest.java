@@ -27,11 +27,14 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static org.junit.jupiter.api.Assertions.*;
 
 class TokenTest {
@@ -184,6 +187,77 @@ class TokenTest {
 		assertEquals(initialSupply + mintAmount, subject.getTotalSupply());
 		assertEquals(+mintAmount, treasuryRel.getBalanceChange());
 		assertEquals(initialTreasuryBalance + mintAmount, treasuryRel.getBalance());
+	}
+
+	@Test
+	void wipeAsExpected() {
+		final long wipeAmount = 100L;
+
+		// give:
+		nonTreasuryRel.initBalance(500L);
+		subject.setWipeKey(someKey);
+
+		// when:
+		subject.wipe(nonTreasuryRel, wipeAmount, false);
+
+		// then:
+		assertEquals(initialSupply-wipeAmount, subject.getTotalSupply());
+		assertEquals(500-wipeAmount, nonTreasuryRel.getBalance());
+		assertEquals(-wipeAmount, nonTreasuryRel.getBalanceChange());
+	}
+
+	@Test
+	void wipeAsExpectedWIthNoWipeKeyAndSkippedKeyCheck() {
+		final long wipeAmount = 100L;
+
+		// give:
+		nonTreasuryRel.initBalance(500L);
+		subject.setWipeKey(null);
+
+		// when:
+		subject.wipe(nonTreasuryRel, wipeAmount, true);
+
+		// then:
+		assertEquals(initialSupply-wipeAmount, subject.getTotalSupply());
+		assertEquals(500-wipeAmount, nonTreasuryRel.getBalance());
+		assertEquals(-wipeAmount, nonTreasuryRel.getBalanceChange());
+	}
+
+	@Test
+	void wipeFailsIfNoWipeKey() {
+		// given:
+		subject.setWipeKey(null);
+
+		// verify:
+		assertFailsWith(() -> subject.wipe(nonTreasuryRel, 1L, false), TOKEN_HAS_NO_WIPE_KEY);
+	}
+
+	@Test
+	void wipeFailsIfAgainstTreasury() {
+		// given:
+		subject.setWipeKey(someKey);
+
+		// verify:
+		assertFailsWith(() -> subject.wipe(treasuryRel, 1L, false), CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT);
+	}
+
+	@Test
+	void wipeFailsIfNegativeWipeAmount() {
+		// given:
+		nonTreasuryRel.initBalance(500L);
+		subject.setWipeKey(someKey);
+
+		// verify:
+		assertFailsWith(() -> subject.wipe(nonTreasuryRel, -1L, false), FAIL_INVALID);
+	}
+
+	@Test
+	void wipeFailsIfWipeAmountMoreThanBalance() {
+		// given:
+		subject.setWipeKey(someKey);
+
+		// verify:
+		assertFailsWith(() -> subject.wipe(nonTreasuryRel, 501L, false), INVALID_WIPING_AMOUNT);
 	}
 
 	@Test
