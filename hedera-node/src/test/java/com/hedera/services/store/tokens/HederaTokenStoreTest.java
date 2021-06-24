@@ -21,7 +21,6 @@ package com.hedera.services.store.tokens;
  */
 
 import com.google.protobuf.StringValue;
-import com.google.protobuf.UInt64Value;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -180,29 +179,29 @@ class HederaTokenStoreTest {
 	private Pair<AccountID, TokenID> treasuryMisc = asTokenRel(treasury, misc);
 	private Pair<AccountID, TokenID> anotherFeeCollectorMisc = asTokenRel(anotherFeeCollector, misc);
 	private CustomFeesOuterClass.FixedFee fixedFeeInTokenUnits = CustomFeesOuterClass.FixedFee.newBuilder()
-			.setTokenId(misc)
-			.setUnitsToCollect(100)
+			.setDenominatingTokenId(misc)
+			.setAmount(100)
 			.build();
 	private CustomFeesOuterClass.FixedFee fixedFeeInHbar = CustomFeesOuterClass.FixedFee.newBuilder()
-			.setUnitsToCollect(100)
+			.setAmount(100)
 			.build();
 	private Fraction fraction = Fraction.newBuilder().setNumerator(15).setDenominator(100).build();
 	private Fraction invalidFraction = Fraction.newBuilder().setNumerator(15).setDenominator(0).build();
 	private CustomFeesOuterClass.FractionalFee fractionalFee = CustomFeesOuterClass.FractionalFee.newBuilder()
-			.setFractionOfUnitsToCollect(fraction)
-			.setMaximumUnitsToCollect(UInt64Value.of(50))
-			.setMinimumUnitsToCollect(10)
+			.setFractionalAmount(fraction)
+			.setMaximumAmount(50)
+			.setMinimumAmount(10)
 			.build();
 	private CustomFeesOuterClass.CustomFee customFixedFeeInHbar = CustomFeesOuterClass.CustomFee.newBuilder()
-			.setFeeCollector(feeCollector)
+			.setFeeCollectorAccountId(feeCollector)
 			.setFixedFee(fixedFeeInHbar)
 			.build();
 	private CustomFeesOuterClass.CustomFee customFixedFeeInHts = CustomFeesOuterClass.CustomFee.newBuilder()
-			.setFeeCollector(anotherFeeCollector)
+			.setFeeCollectorAccountId(anotherFeeCollector)
 			.setFixedFee(fixedFeeInTokenUnits)
 			.build();
 	private CustomFeesOuterClass.CustomFee customFractionalFee = CustomFeesOuterClass.CustomFee.newBuilder()
-			.setFeeCollector(feeCollector)
+			.setFeeCollectorAccountId(feeCollector)
 			.setFractionalFee(fractionalFee)
 			.build();
 	private CustomFeesOuterClass.CustomFees grpcCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
@@ -211,11 +210,11 @@ class HederaTokenStoreTest {
 			.addCustomFees(customFractionalFee)
 			.build();
 	private CustomFeesOuterClass.CustomFees grpcUnderspecifiedCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
-			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder().setFeeCollector(feeCollector))
+			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder().setFeeCollectorAccountId(feeCollector))
 			.build();
 	private CustomFeesOuterClass.CustomFees grpcZeroDenomFractionCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
-			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder().setFeeCollector(feeCollector).setFractionalFee(
-					CustomFeesOuterClass.FractionalFee.newBuilder().setFractionOfUnitsToCollect(invalidFraction).build()
+			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder().setFeeCollectorAccountId(feeCollector).setFractionalFee(
+					CustomFeesOuterClass.FractionalFee.newBuilder().setFractionalAmount(invalidFraction).build()
 			)).build();
 	private List<CustomFee> customFees = MerkleToken.customFeesFromGrpc(grpcCustomFees);
 

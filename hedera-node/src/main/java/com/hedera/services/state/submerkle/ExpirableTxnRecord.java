@@ -360,6 +360,9 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 		}
 
+		final var fcAssessedFees = record.getAssessedCustomFeesCount() > 0
+				? record.getAssessedCustomFeesList().stream().map(AssessedCustomFee::fromGrpc).collect(toList())
+				: null;
 		return ExpirableTxnRecord.newBuilder()
 				.setReceipt(TxnReceipt.fromGrpc(record.getReceipt()))
 				.setTxnHash(record.getTransactionHash().toByteArray())
@@ -373,7 +376,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				.setTokens(tokens)
 				.setTokenAdjustments(tokenAdjustments)
 				.setScheduleRef(record.hasScheduleRef() ? fromGrpcScheduleId(record.getScheduleRef()) : null)
-				.setCustomFeesCharged(record.hasCustomFeesCharged() ? AssessedCustomFee.fromGrpc(record.getCustomFeesCharged()) : null)
+				.setCustomFeesCharged(fcAssessedFees)
 				.build();
 	}
 
@@ -425,7 +428,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		}
 
 		if (customFeesCharged != NO_CUSTOM_FEES) {
-			grpc.setCustomFeesCharged(AssessedCustomFee.toGrpc(customFeesCharged));
+			grpc.addAllAssessedCustomFees(customFeesCharged.stream().map(AssessedCustomFee::toGrpc).collect(toList()));
 		}
 
 		return grpc.build();

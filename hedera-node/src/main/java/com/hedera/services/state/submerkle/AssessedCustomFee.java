@@ -30,8 +30,6 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import proto.CustomFeesOuterClass;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Process self serializable object that represents an assessed custom fee, which may or may not result in a balance
@@ -84,11 +82,11 @@ public class AssessedCustomFee implements SelfSerializable {
 		return account;
 	}
 
-	public static AssessedCustomFee hbarAdjust(final AccountAmount aa) {
+	public static AssessedCustomFee assessedHbarFeeFrom(final AccountAmount aa) {
 		return new AssessedCustomFee(null, aa);
 	}
 
-	public static AssessedCustomFee tokenAdjust(final EntityId token, final AccountAmount aa) {
+	public static AssessedCustomFee assessedHtsFeeFrom(final EntityId token, final AccountAmount aa) {
 		return new AssessedCustomFee(token, aa);
 	}
 
@@ -117,41 +115,25 @@ public class AssessedCustomFee implements SelfSerializable {
 
 	/* --- Helpers --- */
 
-	public CustomFeesOuterClass.CustomFeeCharged toGrpc() {
-		var grpc = CustomFeesOuterClass.CustomFeeCharged.newBuilder()
-				.setFeeCollector(account.toGrpcAccountId())
-				.setUnitsCharged(units);
+	public CustomFeesOuterClass.AssessedCustomFee toGrpc() {
+		var grpc = CustomFeesOuterClass.AssessedCustomFee.newBuilder()
+				.setFeeCollectorAccountId(account.toGrpcAccountId())
+				.setAmount(units);
 		if (isForHbar()) {
 			return grpc.build();
 		}
 		return grpc.setTokenId(token.toGrpcTokenId()).build();
 	}
 
-	public static CustomFeesOuterClass.CustomFeesCharged toGrpc(List<AssessedCustomFee> balanceChanges) {
-		return CustomFeesOuterClass.CustomFeesCharged.newBuilder()
-				.addAllCustomFeesCharged(
-						balanceChanges
-								.stream()
-								.map(AssessedCustomFee::toGrpc)
-								.collect(Collectors.toList()))
+	public static AssessedCustomFee fromGrpc(CustomFeesOuterClass.AssessedCustomFee assessedFee) {
+		final var aa = AccountAmount.newBuilder()
+				.setAccountID(assessedFee.getFeeCollectorAccountId())
+				.setAmount(assessedFee.getAmount())
 				.build();
-	}
-
-	public static List<AssessedCustomFee> fromGrpc(CustomFeesOuterClass.CustomFeesCharged grpc) {
-		return grpc.getCustomFeesChargedList()
-				.stream()
-				.map(AssessedCustomFee::fromGrpc)
-				.collect(Collectors.toList());
-	}
-
-	public static AssessedCustomFee fromGrpc(CustomFeesOuterClass.CustomFeeCharged customFeesCharged) {
-		AccountAmount aa = AccountAmount.newBuilder()
-				.setAccountID(customFeesCharged.getFeeCollector())
-				.setAmount(customFeesCharged.getUnitsCharged()).build();
-		if (customFeesCharged.hasTokenId()) {
-			return tokenAdjust(EntityId.fromGrpcTokenId(customFeesCharged.getTokenId()), aa);
+		if (assessedFee.hasTokenId()) {
+			return assessedHtsFeeFrom(EntityId.fromGrpcTokenId(assessedFee.getTokenId()), aa);
 		}
-		return hbarAdjust(aa);
+		return assessedHbarFeeFrom(aa);
 	}
 
 	/* ----- SelfSerializable methods ------ */

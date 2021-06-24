@@ -378,7 +378,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		var kycKey = asUsableFcKey(request.getKycKey());
 		var wipeKey = asUsableFcKey(request.getWipeKey());
 		var supplyKey = asUsableFcKey(request.getSupplyKey());
-		var customFeesKey = asUsableFcKey(request.getCustomFeesKey());
 
 		var expiry = expiryOf(request, now);
 		pendingId = ids.newTokenId(sponsor);
@@ -397,7 +396,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		wipeKey.ifPresent(pendingCreation::setWipeKey);
 		freezeKey.ifPresent(pendingCreation::setFreezeKey);
 		supplyKey.ifPresent(pendingCreation::setSupplyKey);
-		customFeesKey.ifPresent(pendingCreation::setCustomFeeKey);
 		if (request.hasAutoRenewAccount()) {
 			pendingCreation.setAutoRenewAccount(fromGrpcAccountId(request.getAutoRenewAccount()));
 			pendingCreation.setAutoRenewPeriod(request.getAutoRenewPeriod().getSeconds());
@@ -420,7 +418,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		}
 
 		for (var customFee : feeSchedule) {
-			final var feeCollector = customFee.getFeeCollector();
+			final var feeCollector = customFee.getFeeCollectorAccountId();
 			/* Validate if the feeCollector is a valid account ID */
 			final var feeCollectorValidity = usableOrElse(feeCollector, INVALID_CUSTOM_FEE_COLLECTOR);
 
@@ -432,8 +430,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			feeCollector */
 			if (customFee.hasFixedFee()) {
 				final var fixedFee = customFee.getFixedFee();
-				if (fixedFee.hasTokenId()) {
-					final var denom = fixedFee.getTokenId();
+				if (fixedFee.hasDenominatingTokenId()) {
+					final var denom = fixedFee.getDenominatingTokenId();
 					if (resolve(denom) == MISSING_TOKEN) {
 						return INVALID_TOKEN_ID_IN_CUSTOM_FEES;
 					}
@@ -446,7 +444,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				/* TODO: Should fee collectors for fractional fees automatically be associated to the newly
 				    created token?  (This will require their keys to sign the TokenCreate transaction.) */
 				final var fractionalSpec = customFee.getFractionalFee();
-				final var fraction = fractionalSpec.getFractionOfUnitsToCollect();
+				final var fraction = fractionalSpec.getFractionalAmount();
 				if (fraction.getDenominator() == 0) {
 					return FRACTION_DIVIDES_BY_ZERO;
 				}

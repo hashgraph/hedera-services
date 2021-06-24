@@ -1,6 +1,5 @@
 package com.hedera.services.bdd.spec.transactions.token;
 
-import com.google.protobuf.UInt64Value;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hederahashgraph.api.proto.java.Fraction;
 import proto.CustomFeesOuterClass;
@@ -42,7 +41,7 @@ public class CustomFeeSpecs {
 	static CustomFeesOuterClass.CustomFee buildIncompleteCustomFee(final String collector,
 			final HapiApiSpec spec) {
 		final var collectorId = isIdLiteral(collector) ? asAccount(collector) : spec.registry().getAccountID(collector);
-		return CustomFeesOuterClass.CustomFee.newBuilder().setFeeCollector(collectorId).build();
+		return CustomFeesOuterClass.CustomFee.newBuilder().setFeeCollectorAccountId(collectorId).build();
 	}
 
 	static CustomFeesOuterClass.CustomFee builtFixedHbar(
@@ -61,7 +60,7 @@ public class CustomFeeSpecs {
 	) {
 		final var builder = baseFixedBuilder(amount, collector, spec);
 		final var denomId = isIdLiteral(denom) ? asToken(denom) : spec.registry().getTokenID(denom);
-		builder.getFixedFeeBuilder().setTokenId(denomId);
+		builder.getFixedFeeBuilder().setDenominatingTokenId(denomId);
 		return builder.build();
 	}
 
@@ -75,14 +74,14 @@ public class CustomFeeSpecs {
 	) {
 		final var collectorId = isIdLiteral(collector) ? asAccount(collector) : spec.registry().getAccountID(collector);
 		final var fractionalBuilder = CustomFeesOuterClass.FractionalFee.newBuilder()
-				.setFractionOfUnitsToCollect(Fraction.newBuilder()
+				.setFractionalAmount(Fraction.newBuilder()
 						.setNumerator(numerator)
 						.setDenominator(denominator))
-				.setMinimumUnitsToCollect(min);
-		max.ifPresent(l -> fractionalBuilder.setMaximumUnitsToCollect(UInt64Value.newBuilder().setValue(l)));
+				.setMinimumAmount(min);
+		max.ifPresent(fractionalBuilder::setMaximumAmount);
 		return  CustomFeesOuterClass.CustomFee.newBuilder()
 				.setFractionalFee(fractionalBuilder)
-				.setFeeCollector(collectorId)
+				.setFeeCollectorAccountId(collectorId)
 				.build();
 	}
 
@@ -93,10 +92,10 @@ public class CustomFeeSpecs {
 	) {
 		final var collectorId = isIdLiteral(collector) ? asAccount(collector) : spec.registry().getAccountID(collector);
 		final var fixedBuilder = CustomFeesOuterClass.FixedFee.newBuilder()
-				.setUnitsToCollect(amount);
+				.setAmount(amount);
 		final var builder = CustomFeesOuterClass.CustomFee.newBuilder()
 				.setFixedFee(fixedBuilder)
-				.setFeeCollector(collectorId);
+				.setFeeCollectorAccountId(collectorId);
 		return builder;
 	}
 }

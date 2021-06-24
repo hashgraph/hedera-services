@@ -68,13 +68,13 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	private JKey wipeKey = UNUSED_KEY;
 	private JKey supplyKey = UNUSED_KEY;
 	private JKey freezeKey = UNUSED_KEY;
-	private JKey customFeeKey = UNUSED_KEY;
 	private String symbol;
 	private String name;
 	private String memo = DEFAULT_MEMO;
 	private boolean deleted;
 	private boolean accountsFrozenByDefault;
 	private boolean accountsKycGrantedByDefault;
+	private boolean feeScheduleMutable;
 	private EntityId treasury;
 	private EntityId autoRenewAccount = null;
 	private List<CustomFee> feeSchedule = Collections.emptyList();
@@ -131,7 +131,6 @@ public class MerkleToken extends AbstractMerkleLeaf {
 				equalUpToDecodability(this.adminKey, that.adminKey) &&
 				equalUpToDecodability(this.freezeKey, that.freezeKey) &&
 				equalUpToDecodability(this.kycKey, that.kycKey) &&
-				equalUpToDecodability(this.customFeeKey, that.customFeeKey) &&
 				Objects.equals(this.feeSchedule, that.feeSchedule);
 	}
 
@@ -155,8 +154,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 				treasury,
 				autoRenewAccount,
 				autoRenewPeriod,
-				feeSchedule,
-				customFeeKey);
+				feeSchedule);
 	}
 
 	/* --- Bean --- */
@@ -179,7 +177,6 @@ public class MerkleToken extends AbstractMerkleLeaf {
 				.add("wipeKey", describe(wipeKey))
 				.add("supplyKey", describe(supplyKey))
 				.add("freezeKey", describe(freezeKey))
-				.add("customFeeKey", describe(customFeeKey))
 				.add("accountsKycGrantedByDefault", accountsKycGrantedByDefault)
 				.add("accountsFrozenByDefault", accountsFrozenByDefault)
 				.add("feeSchedules", feeSchedule)
@@ -219,9 +216,6 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		kycKey = serdes.readNullable(in, serdes::deserializeKey);
 		supplyKey = serdes.readNullable(in, serdes::deserializeKey);
 		wipeKey = serdes.readNullable(in, serdes::deserializeKey);
-		if (version >= RELEASE_0160_VERSION) {
-			customFeeKey = serdes.readNullable(in, serdes::deserializeKey);
-		}
 		if (version >= RELEASE_0120_VERSION) {
 			memo = in.readNormalisedString(UPPER_BOUND_MEMO_UTF8_BYTES);
 		}
@@ -248,7 +242,6 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		serdes.writeNullable(kycKey, out, serdes::serializeKey);
 		serdes.writeNullable(supplyKey, out, serdes::serializeKey);
 		serdes.writeNullable(wipeKey, out, serdes::serializeKey);
-		serdes.writeNullable(customFeeKey, out, serdes::serializeKey);
 		out.writeNormalisedString(memo);
 		out.writeSerializableList(feeSchedule, true, true);
 	}
@@ -284,9 +277,6 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		}
 		if (supplyKey != UNUSED_KEY) {
 			fc.setSupplyKey(supplyKey);
-		}
-		if (customFeeKey != UNUSED_KEY) {
-			fc.setCustomFeeKey(customFeeKey);
 		}
 		return fc;
 	}
@@ -354,6 +344,14 @@ public class MerkleToken extends AbstractMerkleLeaf {
 
 	public void setWipeKey(JKey wipeKey) {
 		this.wipeKey = wipeKey;
+	}
+
+	public boolean isFeeScheduleMutable() {
+		return feeScheduleMutable;
+	}
+
+	public void setFeeScheduleMutable(boolean feeScheduleMutable) {
+		this.feeScheduleMutable = feeScheduleMutable;
 	}
 
 	public boolean isDeleted() {
@@ -448,18 +446,6 @@ public class MerkleToken extends AbstractMerkleLeaf {
 
 	public JKey getFreezeKey() {
 		return freezeKey;
-	}
-
-	public void setCustomFeeKey(JKey customFeeKey) {
-		this.customFeeKey = customFeeKey;
-	}
-
-	public JKey getCustomFeeKey() {
-		return customFeeKey;
-	}
-
-	public boolean hasCustomFeeKey() {
-		return customFeeKey != null;
 	}
 
 	public void setTotalSupply(long totalSupply) {

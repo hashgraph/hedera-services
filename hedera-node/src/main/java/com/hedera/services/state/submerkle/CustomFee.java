@@ -21,7 +21,6 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.google.protobuf.UInt64Value;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.Fraction;
 import com.swirlds.common.io.SelfSerializable;
@@ -107,24 +106,23 @@ public class CustomFee implements SelfSerializable {
 	}
 
 	public static CustomFee fromGrpc(CustomFeesOuterClass.CustomFee source) {
-		final var feeCollector = EntityId.fromGrpcAccountId(source.getFeeCollector());
+		final var feeCollector = EntityId.fromGrpcAccountId(source.getFeeCollectorAccountId());
 		if (source.hasFixedFee()) {
 			EntityId denom = null;
 			final var fixedSource = source.getFixedFee();
-			if (fixedSource.hasTokenId()) {
-				denom = EntityId.fromGrpcTokenId(fixedSource.getTokenId());
+			if (fixedSource.hasDenominatingTokenId()) {
+				denom = EntityId.fromGrpcTokenId(fixedSource.getDenominatingTokenId());
 			}
-			return fixedFee(fixedSource.getUnitsToCollect(), denom, feeCollector);
+			return fixedFee(fixedSource.getAmount(), denom, feeCollector);
 		} else {
 			final var fractionalSource = source.getFractionalFee();
-			final var fraction = fractionalSource.getFractionOfUnitsToCollect();
-			final var effectiveMax = fractionalSource.hasMaximumUnitsToCollect()
-					? fractionalSource.getMaximumUnitsToCollect().getValue()
-					: Long.MAX_VALUE;
+			final var fraction = fractionalSource.getFractionalAmount();
+			final var nominalMax = fractionalSource.getMaximumAmount();
+			final var effectiveMax = nominalMax == 0 ? Long.MAX_VALUE : nominalMax;
 			return fractionalFee(
 					fraction.getNumerator(),
 					fraction.getDenominator(),
-					fractionalSource.getMinimumUnitsToCollect(),
+					fractionalSource.getMinimumAmount(),
 					effectiveMax,
 					feeCollector);
 		}
@@ -132,36 +130,35 @@ public class CustomFee implements SelfSerializable {
 
 	public CustomFeesOuterClass.CustomFee asGrpc() {
 		final var builder = CustomFeesOuterClass.CustomFee.newBuilder()
-				.setFeeCollector(feeCollector.toGrpcAccountId());
+				.setFeeCollectorAccountId(feeCollector.toGrpcAccountId());
 		if (feeType == FIXED_FEE) {
 			final var spec = fixedFeeSpec;
 			final var fixedBuilder = CustomFeesOuterClass.FixedFee.newBuilder()
-					.setUnitsToCollect(spec.getUnitsToCollect());
+					.setAmount(spec.getUnitsToCollect());
 			if (spec.getTokenDenomination() != null) {
-				fixedBuilder.setTokenId(spec.getTokenDenomination().toGrpcTokenId());
+				fixedBuilder.setDenominatingTokenId(spec.getTokenDenomination().toGrpcTokenId());
 			}
 			builder.setFixedFee(fixedBuilder);
 		} else {
 			final var spec = fractionalFeeSpec;
 			final var fracBuilder = CustomFeesOuterClass.FractionalFee.newBuilder()
-					.setFractionOfUnitsToCollect(Fraction.newBuilder()
+					.setFractionalAmount(Fraction.newBuilder()
 							.setNumerator(spec.getNumerator())
 							.setDenominator(spec.getDenominator()))
-					.setMinimumUnitsToCollect(spec.getMinimumUnitsToCollect());
+					.setMinimumAmount(spec.getMinimumAmount());
 			if (spec.getMaximumUnitsToCollect() != Long.MAX_VALUE) {
-				fracBuilder.setMaximumUnitsToCollect(UInt64Value.newBuilder()
-						.setValue(spec.getMaximumUnitsToCollect()));
+				fracBuilder.setMaximumAmount(spec.getMaximumUnitsToCollect());
 			}
 			builder.setFractionalFee(fracBuilder);
 		}
 		return builder.build();
 	}
 
-	public EntityId getFeeCollector() {
+	public EntityId getFeeCollectorAccountId() {
 		return feeCollector;
 	}
 
-	public Id getFeeCollectorAsId() {
+	public Id getFeeCollectorAccountIdAsId() {
 		return feeCollector.asId();
 	}
 
@@ -240,7 +237,7 @@ public class CustomFee implements SelfSerializable {
 			dos.writeByte(FRACTIONAL_CODE);
 			dos.writeLong(fractionalFeeSpec.getNumerator());
 			dos.writeLong(fractionalFeeSpec.getDenominator());
-			dos.writeLong(fractionalFeeSpec.getMinimumUnitsToCollect());
+			dos.writeLong(fractionalFeeSpec.getMinimumAmount());
 			dos.writeLong(fractionalFeeSpec.getMaximumUnitsToCollect());
 		}
 		dos.writeSerializable(feeCollector, true);
@@ -285,7 +282,7 @@ public class CustomFee implements SelfSerializable {
 			return denominator;
 		}
 
-		public long getMinimumUnitsToCollect() {
+		public long getMinimumAmount() {
 			return minimumUnitsToCollect;
 		}
 

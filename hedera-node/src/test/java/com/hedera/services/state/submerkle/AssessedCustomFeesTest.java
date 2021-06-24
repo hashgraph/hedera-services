@@ -32,8 +32,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import proto.CustomFeesOuterClass;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertNotNull;
@@ -143,12 +141,12 @@ class AssessedCustomFeesTest {
 		// given:
 		final var subject = new AssessedCustomFee(account, token, units);
 		// then:
-		CustomFeesOuterClass.CustomFeeCharged grpc = subject.toGrpc();
+		CustomFeesOuterClass.AssessedCustomFee grpc = subject.toGrpc();
 
 		//expect:
-		assertEquals(subject.account().toGrpcAccountId(), grpc.getFeeCollector());
+		assertEquals(subject.account().toGrpcAccountId(), grpc.getFeeCollectorAccountId());
 		assertEquals(subject.token().toGrpcTokenId(), grpc.getTokenId());
-		assertEquals(subject.units(), grpc.getUnitsCharged());
+		assertEquals(subject.units(), grpc.getAmount());
 	}
 
 	@Test
@@ -156,74 +154,45 @@ class AssessedCustomFeesTest {
 		// given:
 		final var subject = new AssessedCustomFee(account, units);
 		// then:
-		CustomFeesOuterClass.CustomFeeCharged grpc = subject.toGrpc();
+		CustomFeesOuterClass.AssessedCustomFee grpc = subject.toGrpc();
 
 		//expect:
-		assertEquals(subject.account().toGrpcAccountId(), grpc.getFeeCollector());
+		assertEquals(subject.account().toGrpcAccountId(), grpc.getFeeCollectorAccountId());
 		assertFalse(grpc.hasTokenId());
-		assertEquals(subject.units(), grpc.getUnitsCharged());
-	}
-
-	@Test
-	void testToGrpcWithBalanceChanges(){
-		// given:
-		final var subject = new AssessedCustomFee(account, token, units);
-		List<AssessedCustomFee> balanceChanges = new ArrayList<>();
-		balanceChanges.add(subject);
-
-		// then:
-		CustomFeesOuterClass.CustomFeesCharged grpc = subject.toGrpc(balanceChanges);
-
-		//expect:
-		assertEquals(1, grpc.getCustomFeesChargedCount());
-		List<CustomFeesOuterClass.CustomFeeCharged> feesCharged = grpc.getCustomFeesChargedList();
-		assertEquals(1, feesCharged.size());
-		assertEquals(subject.account().toGrpcAccountId(), feesCharged.get(0).getFeeCollector());
-		assertEquals(subject.token().toGrpcTokenId(), feesCharged.get(0).getTokenId());
-		assertEquals(subject.units(), feesCharged.get(0).getUnitsCharged());
+		assertEquals(subject.units(), grpc.getAmount());
 	}
 
 	@Test
 	void testFromGrpc(){
 		// given:
-		final var feeCharged = CustomFeesOuterClass.CustomFeeCharged
+		final var grpc = CustomFeesOuterClass.AssessedCustomFee
 				.newBuilder()
 				.setTokenId(token.toGrpcTokenId())
-				.setFeeCollector(account.toGrpcAccountId())
-				.setUnitsCharged(units)
-				.build();
-		final var grpc = CustomFeesOuterClass.CustomFeesCharged
-				.newBuilder()
-				.addCustomFeesCharged(feeCharged)
+				.setFeeCollectorAccountId(account.toGrpcAccountId())
+				.setAmount(units)
 				.build();
 
 		//expect:
-		final var balanceChange = AssessedCustomFee.fromGrpc(grpc);
-		assertEquals(1, balanceChange.size());
-		assertEquals(account, balanceChange.get(0).account());
-		assertEquals(token, balanceChange.get(0).token());
-		assertEquals(units, balanceChange.get(0).units());
+		final var fcFee = AssessedCustomFee.fromGrpc(grpc);
+		assertEquals(account, fcFee.account());
+		assertEquals(token, fcFee.token());
+		assertEquals(units, fcFee.units());
 	}
 
 	@Test
 	void testFromGrpcForHbarAdjust(){
 		// given:
-		final var feeCharged = CustomFeesOuterClass.CustomFeeCharged
+		final var grpc = CustomFeesOuterClass.AssessedCustomFee
 				.newBuilder()
-				.setFeeCollector(account.toGrpcAccountId())
-				.setUnitsCharged(units)
-				.build();
-		final var grpc = CustomFeesOuterClass.CustomFeesCharged
-				.newBuilder()
-				.addCustomFeesCharged(feeCharged)
+				.setFeeCollectorAccountId(account.toGrpcAccountId())
+				.setAmount(units)
 				.build();
 
 		//expect:
-		final var balanceChange = AssessedCustomFee.fromGrpc(grpc);
-		assertEquals(1, balanceChange.size());
-		assertEquals(account, balanceChange.get(0).account());
-		assertEquals(null, balanceChange.get(0).token());
-		assertEquals(units, balanceChange.get(0).units());
+		final var fcFee = AssessedCustomFee.fromGrpc(grpc);
+		assertEquals(account, fcFee.account());
+		assertEquals(null, fcFee.token());
+		assertEquals(units, fcFee.units());
 	}
 
 	@Test

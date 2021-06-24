@@ -141,21 +141,21 @@ public class ImpliedTransfersMarshal {
 			List<AssessedCustomFee> assessedCustomFeesForRecord) {
 		long fee =
 				(fees.getFractionalFeeSpec().getNumerator() * totalAmount / fees.getFractionalFeeSpec().getDenominator());
-		long feesToCollect = Math.max(fee, fees.getFractionalFeeSpec().getMinimumUnitsToCollect());
+		long feesToCollect = Math.max(fee, fees.getFractionalFeeSpec().getMinimumAmount());
 
 		if (fees.getFractionalFeeSpec().getMaximumUnitsToCollect() > 0) {
 			feesToCollect = Math.min(feesToCollect, fees.getFractionalFeeSpec().getMaximumUnitsToCollect());
 		}
 
-		modifyBalanceChange(Pair.of(fees.getFeeCollectorAsId(), scopingToken),
+		modifyBalanceChange(Pair.of(fees.getFeeCollectorAccountIdAsId(), scopingToken),
 				existingBalanceChanges, customFeeChanges, feesToCollect,
-				tokenAdjust(fees.getFeeCollectorAsId(), scopingToken, feesToCollect), false);
+				tokenAdjust(fees.getFeeCollectorAccountIdAsId(), scopingToken, feesToCollect), false);
 
 		modifyBalanceChange(Pair.of(payerId, scopingToken),
 				existingBalanceChanges, customFeeChanges, -feesToCollect,
 				tokenAdjust(payerId, scopingToken, -feesToCollect), true);
 
-		assessedCustomFeesForRecord.add(new AssessedCustomFee(fees.getFeeCollector(),
+		assessedCustomFeesForRecord.add(new AssessedCustomFee(fees.getFeeCollectorAccountId(),
 				scopingToken.asEntityId(),
 				feesToCollect));
 	}
@@ -168,26 +168,26 @@ public class ImpliedTransfersMarshal {
 			Map<Pair<Id, Id>, BalanceChange> existingBalanceChanges,
 			List<AssessedCustomFee> assessedCustomFeesForRecord) {
 		if (fees.getFixedFeeSpec().getTokenDenomination() == null) {
-			modifyBalanceChange(Pair.of(fees.getFeeCollectorAsId(), MISSING_ID),
+			modifyBalanceChange(Pair.of(fees.getFeeCollectorAccountIdAsId(), MISSING_ID),
 					existingBalanceChanges, customFeeChanges, fees.getFixedFeeSpec().getUnitsToCollect(),
-					hbarAdjust(fees.getFeeCollectorAsId(), fees.getFixedFeeSpec().getUnitsToCollect()), false);
+					hbarAdjust(fees.getFeeCollectorAccountIdAsId(), fees.getFixedFeeSpec().getUnitsToCollect()), false);
 
 			modifyBalanceChange(Pair.of(payerId, MISSING_ID),
 					existingBalanceChanges, customFeeChanges, -fees.getFixedFeeSpec().getUnitsToCollect(),
 					hbarAdjust(payerId, -fees.getFixedFeeSpec().getUnitsToCollect()), true);
-			assessedCustomFeesForRecord.add(new AssessedCustomFee(fees.getFeeCollector(),
+			assessedCustomFeesForRecord.add(new AssessedCustomFee(fees.getFeeCollectorAccountId(),
 					null, fees.getFixedFeeSpec().getUnitsToCollect()));
 		} else {
 			modifyBalanceChange(
-					Pair.of(fees.getFeeCollectorAsId(), fees.getFixedFeeSpec().getTokenDenomination().asId()),
+					Pair.of(fees.getFeeCollectorAccountIdAsId(), fees.getFixedFeeSpec().getTokenDenomination().asId()),
 					existingBalanceChanges, customFeeChanges, fees.getFixedFeeSpec().getUnitsToCollect(),
-					tokenAdjust(fees.getFeeCollectorAsId(), fees.getFixedFeeSpec().getTokenDenomination().asId(),
+					tokenAdjust(fees.getFeeCollectorAccountIdAsId(), fees.getFixedFeeSpec().getTokenDenomination().asId(),
 							fees.getFixedFeeSpec().getUnitsToCollect()), false);
 			modifyBalanceChange(Pair.of(payerId, fees.getFixedFeeSpec().getTokenDenomination().asId()),
 					existingBalanceChanges, customFeeChanges, -fees.getFixedFeeSpec().getUnitsToCollect(),
 					tokenAdjust(payerId, fees.getFixedFeeSpec().getTokenDenomination().asId(),
 							-fees.getFixedFeeSpec().getUnitsToCollect()), true);
-			assessedCustomFeesForRecord.add(new AssessedCustomFee(fees.getFeeCollector(),
+			assessedCustomFeesForRecord.add(new AssessedCustomFee(fees.getFeeCollectorAccountId(),
 					fees.getFixedFeeSpec().getTokenDenomination(),
 					fees.getFixedFeeSpec().getUnitsToCollect()));
 		}
