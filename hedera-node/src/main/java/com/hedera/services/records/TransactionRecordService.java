@@ -97,8 +97,10 @@ public class TransactionRecordService {
 			transferListMap.put(tokenId, tokenTransferListBuilder);
 		}
 
-		txnCtx.setTokenTransferLists(
-				transferListMap.values().stream().map(TokenTransferList.Builder::build).collect(Collectors.toList())
-		);
+		if(!transferListMap.isEmpty()) {
+			txnCtx.setTokenTransferLists(
+					transferListMap.values().stream().map(TokenTransferList.Builder::build).collect(Collectors.toList())
+			);
+		}
 	}
 }
