@@ -95,8 +95,8 @@ public class SpanMapManager {
 		final var xferMeta = accessor.availXferUsageMeta();
 
 		List<BalanceChange> balanceChanges = impliedTransfers.getAllBalanceChanges();
-		int totalTokenTransfers = 0;
-		int totalHbarTransfers = 0;
+		var totalTokenTransfers = 0;
+		var totalHbarTransfers = 0;
 		Set<TokenID> tokenIDset = new HashSet<>();
 		for(BalanceChange bc : balanceChanges) {
 			if(bc.isForHbar()) {

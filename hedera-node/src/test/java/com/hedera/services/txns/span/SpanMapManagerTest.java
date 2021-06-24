@@ -23,12 +23,15 @@ package com.hedera.services.txns.span;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.AssessedCustomFee;
 import com.hedera.services.state.submerkle.CustomFee;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.utils.TxnAccessor;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,13 +45,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SpanMapManagerTest {
@@ -68,6 +75,13 @@ class SpanMapManagerTest {
 			Pair.of(customFeeToken, List.of(CustomFee.fixedFee(10L, customFeeToken, customFeeCollector))));
 	private final List<AssessedCustomFee> assessedCustomFees = List.of(
 			new AssessedCustomFee(customFeeCollector, customFeeToken, 123L));
+
+	private final AccountID acctID = asAccount("1.2.3");
+	private final EntityId tokenID = new EntityId(4, 6, 6);
+	private final BalanceChange hbarChange = IdUtils.hbarChange(acctID, 1_000L);
+	private final BalanceChange tokenChange = IdUtils.tokenChange(tokenID, acctID, 2_000L);
+	private final List<BalanceChange> balanceChanges = List.of( hbarChange, tokenChange);
+
 	private final ImpliedTransfers validImpliedTransfers = ImpliedTransfers.valid(
 			maxHbarAdjusts, maxTokenAdjusts, new ArrayList<>(), entityCustomFees, assessedCustomFees);
 	private final ImpliedTransfers feeChangedImpliedTransfers = ImpliedTransfers.valid(
@@ -85,7 +99,8 @@ class SpanMapManagerTest {
 	private ImpliedTransfersMarshal impliedTransfersMarshal;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
-
+	@Mock
+	private ImpliedTransfers mockImpliedTransfers;
 	@Mock
 	private CustomFeeSchedules customFeeSchedules;
 
@@ -111,6 +126,24 @@ class SpanMapManagerTest {
 		// then:
 		assertSame(someImpliedXfers, spanMapAccessor.getImpliedTransfers(accessor));
 	}
+	
+	@Test
+	void expandsImpliedTransfersWithDetails() {
+		given(accessor.getTxn()).willReturn(pretendXferTxn);
+		given(accessor.getSpanMap()).willReturn(span);
+		given(accessor.getFunction()).willReturn(CryptoTransfer);
+		given(accessor.availXferUsageMeta()).willReturn(xferMeta);
+		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), accessor.getPayer()))
+				.willReturn(mockImpliedTransfers);
+		given(mockImpliedTransfers.getAllBalanceChanges()).willReturn(balanceChanges);
+
+		// when:
+		subject.expandSpan(accessor);
+
+		// then:
+		assertEquals(1, xferMeta.getTotalTokensInvolved());
+		assertEquals(1, xferMeta.getTotalHbarTransfers());
+	}
 
 	@Test
 	void doesntRecomputeImpliedTransfersIfMetaMatches() {
@@ -129,7 +162,7 @@ class SpanMapManagerTest {
 	}
 
 	@Test
-	void recomputesImpliedTransfersIfMetaMatches() {
+	void recomputesImpliedTransfersIfMetaNotMatches() {
 		given(accessor.getTxn()).willReturn(pretendXferTxn);
 		given(accessor.getSpanMap()).willReturn(span);
 		given(accessor.getFunction()).willReturn(CryptoTransfer);

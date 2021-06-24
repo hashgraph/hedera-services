@@ -40,11 +40,11 @@ public class CryptoTransferMeta {
 		this.totalHbarTransfers = 0;
 	}
 
-	public CryptoTransferMeta(int tokenMultiplier, int totalTokenInvolved, int totalTokenTransfers, int numCustomFeeHbarTransfers) {
+	public CryptoTransferMeta(int tokenMultiplier, int totalTokenInvolved, int totalTokenTransfers, int totalHbarTransfers) {
 		this.tokenMultiplier = tokenMultiplier;
 		this.totalTokensInvolved = totalTokenInvolved;
 		this.totalTokenTransfers = totalTokenTransfers;
-		this.totalHbarTransfers = numCustomFeeHbarTransfers;
+		this.totalHbarTransfers = totalHbarTransfers;
 	}
 
 	public int getTokenMultiplier() {
