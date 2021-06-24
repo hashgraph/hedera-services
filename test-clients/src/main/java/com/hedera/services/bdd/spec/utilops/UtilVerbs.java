@@ -605,8 +605,11 @@ public class UtilVerbs {
 	}
 
 	/**
-	 * Validates that fee charged for a transaction is within +/- 0.0001$ of
-	 * expected fee (taken from pricing calculator)
+	 *  Validates that fee charged for a transaction is within +/- 0.0001$ of
+	 * 	expected fee (taken from pricing calculator)
+	 * @param txn transaction
+	 * @param expectedUsd expected fee
+	 * @return
 	 */
 	public static CustomSpecAssert validateChargedUsd(String txn, double expectedUsd) {
 		return validateChargedUsdWithin(txn, expectedUsd, 1.0);
