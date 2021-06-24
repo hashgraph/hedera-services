@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultFailingHapiSpec;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -119,7 +118,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 				validatesMissingRef(),
 				validatesNewExpiry(),
 				/* HIP-18 */
-//				onlyValidCustomFeeScheduleCanBeUpdated(),
+				onlyValidCustomFeeScheduleCanBeUpdated(),
 				}
 		);
 	}
@@ -604,6 +603,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 		final var tokenCollector = "fractionalFee";
 		final var invalidEntityId = "1.2.786";
 
+		final var adminKey = "admin";
 		final var customFeesKey = "antique";
 
 		final var newHbarAmount = 17_234L;
@@ -620,14 +620,24 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 
 		final var newCustomFeesKey = "modern";
 
-		return defaultFailingHapiSpec("OnlyValidCustomFeeScheduleCanBeUpdated")
+		return defaultHapiSpec("OnlyValidCustomFeeScheduleCanBeUpdated")
 				.given(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(GENESIS)
+								.overridingProps(Map.of("tokens.maxCustomFeesAllowed", "10")),
+						newKeyNamed(adminKey),
 						newKeyNamed(customFeesKey),
+						newKeyNamed(newCustomFeesKey),
 						cryptoCreate(htsCollector),
+						cryptoCreate(newHtsCollector),
 						cryptoCreate(hbarCollector),
+						cryptoCreate(newHbarCollector),
 						cryptoCreate(tokenCollector),
+						cryptoCreate(newTokenCollector),
 						tokenCreate(feeDenom).treasury(htsCollector),
+						tokenCreate(newFeeDenom).treasury(newHtsCollector),
 						tokenCreate(token)
+								.adminKey(adminKey)
 								.treasury(tokenCollector)
 								.customFeesKey(customFeesKey)
 								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
@@ -672,6 +682,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
 								.overridingProps(Map.of("tokens.maxCustomFeesAllowed", "10")),
+						tokenAssociate(newTokenCollector, token),
 						tokenUpdate(token)
 								.treasury(newTokenCollector)
 								.customFeesKey(newCustomFeesKey)
