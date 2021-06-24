@@ -488,13 +488,44 @@ class CustomFeeTest {
 	}
 
 	@Test
+	void failsFastIfNonPositiveFeeUsed() {
+		assertThrows(IllegalArgumentException.class, () -> new CustomFee.FixedFeeSpec(0, denom));
+		assertThrows(IllegalArgumentException.class, () -> new CustomFee.FixedFeeSpec(-1, denom));
+	}
+
+	@Test
 	void failFastIfInvalidFractionUsed() {
-		// setup:
+		// expect:
 		assertThrows(IllegalArgumentException.class, () -> new CustomFee.FractionalFeeSpec(
 				validNumerator,
 				invalidDenominator,
 				minimumUnitsToCollect,
 				maximumUnitsToCollect));
+		assertThrows(IllegalArgumentException.class, () -> new CustomFee.FractionalFeeSpec(
+				-validNumerator,
+				validDenominator,
+				minimumUnitsToCollect,
+				maximumUnitsToCollect));
+		assertThrows(IllegalArgumentException.class, () -> new CustomFee.FractionalFeeSpec(
+				validNumerator,
+				-validDenominator,
+				minimumUnitsToCollect,
+				maximumUnitsToCollect));
+		assertThrows(IllegalArgumentException.class, () -> new CustomFee.FractionalFeeSpec(
+				validNumerator,
+				validDenominator,
+				-minimumUnitsToCollect,
+				maximumUnitsToCollect));
+		assertThrows(IllegalArgumentException.class, () -> new CustomFee.FractionalFeeSpec(
+				validNumerator,
+				validDenominator,
+				minimumUnitsToCollect,
+				-maximumUnitsToCollect));
+		assertThrows(IllegalArgumentException.class, () -> new CustomFee.FractionalFeeSpec(
+				validNumerator,
+				validDenominator,
+				maximumUnitsToCollect,
+				minimumUnitsToCollect));
 	}
 
 	@Test

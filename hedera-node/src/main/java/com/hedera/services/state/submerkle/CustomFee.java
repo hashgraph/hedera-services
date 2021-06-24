@@ -268,8 +268,14 @@ public class CustomFee implements SelfSerializable {
 			if (denominator == 0) {
 				throw new IllegalArgumentException("Division by zero is not allowed");
 			}
-			this.numerator = Math.abs(numerator);
-			this.denominator = Math.abs(denominator);
+			if (numerator < 0 || denominator < 0) {
+				throw new IllegalArgumentException("Negative values are not allowed");
+			}
+			if (minimumUnitsToCollect < 0 || maximumUnitsToCollect < minimumUnitsToCollect) {
+				throw new IllegalArgumentException("Negative values are not allowed");
+			}
+			this.numerator = numerator;
+			this.denominator = denominator;
 			this.minimumUnitsToCollect = minimumUnitsToCollect;
 			this.maximumUnitsToCollect = maximumUnitsToCollect;
 		}
@@ -328,6 +334,9 @@ public class CustomFee implements SelfSerializable {
 		private final EntityId tokenDenomination;
 
 		public FixedFeeSpec(long unitsToCollect, EntityId tokenDenomination) {
+			if (unitsToCollect <= 0) {
+				throw new IllegalArgumentException("Only positive values are allowed");
+			}
 			this.unitsToCollect = unitsToCollect;
 			this.tokenDenomination = tokenDenomination;
 		}
