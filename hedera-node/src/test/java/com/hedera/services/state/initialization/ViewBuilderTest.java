@@ -15,19 +15,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class ViewBuilderTest {
 	private static final EntityId tokenId = new EntityId(0, 0, 54321);
 	private static final EntityId ownerId = new EntityId(0, 0, 12345);
-	private static final MerkleUniqueToken uniq = new MerkleUniqueToken(
-			ownerId,
-			"some-metadata".getBytes(),
-			RichInstant.fromJava(Instant.ofEpochSecond(1_234_567L, 8)));
-	private static final MerkleUniqueTokenId uniqId = new MerkleUniqueTokenId(tokenId, 2);
 
 	public static FCMap<MerkleUniqueTokenId, MerkleUniqueToken> someUniqueTokens() {
+		final var uniqId = new MerkleUniqueTokenId(tokenId, 2);
+		final var uniq = new MerkleUniqueToken(
+				ownerId,
+				"some-metadata".getBytes(),
+				RichInstant.fromJava(Instant.ofEpochSecond(1_234_567L, 8)));
 		final var ans = new FCMap<MerkleUniqueTokenId, MerkleUniqueToken>();
 		ans.put(uniqId, uniq);
 		return ans;
 	}
 
 	public static void assertIsTheExpectedUta(FCOneToManyRelation<EntityId, MerkleUniqueTokenId> actual) {
+		final var uniqId = new MerkleUniqueTokenId(tokenId, 2);
 		final var expected = new FCOneToManyRelation<EntityId, MerkleUniqueTokenId>();
 		expected.associate(tokenId, uniqId);
 		assertEquals(actual.getKeySet(), actual.getKeySet());
@@ -35,6 +36,7 @@ public class ViewBuilderTest {
 	}
 
 	public static void assertIsTheExpectedUtao(FCOneToManyRelation<EntityId, MerkleUniqueTokenId> actual) {
+		final var uniqId = new MerkleUniqueTokenId(tokenId, 2);
 		final var expected = new FCOneToManyRelation<EntityId, MerkleUniqueTokenId>();
 		expected.associate(ownerId, uniqId);
 		assertEquals(actual.getKeySet(), actual.getKeySet());
