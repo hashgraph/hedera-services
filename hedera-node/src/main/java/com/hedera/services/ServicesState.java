@@ -38,6 +38,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
@@ -54,6 +55,7 @@ import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
+import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -65,6 +67,7 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.context.SingletonContextsManager.CONTEXTS;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
+import static com.hedera.services.state.initialization.ViewBuilder.rebuildUniqueTokenViews;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNKNOWN_CONSENSUS_TIME;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
@@ -83,7 +86,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	static final int RELEASE_0130_VERSION = 7;
 	static final int RELEASE_0140_VERSION = 8;
 	static final int RELEASE_0150_VERSION = 9;
-	static final int MERKLE_VERSION = RELEASE_0150_VERSION;
+	static final int RELEASE_0160_VERSION = 10;
+	static final int MERKLE_VERSION = RELEASE_0160_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
 
 	static final String UNSUPPORTED_VERSION_MSG_TPL = "Argument 'version=%d' is invalid!";
@@ -92,6 +96,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	NodeId nodeId = null;
 	boolean skipDiskFsHashCheck = false;
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations;
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations;
 
 	/* Order of Merkle node children */
 	static class ChildIndices {
@@ -113,8 +119,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		static final int NUM_0120_CHILDREN = 10;
 		static final int NUM_0130_CHILDREN = 10;
 		static final int NUM_0140_CHILDREN = 10;
+		static final int NUM_0150_CHILDREN = 10;
 		static final int UNIQUE_TOKENS = 10;
-		static final int NUM_0150_CHILDREN = 11;
+		static final int NUM_0160_CHILDREN = 11;
 	}
 
 	ServicesContext ctx;
@@ -123,11 +130,20 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		/* RuntimeConstructable */
 	}
 
-	public ServicesState(ServicesContext ctx, NodeId nodeId, List<MerkleNode> children, ServicesState immutableState) {
+	public ServicesState(
+			ServicesContext ctx,
+			NodeId nodeId,
+			List<MerkleNode> children,
+			FCOneToManyRelation<EntityId, MerkleUniqueTokenId> mutableUniqueTokenAssociations,
+			FCOneToManyRelation<EntityId, MerkleUniqueTokenId> mutableUniqueOwnershipAssociations,
+			ServicesState immutableState
+	) {
 		super(immutableState);
 		addDeserializedChildren(children, MERKLE_VERSION);
 		this.ctx = ctx;
 		this.nodeId = nodeId;
+		this.uniqueTokenAssociations = mutableUniqueTokenAssociations;
+		this.uniqueOwnershipAssociations = mutableUniqueOwnershipAssociations;
 		if (ctx != null) {
 			ctx.update(this);
 		}
@@ -147,6 +163,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	@Override
 	public int getMinimumChildCount(int version) {
 		switch (version) {
+			case RELEASE_0160_VERSION:
+				return ChildIndices.NUM_0160_CHILDREN;
 			case RELEASE_0150_VERSION:
 				return ChildIndices.NUM_0150_CHILDREN;
 			case RELEASE_0140_VERSION:
@@ -173,6 +191,13 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	@Override
 	public void genesisInit(Platform platform, AddressBook addressBook) {
 		this.init(platform, addressBook);
+	}
+
+	@Override
+	public void initialize() {
+		if (uniqueTokens() == null) {
+			setChild(ChildIndices.UNIQUE_TOKENS, new FCMap<>());
+		}
 	}
 
 	/* --- SwirldState --- */
@@ -250,7 +275,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		ctx.update(this);
 		ctx.rebuildBackingStoresIfPresent();
 		ctx.rebuildStoreViewsIfPresent();
-		ctx.rebuildOwnershipsAndAssociations();
+		uniqueTokenAssociations = new FCOneToManyRelation<>();
+		uniqueOwnershipAssociations = new FCOneToManyRelation<>();
+		rebuildUniqueTokenViews(uniqueTokens(), uniqueTokenAssociations, uniqueOwnershipAssociations);
 
 		/* Use any payer records stored in state to rebuild the recent transaction
 		 * history. This history has two main uses: Purging expired records, and
@@ -322,7 +349,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				scheduleTxs().copy(),
 				runningHashLeaf().copy(),
 				uniqueTokens().copy()
-		), this);
+		), uniqueTokenAssociations.copy(), uniqueOwnershipAssociations.copy(), this);
 	}
 
 	/* --------------- */
@@ -410,5 +437,13 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	public FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens() {
 		return getChild(ChildIndices.UNIQUE_TOKENS);
+	}
+
+	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations() {
+		return uniqueTokenAssociations;
+	}
+
+	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations() {
+		return uniqueOwnershipAssociations;
 	}
 }
