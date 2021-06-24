@@ -639,7 +639,6 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						tokenCreate(token)
 								.adminKey(adminKey)
 								.treasury(tokenCollector)
-								.customFeesKey(customFeesKey)
 								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
 								.withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
 								.withCustom(fractionalFee(
@@ -685,7 +684,6 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						tokenAssociate(newTokenCollector, token),
 						tokenUpdate(token)
 								.treasury(newTokenCollector)
-								.customFeesKey(newCustomFeesKey)
 								.withCustom(fixedHbarFee(newHbarAmount, newHbarCollector))
 								.withCustom(fixedHtsFee(newHtsAmount, newFeeDenom, newHtsCollector))
 								.withCustom(fractionalFee(
@@ -695,7 +693,6 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						)
 				.then(
 						getTokenInfo(token)
-								.hasCustomFeesKey(newCustomFeesKey)
 								.hasCustom(fixedHbarFeeInSchedule(newHbarAmount, newHbarCollector))
 								.hasCustom(fixedHtsFeeInSchedule(newHtsAmount, newFeeDenom, newHtsCollector))
 								.hasCustom(fractionalFeeInSchedule(
