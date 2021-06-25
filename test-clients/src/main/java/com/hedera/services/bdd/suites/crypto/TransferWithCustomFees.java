@@ -59,7 +59,6 @@ public class TransferWithCustomFees extends HapiApiSuite {
 	private final String tokenReceiver = "receiver";
 
 	private final String tokenOwner = "tokenOwner";
-	private final String customFeeKey = "customScheduleKey";
 
 	public static void main(String... args) {
 		new TransferWithCustomFees().runSuiteAsync();
@@ -78,7 +77,6 @@ public class TransferWithCustomFees extends HapiApiSuite {
 	public HapiApiSpec transferWithFixedCustomFeeSchedule() {
 		return defaultHapiSpec("transferWithFixedCustomFeeSchedule")
 				.given(
-						newKeyNamed(customFeeKey),
 						cryptoCreate(htsCollector),
 						cryptoCreate(hbarCollector)
 								.balance(0L),
@@ -116,7 +114,6 @@ public class TransferWithCustomFees extends HapiApiSuite {
 	public HapiApiSpec transferWithFractinalCustomFeeSchedule() {
 		return defaultHapiSpec("transferWithCustomFeeScheduleHappyPath")
 				.given(
-						newKeyNamed(customFeeKey),
 						cryptoCreate(htsCollector),
 						cryptoCreate(hbarCollector)
 								.balance(0L),
@@ -158,7 +155,6 @@ public class TransferWithCustomFees extends HapiApiSuite {
 	public HapiApiSpec transferWithInsufficientCustomFees() {
 		return defaultHapiSpec("transferWithFixedCustomFeeSchedule")
 				.given(
-						newKeyNamed(customFeeKey),
 						cryptoCreate(htsCollector),
 						cryptoCreate(hbarCollector)
 								.balance(0L),
