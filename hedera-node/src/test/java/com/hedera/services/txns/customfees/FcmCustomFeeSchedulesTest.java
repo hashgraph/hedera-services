@@ -34,12 +34,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 @ExtendWith(MockitoExtension.class)
-class FCMCustomFeeSchedulesTest {
-	private FCMCustomFeeSchedules subject;
+class FcmCustomFeeSchedulesTest {
+	private FcmCustomFeeSchedules subject;
 	FCMap<MerkleEntityId, MerkleToken> tokenFCMap = new FCMap<>();
 
 	private final EntityId tokenA = new EntityId(0,0,1);
@@ -60,7 +59,7 @@ class FCMCustomFeeSchedulesTest {
 
 		tokenFCMap.put(tokenA.asMerkle(), tokenAValue);
 		tokenFCMap.put(tokenB.asMerkle(), tokenBValue);
-		subject = new FCMCustomFeeSchedules(() -> tokenFCMap);
+		subject = new FcmCustomFeeSchedules(() -> tokenFCMap);
 	}
 
 	@Test
@@ -88,17 +87,11 @@ class FCMCustomFeeSchedulesTest {
 		MerkleToken token = new MerkleToken();
 		token.setFeeSchedule(missingFees);
 		secondFCMap.put(missingToken.asMerkle(), new MerkleToken());
-		final var fees1 = new FCMCustomFeeSchedules(() -> tokenFCMap);
-		final var fees2 = new FCMCustomFeeSchedules(() -> secondFCMap);
-		// and:
-		final var oneRepr = "FCMCustomFeeSchedules{tokens=Size: 2 - null}";
-		final var twoRepr = "FCMCustomFeeSchedules{tokens=Size: 1 - null}";
+		final var fees1 = new FcmCustomFeeSchedules(() -> tokenFCMap);
+		final var fees2 = new FcmCustomFeeSchedules(() -> secondFCMap);
 
 		// expect:
 		assertNotEquals(fees1, fees2);
 		assertNotEquals(fees1.hashCode(), fees2.hashCode());
-		// and:
-		assertEquals(oneRepr, fees1.toString());
-		assertEquals(twoRepr, fees2.toString());
 	}
 }

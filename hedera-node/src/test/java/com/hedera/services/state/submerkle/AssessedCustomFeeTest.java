@@ -21,6 +21,9 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.hedera.test.utils.IdUtils;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.Test;
@@ -31,9 +34,9 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import proto.CustomFeesOuterClass;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertNotNull;
@@ -43,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-class AssessedCustomFeesTest {
+class AssessedCustomFeeTest {
 	private final EntityId account = new EntityId(4,5,6);
 	private final long units = -1_234L;
 	private final EntityId token = new EntityId(1, 2, 3);
@@ -74,6 +77,65 @@ class AssessedCustomFeesTest {
 		assertEquals(account, hbarChange.account());
 		assertEquals(units, hbarChange.units());
 		assertEquals(token, tokenChange.token());
+	}
+
+	@Test
+	void liveFireSerdeWorksForHtsFee() throws IOException, ConstructableRegistryException {
+		// setup:
+		final var account = new EntityId(1, 2, 3);
+		final var token = new EntityId(2, 3, 4);
+		final var amount = 345L;
+		final var subject = new AssessedCustomFee(account, token, amount);
+		// and:
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(EntityId.class, EntityId::new));
+		// and:
+		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		final var dos = new SerializableDataOutputStream(baos);
+
+		// given:
+		subject.serialize(dos);
+		dos.flush();
+		// and:
+		final var bytes = baos.toByteArray();
+		final ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+		final var din = new SerializableDataInputStream(bais);
+
+		// when:
+		final var newSubject = new AssessedCustomFee();
+		newSubject.deserialize(din, AssessedCustomFee.MERKLE_VERSION);
+
+		// then:
+		assertEquals(subject, newSubject);
+	}
+
+	@Test
+	void liveFireSerdeWorksForHbarFee() throws IOException, ConstructableRegistryException {
+		// setup:
+		final var account = new EntityId(1, 2, 3);
+		final var amount = 345L;
+		final var subject = new AssessedCustomFee(account, amount);
+		// and:
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(EntityId.class, EntityId::new));
+		// and:
+		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		final var dos = new SerializableDataOutputStream(baos);
+
+		// given:
+		subject.serialize(dos);
+		dos.flush();
+		// and:
+		final var bytes = baos.toByteArray();
+		final ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+		final var din = new SerializableDataInputStream(bais);
+
+		// when:
+		final var newSubject = new AssessedCustomFee();
+		newSubject.deserialize(din, AssessedCustomFee.MERKLE_VERSION);
+
+		// then:
+		assertEquals(subject, newSubject);
 	}
 
 	@Test
@@ -143,12 +205,12 @@ class AssessedCustomFeesTest {
 		// given:
 		final var subject = new AssessedCustomFee(account, token, units);
 		// then:
-		CustomFeesOuterClass.CustomFeeCharged grpc = subject.toGrpc();
+		CustomFeesOuterClass.AssessedCustomFee grpc = subject.toGrpc();
 
 		//expect:
-		assertEquals(subject.account().toGrpcAccountId(), grpc.getFeeCollector());
+		assertEquals(subject.account().toGrpcAccountId(), grpc.getFeeCollectorAccountId());
 		assertEquals(subject.token().toGrpcTokenId(), grpc.getTokenId());
-		assertEquals(subject.units(), grpc.getUnitsCharged());
+		assertEquals(subject.units(), grpc.getAmount());
 	}
 
 	@Test
@@ -156,74 +218,45 @@ class AssessedCustomFeesTest {
 		// given:
 		final var subject = new AssessedCustomFee(account, units);
 		// then:
-		CustomFeesOuterClass.CustomFeeCharged grpc = subject.toGrpc();
+		CustomFeesOuterClass.AssessedCustomFee grpc = subject.toGrpc();
 
 		//expect:
-		assertEquals(subject.account().toGrpcAccountId(), grpc.getFeeCollector());
+		assertEquals(subject.account().toGrpcAccountId(), grpc.getFeeCollectorAccountId());
 		assertFalse(grpc.hasTokenId());
-		assertEquals(subject.units(), grpc.getUnitsCharged());
-	}
-
-	@Test
-	void testToGrpcWithBalanceChanges(){
-		// given:
-		final var subject = new AssessedCustomFee(account, token, units);
-		List<AssessedCustomFee> balanceChanges = new ArrayList<>();
-		balanceChanges.add(subject);
-
-		// then:
-		CustomFeesOuterClass.CustomFeesCharged grpc = subject.toGrpc(balanceChanges);
-
-		//expect:
-		assertEquals(1, grpc.getCustomFeesChargedCount());
-		List<CustomFeesOuterClass.CustomFeeCharged> feesCharged = grpc.getCustomFeesChargedList();
-		assertEquals(1, feesCharged.size());
-		assertEquals(subject.account().toGrpcAccountId(), feesCharged.get(0).getFeeCollector());
-		assertEquals(subject.token().toGrpcTokenId(), feesCharged.get(0).getTokenId());
-		assertEquals(subject.units(), feesCharged.get(0).getUnitsCharged());
+		assertEquals(subject.units(), grpc.getAmount());
 	}
 
 	@Test
 	void testFromGrpc(){
 		// given:
-		final var feeCharged = CustomFeesOuterClass.CustomFeeCharged
+		final var grpc = CustomFeesOuterClass.AssessedCustomFee
 				.newBuilder()
 				.setTokenId(token.toGrpcTokenId())
-				.setFeeCollector(account.toGrpcAccountId())
-				.setUnitsCharged(units)
-				.build();
-		final var grpc = CustomFeesOuterClass.CustomFeesCharged
-				.newBuilder()
-				.addCustomFeesCharged(feeCharged)
+				.setFeeCollectorAccountId(account.toGrpcAccountId())
+				.setAmount(units)
 				.build();
 
 		//expect:
-		final var balanceChange = AssessedCustomFee.fromGrpc(grpc);
-		assertEquals(1, balanceChange.size());
-		assertEquals(account, balanceChange.get(0).account());
-		assertEquals(token, balanceChange.get(0).token());
-		assertEquals(units, balanceChange.get(0).units());
+		final var fcFee = AssessedCustomFee.fromGrpc(grpc);
+		assertEquals(account, fcFee.account());
+		assertEquals(token, fcFee.token());
+		assertEquals(units, fcFee.units());
 	}
 
 	@Test
 	void testFromGrpcForHbarAdjust(){
 		// given:
-		final var feeCharged = CustomFeesOuterClass.CustomFeeCharged
+		final var grpc = CustomFeesOuterClass.AssessedCustomFee
 				.newBuilder()
-				.setFeeCollector(account.toGrpcAccountId())
-				.setUnitsCharged(units)
-				.build();
-		final var grpc = CustomFeesOuterClass.CustomFeesCharged
-				.newBuilder()
-				.addCustomFeesCharged(feeCharged)
+				.setFeeCollectorAccountId(account.toGrpcAccountId())
+				.setAmount(units)
 				.build();
 
 		//expect:
-		final var balanceChange = AssessedCustomFee.fromGrpc(grpc);
-		assertEquals(1, balanceChange.size());
-		assertEquals(account, balanceChange.get(0).account());
-		assertEquals(null, balanceChange.get(0).token());
-		assertEquals(units, balanceChange.get(0).units());
+		final var fcFee = AssessedCustomFee.fromGrpc(grpc);
+		assertEquals(account, fcFee.account());
+		assertEquals(null, fcFee.token());
+		assertEquals(units, fcFee.units());
 	}
 
 	@Test
