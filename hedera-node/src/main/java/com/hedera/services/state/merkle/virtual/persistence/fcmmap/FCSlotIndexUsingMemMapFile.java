@@ -3,11 +3,11 @@ package com.hedera.services.state.merkle.virtual.persistence.fcmmap;
 import com.hedera.services.state.merkle.virtual.persistence.FCSlotIndex;
 import sun.misc.Unsafe;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -63,6 +63,7 @@ public final class FCSlotIndexUsingMemMapFile<K> implements FCSlotIndex<K> {
     private final int numOfBins;
     private final int numOfFiles;
     private final int numOfBinsPerFile;
+    private final int numOfKeysPerBin = 20;
 //    private final int numOfBinsPerPage;
 //    private final int numOfPagesPerFile;
 
@@ -74,9 +75,6 @@ public final class FCSlotIndexUsingMemMapFile<K> implements FCSlotIndex<K> {
 
     /** If this virtual map data store has been released, once released it can no longer be used */
     private boolean isReleased = false;
-
-    /** If this data store is immutable(read only) */
-    private boolean isImmutable = false;
 
     /** Monotonically increasing version number that is incremented every time copy() is called on the mutable copy. */
     private long version;
@@ -106,7 +104,7 @@ public final class FCSlotIndexUsingMemMapFile<K> implements FCSlotIndex<K> {
         // create files
         files = new BinFile[numOfFiles];
         for (int i = 0; i < numOfFiles; i++) {
-            files[i] = new BinFile(storageDirectory.resolve(name+"_"+i+".index"));
+            files[i] = new BinFile(storageDirectory.resolve(name+"_"+i+".index"),0); // TODO calculate file size
         }
     }
 
@@ -116,8 +114,6 @@ public final class FCSlotIndexUsingMemMapFile<K> implements FCSlotIndex<K> {
      * @param toCopy The FCFileMap to copy to this new version leaving it immutable.
      */
     private FCSlotIndexUsingMemMapFile(FCSlotIndexUsingMemMapFile<K> toCopy) {
-        // the copy that we are copying from becomes immutable as only the newest copy can be mutable
-        toCopy.isImmutable = true;
         // set our incremental version
         version = toCopy.version + 1;
         // copy config
@@ -137,14 +133,8 @@ public final class FCSlotIndexUsingMemMapFile<K> implements FCSlotIndex<K> {
 
     @Override
     public FCSlotIndexUsingMemMapFile copy() {
-        this.throwIfImmutable();
         this.throwIfReleased();
         return new FCSlotIndexUsingMemMapFile(this);
-    }
-
-    @Override
-    public boolean isImmutable() {
-        return isImmutable;
     }
 
 
@@ -221,21 +211,51 @@ public final class FCSlotIndexUsingMemMapFile<K> implements FCSlotIndex<K> {
      * Each bin contains array of stored values
      * [int hash][bytes key][versions]
      */
+    @SuppressWarnings("DuplicatedCode")
     private static class BinFile {
         private final Path file;
+        private boolean fileIsOpen = false;
+        private RandomAccessFile randomAccessFile;
+        private FileChannel fileChannel;
+        private MappedByteBuffer mappedBuffer;
+        private final int fileSize;
         /** how many FCFileMaps are using this BinFile */
         private int referenceCount = 1;
 
-        public BinFile(Path file) {
+        public BinFile(Path file, int fileSize) {
             this.file = file;
+            this.fileSize = fileSize;
             // work out file size
             // mmap file
+        }
+
+        public void open() throws IOException {
+            if (!fileIsOpen) {
+                // check if file existed before
+                boolean fileExisted = Files.exists(file);
+                // open random access file
+                randomAccessFile = new RandomAccessFile(file.toFile(), "rw");
+                if (!fileExisted) {
+                    // set size for new empty file
+                    randomAccessFile.setLength(fileSize);
+                }
+                // get file channel and memory map the file
+                fileChannel = randomAccessFile.getChannel();
+                mappedBuffer = fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, fileChannel.size());
+                // mark file as open
+                fileIsOpen = true;
+            }
         }
 
 //        public long getSlotLocation(int hash, )
 
         public void close() throws IOException {
-
+            if (fileIsOpen) {
+                mappedBuffer.force();
+                fileChannel.force(true);
+                fileChannel.close();
+                randomAccessFile.close();
+            }
         }
     }
 }

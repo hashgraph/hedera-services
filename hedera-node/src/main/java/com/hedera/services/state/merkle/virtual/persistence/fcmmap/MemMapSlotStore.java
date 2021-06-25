@@ -460,7 +460,7 @@ public final class MemMapSlotStore implements SlotStore {
          * @return True if the file is full
          */
         public boolean isFileFull() {
-            return nextFreeSlotAtEnd == size && freeSlotsForReuse.isEmpty();
+            return nextFreeSlotAtEnd >= size && freeSlotsForReuse.isEmpty();
         }
 
         /**
@@ -488,7 +488,7 @@ public final class MemMapSlotStore implements SlotStore {
          * @return the real ByteBuffer containing the data positioned and marked at the data location
          */
         public ByteBuffer accessSlot(int slotIndex){
-            if (!fileIsOpen) throw new IllegalStateException("Can not access from a closed file.");
+            throwIfClosed();
             // calculate the offset position of the value in the file
             final int slotOffset = slotSize * slotIndex;
             // position and mark buffer
@@ -503,20 +503,30 @@ public final class MemMapSlotStore implements SlotStore {
          * @return Slot index if the value was successfully stored, -1 if there was no space available
          */
         public int getNewSlot(){
-            if (!fileIsOpen) throw new IllegalStateException("Can not access from a closed file.");
+            throwIfClosed();
             if (isFileFull()) return -1;
             // calc next available slot
             int slotIndex;
             if (nextFreeSlotAtEnd < size) {
                 slotIndex = nextFreeSlotAtEnd;
                 nextFreeSlotAtEnd++;
-            } else {
+            } else if (!freeSlotsForReuse.isEmpty()){
                 slotIndex = freeSlotsForReuse.pop();
+            } else {
+                throw new RuntimeException("This should not happen, means we think there is free space but there is not."+
+                        "nextFreeSlotAtEnd="+nextFreeSlotAtEnd+" ,size="+size);
             }
             // mark slot as used
             mappedBuffer.put(slotIndex * slotSize, USED);
             // return slot index
             return slotIndex;
+        }
+
+        /**
+         * Throw an exeption if closed
+         */
+        private void throwIfClosed() {
+            if (!fileIsOpen) throw new IllegalStateException("Can not access from a closed file.");
         }
 
 
@@ -526,7 +536,7 @@ public final class MemMapSlotStore implements SlotStore {
          * @param slotIndex The index of the slot to delete
          */
         public void deleteSlot(int slotIndex){
-            if (!fileIsOpen) throw new IllegalStateException("Can not access from a closed file.");
+            throwIfClosed();
             // store EMPTY for the size in slot
             mappedBuffer.put(slotIndex, EMPTY);
             // add slot to stack of empty slots
