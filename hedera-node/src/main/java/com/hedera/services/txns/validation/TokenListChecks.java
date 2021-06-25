@@ -31,7 +31,6 @@ import java.util.function.Predicate;
 
 import static com.hedera.services.txns.validation.PureValidation.checkKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SUPPLY_KEY;
@@ -59,8 +58,7 @@ public class TokenListChecks {
             boolean hasKycKey, Key kycKey,
             boolean hasWipeKey, Key wipeKey,
             boolean hasSupplyKey, Key supplyKey,
-            boolean hasFreezeKey, Key freezeKey,
-            boolean hasCustomFeeKey, Key customFeeKey
+            boolean hasFreezeKey, Key freezeKey
     ) {
         ResponseCodeEnum validity = OK;
 
@@ -86,11 +84,6 @@ public class TokenListChecks {
         }
         if (hasFreezeKey) {
             if ((validity = checkKey(freezeKey, INVALID_FREEZE_KEY)) != OK) {
-                return validity;
-            }
-        }
-        if (hasCustomFeeKey) {
-            if ((validity = checkKey(customFeeKey, INVALID_CUSTOM_FEE_KEY)) != OK) {
                 return validity;
             }
         }

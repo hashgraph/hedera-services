@@ -289,7 +289,7 @@ import com.hedera.services.txns.schedule.ScheduleExecutor;
 import com.hedera.services.txns.schedule.ScheduleSignTransitionLogic;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.services.txns.customfees.FCMCustomFeeSchedules;
+import com.hedera.services.txns.customfees.FcmCustomFeeSchedules;
 import com.hedera.services.txns.span.SpanMapManager;
 import com.hedera.services.txns.submission.BasicSubmissionFlow;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
@@ -573,7 +573,7 @@ public class ServicesContext {
 	private AtomicReference<FCMap<MerkleEntityId, MerkleSchedule>> queryableSchedules;
 	private AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage;
 	private AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations;
-	private FCMCustomFeeSchedules activeCustomFeeSchedules;
+	private FcmCustomFeeSchedules activeCustomFeeSchedules;
 
 	/* Context-free infrastructure. */
 	private static Pause pause;
@@ -741,7 +741,7 @@ public class ServicesContext {
 
 	private CustomFeeSchedules customFeeSchedules() {
 		if (activeCustomFeeSchedules == null) {
-			activeCustomFeeSchedules = new FCMCustomFeeSchedules(this::tokens);
+			activeCustomFeeSchedules = new FcmCustomFeeSchedules(this::tokens);
 		}
 		return activeCustomFeeSchedules;
 	}

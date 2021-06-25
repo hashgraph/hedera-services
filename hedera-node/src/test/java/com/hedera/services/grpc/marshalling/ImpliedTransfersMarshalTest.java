@@ -1,4 +1,4 @@
-package com.hedera.services.ledger;
+package com.hedera.services.grpc.marshalling;
 
 /*-
  * ‌
@@ -21,9 +21,8 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.grpc.marshalling.ImpliedTransfers;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
+import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.state.submerkle.AssessedCustomFee;
 import com.hedera.services.state.submerkle.CustomFee;
 import com.hedera.services.state.submerkle.EntityId;
@@ -41,6 +40,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -50,6 +50,7 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.IdUtils.hbarChange;
 import static com.hedera.test.utils.IdUtils.tokenChange;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
@@ -201,7 +202,7 @@ class ImpliedTransfersMarshalTest {
 		// then:
 		assertEquals(expectedMeta, result.getMeta());
 		assertEquals(expectedChanges, result.getAllBalanceChanges());
-		assertEquals(expectedCustomFeeChanges, result.getInvolvedTokenFeeSchedules());
+		assertEquals(expectedCustomFeeChanges, result.getTokenFeeSchedules());
 		assertEquals(expectedAssessedCustomFees, result.getAssessedCustomFees());
 	}
 
@@ -240,12 +241,12 @@ class ImpliedTransfersMarshalTest {
 				"maxExplicitHbarAdjusts=3, maxExplicitTokenAdjusts=4, customFeeSchedulesUsedInMarshal=[]}, " +
 				"changes=[]," +
 				" " +
-				"involvedTokenFeeSchedules=[], assessedCustomFees=[]}";
+				"tokenFeeSchedules=[], assessedCustomFees=[]}";
 		final var twoRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=OK, maxExplicitHbarAdjusts=1, " +
 				"maxExplicitTokenAdjusts=100, customFeeSchedulesUsedInMarshal=[(Id{shard=0, realm=0, num=123},[])]}," +
 				" changes=[BalanceChange{token=Id{shard=1, realm=2, num=3}, account=Id{shard=4, realm=5, num=6}," +
 				" units=7, codeForInsufficientBalance=INSUFFICIENT_TOKEN_BALANCE}], " +
-				"involvedTokenFeeSchedules=[(Id{shard=0, realm=0, num=123},[])], " +
+				"tokenFeeSchedules=[(Id{shard=0, realm=0, num=123},[])], " +
 				"assessedCustomFees=[AssessedCustomFee{token=EntityId{shard=0, realm=0, num=123}, " +
 				"account=EntityId{shard=0, realm=0, num=124}, units=123}]}";
 
@@ -255,6 +256,46 @@ class ImpliedTransfersMarshalTest {
 		// and:
 		assertEquals(oneRepr, oneImpliedXfers.toString());
 		assertEquals(twoRepr, twoImpliedXfers.toString());
+	}
+
+	@Test
+	void handlesEasyCase() {
+		// given:
+		long reasonable = 1_234_567L;
+		long n = 10;
+		long d = 9;
+		// and:
+		final var expected = reasonable * n / d;
+
+		// expect:
+		assertEquals(expected, subject.safeFractionMultiply(n, d, reasonable));
+	}
+
+	@Test
+	void fallsBackToArbitraryPrecisionIfNeeded() {
+		// given:
+		long huge = Long.MAX_VALUE / 2;
+		long n = 10;
+		long d = 9;
+		// and:
+		final var expected = BigInteger.valueOf(huge)
+				.multiply(BigInteger.valueOf(n))
+				.divide(BigInteger.valueOf(d))
+				.longValueExact();
+
+		// expect:
+		assertEquals(expected, subject.safeFractionMultiply(n, d, huge));
+	}
+
+	@Test
+	void propagatesArithmeticExceptionOnOverflow() {
+		// given:
+		long huge = Long.MAX_VALUE - 1;
+		long n = 10;
+		long d = 9;
+
+		// expect:
+		assertThrows(ArithmeticException.class, () -> subject.safeFractionMultiply(n, d, huge));
 	}
 
 	@Test
@@ -285,6 +326,66 @@ class ImpliedTransfersMarshalTest {
 
 		// expect:
 		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules));
+	}
+
+	@Test
+	void translatesOverflowFromExcessiveSumming() {
+		op = CryptoTransferTransactionBody.newBuilder()
+				.addTokenTransfers(TokenTransferList.newBuilder()
+						.setToken(anotherId)
+						.addAllTransfers(List.of(
+								adjustFrom(a, Long.MAX_VALUE),
+								adjustFrom(b, Long.MAX_VALUE / 2)
+						))).build();
+
+		// and:
+		final var expected = ImpliedTransfers.invalid(
+				maxExplicitHbarAdjusts, maxExplicitTokenAdjusts, CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE);
+
+		given(dynamicProperties.maxTransferListSize()).willReturn(maxExplicitHbarAdjusts);
+		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxExplicitTokenAdjusts);
+		given(transferSemanticChecks.fullPureValidation(
+				maxExplicitHbarAdjusts,
+				maxExplicitTokenAdjusts,
+				op.getTransfers(),
+				op.getTokenTransfersList())).willReturn(OK);
+
+		// when:
+		final var actual = subject.unmarshalFromGrpc(op, payer);
+
+		// then:
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	void translatesOverflowFromFractionalCalc() {
+		op = CryptoTransferTransactionBody.newBuilder()
+				.addTokenTransfers(TokenTransferList.newBuilder()
+						.setToken(anotherId)
+						.addAllTransfers(List.of(
+								adjustFrom(a, cHbarChange)
+						))).build();
+		// and:
+		final var customFee = getOverflowingFractionalCustomFee();
+
+		// and:
+		final var expected = ImpliedTransfers.invalid(
+				maxExplicitHbarAdjusts, maxExplicitTokenAdjusts, CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE);
+
+		given(dynamicProperties.maxTransferListSize()).willReturn(maxExplicitHbarAdjusts);
+		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxExplicitTokenAdjusts);
+		given(transferSemanticChecks.fullPureValidation(
+				maxExplicitHbarAdjusts,
+				maxExplicitTokenAdjusts,
+				op.getTransfers(),
+				op.getTokenTransfersList())).willReturn(OK);
+		given(customFeeSchedules.lookupScheduleFor(any())).willReturn(customFee);
+
+		// when:
+		final var actual = subject.unmarshalFromGrpc(op, payer);
+
+		// then:
+		assertEquals(expected, actual);
 	}
 
 	@Test
@@ -328,7 +429,7 @@ class ImpliedTransfersMarshalTest {
 		// then:
 		assertEquals(expectedMeta, result.getMeta());
 		assertEquals(expectedChanges, result.getAllBalanceChanges());
-		assertEquals(expectedCustomFeeChanges, result.getInvolvedTokenFeeSchedules());
+		assertEquals(expectedCustomFeeChanges, result.getTokenFeeSchedules());
 		assertEquals(expectedAssessedCustomFees, result.getAssessedCustomFees());
 	}
 
@@ -387,7 +488,7 @@ class ImpliedTransfersMarshalTest {
 		// then:
 		assertEquals(expectedMeta, result.getMeta());
 		assertEquals(expectedChanges, result.getAllBalanceChanges());
-		assertEquals(expectedCustomFeeChanges, result.getInvolvedTokenFeeSchedules());
+		assertEquals(expectedCustomFeeChanges, result.getTokenFeeSchedules());
 		assertEquals(expectedAssessedCustomFees, result.getAssessedCustomFees());
 	}
 
@@ -435,8 +536,15 @@ class ImpliedTransfersMarshalTest {
 
 	private List<CustomFee> getFractionalCustomFee() {
 		return List.of(
-				CustomFee.fractionalFee(numerator, denominator, minimumUnitsToCollect, maximumUnitsToCollect,
-						feeCollector)
+				CustomFee.fractionalFee(
+						numerator, denominator, minimumUnitsToCollect, maximumUnitsToCollect, feeCollector)
+		);
+	}
+
+	private List<CustomFee> getOverflowingFractionalCustomFee() {
+		return List.of(
+				CustomFee.fractionalFee(
+						Long.MAX_VALUE, 2, minimumUnitsToCollect, maximumUnitsToCollect, feeCollector)
 		);
 	}
 

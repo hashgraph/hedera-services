@@ -183,11 +183,11 @@ public class RecordStreamObject extends AbstractSerializableHashable implements 
 		return runningHash;
 	}
 
-	Transaction getTransaction() {
+	public Transaction getTransaction() {
 		return transaction;
 	}
 
-	TransactionRecord getTransactionRecord() {
+	public TransactionRecord getTransactionRecord() {
 		ensureNonNullGrpcRecord();
 		return transactionRecord;
 	}
