@@ -1,6 +1,7 @@
 package com.hedera.services.state.merkle.virtual.persistence;
 
 import com.swirlds.common.FastCopyable;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
 
 import java.io.IOException;
@@ -10,15 +11,14 @@ import java.io.IOException;
  *
  * It should be thread safe and can be used by multiple-threads.
  *
- * @param <PK> The type for parents keys, must implement SelfSerializable
- * @param <PD> The type for parents data, must implement SelfSerializable
+ * @param <PK> The type for hashs keys, must implement SelfSerializable
  * @param <LP> The type for leaf paths, must implement SelfSerializable
  * @param <LK> The type for leaf keys, must implement SelfSerializable
  * @param <LD> The type for leaf data, must implement SelfSerializable
  */
-public interface FCVirtualMapDataStore<PK extends SelfSerializable, PD extends SelfSerializable,
-        LK extends SelfSerializable, LP extends SelfSerializable, LD extends SelfSerializable>
-        extends FastCopyable<FCVirtualMapDataStore<PK, PD, LK, LP, LD>> {
+public interface FCVirtualMapDataStore<PK extends SelfSerializable, LK extends SelfSerializable,
+        LP extends SelfSerializable, LD extends SelfSerializable>
+        extends FastCopyable<FCVirtualMapDataStore<PK, LK, LP, LD>> {
 
     /** Open storage */
     void open() throws IOException;
@@ -76,33 +76,33 @@ public interface FCVirtualMapDataStore<PK extends SelfSerializable, PD extends S
     void saveLeaf(LK leafKey, LP leafPath, LD leafData) throws IOException;
 
     /**
-     * Check if this store contains a parent by key
+     * Check if this store contains a hash by key
      *
-     * @param parentKey The key of the parent to check for
-     * @return true if that parent is stored, false if it is not known
+     * @param hashKey The key of the hash to check for
+     * @return true if that hash is stored, false if it is not known
      */
-    boolean containsParentKey(PK parentKey);
+    boolean containsHash(PK hashKey);
 
     /**
-     * Delete a stored parent from storage, if it is stored.
+     * Delete a stored hash from storage, if it is stored.
      *
-     * @param parentKey The key of the parent to delete
+     * @param hashKey The key of the hash to delete
      */
-    void deleteParent(PK parentKey);
+    void deleteHash(PK hashKey);
 
     /**
-     * Load a tree parent node from storage
+     * Load a tree hash node from storage
      *
-     * @param parentKey The key of the parent to find and load
+     * @param hashKey The key of the hash to find and load
      * @return a loaded VirtualTreeInternal with path and hash set or null if not found
      */
-    PD loadParent(PK parentKey) throws IOException;
+    Hash loadHash(PK hashKey) throws IOException;
 
     /**
-     * Save the hash for a imaginary parent node into storage
+     * Save the hash for a imaginary hash node into storage
      *
-     * @param parentKey The key of the parent to save
-     * @param parentData The parent's data to store
+     * @param hashKey The key of the hash to save
+     * @param hashData The hash's data to store
      */
-    void saveParentHash(PK parentKey, PD parentData) throws IOException;
+    void saveHash(PK hashKey, Hash hashData) throws IOException;
 }
