@@ -259,6 +259,12 @@ class HederaTokenStoreTest {
 					.setFixedFee(CustomFeesOuterClass.FixedFee.newBuilder()
 							.setAmount(-1_000L)
 					)).build();
+	private CustomFeesOuterClass.CustomFees grpcZeroFixedCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
+			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
+					.setFeeCollectorAccountId(feeCollector)
+					.setFixedFee(CustomFeesOuterClass.FixedFee.newBuilder()
+							.setAmount(0L)
+					)).build();
 	private List<CustomFee> customFees = MerkleToken.customFeesFromGrpc(grpcCustomFees);
 
 	private HederaTokenStore subject;
@@ -1344,6 +1350,10 @@ class HederaTokenStoreTest {
 	private static EnumSet<KeyType> NO_KEYS = EnumSet.noneOf(KeyType.class);
 	private static EnumSet<KeyType> ALL_KEYS = EnumSet.complementOf(EnumSet.of(KeyType.EMPTY_ADMIN));
 
+	private TokenUpdateTransactionBody updateWithCustomFees(CustomFeesOuterClass.CustomFees customFees) {
+		return TokenUpdateTransactionBody.newBuilder().setToken(misc).setCustomFees(customFees).build();
+	}
+
 	private TokenUpdateTransactionBody updateWith(
 			EnumSet<KeyType> keys,
 			boolean useNewSymbol,
@@ -1715,6 +1725,18 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	void rejectsNegativeFractionInFractionalFee() {
+		var req = fullyValidAttempt().setCustomFees(grpcNegativeFractionCustomFees).build();
+
+		// when:
+		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		// expect:
+		assertEquals(CUSTOM_FEE_MUST_BE_POSITIVE, result.getStatus());
+		assertTrue(result.getCreated().isEmpty());
+	}
+
+	@Test
 	void rejectsNegativeMaxInFractionalFee() {
 		var req = fullyValidAttempt().setCustomFees(grpcNegativeMaximumCustomFees).build();
 
@@ -1739,8 +1761,8 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	void rejectsNegativeFractionInFractionalFee() {
-		var req = fullyValidAttempt().setCustomFees(grpcNegativeFractionCustomFees).build();
+	void rejectsNegativeAmountInFixedFee() {
+		var req = fullyValidAttempt().setCustomFees(grpcNegativeFixedCustomFees).build();
 
 		// when:
 		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
@@ -1751,15 +1773,14 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	void rejectsNegativeAmountInFixedFee() {
-		var req = fullyValidAttempt().setCustomFees(grpcNegativeFixedCustomFees).build();
+	void rejectsZeroAmountInFixedFeeOnTokenUpdate() {
+		final var op = updateWithCustomFees(grpcZeroFixedCustomFees);
 
 		// when:
-		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+		final var result = subject.update(op, CONSENSUS_NOW);
 
 		// expect:
-		assertEquals(CUSTOM_FEE_MUST_BE_POSITIVE, result.getStatus());
-		assertTrue(result.getCreated().isEmpty());
+		assertEquals(CUSTOM_FEE_MUST_BE_POSITIVE, result);
 	}
 
 	@Test
