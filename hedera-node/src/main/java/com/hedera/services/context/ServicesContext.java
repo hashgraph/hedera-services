@@ -583,8 +583,6 @@ public class ServicesContext {
 	private AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations;
 	private AtomicReference<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> queryableUniqueTokenAssociations;
 	private AtomicReference<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> queryableUniqueOwnershipAssociations;
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations = new FCOneToManyRelation<>();
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations = new FCOneToManyRelation<>();
 
 	/* Context-free infrastructure. */
 	private static Pause pause;
@@ -621,6 +619,8 @@ public class ServicesContext {
 		queryableTokenAssociations().set(tokenAssociations());
 		queryableSchedules().set(schedules());
 		queryableUniqueTokens().set(uniqueTokens());
+		queryableUniqueTokenAssociations().set(uniqueTokenAssociations());
+		queryableUniqueOwnershipAssociations().set(uniqueOwnershipAssociations());
 	}
 
 	public SwirldDualState getDualState() {
@@ -637,6 +637,9 @@ public class ServicesContext {
 		}
 		if (backingAccounts != null) {
 			backingAccounts.rebuildFromSources();
+		}
+		if (backingNfts != null) {
+			backingNfts.rebuildFromSources();
 		}
 	}
 
@@ -956,7 +959,8 @@ public class ServicesContext {
 	}
 
 	/**
-	 * Returns the singleton {@link TypedTokenStore} used in {@link ServicesState#handleTransaction(long, boolean, Instant,
+	 * Returns the singleton {@link TypedTokenStore} used in {@link ServicesState#handleTransaction(long, boolean,
+	 * Instant,
 	 * Instant, SwirldTransaction, SwirldDualState)} to load, save, and create tokens in the Swirlds application state.
 	 * It decouples the {@code handleTransaction} logic from the details of the Merkle state.
 	 *
@@ -987,7 +991,8 @@ public class ServicesContext {
 
 	/**
 	 * Returns the singleton {@link AccountStore} used in {@link ServicesState#handleTransaction(long, boolean, Instant,
-	 * Instant, SwirldTransaction, SwirldDualState)} to load, save, and create accounts from the Swirlds application state.
+	 * Instant, SwirldTransaction, SwirldDualState)} to load, save, and create accounts from the Swirlds application
+	 * state.
 	 * It decouples the {@code handleTransaction} logic from the details of the Merkle state.
 	 *
 	 * @return the singleton AccountStore
@@ -1430,9 +1435,11 @@ public class ServicesContext {
 				entry(TokenDelete,
 						List.of(new TokenDeleteTransitionLogic(tokenStore(), txnCtx()))),
 				entry(TokenMint,
-						List.of(new TokenMintTransitionLogic(validator(), accountStore(), typedTokenStore(), txnCtx()))),
+						List.of(new TokenMintTransitionLogic(validator(), accountStore(), typedTokenStore(),
+								txnCtx()))),
 				entry(TokenBurn,
-						List.of(new TokenBurnTransitionLogic(validator(), accountStore(), typedTokenStore(), txnCtx()))),
+						List.of(new TokenBurnTransitionLogic(validator(), accountStore(), typedTokenStore(),
+								txnCtx()))),
 				entry(TokenAccountWipe,
 						List.of(new TokenWipeTransitionLogic(tokenStore(), txnCtx()))),
 				entry(TokenAssociateToAccount,
@@ -2208,27 +2215,16 @@ public class ServicesContext {
 		return state.tokenAssociations();
 	}
 
-	public void rebuildOwnershipsAndAssociations() {
-		var uniqueTokens= state.uniqueTokens();
-		var keys = uniqueTokens.keySet();
-		this.uniqueTokenAssociations = new FCOneToManyRelation<>();
-		this.uniqueOwnershipAssociations = new FCOneToManyRelation<>();
-		for (MerkleUniqueTokenId key : keys) {
-			this.uniqueTokenAssociations.associate(key.tokenId(), key);
-			this.uniqueOwnershipAssociations.associate(uniqueTokens.get(key).getOwner(), key);
-		}
-	}
-
 	public FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens() {
 		return state.uniqueTokens();
 	}
 
 	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations() {
-		return this.uniqueTokenAssociations;
+		return state.uniqueTokenAssociations();
 	}
 
 	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations() {
-		return this.uniqueOwnershipAssociations;
+		return state.uniqueOwnershipAssociations();
 	}
 
 	public FCMap<MerkleEntityId, MerkleSchedule> schedules() {
@@ -2246,7 +2242,8 @@ public class ServicesContext {
 	/**
 	 * return the directory to which record stream files should be write
 	 *
-	 * @param source the node local properties that contain the record logging directory
+	 * @param source
+	 * 		the node local properties that contain the record logging directory
 	 * @return the direct file folder for writing record stream files
 	 */
 	public String getRecordStreamDirectory(NodeLocalProperties source) {
@@ -2296,6 +2293,10 @@ public class ServicesContext {
 
 	void setBackingTokenRels(BackingTokenRels backingTokenRels) {
 		this.backingTokenRels = backingTokenRels;
+	}
+
+	public void setBackingNfts(BackingNfts backingNfts) {
+		this.backingNfts = backingNfts;
 	}
 
 	void setBackingAccounts(BackingAccounts backingAccounts) {

@@ -33,6 +33,7 @@ import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.state.expiry.ExpiryManager;
+import com.hedera.services.state.initialization.ViewBuilderTest;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
@@ -47,6 +48,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.stream.RecordStreamManager;
@@ -78,6 +80,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -102,6 +105,7 @@ import static com.hedera.services.ServicesState.RELEASE_0120_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_0130_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_0140_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_0150_VERSION;
+import static com.hedera.services.ServicesState.RELEASE_0160_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_070_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_080_VERSION;
 import static com.hedera.services.ServicesState.RELEASE_090_VERSION;
@@ -113,6 +117,7 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -159,6 +164,10 @@ class ServicesStateTest {
 	private FCMap<MerkleEntityId, MerkleSchedule> scheduledTxsCopy;
 	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens;
 	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokensCopy;
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations;
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociationsCopy;
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations;
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociationsCopy;
 	private MerkleDiskFs diskFs;
 	private MerkleDiskFs diskFsCopy;
 	private RecordsRunningHashLeaf runningHashLeaf;
@@ -236,6 +245,10 @@ class ServicesStateTest {
 		scheduledTxsCopy = mock(FCMap.class);
 		uniqueTokensCopy = mock(FCMap.class);
 		runningHashLeafCopy = mock(RecordsRunningHashLeaf.class);
+		uniqueTokenAssociations = mock(FCOneToManyRelation.class);
+		uniqueTokenAssociationsCopy = mock(FCOneToManyRelation.class);
+		uniqueOwnershipAssociations = mock(FCOneToManyRelation.class);
+		uniqueOwnershipAssociationsCopy = mock(FCOneToManyRelation.class);
 
 		given(topics.copy()).willReturn(topicsCopy);
 		given(storage.copy()).willReturn(storageCopy);
@@ -245,6 +258,8 @@ class ServicesStateTest {
 		given(diskFs.copy()).willReturn(diskFsCopy);
 		given(scheduledTxs.copy()).willReturn(scheduledTxsCopy);
 		given(runningHashLeaf.copy()).willReturn(runningHashLeafCopy);
+		given(uniqueTokenAssociations.copy()).willReturn(uniqueTokenAssociationsCopy);
+		given(uniqueOwnershipAssociations.copy()).willReturn(uniqueOwnershipAssociationsCopy);
 
 		seqNo = mock(SequenceNumber.class);
 		midnightRates = mock(ExchangeRates.class);
@@ -292,6 +307,7 @@ class ServicesStateTest {
 		assertEquals(ServicesState.ChildIndices.NUM_0130_CHILDREN, subject.getMinimumChildCount(RELEASE_0130_VERSION));
 		assertEquals(ServicesState.ChildIndices.NUM_0140_CHILDREN, subject.getMinimumChildCount(RELEASE_0140_VERSION));
 		assertEquals(ServicesState.ChildIndices.NUM_0150_CHILDREN, subject.getMinimumChildCount(RELEASE_0150_VERSION));
+		assertEquals(ServicesState.ChildIndices.NUM_0160_CHILDREN, subject.getMinimumChildCount(RELEASE_0160_VERSION));
 
 		Throwable throwable = assertThrows(IllegalArgumentException.class,
 				() -> subject.getMinimumChildCount(invalidVersion));
@@ -303,7 +319,13 @@ class ServicesStateTest {
 	@Test
 	void fullArgsConstructorUpdatesContext() {
 		// when:
-		subject = new ServicesState(ctx, self, Collections.emptyList(), new ServicesState());
+		subject = new ServicesState(
+				ctx,
+				self,
+				Collections.emptyList(),
+				uniqueTokenAssociations,
+				uniqueOwnershipAssociations,
+				new ServicesState());
 
 		// then:
 		verify(ctx).update(subject);
@@ -344,7 +366,6 @@ class ServicesStateTest {
 		inOrder.verify(ctx).update(subject);
 		inOrder.verify(ctx).rebuildBackingStoresIfPresent();
 		inOrder.verify(ctx).rebuildStoreViewsIfPresent();
-		inOrder.verify(ctx).rebuildOwnershipsAndAssociations();
 		inOrder.verify(historian).reviewExistingRecords();
 		inOrder.verify(expiryManager).reviewExistingShortLivedEntities();
 		inOrder.verify(networkCtxManager).setObservableFilesNotLoaded();
@@ -435,6 +456,27 @@ class ServicesStateTest {
 	}
 
 	@Test
+	void createsUniqueTokensIfMigratingFromRelease0150() {
+		// given:
+		subject.setChild(ServicesState.ChildIndices.TOPICS, topics);
+		subject.setChild(ServicesState.ChildIndices.STORAGE, storage);
+		subject.setChild(ServicesState.ChildIndices.ACCOUNTS, accounts);
+		subject.setChild(ServicesState.ChildIndices.ADDRESS_BOOK, book);
+		subject.setChild(ServicesState.ChildIndices.NETWORK_CTX, networkCtx);
+		subject.setChild(ServicesState.ChildIndices.TOKENS, tokens);
+		subject.setChild(ServicesState.ChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
+		subject.setChild(ServicesState.ChildIndices.DISK_FS, diskFs);
+		subject.setChild(ServicesState.ChildIndices.SCHEDULE_TXS, scheduledTxs);
+		subject.setChild(ServicesState.ChildIndices.RECORD_STREAM_RUNNING_HASH, runningHashLeaf);
+
+		// when:
+		subject.initialize();
+
+		// then:
+		assertNotNull(subject.uniqueTokens());
+	}
+
+	@Test
 	void justWarnOnFailedDiskFsMigration() {
 		// setup:
 		var nodeInfo = mock(NodeInfo.class);
@@ -467,6 +509,34 @@ class ServicesStateTest {
 		// then:
 		assertThat(logCaptor.warnLogs(),
 				contains(Matchers.startsWith("Legacy diskFs directory not migrated, was it missing?")));
+	}
+
+	@Test
+	void rebuildsFcotmrAsExpected() {
+		// setup:
+		var nodeInfo = mock(NodeInfo.class);
+		given(ctx.nodeInfo()).willReturn(nodeInfo);
+		given(nodeInfo.selfAccount()).willReturn(nodeAccount);
+		CONTEXTS.store(ctx);
+
+		// and:
+		subject.setChild(ServicesState.ChildIndices.TOPICS, topics);
+		subject.setChild(ServicesState.ChildIndices.STORAGE, storage);
+		subject.setChild(ServicesState.ChildIndices.ACCOUNTS, accounts);
+		subject.setChild(ServicesState.ChildIndices.ADDRESS_BOOK, book);
+		subject.setChild(ServicesState.ChildIndices.NETWORK_CTX, networkCtx);
+		subject.setChild(ServicesState.ChildIndices.TOKENS, tokens);
+		subject.setChild(ServicesState.ChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
+		subject.setChild(ServicesState.ChildIndices.DISK_FS, diskFs);
+		subject.setChild(ServicesState.ChildIndices.SCHEDULE_TXS, scheduledTxs);
+		subject.setChild(ServicesState.ChildIndices.RECORD_STREAM_RUNNING_HASH, runningHashLeaf);
+		subject.setChild(ServicesState.ChildIndices.UNIQUE_TOKENS, ViewBuilderTest.someUniqueTokens());
+		// when:
+		subject.init(platform, book);
+
+		// then:
+		ViewBuilderTest.assertIsTheExpectedUta(subject.uniqueTokenAssociations());
+		ViewBuilderTest.assertIsTheExpectedUtao(subject.uniqueOwnershipAssociations());
 	}
 
 	@Test
@@ -621,6 +691,8 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.SCHEDULE_TXS, scheduledTxs);
 		subject.setChild(ServicesState.ChildIndices.RECORD_STREAM_RUNNING_HASH, runningHashLeaf);
 		subject.setChild(ServicesState.ChildIndices.UNIQUE_TOKENS, uniqueTokens);
+		subject.setUniqueTokenAssociations(uniqueTokenAssociations);
+		subject.setUniqueOwnershipAssociations(uniqueOwnershipAssociations);
 		subject.nodeId = self;
 		subject.ctx = ctx;
 
@@ -642,6 +714,8 @@ class ServicesStateTest {
 		assertSame(scheduledTxsCopy, copy.scheduleTxs());
 		assertSame(runningHashLeafCopy, copy.runningHashLeaf());
 		assertSame(uniqueTokensCopy, copy.uniqueTokens());
+		assertSame(uniqueTokenAssociationsCopy, copy.uniqueTokenAssociations());
+		assertSame(uniqueOwnershipAssociationsCopy, copy.uniqueOwnershipAssociations());
 	}
 
 	@Test
