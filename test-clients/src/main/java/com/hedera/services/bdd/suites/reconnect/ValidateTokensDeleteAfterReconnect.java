@@ -106,7 +106,10 @@ public class ValidateTokensDeleteAfterReconnect extends HapiApiSuite {
 								.loggingAvailabilityEvery(30)
 								.sleepingBetweenRetriesFor(10),
 
-						/* validate tokenInfo between reconnecting node and other nodes match*/
+						/*
+						Check that the reconnected node knows it's ok to dissociate the
+						treasury from a deleted token. -> https://github.com/hashgraph/hedera-services/issues/1678
+						*/
 						tokenDissociate(TOKEN_TREASURY, token).setNode(reconnectingNode)
 				);
 	}
