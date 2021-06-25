@@ -678,6 +678,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				!op.hasSupplyKey() &&
 				!op.hasTreasury() &&
 				!op.hasAutoRenewAccount() &&
+				!op.hasCustomFees() &&
 				op.getSymbol().length() == 0 &&
 				op.getName().length() == 0 &&
 				op.getAutoRenewPeriod().getSeconds() == 0;

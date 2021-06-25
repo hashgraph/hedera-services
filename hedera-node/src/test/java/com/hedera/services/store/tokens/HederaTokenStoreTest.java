@@ -997,13 +997,15 @@ class HederaTokenStoreTest {
 	void updateRejectsImmutableToken() {
 		given(token.hasAdminKey()).willReturn(false);
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
-		// given:
-		final var op = updateWith(NO_KEYS, true, true, false);
 
-		// when:
-		final var outcome = subject.update(op, CONSENSUS_NOW);
+		var op = updateWith(NO_KEYS, true, true, false);
+		var outcome = subject.update(op, CONSENSUS_NOW);
+		assertEquals(TOKEN_IS_IMMUTABLE, outcome);
 
-		// then:
+		verify(token, never()).isFeeScheduleMutable();
+		verify(token, never()).setFeeScheduleFrom(any());
+		op = updateWithCustomFees(grpcCustomFees);
+		outcome = subject.update(op, CONSENSUS_NOW);
 		assertEquals(TOKEN_IS_IMMUTABLE, outcome);
 	}
 
@@ -1137,6 +1139,7 @@ class HederaTokenStoreTest {
 
 		final var outcome = subject.update(op, CONSENSUS_NOW);
 
+		verify(token, never()).setFeeScheduleFrom(any());
 		assertEquals(CUSTOM_FEES_ARE_MARKED_IMMUTABLE, outcome);
 	}
 
