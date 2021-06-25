@@ -23,7 +23,6 @@ package com.hedera.services.txns.span;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
-import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.AssessedCustomFee;
 import com.hedera.services.state.submerkle.CustomFee;
 import com.hedera.services.state.submerkle.EntityId;
@@ -31,7 +30,6 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.utils.TxnAccessor;
-import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
@@ -70,17 +68,17 @@ class SpanMapManagerTest {
 	private final Id customFeeCollector = new Id(0, 0, 124);
 	final List<Pair<Id, List<CustomFee>>> entityCustomFees = List.of(
 			Pair.of(customFeeToken, new ArrayList<>()));
+
 	final List<Pair<Id, List<CustomFee>>> newCustomFeeChanges = List.of(
 			Pair.of(customFeeToken, List.of(CustomFee.fixedFee(10L, customFeeToken.asEntityId(),
 					customFeeCollector.asEntityId()))));
 	private final List<AssessedCustomFee> assessedCustomFees = List.of(
-			new AssessedCustomFee(customFeeCollector.asEntityId(), customFeeToken.asEntityId(), 123L));
+			new AssessedCustomFee(customFeeCollector.asEntityId(), customFeeToken.asEntityId(), 123L),
+			new AssessedCustomFee( customFeeCollector.asEntityId(), 123L)
+			);
 
 	private final AccountID acctID = asAccount("1.2.3");
 	private final EntityId tokenID = new EntityId(4, 6, 6);
-	private final BalanceChange hbarChange = IdUtils.hbarChange(acctID, 1_000L);
-	private final BalanceChange tokenChange = IdUtils.tokenChange(tokenID.asId(), acctID, 2_000L);
-	private final List<BalanceChange> balanceChanges = List.of( hbarChange, tokenChange);
 
 	private final ImpliedTransfers validImpliedTransfers = ImpliedTransfers.valid(
 			maxHbarAdjusts, maxTokenAdjusts, new ArrayList<>(), entityCustomFees, assessedCustomFees);
@@ -109,7 +107,6 @@ class SpanMapManagerTest {
 	@BeforeEach
 	void setUp() {
 		subject = new SpanMapManager(impliedTransfersMarshal, dynamicProperties, customFeeSchedules);
-		xferMeta.setCustomFeeTokenTransfers(1);
 	}
 
 	@Test
@@ -136,15 +133,15 @@ class SpanMapManagerTest {
 		given(accessor.availXferUsageMeta()).willReturn(xferMeta);
 		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), accessor.getPayer()))
 				.willReturn(mockImpliedTransfers);
-//		given(mockImpliedTransfers.getAllBalanceChanges()).willReturn(balanceChanges);
+		given(mockImpliedTransfers.getAssessedCustomFees()).willReturn(assessedCustomFees);
 
 		// when:
 		subject.expandSpan(accessor);
 
 		// then:
-		assertEquals(1, xferMeta.getNumTokenTransfers());
+		assertEquals(1, xferMeta.getCustomFeeTokenTransfers());
 		assertEquals(1, xferMeta.getNumTokensInvolved());
-		assertEquals(0, xferMeta.getCustomFeeHbarTransfers());
+		assertEquals(1, xferMeta.getCustomFeeHbarTransfers());
 	}
 
 	@Test

@@ -26,7 +26,7 @@ public class CryptoTransferMeta {
 	private final int numTokensInvolved;
 	private final int numTokenTransfers;
 
-	// Short term solution to not cause existing fee calculation to fail
+	// Short term solution to not impact existing transaction fee calculation
 	private int customFeeTokensInvolved;
 	private int customFeeHbarTransfers;
 	private int customFeeTokenTransfers;

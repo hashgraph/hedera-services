@@ -21,14 +21,11 @@ package com.hedera.services.txns.span;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
-import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.AssessedCustomFee;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.utils.TxnAccessor;
-import com.hederahashgraph.api.proto.java.TokenID;
 
 import java.util.HashSet;
 import java.util.List;
@@ -110,7 +107,7 @@ public class SpanMapManager {
 		}
 		xferMeta.setCustomFeeTokenTransfers(customFeeTokenTransfers);
 		xferMeta.setCustomFeeTokensInvolved(tokenIDset.size());
-		xferMeta.setCustomFeeTokenTransfers(customFeeHbarTransfers);
+		xferMeta.setCustomFeeHbarTransfers(customFeeHbarTransfers);
 
 		spanMapAccessor.setImpliedTransfers(accessor, impliedTransfers);
 	}
