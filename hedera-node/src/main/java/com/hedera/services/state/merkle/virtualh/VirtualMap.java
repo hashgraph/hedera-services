@@ -1,8 +1,7 @@
-package com.hedera.services.state.merkle.virtual;
+package com.hedera.services.state.merkle.virtualh;
 
-import com.hedera.services.state.merkle.virtual.persistence.VirtualDataSource;
-import com.hedera.services.state.merkle.virtual.persistence.VirtualRecord;
-import com.swirlds.common.FCMValue;
+import com.hedera.services.state.merkle.virtualh.persistence.VirtualDataSource;
+import com.hedera.services.state.merkle.virtualh.persistence.VirtualRecord;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.crypto.Cryptography;
@@ -31,17 +30,17 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.INVALID_PATH;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.ROOT_PATH;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getIndexInRank;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getLeftChildPath;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getParentPath;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getPathForRankAndIndex;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getRank;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getRightChildPath;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getSiblingPath;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.isFarRight;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.isLeft;
+import static com.hedera.services.state.merkle.virtualh.VirtualTreePath.INVALID_PATH;
+import static com.hedera.services.state.merkle.virtualh.VirtualTreePath.ROOT_PATH;
+import static com.hedera.services.state.merkle.virtualh.VirtualTreePath.getIndexInRank;
+import static com.hedera.services.state.merkle.virtualh.VirtualTreePath.getLeftChildPath;
+import static com.hedera.services.state.merkle.virtualh.VirtualTreePath.getParentPath;
+import static com.hedera.services.state.merkle.virtualh.VirtualTreePath.getPathForRankAndIndex;
+import static com.hedera.services.state.merkle.virtualh.VirtualTreePath.getRank;
+import static com.hedera.services.state.merkle.virtualh.VirtualTreePath.getRightChildPath;
+import static com.hedera.services.state.merkle.virtualh.VirtualTreePath.getSiblingPath;
+import static com.hedera.services.state.merkle.virtualh.VirtualTreePath.isFarRight;
+import static com.hedera.services.state.merkle.virtualh.VirtualTreePath.isLeft;
 
 /**
  * A map-like Merkle node designed for working with huge numbers of key/value pairs stored primarily
@@ -50,7 +49,7 @@ import static com.hedera.services.state.merkle.virtual.VirtualTreePath.isLeft;
  *
  * <p>A {@code VirtualMap} is created with a {@link VirtualDataSource}. The {@code VirtualDataSource} is
  * used by the map to read/write data to/from disk. This interface has only one practical implementation
- * in this code base, the {@link com.hedera.services.state.merkle.virtual.persistence.mmap.MemMapDataSource},
+ * in this code base, the {@link com.hedera.services.state.merkle.virtualh.persistence.mmap.MemMapDataSource},
  * which is backed by memory-mapped files. Several in-memory data source implementations exist for testing
  * purposes. The API of the data source is closely tied to the needs of the {@code VirtualMap}. This was done
  * intentionally to <strong>reduce temporary objects and misalignment of the API to enhance performance.</strong>.
@@ -79,7 +78,7 @@ import static com.hedera.services.state.merkle.virtual.VirtualTreePath.isLeft;
 @ConstructableIgnored
 public final class VirtualMap
         extends AbstractMerkleLeaf
-        implements FCMValue, MerkleExternalLeaf {
+        implements MerkleExternalLeaf {
 
     /** Used for serialization **/
     private static final long CLASS_ID = 0xb881f3704885e853L;

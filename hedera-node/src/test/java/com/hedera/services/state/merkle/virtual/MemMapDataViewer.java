@@ -1,5 +1,8 @@
 package com.hedera.services.state.merkle.virtual;
 
+import com.hedera.services.state.merkle.virtualh.Account;
+import com.hedera.services.state.merkle.virtualh.VirtualTreePath;
+
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -13,7 +16,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.List;
 
-import static com.hedera.services.state.merkle.virtual.persistence.mmap.VirtualMapDataStore.HASH_SIZE_BYTES;
+import static com.hedera.services.state.merkle.virtualh.persistence.mmap.VirtualMapDataStore.HASH_SIZE_BYTES;
 
 /**
  * Utility app for viewing mem-mapped data files in Swing

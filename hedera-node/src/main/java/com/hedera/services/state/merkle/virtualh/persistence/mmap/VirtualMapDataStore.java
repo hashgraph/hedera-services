@@ -1,10 +1,10 @@
-package com.hedera.services.state.merkle.virtual.persistence.mmap;
+package com.hedera.services.state.merkle.virtualh.persistence.mmap;
 
-import com.hedera.services.state.merkle.virtual.Account;
-import com.hedera.services.state.merkle.virtual.VirtualKey;
-import com.hedera.services.state.merkle.virtual.VirtualTreePath;
-import com.hedera.services.state.merkle.virtual.VirtualValue;
-import com.hedera.services.state.merkle.virtual.persistence.VirtualRecord;
+import com.hedera.services.state.merkle.virtualh.Account;
+import com.hedera.services.state.merkle.virtualh.VirtualKey;
+import com.hedera.services.state.merkle.virtualh.VirtualTreePath;
+import com.hedera.services.state.merkle.virtualh.VirtualValue;
+import com.hedera.services.state.merkle.virtualh.persistence.VirtualRecord;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap;
