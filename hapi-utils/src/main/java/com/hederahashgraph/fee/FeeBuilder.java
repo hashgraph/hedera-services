@@ -174,7 +174,7 @@ public class FeeBuilder {
    * differ based upon memo field.
    * <p>
    * Common fields in all transaction:
-   * <p>
+   * </p>
    * <ul>
    *     <li>TransactionID transactionID - BASIC_ENTITY_ID_SIZE (accountId) + LONG_SIZE (transactionValidStart)</li>
    *     <li>AccountID nodeAccountID - BASIC_ENTITY_ID_SIZE</li>

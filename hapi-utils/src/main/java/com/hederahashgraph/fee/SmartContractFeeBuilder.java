@@ -296,7 +296,11 @@ public class SmartContractFeeBuilder extends FeeBuilder {
 	}
 
 	/**
-	 * This method returns Fee Matrices for Contract Call Local
+	 * This method returns fee matrices for contract call local
+	 *
+	 * @param funcParamSize function parameter size
+	 *
+	 * @return fee data
 	 */
 	public FeeData getCostContractCallLocalFeeMatrices(int funcParamSize) {
 
@@ -400,7 +404,12 @@ public class SmartContractFeeBuilder extends FeeBuilder {
 	}
 
 	/**
-	 * This method returns the Fee Matrices for Contract Byte Code Query
+	 * This method returns the fee matrices for contract byte code query
+	 *
+	 * @param byteCodeSize byte code size
+	 * @param responseType response type
+	 *
+	 * @return fee data
 	 */
 	public FeeData getContractByteCodeQueryFeeMatrices(int byteCodeSize, ResponseType responseType) {
 
