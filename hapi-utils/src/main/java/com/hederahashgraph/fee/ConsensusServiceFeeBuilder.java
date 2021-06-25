@@ -39,9 +39,15 @@ import java.time.Instant;
  * Fee builder for Consensus service transactions.
  */
 public class ConsensusServiceFeeBuilder extends FeeBuilder {
+
     /**
      * Computes fee for ConsensusCreateTopic transaction
-     * @throws InvalidTxBodyException
+     *
+     * @param txBody transaction body
+     * @param sigValObj signature value object
+     *
+     * @return fee data
+     * @throws InvalidTxBodyException when transaction body is invalid
      */
     public static FeeData getConsensusCreateTopicFee(TransactionBody txBody, SigValueObj sigValObj)
             throws InvalidTxBodyException {

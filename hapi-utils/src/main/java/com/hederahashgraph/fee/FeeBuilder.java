@@ -183,6 +183,10 @@ public class FeeBuilder {
    *     <li>bool generateRecord - BOOL_SIZE</li>
    *     <li>bytes string memo - get memo size from transaction</li>
    * </ul>
+   *
+   * @param txBody transaction body
+   * @return long representing transaction size
+   * @throws InvalidTxBodyException when transaction body is invalid
    */
   public static long getCommonTransactionBodyBytes(TransactionBody txBody) throws InvalidTxBodyException {
     if (txBody == null) {
@@ -197,6 +201,9 @@ public class FeeBuilder {
 
   /**
    * This method returns the Key size in bytes
+   *
+   * @param key key
+   * @return int representing account key storage size
    */
   public static int getAccountKeyStorageSize(Key key) {
 
@@ -237,6 +244,8 @@ public class FeeBuilder {
   /**
    * This method returns the Fee Matrices for querying based upon ID (Account / File / Smart
    * Contract)
+   *
+   * @return fee data
    */
   public static FeeData getCostForQueryByIDOnly() {
     return FeeData.getDefaultInstance();
