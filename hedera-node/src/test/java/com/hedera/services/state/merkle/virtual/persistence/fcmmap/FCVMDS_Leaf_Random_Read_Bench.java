@@ -25,19 +25,18 @@ import static com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCVirt
  */
 @State(Scope.Thread)
 @Warmup(iterations = 1, time = 2, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 1, time = 5, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 2, time = 15, timeUnit = TimeUnit.SECONDS)
 @Fork(1)
 //@Warmup(iterations = 1, time = 10, timeUnit = TimeUnit.SECONDS)
 //@Measurement(iterations = 1, time = 15, timeUnit = TimeUnit.SECONDS)
 //@Fork(1)
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
-public class FCVirtualMapDataStoreBench {
-    private static final int HASH_DATA_SIZE = DigestType.SHA_384.digestLength() + Integer.BYTES + Integer.BYTES; // int for digest type and int for byte array length
+public class FCVMDS_Leaf_Random_Read_Bench {
     public static final Path STORE_PATH = Path.of("store");
 
     @State(Scope.Benchmark)
-    public static class EmptyState {
+    public static class BenchmarkState {
 
         @Param({
                 "com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCSlotIndexUsingFCHashMap"
@@ -47,13 +46,16 @@ public class FCVirtualMapDataStoreBench {
                 "com.hedera.services.state.merkle.virtual.persistence.fcmmap.MemMapSlotStore"
         })
         private String slotStoreImpl;
+        @Param({
+                "10000000"
+        })
+        private int dataSetSize;
 
         // state
         public FCVirtualMapDataStore<SerializableLong, SerializableAccount, SerializableLong, MerkleAccountState> store;
         public Random random = new Random(1234);
-        public int iteration = 0;
 
-        @Setup(Level.Iteration)
+        @Setup(Level.Trial)
         public void setup() {
             System.out.println("FCVirtualMapDataStoreBench.cleanAndCreate");
             try {
@@ -74,35 +76,15 @@ public class FCVirtualMapDataStoreBench {
                 // measure the size of a MerkleAccountState
                 int sizeOfMerkleAccountState = measureLengthOfSerializable(createRandomMerkleAccountState(1, random));
                 // create and open store
-                store = new FCVirtualMapDataStoreImpl<SerializableLong, SerializableAccount, SerializableLong, MerkleAccountState>(STORE_PATH, 250,
+                store = new FCVirtualMapDataStoreImpl<SerializableLong, SerializableAccount, SerializableLong, MerkleAccountState>(STORE_PATH, 1024,
                         8,
                         8 * 3, 8, sizeOfMerkleAccountState,
                         longSlotIndexProvider, longSlotIndexProvider, accountIndexProvider,
                         MerkleAccountState::new, slotStoreSupplier);
                 store.open();
-                // reset iteration counter
-                iteration = 0;
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
-        @TearDown(Level.Iteration)
-        public void tearDown() {
-            System.out.println("store.leafCount() = " + store.leafCount());
-            store.release();
-            printDirectorySize(STORE_PATH);
-        }
-    }
-
-    @State(Scope.Benchmark)
-    public static class FullState extends EmptyState {
-
-        @Setup(Level.Iteration)
-        public void setup() {
-            super.setup();
-            try {
-                for (int i = 0; i < 10_000_000; i++) {
+                // create some data
+                for (int i = 0; i < dataSetSize; i++) {
+                    if ((i % (dataSetSize/10)) ==0) System.out.println("Created "+i+" leaves...");
                     store.saveLeaf(
                             new SerializableAccount(i,i,i),
                             new SerializableLong(i), createRandomMerkleAccountState(i, random));
@@ -111,22 +93,22 @@ public class FCVirtualMapDataStoreBench {
                 e.printStackTrace();
             }
         }
+
+        @TearDown(Level.Trial)
+        public void tearDown() {
+            System.out.println("store.leafCount() = " + store.leafCount());
+            store.release();
+            printDirectorySize(STORE_PATH);
+        }
     }
 
 
-    @Benchmark
-    public void _0_saveLeaf(EmptyState state) throws Exception {
-        state.store.saveLeaf(
-                new SerializableAccount(state.iteration,state.iteration,state.iteration),
-                new SerializableLong(state.iteration), createRandomMerkleAccountState(state.iteration, state.random));
-        state.iteration ++;
-    }
 
     @Benchmark
-    public void _1_randomLoadLeafByPath(FullState state) throws Exception {
-        int index = state.random.nextInt(1000);
+    public void _1_randomLoadLeafByPath(BenchmarkState state) throws Exception {
+        int index = state.random.nextInt(state.dataSetSize);
         MerkleAccountState merkleAccountState = state.store.loadLeafByPath(new SerializableLong(index));
-        if (merkleAccountState == null || merkleAccountState.balance() != index) System.err.println("Got wrong value back");
+//        if (merkleAccountState == null || merkleAccountState.balance() != index) System.err.println("Got wrong value back");
     }
 
 }
