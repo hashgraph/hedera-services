@@ -121,19 +121,6 @@ class ExpirableTxnRecordTest {
 		return s;
 	}
 
-	private ExpirableTxnRecord subjectRecordWithTokenTransfersAndScheduleRef() {
-		var s = ExpirableTxnRecord.fromGprc(
-				DomainSerdesTest.recordOne().asGrpc().toBuilder()
-						.setTransactionHash(ByteString.copyFrom(pretendHash))
-						.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
-						.addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers))
-						.setScheduleRef(scheduleID)
-						.build());
-		s.setExpiry(expiry);
-		s.setSubmittingMember(submittingMember);
-		return s;
-	}
-
 	private ExpirableTxnRecord subjectRecordWithTokenTransfersAndScheduleRefCustomFees() {
 		var s = ExpirableTxnRecord.fromGprc(
 				DomainSerdesTest.recordOne().asGrpc().toBuilder()
@@ -141,7 +128,7 @@ class ExpirableTxnRecordTest {
 						.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
 						.addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers))
 						.setScheduleRef(scheduleID)
-						.setCustomFeesCharged(AssessedCustomFee.toGrpc(List.of(balanceChange)))
+						.addAssessedCustomFees(balanceChange.toGrpc())
 						.build());
 		s.setExpiry(expiry);
 		s.setSubmittingMember(submittingMember);

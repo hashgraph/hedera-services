@@ -22,6 +22,7 @@ package com.hedera.services.state.forensics;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.swirlds.common.AddressBook;
 import com.swirlds.common.CommonUtils;
 import com.swirlds.common.InvalidSignedStateListener;
@@ -45,10 +46,12 @@ public class IssListener implements InvalidSignedStateListener {
 
 	private final FcmDump fcmDump;
 	private final IssEventInfo issEventInfo;
+	private final NodeLocalProperties nodeLocalProperties;
 
-	public IssListener(FcmDump fcmDump, IssEventInfo issEventInfo) {
+	public IssListener(FcmDump fcmDump, IssEventInfo issEventInfo, NodeLocalProperties nodeLocalProperties) {
 		this.fcmDump = fcmDump;
 		this.issEventInfo = issEventInfo;
+		this.nodeLocalProperties = nodeLocalProperties;
 	}
 
 	@Override
@@ -71,7 +74,9 @@ public class IssListener implements InvalidSignedStateListener {
 						round, self.getId(), other.getId(),
 						CommonUtils.hex(sig), CommonUtils.hex(hash));
 				log.error(msg);
-				fcmDump.dumpFrom(issState, self, round);
+				if (nodeLocalProperties.shouldDumpFcmsOnIss()) {
+					fcmDump.dumpFrom(issState, self, round);
+				}
 				issState.logSummary();
 			}
 		} catch (Exception any) {

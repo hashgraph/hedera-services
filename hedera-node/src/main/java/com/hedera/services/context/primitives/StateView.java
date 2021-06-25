@@ -282,10 +282,6 @@ public class StateView {
 				info.setCustomFees(customFeesBuilder);
 			}
 
-			if (token.hasCustomFeeKey()) {
-				info.setCustomFeesKey(asKeyUnchecked(token.getCustomFeeKey()));
-			}
-
 			return Optional.of(info.build());
 		} catch (Exception unexpected) {
 			log.warn(

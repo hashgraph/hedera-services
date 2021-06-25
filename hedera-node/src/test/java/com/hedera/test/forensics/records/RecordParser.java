@@ -20,8 +20,11 @@ package com.hedera.test.forensics.records;
  * ‍
  */
 
+import com.hedera.services.stream.RecordStreamObject;
+import com.hedera.services.stream.RecordStreamType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.swirlds.common.stream.LinkedObjectStreamUtilities;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,7 +37,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.security.MessageDigest;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -53,6 +58,18 @@ public class RecordParser {
 		} catch (Exception fatal) {
 			throw new IllegalStateException("Cannot initialize digests!", fatal);
 		}
+	}
+
+	public static List<RecordStreamObject> parseV5From(File fin) {
+		final List<RecordStreamObject> rsos = new ArrayList<>();
+		final Iterator iter = LinkedObjectStreamUtilities.parseStreamFile(fin, RecordStreamType.RECORD);
+		for (; iter.hasNext(); ) {
+			final var next = iter.next();
+			if (next instanceof RecordStreamObject) {
+				rsos.add((RecordStreamObject) next);
+			}
+		}
+		return rsos;
 	}
 
 	public static RecordFile parseFrom(File file) {
