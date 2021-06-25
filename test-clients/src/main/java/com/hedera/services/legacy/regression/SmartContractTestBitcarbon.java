@@ -300,18 +300,6 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
     return function;
   }
 
-  public static byte[] encodeMintersIsValid(String minter) {
-    CallTransaction.Function function = getMintersIsValidFunction();
-    byte[] encodedFunc = function.encode(minter);
-    return encodedFunc;
-  }
-
-  public static CallTransaction.Function getMintersIsValidFunction() {
-    String funcJson = ContractResources.MINT_ISVALID_ABI.replaceAll("'", "\"");
-    CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(funcJson);
-    return function;
-  }
-
   public static byte[] encodeMintersSeven() {
     CallTransaction.Function function = getMintersSevenFunction();
     byte[] encodedFunc = function.encode();

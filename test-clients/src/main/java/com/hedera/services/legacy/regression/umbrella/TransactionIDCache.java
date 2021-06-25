@@ -54,10 +54,6 @@ public class TransactionIDCache {
     return lastTxIDSubmitTimeMillis;
   }
 
-  public TransactionID getLastTxID() {
-    return lastTxID;
-  }
-
   /**
    * receipt ttl setting in seconds
    */
@@ -99,6 +95,11 @@ public class TransactionIDCache {
 
   /**
    * Gets a singleton instance of this class.
+   * @param receiptPeriod time to live for the transaction ID used for getting receipts, should be
+   * less or equal to the TTL for receipts
+   * @param recordPeriod time to live for the transaction ID used for getting records, should be
+   * less or equal to the TTL for records
+   * @return TransactionIDCache
    */
   public static TransactionIDCache getInstance(int receiptPeriod, int recordPeriod) {
     if (txIDCache == null) {
@@ -109,6 +110,7 @@ public class TransactionIDCache {
 
   /**
    * Adds a transaction ID to cache.
+   * @param txId transaction ID to be added
    */
   public synchronized void addTransactionID(TransactionID txId) {
     if (log.isDebugEnabled()) {
@@ -125,20 +127,6 @@ public class TransactionIDCache {
     }
     notifyAll();
     log.info("notify all ...");
-  }
-
-  public TransactionID getRandomTransactionID4Receipt() {
-    evictExpiredTransactionIDsInReceiptQueue();
-    if (txIdQueue4Receipt.size() == 0) {
-      return null;
-    }
-
-    TransactionID[] a = new TransactionID[1];
-    a = txIdQueue4Receipt.toArray(a);
-
-    TransactionID txId = a[rand.nextInt(a.length)];
-    log.info("Retrieved Tx ID :: {}", txId);
-    return txId;
   }
 
   /**
@@ -161,28 +149,6 @@ public class TransactionIDCache {
 		}
 	}
     return txId;
-  }
-
-  public TransactionID getRandomTransactionID4Record() {
-    evictExpiredTransactionIDsInRecordQueue();
-    if (txIdQueue4Record.size() == 0) {
-      return null;
-    }
-
-    TransactionID[] a = new TransactionID[1];
-    a = txIdQueue4Record.toArray(a);
-
-    TransactionID txId = a[rand.nextInt(a.length)];
-    log.info("Retrieved Tx ID :: {}", txId);
-    return txId;
-  }
-
-  public int sizeOfReceiptQueue() {
-    return txIdQueue4Receipt.size();
-  }
-
-  public int sizeOfRecordQueue() {
-    return txIdQueue4Record.size();
   }
 
   public void evictExpiredTransactionIDsInReceiptQueue() {

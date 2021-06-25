@@ -603,6 +603,7 @@ public class FileServiceIT {
 	 *
 	 * @param accountID
 	 * 		the account to get info for
+	 * @return account info of the given account
 	 * @throws Exception
 	 * 		exception caused if there is any failure while getting account info
 	 */
@@ -773,6 +774,7 @@ public class FileServiceIT {
 	 * 		payer account ID, as the payer of the tx and the from account for the transfer
 	 * @param nodeID
 	 * 		node account ID, as the node account that should process the tx
+	 * @param fromID sender account id
 	 * @param toID
 	 * 		to account for the transfer.
 	 * @param memo

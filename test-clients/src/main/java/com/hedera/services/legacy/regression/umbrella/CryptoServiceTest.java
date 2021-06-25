@@ -553,6 +553,9 @@ public class CryptoServiceTest extends TestHelperComplex {
 
 	/**
 	 * Update complex key registry.
+	 *
+	 * @throws Exception
+	 * 		exception caused if there is a failure
 	 */
 	protected void readGenesisInfo() throws Exception {
 		KeyPairObj genesisKeyPair;
@@ -679,6 +682,8 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 * @param txId
 	 * 		ID of the tx
 	 * @return the transaction receipt
+	 * @throws Throwable
+	 * 		exception thrown if there is a failure
 	 */
 	public TransactionReceipt getTxReceipt(TransactionID txId) throws Throwable {
 		Query query = Query.newBuilder()
@@ -1122,6 +1127,8 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 * 		payer account number, as the payer and the from account
 	 * @param toSeq
 	 * 		node account number, as the node account and the to account
+	 * @param memo
+	 * 		memo in the payment transaction
 	 * @return the signed transaction
 	 * @throws Exception
 	 * 		exception caused if there is a failure
@@ -1316,6 +1323,8 @@ public class CryptoServiceTest extends TestHelperComplex {
 	/**
 	 * Makes a transfer, but does not try to get receipts.
 	 *
+	 * @param transferTxSigned
+	 * 		signed transfer transaction
 	 * @return transaction response
 	 * @throws Throwable
 	 * 		exception thrown if there is a failure

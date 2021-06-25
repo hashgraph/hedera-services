@@ -138,6 +138,8 @@ public class UmbrellaServiceRunnable implements Runnable {
    * Executes a single API operation.
    *
    * @param op api operation to be performed
+   * @param payerID payer account id
+   * @param nodeID  node account id
    */
   protected void exec(ops op, AccountID payerID, AccountID nodeID) {
     // exec op based on type
@@ -566,7 +568,7 @@ public class UmbrellaServiceRunnable implements Runnable {
   /**
    * Handles GRPC exceptions, in particular, wait some time if GRPC throws UNAVAILABLE exception.
    * 
-   * @param e
+   * @param e GRPC exception to be handled
    */
   private void handleGrpcException(Throwable e) {
     if (e.getMessage() != null && e.getMessage().contains("UNAVAILABLE")) {
@@ -600,6 +602,7 @@ public class UmbrellaServiceRunnable implements Runnable {
 
   /**
    * Gets the random file size.
+   * @return file size
    */
   private int getRandomFileSizeK() {
     int index = FileServiceTest.rand.nextInt(FileServiceTest.fileSizesK.length);
@@ -607,7 +610,8 @@ public class UmbrellaServiceRunnable implements Runnable {
   }
 
   /**
-   * Gets the random file size.
+   * Gets the random file type.
+   * @return file type
    */
   private String getRandomFileType() {
     int index = FileServiceTest.rand.nextInt(FileServiceTest.fileTypes.length);
@@ -642,7 +646,7 @@ public class UmbrellaServiceRunnable implements Runnable {
    * Gets a random operation.
    *
    * @param op_and_total_counts 2-element array tracks op count and total API count, respectively
-   * @return a a random operation
+   * @return a random operation
    */
   protected ops getRandomOp(int[] op_and_total_counts) {
     synchronized (activeAPIs) {
@@ -670,19 +674,6 @@ public class UmbrellaServiceRunnable implements Runnable {
       op_and_total_counts[0] = getOpCount(opn);
       op_and_total_counts[1] = getOpCount(ALL_API_TAG);
       return op;
-    }
-  }
-
-  /**
-   * Check if there is any more active API.
-   *
-   * @return true if no more active API, false otherwise
-   */
-  public static boolean isActiveAPIEmpty() {
-    synchronized (activeAPIs) {
-      boolean rv = false;
-      rv = activeAPIs.isEmpty();
-      return rv;
     }
   }
 }
