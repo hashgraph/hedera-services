@@ -21,6 +21,7 @@ package com.hedera.services.txns.span;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.state.submerkle.AssessedCustomFee;
 import com.hedera.services.state.submerkle.EntityId;
@@ -91,6 +92,13 @@ public class SpanMapManager {
 		final var op = accessor.getTxn().getCryptoTransfer();
 		final var impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op, accessor.getPayer());
 
+		reCalculateXferMeta(accessor, impliedTransfers);
+		spanMapAccessor.setImpliedTransfers(accessor, impliedTransfers);
+	}
+
+
+	private void reCalculateXferMeta(TxnAccessor accessor, ImpliedTransfers impliedTransfers) {
+
 		final var xferMeta = accessor.availXferUsageMeta();
 
 		List<AssessedCustomFee> assessedCustomFees = impliedTransfers.getAssessedCustomFees();
@@ -108,7 +116,5 @@ public class SpanMapManager {
 		xferMeta.setCustomFeeTokenTransfers(customFeeTokenTransfers);
 		xferMeta.setCustomFeeTokensInvolved(tokenIDset.size());
 		xferMeta.setCustomFeeHbarTransfers(customFeeHbarTransfers);
-
-		spanMapAccessor.setImpliedTransfers(accessor, impliedTransfers);
 	}
 }

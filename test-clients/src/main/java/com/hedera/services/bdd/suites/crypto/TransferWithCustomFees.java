@@ -53,9 +53,9 @@ public class TransferWithCustomFees extends HapiApiSuite {
 	private final long maxHtsFee = 10L;
 
 	private final String token = "withCustomSchedules";
-	private final String feeDenom = "demon";
+	private final String feeDenom = "denom";
 	private final String hbarCollector = "hbarFee";
-	private final String htsCollector = "demonFee";
+	private final String htsCollector = "denomFee";
 	private final String tokenReceiver = "receiver";
 
 	private final String tokenOwner = "tokenOwner";
