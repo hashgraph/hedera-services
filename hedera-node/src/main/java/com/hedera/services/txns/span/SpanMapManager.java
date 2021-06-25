@@ -21,9 +21,16 @@ package com.hedera.services.txns.span;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.state.submerkle.AssessedCustomFee;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.utils.TxnAccessor;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 
@@ -85,6 +92,29 @@ public class SpanMapManager {
 		final var op = accessor.getTxn().getCryptoTransfer();
 		final var impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op, accessor.getPayer());
 
+		reCalculateXferMeta(accessor, impliedTransfers);
 		spanMapAccessor.setImpliedTransfers(accessor, impliedTransfers);
+	}
+
+
+	private void reCalculateXferMeta(TxnAccessor accessor, ImpliedTransfers impliedTransfers) {
+
+		final var xferMeta = accessor.availXferUsageMeta();
+
+		List<AssessedCustomFee> assessedCustomFees = impliedTransfers.getAssessedCustomFees();
+		var customFeeTokenTransfers = 0;
+		var customFeeHbarTransfers = 0;
+		Set<EntityId> tokenIDset = new HashSet<>();
+		for(AssessedCustomFee acf : assessedCustomFees) {
+			if(acf.isForHbar()) {
+				customFeeHbarTransfers++;
+			} else {
+				customFeeTokenTransfers++;
+				tokenIDset.add(acf.token());
+			}
+		}
+		xferMeta.setCustomFeeTokenTransfers(customFeeTokenTransfers);
+		xferMeta.setCustomFeeTokensInvolved(tokenIDset.size());
+		xferMeta.setCustomFeeHbarTransfers(customFeeHbarTransfers);
 	}
 }

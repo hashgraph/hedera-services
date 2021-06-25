@@ -60,18 +60,20 @@ public class CryptoOpsUsage {
 	) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 
-		final int numXfers = baseMeta.getNumExplicitTransfers();
-		final int numTokenXfers = xferMeta.getNumTokenTransfers();
-		final int tokenMultiplier = xferMeta.getTokenMultiplier();
-		final int numTokensInvolved = xferMeta.getNumTokensInvolved();
-		final int weightedTokensInvolved = tokenMultiplier * numTokensInvolved;
+		final int totalXfers = baseMeta.getNumExplicitTransfers() + xferMeta.getCustomFeeHbarTransfers();
+		final int totalTokensXfers = xferMeta.getNumTokenTransfers() + xferMeta.getCustomFeeTokenTransfers();
+		final int totalTokensInvolved = xferMeta.getNumTokensInvolved() + xferMeta.getCustomFeeTokensInvolved();
 
-		final int weightedTokenXfers = tokenMultiplier * numTokenXfers;
+		final int tokenMultiplier = xferMeta.getTokenMultiplier();
+
+		final int weightedTokensInvolved = tokenMultiplier * totalTokensInvolved;
+
+		final int weightedTokenXfers = tokenMultiplier * totalTokensXfers;
 		long incBpt = weightedTokensInvolved * LONG_BASIC_ENTITY_ID_SIZE;
-		incBpt += (weightedTokenXfers + numXfers) * LONG_ACCOUNT_AMOUNT_BYTES;
+		incBpt += (weightedTokenXfers + totalXfers) * LONG_ACCOUNT_AMOUNT_BYTES;
 		accumulator.addBpt(incBpt);
 
-		long incRb = numXfers * LONG_ACCOUNT_AMOUNT_BYTES;
+		long incRb = totalXfers * LONG_ACCOUNT_AMOUNT_BYTES;
 		incRb += TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(weightedTokensInvolved, weightedTokenXfers);
 		accumulator.addRbs(incRb * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
