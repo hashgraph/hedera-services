@@ -3,6 +3,7 @@ package com.hedera.services.state.merkle.virtual.persistence;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.fcmap.FCVirtualRecord;
 
 import java.io.IOException;
 
@@ -11,21 +12,20 @@ import java.io.IOException;
  *
  * It should be thread safe and can be used by multiple-threads.
  *
- * @param <PK> The type for hashs keys, must implement SelfSerializable
+ * @param <HK> The type for hash keys, must implement SelfSerializable
  * @param <LP> The type for leaf paths, must implement SelfSerializable
  * @param <LK> The type for leaf keys, must implement SelfSerializable
- * @param <LD> The type for leaf data, must implement SelfSerializable
+ * @param <LV> The type for leaf data, must implement SelfSerializable
  */
-public interface FCVirtualMapDataStore<PK extends SelfSerializable, LK extends SelfSerializable,
-        LP extends SelfSerializable, LD extends SelfSerializable>
-        extends FastCopyable<FCVirtualMapDataStore<PK, LK, LP, LD>> {
+public interface FCVirtualMapDataStore<HK extends SelfSerializable, LK extends SelfSerializable,
+        LP extends SelfSerializable, LV extends SelfSerializable>
+        extends FastCopyable {
 
-    /** Open storage */
+    /** Open storage, release() is used to close */
     void open() throws IOException;
 
     /** Sync any changes to disk, used during testing */
     void sync();
-
 
     /**
      * Delete a stored leaf from storage, if it is stored.
@@ -51,20 +51,43 @@ public interface FCVirtualMapDataStore<PK extends SelfSerializable, LK extends S
     int leafCount();
 
     /**
-     * Load a leaf node record from storage given the key for it
+     * Load a leaf value from storage given the key for it
      *
      * @param key The key of the leaf to find
      * @return a loaded leaf data or null if not found
      */
-    LD loadLeafByKey(LK key) throws IOException;
+    LV loadLeafValueByKey(LK key) throws IOException;
 
     /**
-     * Load a leaf node record from storage given a path to it
+     * Load a leaf value from storage given a path to it
      *
      * @param leafPath The path to the leaf
      * @return a loaded leaf data or null if not found
      */
-    LD loadLeafByPath(LP leafPath) throws IOException;
+    LV loadLeafValueByPath(LP leafPath) throws IOException;
+
+    /**
+     * Load a leaf value from storage given a path to it
+     *
+     * @param key The key of the leaf to find
+     * @return a loaded leaf data or null if not found
+     */
+    LP loadLeafPathByKey(LK key) throws IOException;
+
+    /**
+     * Load a leaf value from storage given a path to it
+     *
+     * @param leafPath The path to the leaf
+     * @return a loaded leaf key and data or null if not found
+     */
+    FCVirtualRecord<LK, LV> loadLeafRecordByPath(LP leafPath) throws IOException;
+
+    /**
+     * Update the path to a leaf
+     *
+     * @param oldPath The current path to the leaf in the store
+     */
+    void updateLeafPath(LP oldPath, LP newPath) throws IOException;
 
     /**
      * Save a VirtualTreeLeaf to storage
@@ -73,7 +96,7 @@ public interface FCVirtualMapDataStore<PK extends SelfSerializable, LK extends S
      * @param leafPath The path for the leaf to store
      * @param leafData The data for the leaf to store
      */
-    void saveLeaf(LK leafKey, LP leafPath, LD leafData) throws IOException;
+    void saveLeaf(LK leafKey, LP leafPath, LV leafData) throws IOException;
 
     /**
      * Check if this store contains a hash by key
@@ -81,14 +104,14 @@ public interface FCVirtualMapDataStore<PK extends SelfSerializable, LK extends S
      * @param hashKey The key of the hash to check for
      * @return true if that hash is stored, false if it is not known
      */
-    boolean containsHash(PK hashKey);
+    boolean containsHash(HK hashKey);
 
     /**
      * Delete a stored hash from storage, if it is stored.
      *
      * @param hashKey The key of the hash to delete
      */
-    void deleteHash(PK hashKey);
+    void deleteHash(HK hashKey);
 
     /**
      * Load a tree hash node from storage
@@ -96,7 +119,7 @@ public interface FCVirtualMapDataStore<PK extends SelfSerializable, LK extends S
      * @param hashKey The key of the hash to find and load
      * @return a loaded VirtualTreeInternal with path and hash set or null if not found
      */
-    Hash loadHash(PK hashKey) throws IOException;
+    Hash loadHash(HK hashKey) throws IOException;
 
     /**
      * Save the hash for a imaginary hash node into storage
@@ -104,5 +127,8 @@ public interface FCVirtualMapDataStore<PK extends SelfSerializable, LK extends S
      * @param hashKey The key of the hash to save
      * @param hashData The hash's data to store
      */
-    void saveHash(PK hashKey, Hash hashData) throws IOException;
+    void saveHash(HK hashKey, Hash hashData) throws IOException;
+
+    @Override
+    FCVirtualMapDataStore<HK, LK, LP, LV> copy();
 }

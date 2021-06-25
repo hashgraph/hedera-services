@@ -78,7 +78,7 @@ public class FCVirtualMapDataStoreBench {
                         8,
                         8 * 3, 8, sizeOfMerkleAccountState,
                         longSlotIndexProvider, longSlotIndexProvider, accountIndexProvider,
-                        MerkleAccountState::new, slotStoreSupplier);
+                        SerializableAccount::new, SerializableLong::new, MerkleAccountState::new, slotStoreSupplier);
                 store.open();
                 // reset iteration counter
                 iteration = 0;
@@ -125,7 +125,7 @@ public class FCVirtualMapDataStoreBench {
     @Benchmark
     public void _1_randomLoadLeafByPath(FullState state) throws Exception {
         int index = state.random.nextInt(1000);
-        MerkleAccountState merkleAccountState = state.store.loadLeafByPath(new SerializableLong(index));
+        MerkleAccountState merkleAccountState = state.store.loadLeafValueByPath(new SerializableLong(index));
         if (merkleAccountState == null || merkleAccountState.balance() != index) System.err.println("Got wrong value back");
     }
 
