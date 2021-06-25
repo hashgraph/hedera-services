@@ -148,8 +148,12 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	private void rebuildViewOfKnownTreasuries() {
-		tokens.get().forEach((key, value) ->
-				addKnownTreasury(value.treasury().toGrpcAccountId(), key.toTokenId()));
+		tokens.get().forEach((key, value) -> {
+			/* A deleted token's treasury is no longer bound by ACCOUNT_IS_TREASURY restrictions. */
+			if (!value.isDeleted()) {
+				addKnownTreasury(value.treasury().toGrpcAccountId(), key.toTokenId());
+			}
+		});
 	}
 
 	@Override
