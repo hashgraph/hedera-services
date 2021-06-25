@@ -1,6 +1,6 @@
 package contract;
 
-import com.hedera.services.state.merkle.virtual.persistence.mmap.MemMapDataStore;
+import com.hedera.services.state.merkle.virtualh.persistence.mmap.MemMapDataStore;
 import org.openjdk.jmh.annotations.*;
 
 import java.io.File;

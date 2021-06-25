@@ -1,6 +1,6 @@
 package com.hedera.services.state.merkle.virtual;
 
-import com.hedera.services.state.merkle.virtual.persistence.mmap.MemMapDataStore;
+import com.hedera.services.state.merkle.virtualh.persistence.mmap.MemMapDataStore;
 import org.junit.jupiter.api.*;
 
 import java.io.File;

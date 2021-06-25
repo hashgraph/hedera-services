@@ -1,7 +1,7 @@
-package com.hedera.services.state.merkle.virtual.persistence;
+package com.hedera.services.state.merkle.virtualh.persistence;
 
-import com.hedera.services.state.merkle.virtual.VirtualKey;
-import com.hedera.services.state.merkle.virtual.VirtualValue;
+import com.hedera.services.state.merkle.virtualh.VirtualKey;
+import com.hedera.services.state.merkle.virtualh.VirtualValue;
 import com.swirlds.common.crypto.Hash;
 
 import java.util.Objects;

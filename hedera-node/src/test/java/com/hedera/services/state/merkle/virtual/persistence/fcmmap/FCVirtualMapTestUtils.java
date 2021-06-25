@@ -3,7 +3,7 @@ package com.hedera.services.state.merkle.virtual.persistence.fcmmap;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.state.merkle.MerkleAccountState;
-import com.hedera.services.state.merkle.virtual.Account;
+import com.hedera.services.state.merkle.virtualh.Account;
 import com.hedera.services.state.submerkle.EntityId;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;

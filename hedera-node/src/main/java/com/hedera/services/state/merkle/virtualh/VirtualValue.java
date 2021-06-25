@@ -1,4 +1,4 @@
-package com.hedera.services.state.merkle.virtual;
+package com.hedera.services.state.merkle.virtualh;
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;

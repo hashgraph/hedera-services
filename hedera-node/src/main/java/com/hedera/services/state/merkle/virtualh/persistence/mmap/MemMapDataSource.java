@@ -1,10 +1,10 @@
-package com.hedera.services.state.merkle.virtual.persistence.mmap;
+package com.hedera.services.state.merkle.virtualh.persistence.mmap;
 
-import com.hedera.services.state.merkle.virtual.Account;
-import com.hedera.services.state.merkle.virtual.VirtualKey;
-import com.hedera.services.state.merkle.virtual.VirtualValue;
-import com.hedera.services.state.merkle.virtual.persistence.VirtualDataSource;
-import com.hedera.services.state.merkle.virtual.persistence.VirtualRecord;
+import com.hedera.services.state.merkle.virtualh.Account;
+import com.hedera.services.state.merkle.virtualh.VirtualKey;
+import com.hedera.services.state.merkle.virtualh.VirtualValue;
+import com.hedera.services.state.merkle.virtualh.persistence.VirtualDataSource;
+import com.hedera.services.state.merkle.virtualh.persistence.VirtualRecord;
 import com.swirlds.common.crypto.Hash;
 
 import java.io.IOException;

@@ -1,9 +1,13 @@
 package com.hedera.services.state.merkle.virtual;
 
-import com.hedera.services.state.merkle.virtual.persistence.VirtualDataSource;
-import com.hedera.services.state.merkle.virtual.persistence.VirtualRecord;
-import com.hedera.services.state.merkle.virtual.persistence.mmap.MemMapDataSource;
-import com.hedera.services.state.merkle.virtual.persistence.mmap.VirtualMapDataStore;
+import com.hedera.services.state.merkle.virtualh.Account;
+import com.hedera.services.state.merkle.virtualh.persistence.VirtualDataSource;
+import com.hedera.services.state.merkle.virtualh.persistence.VirtualRecord;
+import com.hedera.services.state.merkle.virtualh.persistence.mmap.MemMapDataSource;
+import com.hedera.services.state.merkle.virtualh.persistence.mmap.VirtualMapDataStore;
+import com.hedera.services.state.merkle.virtualh.VirtualKey;
+import com.hedera.services.state.merkle.virtualh.VirtualMap;
+import com.hedera.services.state.merkle.virtualh.VirtualValue;
 import com.swirlds.common.crypto.Hash;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -20,7 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.INVALID_PATH;
+import static com.hedera.services.state.merkle.virtualh.VirtualTreePath.INVALID_PATH;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 

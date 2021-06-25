@@ -1,8 +1,11 @@
 package com.hedera.services.state.merkle.virtual;
 
 import com.google.common.base.Stopwatch;
-import com.hedera.services.state.merkle.virtual.persistence.VirtualRecord;
-import com.hedera.services.state.merkle.virtual.persistence.mmap.VirtualMapDataStore;
+import com.hedera.services.state.merkle.virtualh.Account;
+import com.hedera.services.state.merkle.virtualh.persistence.VirtualRecord;
+import com.hedera.services.state.merkle.virtualh.persistence.mmap.VirtualMapDataStore;
+import com.hedera.services.state.merkle.virtualh.VirtualKey;
+import com.hedera.services.state.merkle.virtualh.VirtualValue;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import org.junit.jupiter.api.AfterEach;

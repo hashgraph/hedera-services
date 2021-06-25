@@ -1,42 +1,17 @@
 package contract;
 
-import com.hedera.services.state.merkle.virtual.Account;
-import com.hedera.services.state.merkle.virtual.VirtualKey;
-import com.hedera.services.state.merkle.virtual.VirtualMap;
-import com.hedera.services.state.merkle.virtual.VirtualValue;
-import com.hedera.services.state.merkle.virtual.persistence.VirtualDataSource;
-import com.hedera.services.state.merkle.virtual.persistence.VirtualRecord;
-import com.hedera.services.state.merkle.virtual.persistence.mmap.MemMapDataSource;
-import com.hedera.services.state.merkle.virtual.persistence.mmap.VirtualMapDataStore;
-import com.swirlds.common.crypto.Hash;
-import org.openjdk.jmh.annotations.Benchmark;
+import com.hedera.services.state.merkle.virtualh.persistence.mmap.MemMapDataSource;
+import com.hedera.services.state.merkle.virtualh.persistence.mmap.VirtualMapDataStore;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
-import org.openjdk.jmh.infra.Blackhole;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Map;
-import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.INVALID_PATH;
 
 /**
  * Microbenchmark tests for the VirtualMap. These benchmarks are just of the tree itself,

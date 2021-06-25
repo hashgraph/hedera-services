@@ -1,11 +1,11 @@
 /**
- * Provides the {@link com.hedera.services.state.merkle.virtual.VirtualMap}, a merkle node with
+ * Provides the {@link com.hedera.services.state.merkle.virtualh.VirtualMap}, a merkle node with
  * an inner, virtualized merkle tree, encapsulated by a map-like interface.
  *
  * <p>This implementation is specifically designed to fit the needs of Smart Contracts for
  * Hedera Hashgraph. Each Smart Contract may have storage, handled as key/value pairs. Each
- * key and each value are an unsigned 256-bit word. The {@link com.hedera.services.state.merkle.virtual.VirtualKey}
- * represents these keys and the {@link com.hedera.services.state.merkle.virtual.VirtualValue}
+ * key and each value are an unsigned 256-bit word. The {@link com.hedera.services.state.merkle.virtualh.VirtualKey}
+ * represents these keys and the {@link com.hedera.services.state.merkle.virtualh.VirtualValue}
  * represents the values.</p>
  *
  * <p>Smart Contracts present some particular design challenges:</p>
@@ -35,10 +35,10 @@
  * hash, at which point we need to read any saved hashes for parent nodes as well. This design leads to
  * incredibly efficient use of memory and a very high TPS.</p>
  *
- * <p>This API is centered on the {@link com.hedera.services.state.merkle.virtual.VirtualMap}. It is
+ * <p>This API is centered on the {@link com.hedera.services.state.merkle.virtualh.VirtualMap}. It is
  * map-like but does not implement the java.util.Map API because the java Map API defines more
  * capability than is necessary for the VirtualMap. Technically the VirtualMap implementation is
  * powerful enough to implement the entire java.util.Map API, but the implementation of some of the
  * API would not perform well and therefore should not be made available.</p>
  */
-package com.hedera.services.state.merkle.virtual;
+package com.hedera.services.state.merkle.virtualh;

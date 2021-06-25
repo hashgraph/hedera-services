@@ -1,21 +1,20 @@
 package com.hedera.services.state.merkle.virtual;
 
+import com.hedera.services.state.merkle.virtualh.VirtualTreePath;
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
-
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.INVALID_PATH;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.ROOT_PATH;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getIndexInRank;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getLeftChildPath;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getParentPath;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getPathForRankAndIndex;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getRank;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getRightChildPath;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.getSiblingPath;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.isFarRight;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.isLeft;
-import static com.hedera.services.state.merkle.virtual.VirtualTreePath.isRootPath;
+import static com.hedera.services.state.merkle.virtualh.VirtualTreePath.INVALID_PATH;
+import static com.hedera.services.state.merkle.virtualh.VirtualTreePath.ROOT_PATH;
+import static com.hedera.services.state.merkle.virtualh.VirtualTreePath.getIndexInRank;
+import static com.hedera.services.state.merkle.virtualh.VirtualTreePath.getLeftChildPath;
+import static com.hedera.services.state.merkle.virtualh.VirtualTreePath.getParentPath;
+import static com.hedera.services.state.merkle.virtualh.VirtualTreePath.getPathForRankAndIndex;
+import static com.hedera.services.state.merkle.virtualh.VirtualTreePath.getRank;
+import static com.hedera.services.state.merkle.virtualh.VirtualTreePath.getRightChildPath;
+import static com.hedera.services.state.merkle.virtualh.VirtualTreePath.getSiblingPath;
+import static com.hedera.services.state.merkle.virtualh.VirtualTreePath.isFarRight;
+import static com.hedera.services.state.merkle.virtualh.VirtualTreePath.isLeft;
+import static com.hedera.services.state.merkle.virtualh.VirtualTreePath.isRootPath;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
