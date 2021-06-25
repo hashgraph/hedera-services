@@ -459,7 +459,13 @@ public class RequestBuilder {
   }
 
   /**
-   * getFileGetInfoBuilder
+   * Get file get info builder
+   *
+   * @param payment payment
+   * @param fileID file ID
+   * @param responseType response type
+   *
+   * @return query
    */
   public static Query getFileGetInfoBuilder(Transaction payment, FileID fileID,
       ResponseType responseType) {

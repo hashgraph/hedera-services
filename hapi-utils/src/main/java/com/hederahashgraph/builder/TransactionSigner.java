@@ -49,8 +49,9 @@ public class TransactionSigner {
   /**
    * Signs a transaction using SignatureMap format with provided private keys.
    * 
-   * @param transaction
-   * @param privKeyList
+   * @param transaction transaction
+   * @param privKeyList private key list
+   *
    * @return signed transaction
    */
   public static Transaction signTransaction(Transaction transaction, List<PrivateKey> privKeyList) {
