@@ -9,6 +9,7 @@ import java.math.BigInteger;
 import java.util.Objects;
 
 public class ContractUint256 implements SelfSerializable {
+    public static final int SERIALIZED_SIZE = 32;
     private BigInteger value;
 
     public ContractUint256() {

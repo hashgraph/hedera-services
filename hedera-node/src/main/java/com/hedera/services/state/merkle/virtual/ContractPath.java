@@ -6,14 +6,28 @@ import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 
 import java.io.IOException;
+import java.util.Objects;
 
 class ContractPath implements SelfSerializable {
-    private final Id contractId;
-    private final long path;
+    public static final int SERIALIZED_SIZE = Long.BYTES * 4;
+    private Id contractId;
+    private long path;
+
+    ContractPath() {
+        // there has to be a default constructor for deserialize
+    }
 
     ContractPath(Id contractId, long path) {
         this.contractId = contractId;
         this.path = path;
+    }
+
+    public Id getContractId() {
+        return contractId;
+    }
+
+    public long getPath() {
+        return path;
     }
 
     @Override
@@ -27,12 +41,29 @@ class ContractPath implements SelfSerializable {
     }
 
     @Override
-    public void deserialize(SerializableDataInputStream serializableDataInputStream, int i) throws IOException {
-
+    public void deserialize(SerializableDataInputStream in, int i) throws IOException {
+        contractId = new Id(in.readLong(),in.readLong(),in.readLong());
+        path = in.readLong();
     }
 
     @Override
-    public void serialize(SerializableDataOutputStream serializableDataOutputStream) throws IOException {
+    public void serialize(SerializableDataOutputStream out) throws IOException {
+        out.writeLong(contractId.getShard());
+        out.writeLong(contractId.getRealm());
+        out.writeLong(contractId.getNum());
+        out.writeLong(path);
+    }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ContractPath that = (ContractPath) o;
+        return path == that.path && Objects.equals(contractId, that.contractId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(contractId, path);
     }
 }

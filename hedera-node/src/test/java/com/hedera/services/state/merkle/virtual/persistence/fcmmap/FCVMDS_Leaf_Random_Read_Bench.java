@@ -8,7 +8,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import org.openjdk.jmh.annotations.*;
 
@@ -80,7 +79,7 @@ public class FCVMDS_Leaf_Random_Read_Bench {
                         8,
                         8 * 3, 8, sizeOfMerkleAccountState,
                         longSlotIndexProvider, longSlotIndexProvider, accountIndexProvider,
-                        MerkleAccountState::new, slotStoreSupplier);
+                        SerializableAccount::new, SerializableLong::new, MerkleAccountState::new, slotStoreSupplier);
                 store.open();
                 // create some data
                 for (int i = 0; i < dataSetSize; i++) {
@@ -107,7 +106,7 @@ public class FCVMDS_Leaf_Random_Read_Bench {
     @Benchmark
     public void _1_randomLoadLeafByPath(BenchmarkState state) throws Exception {
         int index = state.random.nextInt(state.dataSetSize);
-        MerkleAccountState merkleAccountState = state.store.loadLeafByPath(new SerializableLong(index));
+        MerkleAccountState merkleAccountState = state.store.loadLeafValueByPath(new SerializableLong(index));
 //        if (merkleAccountState == null || merkleAccountState.balance() != index) System.err.println("Got wrong value back");
     }
 

@@ -21,13 +21,15 @@ public class ContractDataSource implements FCDataSource<ContractUint256, Contrac
         this.dataStore = new FCVirtualMapDataStoreImpl<>(
                 Path.of("data/contract-storage"),
                 256,
-                Long.BYTES+(Long.BYTES*3), // Count it up...
-                (256/8) + (Long.BYTES*3), // Count it up, gotta include overhead
-                Long.BYTES+(Long.BYTES*3), // Count it up...
-                (256/8), // Count it up... overhead?
+                ContractPath.SERIALIZED_SIZE,
+                ContractKey.SERIALIZED_SIZE,
+                ContractPath.SERIALIZED_SIZE,
+                ContractUint256.SERIALIZED_SIZE,
                 FCSlotIndexUsingFCHashMap::new,
                 FCSlotIndexUsingFCHashMap::new,
                 FCSlotIndexUsingFCHashMap::new,
+                ContractKey::new,
+                ContractPath::new,
                 ContractUint256::new,
                 MemMapSlotStore::new);
 
@@ -37,6 +39,11 @@ public class ContractDataSource implements FCDataSource<ContractUint256, Contrac
             e.printStackTrace();
             throw new RuntimeException(e);
         }
+    }
+
+    private ContractDataSource(ContractDataSource copyFrom) {
+        this.contractId = copyFrom.contractId;
+        this.dataStore = copyFrom.dataStore.copy();
     }
 
     @Override
@@ -70,20 +77,34 @@ public class ContractDataSource implements FCDataSource<ContractUint256, Contrac
 
     @Override
     public FCVirtualRecord<ContractUint256, ContractUint256> loadLeafRecordByPath(long l) {
-        // TODO
-        return null;
+        try {
+            var record = dataStore.loadLeafRecordByPath(new ContractPath(contractId, l));
+            return record == null ? null : new FCVirtualRecord<>(record.getKey().getKey(),record.getValue());
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     @Override
     public Long loadLeafPathByKey(ContractUint256 contractUint256) {
-        // TODO
-        return null;
+        try {
+            ContractPath contractPath = dataStore.loadLeafPathByKey(new ContractKey(contractId, contractUint256));
+            return contractPath == null ? null : contractPath.getPath();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     @Override
     public ContractUint256 loadLeafValueByKey(ContractUint256 contractUint256) {
-        // TODO
-        return null;
+        try {
+            return dataStore.loadLeafValueByKey(new ContractKey(contractId,contractUint256));
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     @Override
@@ -102,17 +123,20 @@ public class ContractDataSource implements FCDataSource<ContractUint256, Contrac
 
     @Override
     public void updatePath(long oldPath, long newPath) {
-        // TODO
+        try {
+            dataStore.updateLeafPath(new ContractPath(contractId, oldPath), new ContractPath(contractId, newPath));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public FCDataSource<ContractUint256, ContractUint256> copy() {
-        // TODO
-        return null;
+        return new ContractDataSource(this);
     }
 
     @Override
     public void release() {
-        // TODO
+        dataStore.release();
     }
 }

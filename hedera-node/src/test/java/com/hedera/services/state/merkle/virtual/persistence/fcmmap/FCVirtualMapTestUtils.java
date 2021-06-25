@@ -181,7 +181,7 @@ public class FCVirtualMapTestUtils {
         @Override
         public void deserialize(SerializableDataInputStream serializableDataInputStream, int i) throws IOException {
             hash = new Hash();
-            hash.deserialize(serializableDataInputStream,i);
+            hash.deserialize(serializableDataInputStream,hash.getVersion());
             data = new byte[1024];
             serializableDataInputStream.read(data);
         }
@@ -215,6 +215,14 @@ public class FCVirtualMapTestUtils {
             int result = Objects.hash(hash);
             result = 31 * result + Arrays.hashCode(data);
             return result;
+        }
+
+        @Override
+        public String toString() {
+            return "TestLeafData{" +
+                    "hash=" + hash +
+                    ", data=" + Arrays.toString(data) +
+                    '}';
         }
     }
 

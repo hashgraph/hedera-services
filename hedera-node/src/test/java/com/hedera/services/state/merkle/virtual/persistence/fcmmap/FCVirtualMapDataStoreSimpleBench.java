@@ -66,7 +66,7 @@ public class FCVirtualMapDataStoreSimpleBench {
                         8,
                         8 * 3, 8, TestLeafData.SIZE_BYTES,
                         longSlotIndexProvider, longSlotIndexProvider, accountIndexProvider,
-                        TestLeafData::new, slotStoreSupplier);
+                        SerializableAccount::new, SerializableLong::new, TestLeafData::new, slotStoreSupplier);
                 store.open();
                 // reset iteration counter
                 iteration = 0;
@@ -113,7 +113,7 @@ public class FCVirtualMapDataStoreSimpleBench {
     @Benchmark
     public void _1_randomLoadLeafByPath(FullState state) throws Exception {
         int index = state.random.nextInt(1000);
-        TestLeafData testLeafData = state.store.loadLeafByPath(new SerializableLong(index));
+        TestLeafData testLeafData = state.store.loadLeafValueByPath(new SerializableLong(index));
         if (testLeafData == null ) System.err.println("Got wrong value back");
     }
 
