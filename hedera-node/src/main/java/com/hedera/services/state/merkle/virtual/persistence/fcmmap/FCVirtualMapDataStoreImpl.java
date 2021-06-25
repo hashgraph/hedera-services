@@ -6,13 +6,9 @@ import com.hedera.services.state.merkle.virtual.persistence.SlotStore;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
-import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.fcmap.FCVirtualRecord;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.function.Supplier;
 
@@ -352,16 +348,16 @@ public final class FCVirtualMapDataStoreImpl<HK extends SelfSerializable,
     private LV loadLeafImpl(long slotLocation) throws IOException {
         if (slotLocation == SlotStore.NOT_FOUND_LOCATION) return null;
         // access the slot
-        ByteBuffer buffer = leafStore.accessSlot(slotLocation);
-        int position = buffer.position();
+         var inputStream = leafStore.accessSlotForReading(slotLocation);
+        int position = inputStream.position();
         // key
         position += leafKeySizeBytes;
         // path
         position += leafPathSizeBytes;
         // value
-        LV leafValue = readSelfSerializable(buffer,position, leafValueConstructor);
+        LV leafValue = inputStream.readSelfSerializable(position, leafValueConstructor);
         // return buffer
-        leafStore.returnSlot(slotLocation, buffer);
+        leafStore.returnSlot(slotLocation, inputStream);
         return leafValue;
     }
 
@@ -376,14 +372,14 @@ public final class FCVirtualMapDataStoreImpl<HK extends SelfSerializable,
             long slotLocation = leafIndex.getSlot(key);
             if (slotLocation == SlotStore.NOT_FOUND_LOCATION) return null;
             // access the slot
-            ByteBuffer buffer = leafStore.accessSlot(slotLocation);
-            int position = buffer.position();
+             var inputStream = leafStore.accessSlotForReading(slotLocation);
+            int position = inputStream.position();
             // key
             position += leafKeySizeBytes;
             // path
-            LP leafPath = readSelfSerializable(buffer,position,leafPathConstructor);
+            LP leafPath = inputStream.readSelfSerializable(position,leafPathConstructor);
             // return buffer
-            leafStore.returnSlot(slotLocation, buffer);
+            leafStore.returnSlot(slotLocation, inputStream);
             // return path
             return leafPath;
         }
@@ -400,18 +396,18 @@ public final class FCVirtualMapDataStoreImpl<HK extends SelfSerializable,
             long slotLocation = leafPathIndex.getSlot(leafPath);
             if (slotLocation == SlotStore.NOT_FOUND_LOCATION) return null;
             // access the slot
-            ByteBuffer buffer = leafStore.accessSlot(slotLocation);
-            int position = buffer.position();
+            var inputStream = leafStore.accessSlotForReading(slotLocation);
+            int position = inputStream.position();
             // key
-            LK leafKey = readSelfSerializable(buffer,position,leafKeyConstructor);
+            LK leafKey = inputStream.readSelfSerializable(position,leafKeyConstructor);
             position += leafKeySizeBytes;
             // path
-//            LP leafPath = readSelfSerializable(buffer,position,leafPathConstructor);
+//            LP leafPath = inputStream.readSelfSerializable(position,leafPathConstructor);
             position += leafPathSizeBytes;
             // value
-            LV leafValue = readSelfSerializable(buffer,position, leafValueConstructor);
+            LV leafValue = inputStream.readSelfSerializable(position, leafValueConstructor);
             // return buffer
-            leafStore.returnSlot(slotLocation, buffer);
+            leafStore.returnSlot(slotLocation, inputStream);
             // return path
             return new FCVirtualRecord<>(leafKey, leafValue);
         }
@@ -437,18 +433,18 @@ public final class FCVirtualMapDataStoreImpl<HK extends SelfSerializable,
                 leafPathIndex.putSlot(leafPath, slotLocation);
             }
             // write leaf into slot
-            ByteBuffer buffer = leafStore.accessSlot(slotLocation);
-            int position = buffer.position();
+            var outputStream = leafStore.accessSlotForWriting(slotLocation);
+            int position = outputStream.position();
             // write key
-            writeSelfSerializable(buffer,position, leafKey, leafKeySizeBytes);
+            outputStream.writeSelfSerializable(position, leafKey, leafKeySizeBytes);
             position += leafKeySizeBytes;
             // write path
-            writeSelfSerializable(buffer,position, leafPath, leafPathSizeBytes);
+            outputStream.writeSelfSerializable(position, leafPath, leafPathSizeBytes);
             position += leafPathSizeBytes;
             // write key value
-            writeSelfSerializable(buffer,position, leafValue, leafValueSizeBytes);
+            outputStream.writeSelfSerializable(position, leafValue, leafValueSizeBytes);
             // return buffer
-            leafStore.returnSlot(slotLocation,buffer);
+            leafStore.returnSlot(slotLocation,outputStream);
         }
     }
 
@@ -463,12 +459,12 @@ public final class FCVirtualMapDataStoreImpl<HK extends SelfSerializable,
         leafPathIndex.putSlot(newPath,leafSlot);
         // update the path in the leaf's slot // TODO this is not Fast Copy Safe Yet
         // write leaf into slot
-        ByteBuffer buffer = leafStore.accessSlot(leafSlot);
-        int position = buffer.position();
+        var outputStream = leafStore.accessSlotForWriting(leafSlot);
+        int position = outputStream.position();
         // write key
         position += leafKeySizeBytes;
         // write path
-        writeSelfSerializable(buffer,position, newPath, leafPathSizeBytes);
+        outputStream.writeSelfSerializable(position, newPath, leafPathSizeBytes);
     }
 
 
@@ -510,18 +506,19 @@ public final class FCVirtualMapDataStoreImpl<HK extends SelfSerializable,
         synchronized (hashStore) {
             long slotLocation = hashIndex.getSlot(hashKey);
             if (slotLocation == MemMapSlotStore.NOT_FOUND_LOCATION) return null;
-            ByteBuffer buffer = hashStore.accessSlot(slotLocation);
-            int position = buffer.position();
+            var inputStream = hashStore.accessSlotForReading(slotLocation);
+            int position = inputStream.position();
             // skip hash key
-//                SerializableLong key = readSelfSerializable(buffer,position, SerializableLong::new);
+//                SerializableLong key = inputStream.readSelfSerializable(position, SerializableLong::new);
             position += hashKeySizeBytes;
             // hash data
-            buffer.position(position);
-            DigestType digestType = DigestType.valueOf(buffer.getInt());
+            inputStream.position(position);
+            DigestType digestType = DigestType.valueOf(inputStream.readInt());
             byte[] hashData = new byte[digestType.digestLength()];
-            buffer.get(hashData);
+            //noinspection ResultOfMethodCallIgnored
+            inputStream.read(hashData);
             // return buffer
-            leafStore.returnSlot(slotLocation,buffer);
+            leafStore.returnSlot(slotLocation,inputStream);
             return new VirtualHash(digestType, hashData);
         }
     }
@@ -544,40 +541,20 @@ public final class FCVirtualMapDataStoreImpl<HK extends SelfSerializable,
                 hashIndex.putSlot(hashKey, slotLocation);
             }
             // write hash into slot
-            ByteBuffer buffer = hashStore.accessSlot(slotLocation);
-            int position = buffer.position();
+            var outputStream = hashStore.accessSlotForWriting(slotLocation);
+            int position = outputStream.position();
             // write hash key
-            writeSelfSerializable(buffer, position, hashKey, hashKeySizeBytes);
+            outputStream.writeSelfSerializable(position, hashKey, hashKeySizeBytes);
             position += hashKeySizeBytes;
             // write hash data
-            buffer.position(position);
-            buffer.putInt(hash.getDigestType().id());
-            buffer.put(hash.getValue()); // TODO Badly need a way to save a hash here without copying the byte[]
+            outputStream.position(position);
+            outputStream.writeInt(hash.getDigestType().id());
+            outputStream.write(hash.getValue()); // TODO Badly need a way to save a hash here without copying the byte[]
             // return buffer
-            leafStore.returnSlot(slotLocation,buffer);
+            leafStore.returnSlot(slotLocation,outputStream);
         }
     }
-
-
-    //==================================================================================================================
-    // Helper Methods
-
-    public <T extends SelfSerializable> T readSelfSerializable(ByteBuffer buffer, int startOffset, Supplier<T> constructor) throws IOException {
-        buffer.position(startOffset);
-        SerializableDataInputStream inputStream = new SerializableDataInputStream(new ByteBufferInputStream(buffer));
-        int version = inputStream.readInt();
-        T object = constructor.get();
-        object.deserialize(inputStream, version);
-        return object;
-    }
-
-    public void writeSelfSerializable(ByteBuffer buffer, int startOffset, SelfSerializable object, int maxNumberOfBytes) throws IOException {
-        buffer.position(startOffset);
-        SerializableDataOutputStream outputStream = new SerializableDataOutputStream(new ByteBufferOutputStream(buffer, maxNumberOfBytes));
-        outputStream.writeInt(object.getVersion());
-        object.serialize(outputStream);
-    }
-
+    
     //==================================================================================================================
     // Inner Classes
 

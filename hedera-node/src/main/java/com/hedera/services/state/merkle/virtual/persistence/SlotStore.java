@@ -58,21 +58,38 @@ public interface SlotStore {
     void close();
 
     /**
-     * Get direct access to the slot in the base storage
+     * Get direct access to the slot in the base storage as a output stream that can be written two.
      *
      * @param location slot location of the data to get
-     * @return the could be a direct buffer onto real storage or a shared reused buffer
+     * @return A special output stream that has a position, the position is preset at right location in file and will not be 0
      */
-    ByteBuffer accessSlot(long location);
+    PositionableByteBufferSerializableDataOutputStream accessSlotForWriting(long location);
 
     /**
      * Return a slot that was obtained by access, this may be the point when it is written to disk depending on
      * implementation.
      *
      * @param location slot location of the data to get
-     * @param buffer the buffer obtained by accessSlot()
+     * @param out the output stream obtained by accessSlotForWriting()
      */
-    void returnSlot(long location, ByteBuffer buffer);
+    default void returnSlot(long location, PositionableByteBufferSerializableDataOutputStream out){}
+
+    /**
+     * Get direct access to the slot in the base storage as a input stream that can be read from.
+     *
+     * @param location slot location of the data to get
+     * @return A special input stream that has a position, the position is preset at right location in file and will not be 0
+     */
+    PositionableByteBufferSerializableDataInputStream accessSlotForReading(long location);
+
+    /**
+     * Return a slot that was obtained by access, this may be the point when it is written to disk depending on
+     * implementation.
+     *
+     * @param location slot location of the data to get
+     * @param in the input stream obtained by accessSlotForReading()
+     */
+    default void returnSlot(long location, PositionableByteBufferSerializableDataInputStream in){}
 
     /**
      * Finds a new slot ready for use
