@@ -43,6 +43,14 @@ public class Id {
 		this.num = num;
 	}
 
+	public AccountID asGrpcAccount() {
+		return AccountID.newBuilder()
+				.setShardNum(getShard())
+				.setRealmNum(getRealm())
+				.setAccountNum(getNum())
+				.build();
+	}
+
 	public TokenID asGrpcToken() {
 		return TokenID.newBuilder()
 				.setShardNum(getShard())

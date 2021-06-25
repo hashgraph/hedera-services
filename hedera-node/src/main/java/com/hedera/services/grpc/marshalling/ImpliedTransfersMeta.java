@@ -59,14 +59,15 @@ public class ImpliedTransfersMeta {
 			List<Pair<Id, List<CustomFee>>> tokenFeeSchedules
 	) {
 		this.code = code;
-                this.validationProps = validationProps;
+		this.validationProps = validationProps;
 		this.tokenFeeSchedules = tokenFeeSchedules;
 	}
 
 	public boolean wasDerivedFrom(GlobalDynamicProperties dynamicProperties, CustomFeeSchedules customFeeSchedules) {
-		final var validationParamsMatch = (maxExplicitHbarAdjusts == dynamicProperties.maxTransferListSize()) &&
-				(maxExplicitTokenAdjusts == dynamicProperties.maxTokenTransferListSize()) &&
-                                (validationProps.maxOwnershipChanges == dynamicProperties.maxNftTransfersLen());
+		final var validationParamsMatch =
+				(validationProps.maxHbarAdjusts == dynamicProperties.maxTransferListSize()) &&
+				(validationProps.maxTokenAdjusts == dynamicProperties.maxTokenTransferListSize()) &&
+				(validationProps.maxOwnershipChanges == dynamicProperties.maxNftTransfersLen());
 		if (!validationParamsMatch) {
 			return false;
 		}

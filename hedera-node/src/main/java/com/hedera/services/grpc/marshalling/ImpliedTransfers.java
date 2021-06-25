@@ -62,7 +62,7 @@ public class ImpliedTransfers {
 
 	public static ImpliedTransfers valid(
 			ImpliedTransfersMeta.ValidationProps validationProps,
-			List<BalanceChange> changes
+			List<BalanceChange> changes,
 			List<Pair<Id, List<CustomFee>>> tokenFeeSchedules,
 			List<AssessedCustomFee> assessedCustomFees
 	) {
