@@ -85,6 +85,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_ARE_MARKED_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
@@ -1122,6 +1123,21 @@ class HederaTokenStoreTest {
 
 		// then:
 		assertEquals(TOKEN_HAS_NO_SUPPLY_KEY, outcome);
+	}
+
+	@Test
+	void updateRejectsImmutableTokenFeeSchedule() {
+		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
+		given(token.isFeeScheduleMutable()).willReturn(false);
+		givenUpdateTarget(NO_KEYS);
+		final var clearImmutability = CustomFeesOuterClass.CustomFees.newBuilder()
+				.setCanUpdateWithAdminKey(true)
+				.build();
+		final var op = updateWithCustomFees(clearImmutability);
+
+		final var outcome = subject.update(op, CONSENSUS_NOW);
+
+		assertEquals(CUSTOM_FEES_ARE_MARKED_IMMUTABLE, outcome);
 	}
 
 	@Test

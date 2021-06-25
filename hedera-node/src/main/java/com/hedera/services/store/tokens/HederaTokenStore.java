@@ -77,6 +77,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_ARE_MARKED_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
@@ -655,6 +656,10 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				token.setExpiry(expiry);
 			}
 			if (changes.hasCustomFees()) {
+				if (!token.isFeeScheduleMutable()) {
+					appliedValidity.set(CUSTOM_FEES_ARE_MARKED_IMMUTABLE);
+					return;
+				}
 				appliedValidity.set(validateFeeSchedule(changes.getCustomFees().getCustomFeesList()));
 				if (OK != appliedValidity.get()) {
 					return;
