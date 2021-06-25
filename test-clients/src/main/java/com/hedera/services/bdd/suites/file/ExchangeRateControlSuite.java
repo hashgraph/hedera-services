@@ -86,6 +86,7 @@ public class ExchangeRateControlSuite extends HapiApiSuite {
 				.given(
 						resetRatesOp,
 						cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, ADEQUATE_FUNDS))
+								.fee(ONE_HUNDRED_HBARS)
 				).when(
 						fileUpdate(EXCHANGE_RATES)
 								.contents(
@@ -147,8 +148,10 @@ public class ExchangeRateControlSuite extends HapiApiSuite {
 		return defaultHapiSpec("MidnightRateChangesWhenAcct50UpdatesFile112")
 				.given(
 						resetRatesOp,
-						cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, ADEQUATE_FUNDS)),
-						cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, ADEQUATE_FUNDS)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, ADEQUATE_FUNDS))
+								.fee(ONE_HUNDRED_HBARS),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, ADEQUATE_FUNDS))
+								.fee(ONE_HUNDRED_HBARS),
 						fileUpdate(EXCHANGE_RATES)
 						.contents(
 								spec -> {
@@ -218,6 +221,7 @@ public class ExchangeRateControlSuite extends HapiApiSuite {
 				.given(
 						resetRatesOp,
 						cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, ADEQUATE_FUNDS))
+								.fee(ONE_HUNDRED_HBARS)
 				).when().then(
 						fileUpdate(EXCHANGE_RATES)
 								.contents(
