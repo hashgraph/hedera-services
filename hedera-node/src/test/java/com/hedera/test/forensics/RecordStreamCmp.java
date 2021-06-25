@@ -65,7 +65,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.toList;
 
 @Disabled
-public class RecordStreamCmp {
+class RecordStreamCmp {
 	static ObjectMapper om = new ObjectMapper();
 
 	static final String firstIssRoundAccounts = "/Users/tinkerm/Dev/iss/stable/node00-logs/" +
@@ -82,7 +82,12 @@ public class RecordStreamCmp {
 	String BASE_LOC_TPL = "/Users/tinkerm/Dev/iss/stable/records/record0.0.%s";
 
 	@Test
-	public void accountsMakingLargishQueryPaymentsToNode0() throws Exception {
+	void canReadRcdFile() {
+		
+	}
+
+	@Test
+	void accountsMakingLargishQueryPaymentsToNode0() {
 		var node = "5";
 		var cutoff = 100_000L;
 		var allFromStream = allRecordsFrom(node);
@@ -143,7 +148,7 @@ public class RecordStreamCmp {
 	}
 
 	@Test
-	public void dumpStreamRecordsBetweenLastTouchingSuspectAndDivergence() throws Exception {
+	void dumpStreamRecordsBetweenLastTouchingSuspectAndDivergence() throws Exception {
 		var node = "3";
 		var allFromStream = allRecordsFrom(node);
 
@@ -164,7 +169,7 @@ public class RecordStreamCmp {
 	}
 
 	@Test
-	public void comparePostIssStateRecordsToStreamRecordsBeforeDivergence() throws Exception {
+	void comparePostIssStateRecordsToStreamRecordsBeforeDivergence() throws Exception {
 		var node = "5";
 		var allFromStream = allRecordsFrom(node);
 
@@ -205,7 +210,7 @@ public class RecordStreamCmp {
 	}
 
 	@Test
-	public void miscIssForensics() throws Exception {
+	void miscIssForensics() throws Exception {
 		var node = "5";
 		var RECORDS_DIR = String.format(BASE_LOC_TPL, node);
 
@@ -295,7 +300,7 @@ public class RecordStreamCmp {
 	}
 
 	@Test
-	public void compare() throws JsonProcessingException, InvalidProtocolBufferException {
+	void compare() throws JsonProcessingException, InvalidProtocolBufferException {
 		var CONSENSUS_DIR = "/Users/tinkerm/Dev/iss/records/record0.0.3";
 		var SPLINTER_DIR = "/Users/tinkerm/Dev/iss/records/record0.0.5";
 
@@ -526,7 +531,7 @@ public class RecordStreamCmp {
 			return suspectRecords.size();
 		}
 
-		public void observe(StreamEntry pair) {
+		void observe(StreamEntry pair) {
 			var at = pair.consensusTime();
 			var suspectPayer = pair.payerNum() == SUSPECT;
 			if (suspectPayer) {
