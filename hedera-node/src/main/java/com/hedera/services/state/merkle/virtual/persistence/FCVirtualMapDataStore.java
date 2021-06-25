@@ -18,7 +18,7 @@ import java.io.IOException;
  */
 public interface FCVirtualMapDataStore<PK extends SelfSerializable, LK extends SelfSerializable,
         LP extends SelfSerializable, LD extends SelfSerializable>
-        extends FastCopyable<FCVirtualMapDataStore<PK, LK, LP, LD>> {
+        extends FastCopyable {
 
     /** Open storage */
     void open() throws IOException;
@@ -105,4 +105,7 @@ public interface FCVirtualMapDataStore<PK extends SelfSerializable, LK extends S
      * @param hashData The hash's data to store
      */
     void saveHash(PK hashKey, Hash hashData) throws IOException;
+
+    @Override
+    FCVirtualMapDataStore<PK, LK, LP, LD> copy();
 }

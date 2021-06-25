@@ -22,7 +22,6 @@ package com.hedera.services.state.merkle;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.blob.FileBlobStorage;
-import com.swirlds.common.FCMValue;
 import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -34,7 +33,7 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-public class MerkleOptionalBlob extends AbstractMerkleLeaf implements FCMValue, MerkleExternalLeaf {
+public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExternalLeaf {
 
 	// Depends on Migration
 //	static final int PRE_RELEASE_0140_VERSION = 1;

@@ -2,7 +2,6 @@ package com.hedera.services.state.merkle.virtual;
 
 import com.hedera.services.state.merkle.virtual.persistence.VirtualDataSource;
 import com.hedera.services.state.merkle.virtual.persistence.VirtualRecord;
-import com.swirlds.common.FCMValue;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.crypto.Cryptography;
@@ -79,7 +78,7 @@ import static com.hedera.services.state.merkle.virtual.VirtualTreePath.isLeft;
 @ConstructableIgnored
 public final class VirtualMap
         extends AbstractMerkleLeaf
-        implements FCMValue, MerkleExternalLeaf {
+        implements MerkleExternalLeaf {
 
     /** Used for serialization **/
     private static final long CLASS_ID = 0xb881f3704885e853L;
