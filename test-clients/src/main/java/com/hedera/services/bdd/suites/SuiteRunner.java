@@ -392,7 +392,6 @@ public class SuiteRunner {
 		put("MixedOpsLoadTest", aof(new MixedOpsLoadTest()));
 		/* Validate new AddressBook */
 		put("ValidateNewAddressBook", aof(new ValidateNewAddressBook()));
-		put("CryptoTransferPerfSuiteWOpProvider", aof(new CryptoTransferPerfSuiteWOpProvider()));
 		put("ValidateTokensDeleteAfterReconnect", aof(new ValidateTokensDeleteAfterReconnect()));
 	}};
 
