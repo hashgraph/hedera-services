@@ -45,7 +45,6 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.builder.TransactionSigner;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
-import com.hederahashgraph.service.proto.java.SmartContractServiceGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.netty.NegotiationType;
 import io.grpc.netty.NettyChannelBuilder;
@@ -115,13 +114,8 @@ public class BaseClient extends SmartContractServiceTest {
   public CryptoServiceGrpc.CryptoServiceBlockingStub createCryptoServiceStub(String host, int port)  throws Exception {
     return CryptoServiceGrpc.newBlockingStub(createChannel(host, port));
   }
-  public SmartContractServiceGrpc.SmartContractServiceBlockingStub createSmartContractStub(String host, int port)  throws Exception {
-    ManagedChannel channel= createChannel(host, port);
-    channelList.add(channel);
-    return SmartContractServiceGrpc.newBlockingStub(channel);
-  }
 
-  public ManagedChannel createChannel(String host, int port) throws Exception {
+  public ManagedChannel createChannel(String host, int port) {
     return NettyChannelBuilder.forAddress(host, port)
             .negotiationType(NegotiationType.PLAINTEXT)
             .directExecutor()

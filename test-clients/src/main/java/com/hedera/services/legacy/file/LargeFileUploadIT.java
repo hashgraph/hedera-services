@@ -52,21 +52,7 @@ public class LargeFileUploadIT extends FileServiceIT {
 	protected static int FILE_PART_SIZE = 4096; //4K bytes
 
 	public static void main(String[] args) throws Exception {
-//		uploadLargeFileTestWithPayer();
 		uploadLargeFileTest();
-//		checkFileContentTest(5, "spring-core-4.2.0.RELEASE-1mb-jar");			
-	}
-
-	public static void uploadLargeFileTestWithPayer() throws Exception {
-		LargeFileUploadIT tester = new LargeFileUploadIT();
-		tester.init();
-
-//		String filePath = "spring-core-4.2.0.RELEASE-1mb-jar";
-//		String filePath = "overview-frame.html";
-		String filePath = "contract/bytecodes/octoken.bin";
-		localPath = UPLOAD_PATH + filePath;
-
-		uploadFile(genesisAccountID, localPath, tester.getGenesisPrivateKeyList());
 	}
 
 	/**
@@ -320,12 +306,5 @@ public class LargeFileUploadIT extends FileServiceIT {
 		System.out.println("@@@ upload file at: " + localPath + "; size=" + bytes.length);
 
 		tester.uploadFile(filePath, bytes);
-	}
-
-	public static void checkFileContentTest(long fileNum, String filePath) throws Exception {
-		LargeFileUploadIT tester = new LargeFileUploadIT();
-		tester.init();
-		tester.test01InitAccounts();
-		tester.getFileContent(fileNum, filePath);
 	}
 }

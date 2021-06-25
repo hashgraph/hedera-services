@@ -609,7 +609,7 @@ public class UtilVerbs {
 	 * 	expected fee (taken from pricing calculator)
 	 * @param txn transaction
 	 * @param expectedUsd expected fee
-	 * @return
+	 * @return CustomSpecAssert for the validation
 	 */
 	public static CustomSpecAssert validateChargedUsd(String txn, double expectedUsd) {
 		return validateChargedUsdWithin(txn, expectedUsd, 1.0);

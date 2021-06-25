@@ -76,6 +76,8 @@ public class HexUtils {
 	 * @param charsetName
 	 * 		character set name for decoding, e.g. "UTF-8"
 	 * @return decoded string
+	 * @throws UnsupportedEncodingException
+	 * 		exception thrown if encoding is not supported
 	 */
 	public static String bytes2String(byte[] bytesData, String charsetName)
 			throws UnsupportedEncodingException {

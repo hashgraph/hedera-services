@@ -21,10 +21,7 @@ package com.hedera.services.legacy.regression.umbrella;
  */
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.TextFormat;
-import com.google.protobuf.UInt64Value;
 import com.hedera.services.legacy.client.test.ClientBaseThread;
-import com.hedera.services.legacy.client.util.Common;
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.CommonUtils;
 import com.hedera.services.legacy.core.CustomProperties;
@@ -32,9 +29,7 @@ import com.hedera.services.legacy.core.CustomPropertiesSingleton;
 import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.legacy.core.TestHelper;
 import com.hedera.services.legacy.proto.utils.KeyExpansion;
-import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -58,7 +53,6 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.builder.TransactionSigner;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
@@ -70,8 +64,6 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import net.i2p.crypto.eddsa.KeyPairGenerator;
-import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
@@ -79,21 +71,16 @@ import org.junit.Assert;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.KeyPair;
 import java.security.PrivateKey;
-import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Adds crypto related functions for regression tests.
@@ -114,7 +101,7 @@ public class CryptoServiceTest extends TestHelperComplex {
 	protected static boolean isRandomTransferAccount = true;
 	protected static int numTransferAccounts = 2;
 	protected static AccountID[] transferAccounts = null;// accounts for transfer's from and to parties, size
-  // determined by numTransferAccounts
+	// determined by numTransferAccounts
 	public static int K = 1000;
 	protected static AccountID[] nodeAccounts = null;
 	protected static Set<AccountID> accountsBeingUpdated = new HashSet<>();
@@ -133,7 +120,7 @@ public class CryptoServiceTest extends TestHelperComplex {
 	protected static Set<AccountID> recvSigRequiredAccounts = new HashSet<>();
 	protected static boolean getReceipt = true; //flag whether or not to get receipts after a transfer transaction
 	protected static boolean useSystemAccountAsPayer = false; //flag whether or not to use system accounts (account
-  // number under 100 excluding genesis and node accounts).
+	// number under 100 excluding genesis and node accounts).
 	protected static int MAX_BUSY_RETRIES = 10;
 	protected static int BUSY_RETRY_MS = 200;
 
@@ -167,8 +154,6 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 * // default file service stub that connects to the default listening node
 	 */
 	protected static FileServiceBlockingStub stub = null;
-
-	public static Map<AccountID, Long> localLedgerBalance = new ConcurrentHashMap<>();
 
 	/**
 	 * default crypto service stub that connects to the default listening node
@@ -321,6 +306,8 @@ public class CryptoServiceTest extends TestHelperComplex {
 
 	/**
 	 * Gets a non-negative random amount.
+	 *
+	 * @return random amount
 	 */
 	public static long getRandomTransferAmount() {
 		long rv = rand.nextInt(MAX_TRANSFER_AMOUNT - 1) + 1;
@@ -328,16 +315,17 @@ public class CryptoServiceTest extends TestHelperComplex {
 	}
 
 	/**
-	 * Gets the genesis account ID.
-	 */
-	public AccountID getGenesisAccountID() {
-		return genesisAccountID;
-	}
-
-	/**
 	 * Gets transaction records by account ID.
 	 *
+	 * @param accountID
+	 * 		account id to get transaction records for
+	 * @param payerAccount
+	 * 		payer account id
+	 * @param nodeAccountID
+	 * 		node account id
 	 * @return list of transaction records
+	 * @throws Throwable
+	 * 		exception thrown if there is a failure
 	 */
 	public List<TransactionRecord> getTransactionRecordsByAccountId(AccountID accountID,
 			AccountID payerAccount, AccountID nodeAccountID) throws Throwable {
@@ -364,8 +352,14 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 * Updates an account autoRenew.
 	 *
 	 * @param accountID
-	 * 		account to be updated
-	 * @return updated account info.
+	 * 		account id of the account to be updated
+	 * @param payerAccountID
+	 * 		payer account id
+	 * @param nodeAccountID
+	 * 		node account id
+	 * @return account info after update
+	 * @throws Throwable
+	 * 		exception thrown if there is a failure
 	 */
 	public AccountInfo updateAccount(AccountID accountID, AccountID payerAccountID,
 			AccountID nodeAccountID)
@@ -411,140 +405,22 @@ public class CryptoServiceTest extends TestHelperComplex {
 	}
 
 	/**
-	 * Creates a large number of accounts
-	 *
-	 * @param maxAccounts
-	 * 		number of rounds to create accounts
-	 * @return an array holding the created accounts
-	 */
-	public AccountID[] accountCreatBatch(int maxAccounts, String accountKeyType) throws Throwable {
-		AccountID[] rv = new AccountID[maxAccounts];
-		for (int i = 0; i < maxAccounts; i++) {
-			AccountID payerAccount = genesisAccountID;
-			AccountID nodeAccountID = getRandomNodeAccount();
-			if (accountKeyType == null || "".equals(accountKeyType)) {
-				accountKeyType = getRandomAccountKeyType();
-			}
-			AccountID accountId = createAccountComplex(payerAccount, nodeAccountID,
-					accountKeyType, true, false);
-			rv[i] = accountId;
-			log.info("\n@@@@ account creation round #" + (i + 1) + ": account = " + accountId);
-		}
-
-		return rv;
-	}
-
-	public AccountID[] accountCreatBatch(int maxAccounts) throws Throwable {
-		return accountCreatBatch(maxAccounts, null);
-	}
-
-
-	/**
-	 * Create payer accounts.
-	 */
-	public AccountID[] accountCreatBatch4Payer(int maxAccounts) throws Throwable {
-		if (useSystemAccountAsPayer) {
-			return getSystemAccounts(maxAccounts);
-		} else {
-			return accountCreatBatch(maxAccounts);
-		}
-	}
-
-	/**
-	 * Gets funded system accounts, i.e. those with account number under 100 excluding genesis and
-	 * node accounts
-	 *
-	 * @param maxAccounts
-	 * 		number of system accounts to use. the value should be set such that when
-	 * 		combined with the genesis and node accounts, the total should not exceed 100. If the limit is
-	 * 		exceeded, only accounts under the limit will be used.
-	 */
-	public AccountID[] getSystemAccounts(int maxAccounts) throws Throwable {
-		int addressListSize = nodeAccounts.length;
-		int existingNumSystemAccounts = 100 - addressListSize - 2;
-		int numAccounts = maxAccounts;
-		if (maxAccounts > existingNumSystemAccounts) {
-			numAccounts = existingNumSystemAccounts;
-			log.warn("Number of system accounts (" + maxAccounts + "), excceeded limit of "
-					+ existingNumSystemAccounts + "! Reset to " + numAccounts + ".");
-		}
-		AccountID[] rv = new AccountID[numAccounts];
-		long realm = defaultListeningNodeAccountID.getRealmNum();
-		long shard = defaultListeningNodeAccountID.getShardNum();
-
-		int startCount = 2 + addressListSize + 1;
-		for (int i = 0; i < numAccounts; i++) {
-			long accNum = startCount + i;
-			AccountID sysAccountID = RequestBuilder.getAccountIdBuild(accNum, realm, shard);
-			Key key = acc2ComplexKeyMap
-					.get(genesisAccountID); // note system accounts use same keypair as genesis
-
-			//transfer funds to the account from genesis
-			TransactionReceipt receipt = transfer(genesisAccountID, defaultListeningNodeAccountID,
-					genesisAccountID, sysAccountID, DEFAULT_INITIAL_ACCOUNT_BALANCE, false, true);
-			Assert.assertEquals(ResponseCodeEnum.SUCCESS.name(), receipt.getStatus().name());
-
-			acc2ComplexKeyMap.put(sysAccountID, key);
-			rv[i] = sysAccountID;
-		}
-
-		return rv;
-	}
-
-	/**
 	 * Creates an account.
+	 *
+	 * @param payerAccount
+	 * 		payer account id
+	 * @param nodeAccountID
+	 * 		node account id
+	 * @param cacheTxID
+	 * 		if transaction id need to be cached
+	 * @return the account ID of the created account
+	 * @throws Throwable
+	 * 		exception thrown if there is a failure
 	 */
 	public AccountID createAccount(AccountID payerAccount, AccountID nodeAccountID, boolean cacheTxID)
 			throws Throwable {
 		String accountKeyType = getRandomAccountKeyType();
 		return createAccountComplex(cstub, payerAccount, nodeAccountID, accountKeyType, cacheTxID);
-	}
-
-	/* Creates a crypto account.
-	 *
-	 * @param stub
-	 * @param account2keyMap maps from account id to corresponding key pair
-	 * @param payerAccount
-	 * @param nodeAccountID
-	 * @return the account ID of the created account
-	 * @throws Exception
-	 */
-	public AccountID createAccount(CryptoServiceGrpc.CryptoServiceBlockingStub stub,
-			Map<AccountID, List<KeyPair>> account2keyMap, AccountID payerAccount, AccountID nodeAccountID)
-			throws Throwable {
-		KeyPair pair = new KeyPairGenerator().generateKeyPair();
-		List<PrivateKey> payerPrivKeys = null;
-		payerPrivKeys = getAccountPrivateKeys(payerAccount);
-		Transaction createAccountRequest = TestHelperComplex
-				.createAccountWithFee(payerAccount, nodeAccountID, pair, DEFAULT_INITIAL_ACCOUNT_BALANCE,
-						payerPrivKeys);
-
-		sendCreateAccountRequest(createAccountRequest);
-
-		// get transaction receipt
-		log.info("preparing to getTransactionReceipts....");
-		TransactionBody body = com.hedera.services.legacy.proto.utils.CommonUtils
-				.extractTransactionBody(createAccountRequest);
-		TransactionID transactionID = body.getTransactionID();
-		cache.addTransactionID(transactionID);
-		Query query = Query.newBuilder().setTransactionGetReceipt(
-				RequestBuilder.getTransactionGetReceiptQuery(transactionID, ResponseType.ANSWER_ONLY))
-				.build();
-		Response transactionReceipts = fetchReceipts(query, cstub);
-		AccountID accountID = transactionReceipts.getTransactionGetReceipt().getReceipt()
-				.getAccountID();
-		List<KeyPair> keys = new ArrayList<>();
-		keys.add(pair);
-		account2keyMap.put(accountID, keys);
-		log.info("Account created: account num :: " + accountID.getAccountNum());
-
-		// get account info
-		AccountInfo accInfo = getAccountInfo(accountID);
-		log.info("Created account info = " + accInfo);
-		Assert.assertEquals(body.getCryptoCreateAccount().getInitialBalance(),
-				accInfo.getBalance());
-
-		return accountID;
 	}
 
 	private void sendCreateAccountRequest(Transaction createAccountRequest) throws Exception {
@@ -558,9 +434,19 @@ public class CryptoServiceTest extends TestHelperComplex {
 	/**
 	 * Creates a crypto account with complex types, i.e. keylist or threshold keys.
 	 *
+	 * @param stub
+	 * 		CryptoServiceBlockingStub
+	 * @param payerAccount
+	 * 		payer account id
+	 * @param nodeAccountID
+	 * 		node account id
 	 * @param accountKeyType
 	 * 		type of complex key
+	 * @param cacheTxID
+	 * 		if transaction id need to be cached
 	 * @return the account ID of the created account
+	 * @throws Throwable
+	 * 		exception thrown if there is a failure
 	 */
 	public AccountID createAccountComplex(CryptoServiceGrpc.CryptoServiceBlockingStub stub,
 			AccountID payerAccount, AccountID nodeAccountID, String accountKeyType,
@@ -572,9 +458,19 @@ public class CryptoServiceTest extends TestHelperComplex {
 	/**
 	 * Creates a crypto account with complex types, i.e. keylist or threshold keys.
 	 *
+	 * @param payerAccount
+	 * 		payer account id
+	 * @param nodeAccountID
+	 * 		node account id
 	 * @param accountKeyType
 	 * 		type of complex key
+	 * @param needReceipt
+	 * 		if receipt needs to be provided
+	 * @param cacheTxID
+	 * 		if transaction id need to be cached
 	 * @return the account ID of the created account
+	 * @throws Throwable
+	 * 		exception thrown if there is a failure
 	 */
 	public AccountID createAccountComplex(AccountID payerAccount, AccountID nodeAccountID,
 			String accountKeyType, boolean needReceipt, boolean cacheTxID) throws Throwable {
@@ -590,11 +486,21 @@ public class CryptoServiceTest extends TestHelperComplex {
 	/**
 	 * Creates a crypto account with complex types, i.e. keylist or threshold keys.
 	 *
+	 * @param payerAccount
+	 * 		payer account id
+	 * @param nodeAccountID
+	 * 		node account id
 	 * @param accountKeyType
 	 * 		type of complex key
 	 * @param initBalance
 	 * 		initial balance for the new account
+	 * @param needReceipt
+	 * 		if receipt needs to be provided
+	 * @param cacheTxID
+	 * 		if transaction id need to be cached
 	 * @return the account ID of the created account
+	 * @throws Throwable
+	 * 		exception thrown if there is a failure
 	 */
 	public AccountID createAccountComplex(AccountID payerAccount, AccountID nodeAccountID,
 			String accountKeyType, long initBalance, boolean needReceipt, boolean cacheTxID)
@@ -650,9 +556,7 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 */
 	protected void readGenesisInfo() throws Exception {
 		KeyPairObj genesisKeyPair;
-		String payerAccountNumStr = getApplicationProperties().getProperty("payerAccountForTests");
 		// Get Genesis Account key Pair
-		Path path = Paths.get(INITIAL_ACCOUNTS_FILE);
 		Map<String, List<AccountKeyListObj>> keyFromFile = TestHelper.getKeyFromFile(INITIAL_ACCOUNTS_FILE);
 		genesisAccountList = keyFromFile.get("START_ACCOUNT");
 		genesisAccountID = genesisAccountList.get(0).getAccountId();
@@ -717,6 +621,8 @@ public class CryptoServiceTest extends TestHelperComplex {
 	/**
 	 * Parse a string array to an int array.
 	 *
+	 * @param arrayOfStr
+	 * 		string array which need to be parsed
 	 * @return an array of int
 	 */
 	private int[] parseIntArray(String[] arrayOfStr) {
@@ -730,6 +636,9 @@ public class CryptoServiceTest extends TestHelperComplex {
 
 	/**
 	 * Gets the node account IDs from the config file.
+	 *
+	 * @throws Throwable
+	 * 		exception thrown if there is a failure
 	 */
 	public void getNodeAccountsFromLedger() throws Throwable {
 		NodeAddressBook addrBook = getAddressBook();
@@ -747,7 +656,11 @@ public class CryptoServiceTest extends TestHelperComplex {
 	}
 
 	/**
-	 * Gets the node addressbook from the ledger.
+	 * Gets the node address book from the ledger.
+	 *
+	 * @return node address book
+	 * @throws Throwable
+	 * 		exception thrown if there is a failure
 	 */
 	public NodeAddressBook getAddressBook() throws Throwable {
 		AccountID payerID = createAccountComplex(genesisAccountID, defaultListeningNodeAccountID,
@@ -779,6 +692,12 @@ public class CryptoServiceTest extends TestHelperComplex {
 
 	/**
 	 * Gets Tx fast record, retry if necessary.
+	 *
+	 * @param txId
+	 * 		transaction id of transaction
+	 * @return transaction receipt for the transaction
+	 * @throws Throwable
+	 * 		exception thrown if there is a failure
 	 */
 	public TransactionReceipt getTxFastRecord(TransactionID txId) throws Throwable {
 		return TestHelperComplex.getTxReceipt(txId, cstub, log, host);
@@ -787,6 +706,8 @@ public class CryptoServiceTest extends TestHelperComplex {
 
 	/**
 	 * Gets the random account key type.
+	 *
+	 * @return random account key type
 	 */
 	protected String getRandomAccountKeyType() {
 		int index = rand.nextInt(accountKeyTypes.length);
@@ -794,18 +715,13 @@ public class CryptoServiceTest extends TestHelperComplex {
 	}
 
 	/**
-	 * Gets the random Signature Format.
-	 */
-	protected String getRandomSignatureFormat() {
-		int index = rand.nextInt(signatureFormat.length);
-		return signatureFormat[index];
-	}
-
-	/**
 	 * Gets account info using genesis as payer and default listening node as receiving node.
 	 *
 	 * @param accountID
 	 * 		the account to get info for
+	 * @return account info of the given account
+	 * @throws Throwable
+	 * 		exception thrown if there is a failure
 	 */
 	public AccountInfo getAccountInfo(AccountID accountID) throws Throwable {
 		return getAccountInfo(accountID, genesisAccountID.getAccountNum(),
@@ -814,6 +730,16 @@ public class CryptoServiceTest extends TestHelperComplex {
 
 	/**
 	 * Gets the account info for a given account ID.
+	 *
+	 * @param accountID
+	 * 		the account to get info for
+	 * @param fromAccountNum
+	 * 		payer account id  for query payment transaction
+	 * @param toAccountNum
+	 * 		receiver account id for query payment transaction
+	 * @return account info of the given account
+	 * @throws Throwable
+	 * 		exception thrown if there is a failure
 	 */
 	public AccountInfo getAccountInfo(AccountID accountID, long fromAccountNum, long toAccountNum)
 			throws Throwable {
@@ -865,6 +791,7 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 *
 	 * @param accountKeyType
 	 * 		complex key type
+	 * @return complex key generated
 	 */
 	protected Key genComplexKey(String accountKeyType) {
 		Key key = null;
@@ -881,15 +808,11 @@ public class CryptoServiceTest extends TestHelperComplex {
 	}
 
 	/**
-	 * Generates a listKey
-	 */
-	protected Key genListKey(int size) {
-		Key key = KeyExpansion.genKeyListInstance(size, pubKey2privKeyMap);
-		return key;
-	}
-
-	/**
 	 * Extract account ID from memo string, e.g. "0.0.5".
+	 *
+	 * @param memo
+	 * 		memo from which account ID to be extracted from
+	 * @return account id extracted
 	 */
 	protected AccountID extractAccountID(String memo) {
 		AccountID rv = null;
@@ -901,12 +824,21 @@ public class CryptoServiceTest extends TestHelperComplex {
 	}
 
 	/**
+	 * Get file content
 	 *
+	 * @param fid
+	 * 		file id to get content from
+	 * @param payerID
+	 * 		payer account id
+	 * @param nodeID
+	 * 		node account id
+	 * @return byte string of the contents
+	 * @throws Throwable
+	 * 		exception thrown if there is a failure
 	 */
 	public ByteString getFileContent(FileID fid, AccountID payerID, AccountID nodeID)
 			throws Throwable {
 		FileServiceBlockingStub stub = null;
-		ManagedChannel[] createdChannels = new ManagedChannel[1];
 		long fileGetContentCost = getFileGetContentCost(fid, payerID, nodeID, stub);
 		Transaction paymentTxSigned = getQueryPaymentSignedWithFee(payerID, nodeID, "FileGetContent",
 				fileGetContentCost);
@@ -935,11 +867,13 @@ public class CryptoServiceTest extends TestHelperComplex {
 
 
 	/**
-	 * Gets a FileServiceBlockingStub instance for connecting to a given node. Creates it if none
-	 * exists.
+	 * Gets a FileServiceBlockingStub instance for connecting to a given node. Creates it if none exists.
 	 *
 	 * @param nodeID
 	 * 		the node to connect to
+	 * @return FileServiceBlockingStub
+	 * @throws Exception
+	 * 		exception caused if there is a failure
 	 */
 	public synchronized FileServiceBlockingStub getStub(AccountID nodeID)
 			throws Exception {
@@ -985,7 +919,13 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 *
 	 * @param accountID
 	 * 		the account to get balance for
+	 * @param payerID
+	 * 		payer account id
+	 * @param nodeID
+	 * 		node account id
 	 * @return the balance
+	 * @throws Throwable
+	 * 		exception thrown if there is a failure
 	 */
 	public long getAccountBalance(AccountID accountID, AccountID payerID, AccountID nodeID)
 			throws Throwable {
@@ -997,6 +937,13 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 *
 	 * @param accountID
 	 * 		the account to get info for
+	 * @param payerID
+	 * 		payer account id
+	 * @param nodeID
+	 * 		node account id
+	 * @return account info for the given account
+	 * @throws Throwable
+	 * 		exception thrown if there is a failure
 	 */
 	public AccountInfo getAccountInfo(AccountID accountID, AccountID payerID, AccountID nodeID)
 			throws Throwable {
@@ -1005,6 +952,20 @@ public class CryptoServiceTest extends TestHelperComplex {
 
 	/**
 	 * Makes a transfer.
+	 *
+	 * @param payerAccountID
+	 * 		payer account id for the transaction
+	 * @param nodeAccountID
+	 * 		node account id for the transaction
+	 * @param fromAccountID
+	 * 		sender account id
+	 * @param toAccountID
+	 * 		receiver account id
+	 * @param amount
+	 * 		amount to be transferred
+	 * @return transaction receipt for the transaction
+	 * @throws Throwable
+	 * 		exception thrown if there is a failure
 	 */
 	public TransactionReceipt transfer(AccountID payerAccountID, AccountID nodeAccountID,
 			AccountID fromAccountID,
@@ -1017,64 +978,19 @@ public class CryptoServiceTest extends TestHelperComplex {
 	}
 
 	/**
-	 * Makes a transfer.
-	 */
-	public TransactionReceipt cryptoDelete(AccountID accountToBeDeleted, AccountID payerID, AccountID nodeID,
-			long transactionFee) throws Throwable {
-
-		Key payerKey = acc2ComplexKeyMap.get(payerID);
-		Key accKey = acc2ComplexKeyMap.get(accountToBeDeleted);
-		List<Key> keys = new ArrayList<>();
-		keys.add(payerKey);
-		keys.add(accKey);
-
-		Duration transactionValidDuration = RequestBuilder.getDuration(100);
-		CryptoDeleteTransactionBody cryptoDeleteTransactionBody = CryptoDeleteTransactionBody
-				.newBuilder().setDeleteAccountID(accountToBeDeleted).setTransferAccountID(payerID)
-				.build();
-		Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
-		TransactionID transactionID = TransactionID.newBuilder().setAccountID(payerID)
-				.setTransactionValidStart(timestamp).build();
-		TransactionBody transactionBody = TransactionBody.newBuilder()
-				.setTransactionID(transactionID)
-				.setNodeAccountID(nodeID)
-				.setTransactionFee(transactionFee)
-				.setTransactionValidDuration(transactionValidDuration)
-				.setGenerateRecord(false)
-				.setMemo("Crypto Delete")
-				.setCryptoDelete(cryptoDeleteTransactionBody)
-				.build();
-
-		byte[] bodyBytesArr = transactionBody.toByteArray();
-		ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
-		Transaction deletetx = Transaction.newBuilder().setBodyBytes(bodyBytes).build();
-
-		Transaction signDelete = TransactionSigner
-				.signTransactionComplexWithSigMap(deletetx, keys, pubKey2privKeyMap);
-		log.info("\n-----------------------------------\ncryptoDelete: request = "
-				+ com.hedera.services.legacy.proto.utils.CommonUtils.toReadableString(signDelete));
-		TransactionResponse response = retryLoopTransaction(signDelete, "cryptoDelete");
-		log.info("Transfer Response :: " + response.getNodeTransactionPrecheckCodeValue());
-		Assert.assertNotNull(response);
-		TransactionBody body = com.hedera.services.legacy.proto.utils.CommonUtils
-				.extractTransactionBody(signDelete);
-		TransactionID txId = body.getTransactionID();
-		cache.addTransactionID(txId);
-		TransactionReceipt receipt = null;
-		if (CryptoServiceTest.getReceipt) {
-			receipt = getTxReceipt(txId);
-		}
-		return receipt;
-	}
-
-	/**
 	 * Updates an account.
 	 *
 	 * @param accountID
 	 * 		account to be updated
+	 * @param payerAccountID
+	 * 		payer account id
+	 * @param nodeAccountID
+	 * 		node account id
 	 * @param newKey
 	 * 		the new key to replace the existing key
 	 * @return updated account info
+	 * @throws Throwable
+	 * 		exception thrown if there is a failure
 	 */
 	public AccountInfo updateAccountKey(AccountID accountID, AccountID payerAccountID,
 			AccountID nodeAccountID,
@@ -1133,39 +1049,6 @@ public class CryptoServiceTest extends TestHelperComplex {
 	}
 
 	/**
-	 * Revert the genesis account key to the original key.
-	 */
-	public void revertGenesisKey() throws Throwable {
-		AccountID payerID = genesisAccountID;
-		AccountID nodeID = defaultListeningNodeAccountID;
-
-		try {
-			if (changeGenesisKey) {
-				AccountInfo accInfo = updateAccountKey(genesisAccountID, payerID, nodeID, startUpKey);
-				log.info("revert genesis key success :) updated account info = " + accInfo);
-			}
-		} catch (Exception e) {
-			log.warn("cryptoUpdate revert genesis key error!", e);
-		}
-	}
-
-	/**
-	 * Changes the genesis account key.
-	 */
-	public void changeGenesisKey() throws Throwable {
-		AccountID payerID = genesisAccountID;
-		AccountID nodeID = defaultListeningNodeAccountID;
-		Key newKey = genComplexKey("thresholdKey");
-
-		try {
-			AccountInfo accInfo = updateAccountKey(genesisAccountID, payerID, nodeID, newKey);
-			log.info("change genesis key success :) updated account info = " + accInfo);
-		} catch (Exception e) {
-			log.warn("cryptoUpdate genesis key error!", e);
-		}
-	}
-
-	/**
 	 * Generates a complex key up to defined depth.
 	 *
 	 * @param accountKeyType
@@ -1175,6 +1058,8 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 * @param targetLevel
 	 * 		the target depth of the key tree
 	 * @return the key constructed
+	 * @throws Exception
+	 * 		exception caused if there is a failure
 	 */
 	protected Key genComplexKeyRecursive(String accountKeyType, int currentLevel, int targetLevel)
 			throws Exception {
@@ -1183,8 +1068,9 @@ public class CryptoServiceTest extends TestHelperComplex {
 				|| (accountKeyType.equals(SUPPORTE_KEY_TYPES.keylist.name()))) {
 			if (targetLevel < 2) {
 				throw new Exception(
-						"Error: targetLevel should be at least 2 for keyList and thresholdKey! A base key has a depth " +
-                                "of 1 whereas keyList and thresholdKey starts at depth of 2.");
+						"Error: targetLevel should be at least 2 for keyList and thresholdKey! A base key has a depth" +
+								" " +
+								"of 1 whereas keyList and thresholdKey starts at depth of 2.");
 			}
 			Builder keyList = KeyList.newBuilder();
 			for (int i = 0; i < COMPLEX_KEY_SIZE; i++) {
@@ -1237,6 +1123,8 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 * @param toSeq
 	 * 		node account number, as the node account and the to account
 	 * @return the signed transaction
+	 * @throws Exception
+	 * 		exception caused if there is a failure
 	 */
 	protected static Transaction getPaymentSigned(long payerSeq, long toSeq, String memo)
 			throws Exception {
@@ -1249,6 +1137,14 @@ public class CryptoServiceTest extends TestHelperComplex {
 
 	/**
 	 * Fetches the receipts, wait if necessary.
+	 *
+	 * @param query
+	 * 		query to get the receipt
+	 * @param cstub2
+	 * 		CryptoServiceBlockingStub
+	 * @return response for the query
+	 * @throws Exception
+	 * 		exception caused if there is a failure
 	 */
 	protected static Response fetchReceipts(Query query, CryptoServiceBlockingStub cstub2)
 			throws Exception {
@@ -1256,7 +1152,17 @@ public class CryptoServiceTest extends TestHelperComplex {
 	}
 
 	/**
-	 * Creats a signed payment tx.
+	 * Creates a signed payment tx.
+	 *
+	 * @param payerID
+	 * 		payer account id
+	 * @param nodeID
+	 * 		node account id
+	 * @param memo
+	 * 		memo for the transaction
+	 * @return signed query payment transaction
+	 * @throws Exception
+	 * 		exception caused if there is a failure
 	 */
 	public static Transaction getQueryPaymentSigned(AccountID payerID, AccountID nodeID, String memo)
 			throws Exception {
@@ -1266,7 +1172,19 @@ public class CryptoServiceTest extends TestHelperComplex {
 	}
 
 	/**
-	 * Creats a signed payment tx.
+	 * Creates a signed payment tx.
+	 *
+	 * @param payerID
+	 * 		payer account id
+	 * @param nodeID
+	 * 		node account id
+	 * @param memo
+	 * 		memo for the transaction
+	 * @param queryFee
+	 * 		fees to be paid for the query
+	 * @return query payment transaction
+	 * @throws Exception
+	 * 		exception caused if there is a failure
 	 */
 	public static Transaction getQueryPaymentSignedWithFee(AccountID payerID, AccountID nodeID,
 			String memo, long queryFee)
@@ -1277,7 +1195,23 @@ public class CryptoServiceTest extends TestHelperComplex {
 	}
 
 	/**
-	 * Creates a signed transfer tx.
+	 * Creates a signed transfer tx
+	 *
+	 * @param payerAccountID
+	 * 		payer account id for the transaction
+	 * @param nodeAccountID
+	 * 		node account id for the transaction
+	 * @param fromAccountID
+	 * 		sender account id
+	 * @param toAccountID
+	 * 		receiver account id
+	 * @param amount
+	 * 		amount to be transferred
+	 * @param memo
+	 * 		memo for the transaction
+	 * @return signed transfer transaction
+	 * @throws Exception
+	 * 		caused if there is a failure while generating transaction
 	 */
 	protected static Transaction getSignedTransferTx(AccountID payerAccountID,
 			AccountID nodeAccountID,
@@ -1285,36 +1219,6 @@ public class CryptoServiceTest extends TestHelperComplex {
 
 		Transaction paymentTx = getUnSignedTransferTx(payerAccountID, nodeAccountID, fromAccountID,
 				toAccountID, amount, memo);
-		Key payerKey = acc2ComplexKeyMap.get(payerAccountID);
-		Key fromKey = acc2ComplexKeyMap.get(fromAccountID);
-		List<Key> keys = new ArrayList<Key>();
-		keys.add(payerKey);
-		keys.add(fromKey);
-		if (recvSigRequiredAccounts.contains(toAccountID)) {
-			Key toKey = acc2ComplexKeyMap.get(toAccountID);
-			keys.add(toKey);
-		}
-		Transaction paymentTxSigned = TransactionSigner
-				.signTransactionComplexWithSigMap(paymentTx, keys, pubKey2privKeyMap);
-		return paymentTxSigned;
-	}
-
-	/**
-	 * Creates a signed transfer tx.
-	 */
-	protected static Transaction getSignedTransferTx(AccountID payerAccountID,
-			AccountID nodeAccountID,
-			AccountID fromAccountID, AccountID toAccountID, long amount, String memo, long transactionFee)
-			throws Exception {
-
-		Timestamp timestamp = TestHelperComplex.getDefaultCurrentTimestampUTC();
-		Transaction paymentTx = RequestBuilder.getCryptoTransferRequest(payerAccountID.getAccountNum(),
-				payerAccountID.getRealmNum(), payerAccountID.getShardNum(), nodeAccountID.getAccountNum(),
-				nodeAccountID.getRealmNum(), nodeAccountID.getShardNum(), transactionFee, timestamp,
-				transactionDuration, true,
-				memo, fromAccountID.getAccountNum(), -amount, toAccountID.getAccountNum(),
-				amount);
-
 		Key payerKey = acc2ComplexKeyMap.get(payerAccountID);
 		Key fromKey = acc2ComplexKeyMap.get(fromAccountID);
 		List<Key> keys = new ArrayList<Key>();
@@ -1362,54 +1266,10 @@ public class CryptoServiceTest extends TestHelperComplex {
 	}
 
 	/**
-	 * Gets the payer private keys for signing.
-	 */
-	protected static List<PrivateKey> getPayerPrivateKey(long payerSeqNum)
-			throws InvalidKeySpecException, DecoderException {
-		AccountID accountID = RequestBuilder.getAccountIdBuild(payerSeqNum, 0l, 0l);
-		List<PrivateKey> privKey = getAccountPrivateKeys(accountID);
-
-		return privKey;
-	}
-
-	/**
-	 * Gets the account private keys.
-	 *
-	 * @return private key of the given account
-	 */
-	protected static List<PrivateKey> getAccountPrivateKeys(AccountID accountID) {
-		List<PrivateKey> rv = new ArrayList<>();
-		Key key = acc2ComplexKeyMap.get(accountID);
-		List<Key> keys = null;
-		if (key.hasKeyList()) {
-			keys = key.getKeyList().getKeysList();
-
-		} else if (key.hasThresholdKey()) {
-			keys = key.getThresholdKey().getKeys().getKeysList();
-		} else {
-			keys = java.util.Collections.singletonList(key);
-		}
-
-		for (Key aKey : keys) {
-			if (!aKey.getEd25519().isEmpty()) {
-				String pubKey = Common.bytes2Hex(aKey.getEd25519().toByteArray());
-				PrivateKey privKey = pubKey2privKeyMap.get(pubKey);
-				rv.add(privKey);
-			} else if (!aKey.getECDSA384().isEmpty()) {
-				String pubKey = Common.bytes2Hex(aKey.getECDSA384().toByteArray());
-				PrivateKey privKey = pubKey2privKeyMap.get(pubKey);
-				rv.add(privKey);
-			} else {
-				log.warn("Key type not supported: key=" + aKey);
-			}
-		}
-
-		return rv;
-	}
-
-	/**
 	 * Checks transaction size.
 	 *
+	 * @param txSigned
+	 * 		signed transaction
 	 * @throws Exception
 	 * 		if the max size is exceeded.
 	 */
@@ -1428,180 +1288,13 @@ public class CryptoServiceTest extends TestHelperComplex {
 	}
 
 	/**
-	 * Updates an account with all possible fields.
-	 *
-	 * @param accountID
-	 * 		account to be updated
-	 * @param newKey
-	 * 		the new key to replace the existing key
-	 * @return the account info of the updated account
-	 */
-	public AccountInfo updateAccount(AccountID accountID, AccountID payerAccountID,
-			AccountID nodeAccountID, Key newKey, AccountID proxyAccountID, Long sendRecordThreshold,
-			Long recvRecordThreshold,
-			Duration autoRenewPeriod, Timestamp expirationTime, Boolean receiverSigRequired)
-			throws Throwable {
-
-		Key payerKey = acc2ComplexKeyMap.get(payerAccountID);
-		Key accKey = acc2ComplexKeyMap.get(accountID);
-		List<Key> keys = new ArrayList<Key>();
-		keys.add(payerKey);
-		if (accountID.getAccountNum() != specialAccountNum) {
-			keys.add(accKey);
-		}
-		com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody.Builder cryptoUpdate =
-                CryptoUpdateTransactionBody
-				.newBuilder()
-				.setAccountIDToUpdate(accountID);
-
-		if (newKey != null) {
-			cryptoUpdate.setKey(newKey);
-			keys.add(newKey);
-		}
-		if (proxyAccountID != null) {
-			cryptoUpdate.setProxyAccountID(proxyAccountID);
-		}
-		if (sendRecordThreshold != null) {
-			cryptoUpdate.setSendRecordThresholdWrapper(UInt64Value.of(sendRecordThreshold));
-		}
-		if (recvRecordThreshold != null) {
-			cryptoUpdate.setReceiveRecordThresholdWrapper(UInt64Value.of(recvRecordThreshold));
-		}
-		if (autoRenewPeriod != null) {
-			cryptoUpdate.setAutoRenewPeriod(autoRenewPeriod);
-		}
-		if (expirationTime != null) {
-			cryptoUpdate.setExpirationTime(expirationTime);
-		}
-		if (receiverSigRequired != null) {
-			cryptoUpdate.setReceiverSigRequired(receiverSigRequired);
-		}
-		Transaction updateTx = TestHelperComplex
-				.updateAccount(accountID, payerAccountID, nodeAccountID, cryptoUpdate.build());
-
-		Transaction signUpdate = TransactionSigner
-				.signTransactionComplexWithSigMap(updateTx, keys, pubKey2privKeyMap);
-
-		log.info("\n-----------------------------------\nupdateAccount: request = " + signUpdate);
-		Key oldGenesisKey = acc2ComplexKeyMap.remove(accountID);
-
-		TransactionResponse response = cstub.updateAccount(signUpdate);
-		Assert.assertNotNull(response);
-		if (accountID.getAccountNum() != specialAccountNum
-				|| (accountID.getAccountNum() == specialAccountNum &&
-				payerAccountID.getAccountNum() == genesisAccountNum)) {
-			Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
-		}
-		log.info(
-				"Pre Check Response account update :: " + response.getNodeTransactionPrecheckCode().name());
-		String status = "";
-		if (ResponseCodeEnum.OK == response.getNodeTransactionPrecheckCode()) {
-			TransactionBody body =
-                    com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(signUpdate);
-			TransactionID transactionID = body.getTransactionID();
-			cache.addTransactionID(transactionID);
-			TransactionReceipt txReceipt = getTxFastRecord(transactionID);
-			Assert.assertNotNull(txReceipt);
-			status = txReceipt.getStatus().name();
-		}
-		if (newKey != null && status.equals(ResponseCodeEnum.SUCCESS.name())) {
-			acc2ComplexKeyMap.put(accountID, newKey);
-		} else {
-			acc2ComplexKeyMap.put(accountID, oldGenesisKey);
-		}
-
-		synchronized (accountsBeingUpdated) {
-			if (accountsBeingUpdated.contains(accountID)) {
-				accountsBeingUpdated.remove(accountID);
-			}
-		}
-
-		AccountInfo accInfo = getAccountInfo(accountID, payerAccountID, nodeAccountID);
-		Assert.assertNotNull(accInfo);
-		log.info(accInfo);
-		if (newKey != null &&
-				accountID.getAccountNum() == specialAccountNum &&
-				payerAccountID.getAccountNum() == genesisAccountNum) {
-			Assert.assertEquals(newKey, accInfo.getKey());
-		} else if (newKey != null &&
-				accountID.getAccountNum() != specialAccountNum) {
-			Assert.assertEquals(newKey, accInfo.getKey());
-		} else if (oldGenesisKey != null) {
-			Assert.assertEquals(oldGenesisKey, accInfo.getKey());
-		}
-
-		log.info("updating successful" + "\n");
-		return accInfo;
-	}
-
-	/**
-	 * Updates an account with all possible fields.
-	 *
-	 * @param accountID
-	 * 		account to be updated
-	 * @param newKey
-	 * 		the new key to replace the existing key
-	 * @return transaction response of the updated account
-	 */
-	public TransactionResponse updateSpecialAccount(AccountID accountID, AccountID payerAccountID,
-			AccountID nodeAccountID, Key newKey, AccountID proxyAccountID, Long sendRecordThreshold,
-			Long recvRecordThreshold,
-			Duration autoRenewPeriod, Timestamp expirationTime, Boolean receiverSigRequired)
-			throws Throwable {
-
-		Key payerKey = acc2ComplexKeyMap.get(payerAccountID);
-		Key accKey = acc2ComplexKeyMap.get(accountID);
-		List<Key> keys = new ArrayList<Key>();
-		keys.add(payerKey);
-		if (accountID.getAccountNum() != specialAccountNum) {
-			keys.add(accKey);
-		}
-		com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody.Builder cryptoUpdate =
-                CryptoUpdateTransactionBody
-				.newBuilder()
-				.setAccountIDToUpdate(accountID);
-
-		if (newKey != null) {
-			cryptoUpdate.setKey(newKey);
-			keys.add(newKey);
-		}
-		if (proxyAccountID != null) {
-			cryptoUpdate.setProxyAccountID(proxyAccountID);
-		}
-		if (sendRecordThreshold != null) {
-			cryptoUpdate.setSendRecordThreshold(sendRecordThreshold);
-		}
-		if (recvRecordThreshold != null) {
-			cryptoUpdate.setReceiveRecordThreshold(recvRecordThreshold);
-		}
-		if (autoRenewPeriod != null) {
-			cryptoUpdate.setAutoRenewPeriod(autoRenewPeriod);
-		}
-		if (expirationTime != null) {
-			cryptoUpdate.setExpirationTime(expirationTime);
-		}
-		if (receiverSigRequired != null) {
-			cryptoUpdate.setReceiverSigRequired(receiverSigRequired);
-		}
-
-		Transaction updateTx = TestHelperComplex
-				.updateAccount(accountID, payerAccountID, nodeAccountID, cryptoUpdate.build());
-
-		Transaction signUpdate = TransactionSigner
-				.signTransactionComplexWithSigMap(updateTx, keys, pubKey2privKeyMap);
-
-		log.info("\n-----------------------------------\nupdateAccount: request = " + signUpdate);
-		Key oldGenesisKey = acc2ComplexKeyMap.remove(accountID);
-
-		TransactionResponse response = cstub.updateAccount(signUpdate);
-		Assert.assertNotNull(response);
-
-		log.info("updating successful" + "\n");
-		return response;
-	}
-
-	/**
 	 * Makes a transfer.
+	 *
+	 * @param transferTxSigned
+	 * 		signed transfer transaction
+	 * @return transaction receipt for the transfer transaction
+	 * @throws Throwable
+	 * 		exception thrown if there is a failure
 	 */
 	public TransactionReceipt transfer(Transaction transferTxSigned) throws Throwable {
 		log.info("\n-----------------------------------\ntransfer: request = "
@@ -1624,6 +1317,8 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 * Makes a transfer, but does not try to get receipts.
 	 *
 	 * @return transaction response
+	 * @throws Throwable
+	 * 		exception thrown if there is a failure
 	 */
 	public TransactionResponse transferOnly(Transaction transferTxSigned) throws Throwable {
 		log.info("\n-----------------------------------\ntransfer: request = "
@@ -1652,46 +1347,25 @@ public class CryptoServiceTest extends TestHelperComplex {
 	}
 
 	/**
-	 * Creates a signed transfer tx.
-	 */
-	protected static Transaction getSignedTransferTx(Transaction unSignedTransferTx)
-			throws Exception {
-		TransactionBody txBody = com.hedera.services.legacy.proto.utils.CommonUtils
-				.extractTransactionBody(unSignedTransferTx);
-		com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody.Builder bodyBuilder = txBody
-				.getCryptoTransfer().toBuilder();
-		AccountID payerAccountID = txBody.getTransactionID().getAccountID();
-		List<Key> keys = new ArrayList<Key>();
-		Key payerKey = acc2ComplexKeyMap.get(payerAccountID);
-		keys.add(payerKey);
-		TransferList transferList = bodyBuilder.getTransfers();
-		List<AccountAmount> accountAmounts = transferList.getAccountAmountsList();
-		for (AccountAmount aa : accountAmounts) {
-			AccountID accountID = aa.getAccountID();
-			long amount = aa.getAmount();
-//      if (amount <= 0) { // from account
-			if (amount < 0) { // from account
-				Key fromKey = acc2ComplexKeyMap.get(accountID);
-				keys.add(fromKey);
-			} else { // to account
-				if (recvSigRequiredAccounts.contains(accountID)) {
-					Key toKey = acc2ComplexKeyMap.get(accountID);
-					keys.add(toKey);
-				}
-			}
-		}
-
-		Transaction paymentTxSigned = TransactionSigner
-				.signTransactionComplexWithSigMap(unSignedTransferTx, keys, pubKey2privKeyMap);
-		return paymentTxSigned;
-	}
-
-	/**
 	 * Creates a transfer tx with signatures.
+	 *
+	 * @param payerAccountID
+	 * 		payer account id for the transaction
+	 * @param nodeAccountID
+	 * 		node account id for the transaction
+	 * @param fromAccountID
+	 * 		sender account id
+	 * @param toAccountID
+	 * 		receiver account id
+	 * @param amount
+	 * 		amount to be transferred
+	 * @param memo
+	 * 		memo for the transaction
+	 * @return unsigned transfer transaction
 	 */
 	public static Transaction getUnSignedTransferTx(AccountID payerAccountID,
 			AccountID nodeAccountID,
-			AccountID fromAccountID, AccountID toAccountID, long amount, String memo) throws Exception {
+			AccountID fromAccountID, AccountID toAccountID, long amount, String memo) {
 
 		Timestamp timestamp = TestHelperComplex.getDefaultCurrentTimestampUTC();
 		Transaction transferTx = RequestBuilder.getCryptoTransferRequest(payerAccountID.getAccountNum(),
@@ -1704,88 +1378,11 @@ public class CryptoServiceTest extends TestHelperComplex {
 	}
 
 	/**
-	 * Gets balances of provided accounts using genesis account as the payer.
-	 *
-	 * @return map of account number to balance, the entry with key "total" contains the total balance
-	 * 		of all provided accounts
-	 */
-	public Map<String, Long> getBalances(AccountID[] payerAccounts) throws Throwable {
-		long total = 0;
-		Map<String, Long> rv = new LinkedHashMap<>();
-		AccountID payerID = genesisAccountID;
-		AccountID nodeID = defaultListeningNodeAccountID;
-
-		for (AccountID accountID : payerAccounts) {
-			long balance = getAccountBalance(accountID, payerID, nodeID);
-			total += balance;
-			rv.put(String.valueOf(accountID.getAccountNum()), balance);
-		}
-
-		rv.put("total", total);
-		return rv;
-	}
-
-	/**
-	 * Makes a transfer.
-	 *
-	 * @param cacheTxID
-	 * 		flag for caching transaction ID
-	 * @param getReceiptInLine
-	 * 		flag for getting receipt right after the transfer
-	 * @return receipt if getReceiptInLine is true, null otherwise
-	 */
-	public TransactionReceipt transfer(AccountID payerAccountID, AccountID nodeAccountID,
-			AccountID fromAccountID,
-			AccountID toAccountID, long amount, boolean cacheTxID, boolean getReceiptInLine)
-			throws Throwable {
-		Transaction transferTxSigned = getSignedTransferTx(payerAccountID, nodeAccountID, fromAccountID,
-				toAccountID,
-				amount, "Transfer");
-
-		log.info("\n-----------------------------------\ntransfer: request = "
-				+ com.hedera.services.legacy.proto.utils.CommonUtils.toReadableString(transferTxSigned));
-		TransactionResponse response = retryLoopTransaction(transferTxSigned, "transfer");
-		log.info("Transfer Response :: " + response.getNodeTransactionPrecheckCodeValue());
-		Assert.assertNotNull(response);
-		TransactionBody body = com.hedera.services.legacy.proto.utils.CommonUtils
-				.extractTransactionBody(transferTxSigned);
-		TransactionID txId = body.getTransactionID();
-		if (cacheTxID) {
-			cache.addTransactionID(txId);
-		}
-		TransactionReceipt receipt = null;
-		if (getReceiptInLine) {
-			receipt = getTxReceipt(txId);
-		}
-		return receipt;
-	}
-
-	/**
-	 * Makes a transfer.
-	 *
-	 * @param txHolder
-	 * 		single element array for keeping the created tx so that the caller can access
-	 * 		it
-	 */
-	public TransactionReceipt transfer(AccountID payerAccountID, AccountID nodeAccountID,
-			AccountID fromAccountID, AccountID toAccountID, long amount, Transaction[] txHolder)
-			throws Throwable {
-		Transaction transferTxSigned = getSignedTransferTx(payerAccountID, nodeAccountID, fromAccountID,
-				toAccountID,
-				amount, "Transfer");
-
-		if (txHolder != null) {
-			txHolder[0] = transferTxSigned;
-		}
-
-		return transfer(transferTxSigned);
-	}
-
-	/**
 	 * Creates a new channel and stub for file service.
 	 *
 	 * @param createdChannels
 	 * 		to store generated channel
+	 * @return FileServiceBlockingStub
 	 */
 	public static FileServiceBlockingStub createFileServiceStub(ManagedChannel[] createdChannels) {
 		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext()
@@ -1797,81 +1394,19 @@ public class CryptoServiceTest extends TestHelperComplex {
 	}
 
 	/**
-	 * Method to compare balances before Transfer and after Transfer
-	 */
-	public static void tallyBalances() {
-		for (int i = 0; i < CryptoServiceTest.transferAccounts.length; i++) {
-			try {
-				long tempBalance = CryptoServiceTest
-						.getAccountBalance(cstub, CryptoServiceTest.transferAccounts[i], genesisAccountID,
-								nodeAccounts[0]);
-				long localAccountBalance = localLedgerBalance.get(CryptoServiceTest.transferAccounts[i]);
-				log.info(
-						"Tally AccountID: " + TextFormat.shortDebugString(CryptoServiceTest.transferAccounts[i])
-								+ ", with Ledger Balance="
-								+ tempBalance + ", Local Ledger Balance=" + localAccountBalance);
-				Assert.assertEquals(tempBalance, localAccountBalance);
-			} catch (Throwable t) {
-				log.error("Error: getting account balance for : " + CryptoServiceTest.transferAccounts[i],
-						t);
-			}
-		}
-	}
-
-	/**
-	 * Fet all account balances before starting Transfer Test and update local ledger to Tally the
-	 * balance after completion of tests
-	 */
-	public static void initLocalLedgerWithAccountBalances() {
-		for (int i = 0; i < CryptoServiceTest.transferAccounts.length; i++) {
-			try {
-				long tempBalance = CryptoServiceTest
-						.getAccountBalance(cstub, CryptoServiceTest.transferAccounts[i], genesisAccountID,
-								nodeAccounts[0]);
-				localLedgerBalance.put(CryptoServiceTest.transferAccounts[i], tempBalance);
-				log.info("Initializing Local ledger AccountID: " + TextFormat
-						.shortDebugString(CryptoServiceTest.transferAccounts[i])
-						+ ", with Balance=" + tempBalance);
-			} catch (Throwable t) {
-				log.error("Error: getting account balance for : " + TextFormat
-						.shortDebugString(CryptoServiceTest.transferAccounts[i]), t);
-			}
-		}
-	}
-
-	/**
-	 * Update local ledger balance after a transaction to keep track of transactions for Ledger
-	 * Balance Tally
-	 */
-	public static boolean uplodateLocalLedger(AccountID accountID, long transactionAmount) {
-		boolean successFlag = true;
-		try {
-			long localAccountBalance;
-			synchronized (CryptoServiceTest.class) {
-				localAccountBalance = localLedgerBalance.get(accountID) + transactionAmount;
-				if (localAccountBalance < 0) {
-					throw new Exception(
-							"Account balance should not be negative while Updating Local ledger AccountID: "
-									+ accountID + ", with Balance=" + localAccountBalance
-									+ ", Transaction Amount=" + transactionAmount);
-				}
-				localLedgerBalance.put(accountID, localAccountBalance);
-			}
-			log.info(
-					"Updating Local ledger AccountID: " + accountID + ", with Balance=" + localAccountBalance
-							+ ", Transaction Amount=" + transactionAmount);
-
-		} catch (Throwable t) {
-			log.error("Error: while updating account balance for : " + accountID, t);
-			successFlag = false;
-		}
-		return successFlag;
-	}
-
-	/**
 	 * Get balance for provided Account with stub
 	 *
-	 * @return accountBalance
+	 * @param stub
+	 * 		CryptoServiceBlockingStub
+	 * @param accountID
+	 * 		account id to get balance
+	 * @param payerID
+	 * 		payer account id
+	 * @param nodeID
+	 * 		node account id
+	 * @return account balance
+	 * @throws Throwable
+	 * 		exception thrown if there is a failure
 	 */
 	public static long getAccountBalance(CryptoServiceGrpc.CryptoServiceBlockingStub stub,
 			AccountID accountID, AccountID payerID, AccountID nodeID)

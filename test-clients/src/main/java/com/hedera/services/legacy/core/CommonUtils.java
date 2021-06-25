@@ -155,6 +155,7 @@ public class CommonUtils {
 	 * 		number of bytes to copy
 	 * @param bytes
 	 * 		source byte array
+	 * @return copied bytes
 	 */
 	public static byte[] copyBytes(int start, int length, byte[] bytes) {
 		byte[] rv = new byte[length];
@@ -208,6 +209,13 @@ public class CommonUtils {
 	 * 		the resource file to be read
 	 * @param myClass
 	 * 		the calling class
+	 * @param <T>
+	 * 		calling class type
+	 * @return byte array of the binary file read
+	 * @throws IOException
+	 * 		exception caused if file could not be read
+	 * @throws URISyntaxException
+	 * 		exception caused if the URI syntax for the file path could not be parsed
 	 */
 	public static <T> byte[] readBinaryFileAsResource(String filePath, Class<T> myClass)
 			throws IOException, URISyntaxException {
