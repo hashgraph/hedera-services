@@ -1,5 +1,7 @@
 package com.hedera.services.state.merkle.virtual.persistence.fcmmap;
 
+import com.hedera.services.state.merkle.virtual.persistence.PositionableByteBufferSerializableDataInputStream;
+import com.hedera.services.state.merkle.virtual.persistence.PositionableByteBufferSerializableDataOutputStream;
 import com.hedera.services.state.merkle.virtual.persistence.SlotStore;
 
 import java.io.Closeable;
@@ -176,28 +178,29 @@ public final class MemMapSlotStore implements SlotStore {
     }
 
     /**
-     * Get direct access to the slot in the base storage
+     * Get direct access to the slot in the base storage as a output stream that can be written two.
      *
-     * @param location the file and slot location of the data to get
-     * @return the real ByteBuffer containing the data positioned and marked at the data location
+     * @param location slot location of the data to get
+     * @return A special output stream that has a position, the position is preset at right location in file and will not be 0
      */
-    @Override
-    public ByteBuffer accessSlot(long location) {
+    public PositionableByteBufferSerializableDataOutputStream accessSlotForWriting(long location){
         // Technically, we should throw if !open, but because this is a super hot fast path,
         // we're going to play fast and loose and let an NPE get thrown in that case instead.
         // Either way, it is a runtime exception.
-        return files.get(fileIndexFromLocation(location)).accessSlot(slotIndexFromLocation(location));
+        return files.get(fileIndexFromLocation(location)).accessSlotForWriting(slotIndexFromLocation(location));
     }
 
     /**
-     * Return a slot that was obtained by access, this may be the point when it is written to disk depending on
-     * implementation.
+     * Get direct access to the slot in the base storage as a input stream that can be read from.
      *
      * @param location slot location of the data to get
-     * @param buffer the buffer obtained by accessSlot()
+     * @return A special input stream that has a position, the position is preset at right location in file and will not be 0
      */
-    public void returnSlot(long location, ByteBuffer buffer) {
-        // not needed for memory mapped files.
+    public PositionableByteBufferSerializableDataInputStream accessSlotForReading(long location){
+        // Technically, we should throw if !open, but because this is a super hot fast path,
+        // we're going to play fast and loose and let an NPE get thrown in that case instead.
+        // Either way, it is a runtime exception.
+        return files.get(fileIndexFromLocation(location)).accessSlotForReading(slotIndexFromLocation(location));
     }
 
     /**
@@ -353,6 +356,8 @@ public final class MemMapSlotStore implements SlotStore {
         private RandomAccessFile randomAccessFile;
         private FileChannel fileChannel;
         private MappedByteBuffer mappedBuffer;
+        private PositionableByteBufferSerializableDataOutputStream outputStream;
+        private PositionableByteBufferSerializableDataInputStream inputStream;
         /** Current state if the file is open or not */
         private boolean fileIsOpen = false;
 
@@ -409,6 +414,9 @@ public final class MemMapSlotStore implements SlotStore {
                 mappedBuffer = fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, fileChannel.size());
                 // mark file as open
                 fileIsOpen = true;
+                // create streams
+                outputStream = new PositionableByteBufferSerializableDataOutputStream(mappedBuffer);
+                inputStream = new PositionableByteBufferSerializableDataInputStream(mappedBuffer);
             }
         }
 
@@ -482,19 +490,33 @@ public final class MemMapSlotStore implements SlotStore {
         }
 
         /**
-         * Get direct access to the slot in the base storage
+         * Get direct access to the slot in the base storage as a output stream that can be written two.
          *
          * @param slotIndex the slot index of the data to get
-         * @return the real ByteBuffer containing the data positioned and marked at the data location
+         * @return A special output stream that has a position, the position is preset at right location in file and will not be 0
          */
-        public ByteBuffer accessSlot(int slotIndex){
+        public PositionableByteBufferSerializableDataOutputStream accessSlotForWriting(int slotIndex){
             throwIfClosed();
             // calculate the offset position of the value in the file
             final int slotOffset = slotSize * slotIndex;
             // position and mark buffer
-            mappedBuffer.position(slotOffset + HEADER_SIZE);
-            mappedBuffer.mark();
-            return mappedBuffer;
+            outputStream.position(slotOffset + HEADER_SIZE);
+            return outputStream;
+        }
+
+        /**
+         * Get direct access to the slot in the base storage as a input stream that can be read from.
+         *
+         * @param slotIndex the slot index of the data to get
+         * @return A special input stream that has a position, the position is preset at right location in file and will not be 0
+         */
+        public PositionableByteBufferSerializableDataInputStream accessSlotForReading(int slotIndex){
+            throwIfClosed();
+            // calculate the offset position of the value in the file
+            final int slotOffset = slotSize * slotIndex;
+            // position and mark buffer
+            inputStream.position(slotOffset + HEADER_SIZE);
+            return inputStream;
         }
 
         /**
