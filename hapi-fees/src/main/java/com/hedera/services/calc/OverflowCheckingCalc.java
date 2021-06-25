@@ -68,15 +68,19 @@ public class OverflowCheckingCalc {
 		final long nodeFeeTinycents = nodeFeeInTinycents(usage, prices.getNodedata());
 		final long serviceFeeTinycents = serviceFeeInTinycents(usage, prices.getServicedata());
 
-		final long networkFee = tinycentsToTinybars(networkFeeTinycents, rate) * multiplier;
-		final long nodeFee = tinycentsToTinybars(nodeFeeTinycents, rate) * multiplier;
-		final long serviceFee = tinycentsToTinybars(serviceFeeTinycents, rate) * multiplier;
+		final long unscaledNetworkFee = tinycentsToTinybars(networkFeeTinycents, rate);
+		final long unscaledNodeFee = tinycentsToTinybars(nodeFeeTinycents, rate);
+		final long unscaledServiceFee = tinycentsToTinybars(serviceFeeTinycents, rate);
 
-		if (networkFee < 0 || nodeFee < 0 || serviceFee < 0) {
+		final long maxUnscaled = Long.MAX_VALUE / multiplier;
+		if (unscaledNetworkFee > maxUnscaled || unscaledNodeFee > maxUnscaled || unscaledServiceFee > maxUnscaled) {
 			throw new IllegalArgumentException(OVERFLOW_ERROR);
 		}
 
-		return new FeeObject(nodeFee, networkFee, serviceFee);
+		return new FeeObject(
+				unscaledNodeFee * multiplier,
+				unscaledNetworkFee * multiplier,
+				unscaledServiceFee * multiplier);
 	}
 
 	long tinycentsToTinybars(long amount, ExchangeRate rate) {

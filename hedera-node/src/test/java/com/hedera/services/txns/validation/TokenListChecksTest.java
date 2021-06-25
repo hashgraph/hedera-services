@@ -47,7 +47,6 @@ class TokenListChecksTest {
 				false, Key.getDefaultInstance(),
 				false, Key.getDefaultInstance(),
 				false, Key.getDefaultInstance(),
-				false, Key.getDefaultInstance(),
 				false, Key.getDefaultInstance());
 
 		// then:
