@@ -60,7 +60,7 @@ public class ZipUtil {
 	 * Compress a directory recursively to zip output stream
 	 *
 	 * @param zos
-	 * 		Output stream
+	 * 		Zip output stream
 	 * @param rootDirectory
 	 * 		source directory
 	 * @param currentDirectory

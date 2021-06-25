@@ -49,8 +49,8 @@ public final class Ed25519PublicKey {
 	 * Convert a Ed25519PublicKey bytes into a java type {@link PublicKey}
 	 *
 	 * @param ed25529KeyBytes
-	 * 		given Ed25519PublicKey bytes
-	 * @return converted PublicKey
+	 * 		given Ed25519PublicKey byte array
+	 * @return converted java type PublicKey from the given byte array
 	 */
 	public static PublicKey convert(final byte[] ed25529KeyBytes) {
 		if (ed25529KeyBytes == null || ed25529KeyBytes.length < 1) {

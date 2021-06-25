@@ -55,7 +55,7 @@ public class CommonUtils {
 	 * Sleep for the given time in milli seconds
 	 *
 	 * @param timeInMillis
-	 * 		time in milli seconds
+	 * 		given time in milli seconds
 	 */
 	public static void napMillis(long timeInMillis) {
 		try {
@@ -68,7 +68,7 @@ public class CommonUtils {
 	 * Sleep for the given time in seconds
 	 *
 	 * @param timeInSec
-	 * 		time in seconds
+	 * 		given time in seconds
 	 */
 	public static void nap(int timeInSec) {
 		try {
@@ -83,7 +83,7 @@ public class CommonUtils {
 	 * @param path
 	 * 		the file path to write bytes
 	 * @param data
-	 * 		the byte array data
+	 * 		the byte array to be written to the file
 	 * @throws IOException
 	 * 		exception caused if failed to write to file
 	 */
@@ -101,7 +101,7 @@ public class CommonUtils {
 	 * @param append
 	 * 		if true contents will be written to end of file rather than beginning
 	 * @throws IOException
-	 * 		exception caused if there is a failure writing to file
+	 * 		indicates a failure while writing to file
 	 */
 	public static void writeToFile(String path, byte[] data, boolean append) throws IOException {
 		File f = new File(path);
@@ -117,10 +117,10 @@ public class CommonUtils {
 	}
 
 	/**
-	 * Decode base64 string to bytes.
+	 * Decode base64 string to bytes
 	 *
 	 * @param base64string
-	 * 		to be decoded
+	 * 		base64 string to be decoded
 	 * @return decoded bytes
 	 */
 	public static byte[] base64decode(String base64string) {
@@ -130,11 +130,11 @@ public class CommonUtils {
 	}
 
 	/**
-	 * Deserialize a Java object to bytes.
+	 * Deserialize a Java object from given bytes
 	 *
 	 * @param bytes
-	 * 		to be deserialized
-	 * @return the Java object constructed
+	 * 		given byte array to be deserialized
+	 * @return the Java object constructed after deserialization
 	 */
 	public static Object convertFromBytes(byte[] bytes) {
 		try (ByteArrayInputStream bis = new ByteArrayInputStream(
@@ -147,14 +147,14 @@ public class CommonUtils {
 	}
 
 	/**
-	 * Copy bytes.
+	 * Copy given number of bytes from byte array
 	 *
 	 * @param start
-	 * 		from position
+	 * 		starting position from which bytes need to be copied
 	 * @param length
 	 * 		number of bytes to copy
 	 * @param bytes
-	 * 		source byte array
+	 * 		source byte array to be copied from
 	 * @return copied bytes
 	 */
 	public static byte[] copyBytes(int start, int length, byte[] bytes) {
@@ -169,12 +169,12 @@ public class CommonUtils {
 	 * Reads the bytes of a small binary file as a resource file.
 	 *
 	 * @param filePath
-	 * 		path of the binary file
+	 * 		path of the small binary file
 	 * @return byte array of all content in the file
 	 * @throws IOException
-	 * 		exception caused if file could not be read
+	 * 		indicates failure while reading the file
 	 * @throws URISyntaxException
-	 * 		exception caused if the URI syntax for the file path could not be parsed
+	 * 		indicates the given file path could not be parsed as URI reference
 	 */
 	public static byte[] readBinaryFileAsResource(String filePath)
 			throws IOException, URISyntaxException {
@@ -203,19 +203,19 @@ public class CommonUtils {
 	}
 
 	/**
-	 * Reads a resource file.
+	 * Reads a binary file as a resource file.
 	 *
 	 * @param filePath
-	 * 		the resource file to be read
+	 * 		the binary file to be read
 	 * @param myClass
 	 * 		the calling class
 	 * @param <T>
 	 * 		calling class type
-	 * @return byte array of the binary file read
+	 * @return all bytes read from the resource file
 	 * @throws IOException
-	 * 		exception caused if file could not be read
+	 * 		indicates failure while reading the file
 	 * @throws URISyntaxException
-	 * 		exception caused if the URI syntax for the file path could not be parsed
+	 * 		indicates the given file path could not be parsed as URI reference
 	 */
 	public static <T> byte[] readBinaryFileAsResource(String filePath, Class<T> myClass)
 			throws IOException, URISyntaxException {
@@ -224,15 +224,15 @@ public class CommonUtils {
 	}
 
 	/**
-	 * Calculates 20 bytes Solidity Address given indicator, realm number, account number
+	 * Calculates 20 bytes Solidity Address
 	 *
 	 * @param indicator
 	 * 		indicator value
 	 * @param realmNum
 	 * 		realm number
 	 * @param accountNum
-	 * 		account number
-	 * @return hex string of solidity byte array
+	 * 		solidity contract number
+	 * @return hex string of the calculated solidity address
 	 */
 	public static String calculateSolidityAddress(int indicator, long realmNum, long accountNum) {
 		byte[] solidityByteArray = new byte[20];
@@ -258,9 +258,9 @@ public class CommonUtils {
 	 * Checks the record fields against the originating transaction body.
 	 *
 	 * @param record
-	 * 		transaction record
+	 * 		transaction record whose fields need to be checked
 	 * @param body
-	 * 		the originating transaction body
+	 * 		the originating transaction body for comparing transaction record fields
 	 */
 	public static void checkRecord(TransactionRecord record, TransactionBody body) {
 		TransactionID txID = body.getTransactionID();

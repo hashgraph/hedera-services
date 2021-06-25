@@ -27,6 +27,8 @@ import java.io.UnsupportedEncodingException;
 
 /**
  * Hex utilities
+ *
+ * @author hua
  */
 public class HexUtils {
 
@@ -34,8 +36,8 @@ public class HexUtils {
 	 * Encodes bytes to a hex string.
 	 *
 	 * @param bytes
-	 * 		data to be encoded
-	 * @return hex string
+	 * 		bytes to be encoded
+	 * @return hex string resulted after encoding bytes
 	 */
 	public static String bytes2Hex(byte[] bytes) {
 		String str = Hex.encodeHexString(bytes);
@@ -47,9 +49,10 @@ public class HexUtils {
 	 *
 	 * @param data
 	 * 		hex string to be converted
-	 * @return byte array of hex string
+	 * @return decoded byte array
 	 * @throws DecoderException
-	 * 		exception caused while decoding the hex string
+	 * 		indicates failure while decoding the hex string, possibly because illegal characters are supplied in hex
+	 * 		string
 	 */
 	public static byte[] hexToBytes(String data) throws DecoderException {
 		byte[] rv = Hex.decodeHex(data);
@@ -72,12 +75,12 @@ public class HexUtils {
 	 * Decodes a byte array to a string using given character set.
 	 *
 	 * @param bytesData
-	 * 		data to decode
+	 * 		bytes to decode
 	 * @param charsetName
 	 * 		character set name for decoding, e.g. "UTF-8"
 	 * @return decoded string
 	 * @throws UnsupportedEncodingException
-	 * 		exception thrown if encoding is not supported
+	 * 		indicates that given character set name for decoding is not supported
 	 */
 	public static String bytes2String(byte[] bytesData, String charsetName)
 			throws UnsupportedEncodingException {

@@ -46,11 +46,9 @@ import org.bouncycastle.pkcs.PKCSException;
 import org.bouncycastle.util.io.pem.PemGenerationException;
 import org.bouncycastle.util.io.pem.PemObject;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -73,16 +71,6 @@ public class Ed25519KeyStore extends ArrayList<KeyPair> implements KeyStore {
 
 		public Builder withPassword(final char[] password) {
 			this.password = password;
-			return this;
-		}
-
-		public Builder withConverter(final JcaPEMKeyConverter converter) {
-			this.converter = converter;
-			return this;
-		}
-
-		public Builder withSecureRandom(final SecureRandom secureRandom) {
-			this.random = secureRandom;
 			return this;
 		}
 
@@ -117,10 +105,10 @@ public class Ed25519KeyStore extends ArrayList<KeyPair> implements KeyStore {
 	 * Load from a pem file without a password
 	 *
 	 * @param source
-	 * 		source pem file
-	 * @return Ed25519KeyStore after loading the file
+	 * 		source pem file to be loaded
+	 * @return Ed25519KeyStore after loading the source pem file
 	 * @throws KeyStoreException
-	 * 		exception caused on failure of loading pem file
+	 * 		indicates failure of loading pem file
 	 */
 	public static Ed25519KeyStore read(final File source) throws KeyStoreException {
 		final Ed25519KeyStore keyStore = new Builder().build();
@@ -155,24 +143,6 @@ public class Ed25519KeyStore extends ArrayList<KeyPair> implements KeyStore {
 	public static KeyPair createKeyPair() throws NoSuchAlgorithmException {
 		final KeyPairGenerator generator = KeyPairGenerator.getInstance(EdDSAPrivateKey.KEY_ALGORITHM, ED_PROVIDER);
 		return generator.generateKeyPair();
-	}
-
-	public static int getIndex(final String sourceFile) throws KeyStoreException {
-		BufferedReader reader;
-		try {
-			reader = new BufferedReader(new FileReader(sourceFile));
-			String line = reader.readLine();
-			while (line != null) {
-				if (line.contains("Index:")) {
-					String[] parsedLine = line.split(":");
-					return Integer.parseInt(parsedLine[1].replace(" ", ""));
-				}
-				line = reader.readLine();
-			}
-		} catch (IOException e) {
-			throw new KeyStoreException(e);
-		}
-		return -1;
 	}
 
 	public KeyPair insertNewKeyPair() throws KeyStoreException {

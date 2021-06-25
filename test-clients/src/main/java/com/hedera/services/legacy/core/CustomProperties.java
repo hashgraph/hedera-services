@@ -32,7 +32,7 @@ import java.util.Properties;
 import static java.lang.Boolean.parseBoolean;
 
 /**
- * Reads maintains custom properties from a file.
+ * Reads and maintains custom properties from a file.
  *
  * @author hua
  */
@@ -81,9 +81,9 @@ public class CustomProperties {
 	 * Retrieve the string value of the property matching the given name.
 	 *
 	 * @param name
-	 * 		the key of the property
+	 * 		the key of the property to be retrieved
 	 * @param defaultValue
-	 * 		value to be retured if the named property does not exist
+	 * 		default value to be returned if the named property does not exist
 	 * @return string value of the property
 	 */
 	public String getString(String name, String defaultValue) {
@@ -99,16 +99,17 @@ public class CustomProperties {
 	 * Retrieve the int value of the property matching the given name.
 	 *
 	 * @param name
-	 * 		the key of the property
+	 * 		the key of the property to be retrieved
 	 * @param defaultValue
-	 * 		default value to be returned if there is any exception caused parsing the name
+	 * 		default value to be returned if the value retrieved is not parsable integer which results in {@link
+	 *        NumberFormatException}
 	 * @return int value of the property
 	 */
 	public int getInt(String name, int defaultValue) {
 		int rv = 0;
 		try {
 			rv = Integer.parseInt(customProperties.getProperty(name));
-		} catch (Exception e) {
+		} catch (NumberFormatException e) {
 			rv = defaultValue;
 		}
 		return rv;
@@ -119,16 +120,17 @@ public class CustomProperties {
 	 * Retrieve the long value of the property matching the given name.
 	 *
 	 * @param name
-	 * 		the key of the property
+	 * 		the key of the property to be retrieved
 	 * @param defaultValue
-	 * 		value to be returned if the named property does not exist
+	 * 		default value to be returned if the named property does not exist or if the value retrieved is not parsable
+	 * 		long which results in {@link NumberFormatException}
 	 * @return long value of the property
 	 */
 	public long getLong(String name, long defaultValue) {
 		long rv = 0;
 		try {
 			rv = Long.parseLong(customProperties.getProperty(name));
-		} catch (Exception e) {
+		} catch (NumberFormatException e) {
 			rv = defaultValue;
 		}
 		return rv;

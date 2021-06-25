@@ -9,9 +9,9 @@ package com.hedera.services.legacy.client.test;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,13 +40,16 @@ public class ClientBaseThread extends Thread {
 
 	/**
 	 * Convert hex string to bytes.
-	 * @param data date to be converted
-	 * @return converted bytes
-	 * @throws DecoderException exception if failed to convert
+	 *
+	 * @param data
+	 * 		hex string to be converted
+	 * @return converted byte array
+	 * @throws DecoderException
+	 * 		if there is a failure in conversion due to illegal characters provided in the input
 	 */
 	public static byte[] hexToBytes(String data) throws DecoderException {
-	  byte[] rv = Hex.decodeHex(data);
-	  return rv;
+		byte[] rv = Hex.decodeHex(data);
+		return rv;
 	}
 
 	@Override
@@ -59,7 +62,7 @@ public class ClientBaseThread extends Thread {
 		log.info(getName() + " thread finished \n\n\n\n");
 	}
 
-	// Will be override by derived children class
+	// Will be overridden by derived children class
 	void demo() {
 	}
 }

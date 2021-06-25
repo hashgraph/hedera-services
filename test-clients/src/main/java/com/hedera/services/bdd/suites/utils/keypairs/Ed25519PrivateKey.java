@@ -99,29 +99,29 @@ public final class Ed25519PrivateKey {
 	}
 
 	/**
-	 * Generate a new private key using {@link SecureRandom}
+	 * Generate a new Ed25519 private key using {@link SecureRandom}.
 	 *
-	 * @return new private key
+	 * @return new Ed25519 private key generated
 	 */
 	public static Ed25519PrivateKey generate() {
 		return generate(new SecureRandom());
 	}
 
 	/**
-	 * Generate a new private key using the given {@link SecureRandom}
+	 * Generate a new Ed25519 private key using the given {@link SecureRandom}.
 	 *
 	 * @param secureRandom
 	 * 		given SecureRandom
-	 * @return new private key
+	 * @return new Ed25519 private key generated
 	 */
 	public static Ed25519PrivateKey generate(SecureRandom secureRandom) {
 		return new Ed25519PrivateKey(new Ed25519PrivateKeyParameters(secureRandom));
 	}
 
 	/**
-	 * Get the public key counterpart of this private key to share with the hashgraph
+	 * Get the public key counterpart of this private key to share with the hashgraph.
 	 *
-	 * @return public key
+	 * @return Ed25519 public key
 	 */
 	public Ed25519PublicKey getPublicKey() {
 		if (publicKey == null) {
