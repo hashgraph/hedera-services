@@ -23,7 +23,6 @@ package com.hedera.services.txns.token;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
@@ -39,6 +38,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
@@ -89,7 +89,7 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 		if (token.getType() == TokenType.FUNGIBLE_COMMON) {
 			token.mint(treasuryRel, op.getAmount());
 		} else {
-			token.mint(ownershipTracker, treasuryRel, op.getMetadataList(), RichInstant.fromJava(txnCtx.consensusTime()));
+			token.mint(ownershipTracker, treasuryRel, op.getMetadataList(), fromJava(txnCtx.consensusTime()));
 		}
 
 		/* --- Persist the updated models --- */

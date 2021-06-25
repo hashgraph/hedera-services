@@ -38,9 +38,11 @@ import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.MerkleUniqueTokenId;
+import com.hedera.services.state.submerkle.CustomFee;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
-import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.MiscUtils;
@@ -64,6 +66,7 @@ import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TokenType;
+import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -80,10 +83,10 @@ import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccou
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.state.submerkle.EntityId.fromGrpcTokenId;
 import static com.hedera.services.store.schedule.ExceptionalScheduleStore.NOOP_SCHEDULE_STORE;
 import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
 import static com.hedera.services.store.tokens.ExceptionalTokenStore.NOOP_TOKEN_STORE;
-import static com.hedera.services.store.tokens.TokenStore.MISSING_NFT;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
@@ -121,6 +124,21 @@ public class StateView {
 	public static final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> EMPTY_TOKEN_ASSOCS_SUPPLIER =
 			() -> EMPTY_TOKEN_ASSOCIATIONS;
 
+	public static final FCMap<MerkleUniqueTokenId, MerkleUniqueToken> EMPTY_UNIQUE_TOKENS =
+			new FCMap<>();
+	public static final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> EMPTY_UNIQUE_TOKENS_SUPPLIER =
+			() -> EMPTY_UNIQUE_TOKENS;
+
+	public static final FCOneToManyRelation<EntityId, MerkleUniqueTokenId> EMPTY_UNIQUE_TOKEN_ASSOCS =
+			new FCOneToManyRelation<>();
+	public static final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> EMPTY_UNIQUE_TOKEN_ASSOCS_SUPPLIER =
+			() -> EMPTY_UNIQUE_TOKEN_ASSOCS;
+
+	public static final FCOneToManyRelation<EntityId, MerkleUniqueTokenId> EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS =
+			new FCOneToManyRelation<>();
+	public static final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS_SUPPLIER =
+			() -> EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS;
+
 	public static final StateView EMPTY_VIEW = new StateView(
 			EMPTY_TOPICS_SUPPLIER,
 			EMPTY_ACCOUNTS_SUPPLIER,
@@ -130,12 +148,17 @@ public class StateView {
 	Map<byte[], byte[]> contractBytecode;
 	Map<FileID, byte[]> fileContents;
 	Map<FileID, HFileMeta> fileAttrs;
+
 	private final TokenStore tokenStore;
 	private final ScheduleStore scheduleStore;
 	private final Supplier<MerkleDiskFs> diskFs;
 	private final Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics;
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 	private final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations;
+
+	private Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens;
+	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations;
+	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAccountOwnerships;
 
 	private final NodeLocalProperties properties;
 
@@ -145,8 +168,18 @@ public class StateView {
 			NodeLocalProperties properties,
 			Supplier<MerkleDiskFs> diskFs
 	) {
-		this(NOOP_TOKEN_STORE, NOOP_SCHEDULE_STORE, topics, accounts, EMPTY_STORAGE_SUPPLIER,
-				EMPTY_TOKEN_ASSOCS_SUPPLIER, diskFs, properties);
+		this(
+				NOOP_TOKEN_STORE,
+				NOOP_SCHEDULE_STORE,
+				topics,
+				accounts,
+				EMPTY_STORAGE_SUPPLIER,
+				EMPTY_UNIQUE_TOKENS_SUPPLIER,
+				EMPTY_TOKEN_ASSOCS_SUPPLIER,
+				EMPTY_UNIQUE_TOKEN_ASSOCS_SUPPLIER,
+				EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS_SUPPLIER,
+				diskFs,
+				properties);
 	}
 
 	public StateView(
@@ -157,7 +190,17 @@ public class StateView {
 			NodeLocalProperties properties,
 			Supplier<MerkleDiskFs> diskFs
 	) {
-		this(tokenStore, scheduleStore, topics, accounts, EMPTY_STORAGE_SUPPLIER, EMPTY_TOKEN_ASSOCS_SUPPLIER, diskFs,
+		this(
+				tokenStore,
+				scheduleStore,
+				topics,
+				accounts,
+				EMPTY_STORAGE_SUPPLIER,
+				EMPTY_UNIQUE_TOKENS_SUPPLIER,
+				EMPTY_TOKEN_ASSOCS_SUPPLIER,
+				EMPTY_UNIQUE_TOKEN_ASSOCS_SUPPLIER,
+				EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS_SUPPLIER,
+				diskFs,
 				properties);
 	}
 
@@ -167,15 +210,21 @@ public class StateView {
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> storage,
+			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens,
 			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations,
+			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations,
+			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAccountOwnerships,
 			Supplier<MerkleDiskFs> diskFs,
 			NodeLocalProperties properties
 	) {
 		this.topics = topics;
 		this.accounts = accounts;
 		this.tokenStore = tokenStore;
-		this.tokenAssociations = tokenAssociations;
+		this.uniqueTokens = uniqueTokens;
 		this.scheduleStore = scheduleStore;
+		this.tokenAssociations = tokenAssociations;
+		this.uniqueTokenAssociations = uniqueTokenAssociations;
+		this.uniqueTokenAccountOwnerships = uniqueTokenAccountOwnerships;
 
 		Map<String, byte[]> blobStore = unmodifiableMap(new FcBlobsBytesStore(MerkleOptionalBlob::new, storage));
 
@@ -280,6 +329,19 @@ public class StateView {
 				info.setAutoRenewPeriod(Duration.newBuilder().setSeconds(token.autoRenewPeriod()));
 			}
 
+			final var feeSchedule = token.customFeeSchedule();
+			if (!feeSchedule.isEmpty()) {
+				final var customFeesBuilder = info.getCustomFeesBuilder();
+				feeSchedule.stream()
+						.map(CustomFee::asGrpc)
+						.forEach(customFeesBuilder::addCustomFees);
+				info.setCustomFees(customFeesBuilder);
+			}
+
+			if (token.hasCustomFeeKey()) {
+				info.setCustomFeesKey(asKeyUnchecked(token.getCustomFeeKey()));
+			}
+
 			return Optional.of(info.build());
 		} catch (Exception unexpected) {
 			log.warn(
@@ -329,33 +391,25 @@ public class StateView {
 		}
 	}
 
-	public Optional<TokenNftInfo> infoForNft(NftID nftID) {
-		try {
-			var id = tokenStore.resolve(nftID);
-			if (id == MISSING_NFT) {
-				return Optional.empty();
-			}
-			var uniqueToken = tokenStore.getUniqueToken(nftID);
-
-			var info = TokenNftInfo.newBuilder()
-					.setNftID(nftID)
-					.setAccountID(uniqueToken.getOwner().toGrpcAccountId())
-					.setCreationTime(Timestamp.newBuilder()
-							.setSeconds(uniqueToken.getCreationTime().getSeconds())
-							.setNanos(uniqueToken.getCreationTime().getNanos()))
-					.setMetadata(ByteString.copyFrom(uniqueToken.getMetadata()));
-
-			return Optional.of(info.build());
-		} catch (Exception unexpected) {
-			log.warn(
-					"Unexpected failure getting info for token nft {}!",
-					readableId(nftID),
-					unexpected);
+	public Optional<TokenNftInfo> infoForNft(NftID target) {
+		final var currentNfts = uniqueTokens.get();
+		final var targetKey = new MerkleUniqueTokenId(fromGrpcTokenId(target.getTokenID()), target.getSerialNumber());
+		if (!currentNfts.containsKey(targetKey)) {
 			return Optional.empty();
 		}
+		final var targetNft = currentNfts.get(targetKey);
+		final var info = TokenNftInfo.newBuilder()
+				.setNftID(target)
+				.setAccountID(targetNft.getOwner().toGrpcAccountId())
+				.setCreationTime(targetNft.getCreationTime().toGrpc())
+				.setMetadata(ByteString.copyFrom(targetNft.getMetadata()))
+				.build();
+		return Optional.of(info);
 	}
 
-	public boolean nftExists(NftID id) { return tokenStore.resolve(id) != MISSING_NFT; }
+	public boolean nftExists(NftID id) {
+		return uniqueTokens.get().containsKey(new MerkleUniqueTokenId(fromGrpcTokenId(id.getTokenID()), id.getSerialNumber()));
+	}
 
 	public Optional<TokenType> tokenType(TokenID tokenID) {
 		try {

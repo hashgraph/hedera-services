@@ -21,37 +21,25 @@ package com.hedera.services.txns.crypto;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.exceptions.DeletedAccountException;
-import com.hedera.services.exceptions.DetachedAccountException;
-import com.hedera.services.exceptions.InsufficientFundsException;
-import com.hedera.services.exceptions.MissingAccountException;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.grpc.marshalling.ImpliedTransfers;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.txns.validation.OptionValidator;
-import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.txns.validation.TokenListChecks.checkTokenTransfers;
-import static com.hedera.services.txns.validation.TransferListChecks.hasRepeatedAccount;
-import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAdjustment;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 
 /**
  * Implements the {@link TransitionLogic} for a HAPI CryptoTransfer transaction,
@@ -65,60 +53,55 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_
 public class CryptoTransferTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(CryptoTransferTransitionLogic.class);
 
-	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
-
 	private final HederaLedger ledger;
-	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
+	private final GlobalDynamicProperties dynamicProperties;
+	private final ImpliedTransfersMarshal impliedTransfersMarshal;
+	private final PureTransferSemanticChecks transferSemanticChecks;
+	private final ExpandHandleSpanMapAccessor spanMapAccessor;
 
 	public CryptoTransferTransitionLogic(
 			HederaLedger ledger,
-			OptionValidator validator,
-			TransactionContext txnCtx
+			TransactionContext txnCtx,
+			GlobalDynamicProperties dynamicProperties,
+			ImpliedTransfersMarshal impliedTransfersMarshal,
+			PureTransferSemanticChecks transferSemanticChecks,
+			ExpandHandleSpanMapAccessor spanMapAccessor
 	) {
-		this.ledger = ledger;
-		this.validator = validator;
 		this.txnCtx = txnCtx;
+		this.ledger = ledger;
+		this.spanMapAccessor = spanMapAccessor;
+		this.dynamicProperties = dynamicProperties;
+		this.transferSemanticChecks = transferSemanticChecks;
+		this.impliedTransfersMarshal = impliedTransfersMarshal;
 	}
 
 	@Override
 	public void doStateTransition() {
 		try {
-			var op = txnCtx.accessor().getTxn().getCryptoTransfer();
-			var outcome = ledger.doAtomicTransfers(op);
+			final var accessor = txnCtx.accessor();
+			final var impliedTransfers = finalImpliedTransfersFor(accessor);
+
+			var outcome = impliedTransfers.getMeta().code();
+			if (outcome == OK) {
+				final var changes = impliedTransfers.getChanges();
+				outcome = ledger.doZeroSum(changes);
+			}
+
 			txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
 		} catch (Exception e) {
-			log.warn("Avoidable exception!", e);
+			log.warn("Avoidable exception in CryptoTransfer state transition", e);
 			txnCtx.setStatus(FAIL_INVALID);
 		}
 	}
 
-	public static ResponseCodeEnum tryTransfers(HederaLedger ledger, TransferList transfers) {
-		if (!hasOnlyCryptoAccounts(ledger, transfers)) {
-			return INVALID_ACCOUNT_ID;
+	private ImpliedTransfers finalImpliedTransfersFor(TxnAccessor accessor) {
+		var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
+		if (impliedTransfers == null) {
+			final var op = accessor.getTxn().getCryptoTransfer();
+			impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op);
 		}
-		try {
-			ledger.doTransfers(transfers);
-		} catch (MissingAccountException mae) {
-			return ACCOUNT_ID_DOES_NOT_EXIST;
-		} catch (DeletedAccountException aide) {
-			return ACCOUNT_DELETED;
-		} catch (InsufficientFundsException ife) {
-			return INSUFFICIENT_ACCOUNT_BALANCE;
-		} catch (DetachedAccountException dae) {
-			return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-		}
-		return OK;
-	}
-
-	static boolean hasOnlyCryptoAccounts(HederaLedger ledger, TransferList transfers) {
-		for (AccountAmount aa : transfers.getAccountAmountsList()) {
-			var id = aa.getAccountID();
-			if (!ledger.exists(id) || ledger.isSmartContract(id)) {
-				return false;
-			}
-		}
-		return true;
+		return impliedTransfers;
 	}
 
 	@Override
@@ -127,44 +110,22 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 	}
 
 	@Override
-	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return SEMANTIC_CHECK;
-	}
-
-	private ResponseCodeEnum validate(TransactionBody txn) {
-		var op = txn.getCryptoTransfer();
-
-		var validity = basicSemanticChecks(op.getTransfers(), validator);
-		if (validity != OK) {
-			return validity;
-		}
-
-		validity = validator.tokenTransfersLengthCheck(op.getTokenTransfersList());
-		if (validity != OK) {
-			return validity;
-		}
-
-		var maxNftTransfers = 0;
-		for (var tokenTransferList : op.getTokenTransfersList()) {
-			maxNftTransfers += tokenTransferList.getNftTransfersList().size();
-		}
-		validity = validator.maxNftTransfersLenCheck(maxNftTransfers);
-		if (validity != OK) {
-			return validity;
-		}
-
-		return checkTokenTransfers(op.getTokenTransfersList());
-	}
-
-	public static ResponseCodeEnum basicSemanticChecks(TransferList transfers, OptionValidator validator) {
-		if (hasRepeatedAccount(transfers)) {
-			return ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
-		} else if (!isNetZeroAdjustment(transfers)) {
-			return INVALID_ACCOUNT_AMOUNTS;
-		} else if (!validator.isAcceptableTransfersLength(transfers)) {
-			return TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
+	public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
+		final var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
+		if (impliedTransfers != null) {
+			/* Accessor is for a consensus transaction with a expand-handle span
+			* we've been managing in the normal way. */
+			return impliedTransfers.getMeta().code();
 		} else {
-			return OK;
+			/* Accessor is for either (1) a transaction in precheck or (2) a scheduled
+			transaction that reached consensus without a managed expand-handle span. */
+			final var validationProps = new ImpliedTransfersMeta.ValidationProps(
+				dynamicProperties.maxTransferListSize(),
+				dynamicProperties.maxTokenTransferListSize(),
+				dynamicProperties.maxNftTransfersLen());
+			final var op = accessor.getTxn().getCryptoTransfer();
+			return transferSemanticChecks.fullPureValidation(
+					op.getTransfers(), op.getTokenTransfersList(), validationProps);
 		}
 	}
 }

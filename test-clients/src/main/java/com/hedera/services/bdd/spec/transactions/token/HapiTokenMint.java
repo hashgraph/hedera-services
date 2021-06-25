@@ -90,15 +90,11 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 	}
 
 	private SubType figureSubType() {
-		boolean isFungible = this.amount == 0 && !this.metadata.isEmpty();
-		boolean isNonFungible = this.amount > 0 && this.metadata.isEmpty();
-		if (isFungible) {
+		if (metadata.isEmpty()) {
+			return SubType.TOKEN_FUNGIBLE_COMMON;
+		} else {
 			return SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 		}
-		if (isNonFungible) {
-			return SubType.TOKEN_FUNGIBLE_COMMON;
-		}
-		return SubType.DEFAULT;
 	}
 
 	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {

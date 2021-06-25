@@ -44,8 +44,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -56,8 +54,6 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
@@ -65,7 +61,6 @@ import java.util.stream.LongStream;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
 import static com.hedera.test.utils.IdUtils.asFile;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
-import static com.hedera.test.utils.TxnUtils.withTokenAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
@@ -81,7 +76,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -90,13 +84,12 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-public class ContextOptionValidatorTest {
+class ContextOptionValidatorTest {
 	final private Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
 	final private Instant now = Instant.now();
 	final private AccountID a = AccountID.newBuilder().setAccountNum(9_999L).build();
 	final private MerkleAccount aV = MerkleAccountFactory.newAccount().get();
 	final private AccountID b = AccountID.newBuilder().setAccountNum(8_999L).build();
-	final private AccountID c = AccountID.newBuilder().setAccountNum(7_999L).build();
 	final private AccountID d = AccountID.newBuilder().setAccountNum(6_999L).build();
 	final private AccountID missing = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private AccountID thisNodeAccount = AccountID.newBuilder().setAccountNum(13L).build();
@@ -112,11 +105,6 @@ public class ContextOptionValidatorTest {
 	final private TopicID deletedTopicId = TopicID.newBuilder().setTopicNum(2_345L).build();
 	final private TopicID expiredTopicId = TopicID.newBuilder().setTopicNum(3_456L).build();
 	final private TopicID topicId = TopicID.newBuilder().setTopicNum(4_567L).build();
-
-	final private TokenID aTId = TokenID.newBuilder().setTokenNum(1_234L).build();
-	final private TokenID bTId = TokenID.newBuilder().setTokenNum(2_345L).build();
-	final private TokenID cTId = TokenID.newBuilder().setTokenNum(3_456L).build();
-	final private TokenID dTId = TokenID.newBuilder().setTokenNum(4_567L).build();
 
 	private MerkleTopic deletedMerkleTopic;
 	private MerkleTopic expiredMerkleTopic;
@@ -165,7 +153,8 @@ public class ContextOptionValidatorTest {
 		deletedAttr = new HFileMeta(true, wacl, expiry);
 		view = mock(StateView.class);
 
-		subject = new ContextOptionValidator(thisNodeAccount, properties, txnCtx, dynamicProperties);
+		subject = new ContextOptionValidator(
+				thisNodeAccount, properties, txnCtx, dynamicProperties);
 	}
 
 	private FileGetInfoResponse.FileInfo asMinimalInfo(HFileMeta meta) throws Exception {
@@ -601,45 +590,6 @@ public class ContextOptionValidatorTest {
 		// expect:
 		assertEquals(TOKEN_NAME_TOO_LONG, subject.tokenNameCheck("A€"));
 		assertEquals(INVALID_ZERO_BYTE_IN_STRING, subject.tokenNameCheck("\u0000"));
-	}
-
-	@Test
-	void acceptsReasonableTokenTransfersLength() {
-		// setup:
-		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
-
-		given(dynamicProperties.maxTokenTransferListSize()).willReturn(4);
-
-		// expect:
-		assertEquals(OK, subject.tokenTransfersLengthCheck(wrapper));
-	}
-
-	@Test
-	void acceptsNoTokenTransfers() {
-		// expect:
-		assertEquals(OK, subject.tokenTransfersLengthCheck(Collections.emptyList()));
-	}
-
-	@Test
-	void rejectsExceedingTokenTransfersLength() {
-		// setup:
-		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
-
-		given(dynamicProperties.maxTokenTransferListSize()).willReturn(2);
-
-		// expect:
-		assertEquals(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, subject.tokenTransfersLengthCheck(wrapper));
-	}
-
-	@Test
-	void rejectsExceedingTokenTransfersAccountAmountsLength() {
-		// setup:
-		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3, dTId, d, -4);
-
-		given(dynamicProperties.maxTokenTransferListSize()).willReturn(4);
-
-		// expect:
-		assertEquals(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, subject.tokenTransfersLengthCheck(wrapper));
 	}
 
 	@Test

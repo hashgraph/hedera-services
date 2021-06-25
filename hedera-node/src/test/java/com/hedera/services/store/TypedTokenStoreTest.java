@@ -21,6 +21,7 @@ package com.hedera.services.store;
  */
 
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.accounts.BackingNfts;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.TransactionRecordService;
@@ -31,22 +32,22 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
-import com.hedera.services.store.tokens.unique.OwnerIdentifier;
-import com.hedera.services.utils.invertible_fchashmap.FCInvertibleHashMap;
+import com.hedera.services.store.models.UniqueToken;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.function.Supplier;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -65,13 +66,19 @@ class TypedTokenStoreTest {
 	@Mock
 	private FCMap<MerkleEntityId, MerkleToken> tokens;
 	@Mock
-	private FCInvertibleHashMap<MerkleUniqueTokenId, MerkleUniqueToken, OwnerIdentifier> uniqueTokens;
+	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens;
+	@Mock
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenOwnerships;
+	@Mock
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations;
 	@Mock
 	private TransactionRecordService transactionRecordService;
 	@Mock
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
 	@Mock
 	private BackingTokenRels backingTokenRels;
+	@Mock
+	private BackingNfts backingNfts;
 
 	private TypedTokenStore subject;
 
@@ -81,7 +88,15 @@ class TypedTokenStoreTest {
 		setupTokenRel();
 
 		subject = new TypedTokenStore(
-				accountStore, transactionRecordService, () -> tokens, () -> uniqueTokens, () -> tokenRels, backingTokenRels);
+				accountStore,
+				transactionRecordService,
+				() -> tokens,
+				() -> uniqueTokens,
+				() -> uniqueTokenOwnerships,
+				() -> uniqueTokenAssociations,
+				() -> tokenRels,
+				backingTokenRels,
+				backingNfts);
 	}
 
 	/* --- Token relationship loading --- */
@@ -187,16 +202,30 @@ class TypedTokenStoreTest {
 	@Test
 	void savesTokenAsExpected() {
 		// setup:
+		final var mintedSerialNo = 33L;
+		final var burnedSerialNo = 33L;
+		final var nftMeta = "abcdefgh".getBytes();
+		final var treasuryId = new EntityId(0, 0, treasuryAccountNum);
+		final var tokenEntityId = new EntityId(0, 0, tokenNum);
+		final var creationTime = new RichInstant(1_234_567L, 8);
+		final var modelTreasuryId = new Id(0, 0, treasuryAccountNum);
+		final var mintedToken = new UniqueToken(tokenId, mintedSerialNo, creationTime, modelTreasuryId, nftMeta);
+		final var burnedToken = new UniqueToken(tokenId, burnedSerialNo, creationTime, modelTreasuryId, nftMeta);
+		// and:
 		final var expectedReplacementToken = new MerkleToken(
 				expiry, tokenSupply * 2, 0,
 				symbol, name,
 				freezeDefault, true,
 				new EntityId(0, 0, autoRenewAccountNum));
-		expectedReplacementToken.setAutoRenewAccount(new EntityId(0, 0, treasuryAccountNum));
+		expectedReplacementToken.setAutoRenewAccount(treasuryId);
 		expectedReplacementToken.setSupplyKey(supplyKey);
 		expectedReplacementToken.setFreezeKey(freezeKey);
 		expectedReplacementToken.setKycKey(kycKey);
 		expectedReplacementToken.setAccountsFrozenByDefault(!freezeDefault);
+		// and:
+		final var expectedNewUniqTokenId = new MerkleUniqueTokenId(tokenEntityId, mintedSerialNo);
+		final var expectedNewUniqToken = new MerkleUniqueToken(treasuryId, nftMeta, creationTime);
+		final var expectedPastUniqTokenId = new MerkleUniqueTokenId(tokenEntityId, burnedSerialNo);
 
 		givenToken(merkleTokenId, merkleToken);
 		givenModifiableToken(merkleTokenId, merkleToken);
@@ -208,6 +237,8 @@ class TypedTokenStoreTest {
 		modelToken.setAutoRenewAccount(treasuryAccount);
 		modelToken.setTreasury(autoRenewAccount);
 		modelToken.setFrozenByDefault(!freezeDefault);
+		modelToken.mintedUniqueTokens().add(mintedToken);
+		modelToken.burnedUniqueTokens().add(burnedToken);
 		// and:
 		subject.persistToken(modelToken);
 
@@ -216,6 +247,14 @@ class TypedTokenStoreTest {
 		verify(tokens, never()).replace(merkleTokenId, expectedReplacementToken);
 		// and:
 		verify(transactionRecordService).includeChangesToToken(modelToken);
+		verify(uniqueTokens).put(expectedNewUniqTokenId, expectedNewUniqToken);
+		verify(uniqueTokens).remove(expectedPastUniqTokenId);
+		verify(uniqueTokenAssociations).associate(new EntityId(modelToken.getId()), expectedNewUniqTokenId);
+		verify(uniqueTokenAssociations).disassociate(new EntityId(modelToken.getId()), expectedPastUniqTokenId);
+		verify(uniqueTokenOwnerships).associate(treasuryId, expectedNewUniqTokenId);
+		verify(uniqueTokenOwnerships).disassociate(treasuryId, expectedPastUniqTokenId);
+		verify(backingNfts).addToExistingNfts(new NftId(0, 0, tokenNum, mintedSerialNo));
+		verify(backingNfts).removeFromExistingNfts(new NftId(0, 0, tokenNum, burnedSerialNo));
 	}
 
 	private void givenRelationship(MerkleEntityAssociation anAssoc, MerkleTokenRelStatus aRelationship) {

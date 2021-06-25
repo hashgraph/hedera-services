@@ -45,7 +45,6 @@ import java.util.Optional;
 import static com.hedera.services.txns.submission.PresolvencyFlaws.WELL_KNOWN_FLAWS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -187,7 +186,7 @@ class TransactionPrecheckTest {
 		givenActivePlatform();
 		givenStructuralSoundness();
 		givenValidSyntax();
-		given(semanticPrecheck.validate(eq(CryptoTransfer), any(), eq(INSUFFICIENT_TX_FEE)))
+		given(semanticPrecheck.validate(any(), eq(CryptoTransfer), eq(INSUFFICIENT_TX_FEE)))
 				.willReturn(INSUFFICIENT_TX_FEE);
 
 		// when:

@@ -21,14 +21,14 @@ package com.hedera.services.txns.crypto;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.exceptions.DeletedAccountException;
-import com.hedera.services.exceptions.DetachedAccountException;
-import com.hedera.services.exceptions.InsufficientFundsException;
-import com.hedera.services.exceptions.MissingAccountException;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.grpc.marshalling.ImpliedTransfers;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.ledger.PureTransferSemanticChecks;
+import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -38,187 +38,175 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.List;
 
-import static com.hedera.services.txns.crypto.CryptoTransferTransitionLogic.tryTransfers;
 import static com.hedera.test.utils.IdUtils.adjustFrom;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
+import static com.hedera.test.utils.IdUtils.hbarChange;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.verifyNoInteractions;
 
-public class CryptoTransferTransitionLogicTest {
+
+@ExtendWith(MockitoExtension.class)
+class CryptoTransferTransitionLogicTest {
+	final private int maxHbarAdjusts = 5;
+	final private int maxTokenAdjusts = 10;
+	final private int maxOwnershipChanges = 15;
+	private final ImpliedTransfersMeta.ValidationProps validationProps = new ImpliedTransfersMeta.ValidationProps(
+			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges);
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private AccountID a = AccountID.newBuilder().setAccountNum(9_999L).build();
 	final private AccountID b = AccountID.newBuilder().setAccountNum(8_999L).build();
 	final private AccountID c = AccountID.newBuilder().setAccountNum(7_999L).build();
 
+	@Mock
 	private HederaLedger ledger;
-	private OptionValidator validator;
-	private TransactionBody cryptoTransferTxn;
+	@Mock
 	private TransactionContext txnCtx;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private ImpliedTransfersMarshal impliedTransfersMarshal;
+	@Mock
+	private PureTransferSemanticChecks transferSemanticChecks;
+	@Mock
+	private ExpandHandleSpanMapAccessor spanMapAccessor;
+	@Mock
 	private PlatformTxnAccessor accessor;
+
+	private TransactionBody cryptoTransferTxn;
+
 	private CryptoTransferTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
-		txnCtx = mock(TransactionContext.class);
-		ledger = mock(HederaLedger.class);
-		accessor = mock(PlatformTxnAccessor.class);
-
-		validator = mock(OptionValidator.class);
-		withRubberstampingValidator();
-
-		given(ledger.isSmartContract(any())).willReturn(false);
-		given(ledger.exists(any())).willReturn(true);
-
-		subject = new CryptoTransferTransitionLogic(ledger, validator, txnCtx);
+		subject = new CryptoTransferTransitionLogic(
+				ledger, txnCtx, dynamicProperties, impliedTransfersMarshal, transferSemanticChecks, spanMapAccessor);
 	}
 
 	@Test
-	public void hasOnlyCryptoHandlesMissingAccounts() {
-		given(ledger.exists(asAccount("0.0.75231"))).willReturn(false);
+	void happyPathUsesLedgerNetZero() {
+		final var a = asAccount("1.2.3");
+		final var b = asAccount("2.3.4");
+		final var impliedTransfers = ImpliedTransfers.valid(
+				validationProps, List.of(
+						hbarChange(a, +100),
+						hbarChange(b, -100)
+				));
 
-		// expect:
-		assertFalse(CryptoTransferTransitionLogic.hasOnlyCryptoAccounts(ledger, xfers.getTransfers()));
-	}
-
-	@Test
-	public void capturesInvalidXfers() {
 		givenValidTxnCtx();
 		// and:
-		given(ledger.doAtomicTransfers(xfers)).willReturn(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
+		given(spanMapAccessor.getImpliedTransfers(accessor)).willReturn(impliedTransfers);
+		given(ledger.doZeroSum(impliedTransfers.getChanges())).willReturn(INSUFFICIENT_ACCOUNT_BALANCE);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(txnCtx).setStatus(INSUFFICIENT_ACCOUNT_BALANCE);
+	}
+
+	@Test
+	void recomputesImpliedTransfersIfNotAvailableInSpan() {
+		final var a = asAccount("1.2.3");
+		final var b = asAccount("2.3.4");
+		final var impliedTransfers = ImpliedTransfers.valid(
+				validationProps, List.of(
+						hbarChange(a, +100),
+						hbarChange(b, -100)
+				));
+
+		givenValidTxnCtx();
+		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
+		// and:
+		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
+				.willReturn(impliedTransfers);
+		given(ledger.doZeroSum(impliedTransfers.getChanges()))
+				.willReturn(OK);
+
+		// when:
+		subject.doStateTransition();
+
+
+		// then:
+		verify(txnCtx).setStatus(SUCCESS);
+	}
+
+	@Test
+	void shortCircuitsToImpliedTransfersValidityIfNotAvailableInSpan() {
+		final var impliedTransfers = ImpliedTransfers.invalid(
+				validationProps, TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
+
+		givenValidTxnCtx();
+		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
+		// and:
+		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
+				.willReturn(impliedTransfers);
 
 		// when:
 		subject.doStateTransition();
 
 		// then:
 		verify(txnCtx).setStatus(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
+		verifyNoInteractions(ledger);
 	}
 
 	@Test
-	public void rejectsRepeatedAccountAmounts() {
+	void reusesPrecomputedFailureIfImpliedTransfersInSpan() {
 		// setup:
-		xfers = xfers.toBuilder()
-				.setTransfers(xfers.getTransfers().toBuilder()
-						.addAccountAmounts(adjustFrom(asAccount("0.0.75231"), -1_000)))
-				.build();
+		final var impliedTransfers = ImpliedTransfers.invalid(
+				validationProps, TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
 
-		givenValidTxnCtx();
-		// and:
-		given(validator.tokenTransfersLengthCheck(any())).willReturn(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
-
-		// expect:
-		assertEquals(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS, subject.semanticCheck().apply(cryptoTransferTxn));
-	}
-
-	@Test
-	public void rejectsExceedingTransfersLength() {
-		givenValidTxnCtx();
-		given(validator.tokenTransfersLengthCheck(any())).willReturn(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
-
-		// expect:
-		assertEquals(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, subject.semanticCheck().apply(cryptoTransferTxn));
-	}
-
-	@Test
-	public void rejectsEmptyTokenTransferAccountAmounts() {
-		givenValidTxnCtx();
-		given(validator.tokenTransfersLengthCheck(any())).willReturn(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS);
-
-		// expect:
-		assertEquals(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS, subject.semanticCheck().apply(cryptoTransferTxn));
-	}
-
-	@Test
-	public void requiresOnlyCryptoAccounts() {
-		givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
-		given(ledger.isSmartContract(any())).willReturn(true);
-
-		// expect:
-		assertEquals(INVALID_ACCOUNT_ID, tryTransfers(ledger, xfers.getTransfers()));
-	}
-
-	@Test
-	public void translatesDetachedAccountException() {
-		givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
-		willThrow(DetachedAccountException.class).given(ledger).doTransfers(any());
-
-		// expect:
-		assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, tryTransfers(ledger, xfers.getTransfers()));
-	}
-
-	@Test
-	public void translatesMissingAccountException() {
-		givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
-		willThrow(MissingAccountException.class).given(ledger).doTransfers(any());
-
-		// expect:
-		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, tryTransfers(ledger, xfers.getTransfers()));
-	}
-
-	@Test
-	public void followsHappyPath() {
-		givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
+		given(spanMapAccessor.getImpliedTransfers(accessor)).willReturn(impliedTransfers);
 
 		// when:
-		subject.doStateTransition();
+		final var validity = subject.validateSemantics(accessor);
 
-		// expect:
-		verify(ledger).doAtomicTransfers(cryptoTransferTxn.getCryptoTransfer());
-		// and:
-		verify(txnCtx).setStatus(SUCCESS);
+		// then:
+		assertEquals(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN, validity);
 	}
 
 	@Test
-	public void translatesAccountDeletedException() {
-		givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
-		// and:
-		willThrow(DeletedAccountException.class).given(ledger).doTransfers(any());
+	void computesFailureIfImpliedTransfersNotInSpan() {
+		// setup:
+		final var pretendXferTxn = TransactionBody.getDefaultInstance();
 
-		// expect:
-		assertEquals(ACCOUNT_DELETED, tryTransfers(ledger, xfers.getTransfers()));
+		given(dynamicProperties.maxTransferListSize()).willReturn(maxHbarAdjusts);
+		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxTokenAdjusts);
+		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxOwnershipChanges);
+		given(accessor.getTxn()).willReturn(pretendXferTxn);
+		given(transferSemanticChecks.fullPureValidation(
+				pretendXferTxn.getCryptoTransfer().getTransfers(),
+				pretendXferTxn.getCryptoTransfer().getTokenTransfersList(),
+				validationProps)
+		).willReturn(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
+
+		// when:
+		final var validity = subject.validateSemantics(accessor);
+
+		// then:
+		assertEquals(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN, validity);
 	}
 
 	@Test
-	public void translatesInsufficientFundsException() {
+	void translatesUnknownException() {
 		givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
-		willThrow(InsufficientFundsException.class).given(ledger).doTransfers(any());
-
-		// expect:
-		assertEquals(INSUFFICIENT_ACCOUNT_BALANCE, tryTransfers(ledger, xfers.getTransfers()));
-	}
-
-	@Test
-	public void translatesUnknownException() {
-		givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
-		willThrow(RuntimeException.class).given(ledger).doAtomicTransfers(any());
 
 		// when:
 		subject.doStateTransition();
@@ -228,92 +216,12 @@ public class CryptoTransferTransitionLogicTest {
 	}
 
 	@Test
-	public void hasCorrectApplicability() {
+	void hasCorrectApplicability() {
 		givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
 
 		// expect:
 		assertTrue(subject.applicability().test(cryptoTransferTxn));
 		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
-	}
-
-	@Test
-	public void acceptsValidTxn() {
-		givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
-
-		// expect:
-		assertEquals(OK, subject.semanticCheck().apply(cryptoTransferTxn));
-	}
-
-	@Test
-	public void rejectsRepeatedAccount() {
-		givenValidTxnCtx(withAdjustments(a, -2L, a, 1L, c, 1L));
-
-		// expect:
-		assertEquals(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS, subject.semanticCheck().apply(cryptoTransferTxn));
-	}
-
-	@Test
-	public void rejectsNonNetZeroAdjustment() {
-		givenValidTxnCtx(withAdjustments(a, -2L, b, 3L, c, 1L));
-
-		// expect:
-		assertEquals(INVALID_ACCOUNT_AMOUNTS, subject.semanticCheck().apply(cryptoTransferTxn));
-	}
-
-	@Test
-	public void rejectsUndulyLongTransferList() {
-		givenValidTxnCtx(withAdjustments(a, -2L, b, 1L, c, 1L));
-		given(validator.isAcceptableTransfersLength(any())).willReturn(false);
-
-		// expect:
-		assertEquals(TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, subject.semanticCheck().apply(cryptoTransferTxn));
-	}
-
-	@Test
-	public void rejectsDuplicateTokens() {
-		givenDuplicateTokens();
-
-		// expect:
-		assertEquals(TOKEN_ID_REPEATED_IN_TOKEN_LIST, subject.semanticCheck().apply(cryptoTransferTxn));
-	}
-
-	@Test
-	public void rejectsInvalidTokenDuplicateAccounts() {
-		givenInvalidTokenDuplicateAccounts();
-
-		// expect:
-		assertEquals(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS, subject.semanticCheck().apply(cryptoTransferTxn));
-	}
-
-	@Test
-	public void rejectsInvalidTokenAdjustment() {
-		givenInvalidTokenAdjustment();
-
-		// expect:
-		assertEquals(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN, subject.semanticCheck().apply(cryptoTransferTxn));
-	}
-
-	@Test
-	public void rejectsMissingTokenInTransfer() {
-		givenMissingTokenInTransfer();
-
-		// expect:
-		assertEquals(INVALID_TOKEN_ID, subject.semanticCheck().apply(cryptoTransferTxn));
-	}
-
-	@Test
-	public void rejectsMissingAccountInTokenAccountAmount() {
-		givenMissingAccountInTokenAccountAmount();
-
-		// expect:
-		assertEquals(INVALID_ACCOUNT_ID, subject.semanticCheck().apply(cryptoTransferTxn));
-	}
-
-	@Test
-	public void rejectsInvalidTokenZeroAmounts() {
-		givenInvalidTokenZeroAmounts();
-
-		assertEquals(INVALID_ACCOUNT_AMOUNTS, subject.semanticCheck().apply(cryptoTransferTxn));
 	}
 
 	private void givenValidTxnCtx(TransferList wrapper) {
@@ -324,18 +232,13 @@ public class CryptoTransferTransitionLogicTest {
 								.setTransfers(wrapper)
 								.build()
 				).build();
-		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(ledger.doAtomicTransfers(cryptoTransferTxn.getCryptoTransfer())).willReturn(SUCCESS);
 	}
 
 	private void givenValidTxnCtx() {
 		cryptoTransferTxn = TransactionBody.newBuilder()
 				.setCryptoTransfer(xfers)
 				.build();
-		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(ledger.doAtomicTransfers(xfers)).willReturn(SUCCESS);
 	}
 
 	private TransactionID ourTxnId() {
@@ -344,13 +247,6 @@ public class CryptoTransferTransitionLogicTest {
 				.setTransactionValidStart(
 						Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond()))
 				.build();
-	}
-
-
-	private void withRubberstampingValidator() {
-		given(validator.isAcceptableTransfersLength(any())).willReturn(true);
-		given(validator.tokenTransfersLengthCheck(any())).willReturn(OK);
-		given(validator.maxNftTransfersLenCheck(anyInt())).willReturn(OK);
 	}
 
 	CryptoTransferTransactionBody xfers = CryptoTransferTransactionBody.newBuilder()
@@ -366,113 +262,4 @@ public class CryptoTransferTransitionLogicTest {
 					)))
 			.build();
 
-	private void givenDuplicateTokens() {
-		xfers = CryptoTransferTransactionBody.newBuilder()
-				.addTokenTransfers(
-						TokenTransferList.newBuilder()
-								.setToken(asToken("0.0.12345"))
-								.addAllTransfers(List.of(
-										adjustFrom(asAccount("0.0.2"), -1_000),
-										adjustFrom(asAccount("0.0.3"), +1_000)
-								)))
-				.addTokenTransfers(
-						TokenTransferList.newBuilder()
-								.setToken(asToken("0.0.12345"))
-								.addAllTransfers(List.of(
-										adjustFrom(asAccount("0.0.2"), -1_000),
-										adjustFrom(asAccount("0.0.3"), +1_000)
-								))
-				)
-				.build();
-
-		cryptoTransferTxn = TransactionBody.newBuilder()
-				.setCryptoTransfer(xfers)
-				.build();
-	}
-
-	private void givenInvalidTokenDuplicateAccounts() {
-		xfers = CryptoTransferTransactionBody.newBuilder()
-				.addTokenTransfers(
-						TokenTransferList.newBuilder()
-								.setToken(asToken("0.0.12345"))
-								.addAllTransfers(List.of(
-										adjustFrom(asAccount("0.0.2"), -1_000),
-										adjustFrom(asAccount("0.0.2"), +1_000)
-								))
-				)
-				.build();
-
-		cryptoTransferTxn = TransactionBody.newBuilder()
-				.setCryptoTransfer(xfers)
-				.build();
-	}
-
-	private void givenInvalidTokenAdjustment() {
-		xfers = CryptoTransferTransactionBody.newBuilder()
-				.addTokenTransfers(
-						TokenTransferList.newBuilder()
-								.setToken(asToken("0.0.12345"))
-								.addAllTransfers(List.of(
-										adjustFrom(asAccount("0.0.2"), -1_000),
-										adjustFrom(asAccount("0.0.3"), -1_000)
-								))
-				)
-				.build();
-
-		cryptoTransferTxn = TransactionBody.newBuilder()
-				.setCryptoTransfer(xfers)
-				.build();
-	}
-
-	private void givenMissingTokenInTransfer() {
-		xfers = CryptoTransferTransactionBody.newBuilder()
-				.addTokenTransfers(
-						TokenTransferList.newBuilder()
-								.addAllTransfers(List.of(
-										adjustFrom(asAccount("0.0.2"), -1_000),
-										adjustFrom(asAccount("0.0.3"), +1_000)
-								))
-				)
-				.build();
-
-		cryptoTransferTxn = TransactionBody.newBuilder()
-				.setCryptoTransfer(xfers)
-				.build();
-	}
-
-	private void givenMissingAccountInTokenAccountAmount() {
-		xfers = CryptoTransferTransactionBody.newBuilder()
-				.addTokenTransfers(
-						TokenTransferList.newBuilder()
-								.setToken(asToken("0.0.12345"))
-								.addAllTransfers(List.of(
-										AccountAmount.newBuilder()
-												.setAmount(-1000)
-												.build(),
-										adjustFrom(asAccount("0.0.3"), +1_000)
-								))
-				)
-				.build();
-
-		cryptoTransferTxn = TransactionBody.newBuilder()
-				.setCryptoTransfer(xfers)
-				.build();
-	}
-
-	private void givenInvalidTokenZeroAmounts() {
-		xfers = CryptoTransferTransactionBody.newBuilder()
-				.addTokenTransfers(
-						TokenTransferList.newBuilder()
-								.setToken(asToken("0.0.12345"))
-								.addAllTransfers(List.of(
-										adjustFrom(asAccount("0.0.2"), 0),
-										adjustFrom(asAccount("0.0.3"), 0)
-								))
-				)
-				.build();
-
-		cryptoTransferTxn = TransactionBody.newBuilder()
-				.setCryptoTransfer(xfers)
-				.build();
-	}
 }

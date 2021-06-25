@@ -21,6 +21,7 @@ package com.hedera.services.context.primitives;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.UInt64Value;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -31,6 +32,8 @@ import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -41,13 +44,16 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
@@ -61,6 +67,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import proto.CustomFeesOuterClass;
 
 import javax.inject.Inject;
 import java.time.Instant;
@@ -73,6 +80,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 
 import static com.hedera.services.state.merkle.MerkleScheduleTest.scheduleCreateTxnWith;
+import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
@@ -201,6 +209,7 @@ class StateViewTest {
 				new EntityId(1, 2, 3));
 		token.setMemo(tokenMemo);
 		token.setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey());
+		token.setCustomFeeKey(MISC_ACCOUNT_KT.asJKey());
 		token.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asJKey());
 		token.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asJKey());
 		token.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKey());
@@ -211,6 +220,7 @@ class StateViewTest {
 		token.setDeleted(true);
 		token.setTokenType(TokenType.FUNGIBLE_COMMON);
 		token.setSupplyType(TokenSupplyType.FINITE);
+		token.setFeeScheduleFrom(grpcCustomFees);
 
 		given(tokenStore.resolve(tokenId)).willReturn(tokenId);
 		given(tokenStore.resolve(missingTokenId)).willReturn(TokenStore.MISSING_TOKEN);
@@ -248,13 +258,21 @@ class StateViewTest {
 		StateView.tokenRelsFn = mockTokenRelsFn;
 		given(mockTokenRelsFn.apply(any(), any())).willReturn(Collections.emptyList());
 
+		final var uniqueTokenAccountOwnerships = new FCMap<MerkleUniqueTokenId, MerkleUniqueToken>();
+		uniqueTokenAccountOwnerships.put(targetNftKey, targetNft);
+
 		subject = new StateView(
 				tokenStore,
 				scheduleStore,
 				StateView.EMPTY_TOPICS_SUPPLIER,
 				() -> contracts,
-				nodeProps,
-				() -> diskFs);
+				StateView.EMPTY_STORAGE_SUPPLIER,
+				() -> uniqueTokenAccountOwnerships,
+				StateView.EMPTY_TOKEN_ASSOCS_SUPPLIER,
+				StateView.EMPTY_UNIQUE_TOKEN_ASSOCS_SUPPLIER,
+				StateView.EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS_SUPPLIER,
+				() -> diskFs,
+				nodeProps);
 		subject.fileAttrs = attrs;
 		subject.fileContents = contents;
 		subject.contractBytecode = bytecode;
@@ -271,6 +289,13 @@ class StateViewTest {
 		// expect:
 		assertTrue(subject.tokenExists(tokenId));
 		assertFalse(subject.tokenExists(missingTokenId));
+	}
+
+	@Test
+	void nftExistsWorks() {
+		// expect:
+		assertTrue(subject.nftExists(targetNftId));
+		assertFalse(subject.nftExists(missingNftId));
 	}
 
 	@Test
@@ -341,7 +366,7 @@ class StateViewTest {
 		assertEquals(SCHEDULE_ADMIN_KT.asKey(), info.getAdminKey());
 		assertEquals(expectedScheduledTxn, info.getScheduledTransactionBody());
 		assertEquals(schedule.scheduledTransactionId(), info.getScheduledTransactionID());
-		assertEquals(RichInstant.fromJava(resolutionTime).toGrpc(), info.getDeletionTime());
+		assertEquals(fromJava(resolutionTime).toGrpc(), info.getDeletionTime());
 	}
 
 	@Test
@@ -352,7 +377,7 @@ class StateViewTest {
 		var info = gotten.get();
 
 		// then:
-		assertEquals(RichInstant.fromJava(resolutionTime).toGrpc(), info.getExecutionTime());
+		assertEquals(fromJava(resolutionTime).toGrpc(), info.getExecutionTime());
 	}
 
 	@Test
@@ -397,6 +422,8 @@ class StateViewTest {
 
 	@Test
 	void getsTokenInfo() {
+		// setup:
+		final var miscKey = MISC_ACCOUNT_KT.asKey();
 		// when:
 		var info = subject.infoForToken(tokenId).get();
 
@@ -409,10 +436,12 @@ class StateViewTest {
 		assertEquals(token.treasury().toGrpcAccountId(), info.getTreasury());
 		assertEquals(token.totalSupply(), info.getTotalSupply());
 		assertEquals(token.decimals(), info.getDecimals());
+		assertEquals(token.customFeeSchedule(), MerkleToken.customFeesFromGrpc(info.getCustomFees()));
+		assertEquals(miscKey, info.getCustomFeesKey());
 		assertEquals(TOKEN_ADMIN_KT.asKey(), info.getAdminKey());
 		assertEquals(TOKEN_FREEZE_KT.asKey(), info.getFreezeKey());
 		assertEquals(TOKEN_KYC_KT.asKey(), info.getKycKey());
-		assertEquals(MISC_ACCOUNT_KT.asKey(), info.getWipeKey());
+		assertEquals(miscKey, info.getWipeKey());
 		assertEquals(autoRenew, info.getAutoRenewAccount());
 		assertEquals(Duration.newBuilder().setSeconds(autoRenewPeriod).build(), info.getAutoRenewPeriod());
 		assertEquals(Timestamp.newBuilder().setSeconds(expiry).build(), info.getExpiry());
@@ -639,7 +668,7 @@ class StateViewTest {
 		// then:
 		assertTrue(info.isEmpty());
 		final var warnLogs = logCaptor.warnLogs();
-		assertTrue(warnLogs.size() == 1);
+		assertEquals(1, warnLogs.size());
 		assertThat(warnLogs.get(0), Matchers.startsWith("Unexpected error occurred when getting info for file"));
 	}
 
@@ -710,4 +739,73 @@ class StateViewTest {
 		// then:
 		assertTrue(Arrays.equals(data, stuff.get()));
 	}
+
+	@Test
+	void rejectsMissingNft() {
+		// when:
+		final var optionalNftInfo = subject.infoForNft(missingNftId);
+
+		// then:
+		assertTrue(optionalNftInfo.isEmpty());
+	}
+
+	@Test
+	void getNftsAsExpected() {
+		// when:
+		final var optionalNftInfo = subject.infoForNft(targetNftId);
+
+		// then:
+		assertTrue(optionalNftInfo.isPresent());
+		// and:
+		final var info = optionalNftInfo.get();
+		assertEquals(targetNftId, info.getNftID());
+		assertEquals(owner.toGrpcAccountId(), info.getAccountID());
+		assertEquals(fromJava(nftCreation).toGrpc(), info.getCreationTime());
+		assertArrayEquals(nftMeta, info.getMetadata().toByteArray());
+	}
+
+	private final Instant nftCreation = Instant.ofEpochSecond(1_234_567L, 8);
+	private final byte[] nftMeta = "abcdefgh".getBytes();
+	private final EntityId owner = new EntityId(4, 5, 6);
+	private final NftID targetNftId = NftID.newBuilder()
+			.setTokenID(IdUtils.asToken("1.2.3"))
+			.setSerialNumber(4L)
+			.build();
+	private final NftID missingNftId = NftID.newBuilder()
+			.setTokenID(IdUtils.asToken("1.7.9"))
+			.setSerialNumber(5L)
+			.build();
+	private final MerkleUniqueTokenId targetNftKey = new MerkleUniqueTokenId(new EntityId(1, 2, 3), 4);
+	private final MerkleUniqueToken targetNft = new MerkleUniqueToken(owner, nftMeta, fromJava(nftCreation));
+
+	private CustomFeesOuterClass.FixedFee fixedFeeInTokenUnits = CustomFeesOuterClass.FixedFee.newBuilder()
+			.setTokenId(tokenId)
+			.setUnitsToCollect(100)
+			.build();
+	private CustomFeesOuterClass.FixedFee fixedFeeInHbar = CustomFeesOuterClass.FixedFee.newBuilder()
+			.setUnitsToCollect(100)
+			.build();
+	private Fraction fraction = Fraction.newBuilder().setNumerator(15).setDenominator(100).build();
+	private CustomFeesOuterClass.FractionalFee fractionalFee = CustomFeesOuterClass.FractionalFee.newBuilder()
+			.setFractionOfUnitsToCollect(fraction)
+			.setMaximumUnitsToCollect(UInt64Value.of(50))
+			.setMinimumUnitsToCollect(10)
+			.build();
+	private CustomFeesOuterClass.CustomFee customFixedFeeInHbar = CustomFeesOuterClass.CustomFee.newBuilder()
+			.setFeeCollector(payerAccountId)
+			.setFixedFee(fixedFeeInHbar)
+			.build();
+	private CustomFeesOuterClass.CustomFee customFixedFeeInHts = CustomFeesOuterClass.CustomFee.newBuilder()
+			.setFeeCollector(payerAccountId)
+			.setFixedFee(fixedFeeInTokenUnits)
+			.build();
+	private CustomFeesOuterClass.CustomFee customFractionalFee = CustomFeesOuterClass.CustomFee.newBuilder()
+			.setFeeCollector(payerAccountId)
+			.setFractionalFee(fractionalFee)
+			.build();
+	private CustomFeesOuterClass.CustomFees grpcCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
+			.addCustomFees(customFixedFeeInHbar)
+			.addCustomFees(customFixedFeeInHts)
+			.addCustomFees(customFractionalFee)
+			.build();
 }

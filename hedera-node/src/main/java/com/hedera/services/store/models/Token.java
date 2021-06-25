@@ -93,7 +93,11 @@ public class Token {
 		changeSupply(treasuryRel, +amount, INVALID_TOKEN_MINT_AMOUNT);
 	}
 
-	public void burn(final OwnershipTracker ownershipTracker, final TokenRelationship treasuryRelationship, final List<Long> serialNumbers){
+	public void burn(
+			final OwnershipTracker ownershipTracker,
+			final TokenRelationship treasuryRelationship,
+			final List<Long> serialNumbers
+	){
 		validateTrue( type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID, () ->
 				"Non fungible burn can be invoked only on Non fungible tokens!");
 		validateTrue( serialNumbers.size() > 0 , FAIL_INVALID, ()->
@@ -106,7 +110,12 @@ public class Token {
 		changeSupply(treasuryRelationship, -serialNumbers.size(), FAIL_INVALID);
 	}
 
-	public void mint(final OwnershipTracker ownershipTracker, final TokenRelationship treasuryRel, final List<ByteString> metadata, final RichInstant creationTime) {
+	public void mint(
+			final OwnershipTracker ownershipTracker,
+			final TokenRelationship treasuryRel,
+			final List<ByteString> metadata,
+			final RichInstant creationTime
+	) {
 		validateTrue(metadata.size() > 0, FAIL_INVALID, () ->
 				"Cannot mint " + metadata.size() + " numbers of Unique Tokens");
 		validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID, () ->
@@ -116,7 +125,7 @@ public class Token {
 
 		for (ByteString m : metadata) {
 			lastUsedSerialNumber++;
-			UniqueToken uniqueToken = new UniqueToken(id, lastUsedSerialNumber, creationTime, treasury.getId(), m.toByteArray());
+			var uniqueToken = new UniqueToken(id, lastUsedSerialNumber, creationTime, treasury.getId(), m.toByteArray());
 			mintedUniqueTokens.add(uniqueToken);
 			ownershipTracker.add(id, OwnershipTracker.fromMinting(treasury.getId(), lastUsedSerialNumber));
 		}

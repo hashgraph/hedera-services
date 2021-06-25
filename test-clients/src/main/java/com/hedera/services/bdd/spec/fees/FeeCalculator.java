@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.hederahashgraph.fee.FeeBuilder.getFeeObject;
 import static com.hederahashgraph.fee.FeeBuilder.getSignatureCount;
 import static com.hederahashgraph.fee.FeeBuilder.getSignatureSize;
 import static com.hederahashgraph.fee.FeeBuilder.getTotalFeeforRequest;
@@ -82,34 +83,28 @@ public class FeeCalculator {
 		return feeDataMap;
 	}
 
-	public long maxFeeTinyBars(SubType subType) {
+	private long maxFeeTinyBars(SubType subType) {
 		return usingFixedFee ? fixedFee : Arrays
 				.stream(HederaFunctionality.values())
 				.mapToLong(op ->
 						Optional.ofNullable(
-								opFeeData.get(op)).map(fd ->
-								fd.get(subType).getServicedata().getMax()
-										+ fd.get(subType).getNodedata().getMax()
-										+ fd.get(subType).getNetworkdata().getMax()).orElse(0L))
-				.max()
-				.orElse(0L);
+								opFeeData.get(op)
+						).map(fd -> {
+									final var pricesForSubtype = fd.get(subType);
+									if (pricesForSubtype == null) {
+										return 0L;
+									} else {
+										return pricesForSubtype.getServicedata().getMax()
+												+ pricesForSubtype.getNodedata().getMax()
+												+ pricesForSubtype.getNetworkdata().getMax();
+									}
+								}
+						).orElse(0L)
+				).max().orElse(0L);
 	}
 
 	public long maxFeeTinyBars() {
 		return maxFeeTinyBars(SubType.DEFAULT);
-	}
-
-	public long forOp(HederaFunctionality op, SubType subType, FeeData knownActivity) {
-		if (usingFixedFee) {
-			return fixedFee;
-		}
-		try {
-			Map<SubType, FeeData> activityPrices = opFeeData.get(op);
-			return getTotalFeeforRequest(activityPrices.get(subType), knownActivity, provider.rates());
-		} catch (Throwable t) {
-			log.warn("Unable to calculate fee for op {}, using max fee!", op, t);
-		}
-		return maxFeeTinyBars(subType);
 	}
 
 	public long forOp(HederaFunctionality op, FeeData knownActivity) {
@@ -139,7 +134,7 @@ public class FeeCalculator {
 			AtomicReference<FeeObject> obs
 	) throws Throwable {
 		FeeData activityMetrics = metricsFor(txn, numPayerSigs, metricsCalculator);
-		return forOp(op, SubType.DEFAULT, activityMetrics);
+		return forOpWithDetails(op, SubType.DEFAULT, activityMetrics, obs);
 	}
 
 	public long forActivityBasedOp(

@@ -21,19 +21,31 @@ package com.hedera.services.txns;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.txns.span.ExpandHandleSpan;
+import com.hedera.services.txns.span.SpanMapManager;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.SwirldTransaction;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+@ExtendWith(MockitoExtension.class)
 class ExpandHandleSpanTest {
+	@Mock
+	private SpanMapManager handleSpanMap;
+
 	private final long duration = 20;
 	private final TimeUnit testUnit = TimeUnit.MILLISECONDS;
 
@@ -53,28 +65,37 @@ class ExpandHandleSpanTest {
 
 	private ExpandHandleSpan subject;
 
+	@BeforeEach
+	void setUp() {
+		subject = new ExpandHandleSpan(duration, testUnit, handleSpanMap);
+	}
+
 	@Test
 	void propagatesIpbe() {
-		// given:
-		subject = new ExpandHandleSpan(duration, testUnit);
-
 		// expect:
 		assertThrows(InvalidProtocolBufferException.class, ()  -> subject.track(invalidTxn));
 		assertThrows(InvalidProtocolBufferException.class, ()  -> subject.accessorFor(invalidTxn));
 	}
 
 	@Test
-	void reusesTrackedAccessor() throws InvalidProtocolBufferException {
-		// given:
-		subject = new ExpandHandleSpan(duration, testUnit);
-		// and:
-		final var startAccessor = subject.track(validTxn);
-
+	void expandsOnTracking() throws InvalidProtocolBufferException {
 		// when:
+		final var startAccessor = subject.track(validTxn);
+		// and:
 		final var endAccessor = subject.accessorFor(validTxn);
 
 		// then:
-		assertEquals(startAccessor.getPlatformTxn(), endAccessor.getPlatformTxn());
 		assertSame(startAccessor, endAccessor);
+		// and:
+		Mockito.verify(handleSpanMap).expandSpan(startAccessor);
+		Mockito.verify(handleSpanMap).rationalizeSpan(endAccessor);
+	}
+
+	@Test
+	void reExpandsIfNotCached() throws InvalidProtocolBufferException {
+		// when:
+		final var endAccessor = subject.accessorFor(validTxn);
+
+		Mockito.verify(handleSpanMap).expandSpan(endAccessor);
 	}
 }

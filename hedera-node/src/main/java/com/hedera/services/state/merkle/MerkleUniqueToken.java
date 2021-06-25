@@ -23,8 +23,6 @@ package com.hedera.services.state.merkle;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.store.tokens.unique.OwnerIdentifier;
-import com.hedera.services.utils.invertible_fchashmap.Identifiable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
@@ -35,7 +33,7 @@ import java.util.Objects;
 /**
  * Represents an uniqueToken entity. Part of the nft implementation.
  */
-public class MerkleUniqueToken extends AbstractMerkleLeaf implements Identifiable<OwnerIdentifier> {
+public class MerkleUniqueToken extends AbstractMerkleLeaf {
 
 	public static final int UPPER_BOUND_METADATA_BYTES = 1024;
 	static final int MERKLE_VERSION = 1;
@@ -145,8 +143,4 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Identifiabl
 		return creationTime;
 	}
 
-	@Override
-	public OwnerIdentifier getIdentity() {
-		return new OwnerIdentifier(this.owner);
-	}
 }
