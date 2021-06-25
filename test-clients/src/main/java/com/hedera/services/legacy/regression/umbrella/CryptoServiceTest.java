@@ -31,7 +31,6 @@ import com.hedera.services.legacy.core.TestHelper;
 import com.hedera.services.legacy.proto.utils.KeyExpansion;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
-import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetContentsResponse.FileContents;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -983,77 +982,6 @@ public class CryptoServiceTest extends TestHelperComplex {
 	}
 
 	/**
-	 * Updates an account.
-	 *
-	 * @param accountID
-	 * 		account to be updated
-	 * @param payerAccountID
-	 * 		payer account id
-	 * @param nodeAccountID
-	 * 		node account id
-	 * @param newKey
-	 * 		the new key to replace the existing key
-	 * @return updated account info
-	 * @throws Throwable
-	 * 		exception thrown if there is a failure
-	 */
-	public AccountInfo updateAccountKey(AccountID accountID, AccountID payerAccountID,
-			AccountID nodeAccountID,
-			Key newKey) throws Throwable {
-		Key payerKey = acc2ComplexKeyMap.get(payerAccountID);
-		Key accKey = acc2ComplexKeyMap.get(accountID);
-		List<Key> keys = new ArrayList<Key>();
-		keys.add(payerKey);
-		if (accountID.getAccountNum() != specialAccountNum) {
-			keys.add(accKey);
-		}
-		keys.add(newKey);
-
-		CryptoUpdateTransactionBody cryptoUpdate = CryptoUpdateTransactionBody.newBuilder()
-				.setAccountIDToUpdate(accountID).setKey(newKey).build();
-
-		Transaction updateTx = TestHelperComplex
-				.updateAccount(accountID, payerAccountID, nodeAccountID, cryptoUpdate);
-		Transaction signUpdate = TransactionSigner
-				.signTransactionComplexWithSigMap(updateTx, keys, pubKey2privKeyMap);
-
-		log.info("\n-----------------------------------\nupdateAccount: request = " + signUpdate);
-		Key oldGenesisKey = acc2ComplexKeyMap.remove(accountID);
-
-		TransactionResponse response = cstub.updateAccount(signUpdate);
-		Assert.assertNotNull(response);
-		Assert.assertEquals(ResponseCodeEnum.OK, response.getNodeTransactionPrecheckCode());
-		log.info(
-				"Pre Check Response account update :: " + response.getNodeTransactionPrecheckCode().name());
-		TransactionBody body = com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody(signUpdate);
-		TransactionID transactionID = body.getTransactionID();
-		cache.addTransactionID(transactionID);
-		TransactionReceipt txReceipt = getTxFastRecord(transactionID);
-		Assert.assertNotNull(txReceipt);
-		String status = txReceipt.getStatus().name();
-
-		if (status.equals(ResponseCodeEnum.SUCCESS.name())) {
-			acc2ComplexKeyMap.put(accountID, newKey);
-		} else {
-			acc2ComplexKeyMap.put(accountID, oldGenesisKey);
-		}
-
-		synchronized (accountsBeingUpdated) {
-			if (accountsBeingUpdated.contains(accountID)) {
-				accountsBeingUpdated.remove(accountID);
-			}
-		}
-
-		AccountInfo accInfo = getAccountInfo(accountID, payerAccountID, nodeAccountID);
-		Assert.assertNotNull(accInfo);
-		log.info(accInfo);
-		Assert.assertEquals(newKey, accInfo.getKey());
-
-		log.info("updating successful" + "\n");
-		return accInfo;
-	}
-
-	/**
 	 * Generates a complex key up to defined depth.
 	 *
 	 * @param accountKeyType
@@ -1318,24 +1246,6 @@ public class CryptoServiceTest extends TestHelperComplex {
 			receipt = getTxReceipt(txId);
 		}
 		return receipt;
-	}
-
-	/**
-	 * Makes a transfer, but does not try to get receipts.
-	 *
-	 * @param transferTxSigned
-	 * 		signed transfer transaction
-	 * @return transaction response
-	 * @throws Throwable
-	 * 		exception thrown if there is a failure
-	 */
-	public TransactionResponse transferOnly(Transaction transferTxSigned) throws Throwable {
-		log.info("\n-----------------------------------\ntransfer: request = "
-				+ com.hedera.services.legacy.proto.utils.CommonUtils.toReadableString(transferTxSigned));
-		TransactionResponse response = retryLoopTransaction(transferTxSigned, "transfer");
-		log.info("Transfer Response :: " + response.getNodeTransactionPrecheckCodeValue());
-		Assert.assertNotNull(response);
-		return response;
 	}
 
 	/**

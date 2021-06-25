@@ -51,7 +51,6 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
-import net.i2p.crypto.eddsa.KeyPairGenerator;
 import org.apache.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
@@ -60,7 +59,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -159,14 +157,8 @@ public class TestHelper {
 		FeeClient.initialize(hbarEquivalent, centEquivalent, feeScheduleBytes);
 	}
 
-	public static List<AccountKeyListObj> getGenAccountKey() throws URISyntaxException, IOException {
-		Map<String, List<AccountKeyListObj>> keyFromFile = getKeyFromFile(fileName);
-
-		return keyFromFile.get("START_ACCOUNT");
-	}
-
 	public static Transaction createAccountWithFee(AccountID payerAccount, AccountID nodeAccount,
-			KeyPair pair, long initialBalance, List<PrivateKey> privKey) throws Exception {
+			KeyPair pair, long initialBalance, List<PrivateKey> privKey) {
 		Transaction transaction = TestHelper
 				.createAccount(payerAccount, nodeAccount, pair, initialBalance, TestHelper.getCryptoMaxFee(),
 						DEFAULT_SEND_RECV_RECORD_THRESHOLD, DEFAULT_SEND_RECV_RECORD_THRESHOLD);
@@ -263,82 +255,6 @@ public class TestHelper {
 		return stub.cryptoGetBalance(getBalanceQuery);
 	}
 
-	public static Response getTxRecordByTxID(CryptoServiceBlockingStub stub,
-			TransactionID transactionID, AccountID payerAccount, KeyPair payerAccountKey,
-			AccountID nodeAccount) throws Exception {
-
-		long costForQuery = FeeClient.getCostForGettingTxRecord();
-		System.out.println(costForQuery + " :: is the cost for query");
-		Response response = executeTxRecordByTxID(stub, transactionID, payerAccount, payerAccountKey,
-				nodeAccount, costForQuery, ResponseType.COST_ANSWER);
-
-		if (response.getTransactionGetRecord().getHeader().getNodeTransactionPrecheckCode()
-				== ResponseCodeEnum.OK) {
-			long getAcctFee = response.getTransactionGetRecord().getHeader().getCost();
-			response = executeTxRecordByTxID(stub, transactionID, payerAccount, payerAccountKey,
-					nodeAccount, getAcctFee, ResponseType.ANSWER_ONLY);
-		}
-		return response;
-	}
-
-	private static Response executeTxRecordByTxID(CryptoServiceBlockingStub stub,
-			TransactionID transactionID, AccountID payerAccount, KeyPair payerAccountKey,
-			AccountID nodeAccount, long costForQuery, ResponseType responseType) throws Exception {
-		Transaction transferTransaction = createTransferSigMap(payerAccount, payerAccountKey,
-				nodeAccount, payerAccount, payerAccountKey, nodeAccount, costForQuery);
-		Query query = RequestBuilder.getTransactionGetRecordQuery(transactionID, transferTransaction,
-				responseType);
-		return stub.getTxRecordByTxID(query);
-	}
-
-	public static Response getAccountRecords(CryptoServiceBlockingStub stub,
-			AccountID accountId, AccountID payerAccount, KeyPair payerAccountKey,
-			AccountID nodeAccount) throws Exception {
-
-		long costForQuery = TestHelper.getCryptoMaxFee();
-		System.out.println(costForQuery + " :: is the cost for query");
-		Response response = executeGetAccountRecords(stub, accountId, payerAccount, payerAccountKey,
-				nodeAccount, costForQuery, ResponseType.COST_ANSWER);
-
-		if (response.getCryptoGetAccountRecords().getHeader().getNodeTransactionPrecheckCode()
-				== ResponseCodeEnum.OK) {
-			long getAcctFee = response.getCryptoGetAccountRecords().getHeader().getCost();
-			response = executeGetAccountRecords(stub, accountId, payerAccount, payerAccountKey,
-					nodeAccount, getAcctFee, ResponseType.ANSWER_ONLY);
-		}
-		return response;
-	}
-
-	private static Response executeGetAccountRecords(CryptoServiceBlockingStub stub,
-			AccountID accountID, AccountID payerAccount, KeyPair payerAccountKey,
-			AccountID nodeAccount, long costForQuery, ResponseType responseType) throws Exception {
-		Transaction transferTransaction = createTransferSigMap(payerAccount, payerAccountKey,
-				nodeAccount, payerAccount, payerAccountKey, nodeAccount, costForQuery);
-		Query query = RequestBuilder.getAccountRecordsQuery(accountID, transferTransaction,
-				responseType);
-		return stub.getAccountRecords(query);
-	}
-
-	public static Transaction createFile(long payerAccountNum,
-			Long nodeAccountNum, long transactionFee,
-			boolean generateRecord, String memo,
-			ByteString fileData, Timestamp fileExpirationTime) {
-
-		Timestamp startTime = TestHelper.getDefaultCurrentTimestampUTC();
-		Duration transactionDuration = RequestBuilder.getDuration(TX_DURATION);
-		List<Key> waclKeyList = new ArrayList<>();
-		KeyPair pair = new KeyPairGenerator().generateKeyPair();
-		Key waclKey = Key.newBuilder()
-				.setEd25519(ByteString.copyFrom(pair.getPublic().toString().getBytes())).build();
-		waclKeyList.add(waclKey);
-
-		return RequestBuilder.getFileCreateBuilder(payerAccountNum, 0l, 0l, nodeAccountNum, 0l, 0l,
-				transactionFee, startTime, transactionDuration, generateRecord, memo,
-				fileData,
-				fileExpirationTime, waclKeyList);
-	}
-
-
 	public static Properties getApplicationProperties() {
 		Properties prop = new Properties();
 		InputStream input;
@@ -384,23 +300,6 @@ public class TestHelper {
 		}
 	}
 
-	public static Response getFileContent(FileServiceBlockingStub fileStub,
-			FileID fileID, AccountID payerAccount,
-			KeyPair payerAccountKey, AccountID nodeAccount) throws Exception {
-		long getContentFee = TestHelper.getCryptoMaxFee();
-		Transaction transferTransaction = createTransferSigMap(payerAccount, payerAccountKey,
-				nodeAccount, payerAccount, payerAccountKey, nodeAccount, getContentFee);
-		Query fileContentQuery = RequestBuilder
-				.getFileContentQuery(fileID, transferTransaction, ResponseType.COST_ANSWER);
-		Response response = fileStub.getFileContent(fileContentQuery);
-		getContentFee = response.getFileGetContents().getHeader().getCost();
-		transferTransaction = createTransferSigMap(payerAccount, payerAccountKey,
-				nodeAccount, payerAccount, payerAccountKey, nodeAccount, getContentFee);
-		fileContentQuery = RequestBuilder
-				.getFileContentQuery(fileID, transferTransaction, ResponseType.ANSWER_ONLY);
-		return fileStub.getFileContent(fileContentQuery);
-	}
-
 	// For getting the initial files, exchange rate and fee schedule.
 	public static Response getFileContentInitial(FileServiceBlockingStub fileStub,
 			FileID fileID, AccountID payerAccount,
@@ -417,26 +316,6 @@ public class TestHelper {
 		fileContentQuery = RequestBuilder
 				.getFileContentQuery(fileID, transferTransaction, ResponseType.ANSWER_ONLY);
 		return fileStub.getFileContent(fileContentQuery);
-	}
-
-	public static Query getTxRecordByTxId(TransactionID transactionID, AccountID payerAccount,
-			KeyPair payerAccountKey, AccountID nodeAccount, long getTxRecordFee,
-			ResponseType reponseType) throws Exception {
-
-		Transaction transferTransaction = createTransferSigMap(payerAccount, payerAccountKey, nodeAccount,
-				payerAccount, payerAccountKey, nodeAccount, getTxRecordFee);
-
-		return RequestBuilder
-				.getTransactionGetRecordQuery(transactionID, transferTransaction, reponseType);
-	}
-
-	public static Query getTxRecordByAccountId(AccountID accountID, AccountID payerAccount,
-			KeyPair payerAccountKeyPair, AccountID nodeAccount, long getTxRecordFee,
-			ResponseType responsetype) throws Exception {
-		getTxRecordFee = TestHelper.getCryptoMaxFee();
-		Transaction transferTransaction = createTransferSigMap(payerAccount, payerAccountKeyPair,
-				nodeAccount, payerAccount, payerAccountKeyPair, nodeAccount, getTxRecordFee);
-		return RequestBuilder.getAccountRecordsQuery(accountID, transferTransaction, responsetype);
 	}
 
 	public static Transaction createTransferSigMap(AccountID fromAccount, KeyPair fromKeyPair,
@@ -511,14 +390,14 @@ public class TestHelper {
 	 * @param query
 	 * 		query for which receipts to be fetched
 	 * @param cstub
-	 * 		CryptoServiceBlockingStub
+	 * 		CryptoServiceBlockingStub blocking-style stub that supports unary and streaming output calls on the service
 	 * @param log
-	 * 		logger
+	 * 		logger to add logs
 	 * @param host
 	 * 		host to build address
-	 * @return the response
+	 * @return the getTransactionReceipt response
 	 * @throws InvalidNodeTransactionPrecheckCode
-	 * 		exception occurred if there is a failure
+	 * 		indicates there is a failure while querying transaction receipt if pre-check code is not OK or BUSY
 	 */
 	public static Response fetchReceipts(final Query query, CryptoServiceBlockingStub cstub,
 			final Logger log, String host)
@@ -597,7 +476,7 @@ public class TestHelper {
 	 * Exponential wait time in millis capped by a max wait time.
 	 *
 	 * @param retries
-	 * 		num of retries
+	 * 		num of retries to be performed
 	 * @param maxWaitMillis
 	 * 		beyond which, the wait time will be this value
 	 * @return the wait time in millis
@@ -618,7 +497,7 @@ public class TestHelper {
 	/**
 	 * Gets the current UTC timestamp with default winding back seconds.
 	 *
-	 * @return UTC timestamp
+	 * @return current UTC timestamp with default winding back seconds
 	 */
 	public synchronized static Timestamp getDefaultCurrentTimestampUTC() {
 		Timestamp rv = ProtoCommonUtils.getCurrentTimestampUTC(DEFAULT_WIND_SEC);
@@ -714,35 +593,4 @@ public class TestHelper {
 	public static long getCryptoMaxFee() {
 		return CryptoServiceTest.getUmbrellaProperties().getLong("cryptoMaxFee", 5_00_000_000L);
 	}
-
-	public static int getErrorReturnCode() {
-		return CryptoServiceTest.getUmbrellaProperties().getInt("errorReturnCode", -1);
-	}
-
-
-	public static Response getFileInfo(FileServiceBlockingStub stub,
-			FileID fileID, AccountID payerAccount, KeyPair payerAccountKey, AccountID nodeAccount)
-			throws Exception {
-
-		// first get the fee for getting the file info
-		long feeForFileInfoCost = FeeClient.getFeeByID(HederaFunctionality.FileGetInfo);
-		Response response = executeFileInfoQuery(stub, fileID, payerAccount, payerAccountKey,
-				nodeAccount, feeForFileInfoCost, ResponseType.COST_ANSWER);
-
-		long getFileFee = response.getFileGetInfo().getHeader().getCost();
-		response = executeFileInfoQuery(stub, fileID, payerAccount, payerAccountKey, nodeAccount,
-				getFileFee, ResponseType.ANSWER_ONLY);
-		return response;
-	}
-
-	private static Response executeFileInfoQuery(FileServiceBlockingStub stub,
-			FileID fileId, AccountID payerAccount, KeyPair payerAccountKey,
-			AccountID nodeAccount, long costForQuery, ResponseType responseType) throws Exception {
-		Transaction transferTransaction = createTransferSigMap(payerAccount, payerAccountKey, nodeAccount,
-				payerAccount, payerAccountKey, nodeAccount, costForQuery);
-		Query fileGetInfoBuilder = RequestBuilder
-				.getFileGetInfoBuilder(transferTransaction, fileId, responseType);
-		return stub.getFileInfo(fileGetInfoBuilder);
-	}
-
 }

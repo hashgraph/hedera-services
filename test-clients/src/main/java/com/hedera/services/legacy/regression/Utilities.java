@@ -34,9 +34,9 @@ public class Utilities {
 	protected static String DEFAULT_NODE_ACCOUNT_ID_STR = "0.0.3";
 
 	/**
-	 * get configured Node Account from application.properties
+	 * Get configured Node Account from application.properties
 	 *
-	 * @return nodeAccountId
+	 * @return nodeAccountId default listening account id
 	 */
 	public static long getDefaultNodeAccount() {
 		Properties properties = TestHelper.getApplicationProperties();
@@ -53,11 +53,11 @@ public class Utilities {
 	}
 
 	/**
-	 * get UTC Hour and Minutes from utcMillis
+	 * Get UTC Hour and Minutes from utc milli seconds
 	 *
 	 * @param utcMillis
 	 * 		UTC milliseconds given
-	 * @return generated UTC hour and minutes
+	 * @return UTC hour and minutes got from UTC milliseconds
 	 */
 	public static int[] getUTCHourMinFromMillis(final long utcMillis) {
 		int[] hourMin = new int[2];

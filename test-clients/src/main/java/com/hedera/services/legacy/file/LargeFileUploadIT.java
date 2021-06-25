@@ -60,14 +60,14 @@ public class LargeFileUploadIT extends FileServiceIT {
 	 * and uploaded one at a time.
 	 *
 	 * @param payerAccount
-	 * 		payer account Id
+	 * 		payer account Id, as the payer of transaction
 	 * @param filePath
 	 * 		upload file path
 	 * @param payerAccountKeyPair
-	 * 		the payer is a single keypair
-	 * @return file ID that is uploaded
+	 * 		the payer account's single keypair
+	 * @return file ID of the file that is uploaded
 	 * @throws Exception
-	 * 		exception caused if there is any failure during upload
+	 * 		indicates there is any failure during upload
 	 */
 	public static FileID uploadFile(AccountID payerAccount, String filePath,
 			KeyPair payerAccountKeyPair) throws Exception {
@@ -81,14 +81,14 @@ public class LargeFileUploadIT extends FileServiceIT {
 	 * and uploaded one at a time.
 	 *
 	 * @param payerAccount
-	 * 		payer account Id
+	 * 		payer account Id, as the payer of transaction
 	 * @param filePath
 	 * 		upload file path
 	 * @param payerAccountPrivateKeys
 	 * 		list of private keys for payer account
-	 * @return file ID that is uploaded
+	 * @return file ID of the file that is uploaded
 	 * @throws Exception
-	 * 		exception caused if there is any failure during upload
+	 * 		indicates there is any failure during upload
 	 */
 	public static FileID uploadFile(AccountID payerAccount, String filePath,
 			List<PrivateKey> payerAccountPrivateKeys) throws Exception {
@@ -112,18 +112,18 @@ public class LargeFileUploadIT extends FileServiceIT {
 	 * and uploaded one at a time.  Override the config file host and node account.
 	 *
 	 * @param payerAccount
-	 * 		payer account Id
+	 * 		payer account Id, as the payer of transaction
 	 * @param filePath
-	 * 		path of the file to be uploaded
+	 * 		path of the file that needs to be uploaded
 	 * @param payerAccountPrivateKeys
 	 * 		private keys for payer account
 	 * @param overrideHost
 	 * 		override host
 	 * @param overrideNodeAccountID
-	 * 		node account id
+	 * 		default listening node account id
 	 * @return file Id of the file that is uploaded
 	 * @throws Exception
-	 * 		exception caused if there is any failure during upload
+	 * 		indicates there is any failure during upload
 	 */
 	public static FileID uploadFile(AccountID payerAccount, String filePath,
 			List<PrivateKey> payerAccountPrivateKeys, String overrideHost,
@@ -149,22 +149,22 @@ public class LargeFileUploadIT extends FileServiceIT {
 	 * be segmented into 4K parts and uploaded one at a time.
 	 *
 	 * @param payerAccount
-	 * 		payer account Id
+	 * 		payer account Id,  as the payer of transaction
 	 * @param filePath
 	 * 		path of the file to be uploaded
 	 * @param payerAccountPrivateKeys
-	 * 		private keys for payer account
+	 * 		list of private keys for payer account
 	 * @param regex
-	 * 		regex
+	 * 		regex used to compare and replace the data in the file
 	 * @param replacement
-	 * 		replacing string
+	 * 		replacing string that is used to replace content in the file based on regex provided
 	 * @param overridehost
 	 * 		overriding host
 	 * @param overrideAccount
-	 * 		overriding account id
+	 * 		default listening node account id
 	 * @return file Id of the file that is uploaded
 	 * @throws Exception
-	 * 		exception caused if there is any failure during upload
+	 * 		indicates there is any failure during upload
 	 */
 	public static FileID uploadFileWithStringSubstitution(AccountID payerAccount, String filePath,
 			List<PrivateKey> payerAccountPrivateKeys, String regex, String replacement, String overridehost,
@@ -282,15 +282,6 @@ public class LargeFileUploadIT extends FileServiceIT {
 		System.out.println("FileGetContent: content = " + fileContent);
 		System.out.println("FileGetContent: file size = " + actualFileData.size());
 		return actualFileData;
-	}
-
-	public ByteString getFileContent(long fileNum, String filePath)
-			throws Exception {
-		fid = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(fileNum)
-				.build();
-		ByteString rv = getFileContent();
-		saveFile(rv.toByteArray(), filePath);
-		return rv;
 	}
 
 	public static void uploadLargeFileTest() throws Exception {

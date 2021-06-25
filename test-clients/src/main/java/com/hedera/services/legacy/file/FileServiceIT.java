@@ -21,12 +21,14 @@ package com.hedera.services.legacy.file;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.CommonUtils;
 import com.hedera.services.legacy.core.CustomProperties;
 import com.hedera.services.legacy.core.FeeClient;
 import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.legacy.core.TestHelper;
+import com.hedera.services.legacy.exception.InvalidNodeTransactionPrecheckCode;
 import com.hedera.services.legacy.proto.utils.ProtoCommonUtils;
 import com.hedera.services.legacy.regression.Utilities;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -58,7 +60,6 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.KeyPairGenerator;
-import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.After;
@@ -70,14 +71,9 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
-import java.security.InvalidKeyException;
 import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
-import java.security.SignatureException;
-import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -103,7 +99,6 @@ public class FileServiceIT {
 	public static long DAY_SEC = 24 * 60 * 60; // secs in a day
 	protected static String[] files = { "1K.txt", "overview-frame.html" };
 	protected static String UPLOAD_PATH = "testfiles/";
-	public static Map<String, List<AccountKeyListObj>> hederaStartupAccount = null;
 	public static String INITIAL_ACCOUNTS_FILE = TestHelper.getStartUpFile();
 	protected String DEFAULT_NODE_ACCOUNT_ID_STR = "0.0.3";
 
@@ -120,7 +115,6 @@ public class FileServiceIT {
 	protected static FileID fid = null;
 	protected static Duration transactionDuration = Duration.newBuilder().setSeconds(TX_DURATION_SEC).build();
 	public static Map<String, List<AccountKeyListObj>> hederaAccounts = null;
-	public static Map<String, KeyPair> accountKeyPairHolder = new HashMap<String, KeyPair>();
 	protected static List<AccountKeyListObj> genesisAccountList;
 	protected static List<PrivateKey> genesisPrivateKeyList = new ArrayList<>();
 	protected static AccountID genesisAccountID;
@@ -147,9 +141,7 @@ public class FileServiceIT {
 	protected static long fileDuration;
 
 	@Before
-	public void setUp()
-			throws IOException, ClassNotFoundException, InvalidKeySpecException, DecoderException, URISyntaxException,
-			Exception {
+	public void setUp() throws Exception {
 		init();
 		String filePath = files[0];
 		localPath = UPLOAD_PATH + filePath;
@@ -224,7 +216,7 @@ public class FileServiceIT {
 	}
 
 	@Test
-	public void test01Transfer() throws Exception {
+	public void test01Transfer() {
 		long transferAmt = 100l;
 		Transaction transferTxSigned = getPaymentSigned(payerSeq, recvSeq, "Transfer", transferAmt);
 		log.info("\n-----------------------------------");
@@ -281,14 +273,14 @@ public class FileServiceIT {
 	}
 
 	/**
-	 * Generates wacls.
+	 * Generates wacl keys and add them to public key and private key lists.
 	 *
 	 * @param numKeys
 	 * 		number of keys to generate
 	 * @param waclPubKeyList
-	 * 		for storing generated public keys
+	 * 		list for storing generated public keys
 	 * @param waclPrivKeyList
-	 * 		for storing generated private keys
+	 * 		list for storing generated private keys
 	 */
 	public void genWacl(int numKeys, List<Key> waclPubKeyList, List<PrivateKey> waclPrivKeyList) {
 		for (int i = 0; i < numKeys; i++) {
@@ -301,18 +293,13 @@ public class FileServiceIT {
 	}
 
 	/**
-	 * Gets the payer private keys for signing.
+	 * Gets the payer private keys for signing
 	 *
 	 * @param payerSeqNum
 	 * 		payer account number
-	 * @return payer private keys
-	 * @throws InvalidKeySpecException
-	 * 		exception caused if the key is invalid
-	 * @throws DecoderException
-	 * 		exception caused if there is a failure to decode
+	 * @return list of payer private keys
 	 */
-	protected static List<PrivateKey> getPayerPrivateKey(long payerSeqNum)
-			throws InvalidKeySpecException, DecoderException {
+	protected static List<PrivateKey> getPayerPrivateKey(long payerSeqNum) {
 		AccountID accountID = RequestBuilder.getAccountIdBuild(payerSeqNum, 0l, 0l);
 		List<PrivateKey> privKey = getAccountPrivateKeys(accountID);
 
@@ -334,8 +321,7 @@ public class FileServiceIT {
 	}
 
 	@Test
-	public void test04GetTxRecord()
-			throws Exception {
+	public void test04GetTxRecord() {
 		long feeForTxRecordCost = FeeClient.getCostForGettingTxRecord();
 		Transaction paymentTxSigned = getPaymentSigned(payerSeq, recvSeq, "FileGetRecordCost",
 				feeForTxRecordCost);
@@ -363,8 +349,7 @@ public class FileServiceIT {
 	}
 
 	@Test
-	public void test05GetFileInfo()
-			throws Exception {
+	public void test05GetFileInfo() {
 		long feeForFileInfoCost = TestHelper.getFileMaxFee();
 		Transaction paymentTxSigned = getPaymentSigned(payerSeq, recvSeq, "fileGetInfoQueryCost",
 				feeForFileInfoCost);
@@ -391,8 +376,7 @@ public class FileServiceIT {
 	}
 
 	@Test
-	public void test06GetFileContent()
-			throws Exception {
+	public void test06GetFileContent() {
 		long fee = FeeClient.getFeeByID(HederaFunctionality.FileGetContents);
 		Transaction paymentTxSigned = getPaymentSigned(payerSeq, recvSeq, "FileGetContentCost", fee);
 		Query query = RequestBuilder
@@ -413,9 +397,7 @@ public class FileServiceIT {
 	}
 
 	@Test
-	public void test07AppendFile()
-			throws InterruptedException, InvalidKeySpecException, DecoderException, InvalidKeyException,
-			NoSuchAlgorithmException, UnsupportedEncodingException, SignatureException, Exception {
+	public void test07AppendFile() throws Exception {
 		Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
 
 		long nodeAccountNumber;
@@ -450,9 +432,7 @@ public class FileServiceIT {
 	}
 
 	@Test
-	public void test08UpdateFile()
-			throws InterruptedException, InvalidKeySpecException, DecoderException, InvalidKeyException,
-			NoSuchAlgorithmException, UnsupportedEncodingException, SignatureException {
+	public void test08UpdateFile() {
 		Timestamp fileExp = ProtoCommonUtils.getCurrentTimestampUTC(DAY_SEC * 10);
 		List<Key> newWaclPubKeyList = new ArrayList<>();
 		newWaclPrivKeyList = new ArrayList<>();
@@ -493,9 +473,7 @@ public class FileServiceIT {
 	}
 
 	@Test
-	public void test09DeleteFile()
-			throws InterruptedException, InvalidKeySpecException, DecoderException, InvalidKeyException,
-			NoSuchAlgorithmException, UnsupportedEncodingException, SignatureException {
+	public void test09DeleteFile() {
 		Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
 		long nodeAccountNumber;
 		if (nodeAccountOverridden) {
@@ -519,8 +497,7 @@ public class FileServiceIT {
 	}
 
 	@Test
-	public void test10GetFileInfoAfterDelete()
-			throws Exception {
+	public void test10GetFileInfoAfterDelete() {
 		long feeForFileInfoCost = FeeClient.getFeeByID(HederaFunctionality.FileGetInfo);
 		Transaction paymentTxSigned = getPaymentSigned(payerSeq, recvSeq, "fileGetInfoQueryCost",
 				feeForFileInfoCost);
@@ -542,20 +519,17 @@ public class FileServiceIT {
 	}
 
 	/**
-	 * Gets the account info for a given account ID.
+	 * Gets the account info for a given account id.
 	 *
 	 * @param accountID
-	 * 		account id to get the info
+	 * 		account id to get the info for
 	 * @param fromAccountNum
-	 * 		payer account number for payment transaction for the query
+	 * 		payer account number for query payment transaction
 	 * @param toAccountNum
-	 * 		sender account number for payment transaction for the query
-	 * @return account info
-	 * @throws Exception
-	 * 		exception caused if there is any failure while getting account info
+	 * 		receiver node account number of query payment transaction
+	 * @return queried account info for given account
 	 */
-	public AccountInfo getAccountInfo(AccountID accountID, long fromAccountNum, long toAccountNum)
-			throws Exception {
+	public AccountInfo getAccountInfo(AccountID accountID, long fromAccountNum, long toAccountNum) {
 		// get the cost for getting account info
 		long queryCostAcctInfo = FeeClient.getCostForGettingAccountInfo();
 		Transaction paymentTxSigned = getPaymentSigned(fromAccountNum, toAccountNum,
@@ -581,20 +555,17 @@ public class FileServiceIT {
 	}
 
 	/**
-	 * Gets account info
+	 * Gets account info for an account ID given the payer account id and node account id
 	 *
 	 * @param accountID
-	 * 		the account to get info for
+	 * 		the account id to get info for
 	 * @param payerID
-	 * 		payer account ID for payment transaction for the query
+	 * 		payer account ID for query payment transaction
 	 * @param nodeID
-	 * 		node account ID for payment transaction for the query
-	 * @return account info
-	 * @throws Exception
-	 * 		exception caused if there is any failure while getting account info
+	 * 		receiver node account ID of query payment transaction
+	 * @return account info queried for the given account id
 	 */
-	public AccountInfo getAccountInfo(AccountID accountID, AccountID payerID, AccountID nodeID)
-			throws Exception {
+	public AccountInfo getAccountInfo(AccountID accountID, AccountID payerID, AccountID nodeID) {
 		return getAccountInfo(accountID, payerID.getAccountNum(), nodeID.getAccountNum());
 	}
 
@@ -602,13 +573,10 @@ public class FileServiceIT {
 	 * Gets account info using genesis as payer and default listening node as receiving node.
 	 *
 	 * @param accountID
-	 * 		the account to get info for
-	 * @return account info of the given account
-	 * @throws Exception
-	 * 		exception caused if there is any failure while getting account info
+	 * 		the account id to get info for
+	 * @return account info queried of the given account
 	 */
-	public AccountInfo getAccountInfo(AccountID accountID)
-			throws Exception {
+	public AccountInfo getAccountInfo(AccountID accountID) {
 		return getAccountInfo(accountID, genesisAccountID.getAccountNum(),
 				defaultListeningNodeAccountID.getAccountNum());
 	}
@@ -619,13 +587,14 @@ public class FileServiceIT {
 	 * @param query
 	 * 		query to get receipt for
 	 * @param cstub2
-	 * 		CryptoServiceBlockingStub
-	 * @return response
-	 * @throws Exception
-	 * 		exception caused if there is any failure while fetching receipts
+	 * 		CryptoServiceBlockingStub blocking-style stub that supports unary and streaming output calls on the crypto
+	 * 		service
+	 * @return the getTransactionReceipt response
+	 * @throws InvalidNodeTransactionPrecheckCode
+	 * 		indicates there is a failure while querying transaction receipt if pre-check code is not OK or BUSY
 	 */
-	protected static Response fetchReceipts(Query query, CryptoServiceBlockingStub cstub2)
-			throws Exception {
+	protected static Response fetchReceipts(Query query,
+			CryptoServiceBlockingStub cstub2) throws InvalidNodeTransactionPrecheckCode {
 		return TestHelper.fetchReceipts(query, cstub2, log, host);
 	}
 
@@ -637,10 +606,13 @@ public class FileServiceIT {
 	 * @param payerAccount
 	 * 		payer account id
 	 * @return account id of the created crypto account
-	 * @throws Exception
-	 * 		exception caused if there is any failure
+	 * @throws InvalidProtocolBufferException
+	 * 		indicates that the transaction body for creating account could not be parsed
+	 * @throws InvalidNodeTransactionPrecheckCode
+	 * 		indicates there is a failure while querying transaction receipt if pre-check code is not OK or BUSY
 	 */
-	public AccountID createAccount(Map<Long, List<PrivateKey>> account2keyMap, AccountID payerAccount) throws Exception {
+	public AccountID createAccount(Map<Long, List<PrivateKey>> account2keyMap, AccountID payerAccount)
+			throws InvalidProtocolBufferException, InvalidNodeTransactionPrecheckCode {
 		KeyPair pair = new KeyPairGenerator().generateKeyPair();
 		Transaction createAccountRequest = TestHelper
 				.createAccountWithFee(payerAccount, defaultListeningNodeAccountID, pair,
@@ -679,18 +651,17 @@ public class FileServiceIT {
 	}
 
 	/**
-	 * Gets account info
+	 * Gets account info for given account id
 	 *
 	 * @param stub
-	 * 		CryptoServiceBlockingStub
+	 * 		CryptoServiceBlockingStub blocking-style stub that supports unary and streaming output calls on the crypto
+	 * 		service
 	 * @param accountID
 	 * 		account for which account info needs to be queried
-	 * @return response of the query
-	 * @throws Exception
-	 * 		exception caused if there is any failure
+	 * @return response of the getAccountInfo query
 	 */
 	private static Response getCryptoGetAccountInfo(CryptoServiceGrpc.CryptoServiceBlockingStub stub,
-			AccountID accountID) throws Exception {
+			AccountID accountID) {
 		// first get the cost for getting AccountInfo
 		long queryCostGetInfo = FeeClient.getCostForGettingAccountInfo();
 		Transaction paymentTxSigned = getPaymentSigned(payerSeq, recvSeq, "getCostCryptoGetAccountInfo",
@@ -708,18 +679,17 @@ public class FileServiceIT {
 	}
 
 	/**
-	 * Gets the account balance
+	 * Gets the account balance for given account id
 	 *
 	 * @param stub
-	 * 		CryptoServiceBlockingStub
+	 * 		CryptoServiceBlockingStub blocking-style stub that supports unary and streaming output calls on the crypto
+	 * 		service
 	 * @param accountID
-	 * 		account for which accountBalance to be queried
-	 * @return balance of the account
-	 * @throws Exception
-	 * 		exception caused if there is any failure
+	 * 		account for which accountBalance need to be queried
+	 * @return queried balance of the given account
 	 */
 	protected static long getAccountBalance(CryptoServiceGrpc.CryptoServiceBlockingStub stub,
-			AccountID accountID) throws Exception {
+			AccountID accountID) {
 		Response response = getCryptoGetAccountInfo(stub, accountID);
 		long balance = response.getCryptoGetInfo().getAccountInfo().getBalance();
 		return balance;
@@ -756,8 +726,8 @@ public class FileServiceIT {
 	 * Extract account ID from memo string, e.g. "0.0.5".
 	 *
 	 * @param memo
-	 * 		given memo string
-	 * @return account ID extracted
+	 * 		given memo string from which accountID need to be extracted
+	 * @return account ID extracted from memo
 	 */
 	protected AccountID extractAccountID(String memo) {
 		AccountID rv = null;
@@ -774,20 +744,18 @@ public class FileServiceIT {
 	 * 		payer account ID, as the payer of the tx and the from account for the transfer
 	 * @param nodeID
 	 * 		node account ID, as the node account that should process the tx
-	 * @param fromID sender account id
+	 * @param fromID
+	 * 		sender account id
 	 * @param toID
 	 * 		to account for the transfer.
 	 * @param memo
 	 * 		memo for the transaction
 	 * @param transferAmount
 	 * 		amount to be transferred
-	 * @return the signed transaction
-	 * @throws Exception
-	 * 		exception caused if there is any failure
+	 * @return the signed payment transaction
 	 */
 	protected static Transaction getPaymentSigned(AccountID payerID, AccountID nodeID,
-			AccountID fromID, AccountID toID, String memo, long transferAmount)
-			throws Exception {
+			AccountID fromID, AccountID toID, String memo, long transferAmount) {
 		List<PrivateKey> payerPrivKeys = getPayerPrivateKey(payerID.getAccountNum());
 		List<PrivateKey> fromPrivKeys = getPayerPrivateKey(fromID.getAccountNum());
 		Transaction paymentTxSigned = getSignedTransferTx(payerID, nodeID, fromID, toID,
@@ -807,13 +775,10 @@ public class FileServiceIT {
 	 * 		memo for the transaction
 	 * @param transferFeeAmt
 	 * 		fee amount to be transferred for payment transaction
-	 * 		amount to be transferred
-	 * @return the signed transaction
-	 * @throws Exception
-	 * 		exception caused if there is any failure
+	 * @return the signed payment transaction
 	 */
 	protected static Transaction getPaymentSigned(long payerSeq, long toSeq, String memo,
-			long transferFeeAmt) throws Exception {
+			long transferFeeAmt) {
 		AccountID payerAccountID = AccountID.newBuilder().setAccountNum(payerSeq).setRealmNum(0)
 				.setShardNum(0).build();
 		AccountID toID = AccountID.newBuilder().setAccountNum(toSeq).setRealmNum(0).setShardNum(0)
@@ -826,30 +791,27 @@ public class FileServiceIT {
 	 * Creates a signed transfer tx.
 	 *
 	 * @param payerAccountID
-	 * 		payer account id
+	 * 		payer account id, as the payer of the tx
 	 * @param nodeAccountID
-	 * 		node account id
+	 * 		node account id, as the node account that should process the tx
 	 * @param fromAccountID
 	 * 		sender account id
 	 * @param toAccountID
 	 * 		receiver account id
 	 * @param amount
-	 * 		transfer amount
+	 * 		amount to be transferred
 	 * @param payerPrivKeys
-	 * 		payer private key
+	 * 		list of payer private key
 	 * @param fromPrivKeys
-	 * 		sender private key
+	 * 		list of sender private key
 	 * @param memo
 	 * 		memo of transaction
 	 * @return signed transfer transaction
-	 * @throws Exception
-	 * 		exception caused if there is any failure
 	 */
 	protected static Transaction getSignedTransferTx(AccountID payerAccountID,
 			AccountID nodeAccountID,
 			AccountID fromAccountID, AccountID toAccountID, long amount, List<PrivateKey> payerPrivKeys,
-			List<PrivateKey> fromPrivKeys, String memo)
-			throws Exception {
+			List<PrivateKey> fromPrivKeys, String memo) {
 		Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
 		Transaction paymentTx = RequestBuilder.getCryptoTransferRequest(payerAccountID.getAccountNum(),
 				payerAccountID.getRealmNum(), payerAccountID.getShardNum(), nodeAccountID.getAccountNum(),
@@ -879,8 +841,8 @@ public class FileServiceIT {
 	 * Gets the account key pairs.
 	 *
 	 * @param accountID
-	 * 		given account id to get key pairs from
-	 * @return key pairs
+	 * 		given account id to get key pairs for
+	 * @return key pairs of the given account id
 	 */
 	protected static List<KeyPair> getAccountKeyPairs(AccountID accountID) {
 		List<KeyPair> keypairs;
@@ -892,7 +854,7 @@ public class FileServiceIT {
 	 * Gets the account private keys.
 	 *
 	 * @param accountID
-	 * 		given account
+	 * 		given account id to get private keys for
 	 * @return private keys of the given account
 	 */
 	public static List<PrivateKey> getAccountPrivateKeys(AccountID accountID) {
