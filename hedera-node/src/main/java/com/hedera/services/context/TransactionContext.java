@@ -266,9 +266,9 @@ public interface TransactionContext {
 	void setTokenTransferLists(List<TokenTransferList> tokenTransfers);
 
 	/**
-	 * Set the custom fees charged as a result of the active transaction. It is used for {@link ExpirableTxnRecord} .
+	 * Set the assessed custom fees as a result of the active transaction. It is used for {@link ExpirableTxnRecord}.
 	 *
-	 * @param customFeesCharged the custom fees charged
+	 * @param assessedCustomFees the assessed custom fees
 	 */
-	void setCustomFeesCharged(List<AssessedCustomFee> customFeesCharged);
+	void setAssessedCustomFees(List<AssessedCustomFee> assessedCustomFees);
 }

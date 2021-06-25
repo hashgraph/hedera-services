@@ -91,7 +91,7 @@ public class AwareTransactionContext implements TransactionContext {
 	private Consumer<TxnReceipt.Builder> receiptConfig = noopReceiptConfig;
 	private Consumer<ExpirableTxnRecord.Builder> recordConfig = noopRecordConfig;
 	private List<TokenTransferList> explicitTokenTransfers;
-	private List<AssessedCustomFee> customFeesCharged;
+	private List<AssessedCustomFee> assessedCustomFees;
 
 	boolean hasComputedRecordSoFar;
 	ExpirableTxnRecord.Builder recordSoFar = ExpirableTxnRecord.newBuilder();
@@ -116,6 +116,7 @@ public class AwareTransactionContext implements TransactionContext {
 		isPayerSigKnownActive = false;
 		hasComputedRecordSoFar = false;
 		explicitTokenTransfers = null;
+		assessedCustomFees = null;
 
 		ctx.narratedCharging().resetForTxn(accessor, submittingMember);
 
@@ -128,8 +129,8 @@ public class AwareTransactionContext implements TransactionContext {
 	}
 
 	@Override
-	public void setCustomFeesCharged(List<AssessedCustomFee> customFeesCharged){
-		this.customFeesCharged = customFeesCharged;
+	public void setAssessedCustomFees(List<AssessedCustomFee> assessedCustomFees){
+		this.assessedCustomFees = assessedCustomFees;
 	}
 
 	@Override
@@ -174,7 +175,7 @@ public class AwareTransactionContext implements TransactionContext {
 				receipt,
 				explicitTokenTransfers,
 				ctx,
-				customFeesCharged);
+				assessedCustomFees);
 
 		recordConfig.accept(recordSoFar);
 		hasComputedRecordSoFar = true;
@@ -307,5 +308,9 @@ public class AwareTransactionContext implements TransactionContext {
 	@Override
 	public List<ExpiringEntity> expiringEntities() {
 		return expiringEntities;
+	}
+
+	List<AssessedCustomFee> getAssessedCustomFees() {
+		return assessedCustomFees;
 	}
 }

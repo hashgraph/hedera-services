@@ -187,7 +187,7 @@ class CryptoTransferTransitionLogicTest {
 
 		// then:
 		verify(txnCtx).setStatus(SUCCESS);
-		verify(txnCtx).setCustomFeesCharged(customFeesBalanceChange);
+		verify(txnCtx).setAssessedCustomFees(customFeesBalanceChange);
 	}
 
 
