@@ -90,6 +90,7 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -110,10 +111,6 @@ class AwareTransactionContextTest {
 	private Instant now = Instant.now();
 	private ExchangeRate rateNow = ExchangeRate.newBuilder().setHbarEquiv(1).setCentEquiv(100).setExpirationTime(
 			TimestampSeconds.newBuilder()).build();
-	private Timestamp timeNow = Timestamp.newBuilder()
-			.setSeconds(now.getEpochSecond())
-			.setNanos(now.getNano())
-			.build();
 	private ExchangeRateSet ratesNow =
 			ExchangeRateSet.newBuilder().setCurrentRate(rateNow).setNextRate(rateNow).build();
 	private AccountID payer = asAccount("0.0.2");
@@ -290,12 +287,14 @@ class AwareTransactionContextTest {
 		subject.setCreated(contractCreated);
 		subject.payerSigIsKnownActive();
 		subject.hasComputedRecordSoFar = true;
+		subject.setAssessedCustomFees(Collections.emptyList());
 		// and:
 		assertEquals(memberId, subject.submittingSwirldsMember());
 		assertEquals(nodeAccount, subject.submittingNodeAccount());
 
 		// when:
 		subject.resetFor(accessor, now, anotherMemberId);
+		assertNull(subject.getAssessedCustomFees());
 		assertFalse(subject.hasComputedRecordSoFar);
 		// and:
 		setUpBuildingExpirableTxnRecord();
@@ -632,7 +631,7 @@ class AwareTransactionContextTest {
 		var expirableRecordBuilder = buildRecord(subject.getNonThresholdFeeChargedToPayer(),
 				accessor.getHash(),
 				accessor, now, subject.receiptSoFar().build());
-		when(creator.buildExpiringRecord(anyLong(), any(), any(), any(), any(), any(), any()))
+		when(creator.buildExpiringRecord(anyLong(), any(), any(), any(), any(), any(), any(), any()))
 				.thenReturn(expirableRecordBuilder);
 		return expirableRecordBuilder;
 	}

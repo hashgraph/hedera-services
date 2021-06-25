@@ -9,9 +9,9 @@ package com.hedera.services.grpc.marshalling;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,45 +22,62 @@ package com.hedera.services.grpc.marshalling;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.state.submerkle.CustomFee;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.SwirldDualState;
 import com.swirlds.common.SwirldTransaction;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
- * Encapsulates the validity of a CryptoTransfer transaction, given a choice of
- * two parameters: the maximum allowed number of ℏ adjustments, and the maximum
- * allowed number of token unit adjustments.
+ * Encapsulates the validity of a CryptoTransfer transaction, given a choice of two parameters: the maximum
+ * allowed number of ℏ adjustments, and the maximum allowed number of token unit adjustments.
  *
- * Note that we need to remember these two parameters in order to safely reuse
- * this validation across "span" between the {@link com.hedera.services.ServicesState#expandSignatures(SwirldTransaction)}
- * and {@link com.hedera.services.ServicesState#handleTransaction(long, boolean, Instant, Instant, SwirldTransaction, SwirldDualState)}
- * callbacks.
+ * Note that we need to remember these two parameters in order to safely reuse this validation across "span"
+ * between the {@link com.hedera.services.ServicesState#expandSignatures(SwirldTransaction)} and
+ * {@link com.hedera.services.ServicesState#handleTransaction(long, boolean, Instant, Instant,
+ * SwirldTransaction, SwirldDualState)} callbacks.
  *
- * This is because either parameter <i>could</i> change due to an update of
- * file 0.0.121 between the two callbacks. So we have to double-check that
- * neither <i>did</i> change before reusing the work captured by this
+ * This is because either parameter <i>could</i> change due to an update of file 0.0.121 between the two
+ * callbacks. So we have to double-check that neither <i>did</i> change before reusing the work captured by this
  * validation result.
  */
 public class ImpliedTransfersMeta {
 	private final ResponseCodeEnum code;
 	private final ValidationProps validationProps;
+	private final List<Pair<Id, List<CustomFee>>> tokenFeeSchedules;
 
 	public ImpliedTransfersMeta(
 			ValidationProps validationProps,
-			ResponseCodeEnum code
+			ResponseCodeEnum code,
+			List<Pair<Id, List<CustomFee>>> tokenFeeSchedules
 	) {
 		this.code = code;
-		this.validationProps = validationProps;
+                this.validationProps = validationProps;
+		this.tokenFeeSchedules = tokenFeeSchedules;
 	}
 
-	public boolean wasDerivedFrom(GlobalDynamicProperties dynamicProperties) {
-		return validationProps.maxHbarAdjusts == dynamicProperties.maxTransferListSize() &&
-				validationProps.maxTokenAdjusts == dynamicProperties.maxTokenTransferListSize() &&
-				validationProps.maxOwnershipChanges == dynamicProperties.maxNftTransfersLen();
+	public boolean wasDerivedFrom(GlobalDynamicProperties dynamicProperties, CustomFeeSchedules customFeeSchedules) {
+		final var validationParamsMatch = (maxExplicitHbarAdjusts == dynamicProperties.maxTransferListSize()) &&
+				(maxExplicitTokenAdjusts == dynamicProperties.maxTokenTransferListSize()) &&
+                                (validationProps.maxOwnershipChanges == dynamicProperties.maxNftTransfersLen());
+		if (!validationParamsMatch) {
+			return false;
+		}
+		for (var pair : tokenFeeSchedules) {
+			var customFees = pair.getValue();
+			var newCustomFees = customFeeSchedules.lookupScheduleFor(pair.getKey().asEntityId());
+			if (!customFees.equals(newCustomFees)) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	public ResponseCodeEnum code() {
@@ -84,6 +101,7 @@ public class ImpliedTransfersMeta {
 				.add("maxExplicitHbarAdjusts", validationProps.maxHbarAdjusts)
 				.add("maxExplicitTokenAdjusts", validationProps.maxTokenAdjusts)
 				.add("maxExplicitOwnershipChanges", validationProps.maxOwnershipChanges)
+				.add("tokenFeeSchedules", tokenFeeSchedules)
 				.toString();
 	}
 

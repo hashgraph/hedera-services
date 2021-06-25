@@ -330,18 +330,18 @@ class LedgerBalanceChangesTest {
 						.addNftTransfers(nftXfer(cModel, aModel, bSerialNo))
 						.build(),
 				TokenTransferList.newBuilder()
-						.setToken(asGprcToken(token))
+						.setToken(token.toGrpcTokenId())
 						.addTransfers(aaBuilderWith(bModel, bTokenChange))
 						.addTransfers(aaBuilderWith(cModel, cTokenChange))
 						.build(),
 				TokenTransferList.newBuilder()
-						.setToken(asGprcToken(anotherToken))
+						.setToken(anotherToken.toGrpcTokenId())
 						.addTransfers(aaBuilderWith(aModel, aAnotherTokenChange))
 						.addTransfers(aaBuilderWith(bModel, bAnotherTokenChange))
 						.addTransfers(aaBuilderWith(cModel, cAnotherTokenChange))
 						.build(),
 				TokenTransferList.newBuilder()
-						.setToken(asGprcToken(yetAnotherToken))
+						.setToken(yetAnotherToken.toGrpcTokenId())
 						.addTransfers(aaBuilderWith(aModel, aYetAnotherTokenChange))
 						.addTransfers(aaBuilderWith(bModel, bYetAnotherTokenChange))
 						.build()
@@ -475,8 +475,8 @@ class LedgerBalanceChangesTest {
 				changingNftOwnership(bNft, bNft.asGrpcToken(), nftXfer(cModel, aModel, bSerialNo)));
 	}
 
-	private Pair<AccountID, TokenID> rel(AccountID account, Id token) {
-		return Pair.of(account, asGprcToken(token));
+	private Pair<AccountID, TokenID> rel(AccountID account, EntityId token) {
+		return Pair.of(account, token.toGrpcTokenId());
 	}
 
 	private TokenID asGprcToken(Id id) {

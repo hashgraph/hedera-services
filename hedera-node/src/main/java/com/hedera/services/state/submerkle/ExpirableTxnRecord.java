@@ -48,6 +48,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	static final List<EntityId> NO_TOKENS = null;
 	static final List<CurrencyAdjustments> NO_TOKEN_ADJUSTMENTS = null;
 	static final List<NftAdjustments> NO_NFT_TOKEN_ADJUSTMENTS = null;
+	static final List<AssessedCustomFee> NO_CUSTOM_FEES = null;
 	static final EntityId NO_SCHEDULE_REF = null;
 
 	private static final byte[] MISSING_TXN_HASH = new byte[0];
@@ -55,12 +56,13 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	static final int RELEASE_070_VERSION = 1;
 	static final int RELEASE_080_VERSION = 2;
 	static final int RELEASE_0120_VERSION = 3;
-	static final int RELEASE_0150_VERSION = 4;
-	static final int MERKLE_VERSION = RELEASE_0150_VERSION;
+	static final int RELEASE_0160_VERSION = 4;
+	static final int MERKLE_VERSION = RELEASE_0160_VERSION;
 
 	static final int MAX_MEMO_BYTES = 32 * 1_024;
 	static final int MAX_TXN_HASH_BYTES = 1_024;
 	static final int MAX_INVOLVED_TOKENS = 10;
+	static final int MAX_ASSESSED_CUSTOM_FEES_CHANGES = 20;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8b9ede7ca8d8db93L;
 
 	static DomainSerdes serdes = new DomainSerdes();
@@ -82,6 +84,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	private List<CurrencyAdjustments> tokenAdjustments = NO_TOKEN_ADJUSTMENTS;
 	private List<NftAdjustments> nftTokenAdjustments = NO_NFT_TOKEN_ADJUSTMENTS;
 	private EntityId scheduleRef = NO_SCHEDULE_REF;
+	private List<AssessedCustomFee> assessedCustomFees = NO_CUSTOM_FEES;
 
 	@Override
 	public void release() {
@@ -91,7 +94,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	public ExpirableTxnRecord() {
 	}
 
-	public ExpirableTxnRecord (Builder builder){
+	public ExpirableTxnRecord(Builder builder) {
 		this.receipt = builder.receipt;
 		this.txnHash = builder.txnHash;
 		this.txnId = builder.txnId;
@@ -106,10 +109,10 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		this.nftTokenAdjustments = builder.nftTokenAdjustments;
 
 		this.scheduleRef = builder.scheduleRef;
+		this.assessedCustomFees = builder.assessedCustomFees;
 	}
 
 	/* --- Object --- */
-
 	@Override
 	public String toString() {
 		var helper = MoreObjects.toStringHelper(this)
@@ -136,6 +139,14 @@ public class ExpirableTxnRecord implements FCQueueElement {
 					.collect(joining(", "));
 			helper.add("tokenAdjustments", readable);
 		}
+
+		if (assessedCustomFees != NO_CUSTOM_FEES) {
+			int n = assessedCustomFees.size();
+			var readable = IntStream.range(0, n)
+					.mapToObj(i -> String.format("(%s)", assessedCustomFees.get(i)))
+					.collect(joining(", "));
+			helper.add("assessedCustomFees", readable);
+		}
 		return helper.toString();
 	}
 
@@ -161,9 +172,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				Objects.equals(this.hbarAdjustments, that.hbarAdjustments) &&
 				Objects.equals(this.tokens, that.tokens) &&
 				Objects.equals(this.tokenAdjustments, that.tokenAdjustments) &&
-				((nftTokenAdjustments != null && !nftTokenAdjustments.isEmpty()) ?
-						Objects.equals(this.nftTokenAdjustments, that.nftTokenAdjustments) : true) &&
-				Objects.equals(this.scheduleRef, that.scheduleRef);
+                                Objects.equals(this.nftTokenAdjustments, that.nftTokenAdjustments) &&
+				Objects.equals(this.assessedCustomFees, that.assessedCustomFees);
 	}
 
 	@Override
@@ -182,7 +192,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				tokens,
 				tokenAdjustments,
 				nftTokenAdjustments,
-				scheduleRef);
+				scheduleRef,
+				assessedCustomFees);
 		return result * 31 + Arrays.hashCode(txnHash);
 	}
 
@@ -221,6 +232,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 		serdes.writeNullableSerializable(scheduleRef, out);
 		out.writeSerializableList(nftTokenAdjustments, true, true);
+		out.writeSerializableList(assessedCustomFees, true, true);
 	}
 
 	@Override
@@ -243,8 +255,9 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		if (version > RELEASE_080_VERSION) {
 			scheduleRef = serdes.readNullableSerializable(in);
 		}
-		if (version >= RELEASE_0150_VERSION) {
+		if (version >= RELEASE_0160_VERSION) {
 			nftTokenAdjustments = in.readSerializableList(MAX_INVOLVED_TOKENS);
+			assessedCustomFees = in.readSerializableList(MAX_ASSESSED_CUSTOM_FEES_CHANGES);
 		}
 	}
 
@@ -328,6 +341,10 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		this.submittingMember = submittingMember;
 	}
 
+	public List<AssessedCustomFee> getCustomFeesCharged() {
+		return assessedCustomFees;
+	}
+
 	/* --- FastCopyable --- */
 
 	@Override
@@ -362,6 +379,10 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			}
 
 		}
+
+		final var fcAssessedFees = record.getAssessedCustomFeesCount() > 0
+				? record.getAssessedCustomFeesList().stream().map(AssessedCustomFee::fromGrpc).collect(toList())
+				: null;
 		return ExpirableTxnRecord.newBuilder()
 				.setReceipt(TxnReceipt.fromGrpc(record.getReceipt()))
 				.setTxnHash(record.getTransactionHash().toByteArray())
@@ -369,13 +390,17 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				.setConsensusTime(RichInstant.fromGrpc(record.getConsensusTimestamp()))
 				.setMemo(record.getMemo())
 				.setFee(record.getTransactionFee())
-				.setTransferList(record.hasTransferList() ? CurrencyAdjustments.fromGrpc(record.getTransferList()) : null)
-				.setContractCallResult(record.hasContractCallResult() ? SolidityFnResult.fromGrpc(record.getContractCallResult()) : null)
-				.setContractCreateResult(record.hasContractCreateResult() ? SolidityFnResult.fromGrpc(record.getContractCreateResult()) : null)
+				.setTransferList(
+						record.hasTransferList() ? CurrencyAdjustments.fromGrpc(record.getTransferList()) : null)
+				.setContractCallResult(record.hasContractCallResult() ? SolidityFnResult.fromGrpc(
+						record.getContractCallResult()) : null)
+				.setContractCreateResult(record.hasContractCreateResult() ? SolidityFnResult.fromGrpc(
+						record.getContractCreateResult()) : null)
 				.setTokens(tokens)
 				.setTokenAdjustments(tokenAdjustments)
 				.setNftTokenAdjustments(nftTokenAdjustments)
 				.setScheduleRef(record.hasScheduleRef() ? fromGrpcScheduleId(record.getScheduleRef()) : null)
+				.setCustomFeesCharged(fcAssessedFees)
 				.build();
 	}
 
@@ -432,10 +457,14 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			grpc.setScheduleRef(scheduleRef.toGrpcScheduleId());
 		}
 
+		if (assessedCustomFees != NO_CUSTOM_FEES) {
+			grpc.addAllAssessedCustomFees(assessedCustomFees.stream().map(AssessedCustomFee::toGrpc).collect(toList()));
+		}
+
 		return grpc.build();
 	}
 
-	public static Builder newBuilder(){
+	public static Builder newBuilder() {
 		return new Builder();
 	}
 
@@ -453,6 +482,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		private List<CurrencyAdjustments> tokenAdjustments;
 		private List<NftAdjustments> nftTokenAdjustments;
 		private EntityId scheduleRef;
+		private List<AssessedCustomFee> assessedCustomFees;
 
 		public Builder setFee(long fee) {
 			this.fee = fee;
@@ -519,11 +549,16 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			return this;
 		}
 
+		public Builder setCustomFeesCharged(List<AssessedCustomFee> assessedCustomFees) {
+			this.assessedCustomFees = assessedCustomFees;
+			return this;
+		}
+
 		public ExpirableTxnRecord build() {
 			return new ExpirableTxnRecord(this);
 		}
 
-		public Builder clear(){
+		public Builder clear() {
 			fee = 0;
 			txnId = null;
 			txnHash = MISSING_TXN_HASH;
@@ -537,6 +572,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			tokenAdjustments = NO_TOKEN_ADJUSTMENTS;
 			nftTokenAdjustments = NO_NFT_TOKEN_ADJUSTMENTS;
 			scheduleRef = NO_SCHEDULE_REF;
+			assessedCustomFees = NO_CUSTOM_FEES;
 			return this;
 		}
 	}
