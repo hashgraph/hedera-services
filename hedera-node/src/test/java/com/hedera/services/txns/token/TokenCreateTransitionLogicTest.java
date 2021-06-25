@@ -45,7 +45,6 @@ import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KYC_KEY;
@@ -447,14 +446,6 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	void rejectsInvalidCustomFeeKey() {
-		givenInvalidCustomFeeKey();
-
-		// expect:
-		assertEquals(INVALID_CUSTOM_FEE_KEY, subject.semanticCheck().apply(tokenCreateTxn));
-	}
-
-	@Test
 	void rejectMissingFreezeKeyWithFreezeDefault() {
 		givenMissingFreezeKeyWithFreezeDefault();
 
@@ -620,16 +611,6 @@ class TokenCreateTransitionLogicTest {
 						.setDecimals(decimals)
 						.setTreasury(treasury)
 						.setSupplyKey(Key.getDefaultInstance()))
-				.build();
-	}
-
-	private void givenInvalidCustomFeeKey() {
-		tokenCreateTxn = TransactionBody.newBuilder()
-				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
-						.setInitialSupply(initialSupply)
-						.setDecimals(decimals)
-						.setTreasury(treasury)
-						.setCustomFeesKey(Key.getDefaultInstance()))
 				.build();
 	}
 
