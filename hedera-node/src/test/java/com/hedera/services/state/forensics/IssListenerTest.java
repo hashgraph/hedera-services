@@ -21,6 +21,7 @@ package com.hedera.services.state.forensics;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -44,6 +45,7 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
@@ -69,6 +71,8 @@ class IssListenerTest {
 	AddressBook book;
 	@Mock
 	IssEventInfo info;
+	@Mock
+	private NodeLocalProperties nodeLocalProperties;
 
 	@Inject
 	private LogCaptor logCaptor;
@@ -77,12 +81,12 @@ class IssListenerTest {
 	private IssListener subject;
 
 	@BeforeEach
-	public void setup() {
-		subject = new IssListener(fcmDump, info);
+	void setup() {
+		subject = new IssListener(fcmDump, info, nodeLocalProperties);
 	}
 
 	@Test
-	public void logsFallbackInfo() {
+	void logsFallbackInfo() {
 		// given:
 		willThrow(IllegalStateException.class).given(info).alert(any());
 
@@ -100,8 +104,9 @@ class IssListenerTest {
 	}
 
 	@Test
-	public void logsExpectedIssInfo() {
+	void logsAndDumpsIfConfiguredInfo() {
 		given(info.shouldDumpThisRound()).willReturn(true);
+		given(nodeLocalProperties.shouldDumpFcmsOnIss()).willReturn(true);
 
 		// when:
 		subject.notifyError(
@@ -113,6 +118,23 @@ class IssListenerTest {
 		verify(info).decrementRoundsToDump();
 		assertThat(logCaptor.errorLogs(), contains(desired));
 		verify(fcmDump).dumpFrom(state, self, round);
+		verify(state).logSummary();
+	}
+
+	@Test
+	void onlyLogsIfConfiguredInfo() {
+		given(info.shouldDumpThisRound()).willReturn(true);
+
+		// when:
+		subject.notifyError(
+				platform, book, state, new Event[0], self, other, round, consensusTime, numConsEvents, sig, hash);
+
+		// then:
+		var desired = String.format(IssListener.ISS_ERROR_MSG_PATTERN, round, selfId, otherId, sigHex, hashHex);
+		verify(info).alert(consensusTime);
+		verify(info).decrementRoundsToDump();
+		assertThat(logCaptor.errorLogs(), contains(desired));
+		verify(fcmDump, never()).dumpFrom(state, self, round);
 		verify(state).logSummary();
 	}
 }
