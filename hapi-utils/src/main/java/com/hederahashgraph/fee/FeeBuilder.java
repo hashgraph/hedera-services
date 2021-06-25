@@ -222,6 +222,11 @@ public class FeeBuilder {
 
   /**
    * This method calculates number of keys
+   *
+   * @param key key
+   * @param count count array
+   *
+   * @return int array containing key metadata
    */
   public static int[] calculateKeysMetadata(Key key, int[] count) {
     if (key.hasKeyList()) {
@@ -242,8 +247,8 @@ public class FeeBuilder {
   }
 
   /**
-   * This method returns the Fee Matrices for querying based upon ID (Account / File / Smart
-   * Contract)
+   * This method returns the fee matrices for querying based upon ID (account / file / smart
+   * contract)
    *
    * @return fee data
    */
@@ -251,6 +256,13 @@ public class FeeBuilder {
     return FeeData.getDefaultInstance();
   }
 
+  /**
+   * Get signature count
+   *
+   * @param transaction transaction
+   *
+   * @return int representing signature count
+   */
   public static int getSignatureCount(Transaction transaction) {
     try {
       return CommonUtils.extractSignatureMap(transaction).getSigPairCount();
@@ -258,6 +270,13 @@ public class FeeBuilder {
     return 0;
   }
 
+  /**
+   * Get signature size
+   *
+   * @param transaction transaction
+   *
+   * @return int representing signature size
+   */
   public static int getSignatureSize(Transaction transaction) {
     try {
       return CommonUtils.extractSignatureMap(transaction).toByteArray().length;
@@ -267,6 +286,9 @@ public class FeeBuilder {
 
   /**
    * Convert tinyCents to tinybars
+   *
+   * @param exchangeRate exchange rate
+   * @param tinyCentsFee tiny cents fee
    *
    * @return tinyHbars
    */

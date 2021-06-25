@@ -69,8 +69,14 @@ public class ConsensusServiceFeeBuilder extends FeeBuilder {
     }
 
     /**
-     * Computes fee for ConsensusUpdateTopic transaction
-     * @throws InvalidTxBodyException
+     * Computes fee for consensus update topic transaction
+     *
+     * @param txBody transaction body
+     * @param rbsIncrease rbs increase
+     * @param sigValObj signature value object
+     *
+     * @return fee data
+     * @throws InvalidTxBodyException when transaction body is invalid
      */
     public static FeeData getConsensusUpdateTopicFee(TransactionBody txBody, long rbsIncrease, SigValueObj sigValObj)
             throws InvalidTxBodyException {
@@ -97,7 +103,17 @@ public class ConsensusServiceFeeBuilder extends FeeBuilder {
 
     /**
      * Computes additional rbs (services) for update topic transaction. If any of the variable sized fields change,
-     * or the expiration time changes, rbs for the topic may increase.
+     * or the expiration time changes, rbs for the topic may increase
+     *
+     * @param txValidStartTimestamp transaction valid start timestamp
+     * @param oldAdminKey old admin key
+     * @param oldSubmitKey old submit key
+     * @param oldMemo old memo
+     * @param hasOldAutoRenewAccount boolean representing old auto renew account
+     * @param oldExpirationTimeStamp old expiration timestamp
+     * @param updateTopicTxBody update topic transaction body
+     *
+     * @return long representing rbs increase
      */
     public static long getUpdateTopicRbsIncrease(
             Timestamp txValidStartTimestamp,
@@ -155,8 +171,13 @@ public class ConsensusServiceFeeBuilder extends FeeBuilder {
     }
 
     /**
-     * Computes fee for ConsensusDeleteTopic transaction
-     * @throws InvalidTxBodyException
+     * Computes fee for consensus delete topic transaction
+     *
+     * @param txBody transaction body
+     * @param sigValObj signature value object
+     *
+     * @return fee data
+     * @throws InvalidTxBodyException when transaction body is invalid
      */
     public static FeeData getConsensusDeleteTopicFee(TransactionBody txBody, SigValueObj sigValObj)
             throws InvalidTxBodyException {
@@ -205,7 +226,14 @@ public class ConsensusServiceFeeBuilder extends FeeBuilder {
     }
 
     /**
-     * @return Size (in bytes) used by variable sized fields in Topic.
+     * Compute variable sized fields usage
+     *
+     * @param adminKey admin key
+     * @param submitKey submit key
+     * @param memo memo
+     * @param hasAutoRenewAccount boolean representing an auto renew account
+     *
+     * @return size (in bytes) used by variable sized fields in topic
      */
     public static int computeVariableSizedFieldsUsage(
             Key adminKey, Key submitKey, String memo, boolean hasAutoRenewAccount) {
