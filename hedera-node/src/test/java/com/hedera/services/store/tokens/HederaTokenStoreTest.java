@@ -130,7 +130,6 @@ class HederaTokenStoreTest {
 
 	private MerkleToken token;
 	private MerkleToken modifiableToken;
-	private MerkleAccount account;
 
 	private Key newKey = TxnHandlingScenario.TOKEN_REPLACE_KT.asKey();
 	private JKey newFcKey = TxnHandlingScenario.TOKEN_REPLACE_KT.asJKeyUnchecked();
@@ -189,8 +188,6 @@ class HederaTokenStoreTest {
 		ids = mock(EntityIdSource.class);
 		given(ids.newTokenId(sponsor)).willReturn(created);
 
-		account = mock(MerkleAccount.class);
-
 		hederaLedger = mock(HederaLedger.class);
 
 		accountsLedger = (TransactionalLedger<AccountID, AccountProperty, MerkleAccount>) mock(TransactionalLedger.class);
@@ -235,6 +232,10 @@ class HederaTokenStoreTest {
 		ArgumentCaptor<BiConsumer<MerkleEntityId, MerkleToken>> captor = forClass(BiConsumer.class);
 		// and:
 		subject.getKnownTreasuries().put(treasury, Set.of(anotherMisc));
+		// and:
+		final var deletedToken = new MerkleToken();
+		deletedToken.setDeleted(true);
+		deletedToken.setTreasury(EntityId.fromGrpcAccountId(newTreasury));
 
 		// when:
 		subject.rebuildViews();
@@ -246,6 +247,7 @@ class HederaTokenStoreTest {
 
 		// and when:
 		visitor.accept(fromTokenId(misc), token);
+		visitor.accept(fromTokenId(anotherMisc), deletedToken);
 
 		// then:
 		var extant = subject.getKnownTreasuries();

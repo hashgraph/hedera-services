@@ -81,6 +81,7 @@ class NodeLocalPropertiesTest {
 		assertEquals(Profile.PROD, subject.nettyMode());
 		assertEquals(23, subject.nettyStartRetries());
 		assertEquals(24L, subject.nettyStartRetryIntervalMs());
+		assertTrue(subject.shouldDumpFcmsOnIss());
 	}
 
 	@Test
@@ -120,6 +121,7 @@ class NodeLocalPropertiesTest {
 		assertEquals(Profile.TEST, subject.nettyMode());
 		assertEquals(24, subject.nettyStartRetries());
 		assertEquals(25L, subject.nettyStartRetryIntervalMs());
+		assertFalse(subject.shouldDumpFcmsOnIss());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -153,6 +155,7 @@ class NodeLocalPropertiesTest {
 		given(properties.getProfileProperty("netty.mode")).willReturn(LEGACY_ENV_ORDER[(i + 21) % 3]);
 		given(properties.getIntProperty("netty.startRetries")).willReturn(i + 22);
 		given(properties.getLongProperty("netty.startRetryIntervalMs")).willReturn(i + 23L);
+		given(properties.getBooleanProperty("iss.dumpFcms")).willReturn(i % 2 == 1);
 	}
 
 	static String logDir(int num) {
