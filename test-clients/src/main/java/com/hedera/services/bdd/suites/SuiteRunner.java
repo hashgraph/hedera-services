@@ -118,6 +118,7 @@ import com.hedera.services.bdd.suites.reconnect.ValidateCongestionPricingAfterRe
 import com.hedera.services.bdd.suites.reconnect.ValidateDuplicateTransactionAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateExchangeRateStateAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateFeeScheduleStateAfterReconnect;
+import com.hedera.services.bdd.suites.reconnect.ValidateTokensDeleteAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateTokensStateAfterReconnect;
 import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.CryptoRecordsSanityCheckSuite;
@@ -391,6 +392,7 @@ public class SuiteRunner {
 		put("MixedOpsLoadTest", aof(new MixedOpsLoadTest()));
 		/* Validate new AddressBook */
 		put("ValidateNewAddressBook", aof(new ValidateNewAddressBook()));
+		put("ValidateTokensDeleteAfterReconnect", aof(new ValidateTokensDeleteAfterReconnect()));
 	}};
 
 	static boolean runAsync;
