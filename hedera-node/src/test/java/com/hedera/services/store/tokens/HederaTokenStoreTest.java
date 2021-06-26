@@ -140,7 +140,6 @@ class HederaTokenStoreTest {
 	private HederaLedger hederaLedger;
 
 	private MerkleToken token;
-	private MerkleToken modifiableToken;
 
 	private Key newKey = TxnHandlingScenario.TOKEN_REPLACE_KT.asKey();
 	private JKey newFcKey = TxnHandlingScenario.TOKEN_REPLACE_KT.asJKeyUnchecked();
@@ -278,7 +277,6 @@ class HederaTokenStoreTest {
 		supplyKey = COMPLEX_KEY_ACCOUNT_KT.asKey();
 
 		token = mock(MerkleToken.class);
-		modifiableToken = mock(MerkleToken.class);
 		given(token.expiry()).willReturn(expiry);
 		given(token.symbol()).willReturn(symbol);
 		given(token.hasAutoRenewAccount()).willReturn(true);
@@ -286,6 +284,7 @@ class HederaTokenStoreTest {
 		given(token.name()).willReturn(name);
 		given(token.hasAdminKey()).willReturn(true);
 		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
+		given(token.isFeeScheduleMutable()).willReturn(true);
 
 		ids = mock(EntityIdSource.class);
 		given(ids.newTokenId(sponsor)).willReturn(created);
@@ -318,7 +317,7 @@ class HederaTokenStoreTest {
 		given(tokens.get(fromTokenId(created))).willReturn(token);
 		given(tokens.containsKey(fromTokenId(misc))).willReturn(true);
 		given(tokens.get(fromTokenId(misc))).willReturn(token);
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(modifiableToken);
+		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 
 		properties = mock(GlobalDynamicProperties.class);
 		given(properties.maxTokensPerAccount()).willReturn(MAX_TOKENS_PER_ACCOUNT);
@@ -386,11 +385,10 @@ class HederaTokenStoreTest {
 	void applicationAlwaysReplacesModifiableToken() {
 		// setup:
 		final var change = mock(Consumer.class);
-		final var key = fromTokenId(misc);
+		final var modifiableToken = mock(MerkleToken.class);
+		given(tokens.getForModify(fromTokenId(misc))).willReturn(modifiableToken);
 
-		given(tokens.getForModify(key)).willReturn(token);
-
-		willThrow(IllegalStateException.class).given(change).accept(any());
+		willThrow(IllegalStateException.class).given(change).accept(modifiableToken);
 
 		// then:
 		assertThrows(IllegalArgumentException.class, () -> subject.apply(misc, change));
@@ -408,7 +406,7 @@ class HederaTokenStoreTest {
 
 		// then:
 		inOrder.verify(tokens).getForModify(fromTokenId(misc));
-		inOrder.verify(change).accept(modifiableToken);
+		inOrder.verify(change).accept(token);
 	}
 
 	@Test
@@ -422,9 +420,6 @@ class HederaTokenStoreTest {
 
 	@Test
 	void deletesAsExpected() {
-		// given:
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
-
 		// when:
 		final var outcome = subject.delete(misc);
 
@@ -916,8 +911,6 @@ class HederaTokenStoreTest {
 		// setup:
 		given(token.hasWipeKey()).willReturn(false);
 		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
-		// and:
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 
 		// when:
 		final var status = subject.wipe(sponsor, misc, adjustment, true);
@@ -937,8 +930,6 @@ class HederaTokenStoreTest {
 		// setup:
 		given(token.hasWipeKey()).willReturn(true);
 		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
-		// and:
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 
 		// when:
 		final var status = subject.wipe(sponsor, misc, adjustment, false);
@@ -983,7 +974,6 @@ class HederaTokenStoreTest {
 
 	@Test
 	void updateRejectsInvalidExpiry() {
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 		// given:
 		var op = updateWith(NO_KEYS, true, true, false);
 		op = op.toBuilder().setExpiry(Timestamp.newBuilder().setSeconds(expiry - 1)).build();
@@ -998,7 +988,6 @@ class HederaTokenStoreTest {
 	@Test
 	void updateRejectsImmutableToken() {
 		given(token.hasAdminKey()).willReturn(false);
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 
 		var op = updateWith(NO_KEYS, true, true, false);
 		var outcome = subject.update(op, CONSENSUS_NOW);
@@ -1014,7 +1003,6 @@ class HederaTokenStoreTest {
 	@Test
 	void canExtendImmutableExpiry() {
 		given(token.hasAdminKey()).willReturn(false);
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 		// given:
 		var op = updateWith(NO_KEYS, false, false, false);
 		op = op.toBuilder().setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1_234)).build();
@@ -1041,8 +1029,6 @@ class HederaTokenStoreTest {
 
 	@Test
 	void updateRejectsInvalidNewAutoRenewPeriod() {
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
-		// and:
 		var op = updateWith(NO_KEYS, true, true, false, false, false);
 		op = op.toBuilder().setAutoRenewPeriod(enduring(-1L)).build();
 
@@ -1071,8 +1057,6 @@ class HederaTokenStoreTest {
 
 	@Test
 	void updateRejectsInappropriateKycKey() {
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
-		// and:
 		givenUpdateTarget(NO_KEYS);
 		// and:
 		final var op = updateWith(EnumSet.of(KeyType.KYC), false, false, false);
@@ -1086,8 +1070,6 @@ class HederaTokenStoreTest {
 
 	@Test
 	void updateRejectsInappropriateFreezeKey() {
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
-		// and:
 		givenUpdateTarget(NO_KEYS);
 		// and:
 		final var op = updateWith(EnumSet.of(KeyType.FREEZE), false, false, false);
@@ -1101,8 +1083,6 @@ class HederaTokenStoreTest {
 
 	@Test
 	void updateRejectsInappropriateWipeKey() {
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
-		// and:
 		givenUpdateTarget(NO_KEYS);
 		// and:
 		final var op = updateWith(EnumSet.of(KeyType.WIPE), false, false, false);
@@ -1116,8 +1096,6 @@ class HederaTokenStoreTest {
 
 	@Test
 	void updateRejectsInappropriateSupplyKey() {
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
-		// and:
 		givenUpdateTarget(NO_KEYS);
 		// and:
 		final var op = updateWith(EnumSet.of(KeyType.SUPPLY), false, false, false);
@@ -1131,7 +1109,6 @@ class HederaTokenStoreTest {
 
 	@Test
 	void updateRejectsImmutableTokenFeeSchedule() {
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 		given(token.isFeeScheduleMutable()).willReturn(false);
 		givenUpdateTarget(NO_KEYS);
 		final var clearImmutability = CustomFeesOuterClass.CustomFees.newBuilder()
@@ -1246,8 +1223,6 @@ class HederaTokenStoreTest {
 		Set<TokenID> tokenSet = new HashSet<>();
 		tokenSet.add(misc);
 
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
-		// and:
 		givenUpdateTarget(ALL_KEYS);
 		// and:
 		var op = updateWith(ALL_KEYS, true, true, true);
@@ -1272,8 +1247,6 @@ class HederaTokenStoreTest {
 		Set<TokenID> tokenSet = new HashSet<>();
 		tokenSet.add(misc);
 
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
-		// and:
 		givenUpdateTarget(EnumSet.noneOf(KeyType.class));
 		// and:
 		final var op = updateWith(EnumSet.of(KeyType.EMPTY_ADMIN), false, false, false);
@@ -1293,8 +1266,6 @@ class HederaTokenStoreTest {
 		Set<TokenID> tokenSet = new HashSet<>();
 		tokenSet.add(misc);
 
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
-		// and:
 		givenUpdateTarget(ALL_KEYS);
 		// and:
 		var op = updateWith(ALL_KEYS, true, true, true);
@@ -1327,8 +1298,6 @@ class HederaTokenStoreTest {
 		// setup:
 		subject.addKnownTreasury(treasury, misc);
 
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
-		// and:
 		givenUpdateTarget(ALL_KEYS);
 		// and:
 		final var op = updateWith(NO_KEYS,
@@ -1353,8 +1322,6 @@ class HederaTokenStoreTest {
 		// setup:
 		subject.addKnownTreasury(treasury, misc);
 
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
-		// and:
 		givenUpdateTarget(ALL_KEYS);
 		// and:
 		final var op = updateWith(ALL_KEYS, true, true, true, true, true);
@@ -1612,8 +1579,6 @@ class HederaTokenStoreTest {
 
 	@Test
 	void performsValidAdjustment() {
-		given(tokens.get(fromTokenId(misc))).willReturn(token);
-
 		// when:
 		subject.adjustBalance(treasury, misc, -1);
 
@@ -1879,6 +1844,7 @@ class HederaTokenStoreTest {
 		expected.setWipeKey(MISC_ACCOUNT_KT.asJKeyUnchecked());
 		expected.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked());
 		expected.setMemo(memo);
+		expected.setFeeScheduleMutable(false);
 
 		// given:
 		final var req = fullyValidAttempt().clearCustomFees().build();
