@@ -43,7 +43,7 @@ public class StandardizedPropertySources implements PropertySources {
 	static Supplier<ScreenedSysFileProps> dynamicGlobalPropsSupplier = ScreenedSysFileProps::new;
 
 	private static final int ISS_RESET_PERIOD_SECS = 30;
-	private static final int ISS_ROUNDS_TO_DUMP = 5;
+	private static final int ISS_ROUNDS_TO_DUMP = 50;
 
 	private final PropertySource bootstrapProps;
 

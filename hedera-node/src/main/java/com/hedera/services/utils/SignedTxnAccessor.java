@@ -268,14 +268,14 @@ public class SignedTxnAccessor implements TxnAccessor {
 	}
 
 	private void setXferUsageMeta() {
-		var numTokensInvolved = 0;
-		var numTokenTransfers = 0;
+		var totalTokensInvolved = 0;
+		var totalTokenTransfers = 0;
 		final var op = txn.getCryptoTransfer();
 		for (var tokenTransfers : op.getTokenTransfersList()) {
-			numTokensInvolved++;
-			numTokenTransfers += tokenTransfers.getTransfersCount();
+			totalTokensInvolved++;
+			totalTokenTransfers += tokenTransfers.getTransfersCount();
 		}
-		xferUsageMeta = new CryptoTransferMeta(1, numTokensInvolved, numTokenTransfers);
+		xferUsageMeta = new CryptoTransferMeta(1, totalTokensInvolved, totalTokenTransfers);
 	}
 
 	private void setSubmitUsageMeta() {
