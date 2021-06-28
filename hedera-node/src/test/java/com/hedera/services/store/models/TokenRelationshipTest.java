@@ -22,6 +22,7 @@ package com.hedera.services.store.models;
 
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +32,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TokenRelationshipTest {
 	private final Id tokenId = new Id(0, 0, 1234);
@@ -132,6 +134,23 @@ class TokenRelationshipTest {
 
 		// then:
 		assertEquals(1, subject.getBalanceChange());
+	}
+
+	@Test
+	void givesCorrectRepresentation(){
+		subject.getToken().setType(TokenType.NON_FUNGIBLE_UNIQUE);
+		assertTrue(subject.hasUniqueRepresentation());
+
+
+		subject.getToken().setType(TokenType.FUNGIBLE_COMMON);
+		assertTrue(subject.hasCommonRepresentation());
+	}
+
+	@Test
+	void testHashCode(){
+		var rel = new TokenRelationship(token, account);
+		rel.initBalance(balance);
+		assertEquals(rel.hashCode(), subject.hashCode());
 	}
 
 	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
