@@ -47,7 +47,7 @@
       <AppenderRef ref="fileLog"/>
     </Root>
 
-    <Logger name="com.swirlds" level="WARN" additivity="false">
+    <Logger name="com.swirlds" level="TRACE" additivity="false">
       <AppenderRef ref="fileLog" />
       <Filters>
         <!-- Filter out levels above INFO (ex: DEBUG & TRACE) -->
