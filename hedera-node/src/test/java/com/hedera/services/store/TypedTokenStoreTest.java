@@ -36,7 +36,6 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
@@ -92,8 +91,9 @@ class TypedTokenStoreTest {
 				accountStore,
 				transactionRecordService,
 				() -> tokens,
-				() -> nfts,
 				() -> uniqueTokens,
+				() -> uniqueTokenOwnerships,
+				() -> uniqueTokenAssociations,
 				() -> tokenRels,
 				backingTokenRels,
 				backingNfts);
@@ -247,8 +247,8 @@ class TypedTokenStoreTest {
 		verify(tokens, never()).replace(merkleTokenId, expectedReplacementToken);
 		// and:
 		verify(transactionRecordService).includeChangesToToken(modelToken);
-		verify(nfts).put(expectedNewUniqTokenId, expectedNewUniqToken);
-		verify(nfts).remove(expectedPastUniqTokenId);
+		verify(uniqueTokens).put(expectedNewUniqTokenId, expectedNewUniqToken);
+		verify(uniqueTokens).remove(expectedPastUniqTokenId);
 		verify(backingNfts).addToExistingNfts(new NftId(0, 0, tokenNum, mintedSerialNo));
 		verify(backingNfts).removeFromExistingNfts(new NftId(0, 0, tokenNum, burnedSerialNo));
 	}
