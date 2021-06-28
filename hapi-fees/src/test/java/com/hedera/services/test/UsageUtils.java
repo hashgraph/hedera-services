@@ -22,6 +22,7 @@ package com.hedera.services.test;
 
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.SubType;
 
 public class UsageUtils {
 	public static final int NUM_PAYER_KEYS = 2;
@@ -50,6 +51,7 @@ public class UsageUtils {
 			.build();
 
 	public static final FeeData A_USAGES_MATRIX;
+	public static final FeeData A_NON_FUNGIBLE_UNIQUE_USAGES_MATRIX;
 	public static final FeeData A_QUERY_USAGES_MATRIX;
 	static {
 		var usagesBuilder = FeeData.newBuilder();
@@ -60,6 +62,16 @@ public class UsageUtils {
 		usagesBuilder.setServicedata(FeeComponents.newBuilder()
 				.setConstant(ONE).setRbh(RBH).setSbh(SBH).setTv(TV));
 		A_USAGES_MATRIX = usagesBuilder.build();
+
+		usagesBuilder = FeeData.newBuilder();
+		usagesBuilder.setNetworkdata(FeeComponents.newBuilder()
+				.setConstant(ONE).setBpt(BPT).setVpt(VPT).setRbh(NETWORK_RBH));
+		usagesBuilder.setNodedata(FeeComponents.newBuilder()
+				.setConstant(ONE).setBpt(BPT).setVpt(NUM_PAYER_KEYS).setBpr(BPR).setSbpr(SBPR));
+		usagesBuilder.setServicedata(FeeComponents.newBuilder()
+				.setConstant(ONE).setRbh(RBH).setSbh(SBH).setTv(TV));
+		usagesBuilder.setSubType(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
+		A_NON_FUNGIBLE_UNIQUE_USAGES_MATRIX = usagesBuilder.build();
 
 		usagesBuilder = FeeData.newBuilder();
 		usagesBuilder.setNodedata(FeeComponents.newBuilder()

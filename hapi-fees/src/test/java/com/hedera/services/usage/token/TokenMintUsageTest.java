@@ -20,35 +20,33 @@ package com.hedera.services.usage.token;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.test.IdUtils;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
-import com.hederahashgraph.api.proto.java.SubType;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.hedera.services.test.UsageUtils.A_NON_FUNGIBLE_UNIQUE_USAGES_MATRIX;
 import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.*;
 
 public class TokenMintUsageTest {
 	long now = 1_234_567L;
 	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
 	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
 	TokenID id = IdUtils.asToken("0.0.75231");
+	List<ByteString> metadataList = new ArrayList<>();
 
 	TokenMintTransactionBody op;
 	TransactionBody txn;
@@ -67,6 +65,8 @@ public class TokenMintUsageTest {
 		given(factory.get(any(), any(), any())).willReturn(base);
 
 		TxnUsage.estimatorFactory = factory;
+
+		metadataList.add(ByteString.copyFromUtf8("1"));
 	}
 
 	@Test
@@ -88,9 +88,32 @@ public class TokenMintUsageTest {
 						USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
+	@Test
+	public void createsExpectedDeltaWithNonFungibleUnique() {
+		givenOp();
+		// and:
+		given(base.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE)).willReturn(A_NON_FUNGIBLE_UNIQUE_USAGES_MATRIX);
+		subject = TokenMintUsage.newEstimate(txn, sigUsage);
+		subject.givenSubType(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
+
+		// when:
+		var actual = subject.get();
+
+		// then:
+		assertEquals(A_NON_FUNGIBLE_UNIQUE_USAGES_MATRIX, actual);
+		// and:
+		verify(base).addBpt(1);
+		verify(base).addRbs(1);
+		verify(base).addRbs(TOKEN_ENTITY_SIZES.bytesUsedForUniqueTokenTransfers(1));
+		verify(base).addRbs(
+				TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 0, 1) *
+						USAGE_PROPERTIES.legacyReceiptStorageSecs());
+	}
+
 	private void givenOp() {
 		op = TokenMintTransactionBody.newBuilder()
 				.setToken(id)
+				.addAllMetadata(metadataList)
 				.build();
 		setTxn();
 	}
