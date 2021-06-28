@@ -74,7 +74,7 @@ public class PermissionSemanticsSpec extends HapiApiSuite {
 		long amount = 100 * 100_000_000L;
 		AtomicReference<byte[]> origContents = new AtomicReference<>();
 		return defaultHapiSpec("AddressBookAdminExemptFromFeesGivenAuthorizedOps").given(
-				cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, amount)),
+				cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, amount)).fee(ONE_HUNDRED_HBARS),
 				fileCreate("tbu"),
 				getFileContents(NODE_DETAILS).consumedBy(origContents::set)
 		).when(

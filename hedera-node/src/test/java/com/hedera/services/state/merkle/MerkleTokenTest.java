@@ -48,7 +48,6 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.hedera.services.state.merkle.MerkleTopic.serdes;
-import static com.hedera.services.utils.MiscUtils.describe;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -568,14 +567,11 @@ class MerkleTokenTest {
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(identicalSubject);
 		identicalSubject.setDeleted(isDeleted);
-<<<<<<< HEAD
 		identicalSubject.setTokenType(TokenType.FUNGIBLE_COMMON);
 		identicalSubject.setSupplyType(TokenSupplyType.INFINITE);
 		identicalSubject.setMaxSupply(subject.maxSupply());
 		identicalSubject.setLastUsedSerialNumber(subject.getLastUsedSerialNumber());
-=======
 		identicalSubject.setFeeScheduleMutable(true);
->>>>>>> origin/master
 
 		// and:
 		other = new MerkleToken(
@@ -600,14 +596,12 @@ class MerkleTokenTest {
 	}
 
 	@Test
-<<<<<<< HEAD
-	public void toStringWorks() {
-=======
 	void toStringWorks() {
 		// setup:
-		final var desired = "MerkleToken{deleted=true, expiry=1234567, symbol=NotAnHbar, name=NotAnHbarName, " +
-				"memo=NotAMemo, treasury=1.2.3, totalSupply=1000000, decimals=2, autoRenewAccount=2.3.4, " +
-				"autoRenewPeriod=1234567, adminKey=ed25519: \"not-a-real-admin-key\"\n" +
+		final var desired = "MerkleToken{tokenType=FUNGIBLE_COMMON, supplyType=INFINITE, deleted=true, expiry=1234567, " +
+				"symbol=NotAnHbar, name=NotAnHbarName, memo=NotAMemo, treasury=1.2.3, maxSupply=0, totalSupply=1000000," +
+				" decimals=2, lastUsedSerialNumber=0, autoRenewAccount=2.3.4, autoRenewPeriod=1234567, " +
+				"adminKey=ed25519: \"not-a-real-admin-key\"\n" +
 				", kycKey=ed25519: \"not-a-real-kyc-key\"\n" +
 				", wipeKey=ed25519: \"not-a-real-wipe-key\"\n" +
 				", supplyKey=ed25519: \"not-a-real-supply-key\"\n" +
@@ -618,33 +612,8 @@ class MerkleTokenTest {
 				"fractionalFee=FractionalFeeSpec{numerator=5, denominator=100, minimumUnitsToCollect=1, " +
 				"maximumUnitsToCollect=55}, feeCollector=EntityId{shard=4, realm=5, num=6}}], feeScheduleMutable=true}";
 
->>>>>>> origin/master
 		// expect:
-		assertEquals("MerkleToken{" +
-						"tokenType="+ subject.tokenType() + ", " +
-					    "supplyType=" + subject.supplyType() + ", " +
-					    "deleted=" + isDeleted + ", " +
-						"expiry=" + expiry + ", " +
-						"symbol=" + symbol + ", " +
-						"name=" + name + ", " +
-						"memo=" + memo + ", " +
-						"treasury=" + treasury.toAbbrevString() + ", " +
-						"maxSupply=" + subject.maxSupply() + ", " +
-						"totalSupply=" + totalSupply + ", " +
-						"decimals=" + decimals + ", " +
-						"lastUsedSerialNumber=" + subject.getLastUsedSerialNumber() +", " +
-						"autoRenewAccount=" + autoRenewAccount.toAbbrevString() + ", " +
-						"autoRenewPeriod=" + autoRenewPeriod + ", " +
-						"adminKey=" + describe(adminKey) + ", " +
-						"kycKey=" + describe(kycKey) + ", " +
-						"wipeKey=" + describe(wipeKey) + ", " +
-						"supplyKey=" + describe(supplyKey) + ", " +
-						"freezeKey=" + describe(freezeKey) + ", " +
-						"customFeeKey=" + describe(customFeeKey) + ", " +
-						"accountsKycGrantedByDefault=" + accountsKycGrantedByDefault + ", " +
-						"accountsFrozenByDefault=" + freezeDefault + ", " +
-						"feeSchedules=[CustomFee{feeType=FIXED_FEE, fixedFee=FixedFeeSpec{unitsToCollect=7, tokenDenomination=1.2.3}, feeCollector=EntityId{shard=4, realm=5, num=6}}, CustomFee{feeType=FRACTIONAL_FEE, fractionalFee=FractionalFeeSpec{numerator=5, denominator=100, minimumUnitsToCollect=1, maximumUnitsToCollect=55}, feeCollector=EntityId{shard=4, realm=5, num=6}}]}",
-				subject.toString());
+		assertEquals(desired, subject.toString());
 	}
 
 	@Test

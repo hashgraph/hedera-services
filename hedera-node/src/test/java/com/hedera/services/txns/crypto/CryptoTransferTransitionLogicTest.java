@@ -170,7 +170,7 @@ class CryptoTransferTransitionLogicTest {
 		final var customFee = List.of(CustomFee.fixedFee(20L, null, a.asEntityId()));
 		final List<Pair<Id, List<CustomFee>>> customFees = List.of(Pair.of(c, customFee));
 		final var impliedTransfers = ImpliedTransfers.valid(
-				maxHbarAdjusts, maxTokenAdjusts, List.of(
+				validationProps, List.of(
 						hbarChange(a.asGrpcAccount(), +100),
 						hbarChange(b.asGrpcAccount(), -100)
 				),

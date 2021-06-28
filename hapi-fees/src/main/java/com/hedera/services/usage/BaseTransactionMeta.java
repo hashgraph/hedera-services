@@ -22,6 +22,8 @@ package com.hedera.services.usage;
 
 public class BaseTransactionMeta {
 	private final int memoUtf8Bytes;
+	// Note: This field only records original grpc transaction's transfers.
+	// Keep it this way till we have a comprehensive solution for custom fee enhancement.
 	private final int numExplicitTransfers;
 
 	public BaseTransactionMeta(int memoUtf8Bytes, int numExplicitTransfers) {

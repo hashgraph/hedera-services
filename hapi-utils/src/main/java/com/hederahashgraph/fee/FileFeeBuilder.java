@@ -42,8 +42,16 @@ import java.util.List;
  * Transactions and Query.
  */
 public class FileFeeBuilder extends FeeBuilder {
+
   /**
-   * This method returns Fee Matrices for File Append Transaction
+   * This method returns fee matrices for file append transaction
+   *
+   * @param txBody transaction body
+   * @param expirationTimeStamp expiration timestamp
+   * @param sigValObj signature value object
+   *
+   * @return fee data
+   * @throws InvalidTxBodyException when transaction body is invalid
    */
   public FeeData getFileAppendTxFeeMatrices(TransactionBody txBody, Timestamp expirationTimeStamp,
       SigValueObj sigValObj) throws InvalidTxBodyException {
@@ -97,7 +105,12 @@ public class FileFeeBuilder extends FeeBuilder {
   }
 
   /**
-   * This method returns Fee Matrices for File Info Query
+   * This method returns fee matrices for file info query
+   *
+   * @param keys keys
+   * @param responseType response type
+   *
+   * @return fee data
    */
   public FeeData getFileInfoQueryFeeMatrices(KeyList keys, ResponseType responseType) {
 
@@ -149,9 +162,13 @@ public class FileFeeBuilder extends FeeBuilder {
 
   }
 
-
   /**
-   * This method returns Fee Matrices for File Content Query
+   * This method returns fee matrices for file content query
+   *
+   * @param contentSize content size
+   * @param responseType response type
+   *
+   * @return fee data
    */
   public FeeData getFileContentQueryFeeMatrices(int contentSize, ResponseType responseType) {
 

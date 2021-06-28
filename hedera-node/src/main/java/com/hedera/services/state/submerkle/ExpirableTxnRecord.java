@@ -162,7 +162,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		return fee == that.fee &&
 				this.expiry == that.expiry &&
 				this.submittingMember == that.submittingMember &&
-				this.receipt.equals(that.receipt) &&
+				Objects.equals(this.receipt, that.receipt) &&
 				Arrays.equals(this.txnHash, that.txnHash) &&
 				this.txnId.equals(that.txnId) &&
 				Objects.equals(this.consensusTimestamp, that.consensusTimestamp) &&
@@ -172,7 +172,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				Objects.equals(this.hbarAdjustments, that.hbarAdjustments) &&
 				Objects.equals(this.tokens, that.tokens) &&
 				Objects.equals(this.tokenAdjustments, that.tokenAdjustments) &&
-                                Objects.equals(this.nftTokenAdjustments, that.nftTokenAdjustments) &&
+				Objects.equals(this.nftTokenAdjustments, that.nftTokenAdjustments) &&
 				Objects.equals(this.assessedCustomFees, that.assessedCustomFees);
 	}
 
@@ -248,13 +248,10 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		contractCreateResult = serdes.readNullableSerializable(in);
 		expiry = in.readLong();
 		submittingMember = in.readLong();
-		if (version > RELEASE_070_VERSION) {
-			tokens = in.readSerializableList(MAX_INVOLVED_TOKENS);
-			tokenAdjustments = in.readSerializableList(MAX_INVOLVED_TOKENS);
-		}
-		if (version > RELEASE_080_VERSION) {
-			scheduleRef = serdes.readNullableSerializable(in);
-		}
+		/* Tokens present since v0.7.0 */
+		tokens = in.readSerializableList(MAX_INVOLVED_TOKENS);
+		tokenAdjustments = in.readSerializableList(MAX_INVOLVED_TOKENS); /* Schedule references present since v0.8.0 */
+		scheduleRef = serdes.readNullableSerializable(in);
 		if (version >= RELEASE_0160_VERSION) {
 			nftTokenAdjustments = in.readSerializableList(MAX_INVOLVED_TOKENS);
 			assessedCustomFees = in.readSerializableList(MAX_ASSESSED_CUSTOM_FEES_CHANGES);
@@ -361,19 +358,23 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 	public static ExpirableTxnRecord fromGprc(TransactionRecord record) {
 		List<EntityId> tokens = NO_TOKENS;
-		List<CurrencyAdjustments> tokenAdjustments = NO_TOKEN_ADJUSTMENTS;
-		List<NftAdjustments> nftTokenAdjustments = NO_NFT_TOKEN_ADJUSTMENTS;
+		List<CurrencyAdjustments> tokenAdjustments = null;
+		List<NftAdjustments> nftTokenAdjustments = null;
 		int n = record.getTokenTransferListsCount();
 		if (n > 0) {
 			tokens = new ArrayList<>();
-			tokenAdjustments = new ArrayList<>();
-			nftTokenAdjustments = new ArrayList<>();
 			for (TokenTransferList tokenTransfers : record.getTokenTransferListsList()) {
 				tokens.add(EntityId.fromGrpcTokenId(tokenTransfers.getToken()));
 				if (!tokenTransfers.getTransfersList().isEmpty()) {
+					if (tokenAdjustments == null) {
+						tokenAdjustments = new ArrayList<>();
+					}
 					tokenAdjustments.add(CurrencyAdjustments.fromGrpc(tokenTransfers.getTransfersList()));
 				}
 				if (!tokenTransfers.getNftTransfersList().isEmpty()) {
+					if (nftTokenAdjustments == null) {
+						nftTokenAdjustments = new ArrayList<>();
+					}
 					nftTokenAdjustments.add(NftAdjustments.fromGrpc(tokenTransfers.getNftTransfersList()));
 				}
 			}

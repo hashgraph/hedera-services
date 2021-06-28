@@ -9,9 +9,9 @@ package com.hedera.services.legacy.proto.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -56,6 +56,7 @@ public class KeyExpansion {
   /**
    * Generates a KeyList key from a list of keys.
    *
+   * @param keys list of keys
    * @return generated KeyList key
    */
   public static Key genKeyList(List<Key> keys) {
@@ -67,7 +68,9 @@ public class KeyExpansion {
   /**
    * Generates a list of Ed25519 keys.
    *
+   * @param numKeys number of keys
    * @param pubKey2privKeyMap map of public key hex string as key and the private key as value
+   *
    * @return a list of generated Ed25519 keys
    */
   public static List<Key> genEd25519Keys(int numKeys, Map<String, PrivateKey> pubKey2privKeyMap) {
@@ -82,6 +85,9 @@ public class KeyExpansion {
 
   /**
    * Generates a threshold key from a list of keys.
+   *
+   * @param keys list of keys
+   * @param threshold threshold
    *
    * @return generated threshold key
    */
@@ -101,7 +107,9 @@ public class KeyExpansion {
    * @param message message to be signed
    * @param pubKey2privKeyMap map of public key hex string as key and the private key as value
    * @param depth current level that is to be verified. The first level has a value of 1.
+   *
    * @return the complex signature generated
+   * @throws Exception for failed sign
    */
   public static Signature sign(Key key, byte[] message, Map<String, PrivateKey> pubKey2privKeyMap,
       int depth)
@@ -290,6 +298,10 @@ public class KeyExpansion {
 
   /**
    * Expands a key to a given level of depth, only keys needed for signing are expanded.
+   *
+   * @param key key
+   * @param depth depth
+   * @param expandedKeys list of expanded keys
    */
   public static void expandKeyMinimum4Signing(Key key, int depth, List<Key> expandedKeys) {
     if (!(key.hasThresholdKey() || key.hasKeyList())) {
@@ -323,9 +335,13 @@ public class KeyExpansion {
   /**
    * Signs a basic key and returns a SignaturePair object.
    *
+   * @param key  key
+   * @param msgBytes message bytes
    * @param pubKey2privKeyMap map of public key hex string as key and the private key as value
    * @param prefixLen the length of the key prefix, if -1, use the full length of the key
+   *
    * @return the SignaturePair generated
+   * @throws Exception when key type is not implemented
    */
   public static SignaturePair signBasicAsSignaturePair(Key key, int prefixLen, Map<String, PrivateKey> pubKey2privKeyMap,
       byte[] msgBytes)

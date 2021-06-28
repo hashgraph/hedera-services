@@ -373,6 +373,10 @@ class HederaTokenStoreTest {
 		ArgumentCaptor<BiConsumer<MerkleEntityId, MerkleToken>> captor = forClass(BiConsumer.class);
 		// and:
 		subject.getKnownTreasuries().put(treasury, Set.of(anotherMisc));
+		// and:
+		final var deletedToken = new MerkleToken();
+		deletedToken.setDeleted(true);
+		deletedToken.setTreasury(EntityId.fromGrpcAccountId(newTreasury));
 
 		// when:
 		subject.rebuildViews();
@@ -384,6 +388,7 @@ class HederaTokenStoreTest {
 
 		// and when:
 		visitor.accept(fromTokenId(misc), token);
+		visitor.accept(fromTokenId(anotherMisc), deletedToken);
 
 		// then:
 		var extant = subject.getKnownTreasuries();
