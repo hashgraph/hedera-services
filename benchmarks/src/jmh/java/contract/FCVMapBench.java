@@ -1,15 +1,37 @@
 package contract;
 
+import com.hedera.services.state.merkle.virtual.ContractDataSource;
+import com.hedera.services.state.merkle.virtual.ContractUint256;
+import com.hedera.services.store.models.Id;
+import com.swirlds.common.crypto.CryptoFactory;
+import com.swirlds.common.merkle.utility.SerializableLong;
+import com.swirlds.fcmap.VFCMap;
+import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
 
+import java.io.File;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Random;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Microbenchmark tests for the VirtualMap. These benchmarks are just of the tree itself,
@@ -19,62 +41,54 @@ import java.util.concurrent.TimeUnit;
  */
 @State(Scope.Thread)
 @Warmup(iterations = 5, time = 10, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 5, time = 30, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 5, time = 150, timeUnit = TimeUnit.SECONDS)
 @Fork(1)
 //@Warmup(iterations = 1, time = 10, timeUnit = TimeUnit.SECONDS)
 //@Measurement(iterations = 1, time = 15, timeUnit = TimeUnit.SECONDS)
 //@Fork(1)
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
-public class VirtualMapBench {
-  /*  private InMemoryDataSource ds = new InMemoryDataSource();
-    private MemMapDataSource ds2;
-    private VirtualMapDataStore store;
+public class FCVMapBench {
     private Random rand = new Random();
-    private VirtualMap inMemoryMap;
+    private VFCMap<SerializableLong, SerializableLong> inMemoryMap;
+    private VFCMap<ContractUint256, ContractUint256> contractMap;
+    private Future<?> prevIterationHashingFuture;
     private ExecutorService executorService;
 
     @Setup
     public void prepare() throws Exception {
         executorService = Executors.newSingleThreadExecutor((r) -> {
             Thread th = new Thread(r);
+            th.setName("Hashing Executor");
             th.setDaemon(true);
             return th;
         });
 
-        final var storeDir = new File("./store").toPath();
-        if (Files.exists(storeDir)) {
-            try {
-                //noinspection ResultOfMethodCallIgnored
-                Files.walk(storeDir)
-                        .sorted(Comparator.reverseOrder())
-                        .map(Path::toFile)
-                        .forEach(File::delete);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        store = new VirtualMapDataStore(storeDir, 32, 32);
-        store.open();
-        ds2 = new MemMapDataSource(store,
-                new Account(0, 0, 100));
+        final var contractDS = new ContractDataSource(new Id(1, 2, 3));
+        contractMap = new VFCMap<>(contractDS);
 
         // Populate the data source with one million items.
-        inMemoryMap = new VirtualMap(ds);
-//        VirtualMap map2 = new VirtualMap(ds2);
+//        inMemoryMap = new VFCMap<>();
+//        for (int i=0; i<1_000_000; i++) {
+//            final var key = asKey(i);
+//            final var value = asValue(i);
+//            inMemoryMap.put(key, value);
+//        }
+
         for (int i=0; i<1_000_000; i++) {
-            final var key = asKey(i);
-            final var value = asValue(i);
-            inMemoryMap.putValue(key, value);
-//            map2.putValue(key, value);
+            final var key = asContractKey(i);
+            final var value = asContractValue(i);
+            contractMap.put(key, value);
         }
-//        map2.commit();
+
+        final var cf = new CompletableFuture<>();
+        cf.complete(CryptoFactory.getInstance().getNullHash());
+        prevIterationHashingFuture = cf;
     }
 
     @TearDown
     public void destroy() {
-        store.close();
+        /*store.close();*/
     }
 
 //    @Benchmark
@@ -157,20 +171,62 @@ public class VirtualMapBench {
 //        }
 //        inMemoryMap.commit();
 //    }
-//
-    @Benchmark
-    public void update_LimitedPerVirtualMap_25k() throws ExecutionException, InterruptedException {
-        final var old = inMemoryMap;
-        inMemoryMap = old.copy();
-        final var future = executorService.submit(old::release);
-        for (int j=0; j<25_000; j++) {
-            final var i = rand.nextInt(1_000_000);
-            inMemoryMap.putValue(asKey(i), asValue(i + 1_000_000));
-        }
 
-        // Block until the release has completed.
-        future.get();
+    @Benchmark
+    public void update_LimitedPerVirtualMap_25k_Contract_Files() throws ExecutionException, InterruptedException {
+        // Wait for the hashing of the previous iteration to complete
+        prevIterationHashingFuture.get();
+
+        // Create a new fast copy and start hashing the old one
+//        final var old = contractMap;
+//        contractMap = old.copy();
+//        prevIterationHashingFuture = executorService.submit(() -> {
+//            final var f = CryptoFactory.getInstance().digestTreeAsync(old);
+//            try {
+//                f.get(1, TimeUnit.SECONDS);
+//            } catch (InterruptedException | ExecutionException e) {
+//                e.printStackTrace();
+//                System.exit(1);
+//            } catch (TimeoutException e) {
+//                System.err.println("Failed to hash within 1 second! Probably deadlocked?");
+//                e.printStackTrace();
+//            }
+//            old.release();
+//        });
+
+        // Start modifying the new fast copy
+        for (int j=0; j<500; j++) {
+            final var i = rand.nextInt(1_000_000);
+            contractMap.put(asContractKey(i), asContractValue(i + 1_000_000));
+            Thread.sleep(100);
+        }
     }
+
+//    @Benchmark
+//    public void update_LimitedPerVirtualMap_25k() throws ExecutionException, InterruptedException {
+//        // Wait for the hashing of the previous iteration to complete
+//        prevIterationHashingFuture.get();
+//
+//        // Create a new fast copy and start hashing the old one
+//        final var old = inMemoryMap;
+//        inMemoryMap = old.copy();
+////        prevIterationHashingFuture = executorService.submit(() -> {
+////            final var f = CryptoFactory.getInstance().digestTreeAsync(old);
+////            try {
+////                f.get();
+////            } catch (InterruptedException | ExecutionException e) {
+////                e.printStackTrace();
+////                System.exit(1);
+////            }
+//            old.release();
+////        });
+//
+//        // Start modifying the new fast copy
+//        for (int j=0; j<50_000; j++) {
+//            final var i = rand.nextInt(1_000_000);
+//            inMemoryMap.put(asKey(i), asValue(i + 1_000_000));
+//        }
+//    }
 
 //    @Benchmark
 //    public void update_LimitedPerVirtualMap_5_NoHashing() {
@@ -293,91 +349,19 @@ public class VirtualMapBench {
 //        map.commit();
 //    }
 
-    private VirtualKey asKey(int index) {
-        return new VirtualKey(Arrays.copyOf(("key" + index).getBytes(), 32));
+    private SerializableLong asKey(int index) {
+        return new SerializableLong(index);
     }
 
-    private VirtualValue asValue(int index) {
-        return new VirtualValue(Arrays.copyOf(("val" + index).getBytes(), 32));
+    private SerializableLong asValue(int index) {
+        return new SerializableLong(index);
     }
 
-    private static final class InMemoryDataSource implements VirtualDataSource {
-        private Map<VirtualKey, VirtualRecord> leaves = new ConcurrentHashMap<>();
-        private Map<Long, VirtualRecord> leavesByPath = new ConcurrentHashMap<>();
-        private Map<Long, Hash> parents = new ConcurrentHashMap<>();
-        private long firstLeafPath = INVALID_PATH;
-        private long lastLeafPath = INVALID_PATH;
-        private boolean closed = false;
+    private ContractUint256 asContractKey(int index) {
+        return new ContractUint256(BigInteger.valueOf(index));
+    }
 
-        @Override
-        public Hash loadParentHash(long parentPath) {
-            return parents.get(parentPath);
-        }
-
-        @Override
-        public VirtualRecord loadLeaf(long leafPath) {
-            return leavesByPath.get(leafPath);
-        }
-
-        @Override
-        public VirtualRecord loadLeaf(VirtualKey leafKey) {
-            return leaves.get(leafKey);
-        }
-
-        @Override
-        public VirtualValue getLeafValue(VirtualKey leafKey) {
-            final var rec = leaves.get(leafKey);
-            return rec == null ? null : rec.getValue();
-        }
-
-        @Override
-        public void saveParent(long parentPath, Hash hash) {
-            parents.put(parentPath, hash);
-        }
-
-        @Override
-        public void saveLeaf(VirtualRecord leaf) {
-            leaves.put(leaf.getKey(), leaf);
-            leavesByPath.put(leaf.getPath(), leaf);
-        }
-
-        @Override
-        public void deleteParent(long parentPath) {
-            parents.remove(parentPath);
-        }
-
-        @Override
-        public void deleteLeaf(VirtualRecord leaf) {
-            leaves.remove(leaf.getKey());
-            leavesByPath.remove(leaf.getPath());
-        }
-
-        @Override
-        public void writeLastLeafPath(long path) {
-            this.lastLeafPath = path;
-        }
-
-        @Override
-        public long getLastLeafPath() {
-            return lastLeafPath;
-        }
-
-        @Override
-        public void writeFirstLeafPath(long path) {
-            this.firstLeafPath = path;
-        }
-
-        @Override
-        public long getFirstLeafPath() {
-            return firstLeafPath;
-        }
-
-        @Override
-        public void close() throws IOException {
-            if (closed) {
-                throw new IOException("Already closed");
-            }
-            closed = true;
-        }
-    }*/
+    private ContractUint256 asContractValue(int index) {
+        return new ContractUint256(BigInteger.valueOf(index));
+    }
 }
