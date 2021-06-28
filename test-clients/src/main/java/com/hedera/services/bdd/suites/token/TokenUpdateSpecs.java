@@ -639,6 +639,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						tokenCreate(token)
 								.adminKey(adminKey)
 								.treasury(tokenCollector)
+								.customFeesMutable()
 								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
 								.withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
 								.withCustom(fractionalFee(

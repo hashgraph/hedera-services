@@ -77,6 +77,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	private Optional<Function<HapiApiSpec, String>> symbolFn = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> nameFn = Optional.empty();
 	private final List<Function<HapiApiSpec, CustomFeesOuterClass.CustomFee>> feeScheduleSuppliers = new ArrayList<>();
+	private boolean customFeesMutable = false;
 
 	@Override
 	public HederaFunctionality type() {
@@ -93,6 +94,11 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 
 	public HapiTokenCreate withCustom(Function<HapiApiSpec, CustomFeesOuterClass.CustomFee> supplier) {
 		feeScheduleSuppliers.add(supplier);
+		return this;
+	}
+
+	public HapiTokenCreate customFeesMutable() {
+		customFeesMutable = true;
 		return this;
 	}
 
@@ -240,6 +246,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 								for (var supplier : feeScheduleSuppliers) {
 									fb.addCustomFees(supplier.apply(spec));
 								}
+								fb.setCanUpdateWithAdminKey(customFeesMutable);
 							}
 						});
 		return b -> b.setTokenCreation(opBody);
