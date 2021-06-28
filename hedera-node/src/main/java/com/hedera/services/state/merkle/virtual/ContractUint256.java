@@ -38,6 +38,10 @@ public class ContractUint256 implements SelfSerializable {
 
     @Override
     public void serialize(SerializableDataOutputStream serializableDataOutputStream) throws IOException {
-        serializableDataOutputStream.write(this.value.toByteArray());
+        final var arr = this.value.toByteArray();
+        if (arr.length > 32) {
+            System.out.println(arr.length);
+        }
+        serializableDataOutputStream.writeByteArray(arr);
     }
 }
