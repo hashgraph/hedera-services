@@ -240,9 +240,9 @@ public abstract class JKey implements Serializable {
 	public abstract boolean isEmpty();
 
 	/**
-	 * Expected to return {@code false} if the key is empty.
+	 * Expected to return {@code false} if the key is empty
 	 *
-	 * @return return false if the key is empty
+	 * @return whether the key is valid
 	 */
 	public abstract boolean isValid();
 

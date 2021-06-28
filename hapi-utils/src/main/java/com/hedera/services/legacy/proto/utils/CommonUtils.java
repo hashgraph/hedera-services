@@ -9,9 +9,9 @@ package com.hedera.services.legacy.proto.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -50,8 +50,12 @@ import java.util.Base64;
  * @author hua
  */
 public class CommonUtils {
+
   /**
    * Sleep given seconds.
+   *
+   * @param timeInMillis time to sleep in milliseconds
+   * @throws InterruptedException when thread sleep interruption
    */
   public static void napMillis(long timeInMillis) throws InterruptedException {
     Thread.sleep(timeInMillis);
@@ -59,6 +63,10 @@ public class CommonUtils {
 
   /**
    * Sleep given seconds.
+   *
+   * @param timeInSec time to sleep in seconds
+   *
+   * @throws InterruptedException when thread sleep interruption
    */
   public static void nap(int timeInSec)  throws InterruptedException {
     Thread.sleep(timeInSec * 1000L);
@@ -74,6 +82,8 @@ public class CommonUtils {
    *
    * @param path the file path to write bytes
    * @param data the byte array data
+   *
+   * @throws IOException when error with IO
    */
   public static void writeToFile(String path, byte[] data) throws IOException {
     writeToFile(path, data, false);
@@ -82,7 +92,11 @@ public class CommonUtils {
   /**
    * Write bytes to a file.
    *
+   * @param path file write path
+   * @param data byte array representation of data to write
    * @param append append to existing file if true
+   *
+   * @throws IOException when error with IO
    */
   public static void writeToFile(String path, byte[] data, boolean append) throws IOException {
     File f = new File(path);
@@ -103,6 +117,7 @@ public class CommonUtils {
    *
    * @param path the file path to write bytes
    * @param data the byte array data
+   * @throws IOException when error with IO
    */
   public static void writeToFileUTF8(String path, String data) throws IOException {
     byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
@@ -112,7 +127,10 @@ public class CommonUtils {
   /**
    * Write string to a file using UTF_8 encoding.
    *
+   * @param data data represented as string
+   * @param path file write path
    * @param append append to existing file if true
+   * @throws IOException when error with IO
    */
   public static void writeToFileUTF8(String path, String data, boolean append) throws IOException {
     byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
@@ -136,6 +154,7 @@ public class CommonUtils {
    *
    * @param object the Java object to be serialized
    * @return converted bytes
+   * @throws IOException when error with IO
    */
   public static byte[] convertToBytes(Object object) throws IOException {
     try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -151,6 +170,8 @@ public class CommonUtils {
    * @param start from position
    * @param length number of bytes to copy
    * @param bytes source byte array
+   *
+   * @return copied byte array
    */
   public static byte[] copyBytes(int start, int length, byte[] bytes) {
     byte[] rv = new byte[length];
@@ -161,10 +182,15 @@ public class CommonUtils {
   }
 
   /**
-   * Reads a resource file.
+   * Reads a resource file
    *
    * @param filePath the resource file to be read
    * @param myClass the calling class
+   * @param <T> type to read binary into
+   *
+   * @return type T from the binary input
+   * @throws IOException when error with IO
+   * @throws URISyntaxException when invalid URI syntax
    */
   public static <T> byte[] readBinaryFileAsResource(String filePath, Class<T> myClass)
       throws IOException, URISyntaxException {
@@ -175,7 +201,10 @@ public class CommonUtils {
   /**
    * Generates a human readable string for grpc transaction.
    *
+   * @param grpcTransaction GRPC transaction
+   *
    * @return generated readable string
+   * @throws InvalidProtocolBufferException when protocol buffer is invalid
    */
   public static String toReadableString(Transaction grpcTransaction) throws InvalidProtocolBufferException {
     String rv = null;
@@ -192,7 +221,10 @@ public class CommonUtils {
   /**
    * Generates a short human readable string for grpc transaction.
    *
+   * @param grpcTransaction GRPC transaction
+   *
    * @return generated readable string
+   * @throws InvalidProtocolBufferException when protocol buffer is invalid
    */
   public static String toReadableTransactionID(
           Transaction grpcTransaction) throws InvalidProtocolBufferException {

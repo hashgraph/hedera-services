@@ -21,7 +21,6 @@ package com.hedera.services.context.primitives;
  */
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.UInt64Value;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -202,7 +201,6 @@ class StateViewTest {
 				new EntityId(1, 2, 3));
 		token.setMemo(tokenMemo);
 		token.setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey());
-		token.setCustomFeeKey(MISC_ACCOUNT_KT.asJKey());
 		token.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asJKey());
 		token.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asJKey());
 		token.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKey());
@@ -412,7 +410,6 @@ class StateViewTest {
 		assertEquals(token.totalSupply(), info.getTotalSupply());
 		assertEquals(token.decimals(), info.getDecimals());
 		assertEquals(token.customFeeSchedule(), MerkleToken.customFeesFromGrpc(info.getCustomFees()));
-		assertEquals(miscKey, info.getCustomFeesKey());
 		assertEquals(TOKEN_ADMIN_KT.asKey(), info.getAdminKey());
 		assertEquals(TOKEN_FREEZE_KT.asKey(), info.getFreezeKey());
 		assertEquals(TOKEN_KYC_KT.asKey(), info.getKycKey());
@@ -716,28 +713,28 @@ class StateViewTest {
 	}
 
 	private CustomFeesOuterClass.FixedFee fixedFeeInTokenUnits = CustomFeesOuterClass.FixedFee.newBuilder()
-			.setTokenId(tokenId)
-			.setUnitsToCollect(100)
+			.setDenominatingTokenId(tokenId)
+			.setAmount(100)
 			.build();
 	private CustomFeesOuterClass.FixedFee fixedFeeInHbar = CustomFeesOuterClass.FixedFee.newBuilder()
-			.setUnitsToCollect(100)
+			.setAmount(100)
 			.build();
 	private Fraction fraction = Fraction.newBuilder().setNumerator(15).setDenominator(100).build();
 	private CustomFeesOuterClass.FractionalFee fractionalFee = CustomFeesOuterClass.FractionalFee.newBuilder()
-			.setFractionOfUnitsToCollect(fraction)
-			.setMaximumUnitsToCollect(UInt64Value.of(50))
-			.setMinimumUnitsToCollect(10)
+			.setFractionalAmount(fraction)
+			.setMaximumAmount(50)
+			.setMinimumAmount(10)
 			.build();
 	private CustomFeesOuterClass.CustomFee customFixedFeeInHbar = CustomFeesOuterClass.CustomFee.newBuilder()
-			.setFeeCollector(payerAccountId)
+			.setFeeCollectorAccountId(payerAccountId)
 			.setFixedFee(fixedFeeInHbar)
 			.build();
 	private CustomFeesOuterClass.CustomFee customFixedFeeInHts = CustomFeesOuterClass.CustomFee.newBuilder()
-			.setFeeCollector(payerAccountId)
+			.setFeeCollectorAccountId(payerAccountId)
 			.setFixedFee(fixedFeeInTokenUnits)
 			.build();
 	private CustomFeesOuterClass.CustomFee customFractionalFee = CustomFeesOuterClass.CustomFee.newBuilder()
-			.setFeeCollector(payerAccountId)
+			.setFeeCollectorAccountId(payerAccountId)
 			.setFractionalFee(fractionalFee)
 			.build();
 	private CustomFeesOuterClass.CustomFees grpcCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()

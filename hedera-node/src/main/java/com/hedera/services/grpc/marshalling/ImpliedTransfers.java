@@ -45,15 +45,18 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class ImpliedTransfers {
 	private final ImpliedTransfersMeta meta;
 	private final List<BalanceChange> changes;
-	private final List<Pair<Id, List<CustomFee>>> involvedTokenFeeSchedules;
+	private final List<Pair<Id, List<CustomFee>>> tokenFeeSchedules;
 	private final List<AssessedCustomFee> assessedCustomFees;
 
-	private ImpliedTransfers(ImpliedTransfersMeta meta, List<BalanceChange> changes,
-			List<Pair<Id, List<CustomFee>>> entityCustomFees,
-			List<AssessedCustomFee> assessedCustomFees) {
+	private ImpliedTransfers(
+			ImpliedTransfersMeta meta,
+			List<BalanceChange> changes,
+			List<Pair<Id, List<CustomFee>>> tokenFeeSchedules,
+			List<AssessedCustomFee> assessedCustomFees
+	) {
 		this.meta = meta;
 		this.changes = changes;
-		this.involvedTokenFeeSchedules = entityCustomFees;
+		this.tokenFeeSchedules = tokenFeeSchedules;
 		this.assessedCustomFees = assessedCustomFees;
 	}
 
@@ -85,8 +88,8 @@ public class ImpliedTransfers {
 		return changes;
 	}
 
-	public List<Pair<Id, List<CustomFee>>> getInvolvedTokenFeeSchedules() {
-		return involvedTokenFeeSchedules;
+	public List<Pair<Id, List<CustomFee>>> getTokenFeeSchedules() {
+		return tokenFeeSchedules;
 	}
 
 	public List<AssessedCustomFee> getAssessedCustomFees() {
@@ -111,7 +114,7 @@ public class ImpliedTransfers {
 		return MoreObjects.toStringHelper(ImpliedTransfers.class)
 				.add("meta", meta)
 				.add("changes", changes)
-				.add("involvedTokenFeeSchedules", involvedTokenFeeSchedules)
+				.add("tokenFeeSchedules", tokenFeeSchedules)
 				.add("assessedCustomFees", assessedCustomFees)
 				.toString();
 	}

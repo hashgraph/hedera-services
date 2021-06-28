@@ -629,7 +629,6 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						tokenCreate(feeDenom).treasury(htsCollector),
 						tokenCreate(token)
 								.treasury(tokenCollector)
-								.customFeesKey(customFeesKey)
 								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
 								.withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
 								.withCustom(fractionalFee(
@@ -674,7 +673,6 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.overridingProps(Map.of("tokens.maxCustomFeesAllowed", "10")),
 						tokenUpdate(token)
 								.treasury(newTokenCollector)
-								.customFeesKey(newCustomFeesKey)
 								.withCustom(fixedHbarFee(newHbarAmount, newHbarCollector))
 								.withCustom(fixedHtsFee(newHtsAmount, newFeeDenom, newHtsCollector))
 								.withCustom(fractionalFee(
@@ -684,7 +682,6 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						)
 				.then(
 						getTokenInfo(token)
-								.hasCustomFeesKey(newCustomFeesKey)
 								.hasCustom(fixedHbarFeeInSchedule(newHbarAmount, newHbarCollector))
 								.hasCustom(fixedHtsFeeInSchedule(newHtsAmount, newFeeDenom, newHtsCollector))
 								.hasCustom(fractionalFeeInSchedule(
