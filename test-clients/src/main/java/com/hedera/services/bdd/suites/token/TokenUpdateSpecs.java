@@ -63,6 +63,7 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fra
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
@@ -660,6 +661,27 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.hasKnownStatus(FRACTION_DIVIDES_BY_ZERO),
 						tokenUpdate(token)
 								.treasury(tokenCollector)
+								.withCustom(fractionalFee(
+										-numerator, denominator,
+										minimumToCollect, OptionalLong.of(maximumToCollect),
+										tokenCollector))
+								.hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
+						tokenUpdate(token)
+								.treasury(tokenCollector)
+								.withCustom(fractionalFee(
+										numerator, denominator,
+										-minimumToCollect, OptionalLong.of(maximumToCollect),
+										tokenCollector))
+								.hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
+						tokenUpdate(token)
+								.treasury(tokenCollector)
+								.withCustom(fractionalFee(
+										numerator, denominator,
+										minimumToCollect, OptionalLong.of(-maximumToCollect),
+										tokenCollector))
+								.hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
+						tokenUpdate(token)
+								.treasury(tokenCollector)
 								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
 								.withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
 								.hasKnownStatus(CUSTOM_FEES_LIST_TOO_LONG),
@@ -675,6 +697,10 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.treasury(tokenCollector)
 								.withCustom(fixedHtsFee(htsAmount, feeDenom, hbarCollector))
 								.hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR),
+						tokenUpdate(token)
+								.treasury(tokenCollector)
+								.withCustom(fixedHtsFee(-htsAmount, feeDenom, htsCollector))
+								.hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
 						tokenUpdate(token)
 								.treasury(tokenCollector)
 								.withCustom(incompleteCustomFee(hbarCollector))
