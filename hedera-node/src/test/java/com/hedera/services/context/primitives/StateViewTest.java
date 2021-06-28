@@ -29,9 +29,12 @@ import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleDiskFs;
+import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
@@ -47,6 +50,7 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -79,11 +83,14 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 
+import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.state.merkle.MerkleScheduleTest.scheduleCreateTxnWith;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
+import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
+import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_ADMIN_KT;
@@ -95,6 +102,7 @@ import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.asFile;
 import static com.hedera.test.utils.IdUtils.asSchedule;
 import static com.hedera.test.utils.IdUtils.asToken;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -121,6 +129,7 @@ class StateViewTest {
 	private TokenID tokenId = asToken("2.4.5");
 	private TokenID missingTokenId = asToken("3.4.5");
 	private AccountID payerAccountId = asAccount("9.9.9");
+	private AccountID tokenAccountId = asAccount("9.9.10");
 	private ScheduleID scheduleId = asSchedule("6.7.8");
 	private ScheduleID missingScheduleId = asSchedule("7.8.9");
 	private ContractID cid = asContract("3.2.1");
@@ -141,7 +150,9 @@ class StateViewTest {
 	private Map<FileID, HFileMeta> attrs;
 	private BiFunction<StateView, AccountID, List<TokenRelationship>> mockTokenRelsFn;
 
+	private FCMap<MerkleEntityId, MerkleTopic> topics;
 	private FCMap<MerkleEntityId, MerkleAccount> contracts;
+	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
 	private TokenStore tokenStore;
 	private ScheduleStore scheduleStore;
 	private TransactionBody parentScheduleCreate;
@@ -150,6 +161,7 @@ class StateViewTest {
 	private MerkleSchedule schedule;
 	private MerkleAccount contract;
 	private MerkleAccount notContract;
+	private MerkleAccount tokenAccount;
 	private NodeLocalProperties nodeProps;
 	private MerkleDiskFs diskFs;
 
@@ -185,6 +197,10 @@ class StateViewTest {
 		notContract = MerkleAccountFactory.newAccount()
 				.isSmartContract(false)
 				.get();
+		tokenAccount = MerkleAccountFactory.newAccount()
+				.isSmartContract(false)
+				.tokens(tokenId)
+				.get();
 		contract = MerkleAccountFactory.newAccount()
 				.memo("Stay cold...")
 				.isSmartContract(true)
@@ -201,6 +217,14 @@ class StateViewTest {
 		contracts = (FCMap<MerkleEntityId, MerkleAccount>) mock(FCMap.class);
 		given(contracts.get(MerkleEntityId.fromContractId(cid))).willReturn(contract);
 		given(contracts.get(MerkleEntityId.fromContractId(notCid))).willReturn(notContract);
+		given(contracts.get(MerkleEntityId.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
+
+		topics = (FCMap<MerkleEntityId, MerkleTopic>) mock(FCMap.class);
+
+		tokenRels = new FCMap<>();
+		tokenRels.put(
+				fromAccountTokenRel(tokenAccountId, tokenId),
+				new MerkleTokenRelStatus(123L, false, true));
 
 		tokenStore = mock(TokenStore.class);
 		token = new MerkleToken(
@@ -268,7 +292,7 @@ class StateViewTest {
 				() -> contracts,
 				StateView.EMPTY_STORAGE_SUPPLIER,
 				() -> uniqueTokenAccountOwnerships,
-				StateView.EMPTY_TOKEN_ASSOCS_SUPPLIER,
+				() -> tokenRels,
 				StateView.EMPTY_UNIQUE_TOKEN_ASSOCS_SUPPLIER,
 				StateView.EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS_SUPPLIER,
 				() -> diskFs,
@@ -477,6 +501,128 @@ class StateViewTest {
 		assertTrue(info.getDeleted());
 		// and:
 		assertEquals(expectedStorage.length + expectedBytecode.length, info.getStorage());
+	}
+
+	@Test
+	void getTokenRelationship() {
+		// given:
+		given(tokenStore.exists(tokenId)).willReturn(true);
+		given(tokenStore.get(tokenId)).willReturn(token);
+
+		List<TokenRelationship> expectedRels = List.of(
+				TokenRelationship.newBuilder()
+						.setTokenId(tokenId)
+						.setSymbol("UnfrozenToken")
+						.setBalance(123L)
+						.setKycStatus(TokenKycStatus.Granted)
+						.setFreezeStatus(TokenFreezeStatus.Unfrozen)
+						.setDecimals(1)
+						.build());
+
+		// when:
+		var actualRels = StateView.tokenRels(subject, tokenAccountId);
+
+		// then:
+		assertEquals(expectedRels, actualRels);
+	}
+
+	@Test
+	void getInfoForNftMissing() {
+		// setup:
+		var nftID = NftID.newBuilder().setTokenID(tokenId).setSerialNumber(123L).build();
+
+		// when:
+		var actualTokenNftInfo = subject.infoForNft(nftID);
+
+		// then:
+		assertEquals(Optional.empty(), actualTokenNftInfo);
+	}
+
+	@Test
+	void getTokenType() {
+		// setup:
+
+		// when:
+		var actualTokenType = subject.tokenType(tokenId).get();
+
+		// then:
+		assertEquals(FUNGIBLE_COMMON, actualTokenType);
+	}
+
+	@Test
+	void getTokenTypeMissing() {
+		// setup:
+		given(tokenStore.resolve(tokenId)).willReturn(MISSING_TOKEN);
+
+		// when:
+		var actualTokenType = subject.tokenType(tokenId);
+
+		// then:
+		assertEquals(Optional.empty(), actualTokenType);
+	}
+
+	@Test
+	void getTokenTypeException() {
+		// setup:
+		given(tokenStore.get(tokenId)).willThrow(new RuntimeException());
+
+		// when:
+		var actualTokenType = subject.tokenType(tokenId);
+
+		// then:
+		assertEquals(Optional.empty(), actualTokenType);
+	}
+
+	@Test
+	void infoForAccount() {
+		// setup:
+		var expectedResponse = CryptoGetInfoResponse.AccountInfo.newBuilder()
+				.setKey(asKeyUnchecked(tokenAccount.getKey()))
+				.setAccountID(tokenAccountId)
+				.setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
+				.setDeleted(tokenAccount.isDeleted())
+				.setMemo(tokenAccount.getMemo())
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
+				.setBalance(tokenAccount.getBalance())
+				.setExpirationTime(Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
+				.setContractAccountID(asSolidityAddressHex(tokenAccountId))
+				.setOwnedNfts(tokenAccount.getNftsOwned())
+				.build();
+
+		// when:
+		var actualResponse = subject.infoForAccount(tokenAccountId);
+
+		// then:
+		assertEquals(expectedResponse, actualResponse.get());
+	}
+
+	@Test
+	void infoForAccountEmpty() {
+		// setup:
+		given(contracts.get(MerkleEntityId.fromAccountId(tokenAccountId))).willReturn(null);
+
+		// when:
+		var actualResponse = subject.infoForAccount(tokenAccountId);
+
+		// then:
+		assertEquals(Optional.empty(), actualResponse);
+	}
+
+	@Test
+	void getTopics() {
+		// setup:
+		subject = new StateView(
+				() -> topics,
+				() -> contracts,
+				nodeProps,
+				() -> diskFs
+		);
+
+		// when:
+		var actualTopics = subject.topics();
+
+		// then:
+		assertEquals(topics, actualTopics);
 	}
 
 	@Test

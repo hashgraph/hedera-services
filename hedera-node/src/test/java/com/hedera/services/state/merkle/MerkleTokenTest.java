@@ -139,6 +139,8 @@ class MerkleTokenTest {
 		subject = new MerkleToken(
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(subject);
+		subject.setExpiry(expiry);
+		subject.setTotalSupply(totalSupply);
 		subject.setAdminKey(adminKey);
 		subject.setFreezeKey(freezeKey);
 		subject.setKycKey(kycKey);
@@ -149,6 +151,10 @@ class MerkleTokenTest {
 		subject.setMemo(memo);
 		subject.setTokenType(TokenType.FUNGIBLE_COMMON);
 		subject.setSupplyType(TokenSupplyType.INFINITE);
+		subject.setTreasury(treasury);
+		subject.setName(name);
+		subject.setSymbol(symbol);
+		subject.setAccountsFrozenByDefault(true);
 		subject.setFeeScheduleFrom(grpcFeeSchedule);
 
 		serdes = mock(DomainSerdes.class);
@@ -587,6 +593,54 @@ class MerkleTokenTest {
 		assertNotEquals(subject, other);
 		// and:
 		assertNotEquals(subject.hashCode(), other.hashCode());
+	}
+
+	@Test
+	public void objectContractPropertiesCheck() {
+		// setup:
+
+		// when:
+
+		// expect:
+		assertTrue(subject.hasAdminKey());
+		// and:
+		assertEquals(adminKey, subject.adminKey().get());
+		// and:
+		assertEquals(freezeKey, subject.freezeKey().get());
+		// and:
+		assertTrue(subject.hasFreezeKey());
+		// and:
+		assertEquals(kycKey, subject.kycKey().get());
+		// and:
+		assertTrue(subject.hasKycKey());
+		// and:
+		assertEquals(supplyKey, subject.supplyKey().get());
+		// and:
+		assertTrue(subject.hasSupplyKey());
+		// and:
+		assertEquals(wipeKey, subject.wipeKey().get());
+		// and:
+		assertTrue(subject.hasWipeKey());
+		// and:
+		assertTrue(subject.isDeleted());
+		// and:
+		assertEquals(symbol, subject.symbol());
+		// and:
+		assertEquals(name, subject.name());
+		// and:
+		assertTrue(subject.accountsKycGrantedByDefault());
+		// and:
+		assertEquals(autoRenewAccount, subject.autoRenewAccount());
+		// and:
+		assertTrue(subject.hasAutoRenewAccount());
+		// and:
+		assertEquals(supplyKey, subject.getSupplyKey());
+		// and:
+		assertEquals(kycKey, subject.getKycKey());
+		// and:
+		assertEquals(freezeKey, subject.getFreezeKey());
+		// and:
+		assertEquals(memo, subject.memo());
 	}
 
 	private void setOptionalElements(MerkleToken token) {
