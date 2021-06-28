@@ -101,96 +101,23 @@ public class FileServiceTest extends CryptoServiceTest {
 		}
 	}
 
-	public void runFileTests() throws Throwable {
-		int maxTxCnt = (int) (MAX_REQUESTS_IN_K * K);
-		int tx_cnt = 0;
-		while (true) {
-			for (int i = 0; i < fileSizesK.length; i++) {
-				for (int j = 0; j < fileTypes.length; j++) {
-					log.info("\n>>> WORKING ON: fileSizesK=" + fileSizesK[i] + "; fileTypes=" + fileTypes[j]);
-					byte[] fileContents = genFileContent(fileSizesK[i], fileTypes[j]);
-					AccountID payerAccountID = getRandomPayerAccount();
-					AccountID nodeAccountID = getRandomNodeAccount();
-					List<Key> waclPubKeyList = genWaclComplex(NUM_WACL_KEYS);
-
-					tx_cnt += singleFileCrud(fileSizesK[i], fileTypes[j], fileContents, payerAccountID,
-							nodeAccountID, waclPubKeyList);
-					log.info(">>> tx_cnt=" + tx_cnt);
-					if (tx_cnt >= maxTxCnt) {
-						break;
-					}
-				}
-				if (tx_cnt >= maxTxCnt) {
-					break;
-				}
-			}
-			if (tx_cnt >= maxTxCnt) {
-				break;
-			}
-		}
-
-		log.info("\n>>>>>> Total file tx processed = " + tx_cnt);
-	}
-
 	/**
-	 * Gets the node account IDs.
-	 *
-	 * @param startSeqNum
-	 * 		the sequence number of the first node
-	 * @param numNodes
-	 * 		number of nodes in the network
-	 */
-	public void getNodeAccounts(long startSeqNum, int numNodes) {
-		nodeAccounts = new AccountID[numNodes];
-		for (int i = 0; i < numNodes; i++) {
-			AccountID nodeAccount = RequestBuilder.getAccountIdBuild(startSeqNum + i, 0l, 0l);
-			nodeAccounts[i] = nodeAccount;
-		}
-	}
-
-	/**
-	 * Runs file CRUD operations on a file.
-	 *
-	 * @param bytes
-	 * 		the content of the file to upload
-	 * @param payerID
-	 * 		the fee payer ID
-	 * @param nodeID
-	 * 		the node ID
-	 * @param waclPubKeyList
-	 * 		WACL public key list
-	 * @return the number of file API calls.
-	 */
-	private int singleFileCrud(int fileSizeK, String fileType, byte[] bytes, AccountID payerID,
-			AccountID nodeID,
-			List<Key> waclPubKeyList) throws Throwable {
-		String savePath = fileSizeK + "K." + fileType;
-		FileID fid = uploadFile(savePath, bytes, payerID, nodeID, waclPubKeyList);
-
-		List<Key> newWaclKeyList = genWaclComplex(NUM_WACL_KEYS);
-		updateFile(fid, fileType, payerID, nodeID, waclPubKeyList, newWaclKeyList);
-
-		deleteFile(fid, payerID, nodeID, waclPubKeyList);
-		return 4;
-	}
-
-	/**
-	 * Updates a file.
+	 * Updates a file given file Id.
 	 *
 	 * @param fid
 	 * 		the ID of the file to be updated
 	 * @param fileType
 	 * 		the path of the file whose content will be used to generate data as the update
 	 * @param payerID
-	 * 		the fee payer ID
+	 * 		the fee payer ID, acting as payer for transaction
 	 * @param nodeID
-	 * 		the node ID
+	 * 		the node ID, default listening account
 	 * @param oldWaclKeyList
 	 * 		existing wacl keys
 	 * @param newWaclKeyList
 	 * 		the new wacl keys to replace existing ones
 	 * @throws Throwable
-	 * 		exception thrown if there is a failure
+	 * 		indicates failure to update the file
 	 */
 	protected void updateFile(FileID fid, String fileType, AccountID payerID, AccountID nodeID,
 			List<Key> oldWaclKeyList, List<Key> newWaclKeyList) throws Throwable {
@@ -278,18 +205,18 @@ public class FileServiceTest extends CryptoServiceTest {
 	}
 
 	/**
-	 * Deletes a file.
+	 * Deletes a file given the file ID.
 	 *
 	 * @param fid
-	 * 		the ID of the file to be updated
+	 * 		the ID of the file to be deleted
 	 * @param payerID
-	 * 		the fee payer ID
+	 * 		the fee payer ID, acting as payer for the transaction
 	 * @param nodeID
-	 * 		the node ID
+	 * 		the node ID, default listening account
 	 * @param waclKeyList
 	 * 		the file creation WACL public key list
 	 * @throws Throwable
-	 * 		exception thrown if there is a failure
+	 * 		indicates failure to delete the file
 	 */
 	protected void deleteFile(FileID fid, AccountID payerID, AccountID nodeID, List<Key> waclKeyList)
 			throws Throwable {
@@ -328,23 +255,23 @@ public class FileServiceTest extends CryptoServiceTest {
 	}
 
 	/**
-	 * Creates a file on the ledger
+	 * Creates a file on the ledger from given file contents
 	 *
 	 * @param payerID
-	 * 		payer account id
+	 * 		payer account id, acting as payer for the transaction
 	 * @param nodeID
-	 * 		node account id
+	 * 		node account id, default listening account
 	 * @param fileData
-	 * 		contents of the file
+	 * 		contents of the file to be used while creating file
 	 * @param waclKeyList
 	 * 		the file creation WACL public key list
 	 * @param cacheTxID
-	 * 		whether to cache tx ID
+	 * 		whether to cache transaction ID
 	 * @param getReceiptAndFileID
 	 * 		whether or not get receipt and return ID of created file
 	 * @return ID of the file created if getReceiptAndFileID is true, null otherwise
 	 * @throws Throwable
-	 * 		exception thrown if there is a failure
+	 * 		indicates failure while creating file
 	 */
 	public FileID createFile(AccountID payerID, AccountID nodeID, ByteString fileData,
 			List<Key> waclKeyList, boolean cacheTxID, boolean getReceiptAndFileID) throws Throwable {
@@ -513,23 +440,23 @@ public class FileServiceTest extends CryptoServiceTest {
 	}
 
 	/**
-	 * create file
+	 * create file from the file contents
 	 *
 	 * @param payerID
-	 * 		payer account id
+	 * 		payer account id, acting as payer for the transaction
 	 * @param nodeID
-	 * 		node account id
+	 * 		node account id, default listening account
 	 * @param fileData
-	 * 		contents of the file
+	 * 		contents of the file to be used while creating file
 	 * @param waclKeyList
 	 * 		the file creation WACL public key list
 	 * @param fileExp
 	 * 		expiration time for the file
 	 * @param memo
-	 * 		memo of the transaction
+	 * 		memo of the file create transaction
 	 * @return file create transaction
 	 * @throws Throwable
-	 * 		exception thrown if there is a failure
+	 * 		indicates failure while creating file
 	 */
 	public Transaction createFile(AccountID payerID, AccountID nodeID, ByteString fileData,
 			List<Key> waclKeyList, Timestamp fileExp, String memo) throws Throwable {
@@ -565,7 +492,7 @@ public class FileServiceTest extends CryptoServiceTest {
 	}
 
 	/**
-	 * Uploads a large file.
+	 * Uploads a large file from a given path.
 	 *
 	 * @param savePath
 	 * 		the file path locally saving the content retrieved from the uploaded file on
@@ -573,14 +500,14 @@ public class FileServiceTest extends CryptoServiceTest {
 	 * @param bytes
 	 * 		the content of the file to upload
 	 * @param payerID
-	 * 		the fee payer ID
+	 * 		the fee payer ID, acting as payer for the transaction
 	 * @param nodeID
-	 * 		the node ID
+	 * 		the node ID, default listening account
 	 * @param waclPubKeyList
 	 * 		WACL public key list
-	 * @return the ID of the created file
+	 * @return the fileID of uploaded file
 	 * @throws Throwable
-	 * 		exception thrown if there is a failure
+	 * 		indicates failure while uploading file
 	 */
 	public FileID uploadFile(String savePath, byte[] bytes, AccountID payerID, AccountID nodeID,
 			List<Key> waclPubKeyList) throws Throwable {
@@ -633,20 +560,20 @@ public class FileServiceTest extends CryptoServiceTest {
 	}
 
 	/**
-	 * Appends a file with data.
+	 * Appends a file with some data.
 	 *
 	 * @param payerID
-	 * 		the fee payer ID
+	 * 		the fee payer ID, acting as payer for the transaction
 	 * @param nodeID
-	 * 		the node ID
+	 * 		the node ID, default listening account
 	 * @param fid
-	 * 		file id to be appended
+	 * 		file id of the file whose content needs to be appended
 	 * @param fileData
-	 * 		contents of the file
+	 * 		contents of the file to be appended
 	 * @param waclKeys
 	 * 		WACL public key list
 	 * @throws Throwable
-	 * 		exception thrown if there is a failure
+	 * 		indicates failure while appending file
 	 */
 	public void appendFile(AccountID payerID, AccountID nodeID, FileID fid, ByteString fileData,
 			List<Key> waclKeys) throws Throwable {
@@ -696,7 +623,7 @@ public class FileServiceTest extends CryptoServiceTest {
 	 * 		size of the file to be generated
 	 * @param fileType
 	 * 		type of the file to be generated
-	 * @return file bytes
+	 * @return file bytes content generated for the file
 	 * @throws IOException
 	 * 		exception caused if file doesn't exist
 	 * @throws URISyntaxException
@@ -728,13 +655,13 @@ public class FileServiceTest extends CryptoServiceTest {
 	}
 
 	/**
-	 * Reads the content of a file.
+	 * Reads the content of a file from a given file path.
 	 *
 	 * @param filePath
-	 * 		the name of the file
-	 * @return file bytes
+	 * 		path of the file
+	 * @return file bytes read from the file
 	 * @throws IOException
-	 * 		exception caused if there is a failure reading file
+	 * 		indicates failure reading file from the given path
 	 */
 	private byte[] readFileContent(String filePath) throws IOException {
 		String localPath = UPLOAD_PATH + filePath;
@@ -751,21 +678,21 @@ public class FileServiceTest extends CryptoServiceTest {
 	 * Gets the file info given a file ID
 	 *
 	 * @param fid
-	 * 		target file ID
+	 * 		target file ID to get file info for
 	 * @param payerID
-	 * 		payer account ID
+	 * 		payer account ID, acting as payer for the transaction
 	 * @param nodeID
-	 * 		node account id
-	 * @return file info
+	 * 		node account id, default listening account
+	 * @return queried file info
 	 * @throws Exception
-	 * 		exception caused if there is a failure
+	 * 		indicates failure while getting file info for a file
 	 */
 	public FileInfo getFileInfo(FileID fid, AccountID payerID, AccountID nodeID)
 			throws Exception {
 		long fileGetInfoCost = getFileGetInfoCost(fid, payerID, nodeID);
 
 		Transaction paymentTxSigned = getQueryPaymentSignedWithFee(payerID, nodeID, "fileGetInfoQuery",
-                fileGetInfoCost);
+				fileGetInfoCost);
 		Query fileGetInfoQuery = RequestBuilder
 				.getFileGetInfoBuilder(paymentTxSigned, fid, ResponseType.ANSWER_ONLY);
 		log.info("\n-----------------------------------");
@@ -806,7 +733,7 @@ public class FileServiceTest extends CryptoServiceTest {
 	}
 
 	/**
-	 * Generates wacls keys.
+	 * Generates given number of wacls keys.
 	 *
 	 * @param numKeys
 	 * 		number of keys to generate, each key may have different key type
@@ -850,7 +777,7 @@ public class FileServiceTest extends CryptoServiceTest {
 	}
 
 	/**
-	 * Remove a random entry from the map.
+	 * Remove a random entry of file ID and list of wacl keys from the fid to wacl map.
 	 *
 	 * @return the removed entry, null if no files available.
 	 */

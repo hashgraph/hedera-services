@@ -38,7 +38,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.KeyList.Builder;
 import com.hederahashgraph.api.proto.java.NodeAddress;
-import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -105,10 +104,8 @@ public class CryptoServiceTest extends TestHelperComplex {
 	protected static AccountID[] nodeAccounts = null;
 	protected static Set<AccountID> accountsBeingUpdated = new HashSet<>();
 	protected static Random rand = new Random();
-	public static final long ADDRESS_FILE_ACCOUNT_NUM = 101;
 	protected static Map<AccountID, NodeAddress> nodeID2Ip = new HashMap<>();
 	protected static Map<AccountID, FileServiceBlockingStub> nodeID2Stub = new HashMap<>();
-	protected static Map<AccountID, Integer> nodeID2Port = new HashMap<>();
 	protected static int MAX_TRANSFER_AMOUNT = 100;
 	protected int COMPLEX_KEY_SIZE = 3;
 	protected int COMPLEX_KEY_THRESHOLD = 2;
@@ -304,9 +301,9 @@ public class CryptoServiceTest extends TestHelperComplex {
 	}
 
 	/**
-	 * Gets a non-negative random amount.
+	 * Gets a non-negative random amount for transfers.
 	 *
-	 * @return random amount
+	 * @return random amount for transfers
 	 */
 	public static long getRandomTransferAmount() {
 		long rv = rand.nextInt(MAX_TRANSFER_AMOUNT - 1) + 1;
@@ -319,12 +316,12 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 * @param accountID
 	 * 		account id to get transaction records for
 	 * @param payerAccount
-	 * 		payer account id
+	 * 		payer account id, acting as payer for the transaction
 	 * @param nodeAccountID
-	 * 		node account id
-	 * @return list of transaction records
+	 * 		node account id, default listening account id
+	 * @return list of transaction records of the given account Id
 	 * @throws Throwable
-	 * 		exception thrown if there is a failure
+	 * 		indicates failure while getting transaction record
 	 */
 	public List<TransactionRecord> getTransactionRecordsByAccountId(AccountID accountID,
 			AccountID payerAccount, AccountID nodeAccountID) throws Throwable {
@@ -348,17 +345,17 @@ public class CryptoServiceTest extends TestHelperComplex {
 	}
 
 	/**
-	 * Updates an account autoRenew.
+	 * Updates an account's autoRenew duration.
 	 *
 	 * @param accountID
 	 * 		account id of the account to be updated
 	 * @param payerAccountID
-	 * 		payer account id
+	 * 		payer account id, acting as payer for the transaction
 	 * @param nodeAccountID
-	 * 		node account id
+	 * 		node account id, default listening account id
 	 * @return account info after update
 	 * @throws Throwable
-	 * 		exception thrown if there is a failure
+	 * 		indicates failure while signing transaction with sigMap
 	 */
 	public AccountInfo updateAccount(AccountID accountID, AccountID payerAccountID,
 			AccountID nodeAccountID)
@@ -407,14 +404,14 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 * Creates an account.
 	 *
 	 * @param payerAccount
-	 * 		payer account id
+	 * 		payer account id, acting as payer for the transaction
 	 * @param nodeAccountID
-	 * 		node account id
+	 * 		node account id, default listening account id
 	 * @param cacheTxID
 	 * 		if transaction id need to be cached
-	 * @return the account ID of the created account
+	 * @return the account ID of the newly created account
 	 * @throws Throwable
-	 * 		exception thrown if there is a failure
+	 * 		indicates failure while creating complex account
 	 */
 	public AccountID createAccount(AccountID payerAccount, AccountID nodeAccountID, boolean cacheTxID)
 			throws Throwable {
@@ -436,16 +433,16 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 * @param stub
 	 * 		CryptoServiceBlockingStub
 	 * @param payerAccount
-	 * 		payer account id
+	 * 		payer account id, acting as payer for the transaction
 	 * @param nodeAccountID
-	 * 		node account id
+	 * 		node account id, default listening account id
 	 * @param accountKeyType
 	 * 		type of complex key
 	 * @param cacheTxID
 	 * 		if transaction id need to be cached
 	 * @return the account ID of the created account
 	 * @throws Throwable
-	 * 		exception thrown if there is a failure
+	 * 		indicates failure while creating complex account
 	 */
 	public AccountID createAccountComplex(CryptoServiceGrpc.CryptoServiceBlockingStub stub,
 			AccountID payerAccount, AccountID nodeAccountID, String accountKeyType,
@@ -458,9 +455,9 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 * Creates a crypto account with complex types, i.e. keylist or threshold keys.
 	 *
 	 * @param payerAccount
-	 * 		payer account id
+	 * 		payer account id, acting as payer for the transaction
 	 * @param nodeAccountID
-	 * 		node account id
+	 * 		node account id, default listening account id
 	 * @param accountKeyType
 	 * 		type of complex key
 	 * @param needReceipt
@@ -469,7 +466,7 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 * 		if transaction id need to be cached
 	 * @return the account ID of the created account
 	 * @throws Throwable
-	 * 		exception thrown if there is a failure
+	 * 		indicates failure while creating complex account
 	 */
 	public AccountID createAccountComplex(AccountID payerAccount, AccountID nodeAccountID,
 			String accountKeyType, boolean needReceipt, boolean cacheTxID) throws Throwable {
@@ -486,9 +483,9 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 * Creates a crypto account with complex types, i.e. keylist or threshold keys.
 	 *
 	 * @param payerAccount
-	 * 		payer account id
+	 * 		payer account id, acting as payer for the transaction
 	 * @param nodeAccountID
-	 * 		node account id
+	 * 		node account id, default listening account id
 	 * @param accountKeyType
 	 * 		type of complex key
 	 * @param initBalance
@@ -499,7 +496,7 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 * 		if transaction id need to be cached
 	 * @return the account ID of the created account
 	 * @throws Throwable
-	 * 		exception thrown if there is a failure
+	 * 		indicates failure while creating complex account
 	 */
 	public AccountID createAccountComplex(AccountID payerAccount, AccountID nodeAccountID,
 			String accountKeyType, long initBalance, boolean needReceipt, boolean cacheTxID)
@@ -551,10 +548,10 @@ public class CryptoServiceTest extends TestHelperComplex {
 	}
 
 	/**
-	 * Update complex key registry.
+	 * Update complex key registry by reading the genesis information.
 	 *
 	 * @throws Exception
-	 * 		exception caused if there is a failure
+	 * 		indicates failure while reading genesis information
 	 */
 	protected void readGenesisInfo() throws Exception {
 		KeyPairObj genesisKeyPair;
@@ -579,18 +576,11 @@ public class CryptoServiceTest extends TestHelperComplex {
 
 	/**
 	 * Reads default application properties.
-	 */
-	protected void readAppConfig() {
-		readAppConfig(null, null);
-	}
-
-	/**
-	 * Reads default application properties.
 	 *
 	 * @param hostOverWrite
-	 * 		used to overwrite default
+	 * 		used to overwrite default host
 	 * @param nodeAccountOverWrite
-	 * 		used to overwrite default
+	 * 		used to overwrite default listening node account ID
 	 */
 	protected void readAppConfig(String hostOverWrite, Long nodeAccountOverWrite) {
 		CustomProperties properties = TestHelperComplex.getApplicationPropertiesNew();
@@ -625,7 +615,7 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 *
 	 * @param arrayOfStr
 	 * 		string array which need to be parsed
-	 * @return an array of int
+	 * @return an array of int that is parsed from string array
 	 */
 	private int[] parseIntArray(String[] arrayOfStr) {
 		int[] rv = new int[arrayOfStr.length];
@@ -636,53 +626,15 @@ public class CryptoServiceTest extends TestHelperComplex {
 		return rv;
 	}
 
-	/**
-	 * Gets the node account IDs from the config file.
-	 *
-	 * @throws Throwable
-	 * 		exception thrown if there is a failure
-	 */
-	public void getNodeAccountsFromLedger() throws Throwable {
-		NodeAddressBook addrBook = getAddressBook();
-		List<NodeAddress> addrList = addrBook.getNodeAddressList();
-		int numNodes = addrList.size();
-		nodeAccounts = new AccountID[numNodes];
-		for (int i = 0; i < numNodes; i++) {
-			NodeAddress addr = addrList.get(i);
-			String memo = new String(addr.getMemo().toByteArray(), "UTF-8");
-			AccountID nodeAccount = extractAccountID(memo);
-			nodeAccounts[i] = nodeAccount;
-			nodeID2Ip.put(nodeAccount, addr);
-			nodeID2Port.put(nodeAccount, 50211);
-		}
-	}
 
 	/**
-	 * Gets the node address book from the ledger.
-	 *
-	 * @return node address book
-	 * @throws Throwable
-	 * 		exception thrown if there is a failure
-	 */
-	public NodeAddressBook getAddressBook() throws Throwable {
-		AccountID payerID = createAccountComplex(genesisAccountID, defaultListeningNodeAccountID,
-				SUPPORTE_KEY_TYPES.single.name(), true, false);
-		CommonUtils.nap(2);
-		FileID fid = FileID.newBuilder().setFileNum(ADDRESS_FILE_ACCOUNT_NUM).setRealmNum(0)
-				.setShardNum(0).build();
-		ByteString content = getFileContent(fid, payerID, defaultListeningNodeAccountID);
-		NodeAddressBook book = NodeAddressBook.newBuilder().mergeFrom(content.toByteArray()).build();
-		return book;
-	}
-
-	/**
-	 * Get the transaction receipt.
+	 * Get the transaction receipt given TransactionID.
 	 *
 	 * @param txId
-	 * 		ID of the tx
+	 * 		given transaction's TransactionID
 	 * @return the transaction receipt
 	 * @throws Throwable
-	 * 		exception thrown if there is a failure
+	 * 		indicates failure while getting transaction receipt
 	 */
 	public TransactionReceipt getTxReceipt(TransactionID txId) throws Throwable {
 		Query query = Query.newBuilder()
@@ -695,13 +647,13 @@ public class CryptoServiceTest extends TestHelperComplex {
 	}
 
 	/**
-	 * Gets Tx fast record, retry if necessary.
+	 * Gets transaction fast record, retry if necessary.
 	 *
 	 * @param txId
 	 * 		transaction id of transaction
 	 * @return transaction receipt for the transaction
 	 * @throws Throwable
-	 * 		exception thrown if there is a failure
+	 * 		indicates failure while getting transaction receipt
 	 */
 	public TransactionReceipt getTxFastRecord(TransactionID txId) throws Throwable {
 		return TestHelperComplex.getTxReceipt(txId, cstub, log, host);
@@ -725,7 +677,7 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 * 		the account to get info for
 	 * @return account info of the given account
 	 * @throws Throwable
-	 * 		exception thrown if there is a failure
+	 * 		indicates failure while getting account info of given account
 	 */
 	public AccountInfo getAccountInfo(AccountID accountID) throws Throwable {
 		return getAccountInfo(accountID, genesisAccountID.getAccountNum(),
@@ -738,12 +690,12 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 * @param accountID
 	 * 		the account to get info for
 	 * @param fromAccountNum
-	 * 		payer account id  for query payment transaction
+	 * 		payer and sender account id for query payment transaction
 	 * @param toAccountNum
 	 * 		receiver account id for query payment transaction
 	 * @return account info of the given account
 	 * @throws Throwable
-	 * 		exception thrown if there is a failure
+	 * 		indicates failure while getting account info of given account
 	 */
 	public AccountInfo getAccountInfo(AccountID accountID, long fromAccountNum, long toAccountNum)
 			throws Throwable {
@@ -816,7 +768,7 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 *
 	 * @param memo
 	 * 		memo from which account ID to be extracted from
-	 * @return account id extracted
+	 * @return extracted account id from the memo
 	 */
 	protected AccountID extractAccountID(String memo) {
 		AccountID rv = null;
@@ -828,17 +780,17 @@ public class CryptoServiceTest extends TestHelperComplex {
 	}
 
 	/**
-	 * Get file content
+	 * Get file content give the file ID
 	 *
 	 * @param fid
 	 * 		file id to get content from
 	 * @param payerID
-	 * 		payer account id
+	 * 		payer account id, acting as payer for the transaction
 	 * @param nodeID
-	 * 		node account id
-	 * @return byte string of the contents
+	 * 		node account id, default listening account id
+	 * @return byte string of the contents of the given file ID
 	 * @throws Throwable
-	 * 		exception thrown if there is a failure
+	 * 		indicates failure while getting file content
 	 */
 	public ByteString getFileContent(FileID fid, AccountID payerID, AccountID nodeID)
 			throws Throwable {
@@ -874,10 +826,10 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 * Gets a FileServiceBlockingStub instance for connecting to a given node. Creates it if none exists.
 	 *
 	 * @param nodeID
-	 * 		the node to connect to
-	 * @return FileServiceBlockingStub
+	 * 		the node to connect to as default listening account id
+	 * @return FileServiceBlockingStub, channel for file service
 	 * @throws Exception
-	 * 		exception caused if there is a failure
+	 * 		indicates failure while getting FileServiceBlockingStub
 	 */
 	public synchronized FileServiceBlockingStub getStub(AccountID nodeID)
 			throws Exception {
@@ -924,12 +876,12 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 * @param accountID
 	 * 		the account to get balance for
 	 * @param payerID
-	 * 		payer account id
+	 * 		payer account id, acting as payer for the transaction
 	 * @param nodeID
-	 * 		node account id
-	 * @return the balance
+	 * 		node account id, default listening account id
+	 * @return the balance of given account
 	 * @throws Throwable
-	 * 		exception thrown if there is a failure
+	 * 		indicates failure while getting account balance
 	 */
 	public long getAccountBalance(AccountID accountID, AccountID payerID, AccountID nodeID)
 			throws Throwable {
@@ -937,17 +889,17 @@ public class CryptoServiceTest extends TestHelperComplex {
 	}
 
 	/**
-	 * Gets account info.
+	 * Gets account info for given account.
 	 *
 	 * @param accountID
 	 * 		the account to get info for
 	 * @param payerID
-	 * 		payer account id
+	 * 		payer account id, acting as payer for the transaction
 	 * @param nodeID
-	 * 		node account id
+	 * 		node account id, default listening account id
 	 * @return account info for the given account
 	 * @throws Throwable
-	 * 		exception thrown if there is a failure
+	 * 		indicates failure while getting account info
 	 */
 	public AccountInfo getAccountInfo(AccountID accountID, AccountID payerID, AccountID nodeID)
 			throws Throwable {
@@ -958,18 +910,18 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 * Makes a transfer.
 	 *
 	 * @param payerAccountID
-	 * 		payer account id for the transaction
+	 * 		payer account id, acting as payer for the transaction
 	 * @param nodeAccountID
-	 * 		node account id for the transaction
+	 * 		node account id, default listening account id
 	 * @param fromAccountID
-	 * 		sender account id
+	 * 		sender account id for the transfer
 	 * @param toAccountID
-	 * 		receiver account id
+	 * 		receiver account id of the transfer
 	 * @param amount
 	 * 		amount to be transferred
-	 * @return transaction receipt for the transaction
+	 * @return transaction receipt for the transfer transaction
 	 * @throws Throwable
-	 * 		exception thrown if there is a failure
+	 * 		indicates failure caused while doing the transfer transaction
 	 */
 	public TransactionReceipt transfer(AccountID payerAccountID, AccountID nodeAccountID,
 			AccountID fromAccountID,
@@ -992,7 +944,7 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 * 		the target depth of the key tree
 	 * @return the key constructed
 	 * @throws Exception
-	 * 		exception caused if there is a failure
+	 * 		indicates failure caused if target level is less than 2 for keyList and thresholdKey
 	 */
 	protected Key genComplexKeyRecursive(String accountKeyType, int currentLevel, int targetLevel)
 			throws Exception {
@@ -1057,9 +1009,9 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 * 		node account number, as the node account and the to account
 	 * @param memo
 	 * 		memo in the payment transaction
-	 * @return the signed transaction
+	 * @return the signed query payment transaction
 	 * @throws Exception
-	 * 		exception caused if there is a failure
+	 * 		indicates failure while getting query payment signed transaction
 	 */
 	protected static Transaction getPaymentSigned(long payerSeq, long toSeq, String memo)
 			throws Exception {
@@ -1074,12 +1026,13 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 * Fetches the receipts, wait if necessary.
 	 *
 	 * @param query
-	 * 		query to get the receipt
+	 * 		query to get the receipt for
 	 * @param cstub2
-	 * 		CryptoServiceBlockingStub
+	 * 		CryptoServiceBlockingStub, blocking-style stub that supports unary and streaming output calls on the crypto
+	 * 		service
 	 * @return response for the query
 	 * @throws Exception
-	 * 		exception caused if there is a failure
+	 * 		indicates failure while fetching receipts
 	 */
 	protected static Response fetchReceipts(Query query, CryptoServiceBlockingStub cstub2)
 			throws Exception {
@@ -1087,17 +1040,17 @@ public class CryptoServiceTest extends TestHelperComplex {
 	}
 
 	/**
-	 * Creates a signed payment tx.
+	 * Creates a signed payment transaction for query.
 	 *
 	 * @param payerID
-	 * 		payer account id
+	 * 		payer account id, acting as payer for the transaction
 	 * @param nodeID
-	 * 		node account id
+	 * 		node account id, default listening account id
 	 * @param memo
 	 * 		memo for the transaction
 	 * @return signed query payment transaction
 	 * @throws Exception
-	 * 		exception caused if there is a failure
+	 * 		indicates failure while getting signed transfer transaction
 	 */
 	public static Transaction getQueryPaymentSigned(AccountID payerID, AccountID nodeID, String memo)
 			throws Exception {
@@ -1107,19 +1060,19 @@ public class CryptoServiceTest extends TestHelperComplex {
 	}
 
 	/**
-	 * Creates a signed payment tx.
+	 * Creates a signed payment transaction with query payment fee.
 	 *
 	 * @param payerID
-	 * 		payer account id
+	 * 		payer account id, acting as payer for the transaction
 	 * @param nodeID
-	 * 		node account id
+	 * 		node account id, default listening account id
 	 * @param memo
 	 * 		memo for the transaction
 	 * @param queryFee
 	 * 		fees to be paid for the query
-	 * @return query payment transaction
+	 * @return query payment signed transaction with fee
 	 * @throws Exception
-	 * 		exception caused if there is a failure
+	 * 		indicates failure while getting signed transfer transaction
 	 */
 	public static Transaction getQueryPaymentSignedWithFee(AccountID payerID, AccountID nodeID,
 			String memo, long queryFee)
@@ -1130,23 +1083,23 @@ public class CryptoServiceTest extends TestHelperComplex {
 	}
 
 	/**
-	 * Creates a signed transfer tx
+	 * Creates a signed transfer transaction
 	 *
 	 * @param payerAccountID
-	 * 		payer account id for the transaction
+	 * 		payer account id, acting as payer for the transaction
 	 * @param nodeAccountID
-	 * 		node account id for the transaction
+	 * 		node account id, default listening account id
 	 * @param fromAccountID
-	 * 		sender account id
+	 * 		sender account id for transfer transaction
 	 * @param toAccountID
-	 * 		receiver account id
+	 * 		receiver account id  of transfer transaction
 	 * @param amount
 	 * 		amount to be transferred
 	 * @param memo
 	 * 		memo for the transaction
 	 * @return signed transfer transaction
 	 * @throws Exception
-	 * 		caused if there is a failure while generating transaction
+	 * 		indicates failure while getting signed transaction with complex sigMap
 	 */
 	protected static Transaction getSignedTransferTx(AccountID payerAccountID,
 			AccountID nodeAccountID,
@@ -1201,12 +1154,12 @@ public class CryptoServiceTest extends TestHelperComplex {
 	}
 
 	/**
-	 * Checks transaction size.
+	 * Checks the transaction size for given transaction.
 	 *
 	 * @param txSigned
-	 * 		signed transaction
+	 * 		given signed transaction
 	 * @throws Exception
-	 * 		if the max size is exceeded.
+	 * 		indicates the max size of transaction is exceeded.
 	 */
 	protected void checkTxSize(Transaction txSigned) throws Exception {
 		int requestSize = txSigned.getSerializedSize();
@@ -1229,7 +1182,7 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 * 		signed transfer transaction
 	 * @return transaction receipt for the transfer transaction
 	 * @throws Throwable
-	 * 		exception thrown if there is a failure
+	 * 		indicates failure while extracting transaction body
 	 */
 	public TransactionReceipt transfer(Transaction transferTxSigned) throws Throwable {
 		log.info("\n-----------------------------------\ntransfer: request = "
@@ -1266,20 +1219,20 @@ public class CryptoServiceTest extends TestHelperComplex {
 	}
 
 	/**
-	 * Creates a transfer tx with signatures.
+	 * Creates an unsigned transfer transaction
 	 *
 	 * @param payerAccountID
-	 * 		payer account id for the transaction
+	 * 		payer account id, acting as payer for the transaction
 	 * @param nodeAccountID
-	 * 		node account id for the transaction
+	 * 		node account id, default listening account id
 	 * @param fromAccountID
-	 * 		sender account id
+	 * 		sender account id for the transfer
 	 * @param toAccountID
-	 * 		receiver account id
+	 * 		receiver account id of the transfer
 	 * @param amount
 	 * 		amount to be transferred
 	 * @param memo
-	 * 		memo for the transaction
+	 * 		memo for the transfer transaction
 	 * @return unsigned transfer transaction
 	 */
 	public static Transaction getUnSignedTransferTx(AccountID payerAccountID,
@@ -1301,7 +1254,7 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 *
 	 * @param createdChannels
 	 * 		to store generated channel
-	 * @return FileServiceBlockingStub
+	 * @return FileServiceBlockingStub created new channel for file service
 	 */
 	public static FileServiceBlockingStub createFileServiceStub(ManagedChannel[] createdChannels) {
 		ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext()
@@ -1316,16 +1269,17 @@ public class CryptoServiceTest extends TestHelperComplex {
 	 * Get balance for provided Account with stub
 	 *
 	 * @param stub
-	 * 		CryptoServiceBlockingStub
+	 * 		CryptoServiceBlockingStub, blocking-style stub that supports unary and streaming output calls on the crypto
+	 * 		service
 	 * @param accountID
 	 * 		account id to get balance
 	 * @param payerID
-	 * 		payer account id
+	 * 		payer account id, acting as payer for the transaction
 	 * @param nodeID
-	 * 		node account id
-	 * @return account balance
+	 * 		node account id, default listening account id
+	 * @return account balance of given account id
 	 * @throws Throwable
-	 * 		exception thrown if there is a failure
+	 * 		indicates failure while getting signed payment transaction
 	 */
 	public static long getAccountBalance(CryptoServiceGrpc.CryptoServiceBlockingStub stub,
 			AccountID accountID, AccountID payerID, AccountID nodeID)
