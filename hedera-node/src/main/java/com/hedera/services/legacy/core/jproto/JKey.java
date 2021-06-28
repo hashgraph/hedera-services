@@ -9,9 +9,9 @@ package com.hedera.services.legacy.core.jproto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -57,7 +57,8 @@ public abstract class JKey implements Serializable {
 	 * @param key
 	 * 		the proto Key to be converted
 	 * @return the generated JKey instance
-	 * @throws DecoderException on an inconvertible given key
+	 * @throws DecoderException
+	 * 		on an inconvertible given key
 	 */
 	public static JKey mapKey(Key key) throws DecoderException {
 		return convertKey(key, 1);
@@ -72,7 +73,8 @@ public abstract class JKey implements Serializable {
 	 * @param depth
 	 * 		current level that is to be verified. The first level has a value of 1.
 	 * @return the converted JKey instance
-	 * @throws DecoderException on an inconvertible given key
+	 * @throws DecoderException
+	 * 		on an inconvertible given key
 	 */
 	public static JKey convertKey(Key key, int depth) throws DecoderException {
 		if (depth > MAX_KEY_DEPTH) {
@@ -110,7 +112,8 @@ public abstract class JKey implements Serializable {
 	 * @param key
 	 * 		proto Key to be converted
 	 * @return the converted JKey instance
-	 * @throws DecoderException on an inconvertible given key
+	 * @throws DecoderException
+	 * 		on an inconvertible given key
 	 */
 	private static JKey convertBasic(Key key) throws DecoderException {
 		JKey rv;
@@ -139,7 +142,8 @@ public abstract class JKey implements Serializable {
 	 * @param jkey
 	 * 		JKey object to be converted
 	 * @return the converted proto Key instance
-	 * @throws DecoderException on an inconvertible given key
+	 * @throws DecoderException
+	 * 		on an inconvertible given key
 	 */
 	static Key convertJKeyBasic(JKey jkey) throws DecoderException {
 		Key rv = null;
@@ -166,7 +170,8 @@ public abstract class JKey implements Serializable {
 	 * @param depth
 	 * 		current level that is to be verified. The first level has a value of 1.
 	 * @return the converted proto Key instance
-	 * @throws DecoderException on an inconvertible given key
+	 * @throws DecoderException
+	 * 		on an inconvertible given key
 	 */
 	public static Key convertJKey(JKey jkey, int depth) throws DecoderException {
 		if (depth > MAX_KEY_DEPTH) {
@@ -221,7 +226,8 @@ public abstract class JKey implements Serializable {
 	 * @param jkey
 	 * 		the JKey to be converted
 	 * @return the converted proto Key instance
-	 * @throws DecoderException on an inconvertible given key
+	 * @throws DecoderException
+	 * 		on an inconvertible given key
 	 */
 	public static Key mapJKey(JKey jkey) throws DecoderException {
 		return convertJKey(jkey, 1);
@@ -232,8 +238,11 @@ public abstract class JKey implements Serializable {
 	}
 
 	public abstract boolean isEmpty();
+
 	/**
 	 * Expected to return {@code false} if the key is empty.
+	 *
+	 * @return return false if the key is empty
 	 */
 	public abstract boolean isValid();
 
