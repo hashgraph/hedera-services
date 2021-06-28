@@ -95,8 +95,8 @@ public class FeeCalculator {
 										return 0L;
 									} else {
 										return pricesForSubtype.getServicedata().getMax()
-														+ pricesForSubtype.getNodedata().getMax()
-														+ pricesForSubtype.getNetworkdata().getMax();
+												+ pricesForSubtype.getNodedata().getMax()
+												+ pricesForSubtype.getNetworkdata().getMax();
 									}
 								}
 						).orElse(0L)

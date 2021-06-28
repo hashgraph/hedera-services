@@ -112,16 +112,6 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public NftID resolve(NftID id) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public MerkleUniqueToken getUniqueToken(NftID id) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public void commitCreation() {
 		throw new UnsupportedOperationException();
 	}
