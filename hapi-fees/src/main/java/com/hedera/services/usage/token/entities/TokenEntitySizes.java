@@ -56,7 +56,7 @@ public enum TokenEntitySizes {
 	}
 
 	public long bytesUsedForUniqueTokenTransfers(int numTokens) {
-		return numTokens * (BASIC_RICH_INSTANT_SIZE + BASIC_ENTITY_ID_SIZE + LONG_SIZE + BASIC_ENTITY_ID_SIZE);
+		return numTokens * (BASIC_RICH_INSTANT_SIZE + 2 * BASIC_ENTITY_ID_SIZE + LONG_SIZE);
 	}
 
 	public int bytesUsedPerAccountRelationship() {

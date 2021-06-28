@@ -27,8 +27,7 @@ import static com.hedera.services.usage.token.entities.TokenEntitySizes.NUM_ENTI
 import static com.hedera.services.usage.token.entities.TokenEntitySizes.NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION;
 import static com.hedera.services.usage.token.entities.TokenEntitySizes.NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION;
 import static com.hedera.services.usage.token.entities.TokenEntitySizes.NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TokenEntitySizesTest {
@@ -77,6 +76,18 @@ public class TokenEntitySizesTest {
 
 		// then:
 		assertEquals(expected, subject.bytesUsedToRecordTokenTransfers(numTokens, fungibleNumTransfers, uniqueNumTransfers));
+	}
+
+	@Test
+	public void testsBytesUsedForUniqueTokenTransfers() {
+		// setup:
+		int numTokens = 3;
+
+		// given:
+		var expected = 3 * (BASIC_RICH_INSTANT_SIZE + 2 * BASIC_ENTITY_ID_SIZE + LONG_SIZE);
+
+		// then:
+		assertEquals(expected, subject.bytesUsedForUniqueTokenTransfers(numTokens));
 	}
 
 	@Test
