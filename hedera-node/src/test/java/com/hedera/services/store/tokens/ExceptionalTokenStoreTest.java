@@ -64,6 +64,9 @@ class ExceptionalTokenStoreTest {
 				() -> NOOP_TOKEN_STORE.associationExists(null, null));
 		assertThrows(UnsupportedOperationException.class,
 				() -> NOOP_TOKEN_STORE.isTreasuryForToken(null, null));
+		assertThrows(UnsupportedOperationException.class,
+				() -> NOOP_TOKEN_STORE.listOfTokensServed(null));
+
 		assertThrows(UnsupportedOperationException.class, NOOP_TOKEN_STORE::commitCreation);
 		assertThrows(UnsupportedOperationException.class, NOOP_TOKEN_STORE::rollbackCreation);
 		assertThrows(UnsupportedOperationException.class, NOOP_TOKEN_STORE::isCreationPending);

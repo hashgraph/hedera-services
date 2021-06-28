@@ -46,6 +46,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.List;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
@@ -211,6 +212,19 @@ class TokenMintTransitionLogicTest {
 		given(validator.maxBatchSizeMintCheck(tokenMintTxn.getTokenMint().getMetadataCount())).willReturn(OK);
 		given(validator.nftMetadataCheck(any())).willReturn(METADATA_TOO_LONG);
 		assertEquals(METADATA_TOO_LONG, subject.semanticCheck().apply(tokenMintTxn));
+	}
+
+	@Test
+	void propagatesErrorOnMaxBatchSizeReached() {
+		tokenMintTxn = TransactionBody.newBuilder()
+				.setTokenMint(
+						TokenMintTransactionBody.newBuilder()
+								.addAllMetadata(List.of(ByteString.copyFromUtf8("")))
+								.setToken(grpcId))
+				.build();
+
+		given(validator.maxBatchSizeMintCheck(tokenMintTxn.getTokenMint().getMetadataCount())).willReturn(BATCH_SIZE_LIMIT_EXCEEDED);
+		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.semanticCheck().apply(tokenMintTxn));
 	}
 
 	private void givenValidTxnCtx() {
