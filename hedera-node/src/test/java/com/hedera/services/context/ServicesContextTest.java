@@ -156,6 +156,7 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.fcmap.FCMap;
+import java.lang.reflect.Field;
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -193,6 +194,7 @@ public class ServicesContextTest {
 	ExchangeRates midnightRates;
 	MerkleNetworkContext networkCtx;
 	ServicesState state;
+	WorkingState workingState;
 	Cryptography crypto;
 	PropertySource properties;
 	StandardizedPropertySources propertySources;
@@ -222,6 +224,14 @@ public class ServicesContextTest {
 		given(state.tokens()).willReturn(tokens);
 		given(state.tokenAssociations()).willReturn(tokenAssociations);
 		given(state.scheduleTxs()).willReturn(schedules);
+		workingState = mock(WorkingState.class);
+		given(workingState.getNetworkCtx()).willReturn(networkCtx);
+		given(workingState.getAccounts()).willReturn(accounts);
+		given(workingState.getStorage()).willReturn(storage);
+		given(workingState.getTopics()).willReturn(topics);
+		given(workingState.getTokens()).willReturn(tokens);
+		given(workingState.getTokenAssociations()).willReturn(tokenAssociations);
+		given(workingState.getSchedules()).willReturn(schedules);
 		crypto = mock(Cryptography.class);
 		platform = mock(Platform.class);
 		given(platform.getSelfId()).willReturn(new NodeId(false, 0L));
@@ -279,12 +289,22 @@ public class ServicesContextTest {
 	}
 
 	@Test
-	void delegatesPrimitivesToState() {
+	void delegatesPrimitivesToState() throws Exception {
 		// setup:
-		InOrder inOrder = inOrder(state);
+		InOrder inOrder = inOrder(workingState);
 
 		// given:
-		var subject = new ServicesContext(nodeId, platform, state, propertySources);
+		ServicesContext subject = new ServicesContext(nodeId, platform, state, propertySources);
+
+		Field workingStateField = null;
+
+		try {
+			workingStateField = subject.getClass().getDeclaredField("workingState");
+			workingStateField.setAccessible(true);
+			workingStateField.set(subject, workingState);
+		} catch (NoSuchFieldException e) {
+			throw new Exception("Unable to set working state field", e);
+		}
 
 		// when:
 		subject.addressBook();
@@ -296,13 +316,28 @@ public class ServicesContextTest {
 		subject.accounts();
 
 		// then:
-		inOrder.verify(state).addressBook();
+		inOrder.verify(workingState).getAddressBook();
 		assertEquals(seqNo, actualSeqNo);
 		assertEquals(midnightRates, actualMidnightRates);
 		assertEquals(consensusTimeOfLastHandledTxn, actualLastHandleTime);
-		inOrder.verify(state).topics();
-		inOrder.verify(state).storage();
-		inOrder.verify(state).accounts();
+		inOrder.verify(workingState).getTopics();
+		inOrder.verify(workingState).getStorage();
+		inOrder.verify(workingState).getAccounts();
+	}
+
+	@Test
+	void constructorSetsWorkingState() {
+		ServicesContext subject = new ServicesContext(nodeId, platform, state, propertySources);
+
+		assertEquals(state.accounts(), subject.accounts());
+		assertEquals(state.topics(), subject.topics());
+		assertEquals(state.storage(), subject.storage());
+		assertEquals(state.tokens(), subject.tokens());
+		assertEquals(state.tokenAssociations(), subject.tokenAssociations());
+		assertEquals(state.scheduleTxs(), subject.schedules());
+		assertEquals(state.networkCtx(), subject.networkCtx());
+		assertEquals(state.addressBook(), subject.addressBook());
+		assertEquals(state.diskFs(), subject.diskFs());
 	}
 
 	@Test

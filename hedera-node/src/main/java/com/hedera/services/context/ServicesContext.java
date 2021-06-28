@@ -574,6 +574,7 @@ public class ServicesContext {
 	private AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage;
 	private AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations;
 	private FcmCustomFeeSchedules activeCustomFeeSchedules;
+	private WorkingState workingState = new WorkingState();
 
 	/* Context-free infrastructure. */
 	private static Pause pause;
@@ -598,10 +599,19 @@ public class ServicesContext {
 		this.platform = platform;
 		this.state = state;
 		this.propertySources = propertySources;
+
+		updateWorkingState(state);
 	}
 
+	/**
+	 * Update the state and working state based on the provided service state
+	 *
+	 * @param state latest state from the services
+	 */
 	public void update(ServicesState state) {
 		this.state = state;
+
+		updateWorkingState(state);
 
 		queryableAccounts().set(accounts());
 		queryableTopics().set(topics());
@@ -609,6 +619,23 @@ public class ServicesContext {
 		queryableTokens().set(tokens());
 		queryableTokenAssociations().set(tokenAssociations());
 		queryableSchedules().set(schedules());
+	}
+
+	/**
+	 * Update the working state when given the state
+	 *
+	 * @param state to set for the working state
+	 */
+	private void updateWorkingState(ServicesState state) {
+		workingState.setAccounts(state.accounts());
+		workingState.setTopics(state.topics());
+		workingState.setStorage(state.storage());
+		workingState.setTokens(state.tokens());
+		workingState.setTokenAssociations(state.tokenAssociations());
+		workingState.setSchedules(state.scheduleTxs());
+		workingState.setNetworkCtx(state.networkCtx());
+		workingState.setAddressBook(state.addressBook());
+		workingState.setDiskFs(state.diskFs());
 	}
 
 	public SwirldDualState getDualState() {
@@ -1292,8 +1319,13 @@ public class ServicesContext {
 		return hfs;
 	}
 
+	/**
+	 * Get the current special file system from working state disk fs
+	 *
+	 * @return current working state disk fs
+	 */
 	MerkleDiskFs getCurrentSpecialFileSystem() {
-		return this.state.diskFs();
+		return this.workingState.getDiskFs();
 	}
 
 	public SoliditySigsVerifier soliditySigsVerifier() {
@@ -2109,65 +2141,124 @@ public class ServicesContext {
 		return propertySources;
 	}
 
+	/**
+	 * Get consensus time of last handled transaction
+	 *
+	 * @return instant representing last handled transaction from working state
+	 */
 	public Instant consensusTimeOfLastHandledTxn() {
-		return state.networkCtx().consensusTimeOfLastHandledTxn();
+		return workingState.getNetworkCtx().consensusTimeOfLastHandledTxn();
 	}
 
 	public void updateConsensusTimeOfLastHandledTxn(Instant dataDrivenNow) {
 		state.networkCtx().setConsensusTimeOfLastHandledTxn(dataDrivenNow);
 	}
 
-	public AddressBook addressBook() {
-		return state.addressBook();
-	}
+	/**
+	 * Get the working state of address book
+	 *
+	 * @return current working state address book
+	 */
+	public AddressBook addressBook() { return workingState.getAddressBook(); }
 
+	/**
+	 * Get the working state network ctx and extract sequence number
+	 *
+	 * @return sequence number from the current working state network ctx
+	 */
 	public SequenceNumber seqNo() {
-		return state.networkCtx().seqNo();
+		return workingState.getNetworkCtx().seqNo();
 	}
 
+	/**
+	 * Get the working state network ctx and extract the last scanned entity
+	 *
+	 * @return last scanned entity from the current working state network ctx
+	 */
 	public long lastScannedEntity() {
-		return state.networkCtx().lastScannedEntity();
+		return workingState.getNetworkCtx().lastScannedEntity();
 	}
 
 	public void updateLastScannedEntity(long lastScannedEntity) {
 		state.networkCtx().updateLastScannedEntity(lastScannedEntity);
 	}
 
+	/**
+	 * Gets the working state of network ctx and extracts midnight rates
+	 *
+	 * @return current working state network ctx midnight rates
+	 */
 	public ExchangeRates midnightRates() {
-		return state.networkCtx().midnightRates();
+		return workingState.getNetworkCtx().midnightRates();
 	}
 
+	/**
+	 * Gets the working state of the accounts
+	 *
+	 * @return current working state of accounts
+	 */
 	public FCMap<MerkleEntityId, MerkleAccount> accounts() {
-		return state.accounts();
+		return workingState.getAccounts();
 	}
 
+	/**
+	 * Gets the working state of the topics
+	 *
+	 * @return current working state of topics
+	 */
 	public FCMap<MerkleEntityId, MerkleTopic> topics() {
-		return state.topics();
+		return workingState.getTopics();
 	}
 
+	/**
+	 * Gets the working state of storage
+	 *
+	 * @return current working state of storage
+	 */
 	public FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage() {
-		return state.storage();
+		return workingState.getStorage();
 	}
 
+	/**
+	 * Gets the working state of tokens
+	 *
+	 * @return current working state of tokens
+	 */
 	public FCMap<MerkleEntityId, MerkleToken> tokens() {
-		return state.tokens();
+		return workingState.getTokens();
 	}
 
+	/**
+	 * Gets the working state of token associations
+	 *
+	 * @return current working state of token associations
+	 */
 	public FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations() {
-		return state.tokenAssociations();
+		return workingState.getTokenAssociations();
 	}
 
-	public FCMap<MerkleEntityId, MerkleSchedule> schedules() {
-		return state.scheduleTxs();
-	}
+	/**
+	 * Gets the working state of schedules
+	 *
+	 * @return current working state of schedules
+	 */
+	public FCMap<MerkleEntityId, MerkleSchedule> schedules() { return workingState.getSchedules(); }
 
+	/**
+	 * Get the working state of disk fs
+	 *
+	 * @return current working state of disk fs
+	 */
 	public MerkleDiskFs diskFs() {
-		return state.diskFs();
+		return workingState.getDiskFs();
 	}
 
-	public MerkleNetworkContext networkCtx() {
-		return state.networkCtx();
-	}
+	/**
+	 * Get the working state of network ctx
+	 *
+	 * @return current working state of network ctx
+	 */
+	public MerkleNetworkContext networkCtx() { return workingState.getNetworkCtx(); }
 
 	/**
 	 * return the directory to which record stream files should be write
