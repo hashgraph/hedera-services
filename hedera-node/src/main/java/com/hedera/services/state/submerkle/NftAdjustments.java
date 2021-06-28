@@ -43,9 +43,10 @@ public class NftAdjustments implements SelfSerializable {
 	private static final Logger log = LogManager.getLogger(NftAdjustments.class);
 
 	private static final int MERKLE_VERSION = 1;
-	private static final int MAX_NUM_ADJUSTMENTS = 1024;
 	private static final long RUNTIME_CONSTRUCTABLE_ID = 0xd7a02bf45e103466L;
 	private static final long[] NO_ADJUSTMENTS = new long[0];
+
+	static final int MAX_NUM_ADJUSTMENTS = 1024;
 
 	private long[] serialNums = NO_ADJUSTMENTS;
 	private List<EntityId> senderAccIds = Collections.emptyList();
