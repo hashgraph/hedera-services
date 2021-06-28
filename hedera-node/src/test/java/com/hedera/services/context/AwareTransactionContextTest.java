@@ -71,6 +71,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import javax.inject.Inject;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -500,6 +501,19 @@ class AwareTransactionContextTest {
 		// then:
 		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
 		assertEquals(topicCreated, record.getReceipt().toGrpc().getTopicID());
+	}
+
+	@Test
+	void getsExpectedReceiptForSerialNumbersUpdate() {
+		// when:
+		List<Long> serialNumbers = new ArrayList<>(Arrays.asList(1L, 2L, 3L));
+		subject.setCreated(serialNumbers);
+		setUpBuildingExpirableTxnRecord();
+		record = subject.recordSoFar();
+
+		// then:
+		assertEquals(ratesNow, record.getReceipt().toGrpc().getExchangeRate());
+		assertEquals(serialNumbers, record.getReceipt().toGrpc().getSerialNumbersList());
 	}
 
 	@Test
