@@ -249,6 +249,10 @@ class TypedTokenStoreTest {
 		verify(transactionRecordService).includeChangesToToken(modelToken);
 		verify(uniqueTokens).put(expectedNewUniqTokenId, expectedNewUniqToken);
 		verify(uniqueTokens).remove(expectedPastUniqTokenId);
+		verify(uniqueTokenAssociations).associate(new EntityId(modelToken.getId()), expectedNewUniqTokenId);
+		verify(uniqueTokenAssociations).disassociate(new EntityId(modelToken.getId()), expectedPastUniqTokenId);
+		verify(uniqueTokenOwnerships).associate(treasuryId, expectedNewUniqTokenId);
+		verify(uniqueTokenOwnerships).disassociate(treasuryId, expectedPastUniqTokenId);
 		verify(backingNfts).addToExistingNfts(new NftId(0, 0, tokenNum, mintedSerialNo));
 		verify(backingNfts).removeFromExistingNfts(new NftId(0, 0, tokenNum, burnedSerialNo));
 	}
