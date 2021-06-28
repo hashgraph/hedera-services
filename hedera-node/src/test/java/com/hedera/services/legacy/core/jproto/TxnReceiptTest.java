@@ -332,6 +332,25 @@ public class TxnReceiptTest {
 	}
 
 	@Test
+	public void tokenConstructorWithSerialNumbers() {
+		long[] serialNumbers = {1L, 2L, 3L};
+		final var tokenId = EntityId.fromGrpcTokenId(
+				TokenID.newBuilder().setTokenNum(1001L).setRealmNum(0).setShardNum(0).build());
+		final var cut = TxnReceipt.newBuilder()
+				.setStatus("SUCCESS")
+				.setTokenId(tokenId)
+				.setSerialNumbers(serialNumbers)
+				.build();
+
+		assertEquals(tokenId, cut.getTokenId());
+
+		assertAll(() -> Assertions.assertDoesNotThrow(() -> cut.toString()),
+				() -> assertNotNull(cut.toString()));
+
+		assertEquals(serialNumbers, cut.getSerialNumbers());
+	}
+
+	@Test
 	public void tokenConstructorWithTotalSupply() {
 		final var tokenId = EntityId.fromGrpcTokenId(
 				TokenID.newBuilder().setTokenNum(1001L).setRealmNum(0).setShardNum(0).build());
