@@ -74,6 +74,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 	private Optional<Function<HapiApiSpec, String>> newSymbolFn = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> newNameFn = Optional.empty();
 	private final List<Function<HapiApiSpec, CustomFeesOuterClass.CustomFee>> feeScheduleSuppliers = new ArrayList<>();
+	private Optional<Boolean> newCustomFeesMutable = Optional.empty();
 	private boolean useImproperEmptyKey = false;
 	private boolean useEmptyAdminKeyList = false;
 
@@ -88,6 +89,11 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 
 	public HapiTokenUpdate withCustom(Function<HapiApiSpec, CustomFeesOuterClass.CustomFee> supplier) {
 		feeScheduleSuppliers.add(supplier);
+		return this;
+	}
+
+	public HapiTokenUpdate customFeesMutable(boolean customFeesMutable) {
+		newCustomFeesMutable = Optional.of(customFeesMutable);
 		return this;
 	}
 
@@ -268,6 +274,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 								for (var supplier : feeScheduleSuppliers) {
 									fb.addCustomFees(supplier.apply(spec));
 								}
+								newCustomFeesMutable.ifPresent(m -> fb.setCanUpdateWithAdminKey(m));
 							}
 						});
 		return b -> b.setTokenUpdate(opBody);

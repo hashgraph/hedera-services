@@ -62,6 +62,7 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fix
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fractionalFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_ARE_MARKED_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
@@ -120,6 +121,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 				validatesNewExpiry(),
 				/* HIP-18 */
 				onlyValidCustomFeeScheduleCanBeUpdated(),
+				customFeesOnceImmutableStayImmutable(),
 				}
 		);
 	}
@@ -706,6 +708,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						tokenAssociate(newTokenCollector, token),
 						tokenUpdate(token)
 								.treasury(newTokenCollector)
+								.customFeesMutable(true)
 								.withCustom(fixedHbarFee(newHbarAmount, newHbarCollector))
 								.withCustom(fixedHtsFee(newHtsAmount, newFeeDenom, newHtsCollector))
 								.withCustom(fractionalFee(
@@ -715,12 +718,78 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						)
 				.then(
 						getTokenInfo(token)
+								.hasCustomFeesMutable(true)
 								.hasCustom(fixedHbarFeeInSchedule(newHbarAmount, newHbarCollector))
 								.hasCustom(fixedHtsFeeInSchedule(newHtsAmount, newFeeDenom, newHtsCollector))
 								.hasCustom(fractionalFeeInSchedule(
 										newNumerator, newDenominator,
 										newMinimumToCollect, OptionalLong.of(newMaximumToCollect),
 										newTokenCollector))
+				);
+	}
+
+	private HapiApiSpec customFeesOnceImmutableStayImmutable() {
+		final var hbarAmount = 1_234L;
+		final var htsAmount = 2_345L;
+		final var numerator = 1;
+		final var denominator = 10;
+		final var minimumToCollect = 5;
+		final var maximumToCollect = 50;
+
+		final var token = "withCustomSchedules";
+		final var feeDenom = "denom";
+		final var hbarCollector = "hbarFee";
+		final var htsCollector = "denomFee";
+		final var tokenCollector = "fractionalFee";
+
+		final var adminKey = "admin";
+
+		return defaultHapiSpec("CustomFeesOnceImmutableStayImmutable")
+				.given(
+						newKeyNamed(adminKey),
+						cryptoCreate(htsCollector),
+						cryptoCreate(hbarCollector),
+						cryptoCreate(tokenCollector),
+						tokenCreate(feeDenom).treasury(htsCollector),
+						tokenCreate(token)
+								.adminKey(adminKey)
+								.treasury(tokenCollector)
+								.customFeesMutable(true)
+								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
+								.withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
+								.withCustom(fractionalFee(
+										numerator, denominator,
+										minimumToCollect, OptionalLong.of(maximumToCollect),
+										tokenCollector))
+
+						)
+				.when(
+						tokenUpdate(token)
+								.customFeesMutable(false)
+								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
+								.withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
+								.withCustom(fractionalFee(
+										numerator, denominator,
+										minimumToCollect, OptionalLong.of(maximumToCollect),
+										tokenCollector))
+				)
+				.then(
+						getTokenInfo(token)
+								.hasCustomFeesMutable(false)
+								.hasCustom(fixedHbarFeeInSchedule(hbarAmount, hbarCollector))
+								.hasCustom(fixedHtsFeeInSchedule(htsAmount, feeDenom, htsCollector))
+								.hasCustom(fractionalFeeInSchedule(
+										numerator, denominator,
+										minimumToCollect, OptionalLong.of(maximumToCollect),
+										tokenCollector)),
+						tokenUpdate(token)
+								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
+								.withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
+								.withCustom(fractionalFee(
+										numerator, denominator,
+										minimumToCollect, OptionalLong.of(maximumToCollect),
+										tokenCollector))
+								.hasKnownStatus(CUSTOM_FEES_ARE_MARKED_IMMUTABLE)
 				);
 	}
 
