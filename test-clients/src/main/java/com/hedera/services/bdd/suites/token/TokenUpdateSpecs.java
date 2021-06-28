@@ -605,7 +605,6 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 		final var invalidEntityId = "1.2.786";
 
 		final var adminKey = "admin";
-		final var customFeesKey = "antique";
 
 		final var newHbarAmount = 17_234L;
 		final var newHtsAmount = 27_345L;
@@ -619,16 +618,12 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 		final var newHtsCollector = "newDenomFee";
 		final var newTokenCollector = "newFractionalFee";
 
-		final var newCustomFeesKey = "modern";
-
 		return defaultHapiSpec("OnlyValidCustomFeeScheduleCanBeUpdated")
 				.given(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
 								.overridingProps(Map.of("tokens.maxCustomFeesAllowed", "10")),
 						newKeyNamed(adminKey),
-						newKeyNamed(customFeesKey),
-						newKeyNamed(newCustomFeesKey),
 						cryptoCreate(htsCollector),
 						cryptoCreate(newHtsCollector),
 						cryptoCreate(hbarCollector),
@@ -640,7 +635,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						tokenCreate(token)
 								.adminKey(adminKey)
 								.treasury(tokenCollector)
-								.customFeesMutable()
+								.customFeesMutable(true)
 								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
 								.withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
 								.withCustom(fractionalFee(
