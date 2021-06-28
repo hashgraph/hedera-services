@@ -20,21 +20,16 @@ package com.hedera.services.legacy.regression.umbrella;
  * ‍
  */
 
-import com.google.common.base.Strings;
 import com.hedera.services.legacy.core.TestHelper;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.builder.TransactionSigner;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,19 +40,18 @@ import java.util.List;
 public class TestHelperComplex extends TestHelper {
 
 	public static long TX_DURATION_SEC = 2 * 60; // 2 minutes for tx dedup
-	private static final Logger log = LogManager.getLogger(TestHelperComplex.class);
 
 	/**
 	 * Creates an account with complex keys with max tx fee.
 	 *
 	 * @param payerAccount
-	 * 		payer account ID
+	 * 		payer account id, acting as payer for the transaction
 	 * @param nodeAccount
-	 * 		node account ID
+	 * 		node account id, default listening account
 	 * @param key
 	 * 		key for the account to be created
 	 * @param initialBalance
-	 * 		initial balance on account
+	 * 		initial balance on account to be created
 	 * @param receiverSigRequired
 	 * 		if receiver signature is required
 	 * @param accountDuration
@@ -76,15 +70,15 @@ public class TestHelperComplex extends TestHelper {
 	 * Creates an account with complex keys.
 	 *
 	 * @param payerAccount
-	 * 		payer account ID
+	 * 		payer account id, acting as payer for the transaction
 	 * @param nodeAccount
-	 * 		node account ID
+	 * 		node account id, default listening account
 	 * @param key
 	 * 		key for the account to be created
 	 * @param initialBalance
 	 * 		initial balance on account
 	 * @param transactionFee
-	 * 		transaction fees
+	 * 		transaction fees for creating account
 	 * @param receiverSigRequired
 	 * 		if receiver signature is required
 	 * @param autoRenewPeriod
@@ -127,104 +121,21 @@ public class TestHelperComplex extends TestHelper {
 	}
 
 	/**
-	 * create Account Request with parameters
-	 *
-	 * @param payerAccount
-	 * 		payer account ID
-	 * @param payerKey
-	 * 		payer Key
-	 * @param nodeAccount
-	 * 		node account ID
-	 * @param key
-	 * 		key for the account to be created
-	 * @param initialBalance
-	 * 		initial balance on account
-	 * @param transactionFee
-	 * 		transaction fees
-	 * @param receiverSigRequired
-	 * 		if receiver signature is required
-	 * @param memoSize
-	 * 		memo size
-	 * @param duration
-	 * 		transaction valid duration
-	 * @return Transaction for creating account
-	 * @throws Exception
-	 * 		exception caused if there is a failure in operation
-	 */
-	public static Transaction createAccount(AccountID payerAccount, Key payerKey,
-			AccountID nodeAccount, Key key, long initialBalance, long transactionFee,
-			boolean receiverSigRequired, int memoSize, long duration) throws Exception {
-		Timestamp timestamp = TestHelper.getDefaultCurrentTimestampUTC();
-		Duration transactionDuration = RequestBuilder.getDuration(TX_DURATION_SEC);
-		boolean generateRecord = true;
-		String memo = getStringMemo(memoSize);
-		long sendRecordThreshold = DEFAULT_SEND_RECV_RECORD_THRESHOLD;
-		long receiveRecordThreshold = DEFAULT_SEND_RECV_RECORD_THRESHOLD;
-		Duration autoRenewPeriod = RequestBuilder.getDuration(duration);
-
-		Transaction createAccountRequest = RequestBuilder
-				.getCreateAccountBuilder(payerAccount.getAccountNum(),
-						payerAccount.getRealmNum(), payerAccount.getShardNum(), nodeAccount.getAccountNum(),
-						nodeAccount.getRealmNum(), nodeAccount.getShardNum(), transactionFee, timestamp,
-						transactionDuration,
-						generateRecord, memo, key, initialBalance, sendRecordThreshold, receiveRecordThreshold,
-						receiverSigRequired, autoRenewPeriod);
-		List<Key> keys = new ArrayList<>();
-		keys.add(payerKey);
-		if (receiverSigRequired) {
-			keys.add(key);
-		}
-		Transaction txFirstSigned = TransactionSigner.signTransactionComplexWithSigMap(createAccountRequest, keys,
-				pubKey2privKeyMap);
-		TransactionBody transferBody = TransactionBody.parseFrom(txFirstSigned.getBodyBytes());
-		if (transferBody.getTransactionID() == null || !transferBody.hasTransactionID()) {
-			return createAccount(payerAccount, payerKey, nodeAccount,
-					key, initialBalance, transactionFee,
-					receiverSigRequired, memoSize, duration);
-		}
-		return txFirstSigned;
-	}
-
-
-	public static String getStringMemo(int size) {
-		if (size == 0) {
-			return "";
-		} else {
-			return Strings.padEnd("a", size, 'a');
-		}
-	}
-
-	public static Transaction updateAccount(AccountID accountID, AccountID payerAccount,
-			AccountID nodeAccount, CryptoUpdateTransactionBody cryptoUpdate) {
-
-		Timestamp startTime = TestHelper.getDefaultCurrentTimestampUTC();
-		Duration transactionDuration = RequestBuilder.getDuration(TX_DURATION);
-
-		long nodeAccountNum = nodeAccount.getAccountNum();
-		long payerAccountNum = payerAccount.getAccountNum();
-		return RequestBuilder
-				.getAccountUpdateRequest(accountID, payerAccountNum, 0l, 0l, nodeAccountNum, 0l, 0l,
-						TestHelper.getCryptoMaxFee(),
-						startTime, transactionDuration, true, "Update Account", cryptoUpdate);
-
-	}
-
-	/**
 	 * Gets records by account ID.
 	 *
 	 * @param accountID
 	 * 		given account ID
 	 * @param payerAccount
-	 * 		given payer account ID
+	 * 		payer account id, acting as payer for the transaction
 	 * @param nodeAccount
-	 * 		given node account ID
+	 * 		node account id, default listening account
 	 * @param getTxRecordFee
 	 * 		fees to get transaction record
 	 * @param responsetype
 	 * 		response type for the query
 	 * @return Query for getting transaction record
 	 * @throws Exception
-	 * 		exception caused if there is a failure in the operation
+	 * 		indicates failure while getting transaction record
 	 */
 	public static Query getTxRecordByAccountIdComplex(AccountID accountID, AccountID payerAccount,
 			AccountID nodeAccount, long getTxRecordFee, ResponseType responsetype) throws Exception {

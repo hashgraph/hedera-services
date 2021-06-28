@@ -98,18 +98,18 @@ public class SmartContractServiceTest extends FileServiceTest {
 	 * Creates a smart contract, note each unique contract can only be deployed once.
 	 *
 	 * @param contractFile
-	 * 		contract file id
+	 * 		file id of the contract
 	 * @param contractFileName
 	 * 		contract file name
 	 * @param payerAccount
-	 * 		payer account id
+	 * 		payer account id, acting as payer for the transaction
 	 * @param nodeAccount
-	 * 		ndoe account id
+	 * 		ndoe account id, default listening account
 	 * @param addAdminKey
 	 * 		if admin key needs to be added
 	 * @return created contract id
 	 * @throws Throwable
-	 * 		exception thrown if there is a failure
+	 * 		indicates failure while creating contract
 	 */
 	public ContractID createContract(FileID contractFile, String contractFileName,
 			AccountID payerAccount, AccountID nodeAccount, boolean addAdminKey) throws Throwable {
@@ -180,14 +180,14 @@ public class SmartContractServiceTest extends FileServiceTest {
 	 * Updates a smart contract.
 	 *
 	 * @param payerAccount
-	 * 		payer account id
-	 * @param contractToUpdate
-	 * 		contract id to be updated
+	 * 		payer account id, acting as payer for the transaction
 	 * @param nodeAccount
-	 * 		node account id
-	 * @return transaction Receipt
+	 * 		node account id, default listening account
+	 * @param contractToUpdate
+	 * 		contract id of the contract to be updated
+	 * @return transaction Receipt for updating contract
 	 * @throws Exception
-	 * 		exception caused if there is a failure
+	 * 		indicates failure while updating contract
 	 */
 	public TransactionReceipt updateContract(AccountID payerAccount, ContractID contractToUpdate,
 			AccountID nodeAccount) throws Exception {
@@ -249,17 +249,17 @@ public class SmartContractServiceTest extends FileServiceTest {
 	}
 
 	/**
-	 * Gets contract info.
+	 * Gets contract info for a given contract Id.
 	 *
 	 * @param payerAccount
-	 * 		payer account id
+	 * 		payer account id, acting as payer for the transaction
 	 * @param contractId
-	 * 		contract id
+	 * 		contract id whose info needs to be queried
 	 * @param nodeAccount
-	 * 		node account id
+	 * 		node account id, default listening account
 	 * @return ContractInfo object
 	 * @throws Exception
-	 * 		exception caused if there is  a failure
+	 * 		indicates failure while getting contract info
 	 */
 	public ContractInfo getContractInfo(AccountID payerAccount, ContractID contractId,
 			AccountID nodeAccount)
@@ -396,7 +396,7 @@ public class SmartContractServiceTest extends FileServiceTest {
 	/**
 	 * Gets a random smart contract ID.
 	 *
-	 * @return an existing smart contract ID or null of none available
+	 * @return an existing random smart contract ID or null of none available
 	 */
 	public static ContractID getRandomSmartContractID() {
 		synchronized (contractIDMap) {
@@ -507,17 +507,17 @@ public class SmartContractServiceTest extends FileServiceTest {
 	}
 
 	/**
-	 * Gets contract bytecode.
+	 * Gets contract bytecode of given contract Id.
 	 *
 	 * @param payerAccount
-	 * 		payer account id
+	 * 		payer account id, acting as payer for the transaction
 	 * @param contractId
 	 * 		the contract to get the byte code for
 	 * @param nodeAccount
-	 * 		node account id
-	 * @return bytecode in hex
+	 * 		node account id, default listening account
+	 * @return contract bytecode in hex
 	 * @throws Exception
-	 * 		exception caused if there is a failure
+	 * 		indicates failure while getting contract byte code
 	 */
 	public String getContractByteCode(AccountID payerAccount,
 			ContractID contractId, AccountID nodeAccount) throws Exception {
@@ -549,17 +549,17 @@ public class SmartContractServiceTest extends FileServiceTest {
 	}
 
 	/**
-	 * Gets contract ID by solidity ID
+	 * Gets contract ID given solidity ID
 	 *
 	 * @param payerAccount
-	 * 		payer account id
+	 * 		payer account id, acting as payer for the transaction
 	 * @param solidityId
-	 * 		solidity id
+	 * 		solidity id given for getting contract Id
 	 * @param nodeAccount
-	 * 		node account id
-	 * @return contract ID
+	 * 		node account id, default listening account
+	 * @return contract ID fetched from the solidity Id
 	 * @throws Exception
-	 * 		exception thrown if there is any failure
+	 * 		indicates failure while getting contractID based on solidity Id
 	 */
 	public ContractID getBySolidityID(AccountID payerAccount, String solidityId,
 			AccountID nodeAccount) throws Exception {
@@ -579,7 +579,7 @@ public class SmartContractServiceTest extends FileServiceTest {
 	/**
 	 * Gets a random solidity ID.
 	 *
-	 * @return solidity ID string, null if none available
+	 * @return random solidity ID string, null if none available
 	 */
 	public static String getRandomSmartSolidityID() {
 		String rv = null;
@@ -593,17 +593,17 @@ public class SmartContractServiceTest extends FileServiceTest {
 	}
 
 	/**
-	 * Get Tx records by contract ID.
+	 * Get list of transaction records by contract ID.
 	 *
 	 * @param payerID
-	 * 		payer account id
+	 * 		payer account id, acting as payer for the transaction
 	 * @param contractId
-	 * 		contract id
+	 * 		contract id for which transaction records needs to be queried
 	 * @param nodeID
-	 * 		node account id
-	 * @return list of Tx records
+	 * 		node account id, default listening account
+	 * @return list of transaction records for the contract ID
 	 * @throws Exception
-	 * 		exception thrown if there is any failure
+	 * 		indicates failure while fetching transaction records
 	 */
 	public List<TransactionRecord> getTxRecordByContractID(AccountID payerID, ContractID contractId,
 			AccountID nodeID) throws Exception {
@@ -708,9 +708,9 @@ public class SmartContractServiceTest extends FileServiceTest {
 	}
 
 	/**
-	 * Generates admin key based on the account type in configuration.
+	 * Generates a complex admin key based on the account type in configuration.
 	 *
-	 * @return generated key
+	 * @return generated complex admin key
 	 */
 	public Key genAdminKeyComplex() {
 		String accountKeyType = getRandomAccountKeyType();
