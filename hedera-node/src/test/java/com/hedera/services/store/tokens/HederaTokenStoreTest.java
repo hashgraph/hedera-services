@@ -34,7 +34,6 @@ import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.submerkle.CustomFee;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
@@ -85,10 +84,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_ARE_MARKED_IMMUTABLE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_ARE_MARKED_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -205,7 +204,7 @@ class HederaTokenStoreTest {
 			.setFractionalFee(fractionalFee)
 			.build();
 	private CustomFeesOuterClass.CustomFees grpcCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
-			.setCanUpdateWithAdminKey(true)
+			.setCanUpdateWithAdminKey(false)
 			.addCustomFees(customFixedFeeInHbar)
 			.addCustomFees(customFixedFeeInHts)
 			.addCustomFees(customFractionalFee)
@@ -264,7 +263,6 @@ class HederaTokenStoreTest {
 					.setFixedFee(CustomFeesOuterClass.FixedFee.newBuilder()
 							.setAmount(0L)
 					)).build();
-	private List<CustomFee> customFees = MerkleToken.customFeesFromGrpc(grpcCustomFees);
 
 	private HederaTokenStore subject;
 
@@ -1805,8 +1803,7 @@ class HederaTokenStoreTest {
 		expected.setWipeKey(MISC_ACCOUNT_KT.asJKeyUnchecked());
 		expected.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked());
 		expected.setMemo(memo);
-		expected.setFeeSchedule(customFees);
-		expected.setFeeScheduleMutable(true);
+		expected.setFeeScheduleFrom(grpcCustomFees);
 
 		// given:
 		final var req = fullyValidAttempt()
@@ -1844,7 +1841,6 @@ class HederaTokenStoreTest {
 		expected.setWipeKey(MISC_ACCOUNT_KT.asJKeyUnchecked());
 		expected.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked());
 		expected.setMemo(memo);
-		expected.setFeeScheduleMutable(false);
 
 		// given:
 		final var req = fullyValidAttempt().clearCustomFees().build();

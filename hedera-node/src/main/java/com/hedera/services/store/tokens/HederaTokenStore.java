@@ -414,7 +414,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				return failure(validity);
 			}
 			pendingCreation.setFeeScheduleFrom(customFees);
-			pendingCreation.setFeeScheduleMutable(customFees.getCanUpdateWithAdminKey());
 		}
 
 		return success(pendingId);

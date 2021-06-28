@@ -279,6 +279,7 @@ public class StateView {
 				feeSchedule.stream()
 						.map(CustomFee::asGrpc)
 						.forEach(customFeesBuilder::addCustomFees);
+				customFeesBuilder.setCanUpdateWithAdminKey(token.isFeeScheduleMutable());
 				info.setCustomFees(customFeesBuilder);
 			}
 

@@ -355,7 +355,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		return feeScheduleMutable;
 	}
 
-	public void setFeeScheduleMutable(boolean feeScheduleMutable) {
+	void setFeeScheduleMutable(boolean feeScheduleMutable) {
 		this.feeScheduleMutable = feeScheduleMutable;
 	}
 
@@ -474,11 +474,8 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	}
 
 	public void setFeeScheduleFrom(CustomFeesOuterClass.CustomFees grpcFeeSchedule) {
-		feeSchedule = customFeesFromGrpc(grpcFeeSchedule);
-	}
-
-	public static List<CustomFee> customFeesFromGrpc(CustomFeesOuterClass.CustomFees grpcFeeSchedule) {
-		return grpcFeeSchedule.getCustomFeesList().stream().map(CustomFee::fromGrpc).collect(toList());
+		feeSchedule = grpcFeeSchedule.getCustomFeesList().stream().map(CustomFee::fromGrpc).collect(toList());
+		feeScheduleMutable = grpcFeeSchedule.getCanUpdateWithAdminKey();
 	}
 
 	public List<CustomFee> customFeeSchedule() {

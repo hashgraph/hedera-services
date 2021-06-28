@@ -132,15 +132,6 @@ class MerkleTokenTest {
 		subject = new MerkleToken(
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(subject);
-		subject.setAdminKey(adminKey);
-		subject.setFreezeKey(freezeKey);
-		subject.setKycKey(kycKey);
-		subject.setWipeKey(wipeKey);
-		subject.setSupplyKey(supplyKey);
-		subject.setDeleted(isDeleted);
-		subject.setMemo(memo);
-		subject.setFeeScheduleFrom(grpcFeeSchedule);
-		subject.setFeeScheduleMutable(true);
 
 		serdes = mock(DomainSerdes.class);
 		MerkleToken.serdes = serdes;
@@ -542,6 +533,7 @@ class MerkleTokenTest {
 		token.setAutoRenewPeriod(autoRenewPeriod);
 		token.setMemo(memo);
 		token.setFeeSchedule(feeSchedule);
+		token.setFeeScheduleMutable(true);
 	}
 
 	@Test
