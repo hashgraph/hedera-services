@@ -1,7 +1,8 @@
 package com.hedera.services.state.merkle.virtual.persistence.fcmmap;
 
 import com.hedera.services.state.merkle.MerkleAccountState;
-import com.hedera.services.state.merkle.virtual.persistence.FCVirtualMapDataStore;
+import com.hedera.services.state.merkle.virtual.persistence.FCVirtualMapHashStore;
+import com.hedera.services.state.merkle.virtual.persistence.FCVirtualMapLeafStore;
 import com.hedera.services.state.submerkle.EntityId;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -38,25 +39,21 @@ public class FCVirtualMapDataStoreTest {
         // delete old store if it exists
         deleteDirectoryAndContents(STORE_PATH);
         // create and open store
-        FCVirtualMapDataStore<SerializableLong,SerializableLong,SerializableLong,TestLeafData> store
-                = new FCVirtualMapDataStoreImpl<>(STORE_PATH,
-                5, // Use a small file size so we test across file boundaries
-                8,8,8,TestLeafData.SIZE_BYTES,
-                FCSlotIndexUsingFCHashMap::new, FCSlotIndexUsingFCHashMap::new, FCSlotIndexUsingFCHashMap::new,
-                SerializableLong::new, SerializableLong::new, TestLeafData::new,
-                MemMapSlotStore::new);
+        final var hashStore = new FCVirtualMapHashStoreImpl<>(
+                STORE_PATH, 8, 8,
+                new FCSlotIndexUsingFCHashMap<>(), MemMapSlotStore::new);
 
-        store.open();
+        hashStore.open();
         // create some data for a number of accounts
         for (int i = 0; i < COUNT; i++) {
-            store.saveHash(new SerializableLong(i),hash(i));
+            hashStore.saveHash(new SerializableLong(i),hash(i));
         }
         // read back and check that data
         for (int i = 0; i < COUNT; i++) {
             SerializableLong l = new SerializableLong(i);
             var expectedHash = hash(i);
 
-            Hash parentHash = store.loadHash(l);
+            Hash parentHash = hashStore.loadHash(l);
             assertEquals(expectedHash,parentHash);
         }
 
@@ -65,16 +62,16 @@ public class FCVirtualMapDataStoreTest {
             int i = RANDOM.nextInt(COUNT);
             SerializableLong l = new SerializableLong(i);
             var expectedHash = hash(i);
-            Hash parentHash = store.loadHash(l);
+            Hash parentHash = hashStore.loadHash(l);
             assertEquals(expectedHash,parentHash);
         }
 
         // delete a leaf and parent and check
         SerializableLong key = new SerializableLong(COUNT/2);
-        store.deleteHash(key);
-        assertFalse(store.containsHash(key));
+        hashStore.deleteHash(key);
+        assertFalse(hashStore.containsHash(key));
 
-        store.release();
+        hashStore.release();
     }
 
 
@@ -87,10 +84,10 @@ public class FCVirtualMapDataStoreTest {
         // delete old store if it exists
         deleteDirectoryAndContents(STORE_PATH);
         // create and open store
-        FCVirtualMapDataStore<SerializableLong,SerializableLong,SerializableLong,TestLeafData> store
-                = new FCVirtualMapDataStoreImpl<>(STORE_PATH,10,
-                        8,8,8,TestLeafData.SIZE_BYTES,
-                        FCSlotIndexUsingFCHashMap::new, FCSlotIndexUsingFCHashMap::new, FCSlotIndexUsingFCHashMap::new,
+        FCVirtualMapLeafStore<SerializableLong,SerializableLong,TestLeafData> store
+                = new FCVirtualMapLeafStoreImpl<>(STORE_PATH,10,
+                        8,8,TestLeafData.SIZE_BYTES,
+                        new FCSlotIndexUsingFCHashMap<>(), new FCSlotIndexUsingFCHashMap<>(),
                         SerializableLong::new, SerializableLong::new, TestLeafData::new,
                         MemMapSlotStore::new);
 
@@ -149,7 +146,6 @@ public class FCVirtualMapDataStoreTest {
         SerializableLong key = new SerializableLong(COUNT/2);
         store.deleteLeaf(key,key);
         assertFalse(store.containsLeafKey(key));
-        assertFalse(store.containsHash(key));
 
         store.release();
     }
@@ -162,10 +158,10 @@ public class FCVirtualMapDataStoreTest {
         // delete old store if it exists
         deleteDirectoryAndContents(STORE_PATH);
         // create and open store
-        FCVirtualMapDataStore<SerializableLong,SerializableLong,SerializableLong,TestLeafData> store
-                = new FCVirtualMapDataStoreImpl<>(STORE_PATH,10,
-                        8,8,8,TestLeafData.SIZE_BYTES,
-                        FCSlotIndexUsingFCHashMap::new, FCSlotIndexUsingFCHashMap::new, FCSlotIndexUsingFCHashMap::new,
+        FCVirtualMapLeafStore<SerializableLong,SerializableLong,TestLeafData> store
+                = new FCVirtualMapLeafStoreImpl<>(STORE_PATH,10,
+                        8,8,TestLeafData.SIZE_BYTES,
+                        new FCSlotIndexUsingFCHashMap<>(), new FCSlotIndexUsingFCHashMap<>(),
                         SerializableLong::new, SerializableLong::new, TestLeafData::new,
                         MemMapSlotStore::new);
 
@@ -214,14 +210,18 @@ public class FCVirtualMapDataStoreTest {
         int sizeOfMerkleAccountState = measureLengthOfSerializable(createRandomMerkleAccountState(1, RANDOM));
         System.out.println("sizeOfMerkleAccountState = " + sizeOfMerkleAccountState);
         // create and open store
-        FCVirtualMapDataStore<SerializableLong,SerializableAccount,SerializableLong,MerkleAccountState> store
-                = new FCVirtualMapDataStoreImpl<>(STORE_PATH,10,
-                8,
+        FCVirtualMapLeafStore<SerializableAccount,SerializableLong,MerkleAccountState> store
+                = new FCVirtualMapLeafStoreImpl<>(STORE_PATH,10,
                 8 * 3,8,sizeOfMerkleAccountState,
-                FCSlotIndexUsingFCHashMap::new, FCSlotIndexUsingFCHashMap::new, FCSlotIndexUsingFCHashMap::new,
+                new FCSlotIndexUsingFCHashMap<>(), new FCSlotIndexUsingFCHashMap<>(),
                 SerializableAccount::new, SerializableLong::new, MerkleAccountState::new, MemMapSlotStore::new);
 
+        final var hashStore = new FCVirtualMapHashStoreImpl<>(
+                STORE_PATH, 8, 8,
+                new FCSlotIndexUsingFCHashMap<>(), MemMapSlotStore::new);
+
         store.open();
+        hashStore.open();
         System.out.println("Files.exists(STORE_PATH) = " + Files.exists(STORE_PATH));
         // create some data for a number of accounts
         for (int i = 0; i < COUNT; i++) {
@@ -230,7 +230,7 @@ public class FCVirtualMapDataStoreTest {
             int size = measureLengthOfSerializable(merkleAccountState);
             assertEquals(sizeOfMerkleAccountState,size,"Serialized MerkleAccountState size is not as expected.");
             store.saveLeaf(new SerializableAccount(i,i,i),l,merkleAccountState);
-            store.saveHash(l,hash(i));
+            hashStore.saveHash(l,hash(i));
         }
         // read back and check that data
         for (int i = 0; i < COUNT; i++) {
@@ -238,7 +238,7 @@ public class FCVirtualMapDataStoreTest {
             var expectedHash = hash(i);
 //            var expectedLeafData = createRandomMerkleAccountState(i, RANDOM);
 
-            Hash parentHash = store.loadHash(l);
+            Hash parentHash = hashStore.loadHash(l);
             assertEquals(expectedHash,parentHash);
 
             try {
@@ -259,6 +259,7 @@ public class FCVirtualMapDataStoreTest {
         assertEquals(COUNT,store.leafCount());
 
         store.release();
+        hashStore.release();
     }
 
 // TODO once fast copy is working add back in

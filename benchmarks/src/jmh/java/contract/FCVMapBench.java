@@ -175,30 +175,25 @@ public class FCVMapBench {
     @Benchmark
     public void update_LimitedPerVirtualMap_25k_Contract_Files() throws ExecutionException, InterruptedException {
         // Wait for the hashing of the previous iteration to complete
-        prevIterationHashingFuture.get();
+        try {
+            prevIterationHashingFuture.get(1, TimeUnit.SECONDS);
+        } catch (TimeoutException e) {
+            System.err.println("Failed to hash within 1 second! Probably deadlocked?");
+            e.printStackTrace();
+        }
 
         // Create a new fast copy and start hashing the old one
-//        final var old = contractMap;
-//        contractMap = old.copy();
-//        prevIterationHashingFuture = executorService.submit(() -> {
-//            final var f = CryptoFactory.getInstance().digestTreeAsync(old);
-//            try {
-//                f.get(1, TimeUnit.SECONDS);
-//            } catch (InterruptedException | ExecutionException e) {
-//                e.printStackTrace();
-//                System.exit(1);
-//            } catch (TimeoutException e) {
-//                System.err.println("Failed to hash within 1 second! Probably deadlocked?");
-//                e.printStackTrace();
-//            }
-//            old.release();
-//        });
+        final var old = contractMap;
+        contractMap = old.copy();
+        prevIterationHashingFuture = executorService.submit(() -> {
+            CryptoFactory.getInstance().digestTreeSync(old);
+            old.release();
+        });
 
         // Start modifying the new fast copy
-        for (int j=0; j<500; j++) {
+        for (int j=0; j<50_000; j++) {
             final var i = rand.nextInt(1_000_000);
             contractMap.put(asContractKey(i), asContractValue(i + 1_000_000));
-            Thread.sleep(100);
         }
     }
 

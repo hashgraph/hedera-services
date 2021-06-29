@@ -12,12 +12,11 @@ import java.io.IOException;
  *
  * It should be thread safe and can be used by multiple-threads.
  *
- * @param <HK> The type for hash keys, must implement SelfSerializable
  * @param <LP> The type for leaf paths, must implement SelfSerializable
  * @param <LK> The type for leaf keys, must implement SelfSerializable
  * @param <LV> The type for leaf data, must implement SelfSerializable
  */
-public interface FCVirtualMapDataStore<HK extends SelfSerializable, LK extends SelfSerializable,
+public interface FCVirtualMapLeafStore<LK extends SelfSerializable,
         LP extends SelfSerializable, LV extends SelfSerializable>
         extends FastCopyable {
 
@@ -98,37 +97,6 @@ public interface FCVirtualMapDataStore<HK extends SelfSerializable, LK extends S
      */
     void saveLeaf(LK leafKey, LP leafPath, LV leafData) throws IOException;
 
-    /**
-     * Check if this store contains a hash by key
-     *
-     * @param hashKey The key of the hash to check for
-     * @return true if that hash is stored, false if it is not known
-     */
-    boolean containsHash(HK hashKey);
-
-    /**
-     * Delete a stored hash from storage, if it is stored.
-     *
-     * @param hashKey The key of the hash to delete
-     */
-    void deleteHash(HK hashKey);
-
-    /**
-     * Load a tree hash node from storage
-     *
-     * @param hashKey The key of the hash to find and load
-     * @return a loaded VirtualTreeInternal with path and hash set or null if not found
-     */
-    Hash loadHash(HK hashKey) throws IOException;
-
-    /**
-     * Save the hash for a imaginary hash node into storage
-     *
-     * @param hashKey The key of the hash to save
-     * @param hashData The hash's data to store
-     */
-    void saveHash(HK hashKey, Hash hashData) throws IOException;
-
     @Override
-    FCVirtualMapDataStore<HK, LK, LP, LV> copy();
+    FCVirtualMapLeafStore<LK, LP, LV> copy();
 }

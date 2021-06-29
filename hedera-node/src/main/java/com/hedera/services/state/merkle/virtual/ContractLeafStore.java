@@ -1,33 +1,30 @@
 package com.hedera.services.state.merkle.virtual;
 
-import com.hedera.services.state.merkle.virtual.persistence.FCVirtualMapDataStore;
+import com.hedera.services.state.merkle.virtual.persistence.FCVirtualMapLeafStore;
 import com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCSlotIndexUsingFCHashMap;
-import com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCVirtualMapDataStoreImpl;
+import com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCVirtualMapLeafStoreImpl;
 import com.hedera.services.state.merkle.virtual.persistence.fcmmap.MemMapSlotStore;
 import com.hedera.services.store.models.Id;
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.fcmap.FCDataSource;
+import com.swirlds.fcmap.FCLeafStore;
 import com.swirlds.fcmap.FCVirtualRecord;
 
 import java.io.IOException;
 import java.nio.file.Path;
 
-public class ContractDataSource implements FCDataSource<ContractUint256, ContractUint256> {
+public class ContractLeafStore implements FCLeafStore<ContractUint256, ContractUint256> {
     private final Id contractId;
-    private final FCVirtualMapDataStore<ContractPath, ContractKey, ContractPath, ContractUint256> dataStore;
+    private final FCVirtualMapLeafStore<ContractKey, ContractPath, ContractUint256> dataStore;
 
-    public ContractDataSource(Id contractId) {
+    public ContractLeafStore(Id contractId) {
         this.contractId = contractId;
-        this.dataStore = new FCVirtualMapDataStoreImpl<>(
+        this.dataStore = new FCVirtualMapLeafStoreImpl<>(
                 Path.of("data/contract-storage"),
                 256,
-                ContractPath.SERIALIZED_SIZE,
                 ContractKey.SERIALIZED_SIZE,
                 ContractPath.SERIALIZED_SIZE,
                 ContractUint256.SERIALIZED_SIZE,
-                FCSlotIndexUsingFCHashMap::new,
-                FCSlotIndexUsingFCHashMap::new,
-                FCSlotIndexUsingFCHashMap::new,
+                new FCSlotIndexUsingFCHashMap<>(),
+                new FCSlotIndexUsingFCHashMap<>(),
                 ContractKey::new,
                 ContractPath::new,
                 ContractUint256::new,
@@ -41,33 +38,9 @@ public class ContractDataSource implements FCDataSource<ContractUint256, Contrac
         }
     }
 
-    private ContractDataSource(ContractDataSource copyFrom) {
+    private ContractLeafStore(ContractLeafStore copyFrom) {
         this.contractId = copyFrom.contractId;
         this.dataStore = copyFrom.dataStore.copy();
-    }
-
-    @Override
-    public Hash loadHash(long path) {
-        try {
-            return dataStore.loadHash(new ContractPath(contractId, path));
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    @Override
-    public void saveHash(long path, Hash hash) {
-        try {
-            dataStore.saveHash(new ContractPath(contractId, path), hash);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    public void deleteHash(long path) {
-        dataStore.deleteHash(new ContractPath(contractId, path));
     }
 
     @Override
@@ -131,8 +104,8 @@ public class ContractDataSource implements FCDataSource<ContractUint256, Contrac
     }
 
     @Override
-    public FCDataSource<ContractUint256, ContractUint256> copy() {
-        return new ContractDataSource(this);
+    public FCLeafStore<ContractUint256, ContractUint256> copy() {
+        return new ContractLeafStore(this);
     }
 
     @Override

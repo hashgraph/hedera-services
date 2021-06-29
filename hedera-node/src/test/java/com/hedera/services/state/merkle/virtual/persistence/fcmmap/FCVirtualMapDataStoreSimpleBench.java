@@ -1,7 +1,7 @@
 package com.hedera.services.state.merkle.virtual.persistence.fcmmap;
 
 import com.hedera.services.state.merkle.virtual.persistence.FCSlotIndex;
-import com.hedera.services.state.merkle.virtual.persistence.FCVirtualMapDataStore;
+import com.hedera.services.state.merkle.virtual.persistence.FCVirtualMapLeafStore;
 import com.hedera.services.state.merkle.virtual.persistence.SlotStore;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.merkle.utility.SerializableLong;
@@ -44,7 +44,7 @@ public class FCVirtualMapDataStoreSimpleBench {
         private String slotStoreImpl;
 
         // state
-        public FCVirtualMapDataStore<SerializableLong, SerializableAccount, SerializableLong, TestLeafData> store;
+        public FCVirtualMapLeafStore<SerializableAccount, SerializableLong, TestLeafData> store;
         public Random random = new Random(1234);
         public int iteration = 0;
 
@@ -62,10 +62,9 @@ public class FCVirtualMapDataStoreSimpleBench {
                 // get slot store suppler
                 Supplier<SlotStore> slotStoreSupplier = supplerFromClass(slotStoreImpl);
                 // create and open store
-                store = new FCVirtualMapDataStoreImpl<>(STORE_PATH, 10,
-                        8,
+                store = new FCVirtualMapLeafStoreImpl<>(STORE_PATH, 10,
                         8 * 3, 8, TestLeafData.SIZE_BYTES,
-                        longSlotIndexProvider, longSlotIndexProvider, accountIndexProvider,
+                        longSlotIndexProvider.get(), accountIndexProvider.get(),
                         SerializableAccount::new, SerializableLong::new, TestLeafData::new, slotStoreSupplier);
                 store.open();
                 // reset iteration counter

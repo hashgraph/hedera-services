@@ -2,7 +2,7 @@ package com.hedera.services.state.merkle.virtual.persistence.fcmmap;
 
 import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.virtual.persistence.FCSlotIndex;
-import com.hedera.services.state.merkle.virtual.persistence.FCVirtualMapDataStore;
+import com.hedera.services.state.merkle.virtual.persistence.FCVirtualMapLeafStore;
 import com.hedera.services.state.merkle.virtual.persistence.SlotStore;
 import com.hedera.services.state.submerkle.EntityId;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -51,7 +51,7 @@ public class FCVMDS_Leaf_Random_Read_Bench {
         private int dataSetSize;
 
         // state
-        public FCVirtualMapDataStore<SerializableLong, SerializableAccount, SerializableLong, MerkleAccountState> store;
+        public FCVirtualMapLeafStore<SerializableAccount, SerializableLong, MerkleAccountState> store;
         public Random random = new Random(1234);
 
         @Setup(Level.Trial)
@@ -75,10 +75,9 @@ public class FCVMDS_Leaf_Random_Read_Bench {
                 // measure the size of a MerkleAccountState
                 int sizeOfMerkleAccountState = measureLengthOfSerializable(createRandomMerkleAccountState(1, random));
                 // create and open store
-                store = new FCVirtualMapDataStoreImpl<SerializableLong, SerializableAccount, SerializableLong, MerkleAccountState>(STORE_PATH, 1024,
-                        8,
+                store = new FCVirtualMapLeafStoreImpl<SerializableAccount, SerializableLong, MerkleAccountState>(STORE_PATH, 1024,
                         8 * 3, 8, sizeOfMerkleAccountState,
-                        longSlotIndexProvider, longSlotIndexProvider, accountIndexProvider,
+                        longSlotIndexProvider.get(), accountIndexProvider.get(),
                         SerializableAccount::new, SerializableLong::new, MerkleAccountState::new, slotStoreSupplier);
                 store.open();
                 // create some data
