@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Random;
 
@@ -24,6 +25,7 @@ public class BinFileTest {
 
     private static Path getTempFile() throws IOException {
         File tempFile = File.createTempFile("BinFileTest",".dat");
+        System.out.println("tempFile = " + tempFile.getAbsolutePath());
         tempFile.deleteOnExit();
         return tempFile.toPath();
     }
@@ -34,8 +36,11 @@ public class BinFileTest {
     @Test
     public void createSomeDataAndReadBack() throws IOException {
         final int COUNT = 10_000;
+//        final int COUNT = 1;
         // create and open file
-        BinFile<SerializableLong> binFile = new BinFile<>(getTempFile(),8,100,20,20);
+        Path file = getTempFile();
+        BinFile<SerializableLong> binFile = new BinFile<>(file,8,150,100,20);
+        System.out.printf("BinFile size: %,.1f Mb\n",(double) Files.size(file)/(1024d*1024d));
         // create some data for a number of accounts
         for (int i = 0; i < COUNT; i++) {
             SerializableLong key = new SerializableLong(i);

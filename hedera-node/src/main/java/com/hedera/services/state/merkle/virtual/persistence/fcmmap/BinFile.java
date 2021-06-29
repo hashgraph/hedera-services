@@ -91,6 +91,7 @@ public final class BinFile<K extends SelfSerializable> {
     private final MappedByteBuffer mappedBuffer;
     private final PositionableByteBufferSerializableDataOutputStream outputStream;
     private final PositionableByteBufferSerializableDataInputStream inputStream;
+    private final int numOfKeysPerBin;
     private final int numOfBinsPerFile;
     private final int maxNumberOfMutations;
     /** Size of a bin in bytes */
@@ -115,6 +116,7 @@ public final class BinFile<K extends SelfSerializable> {
      * @throws IOException if there was a problem opening the file
      */
     public BinFile(Path file, int keySizeBytes, int numOfKeysPerBin, int numOfBinsPerFile, int maxNumberOfMutations) throws IOException {
+        this.numOfKeysPerBin = numOfKeysPerBin;
         this.numOfBinsPerFile = numOfBinsPerFile;
         this.maxNumberOfMutations = maxNumberOfMutations;
         // calculate size of key,mutation store which contains:
@@ -135,7 +137,7 @@ public final class BinFile<K extends SelfSerializable> {
         }
         // get file channel and memory map the file
         fileChannel = randomAccessFile.getChannel();
-        mappedBuffer = fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, fileChannel.size());
+        mappedBuffer = fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, fileSize);
         // mark file as open
         fileIsOpen = true;
         // create streams
@@ -189,7 +191,7 @@ public final class BinFile<K extends SelfSerializable> {
         synchronized (mappedBuffer) {
             EntryReference entry = getOrCreateEntry(keySubHash, key);
             // so we now have a entry, existing or a new one we just have to add/update the version in mutation queue
-            long oldValue = writeValueIntoMutationQue(entry.offset+queueOffsetInEntry, entry.wasCreated, version, value);
+            long oldValue = writeValueIntoMutationQueue(entry.offset+queueOffsetInEntry, entry.wasCreated, version, value);
             return oldValue != NOT_FOUND_LOCATION;
         }
     }
@@ -205,7 +207,7 @@ public final class BinFile<K extends SelfSerializable> {
     public long removeKey(long version, int keySubHash, K key) {
         synchronized (mappedBuffer) {
             EntryReference entry = getOrCreateEntry(keySubHash, key);
-            return writeValueIntoMutationQue(entry.offset+queueOffsetInEntry, entry.wasCreated, version, DELETED_POINTER);
+            return writeValueIntoMutationQueue(entry.offset+queueOffsetInEntry, entry.wasCreated, version, DELETED_POINTER);
         }
     }
 
@@ -253,7 +255,7 @@ public final class BinFile<K extends SelfSerializable> {
             // read hash
             final int readHash = mappedBuffer.getInt(keyQueueOffset);
             // dont need to check for EMPTY_ENTRY_HASH as it will never match keySubHash
-            if (readHash == keySubHash && keyEquals(keyQueueOffset,key)) {
+            if (readHash == keySubHash && keyEquals(keyQueueOffset+Integer.BYTES,key)) {
                 // we found the key
                 foundOffset = keyQueueOffset;
                 break;
@@ -303,7 +305,7 @@ public final class BinFile<K extends SelfSerializable> {
             }
             // see if we found one, if not append one on the end
             if (entryOffset == -1) {
-                if (entryCount >= maxNumberOfMutations) throw new RuntimeException("We have hit maxNumberOfMutations in BinFile.putSlot()");
+                if (entryCount >= numOfKeysPerBin) throw new RuntimeException("We have hit numOfKeysPerBin in BinFile.putSlot(), entryCount="+entryCount);
                 // find next entry index
                 @SuppressWarnings("UnnecessaryLocalVariable") final int nextEntryIndex = entryCount;
                 // increment entryCount
@@ -361,7 +363,7 @@ public final class BinFile<K extends SelfSerializable> {
      * @param value the value to save for version
      * @return
      */
-    private long writeValueIntoMutationQue(int mutationQueueOffset, boolean isEmptyMutationQueue, long version, long value) {
+    private long writeValueIntoMutationQueue(int mutationQueueOffset, boolean isEmptyMutationQueue, long version, long value) {
         int mutationCount = mappedBuffer.getInt(mutationQueueOffset);
         int mutationOffset;
         long oldSlotIndex = NOT_FOUND_LOCATION;
