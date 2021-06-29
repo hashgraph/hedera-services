@@ -121,7 +121,7 @@ public final class Ed25519PrivateKey {
 	/**
 	 * Get the public key counterpart of this private key to share with the hashgraph.
 	 *
-	 * @return Ed25519 public key
+	 * @return the Ed25519 public key counterpart of this private key
 	 */
 	public Ed25519PublicKey getPublicKey() {
 		if (publicKey == null) {

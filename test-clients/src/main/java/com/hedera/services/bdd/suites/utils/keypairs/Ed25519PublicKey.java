@@ -46,17 +46,17 @@ public final class Ed25519PublicKey {
 	}
 
 	/**
-	 * Convert a Ed25519PublicKey bytes into a java type {@link PublicKey}
+	 * Convert an Ed25519PublicKey bytes into a java type {@link PublicKey}
 	 *
-	 * @param ed25529KeyBytes
+	 * @param ed25519KeyBytes
 	 * 		given Ed25519PublicKey byte array
-	 * @return converted java type PublicKey from the given byte array
+	 * @return the converted java type {@link PublicKey} from the given byte array
 	 */
-	public static PublicKey convert(final byte[] ed25529KeyBytes) {
-		if (ed25529KeyBytes == null || ed25529KeyBytes.length < 1) {
+	public static PublicKey convert(final byte[] ed25519KeyBytes) {
+		if (ed25519KeyBytes == null || ed25519KeyBytes.length < 1) {
 			throw new IllegalArgumentException("Ed25519 byte array is empty.");
 		}
-		EdDSAPublicKeySpec pubKeySpec = new EdDSAPublicKeySpec(ed25529KeyBytes,
+		EdDSAPublicKeySpec pubKeySpec = new EdDSAPublicKeySpec(ed25519KeyBytes,
 				EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.ED_25519));
 		return new EdDSAPublicKey(pubKeySpec);
 	}

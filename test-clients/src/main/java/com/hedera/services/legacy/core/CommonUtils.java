@@ -60,7 +60,7 @@ public class CommonUtils {
 	public static void napMillis(long timeInMillis) {
 		try {
 			Thread.sleep(timeInMillis);
-		} catch (Exception e) {
+		} catch (Exception ignore) {
 		}
 	}
 
@@ -72,8 +72,8 @@ public class CommonUtils {
 	 */
 	public static void nap(int timeInSec) {
 		try {
-			Thread.sleep(timeInSec * 1000);
-		} catch (Exception e) {
+			Thread.sleep(timeInSec * 1000L);
+		} catch (Exception ignore) {
 		}
 	}
 
@@ -81,11 +81,11 @@ public class CommonUtils {
 	 * Write bytes to a file
 	 *
 	 * @param path
-	 * 		the file path to write bytes
+	 * 		the file path to write bytes to
 	 * @param data
 	 * 		the byte array to be written to the file
 	 * @throws IOException
-	 * 		exception caused if failed to write to file
+	 * 		when failing to write the byte array to the file
 	 */
 	public static void writeToFile(String path, byte[] data) throws IOException {
 		writeToFile(path, data, false);
@@ -95,13 +95,13 @@ public class CommonUtils {
 	 * Write bytes to a file
 	 *
 	 * @param path
-	 * 		the file path to write bytes
+	 * 		the file path to write bytes to
 	 * @param data
-	 * 		the byte array data
+	 * 		the byte array to be written to the file
 	 * @param append
-	 * 		if true contents will be written to end of file rather than beginning
+	 * 		the flag to control whether to append to or to overwrite the file current contents
 	 * @throws IOException
-	 * 		indicates a failure while writing to file
+	 * 		when failing to write the byte array to the file
 	 */
 	public static void writeToFile(String path, byte[] data, boolean append) throws IOException {
 		File f = new File(path);
@@ -147,7 +147,7 @@ public class CommonUtils {
 	}
 
 	/**
-	 * Copy given number of bytes from byte array
+	 * Copy a given number of bytes from a byte array
 	 *
 	 * @param start
 	 * 		starting position from which bytes need to be copied
@@ -170,11 +170,11 @@ public class CommonUtils {
 	 *
 	 * @param filePath
 	 * 		path of the small binary file
-	 * @return byte array of all content in the file
+	 * @return the byte array of the file contents
 	 * @throws IOException
-	 * 		indicates failure while reading the file
+	 * 		when failing to read the file
 	 * @throws URISyntaxException
-	 * 		indicates the given file path could not be parsed as URI reference
+	 * 		when the given file path could not be parsed as a URI reference
 	 */
 	public static byte[] readBinaryFileAsResource(String filePath)
 			throws IOException, URISyntaxException {
@@ -213,9 +213,9 @@ public class CommonUtils {
 	 * 		calling class type
 	 * @return all bytes read from the resource file
 	 * @throws IOException
-	 * 		indicates failure while reading the file
+	 * 		when failing to read the file
 	 * @throws URISyntaxException
-	 * 		indicates the given file path could not be parsed as URI reference
+	 * 		when the given file path could not be parsed as a URI reference
 	 */
 	public static <T> byte[] readBinaryFileAsResource(String filePath, Class<T> myClass)
 			throws IOException, URISyntaxException {
@@ -224,7 +224,7 @@ public class CommonUtils {
 	}
 
 	/**
-	 * Calculates 20 bytes Solidity Address
+	 * Calculates the hex string of a 20-byte solidity address
 	 *
 	 * @param indicator
 	 * 		indicator value
@@ -232,7 +232,7 @@ public class CommonUtils {
 	 * 		realm number
 	 * @param accountNum
 	 * 		solidity contract number
-	 * @return hex string of the calculated solidity address
+	 * @return the hex string of the 20-byte solidity address
 	 */
 	public static String calculateSolidityAddress(int indicator, long realmNum, long accountNum) {
 		byte[] solidityByteArray = new byte[20];

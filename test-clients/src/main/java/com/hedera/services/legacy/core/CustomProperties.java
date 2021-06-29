@@ -41,7 +41,7 @@ public class CustomProperties {
 	private Properties customProperties = new Properties();
 
 	/**
-	 * Read custom properties from a file path.
+	 * Reads custom properties from a file path.
 	 *
 	 * @param file
 	 * 		the properties file to be read, if null, customProperties will be empty.
@@ -78,7 +78,7 @@ public class CustomProperties {
 	}
 
 	/**
-	 * Retrieve the string value of the property matching the given name.
+	 * Retrieves the string value of the property matching the given name.
 	 *
 	 * @param name
 	 * 		the key of the property to be retrieved
@@ -96,13 +96,13 @@ public class CustomProperties {
 	}
 
 	/**
-	 * Retrieve the int value of the property matching the given name.
+	 * Retrieves the int value of the property matching the given name.
 	 *
 	 * @param name
 	 * 		the key of the property to be retrieved
 	 * @param defaultValue
-	 * 		default value to be returned if the value retrieved is not parsable integer which results in {@link
-	 *        NumberFormatException}
+	 * 		default value to be returned if the named property does not exist or
+	 * 		the value retrieved is not a parsable integer which results in {@link NumberFormatException}
 	 * @return int value of the property
 	 */
 	public int getInt(String name, int defaultValue) {
@@ -117,13 +117,13 @@ public class CustomProperties {
 
 
 	/**
-	 * Retrieve the long value of the property matching the given name.
+	 * Retrieves the long value of the property matching the given name.
 	 *
 	 * @param name
 	 * 		the key of the property to be retrieved
 	 * @param defaultValue
-	 * 		default value to be returned if the named property does not exist or if the value retrieved is not parsable
-	 * 		long which results in {@link NumberFormatException}
+	 * 		default value to be returned if the named property does not exist or
+	 * 		the value retrieved is not a parsable long which results in {@link NumberFormatException}
 	 * @return long value of the property
 	 */
 	public long getLong(String name, long defaultValue) {

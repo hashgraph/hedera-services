@@ -45,14 +45,13 @@ public class HexUtils {
 	}
 
 	/**
-	 * Convert hex string to bytes
+	 * Converts hex string to bytes.
 	 *
 	 * @param data
 	 * 		hex string to be converted
 	 * @return decoded byte array
 	 * @throws DecoderException
-	 * 		indicates failure while decoding the hex string, possibly because illegal characters are supplied in hex
-	 * 		string
+	 * 		when failing to decode the hex string, possibly because illegal characters are supplied in the hex string
 	 */
 	public static byte[] hexToBytes(String data) throws DecoderException {
 		byte[] rv = Hex.decodeHex(data);
@@ -80,12 +79,10 @@ public class HexUtils {
 	 * 		character set name for decoding, e.g. "UTF-8"
 	 * @return decoded string
 	 * @throws UnsupportedEncodingException
-	 * 		indicates that given character set name for decoding is not supported
+	 * 		on unsupported character set name for decoding
 	 */
 	public static String bytes2String(byte[] bytesData, String charsetName)
 			throws UnsupportedEncodingException {
-		String decodedDataUsing = new String(bytesData, charsetName);
-		System.out.println("Text decoded using UTF-8 : " + decodedDataUsing);
-		return decodedDataUsing;
+		return new String(bytesData, charsetName);
 	}
 }

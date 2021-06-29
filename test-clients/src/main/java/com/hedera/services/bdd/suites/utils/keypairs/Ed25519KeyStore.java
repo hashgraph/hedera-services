@@ -106,9 +106,9 @@ public class Ed25519KeyStore extends ArrayList<KeyPair> implements KeyStore {
 	 *
 	 * @param source
 	 * 		source pem file to be loaded
-	 * @return Ed25519KeyStore after loading the source pem file
+	 * @return an {@link Ed25519KeyStore} after loading the source pem file
 	 * @throws KeyStoreException
-	 * 		indicates failure of loading pem file
+	 * 		when failing to load the source pem file
 	 */
 	public static Ed25519KeyStore read(final File source) throws KeyStoreException {
 		final Ed25519KeyStore keyStore = new Builder().build();

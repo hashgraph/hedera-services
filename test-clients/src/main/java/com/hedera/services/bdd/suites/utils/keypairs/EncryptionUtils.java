@@ -37,8 +37,8 @@ public class EncryptionUtils {
 	 * Build a KeyPair from Ed25519PrivateKey
 	 *
 	 * @param ed25519PrivateKey
-	 * 		given Ed25519PrivateKey private key
-	 * @return key pair built from the given private key
+	 * 		given Ed25519 private key
+	 * @return a key pair built from the given private key
 	 */
 	public static KeyPair buildKeyPairFromMainnetPrivateKey(final Ed25519PrivateKey ed25519PrivateKey) {
 		return buildKeyPairFromMainnetPriKeyEncHex(ed25519PrivateKey.toString());
@@ -49,7 +49,7 @@ public class EncryptionUtils {
 	 *
 	 * @param priKeyEncHex
 	 * 		private key string in its encoded hex format
-	 * @return key pair built from the given encoded hex format
+	 * @return a key pair built from the given encoded hex string
 	 */
 	private static KeyPair buildKeyPairFromMainnetPriKeyEncHex(final String priKeyEncHex) {
 		byte[] privateKeyBytes = Hex.decode(priKeyEncHex);
