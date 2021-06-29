@@ -875,10 +875,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		return exists(tId) ? OK : INVALID_TOKEN_ID;
 	}
 
-	private boolean signsMatch(long a, long b) {
-		return (a < 0 && b < 0) || (a > 0 && b > 0);
-	}
-
 	Map<AccountID, Set<TokenID>> getKnownTreasuries() {
 		return knownTreasuries;
 	}
