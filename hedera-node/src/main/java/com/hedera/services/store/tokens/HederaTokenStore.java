@@ -531,6 +531,10 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		return OK;
 	}
 
+	private boolean signsMatch(long a, long b) {
+		return (a < 0 && b < 0) || (a > 0 && b > 0);
+	}
+
 	public void addKnownTreasury(AccountID aId, TokenID tId) {
 		knownTreasuries.computeIfAbsent(aId, ignore -> new HashSet<>()).add(tId);
 	}
