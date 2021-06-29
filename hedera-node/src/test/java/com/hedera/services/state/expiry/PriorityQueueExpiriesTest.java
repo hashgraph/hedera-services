@@ -23,6 +23,9 @@ package com.hedera.services.state.expiry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -112,5 +115,68 @@ class PriorityQueueExpiriesTest {
 	void noExpiringIfEmpty() {
 		// expect:
 		assertFalse(subject.hasExpiringAt(expiry1));
+	}
+
+	@Test
+	void expiryFromNewPqWithDifferentGrowthOrderIsDeterministic() {
+		// setup:
+		/* Total number of expiring events to put in the PriorityQueueExpiries */
+		var entitiesToTrack = 33;
+		/* Number of consecutive events with the same expiration time. */
+		var reuseOfEachExpiryTime = 3;
+		/* Number of events to expire before putting what is left over in a second priority queue */
+		var entitiesToRemoveBeforeRebuild = 12;
+
+		// given:
+		long startTime = 1L;
+		List<ExpiryEvent<String>> events =
+				buildTestEvents(entitiesToTrack, reuseOfEachExpiryTime, startTime);
+		// and:
+		var fullPq = pqFrom(events);
+
+		// when:
+		for (int i = 0; i < entitiesToRemoveBeforeRebuild; i++) {
+			long now = events.get(i).getExpiry();
+			fullPq.expireNextAt(now);
+		}
+		// and:
+		var partialPq = pqFrom(events.subList(entitiesToRemoveBeforeRebuild, entitiesToTrack));
+
+		// then:
+		for (int i = entitiesToRemoveBeforeRebuild; i < entitiesToTrack; i++) {
+			long now = events.get(i).getExpiry();
+			var fromFull = fullPq.expireNextAt(now);
+			var fromPartial = partialPq.expireNextAt(now);
+			assertEquals(fromFull, fromPartial,
+					"The purge order of keys with the same expiry should be deterministic");
+		}
+	}
+
+	private PriorityQueueExpiries<String> pqFrom(List<ExpiryEvent<String>> events) {
+		System.out.println("Building a queue from " + events);
+		var pq = new PriorityQueueExpiries<String>();
+		for (var event : events) {
+			pq.track(event.getId(), event.getExpiry());
+		}
+		return pq;
+	}
+
+	private List<ExpiryEvent<String>> buildTestEvents(int n, int reuses, long start) {
+		List<ExpiryEvent<String>> events = new ArrayList<>();
+		var id = 0;
+		var now = start;
+		var reusesLeft = reuses;
+		while (n > 0) {
+			var name = "Event" + (id++);
+			if (reusesLeft == 0) {
+				now++;
+				reusesLeft = reuses;
+			} else {
+				reusesLeft--;
+			}
+			events.add(new ExpiryEvent<>(name, now));
+			n--;
+		}
+		return events;
 	}
 }
