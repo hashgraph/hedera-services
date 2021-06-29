@@ -134,8 +134,11 @@ public final class FCSlotIndexUsingMemMapFile<K extends SelfSerializable> implem
         referenceCount.incrementAndGet(); // add this class as a new reference
         // set our incremental version
         version = toCopy.version + 1;
+        // tell files version has changed
+        for (BinFile<K> file : files) {
+            file.versionChanged(toCopy.version, version);
+        }
     }
-
 
     //==================================================================================================================
     // FastCopy Implementation
@@ -152,12 +155,13 @@ public final class FCSlotIndexUsingMemMapFile<K extends SelfSerializable> implem
     @Override
     public void release() {
         isReleased.set(true);
-        // TODO what else here
-        // TODO need to remove all mutations of this version and clean up
+        // release version in all files
+        for(BinFile<K> file:files) {
+            file.releaseVersion(version);
+        }
         // if we were the last reference then close all the files
         if (referenceCount.decrementAndGet() <= 0){
-            for (int i = 0; i < files.length; i++) {
-                var file = files[i];
+            for (BinFile<K> file : files) {
                 try {
                     file.close();
                 } catch (IOException e) {
