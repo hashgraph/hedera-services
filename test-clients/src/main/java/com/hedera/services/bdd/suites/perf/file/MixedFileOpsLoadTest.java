@@ -40,6 +40,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
+
 /**
  * Run mixed operations including FileCreate, FileAppend, FileUpdate
  */
@@ -73,20 +76,23 @@ public class MixedFileOpsLoadTest extends LoadTest {
 		String targetFile = "targetFile";
 
 		Supplier<HapiSpecOperation[]> mixedFileOpsBurst = () -> new HapiSpecOperation[] {
-				fileCreate(targetFile + submittedSoFar.getAndIncrement()).contents(initialContent),
+				fileCreate(targetFile + submittedSoFar.getAndIncrement())
+						.contents(initialContent)
+						.hasKnownStatusFrom(SUCCESS, UNKNOWN),
 				fileUpdate(targetFile)
 						.fee(ONE_HUNDRED_HBARS)
 						.contents(TxnUtils.randomUtf8Bytes(TxnUtils.BYTES_4K))
 						.noLogging()
 						.payingWith(GENESIS)
 						.hasAnyPrecheck()
+						.hasKnownStatusFrom(SUCCESS, UNKNOWN)
 						.deferStatusResolution(),
 				fileAppend(targetFile)
 						.content("dummy")
 						.hasAnyPrecheck()
 						.payingWith(GENESIS)
 						.fee(ONE_HUNDRED_HBARS)
-						.logging()
+						.hasKnownStatusFrom(SUCCESS, UNKNOWN)
 						.deferStatusResolution()
 		};
 
