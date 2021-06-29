@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class CryptoTransferMetaTest {
 	@Test
-	void setterWorks() {
+	void setterWith2ParamsWorks() {
 		final var subject = new CryptoTransferMeta(1, 2);
 
 		// when:
@@ -34,5 +34,25 @@ class CryptoTransferMetaTest {
 
 		// then:
 		assertEquals(3, subject.getTokenMultiplier());
+		assertEquals(1, subject.getNumTokensInvolved());
+		assertEquals(2, subject.getNumTokenTransfers());
+	}
+
+	@Test
+	void setterWith3ParamsWorks() {
+		final var subject = new CryptoTransferMeta(1, 2, 3);
+
+		// when:
+		subject.setCustomFeeHbarTransfers(10);
+		subject.setCustomFeeTokenTransfers(5);
+		subject.setCustomFeeTokensInvolved(2);
+
+		// then:
+		assertEquals(1, subject.getTokenMultiplier());
+		assertEquals(3, subject.getNumTokenTransfers());
+		assertEquals(2, subject.getNumTokensInvolved());
+		assertEquals(2, subject.getCustomFeeTokensInvolved());
+		assertEquals(5, subject.getCustomFeeTokenTransfers());
+		assertEquals(10, subject.getCustomFeeHbarTransfers());
 	}
 }

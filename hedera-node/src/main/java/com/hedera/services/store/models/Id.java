@@ -21,6 +21,7 @@ package com.hedera.services.store.models;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 
@@ -34,10 +35,20 @@ public class Id {
 	private final long realm;
 	private final long num;
 
+	public static final Id MISSING_ID = new Id(0, 0, 0);
+
 	public Id(long shard, long realm, long num) {
 		this.shard = shard;
 		this.realm = realm;
 		this.num = num;
+	}
+
+	public AccountID asGrpcAccount() {
+		return AccountID.newBuilder()
+				.setShardNum(getShard())
+				.setRealmNum(getRealm())
+				.setAccountNum(getNum())
+				.build();
 	}
 
 	public TokenID asGrpcToken() {
@@ -95,5 +106,9 @@ public class Id {
 				.add("realm", realm)
 				.add("num", num)
 				.toString();
+	}
+
+	public EntityId asEntityId() {
+		return new EntityId(shard, realm, num);
 	}
 }

@@ -43,8 +43,15 @@ import java.util.List;
  * related Transactions and Query.
  */
 public class SmartContractFeeBuilder extends FeeBuilder {
+
 	/**
-	 * This method returns Fee Matrices for Contract Create Transaction
+	 * This method returns fee matrices for contract create transaction
+	 *
+	 * @param txBody transaction body
+	 * @param sigValObj signature value object
+	 *
+	 * @return fee data
+	 * @throws InvalidTxBodyException when transaction body is invalid
 	 */
 	public FeeData getContractCreateTxFeeMatrices(TransactionBody txBody, SigValueObj sigValObj)
 			throws InvalidTxBodyException {
@@ -128,7 +135,14 @@ public class SmartContractFeeBuilder extends FeeBuilder {
 	}
 
 	/**
-	 * This method returns Fee Matrices for Contract Update Transaction
+	 * This method returns fee matrices for contract update transaction
+	 *
+	 * @param txBody transaction body
+	 * @param contractExpiryTime contract expiration time
+	 * @param sigValObj signature value object
+	 *
+	 * @return fee data
+	 * @throws InvalidTxBodyException when transaction body is invalid
 	 */
 	public FeeData getContractUpdateTxFeeMatrices(TransactionBody txBody,
 			Timestamp contractExpiryTime, SigValueObj sigValObj) throws InvalidTxBodyException {
@@ -171,9 +185,14 @@ public class SmartContractFeeBuilder extends FeeBuilder {
 		return getFeeDataMatrices(feeMatricesForTx, sigValObj.getPayerAcctSigCount(), rbsNetwork);
 	}
 
-
 	/**
-	 * This method returns Fee Matrices for Contract Call Transaction
+	 * This method returns fee matrices for contract call transaction
+	 *
+	 * @param txBody transaction body
+	 * @param sigValObj signature value object
+	 * @return fee data
+	 *
+	 * @throws InvalidTxBodyException when transaction body is invalid
 	 */
 	public FeeData getContractCallTxFeeMatrices(TransactionBody txBody, SigValueObj sigValObj)
 			throws InvalidTxBodyException {
@@ -212,9 +231,14 @@ public class SmartContractFeeBuilder extends FeeBuilder {
 
 	}
 
-
 	/**
-	 * This method returns Fee Matrices for Contract Call Local
+	 * This method returns fee matrices for contract call local
+	 *
+	 * @param funcParamSize function parameter size
+	 * @param contractFuncResult contract function result
+	 * @param responseType response type
+	 *
+	 * @return fee data
 	 */
 	public FeeData getContractCallLocalFeeMatrices(int funcParamSize,
 			ContractFunctionResult contractFuncResult, ResponseType responseType) {
@@ -272,7 +296,11 @@ public class SmartContractFeeBuilder extends FeeBuilder {
 	}
 
 	/**
-	 * This method returns Fee Matrices for Contract Call Local
+	 * This method returns fee matrices for contract call local
+	 *
+	 * @param funcParamSize function parameter size
+	 *
+	 * @return fee data
 	 */
 	public FeeData getCostContractCallLocalFeeMatrices(int funcParamSize) {
 
@@ -376,7 +404,12 @@ public class SmartContractFeeBuilder extends FeeBuilder {
 	}
 
 	/**
-	 * This method returns the Fee Matrices for Contract Byte Code Query
+	 * This method returns the fee matrices for contract byte code query
+	 *
+	 * @param byteCodeSize byte code size
+	 * @param responseType response type
+	 *
+	 * @return fee data
 	 */
 	public FeeData getContractByteCodeQueryFeeMatrices(int byteCodeSize, ResponseType responseType) {
 
