@@ -409,7 +409,7 @@ class StateViewTest {
 		assertEquals(token.treasury().toGrpcAccountId(), info.getTreasury());
 		assertEquals(token.totalSupply(), info.getTotalSupply());
 		assertEquals(token.decimals(), info.getDecimals());
-//		assertEquals(token.customFeeSchedule(), MerkleToken.customFeesFromGrpc(info.getCustomFees()));
+		assertEquals(token.grpcFeeSchedule(), info.getCustomFees());
 		assertEquals(TOKEN_ADMIN_KT.asKey(), info.getAdminKey());
 		assertEquals(TOKEN_FREEZE_KT.asKey(), info.getFreezeKey());
 		assertEquals(TOKEN_KYC_KT.asKey(), info.getKycKey());

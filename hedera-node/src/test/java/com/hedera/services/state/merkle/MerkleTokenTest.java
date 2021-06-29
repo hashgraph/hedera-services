@@ -631,4 +631,14 @@ class MerkleTokenTest {
 		// then:
 		assertEquals(subject, newSubject);
 	}
+
+	@Test
+	void returnCorrectGrpcFeeSchedule() {
+		final var token = new MerkleToken(
+				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
+		assertEquals(CustomFeesOuterClass.CustomFees.getDefaultInstance(), token.grpcFeeSchedule());
+
+		token.setFeeScheduleFrom(grpcFeeSchedule);
+		assertEquals(grpcFeeSchedule, token.grpcFeeSchedule());
+	}
 }
