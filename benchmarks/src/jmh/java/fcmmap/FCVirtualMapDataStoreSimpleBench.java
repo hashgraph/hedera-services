@@ -1,8 +1,9 @@
-package com.hedera.services.state.merkle.virtual.persistence.fcmmap;
+package fcmmap;
 
 import com.hedera.services.state.merkle.virtual.persistence.FCSlotIndex;
 import com.hedera.services.state.merkle.virtual.persistence.FCVirtualMapLeafStore;
 import com.hedera.services.state.merkle.virtual.persistence.SlotStore;
+import com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCVirtualMapLeafStoreImpl;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import org.openjdk.jmh.annotations.*;
@@ -13,7 +14,7 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import static com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCVirtualMapTestUtils.*;
+import static fcmmap.FCVirtualMapTestUtils.*;
 
 /**
  * Microbenchmark tests for the FCVirtualMapDataStore.
@@ -53,14 +54,14 @@ public class FCVirtualMapDataStoreSimpleBench {
             System.out.println("FCVirtualMapDataStoreBench.cleanAndCreate");
             try {
                 // delete any old store
-                deleteDirectoryAndContents(STORE_PATH);
+                FCVirtualMapTestUtils.deleteDirectoryAndContents(STORE_PATH);
                 // create new store dir
                 Files.createDirectories(STORE_PATH);
                 // get slot index suppliers
-                Supplier<FCSlotIndex<SerializableLong>> longSlotIndexProvider = supplerFromClass(fcSlotIndexImpl);
-                Supplier<FCSlotIndex<SerializableAccount>> accountIndexProvider = supplerFromClass(fcSlotIndexImpl);
+                Supplier<FCSlotIndex<SerializableLong>> longSlotIndexProvider = FCVirtualMapTestUtils.supplerFromClass(fcSlotIndexImpl);
+                Supplier<FCSlotIndex<SerializableAccount>> accountIndexProvider = FCVirtualMapTestUtils.supplerFromClass(fcSlotIndexImpl);
                 // get slot store suppler
-                Supplier<SlotStore> slotStoreSupplier = supplerFromClass(slotStoreImpl);
+                Supplier<SlotStore> slotStoreSupplier = FCVirtualMapTestUtils.supplerFromClass(slotStoreImpl);
                 // create and open store
                 store = new FCVirtualMapLeafStoreImpl<>(STORE_PATH, 10,
                         8 * 3, 8, TestLeafData.SIZE_BYTES,
@@ -78,7 +79,7 @@ public class FCVirtualMapDataStoreSimpleBench {
         public void tearDown() {
             System.out.println("store.leafCount() = " + store.leafCount());
             store.release();
-            printDirectorySize(STORE_PATH);
+            FCVirtualMapTestUtils.printDirectorySize(STORE_PATH);
         }
     }
 

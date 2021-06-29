@@ -1,9 +1,10 @@
-package com.hedera.services.state.merkle.virtual.persistence.fcmmap;
+package fcmmap;
 
 import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.virtual.persistence.FCSlotIndex;
 import com.hedera.services.state.merkle.virtual.persistence.FCVirtualMapLeafStore;
 import com.hedera.services.state.merkle.virtual.persistence.SlotStore;
+import com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCVirtualMapLeafStoreImpl;
 import com.hedera.services.state.submerkle.EntityId;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -17,7 +18,7 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import static com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCVirtualMapTestUtils.*;
+import fcmmap.FCVirtualMapTestUtils.*;
 
 /**
  * Microbenchmark tests for the FCVirtualMapDataStore.
@@ -64,16 +65,16 @@ public class FCVMDS_Leaf_Random_Read_Bench {
             }
             try {
                 // delete any old store
-                deleteDirectoryAndContents(STORE_PATH);
+                FCVirtualMapTestUtils.deleteDirectoryAndContents(STORE_PATH);
                 // create new store dir
                 Files.createDirectories(STORE_PATH);
                 // get slot index suppliers
-                Supplier<FCSlotIndex<SerializableLong>> longSlotIndexProvider = supplerFromClass(fcSlotIndexImpl);
-                Supplier<FCSlotIndex<SerializableAccount>> accountIndexProvider = supplerFromClass(fcSlotIndexImpl);
+                Supplier<FCSlotIndex<SerializableLong>> longSlotIndexProvider = FCVirtualMapTestUtils.supplerFromClass(fcSlotIndexImpl);
+                Supplier<FCSlotIndex<SerializableAccount>> accountIndexProvider = FCVirtualMapTestUtils.supplerFromClass(fcSlotIndexImpl);
                 // get slot store suppler
-                Supplier<SlotStore> slotStoreSupplier = supplerFromClass(slotStoreImpl);
+                Supplier<SlotStore> slotStoreSupplier = FCVirtualMapTestUtils.supplerFromClass(slotStoreImpl);
                 // measure the size of a MerkleAccountState
-                int sizeOfMerkleAccountState = measureLengthOfSerializable(createRandomMerkleAccountState(1, random));
+                int sizeOfMerkleAccountState = FCVirtualMapTestUtils.measureLengthOfSerializable(FCVirtualMapTestUtils.createRandomMerkleAccountState(1, random));
                 // create and open store
                 store = new FCVirtualMapLeafStoreImpl<SerializableAccount, SerializableLong, MerkleAccountState>(STORE_PATH, 1024,
                         8 * 3, 8, sizeOfMerkleAccountState,
@@ -85,7 +86,7 @@ public class FCVMDS_Leaf_Random_Read_Bench {
                     if ((i % (dataSetSize/10)) ==0) System.out.println("Created "+i+" leaves...");
                     store.saveLeaf(
                             new SerializableAccount(i,i,i),
-                            new SerializableLong(i), createRandomMerkleAccountState(i, random));
+                            new SerializableLong(i), FCVirtualMapTestUtils.createRandomMerkleAccountState(i, random));
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -96,7 +97,7 @@ public class FCVMDS_Leaf_Random_Read_Bench {
         public void tearDown() {
             System.out.println("store.leafCount() = " + store.leafCount());
             store.release();
-            printDirectorySize(STORE_PATH);
+            FCVirtualMapTestUtils.printDirectorySize(STORE_PATH);
         }
     }
 
