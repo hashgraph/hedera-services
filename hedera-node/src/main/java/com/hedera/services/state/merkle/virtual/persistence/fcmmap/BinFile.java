@@ -34,6 +34,8 @@ public final class BinFile<K extends SelfSerializable> {
     /** a mutation in mutation queue size, consists of a Version long and slot location value long */
     private static final int MUTATION_SIZE = Long.BYTES * 2;
     private static final int MUTATION_QUEUE_HEADER_SIZE = Integer.BYTES;
+    private static final int TOMBSTONE = -1;
+
     /**
      * Special key for a hash for a empty entry. -1 is known to be safe as it is all ones and keys are always shifted
      * left at least 2 by FCSlotIndexUsingMemMapFile.
@@ -379,6 +381,8 @@ public final class BinFile<K extends SelfSerializable> {
                 // read the old slot value
                 oldSlotIndex = mappedBuffer.getLong(mutationOffset + Long.BYTES);
             } else { // new version
+                // clean out any old mutations that are no longer needed
+                sweepQueue(mutationQueueOffset);
                 // check we have not run out of mutations
                 if (mutationCount >= maxNumberOfMutations) throw new IllegalStateException("We ran out of mutations.");
                 // increment mutation count
@@ -392,6 +396,53 @@ public final class BinFile<K extends SelfSerializable> {
         // write value into mutation
         mappedBuffer.putLong(mutationOffset+Long.BYTES,value);
         return oldSlotIndex;
+    }
+
+    /**
+     * As part of a classic mark+sweep design, marks (tombstones) any mutation in the queue
+     * with the given version. A subsequent "sweep" will remove all released mutations that
+     * are no longer needed.
+     *
+     * @param mutationQueueOffset The offset of the mutation queue to process
+     * @param version The mutation version to try to TOMBSTONE.
+     */
+    private void markQueue(int mutationQueueOffset, long version) {
+        // Normally, copies are released in the order in which they were
+        // copied, which means I am more likely to iterate less if I
+        // start at the beginning of the queue (oldest) and work my way
+        // down towards the newest. I can terminate prematurely if the
+        // mutation I'm looking at is newer than my version.
+        final var mutationCount = mappedBuffer.getInt(mutationQueueOffset);
+        for (int i=0; i<mutationCount; i++) {
+            final var mutationOffset = getMutationOffset(mutationQueueOffset, i);
+            final var mutationVersion = mappedBuffer.getLong(mutationOffset);
+            if (mutationVersion == version) {
+                // This is the mutation. Mark it by setting the version to TOMBSTONE.
+                mappedBuffer.putLong(mutationOffset, TOMBSTONE);
+            } else if (mutationVersion > version) {
+                // There is no such mutation here (which is surprising, but maybe it got swept already).
+                return;
+            }
+        }
+    }
+
+    /**
+     * "Sweeps" all unneeded mutations from the queue, shifting all
+     * subsequent mutations left.
+     *
+     * @param mutationQueueOffset
+     */
+    private void sweepQueue(int mutationQueueOffset) {
+        // Look through the mutations and collect the indexes of each mutation that can be removed.
+        // Then move surviving mutations forward into the earliest available slots.
+        final var mutationCount = mappedBuffer.getInt(mutationQueueOffset);
+        for (int i=0; i<mutationCount; i++) {
+            final var mutationOffset = getMutationOffset(mutationQueueOffset, i);
+            final var mutationVersion = mappedBuffer.getLong(mutationOffset);
+            if (mutationVersion == TOMBSTONE) {
+                // This guy has been released...
+            }
+        }
     }
 
     private int getMutationOffset(int mutationQueueOffset, int mutationIndex) {
