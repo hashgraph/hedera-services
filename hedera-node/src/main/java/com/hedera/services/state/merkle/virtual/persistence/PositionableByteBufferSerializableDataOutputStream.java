@@ -70,8 +70,8 @@ public class PositionableByteBufferSerializableDataOutputStream extends Serializ
         @Override
         public void write (int b) throws IOException {
             if (!byteBuffer.hasRemaining()) flush(); // TODO no idea why, was in some example code
-            if(limit == 0) throw new IOException("ByteBufferOutputStream has hit limit.");
-            limit --;
+            if (limit == 0) throw new IOException("ByteBufferOutputStream has hit limit.");
+            if (limit > 0) limit --;
             byteBuffer.put((byte)b);
         }
 
@@ -84,8 +84,8 @@ public class PositionableByteBufferSerializableDataOutputStream extends Serializ
          * @throws IOException only if underlying byteBuffer throws
          */
         public void write (@NotNull byte[] bytes, int offset, int length) throws IOException {
-            if(limit > 0 && limit < length) throw new IOException("ByteBufferOutputStream has hit limit.");
-            limit -= length;
+            if (limit > 0 && limit < length) throw new IOException("ByteBufferOutputStream has hit limit.");
+            if (limit > 0) limit -= length;
             byteBuffer.put(bytes, offset, length);
         }
     }
