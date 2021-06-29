@@ -152,11 +152,4 @@ public class IdUtils {
 		return AssessedCustomFee.assessedHtsFeeFrom(token, adjustFrom(account, amount));
 	}
 
-	public static AssessedCustomFee hbarChangeForCustomFees(final AccountID account, final long amount) {
-		return AssessedCustomFee.assessedHbarFeeFrom(adjustFrom(account, amount));
-	}
-
-	public static AssessedCustomFee tokenChangeForCustomFees(final EntityId token, final AccountID account, final long amount) {
-		return AssessedCustomFee.assessedHtsFeeFrom(token, adjustFrom(account, amount));
-	}
 }
