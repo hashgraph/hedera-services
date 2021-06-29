@@ -30,9 +30,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+import proto.CustomFeesOuterClass;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
@@ -48,14 +48,17 @@ class FcmCustomFeeSchedulesTest {
 	private final MerkleToken tokenAValue = new MerkleToken();
 	private final MerkleToken tokenBValue = new MerkleToken();
 
-	List<CustomFee> tokenAFees = List.of(CustomFee.fixedFee(20L, tokenA, feeCollector));
-	List<CustomFee> tokenBFees = List.of(CustomFee.fixedFee(40L, tokenB, feeCollector));
-	List<CustomFee> missingFees = List.of(CustomFee.fixedFee(50L, missingToken, feeCollector));
 	@BeforeEach
 	void setUp() {
 		//setup:
-		tokenAValue.setFeeSchedule(tokenAFees);
-		tokenBValue.setFeeSchedule(tokenBFees);
+		final var tokenAFees = CustomFeesOuterClass.CustomFees
+				.newBuilder()
+				.addCustomFees(CustomFee.fixedFee(20L, tokenA, feeCollector).asGrpc());
+		final var tokenBFees = CustomFeesOuterClass.CustomFees
+				.newBuilder()
+				.addCustomFees(CustomFee.fixedFee(40L, tokenB, feeCollector).asGrpc());
+		tokenAValue.setFeeScheduleFrom(tokenAFees);
+		tokenBValue.setFeeScheduleFrom(tokenBFees);
 
 		tokenFCMap.put(tokenA.asMerkle(), tokenAValue);
 		tokenFCMap.put(tokenB.asMerkle(), tokenBValue);
@@ -85,7 +88,10 @@ class FcmCustomFeeSchedulesTest {
 		// given:
 		FCMap<MerkleEntityId, MerkleToken> secondFCMap = new FCMap<>();
 		MerkleToken token = new MerkleToken();
-		token.setFeeSchedule(missingFees);
+		final var missingFees = CustomFeesOuterClass.CustomFees
+				.newBuilder()
+				.addCustomFees(CustomFee.fixedFee(50L, missingToken, feeCollector).asGrpc());
+		token.setFeeScheduleFrom(missingFees);
 		secondFCMap.put(missingToken.asMerkle(), new MerkleToken());
 		final var fees1 = new FcmCustomFeeSchedules(() -> tokenFCMap);
 		final var fees2 = new FcmCustomFeeSchedules(() -> secondFCMap);

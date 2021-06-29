@@ -42,7 +42,6 @@ import proto.CustomFeesOuterClass;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 
 import static com.hedera.services.state.merkle.MerkleTopic.serdes;
@@ -109,6 +108,7 @@ class MerkleTokenTest {
 	final CustomFeesOuterClass.CustomFees grpcFeeSchedule = CustomFeesOuterClass.CustomFees.newBuilder()
 			.addCustomFees(fixedFee)
 			.addCustomFees(fractionalFee)
+			.setCanUpdateWithAdminKey(true)
 			.build();
 	final List<CustomFee> feeSchedule = grpcFeeSchedule.getCustomFeesList().stream()
 			.map(CustomFee::fromGrpc).collect(toList());
@@ -204,8 +204,7 @@ class MerkleTokenTest {
 	void v0120DeserializeWorks() throws IOException {
 		// setup:
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
-		subject.setFeeSchedule(Collections.emptyList());
-		subject.setFeeScheduleMutable(false);
+		subject.setFeeScheduleFrom(CustomFeesOuterClass.CustomFees.getDefaultInstance());
 
 		given(serdes.readNullableSerializable(any())).willReturn(autoRenewAccount);
 		given(serdes.deserializeKey(fin)).willReturn(adminKey);
@@ -532,8 +531,7 @@ class MerkleTokenTest {
 		token.setAutoRenewAccount(autoRenewAccount);
 		token.setAutoRenewPeriod(autoRenewPeriod);
 		token.setMemo(memo);
-		token.setFeeSchedule(feeSchedule);
-		token.setFeeScheduleMutable(true);
+		token.setFeeScheduleFrom(grpcFeeSchedule);
 	}
 
 	@Test
@@ -544,8 +542,6 @@ class MerkleTokenTest {
 		var identicalSubject = new MerkleToken(
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(identicalSubject);
-		identicalSubject.setDeleted(isDeleted);
-		identicalSubject.setFeeScheduleMutable(true);
 
 		// and:
 		other = new MerkleToken(

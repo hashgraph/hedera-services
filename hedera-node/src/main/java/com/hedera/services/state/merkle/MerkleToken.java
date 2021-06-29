@@ -351,14 +351,6 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		this.wipeKey = wipeKey;
 	}
 
-	public boolean isFeeScheduleMutable() {
-		return feeScheduleMutable;
-	}
-
-	void setFeeScheduleMutable(boolean feeScheduleMutable) {
-		this.feeScheduleMutable = feeScheduleMutable;
-	}
-
 	public boolean isDeleted() {
 		return deleted;
 	}
@@ -469,11 +461,19 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		this.accountsFrozenByDefault = accountsFrozenByDefault;
 	}
 
-	public void setFeeSchedule(List<CustomFee> feeSchedule) {
+	public boolean isFeeScheduleMutable() {
+		return feeScheduleMutable;
+	}
+
+	private void setFeeScheduleMutable(boolean feeScheduleMutable) {
+		this.feeScheduleMutable = feeScheduleMutable;
+	}
+
+	private void setFeeSchedule(List<CustomFee> feeSchedule) {
 		this.feeSchedule = unmodifiableList(feeSchedule);
 	}
 
-	public void setFeeScheduleFrom(CustomFeesOuterClass.CustomFees grpcFeeSchedule) {
+	public void setFeeScheduleFrom(CustomFeesOuterClass.CustomFeesOrBuilder grpcFeeSchedule) {
 		feeSchedule = grpcFeeSchedule.getCustomFeesList().stream().map(CustomFee::fromGrpc).collect(toList());
 		feeScheduleMutable = grpcFeeSchedule.getCanUpdateWithAdminKey();
 	}

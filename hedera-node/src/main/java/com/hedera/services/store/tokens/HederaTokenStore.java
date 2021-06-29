@@ -663,11 +663,12 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 					appliedValidity.set(CUSTOM_FEES_ARE_MARKED_IMMUTABLE);
 					return;
 				}
-				appliedValidity.set(validateFeeSchedule(changes.getCustomFees().getCustomFeesList()));
+				final var customFees = changes.getCustomFees();
+				appliedValidity.set(validateFeeSchedule(customFees.getCustomFeesList()));
 				if (OK != appliedValidity.get()) {
 					return;
 				}
-				token.setFeeScheduleFrom(changes.getCustomFees());
+				token.setFeeScheduleFrom(customFees);
 			}
 		});
 		return appliedValidity.get();

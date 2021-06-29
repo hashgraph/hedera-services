@@ -204,7 +204,6 @@ class HederaTokenStoreTest {
 			.setFractionalFee(fractionalFee)
 			.build();
 	private CustomFeesOuterClass.CustomFees grpcCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
-			.setCanUpdateWithAdminKey(false)
 			.addCustomFees(customFixedFeeInHbar)
 			.addCustomFees(customFixedFeeInHts)
 			.addCustomFees(customFractionalFee)
@@ -1841,6 +1840,7 @@ class HederaTokenStoreTest {
 		expected.setWipeKey(MISC_ACCOUNT_KT.asJKeyUnchecked());
 		expected.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked());
 		expected.setMemo(memo);
+		expected.setFeeScheduleFrom(CustomFeesOuterClass.CustomFees.getDefaultInstance());
 
 		// given:
 		final var req = fullyValidAttempt().clearCustomFees().build();
