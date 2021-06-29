@@ -1484,28 +1484,6 @@ executors:
     working_directory: /repo
 
 workflows:
-  GCP-Daily-Services-Crypto-Update-5N-1C:
-    triggers:
-      - schedule:
-          cron: "45 4 * * *"
-          filters:
-            branches:
-              only:
-                - master
-    jobs:
-      - build-platform-and-services
-      - jrs-regression:
-          context: Slack
-          result_path: results/5N_1C/Update
-          config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Crypto-Update-5N-1C"
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-
   GCP-Weekly-Services-Crypto-Restart-Performance-15N-15C:
     triggers:
       - schedule:
@@ -1765,7 +1743,7 @@ workflows:
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/15N_4C/GlobalReconnect
+          result_path: results/15N_4C/Global3NReconnect
           config_type: "daily"
           workflow-name: "GCP-Daily-Services-Global-3NReconnect-15N-4C"
           requires:
