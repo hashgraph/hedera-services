@@ -12,6 +12,10 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.hedera.services.state.merkle.virtual.persistence.FCSlotIndex.NOT_FOUND_LOCATION;
@@ -19,6 +23,8 @@ import static com.hedera.services.state.merkle.virtual.persistence.FCSlotIndex.N
 /**
  * A BinFile contains a fixed number of bins. Each bin contains entries for key in a section of the hash space. Each
  * entry contains the mutation list for a key.
+ *
+ * TODO this class assumes that only one thread will call it
  *
  * Each bin contains a header of
  *      [int] a single int for number of entries, this can include deleted entries
@@ -104,6 +110,12 @@ public final class BinFile<K extends SelfSerializable> {
     private final int queueOffsetInEntry;
     /** Single MutationQueueReference that we can reuse as we are synchronized */
     private final EntryReference entryReference = new EntryReference();
+    /** Map containing list of mutated queues for each version older than the current one that has not yet been released. */
+    private final Map<Long, List<Integer>> changedKeysPerVersion = new HashMap<>();
+    /** list of offsets for mutated keys for current version */
+    private List<Integer> changedKeysCurrentVersion = new ArrayList<>();
+    /** The current version we are working on */
+    private long currentVersion = -1;
 
     /**
      * Construct a new BinFile
@@ -212,13 +224,33 @@ public final class BinFile<K extends SelfSerializable> {
     }
 
     /**
+     * Called to inform us when a version has changed
+     *
+     * @param oldVersion the old version number
+     * @param newVersion the new version number
+     */
+    public void versionChanged(long oldVersion, long newVersion) {
+        currentVersion = newVersion;
+        // stash changedKeysCurrentVersion and create new list
+        changedKeysPerVersion.put(oldVersion, changedKeysCurrentVersion);
+        changedKeysCurrentVersion = new ArrayList<>();
+    }
+
+    /**
      * Release a version, cleaning up all references to it in file.
      *
      * @param version the version to release
      */
     public void releaseVersion(long version) {
-        // todo need to keep track of all changed keys for a version then here we can go clean up all mutation queues for that
         // version deleting entries for this version
+        List<Integer> changedKeys = (version == currentVersion || currentVersion == -1) ?
+                changedKeysCurrentVersion : changedKeysPerVersion.remove(version);
+        // TODO maybe need to clear out changedKeysCurrentVersion but seems if current version has been released we are done
+        if (changedKeys != null) {
+            for(Integer mutationQueueOffset: changedKeys) {
+                markQueue(mutationQueueOffset, version);
+            }
+        }
     }
 
     //==================================================================================================================
@@ -326,7 +358,6 @@ public final class BinFile<K extends SelfSerializable> {
                 // no need to write a size of new mutation queue as we will always set it in putMutationValue but
                 // we do need to keep track of if the mutation queue was created.
                 entryReference.wasCreated = true;
-
             }
         }
         entryReference.offset = entryOffset;
@@ -361,7 +392,8 @@ public final class BinFile<K extends SelfSerializable> {
      * @param isEmptyMutationQueue if this is writing to a brand new mutation queue
      * @param version the version to write value for, this will always be the latest version
      * @param value the value to save for version
-     * @return
+     * @return the old version that was changed if there was one this version or NOT_FOUND_LOCATION if there was not a
+     *         mutation for this version to change.
      */
     private long writeValueIntoMutationQueue(int mutationQueueOffset, boolean isEmptyMutationQueue, long version, long value) {
         int mutationCount = mappedBuffer.getInt(mutationQueueOffset);
@@ -397,6 +429,11 @@ public final class BinFile<K extends SelfSerializable> {
         }
         // write value into mutation
         mappedBuffer.putLong(mutationOffset+Long.BYTES,value);
+        // stash mutation queue for later clean up, if this is a new mutation. If it was updating a mutation
+        // then when that mutation was made it would have already been added.
+        if (oldSlotIndex == NOT_FOUND_LOCATION) {
+            changedKeysCurrentVersion.add(mutationQueueOffset);
+        }
         return oldSlotIndex;
     }
 
@@ -432,7 +469,7 @@ public final class BinFile<K extends SelfSerializable> {
      * "Sweeps" all unneeded mutations from the queue, shifting all
      * subsequent mutations left.
      *
-     * @param mutationQueueOffset
+     * @param mutationQueueOffset The offset of the mutation queue to process
      */
     private void sweepQueue(int mutationQueueOffset) {
         // Look through the mutations and collect the indexes of each mutation that can be removed.
@@ -443,6 +480,7 @@ public final class BinFile<K extends SelfSerializable> {
             final var mutationVersion = mappedBuffer.getLong(mutationOffset);
             if (mutationVersion == TOMBSTONE) {
                 // This guy has been released...
+                System.out.println("Hello");
             }
         }
     }
