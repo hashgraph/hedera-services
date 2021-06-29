@@ -132,11 +132,10 @@ public final class FCSlotIndexUsingMemMapFile<K> implements FCSlotIndex<K> {
     // FastCopy Implementation
 
     @Override
-    public FCSlotIndexUsingMemMapFile copy() {
+    public FCSlotIndexUsingMemMapFile<K> copy() {
         this.throwIfReleased();
-        return new FCSlotIndexUsingMemMapFile(this);
+        return new FCSlotIndexUsingMemMapFile<>(this);
     }
-
 
     //==================================================================================================================
     // Releasable Implementation
@@ -168,11 +167,6 @@ public final class FCSlotIndexUsingMemMapFile<K> implements FCSlotIndex<K> {
 
     //==================================================================================================================
     // FCSlotIndex Implementation
-
-    @Override
-    public void setKeySizeBytes(int size) {
-
-    }
 
     @Override
     public long getSlot(K key) {

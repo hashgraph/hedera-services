@@ -1,7 +1,7 @@
 package com.hedera.services.state.merkle.virtual.persistence.fcmmap;
 
 import com.hedera.services.state.merkle.virtual.persistence.FCSlotIndex;
-import com.hedera.services.state.merkle.virtual.persistence.FCVirtualMapDataStore;
+import com.hedera.services.state.merkle.virtual.persistence.FCVirtualMapLeafStore;
 import com.hedera.services.state.merkle.virtual.persistence.SlotStore;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -18,15 +18,14 @@ import java.util.function.Supplier;
  *
  * It is thread safe and can be used by multiple-threads. Only one thread can use one of the sub-data stores at a time.
  *
- * @param <HK> The type for hashes keys, must implement SelfSerializable
  * @param <LP> The type for leaf paths, must implement SelfSerializable
  * @param <LK> The type for leaf keys, must implement SelfSerializable
  * @param <LV> The type for leaf value, must implement SelfSerializable
  */
 @SuppressWarnings({"DuplicatedCode"})
-public final class FCVirtualMapDataStoreImpl<HK extends SelfSerializable,
-        LK extends SelfSerializable, LP extends SelfSerializable, LV extends SelfSerializable>
-        implements FCVirtualMapDataStore<HK, LK, LP, LV> {
+public final class FCVirtualMapLeafStoreImpl<LK extends SelfSerializable,
+        LP extends SelfSerializable, LV extends SelfSerializable>
+        implements FCVirtualMapLeafStore<LK, LP, LV> {
     /** 1 Mb of bytes */
     private static final int MB = 1024*1024;
 
@@ -43,8 +42,6 @@ public final class FCVirtualMapDataStoreImpl<HK extends SelfSerializable,
     private final Supplier<LP> leafPathConstructor;
     /** Constructor supplier for creating leaf value */
     private final Supplier<LV> leafValueConstructor;
-    /** The number of bytes for a hash key "PK", when serialized to ByteBuffer */
-    private final int hashKeySizeBytes;
     /** The number of bytes for a leaf key "LK", when serialized to ByteBuffer */
     private final int leafKeySizeBytes;
     /** The number of bytes for a leaf path "LP", when serialized to ByteBuffer */
@@ -53,22 +50,16 @@ public final class FCVirtualMapDataStoreImpl<HK extends SelfSerializable,
     private final int leafValueSizeBytes;
     /** Total number of bytes to be stored for a leaf key, path and value */
     private final int leafStoreSlotSize;
-    /** Total number of bytes to be stored for a hash key and value */
-    private final int hashStoreSlotSize;
 
     //==================================================================================================================
     // Value Stores
 
     /** Store for all the tree leaves */
     private final SlotStore leafStore;
-    /** Store for all the tree hashes */
-    private final SlotStore hashStore;
 
     //==================================================================================================================
     // Indexes
 
-    /** Find a value store slot for a hash by hash path */
-    public final FCSlotIndex<HK> hashIndex;
     /** Find a value store slot for a leaf by key */
     public final FCSlotIndex<LK> leafIndex;
     /** Find a value store slot for a leaf by leaf path */
@@ -95,17 +86,14 @@ public final class FCVirtualMapDataStoreImpl<HK extends SelfSerializable,
      *
      * @param storageDirectory The path of the directory to store storage files
      * @param dataFileSizeInMb The size of each mem mapped storage file in MB
-     * @param hashKeySizeBytes The number of bytes for a hash key "HK", when serialized to ByteBuffer
      * @param leafKeySizeBytes The number of bytes for a leaf key "LK", when serialized to ByteBuffer
      * @param leafPathSizeBytes The number of bytes for a leaf path "LP", when serialized to ByteBuffer
      * @param leafValueSizeBytes The number of bytes for a leaf value value "LV", when serialized to ByteBuffer
      */
-    public FCVirtualMapDataStoreImpl(Path storageDirectory, int dataFileSizeInMb,
-                                     int hashKeySizeBytes,
+    public FCVirtualMapLeafStoreImpl(Path storageDirectory, int dataFileSizeInMb,
                                      int leafKeySizeBytes, int leafPathSizeBytes, int leafValueSizeBytes,
-                                     Supplier<FCSlotIndex<HK>> hashSlotIndexSupplier,
-                                     Supplier<FCSlotIndex<LP>> leafPathSlotIndexSupplier,
-                                     Supplier<FCSlotIndex<LK>> leafSlotIndexSupplier,
+                                     FCSlotIndex<LP> leafPathSlotIndex,
+                                     FCSlotIndex<LK> leafSlotIndex,
                                      Supplier<LK> leafKeyConstructor,
                                      Supplier<LP> leafPathConstructor,
                                      Supplier<LV> leafValueConstructor,
@@ -116,7 +104,6 @@ public final class FCVirtualMapDataStoreImpl<HK extends SelfSerializable,
         this.leafKeyConstructor = leafKeyConstructor;
         this.leafPathConstructor = leafPathConstructor;
         this.leafValueConstructor = leafValueConstructor;
-        this.hashKeySizeBytes = Integer.BYTES + hashKeySizeBytes; // we store an extra int for class serialization version
         this.leafKeySizeBytes = Integer.BYTES + leafKeySizeBytes; // we store an extra int for class serialization version
         this.leafPathSizeBytes = Integer.BYTES + leafPathSizeBytes; // we store an extra int for class serialization version
         this.leafValueSizeBytes = Integer.BYTES + leafValueSizeBytes; // we store an extra int for class serialization version
@@ -125,19 +112,11 @@ public final class FCVirtualMapDataStoreImpl<HK extends SelfSerializable,
                 this.leafKeySizeBytes +// size of version int and LK
                 this.leafPathSizeBytes +// size of version int and  LP
                 this.leafValueSizeBytes; // size of version int and  LD
-        this.hashStoreSlotSize =
-                this.hashKeySizeBytes +// size of PK
-                Integer.BYTES + DigestType.SHA_384.digestLength(); // size of Hash
 
         leafStore = slotStoreConstructor.get();
-        hashStore = slotStoreConstructor.get();
         // create indexes
-        hashIndex = hashSlotIndexSupplier.get();
-        hashIndex.setKeySizeBytes(hashKeySizeBytes);
-        leafIndex = leafSlotIndexSupplier.get();
-        leafIndex.setKeySizeBytes(leafKeySizeBytes);
-        leafPathIndex = leafPathSlotIndexSupplier.get();
-        leafPathIndex.setKeySizeBytes(leafPathSizeBytes);
+        leafIndex = leafSlotIndex;
+        leafPathIndex = leafPathSlotIndex;
     }
 
 
@@ -146,7 +125,7 @@ public final class FCVirtualMapDataStoreImpl<HK extends SelfSerializable,
      *
      * @param dataStoreToCopy The data source to copy
      */
-    private FCVirtualMapDataStoreImpl(FCVirtualMapDataStoreImpl<HK, LK, LP, LV> dataStoreToCopy) {
+    private FCVirtualMapLeafStoreImpl(FCVirtualMapLeafStoreImpl<LK, LP, LV> dataStoreToCopy) {
         // the copy that we are copying from becomes immutable as only the newest copy can be mutable
         dataStoreToCopy.isImmutable = true;
         // a new copy is not released and is mutable
@@ -158,22 +137,17 @@ public final class FCVirtualMapDataStoreImpl<HK extends SelfSerializable,
         this.leafKeyConstructor = dataStoreToCopy.leafKeyConstructor;
         this.leafPathConstructor = dataStoreToCopy.leafPathConstructor;
         this.leafValueConstructor = dataStoreToCopy.leafValueConstructor;
-        this.hashKeySizeBytes = dataStoreToCopy.hashKeySizeBytes;
         this.leafKeySizeBytes = dataStoreToCopy.leafKeySizeBytes;
         this.leafPathSizeBytes = dataStoreToCopy.leafPathSizeBytes;
         this.leafStoreSlotSize = dataStoreToCopy.leafStoreSlotSize;
         this.leafValueSizeBytes = dataStoreToCopy.leafValueSizeBytes;
-        this.hashStoreSlotSize = dataStoreToCopy.hashStoreSlotSize;
         this.isOpen = dataStoreToCopy.isOpen;
         // fast copy indexes
-        hashIndex = dataStoreToCopy.hashIndex.copy();
         leafIndex = dataStoreToCopy.leafIndex.copy();
         leafPathIndex = dataStoreToCopy.leafPathIndex.copy();
         // reuse value stores
         leafStore = dataStoreToCopy.leafStore;
         leafStore.addReference();
-        hashStore = dataStoreToCopy.hashStore;
-        hashStore.addReference();
     }
 
 
@@ -181,11 +155,11 @@ public final class FCVirtualMapDataStoreImpl<HK extends SelfSerializable,
     // FastCopy Implementation
 
     @Override
-    public FCVirtualMapDataStoreImpl<HK, LK, LP, LV> copy() {
+    public FCVirtualMapLeafStoreImpl<LK, LP, LV> copy() {
         this.throwIfImmutable();
         this.throwIfReleased();
         if (!isOpen) throw new IllegalStateException("Only open stores can be fast copied.");
-        return new FCVirtualMapDataStoreImpl<>(this);
+        return new FCVirtualMapLeafStoreImpl<>(this);
     }
 
     @Override
@@ -201,18 +175,12 @@ public final class FCVirtualMapDataStoreImpl<HK extends SelfSerializable,
         isReleased = true;
         isOpen = false;
         // release indexes
-        hashIndex.release();
         leafIndex.release();
         leafPathIndex.release();
         // close leaf store if it has no references left
         synchronized (leafStore) {
             leafStore.removeReference();
             leafStore.close();
-        }
-        // close hash store if it has no references left
-        synchronized (hashStore) {
-            leafStore.removeReference();
-            hashStore.close();
         }
     }
 
@@ -236,10 +204,6 @@ public final class FCVirtualMapDataStoreImpl<HK extends SelfSerializable,
         synchronized (leafStore) {
             leafStore.open(leafStoreSlotSize,dataFileSizeInMb*MB,storageDirectory.resolve("leaves"),"leaves_","dat", null);
         }
-        // open hashes store
-        synchronized (hashStore) {
-            hashStore.open(hashStoreSlotSize,dataFileSizeInMb*MB,storageDirectory.resolve("hashes"),"hashes_","dat", null);
-        }
         isOpen = true;
     }
 
@@ -254,12 +218,7 @@ public final class FCVirtualMapDataStoreImpl<HK extends SelfSerializable,
         synchronized (leafStore) {
             leafStore.sync();
         }
-        // sync hash store
-        synchronized (hashStore) {
-            hashStore.sync();
-        }
         // TODO add syncing for index
-        // hashIndex
         // leafIndex
         // leafPathIndex
     }
@@ -467,94 +426,6 @@ public final class FCVirtualMapDataStoreImpl<HK extends SelfSerializable,
         outputStream.writeSelfSerializable(position, newPath, leafPathSizeBytes);
     }
 
-
-    /**
-     * Check if this store contains a hash by key
-     *
-     * @param hashKey The key of the hash to check for
-     * @return true if that hash is stored, false if it is not known
-     */
-    @Override
-    public boolean containsHash(HK hashKey) {
-        synchronized (hashStore) {
-            return hashIndex.getSlot(hashKey) != FCSlotIndex.NOT_FOUND_LOCATION;
-        }
-    }
-
-    /**
-     * Delete a stored hash from storage, if it is stored.
-     *
-     * @param hashKey The key of the hash to delete
-     */
-    @Override
-    public void deleteHash(HK hashKey) {
-        synchronized (hashStore) {
-            long slotLocation = hashIndex.removeSlot(hashKey);
-            if (slotLocation != MemMapSlotStore.NOT_FOUND_LOCATION) hashStore.deleteSlot(slotLocation); // TODO this is not fast copy safe
-        }
-    }
-
-    /**
-     * Load a tree hash node from storage
-     *
-     * @param hashKey The key of the hash to find and load
-     * @return a loaded VirtualTreeInternal with path and hash set or null if not found
-     */
-    @SuppressWarnings("RedundantThrows")
-    @Override
-    public Hash loadHash(HK hashKey) throws IOException {
-        synchronized (hashStore) {
-            long slotLocation = hashIndex.getSlot(hashKey);
-            if (slotLocation == MemMapSlotStore.NOT_FOUND_LOCATION) return null;
-            var inputStream = hashStore.accessSlotForReading(slotLocation);
-            int position = inputStream.position();
-            // skip hash key
-//                SerializableLong key = inputStream.readSelfSerializable(position, SerializableLong::new);
-            position += hashKeySizeBytes;
-            // hash data
-            inputStream.position(position);
-            DigestType digestType = DigestType.valueOf(inputStream.readInt());
-            byte[] hashData = new byte[digestType.digestLength()];
-            //noinspection ResultOfMethodCallIgnored
-            inputStream.read(hashData);
-            // return buffer
-            leafStore.returnSlot(slotLocation,inputStream);
-            return new VirtualHash(digestType, hashData);
-        }
-    }
-
-    /**
-     * Save the hash for a imaginary hash node into storage
-     *
-     * @param hashKey The key of the hash to save
-     * @param hash The hash's data to store
-     */
-    @Override
-    public void saveHash(HK hashKey, Hash hash) throws IOException {
-        synchronized (hashStore) {
-            // if already stored and if so it is an update
-            long slotLocation = hashIndex.getSlot(hashKey);
-            if (slotLocation == MemMapSlotStore.NOT_FOUND_LOCATION) {
-                // find a new slot location
-                slotLocation = hashStore.getNewSlot();
-                // store in index
-                hashIndex.putSlot(hashKey, slotLocation);
-            }
-            // write hash into slot
-            var outputStream = hashStore.accessSlotForWriting(slotLocation);
-            int position = outputStream.position();
-            // write hash key
-            outputStream.writeSelfSerializable(position, hashKey, hashKeySizeBytes);
-            position += hashKeySizeBytes;
-            // write hash data
-            outputStream.position(position);
-            outputStream.writeInt(hash.getDigestType().id());
-            outputStream.write(hash.getValue()); // TODO Badly need a way to save a hash here without copying the byte[]
-            // return buffer
-            leafStore.returnSlot(slotLocation,outputStream);
-        }
-    }
-    
     //==================================================================================================================
     // Inner Classes
 

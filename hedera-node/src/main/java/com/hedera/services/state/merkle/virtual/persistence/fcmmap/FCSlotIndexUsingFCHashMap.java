@@ -20,9 +20,6 @@ public class FCSlotIndexUsingFCHashMap<K> implements FCSlotIndex<K> {
     }
 
     @Override
-    public void setKeySizeBytes(int size) {} // not needed
-
-    @Override
     public long getSlot(K key) {
         return map.getOrDefault(key, FCSlotIndex.NOT_FOUND_LOCATION);
     }

@@ -11,8 +11,6 @@ public interface FCSlotIndex<K> extends FastCopyable<FCSlotIndex<K>> {
     /** Special Location for when not found */
     public static final long NOT_FOUND_LOCATION = Long.MAX_VALUE;
 
-    public void setKeySizeBytes(int size);
-
     public long getSlot(K key);
 
     public void putSlot(K key, long slot);
