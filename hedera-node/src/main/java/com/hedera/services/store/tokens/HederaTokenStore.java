@@ -454,11 +454,14 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				if (fraction.getDenominator() == 0) {
 					return FRACTION_DIVIDES_BY_ZERO;
 				}
-				if (!signsMatch(fraction.getNumerator(), fraction.getDenominator())) {
+				if (!areValidPositiveNumbers(fraction.getNumerator(), fraction.getDenominator())) {
 					return CUSTOM_FEE_MUST_BE_POSITIVE;
 				}
 				if (fractionalSpec.getMaximumAmount() < 0 || fractionalSpec.getMinimumAmount() < 0) {
 					return CUSTOM_FEE_MUST_BE_POSITIVE;
+				}
+				if (fractionalSpec.getMaximumAmount() < fractionalSpec.getMinimumAmount()) {
+					return FRACTIONAL_FEES_MIN_GREATER_THAN_MAX;
 				}
 			} else {
 				return CUSTOM_FEE_NOT_FULLY_SPECIFIED;
@@ -468,8 +471,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		return OK;
 	}
 
-	private boolean signsMatch(long a, long b) {
-		return (a < 0 && b < 0) || (a > 0 && b > 0);
+	private boolean areValidPositiveNumbers(long a, long b) {
+		return (a < 0 && b < 0) || (a > 0 && b > 0) || (a < 0 && b < 0);
 	}
 
 	public void addKnownTreasury(AccountID aId, TokenID tId) {
