@@ -47,7 +47,7 @@
       <AppenderRef ref="fileLog"/>
     </Root>
 
-    <Logger name="com.swirlds" level="WARN" additivity="false">
+    <Logger name="com.swirlds" level="TRACE" additivity="false">
       <AppenderRef ref="fileLog"/>
       <!--
 	  Due to known log4j2 issues with how Markers and LogLevels are evaluated there must be a top level <Filter> element

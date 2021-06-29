@@ -38,7 +38,6 @@ import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.submerkle.CustomFee;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -273,14 +272,7 @@ public class StateView {
 				info.setAutoRenewPeriod(Duration.newBuilder().setSeconds(token.autoRenewPeriod()));
 			}
 
-			final var feeSchedule = token.customFeeSchedule();
-			if (!feeSchedule.isEmpty()) {
-				final var customFeesBuilder = info.getCustomFeesBuilder();
-				feeSchedule.stream()
-						.map(CustomFee::asGrpc)
-						.forEach(customFeesBuilder::addCustomFees);
-				info.setCustomFees(customFeesBuilder);
-			}
+			info.setCustomFees(token.grpcFeeSchedule());
 
 			return Optional.of(info.build());
 		} catch (Exception unexpected) {
