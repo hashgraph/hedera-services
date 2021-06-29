@@ -218,8 +218,13 @@ public final class BinFile<K extends SelfSerializable> {
      */
     public long removeKey(long version, int keySubHash, K key) {
         synchronized (mappedBuffer) {
-            EntryReference entry = getOrCreateEntry(keySubHash, key);
-            return writeValueIntoMutationQueue(entry.offset+queueOffsetInEntry, entry.wasCreated, version, DELETED_POINTER);
+            int entryOffset = findEntryOffsetForKeyInBin(keySubHash, key);
+            if (entryOffset != -1) {
+                // we only need to write a deleted mutation if there was already a entry for the key
+                return writeValueIntoMutationQueue(entryOffset + queueOffsetInEntry, false, version, DELETED_POINTER);
+            } else {
+                return NOT_FOUND_LOCATION;
+            }
         }
     }
 
