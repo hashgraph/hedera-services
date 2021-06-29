@@ -267,6 +267,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						}),
 						getTokenInfo("primary")
 								.logged()
+								.hasCustomFeesMutable(false)
 								.hasRegisteredId("primary")
 								.hasEntityMemo(memo)
 								.hasName(saltedName)
@@ -440,6 +441,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 										tokenCollector))
 				).then(
 						getTokenInfo(token)
+								.hasCustomFeesMutable(false)
 								.hasCustom(fixedHbarFeeInSchedule(hbarAmount, hbarCollector))
 								.hasCustom(fixedHtsFeeInSchedule(htsAmount, feeDenom, htsCollector))
 								.hasCustom(fractionalFeeInSchedule(
