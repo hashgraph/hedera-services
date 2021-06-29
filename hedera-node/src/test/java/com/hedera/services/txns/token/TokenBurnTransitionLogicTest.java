@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -211,6 +212,19 @@ class TokenBurnTransitionLogicTest {
 
 		given(validator.maxBatchSizeBurnCheck(tokenBurnTxn.getTokenBurn().getSerialNumbersCount())).willReturn(OK);
 		assertEquals(INVALID_NFT_ID, subject.semanticCheck().apply(tokenBurnTxn));
+	}
+
+	@Test
+	void propagatesErrorOnBatchSizeExceeded(){
+		tokenBurnTxn = TransactionBody.newBuilder()
+				.setTokenBurn(
+						TokenBurnTransactionBody.newBuilder()
+								.addAllSerialNumbers(LongStream.range(1, 5).boxed().collect(Collectors.toList()))
+								.setToken(grpcId))
+				.build();
+
+		given(validator.maxBatchSizeBurnCheck(tokenBurnTxn.getTokenBurn().getSerialNumbersCount())).willReturn(BATCH_SIZE_LIMIT_EXCEEDED);
+		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.semanticCheck().apply(tokenBurnTxn));
 	}
 
 	private void givenValidTxnCtx() {
