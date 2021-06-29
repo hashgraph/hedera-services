@@ -17,7 +17,7 @@ public class ContractHashStore implements FCHashStore {
 
     public ContractHashStore(Id contractId) {
         this.contractId = contractId;
-        this.dataStore = new FCVirtualMapHashStoreImpl<ContractPath>(
+        this.dataStore = new FCVirtualMapHashStoreImpl<>(
                 Path.of("data/contract-storage"),
                 256,
                 ContractPath.SERIALIZED_SIZE,
