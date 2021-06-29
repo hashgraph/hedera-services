@@ -1,60 +1,26 @@
 package com.hedera.services.state.merkle.virtual.persistence.fcmmap;
 
 import com.hedera.services.state.merkle.virtual.persistence.FCSlotIndex;
-import sun.misc.Unsafe;
+import com.swirlds.common.io.SelfSerializable;
 
-import java.io.*;
-import java.lang.reflect.Field;
-import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public final class FCSlotIndexUsingMemMapFile<K> implements FCSlotIndex<K> {
+/**
+ *
+ * TODO load and save version from file
+ *
+ * @param <K> Key type
+ */
+@SuppressWarnings("jol")
+public final class FCSlotIndexUsingMemMapFile<K extends SelfSerializable> implements FCSlotIndex<K> {
 
-    /**
-     * We assume try and get the page size and us default of 4k if we fail as that is standard on linux
-     */
-    private static final int PAGE_SIZE_BYTES;
-    static {
-        int pageSize = 4096; // 4k is default on linux
-        try {
-            Field f = Unsafe.class.getDeclaredField("theUnsafe");
-            f.setAccessible(true);
-            Unsafe unsafe = (Unsafe)f.get(null);
-            pageSize = unsafe.pageSize();
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            System.out.println("Failed to get page size via misc.unsafe");
-            // try and get from system command
-            boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
-            if (!isWindows) {
-                ProcessBuilder builder = new ProcessBuilder()
-                        .command("getconf", "PAGE_SIZE")
-                        .directory(new File(System.getProperty("user.home")));
-                try {
-                    Process process = builder.start();
-                    String output = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))
-                            .lines()
-                            .collect(Collectors.joining())
-                            .trim();
-                    try {
-                        pageSize = Integer.parseInt(output);
-                    } catch(NumberFormatException numberFormatException) {
-                        System.out.println("Failed to get page size via running \"getconf\" command. so using default 4k\n"+
-                                "\"getconf\" output was \""+output+"\"");
-                    }
-                } catch (IOException ioException) {
-                    System.out.println("Failed to get page size via running \"getconf\" command. so using default 4k");
-                    ioException.printStackTrace();
-                }
-            }
-        }
-        System.out.println("Page size: " + pageSize);
-        PAGE_SIZE_BYTES = pageSize;
-    }
+    //==================================================================================================================
+    // Config
+
     /** The path of the directory to store storage files */
     private final Path storageDirectory;
 
@@ -63,27 +29,49 @@ public final class FCSlotIndexUsingMemMapFile<K> implements FCSlotIndex<K> {
     private final int numOfBins;
     private final int numOfFiles;
     private final int numOfBinsPerFile;
-    private final int numOfKeysPerBin = 20;
-//    private final int numOfBinsPerPage;
-//    private final int numOfPagesPerFile;
+    private final int numOfKeysPerBin;
+    private final int keySizeBytes;
+    private final int maxNumberOfKeys;
+    private final int maxNumberOfMutations;
+    private final int shiftRightCountForFileSubKey;
 
     //==================================================================================================================
     // State
 
-    /** Array of BinFiles we are using */
-    private final BinFile[] files;
+    /** Array of BinFiles we are using, only set once in constructor and not changed */
+    private final BinFile<K>[] files;
 
     /** If this virtual map data store has been released, once released it can no longer be used */
-    private boolean isReleased = false;
+    private final AtomicBoolean isReleased = new AtomicBoolean(false);
+
+    /** If true the data in this version can no longer be changed */
+    private final AtomicBoolean isImmutable = new AtomicBoolean(false);
+
+    /** Number of instances of copy that refer to the same files[], this is shared across all copies */
+    private final AtomicInteger referenceCount;
+
+    /** Number of keys in this version */
+    private final AtomicInteger keyCount = new AtomicInteger(0);
 
     /** Monotonically increasing version number that is incremented every time copy() is called on the mutable copy. */
-    private long version;
-
+    private final long version;
 
     //==================================================================================================================
     // Constructors
 
-    public FCSlotIndexUsingMemMapFile(Path storageDirectory, String name, int numOfBins, int numOfFiles) throws IOException {
+    /**
+     *
+     * @param storageDirectory
+     * @param name
+     * @param numOfBins
+     * @param numOfFiles
+     * @param keySizeBytes The number of
+     * @param maxNumberOfKeys The maximum number of key that this map can store, this assumes even key hash distribution.
+     * @param maxNumberOfMutations The maximum number of mutations per key we can store
+     * @throws IOException
+     */
+    public FCSlotIndexUsingMemMapFile(Path storageDirectory, String name, int numOfBins, int numOfFiles, int keySizeBytes,
+                                      int maxNumberOfKeys, int maxNumberOfMutations) throws IOException {
         if (!positivePowerOfTwo(numOfFiles)) throw new IllegalArgumentException("numOfFiles["+numOfFiles+"] must be a positive power of two.");
         if (!positivePowerOfTwo(numOfBins)) throw new IllegalArgumentException("numOfBins["+numOfBins+"] must be a positive power of two.");
         if (numOfBins > (2*numOfFiles)) throw new IllegalArgumentException("numOfBins["+numOfBins+"] must be at least twice the size of numOfFiles["+numOfFiles+"].");
@@ -92,6 +80,17 @@ public final class FCSlotIndexUsingMemMapFile<K> implements FCSlotIndex<K> {
         this.numOfBins = numOfBins;
         this.numOfFiles = numOfFiles;
         this.numOfBinsPerFile = numOfBins/numOfFiles;
+        this.keySizeBytes = keySizeBytes;
+        this.maxNumberOfKeys = maxNumberOfKeys;
+        this.maxNumberOfMutations = maxNumberOfMutations;
+        // compute numOfKeysPerBin
+        numOfKeysPerBin = 20; // TODO should be calculated based on maxNumberOfKeys and numOfBins
+        // compute shiftRightCountForFileSubKey
+        shiftRightCountForFileSubKey = Integer.bitCount(numOfFiles-1);
+        // set reference count
+        referenceCount = new AtomicInteger(0);
+        // set initial version
+        version = 1;
         // create storage directory if it doesn't exist
         if (Files.exists(storageDirectory)) {
             Files.createDirectories(storageDirectory);
@@ -102,9 +101,10 @@ public final class FCSlotIndexUsingMemMapFile<K> implements FCSlotIndex<K> {
             }
         }
         // create files
+        //noinspection unchecked
         files = new BinFile[numOfFiles];
         for (int i = 0; i < numOfFiles; i++) {
-            files[i] = new BinFile(storageDirectory.resolve(name+"_"+i+".index"),0); // TODO calculate file size
+            files[i] = new BinFile<>(storageDirectory.resolve(name+"_"+i+".index"),keySizeBytes, numOfKeysPerBin, numOfBinsPerFile, maxNumberOfMutations);
         }
     }
 
@@ -114,17 +114,26 @@ public final class FCSlotIndexUsingMemMapFile<K> implements FCSlotIndex<K> {
      * @param toCopy The FCFileMap to copy to this new version leaving it immutable.
      */
     private FCSlotIndexUsingMemMapFile(FCSlotIndexUsingMemMapFile<K> toCopy) {
-        // set our incremental version
-        version = toCopy.version + 1;
         // copy config
         this.storageDirectory = toCopy.storageDirectory;
         this.name = toCopy.name;
         this.numOfBins = toCopy.numOfBins;
         this.numOfFiles = toCopy.numOfFiles;
         this.numOfBinsPerFile = toCopy.numOfBinsPerFile;
+        this.numOfKeysPerBin = toCopy.numOfKeysPerBin;
+        this.keySizeBytes = toCopy.keySizeBytes;
+        this.maxNumberOfKeys = toCopy.maxNumberOfKeys;
+        this.maxNumberOfMutations = toCopy.maxNumberOfMutations;
+        this.shiftRightCountForFileSubKey = toCopy.shiftRightCountForFileSubKey;
         // state
+        this.keyCount.set(toCopy.keyCount.get());
+        this.isReleased.set(false);
+        this.isImmutable.set(true);
         this.files = toCopy.files;
-        this.files[0].referenceCount ++; // add this class as a new reference
+        this.referenceCount = toCopy.referenceCount;
+        referenceCount.incrementAndGet(); // add this class as a new reference
+        // set our incremental version
+        version = toCopy.version + 1;
     }
 
 
@@ -142,15 +151,13 @@ public final class FCSlotIndexUsingMemMapFile<K> implements FCSlotIndex<K> {
 
     @Override
     public void release() {
-        isReleased = true;
+        isReleased.set(true);
         // TODO what else here
         // TODO need to remove all mutations of this version and clean up
-        // remove reference from files
-        this.files[0].referenceCount --;
         // if we were the last reference then close all the files
-        if (this.files[0].referenceCount <= 0){
+        if (referenceCount.decrementAndGet() <= 0){
             for (int i = 0; i < files.length; i++) {
-                BinFile file = files[i];
+                var file = files[i];
                 try {
                     file.close();
                 } catch (IOException e) {
@@ -162,7 +169,7 @@ public final class FCSlotIndexUsingMemMapFile<K> implements FCSlotIndex<K> {
 
     @Override
     public boolean isReleased() {
-        return isReleased;
+        return isReleased.get();
     }
 
     //==================================================================================================================
@@ -170,87 +177,66 @@ public final class FCSlotIndexUsingMemMapFile<K> implements FCSlotIndex<K> {
 
     @Override
     public long getSlot(K key) {
-        return 0;
+        if (key == null) throw new IllegalArgumentException("Key can not be null");
+        if (isReleased.get()) throw new IllegalStateException("You can not access a released index.");
+        int keyHash = key.hashCode();
+        // find right bin file
+        BinFile<K> file = getFileForKey(keyHash);
+        // ask bin file
+        return file.getSlot(version, getFileSubKeyHash(keyHash), key);
     }
 
     @Override
     public void putSlot(K key, long slot) {
-
+        if (key == null) throw new IllegalArgumentException("Key can not be null");
+        if (isReleased.get()) throw new IllegalStateException("You can not access a released index.");
+        if (isImmutable.get()) throw new IllegalStateException("You can not put on a immutable index.");
+        int keyHash = key.hashCode();
+        // find right bin file
+        BinFile<K> file = getFileForKey(keyHash);
+        // ask bin file
+        boolean alreadyExisted = file.putSlot(version, getFileSubKeyHash(keyHash), key, slot);
+        if (!alreadyExisted) keyCount.incrementAndGet();
     }
 
     @Override
     public long removeSlot(K key) {
-        return 0;
+        if (key == null) throw new IllegalArgumentException("Key can not be null");
+        if (isReleased.get()) throw new IllegalStateException("You can not access a released index.");
+        if (isImmutable.get()) throw new IllegalStateException("You can not remove on a immutable index.");
+        int keyHash = key.hashCode();
+        // find right bin file
+        BinFile<K> file = getFileForKey(keyHash);
+        // ask bin file
+        long slotLocation = file.removeKey(version, getFileSubKeyHash(keyHash), key);
+        if (slotLocation != FCSlotIndex.NOT_FOUND_LOCATION) keyCount.decrementAndGet();
+        return slotLocation;
     }
 
     @Override
     public int keyCount() {
-        return 0;
+        if (isReleased.get()) throw new IllegalStateException("You can not access a released index.");
+        return keyCount.get();
     }
 
     //==================================================================================================================
     // Util functions
 
     /** Simple way to check of a integer is a power of two */
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private static boolean positivePowerOfTwo(int n){
         return n > 0 && (n & n-1)==0;
     }
 
-    //==================================================================================================================
-    // BinFile inner class
+    /** for a given hash find out which file it is in */
+    private BinFile<K> getFileForKey(int keyHash) {
+        final int fileBitMask = numOfFiles-1;
+        return files[keyHash & fileBitMask];
+    }
 
-    /**
-     * A BinFile contains a number of pages. Each page contains a number of bins. The number of pages per file is
-     * ceil(numOfBinsPerFile/numOfBinsPerPage)
-     * Each bin contains array of stored values
-     * [int hash][bytes key][versions]
-     */
-    @SuppressWarnings("DuplicatedCode")
-    private static class BinFile {
-        private final Path file;
-        private boolean fileIsOpen = false;
-        private RandomAccessFile randomAccessFile;
-        private FileChannel fileChannel;
-        private MappedByteBuffer mappedBuffer;
-        private final int fileSize;
-        /** how many FCFileMaps are using this BinFile */
-        private int referenceCount = 1;
-
-        public BinFile(Path file, int fileSize) {
-            this.file = file;
-            this.fileSize = fileSize;
-            // work out file size
-            // mmap file
-        }
-
-        public void open() throws IOException {
-            if (!fileIsOpen) {
-                // check if file existed before
-                boolean fileExisted = Files.exists(file);
-                // open random access file
-                randomAccessFile = new RandomAccessFile(file.toFile(), "rw");
-                if (!fileExisted) {
-                    // set size for new empty file
-                    randomAccessFile.setLength(fileSize);
-                }
-                // get file channel and memory map the file
-                fileChannel = randomAccessFile.getChannel();
-                mappedBuffer = fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, fileChannel.size());
-                // mark file as open
-                fileIsOpen = true;
-            }
-        }
-
-//        public long getSlotLocation(int hash, )
-
-        public void close() throws IOException {
-            if (fileIsOpen) {
-                mappedBuffer.force();
-                fileChannel.force(true);
-                fileChannel.close();
-                randomAccessFile.close();
-            }
-        }
+    /** Gets the sub key hash from key hash, this is the part of key that specifies the bin inside a file */
+    private int getFileSubKeyHash(int keyHash) {
+        return keyHash >> shiftRightCountForFileSubKey;
     }
 }
 

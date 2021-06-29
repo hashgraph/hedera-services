@@ -106,6 +106,17 @@ public class FCVirtualMapTestUtils {
         };
     }
 
+    /** Helper function to create a suppler for a classes instance */
+    public static <I> I instanceFromClass(Class<I> slotIndexClass) throws Exception {
+        Constructor<I> slotIndexConstructor = slotIndexClass.getConstructor();
+        try {
+            return slotIndexConstructor.newInstance();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     public static int measureLengthOfSerializable(SelfSerializable serializable) {
         ByteArrayOutputStream out = new ByteArrayOutputStream(5000);
         try {
