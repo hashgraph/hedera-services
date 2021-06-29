@@ -28,7 +28,6 @@ import java.util.function.Supplier;
 public class FCVirtualMapTestUtils {
     public static final int HASH_DATA_SIZE = DigestType.SHA_384.digestLength() + Integer.BYTES + Integer.BYTES; // int for digest type and int for byte array length
 
-    @BeforeEach
     public static void deleteDirectoryAndContents(Path dir) {
         if (Files.exists(dir) && Files.isDirectory(dir)) {
             try {
@@ -45,7 +44,6 @@ public class FCVirtualMapTestUtils {
         }
     }
 
-    @AfterEach
     public static void printDirectorySize(Path dir) {
         if (Files.exists(dir) && Files.isDirectory(dir)) {
             try {
