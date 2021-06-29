@@ -109,7 +109,7 @@ public class VFCMapBench {
         // Start modifying the new fast copy
         final var iterationsPerRound = numUpdatesPerOperation * targetOpsPerSecond;
         for (int j=0; j<iterationsPerRound; j++) {
-            final var i = rand.nextLong(numEntities);
+            final var i = rand.nextInt((int)numEntities);
             contractMap.put(asContractKey(i), asContractValue(i + numEntities));
         }
     }
