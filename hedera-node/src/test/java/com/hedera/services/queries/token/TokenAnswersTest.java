@@ -43,5 +43,6 @@ class TokenAnswersTest {
 
 		// expect:
 		assertSame(tokenInfo, subject.getTokenInfo());
+		assertSame(nftInfo, subject.getNftInfoAnswer());
 	}
 }
