@@ -45,6 +45,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
@@ -99,7 +100,8 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						uniqueTokenTxnWithSenderNotSigned(),
 						uniqueTokenTxnWithReceiverNotSigned(),
 						uniqueTokenTxnsAreAtomic(),
-						uniqueTokenDeletedTxn()
+						uniqueTokenDeletedTxn(),
+						balancesChangeOnTokenTransferWithFixedHbarCustomFees(),
 				}
 		);
 	}
@@ -670,6 +672,44 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						)
 								.signedBy("signingKeyTreasury", "signingKeyFirstUser", DEFAULT_PAYER)
 								.hasKnownStatus(TOKEN_WAS_DELETED)
+				);
+	}
+
+	public HapiApiSpec balancesChangeOnTokenTransferWithFixedHbarCustomFees() {
+		return defaultHapiSpec("BalancesChangeOnTokenTransferWithFixedHbarCustomFees")
+				.given(
+						cryptoCreate(FIRST_USER).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(SECOND_USER).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						tokenCreate(A_TOKEN)
+								.initialSupply(TOTAL_SUPPLY)
+								.treasury(TOKEN_TREASURY)
+								.withCustom(fixedHbarFee(ONE_HBAR, TOKEN_TREASURY)),
+						tokenAssociate(FIRST_USER, A_TOKEN),
+						tokenAssociate(SECOND_USER, A_TOKEN)
+				).when(
+						cryptoTransfer(
+								moving(100, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+						),
+						cryptoTransfer(
+								moving(100, A_TOKEN).between(TOKEN_TREASURY, SECOND_USER)
+						),
+						cryptoTransfer(
+								moving(10, A_TOKEN).between(FIRST_USER, SECOND_USER)
+						)
+				).then(
+						getAccountBalance(TOKEN_TREASURY)
+								.logged()
+								.hasTokenBalance(A_TOKEN, TOTAL_SUPPLY - 200)
+								.hasTinyBars(3 * ONE_HBAR),
+						getAccountBalance(FIRST_USER)
+								.logged()
+								.hasTokenBalance(A_TOKEN, 90)
+								.hasTinyBars(ONE_HUNDRED_HBARS - 2 * ONE_HBAR),
+						getAccountBalance(SECOND_USER)
+								.logged()
+								.hasTokenBalance(B_TOKEN, 110)
+								.hasTinyBars(ONE_HUNDRED_HBARS - ONE_HBAR)
 				);
 	}
 
