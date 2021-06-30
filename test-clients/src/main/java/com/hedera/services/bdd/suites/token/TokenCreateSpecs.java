@@ -449,7 +449,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 										numerator, denominator,
 										minimumToCollect * 10, OptionalLong.of(maximumToCollect),
 										tokenCollector))
-								.hasKnownStatus(FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT),
+								.hasKnownStatus(SUCCESS),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
 								.overridingProps(Map.of("tokens.maxCustomFeesAllowed", "10")),
