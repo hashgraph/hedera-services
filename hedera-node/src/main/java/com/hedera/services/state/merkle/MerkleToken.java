@@ -387,14 +387,6 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		this.wipeKey = wipeKey;
 	}
 
-	public boolean isFeeScheduleMutable() {
-		return feeScheduleMutable;
-	}
-
-	public void setFeeScheduleMutable(boolean feeScheduleMutable) {
-		this.feeScheduleMutable = feeScheduleMutable;
-	}
-
 	public boolean isDeleted() {
 		return deleted;
 	}
@@ -532,13 +524,13 @@ public class MerkleToken extends AbstractMerkleLeaf {
 
 	public TokenSupplyType supplyType() { return supplyType; }
 
-	public void setSupplyType(TokenSupplyType supplyType) { 
-                this.supplyType = supplyType; 
-        }
+	public void setSupplyType(TokenSupplyType supplyType) {
+		this.supplyType = supplyType;
+	}
 
-	public void setSupplyType(int supplyTypeInt) { 
-                this.supplyType = TokenSupplyType.values()[supplyTypeInt]; 
-        }
+	public void setSupplyType(int supplyTypeInt) {
+		this.supplyType = TokenSupplyType.values()[supplyTypeInt];
+	}
 
 	public long maxSupply() {
 		return maxSupply;
@@ -548,19 +540,33 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		this.maxSupply = maxSupply;
 	}
 
-	public void setFeeSchedule(List<CustomFee> feeSchedule) {
-		this.feeSchedule = unmodifiableList(feeSchedule);
+	public boolean isFeeScheduleMutable() {
+		return feeScheduleMutable;
 	}
 
-	public void setFeeScheduleFrom(CustomFeesOuterClass.CustomFees grpcFeeSchedule) {
-		feeSchedule = customFeesFromGrpc(grpcFeeSchedule);
-	}
-
-	public static List<CustomFee> customFeesFromGrpc(CustomFeesOuterClass.CustomFees grpcFeeSchedule) {
-		return grpcFeeSchedule.getCustomFeesList().stream().map(CustomFee::fromGrpc).collect(toList());
+	private void setFeeScheduleMutable(boolean feeScheduleMutable) {
+		this.feeScheduleMutable = feeScheduleMutable;
 	}
 
 	public List<CustomFee> customFeeSchedule() {
 		return feeSchedule;
+	}
+
+	private void setFeeSchedule(List<CustomFee> feeSchedule) {
+		this.feeSchedule = unmodifiableList(feeSchedule);
+	}
+
+	public CustomFeesOuterClass.CustomFees grpcFeeSchedule() {
+		final var builder = CustomFeesOuterClass.CustomFees.newBuilder();
+		for (var customFee : feeSchedule) {
+			builder.addCustomFees(customFee.asGrpc());
+		}
+		builder.setCanUpdateWithAdminKey(feeScheduleMutable);
+		return builder.build();
+	}
+
+	public void setFeeScheduleFrom(CustomFeesOuterClass.CustomFeesOrBuilder grpcFeeSchedule) {
+		feeSchedule = grpcFeeSchedule.getCustomFeesList().stream().map(CustomFee::fromGrpc).collect(toList());
+		feeScheduleMutable = grpcFeeSchedule.getCanUpdateWithAdminKey();
 	}
 }

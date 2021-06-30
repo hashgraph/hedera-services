@@ -86,6 +86,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_ARE_MARKED_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
@@ -476,7 +477,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				return failure(validity);
 			}
 			pendingCreation.setFeeScheduleFrom(customFees);
-			pendingCreation.setFeeScheduleMutable(customFees.getCanUpdateWithAdminKey());
 		}
 
 		return success(pendingId);
@@ -731,6 +731,18 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			if (expiry != 0) {
 				token.setExpiry(expiry);
 			}
+			if (changes.hasCustomFees()) {
+				if (!token.isFeeScheduleMutable()) {
+					appliedValidity.set(CUSTOM_FEES_ARE_MARKED_IMMUTABLE);
+					return;
+				}
+				final var customFees = changes.getCustomFees();
+				appliedValidity.set(validateFeeSchedule(customFees.getCustomFeesList()));
+				if (OK != appliedValidity.get()) {
+					return;
+				}
+				token.setFeeScheduleFrom(customFees);
+			}
 		});
 		return appliedValidity.get();
 	}
@@ -743,6 +755,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				!op.hasSupplyKey() &&
 				!op.hasTreasury() &&
 				!op.hasAutoRenewAccount() &&
+				!op.hasCustomFees() &&
 				op.getSymbol().length() == 0 &&
 				op.getName().length() == 0 &&
 				op.getAutoRenewPeriod().getSeconds() == 0;
