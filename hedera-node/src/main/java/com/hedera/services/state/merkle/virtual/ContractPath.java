@@ -8,12 +8,12 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import java.io.IOException;
 import java.util.Objects;
 
-class ContractPath implements SelfSerializable {
+public class ContractPath implements SelfSerializable {
     public static final int SERIALIZED_SIZE = Long.BYTES * 4;
     private Id contractId;
     private long path;
 
-    ContractPath() {
+    public ContractPath() {
         // there has to be a default constructor for deserialize
     }
 
@@ -65,5 +65,12 @@ class ContractPath implements SelfSerializable {
     @Override
     public int hashCode() {
         return Objects.hash(contractId, path);
+    }
+
+    @Override
+    public String toString() {
+        return "ContractPath{" +
+                "path=" + path +
+                '}';
     }
 }

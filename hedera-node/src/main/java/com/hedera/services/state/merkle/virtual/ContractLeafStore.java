@@ -2,6 +2,7 @@ package com.hedera.services.state.merkle.virtual;
 
 import com.hedera.services.state.merkle.virtual.persistence.FCVirtualMapLeafStore;
 import com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCSlotIndexUsingFCHashMap;
+import com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCSlotIndexUsingMemMapFile;
 import com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCVirtualMapLeafStoreImpl;
 import com.hedera.services.state.merkle.virtual.persistence.fcmmap.MemMapSlotStore;
 import com.hedera.services.store.models.Id;
@@ -17,20 +18,38 @@ public class ContractLeafStore implements FCLeafStore<ContractUint256, ContractU
 
     public ContractLeafStore(Id contractId) {
         this.contractId = contractId;
-        this.dataStore = new FCVirtualMapLeafStoreImpl<>(
-                Path.of("data/contract-storage"),
-                256,
-                ContractKey.SERIALIZED_SIZE,
-                ContractPath.SERIALIZED_SIZE,
-                ContractUint256.SERIALIZED_SIZE,
-                new FCSlotIndexUsingFCHashMap<>(),
-                new FCSlotIndexUsingFCHashMap<>(),
-                ContractKey::new,
-                ContractPath::new,
-                ContractUint256::new,
-                MemMapSlotStore::new);
-
         try {
+            final var leafPathIndex = new FCSlotIndexUsingMemMapFile<ContractPath>(
+                    Path.of("data/contract-storage"),
+                    "leaf-path-index",
+                    1024*1024,
+                    128,
+                    ContractPath.SERIALIZED_SIZE,
+                    16,
+                    20);
+
+            final var leafKeyIndex = new FCSlotIndexUsingMemMapFile<ContractKey>(
+                    Path.of("data/contract-storage"),
+                    "leaf-key-index",
+                    1024*1024,
+                    128,
+                    ContractKey.SERIALIZED_SIZE,
+                    256,
+                    20);
+
+            this.dataStore = new FCVirtualMapLeafStoreImpl<>(
+                    Path.of("data/contract-storage"),
+                    256,
+                    ContractKey.SERIALIZED_SIZE,
+                    ContractPath.SERIALIZED_SIZE,
+                    ContractUint256.SERIALIZED_SIZE,
+                    leafPathIndex,
+                    leafKeyIndex,
+                    ContractKey::new,
+                    ContractPath::new,
+                    ContractUint256::new,
+                    MemMapSlotStore::new);
+
             this.dataStore.open();
         } catch (IOException e) {
             e.printStackTrace();

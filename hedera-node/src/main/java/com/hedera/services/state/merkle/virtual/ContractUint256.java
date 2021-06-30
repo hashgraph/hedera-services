@@ -6,6 +6,7 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Objects;
 
 public class ContractUint256 implements SelfSerializable {
@@ -32,7 +33,7 @@ public class ContractUint256 implements SelfSerializable {
 
     @Override
     public void deserialize(SerializableDataInputStream serializableDataInputStream, int i) throws IOException {
-        final var bytes = serializableDataInputStream.readByteArray(32);
+        final var bytes = serializableDataInputStream.readNBytes(32);
         this.value = new BigInteger(bytes);
     }
 
@@ -42,7 +43,7 @@ public class ContractUint256 implements SelfSerializable {
         if (arr.length > 32) {
             System.out.println(arr.length);
         }
-        serializableDataOutputStream.writeByteArray(arr);
+        serializableDataOutputStream.write(Arrays.copyOf(arr, 32));
     }
 
     @Override
