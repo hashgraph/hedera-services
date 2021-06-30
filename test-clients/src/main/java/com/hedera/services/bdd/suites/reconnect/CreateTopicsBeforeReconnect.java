@@ -32,10 +32,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.utilops.LoadTest.defaultLoadTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeReconnect.DEFAULT_MINS_FOR_RECONNECT_TESTS;
 import static com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeReconnect.DEFAULT_THREADS_FOR_RECONNECT_TESTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
@@ -64,10 +64,7 @@ public class CreateTopicsBeforeReconnect extends HapiApiSuite {
 	private synchronized HapiSpecOperation generateTopicCreateOperation() {
 		final long topic = topicNumber.getAndIncrement();
 		if (topic >= TOPIC_CREATION_LIMIT) {
-			return getVersionInfo()
-					.fee(ONE_HUNDRED_HBARS)
-					.payingWith(GENESIS)
-					.noLogging();
+			return noOp();
 		}
 
 		return createTopic("topic" + topic)
