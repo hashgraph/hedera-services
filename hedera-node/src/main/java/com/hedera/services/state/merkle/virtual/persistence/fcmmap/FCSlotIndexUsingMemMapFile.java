@@ -74,7 +74,7 @@ public final class FCSlotIndexUsingMemMapFile<K extends SelfSerializable> implem
                                       int maxNumberOfKeys, int maxNumberOfMutations) throws IOException {
         if (!positivePowerOfTwo(numOfFiles)) throw new IllegalArgumentException("numOfFiles["+numOfFiles+"] must be a positive power of two.");
         if (!positivePowerOfTwo(numOfBins)) throw new IllegalArgumentException("numOfBins["+numOfBins+"] must be a positive power of two.");
-        if (numOfBins > (2*numOfFiles)) throw new IllegalArgumentException("numOfBins["+numOfBins+"] must be at least twice the size of numOfFiles["+numOfFiles+"].");
+        if (numOfBins <= (2*numOfFiles)) throw new IllegalArgumentException("numOfBins["+numOfBins+"] must be at least twice the size of numOfFiles["+numOfFiles+"].");
         this.storageDirectory = storageDirectory;
         this.name = name;
         this.numOfBins = numOfBins;
@@ -92,7 +92,7 @@ public final class FCSlotIndexUsingMemMapFile<K extends SelfSerializable> implem
         // set initial version
         version = 1;
         // create storage directory if it doesn't exist
-        if (Files.exists(storageDirectory)) {
+        if (!Files.exists(storageDirectory)) {
             Files.createDirectories(storageDirectory);
         } else {
             // check that storage directory is a directory
@@ -128,7 +128,6 @@ public final class FCSlotIndexUsingMemMapFile<K extends SelfSerializable> implem
         // state
         this.keyCount.set(toCopy.keyCount.get());
         this.isReleased.set(false);
-        this.isImmutable.set(true);
         this.files = toCopy.files;
         this.referenceCount = toCopy.referenceCount;
         referenceCount.incrementAndGet(); // add this class as a new reference
@@ -138,6 +137,8 @@ public final class FCSlotIndexUsingMemMapFile<K extends SelfSerializable> implem
         for (BinFile<K> file : files) {
             file.versionChanged(toCopy.version, version);
         }
+        // mark instance we copied from as immutable
+        toCopy.isImmutable.set(true);
     }
 
     //==================================================================================================================

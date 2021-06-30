@@ -51,7 +51,10 @@ public class FCVirtualMapTestUtils {
                         .filter(p -> p.toFile().isFile())
                         .mapToLong(p -> p.toFile().length())
                         .sum();
-                System.out.printf("Test data storage size: %,.1f Mb\n",(double)size/(1024d*1024d));
+                long count = Files.walk(dir)
+                        .filter(p -> p.toFile().isFile())
+                        .count();
+                System.out.printf("Test data storage %d files totalling size: %,.1f Mb\n",count,(double)size/(1024d*1024d));
             } catch (Exception e) {
                 System.err.println("Failed to measure size of directory. ["+dir.toFile().getAbsolutePath()+"]");
                 e.printStackTrace();
