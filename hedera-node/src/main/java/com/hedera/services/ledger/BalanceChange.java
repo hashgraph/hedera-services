@@ -43,7 +43,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NO
  * and a field to contain the new balance that will result from the change.
  * (This field is helpful to simplify work done in {@link HederaLedger}.)
  *
- * The {@code explicitTokenId} and {@code explicitAccountId} fields are
+ * The {@code tokenId} and {@code accountId} fields are
  * temporary, needed to interact with the {@link com.hedera.services.ledger.accounts.BackingAccounts}
  * and {@link com.hedera.services.ledger.accounts.BackingTokenRels} components
  * whose APIs still use gRPC types.
@@ -51,11 +51,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NO
 public class BalanceChange {
 	static final TokenID NO_TOKEN_FOR_HBAR_ADJUST = TokenID.getDefaultInstance();
 
-	private final Id token;
-	private final Id account;
-	private final long units;
-	private ResponseCodeEnum codeForInsufficientBalance;
+	private Id token;
 
+	private Id account;
+	private long units;
+	private ResponseCodeEnum codeForInsufficientBalance;
 	private long newBalance;
 	private NftId nftId = null;
 	private TokenID tokenId = null;
@@ -93,6 +93,22 @@ public class BalanceChange {
 		return tokenChange;
 	}
 
+	private BalanceChange(Id account, long amount, ResponseCodeEnum code) {
+		this.token = null;
+		this.account = account;
+		this.accountId = account.asGrpcAccount();
+		this.units = amount;
+		this.codeForInsufficientBalance = code;
+	}
+
+	public void adjustUnits(long units) {
+		this.units += units;
+	}
+
+	public static BalanceChange hbarAdjust(Id id, long amount) {
+		return new BalanceChange(id, amount, INSUFFICIENT_ACCOUNT_BALANCE);
+	}
+
 	public static BalanceChange changingNftOwnership(Id token, TokenID tokenId, NftTransfer nftTransfer) {
 		final var serialNo = nftTransfer.getSerialNumber();
 		final var nftChange = new BalanceChange(
@@ -104,6 +120,13 @@ public class BalanceChange {
 		nftChange.nftId = new NftId(token.getShard(), token.getRealm(), token.getNum(), serialNo);
 		nftChange.tokenId = tokenId;
 		return nftChange;
+        }
+
+	public static BalanceChange tokenAdjust(Id account, Id token, long amount) {
+		final var tokenChange = new BalanceChange(account, amount, INSUFFICIENT_TOKEN_BALANCE);
+		tokenChange.token = token;
+		tokenChange.tokenId = token.asGrpcToken();
+		return tokenChange;
 	}
 
 	public boolean isForHbar() {
@@ -144,6 +167,14 @@ public class BalanceChange {
 
 	public AccountID counterPartyAccountId() {
 		return counterPartyAccountId;
+        }
+
+	public Id getAccount() {
+		return account;
+	}
+
+	public Id getToken() {
+		return token;
 	}
 
 	public ResponseCodeEnum codeForInsufficientBalance() {
@@ -175,10 +206,14 @@ public class BalanceChange {
 		} else {
 			return MoreObjects.toStringHelper(BalanceChange.class)
 					.add("nft", token)
-					.add("serialNo", serialNo())
+					.add("serialNo", units)
 					.add("from", account)
 					.add("to", Id.fromGrpcAccount(counterPartyAccountId))
 					.toString();
 		}
+	}
+
+	public void setCodeForInsufficientBalance(ResponseCodeEnum codeForInsufficientBalance) {
+		this.codeForInsufficientBalance = codeForInsufficientBalance;
 	}
 }

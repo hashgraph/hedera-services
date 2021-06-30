@@ -116,14 +116,6 @@
         <enabled>true</enabled>
       </snapshots>
     </repository>
-    <repository>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-      <id>alpha-sdk</id>
-      <name>OSSRH</name>
-      <url>https://oss.sonatype.org/content/repositories/comswirlds-1112</url>
-    </repository>
   </repositories>
   <distributionManagement>
     <snapshotRepository>
@@ -170,11 +162,11 @@
     <grpc.version>1.33.0</grpc.version>
     <jackson-databind.version>2.9.10.7</jackson-databind.version>
     <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
-    <hapi-proto.version>0.16.0-SNAPSHOT</hapi-proto.version>
+    <hapi-proto.version>0.16.0-alpha.1</hapi-proto.version>
     <javax-inject.version>1</javax-inject.version>
     <log4j.version>2.13.2</log4j.version>
     <netty.version>4.1.51.Final</netty.version>
-    <swirlds.version>0.16.0-alpha.1</swirlds.version>
+    <swirlds.version>0.16.0</swirlds.version>
     <!-- Test dependency properties -->
     <hamcrest-all.version>1.3</hamcrest-all.version>
     <junit.version>4.13.1</junit.version>

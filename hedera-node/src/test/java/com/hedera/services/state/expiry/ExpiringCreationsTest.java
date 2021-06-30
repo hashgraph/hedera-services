@@ -30,6 +30,7 @@ import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.serdes.DomainSerdesTest;
+import com.hedera.services.state.submerkle.AssessedCustomFee;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -119,6 +120,11 @@ class ExpiringCreationsTest {
 
 	private final TxnReceipt receipt = TxnReceipt.newBuilder().setStatus(SUCCESS.name()).build();
 
+	private final EntityId customFeeToken = new EntityId(0, 0, 123);
+	private final EntityId customFeeCollector = new EntityId(0, 0, 124);
+	private final List<AssessedCustomFee> customFeesCharged = List.of(new AssessedCustomFee(customFeeCollector, customFeeToken, 123L));
+
+
 	@BeforeEach
 	void setup() {
 		subject = new ExpiringCreations(expiries, dynamicProperties, () -> accounts);
@@ -180,7 +186,7 @@ class ExpiringCreationsTest {
 						null, null, 0L, submittingMember));
 		Assertions.assertThrows(UnsupportedOperationException.class, () ->
 				NOOP_EXPIRING_CREATIONS.buildExpiringRecord(
-						0L, null, null, null, null, null, null));
+						0L, null, null, null, null, null, null, null));
 		Assertions.assertThrows(UnsupportedOperationException.class, () ->
 				NOOP_EXPIRING_CREATIONS.buildFailedExpiringRecord(null, null));
 	}
@@ -198,7 +204,7 @@ class ExpiringCreationsTest {
 
 		//when:
 		ExpirableTxnRecord.Builder builder =
-				subject.buildExpiringRecord(100L, hash, accessor, timestamp, receipt, null, ctx);
+				subject.buildExpiringRecord(100L, hash, accessor, timestamp, receipt, null, ctx, customFeesCharged);
 		ExpirableTxnRecord actualRecord = builder.build();
 
 		//then:
@@ -225,6 +231,9 @@ class ExpiringCreationsTest {
 		for (int i = 0; i < tokenTransferListExpected.size(); i++) {
 			assertEquals(tokenTransferListExpected.get(i), actualRecord.getTokenAdjustments().get(i));
 		}
+
+		assertEquals(1, actualRecord.getCustomFeesCharged().size());
+		assertEquals(customFeesCharged.get(0), actualRecord.getCustomFeesCharged().get(0));
 	}
 
 	@Test
@@ -245,7 +254,7 @@ class ExpiringCreationsTest {
 
 		//when:
 		final var builder =
-				subject.buildExpiringRecord(100L, hash, accessor, timestamp, receipt, someTokenXfers, ctx);
+				subject.buildExpiringRecord(100L, hash, accessor, timestamp, receipt, someTokenXfers, ctx, null);
 		final var actualRecord = builder.build();
 
 		//then:

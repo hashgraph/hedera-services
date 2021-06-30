@@ -9,9 +9,9 @@ package com.hedera.services.legacy.proto.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,6 +35,8 @@ public class SignatureGenerator {
    * @param msgBytes to be signed
    * @param priv private key
    * @return signature in hex format
+   * @throws InvalidKeyException if the key is invalid
+   * @throws SignatureException if there is an error in the signature
    */
   public static String signBytes(byte[] msgBytes, PrivateKey priv) throws InvalidKeyException, SignatureException {
     byte[] sigBytes = null;

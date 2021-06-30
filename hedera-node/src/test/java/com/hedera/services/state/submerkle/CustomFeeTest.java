@@ -20,7 +20,6 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
-import com.google.protobuf.UInt64Value;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.Fraction;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -70,15 +69,15 @@ class CustomFeeTest {
 
 		// given:
 		final var htsGrpc = CustomFeesOuterClass.CustomFee.newBuilder()
-				.setFeeCollector(feeCollector.toGrpcAccountId())
+				.setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
 				.setFixedFee(CustomFeesOuterClass.FixedFee.newBuilder()
-						.setTokenId(grpcDenom)
-						.setUnitsToCollect(fixedUnitsToCollect)
+						.setDenominatingTokenId(grpcDenom)
+						.setAmount(fixedUnitsToCollect)
 				).build();
 		final var hbarGrpc = CustomFeesOuterClass.CustomFee.newBuilder()
-				.setFeeCollector(feeCollector.toGrpcAccountId())
+				.setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
 				.setFixedFee(CustomFeesOuterClass.FixedFee.newBuilder()
-						.setUnitsToCollect(fixedUnitsToCollect)
+						.setAmount(fixedUnitsToCollect)
 				).build();
 
 		// when:
@@ -94,9 +93,9 @@ class CustomFeeTest {
 	void grpcReprWorksForFixedHbar() {
 		// setup:
 		final var expected = CustomFeesOuterClass.CustomFee.newBuilder()
-				.setFeeCollector(feeCollector.toGrpcAccountId())
+				.setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
 				.setFixedFee(CustomFeesOuterClass.FixedFee.newBuilder()
-						.setUnitsToCollect(fixedUnitsToCollect)
+						.setAmount(fixedUnitsToCollect)
 				).build();
 
 		// given:
@@ -115,10 +114,10 @@ class CustomFeeTest {
 
 		// setup:
 		final var expected = CustomFeesOuterClass.CustomFee.newBuilder()
-				.setFeeCollector(feeCollector.toGrpcAccountId())
+				.setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
 				.setFixedFee(CustomFeesOuterClass.FixedFee.newBuilder()
-						.setTokenId(grpcDenom)
-						.setUnitsToCollect(fixedUnitsToCollect)
+						.setDenominatingTokenId(grpcDenom)
+						.setAmount(fixedUnitsToCollect)
 				).build();
 
 		// given:
@@ -135,14 +134,13 @@ class CustomFeeTest {
 	void grpcReprWorksForFractional() {
 		// setup:
 		final var expected = CustomFeesOuterClass.CustomFee.newBuilder()
-				.setFeeCollector(feeCollector.toGrpcAccountId())
+				.setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
 				.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
-						.setFractionOfUnitsToCollect(Fraction.newBuilder()
+						.setFractionalAmount(Fraction.newBuilder()
 								.setNumerator(validNumerator)
 								.setDenominator(validDenominator))
-						.setMinimumUnitsToCollect(minimumUnitsToCollect)
-						.setMaximumUnitsToCollect(UInt64Value.newBuilder()
-								.setValue(maximumUnitsToCollect))
+						.setMinimumAmount(minimumUnitsToCollect)
+						.setMaximumAmount(maximumUnitsToCollect)
 				).build();
 
 		// given:
@@ -164,12 +162,12 @@ class CustomFeeTest {
 	void grpcReprWorksForFractionalNoMax() {
 		// setup:
 		final var expected = CustomFeesOuterClass.CustomFee.newBuilder()
-				.setFeeCollector(feeCollector.toGrpcAccountId())
+				.setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
 				.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
-						.setFractionOfUnitsToCollect(Fraction.newBuilder()
+						.setFractionalAmount(Fraction.newBuilder()
 								.setNumerator(validNumerator)
 								.setDenominator(validDenominator))
-						.setMinimumUnitsToCollect(minimumUnitsToCollect)
+						.setMinimumAmount(minimumUnitsToCollect)
 				).build();
 
 		// given:
@@ -205,23 +203,23 @@ class CustomFeeTest {
 
 		// given:
 		final var grpcWithExplicitMax = CustomFeesOuterClass.CustomFee.newBuilder()
-				.setFeeCollector(feeCollector.toGrpcAccountId())
+				.setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
 				.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
-						.setFractionOfUnitsToCollect(Fraction.newBuilder()
+						.setFractionalAmount(Fraction.newBuilder()
 								.setNumerator(validNumerator)
 								.setDenominator(validDenominator)
 								.build())
-						.setMinimumUnitsToCollect(minimumUnitsToCollect)
-						.setMaximumUnitsToCollect(UInt64Value.newBuilder().setValue(maximumUnitsToCollect).build())
+						.setMinimumAmount(minimumUnitsToCollect)
+						.setMaximumAmount(maximumUnitsToCollect)
 				).build();
 		final var grpcWithoutExplicitMax = CustomFeesOuterClass.CustomFee.newBuilder()
-				.setFeeCollector(feeCollector.toGrpcAccountId())
+				.setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
 				.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
-						.setFractionOfUnitsToCollect(Fraction.newBuilder()
+						.setFractionalAmount(Fraction.newBuilder()
 								.setNumerator(validNumerator)
 								.setDenominator(validDenominator)
 								.build())
-						.setMinimumUnitsToCollect(minimumUnitsToCollect)
+						.setMinimumAmount(minimumUnitsToCollect)
 				).build();
 
 		// when:
@@ -260,7 +258,7 @@ class CustomFeeTest {
 
 		// then:
 		assertEquals(subject.getFractionalFeeSpec(), newSubject.getFractionalFeeSpec());
-		assertEquals(subject.getFeeCollector(), newSubject.getFeeCollector());
+		assertEquals(subject.getFeeCollectorAccountId(), newSubject.getFeeCollectorAccountId());
 	}
 
 	@Test
@@ -285,7 +283,7 @@ class CustomFeeTest {
 
 		// then:
 		assertEquals(fixedSubject.getFixedFeeSpec(), newSubject.getFixedFeeSpec());
-		assertEquals(fixedSubject.getFeeCollector(), newSubject.getFeeCollector());
+		assertEquals(fixedSubject.getFeeCollectorAccountId(), newSubject.getFeeCollectorAccountId());
 	}
 
 	@Test
@@ -310,7 +308,7 @@ class CustomFeeTest {
 
 		// then:
 		assertEquals(fixedSubject.getFixedFeeSpec(), newSubject.getFixedFeeSpec());
-		assertEquals(fixedSubject.getFeeCollector(), newSubject.getFeeCollector());
+		assertEquals(fixedSubject.getFeeCollectorAccountId(), newSubject.getFeeCollectorAccountId());
 	}
 
 	@Test
@@ -332,7 +330,7 @@ class CustomFeeTest {
 		assertEquals(CustomFee.FeeType.FIXED_FEE, subject.getFeeType());
 		assertEquals(expectedFixedSpec, subject.getFixedFeeSpec());
 		assertNull(subject.getFractionalFeeSpec());
-		assertEquals(feeCollector, subject.getFeeCollector());
+		assertEquals(feeCollector, subject.getFeeCollectorAccountId());
 	}
 
 	@Test
@@ -362,7 +360,7 @@ class CustomFeeTest {
 		assertEquals(CustomFee.FeeType.FRACTIONAL_FEE, subject.getFeeType());
 		assertEquals(expectedFractionalSpec, subject.getFractionalFeeSpec());
 		assertNull(subject.getFixedFeeSpec());
-		assertEquals(feeCollector, subject.getFeeCollector());
+		assertEquals(feeCollector, subject.getFeeCollectorAccountId());
 	}
 
 	@Test
@@ -430,7 +428,7 @@ class CustomFeeTest {
 		assertEquals(CustomFee.FeeType.FIXED_FEE, fixedSubject.getFeeType());
 		assertEquals(expectedFixedSpec, fixedSubject.getFixedFeeSpec());
 		assertNull(fixedSubject.getFractionalFeeSpec());
-		assertEquals(feeCollector, fixedSubject.getFeeCollector());
+		assertEquals(feeCollector, fixedSubject.getFeeCollectorAccountId());
 	}
 
 	@Test
@@ -454,7 +452,7 @@ class CustomFeeTest {
 		assertEquals(CustomFee.FeeType.FRACTIONAL_FEE, fractionalSubject.getFeeType());
 		assertEquals(expectedFractionalSpec, fractionalSubject.getFractionalFeeSpec());
 		assertNull(fractionalSubject.getFixedFeeSpec());
-		assertEquals(feeCollector, fractionalSubject.getFeeCollector());
+		assertEquals(feeCollector, fractionalSubject.getFeeCollectorAccountId());
 	}
 
 	@Test
@@ -478,13 +476,44 @@ class CustomFeeTest {
 	}
 
 	@Test
+	void failsFastIfNonPositiveFeeUsed() {
+		assertThrows(IllegalArgumentException.class, () -> new CustomFee.FixedFeeSpec(0, denom));
+		assertThrows(IllegalArgumentException.class, () -> new CustomFee.FixedFeeSpec(-1, denom));
+	}
+
+	@Test
 	void failFastIfInvalidFractionUsed() {
-		// setup:
+		// expect:
 		assertThrows(IllegalArgumentException.class, () -> new CustomFee.FractionalFeeSpec(
 				validNumerator,
 				invalidDenominator,
 				minimumUnitsToCollect,
 				maximumUnitsToCollect));
+		assertThrows(IllegalArgumentException.class, () -> new CustomFee.FractionalFeeSpec(
+				-validNumerator,
+				validDenominator,
+				minimumUnitsToCollect,
+				maximumUnitsToCollect));
+		assertThrows(IllegalArgumentException.class, () -> new CustomFee.FractionalFeeSpec(
+				validNumerator,
+				-validDenominator,
+				minimumUnitsToCollect,
+				maximumUnitsToCollect));
+		assertThrows(IllegalArgumentException.class, () -> new CustomFee.FractionalFeeSpec(
+				validNumerator,
+				validDenominator,
+				-minimumUnitsToCollect,
+				maximumUnitsToCollect));
+		assertThrows(IllegalArgumentException.class, () -> new CustomFee.FractionalFeeSpec(
+				validNumerator,
+				validDenominator,
+				minimumUnitsToCollect,
+				-maximumUnitsToCollect));
+		assertThrows(IllegalArgumentException.class, () -> new CustomFee.FractionalFeeSpec(
+				validNumerator,
+				validDenominator,
+				maximumUnitsToCollect,
+				minimumUnitsToCollect));
 	}
 
 	@Test
@@ -500,7 +529,7 @@ class CustomFeeTest {
 		// given:
 		assertEquals(validNumerator, fractionalSpec.getNumerator());
 		assertEquals(validDenominator, fractionalSpec.getDenominator());
-		assertEquals(minimumUnitsToCollect, fractionalSpec.getMinimumUnitsToCollect());
+		assertEquals(minimumUnitsToCollect, fractionalSpec.getMinimumAmount());
 		assertEquals(maximumUnitsToCollect, fractionalSpec.getMaximumUnitsToCollect());
 		assertEquals(fixedUnitsToCollect, fixedSpec.getUnitsToCollect());
 		assertEquals(denom, fixedSpec.getTokenDenomination());

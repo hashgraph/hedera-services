@@ -41,6 +41,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import proto.CustomFeesOuterClass;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -72,6 +73,8 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 	private Optional<String> autoRenewAccount = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> newSymbolFn = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> newNameFn = Optional.empty();
+	private final List<Function<HapiApiSpec, CustomFeesOuterClass.CustomFee>> feeScheduleSuppliers = new ArrayList<>();
+	private Optional<Boolean> newCustomFeesMutable = Optional.empty();
 	private boolean useImproperEmptyKey = false;
 	private boolean useEmptyAdminKeyList = false;
 
@@ -82,6 +85,16 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 
 	public HapiTokenUpdate(String token) {
 		this.token = token;
+	}
+
+	public HapiTokenUpdate withCustom(Function<HapiApiSpec, CustomFeesOuterClass.CustomFee> supplier) {
+		feeScheduleSuppliers.add(supplier);
+		return this;
+	}
+
+	public HapiTokenUpdate customFeesMutable(boolean customFeesMutable) {
+		newCustomFeesMutable = Optional.of(customFeesMutable);
+		return this;
 	}
 
 	public HapiTokenUpdate freezeKey(String name) {
@@ -256,6 +269,13 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 							expiry.ifPresent(t -> b.setExpiry(Timestamp.newBuilder().setSeconds(t).build()));
 							autoRenewPeriod.ifPresent(secs ->
 									b.setAutoRenewPeriod(Duration.newBuilder().setSeconds(secs).build()));
+							if (!feeScheduleSuppliers.isEmpty()) {
+								final var fb = b.getCustomFeesBuilder();
+								for (var supplier : feeScheduleSuppliers) {
+									fb.addCustomFees(supplier.apply(spec));
+								}
+								newCustomFeesMutable.ifPresent(m -> fb.setCanUpdateWithAdminKey(m));
+							}
 						});
 		return b -> b.setTokenUpdate(opBody);
 	}

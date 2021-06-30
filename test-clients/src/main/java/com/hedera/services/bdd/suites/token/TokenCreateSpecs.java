@@ -63,6 +63,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordSystemProperty;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
@@ -279,6 +280,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						}),
 						getTokenInfo("primary")
 								.logged()
+								.hasCustomFeesMutable(false)
 								.hasRegisteredId("primary")
 								.hasTokenType(TokenType.FUNGIBLE_COMMON)
 								.hasSupplyType(TokenSupplyType.FINITE)
@@ -426,17 +428,18 @@ public class TokenCreateSpecs extends HapiApiSuite {
 		final var maximumToCollect = 50;
 
 		final var token = "withCustomSchedules";
-		final var feeDenom = "demon";
+		final var feeDenom = "denom";
 		final var hbarCollector = "hbarFee";
-		final var htsCollector = "demonFee";
+		final var htsCollector = "denomFee";
 		final var tokenCollector = "fractionalFee";
 		final var invalidEntityId = "1.2.786";
+		final var negativeHtsFee = -100L;
 
-		final var customFeeKey = "antique";
+		final var customFeesKey = "antique";
 
 		return defaultHapiSpec("OnlyValidCustomFeeScheduleCanBeCreated")
 				.given(
-						newKeyNamed(customFeeKey),
+						newKeyNamed(customFeesKey),
 						cryptoCreate(htsCollector),
 						cryptoCreate(hbarCollector),
 						cryptoCreate(tokenCollector),
@@ -473,12 +476,36 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.treasury(tokenCollector)
 								.withCustom(incompleteCustomFee(hbarCollector))
 								.hasKnownStatus(CUSTOM_FEE_NOT_FULLY_SPECIFIED),
+						tokenCreate(token)
+								.treasury(tokenCollector)
+								.withCustom(fixedHtsFee(negativeHtsFee, feeDenom, hbarCollector))
+								.hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
+						tokenCreate(token)
+								.treasury(tokenCollector)
+								.withCustom(fractionalFee(
+										numerator, -denominator,
+										minimumToCollect, OptionalLong.of(maximumToCollect),
+										tokenCollector))
+								.hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
+						tokenCreate(token)
+								.treasury(tokenCollector)
+								.withCustom(fractionalFee(
+										numerator, denominator,
+										-minimumToCollect, OptionalLong.of(maximumToCollect),
+										tokenCollector))
+								.hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
+						tokenCreate(token)
+								.treasury(tokenCollector)
+								.withCustom(fractionalFee(
+										numerator, denominator,
+										minimumToCollect, OptionalLong.of(-maximumToCollect),
+										tokenCollector))
+								.hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
 								.overridingProps(Map.of("tokens.maxCustomFeesAllowed", "10")),
 						tokenCreate(token)
 								.treasury(tokenCollector)
-								.customFeeKey(customFeeKey)
 								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
 								.withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
 								.withCustom(fractionalFee(
@@ -487,7 +514,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 										tokenCollector))
 				).then(
 						getTokenInfo(token)
-								.hasCustomFeeKey(customFeeKey)
+								.hasCustomFeesMutable(false)
 								.hasCustom(fixedHbarFeeInSchedule(hbarAmount, hbarCollector))
 								.hasCustom(fixedHtsFeeInSchedule(htsAmount, feeDenom, htsCollector))
 								.hasCustom(fractionalFeeInSchedule(

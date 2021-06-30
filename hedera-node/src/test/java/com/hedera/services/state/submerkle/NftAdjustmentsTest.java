@@ -44,11 +44,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 class NftAdjustmentsTest {
+	private AccountID sender = AccountID.getDefaultInstance();
+	private AccountID recipient = AccountID.newBuilder().setAccountNum(3).setRealmNum(2).setShardNum(1).build();
 
-	NftAdjustments subject;
-	AccountID sender = AccountID.getDefaultInstance();
-	AccountID recipient = AccountID.newBuilder().setAccountNum(3).setRealmNum(2).setShardNum(1).build();
-
+	private NftAdjustments subject;
 
 	@BeforeEach
 	void setUp() {
@@ -68,12 +67,14 @@ class NftAdjustmentsTest {
 	@Test
 	void deserialize() throws IOException {
 		SerializableDataInputStream stream = mock(SerializableDataInputStream.class);
-		given(stream.readSerializableList(eq(NftAdjustments.MAX_NUM_ADJUSTMENTS), anyBoolean(), any())).willReturn(Collections.emptyList());
+		given(stream.readSerializableList(eq(NftAdjustments.MAX_NUM_ADJUSTMENTS), anyBoolean(), any()))
+				.willReturn(Collections.emptyList());
 		given(stream.readLongArray(NftAdjustments.MAX_NUM_ADJUSTMENTS)).willReturn(new long[]{1, 2, 3});
 
 		subject.deserialize(stream, 1);
 		verify(stream).readLongArray(NftAdjustments.MAX_NUM_ADJUSTMENTS);
-		verify(stream, times(2)).readSerializableList(eq(1024), eq(true), any());
+		verify(stream, times(2))
+				.readSerializableList(eq(1024), eq(true), any());
 	}
 
 	@Test

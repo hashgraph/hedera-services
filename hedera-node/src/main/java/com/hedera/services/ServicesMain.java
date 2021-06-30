@@ -264,7 +264,8 @@ public class ServicesMain implements SwirldMain {
 	}
 
 	private void registerIssListener() {
-		ctx.platform().addSignedStateListener(new IssListener(new FcmDump(), ctx.issEventInfo()));
+		ctx.platform().addSignedStateListener(
+				new IssListener(new FcmDump(), ctx.issEventInfo(), ctx.nodeLocalProperties()));
 	}
 
 	void registerReconnectCompleteListener(final NotificationEngine notificationEngine) {

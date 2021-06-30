@@ -9,9 +9,9 @@ package com.hedera.services.calc;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -59,6 +59,8 @@ public class OverflowCheckingCalc {
 	 * @param prices the prices of those resources, in units of 1/1000th of a tinycent
 	 * @param rate the exchange rate between ℏ and ¢
 	 * @param multiplier a scale factor determined by congestion pricing
+	 *
+	 * @return fee object containing the node, network, and service fees
 	 * @throws IllegalArgumentException if any step of the calculation overflows
 	 */
 	public FeeObject fees(UsageAccumulator usage, FeeData prices, ExchangeRate rate, long multiplier) {
@@ -66,15 +68,19 @@ public class OverflowCheckingCalc {
 		final long nodeFeeTinycents = nodeFeeInTinycents(usage, prices.getNodedata());
 		final long serviceFeeTinycents = serviceFeeInTinycents(usage, prices.getServicedata());
 
-		final long networkFee = tinycentsToTinybars(networkFeeTinycents, rate) * multiplier;
-		final long nodeFee = tinycentsToTinybars(nodeFeeTinycents, rate) * multiplier;
-		final long serviceFee = tinycentsToTinybars(serviceFeeTinycents, rate) * multiplier;
+		final long unscaledNetworkFee = tinycentsToTinybars(networkFeeTinycents, rate);
+		final long unscaledNodeFee = tinycentsToTinybars(nodeFeeTinycents, rate);
+		final long unscaledServiceFee = tinycentsToTinybars(serviceFeeTinycents, rate);
 
-		if (networkFee < 0 || nodeFee < 0 || serviceFee < 0) {
+		final long maxUnscaled = Long.MAX_VALUE / multiplier;
+		if (unscaledNetworkFee > maxUnscaled || unscaledNodeFee > maxUnscaled || unscaledServiceFee > maxUnscaled) {
 			throw new IllegalArgumentException(OVERFLOW_ERROR);
 		}
 
-		return new FeeObject(nodeFee, networkFee, serviceFee);
+		return new FeeObject(
+				unscaledNodeFee * multiplier,
+				unscaledNetworkFee * multiplier,
+				unscaledServiceFee * multiplier);
 	}
 
 	long tinycentsToTinybars(long amount, ExchangeRate rate) {

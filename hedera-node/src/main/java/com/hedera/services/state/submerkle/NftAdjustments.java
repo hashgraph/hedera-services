@@ -40,25 +40,20 @@ import static com.hedera.services.utils.MiscUtils.readableNftTransferList;
 import static java.util.stream.Collectors.toList;
 
 public class NftAdjustments implements SelfSerializable {
-
 	private static final Logger log = LogManager.getLogger(NftAdjustments.class);
 
 	private static final int MERKLE_VERSION = 1;
-
 	private static final long RUNTIME_CONSTRUCTABLE_ID = 0xd7a02bf45e103466L;
-
 	private static final long[] NO_ADJUSTMENTS = new long[0];
 
-	public static final int MAX_NUM_ADJUSTMENTS = 1024;
+	static final int MAX_NUM_ADJUSTMENTS = 1024;
 
 	private long[] serialNums = NO_ADJUSTMENTS;
-
 	private List<EntityId> senderAccIds = Collections.emptyList();
-
 	private List<EntityId> receiverAccIds = Collections.emptyList();
 
 	public NftAdjustments() {
-
+		/* RuntimeConstructable */
 	}
 
 	@Override
@@ -86,7 +81,6 @@ public class NftAdjustments implements SelfSerializable {
 	}
 
 	/* ---- Object --- */
-
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
@@ -116,7 +110,6 @@ public class NftAdjustments implements SelfSerializable {
 	}
 
 	/* --- Helpers --- */
-
 	public TokenTransferList toGrpc() {
 		var grpc = TokenTransferList.newBuilder();
 		IntStream.range(0, serialNums.length)
@@ -144,7 +137,6 @@ public class NftAdjustments implements SelfSerializable {
 				.map(NftTransfer::getReceiverAccountID)
 				.map(EntityId::fromGrpcAccountId)
 				.collect(toList());
-
 
 		return pojo;
 	}
