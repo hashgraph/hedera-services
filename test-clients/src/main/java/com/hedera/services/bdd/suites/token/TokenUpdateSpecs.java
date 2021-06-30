@@ -679,6 +679,27 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
 						tokenUpdate(token)
 								.treasury(tokenCollector)
+								.withCustom(fractionalFee(
+										-numerator, -denominator,
+										minimumToCollect, OptionalLong.of(maximumToCollect),
+										tokenCollector))
+								.hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
+						tokenUpdate(token)
+								.treasury(tokenCollector)
+								.withCustom(fractionalFee(
+										numerator, denominator,
+										minimumToCollect * 20, OptionalLong.of(maximumToCollect),
+										tokenCollector))
+								.hasKnownStatus(FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT),
+						tokenUpdate(token)
+								.treasury(tokenCollector)
+								.withCustom(fractionalFee(
+										numerator, denominator,
+										minimumToCollect * 10, OptionalLong.of(maximumToCollect),
+										tokenCollector))
+								.hasKnownStatus(OK),
+						tokenUpdate(token)
+								.treasury(tokenCollector)
 								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
 								.withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
 								.hasKnownStatus(CUSTOM_FEES_LIST_TOO_LONG),
