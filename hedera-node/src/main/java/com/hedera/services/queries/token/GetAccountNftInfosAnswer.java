@@ -40,7 +40,7 @@ import java.util.Optional;
 import static com.hedera.services.utils.SignedTxnAccessor.uncheckedFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.QUERY_RANGE_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_QUERY_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
 public class GetAccountNftInfosAnswer implements AnswerService {
@@ -83,7 +83,7 @@ public class GetAccountNftInfosAnswer implements AnswerService {
         AccountID id = accountNftInfoQuery.getAccountID();
 
         if (accountNftInfoQuery.getStart() > accountNftInfoQuery.getEnd()) {
-            return QUERY_RANGE_LIMIT_EXCEEDED;
+            return INVALID_QUERY_RANGE;
         }
 
         var validity = validator.nftMaxQueryRangeCheck(accountNftInfoQuery.getStart(), accountNftInfoQuery.getEnd());
@@ -103,7 +103,7 @@ public class GetAccountNftInfosAnswer implements AnswerService {
                 accountNftInfoQuery.getStart() > nftCount ||
                 accountNftInfoQuery.getEnd() > nftCount
         ) {
-            return QUERY_RANGE_LIMIT_EXCEEDED;
+            return INVALID_QUERY_RANGE;
         }
 
         return OK;

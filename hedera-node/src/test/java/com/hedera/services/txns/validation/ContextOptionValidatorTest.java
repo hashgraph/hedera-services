@@ -76,7 +76,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.METADATA_TOO_L
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.QUERY_RANGE_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_QUERY_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
@@ -617,7 +617,7 @@ class ContextOptionValidatorTest {
 
 	@Test
 	void rejectsInvalidMetadata(){
-		assertEquals(QUERY_RANGE_LIMIT_EXCEEDED, subject.nftMaxQueryRangeCheck(0, 1001));
+		assertEquals(INVALID_QUERY_RANGE, subject.nftMaxQueryRangeCheck(0, 1001));
 		assertEquals(METADATA_TOO_LONG, subject.nftMetadataCheck(ByteString.copyFromUtf8("aaaaaaaaaaaaaaa").toByteArray()));
 	}
 }
