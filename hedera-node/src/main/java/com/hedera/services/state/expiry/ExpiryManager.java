@@ -37,6 +37,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -54,6 +55,13 @@ import static java.util.Comparator.comparing;
  * </ol>
  */
 public class ExpiryManager {
+	/* Since the key in Pair<Long, Consumer<EntityId>> is the schedule entity number---and
+	entity numbers are unique---the downstream comparator below will guarantee a fixed
+	ordering for ExpiryEvents with the same expiry. */
+	private static final Comparator<ExpiryEvent<Pair<Long, Consumer<EntityId>>>> PQ_CMP = Comparator
+			.comparingLong(ExpiryEvent<Pair<Long, Consumer<EntityId>>>::getExpiry)
+			.thenComparingLong(ee -> ee.getId().getKey());
+
 	private final long shard, realm;
 
 	private final RecordCache recordCache;
@@ -65,7 +73,7 @@ public class ExpiryManager {
 	private final MonotonicFullQueueExpiries<Long> payerRecordExpiries =
 			new MonotonicFullQueueExpiries<>();
 	private final PriorityQueueExpiries<Pair<Long, Consumer<EntityId>>> shortLivedEntityExpiries =
-			new PriorityQueueExpiries<>();
+			new PriorityQueueExpiries<>(PQ_CMP);
 
 	public ExpiryManager(
 			RecordCache recordCache,

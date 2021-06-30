@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,14 +33,19 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PriorityQueueExpiriesTest {
-	String k1 = "first", k2 = "second", k3 = "third";
-	long expiry1 = 50, expiry2 = 1000, expiry3 = 200;
+	private String k1 = "first", k2 = "second", k3 = "third";
+	private long expiry1 = 50, expiry2 = 1000, expiry3 = 200;
 
-	PriorityQueueExpiries<String> subject;
+	private PriorityQueueExpiries<String> subject;
+	private Comparator<ExpiryEvent<String>> testCmp = (aEvent, bEvent) -> {
+		int order;
+		return (order = Long.compare(aEvent.getExpiry(), bEvent.getExpiry())) != 0
+				? order : aEvent.getId().compareTo(bEvent.getId());
+	};
 
 	@BeforeEach
 	void setup() {
-		subject = new PriorityQueueExpiries<>();
+		subject = new PriorityQueueExpiries<>(testCmp);
 	}
 
 	@Test
@@ -153,8 +159,7 @@ class PriorityQueueExpiriesTest {
 	}
 
 	private PriorityQueueExpiries<String> pqFrom(List<ExpiryEvent<String>> events) {
-		System.out.println("Building a queue from " + events);
-		var pq = new PriorityQueueExpiries<String>();
+		var pq = new PriorityQueueExpiries<>(testCmp);
 		for (var event : events) {
 			pq.track(event.getId(), event.getExpiry());
 		}
