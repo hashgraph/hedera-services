@@ -433,7 +433,7 @@ public final class BinFile<K extends SelfSerializable> {
                 mutationOffset = newestMutationOffset;
             } else { // new version
                 // clean out any old mutations that are no longer needed
-                mutationCount = sweepQueue(mutationQueueOffset);
+                mutationCount = sweepQueue(mutationQueueOffset, mutationCount);
                 // check we have not run out of mutations
                 if (mutationCount >= maxNumberOfMutations) throw new IllegalStateException("We ran out of mutations.");
                 // increment mutation count
@@ -489,10 +489,9 @@ public final class BinFile<K extends SelfSerializable> {
      * @param mutationQueueOffset The offset to the mutation queue to be swept.
      * @return The new mutation count after sweeping
      */
-    private int sweepQueue(int mutationQueueOffset) {
+    private int sweepQueue(final int mutationQueueOffset, final int mutationCount) {
         // Look through the mutations and collect the indexes of each mutation that can be removed.
         // Then move surviving mutations forward into the earliest available slots.
-        final var mutationCount = mappedBuffer.getInt(mutationQueueOffset);
         // Visit all of the mutations. Anything marked RELEASED can be replaced.
         int i = 0;
         int j = 1;
@@ -507,7 +506,7 @@ public final class BinFile<K extends SelfSerializable> {
                     final var version2 = mappedBuffer.getLong(offset2);
                     if (version2 != RELEASED) {
                         // Copy from mutation2 to mutation
-                        mappedBuffer.putLong(offset, mappedBuffer.getLong(offset2));
+                        mappedBuffer.putLong(offset, version2);
                         mappedBuffer.putLong(offset + Long.BYTES, mappedBuffer.getLong(offset2 + Long.BYTES));
                         // Tombstone the old mutation location (it will be removed by this code)
                         mappedBuffer.putLong(offset2, RELEASED);
