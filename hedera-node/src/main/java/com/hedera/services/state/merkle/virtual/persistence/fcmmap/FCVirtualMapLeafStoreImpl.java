@@ -180,7 +180,7 @@ public final class FCVirtualMapLeafStoreImpl<LK extends SelfSerializable,
         // close leaf store if it has no references left
         synchronized (leafStore) {
             leafStore.removeReference();
-            leafStore.close();
+//            leafStore.close();
         }
     }
 
