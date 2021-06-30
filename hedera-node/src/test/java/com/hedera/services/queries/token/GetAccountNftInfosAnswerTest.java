@@ -50,7 +50,7 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_QUERY_RANGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.QUERY_RANGE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
@@ -134,13 +134,13 @@ public class GetAccountNftInfosAnswerTest {
     @Test
     public void checksExceededQueryRangeProperly() throws Throwable {
         // given:
-        given(optionValidator.nftMaxQueryRangeCheck(start, end)).willReturn(INVALID_QUERY_RANGE);
+        given(optionValidator.nftMaxQueryRangeCheck(start, end)).willReturn(QUERY_RANGE_LIMIT_EXCEEDED);
 
         // when:
         var validity = subject.checkValidity(validQuery(ANSWER_ONLY, 0, accountId, start, end), view);
 
         // then:
-        assertEquals(INVALID_QUERY_RANGE, validity);
+        assertEquals(QUERY_RANGE_LIMIT_EXCEEDED, validity);
     }
 
     @Test
@@ -155,7 +155,7 @@ public class GetAccountNftInfosAnswerTest {
         var validity = subject.checkValidity(validQuery(ANSWER_ONLY, 0, accountId, start, end), view);
 
         // then:
-        assertEquals(INVALID_QUERY_RANGE, validity);
+        assertEquals(QUERY_RANGE_LIMIT_EXCEEDED, validity);
     }
 
     @Test
@@ -204,7 +204,7 @@ public class GetAccountNftInfosAnswerTest {
         var validity = subject.checkValidity(validQuery(ANSWER_ONLY, 0, accountId, end, start), view);
 
         // then:
-        assertEquals(INVALID_QUERY_RANGE, validity);
+        assertEquals(QUERY_RANGE_LIMIT_EXCEEDED, validity);
     }
 
     @Test

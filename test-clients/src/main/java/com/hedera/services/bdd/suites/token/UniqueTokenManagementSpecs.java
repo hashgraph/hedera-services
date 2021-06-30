@@ -64,7 +64,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_QUERY_RANGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.QUERY_RANGE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -157,7 +157,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 						))
 				).then(
 						getAccountNftInfos(TOKEN_TREASURY, 0, 6)
-								.hasCostAnswerPrecheck(INVALID_QUERY_RANGE)
+								.hasCostAnswerPrecheck(QUERY_RANGE_LIMIT_EXCEEDED)
 				);
 	}
 
@@ -167,7 +167,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 						cryptoCreate(FIRST_USER)
 				).when().then(
 						getAccountNftInfos(FIRST_USER, 0, 2)
-								.hasCostAnswerPrecheck(INVALID_QUERY_RANGE)
+								.hasCostAnswerPrecheck(QUERY_RANGE_LIMIT_EXCEEDED)
 				);
 	}
 
@@ -196,9 +196,9 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 						cryptoCreate(FIRST_USER)
 				).when().then(
 						getAccountNftInfos(FIRST_USER, 2, 0)
-								.hasCostAnswerPrecheck(INVALID_QUERY_RANGE),
+								.hasCostAnswerPrecheck(QUERY_RANGE_LIMIT_EXCEEDED),
 						getAccountNftInfos(FIRST_USER, 0, 100000000)
-								.hasCostAnswerPrecheck(INVALID_QUERY_RANGE)
+								.hasCostAnswerPrecheck(QUERY_RANGE_LIMIT_EXCEEDED)
 				);
 	}
 
@@ -224,7 +224,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 						getTokenNftInfo(NFT, 1)
 								.hasCostAnswerPrecheck(INVALID_NFT_ID),
 						getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(0),
-						getAccountNftInfos(TOKEN_TREASURY, 0, 1).hasCostAnswerPrecheck(INVALID_QUERY_RANGE)
+						getAccountNftInfos(TOKEN_TREASURY, 0, 1).hasCostAnswerPrecheck(QUERY_RANGE_LIMIT_EXCEEDED)
 				);
 	}
 

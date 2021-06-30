@@ -303,7 +303,7 @@ class StateViewTest {
 				() -> contracts,
 				StateView.EMPTY_STORAGE_SUPPLIER,
 				() -> uniqueTokens,
-				StateView.EMPTY_TOKEN_ASSOCS_SUPPLIER,
+				() -> tokenRels,
 				StateView.EMPTY_UNIQUE_TOKEN_ASSOCS_SUPPLIER,
 				() -> uniqueTokenAccountOwnerships,
 				() -> diskFs,

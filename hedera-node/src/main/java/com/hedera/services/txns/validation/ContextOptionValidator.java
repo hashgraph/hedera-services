@@ -166,7 +166,7 @@ public class ContextOptionValidator implements OptionValidator {
 		return lengthCheck(
 				end - start,
 				dynamicProperties.maxNFTQueryRange(),
-				ResponseCodeEnum.INVALID_QUERY_RANGE
+				ResponseCodeEnum.QUERY_RANGE_LIMIT_EXCEEDED
 		);
 	}
 
