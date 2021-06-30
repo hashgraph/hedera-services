@@ -696,7 +696,9 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						),
 						cryptoTransfer(
 								moving(10, A_TOKEN).between(FIRST_USER, SECOND_USER)
-						)
+						).payingWith(FIRST_USER)
+								.signedBy(FIRST_USER)
+								.fee(ONE_HBAR)
 				).then(
 						getAccountBalance(TOKEN_TREASURY)
 								.logged()
@@ -705,7 +707,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						getAccountBalance(FIRST_USER)
 								.logged()
 								.hasTokenBalance(A_TOKEN, 90)
-								.hasTinyBars(ONE_HUNDRED_HBARS),
+								.hasTinyBars(9899205334L),
 						getAccountBalance(SECOND_USER)
 								.logged()
 								.hasTokenBalance(A_TOKEN, 110)
