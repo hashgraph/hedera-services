@@ -695,6 +695,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.hasKnownStatus(FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT),
 						tokenUpdate(token)
 								.treasury(tokenCollector)
+								.customFeesMutable(true)
 								.withCustom(fractionalFee(
 										numerator, denominator,
 										minimumToCollect * 10, OptionalLong.of(maximumToCollect),
