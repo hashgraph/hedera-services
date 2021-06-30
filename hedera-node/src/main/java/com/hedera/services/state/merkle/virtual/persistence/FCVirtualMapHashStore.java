@@ -4,6 +4,7 @@ import com.swirlds.common.FastCopyable;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.fcmap.FCVirtualRecord;
+import com.swirlds.fcmap.VKey;
 
 import java.io.IOException;
 
@@ -14,7 +15,7 @@ import java.io.IOException;
  *
  * @param <HK> The type for hash keys, must implement SelfSerializable
  */
-public interface FCVirtualMapHashStore<HK extends SelfSerializable>
+public interface FCVirtualMapHashStore<HK extends VKey>
         extends FastCopyable {
 
     /** Open storage, release() is used to close */

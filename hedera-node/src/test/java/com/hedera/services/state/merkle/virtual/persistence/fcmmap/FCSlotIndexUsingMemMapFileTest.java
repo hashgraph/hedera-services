@@ -1,12 +1,13 @@
 package com.hedera.services.state.merkle.virtual.persistence.fcmmap;
 
 import com.hedera.services.state.merkle.virtual.persistence.FCSlotIndex;
-import com.swirlds.common.merkle.utility.SerializableLong;
+import com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCVirtualMapTestUtils.LongVKey;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.LongSupplier;
 
 import static com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCVirtualMapTestUtils.deleteDirectoryAndContents;
 import static com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCVirtualMapTestUtils.printDirectorySize;
@@ -23,8 +24,8 @@ public class FCSlotIndexUsingMemMapFileTest {
         // delete old store if it exists
         deleteDirectoryAndContents(STORE_PATH);
         // create initial indexes
-        FCSlotIndexUsingFCHashMap<SerializableLong> fcHashMap = new FCSlotIndexUsingFCHashMap<>();
-        FCSlotIndexUsingMemMapFile<SerializableLong> memMapFile = new FCSlotIndexUsingMemMapFile<>(
+        FCSlotIndexUsingFCHashMap<LongVKey> fcHashMap = new FCSlotIndexUsingFCHashMap<>();
+        FCSlotIndexUsingMemMapFile<LongVKey> memMapFile = new FCSlotIndexUsingMemMapFile<>(
                 STORE_PATH,"FCSlotIndexUsingMemMapFileTest",256,16,Long.BYTES,100,10);
         var index_0 = new PairFCSlotIndex(fcHashMap, memMapFile, 0);
         // create 1000 entries
@@ -66,8 +67,8 @@ public class FCSlotIndexUsingMemMapFileTest {
         // delete old store if it exists
         deleteDirectoryAndContents(STORE_PATH);
         // create initial indexes
-        FCSlotIndexUsingFCHashMap<SerializableLong> fcHashMap = new FCSlotIndexUsingFCHashMap<>();
-        FCSlotIndexUsingMemMapFile<SerializableLong> memMapFile = new FCSlotIndexUsingMemMapFile<>(
+        FCSlotIndexUsingFCHashMap<LongVKey> fcHashMap = new FCSlotIndexUsingFCHashMap<>();
+        FCSlotIndexUsingMemMapFile<LongVKey> memMapFile = new FCSlotIndexUsingMemMapFile<>(
                 STORE_PATH,"FCSlotIndexUsingMemMapFileTest",512,128,Long.BYTES,100,10);
         var currentIndex = new PairFCSlotIndex(fcHashMap, memMapFile, 0);
         List<PairFCSlotIndex> indexes = new ArrayList<>();
@@ -97,6 +98,7 @@ public class FCSlotIndexUsingMemMapFileTest {
                     break;
                 case 10: // release old copy
                     if (RANDOM.nextDouble() > 0.75 && indexes.size() > 1) {
+                        //noinspection ResultOfMethodCallIgnored
                         indexes.get(RANDOM.nextInt(indexes.size() - 1));
                     }
                     break;
@@ -113,25 +115,25 @@ public class FCSlotIndexUsingMemMapFileTest {
         return value;
     }
 
-    public static class PairFCSlotIndex implements FCSlotIndex<SerializableLong> {
-        private final FCSlotIndexUsingFCHashMap<SerializableLong> fcHashMap;
-        private final FCSlotIndexUsingMemMapFile<SerializableLong> memMapFile;
+    public static class PairFCSlotIndex implements FCSlotIndex<LongVKey> {
+        private final FCSlotIndexUsingFCHashMap<LongVKey> fcHashMap;
+        private final FCSlotIndexUsingMemMapFile<LongVKey> memMapFile;
         private final int version;
 
-        public PairFCSlotIndex(FCSlotIndexUsingFCHashMap<SerializableLong> fcHashMap, FCSlotIndexUsingMemMapFile<SerializableLong> memMapFile, int version) {
+        public PairFCSlotIndex(FCSlotIndexUsingFCHashMap<LongVKey> fcHashMap, FCSlotIndexUsingMemMapFile<LongVKey> memMapFile, int version) {
             this.fcHashMap = fcHashMap;
             this.memMapFile = memMapFile;
             this.version = version;
         }
 
         public long getSlot(long key) {
-            return getSlot(new SerializableLong(key));
+            return getSlot(new LongVKey(key));
         }
-        public void putSlot(long key, long slot) { putSlot(new SerializableLong(key),slot); }
-        public void removeSlot(long key) { removeSlot(new SerializableLong(key)); }
+        public void putSlot(long key, long slot) { putSlot(new LongVKey(key),slot); }
+        public void removeSlot(long key) { removeSlot(new LongVKey(key)); }
 
         @Override
-        public long getSlot(SerializableLong key) {
+        public long getSlot(LongVKey key) {
             long fcHashMapValue = fcHashMap.getSlot(key);
             long memMapFileValue = memMapFile.getSlot(key);
             assertEquals(fcHashMapValue, memMapFileValue);
@@ -139,13 +141,33 @@ public class FCSlotIndexUsingMemMapFileTest {
         }
 
         @Override
-        public void putSlot(SerializableLong key, long slot) {
+        public long getSlotIfAbsentPut(LongVKey key, LongSupplier newValueSupplier) {
+            LongSupplier longSupplier = new LongSupplier() {
+                boolean newValueAvailable = false;
+                long newValue;
+                @Override
+                public synchronized long getAsLong() {
+                    if (!newValueAvailable) {
+                        newValue = newValueSupplier.getAsLong();
+                        newValueAvailable = true;
+                    }
+                    return newValue;
+                }
+            };
+            long fcHashMapValue = fcHashMap.getSlotIfAbsentPut(key,longSupplier);
+            long memMapFileValue = memMapFile.getSlotIfAbsentPut(key,longSupplier);
+            assertEquals(fcHashMapValue, memMapFileValue);
+            return memMapFileValue;
+        }
+
+        @Override
+        public void putSlot(LongVKey key, long slot) {
             fcHashMap.putSlot(key,slot);
             memMapFile.putSlot(key,slot);
         }
 
         @Override
-        public long removeSlot(SerializableLong key) {
+        public long removeSlot(LongVKey key) {
             long fcHashMapValue = fcHashMap.removeSlot(key);
             long memMapFileValue = memMapFile.removeSlot(key);
             assertEquals(fcHashMapValue, memMapFileValue,"removeSlot returned different values for key["+toString(key)+"] and version["+version+"]");
@@ -171,14 +193,8 @@ public class FCSlotIndexUsingMemMapFileTest {
             memMapFile.release();
         }
 
-        public void assertEqualsForKeys(Collection<SerializableLong> keys) {
-            for (SerializableLong key : keys) {
-                getSlot(key);
-            }
-        }
-
-        private String toString(SerializableLong serializableLong) {
-            return serializableLong == null ? "null" : Long.toString(serializableLong.getValue());
+        private String toString(LongVKey LongVKey) {
+            return LongVKey == null ? "null" : Long.toString(LongVKey.getValue());
         }
     }
 }

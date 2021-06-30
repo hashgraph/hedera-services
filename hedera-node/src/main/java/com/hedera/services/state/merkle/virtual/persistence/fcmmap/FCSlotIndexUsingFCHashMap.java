@@ -2,13 +2,16 @@ package com.hedera.services.state.merkle.virtual.persistence.fcmmap;
 
 import com.hedera.services.state.merkle.virtual.persistence.FCSlotIndex;
 import com.swirlds.fchashmap.FCHashMap;
+import com.swirlds.fcmap.VKey;
+
+import java.util.function.LongSupplier;
 
 /**
  * An implementation of FCSlotIndex using FCHashMap
  *
  * @param <K> data type for key
  */
-public class FCSlotIndexUsingFCHashMap<K> implements FCSlotIndex<K> {
+public class FCSlotIndexUsingFCHashMap<K extends VKey> implements FCSlotIndex<K> {
     private FCHashMap<K,Long> map;
 
     public FCSlotIndexUsingFCHashMap() {
@@ -22,6 +25,17 @@ public class FCSlotIndexUsingFCHashMap<K> implements FCSlotIndex<K> {
     @Override
     public long getSlot(K key) {
         return map.getOrDefault(key, FCSlotIndex.NOT_FOUND_LOCATION);
+    }
+
+    @Override
+    public long getSlotIfAbsentPut(K key, LongSupplier newValueSupplier) {
+        // TODO not sure how to make this thread safe ?
+        long value =  map.getOrDefault(key, FCSlotIndex.NOT_FOUND_LOCATION);
+        if (value == FCSlotIndex.NOT_FOUND_LOCATION) {
+            value = newValueSupplier.getAsLong();
+            map.put(key, value);
+        }
+        return value;
     }
 
     @Override

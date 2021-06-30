@@ -1,13 +1,14 @@
 package com.hedera.services.state.merkle.virtual.persistence.fcmmap;
 
 import com.hedera.services.state.merkle.virtual.persistence.FCSlotIndex;
-import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.fcmap.VKey;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.LongSupplier;
 
 /**
  *
@@ -16,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @param <K> Key type
  */
 @SuppressWarnings("jol")
-public final class FCSlotIndexUsingMemMapFile<K extends SelfSerializable> implements FCSlotIndex<K> {
+public final class FCSlotIndexUsingMemMapFile<K extends VKey> implements FCSlotIndex<K> {
 
     //==================================================================================================================
     // Config
@@ -189,6 +190,17 @@ public final class FCSlotIndexUsingMemMapFile<K extends SelfSerializable> implem
         BinFile<K> file = getFileForKey(keyHash);
         // ask bin file
         return file.getSlot(version, getFileSubKeyHash(keyHash), key);
+    }
+
+    @Override
+    public long getSlotIfAbsentPut(K key, LongSupplier newValueSupplier) {
+        if (key == null) throw new IllegalArgumentException("Key can not be null");
+        if (isReleased.get()) throw new IllegalStateException("You can not access a released index.");
+        int keyHash = key.hashCode();
+        // find right bin file
+        BinFile<K> file = getFileForKey(keyHash);
+        // ask bin file
+        return file.getSlotIfAbsentPut(version, getFileSubKeyHash(keyHash), key, newValueSupplier);
     }
 
     @Override

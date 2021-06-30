@@ -5,11 +5,14 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.virtualh.Account;
 import com.hedera.services.state.submerkle.EntityId;
+import com.swirlds.common.FastCopyable;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.merkle.utility.SerializableLong;
+import com.swirlds.fcmap.VKey;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -238,7 +241,7 @@ public class FCVirtualMapTestUtils {
         }
     }
 
-    public static class SerializableAccount implements SelfSerializable {
+    public static class SerializableAccount implements VKey, SelfSerializable {
         private Account account;
 
         public SerializableAccount() {}
@@ -248,6 +251,44 @@ public class FCVirtualMapTestUtils {
         }
         public SerializableAccount(long shardNum, long realmNum, long accountNum) {
             this.account = new Account(shardNum,realmNum,accountNum);
+        }
+
+        @Override
+        public void serialize(ByteBuffer byteBuffer) throws IOException {
+            if (account != null) {
+                byteBuffer.putLong(account.shardNum());
+                byteBuffer.putLong(account.realmNum());
+                byteBuffer.putLong(account.accountNum());
+            } else {
+                byteBuffer.putLong(Long.MIN_VALUE);
+                byteBuffer.putLong(Long.MIN_VALUE);
+                byteBuffer.putLong(Long.MIN_VALUE);
+            }
+        }
+
+        @Override
+        public void deserialize(ByteBuffer byteBuffer, int version) throws IOException {
+            long shard = byteBuffer.getLong();
+            if (shard != Long.MIN_VALUE) {
+                this.account = new Account(
+                        shard,
+                        byteBuffer.getLong(),
+                        byteBuffer.getLong()
+                );
+            } else {
+                account = null;
+            }
+        }
+
+        @Override
+        public boolean equals(ByteBuffer byteBuffer, int version) throws IOException {
+            if (this.account == null) {
+                return byteBuffer.getLong() == Long.MIN_VALUE;
+            } else {
+                return byteBuffer.getLong() == account.shardNum() &&
+                        byteBuffer.getLong() == account.realmNum() &&
+                        byteBuffer.getLong() == account.accountNum();
+            }
         }
 
         @Override
@@ -298,6 +339,79 @@ public class FCVirtualMapTestUtils {
         @Override
         public int hashCode() {
             return Objects.hash(account);
+        }
+    }
+
+    public static class LongVKey implements VKey, SelfSerializable, FastCopyable {
+        private static final long CLASS_ID = 2544515330134674835L;
+        private long value;
+        private int hashCode;
+
+        public LongVKey() {}
+
+        public LongVKey(long value) {
+            setValue(value);
+        }
+
+        public long getValue() {
+            return value;
+        }
+
+        public void setValue(long value) {
+            this.value = value;
+            this.hashCode = Long.hashCode(value);
+        }
+
+        public int hashCode() {
+            return this.hashCode;
+        }
+
+        @Override
+        public void serialize(ByteBuffer byteBuffer) throws IOException {
+            byteBuffer.putLong(value);
+        }
+
+        @Override
+        public void deserialize(ByteBuffer byteBuffer, int version) throws IOException {
+            setValue(byteBuffer.getLong());
+        }
+
+        @Override
+        public boolean equals(ByteBuffer byteBuffer, int version) throws IOException {
+            return byteBuffer.getLong() == value;
+        }
+
+        public LongVKey copy() {
+            return new LongVKey(this.value);
+        }
+
+        public void release() {}
+
+        public void serialize(SerializableDataOutputStream out) throws IOException {
+            out.writeLong(this.value);
+        }
+
+        public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+            this.value = in.readLong();
+        }
+
+        public long getClassId() {
+            return 8133160492230511558L;
+        }
+
+        public int getVersion() {
+            return 1;
+        }
+
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            } else if (!(o instanceof LongVKey)) {
+                return false;
+            } else {
+                LongVKey that = (LongVKey)o;
+                return this.value == that.value;
+            }
         }
     }
 }

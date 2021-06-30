@@ -4,6 +4,7 @@ import com.swirlds.common.FastCopyable;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.fcmap.FCVirtualRecord;
+import com.swirlds.fcmap.VKey;
 
 import java.io.IOException;
 
@@ -16,7 +17,7 @@ import java.io.IOException;
  * @param <LK> The type for leaf keys, must implement SelfSerializable
  * @param <LV> The type for leaf data, must implement SelfSerializable
  */
-public interface FCVirtualMapLeafStore<LK extends SelfSerializable,
+public interface FCVirtualMapLeafStore<LK extends VKey,
         LP extends SelfSerializable, LV extends SelfSerializable>
         extends FastCopyable {
 
