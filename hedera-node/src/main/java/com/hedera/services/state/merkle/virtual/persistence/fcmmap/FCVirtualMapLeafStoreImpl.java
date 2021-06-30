@@ -3,10 +3,9 @@ package com.hedera.services.state.merkle.virtual.persistence.fcmmap;
 import com.hedera.services.state.merkle.virtual.persistence.FCSlotIndex;
 import com.hedera.services.state.merkle.virtual.persistence.FCVirtualMapLeafStore;
 import com.hedera.services.state.merkle.virtual.persistence.SlotStore;
-import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.fcmap.FCVirtualRecord;
+import com.swirlds.fcmap.VKey;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -23,8 +22,8 @@ import java.util.function.Supplier;
  * @param <LV> The type for leaf value, must implement SelfSerializable
  */
 @SuppressWarnings({"DuplicatedCode"})
-public final class FCVirtualMapLeafStoreImpl<LK extends SelfSerializable,
-        LP extends SelfSerializable, LV extends SelfSerializable>
+public final class FCVirtualMapLeafStoreImpl<LK extends VKey,
+        LP extends VKey, LV extends SelfSerializable>
         implements FCVirtualMapLeafStore<LK, LP, LV> {
     /** 1 Mb of bytes */
     private static final int MB = 1024*1024;
@@ -425,18 +424,5 @@ public final class FCVirtualMapLeafStoreImpl<LK extends SelfSerializable,
         // write path
         outputStream.writeSelfSerializable(position, newPath, leafPathSizeBytes);
     }
-
-    //==================================================================================================================
-    // Inner Classes
-
-    /**
-     * Class for creating hashes directly from a byte[] without copying and safety checking
-     */
-    private static final class VirtualHash extends Hash {
-        protected VirtualHash(DigestType type, byte[] value) {
-            super(value, type, true, false);
-        }
-    }
-
 }
 

@@ -5,7 +5,7 @@ import com.hedera.services.state.merkle.virtual.persistence.FCVirtualMapHashStor
 import com.hedera.services.state.merkle.virtual.persistence.SlotStore;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.fcmap.VKey;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -20,7 +20,7 @@ import java.util.function.Supplier;
  * @param <HK> The type for hashes keys, must implement SelfSerializable
  */
 @SuppressWarnings({"DuplicatedCode"})
-public final class FCVirtualMapHashStoreImpl<HK extends SelfSerializable> implements FCVirtualMapHashStore<HK> {
+public final class FCVirtualMapHashStoreImpl<HK extends VKey> implements FCVirtualMapHashStore<HK> {
     /** 1 Mb of bytes */
     private static final int MB = 1024*1024;
 
@@ -217,7 +217,7 @@ public final class FCVirtualMapHashStoreImpl<HK extends SelfSerializable> implem
     public void deleteHash(HK hashKey) {
         synchronized (hashStore) {
             long slotLocation = hashIndex.removeSlot(hashKey);
-            if (slotLocation != MemMapSlotStore.NOT_FOUND_LOCATION) hashStore.deleteSlot(slotLocation); // TODO this is not fast copy safe
+            if (slotLocation != SlotStore.NOT_FOUND_LOCATION) hashStore.deleteSlot(slotLocation); // TODO this is not fast copy safe
         }
     }
 
@@ -232,7 +232,7 @@ public final class FCVirtualMapHashStoreImpl<HK extends SelfSerializable> implem
     public Hash loadHash(HK hashKey) throws IOException {
         synchronized (hashStore) {
             long slotLocation = hashIndex.getSlot(hashKey);
-            if (slotLocation == MemMapSlotStore.NOT_FOUND_LOCATION) return null;
+            if (slotLocation == SlotStore.NOT_FOUND_LOCATION) return null;
             var inputStream = hashStore.accessSlotForReading(slotLocation);
             int position = inputStream.position();
             // skip hash key
@@ -258,15 +258,9 @@ public final class FCVirtualMapHashStoreImpl<HK extends SelfSerializable> implem
      */
     @Override
     public void saveHash(HK hashKey, Hash hash) throws IOException {
-        synchronized (hashStore) {
+        synchronized (hashStore) { // TODO Question not sure on thread safety as operations across two stores are not atomic or synchronized
             // if already stored and if so it is an update
-            long slotLocation = hashIndex.getSlot(hashKey);
-            if (slotLocation == MemMapSlotStore.NOT_FOUND_LOCATION) {
-                // find a new slot location
-                slotLocation = hashStore.getNewSlot();
-                // store in index
-                hashIndex.putSlot(hashKey, slotLocation);
-            }
+            long slotLocation = hashIndex.getSlotIfAbsentPut(hashKey, hashStore::getNewSlot);
             // write hash into slot
             var outputStream = hashStore.accessSlotForWriting(slotLocation);
             int position = outputStream.position();

@@ -1,20 +1,17 @@
 package com.hedera.services.state.merkle.virtual.persistence.fcmmap;
 
 import com.hedera.services.state.merkle.virtual.persistence.FCSlotIndex;
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.merkle.utility.SerializableLong;
-import com.swirlds.fchashmap.FCHashMap;
+import com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCVirtualMapTestUtils.LongVKey;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.Random;
 
-import static com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCVirtualMapTestUtils.deleteDirectoryAndContents;
-import static com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCVirtualMapTestUtils.hash;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class BinFileTest {
     public static final Path STORE_PATH = Path.of("store");
@@ -41,16 +38,16 @@ public class BinFileTest {
 //        final int COUNT = 1;
         // create and open file
         Path file = getTempFile();
-        BinFile<SerializableLong> binFile = new BinFile<>(file,8,150,100,20);
+        BinFile<LongVKey> binFile = new BinFile<>(file,8,150,100,20);
         System.out.printf("BinFile size: %,.1f Mb\n",(double) Files.size(file)/(1024d*1024d));
         // create some data for a number of accounts
         for (int i = 0; i < COUNT; i++) {
-            SerializableLong key = new SerializableLong(i);
+            LongVKey key = new LongVKey(i);
             binFile.putSlot(0,key.hashCode(), key,i);
         }
         // read back and check that data
         for (int i = 0; i < COUNT; i++) {
-            SerializableLong key = new SerializableLong(i);
+            LongVKey key = new LongVKey(i);
             long result = binFile.getSlot(0,key.hashCode(), key);
             assertEquals(i, result);
         }
@@ -58,7 +55,7 @@ public class BinFileTest {
         // read back random and check that data
         for (int j = 0; j < COUNT; j++) {
             int i = RANDOM.nextInt(COUNT);
-            SerializableLong key = new SerializableLong(i);
+            LongVKey key = new LongVKey(i);
             long result = binFile.getSlot(0,key.hashCode(), key);
             assertEquals(i, result);
         }
@@ -72,14 +69,14 @@ public class BinFileTest {
         // test I will add and remove things and keep track of how many mutations there should be. Eventually I will
         // overflow it to trigger an exception to prove the number of mutations is exactly as expected.
         Path file = getTempFile();
-        BinFile<SerializableLong> binFile = new BinFile<>(file,8,5,5,10);
+        BinFile<LongVKey> binFile = new BinFile<>(file,8,5,5,10);
 
         // Release version 0 (nothing has been written yet, should have no effect)
         binFile.releaseVersion(0);
 
         // Write a single item for version 1. Then release it. The mutation queue should still exist, but
         // with a single "RELEASED" item.
-        final var key = new SerializableLong(1001001);
+        final var key = new LongVKey(1001001);
         binFile.putSlot(1, key.hashCode(), key, 111);
         binFile.releaseVersion(1);
 
@@ -129,26 +126,26 @@ public class BinFileTest {
     public void testDelete() throws IOException {
         // create and open file
         Path file = getTempFile();
-        BinFile<SerializableLong> binFile = new BinFile<>(file,8,5,5,20);
+        BinFile<LongVKey> binFile = new BinFile<>(file,8,5,5,20);
         // create some data for a number of accounts
         for (int i = 0; i < 10; i++) {
-            SerializableLong key = new SerializableLong(i);
+            LongVKey key = new LongVKey(i);
             binFile.putSlot(0,key.hashCode(), key,i);
         }
         // read back and check that data
         for (int i = 0; i < 10; i++) {
-            SerializableLong key = new SerializableLong(i);
+            LongVKey key = new LongVKey(i);
             long result = binFile.getSlot(0,key.hashCode(), key);
             assertEquals(i, result);
         }
         // delete 3 and 7
-        SerializableLong key3 = new SerializableLong(3);
+        LongVKey key3 = new LongVKey(3);
         binFile.removeKey(0,key3.hashCode(), key3);
-        SerializableLong key7 = new SerializableLong(7);
+        LongVKey key7 = new LongVKey(7);
         binFile.removeKey(0,key7.hashCode(), key7);
         // check data
         for (int i = 0; i < 10; i++) {
-            SerializableLong key = new SerializableLong(i);
+            LongVKey key = new LongVKey(i);
             long result = binFile.getSlot(0, key.hashCode(), key);
             assertEquals((i != 3 && i != 7) ? i : FCSlotIndex.NOT_FOUND_LOCATION, result);
         }
@@ -160,13 +157,13 @@ public class BinFileTest {
     public void versionsTest() throws IOException {
         // create and open file
         Path file = getTempFile();
-        BinFile<SerializableLong> binFile = new BinFile<>(file,8,20,20,20);
+        BinFile<LongVKey> binFile = new BinFile<>(file,8,20,20,20);
         System.out.printf("BinFile size: %,.1f Mb\n",(double) Files.size(file)/(1024d*1024d));
         // create key array
-        SerializableLong[] keys = new SerializableLong[20];
+        LongVKey[] keys = new LongVKey[20];
         int[] keyHashs = new int[20];
         for (int i = 0; i < 20; i++) {
-            keys[i] = new SerializableLong(i);
+            keys[i] = new LongVKey(i);
             keyHashs[i] = keys[i].hashCode();
         }
         // create 20 values in version 100
@@ -221,10 +218,11 @@ public class BinFileTest {
             }
             // check all data in 300 is correct
             for (int i = 0; i < 20; i++) {
-                long result = binFile.getSlot(200,keyHashs[i], keys[i]);
+                long result = binFile.getSlot(300,keyHashs[i], keys[i]);
                 if (i == 5) {
                     assertEquals(305, binFile.getSlot(300,keyHashs[5], keys[5]));
                 } else {
+                    System.out.println("i = " + i);
                     assertEquals((i < 10) ? 100 + i : 200 + i, result);
                 }
             }

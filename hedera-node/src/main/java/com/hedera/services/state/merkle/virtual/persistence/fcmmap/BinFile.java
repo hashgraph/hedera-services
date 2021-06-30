@@ -1,20 +1,18 @@
 package com.hedera.services.state.merkle.virtual.persistence.fcmmap;
 
-import com.hedera.services.state.merkle.virtual.persistence.PositionableByteBufferSerializableDataInputStream;
-import com.hedera.services.state.merkle.virtual.persistence.PositionableByteBufferSerializableDataOutputStream;
-import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.SerializableDataOutputStream;
-import sun.misc.Unsafe;
+import com.swirlds.fcmap.VKey;
 
-import java.io.*;
-import java.lang.reflect.Field;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.LongSupplier;
 
 import static com.hedera.services.state.merkle.virtual.persistence.FCSlotIndex.NOT_FOUND_LOCATION;
 
@@ -34,7 +32,7 @@ import static com.hedera.services.state.merkle.virtual.persistence.FCSlotIndex.N
  *      [long version][long slot index value]
  */
 @SuppressWarnings({"DuplicatedCode", "jol"})
-public final class BinFile<K extends SelfSerializable> {
+public final class BinFile<K extends VKey> {
     /** a mutation in mutation queue size, consists of a Version long and slot location value long */
     private static final int MUTATION_SIZE = Long.BYTES * 2;
     private static final int MUTATION_QUEUE_HEADER_SIZE = Integer.BYTES;
@@ -51,52 +49,50 @@ public final class BinFile<K extends SelfSerializable> {
     /**
      * We assume try and get the page size and us default of 4k if we fail as that is standard on linux
      */
-//    private static final int PAGE_SIZE_BYTES;
-//    static {
-//        int pageSize = 4096; // 4k is default on linux
-//        try {
-//            Field f = Unsafe.class.getDeclaredField("theUnsafe");
-//            f.setAccessible(true);
-//            Unsafe unsafe = (Unsafe)f.get(null);
-//            pageSize = unsafe.pageSize();
-//        } catch (NoSuchFieldException | IllegalAccessException e) {
-//            System.out.println("Failed to get page size via misc.unsafe");
-//            // try and get from system command
-//            boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
-//            if (!isWindows) {
-//                ProcessBuilder builder = new ProcessBuilder()
-//                        .command("getconf", "PAGE_SIZE")
-//                        .directory(new File(System.getProperty("user.home")));
-//                try {
-//                    Process process = builder.start();
-//                    String output = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))
-//                            .lines()
-//                            .collect(Collectors.joining())
-//                            .trim();
-//                    try {
-//                        pageSize = Integer.parseInt(output);
-//                    } catch(NumberFormatException numberFormatException) {
-//                        System.out.println("Failed to get page size via running \"getconf\" command. so using default 4k\n"+
-//                                "\"getconf\" output was \""+output+"\"");
-//                    }
-//                } catch (IOException ioException) {
-//                    System.out.println("Failed to get page size via running \"getconf\" command. so using default 4k");
-//                    ioException.printStackTrace();
-//                }
-//            }
-//        }
-//        System.out.println("Page size: " + pageSize);
-//        PAGE_SIZE_BYTES = pageSize;
-//    }
+    /*private static final int PAGE_SIZE_BYTES;
+    static {
+        int pageSize = 4096; // 4k is default on linux
+        try {
+            Field f = Unsafe.class.getDeclaredField("theUnsafe");
+            f.setAccessible(true);
+            Unsafe unsafe = (Unsafe)f.get(null);
+            pageSize = unsafe.pageSize();
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            System.out.println("Failed to get page size via misc.unsafe");
+            // try and get from system command
+            boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
+            if (!isWindows) {
+                ProcessBuilder builder = new ProcessBuilder()
+                        .command("getconf", "PAGE_SIZE")
+                        .directory(new File(System.getProperty("user.home")));
+                try {
+                    Process process = builder.start();
+                    String output = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))
+                            .lines()
+                            .collect(Collectors.joining())
+                            .trim();
+                    try {
+                        pageSize = Integer.parseInt(output);
+                    } catch(NumberFormatException numberFormatException) {
+                        System.out.println("Failed to get page size via running \"getconf\" command. so using default 4k\n"+
+                                "\"getconf\" output was \""+output+"\"");
+                    }
+                } catch (IOException ioException) {
+                    System.out.println("Failed to get page size via running \"getconf\" command. so using default 4k");
+                    ioException.printStackTrace();
+                }
+            }
+        }
+        System.out.println("Page size: " + pageSize);
+        PAGE_SIZE_BYTES = pageSize;
+    }*/
 
     /** Special pointer value used for when a value has been deleted */
     public static final long DELETED_POINTER = -1;
-    private boolean fileIsOpen = false;
+    private boolean fileIsOpen;
     private final RandomAccessFile randomAccessFile;
     private final FileChannel fileChannel;
     private final MappedByteBuffer mappedBuffer;
-    private final PositionableByteBufferSerializableDataOutputStream outputStream;
-    private final PositionableByteBufferSerializableDataInputStream inputStream;
     private final int numOfKeysPerBin;
     private final int numOfBinsPerFile;
     private final int maxNumberOfMutations;
@@ -116,10 +112,6 @@ public final class BinFile<K extends SelfSerializable> {
     private List<Integer> changedKeysCurrentVersion = new ArrayList<>();
     /** The current version we are working on */
     private long currentVersion = -1;
-    private final byte[] tempKeyData1;
-    private final byte[] tempKeyData2;
-
-    //private Path file;
 
     /**
      * Construct a new BinFile
@@ -136,13 +128,11 @@ public final class BinFile<K extends SelfSerializable> {
         this.numOfKeysPerBin = numOfKeysPerBin;
         this.numOfBinsPerFile = numOfBinsPerFile;
         this.maxNumberOfMutations = maxNumberOfMutations;
-        tempKeyData1 = new byte[keySizeBytes];
-        tempKeyData2 = new byte[keySizeBytes];
         // calculate size of key,mutation store which contains:
         final int mutationArraySize = maxNumberOfMutations * MUTATION_SIZE;
         final int serializedKeySize = Integer.BYTES + keySizeBytes; // we store a int for class version
         queueOffsetInEntry = Integer.BYTES + serializedKeySize;
-        keyMutationEntrySize = queueOffsetInEntry + Integer.BYTES + mutationArraySize;
+        keyMutationEntrySize = queueOffsetInEntry + MUTATION_QUEUE_HEADER_SIZE + mutationArraySize;
         binSize = binHeaderSize + (numOfKeysPerBin * keyMutationEntrySize);
         final int fileSize = binSize * numOfBinsPerFile;
         // OPEN FILE
@@ -159,9 +149,6 @@ public final class BinFile<K extends SelfSerializable> {
         mappedBuffer = fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, fileSize);
         // mark file as open
         fileIsOpen = true;
-        // create streams
-        outputStream = new PositionableByteBufferSerializableDataOutputStream(mappedBuffer);
-        inputStream = new PositionableByteBufferSerializableDataInputStream(mappedBuffer);
     }
 
     /**
@@ -193,6 +180,22 @@ public final class BinFile<K extends SelfSerializable> {
         synchronized (mappedBuffer) {
             int entryOffset = findEntryOffsetForKeyInBin(keySubHash, key);
             return (entryOffset != -1) ? getMutationValue(entryOffset+queueOffsetInEntry,version) : NOT_FOUND_LOCATION;
+        }
+    }
+
+
+    public long getSlotIfAbsentPut(long version, int keySubHash, K key, LongSupplier newValueSupplier) {
+        synchronized (mappedBuffer) {
+            int entryOffset = findEntryOffsetForKeyInBin(keySubHash, key);
+            if (entryOffset != -1) {
+                return getMutationValue(entryOffset + queueOffsetInEntry, version);
+            } else {
+                long newValue = newValueSupplier.getAsLong();
+                EntryReference entry = getOrCreateEntry(keySubHash, key);
+                // so we now have a entry, existing or a new one we just have to add/update the version in mutation queue
+                writeValueIntoMutationQueue(entry.offset+queueOffsetInEntry, entry.wasCreated, version, newValue);
+                return newValue;
+            }
         }
     }
 
@@ -242,10 +245,12 @@ public final class BinFile<K extends SelfSerializable> {
      * @param newVersion the new version number
      */
     public void versionChanged(long oldVersion, long newVersion) {
-        currentVersion = newVersion;
-        // stash changedKeysCurrentVersion and create new list
-        changedKeysPerVersion.put(oldVersion, changedKeysCurrentVersion);
-        changedKeysCurrentVersion = new ArrayList<>();
+        synchronized (mappedBuffer) {
+            currentVersion = newVersion;
+            // stash changedKeysCurrentVersion and create new list
+            changedKeysPerVersion.put(oldVersion, changedKeysCurrentVersion);
+            changedKeysCurrentVersion = new ArrayList<>();
+        }
     }
 
     /**
@@ -254,13 +259,15 @@ public final class BinFile<K extends SelfSerializable> {
      * @param version the version to release
      */
     public void releaseVersion(long version) {
-        // version deleting entries for this version
-        List<Integer> changedKeys = (version == currentVersion || currentVersion == -1) ?
-                changedKeysCurrentVersion : changedKeysPerVersion.remove(version);
-        // TODO maybe need to clear out changedKeysCurrentVersion but seems if current version has been released we are done
-        if (changedKeys != null) {
-            for(Integer mutationQueueOffset: changedKeys) {
-                markQueue(mutationQueueOffset, version);
+        synchronized (mappedBuffer) {
+            // version deleting entries for this version
+            List<Integer> changedKeys = (version == currentVersion || currentVersion == -1) ?
+                    changedKeysCurrentVersion : changedKeysPerVersion.remove(version);
+            // TODO maybe need to clear out changedKeysCurrentVersion but seems if current version has been released we are done
+            if (changedKeys != null) {
+                for (Integer mutationQueueOffset : changedKeys) {
+                    markQueue(mutationQueueOffset, version);
+                }
             }
         }
     }
@@ -295,16 +302,12 @@ public final class BinFile<K extends SelfSerializable> {
         // iterate searching
         int foundOffset = -1;
         try {
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(tempKeyData1.length);
-            key.serialize(new SerializableDataOutputStream(byteArrayOutputStream));
-            final var arr = byteArrayOutputStream.toByteArray();
-
             for (int i = 0; i < queueCount; i++) {
                 final int keyQueueOffset = binOffset + binHeaderSize + (keyMutationEntrySize * i);
                 // read hash
                 final int readHash = mappedBuffer.getInt(keyQueueOffset);
                 // dont need to check for EMPTY_ENTRY_HASH as it will never match keySubHash
-                if (readHash == keySubHash && keyEquals(keyQueueOffset + Integer.BYTES, arr)) {
+                if (readHash == keySubHash && keyEquals(keyQueueOffset + Integer.BYTES, key)) {
                     // we found the key
                     foundOffset = keyQueueOffset;
                     break;
@@ -320,16 +323,15 @@ public final class BinFile<K extends SelfSerializable> {
      * Check if a key equals one stored in the file at the given offset
      *
      * @param offset the offset into file where key to compare with hash been serialized
-     * @param keyBytes The key to compare with
+     * @param key The key to compare with
      * @return true if the key object .equals() the serialized key stored in file
      */
-    private boolean keyEquals(int offset, byte[] keyBytes) {
+    private boolean keyEquals(int offset, K key) throws IOException {
         // read serialization version
         int version = mappedBuffer.getInt(offset);
         // position input stream for deserialize
         mappedBuffer.position(offset+Integer.BYTES);
-        mappedBuffer.get(tempKeyData1);
-        return Arrays.equals(tempKeyData1, 0, keyBytes.length, keyBytes, 0, keyBytes.length);
+        return key.equals(mappedBuffer,version);
     }
 
     private EntryReference getOrCreateEntry(int keySubHash, K key) {
@@ -365,9 +367,9 @@ public final class BinFile<K extends SelfSerializable> {
                 // write serialized key version
                 mappedBuffer.putInt(entryOffset+Integer.BYTES,key.getVersion());
                 // write serialized key
-                outputStream.position(entryOffset+Integer.BYTES+Integer.BYTES);
+                mappedBuffer.position(entryOffset+Integer.BYTES+Integer.BYTES);
                 try {
-                    key.serialize(outputStream);
+                    key.serialize(mappedBuffer);
                 } catch (IOException e) {
                     e.printStackTrace(); // TODO something better
                 }
