@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.token;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -44,6 +43,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
@@ -121,6 +121,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						cannotCreateWithExcessiveLifetime(),
 						/* HIP-18 */
 						onlyValidCustomFeeScheduleCanBeCreated(),
+						feeCollectorSigningReqsWorkForTokenCreate(),
 				}
 		);
 	}
@@ -225,7 +226,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 				).then(
 						getAccountInfo(TOKEN_TREASURY)
 								.hasToken(
-										ExpectedTokenRel.relationshipWith("primary")
+										relationshipWith("primary")
 												.kyc(TokenKycStatus.KycNotApplicable)
 								)
 				);
@@ -284,7 +285,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.hasAutoRenewAccount("autoRenewAccount"),
 						getAccountInfo(TOKEN_TREASURY)
 								.hasToken(
-										ExpectedTokenRel.relationshipWith("primary")
+										relationshipWith("primary")
 												.balance(500)
 												.kyc(TokenKycStatus.Granted)
 												.freeze(TokenFreezeStatus.Unfrozen)
@@ -347,23 +348,6 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	}
 
 	public HapiApiSpec onlyValidCustomFeeScheduleCanBeCreated() {
-		final var hbarAmount = 1_234L;
-		final var htsAmount = 2_345L;
-		final var numerator = 1;
-		final var denominator = 10;
-		final var minimumToCollect = 5;
-		final var maximumToCollect = 50;
-
-		final var token = "withCustomSchedules";
-		final var feeDenom = "denom";
-		final var hbarCollector = "hbarFee";
-		final var htsCollector = "denomFee";
-		final var tokenCollector = "fractionalFee";
-		final var invalidEntityId = "1.2.786";
-		final var negativeHtsFee = -100L;
-
-		final var customFeesKey = "antique";
-
 		return defaultHapiSpec("OnlyValidCustomFeeScheduleCanBeCreated")
 				.given(
 						newKeyNamed(customFeesKey),
@@ -402,6 +386,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						tokenCreate(token)
 								.treasury(tokenCollector)
 								.withCustom(incompleteCustomFee(hbarCollector))
+								.signedBy(DEFAULT_PAYER, tokenCollector, hbarCollector)
 								.hasKnownStatus(CUSTOM_FEE_NOT_FULLY_SPECIFIED),
 						tokenCreate(token)
 								.treasury(tokenCollector)
@@ -448,6 +433,58 @@ public class TokenCreateSpecs extends HapiApiSuite {
 										numerator, denominator,
 										minimumToCollect, OptionalLong.of(maximumToCollect),
 										tokenCollector))
+				);
+	}
+
+	private HapiApiSpec feeCollectorSigningReqsWorkForTokenCreate() {
+		return defaultHapiSpec("FeeCollectorSigningReqsEnforced")
+				.given(
+						newKeyNamed(customFeesKey),
+						cryptoCreate(htsCollector).receiverSigRequired(true),
+						cryptoCreate(hbarCollector),
+						cryptoCreate(tokenCollector),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(feeDenom).treasury(htsCollector)
+				).when(
+						tokenCreate(token)
+								.treasury(TOKEN_TREASURY)
+								.withCustom(fractionalFee(
+										numerator, 0,
+										minimumToCollect, OptionalLong.of(maximumToCollect),
+										tokenCollector))
+								.hasKnownStatus(INVALID_SIGNATURE),
+						tokenCreate(token)
+								.treasury(TOKEN_TREASURY)
+								.withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
+								.hasKnownStatus(INVALID_SIGNATURE),
+						tokenCreate(token)
+								.treasury(TOKEN_TREASURY)
+								.withCustom(fractionalFee(
+										numerator, -denominator,
+										minimumToCollect, OptionalLong.of(maximumToCollect),
+										tokenCollector))
+								.hasKnownStatus(INVALID_SIGNATURE),
+						tokenCreate(token)
+								.treasury(TOKEN_TREASURY)
+								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
+								.withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
+								.withCustom(fractionalFee(
+										numerator, denominator,
+										minimumToCollect, OptionalLong.of(maximumToCollect),
+										tokenCollector))
+								.signedBy(DEFAULT_PAYER, TOKEN_TREASURY, htsCollector, tokenCollector)
+				).then(
+						getTokenInfo(token)
+								.hasCustomFeesMutable(false)
+								.hasCustom(fixedHbarFeeInSchedule(hbarAmount, hbarCollector))
+								.hasCustom(fixedHtsFeeInSchedule(htsAmount, feeDenom, htsCollector))
+								.hasCustom(fractionalFeeInSchedule(
+										numerator, denominator,
+										minimumToCollect, OptionalLong.of(maximumToCollect),
+										tokenCollector)),
+						getAccountInfo(tokenCollector).hasToken(relationshipWith(token)),
+						getAccountInfo(hbarCollector).hasNoTokenRelationship(token),
+						getAccountInfo(htsCollector).hasNoTokenRelationship(token)
 				);
 	}
 
@@ -632,4 +669,19 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	protected Logger getResultsLogger() {
 		return log;
 	}
+
+	private final long hbarAmount = 1_234L;
+	private final long htsAmount = 2_345L;
+	private final long numerator = 1;
+	private final long denominator = 10;
+	private final long minimumToCollect = 5;
+	private final long maximumToCollect = 50;
+	private final String token = "withCustomSchedules";
+	private final String feeDenom = "denom";
+	private final String hbarCollector = "hbarFee";
+	private final String htsCollector = "denomFee";
+	private final String tokenCollector = "fractionalFee";
+	private final String invalidEntityId = "1.2.786";
+	private final long negativeHtsFee = -100L;
+	private final String customFeesKey = "antique";
 }

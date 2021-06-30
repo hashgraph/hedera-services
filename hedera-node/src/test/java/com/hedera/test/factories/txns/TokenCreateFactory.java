@@ -20,12 +20,15 @@ package com.hedera.test.factories.txns;
  * ‍
  */
 
+import com.hedera.services.state.submerkle.CustomFee;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public class TokenCreateFactory extends SignedTxnFactory<TokenCreateFactory> {
@@ -33,6 +36,7 @@ public class TokenCreateFactory extends SignedTxnFactory<TokenCreateFactory> {
 	private boolean omitAdmin = false;
 	private boolean omitTreasury = false;
 	private Optional<AccountID> autoRenew = Optional.empty();
+	private List<CustomFee> customFees = null;
 
 	private TokenCreateFactory() {}
 
@@ -50,13 +54,16 @@ public class TokenCreateFactory extends SignedTxnFactory<TokenCreateFactory> {
 		return this;
 	}
 
-	public TokenCreateFactory missingTreasury() {
-		omitTreasury = true;
+	public TokenCreateFactory missingAdmin() {
+		omitAdmin = true;
 		return this;
 	}
 
-	public TokenCreateFactory missingAdmin() {
-		omitAdmin = true;
+	public TokenCreateFactory plusCustomFee(CustomFee customFee) {
+		if (customFees == null) {
+			customFees = new ArrayList<>();
+		}
+		customFees.add(customFee);
 		return this;
 	}
 
@@ -82,7 +89,12 @@ public class TokenCreateFactory extends SignedTxnFactory<TokenCreateFactory> {
 		if (frozen) {
 			op.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey());
 		}
-		autoRenew.ifPresent(a -> op.setAutoRenewAccount(a));
+		if (customFees != null) {
+			for (var fee : customFees) {
+				op.getCustomFeesBuilder().addCustomFees(fee.asGrpc());
+			}
+		}
+		autoRenew.ifPresent(op::setAutoRenewAccount);
 		txn.setTokenCreation(op);
 	}
 }

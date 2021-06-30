@@ -20,8 +20,11 @@ package com.hedera.test.factories.scenarios;
  * ‍
  */
 
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.PlatformTxnAccessor;
 
+import static com.hedera.services.state.submerkle.CustomFee.fixedFee;
+import static com.hedera.services.state.submerkle.CustomFee.fractionalFee;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.TokenCreateFactory.newSignedTokenCreate;
 
@@ -67,6 +70,53 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 					newSignedTokenCreate()
 							.missingAdmin()
 							.autoRenew(MISSING_ACCOUNT)
+							.get()
+			));
+		}
+	},
+	TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIQ_REQ {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			final var collector = EntityId.fromGrpcAccountId(NO_RECEIVER_SIG);
+			return new PlatformTxnAccessor(from(
+					newSignedTokenCreate()
+							.missingAdmin()
+							.plusCustomFee(fixedFee(123L, null, collector))
+							.get()
+			));
+		}
+	},
+	TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIQ_REQ {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			final var collector = EntityId.fromGrpcAccountId(RECEIVER_SIG);
+			return new PlatformTxnAccessor(from(
+					newSignedTokenCreate()
+							.missingAdmin()
+							.plusCustomFee(fixedFee(123L, null, collector))
+							.get()
+			));
+		}
+	},
+	TOKEN_CREATE_WITH_FRACTIONAL_FEE_COLLECTOR_NO_SIQ_REQ {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			final var collector = EntityId.fromGrpcAccountId(NO_RECEIVER_SIG);
+			return new PlatformTxnAccessor(from(
+					newSignedTokenCreate()
+							.missingAdmin()
+							.plusCustomFee(fractionalFee(
+									1, 2,
+									3, 4,
+									collector))
+							.get()
+			));
+		}
+	},
+	TOKEN_CREATE_WITH_MISSING_COLLECTOR {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			final var collector = EntityId.fromGrpcAccountId(MISSING_ACCOUNT);
+			return new PlatformTxnAccessor(from(
+					newSignedTokenCreate()
+							.missingAdmin()
+							.plusCustomFee(fixedFee(123L, null, collector))
 							.get()
 			));
 		}

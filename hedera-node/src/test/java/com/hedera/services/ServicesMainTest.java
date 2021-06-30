@@ -83,7 +83,6 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.verifyNoInteractions;
 import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.mockStatic;
 
 public class ServicesMainTest {
 	private final long NODE_ID = 1L;
