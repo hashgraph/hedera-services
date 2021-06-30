@@ -204,6 +204,8 @@ public class ServicesContextTest {
 	FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
 	FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
 	FCMap<MerkleEntityId, MerkleSchedule> schedules;
+	AddressBook addresses;
+	MerkleDiskFs diskFs;
 
 	@BeforeEach
 	void setup() {
@@ -211,8 +213,10 @@ public class ServicesContextTest {
 		tokens = mock(FCMap.class);
 		tokenAssociations = mock(FCMap.class);
 		schedules = mock(FCMap.class);
+		addresses = mock(AddressBook.class);
 		storage = mock(FCMap.class);
 		accounts = mock(FCMap.class);
+		diskFs = mock(MerkleDiskFs.class);
 		seqNo = mock(SequenceNumber.class);
 		midnightRates = mock(ExchangeRates.class);
 		networkCtx = new MerkleNetworkContext(consensusTimeOfLastHandledTxn, seqNo, 1000L, midnightRates);
@@ -224,6 +228,8 @@ public class ServicesContextTest {
 		given(state.tokens()).willReturn(tokens);
 		given(state.tokenAssociations()).willReturn(tokenAssociations);
 		given(state.scheduleTxs()).willReturn(schedules);
+		given(state.addressBook()).willReturn(addresses);
+		given(state.diskFs()).willReturn(diskFs);
 		workingState = mock(WorkingState.class);
 		given(workingState.getNetworkCtx()).willReturn(networkCtx);
 		given(workingState.getAccounts()).willReturn(accounts);
@@ -232,6 +238,9 @@ public class ServicesContextTest {
 		given(workingState.getTokens()).willReturn(tokens);
 		given(workingState.getTokenAssociations()).willReturn(tokenAssociations);
 		given(workingState.getSchedules()).willReturn(schedules);
+		given(workingState.getAddressBook()).willReturn(addresses);
+		given(workingState.getDiskFs()).willReturn(diskFs);
+
 		crypto = mock(Cryptography.class);
 		platform = mock(Platform.class);
 		given(platform.getSelfId()).willReturn(new NodeId(false, 0L));
@@ -242,7 +251,7 @@ public class ServicesContextTest {
 	}
 
 	@Test
-	void updatesStateAsExpected() {
+	void updatesStateAsExpected() throws Exception {
 		// setup:
 		var newState = mock(ServicesState.class);
 		var newAccounts = mock(FCMap.class);
@@ -258,34 +267,31 @@ public class ServicesContextTest {
 		given(newState.storage()).willReturn(newStorage);
 		given(newState.tokenAssociations()).willReturn(newTokenRels);
 		given(newState.scheduleTxs()).willReturn(newSchedules);
+
 		// given:
 		var subject = new ServicesContext(nodeId, platform, state, propertySources);
+
+		QueryableState queryableState = getQueryableState(subject);
+
 		// and:
-		var accountsRef = subject.queryableAccounts();
-		var topicsRef = subject.queryableTopics();
-		var storageRef = subject.queryableStorage();
-		var tokensRef = subject.queryableTokens();
-		var tokenRelsRef = subject.queryableTokenAssociations();
-		var schedulesRef = subject.queryableSchedules();
+		assertSame(state, subject.state);
+		assertSame(state.accounts(), queryableState.getQueryableAccounts().get());
+		assertSame(state.topics(), queryableState.getQueryableTopics().get());
+		assertSame(state.storage(), queryableState.getQueryableStorage().get());
+		assertSame(state.tokens(), queryableState.getQueryableTokens().get());
+		assertSame(state.tokenAssociations(), queryableState.getQueryableTokenAssociations().get());
+		assertSame(state.scheduleTxs(), queryableState.getQueryableSchedules().get());
 
 		// when:
 		subject.update(newState);
 
-		// then:
 		assertSame(newState, subject.state);
-		assertSame(accountsRef, subject.queryableAccounts());
-		assertSame(topicsRef, subject.queryableTopics());
-		assertSame(storageRef, subject.queryableStorage());
-		assertSame(tokensRef, subject.queryableTokens());
-		assertSame(tokenRelsRef, subject.queryableTokenAssociations());
-		assertSame(schedulesRef, subject.queryableSchedules());
-		// and:
-		assertSame(newAccounts, subject.queryableAccounts().get());
-		assertSame(newTopics, subject.queryableTopics().get());
-		assertSame(newStorage, subject.queryableStorage().get());
-		assertSame(newTokens, subject.queryableTokens().get());
-		assertSame(newTokenRels, subject.queryableTokenAssociations().get());
-		assertSame(newSchedules, subject.queryableSchedules().get());
+		assertSame(newState.accounts(), queryableState.getQueryableAccounts().get());
+		assertSame(newState.topics(), queryableState.getQueryableTopics().get());
+		assertSame(newState.storage(), queryableState.getQueryableStorage().get());
+		assertSame(newState.tokens(), queryableState.getQueryableTokens().get());
+		assertSame(newState.tokenAssociations(), queryableState.getQueryableTokenAssociations().get());
+		assertSame(newState.scheduleTxs(), queryableState.getQueryableSchedules().get());
 	}
 
 	@Test
@@ -440,7 +446,7 @@ public class ServicesContextTest {
 	}
 
 	@Test
-	void hasExpectedStakedInfrastructure() {
+	void hasExpectedStakedInfrastructure() throws Exception {
 		// setup:
 		Address address = mock(Address.class);
 		AddressBook book = mock(AddressBook.class);
@@ -453,6 +459,8 @@ public class ServicesContextTest {
 		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
 		// and:
 		ctx.platformStatus().set(PlatformStatus.DISCONNECTED);
+
+		QueryableState queryableState = getQueryableState(ctx);
 
 		// expect:
 		assertEquals(SleepingPause.SLEEPING_PAUSE, ctx.pause());
@@ -500,17 +508,17 @@ public class ServicesContextTest {
 		assertThat(ctx.submissionFlow(), instanceOf(BasicSubmissionFlow.class));
 		assertThat(ctx.answerFunctions(), instanceOf(AnswerFunctions.class));
 		assertThat(ctx.queryFeeCheck(), instanceOf(QueryFeeCheck.class));
-		assertThat(ctx.queryableTopics(), instanceOf(AtomicReference.class));
+		assertThat(queryableState.getQueryableTopics(), instanceOf(AtomicReference.class));
 		assertThat(ctx.transitionLogic(), instanceOf(TransitionLogicLookup.class));
 		assertThat(ctx.precheckVerifier(), instanceOf(PrecheckVerifier.class));
 		assertThat(ctx.apiPermissionsReloading(), instanceOf(ValidatingCallbackInterceptor.class));
 		assertThat(ctx.applicationPropertiesReloading(), instanceOf(ValidatingCallbackInterceptor.class));
 		assertThat(ctx.recordsHistorian(), instanceOf(TxnAwareRecordsHistorian.class));
-		assertThat(ctx.queryableAccounts(), instanceOf(AtomicReference.class));
+		assertThat(queryableState.getQueryableAccounts(), instanceOf(AtomicReference.class));
 		assertThat(ctx.txnChargingPolicy(), instanceOf(FeeChargingPolicy.class));
 		assertThat(ctx.txnResponseHelper(), instanceOf(TxnResponseHelper.class));
 		assertThat(ctx.statusCounts(), instanceOf(ConsensusStatusCounts.class));
-		assertThat(ctx.queryableStorage(), instanceOf(AtomicReference.class));
+		assertThat(queryableState.getQueryableStorage(), instanceOf(AtomicReference.class));
 		assertThat(ctx.systemFilesManager(), instanceOf(HfsSystemFilesManager.class));
 		assertThat(ctx.queryResponseHelper(), instanceOf(QueryResponseHelper.class));
 		assertThat(ctx.solidityLifecycle(), instanceOf(SolidityLifecycle.class));
@@ -703,5 +711,27 @@ public class ServicesContextTest {
 
 		// then:
 		verify(recordStreamManager).setInitialHash(initialHash);
+	}
+
+	/**
+	 * Use reflection to extract the private field queryableState from ServiceContext
+	 * @param serviceContext service context
+	 * @return queryable state
+	 * @throws Exception if unable to extract field
+	 */
+	private QueryableState getQueryableState(ServicesContext serviceContext) throws Exception {
+
+		Field workingStateField;
+		QueryableState queryableState;
+
+		try {
+			workingStateField = serviceContext.getClass().getDeclaredField("queryableState");
+			workingStateField.setAccessible(true);
+			queryableState = (QueryableState) workingStateField.get(serviceContext);
+		} catch (NoSuchFieldException | IllegalAccessException e) {
+			throw new Exception("Unable to set working state field", e);
+		}
+
+		return queryableState;
 	}
 }

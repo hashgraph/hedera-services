@@ -33,6 +33,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fcmap.FCMap;
+import java.util.Objects;
 
 /**
  * Manages the working state of the services. This gets updated by {@link ServicesContext} on a regular interval. The
@@ -41,33 +42,34 @@ import com.swirlds.fcmap.FCMap;
 public class WorkingState {
 
 	/** Working state of accounts */
-	private FCMap<MerkleEntityId, MerkleAccount> accounts = new FCMap<>();
+	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 
 	/** Working state of topics */
-	private FCMap<MerkleEntityId, MerkleTopic> topics = new FCMap<>();
+	private FCMap<MerkleEntityId, MerkleTopic> topics;
 
 	/** Working state of tokens */
-	private FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
+	private FCMap<MerkleEntityId, MerkleToken> tokens;
 
 	/** Working state of schedules */
-	private FCMap<MerkleEntityId, MerkleSchedule> schedules = new FCMap<>();
+	private FCMap<MerkleEntityId, MerkleSchedule> schedules;
 
 	/** Working state of storage */
-	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage = new FCMap<>();
+	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
 
 	/** Working state of token associations */
-	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations = new FCMap<>();
+	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
 
 	/** Working state of network context */
-	private MerkleNetworkContext networkCtx = new MerkleNetworkContext();
+	private MerkleNetworkContext networkCtx;
 
 	/** Working state of address book */
-	private AddressBook addressBook = new AddressBook();
+	private AddressBook addressBook;
 
 	/** Working state of disk fs */
-	private MerkleDiskFs diskFs = new MerkleDiskFs();
+	private MerkleDiskFs diskFs;
 
 	public FCMap<MerkleEntityId, MerkleAccount> getAccounts() {
+		Objects.requireNonNull(accounts, "A working state with null accounts map is never valid");
 		return accounts;
 	}
 
@@ -76,6 +78,7 @@ public class WorkingState {
 	}
 
 	public FCMap<MerkleEntityId, MerkleTopic> getTopics() {
+		Objects.requireNonNull(topics, "A working state with null topics map is never valid");
 		return topics;
 	}
 
@@ -84,6 +87,7 @@ public class WorkingState {
 	}
 
 	public FCMap<MerkleEntityId, MerkleToken> getTokens() {
+		Objects.requireNonNull(tokens, "A working state with null tokens map is never valid");
 		return tokens;
 	}
 
@@ -92,6 +96,7 @@ public class WorkingState {
 	}
 
 	public FCMap<MerkleEntityId, MerkleSchedule> getSchedules() {
+		Objects.requireNonNull(schedules, "A working state with null schedules map is never valid");
 		return schedules;
 	}
 
@@ -101,6 +106,7 @@ public class WorkingState {
 	}
 
 	public FCMap<MerkleBlobMeta, MerkleOptionalBlob> getStorage() {
+		Objects.requireNonNull(storage, "A working state with null storage map is never valid");
 		return storage;
 	}
 
@@ -110,6 +116,7 @@ public class WorkingState {
 	}
 
 	public FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> getTokenAssociations() {
+		Objects.requireNonNull(tokenAssociations, "A working state with null token associations map is never valid");
 		return tokenAssociations;
 	}
 
@@ -119,6 +126,7 @@ public class WorkingState {
 	}
 
 	public MerkleNetworkContext getNetworkCtx() {
+		Objects.requireNonNull(networkCtx, "A working state with null network ctx map is never valid");
 		return networkCtx;
 	}
 
@@ -127,6 +135,7 @@ public class WorkingState {
 	}
 
 	public AddressBook getAddressBook() {
+		Objects.requireNonNull(addressBook, "A working state with null address book map is never valid");
 		return addressBook;
 	}
 
@@ -135,6 +144,7 @@ public class WorkingState {
 	}
 
 	public MerkleDiskFs getDiskFs() {
+		Objects.requireNonNull(diskFs, "A working state with null disk fs map is never valid");
 		return diskFs;
 	}
 

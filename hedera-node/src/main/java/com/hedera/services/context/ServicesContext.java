@@ -567,14 +567,9 @@ public class ServicesContext {
 	private ValidatingCallbackInterceptor applicationPropertiesReloading;
 	private Supplier<ServicesRepositoryRoot> newPureRepo;
 	private Map<TransactionID, TxnIdRecentHistory> txnHistories;
-	private AtomicReference<FCMap<MerkleEntityId, MerkleTopic>> queryableTopics;
-	private AtomicReference<FCMap<MerkleEntityId, MerkleToken>> queryableTokens;
-	private AtomicReference<FCMap<MerkleEntityId, MerkleAccount>> queryableAccounts;
-	private AtomicReference<FCMap<MerkleEntityId, MerkleSchedule>> queryableSchedules;
-	private AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage;
-	private AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations;
 	private FcmCustomFeeSchedules activeCustomFeeSchedules;
 	private WorkingState workingState = new WorkingState();
+	private QueryableState queryableState = new QueryableState();
 
 	/* Context-free infrastructure. */
 	private static Pause pause;
@@ -601,6 +596,7 @@ public class ServicesContext {
 		this.propertySources = propertySources;
 
 		updateWorkingState(state);
+		updateQueryableState(state);
 	}
 
 	/**
@@ -612,13 +608,19 @@ public class ServicesContext {
 		this.state = state;
 
 		updateWorkingState(state);
+		updateQueryableState(state);
+	}
 
-		queryableAccounts().set(accounts());
-		queryableTopics().set(topics());
-		queryableStorage().set(storage());
-		queryableTokens().set(tokens());
-		queryableTokenAssociations().set(tokenAssociations());
-		queryableSchedules().set(schedules());
+	/**
+	 * Update the queryable state
+	 */
+	private void updateQueryableState(ServicesState state) {
+		queryableState.setQueryableAccounts(new AtomicReference<>(state.accounts()));
+		queryableState.setQueryableTopics(new AtomicReference<>(state.topics()));
+		queryableState.setQueryableStorage(new AtomicReference<>(state.storage()));
+		queryableState.setQueryableTokens(new AtomicReference<>(state.tokens()));
+		queryableState.setQueryableTokenAssociations(new AtomicReference<>(state.tokenAssociations()));
+		queryableState.setQueryableSchedules(new AtomicReference<>(state.scheduleTxs()));
 	}
 
 	/**
@@ -866,10 +868,10 @@ public class ServicesContext {
 			stateViews = () -> new StateView(
 					tokenStore(),
 					scheduleStore(),
-					() -> queryableTopics().get(),
-					() -> queryableAccounts().get(),
-					() -> queryableStorage().get(),
-					() -> queryableTokenAssociations().get(),
+					() -> queryableState.getQueryableTopics().get(),
+					() -> queryableState.getQueryableAccounts().get(),
+					() -> queryableState.getQueryableStorage().get(),
+					() -> queryableState.getQueryableTokenAssociations().get(),
 					this::diskFs,
 					nodeLocalProperties());
 		}
@@ -2033,49 +2035,6 @@ public class ServicesContext {
 			address = addressBook().getAddress(id.getId());
 		}
 		return address;
-	}
-
-	public AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage() {
-		if (queryableStorage == null) {
-			queryableStorage = new AtomicReference<>(storage());
-		}
-		return queryableStorage;
-	}
-
-	public AtomicReference<FCMap<MerkleEntityId, MerkleAccount>> queryableAccounts() {
-		if (queryableAccounts == null) {
-			queryableAccounts = new AtomicReference<>(accounts());
-		}
-		return queryableAccounts;
-	}
-
-	public AtomicReference<FCMap<MerkleEntityId, MerkleTopic>> queryableTopics() {
-		if (queryableTopics == null) {
-			queryableTopics = new AtomicReference<>(topics());
-		}
-		return queryableTopics;
-	}
-
-	public AtomicReference<FCMap<MerkleEntityId, MerkleToken>> queryableTokens() {
-		if (queryableTokens == null) {
-			queryableTokens = new AtomicReference<>(tokens());
-		}
-		return queryableTokens;
-	}
-
-	public AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations() {
-		if (queryableTokenAssociations == null) {
-			queryableTokenAssociations = new AtomicReference<>(tokenAssociations());
-		}
-		return queryableTokenAssociations;
-	}
-
-	public AtomicReference<FCMap<MerkleEntityId, MerkleSchedule>> queryableSchedules() {
-		if (queryableSchedules == null) {
-			queryableSchedules = new AtomicReference<>(schedules());
-		}
-
-		return queryableSchedules;
 	}
 
 	public UsagePricesProvider usagePrices() {
