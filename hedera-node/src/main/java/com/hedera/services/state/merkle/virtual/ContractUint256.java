@@ -3,13 +3,15 @@ package com.hedera.services.state.merkle.virtual;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.fcmap.VKey;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class ContractUint256 implements SelfSerializable {
+public class ContractUint256 implements SelfSerializable, VKey {
     public static final int SERIALIZED_SIZE = 32;
     private BigInteger value;
 
@@ -57,5 +59,25 @@ public class ContractUint256 implements SelfSerializable {
     @Override
     public int hashCode() {
         return Objects.hash(value);
+    }
+
+    @Override
+    public void serialize(ByteBuffer byteBuffer) throws IOException {
+        throw new UnsupportedOperationException("Boo");
+    }
+
+    @Override
+    public void deserialize(ByteBuffer byteBuffer, int i) throws IOException {
+        throw new UnsupportedOperationException("Boo");
+    }
+
+    @Override
+    public boolean equals(ByteBuffer byteBuffer, int i) throws IOException {
+        final var bytes = this.value.toByteArray();
+        for (var b : bytes) {
+            if (b != byteBuffer.get()) return false;
+        }
+        // TODO Not really true, I'm just checking the prefix instead of everything...
+        return true;
     }
 }

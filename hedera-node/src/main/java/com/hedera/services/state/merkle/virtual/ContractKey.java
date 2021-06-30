@@ -4,16 +4,19 @@ import com.hedera.services.store.models.Id;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.fcmap.VKey;
 import org.apache.tuweni.units.bigints.UInt256;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
  * The key of a key/value pair used by a Smart Contract for storage purposes.
  */
-public final class ContractKey implements SelfSerializable {
+public final class ContractKey implements SelfSerializable, VKey {
     public static final int SERIALIZED_SIZE = Long.BYTES + Long.BYTES + Long.BYTES + Integer.BYTES + ContractUint256.SERIALIZED_SIZE;
     private Id contractId;
     private ContractUint256 key;
@@ -80,5 +83,24 @@ public final class ContractKey implements SelfSerializable {
         return "ContractKey{" +
                 "key=" + key +
                 '}';
+    }
+
+    @Override
+    public void serialize(ByteBuffer byteBuffer) throws IOException {
+        throw new UnsupportedOperationException("Boo");
+    }
+
+    @Override
+    public void deserialize(ByteBuffer byteBuffer, int i) throws IOException {
+        throw new UnsupportedOperationException("Boo");
+    }
+
+    @Override
+    public boolean equals(ByteBuffer byteBuffer, int version) throws IOException {
+        if (contractId.getShard() != byteBuffer.getLong()) return false;
+        if (contractId.getRealm() != byteBuffer.getLong()) return false;
+        if (contractId.getNum() != byteBuffer.getLong()) return false;
+        if (key.getVersion() != byteBuffer.getInt()) return false;
+        return key.equals(byteBuffer, version);
     }
 }
