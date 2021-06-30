@@ -36,7 +36,7 @@ public class GlobalDynamicProperties {
 	private int maxBatchSizeMint;
 	private int maxNftTransfersLen;
 	private int maxBatchSizeWipe;
-	private int maxNFTQueryRange;
+	private long maxNFTQueryRange;
 	private int maxTokensPerAccount;
 	private int maxCustomFeesAllowed;
 	private int maxTokenSymbolUtf8Bytes;
@@ -92,7 +92,7 @@ public class GlobalDynamicProperties {
 		maxBatchSizeBurn = properties.getIntProperty("tokens.nfts.maxBatchSizeBurn");
 		maxBatchSizeMint = properties.getIntProperty("tokens.nfts.maxBatchSizeMint");
 		maxBatchSizeWipe = properties.getIntProperty("tokens.nfts.maxBatchSizeWipe");
-		maxNFTQueryRange = properties.getIntProperty("tokens.nfts.maxQueryRange");
+		maxNFTQueryRange = properties.getLongProperty("tokens.nfts.maxQueryRange");
 		maxTokensPerAccount = properties.getIntProperty("tokens.maxPerAccount");
 		maxTokenSymbolUtf8Bytes = properties.getIntProperty("tokens.maxSymbolUtf8Bytes");
 		maxTokenNameUtf8Bytes = properties.getIntProperty("tokens.maxTokenNameUtf8Bytes");
@@ -156,7 +156,7 @@ public class GlobalDynamicProperties {
 
 	public int maxBatchSizeMint() { return maxBatchSizeMint; }
 
-	public int maxNFTQueryRange() { return maxNFTQueryRange; }
+	public long maxNFTQueryRange() { return maxNFTQueryRange; }
 
 	public int maxTokenSymbolUtf8Bytes() {
 		return maxTokenSymbolUtf8Bytes;

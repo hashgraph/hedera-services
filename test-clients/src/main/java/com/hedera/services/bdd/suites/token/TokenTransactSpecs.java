@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.token;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.queries.token.HapiTokenNftInfo;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
@@ -33,6 +34,7 @@ import java.util.Map;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountNftInfos;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -471,6 +473,10 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.hasMetadata(ByteString.copyFromUtf8("memo"))
 								.hasTokenID(A_TOKEN)
 								.hasAccountID(FIRST_USER),
+						getAccountNftInfos(FIRST_USER, 0, 1)
+								.hasNfts(
+										HapiTokenNftInfo.newTokenNftInfo(A_TOKEN, 1, FIRST_USER, ByteString.copyFromUtf8("memo"))
+								),
 						getTxnRecord("cryptoTransferTxn").logged()
 				);
 	}
@@ -494,7 +500,11 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						cryptoTransfer(
 								movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
 
-						).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
+						).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+						getAccountNftInfos(TOKEN_TREASURY, 0, 1)
+								.hasNfts(
+										HapiTokenNftInfo.newTokenNftInfo(A_TOKEN, 1, TOKEN_TREASURY, ByteString.copyFromUtf8("memo"))
+								)
 				);
 	}
 
@@ -520,7 +530,6 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				.then(
 						cryptoTransfer(
 								movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
-
 						)
 								.hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN)
 				);

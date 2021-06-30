@@ -22,7 +22,6 @@ package com.hedera.services.store.tokens;
 
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.Store;
 import com.hedera.services.store.models.NftId;

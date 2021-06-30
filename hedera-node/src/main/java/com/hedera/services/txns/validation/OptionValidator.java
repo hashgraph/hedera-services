@@ -64,7 +64,7 @@ public interface OptionValidator {
 	ResponseCodeEnum maxBatchSizeWipeCheck(int length);
 	ResponseCodeEnum maxBatchSizeBurnCheck(int length);
 	ResponseCodeEnum maxNftTransfersLenCheck(int length);
-	ResponseCodeEnum nftMaxQueryRangeCheck(int start, int end);
+	ResponseCodeEnum nftMaxQueryRangeCheck(long start, long end);
 
 	ResponseCodeEnum queryableTopicStatus(TopicID id, FCMap<MerkleEntityId, MerkleTopic> topics);
 

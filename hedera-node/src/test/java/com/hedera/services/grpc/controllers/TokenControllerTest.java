@@ -38,7 +38,9 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetAccountNftInfos;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetNftInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
@@ -186,5 +188,23 @@ class TokenControllerTest {
 
 		// expect:
 		verify(queryResponseHelper).answer(query, queryObserver,null , TokenGetInfo);
+	}
+
+	@Test
+	public void forwardsTokenNftInfoAsExpected() {
+		// when:
+		subject.getTokenNftInfo(query, queryObserver);
+
+		// expect:
+		verify(queryResponseHelper).answer(query, queryObserver,null , TokenGetNftInfo);
+	}
+
+	@Test
+	public void forwardsAccountNftInfosAsExpected() {
+		// when:
+		subject.getAccountNftInfos(query, queryObserver);
+
+		// expect:
+		verify(queryResponseHelper).answer(query, queryObserver,null , TokenGetAccountNftInfos);
 	}
 }
