@@ -139,9 +139,8 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 	) {
 		/* TokenStore.associate() returns TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT if the
 		account-token relationship already exists. */
-		final Set<AccountID> customCollectorsEnabled = new HashSet<>() {{
-			this.add(alreadyEnabledTreasury);
-		}};
+		final Set<AccountID> customCollectorsEnabled = new HashSet<>();
+		customCollectorsEnabled.add(alreadyEnabledTreasury);
 		ResponseCodeEnum status = OK;
 		for (var fee : op.getCustomFees().getCustomFeesList()) {
 			if (fee.hasFractionalFee()) {

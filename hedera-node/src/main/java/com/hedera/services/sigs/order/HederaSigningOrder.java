@@ -756,7 +756,7 @@ public class HederaSigningOrder {
 		return basic;
 	}
 
-	private <T> boolean addAccountIfReceiverSigRequired(AccountID id, List<JKey> reqs) {
+	private boolean addAccountIfReceiverSigRequired(AccountID id, List<JKey> reqs) {
 		return addAccount(id, reqs, false);
 	}
 
