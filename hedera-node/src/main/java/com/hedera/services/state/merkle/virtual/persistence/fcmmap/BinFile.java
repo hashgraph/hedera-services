@@ -3,6 +3,7 @@ package com.hedera.services.state.merkle.virtual.persistence.fcmmap;
 import com.hedera.services.state.merkle.virtual.persistence.PositionableByteBufferSerializableDataInputStream;
 import com.hedera.services.state.merkle.virtual.persistence.PositionableByteBufferSerializableDataOutputStream;
 import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.io.SerializableDataOutputStream;
 import sun.misc.Unsafe;
 
 import java.io.*;
@@ -12,10 +13,7 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.hedera.services.state.merkle.virtual.persistence.FCSlotIndex.NOT_FOUND_LOCATION;
@@ -118,6 +116,8 @@ public final class BinFile<K extends SelfSerializable> {
     private List<Integer> changedKeysCurrentVersion = new ArrayList<>();
     /** The current version we are working on */
     private long currentVersion = -1;
+    private final byte[] tempKeyData1;
+    private final byte[] tempKeyData2;
 
     /**
      * Construct a new BinFile
@@ -133,6 +133,8 @@ public final class BinFile<K extends SelfSerializable> {
         this.numOfKeysPerBin = numOfKeysPerBin;
         this.numOfBinsPerFile = numOfBinsPerFile;
         this.maxNumberOfMutations = maxNumberOfMutations;
+        tempKeyData1 = new byte[keySizeBytes];
+        tempKeyData2 = new byte[keySizeBytes];
         // calculate size of key,mutation store which contains:
         final int mutationArraySize = maxNumberOfMutations * MUTATION_SIZE;
         final int serializedKeySize = Integer.BYTES + keySizeBytes; // we store a int for class version
@@ -314,11 +316,12 @@ public final class BinFile<K extends SelfSerializable> {
         // read serialization version
         int version = mappedBuffer.getInt(offset);
         // position input stream for deserialize
-        inputStream.position(offset+Integer.BYTES);
+        mappedBuffer.position(offset+Integer.BYTES);
+        mappedBuffer.get(tempKeyData1);
         try {
-            @SuppressWarnings("unchecked") K newKey = (K)key.getClass().getConstructor().newInstance();
-            newKey.deserialize(inputStream, version);
-            return key.equals(newKey);
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(tempKeyData1.length);
+            key.serialize(new SerializableDataOutputStream(byteArrayOutputStream));
+            return Arrays.equals(tempKeyData1,byteArrayOutputStream.toByteArray());
         } catch (Exception e) {
             e.printStackTrace(); // TODO something better
             return false;
