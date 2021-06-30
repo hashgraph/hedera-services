@@ -1260,7 +1260,6 @@
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TokenAccountWipe",
       "fees" : [ {
-        "subType": "TOKEN_FUNGIBLE_COMMON",
         "nodedata" : {
           "constant" : 94092119,
           "bpt" : 150425,

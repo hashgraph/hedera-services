@@ -62,10 +62,6 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 		/* No-op. */
 	}
 
-	public MerkleUniqueToken(EntityId owner) {
-		this.owner = owner;
-	}
-
 	/* Object */
 	@Override
 	public boolean equals(Object o) {
