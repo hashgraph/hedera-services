@@ -567,6 +567,7 @@ public class ServicesMainTest {
 	void failsFastIfBalanceExportDetectedInvalidState() throws Exception {
 		// setup:
 		subject.ctx = ctx;
+		var nodeId = ctx.id();
 		Instant when = Instant.now();
 		ServicesState signedState = mock(ServicesState.class);
 
@@ -574,7 +575,7 @@ public class ServicesMainTest {
 		given(balancesExporter.isTimeToExport(when)).willReturn(true);
 		willThrow(IllegalStateException.class)
 				.given(balancesExporter)
-				.exportBalancesFrom(signedState, when, ctx.id());
+				.exportBalancesFrom(signedState, when, nodeId);
 
 		// when:
 		subject.newSignedState(signedState, when, 1L);
