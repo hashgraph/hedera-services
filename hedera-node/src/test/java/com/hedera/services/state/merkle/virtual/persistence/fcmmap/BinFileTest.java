@@ -67,6 +67,65 @@ public class BinFileTest {
     }
 
     @Test
+    public void testRelease() throws IOException {
+        // Create and open the file. I'm only going to allow a maximum of 10 mutations per queue, and throughout the
+        // test I will add and remove things and keep track of how many mutations there should be. Eventually I will
+        // overflow it to trigger an exception to prove the number of mutations is exactly as expected.
+        Path file = getTempFile();
+        BinFile<SerializableLong> binFile = new BinFile<>(file,8,5,5,10);
+
+        // Release version 0 (nothing has been written yet, should have no effect)
+        binFile.releaseVersion(0);
+
+        // Write a single item for version 1. Then release it. The mutation queue should still exist, but
+        // with a single "RELEASED" item.
+        final var key = new SerializableLong(1001001);
+        binFile.putSlot(1, key.hashCode(), key, 111);
+        binFile.releaseVersion(1);
+
+        // Now write another value for that key. The first key should have been deleted as a consequence.
+        // At this point in time, there should be a single mutation in the queue.
+        binFile.putSlot(2, key.hashCode(), key, 222);
+
+        // At this point, we have a single mutation. If I write a few more times to the same version, it shouldn't
+        // result in any additional mutations
+        for (int i=0; i<20; i++) {
+            binFile.putSlot(2, key.hashCode(), key, 223 + i);
+        }
+
+        // Now add versions to fill up the mutation queue
+        binFile.putSlot(3, key.hashCode(), key, 333);
+        binFile.putSlot(4, key.hashCode(), key, 444);
+        binFile.putSlot(5, key.hashCode(), key, 555);
+        binFile.putSlot(6, key.hashCode(), key, 666);
+        binFile.putSlot(7, key.hashCode(), key, 777);
+        binFile.putSlot(8, key.hashCode(), key, 888);
+        binFile.putSlot(9, key.hashCode(), key, 999);
+        binFile.putSlot(10, key.hashCode(), key, 1010);
+        binFile.putSlot(11, key.hashCode(), key, 1111);
+
+        // Now lets pick a couple versions to release in the middle and at the end
+        binFile.releaseVersion(6);
+        binFile.releaseVersion(8);
+        binFile.releaseVersion(9);
+        binFile.releaseVersion(11);
+
+        // Now lets add new versions to fill up the queue again (another 4 to go!)
+        binFile.putSlot(12, key.hashCode(), key, 1212);
+        binFile.putSlot(13, key.hashCode(), key, 1313);
+        binFile.putSlot(14, key.hashCode(), key, 1414);
+        binFile.putSlot(15, key.hashCode(), key, 1515);
+
+        // TODO put a lot of asserts in to read back values for every version, and what happens if we lookup a released version?
+
+        // Now it is time to tip the scales!
+        assertThrows(IllegalStateException.class, () -> binFile.putSlot(99, key.hashCode(), key, 9999));
+
+        // close
+        binFile.close();
+    }
+
+    @Test
     public void testDelete() throws IOException {
         // create and open file
         Path file = getTempFile();
@@ -96,7 +155,6 @@ public class BinFileTest {
         // close
         binFile.close();
     }
-
 
     @Test
     public void versionsTest() throws IOException {
