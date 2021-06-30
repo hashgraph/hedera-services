@@ -66,12 +66,16 @@ public class ContractPath implements SelfSerializable, VKey {
 
     @Override
     public void serialize(ByteBuffer byteBuffer) throws IOException {
-        throw new UnsupportedOperationException("Boo");
+        byteBuffer.putLong(contractId.getShard());
+        byteBuffer.putLong(contractId.getRealm());
+        byteBuffer.putLong(contractId.getNum());
+        byteBuffer.putLong(path);
     }
 
     @Override
     public void deserialize(ByteBuffer byteBuffer, int i) throws IOException {
-        throw new UnsupportedOperationException("Boo");
+        contractId = new Id(byteBuffer.getLong(), byteBuffer.getLong(), byteBuffer.getLong());
+        path = byteBuffer.getLong();
     }
 
     @Override

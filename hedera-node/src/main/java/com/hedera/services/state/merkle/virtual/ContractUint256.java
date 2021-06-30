@@ -42,9 +42,6 @@ public class ContractUint256 implements SelfSerializable, VKey {
     @Override
     public void serialize(SerializableDataOutputStream serializableDataOutputStream) throws IOException {
         final var arr = this.value.toByteArray();
-        if (arr.length > 32) {
-            System.out.println(arr.length);
-        }
         serializableDataOutputStream.write(Arrays.copyOf(arr, 32));
     }
 
@@ -63,21 +60,27 @@ public class ContractUint256 implements SelfSerializable, VKey {
 
     @Override
     public void serialize(ByteBuffer byteBuffer) throws IOException {
-        throw new UnsupportedOperationException("Boo");
+        final var arr = this.value.toByteArray();
+        byteBuffer.putInt(arr.length);
+        byteBuffer.put(arr);
     }
 
     @Override
     public void deserialize(ByteBuffer byteBuffer, int i) throws IOException {
-        throw new UnsupportedOperationException("Boo");
+        final var length = byteBuffer.getInt();
+        final var bytes = new byte[length];
+        byteBuffer.get(bytes);
+        this.value = new BigInteger(bytes);
     }
 
     @Override
     public boolean equals(ByteBuffer byteBuffer, int i) throws IOException {
+        final var length = byteBuffer.getInt();
         final var bytes = this.value.toByteArray();
+        if (length != bytes.length) return false;
         for (var b : bytes) {
             if (b != byteBuffer.get()) return false;
         }
-        // TODO Not really true, I'm just checking the prefix instead of everything...
         return true;
     }
 }
