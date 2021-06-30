@@ -309,7 +309,7 @@ public class UtilVerbs {
 	}
 
 	public static HapiSpecOperation chunkAFile(String filePath, int chunkSize, String payer, String topic,
-											   AtomicLong count) {
+			AtomicLong count) {
 		return withOpContext((spec, ctxLog) -> {
 			List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
 			String overriddenFile = new String(filePath);
@@ -503,7 +503,8 @@ public class UtilVerbs {
 			boolean signOnlyWithPayer,
 			OptionalLong tinyBarsToOffer
 	) {
-		return updateLargeFile(payer, fileName, byteString, signOnlyWithPayer, tinyBarsToOffer, op -> {}, op -> {});
+		return updateLargeFile(payer, fileName, byteString, signOnlyWithPayer, tinyBarsToOffer,
+				op -> {}, op -> {});
 	}
 
 	public static HapiSpecOperation updateLargeFile(
@@ -516,7 +517,7 @@ public class UtilVerbs {
 			Consumer<HapiFileAppend> appendCustomizer
 	) {
 		return withOpContext((spec, ctxLog) -> {
-			List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
+			List<HapiSpecOperation> opsList = new ArrayList<>();
 
 			int fileSize = byteString.size();
 			int position = Math.min(BYTES_4K, fileSize);
@@ -607,6 +608,12 @@ public class UtilVerbs {
 	/**
 	 * Validates that fee charged for a transaction is within +/- 0.0001$ of
 	 * expected fee (taken from pricing calculator)
+	 *
+	 * @param txn
+	 * 		transaction to be validated
+	 * @param expectedUsd
+	 * 		expected fee in USD
+	 * @return assertion for the validation
 	 */
 	public static CustomSpecAssert validateChargedUsd(String txn, double expectedUsd) {
 		return validateChargedUsdWithin(txn, expectedUsd, 1.0);
