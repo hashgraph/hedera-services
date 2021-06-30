@@ -34,8 +34,6 @@ public class ContractHashStore implements FCHashStore {
                     ContractPath.SERIALIZED_SIZE,
                     index,
                     MemMapSlotStore::new);
-
-            this.dataStore.open();
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -68,7 +66,11 @@ public class ContractHashStore implements FCHashStore {
 
     @Override
     public void deleteHash(long path) {
-        dataStore.deleteHash(new ContractPath(contractId, path));
+        try {
+            dataStore.deleteHash(new ContractPath(contractId, path));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

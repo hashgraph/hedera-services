@@ -21,19 +21,13 @@ public interface FCVirtualMapLeafStore<LK extends VKey,
         LP extends SelfSerializable, LV extends SelfSerializable>
         extends FastCopyable {
 
-    /** Open storage, release() is used to close */
-    void open() throws IOException;
-
-    /** Sync any changes to disk, used during testing */
-    void sync();
-
     /**
      * Delete a stored leaf from storage, if it is stored.
      *
      * @param leafKey The key for the leaf to delete
      * @param leafPath The path for the leaf to delete
      */
-    void deleteLeaf(LK leafKey, LP leafPath);
+    void deleteLeaf(LK leafKey, LP leafPath) throws IOException;
 
     /**
      * Check if this store contains a leaf by key
@@ -41,7 +35,7 @@ public interface FCVirtualMapLeafStore<LK extends VKey,
      * @param leafKey The key of the leaf to check for
      * @return true if that leaf is stored, false if it is not known
      */
-    boolean containsLeafKey(LK leafKey);
+    boolean containsLeafKey(LK leafKey) throws IOException;
 
     /**
      * Get the number of leaves for a given account

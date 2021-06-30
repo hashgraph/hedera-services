@@ -1,9 +1,6 @@
 package com.hedera.services.state.merkle.virtual.persistence;
 
-import com.hedera.services.state.merkle.virtual.persistence.fcmmap.MemMapSlotStore;
-
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.file.Path;
 
 /**
@@ -16,13 +13,6 @@ public interface SlotStore {
     long NOT_FOUND_LOCATION = Long.MAX_VALUE;
 
     /**
-     * Get the size for each storage slot in bytes.
-     *
-     * @return data size in bytes
-     */
-    int getSlotSizeBytes();
-
-    /**
      * Get number of slots that can be stored in this storage
      *
      * @return number of total slots
@@ -30,66 +20,58 @@ public interface SlotStore {
     int getSize();
 
     /**
-     * Opens all the files in this store. While opening it visits every used slot and calls slotVisitor.
-     *
-     * @param slotSizeBytes Slot data size in bytes
-     * @param fileSize The size of each storage file in bytes
-     * @param storageDirectory The path of the directory to store storage files
-     * @param filePrefix The prefix for each storage file
-     * @param fileExtension The extension for each storage file, for example "dat"
-     * @param slotVisitor Visitor that gets to visit every used slot. May be null.
-     */
-    void open(int slotSizeBytes, int fileSize, Path storageDirectory, String filePrefix, String fileExtension, MemMapSlotStore.SlotVisitor slotVisitor)
-            throws IOException;
-
-    /**
-     * Add a reference to be tracked to this data store. This can only be closed when all references are removed.
-     */
-    void addReference();
-
-    /**
-     * Add a reference to be tracked to this data store
-     */
-    void removeReference();
-
-    /**
      * Flush all data to disk and close all files only if there are no references to this data store
      */
     void close();
 
     /**
-     * Get direct access to the slot in the base storage as a output stream that can be written two.
+     * Acquire a write lock for the given location
      *
-     * @param location slot location of the data to get
-     * @return A special output stream that has a position, the position is preset at right location in file and will not be 0
+     * @param location the location we want to be able to write to
+     * @return stamp representing the lock that needs to be returned to releaseWriteLock
      */
-    PositionableByteBufferSerializableDataOutputStream accessSlotForWriting(long location);
+    Object acquireWriteLock(long location);
 
     /**
-     * Return a slot that was obtained by access, this may be the point when it is written to disk depending on
-     * implementation.
+     * Release a previously acquired write lock
      *
-     * @param location slot location of the data to get
-     * @param out the output stream obtained by accessSlotForWriting()
+     * @param location the location we are finished writing to
+     * @param lockStamp stamp representing the lock that you got from acquireWriteLock
      */
-    default void returnSlot(long location, PositionableByteBufferSerializableDataOutputStream out){}
+    void releaseWriteLock(long location, Object lockStamp);
 
     /**
-     * Get direct access to the slot in the base storage as a input stream that can be read from.
+     * Write data into a slot, your slot writer will be called with a output stream while file is locked
      *
      * @param location slot location of the data to get
-     * @return A special input stream that has a position, the position is preset at right location in file and will not be 0
+     * @param writer slot writer to write into the slot with output stream
      */
-    PositionableByteBufferSerializableDataInputStream accessSlotForReading(long location);
+    void writeSlot(long location, SlotWriter writer) throws IOException;
 
     /**
-     * Return a slot that was obtained by access, this may be the point when it is written to disk depending on
-     * implementation.
+     * Acquire a read lock for the given location
+     *
+     * @param location the location we want to be able to read to
+     * @return stamp representing the lock that needs to be returned to releaseReadLock
+     */
+    Object acquireReadLock(long location);
+
+    /**
+     * Release a previously acquired read lock
+     *
+     * @param location the location we are finished reading from
+     * @param lockStamp stamp representing the lock that you got from acquireReadLock
+     */
+    void releaseReadLock(long location, Object lockStamp);
+
+    /**
+     * Read data from a slot, your consumer reader will be called with a input stream while file is locked
      *
      * @param location slot location of the data to get
-     * @param in the input stream obtained by accessSlotForReading()
+     * @param reader consumer to read slot from stream
+     * @return object read by reader
      */
-    default void returnSlot(long location, PositionableByteBufferSerializableDataInputStream in){}
+    <R> R readSlot(long location, SlotReader<R> reader) throws IOException;
 
     /**
      * Finds a new slot ready for use
@@ -103,11 +85,42 @@ public interface SlotStore {
      *
      * @param location the file and slot location to delete
      */
-    void deleteSlot(long location);
+    void deleteSlot(long location) throws IOException;
 
     /**
      * Make sure all data is flushed to disk. This is an expensive operation. The OS will write all data to disk in the
      * background, so only call this if you need to insure it is written synchronously.
      */
     void sync();
+
+    /**
+     * Interface for a slot writer
+     */
+    interface SlotWriter {
+        void write(PositionableByteBufferSerializableDataOutputStream outputStream) throws IOException;
+    }
+
+    /**
+     * Interface for a slot reader
+     */
+    interface SlotReader<R> {
+        R read(PositionableByteBufferSerializableDataInputStream inputStream) throws IOException;
+    }
+
+    /**
+     * Interface for factory for creating a slot store
+     */
+    interface SlotStoreFactory {
+        /**
+         * Creates and opens slot store.
+         *
+         * @param slotSizeBytes Slot data size in bytes
+         * @param fileSize The size of each storage file in bytes
+         * @param storageDirectory The path of the directory to store storage files
+         * @param filePrefix The prefix for each storage file
+         * @param fileExtension The extension for each storage file, for example "dat"
+         */
+        SlotStore open(int slotSizeBytes, int fileSize, Path storageDirectory, String filePrefix, String fileExtension)
+                throws IOException;
+    }
 }
