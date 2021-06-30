@@ -15,7 +15,7 @@ public class FCSlotIndexUsingFCHashMap<K extends VKey> implements FCSlotIndex<K>
     private FCHashMap<K,Long> map;
 
     public FCSlotIndexUsingFCHashMap() {
-        this.map = map = new FCHashMap<>();
+        this.map = new FCHashMap<>();
     }
 
     public FCSlotIndexUsingFCHashMap(FCSlotIndexUsingFCHashMap<K> toCopy) {
