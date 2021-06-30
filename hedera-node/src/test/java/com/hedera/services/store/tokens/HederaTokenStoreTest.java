@@ -219,39 +219,12 @@ class HederaTokenStoreTest {
 					.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
 							.setFractionalAmount(invalidFraction)
 					)).build();
-	private CustomFeesOuterClass.CustomFees grpcMaxLessThanMinCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
-			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
-					.setFeeCollectorAccountId(feeCollector)
-					.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
-							.setFractionalAmount(Fraction.newBuilder()
-									.setNumerator(123L).setDenominator(1_000L))
-							.setMaximumAmount(2L)
-							.setMinimumAmount(10L)
-					)).build();
-	private CustomFeesOuterClass.CustomFees grpcMaxEqualToMinCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
-			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
-					.setFeeCollectorAccountId(feeCollector)
-					.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
-							.setFractionalAmount(Fraction.newBuilder()
-									.setNumerator(123L).setDenominator(1_000L))
-							.setMaximumAmount(2L)
-							.setMinimumAmount(2L)
-							.setMinimumAmount(2L)
-					)).build();
 	private CustomFeesOuterClass.CustomFees grpcNegativeFractionCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
 			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
 					.setFeeCollectorAccountId(feeCollector)
 					.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
 							.setFractionalAmount(Fraction.newBuilder()
 									.setNumerator(123L).setDenominator(-1_000L)
-							)
-					)).build();
-	private CustomFeesOuterClass.CustomFees grpcBothNegativeFractionCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
-			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
-					.setFeeCollectorAccountId(feeCollector)
-					.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
-							.setFractionalAmount(Fraction.newBuilder()
-									.setNumerator(-123L).setDenominator(-1_000L)
 							)
 					)).build();
 	private CustomFeesOuterClass.CustomFees grpcNegativeMaximumCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
@@ -290,7 +263,33 @@ class HederaTokenStoreTest {
 					.setFixedFee(CustomFeesOuterClass.FixedFee.newBuilder()
 							.setAmount(0L)
 					)).build();
-
+	private CustomFeesOuterClass.CustomFees grpcMaxLessThanMinCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
+			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
+					.setFeeCollectorAccountId(feeCollector)
+					.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
+							.setFractionalAmount(Fraction.newBuilder()
+									.setNumerator(123L).setDenominator(1_000L))
+							.setMaximumAmount(2L)
+							.setMinimumAmount(10L)
+					)).build();
+	private CustomFeesOuterClass.CustomFees grpcMaxEqualToMinCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
+			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
+					.setFeeCollectorAccountId(feeCollector)
+					.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
+							.setFractionalAmount(Fraction.newBuilder()
+									.setNumerator(123L).setDenominator(1_000L))
+							.setMaximumAmount(2L)
+							.setMinimumAmount(2L)
+							.setMinimumAmount(2L)
+					)).build();
+	private CustomFeesOuterClass.CustomFees grpcBothNegativeFractionCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
+			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
+					.setFeeCollectorAccountId(feeCollector)
+					.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
+							.setFractionalAmount(Fraction.newBuilder()
+									.setNumerator(-123L).setDenominator(-1_000L)
+							)
+					)).build();
 	private HederaTokenStore subject;
 
 	@BeforeEach
