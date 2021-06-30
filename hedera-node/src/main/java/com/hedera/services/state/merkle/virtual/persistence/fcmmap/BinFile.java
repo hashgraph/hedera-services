@@ -40,7 +40,9 @@ public final class BinFile<K extends SelfSerializable> {
     /** a mutation in mutation queue size, consists of a Version long and slot location value long */
     private static final int MUTATION_SIZE = Long.BYTES * 2;
     private static final int MUTATION_QUEUE_HEADER_SIZE = Integer.BYTES;
-    private static final int TOMBSTONE = -1;
+
+    /** A flag used in place of the mutation version indicating that the associated copy has been released. */
+    private static final int RELEASED = -1;
 
     /**
      * Special key for a hash for a empty entry. -1 is known to be safe as it is all ones and keys are always shifted
@@ -422,7 +424,7 @@ public final class BinFile<K extends SelfSerializable> {
                 mutationOffset = newestMutationOffset;
             } else { // new version
                 // clean out any old mutations that are no longer needed
-                sweepQueue(mutationQueueOffset);
+                mutationCount = sweepQueue(mutationQueueOffset);
                 // check we have not run out of mutations
                 if (mutationCount >= maxNumberOfMutations) throw new IllegalStateException("We ran out of mutations.");
                 // increment mutation count
@@ -444,12 +446,12 @@ public final class BinFile<K extends SelfSerializable> {
     }
 
     /**
-     * As part of a classic mark+sweep design, marks (tombstones) any mutation in the queue
+     * As part of a classic mark+sweep design, marks any mutation in the queue
      * with the given version. A subsequent "sweep" will remove all released mutations that
      * are no longer needed.
      *
      * @param mutationQueueOffset The offset of the mutation queue to process
-     * @param version The mutation version to try to TOMBSTONE.
+     * @param version The mutation version to try to mark as RELEASED.
      */
     private void markQueue(int mutationQueueOffset, long version) {
         // Normally, copies are released in the order in which they were
@@ -462,8 +464,8 @@ public final class BinFile<K extends SelfSerializable> {
             final var mutationOffset = getMutationOffset(mutationQueueOffset, i);
             final var mutationVersion = mappedBuffer.getLong(mutationOffset);
             if (mutationVersion == version) {
-                // This is the mutation. Mark it by setting the version to TOMBSTONE.
-                mappedBuffer.putLong(mutationOffset, TOMBSTONE);
+                // This is the mutation. Mark it by setting the version to RELEASED.
+                mappedBuffer.putLong(mutationOffset, RELEASED);
             } else if (mutationVersion > version) {
                 // There is no such mutation here (which is surprising, but maybe it got swept already).
                 return;
@@ -475,20 +477,50 @@ public final class BinFile<K extends SelfSerializable> {
      * "Sweeps" all unneeded mutations from the queue, shifting all
      * subsequent mutations left.
      *
-     * @param mutationQueueOffset The offset of the mutation queue to process
+     * @param mutationQueueOffset The offset to the mutation queue to be swept.
+     * @return The new mutation count after sweeping
      */
-    private void sweepQueue(int mutationQueueOffset) {
+    private int sweepQueue(int mutationQueueOffset) {
         // Look through the mutations and collect the indexes of each mutation that can be removed.
         // Then move surviving mutations forward into the earliest available slots.
         final var mutationCount = mappedBuffer.getInt(mutationQueueOffset);
-        for (int i=0; i<mutationCount; i++) {
-            final var mutationOffset = getMutationOffset(mutationQueueOffset, i);
-            final var mutationVersion = mappedBuffer.getLong(mutationOffset);
-            if (mutationVersion == TOMBSTONE) {
-                // This guy has been released...
-                System.out.println("Hello");
+        // Visit all of the mutations. Anything marked RELEASED can be replaced.
+        int i = 0;
+        int j = 1;
+        for (; i < mutationCount; i++, j++) {
+            final var offset = getMutationOffset(mutationQueueOffset, i);
+            final var version = mappedBuffer.getLong(offset);
+            if (version == RELEASED) {
+                // This mutation has been released. Now we need to look for the first non-released mutation
+                // and copy it here.
+                while (j < mutationCount) {
+                    final var offset2 = getMutationOffset(mutationQueueOffset, j);
+                    final var version2 = mappedBuffer.getLong(offset2);
+                    if (version2 != RELEASED) {
+                        // Copy from mutation2 to mutation
+                        mappedBuffer.putLong(offset, mappedBuffer.getLong(offset2));
+                        mappedBuffer.putLong(offset + Long.BYTES, mappedBuffer.getLong(offset2 + Long.BYTES));
+                        // Tombstone the old mutation location (it will be removed by this code)
+                        mappedBuffer.putLong(offset2, RELEASED);
+                        // Step out of the inner loop and let "i" increment again. But increment j so that next time
+                        // we need a keeper mutation, we start from looking one past j (since we already know by this
+                        // point that only SWEPT mutations or keepers are behind j).
+                        break;
+                    } else {
+                        j++;
+                    }
+                }
+
+                // If j is >= mutationCount, then we have decided there is NOTHING later in this queue, so
+                // we can finish our iteration.
+                if (j >= mutationCount) {
+                    break;
+                }
             }
         }
+
+        // "i" will tell us how many mutations we still have.
+        return i;
     }
 
     private int getMutationOffset(int mutationQueueOffset, int mutationIndex) {
