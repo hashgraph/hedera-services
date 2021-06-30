@@ -22,7 +22,7 @@ public final class ContractKey implements SelfSerializable {
         // there has to be a default constructor for deserialize
     }
 
-    ContractKey(Id contractId, ContractUint256 key) {
+    public ContractKey(Id contractId, ContractUint256 key) {
         this.contractId = contractId;
         this.key = key;
     }

@@ -51,43 +51,43 @@ public final class BinFile<K extends SelfSerializable> {
     /**
      * We assume try and get the page size and us default of 4k if we fail as that is standard on linux
      */
-    private static final int PAGE_SIZE_BYTES;
-    static {
-        int pageSize = 4096; // 4k is default on linux
-        try {
-            Field f = Unsafe.class.getDeclaredField("theUnsafe");
-            f.setAccessible(true);
-            Unsafe unsafe = (Unsafe)f.get(null);
-            pageSize = unsafe.pageSize();
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            System.out.println("Failed to get page size via misc.unsafe");
-            // try and get from system command
-            boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
-            if (!isWindows) {
-                ProcessBuilder builder = new ProcessBuilder()
-                        .command("getconf", "PAGE_SIZE")
-                        .directory(new File(System.getProperty("user.home")));
-                try {
-                    Process process = builder.start();
-                    String output = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))
-                            .lines()
-                            .collect(Collectors.joining())
-                            .trim();
-                    try {
-                        pageSize = Integer.parseInt(output);
-                    } catch(NumberFormatException numberFormatException) {
-                        System.out.println("Failed to get page size via running \"getconf\" command. so using default 4k\n"+
-                                "\"getconf\" output was \""+output+"\"");
-                    }
-                } catch (IOException ioException) {
-                    System.out.println("Failed to get page size via running \"getconf\" command. so using default 4k");
-                    ioException.printStackTrace();
-                }
-            }
-        }
-        System.out.println("Page size: " + pageSize);
-        PAGE_SIZE_BYTES = pageSize;
-    }
+//    private static final int PAGE_SIZE_BYTES;
+//    static {
+//        int pageSize = 4096; // 4k is default on linux
+//        try {
+//            Field f = Unsafe.class.getDeclaredField("theUnsafe");
+//            f.setAccessible(true);
+//            Unsafe unsafe = (Unsafe)f.get(null);
+//            pageSize = unsafe.pageSize();
+//        } catch (NoSuchFieldException | IllegalAccessException e) {
+//            System.out.println("Failed to get page size via misc.unsafe");
+//            // try and get from system command
+//            boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
+//            if (!isWindows) {
+//                ProcessBuilder builder = new ProcessBuilder()
+//                        .command("getconf", "PAGE_SIZE")
+//                        .directory(new File(System.getProperty("user.home")));
+//                try {
+//                    Process process = builder.start();
+//                    String output = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))
+//                            .lines()
+//                            .collect(Collectors.joining())
+//                            .trim();
+//                    try {
+//                        pageSize = Integer.parseInt(output);
+//                    } catch(NumberFormatException numberFormatException) {
+//                        System.out.println("Failed to get page size via running \"getconf\" command. so using default 4k\n"+
+//                                "\"getconf\" output was \""+output+"\"");
+//                    }
+//                } catch (IOException ioException) {
+//                    System.out.println("Failed to get page size via running \"getconf\" command. so using default 4k");
+//                    ioException.printStackTrace();
+//                }
+//            }
+//        }
+//        System.out.println("Page size: " + pageSize);
+//        PAGE_SIZE_BYTES = pageSize;
+//    }
 
     /** Special pointer value used for when a value has been deleted */
     public static final long DELETED_POINTER = -1;
