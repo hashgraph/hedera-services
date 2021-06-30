@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,7 +46,6 @@ import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KYC_KEY;
@@ -53,6 +53,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DECIMALS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_INITIAL_SUPPLY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_KEY;
@@ -75,6 +76,7 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
 class TokenCreateTransitionLogicTest {
+	final private Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
 	long thisSecond = 1_234_567L;
 	private Instant now = Instant.ofEpochSecond(thisSecond);
 	private int decimals = 2;
@@ -84,7 +86,6 @@ class TokenCreateTransitionLogicTest {
 	private AccountID treasury = IdUtils.asAccount("1.2.4");
 	private AccountID renewAccount = IdUtils.asAccount("1.2.5");
 	private TokenID created = IdUtils.asToken("1.2.666");
-	final private Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
 	private TransactionBody tokenCreateTxn;
 
 	private OptionValidator validator;
@@ -447,14 +448,6 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
-	void rejectsInvalidCustomFeeKey() {
-		givenInvalidCustomFeeKey();
-
-		// expect:
-		assertEquals(INVALID_CUSTOM_FEE_KEY, subject.semanticCheck().apply(tokenCreateTxn));
-	}
-
-	@Test
 	void rejectMissingFreezeKeyWithFreezeDefault() {
 		givenMissingFreezeKeyWithFreezeDefault();
 
@@ -501,6 +494,54 @@ class TokenCreateTransitionLogicTest {
 		givenInvalidExpirationTime();
 
 		assertEquals(INVALID_EXPIRATION_TIME, subject.semanticCheck().apply(tokenCreateTxn));
+	}
+
+	@Test
+	void rejectsInvalidSupplyChecks() {
+		givenInvalidSupplyTypeAndSupply();
+		assertEquals(INVALID_TOKEN_MAX_SUPPLY, subject.semanticCheck().apply(tokenCreateTxn));
+	}
+
+	@Test
+	void rejectsInvalidInitialAndMaxSupply() {
+		givenTxWithInvalidSupplies();
+		assertEquals(INVALID_TOKEN_INITIAL_SUPPLY, subject.semanticCheck().apply(tokenCreateTxn));
+	}
+
+	private void givenInvalidSupplyTypeAndSupply() {
+		final var expiry = Timestamp.newBuilder().setSeconds(thisSecond + thisSecond).build();
+		var builder = TransactionBody.newBuilder()
+				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
+						.setSupplyType(TokenSupplyType.INFINITE)
+						.setInitialSupply(0)
+						.setMaxSupply(1)
+						.build()
+				);
+
+
+		tokenCreateTxn = builder.build();
+		given(accessor.getTxn()).willReturn(tokenCreateTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.consensusTime()).willReturn(now);
+		given(store.isCreationPending()).willReturn(true);
+		given(validator.isValidExpiry(expiry)).willReturn(true);
+	}
+
+	private void givenTxWithInvalidSupplies() {
+		final var expiry = Timestamp.newBuilder().setSeconds(thisSecond + thisSecond).build();
+		var builder = TransactionBody.newBuilder()
+				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
+						.setSupplyType(TokenSupplyType.FINITE)
+						.setInitialSupply(1000)
+						.setMaxSupply(1)
+						.build()
+				);
+		tokenCreateTxn = builder.build();
+		given(accessor.getTxn()).willReturn(tokenCreateTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.consensusTime()).willReturn(now);
+		given(store.isCreationPending()).willReturn(true);
+		given(validator.isValidExpiry(expiry)).willReturn(true);
 	}
 
 	private void givenValidTxnCtx() {
@@ -620,16 +661,6 @@ class TokenCreateTransitionLogicTest {
 						.setDecimals(decimals)
 						.setTreasury(treasury)
 						.setSupplyKey(Key.getDefaultInstance()))
-				.build();
-	}
-
-	private void givenInvalidCustomFeeKey() {
-		tokenCreateTxn = TransactionBody.newBuilder()
-				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
-						.setInitialSupply(initialSupply)
-						.setDecimals(decimals)
-						.setTreasury(treasury)
-						.setCustomFeesKey(Key.getDefaultInstance()))
 				.build();
 	}
 

@@ -41,12 +41,12 @@ import com.hedera.services.contracts.sources.LedgerAccountsSource;
 import com.hedera.services.fees.AwareHbarCentExchange;
 import com.hedera.services.fees.StandardExemptions;
 import com.hedera.services.fees.TxnRateFeeMultiplierSource;
-import com.hedera.services.fees.calculation.utils.AccessorBasedUsages;
 import com.hedera.services.fees.calculation.AwareFcfsUsagePrices;
 import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
+import com.hedera.services.fees.calculation.utils.AccessorBasedUsages;
 import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
-import com.hedera.services.fees.charging.NarratedLedgerCharging;
 import com.hedera.services.fees.charging.FeeChargingPolicy;
+import com.hedera.services.fees.charging.NarratedLedgerCharging;
 import com.hedera.services.fees.charging.TxnChargingPolicyAgent;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.SysFileCallbacks;
@@ -71,9 +71,9 @@ import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
+import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.accounts.BackingNfts;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
-import com.hedera.services.ledger.accounts.BackingAccounts;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
 import com.hedera.services.legacy.handler.FreezeHandler;
 import com.hedera.services.legacy.handler.SmartContractRequestHandler;
@@ -140,9 +140,9 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttling.HapiThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.throttling.TxnAwareHandleThrottling;
-import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.TransitionLogicLookup;
 import com.hedera.services.txns.TransitionRunner;
+import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.span.SpanMapManager;
 import com.hedera.services.txns.submission.BasicSubmissionFlow;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
@@ -188,29 +188,29 @@ import static org.mockito.BDDMockito.spy;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.when;
 
-public class ServicesContextTest {
+class ServicesContextTest {
 	private final long id = 1L;
 	private final NodeId nodeId = new NodeId(false, id);
 	private static final String recordStreamDir = "somePath/recordStream";
 
-	Instant consensusTimeOfLastHandledTxn = Instant.now();
-	Platform platform;
-	SequenceNumber seqNo;
-	ExchangeRates midnightRates;
-	MerkleNetworkContext networkCtx;
-	ServicesState state;
-	Cryptography crypto;
-	PropertySource properties;
-	StandardizedPropertySources propertySources;
-	FCMap<MerkleEntityId, MerkleTopic> topics;
-	FCMap<MerkleEntityId, MerkleToken> tokens;
-	FCMap<MerkleEntityId, MerkleAccount> accounts;
-	FCMap<MerkleEntityId, MerkleSchedule> schedules;
-	FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
-	FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens;
-	FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
-	FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations;
-	FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations;
+	private Instant consensusTimeOfLastHandledTxn = Instant.now();
+	private Platform platform;
+	private SequenceNumber seqNo;
+	private ExchangeRates midnightRates;
+	private MerkleNetworkContext networkCtx;
+	private ServicesState state;
+	private Cryptography crypto;
+	private PropertySource properties;
+	private StandardizedPropertySources propertySources;
+	private FCMap<MerkleEntityId, MerkleTopic> topics;
+	private FCMap<MerkleEntityId, MerkleToken> tokens;
+	private FCMap<MerkleEntityId, MerkleAccount> accounts;
+	private FCMap<MerkleEntityId, MerkleSchedule> schedules;
+	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
+	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens;
+	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations;
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations;
 
 	@BeforeEach
 	void setup() {
@@ -235,6 +235,8 @@ public class ServicesContextTest {
 		given(state.tokenAssociations()).willReturn(tokenAssociations);
 		given(state.scheduleTxs()).willReturn(schedules);
 		given(state.uniqueTokens()).willReturn(uniqueTokens);
+		given(state.uniqueTokenAssociations()).willReturn(uniqueTokenAssociations);
+		given(state.uniqueOwnershipAssociations()).willReturn(uniqueOwnershipAssociations);
 		crypto = mock(Cryptography.class);
 		platform = mock(Platform.class);
 		given(platform.getSelfId()).willReturn(new NodeId(false, 0L));
@@ -255,6 +257,8 @@ public class ServicesContextTest {
 		var newTokenRels = mock(FCMap.class);
 		var newSchedules = mock(FCMap.class);
 		var newUniqueTokens = mock(FCMap.class);
+		var newUniqueTokenAssociations = mock(FCOneToManyRelation.class);
+		var newUniqueOwnershipAssociations = mock(FCOneToManyRelation.class);
 
 		given(newState.accounts()).willReturn(newAccounts);
 		given(newState.topics()).willReturn(newTopics);
@@ -263,6 +267,8 @@ public class ServicesContextTest {
 		given(newState.tokenAssociations()).willReturn(newTokenRels);
 		given(newState.scheduleTxs()).willReturn(newSchedules);
 		given(newState.uniqueTokens()).willReturn(newUniqueTokens);
+		given(newState.uniqueTokenAssociations()).willReturn(newUniqueTokenAssociations);
+		given(newState.uniqueOwnershipAssociations()).willReturn(newUniqueOwnershipAssociations);
 		// given:
 		var subject = new ServicesContext(nodeId, platform, state, propertySources);
 		// and:
@@ -273,6 +279,8 @@ public class ServicesContextTest {
 		var tokenRelsRef = subject.queryableTokenAssociations();
 		var schedulesRef = subject.queryableSchedules();
 		var uniqueTokensRef = subject.queryableUniqueTokens();
+		var uniqueUtaRef = subject.queryableUniqueTokenAssociations();
+		var uniqueUtaoRef = subject.queryableUniqueOwnershipAssociations();
 
 		// when:
 		subject.update(newState);
@@ -286,6 +294,8 @@ public class ServicesContextTest {
 		assertSame(tokenRelsRef, subject.queryableTokenAssociations());
 		assertSame(schedulesRef, subject.queryableSchedules());
 		assertSame(uniqueTokensRef, subject.queryableUniqueTokens());
+		assertSame(uniqueUtaRef, subject.queryableUniqueTokenAssociations());
+		assertSame(uniqueUtaoRef, subject.queryableUniqueOwnershipAssociations());
 		// and:
 		assertSame(newAccounts, subject.queryableAccounts().get());
 		assertSame(newTopics, subject.queryableTopics().get());
@@ -294,13 +304,8 @@ public class ServicesContextTest {
 		assertSame(newTokenRels, subject.queryableTokenAssociations().get());
 		assertSame(newSchedules, subject.queryableSchedules().get());
 		assertSame(newUniqueTokens, subject.queryableUniqueTokens().get());
-	}
-
-	void compareFCOTMR(FCOneToManyRelation expected, FCOneToManyRelation actual) {
-		assertEquals(expected.getKeySet(), actual.getKeySet());
-		expected.getKeySet().forEach(key -> {
-			assertEquals(expected.getList(key), actual.getList(key));
-		});
+		assertSame(newUniqueTokenAssociations, subject.queryableUniqueTokenAssociations().get());
+		assertSame(newUniqueOwnershipAssociations, subject.queryableUniqueOwnershipAssociations().get());
 	}
 
 	@Test
@@ -312,7 +317,7 @@ public class ServicesContextTest {
 	@Test
 	void queryableUniqueTokenAccountOwnershipsReturnsProperReference() {
 		var subject = new ServicesContext(nodeId, platform, state, propertySources);
-		compareFCOTMR(subject.uniqueOwnershipAssociations(), subject.queryableUniqueTokenAccountOwnerships().get());
+		compareFCOTMR(subject.uniqueOwnershipAssociations(), subject.queryableUniqueOwnershipAssociations().get());
 	}
 
 	@Test
@@ -420,6 +425,7 @@ public class ServicesContextTest {
 	@Test
 	void rebuildsBackingAccountsIfNonNull() {
 		// setup:
+		BackingNfts nfts = mock(BackingNfts.class);
 		BackingTokenRels tokenRels = mock(BackingTokenRels.class);
 		BackingAccounts backingAccounts = mock(BackingAccounts.class);
 
@@ -432,6 +438,7 @@ public class ServicesContextTest {
 		// and given:
 		ctx.setBackingAccounts(backingAccounts);
 		ctx.setBackingTokenRels(tokenRels);
+		ctx.setBackingNfts(nfts);
 
 		// when:
 		ctx.rebuildBackingStoresIfPresent();
@@ -439,37 +446,7 @@ public class ServicesContextTest {
 		// then:
 		verify(tokenRels).rebuildFromSources();
 		verify(backingAccounts).rebuildFromSources();
-	}
-
-	@Test
-	void rebuildOwnershipsAndAssociationsWorks() {
-		var token = new EntityId(0, 0, 54321);
-		var owner = new EntityId(0, 0, 12345);
-		var realUniqueTokens = new FCMap<MerkleUniqueTokenId, MerkleUniqueToken>();
-
-		MerkleUniqueToken mut = new MerkleUniqueToken(owner, "some-metadata".getBytes(), RichInstant.fromJava(Instant.now()));
-		MerkleUniqueTokenId muti = new MerkleUniqueTokenId(token, 2);
-
-		var expectedUTA = new FCOneToManyRelation<EntityId, MerkleUniqueTokenId>();
-		expectedUTA.associate(token, muti);
-
-		var expectedUTAO = new FCOneToManyRelation<EntityId, MerkleUniqueTokenId>();
-		expectedUTAO.associate(owner, muti);
-
-		realUniqueTokens.put(muti, mut);
-		given(state.uniqueTokens()).willReturn(realUniqueTokens);
-
-		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
-
-		ctx.rebuildOwnershipsAndAssociations();
-		assertEquals(expectedUTA.getKeySet(), ctx.uniqueTokenAssociations().getKeySet());
-		assertEquals(expectedUTAO.getKeySet(), ctx.uniqueOwnershipAssociations().getKeySet());
-		expectedUTA.getKeySet().forEach(key -> {
-			assertEquals(expectedUTA.getList(key), ctx.uniqueTokenAssociations().getList(key));
-		});
-		expectedUTAO.getKeySet().forEach(key -> {
-			assertEquals(expectedUTAO.getList(key), ctx.uniqueOwnershipAssociations().getList(key));
-		});
+		verify(nfts).rebuildFromSources();
 	}
 
 	@Test
@@ -737,5 +714,12 @@ public class ServicesContextTest {
 
 		// then:
 		verify(recordStreamManager).setInitialHash(initialHash);
+	}
+
+	private void compareFCOTMR(FCOneToManyRelation expected, FCOneToManyRelation actual) {
+		assertEquals(expected.getKeySet(), actual.getKeySet());
+		expected.getKeySet().forEach(key -> {
+			assertEquals(expected.getList(key), actual.getList(key));
+		});
 	}
 }

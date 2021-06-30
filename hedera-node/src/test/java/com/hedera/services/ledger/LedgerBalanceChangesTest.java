@@ -330,18 +330,18 @@ class LedgerBalanceChangesTest {
 						.addNftTransfers(nftXfer(cModel, aModel, bSerialNo))
 						.build(),
 				TokenTransferList.newBuilder()
-						.setToken(asGprcToken(token))
+						.setToken(token.asGrpcToken())
 						.addTransfers(aaBuilderWith(bModel, bTokenChange))
 						.addTransfers(aaBuilderWith(cModel, cTokenChange))
 						.build(),
 				TokenTransferList.newBuilder()
-						.setToken(asGprcToken(anotherToken))
+						.setToken(anotherToken.asGrpcToken())
 						.addTransfers(aaBuilderWith(aModel, aAnotherTokenChange))
 						.addTransfers(aaBuilderWith(bModel, bAnotherTokenChange))
 						.addTransfers(aaBuilderWith(cModel, cAnotherTokenChange))
 						.build(),
 				TokenTransferList.newBuilder()
-						.setToken(asGprcToken(yetAnotherToken))
+						.setToken(yetAnotherToken.asGrpcToken())
 						.addTransfers(aaBuilderWith(aModel, aYetAnotherTokenChange))
 						.addTransfers(aaBuilderWith(bModel, bYetAnotherTokenChange))
 						.build()
@@ -476,7 +476,7 @@ class LedgerBalanceChangesTest {
 	}
 
 	private Pair<AccountID, TokenID> rel(AccountID account, Id token) {
-		return Pair.of(account, asGprcToken(token));
+		return Pair.of(account, token.asGrpcToken());
 	}
 
 	private TokenID asGprcToken(Id id) {

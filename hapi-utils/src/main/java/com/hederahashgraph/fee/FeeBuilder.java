@@ -90,10 +90,14 @@ public class FeeBuilder {
   public static final int BASIC_TX_RECORD_SIZE =
       BASIC_RECEIPT_SIZE + TX_HASH_SIZE + LONG_SIZE + BASIC_TX_ID_SIZE + LONG_SIZE;
 
-
   /**
    * This method calculates Fee for specific component (Noe/Network/Service) based upon param
    * componentCoefficients and componentMetrics
+   *
+   * @param componentCoefficients component coefficients
+   * @param componentMetrics compnent metrics
+   *
+   * @return long representation of the fee in tiny cents
    */
   public static long getComponentFeeInTinyCents(FeeComponents componentCoefficients,
       FeeComponents componentMetrics) {
@@ -119,9 +123,14 @@ public class FeeBuilder {
     return Math.max(totalComponentFee > 0 ? 1 : 0, (totalComponentFee) / FEE_DIVISOR_FACTOR);
   }
 
-
   /**
-   * This method calculates Total Fee for Transaction or Query and returns the value in tinyBars
+   * This method calculates total fee for transaction or query and returns the value in tinyBars
+   *
+   * @param feeCoefficients fee coefficients
+   * @param componentMetrics component metrics
+   * @param exchangeRate exchange rates
+   *
+   * @return long representing the total fee request
    */
   public static long getTotalFeeforRequest(FeeData feeCoefficients, FeeData componentMetrics,
       ExchangeRate exchangeRate) {
@@ -147,17 +156,25 @@ public class FeeBuilder {
     return new FeeObject(nodeFee, networkFee, serviceFee);
   }
 
+  /**
+   * Get fee object
+   *
+   * @param feeData fee data
+   * @param feeMatrices fee matrices
+   * @param exchangeRate exchange rate
+   *
+   * @return fee object
+   */
   public static FeeObject getFeeObject(FeeData feeData, FeeData feeMatrices, ExchangeRate exchangeRate) {
   	return getFeeObject(feeData, feeMatrices, exchangeRate, 1L);
   }
-
 
   /**
    * This method calculates the common bytes included in a every transaction. Common bytes only
    * differ based upon memo field.
    * <p>
    * Common fields in all transaction:
-   * <p>
+   * </p>
    * <ul>
    *     <li>TransactionID transactionID - BASIC_ENTITY_ID_SIZE (accountId) + LONG_SIZE (transactionValidStart)</li>
    *     <li>AccountID nodeAccountID - BASIC_ENTITY_ID_SIZE</li>
@@ -166,6 +183,10 @@ public class FeeBuilder {
    *     <li>bool generateRecord - BOOL_SIZE</li>
    *     <li>bytes string memo - get memo size from transaction</li>
    * </ul>
+   *
+   * @param txBody transaction body
+   * @return long representing transaction size
+   * @throws InvalidTxBodyException when transaction body is invalid
    */
   public static long getCommonTransactionBodyBytes(TransactionBody txBody) throws InvalidTxBodyException {
     if (txBody == null) {
@@ -180,6 +201,9 @@ public class FeeBuilder {
 
   /**
    * This method returns the Key size in bytes
+   *
+   * @param key key
+   * @return int representing account key storage size
    */
   public static int getAccountKeyStorageSize(Key key) {
 
@@ -198,6 +222,11 @@ public class FeeBuilder {
 
   /**
    * This method calculates number of keys
+   *
+   * @param key key
+   * @param count count array
+   *
+   * @return int array containing key metadata
    */
   public static int[] calculateKeysMetadata(Key key, int[] count) {
     if (key.hasKeyList()) {
@@ -218,13 +247,22 @@ public class FeeBuilder {
   }
 
   /**
-   * This method returns the Fee Matrices for querying based upon ID (Account / File / Smart
-   * Contract)
+   * This method returns the fee matrices for querying based upon ID (account / file / smart
+   * contract)
+   *
+   * @return fee data
    */
   public static FeeData getCostForQueryByIDOnly() {
     return FeeData.getDefaultInstance();
   }
 
+  /**
+   * Get signature count
+   *
+   * @param transaction transaction
+   *
+   * @return int representing signature count
+   */
   public static int getSignatureCount(Transaction transaction) {
     try {
       return CommonUtils.extractSignatureMap(transaction).getSigPairCount();
@@ -232,6 +270,13 @@ public class FeeBuilder {
     return 0;
   }
 
+  /**
+   * Get signature size
+   *
+   * @param transaction transaction
+   *
+   * @return int representing signature size
+   */
   public static int getSignatureSize(Transaction transaction) {
     try {
       return CommonUtils.extractSignatureMap(transaction).toByteArray().length;
@@ -241,6 +286,9 @@ public class FeeBuilder {
 
   /**
    * Convert tinyCents to tinybars
+   *
+   * @param exchangeRate exchange rate
+   * @param tinyCentsFee tiny cents fee
    *
    * @return tinyHbars
    */

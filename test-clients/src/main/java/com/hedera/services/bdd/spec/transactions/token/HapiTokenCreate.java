@@ -77,12 +77,12 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	private Optional<String> name = Optional.empty();
 	private Optional<String> treasury = Optional.empty();
 	private Optional<String> adminKey = Optional.empty();
-	private Optional<String> customFeeKey = Optional.empty();
 	private Optional<Boolean> freezeDefault = Optional.empty();
 	private Optional<String> autoRenewAccount = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> symbolFn = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> nameFn = Optional.empty();
 	private final List<Function<HapiApiSpec, CustomFeesOuterClass.CustomFee>> feeScheduleSuppliers = new ArrayList<>();
+	private Optional<Boolean> customFeesMutable = Optional.empty();
 
 	@Override
 	public HederaFunctionality type() {
@@ -99,6 +99,11 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 
 	public HapiTokenCreate withCustom(Function<HapiApiSpec, CustomFeesOuterClass.CustomFee> supplier) {
 		feeScheduleSuppliers.add(supplier);
+		return this;
+	}
+
+	public HapiTokenCreate customFeesMutable(boolean customFeesMutable) {
+		this.customFeesMutable = Optional.of(customFeesMutable);
 		return this;
 	}
 
@@ -192,11 +197,6 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 		return this;
 	}
 
-	public HapiTokenCreate customFeeKey(String name) {
-		this.customFeeKey = Optional.of(name);
-		return this;
-	}
-
 	public HapiTokenCreate treasury(String treasury) {
 		this.treasury = Optional.of(treasury);
 		return this;
@@ -251,7 +251,6 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 							adminKey.ifPresent(k -> b.setAdminKey(spec.registry().getKey(k)));
 							freezeKey.ifPresent(k -> b.setFreezeKey(spec.registry().getKey(k)));
 							supplyKey.ifPresent(k -> b.setSupplyKey(spec.registry().getKey(k)));
-							customFeeKey.ifPresent(k -> b.setCustomFeesKey(spec.registry().getKey(k)));
 							if (autoRenewAccount.isPresent()) {
 								var id = TxnUtils.asId(autoRenewAccount.get(), spec);
 								b.setAutoRenewAccount(id);
@@ -270,6 +269,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 								for (var supplier : feeScheduleSuppliers) {
 									fb.addCustomFees(supplier.apply(spec));
 								}
+								customFeesMutable.ifPresent(m -> fb.setCanUpdateWithAdminKey(m));
 							}
 						});
 		return b -> b.setTokenCreation(opBody);
@@ -320,9 +320,6 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 			}
 			if (op.hasFreezeKey()) {
 				registry.saveFreezeKey(token, op.getFreezeKey());
-			}
-			if (op.hasCustomFeesKey()) {
-				registry.saveCustomFeesKey(token, op.getCustomFeesKey());
 			}
 		} catch (InvalidProtocolBufferException impossible) { }
 

@@ -84,11 +84,12 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 
 			var outcome = impliedTransfers.getMeta().code();
 			if (outcome == OK) {
-				final var changes = impliedTransfers.getChanges();
+				final var changes = impliedTransfers.getAllBalanceChanges();
 				outcome = ledger.doZeroSum(changes);
 			}
 
 			txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
+			txnCtx.setAssessedCustomFees(impliedTransfers.getAssessedCustomFees());
 		} catch (Exception e) {
 			log.warn("Avoidable exception in CryptoTransfer state transition", e);
 			txnCtx.setStatus(FAIL_INVALID);
@@ -99,7 +100,7 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 		var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
 		if (impliedTransfers == null) {
 			final var op = accessor.getTxn().getCryptoTransfer();
-			impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op);
+			impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op, accessor.getPayer());
 		}
 		return impliedTransfers;
 	}

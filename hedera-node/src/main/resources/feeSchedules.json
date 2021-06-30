@@ -882,8 +882,7 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      },
-        {
+      }, {
           "subType": "TOKEN_NON_FUNGIBLE_UNIQUE",
           "nodedata" : {
             "constant" : 94092119,
@@ -1260,7 +1259,7 @@
   }, {
     "transactionFeeSchedule" : {
       "hederaFunctionality" : "TokenAccountWipe",
-      "fees" : [{
+      "fees" : [ {
         "subType": "TOKEN_FUNGIBLE_COMMON",
         "nodedata" : {
           "constant" : 94092119,
@@ -1336,8 +1335,7 @@
           "min" : 0,
           "max" : 1000000000000000
         }
-      }
-      ]
+      } ]
     }
   }, {
     "transactionFeeSchedule" : {

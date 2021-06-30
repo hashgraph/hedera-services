@@ -493,7 +493,10 @@ public class HapiApiSpec implements Runnable {
 	}
 
 	public static Def.Given defaultFailingHapiSpec(String name) {
-		return customizedHapiSpec(name, Stream.of(Map.of("expected.final.status", "FAILED"))).withProperties();
+		Stream prioritySource =
+				Stream.of(runningInCi ? ciPropOverrides() : Collections.emptyMap(),
+						Map.of("expected.final.status", "FAILED"));
+		return customizedHapiSpec(name, prioritySource).withProperties();
 	}
 
 	public static Def.Sourced customHapiSpec(String name) {

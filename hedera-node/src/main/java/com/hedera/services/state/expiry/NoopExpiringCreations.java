@@ -24,6 +24,7 @@ import com.hedera.services.context.ServicesContext;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.submerkle.AssessedCustomFee;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -58,7 +59,8 @@ public enum NoopExpiringCreations implements EntityCreator {
 			Instant consensusTime,
 			TxnReceipt receipt,
 			List<TokenTransferList> explicitTokenTransfers,
-			ServicesContext ctx
+			ServicesContext ctx,
+			List<AssessedCustomFee> customFeesCharged
 	) {
 		throw new UnsupportedOperationException();
 	}
