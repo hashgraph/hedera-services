@@ -503,9 +503,8 @@ public class UtilVerbs {
 			boolean signOnlyWithPayer,
 			OptionalLong tinyBarsToOffer
 	) {
-		return updateLargeFile(payer, fileName, byteString, signOnlyWithPayer, tinyBarsToOffer, op -> {
-		}, op -> {
-		});
+		return updateLargeFile(payer, fileName, byteString, signOnlyWithPayer, tinyBarsToOffer,
+				op -> {}, op -> {});
 	}
 
 	public static HapiSpecOperation updateLargeFile(
@@ -518,7 +517,7 @@ public class UtilVerbs {
 			Consumer<HapiFileAppend> appendCustomizer
 	) {
 		return withOpContext((spec, ctxLog) -> {
-			List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
+			List<HapiSpecOperation> opsList = new ArrayList<>();
 
 			int fileSize = byteString.size();
 			int position = Math.min(BYTES_4K, fileSize);
