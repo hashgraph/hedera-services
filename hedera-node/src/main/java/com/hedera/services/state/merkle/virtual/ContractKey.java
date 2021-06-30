@@ -84,12 +84,19 @@ public final class ContractKey implements SelfSerializable, VKey {
 
     @Override
     public void serialize(ByteBuffer byteBuffer) throws IOException {
-        throw new UnsupportedOperationException("Boo");
+        byteBuffer.putLong(contractId.getShard());
+        byteBuffer.putLong(contractId.getRealm());
+        byteBuffer.putLong(contractId.getNum());
+        byteBuffer.putInt(key.getVersion());
+        key.serialize(byteBuffer);
     }
 
     @Override
     public void deserialize(ByteBuffer byteBuffer, int i) throws IOException {
-        throw new UnsupportedOperationException("Boo");
+        contractId = new Id(byteBuffer.getLong(), byteBuffer.getLong(), byteBuffer.getLong());
+        int version = byteBuffer.getInt();
+        key = new ContractUint256();
+        key.deserialize(byteBuffer, version);
     }
 
     @Override
