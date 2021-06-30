@@ -39,11 +39,10 @@ public class MonotonicFullQueueExpiries<K> implements KeyedExpirations<K> {
 	@Override
 	public void track(K id, long expiry) {
 		if (expiry < now) {
-			throw new IllegalArgumentException(String.format("Track time %d for %s not later than %d", expiry, id,
-					now));
+			throw new IllegalArgumentException(String.format("Track time %d for %s not later than %d", expiry, id, now));
 		}
 		now = expiry;
-		allExpiries.add(new ExpiryEvent(id, expiry));
+		allExpiries.add(new ExpiryEvent<>(id, expiry));
 	}
 
 	@Override
