@@ -4,11 +4,13 @@ import com.hedera.services.store.models.Id;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.fcmap.VKey;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public class ContractPath implements SelfSerializable {
+public class ContractPath implements SelfSerializable, VKey {
     public static final int SERIALIZED_SIZE = Long.BYTES * 4;
     private Id contractId;
     private long path;
@@ -60,6 +62,24 @@ public class ContractPath implements SelfSerializable {
         if (o == null || getClass() != o.getClass()) return false;
         ContractPath that = (ContractPath) o;
         return path == that.path && Objects.equals(contractId, that.contractId);
+    }
+
+    @Override
+    public void serialize(ByteBuffer byteBuffer) throws IOException {
+        throw new UnsupportedOperationException("Boo");
+    }
+
+    @Override
+    public void deserialize(ByteBuffer byteBuffer, int i) throws IOException {
+        throw new UnsupportedOperationException("Boo");
+    }
+
+    @Override
+    public boolean equals(ByteBuffer byteBuffer, int i) throws IOException {
+        if (contractId.getShard() != byteBuffer.getLong()) return false;
+        if (contractId.getRealm() != byteBuffer.getLong()) return false;
+        if (contractId.getNum() != byteBuffer.getLong()) return false;
+        return path == byteBuffer.getLong();
     }
 
     @Override
