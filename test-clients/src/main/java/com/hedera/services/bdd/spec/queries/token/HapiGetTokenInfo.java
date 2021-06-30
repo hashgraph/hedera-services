@@ -60,28 +60,29 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		this.token = token;
 	}
 
-	Optional<TokenType> expectedTokenType = Optional.empty();
-	Optional<TokenSupplyType> expectedSupplyType = Optional.empty();
-	OptionalInt expectedDecimals = OptionalInt.empty();
-	OptionalLong expectedTotalSupply = OptionalLong.empty();
-	OptionalLong expectedMaxSupply = OptionalLong.empty();
-	Optional<String> expectedMemo = Optional.empty();
-	Optional<String> expectedId = Optional.empty();
-	Optional<String> expectedSymbol = Optional.empty();
-	Optional<String> expectedName = Optional.empty();
-	Optional<String> expectedTreasury = Optional.empty();
-	Optional<String> expectedAdminKey = Optional.empty();
-	Optional<String> expectedKycKey = Optional.empty();
-	Optional<String> expectedFreezeKey = Optional.empty();
-	Optional<String> expectedSupplyKey = Optional.empty();
-	Optional<String> expectedWipeKey = Optional.empty();
-	Optional<Boolean> expectedDeletion = Optional.empty();
-	Optional<TokenKycStatus> expectedKycDefault = Optional.empty();
-	Optional<TokenFreezeStatus> expectedFreezeDefault = Optional.empty();
-	Optional<String> expectedAutoRenewAccount = Optional.empty();
-	OptionalLong expectedAutoRenewPeriod = OptionalLong.empty();
-	Optional<Boolean> expectedExpiry = Optional.empty();
-	List<BiConsumer<HapiApiSpec, CustomFeesOuterClass.CustomFees>> expectedFees = new ArrayList<>();
+	private Optional<TokenType> expectedTokenType = Optional.empty();
+	private Optional<TokenSupplyType> expectedSupplyType = Optional.empty();
+	private OptionalInt expectedDecimals = OptionalInt.empty();
+	private OptionalLong expectedTotalSupply = OptionalLong.empty();
+	private OptionalLong expectedMaxSupply = OptionalLong.empty();
+	private Optional<String> expectedMemo = Optional.empty();
+	private Optional<String> expectedId = Optional.empty();
+	private Optional<String> expectedSymbol = Optional.empty();
+	private Optional<String> expectedName = Optional.empty();
+	private Optional<String> expectedTreasury = Optional.empty();
+	private Optional<String> expectedAdminKey = Optional.empty();
+	private Optional<String> expectedKycKey = Optional.empty();
+	private Optional<String> expectedFreezeKey = Optional.empty();
+	private Optional<String> expectedSupplyKey = Optional.empty();
+	private Optional<String> expectedWipeKey = Optional.empty();
+	private Optional<Boolean> expectedDeletion = Optional.empty();
+	private Optional<TokenKycStatus> expectedKycDefault = Optional.empty();
+	private Optional<TokenFreezeStatus> expectedFreezeDefault = Optional.empty();
+	private Optional<String> expectedAutoRenewAccount = Optional.empty();
+	private OptionalLong expectedAutoRenewPeriod = OptionalLong.empty();
+	private Optional<Boolean> expectedExpiry = Optional.empty();
+	private List<BiConsumer<HapiApiSpec, CustomFeesOuterClass.CustomFees>> expectedFees = new ArrayList<>();
+	private Optional<Boolean> expectedCustomFeesMutable = Optional.empty();
 
 	@Override
 	public HederaFunctionality type() {
@@ -207,6 +208,10 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		expectedFees.add(feeAssertion);
 		return this;
 	}
+	public HapiGetTokenInfo hasCustomFeesMutable(boolean customFeesMutable) {
+		expectedCustomFeesMutable = Optional.of(customFeesMutable);
+		return this;
+	}
 
 	@Override
 	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
@@ -287,6 +292,11 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		for (var expectedFee : expectedFees) {
 			expectedFee.accept(spec, actualFees);
 		}
+
+		expectedCustomFeesMutable.ifPresent(b -> Assert.assertEquals(
+				"Wrong custom fees mutability!",
+				b,
+				actualInfo.getCustomFees().getCanUpdateWithAdminKey()));
 
 		expectedMemo.ifPresent(s -> Assert.assertEquals(
 				"Wrong memo!",

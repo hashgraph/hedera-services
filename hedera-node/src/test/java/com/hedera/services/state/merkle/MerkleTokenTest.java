@@ -44,7 +44,6 @@ import proto.CustomFeesOuterClass;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 
 import static com.hedera.services.state.merkle.MerkleTopic.serdes;
@@ -111,6 +110,7 @@ class MerkleTokenTest {
 	final CustomFeesOuterClass.CustomFees grpcFeeSchedule = CustomFeesOuterClass.CustomFees.newBuilder()
 			.addCustomFees(fixedFee)
 			.addCustomFees(fractionalFee)
+			.setCanUpdateWithAdminKey(true)
 			.build();
 	final List<CustomFee> feeSchedule = grpcFeeSchedule.getCustomFeesList().stream()
 			.map(CustomFee::fromGrpc).collect(toList());
@@ -150,7 +150,6 @@ class MerkleTokenTest {
 		subject.setSymbol(symbol);
 		subject.setAccountsFrozenByDefault(true);
 		subject.setFeeScheduleFrom(grpcFeeSchedule);
-		subject.setFeeScheduleMutable(true);
 
 		serdes = mock(DomainSerdes.class);
 		MerkleToken.serdes = serdes;
@@ -225,8 +224,7 @@ class MerkleTokenTest {
 	void v0120DeserializeWorks() throws IOException {
 		// setup:
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
-		subject.setFeeSchedule(Collections.emptyList());
-		subject.setFeeScheduleMutable(false);
+		subject.setFeeScheduleFrom(CustomFeesOuterClass.CustomFees.getDefaultInstance());
 
 		given(serdes.readNullableSerializable(any())).willReturn(autoRenewAccount);
 		given(serdes.deserializeKey(fin)).willReturn(adminKey);
@@ -609,7 +607,7 @@ class MerkleTokenTest {
 		token.setAutoRenewAccount(autoRenewAccount);
 		token.setAutoRenewPeriod(autoRenewPeriod);
 		token.setMemo(memo);
-		token.setFeeSchedule(feeSchedule);
+		token.setFeeScheduleFrom(grpcFeeSchedule);
 	}
 
 	@Test
@@ -625,7 +623,6 @@ class MerkleTokenTest {
 		identicalSubject.setSupplyType(TokenSupplyType.INFINITE);
 		identicalSubject.setMaxSupply(subject.maxSupply());
 		identicalSubject.setLastUsedSerialNumber(subject.getLastUsedSerialNumber());
-		identicalSubject.setFeeScheduleMutable(true);
 
 		// and:
 		other = new MerkleToken(
@@ -718,5 +715,15 @@ class MerkleTokenTest {
 
 		// then:
 		assertEquals(subject, newSubject);
+	}
+
+	@Test
+	void returnCorrectGrpcFeeSchedule() {
+		final var token = new MerkleToken(
+				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
+		assertEquals(CustomFeesOuterClass.CustomFees.getDefaultInstance(), token.grpcFeeSchedule());
+
+		token.setFeeScheduleFrom(grpcFeeSchedule);
+		assertEquals(grpcFeeSchedule, token.grpcFeeSchedule());
 	}
 }
