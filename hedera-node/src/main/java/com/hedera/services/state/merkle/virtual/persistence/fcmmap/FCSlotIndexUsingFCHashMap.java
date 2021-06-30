@@ -4,6 +4,7 @@ import com.hedera.services.state.merkle.virtual.persistence.FCSlotIndex;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.fcmap.VKey;
 
+import java.io.IOException;
 import java.util.function.LongSupplier;
 
 /**
@@ -23,7 +24,7 @@ public class FCSlotIndexUsingFCHashMap<K extends VKey> implements FCSlotIndex<K>
     }
 
     @Override
-    public long getSlot(K key) {
+    public long getSlot(K key) throws IOException {
         return map.getOrDefault(key, FCSlotIndex.NOT_FOUND_LOCATION);
     }
 
@@ -39,12 +40,12 @@ public class FCSlotIndexUsingFCHashMap<K extends VKey> implements FCSlotIndex<K>
     }
 
     @Override
-    public void putSlot(K key, long slot) {
+    public void putSlot(K key, long slot) throws IOException {
         map.put(key, slot);
     }
 
     @Override
-    public long removeSlot(K key) {
+    public long removeSlot(K key) throws IOException {
         Long removedIndex = map.remove(key);
         return removedIndex == null ? NOT_FOUND_LOCATION : removedIndex;
     }
@@ -72,5 +73,25 @@ public class FCSlotIndexUsingFCHashMap<K extends VKey> implements FCSlotIndex<K>
     @Override
     public boolean isReleased() {
         return map.isReleased();
+    }
+
+    @Override
+    public Object acquireWriteLock(int keyHash) {
+        return null;
+    }
+
+    @Override
+    public void releaseWriteLock(int keyHash, Object lockStamp) {
+
+    }
+
+    @Override
+    public Object acquireReadLock(int keyHash) {
+        return null;
+    }
+
+    @Override
+    public void releaseReadLock(int keyHash, Object lockStamp) {
+
     }
 }

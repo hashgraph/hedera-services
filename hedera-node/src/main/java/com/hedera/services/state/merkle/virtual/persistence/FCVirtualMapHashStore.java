@@ -18,26 +18,20 @@ import java.io.IOException;
 public interface FCVirtualMapHashStore<HK extends VKey>
         extends FastCopyable {
 
-    /** Open storage, release() is used to close */
-    void open() throws IOException;
-
-    /** Sync any changes to disk, used during testing */
-    void sync();
-
     /**
      * Check if this store contains a hash by key
      *
      * @param hashKey The key of the hash to check for
      * @return true if that hash is stored, false if it is not known
      */
-    boolean containsHash(HK hashKey);
+    boolean containsHash(HK hashKey) throws IOException;
 
     /**
      * Delete a stored hash from storage, if it is stored.
      *
      * @param hashKey The key of the hash to delete
      */
-    void deleteHash(HK hashKey);
+    void deleteHash(HK hashKey) throws IOException;
 
     /**
      * Load a tree hash node from storage

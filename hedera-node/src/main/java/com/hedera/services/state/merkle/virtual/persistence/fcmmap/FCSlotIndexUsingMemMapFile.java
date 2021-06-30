@@ -182,7 +182,7 @@ public final class FCSlotIndexUsingMemMapFile<K extends VKey> implements FCSlotI
     // FCSlotIndex Implementation
 
     @Override
-    public long getSlot(K key) {
+    public long getSlot(K key) throws IOException {
         if (key == null) throw new IllegalArgumentException("Key can not be null");
         if (isReleased.get()) throw new IllegalStateException("You can not access a released index.");
         int keyHash = key.hashCode();
@@ -193,7 +193,7 @@ public final class FCSlotIndexUsingMemMapFile<K extends VKey> implements FCSlotI
     }
 
     @Override
-    public long getSlotIfAbsentPut(K key, LongSupplier newValueSupplier) {
+    public long getSlotIfAbsentPut(K key, LongSupplier newValueSupplier) throws IOException {
         if (key == null) throw new IllegalArgumentException("Key can not be null");
         if (isReleased.get()) throw new IllegalStateException("You can not access a released index.");
         int keyHash = key.hashCode();
@@ -204,7 +204,7 @@ public final class FCSlotIndexUsingMemMapFile<K extends VKey> implements FCSlotI
     }
 
     @Override
-    public void putSlot(K key, long slot) {
+    public void putSlot(K key, long slot) throws IOException {
         if (key == null) throw new IllegalArgumentException("Key can not be null");
         if (isReleased.get()) throw new IllegalStateException("You can not access a released index.");
         if (isImmutable.get()) throw new IllegalStateException("You can not put on a immutable index.");
@@ -212,8 +212,11 @@ public final class FCSlotIndexUsingMemMapFile<K extends VKey> implements FCSlotI
         // find right bin file
         BinFile<K> file = getFileForKey(keyHash);
         // ask bin file
-        boolean alreadyExisted = file.putSlot(version, getFileSubKeyHash(keyHash), key, slot);
-        if (!alreadyExisted) keyCount.incrementAndGet();
+        //noinspection SynchronizationOnLocalVariableOrMethodParameter
+        synchronized (file) {
+            boolean alreadyExisted = file.putSlot(version, getFileSubKeyHash(keyHash), key, slot);
+            if (!alreadyExisted) keyCount.incrementAndGet();
+        }
     }
 
     @Override
@@ -225,15 +228,66 @@ public final class FCSlotIndexUsingMemMapFile<K extends VKey> implements FCSlotI
         // find right bin file
         BinFile<K> file = getFileForKey(keyHash);
         // ask bin file
-        long slotLocation = file.removeKey(version, getFileSubKeyHash(keyHash), key);
-        if (slotLocation != FCSlotIndex.NOT_FOUND_LOCATION) keyCount.decrementAndGet();
-        return slotLocation;
+        //noinspection SynchronizationOnLocalVariableOrMethodParameter
+        synchronized (file) {
+            long slotLocation = file.removeKey(version, getFileSubKeyHash(keyHash), key);
+            if (slotLocation != FCSlotIndex.NOT_FOUND_LOCATION) keyCount.decrementAndGet();
+            return slotLocation;
+        }
     }
 
     @Override
     public int keyCount() {
         if (isReleased.get()) throw new IllegalStateException("You can not access a released index.");
         return keyCount.get();
+    }
+
+    /**
+     * Acquire a write lock for the given location
+     *
+     * @param keyHash the keyHash we want to be able to write to
+     * @return stamp representing the lock that needs to be returned to releaseWriteLock
+     */
+    @Override
+    public Object acquireWriteLock(int keyHash) {
+        BinFile<K> file = getFileForKey(keyHash);
+        return file.acquireWriteLock(getFileSubKeyHash(keyHash));
+    }
+
+    /**
+     * Release a previously acquired write lock
+     *
+     * @param keyHash   the keyHash we are done writing to
+     * @param lockStamp stamp representing the lock that you got from acquireWriteLock
+     */
+    @Override
+    public void releaseWriteLock(int keyHash, Object lockStamp) {
+        BinFile<K> file = getFileForKey(keyHash);
+        file.releaseWriteLock(getFileSubKeyHash(keyHash), lockStamp);
+    }
+
+    /**
+     * Acquire a read lock for the given location
+     *
+     * @param keyHash the keyHash we want to be able to read from
+     * @return stamp representing the lock that needs to be returned to releaseReadLock
+     */
+    @Override
+    public Object acquireReadLock(int keyHash) {
+        BinFile<K> file = getFileForKey(keyHash);
+        return file.acquireReadLock(getFileSubKeyHash(keyHash));
+    }
+
+    /**
+     * Release a previously acquired read lock
+     *
+     * @param keyHash   the keyHash we are done reading from
+     * @param lockStamp stamp representing the lock that you got from acquireReadLock
+     */
+    @Override
+    public void releaseReadLock(int keyHash, Object lockStamp) {
+        BinFile<K> file = getFileForKey(keyHash);
+        file.releaseReadLock(getFileSubKeyHash(keyHash), lockStamp);
     }
 
     //==================================================================================================================

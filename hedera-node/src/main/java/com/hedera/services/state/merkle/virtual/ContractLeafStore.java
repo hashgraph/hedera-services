@@ -49,8 +49,6 @@ public class ContractLeafStore implements FCLeafStore<ContractUint256, ContractU
                     ContractPath::new,
                     ContractUint256::new,
                     MemMapSlotStore::new);
-
-            this.dataStore.open();
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -110,7 +108,11 @@ public class ContractLeafStore implements FCLeafStore<ContractUint256, ContractU
 
     @Override
     public void deleteLeaf(ContractUint256 key, long path) {
-        dataStore.deleteLeaf(new ContractKey(contractId, key), new ContractPath(contractId, path));
+        try {
+            dataStore.deleteLeaf(new ContractKey(contractId, key), new ContractPath(contractId, path));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

@@ -9,6 +9,7 @@ import com.swirlds.fcmap.VKey;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 /**
@@ -68,11 +69,11 @@ public final class FCVirtualMapLeafStoreImpl<LK extends VKey,
     // State
 
     /** If this virtual data store has been released, once released it can no longer be used */
-    private boolean isReleased = false;
+    private final AtomicBoolean isReleased = new AtomicBoolean(false);
     /** If this data store is immutable(read only) */
-    private boolean isImmutable = false;
+    private final AtomicBoolean isImmutable = new AtomicBoolean(false);
     /** True if this store is open */
-    private boolean isOpen = false;
+    private final AtomicBoolean isOpen;
 
     //==================================================================================================================
     // Constructors
@@ -96,7 +97,7 @@ public final class FCVirtualMapLeafStoreImpl<LK extends VKey,
                                      Supplier<LK> leafKeyConstructor,
                                      Supplier<LP> leafPathConstructor,
                                      Supplier<LV> leafValueConstructor,
-                                     Supplier<SlotStore> slotStoreConstructor) {
+                                     SlotStore.SlotStoreFactory slotStoreFactory) throws IOException {
         // store config
         this.storageDirectory = storageDirectory;
         this.dataFileSizeInMb = dataFileSizeInMb;
@@ -106,18 +107,18 @@ public final class FCVirtualMapLeafStoreImpl<LK extends VKey,
         this.leafKeySizeBytes = Integer.BYTES + leafKeySizeBytes; // we store an extra int for class serialization version
         this.leafPathSizeBytes = Integer.BYTES + leafPathSizeBytes; // we store an extra int for class serialization version
         this.leafValueSizeBytes = Integer.BYTES + leafValueSizeBytes; // we store an extra int for class serialization version
-        // create value stores
+        // create and open value store
         this.leafStoreSlotSize =
                 this.leafKeySizeBytes +// size of version int and LK
                 this.leafPathSizeBytes +// size of version int and  LP
                 this.leafValueSizeBytes; // size of version int and  LD
-
-        leafStore = slotStoreConstructor.get();
+        leafStore = slotStoreFactory.open(leafStoreSlotSize,dataFileSizeInMb*MB,
+                storageDirectory.resolve("leaves"),"leaves_","dat");
+        isOpen = new AtomicBoolean(true);
         // create indexes
         leafIndex = leafSlotIndex;
         leafPathIndex = leafPathSlotIndex;
     }
-
 
     /**
      * Copy Constructor
@@ -126,10 +127,7 @@ public final class FCVirtualMapLeafStoreImpl<LK extends VKey,
      */
     private FCVirtualMapLeafStoreImpl(FCVirtualMapLeafStoreImpl<LK, LP, LV> dataStoreToCopy) {
         // the copy that we are copying from becomes immutable as only the newest copy can be mutable
-        dataStoreToCopy.isImmutable = true;
-        // a new copy is not released and is mutable
-        isReleased = false;
-        isImmutable = false;
+        dataStoreToCopy.isImmutable.set(true);
         // copy config
         this.storageDirectory = dataStoreToCopy.storageDirectory;
         this.dataFileSizeInMb = dataStoreToCopy.dataFileSizeInMb;
@@ -146,7 +144,6 @@ public final class FCVirtualMapLeafStoreImpl<LK extends VKey,
         leafPathIndex = dataStoreToCopy.leafPathIndex.copy();
         // reuse value stores
         leafStore = dataStoreToCopy.leafStore;
-        leafStore.addReference();
     }
 
 
@@ -157,13 +154,13 @@ public final class FCVirtualMapLeafStoreImpl<LK extends VKey,
     public FCVirtualMapLeafStoreImpl<LK, LP, LV> copy() {
         this.throwIfImmutable();
         this.throwIfReleased();
-        if (!isOpen) throw new IllegalStateException("Only open stores can be fast copied.");
+        if (!isOpen.get()) throw new IllegalStateException("Only open stores can be fast copied.");
         return new FCVirtualMapLeafStoreImpl<>(this);
     }
 
     @Override
     public boolean isImmutable() {
-        return isImmutable;
+        return isImmutable.get();
     }
 
     //==================================================================================================================
@@ -171,56 +168,19 @@ public final class FCVirtualMapLeafStoreImpl<LK extends VKey,
 
     @Override
     public void release() {
-        isReleased = true;
-        isOpen = false;
+        isReleased.set(true);
         // release indexes
         leafIndex.release();
         leafPathIndex.release();
-        // close leaf store if it has no references left
-        synchronized (leafStore) {
-            leafStore.removeReference();
-//            leafStore.close();
-        }
     }
 
     @Override
     public boolean isReleased() {
-        return isReleased;
+        return isReleased.get();
     }
 
     //==================================================================================================================
     // Data Source Implementation
-
-    /**
-     * Open all storage files and read the indexes.
-     */
-    @Override
-    public void open() throws IOException {
-        if (isOpen) throw new IOException("Store is already open.");
-        // TODO This could be faster if we open each in a thread.
-        // TODO Do we need slot visitors any more?
-        // open leaf store
-        synchronized (leafStore) {
-            leafStore.open(leafStoreSlotSize,dataFileSizeInMb*MB,storageDirectory.resolve("leaves"),"leaves_","dat", null);
-        }
-        isOpen = true;
-    }
-
-    /**
-     * Make sure all data is flushed to disk. This is an expensive operation. The OS will write all data to disk in the
-     * background, so only call this if you need to insure it is written synchronously.
-     * TODO do we need this as API? Feels like data store and indexes should handle internally on release()
-     */
-    @Override
-    public void sync(){
-        // sync leaf store
-        synchronized (leafStore) {
-            leafStore.sync();
-        }
-        // TODO add syncing for index
-        // leafIndex
-        // leafPathIndex
-    }
 
     /**
      * Delete a stored leaf from storage, if it is stored.
@@ -229,21 +189,25 @@ public final class FCVirtualMapLeafStoreImpl<LK extends VKey,
      * @param leafPath The path for the leaf to delete
      */
     @Override
-    public void deleteLeaf(LK leafKey, LP leafPath){
-        synchronized (leafStore) {
+    public void deleteLeaf(LK leafKey, LP leafPath) throws IOException {
+        int leafKeyHash = leafKey.hashCode();
+        int pathHash = leafPath.hashCode();
+        Object leafIndexLock = leafIndex.acquireWriteLock(leafKeyHash);
+        Object leafPathIndexLock = leafPathIndex.acquireWriteLock(pathHash);
+        try {
             long slotLocation = leafIndex.removeSlot(leafKey);
-            if (slotLocation != MemMapSlotStore.NOT_FOUND_LOCATION){
-                leafStore.deleteSlot(slotLocation); // TODO this is not fast copy safe
+            if (slotLocation == MemMapSlotStore.NOT_FOUND_LOCATION) return;
+            Object leafStoreLock = leafStore.acquireWriteLock(slotLocation);
+            try {
                 leafPathIndex.removeSlot(leafPath);
+                leafStore.deleteSlot(slotLocation); // TODO this is not fast copy safe
+            } finally {
+                leafStore.releaseWriteLock(slotLocation, leafStoreLock);
             }
+        } finally {
+            leafIndex.releaseWriteLock(leafKeyHash, leafIndexLock);
+            leafPathIndex.releaseWriteLock(pathHash, leafPathIndexLock);
         }
-    }
-
-    /**
-     * Removes all leaves and hashes
-     */
-    public void clear() {
-        // TODO, how to do efficiently
     }
 
     /**
@@ -253,9 +217,13 @@ public final class FCVirtualMapLeafStoreImpl<LK extends VKey,
      * @return true if that leaf is stored, false if it is not known
      */
     @Override
-    public boolean containsLeafKey(LK leafKey) {
-        synchronized (leafStore) {
+    public boolean containsLeafKey(LK leafKey) throws IOException {
+        int leafKeyHash = leafKey.hashCode();
+        Object leafIndexLock = leafIndex.acquireReadLock(leafKeyHash);
+        try {
             return leafIndex.getSlot(leafKey) != FCSlotIndex.NOT_FOUND_LOCATION;
+        } finally {
+            leafIndex.releaseReadLock(leafKeyHash, leafIndexLock);
         }
     }
 
@@ -266,9 +234,7 @@ public final class FCVirtualMapLeafStoreImpl<LK extends VKey,
      */
     @Override
     public int leafCount() {
-        synchronized (leafStore) {
-            return leafIndex.keyCount();
-        }
+        return leafIndex.keyCount(); // implementation is thread safe
     }
 
     /**
@@ -279,8 +245,12 @@ public final class FCVirtualMapLeafStoreImpl<LK extends VKey,
      */
     @Override
     public LV loadLeafValueByKey(LK key) throws IOException {
-        synchronized (leafStore) {
+        int leafKeyHash = key.hashCode();
+        Object leafIndexLock = leafIndex.acquireReadLock(leafKeyHash);
+        try {
             return loadLeafImpl(leafIndex.getSlot(key));
+        } finally {
+            leafIndex.releaseReadLock(leafKeyHash, leafIndexLock);
         }
     }
 
@@ -292,8 +262,12 @@ public final class FCVirtualMapLeafStoreImpl<LK extends VKey,
      */
     @Override
     public LV loadLeafValueByPath(LP leafPath) throws IOException {
-        synchronized (leafStore) {
+        int pathHash = leafPath.hashCode();
+        Object leafPathIndexLock = leafPathIndex.acquireWriteLock(pathHash);
+        try {
             return loadLeafImpl(leafPathIndex.getSlot(leafPath));
+        } finally {
+            leafPathIndex.releaseWriteLock(pathHash, leafPathIndexLock);
         }
     }
 
@@ -305,18 +279,20 @@ public final class FCVirtualMapLeafStoreImpl<LK extends VKey,
      */
     private LV loadLeafImpl(long slotLocation) throws IOException {
         if (slotLocation == SlotStore.NOT_FOUND_LOCATION) return null;
-        // access the slot
-         var inputStream = leafStore.accessSlotForReading(slotLocation);
-        int position = inputStream.position();
-        // key
-        position += leafKeySizeBytes;
-        // path
-        position += leafPathSizeBytes;
-        // value
-        LV leafValue = inputStream.readSelfSerializable(position, leafValueConstructor);
-        // return buffer
-        leafStore.returnSlot(slotLocation, inputStream);
-        return leafValue;
+        Object storeLock = leafStore.acquireReadLock(slotLocation);
+        try {
+            return leafStore.readSlot(slotLocation, inputStream -> {
+                int position = inputStream.position();
+                // key
+                position += leafKeySizeBytes;
+                // path
+                position += leafPathSizeBytes;
+                // value
+                return inputStream.readSelfSerializable(position, leafValueConstructor);
+            });
+        } finally {
+            leafStore.releaseReadLock(slotLocation, storeLock);
+        }
     }
 
     /**
@@ -326,20 +302,26 @@ public final class FCVirtualMapLeafStoreImpl<LK extends VKey,
      * @return a loaded leaf value or null if not found
      */
     public LP loadLeafPathByKey(LK key) throws IOException {
-        synchronized (leafStore) {
+        int leafKeyHash = key.hashCode();
+        Object leafIndexLock = leafIndex.acquireReadLock(leafKeyHash);
+        try {
             long slotLocation = leafIndex.getSlot(key);
             if (slotLocation == SlotStore.NOT_FOUND_LOCATION) return null;
-            // access the slot
-             var inputStream = leafStore.accessSlotForReading(slotLocation);
-            int position = inputStream.position();
-            // key
-            position += leafKeySizeBytes;
-            // path
-            LP leafPath = inputStream.readSelfSerializable(position,leafPathConstructor);
-            // return buffer
-            leafStore.returnSlot(slotLocation, inputStream);
-            // return path
-            return leafPath;
+            // now we have location read from store
+            Object storeLock = leafStore.acquireReadLock(slotLocation);
+            try {
+                return leafStore.readSlot(slotLocation, inputStream -> {
+                    int position = inputStream.position();
+                    // key
+                    position += leafKeySizeBytes;
+                    // path
+                    return inputStream.readSelfSerializable(position,leafPathConstructor);
+                });
+            } finally {
+                leafStore.releaseReadLock(slotLocation, storeLock);
+            }
+        } finally {
+            leafIndex.releaseReadLock(leafKeyHash, leafIndexLock);
         }
     }
 
@@ -350,24 +332,31 @@ public final class FCVirtualMapLeafStoreImpl<LK extends VKey,
      * @return a loaded leaf key and value or null if not found
      */
     public FCVirtualRecord<LK, LV> loadLeafRecordByPath(LP leafPath) throws IOException {
-        synchronized (leafStore) {
+        int pathHash = leafPath.hashCode();
+        Object leafPathIndexLock = leafPathIndex.acquireReadLock(pathHash);
+        try {
             long slotLocation = leafPathIndex.getSlot(leafPath);
             if (slotLocation == SlotStore.NOT_FOUND_LOCATION) return null;
-            // access the slot
-            var inputStream = leafStore.accessSlotForReading(slotLocation);
-            int position = inputStream.position();
-            // key
-            LK leafKey = inputStream.readSelfSerializable(position,leafKeyConstructor);
-            position += leafKeySizeBytes;
-            // path
+            // now we have location read from store
+            Object storeLock = leafStore.acquireReadLock(slotLocation);
+            try {
+                return leafStore.readSlot(slotLocation, inputStream -> {
+                    int position = inputStream.position();
+                    // key
+                    LK leafKey = inputStream.readSelfSerializable(position,leafKeyConstructor);
+                    position += leafKeySizeBytes;
+                    // path
 //            LP leafPath = inputStream.readSelfSerializable(position,leafPathConstructor);
-            position += leafPathSizeBytes;
-            // value
-            LV leafValue = inputStream.readSelfSerializable(position, leafValueConstructor);
-            // return buffer
-            leafStore.returnSlot(slotLocation, inputStream);
-            // return path
-            return new FCVirtualRecord<>(leafKey, leafValue);
+                    position += leafPathSizeBytes;
+                    // value
+                    LV leafValue = inputStream.readSelfSerializable(position, leafValueConstructor);
+                    return new FCVirtualRecord<>(leafKey, leafValue);
+                });
+            } finally {
+                leafStore.releaseReadLock(slotLocation, storeLock);
+            }
+        } finally {
+            leafPathIndex.releaseReadLock(pathHash, leafPathIndexLock);
         }
     }
 
@@ -380,7 +369,11 @@ public final class FCVirtualMapLeafStoreImpl<LK extends VKey,
      */
     @Override
     public void saveLeaf(LK leafKey, LP leafPath, LV leafValue) throws IOException {
-        synchronized (leafStore) {
+        int leafKeyHash = leafKey.hashCode();
+        int pathHash = leafPath.hashCode();
+        Object leafIndexLock = leafIndex.acquireWriteLock(leafKeyHash);
+        Object pathLock = leafPathIndex.acquireWriteLock(pathHash);
+        try {
             // if already stored and if so it is an update
             long slotLocation = leafIndex.getSlot(leafKey);
             if (slotLocation == MemMapSlotStore.NOT_FOUND_LOCATION) {
@@ -390,19 +383,26 @@ public final class FCVirtualMapLeafStoreImpl<LK extends VKey,
                 leafIndex.putSlot(leafKey,slotLocation);
                 leafPathIndex.putSlot(leafPath, slotLocation);
             }
-            // write leaf into slot
-            var outputStream = leafStore.accessSlotForWriting(slotLocation);
-            int position = outputStream.position();
-            // write key
-            outputStream.writeSelfSerializable(position, leafKey, leafKeySizeBytes);
-            position += leafKeySizeBytes;
-            // write path
-            outputStream.writeSelfSerializable(position, leafPath, leafPathSizeBytes);
-            position += leafPathSizeBytes;
-            // write key value
-            outputStream.writeSelfSerializable(position, leafValue, leafValueSizeBytes);
-            // return buffer
-            leafStore.returnSlot(slotLocation,outputStream);
+            // now we have location read from store
+            Object storeLock = leafStore.acquireWriteLock(slotLocation);
+            try {
+                leafStore.writeSlot(slotLocation, outputStream -> {
+                    int position = outputStream.position();
+                    // write key
+                    outputStream.writeSelfSerializable(position, leafKey, leafKeySizeBytes);
+                    position += leafKeySizeBytes;
+                    // write path
+                    outputStream.writeSelfSerializable(position, leafPath, leafPathSizeBytes);
+                    position += leafPathSizeBytes;
+                    // write key value
+                    outputStream.writeSelfSerializable(position, leafValue, leafValueSizeBytes);
+                });
+            } finally {
+                leafStore.releaseWriteLock(slotLocation, storeLock);
+            }
+        } finally {
+            leafIndex.releaseWriteLock(leafKeyHash, leafIndexLock);
+            leafPathIndex.releaseWriteLock(pathHash, pathLock);
         }
     }
 
@@ -412,17 +412,31 @@ public final class FCVirtualMapLeafStoreImpl<LK extends VKey,
      * @param oldPath The current path to the leaf in the store
      */
     public void updateLeafPath(LP oldPath, LP newPath) throws IOException {
-        long leafSlot = leafPathIndex.removeSlot(oldPath);
-        if (leafSlot == MemMapSlotStore.NOT_FOUND_LOCATION) throw new IOException("You just asked me to updateLeafPath for a leaf that doesn't exist.");
-        leafPathIndex.putSlot(newPath,leafSlot);
-        // update the path in the leaf's slot // TODO this is not Fast Copy Safe Yet
-        // write leaf into slot
-        var outputStream = leafStore.accessSlotForWriting(leafSlot);
-        int position = outputStream.position();
-        // write key
-        position += leafKeySizeBytes;
-        // write path
-        outputStream.writeSelfSerializable(position, newPath, leafPathSizeBytes);
+        int oldPathHash = oldPath.hashCode();
+        int newPathHash = newPath.hashCode();
+        Object oldPathLock = leafPathIndex.acquireWriteLock(oldPathHash);
+        Object newPathLock = leafPathIndex.acquireWriteLock(newPathHash);
+        try {
+            long leafSlot = leafPathIndex.removeSlot(oldPath);
+            if (leafSlot == MemMapSlotStore.NOT_FOUND_LOCATION) throw new IOException("You just asked me to updateLeafPath for a leaf that doesn't exist.");
+            leafPathIndex.putSlot(newPath,leafSlot);
+            // update the path in the leaf's slot // TODO this is not Fast Copy Safe Yet
+            Object storeLock = leafStore.acquireWriteLock(leafSlot);
+            try {
+                leafStore.writeSlot(leafSlot, outputStream -> {
+                    int position = outputStream.position();
+                    // write key
+                    position += leafKeySizeBytes;
+                    // write path
+                    outputStream.writeSelfSerializable(position, newPath, leafPathSizeBytes);
+                });
+            } finally {
+                leafStore.releaseWriteLock(leafSlot, storeLock);
+            }
+        } finally {
+            leafPathIndex.releaseWriteLock(oldPathHash, oldPathLock);
+            leafPathIndex.releaseWriteLock(newPathHash, newPathLock);
+        }
     }
 }
 
