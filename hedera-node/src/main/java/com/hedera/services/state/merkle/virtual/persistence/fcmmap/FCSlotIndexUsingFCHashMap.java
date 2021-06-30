@@ -31,7 +31,8 @@ public class FCSlotIndexUsingFCHashMap<K> implements FCSlotIndex<K> {
 
     @Override
     public long removeSlot(K key) {
-        return map.remove(key);
+        Long removedIndex = map.remove(key);
+        return removedIndex == null ? NOT_FOUND_LOCATION : removedIndex;
     }
 
     @Override
@@ -40,7 +41,7 @@ public class FCSlotIndexUsingFCHashMap<K> implements FCSlotIndex<K> {
     }
 
     @Override
-    public FCSlotIndex<K> copy() {
+    public FCSlotIndexUsingFCHashMap<K> copy() {
         return new FCSlotIndexUsingFCHashMap<>(this);
     }
 

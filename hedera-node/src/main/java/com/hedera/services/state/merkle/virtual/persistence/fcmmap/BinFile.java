@@ -415,10 +415,11 @@ public final class BinFile<K extends SelfSerializable> {
             // check if the newest version saved is same version
             final int newestMutationOffset = getMutationOffset(mutationQueueOffset, mutationCount - 1);
             final long newestVersionInQueue = mappedBuffer.getLong(newestMutationOffset);
+            // read the old slot value
+            oldSlotIndex = mappedBuffer.getLong(newestMutationOffset + Long.BYTES);
+            // update for create new mutation
             if (newestVersionInQueue == version) { // update
                 mutationOffset = newestMutationOffset;
-                // read the old slot value
-                oldSlotIndex = mappedBuffer.getLong(mutationOffset + Long.BYTES);
             } else { // new version
                 // clean out any old mutations that are no longer needed
                 sweepQueue(mutationQueueOffset);
