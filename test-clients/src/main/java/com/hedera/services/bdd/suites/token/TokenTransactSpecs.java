@@ -705,11 +705,11 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						getAccountBalance(FIRST_USER)
 								.logged()
 								.hasTokenBalance(A_TOKEN, 90)
-								.hasTinyBars(ONE_HUNDRED_HBARS - 2 * ONE_HBAR),
+								.hasTinyBars(ONE_HUNDRED_HBARS),
 						getAccountBalance(SECOND_USER)
 								.logged()
-								.hasTokenBalance(B_TOKEN, 110)
-								.hasTinyBars(ONE_HUNDRED_HBARS - ONE_HBAR)
+								.hasTokenBalance(A_TOKEN, 110)
+								.hasTinyBars(ONE_HUNDRED_HBARS)
 				);
 	}
 
