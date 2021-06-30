@@ -81,6 +81,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_AR
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
@@ -461,7 +462,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 					return CUSTOM_FEE_MUST_BE_POSITIVE;
 				}
 				if (fractionalSpec.getMaximumAmount() < fractionalSpec.getMinimumAmount()) {
-					return FRACTIONAL_FEES_MIN_GREATER_THAN_MAX;
+					return FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
 				}
 			} else {
 				return CUSTOM_FEE_NOT_FULLY_SPECIFIED;
@@ -472,7 +473,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	private boolean areValidPositiveNumbers(long a, long b) {
-		return (a < 0 && b < 0) || (a > 0 && b > 0) || (a < 0 && b < 0);
+		return (a > 0 && b > 0);
 	}
 
 	public void addKnownTreasury(AccountID aId, TokenID tId) {
