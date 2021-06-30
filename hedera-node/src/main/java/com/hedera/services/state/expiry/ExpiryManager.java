@@ -57,7 +57,8 @@ import static java.util.Comparator.comparing;
 public class ExpiryManager {
 	/* Since the key in Pair<Long, Consumer<EntityId>> is the schedule entity number---and
 	entity numbers are unique---the downstream comparator below will guarantee a fixed
-	ordering for ExpiryEvents with the same expiry. */
+	ordering for ExpiryEvents with the same expiry. The reason for different scheduled entities having
+	the same expiry is that we round expiration times to a consensus second. */
 	private static final Comparator<ExpiryEvent<Pair<Long, Consumer<EntityId>>>> PQ_CMP = Comparator
 			.comparingLong(ExpiryEvent<Pair<Long, Consumer<EntityId>>>::getExpiry)
 			.thenComparingLong(ee -> ee.getId().getKey());
