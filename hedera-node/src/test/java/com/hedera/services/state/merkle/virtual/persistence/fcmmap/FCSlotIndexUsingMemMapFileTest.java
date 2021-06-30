@@ -12,6 +12,7 @@ import static com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCVirt
 import static com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCVirtualMapTestUtils.printDirectorySize;
 import static java.util.stream.IntStream.range;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FCSlotIndexUsingMemMapFileTest {
     public static final Path STORE_PATH = Path.of("store");
@@ -57,6 +58,59 @@ public class FCSlotIndexUsingMemMapFileTest {
         index_0.release();
         // print directory size
         printDirectorySize(STORE_PATH);
+    }
+
+    @Test
+    public void randomOpTest() throws IOException {
+        final int MAX_INDEX = 100_000;
+        // delete old store if it exists
+        deleteDirectoryAndContents(STORE_PATH);
+        // create initial indexes
+        FCSlotIndexUsingFCHashMap<SerializableLong> fcHashMap = new FCSlotIndexUsingFCHashMap<>();
+        FCSlotIndexUsingMemMapFile<SerializableLong> memMapFile = new FCSlotIndexUsingMemMapFile<>(
+                STORE_PATH,"FCSlotIndexUsingMemMapFileTest",512,128,Long.BYTES,100,10);
+        var currentIndex = new PairFCSlotIndex(fcHashMap, memMapFile, 0);
+        List<PairFCSlotIndex> indexes = new ArrayList<>();
+        indexes.add(currentIndex);
+        for (int i = 0; i < 100_000; i++) {
+            switch(RANDOM.nextInt(11)){
+                case 0:
+                case 1:
+                case 2:
+                case 3:
+                    indexes.forEach(pairFCSlotIndex -> pairFCSlotIndex.getSlot(RANDOM.nextInt(MAX_INDEX)));
+                    break;
+                case 4:
+                case 5:
+                case 6:
+                    currentIndex.putSlot(RANDOM.nextInt(MAX_INDEX), randomPositiveLong());
+                    break;
+                case 7:
+                    currentIndex.removeSlot(RANDOM.nextInt(MAX_INDEX));
+                    break;
+                case 8:
+                    currentIndex.keyCount();
+                    break;
+                case 9: // fast copy
+                    currentIndex = currentIndex.copy();
+                    indexes.add(currentIndex);
+                    break;
+                case 10: // release old copy
+                    if (RANDOM.nextDouble() > 0.75 && indexes.size() > 1) {
+                        indexes.get(RANDOM.nextInt(indexes.size() - 1));
+                    }
+                    break;
+            }
+        }
+        // print directory size
+        printDirectorySize(STORE_PATH);
+    }
+
+    public static long randomPositiveLong() {
+        // it's okay that the bottom word remains signed.
+        long value = (long)(RANDOM.nextDouble()*Long.MAX_VALUE);
+        assertTrue(value >= 0);
+        return value;
     }
 
     public static class PairFCSlotIndex implements FCSlotIndex<SerializableLong> {
