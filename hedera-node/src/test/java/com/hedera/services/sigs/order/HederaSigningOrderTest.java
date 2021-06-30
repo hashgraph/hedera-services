@@ -165,10 +165,10 @@ import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CRE
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ADMIN_AND_FREEZE;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ADMIN_ONLY;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_AUTO_RENEW;
-import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FRACTIONAL_FEE_COLLECTOR_NO_SIQ_REQ;
+import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FRACTIONAL_FEE_COLLECTOR_NO_SIG_REQ;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_MISSING_COLLECTOR;
-import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIQ_REQ;
-import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIQ_REQ;
+import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ;
+import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_MISSING_AUTO_RENEW;
 import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.DELETE_WITH_KNOWN_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.DELETE_WITH_MISSING_TOKEN;
@@ -1317,7 +1317,7 @@ class HederaSigningOrderTest {
 	@Test
 	void getsTokenCreateCustomFixedFeeNoCollectorSigReq() throws Throwable {
 		// given:
-		setupFor(TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIQ_REQ);
+		setupFor(TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ);
 
 		// when:
 		var summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -1331,7 +1331,7 @@ class HederaSigningOrderTest {
 	@Test
 	void getsTokenCreateCustomFixedFeeAndCollectorSigReq() throws Throwable {
 		// given:
-		setupFor(TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIQ_REQ);
+		setupFor(TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ);
 
 		// when:
 		var summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -1345,7 +1345,7 @@ class HederaSigningOrderTest {
 	@Test
 	void getsTokenCreateCustomFractionalFeeNoCollectorSigReq() throws Throwable {
 		// given:
-		setupFor(TOKEN_CREATE_WITH_FRACTIONAL_FEE_COLLECTOR_NO_SIQ_REQ);
+		setupFor(TOKEN_CREATE_WITH_FRACTIONAL_FEE_COLLECTOR_NO_SIG_REQ);
 
 		// when:
 		var summary = subject.keysForOtherParties(txn, summaryFactory);

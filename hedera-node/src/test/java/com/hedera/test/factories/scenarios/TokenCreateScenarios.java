@@ -74,7 +74,7 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
-	TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIQ_REQ {
+	TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			final var collector = EntityId.fromGrpcAccountId(NO_RECEIVER_SIG);
 			return new PlatformTxnAccessor(from(
@@ -85,7 +85,7 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
-	TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIQ_REQ {
+	TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			final var collector = EntityId.fromGrpcAccountId(RECEIVER_SIG);
 			return new PlatformTxnAccessor(from(
@@ -96,7 +96,7 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
-	TOKEN_CREATE_WITH_FRACTIONAL_FEE_COLLECTOR_NO_SIQ_REQ {
+	TOKEN_CREATE_WITH_FRACTIONAL_FEE_COLLECTOR_NO_SIG_REQ {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			final var collector = EntityId.fromGrpcAccountId(NO_RECEIVER_SIG);
 			return new PlatformTxnAccessor(from(
