@@ -119,6 +119,8 @@ public final class BinFile<K extends SelfSerializable> {
     private final byte[] tempKeyData1;
     private final byte[] tempKeyData2;
 
+    //private Path file;
+
     /**
      * Construct a new BinFile
      *
@@ -130,6 +132,7 @@ public final class BinFile<K extends SelfSerializable> {
      * @throws IOException if there was a problem opening the file
      */
     public BinFile(Path file, int keySizeBytes, int numOfKeysPerBin, int numOfBinsPerFile, int maxNumberOfMutations) throws IOException {
+        //this.file = file;
         this.numOfKeysPerBin = numOfKeysPerBin;
         this.numOfBinsPerFile = numOfBinsPerFile;
         this.maxNumberOfMutations = maxNumberOfMutations;
@@ -291,16 +294,24 @@ public final class BinFile<K extends SelfSerializable> {
         int queueCount = mappedBuffer.getInt(binOffset);
         // iterate searching
         int foundOffset = -1;
-        for (int i = 0; i < queueCount; i++) {
-            final int keyQueueOffset = binOffset + binHeaderSize + (keyMutationEntrySize * i);
-            // read hash
-            final int readHash = mappedBuffer.getInt(keyQueueOffset);
-            // dont need to check for EMPTY_ENTRY_HASH as it will never match keySubHash
-            if (readHash == keySubHash && keyEquals(keyQueueOffset+Integer.BYTES,key)) {
-                // we found the key
-                foundOffset = keyQueueOffset;
-                break;
+        try {
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(tempKeyData1.length);
+            key.serialize(new SerializableDataOutputStream(byteArrayOutputStream));
+            final var arr = byteArrayOutputStream.toByteArray();
+
+            for (int i = 0; i < queueCount; i++) {
+                final int keyQueueOffset = binOffset + binHeaderSize + (keyMutationEntrySize * i);
+                // read hash
+                final int readHash = mappedBuffer.getInt(keyQueueOffset);
+                // dont need to check for EMPTY_ENTRY_HASH as it will never match keySubHash
+                if (readHash == keySubHash && keyEquals(keyQueueOffset + Integer.BYTES, arr)) {
+                    // we found the key
+                    foundOffset = keyQueueOffset;
+                    break;
+                }
             }
+        } catch (Exception e) {
+            e.printStackTrace(); // TODO Something here.
         }
         return foundOffset;
     }
@@ -309,23 +320,16 @@ public final class BinFile<K extends SelfSerializable> {
      * Check if a key equals one stored in the file at the given offset
      *
      * @param offset the offset into file where key to compare with hash been serialized
-     * @param key The key to compare with
+     * @param keyBytes The key to compare with
      * @return true if the key object .equals() the serialized key stored in file
      */
-    private boolean keyEquals(int offset, K key) {
+    private boolean keyEquals(int offset, byte[] keyBytes) {
         // read serialization version
         int version = mappedBuffer.getInt(offset);
         // position input stream for deserialize
         mappedBuffer.position(offset+Integer.BYTES);
         mappedBuffer.get(tempKeyData1);
-        try {
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(tempKeyData1.length);
-            key.serialize(new SerializableDataOutputStream(byteArrayOutputStream));
-            return Arrays.equals(tempKeyData1,byteArrayOutputStream.toByteArray());
-        } catch (Exception e) {
-            e.printStackTrace(); // TODO something better
-            return false;
-        }
+        return Arrays.equals(tempKeyData1, 0, keyBytes.length, keyBytes, 0, keyBytes.length);
     }
 
     private EntryReference getOrCreateEntry(int keySubHash, K key) {
@@ -335,6 +339,8 @@ public final class BinFile<K extends SelfSerializable> {
         // if no entry exists we need to create one
         if (entryOffset == -1) {
             final int binOffset = findBinOffset(keySubHash);
+//            System.out.println(file.getFileName().toString() + ", key=" + key + ", keySubHash=" + keySubHash + ", binOffset=" + binOffset);
+
             final int entryCount = mappedBuffer.getInt(binOffset);
             // first search for empty entry
             for(int i=0; i< entryCount; i++) {

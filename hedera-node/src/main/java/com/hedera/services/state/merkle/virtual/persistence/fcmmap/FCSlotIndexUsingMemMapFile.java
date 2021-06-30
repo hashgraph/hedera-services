@@ -162,13 +162,13 @@ public final class FCSlotIndexUsingMemMapFile<K extends SelfSerializable> implem
         }
         // if we were the last reference then close all the files
         if (referenceCount.decrementAndGet() <= 0){
-            for (BinFile<K> file : files) {
-                try {
-                    file.close();
-                } catch (IOException e) {
-                    e.printStackTrace(); // TODO is there a better option here
-                }
-            }
+//            for (BinFile<K> file : files) {
+//                try {
+//                    file.close();
+//                } catch (IOException e) {
+//                    e.printStackTrace(); // TODO is there a better option here
+//                }
+//            }
         }
     }
 

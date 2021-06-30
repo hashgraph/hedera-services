@@ -55,6 +55,14 @@ public class VFCMapBench {
         contractMap = new VFCMap<>(ls, hs);
 
         for (int i=0; i<numEntities; i++) {
+            if (i % 100000 == 0) {
+                System.out.println("Completed: " + i);
+                unmodifiableContractMap = contractMap;
+                contractMap = contractMap.copy();
+                prevIterationHashingFuture = CryptoFactory.getInstance().digestTreeAsync(unmodifiableContractMap);
+                prevIterationHashingFuture.get();
+                unmodifiableContractMap.release();
+            }
             final var key = asContractKey(i);
             final var value = asContractValue(i);
             contractMap.put(key, value);

@@ -1,7 +1,7 @@
 package com.hedera.services.state.merkle.virtual;
 
 import com.hedera.services.state.merkle.virtual.persistence.FCVirtualMapHashStore;
-import com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCSlotIndexUsingFCHashMap;
+import com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCSlotIndexUsingMemMapFile;
 import com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCVirtualMapHashStoreImpl;
 import com.hedera.services.state.merkle.virtual.persistence.fcmmap.MemMapSlotStore;
 import com.hedera.services.store.models.Id;
@@ -17,14 +17,24 @@ public class ContractHashStore implements FCHashStore {
 
     public ContractHashStore(Id contractId) {
         this.contractId = contractId;
-        this.dataStore = new FCVirtualMapHashStoreImpl<>(
-                Path.of("data/contract-storage"),
-                256,
-                ContractPath.SERIALIZED_SIZE,
-                new FCSlotIndexUsingFCHashMap<>(),
-                MemMapSlotStore::new);
 
         try {
+            final var index = new FCSlotIndexUsingMemMapFile<ContractPath>(
+                    Path.of("data/contract-storage"),
+                    "hash-index",
+                    1024*1024,
+                    128,
+                    ContractPath.SERIALIZED_SIZE,
+                    16,
+                    20);
+
+            this.dataStore = new FCVirtualMapHashStoreImpl<>(
+                    Path.of("data/contract-storage"),
+                    256,
+                    ContractPath.SERIALIZED_SIZE,
+                    index,
+                    MemMapSlotStore::new);
+
             this.dataStore.open();
         } catch (IOException e) {
             e.printStackTrace();

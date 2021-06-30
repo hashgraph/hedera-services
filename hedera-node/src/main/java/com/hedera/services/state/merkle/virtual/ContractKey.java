@@ -13,12 +13,12 @@ import java.util.Objects;
 /**
  * The key of a key/value pair used by a Smart Contract for storage purposes.
  */
-final class ContractKey implements SelfSerializable {
+public final class ContractKey implements SelfSerializable {
     public static final int SERIALIZED_SIZE = Long.BYTES + Long.BYTES + Long.BYTES + Integer.BYTES + ContractUint256.SERIALIZED_SIZE;
     private Id contractId;
     private ContractUint256 key;
 
-    ContractKey() {
+    public ContractKey() {
         // there has to be a default constructor for deserialize
     }
 
@@ -73,5 +73,12 @@ final class ContractKey implements SelfSerializable {
     @Override
     public int hashCode() {
         return Objects.hash(contractId, key);
+    }
+
+    @Override
+    public String toString() {
+        return "ContractKey{" +
+                "key=" + key +
+                '}';
     }
 }
