@@ -20,7 +20,7 @@ public class ContractHashStore implements FCHashStore {
 
         try {
             final var index = new FCSlotIndexUsingMemMapFile<ContractPath>(
-                    Path.of("data/contract-storage"),
+                    Path.of("data/contract-storage/hash-index"),
                     "hash-index",
                     128*1024,
                     1024,
