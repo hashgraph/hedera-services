@@ -39,6 +39,7 @@ import org.mockito.InOrder;
 import org.mockito.Mockito;
 
 import java.io.IOException;
+import java.util.List;
 
 import static com.hedera.services.legacy.core.jproto.TxnReceipt.MISSING_RUNNING_HASH;
 import static com.hedera.services.legacy.core.jproto.TxnReceipt.MISSING_RUNNING_HASH_VERSION;
@@ -51,6 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -66,6 +68,7 @@ public class TxnReceiptTest {
 	DomainSerdes serdes;
 	ExchangeRates mockRates;
 	TxnReceipt subject;
+	private long[] serialNumbers = new long[]{1, 2, 3, 4, 5};
 
 	private TopicID getTopicId(long shard, long realm, long num) {
 		return TopicID.newBuilder().setShardNum(shard).setRealmNum(realm).setTopicNum(num).build();
@@ -180,6 +183,18 @@ public class TxnReceiptTest {
 		final var receipt = TransactionReceipt.newBuilder()
 				.setExchangeRate(new ExchangeRates().toGrpc())
 				.setNewTotalSupply(totalSupply)
+				.build();
+		final var cut = TxnReceipt.fromGrpc(receipt);
+		final var back = TxnReceipt.convert(cut);
+
+		assertEquals(receipt, back);
+	}
+
+	@Test
+	public void postConsensusTokenNftInterconversionWorks() {
+		final var receipt = TransactionReceipt.newBuilder()
+				.setExchangeRate(new ExchangeRates().toGrpc())
+				.addAllSerialNumbers(List.of(1L, 2L, 3L, 4L, 5L))
 				.build();
 		final var cut = TxnReceipt.fromGrpc(receipt);
 		final var back = TxnReceipt.convert(cut);
@@ -365,6 +380,7 @@ public class TxnReceiptTest {
 				.setTopicSequenceNumber(0L)
 				.setNewTotalSupply(100L)
 				.setScheduledTxnId(TxnId.fromGrpc(scheduledTxnId))
+				.setSerialNumbers(serialNumbers)
 				.build();
 
 		// when:
@@ -377,6 +393,7 @@ public class TxnReceiptTest {
 		inOrder.verify(fout).writeBoolean(false);
 		inOrder.verify(fout).writeLong(subject.getNewTotalSupply());
 		inOrder.verify(serdes).writeNullableSerializable(subject.getScheduledTxnId(), fout);
+		inOrder.verify(fout).writeLongArray(serialNumbers);
 	}
 
 	@Test
@@ -424,6 +441,56 @@ public class TxnReceiptTest {
 		assertEquals(subject.getExchangeRates(), txnReceipt.getExchangeRates());
 		assertEquals(subject.getTokenId(), txnReceipt.getTokenId());
 		assertEquals(subject.getScheduledTxnId(), txnReceipt.getScheduledTxnId());
+	}
+
+	@Test
+	public void v0160DeserializeWorks() throws IOException {
+		final var scheduleId = EntityId.fromGrpcScheduleId(IdUtils.asSchedule("0.0.312"));
+		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
+
+		subject = TxnReceipt.newBuilder()
+				.setStatus("SUCCESS")
+				.setScheduleId(scheduleId)
+				.setExchangeRates(mockRates)
+				.setTopicSequenceNumber(-1)
+				.setRunningHashVersion(-1)
+				.setTopicSequenceNumber(0L)
+				.setNewTotalSupply(0L)
+				.setScheduledTxnId(TxnId.fromGrpc(scheduledTxnId))
+				.setSerialNumbers(new long[] {1, 2, 3, 4, 5})
+				.build();
+
+
+		given(fin.readByteArray(MAX_STATUS_BYTES)).willReturn(subject.getStatus().getBytes());
+		given(fin.readSerializable(anyBoolean(), any())).willReturn(mockRates);
+		given(serdes.readNullableSerializable(fin))
+				.willReturn(subject.getAccountId())
+				.willReturn(subject.getFileId())
+				.willReturn(subject.getContractId())
+				.willReturn(subject.getTopicId())
+				.willReturn(subject.getTokenId())
+				.willReturn(subject.getScheduleId())
+				.willReturn(subject.getScheduledTxnId());
+		given(fin.readBoolean()).willReturn(true);
+		given(fin.readLong()).willReturn(subject.getTopicSequenceNumber());
+		given(fin.readLong()).willReturn(subject.getRunningHashVersion());
+		given(fin.readAllBytes()).willReturn(subject.getTopicRunningHash());
+		given(fin.readLong()).willReturn(subject.getNewTotalSupply());
+		given(fin.readLongArray(anyInt())).willReturn(subject.getSerialNumbers());
+
+		// and:
+		TxnReceipt txnReceipt = new TxnReceipt();
+
+		// when:
+		txnReceipt.deserialize(fin, TxnReceipt.RELEASE_0160_VERSION);
+
+		// then:
+		assertEquals(subject.getNewTotalSupply(), txnReceipt.getNewTotalSupply());
+		assertEquals(subject.getStatus(), txnReceipt.getStatus());
+		assertEquals(subject.getExchangeRates(), txnReceipt.getExchangeRates());
+		assertEquals(subject.getTokenId(), txnReceipt.getTokenId());
+		assertEquals(subject.getScheduledTxnId(), txnReceipt.getScheduledTxnId());
+		assertArrayEquals(subject.getSerialNumbers(), txnReceipt.getSerialNumbers());
 	}
 
 	@Test

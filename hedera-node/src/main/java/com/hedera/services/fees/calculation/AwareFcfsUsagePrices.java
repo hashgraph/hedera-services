@@ -106,7 +106,7 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 	public FeeData defaultActivePrices() {
 		try {
 			var accessor = txnCtx.accessor();
-			return pricesGiven(accessor.getFunction(), accessor.getTxnId().getTransactionValidStart()).get(SubType.DEFAULT);
+			return defaultPricesGiven(accessor.getFunction(), accessor.getTxnId().getTransactionValidStart());
 		} catch (Exception e) {
 			log.warn("Using default usage prices to calculate fees for {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
 		}

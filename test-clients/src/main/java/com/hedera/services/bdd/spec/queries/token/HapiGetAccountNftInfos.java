@@ -35,6 +35,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.util.Strings;
 import org.junit.Assert;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -70,6 +71,7 @@ public class HapiGetAccountNftInfos extends HapiQueryOp<HapiGetAccountNftInfos> 
     @Override
     protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
         var actualInfo = response.getTokenGetAccountNftInfos().getNftsList();
+        var expectedInfo = new ArrayList<TokenNftInfo>();
         expectedNfts.ifPresent(nfts -> {
             for (HapiTokenNftInfo nftInfo : nfts) {
                 var expectedNftElement = TokenNftInfo.newBuilder();
@@ -86,9 +88,9 @@ public class HapiGetAccountNftInfos extends HapiQueryOp<HapiGetAccountNftInfos> 
                 nftInfo.getExpectedMetadata().ifPresent(expectedNftElement::setMetadata);
 
                 var completedNft = expectedNftElement.build();
-                Assert.assertTrue(actualInfo.contains(completedNft));
+                expectedInfo.add(completedNft);
             }
-            Assert.assertEquals(actualInfo.size(), nfts.size());
+            Assert.assertEquals(actualInfo, expectedInfo);
         });
     }
 

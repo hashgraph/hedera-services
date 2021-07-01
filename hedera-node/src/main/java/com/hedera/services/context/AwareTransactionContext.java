@@ -313,7 +313,7 @@ public class AwareTransactionContext implements TransactionContext {
 	@Override
 	public void setCreated(List<Long> serialNumbers) {
 		receiptConfig = receipt -> receipt.setSerialNumbers(serialNumbers.stream().mapToLong(l -> l).toArray());
-        }
+	}
 
 	List<AssessedCustomFee> getAssessedCustomFees() {
 		return assessedCustomFees;
