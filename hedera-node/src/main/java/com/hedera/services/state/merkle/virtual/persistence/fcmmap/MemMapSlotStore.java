@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -47,7 +48,7 @@ public final class MemMapSlotStore implements SlotStore {
      * The current file to use for writes, if it is null we will check existing files for space then create a
      * new file if needed.
      */
-    private MemMapSlotFile currentFileForWriting = null;
+    private final AtomicReference<MemMapSlotFile> currentFileForWriting = new AtomicReference<>();
 
     /**
      * Open all the files in this store. While opening it visits every used slot and calls slotVisitor.
@@ -93,7 +94,7 @@ public final class MemMapSlotStore implements SlotStore {
                 files.add(new MemMapSlotFile(slotSizeBytes, size, filePaths.get(i).toFile(), i));
             }
             // set the first file as the current one for writing
-            if (!files.isEmpty()) currentFileForWriting = files.get(0);
+            if (!files.isEmpty()) currentFileForWriting.set(files.get(0));
         }
         // Change state to open
         open = new AtomicBoolean(true);
@@ -206,43 +207,55 @@ public final class MemMapSlotStore implements SlotStore {
     }
 
     /**
-     * Finds a new slot ready for use
+     * Finds a new slot ready for use.
+     *
+     * If there is a free slot in a existing file, then it can return a answer concurrently without having to lock. It
+     * will only lock when creating a new file.
      *
      * @return File and slot location for a new location to store into
      */
     @Override
-    public synchronized long getNewSlot() {
+    public long getNewSlot() {
         throwIfNotOpen(); // We will end up throwing with an NPE while accessing "files" below anyway.
-        // this is the only place we change the array of files so need a write lock here
-        MemMapSlotFile fileToWriteTo = currentFileForWriting;
-        boolean currentFileHasRoom = fileToWriteTo != null && !fileToWriteTo.isFileFull();
-        // search for a file to write to if currentFileForWriting is missing or full
-        if (!currentFileHasRoom) {
-            // current file is full or there is no current file
-            // start by scanning existing files for free space
-            currentFileForWriting = null;
-            for (MemMapSlotFile file : files) {
-                if (!file.isFileFull()) {
-                    currentFileForWriting = file;
-                    break;
-                }
+        // first try getting a slot form the currentFileForWriting
+        MemMapSlotFile file = currentFileForWriting.get();
+        if (file != null) {
+            // we have a currentFileForWriting, see if it has a free slot
+            int slotIndex = file.getNewSlot();
+            if (slotIndex != -1) {
+                // great we got one, lets return it
+                return locationFromParts(file.getFileIndex(), slotIndex);
             }
-            // all current files are full so create a new file
-            if (currentFileForWriting == null) {
-                // open new file
-                final var newIndex = files.size();
-                try {
-                    currentFileForWriting = new MemMapSlotFile(slotSizeBytes, size, fileForIndex(newIndex).toFile(), newIndex);
-                    files.add(currentFileForWriting);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            // we can now write to new file
-            fileToWriteTo = currentFileForWriting;
         }
-        // we now have a file for writing, get a new slot
-        return locationFromParts(fileToWriteTo.getFileIndex(), fileToWriteTo.getNewSlot());
+        // doh the currentFileForWriting is full, so lets search existing files for free space
+        for (MemMapSlotFile oldFile : files) {
+            int slotIndex = oldFile.getNewSlot();
+            if (slotIndex != -1) {
+                // great we got one lets update currentFileForWriting for future callers
+                currentFileForWriting.set(oldFile);
+                // lets return it
+                return locationFromParts(oldFile.getFileIndex(), slotIndex);
+            }
+        }
+        // we we got here, so there is no room in any file, we have to create a new file
+        synchronized (this) { // we only want one thread to be creating a file at a time
+            // get index for new file
+            final var newIndex = files.size();
+            // create new file
+            MemMapSlotFile newFile = null;
+            try {
+                newFile = new MemMapSlotFile(slotSizeBytes, size, fileForIndex(newIndex).toFile(), newIndex);
+                // add to files
+                files.add(newFile);
+                // set it as the currentFileForWriting
+                currentFileForWriting.set(newFile);
+                // grab and return new slot
+                return locationFromParts(newFile.getFileIndex(), newFile.getNewSlot());
+            } catch (IOException e) { // TODO better handling of fail to create new file
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     /**

@@ -11,11 +11,10 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Consumer;
 
 /**
  * Memory Mapped File key value store, with a maximum number of items it can store and a max size for any item.
@@ -49,17 +48,17 @@ class MemMapSlotFile implements Closeable {
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     /** Current state if the file is open or not */
-    private boolean fileIsOpen = false;
+    private final AtomicBoolean fileIsOpen = new AtomicBoolean(false);
 
     /** stack of empty slots not at end of file */
-    private final Deque<Integer> freeSlotsForReuse = new ArrayDeque<>(100);
+    private final ConcurrentLinkedDeque<Integer> freeSlotsForReuse = new ConcurrentLinkedDeque<>();
 
     /**
      * Index of first available slot at the end of file.
      * = 0 being first slot is free,
      * = "size" means no free slots are available at the end of the file.
      */
-    private int nextFreeSlotAtEnd;
+    private final AtomicInteger nextFreeSlotAtEnd = new AtomicInteger();
 
     /**
      * Create MapDataFile, you need to call open() after to actually open/create file.
@@ -69,33 +68,34 @@ class MemMapSlotFile implements Closeable {
      * @param file     The file we are storing the data in
      */
     public MemMapSlotFile(int dataSize, int size, File file, int fileIndex) throws IOException {
-        this.size = size;
-        /** The file we are storing the data in */
-        this.fileIndex = fileIndex;
         this.slotSize = dataSize + HEADER_SIZE;
-        // calculate file size in bytes
-        /** total file size in bytes */
+        this.size = size;
+        this.fileIndex = fileIndex;
+        // calculate total file size in bytes
         int fileSize = this.slotSize * size;
-        // Open the file
         // check if file existed before
         boolean fileExisted = file.exists();
         // open random access file
         randomAccessFile = new RandomAccessFile(file, "rw");
         if (fileExisted) {
-            // TODO It seems we have a problem if the file was created at the wrong
-            // size before. I had a file that had size 0 and couldn't recover.
+            // check file length
+            final var fileLength = (int) file.length();
+            if (fileLength != fileSize) throw new IOException("File ["+file.getName()+"] exists but is wrong length. fileLength = "+fileLength+" should be "+fileSize);
+            // start assuming file is full
+            nextFreeSlotAtEnd.set(size);
+            // now read file and find empty slots and correct nextFreeSlotAtEnd
             loadExistingFile(randomAccessFile);
         } else {
             // set size for new empty file
             randomAccessFile.setLength(fileSize);
             // mark first slot as free
-            nextFreeSlotAtEnd = 0;
+            nextFreeSlotAtEnd.set(0);
         }
         // get file channel and memory map the file
         fileChannel = randomAccessFile.getChannel();
-        mappedBuffer = fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, fileChannel.size());
+        mappedBuffer = fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, fileSize);
         // mark file as open
-        fileIsOpen = true;
+        fileIsOpen.set(true);
     }
 
     //==================================================================================================================
@@ -107,6 +107,7 @@ class MemMapSlotFile implements Closeable {
      * @param slotIndex the slot index we want to be able to write to
      * @return stamp representing the lock that needs to be returned to releaseWriteLock
      */
+    @SuppressWarnings("unused") // can be used in future for locking on region of file
     public Object acquireWriteLock(int slotIndex) {
         lock.writeLock().lock();
         return lock.writeLock();
@@ -118,6 +119,7 @@ class MemMapSlotFile implements Closeable {
      * @param slotIndex the slot index we are done writing to
      * @param lockStamp stamp representing the lock that you got from acquireWriteLock
      */
+    @SuppressWarnings("unused") // can be used in future for locking on region of file
     public void releaseWriteLock(int slotIndex, Object lockStamp) {
         if (lockStamp == lock.writeLock()) lock.writeLock().unlock();
     }
@@ -128,6 +130,7 @@ class MemMapSlotFile implements Closeable {
      * @param slotIndex the slot index we want to be able to read to
      * @return stamp representing the lock that needs to be returned to releaseReadLock
      */
+    @SuppressWarnings("unused") // can be used in future for locking on region of file
     public Object acquireReadLock(int slotIndex) {
         lock.readLock().lock();
         return lock.readLock();
@@ -139,6 +142,7 @@ class MemMapSlotFile implements Closeable {
      * @param slotIndex the slot index we are done reading from
      * @param lockStamp stamp representing the lock that you got from acquireReadLock
      */
+    @SuppressWarnings("unused") // can be used in future for locking on region of file
     public void releaseReadLock(int slotIndex, Object lockStamp) {
         if (lockStamp == lock.readLock()) lock.readLock().unlock();
     }
@@ -153,20 +157,6 @@ class MemMapSlotFile implements Closeable {
     }
 
     /**
-     * Check if the file is full, with no available slots
-     *
-     * @return True if the file is full
-     */
-    public boolean isFileFull() {
-        lock.readLock().lock();
-        try {
-            return nextFreeSlotAtEnd >= size && freeSlotsForReuse.isEmpty();
-        } finally {
-            lock.readLock().unlock();
-        }
-    }
-
-    /**
      * Closes the file and clears up all resources
      *
      * @throws IOException If there was a problem closing the file
@@ -174,15 +164,13 @@ class MemMapSlotFile implements Closeable {
     public void close() throws IOException {
         lock.writeLock().lock();
         try {
-            if (fileIsOpen) {
+            if (fileIsOpen.getAndSet(false)) {
                 mappedBuffer.force();
                 mappedBuffer = null;
                 fileChannel.close();
                 fileChannel = null;
                 randomAccessFile.close();
                 randomAccessFile = null;
-                // mark file as closed
-                fileIsOpen = false;
             }
         } finally {
             lock.writeLock().unlock();
@@ -240,33 +228,37 @@ class MemMapSlotFile implements Closeable {
     }
 
     /**
-     * Finds a new slot in this file
+     * Finds a new slot in this file, if there is one available
+     *
+     * This trys to be concurrent and if the file is full
      *
      * @return Slot index if the value was successfully stored, -1 if there was no space available
      */
     public synchronized int getNewSlot() {
         throwIfClosed();
-        if (isFileFull()) return -1;
-        lock.writeLock().lock(); // TODO seems like maybe we could have another lock for getting new slots and deleting
-        try {
-            // calc next available slot
-            int slotIndex;
-            if (nextFreeSlotAtEnd < size) {
-                slotIndex = nextFreeSlotAtEnd;
-                nextFreeSlotAtEnd++;
-            } else if (!freeSlotsForReuse.isEmpty()) {
-                slotIndex = freeSlotsForReuse.pop();
-            } else {
-                throw new RuntimeException("This should not happen, means we think there is free space but there is not." +
-                        "nextFreeSlotAtEnd=" + nextFreeSlotAtEnd + " ,size=" + size);
+        // grab free slot at the end
+        int nextFreeSlot = nextFreeSlotAtEnd.getAndIncrement();
+        // check if we ran out of free slots
+        if (nextFreeSlot >= size) {
+            // there are no free slots at end so try and grab one from queue
+            Integer freeSlot = freeSlotsForReuse.poll();
+            // check if we got one
+            if (freeSlot == null) {
+                // there are no free slots so this file is full
+                return -1;
             }
-            // mark slot as used
-            mappedBuffer.put(slotIndex * slotSize, USED);
-            // return slot index
-            return slotIndex;
+            // we have a free slot to use
+            nextFreeSlot = freeSlot;
+        }
+        // mark slot as used, TODO it is possible locking is not needed here as no other thread can be writing or reading this part of file.
+        lock.writeLock().lock();
+        try {
+            mappedBuffer.put(nextFreeSlot * slotSize, USED);
         } finally {
             lock.writeLock().unlock();
         }
+        // return the new slot
+        return nextFreeSlot;
     }
 
     /**
@@ -274,27 +266,27 @@ class MemMapSlotFile implements Closeable {
      *
      * @param slotIndex The index of the slot to delete
      */
-    public void deleteSlot(int slotIndex) throws IOException {
+    public void deleteSlot(int slotIndex) {
         throwIfClosed();
-        lock.writeLock().lock(); // TODO seems like maybe we could have another lock for getting new slots and deleting
+        // mark slot as EMPTY
+        lock.writeLock().lock();
         try {
-            // store EMPTY for the size in slot
             mappedBuffer.put(slotIndex, EMPTY);
-            // add slot to stack of empty slots
-            freeSlotsForReuse.push(slotIndex); // TODO could maybe check if it as the end and add slots back on nextFreeSlotAtEnd
         } finally {
             lock.writeLock().unlock();
         }
+        // add slot to queue of empty slots
+        freeSlotsForReuse.add(slotIndex);
     }
 
     //==================================================================================================================
     // Private methods
 
     /**
-     * Throw an exeption if closed
+     * Throw an exception if closed
      */
     private void throwIfClosed() {
-        if (!fileIsOpen) throw new IllegalStateException("Can not access from a closed file.");
+        if (!fileIsOpen.get()) throw new IllegalStateException("Can not access from a closed file.");
     }
 
     /**
@@ -302,34 +294,25 @@ class MemMapSlotFile implements Closeable {
      * empty slots in middle of data and updating nextFreeSlotAtEnd for the first free slot
      */
     private void loadExistingFile(RandomAccessFile file) throws IOException {
-        // start at last slot
-        final var fileLength = (int) file.length();
-        if (fileLength == 0) {
-            return;
-        }
-        int slotOffset = fileLength - slotSize;
         // keep track of the first real data from end of file
         boolean foundFirstData = false;
-        // start assuming the file is full
-        nextFreeSlotAtEnd = size;
         // read from end to start
-        for (int i = (size - 1); i >= 0; i--) {
+        for (int slotIndex = (size-1); slotIndex >= 0; slotIndex --) {
+            int slotOffset = slotIndex * slotSize;
             file.seek(slotOffset);
             // read size from file
-            long size = file.readLong();
-            if (size != EMPTY) {
-                // we found some real data
-                foundFirstData = true;
-            } else if (foundFirstData) {
-                // this is a free slot in the middle of data so add to stack
-                freeSlotsForReuse.push(i);
-            } else {
-                // we are still in the block of free slots at the end
-                nextFreeSlotAtEnd = slotOffset;
+            long header = file.readLong();
+            if (header != EMPTY) {
+                if (!foundFirstData) {
+                    // we found some real data
+                    foundFirstData = true;
+                    // we know the last slot we visited was last free one at the end
+                    nextFreeSlotAtEnd.set(slotIndex+1);
+                } else {
+                    // we found a free slot in the middle so add to queue
+                    freeSlotsForReuse.push(slotIndex);
+                }
             }
-            // move key pointer to next slot
-            slotOffset -= slotSize;
         }
     }
-
 }
