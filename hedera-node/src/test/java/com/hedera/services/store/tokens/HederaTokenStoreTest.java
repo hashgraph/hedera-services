@@ -1359,7 +1359,6 @@ class HederaTokenStoreTest {
 		verify(token).setKycKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
 		verify(token).setSupplyKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
 		verify(token).setWipeKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
-		verify(token).setFeeScheduleFrom(grpcCustomFees);
 		// and:
 		assertFalse(subject.knownTreasuries.containsKey(treasury));
 		assertEquals(subject.knownTreasuries.get(newTreasury), tokenSet);

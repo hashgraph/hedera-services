@@ -643,12 +643,12 @@ class FcCustomFeeTest {
 		final var fixedHtsFee = FcCustomFee.fixedFee(fixedUnitsToCollect, denom, feeCollector);
 
 		// given:
-		final var expectedFractional = "CustomFee{feeType=FRACTIONAL_FEE, fractionalFee=FractionalFeeSpec{numerator=5, " +
+		final var expectedFractional = "FcCustomFee{feeType=FRACTIONAL_FEE, fractionalFee=FractionalFeeSpec{numerator=5, " +
 				"denominator=100, minimumUnitsToCollect=1, maximumUnitsToCollect=55}, " +
 				"feeCollector=EntityId{shard=4, realm=5, num=6}}";
-		final var expectedFixedHbar = "CustomFee{feeType=FIXED_FEE, fixedFee=FixedFeeSpec{unitsToCollect=7, " +
+		final var expectedFixedHbar = "FcCustomFee{feeType=FIXED_FEE, fixedFee=FixedFeeSpec{unitsToCollect=7, " +
 				"tokenDenomination=ℏ}, feeCollector=EntityId{shard=4, realm=5, num=6}}";
-		final var expectedFixedHts = "CustomFee{feeType=FIXED_FEE, fixedFee=FixedFeeSpec{unitsToCollect=7, " +
+		final var expectedFixedHts = "FcCustomFee{feeType=FIXED_FEE, fixedFee=FixedFeeSpec{unitsToCollect=7, " +
 				"tokenDenomination=111.222.333}, feeCollector=EntityId{shard=4, realm=5, num=6}}";
 
 		// expect:

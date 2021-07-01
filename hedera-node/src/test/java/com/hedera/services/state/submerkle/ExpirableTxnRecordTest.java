@@ -316,7 +316,7 @@ class ExpirableTxnRecordTest {
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, tokenAdjustments=1.2.3(CurrencyAdjustments{" +
 				"readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), 1.2.4(CurrencyAdjustments{" +
 				"readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), assessedCustomFees=(" +
-				"AssessedCustomFee{token=EntityId{shard=1, realm=2, num=9}, account=EntityId{shard=1, realm=2, num=8}, " +
+				"FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=9}, account=EntityId{shard=1, realm=2, num=8}, " +
 				"units=123})}";
 
 		// expect:

@@ -62,8 +62,8 @@ class FcAssessedCustomFeeTest {
 		final var hbarChange = IdUtils.hbarChangeForCustomFees(account.toGrpcAccountId(), units);
 		final var tokenChange = IdUtils.tokenChangeForCustomFees(token, account.toGrpcAccountId(), units);
 		// and:
-		final var hbarRepr = "AssessedCustomFee{token=ℏ, account=EntityId{shard=4, realm=5, num=6}, units=-1234}";
-		final var tokenRepr = "AssessedCustomFee{token=EntityId{shard=1, realm=2, num=3}, account=EntityId{shard=4, " +
+		final var hbarRepr = "FcAssessedCustomFee{token=ℏ, account=EntityId{shard=4, realm=5, num=6}, units=-1234}";
+		final var tokenRepr = "FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=3}, account=EntityId{shard=4, " +
 				"realm=5, num=6}, units=-1234}";
 
 		// expect:
