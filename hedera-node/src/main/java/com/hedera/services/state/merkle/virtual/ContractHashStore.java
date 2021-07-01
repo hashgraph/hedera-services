@@ -22,15 +22,15 @@ public class ContractHashStore implements FCHashStore {
             final var index = new FCSlotIndexUsingMemMapFile<ContractPath>(
                     Path.of("data/contract-storage"),
                     "hash-index",
-                    1024*1024,
-                    128,
+                    128*1024,
+                    1024,
                     ContractPath.SERIALIZED_SIZE,
                     16,
                     20);
 
             this.dataStore = new FCVirtualMapHashStoreImpl<>(
                     Path.of("data/contract-storage"),
-                    256,
+                    32,
                     ContractPath.SERIALIZED_SIZE,
                     index,
                     MemMapSlotStore::new);
