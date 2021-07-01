@@ -25,14 +25,15 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.serdes.DomainSerdes;
-import com.hedera.services.state.submerkle.CustomFee;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hederahashgraph.api.proto.java.CustomFee;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
-import proto.CustomFeesOuterClass;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -80,10 +81,9 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	private boolean deleted;
 	private boolean accountsFrozenByDefault;
 	private boolean accountsKycGrantedByDefault;
-	private boolean feeScheduleMutable;
 	private EntityId treasury;
 	private EntityId autoRenewAccount = null;
-	private List<CustomFee> feeSchedule = Collections.emptyList();
+	private List<FcCustomFee> feeSchedule = Collections.emptyList();
 
 	public MerkleToken() {
 		/* No-op. */
@@ -131,7 +131,6 @@ public class MerkleToken extends AbstractMerkleLeaf {
 				this.lastUsedSerialNumber == that.lastUsedSerialNumber &&
 				this.accountsFrozenByDefault == that.accountsFrozenByDefault &&
 				this.accountsKycGrantedByDefault == that.accountsKycGrantedByDefault &&
-				this.feeScheduleMutable == that.feeScheduleMutable &&
 				Objects.equals(this.symbol, that.symbol) &&
 				Objects.equals(this.name, that.name) &&
 				Objects.equals(this.memo, that.memo) &&
@@ -169,8 +168,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 				treasury,
 				autoRenewAccount,
 				autoRenewPeriod,
-				feeSchedule,
-				feeScheduleMutable);
+				feeSchedule);
 	}
 
 	/* --- Bean --- */
@@ -200,7 +198,6 @@ public class MerkleToken extends AbstractMerkleLeaf {
 				.add("accountsKycGrantedByDefault", accountsKycGrantedByDefault)
 				.add("accountsFrozenByDefault", accountsFrozenByDefault)
 				.add("feeSchedules", feeSchedule)
-				.add("feeScheduleMutable", feeScheduleMutable)
 				.toString();
 	}
 
@@ -244,8 +241,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 			supplyType = TokenSupplyType.values()[in.readInt()];
 			maxSupply = in.readLong();
 			lastUsedSerialNumber = in.readLong();
-			feeSchedule = unmodifiableList(in.readSerializableList(Integer.MAX_VALUE, true, CustomFee::new));
-			feeScheduleMutable = in.readBoolean();
+			feeSchedule = unmodifiableList(in.readSerializableList(Integer.MAX_VALUE, true, FcCustomFee::new));
 		}
 		if (tokenType == null) {
 			tokenType = TokenType.FUNGIBLE_COMMON;
@@ -279,7 +275,6 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		out.writeLong(maxSupply);
 		out.writeLong(lastUsedSerialNumber);
 		out.writeSerializableList(feeSchedule, true, true);
-		out.writeBoolean(feeScheduleMutable);
 	}
 
 	/* --- FastCopyable --- */
@@ -297,7 +292,6 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		fc.setMemo(memo);
 		fc.setDeleted(deleted);
 		fc.setFeeSchedule(feeSchedule);
-		fc.setFeeScheduleMutable(feeScheduleMutable);
 		fc.setAutoRenewPeriod(autoRenewPeriod);
 		fc.setAutoRenewAccount(autoRenewAccount);
 		fc.lastUsedSerialNumber = lastUsedSerialNumber;
@@ -540,33 +534,23 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		this.maxSupply = maxSupply;
 	}
 
-	public boolean isFeeScheduleMutable() {
-		return feeScheduleMutable;
-	}
-
-	private void setFeeScheduleMutable(boolean feeScheduleMutable) {
-		this.feeScheduleMutable = feeScheduleMutable;
-	}
-
-	public List<CustomFee> customFeeSchedule() {
+	public List<FcCustomFee> customFeeSchedule() {
 		return feeSchedule;
 	}
 
-	private void setFeeSchedule(List<CustomFee> feeSchedule) {
+	private void setFeeSchedule(List<FcCustomFee> feeSchedule) {
 		this.feeSchedule = unmodifiableList(feeSchedule);
 	}
 
-	public CustomFeesOuterClass.CustomFees grpcFeeSchedule() {
-		final var builder = CustomFeesOuterClass.CustomFees.newBuilder();
+	public List<CustomFee> grpcFeeSchedule() {
+		final List<CustomFee> grpcList = new ArrayList<>();
 		for (var customFee : feeSchedule) {
-			builder.addCustomFees(customFee.asGrpc());
+			grpcList.add(customFee.asGrpc());
 		}
-		builder.setCanUpdateWithAdminKey(feeScheduleMutable);
-		return builder.build();
+		return grpcList;
 	}
 
-	public void setFeeScheduleFrom(CustomFeesOuterClass.CustomFeesOrBuilder grpcFeeSchedule) {
-		feeSchedule = grpcFeeSchedule.getCustomFeesList().stream().map(CustomFee::fromGrpc).collect(toList());
-		feeScheduleMutable = grpcFeeSchedule.getCanUpdateWithAdminKey();
+	public void setFeeScheduleFrom(List<CustomFee> grpcFeeSchedule) {
+		feeSchedule = grpcFeeSchedule.stream().map(FcCustomFee::fromGrpc).collect(toList());
 	}
 }

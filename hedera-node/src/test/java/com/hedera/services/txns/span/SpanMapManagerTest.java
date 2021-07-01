@@ -24,8 +24,8 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
-import com.hedera.services.state.submerkle.AssessedCustomFee;
-import com.hedera.services.state.submerkle.CustomFee;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
@@ -72,15 +72,15 @@ class SpanMapManagerTest {
 
 	private final Id customFeeToken = new Id(0, 0, 123);
 	private final Id customFeeCollector = new Id(0, 0, 124);
-	final List<Pair<Id, List<CustomFee>>> entityCustomFees = List.of(
+	final List<Pair<Id, List<FcCustomFee>>> entityCustomFees = List.of(
 			Pair.of(customFeeToken, new ArrayList<>()));
 
-	final List<Pair<Id, List<CustomFee>>> newCustomFeeChanges = List.of(
-			Pair.of(customFeeToken, List.of(CustomFee.fixedFee(10L, customFeeToken.asEntityId(),
+	final List<Pair<Id, List<FcCustomFee>>> newCustomFeeChanges = List.of(
+			Pair.of(customFeeToken, List.of(FcCustomFee.fixedFee(10L, customFeeToken.asEntityId(),
 					customFeeCollector.asEntityId()))));
-	private final List<AssessedCustomFee> assessedCustomFees = List.of(
-			new AssessedCustomFee(customFeeCollector.asEntityId(), customFeeToken.asEntityId(), 123L),
-			new AssessedCustomFee( customFeeCollector.asEntityId(), 123L)
+	private final List<FcAssessedCustomFee> assessedCustomFees = List.of(
+			new FcAssessedCustomFee(customFeeCollector.asEntityId(), customFeeToken.asEntityId(), 123L),
+			new FcAssessedCustomFee( customFeeCollector.asEntityId(), 123L)
 			);
 
 	private final AccountID acctID = asAccount("1.2.3");

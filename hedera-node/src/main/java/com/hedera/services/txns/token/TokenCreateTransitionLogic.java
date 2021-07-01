@@ -115,7 +115,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			abortWith(status);
 			return;
 		}
-		if (op.getCustomFees().getCustomFeesCount() > 0) {
+		if (op.getCustomFeesCount() > 0) {
 			status = autoEnableFeeCollectors(created, treasury, op);
 			if (status != OK) {
 				abortWith(status);
@@ -144,7 +144,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		final Set<AccountID> customCollectorsEnabled = new HashSet<>();
 		customCollectorsEnabled.add(alreadyEnabledTreasury);
 		ResponseCodeEnum status = OK;
-		for (var fee : op.getCustomFees().getCustomFeesList()) {
+		for (var fee : op.getCustomFeesList()) {
 			if (fee.hasFractionalFee()) {
 				final var collector = fee.getFeeCollectorAccountId();
 				if (!customCollectorsEnabled.contains(collector)) {

@@ -23,7 +23,7 @@ package com.hedera.services.txns.span;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
-import com.hedera.services.state.submerkle.AssessedCustomFee;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.utils.TxnAccessor;
@@ -101,11 +101,11 @@ public class SpanMapManager {
 
 		final var xferMeta = accessor.availXferUsageMeta();
 
-		List<AssessedCustomFee> assessedCustomFees = impliedTransfers.getAssessedCustomFees();
+		List<FcAssessedCustomFee> assessedCustomFees = impliedTransfers.getAssessedCustomFees();
 		var customFeeTokenTransfers = 0;
 		var customFeeHbarTransfers = 0;
 		Set<EntityId> tokenIDset = new HashSet<>();
-		for(AssessedCustomFee acf : assessedCustomFees) {
+		for(FcAssessedCustomFee acf : assessedCustomFees) {
 			if(acf.isForHbar()) {
 				customFeeHbarTransfers++;
 			} else {

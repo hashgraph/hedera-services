@@ -22,7 +22,7 @@ package com.hedera.services.context;
 
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.expiry.ExpiringEntity;
-import com.hedera.services.state.submerkle.AssessedCustomFee;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -276,5 +276,5 @@ public interface TransactionContext {
 	 *
 	 * @param assessedCustomFees the assessed custom fees
 	 */
-	void setAssessedCustomFees(List<AssessedCustomFee> assessedCustomFees);
+	void setAssessedCustomFees(List<FcAssessedCustomFee> assessedCustomFees);
 }

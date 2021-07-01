@@ -23,14 +23,13 @@ package com.hedera.services.grpc.marshalling;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
-import com.hedera.services.state.submerkle.AssessedCustomFee;
-import com.hedera.services.state.submerkle.CustomFee;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
-import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -122,12 +121,12 @@ class ImpliedTransfersMarshalTest {
 
 	private final EntityId customFeeToken = new EntityId(0, 0, 123);
 	private final EntityId customFeeCollector = new EntityId(0, 0, 124);
-	final List<Pair<Id, List<CustomFee>>> entityCustomFees = List.of(
+	final List<Pair<Id, List<FcCustomFee>>> entityCustomFees = List.of(
 			Pair.of(customFeeToken.asId(), new ArrayList<>()));
-	final List<Pair<EntityId, List<CustomFee>>> newCustomFeeChanges = List.of(
-			Pair.of(customFeeToken, List.of(CustomFee.fixedFee(10L, customFeeToken, customFeeCollector))));
-	private final List<AssessedCustomFee> assessedCustomFees = List.of(
-			new AssessedCustomFee(customFeeCollector, customFeeToken, 123L));
+	final List<Pair<EntityId, List<FcCustomFee>>> newCustomFeeChanges = List.of(
+			Pair.of(customFeeToken, List.of(FcCustomFee.fixedFee(10L, customFeeToken, customFeeCollector))));
+	private final List<FcAssessedCustomFee> assessedCustomFees = List.of(
+			new FcAssessedCustomFee(customFeeCollector, customFeeToken, 123L));
 
 	private final long numerator = 2L;
 	private final long denominator = 100L;
@@ -184,15 +183,15 @@ class ImpliedTransfersMarshalTest {
 				}
 		);
 		// and:
-		final List<CustomFee> customFee = getFixedCustomFee();
-		final List<Pair<Id, List<CustomFee>>> expectedCustomFeeChanges =
+		final List<FcCustomFee> customFee = getFixedCustomFee();
+		final List<Pair<Id, List<FcCustomFee>>> expectedCustomFeeChanges =
 				List.of(Pair.of(anotherToken, customFee),
 						Pair.of(token, customFee),
 						Pair.of(yetAnotherToken, customFee));
-		final List<AssessedCustomFee> expectedAssessedCustomFees = List.of(
-				new AssessedCustomFee(EntityId.fromGrpcAccountId(aModel), customFeeChangeToFeeCollector),
-				new AssessedCustomFee(EntityId.fromGrpcAccountId(aModel), customFeeChangeToFeeCollector),
-				new AssessedCustomFee(EntityId.fromGrpcAccountId(aModel), customFeeChangeToFeeCollector));
+		final List<FcAssessedCustomFee> expectedAssessedCustomFees = List.of(
+				new FcAssessedCustomFee(EntityId.fromGrpcAccountId(aModel), customFeeChangeToFeeCollector),
+				new FcAssessedCustomFee(EntityId.fromGrpcAccountId(aModel), customFeeChangeToFeeCollector),
+				new FcAssessedCustomFee(EntityId.fromGrpcAccountId(aModel), customFeeChangeToFeeCollector));
 
 		// and:
 		final var expectedMeta = new ImpliedTransfersMeta(validationProps, OK, expectedCustomFeeChanges);
@@ -422,7 +421,7 @@ class ImpliedTransfersMarshalTest {
 		final var expectedCustomFeeChanges =
 				List.of(Pair.of(anotherToken, customFee));
 		final var expectedAssessedCustomFees = List.of(
-				new AssessedCustomFee(EntityId.fromGrpcAccountId(aModel), anotherToken.asEntityId(),
+				new FcAssessedCustomFee(EntityId.fromGrpcAccountId(aModel), anotherToken.asEntityId(),
 						expectedFractionalFee));
 
 		// and:
@@ -458,7 +457,7 @@ class ImpliedTransfersMarshalTest {
 		// and:
 
 		var exception = assertThrows(IllegalArgumentException.class,
-				() -> CustomFee.fractionalFee(numerator, 0, minimumUnitsToCollect,
+				() -> FcCustomFee.fractionalFee(numerator, 0, minimumUnitsToCollect,
 						maximumUnitsToCollect, feeCollector));
 		assertEquals("Division by zero is not allowed", exception.getMessage());
 	}
@@ -481,7 +480,7 @@ class ImpliedTransfersMarshalTest {
 		final var expectedCustomFeeChanges =
 				List.of(Pair.of(anotherToken, customFee));
 		final var expectedAssessedCustomFees = List.of(
-				new AssessedCustomFee(EntityId.fromGrpcAccountId(aModel), token.asEntityId(), 20L));
+				new FcAssessedCustomFee(EntityId.fromGrpcAccountId(aModel), token.asEntityId(), 20L));
 
 		// and:
 		final var expectedMeta = new ImpliedTransfersMeta(validationProps, OK, expectedCustomFeeChanges);
@@ -539,28 +538,28 @@ class ImpliedTransfersMarshalTest {
 				.build();
 	}
 
-	private List<CustomFee> getFixedCustomFee() {
+	private List<FcCustomFee> getFixedCustomFee() {
 		return List.of(
-				CustomFee.fixedFee(20L, null, feeCollector)
+				FcCustomFee.fixedFee(20L, null, feeCollector)
 		);
 	}
 
-	private List<CustomFee> getFixedCustomFeeNonNullDenom() {
+	private List<FcCustomFee> getFixedCustomFeeNonNullDenom() {
 		return List.of(
-				CustomFee.fixedFee(20L, token.asEntityId(), feeCollector)
+				FcCustomFee.fixedFee(20L, token.asEntityId(), feeCollector)
 		);
 	}
 
-	private List<CustomFee> getFractionalCustomFee() {
+	private List<FcCustomFee> getFractionalCustomFee() {
 		return List.of(
-				CustomFee.fractionalFee(
+				FcCustomFee.fractionalFee(
 						numerator, denominator, minimumUnitsToCollect, maximumUnitsToCollect, feeCollector)
 		);
 	}
 
-	private List<CustomFee> getOverflowingFractionalCustomFee() {
+	private List<FcCustomFee> getOverflowingFractionalCustomFee() {
 		return List.of(
-				CustomFee.fractionalFee(
+				FcCustomFee.fractionalFee(
 						Long.MAX_VALUE, 2, minimumUnitsToCollect, maximumUnitsToCollect, feeCollector)
 		);
 	}

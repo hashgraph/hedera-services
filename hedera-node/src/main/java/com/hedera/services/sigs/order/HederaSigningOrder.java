@@ -690,7 +690,7 @@ public class HederaSigningOrder {
 				TokenCreateTransactionBody::hasAdminKey,
 				TokenCreateTransactionBody::getAdminKey,
 				required);
-		for (var customFee : op.getCustomFees().getCustomFeesList()) {
+		for (var customFee : op.getCustomFeesList()) {
 			final var collector = customFee.getFeeCollectorAccountId();
 			/* A fractional fee collector must always sign a TokenCreate, since it is
 			automatically associated to the newly created token. */

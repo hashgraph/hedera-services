@@ -44,8 +44,11 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.Fraction;
+import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -60,7 +63,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
-import proto.CustomFeesOuterClass;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -93,7 +95,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_ARE_MARKED_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
@@ -145,7 +146,6 @@ class HederaTokenStoreTest {
 	private EntityIdSource ids;
 	private GlobalDynamicProperties properties;
 	private FCMap<MerkleEntityId, MerkleToken> tokens;
-	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens;
 	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAccountOwnerships;
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
@@ -197,91 +197,84 @@ class HederaTokenStoreTest {
 	private Pair<AccountID, TokenID> treasuryMisc = asTokenRel(treasury, misc);
 	private NftId aNft = new NftId(4, 3, 2, 1_234);
 	private Pair<AccountID, TokenID> anotherFeeCollectorMisc = asTokenRel(anotherFeeCollector, misc);
-	private CustomFeesOuterClass.FixedFee fixedFeeInTokenUnits = CustomFeesOuterClass.FixedFee.newBuilder()
+	private FixedFee fixedFeeInTokenUnits = FixedFee.newBuilder()
 			.setDenominatingTokenId(misc)
 			.setAmount(100)
 			.build();
-	private CustomFeesOuterClass.FixedFee fixedFeeInHbar = CustomFeesOuterClass.FixedFee.newBuilder()
+	private FixedFee fixedFeeInHbar = FixedFee.newBuilder()
 			.setAmount(100)
 			.build();
 	private Fraction fraction = Fraction.newBuilder().setNumerator(15).setDenominator(100).build();
 	private Fraction invalidFraction = Fraction.newBuilder().setNumerator(15).setDenominator(0).build();
-	private CustomFeesOuterClass.FractionalFee fractionalFee = CustomFeesOuterClass.FractionalFee.newBuilder()
+	private FractionalFee fractionalFee = FractionalFee.newBuilder()
 			.setFractionalAmount(fraction)
 			.setMaximumAmount(50)
 			.setMinimumAmount(10)
 			.build();
-	private CustomFeesOuterClass.CustomFee customFixedFeeInHbar = CustomFeesOuterClass.CustomFee.newBuilder()
+	private CustomFee customFixedFeeInHbar = CustomFee.newBuilder()
 			.setFeeCollectorAccountId(feeCollector)
 			.setFixedFee(fixedFeeInHbar)
 			.build();
-	private CustomFeesOuterClass.CustomFee customFixedFeeInHts = CustomFeesOuterClass.CustomFee.newBuilder()
+	private CustomFee customFixedFeeInHts = CustomFee.newBuilder()
 			.setFeeCollectorAccountId(anotherFeeCollector)
 			.setFixedFee(fixedFeeInTokenUnits)
 			.build();
-	private CustomFeesOuterClass.CustomFee customFractionalFee = CustomFeesOuterClass.CustomFee.newBuilder()
+	private CustomFee customFractionalFee = CustomFee.newBuilder()
 			.setFeeCollectorAccountId(feeCollector)
 			.setFractionalFee(fractionalFee)
 			.build();
-	private CustomFeesOuterClass.CustomFees grpcCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
-			.addCustomFees(customFixedFeeInHbar)
-			.addCustomFees(customFixedFeeInHts)
-			.addCustomFees(customFractionalFee)
-			.build();
-	private CustomFeesOuterClass.CustomFees grpcUnderspecifiedCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
-			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
-					.setFeeCollectorAccountId(feeCollector))
-			.build();
-	private CustomFeesOuterClass.CustomFees grpcDivideByZeroCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
-			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
+	private List<CustomFee> grpcCustomFees = List.of(
+			customFixedFeeInHbar,
+			customFixedFeeInHts,
+			customFractionalFee
+	);
+	private List<CustomFee> grpcUnderspecifiedCustomFees = List.of(
+			CustomFee.newBuilder().setFeeCollectorAccountId(feeCollector).build()
+	);
+	private List<CustomFee> grpcDivideByZeroCustomFees = List.of(
+			CustomFee.newBuilder()
 					.setFeeCollectorAccountId(feeCollector)
-					.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
+					.setFractionalFee(FractionalFee.newBuilder()
 							.setFractionalAmount(invalidFraction)
-					)).build();
-	private CustomFeesOuterClass.CustomFees grpcNegativeFractionCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
-			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
+					).build());
+	private List<CustomFee> grpcNegativeFractionCustomFees = List.of(
+			CustomFee.newBuilder()
 					.setFeeCollectorAccountId(feeCollector)
-					.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
+					.setFractionalFee(FractionalFee.newBuilder()
 							.setFractionalAmount(Fraction.newBuilder()
 									.setNumerator(123L).setDenominator(-1_000L)
 							)
-					)).build();
-	private CustomFeesOuterClass.CustomFees grpcNegativeMaximumCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
-			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
+					).build());
+	private List<CustomFee> grpcNegativeMaximumCustomFees = List.of(
+			CustomFee.newBuilder()
 					.setFeeCollectorAccountId(feeCollector)
-					.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
+					.setFractionalFee(FractionalFee.newBuilder()
 							.setFractionalAmount(Fraction.newBuilder()
 									.setNumerator(123L).setDenominator(1_000L)
 							).setMaximumAmount(-1L)
-					)).build();
-	private CustomFeesOuterClass.CustomFees grpcNegativeMinimumCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
-			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
+					).build());
+	private List<CustomFee> grpcNegativeMinimumCustomFees = List.of(
+			CustomFee.newBuilder()
 					.setFeeCollectorAccountId(feeCollector)
-					.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
+					.setFractionalFee(FractionalFee.newBuilder()
 							.setFractionalAmount(Fraction.newBuilder()
 									.setNumerator(123L).setDenominator(1_000L)
 							).setMinimumAmount(-1L)
-					)).build();
-	private CustomFeesOuterClass.CustomFees grpcZeroFractionCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
-			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
+					).build());
+	private List<CustomFee> grpcZeroFractionCustomFees = List.of(
+			CustomFee.newBuilder()
 					.setFeeCollectorAccountId(feeCollector)
-					.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
+					.setFractionalFee(FractionalFee.newBuilder()
 							.setFractionalAmount(Fraction.newBuilder()
 									.setNumerator(0L).setDenominator(1_000L)
 							)
-					)).build();
-	private CustomFeesOuterClass.CustomFees grpcNegativeFixedCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
-			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
+					).build());
+	private List<CustomFee> grpcNegativeFixedCustomFees = List.of(
+			CustomFee.newBuilder()
 					.setFeeCollectorAccountId(feeCollector)
-					.setFixedFee(CustomFeesOuterClass.FixedFee.newBuilder()
+					.setFixedFee(FixedFee.newBuilder()
 							.setAmount(-1_000L)
-					)).build();
-	private CustomFeesOuterClass.CustomFees grpcZeroFixedCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
-			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
-					.setFeeCollectorAccountId(feeCollector)
-					.setFixedFee(CustomFeesOuterClass.FixedFee.newBuilder()
-							.setAmount(0L)
-					)).build();
+					).build());
 
 	private HederaTokenStore subject;
 
@@ -301,7 +294,6 @@ class HederaTokenStoreTest {
 		given(token.name()).willReturn(name);
 		given(token.hasAdminKey()).willReturn(true);
 		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
-		given(token.isFeeScheduleMutable()).willReturn(true);
 
 		nonfungibleToken = new MerkleToken();
 
@@ -352,7 +344,6 @@ class HederaTokenStoreTest {
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 		given(tokens.get(fromTokenId(nonfungible))).willReturn(nonfungibleToken);
 
-		uniqueTokens = (FCMap<MerkleUniqueTokenId, MerkleUniqueToken>) mock(FCMap.class);
 		uniqueTokenAccountOwnerships = (FCOneToManyRelation<EntityId, MerkleUniqueTokenId>) mock(FCOneToManyRelation.class);
 
 		properties = mock(GlobalDynamicProperties.class);
@@ -1098,21 +1089,6 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	void updateRejectsImmutableToken() {
-		given(token.hasAdminKey()).willReturn(false);
-
-		var op = updateWith(NO_KEYS, true, true, false);
-		var outcome = subject.update(op, CONSENSUS_NOW);
-		assertEquals(TOKEN_IS_IMMUTABLE, outcome);
-
-		verify(token, never()).isFeeScheduleMutable();
-		verify(token, never()).setFeeScheduleFrom(any());
-		op = updateWithCustomFees(grpcCustomFees);
-		outcome = subject.update(op, CONSENSUS_NOW);
-		assertEquals(TOKEN_IS_IMMUTABLE, outcome);
-	}
-
-	@Test
 	void canExtendImmutableExpiry() {
 		given(token.hasAdminKey()).willReturn(false);
 		// given:
@@ -1217,21 +1193,6 @@ class HederaTokenStoreTest {
 
 		// then:
 		assertEquals(TOKEN_HAS_NO_SUPPLY_KEY, outcome);
-	}
-
-	@Test
-	void updateRejectsImmutableTokenFeeSchedule() {
-		given(token.isFeeScheduleMutable()).willReturn(false);
-		givenUpdateTarget(NO_KEYS);
-		final var clearImmutability = CustomFeesOuterClass.CustomFees.newBuilder()
-				.setCanUpdateWithAdminKey(true)
-				.build();
-		final var op = updateWithCustomFees(clearImmutability);
-
-		final var outcome = subject.update(op, CONSENSUS_NOW);
-
-		verify(token, never()).setFeeScheduleFrom(any());
-		assertEquals(CUSTOM_FEES_ARE_MARKED_IMMUTABLE, outcome);
 	}
 
 	@Test
@@ -1383,7 +1344,6 @@ class HederaTokenStoreTest {
 		var op = updateWith(ALL_KEYS, true, true, true);
 		op = op.toBuilder()
 				.setExpiry(Timestamp.newBuilder().setSeconds(newExpiry))
-				.setCustomFees(grpcCustomFees)
 				.build();
 
 		// when:
@@ -1453,10 +1413,6 @@ class HederaTokenStoreTest {
 
 	private static EnumSet<KeyType> NO_KEYS = EnumSet.noneOf(KeyType.class);
 	private static EnumSet<KeyType> ALL_KEYS = EnumSet.complementOf(EnumSet.of(KeyType.EMPTY_ADMIN));
-
-	private TokenUpdateTransactionBody updateWithCustomFees(CustomFeesOuterClass.CustomFees customFees) {
-		return TokenUpdateTransactionBody.newBuilder().setToken(misc).setCustomFees(customFees).build();
-	}
 
 	private TokenUpdateTransactionBody updateWith(
 			EnumSet<KeyType> keys,
@@ -1759,7 +1715,7 @@ class HederaTokenStoreTest {
 	@Test
 	void rejectsUnderspecifiedFeeSchedules() {
 		// given:
-		final var req = fullyValidAttempt().setCustomFees(grpcUnderspecifiedCustomFees).build();
+		final var req = fullyValidAttempt().addAllCustomFees(grpcUnderspecifiedCustomFees).build();
 
 		// when:
 		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
@@ -1816,7 +1772,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void rejectsZeroFractionInFractionalFee() {
-		final var req = fullyValidAttempt().setCustomFees(grpcZeroFractionCustomFees).build();
+		final var req = fullyValidAttempt().addAllCustomFees(grpcZeroFractionCustomFees).build();
 
 		// when:
 		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
@@ -1828,7 +1784,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void rejectsNegativeFractionInFractionalFee() {
-		final var req = fullyValidAttempt().setCustomFees(grpcNegativeFractionCustomFees).build();
+		final var req = fullyValidAttempt().addAllCustomFees(grpcNegativeFractionCustomFees).build();
 
 		// when:
 		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
@@ -1840,7 +1796,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void rejectsNegativeMaxInFractionalFee() {
-		final var req = fullyValidAttempt().setCustomFees(grpcNegativeMaximumCustomFees).build();
+		final var req = fullyValidAttempt().addAllCustomFees(grpcNegativeMaximumCustomFees).build();
 
 		// when:
 		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
@@ -1852,7 +1808,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void rejectsNegativeMinInFractionalFee() {
-		final var req = fullyValidAttempt().setCustomFees(grpcNegativeMinimumCustomFees).build();
+		final var req = fullyValidAttempt().addAllCustomFees(grpcNegativeMinimumCustomFees).build();
 
 		// when:
 		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
@@ -1864,7 +1820,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void rejectsNegativeAmountInFixedFee() {
-		final var req = fullyValidAttempt().setCustomFees(grpcNegativeFixedCustomFees).build();
+		final var req = fullyValidAttempt().addAllCustomFees(grpcNegativeFixedCustomFees).build();
 
 		// when:
 		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
@@ -1875,19 +1831,8 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	void rejectsZeroAmountInFixedFeeOnTokenUpdate() {
-		final var op = updateWithCustomFees(grpcZeroFixedCustomFees);
-
-		// when:
-		final var result = subject.update(op, CONSENSUS_NOW);
-
-		// expect:
-		assertEquals(CUSTOM_FEE_MUST_BE_POSITIVE, result);
-	}
-
-	@Test
 	void rejectsInvalidFractionInFractionalFee() {
-		final var req = fullyValidAttempt().setCustomFees(grpcDivideByZeroCustomFees).build();
+		final var req = fullyValidAttempt().addAllCustomFees(grpcDivideByZeroCustomFees).build();
 
 		// when:
 		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
@@ -1959,7 +1904,7 @@ class HederaTokenStoreTest {
 		expected.setTokenType(TokenType.FUNGIBLE_COMMON);
 		expected.setSupplyType(TokenSupplyType.INFINITE);
 		expected.setMemo(memo);
-		expected.setFeeScheduleFrom(CustomFeesOuterClass.CustomFees.getDefaultInstance());
+		expected.setFeeScheduleFrom(Collections.emptyList());
 
 		// given:
 		final var req = fullyValidAttempt().clearCustomFees().build();
@@ -2084,7 +2029,7 @@ class HederaTokenStoreTest {
 				.setTreasury(treasury)
 				.setDecimals(decimals)
 				.setFreezeDefault(freezeDefault)
-				.setCustomFees(grpcCustomFees);
+				.addAllCustomFees(grpcCustomFees);
 	}
 
 	private Duration enduring(long secs) {

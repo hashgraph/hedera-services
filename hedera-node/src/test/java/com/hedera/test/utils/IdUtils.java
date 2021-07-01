@@ -22,7 +22,7 @@ package com.hedera.test.utils;
 
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.submerkle.AssessedCustomFee;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -156,12 +156,12 @@ public class IdUtils {
 				.build();
 	}
 
-	public static AssessedCustomFee hbarChangeForCustomFees(final AccountID account, final long amount) {
-		return AssessedCustomFee.assessedHbarFeeFrom(adjustFrom(account, amount));
+	public static FcAssessedCustomFee hbarChangeForCustomFees(final AccountID account, final long amount) {
+		return FcAssessedCustomFee.assessedHbarFeeFrom(adjustFrom(account, amount));
 	}
 
-	public static AssessedCustomFee tokenChangeForCustomFees(final EntityId token, final AccountID account, final long amount) {
-		return AssessedCustomFee.assessedHtsFeeFrom(token, adjustFrom(account, amount));
+	public static FcAssessedCustomFee tokenChangeForCustomFees(final EntityId token, final AccountID account, final long amount) {
+		return FcAssessedCustomFee.assessedHtsFeeFrom(token, adjustFrom(account, amount));
 	}
 
 }

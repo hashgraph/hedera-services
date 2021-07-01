@@ -48,7 +48,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	static final List<EntityId> NO_TOKENS = null;
 	static final List<CurrencyAdjustments> NO_TOKEN_ADJUSTMENTS = null;
 	static final List<NftAdjustments> NO_NFT_TOKEN_ADJUSTMENTS = null;
-	static final List<AssessedCustomFee> NO_CUSTOM_FEES = null;
+	static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = null;
 	static final EntityId NO_SCHEDULE_REF = null;
 
 	private static final byte[] MISSING_TXN_HASH = new byte[0];
@@ -84,7 +84,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	private List<CurrencyAdjustments> tokenAdjustments = NO_TOKEN_ADJUSTMENTS;
 	private List<NftAdjustments> nftTokenAdjustments = NO_NFT_TOKEN_ADJUSTMENTS;
 	private EntityId scheduleRef = NO_SCHEDULE_REF;
-	private List<AssessedCustomFee> assessedCustomFees = NO_CUSTOM_FEES;
+	private List<FcAssessedCustomFee> assessedCustomFees = NO_CUSTOM_FEES;
 
 	@Override
 	public void release() {
@@ -338,7 +338,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		this.submittingMember = submittingMember;
 	}
 
-	public List<AssessedCustomFee> getCustomFeesCharged() {
+	public List<FcAssessedCustomFee> getCustomFeesCharged() {
 		return assessedCustomFees;
 	}
 
@@ -382,7 +382,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		}
 
 		final var fcAssessedFees = record.getAssessedCustomFeesCount() > 0
-				? record.getAssessedCustomFeesList().stream().map(AssessedCustomFee::fromGrpc).collect(toList())
+				? record.getAssessedCustomFeesList().stream().map(FcAssessedCustomFee::fromGrpc).collect(toList())
 				: null;
 		return ExpirableTxnRecord.newBuilder()
 				.setReceipt(TxnReceipt.fromGrpc(record.getReceipt()))
@@ -459,7 +459,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		}
 
 		if (assessedCustomFees != NO_CUSTOM_FEES) {
-			grpc.addAllAssessedCustomFees(assessedCustomFees.stream().map(AssessedCustomFee::toGrpc).collect(toList()));
+			grpc.addAllAssessedCustomFees(assessedCustomFees.stream().map(FcAssessedCustomFee::toGrpc).collect(toList()));
 		}
 
 		return grpc.build();
@@ -483,7 +483,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		private List<CurrencyAdjustments> tokenAdjustments;
 		private List<NftAdjustments> nftTokenAdjustments;
 		private EntityId scheduleRef;
-		private List<AssessedCustomFee> assessedCustomFees;
+		private List<FcAssessedCustomFee> assessedCustomFees;
 
 		public Builder setFee(long fee) {
 			this.fee = fee;
@@ -550,7 +550,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			return this;
 		}
 
-		public Builder setCustomFeesCharged(List<AssessedCustomFee> assessedCustomFees) {
+		public Builder setCustomFeesCharged(List<FcAssessedCustomFee> assessedCustomFees) {
 			this.assessedCustomFees = assessedCustomFees;
 			return this;
 		}

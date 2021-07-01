@@ -39,6 +39,7 @@ import com.hedera.services.store.HederaStore;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -51,7 +52,6 @@ import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import proto.CustomFeesOuterClass;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -86,7 +86,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_ARE_MARKED_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
@@ -470,9 +469,9 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			pendingCreation.setAutoRenewPeriod(request.getAutoRenewPeriod().getSeconds());
 		}
 
-		if (request.hasCustomFees()) {
-			final var customFees = request.getCustomFees();
-			validity = validateFeeSchedule(customFees.getCustomFeesList());
+		if (request.getCustomFeesCount() > 0) {
+			final var customFees = request.getCustomFeesList();
+			validity = validateFeeSchedule(customFees);
 			if (validity != OK) {
 				return failure(validity);
 			}
@@ -482,7 +481,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		return success(pendingId);
 	}
 
-	private ResponseCodeEnum validateFeeSchedule(List<CustomFeesOuterClass.CustomFee> feeSchedule) {
+	private ResponseCodeEnum validateFeeSchedule(List<CustomFee> feeSchedule) {
 		if (feeSchedule.size() > properties.maxCustomFeesAllowed()) {
 			return CUSTOM_FEES_LIST_TOO_LONG;
 		}
@@ -729,18 +728,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			if (expiry != 0) {
 				token.setExpiry(expiry);
 			}
-			if (changes.hasCustomFees()) {
-				if (!token.isFeeScheduleMutable()) {
-					appliedValidity.set(CUSTOM_FEES_ARE_MARKED_IMMUTABLE);
-					return;
-				}
-				final var customFees = changes.getCustomFees();
-				appliedValidity.set(validateFeeSchedule(customFees.getCustomFeesList()));
-				if (OK != appliedValidity.get()) {
-					return;
-				}
-				token.setFeeScheduleFrom(customFees);
-			}
 		});
 		return appliedValidity.get();
 	}
@@ -753,7 +740,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				!op.hasSupplyKey() &&
 				!op.hasTreasury() &&
 				!op.hasAutoRenewAccount() &&
-				!op.hasCustomFees() &&
 				op.getSymbol().length() == 0 &&
 				op.getName().length() == 0 &&
 				op.getAutoRenewPeriod().getSeconds() == 0;

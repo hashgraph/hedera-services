@@ -21,7 +21,10 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.Fraction;
+import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.Test;
@@ -30,7 +33,6 @@ import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import proto.CustomFeesOuterClass;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -45,7 +47,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-class CustomFeeTest {
+class FcCustomFeeTest {
 	private final long validNumerator = 5;
 	private final long validDenominator = 100;
 	private final long invalidDenominator = 0;
@@ -64,25 +66,25 @@ class CustomFeeTest {
 	void grpcConversionWorksForFixed() {
 		// setup:
 		final var grpcDenom = IdUtils.asToken("1.2.3");
-		final var expectedHtsSubject = CustomFee.fixedFee(fixedUnitsToCollect, denom, feeCollector);
-		final var expectedHbarSubject = CustomFee.fixedFee(fixedUnitsToCollect, null, feeCollector);
+		final var expectedHtsSubject = FcCustomFee.fixedFee(fixedUnitsToCollect, denom, feeCollector);
+		final var expectedHbarSubject = FcCustomFee.fixedFee(fixedUnitsToCollect, null, feeCollector);
 
 		// given:
-		final var htsGrpc = CustomFeesOuterClass.CustomFee.newBuilder()
+		final var htsGrpc = CustomFee.newBuilder()
 				.setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
-				.setFixedFee(CustomFeesOuterClass.FixedFee.newBuilder()
+				.setFixedFee(FixedFee.newBuilder()
 						.setDenominatingTokenId(grpcDenom)
 						.setAmount(fixedUnitsToCollect)
 				).build();
-		final var hbarGrpc = CustomFeesOuterClass.CustomFee.newBuilder()
+		final var hbarGrpc = CustomFee.newBuilder()
 				.setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
-				.setFixedFee(CustomFeesOuterClass.FixedFee.newBuilder()
+				.setFixedFee(FixedFee.newBuilder()
 						.setAmount(fixedUnitsToCollect)
 				).build();
 
 		// when:
-		final var htsSubject = CustomFee.fromGrpc(htsGrpc);
-		final var hbarSubject = CustomFee.fromGrpc(hbarGrpc);
+		final var htsSubject = FcCustomFee.fromGrpc(htsGrpc);
+		final var hbarSubject = FcCustomFee.fromGrpc(hbarGrpc);
 
 		// then:
 		assertEquals(expectedHtsSubject, htsSubject);
@@ -92,14 +94,14 @@ class CustomFeeTest {
 	@Test
 	void grpcReprWorksForFixedHbar() {
 		// setup:
-		final var expected = CustomFeesOuterClass.CustomFee.newBuilder()
+		final var expected = CustomFee.newBuilder()
 				.setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
-				.setFixedFee(CustomFeesOuterClass.FixedFee.newBuilder()
+				.setFixedFee(FixedFee.newBuilder()
 						.setAmount(fixedUnitsToCollect)
 				).build();
 
 		// given:
-		final var hbarFee = CustomFee.fixedFee(fixedUnitsToCollect, null, feeCollector);
+		final var hbarFee = FcCustomFee.fixedFee(fixedUnitsToCollect, null, feeCollector);
 
 		// when:
 		final var actual = hbarFee.asGrpc();
@@ -113,15 +115,15 @@ class CustomFeeTest {
 		final var grpcDenom = IdUtils.asToken("1.2.3");
 
 		// setup:
-		final var expected = CustomFeesOuterClass.CustomFee.newBuilder()
+		final var expected = CustomFee.newBuilder()
 				.setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
-				.setFixedFee(CustomFeesOuterClass.FixedFee.newBuilder()
+				.setFixedFee(FixedFee.newBuilder()
 						.setDenominatingTokenId(grpcDenom)
 						.setAmount(fixedUnitsToCollect)
 				).build();
 
 		// given:
-		final var htsFee = CustomFee.fixedFee(fixedUnitsToCollect, EntityId.fromGrpcTokenId(grpcDenom), feeCollector);
+		final var htsFee = FcCustomFee.fixedFee(fixedUnitsToCollect, EntityId.fromGrpcTokenId(grpcDenom), feeCollector);
 
 		// when:
 		final var actual = htsFee.asGrpc();
@@ -133,9 +135,9 @@ class CustomFeeTest {
 	@Test
 	void grpcReprWorksForFractional() {
 		// setup:
-		final var expected = CustomFeesOuterClass.CustomFee.newBuilder()
+		final var expected = CustomFee.newBuilder()
 				.setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
-				.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
+				.setFractionalFee(FractionalFee.newBuilder()
 						.setFractionalAmount(Fraction.newBuilder()
 								.setNumerator(validNumerator)
 								.setDenominator(validDenominator))
@@ -144,7 +146,7 @@ class CustomFeeTest {
 				).build();
 
 		// given:
-		final var fractionalFee = CustomFee.fractionalFee(
+		final var fractionalFee = FcCustomFee.fractionalFee(
 				validNumerator,
 				validDenominator,
 				minimumUnitsToCollect,
@@ -161,9 +163,9 @@ class CustomFeeTest {
 	@Test
 	void grpcReprWorksForFractionalNoMax() {
 		// setup:
-		final var expected = CustomFeesOuterClass.CustomFee.newBuilder()
+		final var expected = CustomFee.newBuilder()
 				.setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
-				.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
+				.setFractionalFee(FractionalFee.newBuilder()
 						.setFractionalAmount(Fraction.newBuilder()
 								.setNumerator(validNumerator)
 								.setDenominator(validDenominator))
@@ -171,7 +173,7 @@ class CustomFeeTest {
 				).build();
 
 		// given:
-		final var fractionalFee = CustomFee.fractionalFee(
+		final var fractionalFee = FcCustomFee.fractionalFee(
 				validNumerator,
 				validDenominator,
 				minimumUnitsToCollect,
@@ -188,13 +190,13 @@ class CustomFeeTest {
 	@Test
 	void grpcConversionWorksForFractional() {
 		// setup:
-		final var expectedExplicitMaxSubject = CustomFee.fractionalFee(
+		final var expectedExplicitMaxSubject = FcCustomFee.fractionalFee(
 				validNumerator,
 				validDenominator,
 				minimumUnitsToCollect,
 				maximumUnitsToCollect,
 				feeCollector);
-		final var expectedNoExplicitMaxSubject = CustomFee.fractionalFee(
+		final var expectedNoExplicitMaxSubject = FcCustomFee.fractionalFee(
 				validNumerator,
 				validDenominator,
 				minimumUnitsToCollect,
@@ -202,9 +204,9 @@ class CustomFeeTest {
 				feeCollector);
 
 		// given:
-		final var grpcWithExplicitMax = CustomFeesOuterClass.CustomFee.newBuilder()
+		final var grpcWithExplicitMax = CustomFee.newBuilder()
 				.setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
-				.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
+				.setFractionalFee(FractionalFee.newBuilder()
 						.setFractionalAmount(Fraction.newBuilder()
 								.setNumerator(validNumerator)
 								.setDenominator(validDenominator)
@@ -212,9 +214,9 @@ class CustomFeeTest {
 						.setMinimumAmount(minimumUnitsToCollect)
 						.setMaximumAmount(maximumUnitsToCollect)
 				).build();
-		final var grpcWithoutExplicitMax = CustomFeesOuterClass.CustomFee.newBuilder()
+		final var grpcWithoutExplicitMax = CustomFee.newBuilder()
 				.setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
-				.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
+				.setFractionalFee(FractionalFee.newBuilder()
 						.setFractionalAmount(Fraction.newBuilder()
 								.setNumerator(validNumerator)
 								.setDenominator(validDenominator)
@@ -223,8 +225,8 @@ class CustomFeeTest {
 				).build();
 
 		// when:
-		final var explicitMaxSubject = CustomFee.fromGrpc(grpcWithExplicitMax);
-		final var noExplicitMaxSubject = CustomFee.fromGrpc(grpcWithoutExplicitMax);
+		final var explicitMaxSubject = FcCustomFee.fromGrpc(grpcWithExplicitMax);
+		final var noExplicitMaxSubject = FcCustomFee.fromGrpc(grpcWithoutExplicitMax);
 
 		// then:
 		assertEquals(expectedExplicitMaxSubject, explicitMaxSubject);
@@ -234,7 +236,7 @@ class CustomFeeTest {
 	@Test
 	void liveFireSerdesWorkForFractional() throws IOException {
 		// setup:
-		final var subject = CustomFee.fractionalFee(
+		final var subject = FcCustomFee.fractionalFee(
 				validNumerator,
 				validDenominator,
 				minimumUnitsToCollect,
@@ -253,8 +255,8 @@ class CustomFeeTest {
 		final var din = new SerializableDataInputStream(bais);
 
 		// when:
-		final var newSubject = new CustomFee();
-		newSubject.deserialize(din, CustomFee.MERKLE_VERSION);
+		final var newSubject = new FcCustomFee();
+		newSubject.deserialize(din, FcCustomFee.MERKLE_VERSION);
 
 		// then:
 		assertEquals(subject.getFractionalFeeSpec(), newSubject.getFractionalFeeSpec());
@@ -264,7 +266,7 @@ class CustomFeeTest {
 	@Test
 	void liveFireSerdesWorkForFixed() throws IOException {
 		// setup:
-		final var fixedSubject = CustomFee.fixedFee(fixedUnitsToCollect, denom, feeCollector);
+		final var fixedSubject = FcCustomFee.fixedFee(fixedUnitsToCollect, denom, feeCollector);
 		// and:
 		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		final var dos = new SerializableDataOutputStream(baos);
@@ -278,8 +280,8 @@ class CustomFeeTest {
 		final var din = new SerializableDataInputStream(bais);
 
 		// when:
-		final var newSubject = new CustomFee();
-		newSubject.deserialize(din, CustomFee.MERKLE_VERSION);
+		final var newSubject = new FcCustomFee();
+		newSubject.deserialize(din, FcCustomFee.MERKLE_VERSION);
 
 		// then:
 		assertEquals(fixedSubject.getFixedFeeSpec(), newSubject.getFixedFeeSpec());
@@ -289,7 +291,7 @@ class CustomFeeTest {
 	@Test
 	void liveFireSerdesWorkForFixedWithNullDenom() throws IOException {
 		// setup:
-		final var fixedSubject = CustomFee.fixedFee(fixedUnitsToCollect, null, feeCollector);
+		final var fixedSubject = FcCustomFee.fixedFee(fixedUnitsToCollect, null, feeCollector);
 		// and:
 		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		final var dos = new SerializableDataOutputStream(baos);
@@ -303,8 +305,8 @@ class CustomFeeTest {
 		final var din = new SerializableDataInputStream(bais);
 
 		// when:
-		final var newSubject = new CustomFee();
-		newSubject.deserialize(din, CustomFee.MERKLE_VERSION);
+		final var newSubject = new FcCustomFee();
+		newSubject.deserialize(din, FcCustomFee.MERKLE_VERSION);
 
 		// then:
 		assertEquals(fixedSubject.getFixedFeeSpec(), newSubject.getFixedFeeSpec());
@@ -314,20 +316,20 @@ class CustomFeeTest {
 	@Test
 	void deserializeWorksAsExpectedForFixed() throws IOException {
 		// setup:
-		final var expectedFixedSpec = new CustomFee.FixedFeeSpec(fixedUnitsToCollect, denom);
+		final var expectedFixedSpec = new FcCustomFee.FixedFeeSpec(fixedUnitsToCollect, denom);
 
-		given(din.readByte()).willReturn(CustomFee.FIXED_CODE);
+		given(din.readByte()).willReturn(FcCustomFee.FIXED_CODE);
 		given(din.readLong()).willReturn(fixedUnitsToCollect);
 		given(din.readSerializable(anyBoolean(), Mockito.any())).willReturn(denom).willReturn(feeCollector);
 
 		// given:
-		final var subject = new CustomFee();
+		final var subject = new FcCustomFee();
 
 		// when:
-		subject.deserialize(din, CustomFee.MERKLE_VERSION);
+		subject.deserialize(din, FcCustomFee.MERKLE_VERSION);
 
 		// then:
-		assertEquals(CustomFee.FeeType.FIXED_FEE, subject.getFeeType());
+		assertEquals(FcCustomFee.FeeType.FIXED_FEE, subject.getFeeType());
 		assertEquals(expectedFixedSpec, subject.getFixedFeeSpec());
 		assertNull(subject.getFractionalFeeSpec());
 		assertEquals(feeCollector, subject.getFeeCollectorAccountId());
@@ -336,13 +338,13 @@ class CustomFeeTest {
 	@Test
 	void deserializeWorksAsExpectedForFractional() throws IOException {
 		// setup:
-		final var expectedFractionalSpec = new CustomFee.FractionalFeeSpec(
+		final var expectedFractionalSpec = new FcCustomFee.FractionalFeeSpec(
 				validNumerator,
 				validDenominator,
 				minimumUnitsToCollect,
 				maximumUnitsToCollect);
 
-		given(din.readByte()).willReturn(CustomFee.FRACTIONAL_CODE);
+		given(din.readByte()).willReturn(FcCustomFee.FRACTIONAL_CODE);
 		given(din.readLong())
 				.willReturn(validNumerator)
 				.willReturn(validDenominator)
@@ -351,13 +353,13 @@ class CustomFeeTest {
 		given(din.readSerializable(anyBoolean(), Mockito.any())).willReturn(feeCollector);
 
 		// given:
-		final var subject = new CustomFee();
+		final var subject = new FcCustomFee();
 
 		// when:
-		subject.deserialize(din, CustomFee.MERKLE_VERSION);
+		subject.deserialize(din, FcCustomFee.MERKLE_VERSION);
 
 		// then:
-		assertEquals(CustomFee.FeeType.FRACTIONAL_FEE, subject.getFeeType());
+		assertEquals(FcCustomFee.FeeType.FRACTIONAL_FEE, subject.getFeeType());
 		assertEquals(expectedFractionalSpec, subject.getFractionalFeeSpec());
 		assertNull(subject.getFixedFeeSpec());
 		assertEquals(feeCollector, subject.getFeeCollectorAccountId());
@@ -369,7 +371,7 @@ class CustomFeeTest {
 		InOrder inOrder = Mockito.inOrder(dos);
 
 		// given:
-		final var subject = CustomFee.fractionalFee(
+		final var subject = FcCustomFee.fractionalFee(
 				validNumerator,
 				validDenominator,
 				minimumUnitsToCollect,
@@ -380,7 +382,7 @@ class CustomFeeTest {
 		subject.serialize(dos);
 
 		// then:
-		inOrder.verify(dos).writeByte(CustomFee.FRACTIONAL_CODE);
+		inOrder.verify(dos).writeByte(FcCustomFee.FRACTIONAL_CODE);
 		inOrder.verify(dos).writeLong(validNumerator);
 		inOrder.verify(dos).writeLong(validDenominator);
 		inOrder.verify(dos).writeLong(minimumUnitsToCollect);
@@ -394,13 +396,13 @@ class CustomFeeTest {
 		InOrder inOrder = Mockito.inOrder(dos);
 
 		// given:
-		final var subject = CustomFee.fixedFee(fixedUnitsToCollect, denom, feeCollector);
+		final var subject = FcCustomFee.fixedFee(fixedUnitsToCollect, denom, feeCollector);
 
 		// when:
 		subject.serialize(dos);
 
 		// then:
-		inOrder.verify(dos).writeByte(CustomFee.FIXED_CODE);
+		inOrder.verify(dos).writeByte(FcCustomFee.FIXED_CODE);
 		inOrder.verify(dos).writeLong(fixedUnitsToCollect);
 		inOrder.verify(dos).writeSerializable(denom, true);
 		inOrder.verify(dos).writeSerializable(feeCollector, true);
@@ -410,22 +412,22 @@ class CustomFeeTest {
 	@Test
 	void merkleMethodsWork() {
 		// given:
-		final var subject = CustomFee.fixedFee(fixedUnitsToCollect, denom, feeCollector);
+		final var subject = FcCustomFee.fixedFee(fixedUnitsToCollect, denom, feeCollector);
 
-		assertEquals(CustomFee.MERKLE_VERSION, subject.getVersion());
-		assertEquals(CustomFee.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
+		assertEquals(FcCustomFee.MERKLE_VERSION, subject.getVersion());
+		assertEquals(FcCustomFee.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 
 	@Test
 	void fixedFactoryWorks() {
 		// setup:
-		final var expectedFixedSpec = new CustomFee.FixedFeeSpec(fixedUnitsToCollect, denom);
+		final var expectedFixedSpec = new FcCustomFee.FixedFeeSpec(fixedUnitsToCollect, denom);
 
 		// given:
-		final var fixedSubject = CustomFee.fixedFee(fixedUnitsToCollect, denom, feeCollector);
+		final var fixedSubject = FcCustomFee.fixedFee(fixedUnitsToCollect, denom, feeCollector);
 
 		// expect:
-		assertEquals(CustomFee.FeeType.FIXED_FEE, fixedSubject.getFeeType());
+		assertEquals(FcCustomFee.FeeType.FIXED_FEE, fixedSubject.getFeeType());
 		assertEquals(expectedFixedSpec, fixedSubject.getFixedFeeSpec());
 		assertNull(fixedSubject.getFractionalFeeSpec());
 		assertEquals(feeCollector, fixedSubject.getFeeCollectorAccountId());
@@ -434,14 +436,14 @@ class CustomFeeTest {
 	@Test
 	void fractionalFactoryWorks() {
 		// setup:
-		final var expectedFractionalSpec = new CustomFee.FractionalFeeSpec(
+		final var expectedFractionalSpec = new FcCustomFee.FractionalFeeSpec(
 				validNumerator,
 				validDenominator,
 				minimumUnitsToCollect,
 				maximumUnitsToCollect);
 
 		// given:
-		final var fractionalSubject = CustomFee.fractionalFee(
+		final var fractionalSubject = FcCustomFee.fractionalFee(
 				validNumerator,
 				validDenominator,
 				minimumUnitsToCollect,
@@ -449,7 +451,7 @@ class CustomFeeTest {
 				feeCollector);
 
 		// expect:
-		assertEquals(CustomFee.FeeType.FRACTIONAL_FEE, fractionalSubject.getFeeType());
+		assertEquals(FcCustomFee.FeeType.FRACTIONAL_FEE, fractionalSubject.getFeeType());
 		assertEquals(expectedFractionalSpec, fractionalSubject.getFractionalFeeSpec());
 		assertNull(fractionalSubject.getFixedFeeSpec());
 		assertEquals(feeCollector, fractionalSubject.getFeeCollectorAccountId());
@@ -458,12 +460,12 @@ class CustomFeeTest {
 	@Test
 	void toStringsWork() {
 		// setup:
-		final var fractionalSpec = new CustomFee.FractionalFeeSpec(
+		final var fractionalSpec = new FcCustomFee.FractionalFeeSpec(
 				validNumerator,
 				validDenominator,
 				minimumUnitsToCollect,
 				maximumUnitsToCollect);
-		final var fixedSpec = new CustomFee.FixedFeeSpec(fixedUnitsToCollect, denom);
+		final var fixedSpec = new FcCustomFee.FixedFeeSpec(fixedUnitsToCollect, denom);
 
 		// given:
 		final var desiredFracRepr = "FractionalFeeSpec{numerator=5, denominator=100, " +
@@ -477,39 +479,39 @@ class CustomFeeTest {
 
 	@Test
 	void failsFastIfNonPositiveFeeUsed() {
-		assertThrows(IllegalArgumentException.class, () -> new CustomFee.FixedFeeSpec(0, denom));
-		assertThrows(IllegalArgumentException.class, () -> new CustomFee.FixedFeeSpec(-1, denom));
+		assertThrows(IllegalArgumentException.class, () -> new FcCustomFee.FixedFeeSpec(0, denom));
+		assertThrows(IllegalArgumentException.class, () -> new FcCustomFee.FixedFeeSpec(-1, denom));
 	}
 
 	@Test
 	void failFastIfInvalidFractionUsed() {
 		// expect:
-		assertThrows(IllegalArgumentException.class, () -> new CustomFee.FractionalFeeSpec(
+		assertThrows(IllegalArgumentException.class, () -> new FcCustomFee.FractionalFeeSpec(
 				validNumerator,
 				invalidDenominator,
 				minimumUnitsToCollect,
 				maximumUnitsToCollect));
-		assertThrows(IllegalArgumentException.class, () -> new CustomFee.FractionalFeeSpec(
+		assertThrows(IllegalArgumentException.class, () -> new FcCustomFee.FractionalFeeSpec(
 				-validNumerator,
 				validDenominator,
 				minimumUnitsToCollect,
 				maximumUnitsToCollect));
-		assertThrows(IllegalArgumentException.class, () -> new CustomFee.FractionalFeeSpec(
+		assertThrows(IllegalArgumentException.class, () -> new FcCustomFee.FractionalFeeSpec(
 				validNumerator,
 				-validDenominator,
 				minimumUnitsToCollect,
 				maximumUnitsToCollect));
-		assertThrows(IllegalArgumentException.class, () -> new CustomFee.FractionalFeeSpec(
+		assertThrows(IllegalArgumentException.class, () -> new FcCustomFee.FractionalFeeSpec(
 				validNumerator,
 				validDenominator,
 				-minimumUnitsToCollect,
 				maximumUnitsToCollect));
-		assertThrows(IllegalArgumentException.class, () -> new CustomFee.FractionalFeeSpec(
+		assertThrows(IllegalArgumentException.class, () -> new FcCustomFee.FractionalFeeSpec(
 				validNumerator,
 				validDenominator,
 				minimumUnitsToCollect,
 				-maximumUnitsToCollect));
-		assertThrows(IllegalArgumentException.class, () -> new CustomFee.FractionalFeeSpec(
+		assertThrows(IllegalArgumentException.class, () -> new FcCustomFee.FractionalFeeSpec(
 				validNumerator,
 				validDenominator,
 				maximumUnitsToCollect,
@@ -519,12 +521,12 @@ class CustomFeeTest {
 	@Test
 	void gettersWork() {
 		// setup:
-		final var fractionalSpec = new CustomFee.FractionalFeeSpec(
+		final var fractionalSpec = new FcCustomFee.FractionalFeeSpec(
 				validNumerator,
 				validDenominator,
 				minimumUnitsToCollect,
 				maximumUnitsToCollect);
-		final var fixedSpec = new CustomFee.FixedFeeSpec(fixedUnitsToCollect, denom);
+		final var fixedSpec = new FcCustomFee.FixedFeeSpec(fixedUnitsToCollect, denom);
 
 		// given:
 		assertEquals(validNumerator, fractionalSpec.getNumerator());
@@ -538,12 +540,12 @@ class CustomFeeTest {
 	@Test
 	void hashCodeWorks() {
 		// setup:
-		final var fractionalSpec = new CustomFee.FractionalFeeSpec(
+		final var fractionalSpec = new FcCustomFee.FractionalFeeSpec(
 				validNumerator,
 				validDenominator,
 				minimumUnitsToCollect,
 				maximumUnitsToCollect);
-		final var fixedSpec = new CustomFee.FixedFeeSpec(fixedUnitsToCollect, denom);
+		final var fixedSpec = new FcCustomFee.FixedFeeSpec(fixedUnitsToCollect, denom);
 
 		// expect:
 		assertDoesNotThrow(fractionalSpec::hashCode);
@@ -553,10 +555,10 @@ class CustomFeeTest {
 	@Test
 	void fixedFeeEqualsWorks() {
 		// given:
-		final var aFixedSpec = new CustomFee.FixedFeeSpec(fixedUnitsToCollect, denom);
-		final var bFixedSpec = new CustomFee.FixedFeeSpec(fixedUnitsToCollect, denom);
-		final var cFixedSpec = new CustomFee.FixedFeeSpec(fixedUnitsToCollect + 1, denom);
-		final var dFixedSpec = new CustomFee.FixedFeeSpec(fixedUnitsToCollect, null);
+		final var aFixedSpec = new FcCustomFee.FixedFeeSpec(fixedUnitsToCollect, denom);
+		final var bFixedSpec = new FcCustomFee.FixedFeeSpec(fixedUnitsToCollect, denom);
+		final var cFixedSpec = new FcCustomFee.FixedFeeSpec(fixedUnitsToCollect + 1, denom);
+		final var dFixedSpec = new FcCustomFee.FixedFeeSpec(fixedUnitsToCollect, null);
 		final var eFixedSpec = aFixedSpec;
 
 		// expect:
@@ -577,12 +579,12 @@ class CustomFeeTest {
 		long max = 99;
 
 		// given:
-		final var aFractionalSpec = new CustomFee.FractionalFeeSpec(n, d, min, max);
-		final var bFractionalSpec = new CustomFee.FractionalFeeSpec(n + 1, d, min, max);
-		final var cFractionalSpec = new CustomFee.FractionalFeeSpec(n, d + 1, min, max);
-		final var dFractionalSpec = new CustomFee.FractionalFeeSpec(n, d, min + 1, max);
-		final var eFractionalSpec = new CustomFee.FractionalFeeSpec(n, d, min, max + 1);
-		final var fFractionalSpec = new CustomFee.FractionalFeeSpec(n, d, min, max);
+		final var aFractionalSpec = new FcCustomFee.FractionalFeeSpec(n, d, min, max);
+		final var bFractionalSpec = new FcCustomFee.FractionalFeeSpec(n + 1, d, min, max);
+		final var cFractionalSpec = new FcCustomFee.FractionalFeeSpec(n, d + 1, min, max);
+		final var dFractionalSpec = new FcCustomFee.FractionalFeeSpec(n, d, min + 1, max);
+		final var eFractionalSpec = new FcCustomFee.FractionalFeeSpec(n, d, min, max + 1);
+		final var fFractionalSpec = new FcCustomFee.FractionalFeeSpec(n, d, min, max);
 		final var gFractionalSpec = aFractionalSpec;
 
 		// expect:
@@ -608,12 +610,12 @@ class CustomFeeTest {
 		final var bFeeCollector = new EntityId(2, 3, 4);
 
 		// given:
-		final var aCustomFee = CustomFee.fixedFee(fixedUnitsToCollect, denom, aFeeCollector);
-		final var bCustomFee = CustomFee.fixedFee(fixedUnitsToCollect + 1, denom, aFeeCollector);
-		final var cCustomFee = CustomFee.fixedFee(fixedUnitsToCollect, denom, bFeeCollector);
-		final var dCustomFee = CustomFee.fractionalFee(n, d, min, max, aFeeCollector);
+		final var aCustomFee = FcCustomFee.fixedFee(fixedUnitsToCollect, denom, aFeeCollector);
+		final var bCustomFee = FcCustomFee.fixedFee(fixedUnitsToCollect + 1, denom, aFeeCollector);
+		final var cCustomFee = FcCustomFee.fixedFee(fixedUnitsToCollect, denom, bFeeCollector);
+		final var dCustomFee = FcCustomFee.fractionalFee(n, d, min, max, aFeeCollector);
 		final var eCustomFee = aCustomFee;
-		final var fCustomFee = CustomFee.fixedFee(fixedUnitsToCollect, denom, aFeeCollector);
+		final var fCustomFee = FcCustomFee.fixedFee(fixedUnitsToCollect, denom, aFeeCollector);
 
 		// expect:
 		assertEquals(aCustomFee, eCustomFee);
@@ -631,14 +633,14 @@ class CustomFeeTest {
 	void toStringWorks() {
 		// setup:
 		final var denom = new EntityId(111, 222, 333);
-		final var fractionalFee = CustomFee.fractionalFee(
+		final var fractionalFee = FcCustomFee.fractionalFee(
 				validNumerator,
 				validDenominator,
 				minimumUnitsToCollect,
 				maximumUnitsToCollect,
 				feeCollector);
-		final var fixedHbarFee = CustomFee.fixedFee(fixedUnitsToCollect, null, feeCollector);
-		final var fixedHtsFee = CustomFee.fixedFee(fixedUnitsToCollect, denom, feeCollector);
+		final var fixedHbarFee = FcCustomFee.fixedFee(fixedUnitsToCollect, null, feeCollector);
+		final var fixedHtsFee = FcCustomFee.fixedFee(fixedUnitsToCollect, denom, feeCollector);
 
 		// given:
 		final var expectedFractional = "CustomFee{feeType=FRACTIONAL_FEE, fractionalFee=FractionalFeeSpec{numerator=5, " +

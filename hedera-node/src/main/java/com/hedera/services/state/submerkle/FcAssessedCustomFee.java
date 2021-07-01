@@ -22,12 +22,12 @@ package com.hedera.services.state.submerkle;
 
 import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AssessedCustomFee;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import proto.CustomFeesOuterClass;
 
 import java.io.IOException;
 
@@ -36,7 +36,7 @@ import java.io.IOException;
  * change, depending on if the payer can afford it.
  * This is useful for setting custom fees balance changes in {@link ExpirableTxnRecord}.
  */
-public class AssessedCustomFee implements SelfSerializable {
+public class FcAssessedCustomFee implements SelfSerializable {
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xd8b56ce46e56a466L;
 
@@ -44,23 +44,23 @@ public class AssessedCustomFee implements SelfSerializable {
 	private EntityId account;
 	private long units;
 
-	public AssessedCustomFee() {
+	public FcAssessedCustomFee() {
 		/* For RuntimeConstructable */
 	}
 
-	private AssessedCustomFee(final EntityId token, final AccountAmount aa) {
+	private FcAssessedCustomFee(final EntityId token, final AccountAmount aa) {
 		this.token = token;
 		this.account = EntityId.fromGrpcAccountId(aa.getAccountID());
 		this.units = aa.getAmount();
 	}
 
-	public AssessedCustomFee(final EntityId account, final long amount) {
+	public FcAssessedCustomFee(final EntityId account, final long amount) {
 		this.token = null;
 		this.account = account;
 		this.units = amount;
 	}
 
-	public AssessedCustomFee(final EntityId account, final EntityId token, final long amount) {
+	public FcAssessedCustomFee(final EntityId account, final EntityId token, final long amount) {
 		this.token = token;
 		this.account = account;
 		this.units = amount;
@@ -82,12 +82,12 @@ public class AssessedCustomFee implements SelfSerializable {
 		return account;
 	}
 
-	public static AssessedCustomFee assessedHbarFeeFrom(final AccountAmount aa) {
-		return new AssessedCustomFee(null, aa);
+	public static FcAssessedCustomFee assessedHbarFeeFrom(final AccountAmount aa) {
+		return new FcAssessedCustomFee(null, aa);
 	}
 
-	public static AssessedCustomFee assessedHtsFeeFrom(final EntityId token, final AccountAmount aa) {
-		return new AssessedCustomFee(token, aa);
+	public static FcAssessedCustomFee assessedHtsFeeFrom(final EntityId token, final AccountAmount aa) {
+		return new FcAssessedCustomFee(token, aa);
 	}
 
 	/* NOTE: The object methods below are only overridden to improve readability of unit tests;
@@ -106,7 +106,7 @@ public class AssessedCustomFee implements SelfSerializable {
 
 	@Override
 	public String toString() {
-		return MoreObjects.toStringHelper(AssessedCustomFee.class)
+		return MoreObjects.toStringHelper(FcAssessedCustomFee.class)
 				.add("token", token == null ? "ℏ" : token)
 				.add("account", account)
 				.add("units", units)
@@ -114,8 +114,8 @@ public class AssessedCustomFee implements SelfSerializable {
 	}
 
 	/* --- Helpers --- */
-	public CustomFeesOuterClass.AssessedCustomFee toGrpc() {
-		var grpc = CustomFeesOuterClass.AssessedCustomFee.newBuilder()
+	public AssessedCustomFee toGrpc() {
+		var grpc = AssessedCustomFee.newBuilder()
 				.setFeeCollectorAccountId(account.toGrpcAccountId())
 				.setAmount(units);
 		if (isForHbar()) {
@@ -124,7 +124,7 @@ public class AssessedCustomFee implements SelfSerializable {
 		return grpc.setTokenId(token.toGrpcTokenId()).build();
 	}
 
-	public static AssessedCustomFee fromGrpc(CustomFeesOuterClass.AssessedCustomFee assessedFee) {
+	public static FcAssessedCustomFee fromGrpc(AssessedCustomFee assessedFee) {
 		final var aa = AccountAmount.newBuilder()
 				.setAccountID(assessedFee.getFeeCollectorAccountId())
 				.setAmount(assessedFee.getAmount())

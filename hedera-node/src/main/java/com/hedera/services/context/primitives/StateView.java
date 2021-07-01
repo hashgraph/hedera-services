@@ -329,7 +329,7 @@ public class StateView {
 				info.setAutoRenewPeriod(Duration.newBuilder().setSeconds(token.autoRenewPeriod()));
 			}
 
-			info.setCustomFees(token.grpcFeeSchedule());
+			info.addAllCustomFees(token.grpcFeeSchedule());
 
 			return Optional.of(info.build());
 		} catch (Exception unexpected) {

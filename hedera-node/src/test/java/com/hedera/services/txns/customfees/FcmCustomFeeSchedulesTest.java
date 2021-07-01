@@ -22,17 +22,17 @@ package com.hedera.services.txns.customfees;
 
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.submerkle.CustomFee;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcCustomFee;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
-import proto.CustomFeesOuterClass;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
@@ -51,12 +51,8 @@ class FcmCustomFeeSchedulesTest {
 	@BeforeEach
 	void setUp() {
 		//setup:
-		final var tokenAFees = CustomFeesOuterClass.CustomFees
-				.newBuilder()
-				.addCustomFees(CustomFee.fixedFee(20L, tokenA, feeCollector).asGrpc());
-		final var tokenBFees = CustomFeesOuterClass.CustomFees
-				.newBuilder()
-				.addCustomFees(CustomFee.fixedFee(40L, tokenB, feeCollector).asGrpc());
+		final var tokenAFees = List.of(FcCustomFee.fixedFee(20L, tokenA, feeCollector).asGrpc());
+		final var tokenBFees = List.of(FcCustomFee.fixedFee(40L, tokenB, feeCollector).asGrpc());
 		tokenAValue.setFeeScheduleFrom(tokenAFees);
 		tokenBValue.setFeeScheduleFrom(tokenBFees);
 
@@ -88,9 +84,8 @@ class FcmCustomFeeSchedulesTest {
 		// given:
 		FCMap<MerkleEntityId, MerkleToken> secondFCMap = new FCMap<>();
 		MerkleToken token = new MerkleToken();
-		final var missingFees = CustomFeesOuterClass.CustomFees
-				.newBuilder()
-				.addCustomFees(CustomFee.fixedFee(50L, missingToken, feeCollector).asGrpc());
+		final var missingFees = List.of(
+				FcCustomFee.fixedFee(50L, missingToken, feeCollector).asGrpc());
 		token.setFeeScheduleFrom(missingFees);
 		secondFCMap.put(missingToken.asMerkle(), new MerkleToken());
 		final var fees1 = new FcmCustomFeeSchedules(() -> tokenFCMap);

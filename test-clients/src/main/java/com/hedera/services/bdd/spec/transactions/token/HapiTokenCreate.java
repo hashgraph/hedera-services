@@ -27,6 +27,7 @@ import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.usage.token.TokenCreateUsage;
+import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -41,7 +42,6 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import proto.CustomFeesOuterClass;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -81,8 +81,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	private Optional<String> autoRenewAccount = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> symbolFn = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> nameFn = Optional.empty();
-	private final List<Function<HapiApiSpec, CustomFeesOuterClass.CustomFee>> feeScheduleSuppliers = new ArrayList<>();
-	private Optional<Boolean> customFeesMutable = Optional.empty();
+	private final List<Function<HapiApiSpec, CustomFee>> feeScheduleSuppliers = new ArrayList<>();
 
 	@Override
 	public HederaFunctionality type() {
@@ -97,13 +96,8 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 		token = prefix + token;
 	}
 
-	public HapiTokenCreate withCustom(Function<HapiApiSpec, CustomFeesOuterClass.CustomFee> supplier) {
+	public HapiTokenCreate withCustom(Function<HapiApiSpec, CustomFee> supplier) {
 		feeScheduleSuppliers.add(supplier);
-		return this;
-	}
-
-	public HapiTokenCreate customFeesMutable(boolean customFeesMutable) {
-		this.customFeesMutable = Optional.of(customFeesMutable);
 		return this;
 	}
 
@@ -265,11 +259,9 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 								b.setTreasury(treasuryId);
 							});
 							if (!feeScheduleSuppliers.isEmpty()) {
-								final var fb = b.getCustomFeesBuilder();
 								for (var supplier : feeScheduleSuppliers) {
-									fb.addCustomFees(supplier.apply(spec));
+									b.addCustomFees(supplier.apply(spec));
 								}
-								customFeesMutable.ifPresent(m -> fb.setCanUpdateWithAdminKey(m));
 							}
 						});
 		return b -> b.setTokenCreation(opBody);
