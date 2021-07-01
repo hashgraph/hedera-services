@@ -319,8 +319,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	/* --------------- */
-
-	public AccountID getNodeAccountId() {
+	public AccountID getAccountFromNodeId(NodeId nodeId) {
 		var address = addressBook().getAddress(nodeId.getId());
 		var memo = address.getMemo();
 		return parseAccount(memo);

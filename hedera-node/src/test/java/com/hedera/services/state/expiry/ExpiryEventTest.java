@@ -47,17 +47,4 @@ public class ExpiryEventTest {
 		// then:
 		assertEquals(expected, actual);
 	}
-
-	@Test
-	void expiryEventCompareTo() {
-		//given:
-		var expiryEvent1 = new ExpiryEvent("expiryEvent1", 1_000_000L);
-
-		// when:
-		int expected = 1;
-		int actual = expiryEvent.compareTo(expiryEvent1);
-
-		// then:
-		assertEquals(expected, actual);
-	}
 }
