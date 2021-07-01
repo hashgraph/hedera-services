@@ -5,12 +5,11 @@ import com.hedera.services.state.merkle.virtual.persistence.SlotStore;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
 /**
@@ -42,16 +41,13 @@ public final class MemMapSlotStore implements SlotStore {
      * List of all of our storage files. This is lazily created so we can default to the right array size.
      * Be careful to avoid an NPE.
      * */
-    private List<MemMapSlotFile> files;
+    private final CopyOnWriteArrayList<MemMapSlotFile> files = new CopyOnWriteArrayList<>();
 
     /**
      * The current file to use for writes, if it is null we will check existing files for space then create a
      * new file if needed.
      */
     private MemMapSlotFile currentFileForWriting = null;
-
-    /** Read write lock for accessing and changing the files list and currentFileForWriting */
-    private final ReentrantReadWriteLock filesLock = new ReentrantReadWriteLock();
 
     /**
      * Open all the files in this store. While opening it visits every used slot and calls slotVisitor.
@@ -83,8 +79,6 @@ public final class MemMapSlotStore implements SlotStore {
         if (!Files.exists(storageDirectory)) {
             // create directory
             Files.createDirectories(storageDirectory);
-            // create empty list for files
-            files = new ArrayList<>();
         } else {
             // find all storage files in directory with prefix
             List<Path> filePaths = Files.list(storageDirectory)
@@ -95,7 +89,6 @@ public final class MemMapSlotStore implements SlotStore {
                     .sorted(Comparator.comparingInt(this::indexForFile))
                     .collect(Collectors.toList());
             // open files for each path
-            files = new ArrayList<>(filePaths.size());
             for (int i = 0; i < filePaths.size(); i++) {
                 files.add(new MemMapSlotFile(slotSizeBytes, size, filePaths.get(i).toFile(), i));
             }
@@ -123,8 +116,7 @@ public final class MemMapSlotStore implements SlotStore {
      * Flush all data to disk and close all files only if there are no references to this data store
      */
     @Override
-    public void close() {
-        filesLock.writeLock().lock();
+    public synchronized void close() {
         if (open.get()) {
             // Note: files is never null when we are in the open state.
             for (MemMapSlotFile file : files) {
@@ -135,9 +127,8 @@ public final class MemMapSlotStore implements SlotStore {
                 }
             }
             open.set(false);
-            files = null;
+            files.clear();
         }
-        filesLock.writeLock().unlock();
     }
 
     /**
@@ -148,9 +139,7 @@ public final class MemMapSlotStore implements SlotStore {
      */
     @Override
     public Object acquireWriteLock(long location) {
-        filesLock.readLock().lock();
         MemMapSlotFile file = files.get(fileIndexFromLocation(location));
-        filesLock.readLock().unlock();
         return file.acquireWriteLock(slotIndexFromLocation(location));
     }
 
@@ -162,9 +151,7 @@ public final class MemMapSlotStore implements SlotStore {
      */
     @Override
     public void releaseWriteLock(long location, Object lockStamp) {
-        filesLock.readLock().lock();
         MemMapSlotFile file = files.get(fileIndexFromLocation(location));
-        filesLock.readLock().unlock();
         file.releaseWriteLock(slotIndexFromLocation(location), lockStamp);
     }
 
@@ -176,9 +163,7 @@ public final class MemMapSlotStore implements SlotStore {
      */
     @Override
     public Object acquireReadLock(long location) {
-        filesLock.readLock().lock();
         MemMapSlotFile file = files.get(fileIndexFromLocation(location));
-        filesLock.readLock().unlock();
         return file.acquireReadLock(slotIndexFromLocation(location));
     }
 
@@ -190,9 +175,7 @@ public final class MemMapSlotStore implements SlotStore {
      */
     @Override
     public void releaseReadLock(long location, Object lockStamp) {
-        filesLock.readLock().lock();
         MemMapSlotFile file = files.get(fileIndexFromLocation(location));
-        filesLock.readLock().unlock();
         file.releaseReadLock(slotIndexFromLocation(location), lockStamp);
     }
 
@@ -204,9 +187,7 @@ public final class MemMapSlotStore implements SlotStore {
      */
     @Override
     public void writeSlot(long location, SlotWriter writer) throws IOException {
-        filesLock.readLock().lock();
         MemMapSlotFile file = files.get(fileIndexFromLocation(location));
-        filesLock.readLock().unlock();
         if (file == null) throw new IllegalArgumentException("There is no file for location ["+location+"]");
         file.writeSlot(slotIndexFromLocation(location), writer);
     }
@@ -219,9 +200,7 @@ public final class MemMapSlotStore implements SlotStore {
      */
     @Override
     public <R> R readSlot(long location, SlotReader<R> reader) throws IOException {
-        filesLock.readLock().lock();
         MemMapSlotFile file = files.get(fileIndexFromLocation(location));
-        filesLock.readLock().unlock();
         if (file == null) throw new IllegalArgumentException("There is no file for location ["+location+"]");
         return file.readSlot(slotIndexFromLocation(location),reader);
     }
@@ -232,15 +211,13 @@ public final class MemMapSlotStore implements SlotStore {
      * @return File and slot location for a new location to store into
      */
     @Override
-    public long getNewSlot() {
+    public synchronized long getNewSlot() {
         throwIfNotOpen(); // We will end up throwing with an NPE while accessing "files" below anyway.
-        filesLock.readLock().lock();
+        // this is the only place we change the array of files so need a write lock here
         MemMapSlotFile fileToWriteTo = currentFileForWriting;
         boolean currentFileHasRoom = fileToWriteTo != null && !fileToWriteTo.isFileFull();
-        filesLock.readLock().unlock();
         // search for a file to write to if currentFileForWriting is missing or full
         if (!currentFileHasRoom) {
-            filesLock.writeLock().lock();
             // current file is full or there is no current file
             // start by scanning existing files for free space
             currentFileForWriting = null;
@@ -263,7 +240,6 @@ public final class MemMapSlotStore implements SlotStore {
             }
             // we can now write to new file
             fileToWriteTo = currentFileForWriting;
-            filesLock.writeLock().unlock();
         }
         // we now have a file for writing, get a new slot
         return locationFromParts(fileToWriteTo.getFileIndex(), fileToWriteTo.getNewSlot());
@@ -277,9 +253,7 @@ public final class MemMapSlotStore implements SlotStore {
     @Override
     public void deleteSlot(long location) throws IOException {
         throwIfNotOpen();
-        filesLock.readLock().lock();
         MemMapSlotFile file = files.get(fileIndexFromLocation(location));
-        filesLock.readLock().unlock();
         if (file == null) throw new IllegalArgumentException("There is no file for location ["+location+"]");
         file.deleteSlot(slotIndexFromLocation(location));
     }
