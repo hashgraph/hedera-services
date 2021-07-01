@@ -115,7 +115,6 @@ import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(LogCaptureExtension.class)
 class StateViewTest {
@@ -949,9 +948,18 @@ class StateViewTest {
 		assertArrayEquals(nftMeta, info.getMetadata().toByteArray());
 	}
 
+	@Test
+	void emptySuppliersYieldEmptyAssociations() {
+		assertSame(
+				StateView.EMPTY_UNIQUE_TOKEN_ASSOCS,
+				StateView.EMPTY_UNIQUE_TOKEN_ASSOCS_SUPPLIER.get());
+		assertSame(
+				StateView.EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS,
+				StateView.EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS_SUPPLIER.get());
+	}
+
 	private final Instant nftCreation = Instant.ofEpochSecond(1_234_567L, 8);
 	private final byte[] nftMeta = "abcdefgh".getBytes();
-	private final EntityId owner = new EntityId(4, 5, 6);
 	private final NftID targetNftId = NftID.newBuilder()
 			.setTokenID(IdUtils.asToken("1.2.3"))
 			.setSerialNumber(4L)
