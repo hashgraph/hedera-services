@@ -111,7 +111,6 @@ public class MerkleUniqueTokenTest {
         // expect:
         assertNotSame(copyNft, subject);
         assertEquals(subject, copyNft);
-        assertEquals(subject, subject);
         assertNotEquals(subject, other);
     }
 
