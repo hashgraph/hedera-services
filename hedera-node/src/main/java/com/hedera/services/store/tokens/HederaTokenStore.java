@@ -459,7 +459,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				if (fractionalSpec.getMaximumAmount() < 0 || fractionalSpec.getMinimumAmount() < 0) {
 					return CUSTOM_FEE_MUST_BE_POSITIVE;
 				}
-				if (fractionalSpec.getMaximumAmount() < fractionalSpec.getMinimumAmount()) {
+				if (fractionalSpec.getMaximumAmount() > 0 &&
+						fractionalSpec.getMaximumAmount() < fractionalSpec.getMinimumAmount()) {
 					return FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
 				}
 			} else {
