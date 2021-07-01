@@ -164,14 +164,17 @@ public final class BinFile<K extends VKey> {
      */
     public void close() throws IOException {
         lock.writeLock().lock();
-        if (fileIsOpen) {
-            fileIsOpen = false;
-            mappedBuffer.force();
-            fileChannel.force(true);
-            fileChannel.close();
-            randomAccessFile.close();
+        try {
+            if (fileIsOpen) {
+                fileIsOpen = false;
+                mappedBuffer.force();
+                fileChannel.force(true);
+                fileChannel.close();
+                randomAccessFile.close();
+            }
+        } finally {
+            lock.writeLock().unlock();
         }
-        lock.writeLock().unlock();
     }
 
     /**
@@ -184,10 +187,12 @@ public final class BinFile<K extends VKey> {
      */
     public long getSlot(long version, int keySubHash, K key) {
         lock.readLock().lock();
-        int entryOffset = findEntryOffsetForKeyInBin(keySubHash, key);
-        long slotIndex = (entryOffset != -1) ? getMutationValue(entryOffset+queueOffsetInEntry,version) : NOT_FOUND_LOCATION;
-        lock.readLock().unlock();
-        return slotIndex;
+        try {
+            int entryOffset = findEntryOffsetForKeyInBin(keySubHash, key);
+            return (entryOffset != -1) ? getMutationValue(entryOffset + queueOffsetInEntry, version) : NOT_FOUND_LOCATION;
+        } finally {
+            lock.readLock().unlock();
+        }
     }
 
     /**
@@ -202,20 +207,23 @@ public final class BinFile<K extends VKey> {
      */
     public long getSlotIfAbsentPut(long version, int keySubHash, K key, LongSupplier newValueSupplier) {
         lock.readLock().lock();
-        int entryOffset = findEntryOffsetForKeyInBin(keySubHash, key);
-        if (entryOffset != -1) {
-            long slotIndex = getMutationValue(entryOffset + queueOffsetInEntry, version);
+        try {
+            int entryOffset = findEntryOffsetForKeyInBin(keySubHash, key);
+            if (entryOffset != -1) {
+                return getMutationValue(entryOffset + queueOffsetInEntry, version);
+            }
+        } finally {
             lock.readLock().unlock();
-            return slotIndex;
-        } else {
-            lock.readLock().unlock();
-            lock.writeLock().lock();
+        }
+        lock.writeLock().lock();
+        try {
             long newValue = newValueSupplier.getAsLong();
             EntryReference entry = getOrCreateEntry(keySubHash, key);
             // so we now have a entry, existing or a new one we just have to add/update the version in mutation queue
-            writeValueIntoMutationQueue(entry.offset+queueOffsetInEntry, entry.wasCreated, version, newValue);
-            lock.writeLock().unlock();
+            writeValueIntoMutationQueue(entry.offset + queueOffsetInEntry, entry.wasCreated, version, newValue);
             return newValue;
+        } finally {
+            lock.writeLock().unlock();
         }
     }
 
@@ -231,11 +239,14 @@ public final class BinFile<K extends VKey> {
      */
     public boolean putSlot(long version, int keySubHash, K key, long value) {
         lock.writeLock().lock();
-        EntryReference entry = getOrCreateEntry(keySubHash, key);
-        // so we now have a entry, existing or a new one we just have to add/update the version in mutation queue
-        long oldValue = writeValueIntoMutationQueue(entry.offset+queueOffsetInEntry, entry.wasCreated, version, value);
-        lock.writeLock().unlock();
-        return oldValue != NOT_FOUND_LOCATION;
+        try {
+            EntryReference entry = getOrCreateEntry(keySubHash, key);
+            // so we now have a entry, existing or a new one we just have to add/update the version in mutation queue
+            long oldValue = writeValueIntoMutationQueue(entry.offset + queueOffsetInEntry, entry.wasCreated, version, value);
+            return oldValue != NOT_FOUND_LOCATION;
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /**
@@ -248,14 +259,17 @@ public final class BinFile<K extends VKey> {
      */
     public long removeKey(long version, int keySubHash, K key) {
         lock.writeLock().lock();
-        int entryOffset = findEntryOffsetForKeyInBin(keySubHash, key);
-        long slotIndex = NOT_FOUND_LOCATION;
-        if (entryOffset != -1) {
-            // we only need to write a deleted mutation if there was already a entry for the key
-            slotIndex = writeValueIntoMutationQueue(entryOffset + queueOffsetInEntry, false, version, DELETED_POINTER);
+        try {
+            int entryOffset = findEntryOffsetForKeyInBin(keySubHash, key);
+            long slotIndex = NOT_FOUND_LOCATION;
+            if (entryOffset != -1) {
+                // we only need to write a deleted mutation if there was already a entry for the key
+                slotIndex = writeValueIntoMutationQueue(entryOffset + queueOffsetInEntry, false, version, DELETED_POINTER);
+            }
+            return slotIndex;
+        } finally {
+            lock.writeLock().unlock();
         }
-        lock.writeLock().unlock();
-        return slotIndex;
     }
 
     /**
@@ -266,11 +280,14 @@ public final class BinFile<K extends VKey> {
      */
     public void versionChanged(long oldVersion, long newVersion) {
         lock.writeLock().lock();
-        currentVersion = newVersion;
-        // stash changedKeysCurrentVersion and create new list
-        changedKeysPerVersion.put(oldVersion, changedKeysCurrentVersion);
-        changedKeysCurrentVersion = new ArrayList<>();
-        lock.writeLock().unlock();
+        try {
+            currentVersion = newVersion;
+            // stash changedKeysCurrentVersion and create new list
+            changedKeysPerVersion.put(oldVersion, changedKeysCurrentVersion);
+            changedKeysCurrentVersion = new ArrayList<>();
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /**
@@ -280,16 +297,19 @@ public final class BinFile<K extends VKey> {
      */
     public void releaseVersion(long version) {
         lock.writeLock().lock();
-        // version deleting entries for this version
-        List<Integer> changedKeys = (version == currentVersion || currentVersion == -1) ?
-                changedKeysCurrentVersion : changedKeysPerVersion.remove(version);
-        // TODO maybe need to clear out changedKeysCurrentVersion but seems if current version has been released we are done
-        if (changedKeys != null) {
-            for (Integer mutationQueueOffset : changedKeys) {
-                markQueue(mutationQueueOffset, version);
+        try {
+            // version deleting entries for this version
+            List<Integer> changedKeys = (version == currentVersion || currentVersion == -1) ?
+                    changedKeysCurrentVersion : changedKeysPerVersion.remove(version);
+            // TODO maybe need to clear out changedKeysCurrentVersion but seems if current version has been released we are done
+            if (changedKeys != null) {
+                for (Integer mutationQueueOffset : changedKeys) {
+                    markQueue(mutationQueueOffset, version);
+                }
             }
+        } finally {
+            lock.writeLock().unlock();
         }
-        lock.writeLock().unlock();
     }
 
     /**

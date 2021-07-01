@@ -188,7 +188,7 @@ public final class FCSlotIndexUsingMemMapFile<K extends VKey> implements FCSlotI
         int keyHash = key.hashCode();
         // find right bin file
         BinFile<K> file = getFileForKey(keyHash);
-        // ask bin file
+        // ask bin file, it will get its own locks
         return file.getSlot(version, getFileSubKeyHash(keyHash), key);
     }
 
@@ -199,7 +199,7 @@ public final class FCSlotIndexUsingMemMapFile<K extends VKey> implements FCSlotI
         int keyHash = key.hashCode();
         // find right bin file
         BinFile<K> file = getFileForKey(keyHash);
-        // ask bin file
+        // ask bin file, it will get its own locks
         return file.getSlotIfAbsentPut(version, getFileSubKeyHash(keyHash), key, newValueSupplier);
     }
 
@@ -212,10 +212,13 @@ public final class FCSlotIndexUsingMemMapFile<K extends VKey> implements FCSlotI
         // find right bin file
         BinFile<K> file = getFileForKey(keyHash);
         // ask bin file
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
-        synchronized (file) {
-            boolean alreadyExisted = file.putSlot(version, getFileSubKeyHash(keyHash), key, slot);
+        int subKeyHash = getFileSubKeyHash(keyHash);
+        Object fileLock = file.acquireWriteLock(subKeyHash);
+        try {
+            boolean alreadyExisted = file.putSlot(version, subKeyHash, key, slot);
             if (!alreadyExisted) keyCount.incrementAndGet();
+        } finally {
+            file.releaseWriteLock(subKeyHash, fileLock);
         }
     }
 
@@ -228,11 +231,14 @@ public final class FCSlotIndexUsingMemMapFile<K extends VKey> implements FCSlotI
         // find right bin file
         BinFile<K> file = getFileForKey(keyHash);
         // ask bin file
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
-        synchronized (file) {
+        int subKeyHash = getFileSubKeyHash(keyHash);
+        Object fileLock = file.acquireWriteLock(subKeyHash);
+        try {
             long slotLocation = file.removeKey(version, getFileSubKeyHash(keyHash), key);
             if (slotLocation != FCSlotIndex.NOT_FOUND_LOCATION) keyCount.decrementAndGet();
             return slotLocation;
+        } finally {
+            file.releaseWriteLock(subKeyHash, fileLock);
         }
     }
 
