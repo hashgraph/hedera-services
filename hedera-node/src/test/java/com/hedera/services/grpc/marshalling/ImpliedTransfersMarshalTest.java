@@ -30,6 +30,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -49,6 +50,8 @@ import static com.hedera.test.utils.IdUtils.adjustFrom;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.IdUtils.hbarChange;
+import static com.hedera.test.utils.IdUtils.nftChange;
+import static com.hedera.test.utils.IdUtils.nftXfer;
 import static com.hedera.test.utils.IdUtils.tokenChange;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
@@ -93,6 +96,8 @@ class ImpliedTransfersMarshalTest {
 	private final AccountID a = asAccount("1.2.3");
 	private final AccountID b = asAccount("2.3.4");
 	private final AccountID c = asAccount("3.4.5");
+	private final long serialNumberA = 12;
+	private final long serialNumberB = 12;
 
 	private final long aHbarChange = -100L;
 	private final long bHbarChange = +50L;
@@ -174,6 +179,8 @@ class ImpliedTransfersMarshalTest {
 						tokenChange(token, cModel, cTokenChange),
 						tokenChange(yetAnotherToken, aModel, aYetAnotherTokenChange),
 						tokenChange(yetAnotherToken, bModel, bYetAnotherTokenChange),
+						nftChange(yetAnotherToken, a, b, serialNumberA),
+						nftChange(yetAnotherToken, a, b, serialNumberB),
 				}
 		);
 		// and:
@@ -521,6 +528,10 @@ class ImpliedTransfersMarshalTest {
 						)))
 				.addTokenTransfers(TokenTransferList.newBuilder()
 						.setToken(yetAnotherId)
+						.addAllNftTransfers(List.of(
+								nftXfer(a, b, serialNumberA),
+								nftXfer(a, b, serialNumberB)
+						))
 						.addAllTransfers(List.of(
 								adjustFrom(a, -15),
 								adjustFrom(b, 15)

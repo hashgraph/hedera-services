@@ -9,9 +9,9 @@ package com.hedera.services.usage.token;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,13 +31,18 @@ import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
+import org.mockito.Mockito;
+
+import java.util.List;
 
 import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
@@ -82,10 +87,32 @@ public class TokenBurnUsageTest {
 		assertEquals(A_USAGES_MATRIX, actual);
 		// and:
 		verify(base).addBpt(8);
-		verify(base).addBpt(FeeBuilder.BASIC_ENTITY_ID_SIZE);
+		verify(base).addBpt(BASIC_ENTITY_ID_SIZE);
 		verify(base).addRbs(
 				TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 1, 0) *
 						USAGE_PROPERTIES.legacyReceiptStorageSecs());
+	}
+
+	@Test
+	public void createsExpectedDeltaForUnique() {
+		op = TokenBurnTransactionBody.newBuilder()
+				.setToken(id)
+				.addAllSerialNumbers(List.of(1L, 2L, 3L))
+				.build();
+		setTxn();
+		// and:
+		subject = TokenBurnUsage.newEstimate(txn, sigUsage).givenSubType(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
+		given(base.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE)).willReturn(A_USAGES_MATRIX);
+		// when:
+		var actual = subject.get();
+
+		// then:
+		assertEquals(A_USAGES_MATRIX, actual);
+		// and:
+		InOrder inOrder = Mockito.inOrder(base);
+		inOrder.verify(base).addBpt((long) op.getSerialNumbersCount() * LONG_SIZE);
+		inOrder.verify(base)
+				.addBpt(BASIC_ENTITY_ID_SIZE);
 	}
 
 	@Test
@@ -97,6 +124,7 @@ public class TokenBurnUsageTest {
 	private void givenOp() {
 		op = TokenBurnTransactionBody.newBuilder()
 				.setToken(id)
+				.setAmount(10)
 				.build();
 		setTxn();
 	}

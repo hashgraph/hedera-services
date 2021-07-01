@@ -685,6 +685,15 @@ class MerkleTokenTest {
 	}
 
 	@Test
+	void doesNotAdjustTotalSupplyWhenInvalid() {
+		// when:
+		subject.setMaxSupply(2);
+
+		// then:
+		assertThrows(IllegalArgumentException.class, () -> subject.adjustTotalSupplyBy(1_500_000));
+	}
+
+	@Test
 	void throwsIaeIfTotalSupplyGoesNegative() {
 		// expect:
 		assertThrows(IllegalArgumentException.class, () -> subject.adjustTotalSupplyBy(-1_500_000));

@@ -27,6 +27,7 @@ import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 
 public class TokenBurnUsage extends TokenTxnUsage<TokenBurnUsage> {
 
@@ -54,15 +55,8 @@ public class TokenBurnUsage extends TokenTxnUsage<TokenBurnUsage> {
 		var op = this.op.getTokenBurn();
 
 		if (currentSubType == SubType.TOKEN_NON_FUNGIBLE_UNIQUE) {
-			var bytesToAdd = 0;
-			for (Long o : op.getSerialNumbersList()) {
-				bytesToAdd += o.byteValue();
-			}
-			usageEstimator.addBpt(bytesToAdd);
-			usageEstimator.addRbs(bytesToAdd);
-			var tokenSize = op.getSerialNumbersCount();
-			usageEstimator.addRbs(tokenEntitySizes.bytesUsedForUniqueTokenTransfers(tokenSize));
-			addTokenTransfersRecordRb(1, 0, tokenSize);
+			usageEstimator.addBpt((long) op.getSerialNumbersCount() * LONG_SIZE);
+			addTokenTransfersRecordRb(1, 0, op.getSerialNumbersCount());
 		} else if (currentSubType == SubType.TOKEN_FUNGIBLE_COMMON) {
 			addAmountBpt();
 			addTokenTransfersRecordRb(1, 1, 0);

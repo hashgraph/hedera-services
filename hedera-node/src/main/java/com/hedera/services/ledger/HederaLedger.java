@@ -649,8 +649,4 @@ public class HederaLedger {
 			}
 		}
 	}
-
-	private boolean isFungibleToken(TokenID token) {
-		return tokenStore.get(token).tokenType().equals(TokenType.FUNGIBLE_COMMON);
-	}
 }

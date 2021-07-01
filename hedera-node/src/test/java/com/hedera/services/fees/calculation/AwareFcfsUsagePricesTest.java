@@ -167,6 +167,18 @@ class AwareFcfsUsagePricesTest {
 	}
 
 	@Test
+	void getsDefaultActivePrices() throws Exception {
+		// given:
+		subject.loadPriceSchedules();
+
+		// when:
+		FeeData actual = subject.defaultActivePrices();
+
+		// then:
+		assertEquals(nextUsagePrices, actual);
+	}
+
+	@Test
 	void getsActivePrices() throws Exception {
 		// given:
 		subject.loadPriceSchedules();

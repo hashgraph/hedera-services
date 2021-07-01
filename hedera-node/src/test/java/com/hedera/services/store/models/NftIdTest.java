@@ -20,6 +20,7 @@ package com.hedera.services.store.models;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -69,5 +70,30 @@ class NftIdTest {
 
 		// expect:
 		assertEquals(desired, subject.toString());
+	}
+
+	@Test
+	void gettersWork() {
+		// given:
+		final var subject = new NftId(shard, realm, num, serialNo);
+		TokenID expectedTokenId = TokenID.newBuilder()
+				.setShardNum(shard)
+				.setRealmNum(realm)
+				.setTokenNum(num)
+				.build();
+
+		assertEquals(shard, subject.shard());
+		assertEquals(realm, subject.realm());
+		assertEquals(num, subject.num());
+		assertEquals(serialNo, subject.serialNo());
+		assertEquals(expectedTokenId, subject.tokenId());
+	}
+
+	@Test
+	void nullEqualsWorks() {
+		// given:
+		final var subject = new NftId(shard, realm, num, serialNo);
+
+		assertFalse(subject.equals(null));
 	}
 }

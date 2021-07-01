@@ -61,13 +61,6 @@ public class MerkleUniqueTokenId extends AbstractMerkleLeaf {
 		this.serialNumber = serialNumber;
 	}
 
-	public static MerkleUniqueTokenId fromNftID(NftID grpc) {
-		final var tokenID = grpc.getTokenID();
-		final var entity = new EntityId(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum());
-
-		return new MerkleUniqueTokenId(entity, grpc.getSerialNumber());
-	}
-
 	public static MerkleUniqueTokenId fromNftId(NftId id) {
 		return new MerkleUniqueTokenId(new EntityId(id.shard(), id.realm(), id.num()), id.serialNo());
 	}
