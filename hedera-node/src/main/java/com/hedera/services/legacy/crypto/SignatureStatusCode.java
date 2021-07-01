@@ -47,7 +47,10 @@ public enum SignatureStatusCode {
   UNRESOLVABLE_REQUIRED_SIGNERS(
           "Cannot resolve required signers for scheduled txn [ source = '%s', scheduled = '%s', error = '%s' ]"),
   SCHEDULED_TRANSACTION_NOT_IN_WHITELIST(
-          "Specified txn cannot be scheduled [ source = '%s', transactionId = '%s' ]");
+          "Specified txn cannot be scheduled [ source = '%s', transactionId = '%s' ]"),
+  INVALID_FEE_COLLECTOR(
+          "Fee collector for custom account does not exist [ source = '%s', transactionId = '%s' ]");
+
 
   private String message;
 

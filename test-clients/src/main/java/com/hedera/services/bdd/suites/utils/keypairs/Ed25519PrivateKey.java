@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.utils.keypairs;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -47,7 +47,8 @@ public final class Ed25519PrivateKey {
 	}
 
 	private Ed25519PrivateKey(
-			Ed25519PrivateKeyParameters privateKeyParameters, @Nullable Ed25519PublicKeyParameters publicKeyParameters) {
+			Ed25519PrivateKeyParameters privateKeyParameters,
+			@Nullable Ed25519PublicKeyParameters publicKeyParameters) {
 		this.privKeyParams = privateKeyParameters;
 
 		if (publicKeyParameters != null) {
@@ -97,17 +98,31 @@ public final class Ed25519PrivateKey {
 		return new Ed25519PrivateKey(privKeyParams, pubKeyParams);
 	}
 
-	/** @return a new private key using {@link SecureRandom} */
+	/**
+	 * Generate a new Ed25519 private key using {@link SecureRandom}.
+	 *
+	 * @return new Ed25519 private key generated
+	 */
 	public static Ed25519PrivateKey generate() {
 		return generate(new SecureRandom());
 	}
 
-	/** @return a new private key using the given {@link SecureRandom} */
+	/**
+	 * Generate a new Ed25519 private key using the given {@link SecureRandom}.
+	 *
+	 * @param secureRandom
+	 * 		given SecureRandom
+	 * @return new Ed25519 private key generated
+	 */
 	public static Ed25519PrivateKey generate(SecureRandom secureRandom) {
 		return new Ed25519PrivateKey(new Ed25519PrivateKeyParameters(secureRandom));
 	}
 
-	/** @return the public key counterpart of this private key to share with the hashgraph */
+	/**
+	 * Get the public key counterpart of this private key to share with the hashgraph.
+	 *
+	 * @return the Ed25519 public key counterpart of this private key
+	 */
 	public Ed25519PublicKey getPublicKey() {
 		if (publicKey == null) {
 			publicKey = new Ed25519PublicKey(privKeyParams.generatePublicKey());
