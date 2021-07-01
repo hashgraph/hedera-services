@@ -124,7 +124,7 @@ public class ContextOptionValidator implements OptionValidator {
 	public ResponseCodeEnum nftMetadataCheck(byte[] metadata) {
 		return lengthCheck(
 				metadata.length,
-				dynamicProperties.maxNFTMetadataBytes(),
+				dynamicProperties.maxNftMetadataBytes(),
 				ResponseCodeEnum.METADATA_TOO_LONG
 		);
 	}
@@ -165,7 +165,7 @@ public class ContextOptionValidator implements OptionValidator {
 	public ResponseCodeEnum nftMaxQueryRangeCheck(long start, long end) {
 		return lengthCheck(
 				end - start,
-				dynamicProperties.maxNFTQueryRange(),
+				dynamicProperties.maxNftQueryRange(),
 				ResponseCodeEnum.INVALID_QUERY_RANGE
 		);
 	}

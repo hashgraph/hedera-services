@@ -20,7 +20,6 @@ package com.hedera.services.txns.validation;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -630,13 +629,13 @@ class ContextOptionValidatorTest {
 
 	@Test
 	void rejectsInvalidQueryRange() {
-		given(dynamicProperties.maxNFTQueryRange()).willReturn(0, 10);
-		assertEquals(INVALID_QUERY_RANGE, subject.nftMaxQueryRangeCheck(-10, 100000));
+		given(dynamicProperties.maxNftQueryRange()).willReturn(10L);
+		assertEquals(INVALID_QUERY_RANGE, subject.nftMaxQueryRangeCheck(0, 11));
 	}
 
 	@Test
 	void rejectsInvalidMetadata() {
-		given(dynamicProperties.maxNFTMetadataBytes()).willReturn(2);
+		given(dynamicProperties.maxNftMetadataBytes()).willReturn(2);
 		assertEquals(METADATA_TOO_LONG, subject.nftMetadataCheck(new byte[]{1, 2, 3, 4}));
 	}
 }
