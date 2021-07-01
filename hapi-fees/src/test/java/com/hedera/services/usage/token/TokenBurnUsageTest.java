@@ -75,7 +75,7 @@ public class TokenBurnUsageTest {
 		subject = TokenBurnUsage.newEstimate(txn, sigUsage);
 		subject.givenSubType(SubType.TOKEN_FUNGIBLE_COMMON);
 		given(base.get(SubType.TOKEN_FUNGIBLE_COMMON)).willReturn(A_USAGES_MATRIX);
-		// when:2
+		// when:
 		var actual = subject.get();
 
 		// then:
@@ -86,6 +86,12 @@ public class TokenBurnUsageTest {
 		verify(base).addRbs(
 				TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 1, 0) *
 						USAGE_PROPERTIES.legacyReceiptStorageSecs());
+	}
+
+	@Test
+	void selfTest() {
+		subject = TokenBurnUsage.newEstimate(txn, sigUsage).givenSubType(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
+		assertEquals(subject, subject.self());
 	}
 
 	private void givenOp() {
