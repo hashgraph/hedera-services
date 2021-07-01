@@ -55,15 +55,13 @@ public class TokenMintUsage extends TokenTxnUsage<TokenMintUsage> {
 		var op = this.op.getTokenMint();
 
 		if (currentSubType == SubType.TOKEN_NON_FUNGIBLE_UNIQUE) {
-			var bytesToAdd = 0;
+			var metadataBytes = 0;
 			for (ByteString o : op.getMetadataList()) {
-				bytesToAdd += o.size();
+				metadataBytes += o.size();
 			}
-			usageEstimator.addBpt(bytesToAdd);
-			usageEstimator.addRbs(bytesToAdd);
-			var tokenSize = op.getMetadataCount();
-			usageEstimator.addRbs(tokenEntitySizes.bytesUsedForUniqueTokenTransfers(tokenSize));
-			addTokenTransfersRecordRb(1, 0, tokenSize);
+			usageEstimator.addBpt(metadataBytes);
+			usageEstimator.addRbs(tokenEntitySizes.bytesUsedForUniqueTokenTransfers(op.getMetadataCount()));
+			addTokenTransfersRecordRb(1, 0, op.getMetadataCount());
 		} else if (currentSubType == SubType.TOKEN_FUNGIBLE_COMMON) {
 			addAmountBpt();
 			addTokenTransfersRecordRb(1, 1, 0);

@@ -71,9 +71,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_START;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.METADATA_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_QUERY_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
@@ -604,8 +606,38 @@ class ContextOptionValidatorTest {
 	}
 
 	@Test
-	void rejectsInvalidBatchSize(){
-		var list = LongStream.range(0, 1000).boxed().collect(Collectors.toList());
-		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.maxBatchSizeBurnCheck(list.size()));
+	void rejectsInvalidBurnBatchSize(){
+		given(dynamicProperties.maxBatchSizeBurn()).willReturn(10);
+		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.maxBatchSizeBurnCheck(12));
+	}
+
+	@Test
+	void rejectsInvalidNftTransfersSize() {
+		given(dynamicProperties.maxNftTransfersLen()).willReturn(10);
+		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.maxNftTransfersLenCheck(12));
+	}
+
+	@Test
+	void rejectsInvalidWipeBatchSize() {
+		given(dynamicProperties.maxBatchSizeWipe()).willReturn(10);
+		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.maxBatchSizeWipeCheck(12));
+	}
+
+	@Test
+	void rejectsInvalidMintBatchSize() {
+		given(dynamicProperties.maxBatchSizeMint()).willReturn(10);
+		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.maxBatchSizeMintCheck(12));
+	}
+
+	@Test
+	void rejectsInvalidQueryRange() {
+		given(dynamicProperties.maxNftQueryRange()).willReturn(10L);
+		assertEquals(INVALID_QUERY_RANGE, subject.nftMaxQueryRangeCheck(0, 11));
+	}
+
+	@Test
+	void rejectsInvalidMetadata() {
+		given(dynamicProperties.maxNftMetadataBytes()).willReturn(2);
+		assertEquals(METADATA_TOO_LONG, subject.nftMetadataCheck(new byte[]{1, 2, 3, 4}));
 	}
 }

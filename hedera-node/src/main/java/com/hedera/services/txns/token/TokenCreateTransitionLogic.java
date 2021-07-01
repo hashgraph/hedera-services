@@ -25,6 +25,7 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -32,7 +33,9 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -107,22 +110,20 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		}
 
 		var treasury = op.getTreasury();
-		var status = OK;
-		status = store.associate(treasury, List.of(created));
+		var status = autoEnableAccountForNewToken(treasury, created, op);
 		if (status != OK) {
 			abortWith(status);
 			return;
 		}
-		if (op.hasFreezeKey()) {
-			status = ledger.unfreeze(treasury, created);
-		}
-		if (status == OK && op.hasKycKey()) {
-			status = ledger.grantKyc(treasury, created);
-		}
-		if (status == OK) {
-			status = ledger.adjustTokenBalance(treasury, created, op.getInitialSupply());
+		if (op.getCustomFees().getCustomFeesCount() > 0) {
+			status = autoEnableFeeCollectors(created, treasury, op);
+			if (status != OK) {
+				abortWith(status);
+				return;
+			}
 		}
 
+		status = ledger.adjustTokenBalance(treasury, created, op.getInitialSupply());
 		if (status != OK) {
 			abortWith(status);
 			return;
@@ -131,6 +132,49 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		store.commitCreation();
 		txnCtx.setCreated(created);
 		txnCtx.setStatus(SUCCESS);
+	}
+
+	private ResponseCodeEnum autoEnableFeeCollectors(
+			TokenID created,
+			AccountID alreadyEnabledTreasury,
+			TokenCreateTransactionBody op
+	) {
+		/* TokenStore.associate() returns TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT if the
+		account-token relationship already exists. */
+		final Set<AccountID> customCollectorsEnabled = new HashSet<>();
+		customCollectorsEnabled.add(alreadyEnabledTreasury);
+		ResponseCodeEnum status = OK;
+		for (var fee : op.getCustomFees().getCustomFeesList()) {
+			if (fee.hasFractionalFee()) {
+				final var collector = fee.getFeeCollectorAccountId();
+				if (!customCollectorsEnabled.contains(collector)) {
+					status = autoEnableAccountForNewToken(collector, created, op);
+					if (status != OK) {
+						return status;
+					}
+					customCollectorsEnabled.add(collector);
+				}
+			}
+		}
+		return status;
+	}
+
+	private ResponseCodeEnum autoEnableAccountForNewToken(
+			AccountID id,
+			TokenID created,
+			TokenCreateTransactionBody op
+	) {
+		var status = store.associate(id, List.of(created));
+		if (status != OK) {
+			return status;
+		}
+		if (op.hasFreezeKey()) {
+			status = ledger.unfreeze(id, created);
+		}
+		if (status == OK && op.hasKycKey()) {
+			status = ledger.grantKyc(id, created);
+		}
+		return status;
 	}
 
 	private void abortWith(ResponseCodeEnum cause) {

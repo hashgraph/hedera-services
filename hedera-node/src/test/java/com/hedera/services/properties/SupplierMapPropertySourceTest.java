@@ -27,10 +27,12 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -68,6 +70,13 @@ public class SupplierMapPropertySourceTest {
 		assertEquals(
 				AccountID.newBuilder().setAccountNum(2L).build(),
 				subject.getAccountProperty(GOOD_ACCOUNT_PROP));
+	}
+
+	@Test
+	public void allPropertyNames() {
+		assertNotNull(subject.allPropertyNames());
+		var propSet = Set.of("a.double.prop", "a.string.prop", "a.profile.prop", "a.boolean.prop", "a.bad.account", "a.long.prop", "a.good.account", "a.int.prop");
+		assertEquals(propSet, subject.allPropertyNames());
 	}
 
 	@Test

@@ -100,28 +100,28 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				symbolChanges(),
-				standardImmutabilitySemanticsHold(),
-				validAutoRenewWorks(),
-				tooLongNameCheckHolds(),
-				tooLongSymbolCheckHolds(),
-				nameChanges(),
-				keysChange(),
-				validatesAlreadyDeletedToken(),
-				treasuryEvolves(),
-				deletedAutoRenewAccountCheckHolds(),
-				renewalPeriodCheckHolds(),
-				invalidTreasuryCheckHolds(),
-				newTreasuryMustSign(),
-				newTreasuryMustBeAssociated(),
-				tokensCanBeMadeImmutableWithEmptyKeyList(),
-				updateHappyPath(),
-				validatesMissingAdminKey(),
-				validatesMissingRef(),
-				validatesNewExpiry(),
-				/* HIP-18 */
-				onlyValidCustomFeeScheduleCanBeUpdated(),
-				customFeesOnceImmutableStayImmutable(),
+						symbolChanges(),
+						standardImmutabilitySemanticsHold(),
+						validAutoRenewWorks(),
+						tooLongNameCheckHolds(),
+						tooLongSymbolCheckHolds(),
+						nameChanges(),
+						keysChange(),
+						validatesAlreadyDeletedToken(),
+						treasuryEvolves(),
+						deletedAutoRenewAccountCheckHolds(),
+						renewalPeriodCheckHolds(),
+						invalidTreasuryCheckHolds(),
+						newTreasuryMustSign(),
+						newTreasuryMustBeAssociated(),
+						tokensCanBeMadeImmutableWithEmptyKeyList(),
+						updateHappyPath(),
+						validatesMissingAdminKey(),
+						validatesMissingRef(),
+						validatesNewExpiry(),
+						/* HIP-18 */
+						onlyValidCustomFeeScheduleCanBeUpdated(),
+						customFeesOnceImmutableStayImmutable(),
 				}
 		);
 	}
@@ -649,7 +649,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
 								.overridingProps(Map.of("tokens.maxCustomFeesAllowed", "1"))
-						)
+				)
 				.when(
 						tokenUpdate(token)
 								.treasury(tokenCollector)
@@ -717,7 +717,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 										newNumerator, newDenominator,
 										newMinimumToCollect, OptionalLong.of(newMaximumToCollect),
 										newTokenCollector))
-						)
+				)
 				.then(
 						getTokenInfo(token)
 								.hasCustomFeesMutable(true)
@@ -764,7 +764,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 										minimumToCollect, OptionalLong.of(maximumToCollect),
 										tokenCollector))
 
-						)
+				)
 				.when(
 						tokenUpdate(token)
 								.customFeesMutable(false)
