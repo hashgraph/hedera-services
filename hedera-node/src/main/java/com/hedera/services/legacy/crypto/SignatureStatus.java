@@ -162,6 +162,7 @@ public class SignatureStatus {
 		formatArguments.add(errorReport.getResponseCode().toString());
 		break;
       case SCHEDULED_TRANSACTION_NOT_IN_WHITELIST:
+      case INVALID_FEE_COLLECTOR:
       case GENERAL_PAYER_ERROR:
       case GENERAL_TRANSACTION_ERROR:
       case KEY_PREFIX_MISMATCH:
