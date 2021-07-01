@@ -35,14 +35,16 @@ public class ContractUint256 implements SelfSerializable, VKey {
 
     @Override
     public void deserialize(SerializableDataInputStream serializableDataInputStream, int i) throws IOException {
-        final var bytes = serializableDataInputStream.readNBytes(32);
+        final var length = serializableDataInputStream.readInt();
+        final var bytes = serializableDataInputStream.readNBytes(length);
         this.value = new BigInteger(bytes);
     }
 
     @Override
     public void serialize(SerializableDataOutputStream serializableDataOutputStream) throws IOException {
         final var arr = this.value.toByteArray();
-        serializableDataOutputStream.write(Arrays.copyOf(arr, 32));
+        serializableDataOutputStream.writeInt(arr.length);
+        serializableDataOutputStream.write(arr);
     }
 
     @Override
