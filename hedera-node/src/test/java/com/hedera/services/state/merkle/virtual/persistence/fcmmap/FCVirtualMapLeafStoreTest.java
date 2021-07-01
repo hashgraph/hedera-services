@@ -19,58 +19,10 @@ import static com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCVirt
 import static org.junit.jupiter.api.Assertions.*;
 import static com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCVirtualMapTestUtils.*;
 
-public class FCVirtualMapDataStoreTest {
-    public static final Path STORE_PATH = Path.of("store");
-
-    static {
-        System.out.println("STORE_PATH = " + STORE_PATH.toAbsolutePath());
-    }
+public class FCVirtualMapLeafStoreTest {
     private static final Random RANDOM = new Random(1234);
-
-
-    /**
-     * TEST HASH FUNCTIONALITY
-     */
-    @Test
-    public void createSomeHashDataAndReadBack() throws IOException {
-        final int COUNT = 10_000;
-        // delete old store if it exists
-        deleteDirectoryAndContents(STORE_PATH);
-        // create and open store
-        final var hashStore = new FCVirtualMapHashStoreImpl<>(
-                STORE_PATH, 8, 8,
-                new FCSlotIndexUsingFCHashMap<>(), MemMapSlotStore::new);
-
-        // create some data for a number of accounts
-        for (int i = 0; i < COUNT; i++) {
-            hashStore.saveHash(new LongVKey(i),hash(i));
-        }
-        // read back and check that data
-        for (int i = 0; i < COUNT; i++) {
-            LongVKey l = new LongVKey(i);
-            var expectedHash = hash(i);
-
-            Hash parentHash = hashStore.loadHash(l);
-            assertEquals(expectedHash,parentHash);
-        }
-
-        // read back random and check that data
-        for (int j = 0; j < COUNT; j++) {
-            int i = RANDOM.nextInt(COUNT);
-            LongVKey l = new LongVKey(i);
-            var expectedHash = hash(i);
-            Hash parentHash = hashStore.loadHash(l);
-            assertEquals(expectedHash,parentHash);
-        }
-
-        // delete a leaf and parent and check
-        LongVKey key = new LongVKey(COUNT/2);
-        hashStore.deleteHash(key);
-        assertFalse(hashStore.containsHash(key));
-
-        hashStore.release();
-    }
-
+    public static final Path STORE_PATH = Path.of("store");
+    static { System.out.println("STORE_PATH = " + STORE_PATH.toAbsolutePath()); }
 
     /**
      * TEST LEAF FUNCTIONALITY
@@ -97,7 +49,7 @@ public class FCVirtualMapDataStoreTest {
         for (int i = 0; i < COUNT; i++) {
             LongVKey l = new LongVKey(i);
             var expectedLeafData = new TestLeafData(i);
-            var expectedRecord = new FCVirtualRecord<LongVKey,TestLeafData>(l, expectedLeafData);
+            var expectedRecord = new FCVirtualRecord<>(l, expectedLeafData);
 
             TestLeafData leafData = store.loadLeafValueByKey(l);
             assertEquals(expectedLeafData,leafData);
@@ -120,7 +72,7 @@ public class FCVirtualMapDataStoreTest {
             int i = RANDOM.nextInt(COUNT);
             LongVKey l = new LongVKey(i);
             var expectedLeafData = new TestLeafData(i);
-            var expectedRecord = new FCVirtualRecord<LongVKey,TestLeafData>(l, expectedLeafData);
+            var expectedRecord = new FCVirtualRecord<>(l, expectedLeafData);
 
             TestLeafData leafData = store.loadLeafValueByKey(l);
             assertEquals(expectedLeafData,leafData);
@@ -145,6 +97,7 @@ public class FCVirtualMapDataStoreTest {
 
         store.release();
     }
+
     /**
      * TEST LEAF updateLeafPath FUNCTIONALITY
      */
@@ -189,6 +142,7 @@ public class FCVirtualMapDataStoreTest {
 
         store.release();
     }
+
     @Test
     public void createSomeDataAndReadBackComplexLeaf() throws IOException {
         try {
@@ -256,6 +210,7 @@ public class FCVirtualMapDataStoreTest {
     }
 
 // TODO once fast copy is working add back in
+
 //    @Test
 //    public void testFastCopy() throws IOException {
 //        final int COUNT = 1000;
