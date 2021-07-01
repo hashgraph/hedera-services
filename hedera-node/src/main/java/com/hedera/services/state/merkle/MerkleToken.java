@@ -75,6 +75,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	private JKey wipeKey = UNUSED_KEY;
 	private JKey supplyKey = UNUSED_KEY;
 	private JKey freezeKey = UNUSED_KEY;
+	private JKey feeScheduleKey = UNUSED_KEY;
 	private String symbol;
 	private String name;
 	private String memo = DEFAULT_MEMO;
@@ -141,6 +142,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 				equalUpToDecodability(this.adminKey, that.adminKey) &&
 				equalUpToDecodability(this.freezeKey, that.freezeKey) &&
 				equalUpToDecodability(this.kycKey, that.kycKey) &&
+				equalUpToDecodability(this.feeScheduleKey, that.feeScheduleKey) &&
 				Objects.equals(this.feeSchedule, that.feeSchedule);
 	}
 
@@ -198,6 +200,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 				.add("accountsKycGrantedByDefault", accountsKycGrantedByDefault)
 				.add("accountsFrozenByDefault", accountsFrozenByDefault)
 				.add("feeSchedules", feeSchedule)
+				.add("feeScheduleKey", feeScheduleKey)
 				.toString();
 	}
 
@@ -242,6 +245,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 			maxSupply = in.readLong();
 			lastUsedSerialNumber = in.readLong();
 			feeSchedule = unmodifiableList(in.readSerializableList(Integer.MAX_VALUE, true, FcCustomFee::new));
+			feeScheduleKey = serdes.readNullable(in, serdes::deserializeKey);
 		}
 		if (tokenType == null) {
 			tokenType = TokenType.FUNGIBLE_COMMON;
@@ -275,6 +279,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		out.writeLong(maxSupply);
 		out.writeLong(lastUsedSerialNumber);
 		out.writeSerializableList(feeSchedule, true, true);
+		serdes.writeNullable(feeScheduleKey, out, serdes::serializeKey);
 	}
 
 	/* --- FastCopyable --- */
@@ -312,6 +317,9 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		}
 		if (supplyKey != UNUSED_KEY) {
 			fc.setSupplyKey(supplyKey);
+		}
+		if (feeScheduleKey != UNUSED_KEY) {
+			fc.setFeeScheduleKey(feeScheduleKey);
 		}
 		return fc;
 	}
@@ -552,5 +560,9 @@ public class MerkleToken extends AbstractMerkleLeaf {
 
 	public void setFeeScheduleFrom(List<CustomFee> grpcFeeSchedule) {
 		feeSchedule = grpcFeeSchedule.stream().map(FcCustomFee::fromGrpc).collect(toList());
+	}
+
+	public void setFeeScheduleKey(final JKey feeScheduleKey) {
+		this.feeScheduleKey = feeScheduleKey;
 	}
 }
