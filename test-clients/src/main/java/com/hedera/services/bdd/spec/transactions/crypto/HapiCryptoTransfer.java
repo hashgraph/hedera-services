@@ -36,6 +36,7 @@ import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -60,6 +61,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 
@@ -213,7 +215,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 							if (hbarOnlyProvider != MISSING_HBAR_ONLY_PROVIDER) {
 								b.setTransfers(hbarOnlyProvider.apply(spec));
 							} else {
-								var xfers = transfersFor(spec);
+								var xfers = transfersAllFor(spec);
 								for (TokenTransferList scopedXfers : xfers) {
 									if (scopedXfers.getToken() == HBAR_SENTINEL_TOKEN_ID) {
 										b.setTransfers(TransferList.newBuilder()
@@ -223,6 +225,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 										b.addTokenTransfers(scopedXfers);
 									}
 								}
+
 								misconfigureIfRequested(b, spec);
 							}
 						}
@@ -368,8 +371,13 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 		};
 	}
 
+	private List<TokenTransferList> transfersAllFor(HapiApiSpec spec) {
+		return Stream.concat(transfersFor(spec).stream(), transfersForNft(spec).stream()).collect(toList());
+	}
+
 	private List<TokenTransferList> transfersFor(HapiApiSpec spec) {
 		Map<TokenID, List<AccountAmount>> aggregated = tokenAwareProviders.stream()
+				.filter(TokenMovement::isFungibleToken)
 				.map(p -> p.specializedFor(spec))
 				.collect(groupingBy(
 						TokenTransferList::getToken,
@@ -380,6 +388,21 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 						.addAllTransfers(entry.getValue())
 						.build())
 				.collect(toList());
+	}
+
+	private List<TokenTransferList> transfersForNft(HapiApiSpec spec) {
+		Map<TokenID, List<NftTransfer>> aggregated = tokenAwareProviders.stream()
+				.filter(Predicate.not(TokenMovement::isFungibleToken))
+				.map(p -> p.specializedForNft(spec))
+				.collect(groupingBy(
+						TokenTransferList::getToken,
+						flatMapping(xfers -> xfers.getNftTransfersList().stream(), toList())));
+		return aggregated.entrySet().stream()
+				.map(entry -> TokenTransferList.newBuilder()
+						.setToken(entry.getKey())
+						.addAllNftTransfers(entry.getValue())
+						.build()
+				).collect(toList());
 	}
 
 	@Override

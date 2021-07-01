@@ -62,7 +62,9 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetAccountNftInfos;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetNftInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
@@ -72,7 +74,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.Transaction
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
 
 public class ExpectedCustomThrottles {
-	public static final EnumSet<HederaFunctionality> OPS_FOR_RELEASE_0130 = EnumSet.of(
+	public static final EnumSet<HederaFunctionality> OPS_FOR_RELEASE_0160 = EnumSet.of(
 			CryptoCreate,
 			CryptoTransfer,
 			CryptoUpdate,
@@ -90,6 +92,8 @@ public class ExpectedCustomThrottles {
 			ConsensusDeleteTopic,
 			ConsensusSubmitMessage,
 			TokenCreate,
+			TokenGetNftInfo,
+			TokenGetAccountNftInfos,
 			TokenFreezeAccount,
 			TokenUnfreezeAccount,
 			TokenGrantKycToAccount,

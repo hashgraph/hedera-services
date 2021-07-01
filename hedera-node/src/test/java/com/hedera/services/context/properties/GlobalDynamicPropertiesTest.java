@@ -71,6 +71,20 @@ class GlobalDynamicPropertiesTest {
 	}
 
 	@Test
+	void nftPropertiesTest(){
+		givenPropsWithSeed(1);
+		subject = new GlobalDynamicProperties(numbers, properties);
+
+		assertEquals(36, subject.maxNftTransfersLen());
+		assertEquals(37, subject.maxBatchSizeBurn());
+		assertEquals(38, subject.maxBatchSizeWipe());
+		assertEquals(39, subject.maxBatchSizeMint());
+		assertEquals(40, subject.maxNftQueryRange());
+		assertEquals(41, subject.maxNftMetadataBytes());
+		assertEquals(42, subject.maxTokenNameUtf8Bytes());
+	}
+
+	@Test
 	void constructsIntsAsExpected() {
 		givenPropsWithSeed(1);
 
@@ -251,6 +265,14 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("autorenew.gracePeriod")).willReturn(i + 32L);
 		given(properties.getLongProperty("rates.midnightCheckInterval")).willReturn(i + 33L);
 		given(properties.getIntProperty("tokens.maxCustomFeesAllowed")).willReturn(i + 34);
+
+		given(properties.getIntProperty("ledger.nftTransfers.maxLen")).willReturn(i + 35);
+		given(properties.getIntProperty("tokens.nfts.maxBatchSizeBurn")).willReturn(i + 36);
+		given(properties.getIntProperty("tokens.nfts.maxBatchSizeWipe")).willReturn(i + 37);
+		given(properties.getIntProperty("tokens.nfts.maxBatchSizeMint")).willReturn(i + 38);
+		given(properties.getLongProperty("tokens.nfts.maxQueryRange")).willReturn(i + 39L);
+		given(properties.getIntProperty("tokens.nfts.maxMetadataBytes")).willReturn(i + 40);
+		given(properties.getIntProperty("tokens.maxTokenNameUtf8Bytes")).willReturn(i + 41);
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {

@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.fees;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,6 +25,7 @@ import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.FeeObject;
@@ -34,6 +35,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -47,7 +49,7 @@ public class FeeCalculator {
 	private static final Logger log = LogManager.getLogger(FeeCalculator.class);
 
 	final private HapiSpecSetup setup;
-	final private Map<HederaFunctionality, FeeData> opFeeData = new HashMap<>();
+	final private Map<HederaFunctionality, Map<SubType, FeeData>> opFeeData = new HashMap<>();
 	final private FeesAndRatesProvider provider;
 
 	private long fixedFee = Long.MIN_VALUE;
@@ -67,47 +69,46 @@ public class FeeCalculator {
 			return;
 		}
 		FeeSchedule feeSchedule = provider.currentSchedule();
-		feeSchedule.getTransactionFeeScheduleList().stream().forEach(feeData -> {
-			opFeeData.put(feeData.getHederaFunctionality(), feeData.getFeeData());
+		feeSchedule.getTransactionFeeScheduleList().forEach(f -> {
+			opFeeData.put(f.getHederaFunctionality(), feesListToMap(f.getFeesList()));
 		});
 		tokenTransferUsageMultiplier = setup.feesTokenTransferUsageMultiplier();
 	}
 
-	public long maxFeeTinyBars() {
+	private Map<SubType, FeeData> feesListToMap(List<FeeData> feesList) {
+		Map<SubType, FeeData> feeDataMap = new HashMap<>();
+		for (FeeData feeData : feesList) {
+			feeDataMap.put(feeData.getSubType(), feeData);
+		}
+		return feeDataMap;
+	}
+
+	private long maxFeeTinyBars(SubType subType) {
 		return usingFixedFee ? fixedFee : Arrays
 				.stream(HederaFunctionality.values())
 				.mapToLong(op ->
 						Optional.ofNullable(
-								opFeeData.get(op)).map(fd ->
-										fd.getServicedata().getMax()
-										+ fd.getNodedata().getMax()
-										+ fd.getNetworkdata().getMax()).orElse(0L))
-				.max()
-				.orElse(0L);
+								opFeeData.get(op)
+						).map(fd -> {
+									final var pricesForSubtype = fd.get(subType);
+									if (pricesForSubtype == null) {
+										return 0L;
+									} else {
+										return pricesForSubtype.getServicedata().getMax()
+												+ pricesForSubtype.getNodedata().getMax()
+												+ pricesForSubtype.getNetworkdata().getMax();
+									}
+								}
+						).orElse(0L)
+				).max().orElse(0L);
+	}
+
+	public long maxFeeTinyBars() {
+		return maxFeeTinyBars(SubType.DEFAULT);
 	}
 
 	public long forOp(HederaFunctionality op, FeeData knownActivity) {
-		if (usingFixedFee) {
-			return fixedFee;
-		}
-		try {
-			FeeData activityPrices = opFeeData.get(op);
-			return getTotalFeeforRequest(activityPrices, knownActivity, provider.rates());
-		} catch (Throwable t) {
-			log.warn("Unable to calculate fee for op {}, using max fee!", op, t);
-		}
-		return maxFeeTinyBars();
-	}
-
-	public long forOpWithDetails(HederaFunctionality op, FeeData knownActivity, AtomicReference<FeeObject> obs) {
-		try {
-			final var activityPrices = opFeeData.get(op);
-			final var fees = getFeeObject(activityPrices, knownActivity, provider.rates());
-			obs.set(fees);
-			return getTotalFeeforRequest(activityPrices, knownActivity, provider.rates());
-		} catch (Throwable t) {
-			throw new IllegalArgumentException("Calculation not observable!", t);
-		}
+		return forOp(op, SubType.DEFAULT, knownActivity);
 	}
 
 	@FunctionalInterface
@@ -133,7 +134,18 @@ public class FeeCalculator {
 			AtomicReference<FeeObject> obs
 	) throws Throwable {
 		FeeData activityMetrics = metricsFor(txn, numPayerSigs, metricsCalculator);
-		return forOpWithDetails(op, activityMetrics, obs);
+		return forOpWithDetails(op, SubType.DEFAULT, activityMetrics, obs);
+	}
+
+	public long forActivityBasedOp(
+			HederaFunctionality op,
+			SubType subType,
+			ActivityMetrics metricsCalculator,
+			Transaction txn,
+			int numPayerSigs
+	) throws Throwable {
+		FeeData activityMetrics = metricsFor(txn, numPayerSigs, metricsCalculator);
+		return forOp(op, subType, activityMetrics);
 	}
 
 	private FeeData metricsFor(
@@ -144,6 +156,35 @@ public class FeeCalculator {
 		SigValueObj sigUsage = sigUsageGiven(txn, numPayerSigs);
 		TransactionBody body = CommonUtils.extractTransactionBody(txn);
 		return metricsCalculator.compute(body, sigUsage);
+	}
+
+	private long forOp(HederaFunctionality op, SubType subType, FeeData knownActivity) {
+		if (usingFixedFee) {
+			return fixedFee;
+		}
+		try {
+			Map<SubType, FeeData> activityPrices = opFeeData.get(op);
+			return getTotalFeeforRequest(activityPrices.get(subType), knownActivity, provider.rates());
+		} catch (Throwable t) {
+			log.warn("Unable to calculate fee for op {}, using max fee!", op, t);
+		}
+		return maxFeeTinyBars(subType);
+	}
+
+	public long forOpWithDetails(
+			HederaFunctionality op,
+			SubType subType,
+			FeeData knownActivity,
+			AtomicReference<FeeObject> obs
+	) {
+		try {
+			final var activityPrices = opFeeData.get(op).get(subType);
+			final var fees = getFeeObject(activityPrices, knownActivity, provider.rates());
+			obs.set(fees);
+			return getTotalFeeforRequest(activityPrices, knownActivity, provider.rates());
+		} catch (Throwable t) {
+			throw new IllegalArgumentException("Calculation not observable!", t);
+		}
 	}
 
 	private SigValueObj sigUsageGiven(Transaction txn, int numPayerSigs) {

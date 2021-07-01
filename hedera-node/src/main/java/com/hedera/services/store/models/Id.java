@@ -29,6 +29,8 @@ import com.hederahashgraph.api.proto.java.TokenID;
  * Represents the id of a Hedera entity (account, topic, token, contract, file, or schedule).
  */
 public class Id {
+	public static final Id DEFAULT = new Id(0, 0, 0);
+
 	private final long shard;
 	private final long realm;
 	private final long num;

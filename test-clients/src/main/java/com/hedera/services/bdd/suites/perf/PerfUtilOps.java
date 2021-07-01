@@ -73,7 +73,9 @@ public class PerfUtilOps {
 						entry("tokenUpdate", "0-*"),
 						entry("tokenGetInfo", "0-*"),
 						entry("tokenAssociateToAccount", "0-*"),
-						entry("tokenDissociateFromAccount", "0-*")
+						entry("tokenDissociateFromAccount", "0-*"),
+						entry("tokenGetNftInfo", "0-*"),
+						entry("tokenGetAccountNftInfos", "0-*")
 				));
 	}
 

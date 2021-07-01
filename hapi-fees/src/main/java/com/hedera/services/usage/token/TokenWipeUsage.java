@@ -45,7 +45,7 @@ public class TokenWipeUsage extends TokenTxnUsage<TokenWipeUsage> {
 		addEntityBpt();
 		addAmountBpt();
 		addEntityBpt();
-		addTokenTransfersRecordRb(1, 1);
+		addTokenTransfersRecordRb(1, 1, 0);
 		return usageEstimator.get();
 	}
 }

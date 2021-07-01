@@ -31,6 +31,12 @@ public class GlobalDynamicProperties {
 	private final HederaNumbers hederaNums;
 	private final PropertySource properties;
 
+	private int maxNFTMetadataBytes;
+	private int maxBatchSizeBurn;
+	private int maxBatchSizeMint;
+	private int maxNftTransfersLen;
+	private int maxBatchSizeWipe;
+	private long maxNftQueryRange;
 	private int maxTokensPerAccount;
 	private int maxCustomFeesAllowed;
 	private int maxTokenSymbolUtf8Bytes;
@@ -82,6 +88,11 @@ public class GlobalDynamicProperties {
 
 	public void reload() {
 		shouldKeepRecordsInState = properties.getBooleanProperty("ledger.keepRecordsInState");
+		maxNFTMetadataBytes = properties.getIntProperty("tokens.nfts.maxMetadataBytes");
+		maxBatchSizeBurn = properties.getIntProperty("tokens.nfts.maxBatchSizeBurn");
+		maxBatchSizeMint = properties.getIntProperty("tokens.nfts.maxBatchSizeMint");
+		maxBatchSizeWipe = properties.getIntProperty("tokens.nfts.maxBatchSizeWipe");
+		maxNftQueryRange = properties.getLongProperty("tokens.nfts.maxQueryRange");
 		maxTokensPerAccount = properties.getIntProperty("tokens.maxPerAccount");
 		maxTokenSymbolUtf8Bytes = properties.getIntProperty("tokens.maxSymbolUtf8Bytes");
 		maxTokenNameUtf8Bytes = properties.getIntProperty("tokens.maxTokenNameUtf8Bytes");
@@ -102,6 +113,7 @@ public class GlobalDynamicProperties {
 		shouldExportTokenBalances = properties.getBooleanProperty("balances.exportTokenBalances");
 		maxTransfersLen = properties.getIntProperty("ledger.transfers.maxLen");
 		maxTokenTransfersLen = properties.getIntProperty("ledger.tokenTransfers.maxLen");
+		maxNftTransfersLen = properties.getIntProperty("ledger.nftTransfers.maxLen");
 		maxMemoUtf8Bytes = properties.getIntProperty("hedera.transaction.maxMemoUtf8Bytes");
 		maxTxnDuration = properties.getLongProperty("hedera.transaction.maxValidDuration");
 		minTxnDuration = properties.getLongProperty("hedera.transaction.minValidDuration");
@@ -119,7 +131,7 @@ public class GlobalDynamicProperties {
 		localCallEstRetBytes = properties.getIntProperty("contracts.localCall.estRetBytes");
 		scheduledTxExpiryTimeSecs = properties.getIntProperty("ledger.schedule.txExpiryTimeSecs");
 		schedulingWhitelist = properties.getFunctionsProperty("scheduling.whitelist");
-		messageMaxBytesAllowed = properties.getIntProperty( "consensus.message.maxBytesAllowed");
+		messageMaxBytesAllowed = properties.getIntProperty("consensus.message.maxBytesAllowed");
 		congestionMultipliers = properties.getCongestionMultiplierProperty("fees.percentCongestionMultipliers");
 		feesMinCongestionPeriod = properties.getIntProperty("fees.minCongestionPeriod");
 		ratesMidnightCheckInterval = properties.getLongProperty("rates.midnightCheckInterval");
@@ -133,6 +145,18 @@ public class GlobalDynamicProperties {
 	public int maxCustomFeesAllowed() {
 		return maxCustomFeesAllowed;
 	}
+
+	public int maxNftMetadataBytes() { return maxNFTMetadataBytes; }
+
+	public int maxBatchSizeBurn() { return maxBatchSizeBurn; }
+
+	public int maxNftTransfersLen() { return maxNftTransfersLen; }
+
+	public int maxBatchSizeWipe() { return maxBatchSizeWipe; }
+
+	public int maxBatchSizeMint() { return maxBatchSizeMint; }
+
+	public long maxNftQueryRange() { return maxNftQueryRange; }
 
 	public int maxTokenSymbolUtf8Bytes() {
 		return maxTokenSymbolUtf8Bytes;
@@ -164,7 +188,7 @@ public class GlobalDynamicProperties {
 
 	public int ratesIntradayChangeLimitPercent() {
 		return ratesIntradayChangeLimitPercent;
-        }
+	}
 
 	public boolean shouldKeepRecordsInState() {
 		return shouldKeepRecordsInState;

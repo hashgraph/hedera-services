@@ -112,7 +112,8 @@ public class PrivilegedOpsSuite extends HapiApiSuite {
 	private HapiApiSpec freezeAdminPrivilegesAsExpected() {
 		return defaultHapiSpec("FreezeAdminPrivilegesAsExpected")
 				.given(
-						cryptoCreate("civilian")
+						cryptoCreate("civilian"),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, ONE_HUNDRED_HBARS))
 				).when(
 
 						fileUpdate(UPDATE_ZIP_FILE)

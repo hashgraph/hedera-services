@@ -142,7 +142,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec deletingAlreadyDeletedIsObvious() {
-		return defaultHapiSpec("DeletingADeletedTxnFails")
+		return defaultHapiSpec("DeletingAlreadyDeletedIsObvious")
 				.given(
 						cryptoCreate("sender"),
 						cryptoCreate("receiver"),
@@ -154,6 +154,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
 								.signedBy("admin", DEFAULT_PAYER))
 				.when().then(
 						scheduleDelete("validScheduledTxn")
+								.fee(ONE_HBAR)
 								.signedBy("admin", DEFAULT_PAYER)
 								.hasKnownStatus(SCHEDULE_ALREADY_DELETED)
 				);
@@ -163,8 +164,10 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
 		return defaultHapiSpec("DeletingNonExistingFails")
 				.given().when().then(
 						scheduleDelete("0.0.534")
+								.fee(ONE_HBAR)
 								.hasKnownStatus(INVALID_SCHEDULE_ID),
 						scheduleDelete("0.0.0")
+								.fee(ONE_HBAR)
 								.hasKnownStatus(INVALID_SCHEDULE_ID)
 				);
 	}
