@@ -159,9 +159,11 @@ class MemMapSlotFile implements Closeable {
      */
     public boolean isFileFull() {
         lock.readLock().lock();
-        boolean isFull = nextFreeSlotAtEnd >= size && freeSlotsForReuse.isEmpty();
-        lock.readLock().unlock();
-        return isFull;
+        try {
+            return nextFreeSlotAtEnd >= size && freeSlotsForReuse.isEmpty();
+        } finally {
+            lock.readLock().unlock();
+        }
     }
 
     /**
@@ -171,17 +173,20 @@ class MemMapSlotFile implements Closeable {
      */
     public void close() throws IOException {
         lock.writeLock().lock();
-        if (fileIsOpen) {
-            mappedBuffer.force();
-            mappedBuffer = null;
-            fileChannel.close();
-            fileChannel = null;
-            randomAccessFile.close();
-            randomAccessFile = null;
-            // mark file as closed
-            fileIsOpen = false;
+        try {
+            if (fileIsOpen) {
+                mappedBuffer.force();
+                mappedBuffer = null;
+                fileChannel.close();
+                fileChannel = null;
+                randomAccessFile.close();
+                randomAccessFile = null;
+                // mark file as closed
+                fileIsOpen = false;
+            }
+        } finally {
+            lock.writeLock().unlock();
         }
-        lock.writeLock().unlock();
     }
 
     /**
@@ -202,8 +207,11 @@ class MemMapSlotFile implements Closeable {
         final PositionableByteBufferSerializableDataOutputStream outputStream = new PositionableByteBufferSerializableDataOutputStream(subBuffer);
         // call write
         lock.writeLock().lock();
-        writer.write(outputStream);
-        lock.writeLock().unlock();
+        try {
+            writer.write(outputStream);
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /**
@@ -224,9 +232,11 @@ class MemMapSlotFile implements Closeable {
         final PositionableByteBufferSerializableDataInputStream inputStream = new PositionableByteBufferSerializableDataInputStream(subBuffer);
         // call read
         lock.readLock().lock();
-        R read =  reader.read(inputStream);
-        lock.readLock().unlock();
-        return read;
+        try {
+            return reader.read(inputStream);
+        } finally {
+            lock.readLock().unlock();
+        }
     }
 
     /**
@@ -238,22 +248,25 @@ class MemMapSlotFile implements Closeable {
         throwIfClosed();
         if (isFileFull()) return -1;
         lock.writeLock().lock(); // TODO seems like maybe we could have another lock for getting new slots and deleting
-        // calc next available slot
-        int slotIndex;
-        if (nextFreeSlotAtEnd < size) {
-            slotIndex = nextFreeSlotAtEnd;
-            nextFreeSlotAtEnd++;
-        } else if (!freeSlotsForReuse.isEmpty()) {
-            slotIndex = freeSlotsForReuse.pop();
-        } else {
-            throw new RuntimeException("This should not happen, means we think there is free space but there is not." +
-                    "nextFreeSlotAtEnd=" + nextFreeSlotAtEnd + " ,size=" + size);
+        try {
+            // calc next available slot
+            int slotIndex;
+            if (nextFreeSlotAtEnd < size) {
+                slotIndex = nextFreeSlotAtEnd;
+                nextFreeSlotAtEnd++;
+            } else if (!freeSlotsForReuse.isEmpty()) {
+                slotIndex = freeSlotsForReuse.pop();
+            } else {
+                throw new RuntimeException("This should not happen, means we think there is free space but there is not." +
+                        "nextFreeSlotAtEnd=" + nextFreeSlotAtEnd + " ,size=" + size);
+            }
+            // mark slot as used
+            mappedBuffer.put(slotIndex * slotSize, USED);
+            // return slot index
+            return slotIndex;
+        } finally {
+            lock.writeLock().unlock();
         }
-        // mark slot as used
-        mappedBuffer.put(slotIndex * slotSize, USED);
-        lock.writeLock().unlock();
-        // return slot index
-        return slotIndex;
     }
 
     /**
@@ -264,23 +277,15 @@ class MemMapSlotFile implements Closeable {
     public void deleteSlot(int slotIndex) throws IOException {
         throwIfClosed();
         lock.writeLock().lock(); // TODO seems like maybe we could have another lock for getting new slots and deleting
-        // store EMPTY for the size in slot
-        mappedBuffer.put(slotIndex, EMPTY);
-        // add slot to stack of empty slots
-        freeSlotsForReuse.push(slotIndex); // TODO could maybe check if it as the end and add slots back on nextFreeSlotAtEnd
-        lock.writeLock().unlock();
+        try {
+            // store EMPTY for the size in slot
+            mappedBuffer.put(slotIndex, EMPTY);
+            // add slot to stack of empty slots
+            freeSlotsForReuse.push(slotIndex); // TODO could maybe check if it as the end and add slots back on nextFreeSlotAtEnd
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
-
-    /**
-     * Make sure all data is flushed to disk. This is an expensive operation. The OS will write all data to disk in the
-     * background, so only call this if you need to insure it is written synchronously.
-     */
-    public void sync() {
-        lock.writeLock().lock();
-        mappedBuffer.force();
-        lock.writeLock().unlock();
-    }
-
 
     //==================================================================================================================
     // Private methods
@@ -302,7 +307,6 @@ class MemMapSlotFile implements Closeable {
         if (fileLength == 0) {
             return;
         }
-
         int slotOffset = fileLength - slotSize;
         // keep track of the first real data from end of file
         boolean foundFirstData = false;
