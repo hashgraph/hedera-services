@@ -191,7 +191,6 @@ public final class FCVirtualMapHashStoreImpl<HK extends VKey> implements FCVirtu
                 hashStore.deleteSlot(slotLocation); // TODO this is not fast copy safe
         } finally {
             hashIndex.releaseWriteLock(keyHash, indexLock);
-            hashStore.releaseWriteLock(keyHash, storeLock);
         }
     }
 

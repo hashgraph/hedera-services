@@ -203,7 +203,7 @@ class MemMapSlotFile implements Closeable {
         // create output stream
         final ByteBuffer subBuffer = mappedBuffer.slice();
         subBuffer.position(slotOffset + HEADER_SIZE);
-        subBuffer.limit(slotSize);
+        subBuffer.limit(subBuffer.position() + slotSize - HEADER_SIZE);
         final PositionableByteBufferSerializableDataOutputStream outputStream = new PositionableByteBufferSerializableDataOutputStream(subBuffer);
         // call write
         lock.writeLock().lock();
@@ -228,7 +228,7 @@ class MemMapSlotFile implements Closeable {
         // create input stream
         final ByteBuffer subBuffer = mappedBuffer.asReadOnlyBuffer();
         subBuffer.position(slotOffset + HEADER_SIZE);
-        subBuffer.limit(slotSize);
+        subBuffer.limit(subBuffer.position() + slotSize - HEADER_SIZE);
         final PositionableByteBufferSerializableDataInputStream inputStream = new PositionableByteBufferSerializableDataInputStream(subBuffer);
         // call read
         lock.readLock().lock();

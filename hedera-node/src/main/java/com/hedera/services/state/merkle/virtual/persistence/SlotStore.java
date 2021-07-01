@@ -88,12 +88,6 @@ public interface SlotStore {
     void deleteSlot(long location) throws IOException;
 
     /**
-     * Make sure all data is flushed to disk. This is an expensive operation. The OS will write all data to disk in the
-     * background, so only call this if you need to insure it is written synchronously.
-     */
-    void sync();
-
-    /**
      * Interface for a slot writer
      */
     interface SlotWriter {
