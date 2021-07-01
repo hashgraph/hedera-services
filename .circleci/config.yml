@@ -2224,12 +2224,11 @@ workflows:
                 ignore:
                   - NONE
             workflow-name: "Continuous-integration"
-         - sonar-check:
-             context: SonarCloud
-             requires:
-               - artifact-build
-             workflow-name: "Continuous-integration-GCP"
-
+        - sonar-check:
+            context: SonarCloud
+            requires:
+              - artifact-build
+            workflow-name: "Continuous-integration-GCP"
         - build-platform-and-services:
             context: SonarCloud
             requires:
