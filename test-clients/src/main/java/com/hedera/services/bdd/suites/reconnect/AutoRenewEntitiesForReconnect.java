@@ -110,7 +110,7 @@ public class AutoRenewEntitiesForReconnect extends HapiApiSuite {
 	 * Since reconnect is not supported when node starts from genesis, run some transactions before running correctness
 	 * tests so that a state is saved before reconnect.
 	 *
-	 * @return
+	 * @return a {@link HapiApiSpec} to do some crypto transfer transactions before reconnect
 	 */
 	public static HapiApiSpec runTransfersBeforeReconnect() {
 		return defaultHapiSpec("runTransfersBeforeReconnect")

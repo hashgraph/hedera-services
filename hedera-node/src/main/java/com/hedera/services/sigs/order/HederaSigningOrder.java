@@ -656,9 +656,9 @@ public class HederaSigningOrder {
 			TokenCreateTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
-		List<JKey> required = new ArrayList<>();
+		final List<JKey> required = new ArrayList<>();
 
-		var couldAddTreasury = addAccount(
+		final var couldAddTreasury = addAccount(
 				op,
 				TokenCreateTransactionBody::hasTreasury,
 				TokenCreateTransactionBody::getTreasury,
@@ -666,7 +666,7 @@ public class HederaSigningOrder {
 		if (!couldAddTreasury) {
 			return accountFailure(op.getTreasury(), txnId, MISSING_ACCOUNT, factory);
 		}
-		var couldAddAutoRenew = addAccount(
+		final var couldAddAutoRenew = addAccount(
 				op,
 				TokenCreateTransactionBody::hasAutoRenewAccount,
 				TokenCreateTransactionBody::getAutoRenewAccount,
@@ -679,6 +679,17 @@ public class HederaSigningOrder {
 				TokenCreateTransactionBody::hasAdminKey,
 				TokenCreateTransactionBody::getAdminKey,
 				required);
+		for (var customFee : op.getCustomFees().getCustomFeesList()) {
+			final var collector = customFee.getFeeCollectorAccountId();
+			/* A fractional fee collector must always sign a TokenCreate, since it is
+			automatically associated to the newly created token. */
+			final var couldAddCollector = customFee.hasFixedFee()
+					? addAccountIfReceiverSigRequired(collector, required)
+					: addAccount(collector, required, true);
+			if (!couldAddCollector) {
+				return factory.forMissingFeeCollector(txnId);
+			}
+		}
 
 		return factory.forValidOrder(required);
 	}
@@ -745,14 +756,30 @@ public class HederaSigningOrder {
 		return basic;
 	}
 
+	private boolean addAccountIfReceiverSigRequired(AccountID id, List<JKey> reqs) {
+		return addAccount(id, reqs, false);
+	}
+
 	private <T> boolean addAccount(T op, Predicate<T> isPresent, Function<T, AccountID> getter, List<JKey> reqs) {
 		if (isPresent.test(op)) {
-			var result = sigMetaLookup.accountSigningMetaFor(getter.apply(op));
-			if (result.succeeded()) {
-				reqs.add(result.metadata().getKey());
-			} else {
-				return false;
+			return addAccount(getter.apply(op), reqs, true);
+		}
+		return true;
+	}
+
+	private boolean addAccount(
+			AccountID id,
+			List<JKey> reqs,
+			boolean alwaysAdd
+	) {
+		var result = sigMetaLookup.accountSigningMetaFor(id);
+		if (result.succeeded()) {
+			final var metadata = result.metadata();
+			if (alwaysAdd || metadata.isReceiverSigRequired()) {
+				reqs.add(metadata.getKey());
 			}
+		} else {
+			return false;
 		}
 		return true;
 	}
