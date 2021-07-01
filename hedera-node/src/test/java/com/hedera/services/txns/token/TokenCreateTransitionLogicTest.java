@@ -31,6 +31,7 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
@@ -39,6 +40,7 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import proto.CustomFeesOuterClass;
 
 import java.time.Instant;
 import java.util.List;
@@ -208,7 +210,7 @@ class TokenCreateTransitionLogicTest {
 
 	@Test
 	void abortsIfAssociationFails() {
-		givenValidTxnCtx(false, true);
+		givenValidTxnCtx(false, true, false);
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willReturn(CreationResult.success(created));
@@ -228,7 +230,7 @@ class TokenCreateTransitionLogicTest {
 
 	@Test
 	void abortsIfUnfreezeFails() {
-		givenValidTxnCtx(false, true);
+		givenValidTxnCtx(false, true, false);
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willReturn(CreationResult.success(created));
@@ -249,15 +251,18 @@ class TokenCreateTransitionLogicTest {
 
 	@Test
 	void followsHappyPathWithAllKeys() {
-		givenValidTxnCtx(true, true);
+		givenValidTxnCtx(true, true, true);
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willReturn(CreationResult.success(created));
 		given(ledger.unfreeze(treasury, created)).willReturn(OK);
 		given(ledger.grantKyc(treasury, created)).willReturn(OK);
+		given(ledger.unfreeze(feeCollector, created)).willReturn(OK);
+		given(ledger.grantKyc(feeCollector, created)).willReturn(OK);
 		given(ledger.adjustTokenBalance(treasury, created, initialSupply))
 				.willReturn(OK);
 		given(store.associate(treasury, List.of(created))).willReturn(OK);
+		given(store.associate(feeCollector, List.of(created))).willReturn(OK);
 
 		// when:
 		subject.doStateTransition();
@@ -266,6 +271,9 @@ class TokenCreateTransitionLogicTest {
 		verify(store).associate(treasury, List.of(created));
 		verify(ledger).unfreeze(treasury, created);
 		verify(ledger).grantKyc(treasury, created);
+		verify(store).associate(feeCollector, List.of(created));
+		verify(ledger).unfreeze(feeCollector, created);
+		verify(ledger).grantKyc(feeCollector, created);
 		// and:
 		verify(txnCtx).setCreated(created);
 		verify(txnCtx).setStatus(SUCCESS);
@@ -274,8 +282,35 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
+	void abortsIfFeeCollectorEnablementFails() {
+		givenValidTxnCtx(true, true, true);
+		// and:
+		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
+				.willReturn(CreationResult.success(created));
+		given(ledger.unfreeze(treasury, created)).willReturn(OK);
+		given(ledger.grantKyc(treasury, created)).willReturn(OK);
+		given(ledger.unfreeze(feeCollector, created)).willReturn(OK);
+		given(ledger.grantKyc(feeCollector, created)).willReturn(OK);
+		given(ledger.adjustTokenBalance(treasury, created, initialSupply))
+				.willReturn(OK);
+		given(store.associate(treasury, List.of(created))).willReturn(OK);
+		given(store.associate(feeCollector, List.of(created))).willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(txnCtx, never()).setCreated(created);
+		verify(txnCtx).setStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+		// and:
+		verify(store, never()).commitCreation();
+		verify(store).rollbackCreation();
+		verify(ledger).dropPendingTokenChanges();
+	}
+
+	@Test
 	void doesntUnfreezeIfNoKeyIsPresent() {
-		givenValidTxnCtx(true, false);
+		givenValidTxnCtx(true, false, false);
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willReturn(CreationResult.success(created));
@@ -299,7 +334,7 @@ class TokenCreateTransitionLogicTest {
 
 	@Test
 	void doesntGrantKycIfNoKeyIsPresent() {
-		givenValidTxnCtx(false, true);
+		givenValidTxnCtx(false, true, false);
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willReturn(CreationResult.success(created));
@@ -545,10 +580,10 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	private void givenValidTxnCtx() {
-		givenValidTxnCtx(false, false);
+		givenValidTxnCtx(false, false, false);
 	}
 
-	private void givenValidTxnCtx(boolean withKyc, boolean withFreeze) {
+	private void givenValidTxnCtx(boolean withKyc, boolean withFreeze, boolean withCustomFees) {
 		final var expiry = Timestamp.newBuilder().setSeconds(thisSecond + thisSecond).build();
 		var builder = TransactionBody.newBuilder()
 				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
@@ -559,6 +594,9 @@ class TokenCreateTransitionLogicTest {
 						.setAdminKey(key)
 						.setAutoRenewAccount(renewAccount)
 						.setExpiry(expiry));
+		if (withCustomFees) {
+			builder.getTokenCreationBuilder().setCustomFees(grpcCustomFees);
+		}
 		if (withFreeze) {
 			builder.getTokenCreationBuilder().setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey());
 		}
@@ -691,4 +729,48 @@ class TokenCreateTransitionLogicTest {
 		given(validator.tokenSymbolCheck(any())).willReturn(OK);
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 	}
+
+	private TokenID misc = IdUtils.asToken("3.2.1");
+	private Fraction fraction = Fraction.newBuilder().setNumerator(15).setDenominator(100).build();
+	private CustomFeesOuterClass.FractionalFee firstFractionalFee = CustomFeesOuterClass.FractionalFee.newBuilder()
+			.setFractionalAmount(fraction)
+			.setMaximumAmount(50)
+			.setMinimumAmount(10)
+			.build();
+	private CustomFeesOuterClass.FractionalFee secondFractionalFee = CustomFeesOuterClass.FractionalFee.newBuilder()
+			.setFractionalAmount(fraction)
+			.setMaximumAmount(15)
+			.setMinimumAmount(5)
+			.build();
+	private CustomFeesOuterClass.FixedFee fixedFeeInTokenUnits = CustomFeesOuterClass.FixedFee.newBuilder()
+			.setDenominatingTokenId(misc)
+			.setAmount(100)
+			.build();
+	private CustomFeesOuterClass.FixedFee fixedFeeInHbar = CustomFeesOuterClass.FixedFee.newBuilder()
+			.setAmount(100)
+			.build();
+	private AccountID feeCollector = IdUtils.asAccount("6.6.6");
+	private AccountID anotherFeeCollector = IdUtils.asAccount("1.2.777");
+	private CustomFeesOuterClass.CustomFee customFixedFeeInHbar = CustomFeesOuterClass.CustomFee.newBuilder()
+			.setFeeCollectorAccountId(feeCollector)
+			.setFixedFee(fixedFeeInHbar)
+			.build();
+	private CustomFeesOuterClass.CustomFee customFixedFeeInHts = CustomFeesOuterClass.CustomFee.newBuilder()
+			.setFeeCollectorAccountId(anotherFeeCollector)
+			.setFixedFee(fixedFeeInTokenUnits)
+			.build();
+	private CustomFeesOuterClass.CustomFee customFractionalFeeA = CustomFeesOuterClass.CustomFee.newBuilder()
+			.setFeeCollectorAccountId(feeCollector)
+			.setFractionalFee(firstFractionalFee)
+			.build();
+	private CustomFeesOuterClass.CustomFee customFractionalFeeB = CustomFeesOuterClass.CustomFee.newBuilder()
+			.setFeeCollectorAccountId(feeCollector)
+			.setFractionalFee(secondFractionalFee)
+			.build();
+	private CustomFeesOuterClass.CustomFees grpcCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
+			.addCustomFees(customFixedFeeInHbar)
+			.addCustomFees(customFixedFeeInHts)
+			.addCustomFees(customFractionalFeeA)
+			.addCustomFees(customFractionalFeeB)
+			.build();
 }

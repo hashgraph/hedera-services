@@ -520,7 +520,7 @@ public class StateView {
 								.setAccountID(aid)
 								.setCreationTime(nft.getCreationTime().toGrpc())
 								.setNftID(NftID.newBuilder()
-										.setTokenID(fromEntityId(nftId.tokenId()))
+										.setTokenID(nftId.tokenId().toGrpcTokenId())
 										.setSerialNumber(nftId.serialNumber())
 										.build())
 								.setMetadata(ByteString.copyFrom(nft.getMetadata()))
@@ -528,14 +528,6 @@ public class StateView {
 					);
 				});
 		return Optional.of(nftInfos);
-	}
-
-	private TokenID fromEntityId(EntityId e) {
-		return TokenID.newBuilder()
-				.setRealmNum(e.realm())
-				.setShardNum(e.shard())
-				.setTokenNum(e.num())
-				.build();
 	}
 
 	public Optional<ContractGetInfoResponse.ContractInfo> infoForContract(ContractID id) {

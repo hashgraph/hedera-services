@@ -79,8 +79,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(37, subject.maxBatchSizeBurn());
 		assertEquals(38, subject.maxBatchSizeWipe());
 		assertEquals(39, subject.maxBatchSizeMint());
-		assertEquals(40, subject.maxNFTQueryRange());
-		assertEquals(41, subject.maxNFTMetadataBytes());
+		assertEquals(40, subject.maxNftQueryRange());
+		assertEquals(41, subject.maxNftMetadataBytes());
 		assertEquals(42, subject.maxTokenNameUtf8Bytes());
 	}
 

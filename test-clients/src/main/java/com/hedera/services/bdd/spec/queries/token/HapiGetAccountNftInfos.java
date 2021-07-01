@@ -45,9 +45,9 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 public class HapiGetAccountNftInfos extends HapiQueryOp<HapiGetAccountNftInfos> {
     private static final Logger log = LogManager.getLogger(HapiGetAccountNftInfos.class);
 
-    String account;
-    long start;
-    long end;
+    private String account;
+    private long start;
+    private long end;
 
     public HapiGetAccountNftInfos(String account, long start, long end) {
         this.account = account;
@@ -55,7 +55,7 @@ public class HapiGetAccountNftInfos extends HapiQueryOp<HapiGetAccountNftInfos> 
         this.end = end;
     }
 
-    Optional<List<HapiTokenNftInfo>> expectedNfts = Optional.empty();
+    private Optional<List<HapiTokenNftInfo>> expectedNfts = Optional.empty();
 
     @Override
     public HederaFunctionality type() {
@@ -75,15 +75,15 @@ public class HapiGetAccountNftInfos extends HapiQueryOp<HapiGetAccountNftInfos> 
                 var expectedNftElement = TokenNftInfo.newBuilder();
                 var expectedNftId = NftID.newBuilder();
 
-                nftInfo.expectedTokenID.ifPresent(e -> {
+                nftInfo.getExpectedTokenID().ifPresent(e -> {
                     expectedNftId.setTokenID(TxnUtils.asTokenId(e, spec));
                     expectedNftElement.setCreationTime(spec.registry().getCreationTime(e));
                 });
-                nftInfo.expectedSerialNum.ifPresent(expectedNftId::setSerialNumber);
+                nftInfo.getExpectedSerialNum().ifPresent(expectedNftId::setSerialNumber);
 
                 expectedNftElement.setNftID(expectedNftId.build());
-                nftInfo.expectedAccountID.ifPresent(e -> expectedNftElement.setAccountID(TxnUtils.asId(e, spec)));
-                nftInfo.expectedMetadata.ifPresent(expectedNftElement::setMetadata);
+                nftInfo.getExpectedAccountID().ifPresent(e -> expectedNftElement.setAccountID(TxnUtils.asId(e, spec)));
+                nftInfo.getExpectedMetadata().ifPresent(expectedNftElement::setMetadata);
 
                 var completedNft = expectedNftElement.build();
                 Assert.assertTrue(actualInfo.contains(completedNft));

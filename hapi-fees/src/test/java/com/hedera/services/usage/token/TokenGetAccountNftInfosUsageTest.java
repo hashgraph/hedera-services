@@ -37,12 +37,12 @@ import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 import static org.junit.Assert.assertEquals;
 
 public class TokenGetAccountNftInfosUsageTest {
-    TokenGetAccountNftInfosUsage subject;
-    AccountID id;
-    List<ByteString> metadata;
+    private TokenGetAccountNftInfosUsage subject;
+    private AccountID id;
+    private List<ByteString> metadata;
 
     @BeforeEach
-    public void setup() {
+    private void setup() {
         metadata = List.of(ByteString.copyFromUtf8("some metadata"));
         id = AccountID.newBuilder()
                 .setShardNum(0)
@@ -53,7 +53,7 @@ public class TokenGetAccountNftInfosUsageTest {
     }
 
     @Test
-    public void assessesEverything() {
+    void assessesEverything() {
         // given:
         subject.givenMetadata(metadata);
 

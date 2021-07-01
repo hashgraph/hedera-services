@@ -83,7 +83,6 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.verifyNoInteractions;
 import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.mockStatic;
 
 public class ServicesMainTest {
 	private final long NODE_ID = 1L;
@@ -528,7 +527,7 @@ public class ServicesMainTest {
 		subject.newSignedState(signedState, when, 1L);
 
 		// then:
-		verify(balancesExporter, never()).exportBalancesFrom(any(), any());
+		verify(balancesExporter, never()).exportBalancesFrom(any(), any(), any());
 	}
 
 	@Test
@@ -545,7 +544,7 @@ public class ServicesMainTest {
 		subject.newSignedState(signedState, when, 1L);
 
 		// then:
-		verify(balancesExporter).exportBalancesFrom(signedState, when);
+		verify(balancesExporter).exportBalancesFrom(signedState, when, ctx.id());
 	}
 
 	@Test
@@ -568,6 +567,7 @@ public class ServicesMainTest {
 	void failsFastIfBalanceExportDetectedInvalidState() throws Exception {
 		// setup:
 		subject.ctx = ctx;
+		var nodeId = ctx.id();
 		Instant when = Instant.now();
 		ServicesState signedState = mock(ServicesState.class);
 
@@ -575,7 +575,7 @@ public class ServicesMainTest {
 		given(balancesExporter.isTimeToExport(when)).willReturn(true);
 		willThrow(IllegalStateException.class)
 				.given(balancesExporter)
-				.exportBalancesFrom(signedState, when);
+				.exportBalancesFrom(signedState, when, nodeId);
 
 		// when:
 		subject.newSignedState(signedState, when, 1L);
