@@ -60,6 +60,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetAccountNftInfos;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetNftInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
@@ -78,7 +79,7 @@ class ExpectedCustomThrottlesTest {
 	void release0160HasExpected() {
 		assertDoesNotThrow(ExpectedCustomThrottles::new);
 
-		assertEquals(47, OPS_FOR_RELEASE_0160.size());
+		assertEquals(48, OPS_FOR_RELEASE_0160.size());
 		// and:
 		assertTrue(OPS_FOR_RELEASE_0160.contains(CryptoCreate), "Missing CryptoCreate!");
 		assertTrue(OPS_FOR_RELEASE_0160.contains(CryptoTransfer), "Missing CryptoTransfer!");
@@ -99,6 +100,7 @@ class ExpectedCustomThrottlesTest {
 		assertTrue(OPS_FOR_RELEASE_0160.contains(TokenCreate), "Missing TokenCreate!");
 		assertTrue(OPS_FOR_RELEASE_0160.contains(TokenFreezeAccount), "Missing TokenFreezeAccount!");
 		assertTrue(OPS_FOR_RELEASE_0160.contains(TokenGetNftInfo), "Missing TokenGetNftInfo!");
+		assertTrue(OPS_FOR_RELEASE_0160.contains(TokenGetAccountNftInfos), "Missing TokenGetAccountNftInfos!");
 		assertTrue(OPS_FOR_RELEASE_0160.contains(TokenUnfreezeAccount), "Missing TokenUnfreezeAccount!");
 		assertTrue(OPS_FOR_RELEASE_0160.contains(TokenGrantKycToAccount), "Missing TokenGrantKycToAccount!");
 		assertTrue(OPS_FOR_RELEASE_0160.contains(TokenRevokeKycFromAccount), "Missing TokenRevokeKycFromAccount!");

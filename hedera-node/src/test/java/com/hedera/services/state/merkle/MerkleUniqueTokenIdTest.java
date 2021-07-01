@@ -54,7 +54,6 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 
 class MerkleUniqueTokenIdTest {
-
 	private MerkleUniqueTokenId subject;
 
 	private EntityId tokenId = MISSING_ENTITY_ID;
