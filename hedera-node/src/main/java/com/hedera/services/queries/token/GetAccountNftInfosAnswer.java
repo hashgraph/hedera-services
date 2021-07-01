@@ -82,7 +82,7 @@ public class GetAccountNftInfosAnswer implements AnswerService {
         var accountNftInfoQuery = query.getTokenGetAccountNftInfos();
         AccountID id = accountNftInfoQuery.getAccountID();
 
-        if (accountNftInfoQuery.getStart() > accountNftInfoQuery.getEnd()) {
+        if (accountNftInfoQuery.getStart() >= accountNftInfoQuery.getEnd()) {
             return INVALID_QUERY_RANGE;
         }
 
@@ -100,7 +100,7 @@ public class GetAccountNftInfosAnswer implements AnswerService {
         if (
                 accountNftInfoQuery.getStart() < 0 ||
                 accountNftInfoQuery.getEnd() < 0 ||
-                accountNftInfoQuery.getStart() > nftCount ||
+                accountNftInfoQuery.getStart() >= nftCount ||
                 accountNftInfoQuery.getEnd() > nftCount
         ) {
             return INVALID_QUERY_RANGE;
@@ -151,7 +151,6 @@ public class GetAccountNftInfosAnswer implements AnswerService {
                 .build();
     }
 
-    @SuppressWarnings("unchecked")
     private void setAnswerOnly(
             TokenGetAccountNftInfosResponse.Builder response,
             StateView view,

@@ -26,10 +26,10 @@ import java.util.Optional;
 import java.util.OptionalLong;
 
 public class HapiTokenNftInfo {
-    OptionalLong expectedSerialNum;
-    Optional<ByteString> expectedMetadata;
-    Optional<String> expectedTokenID;
-    Optional<String> expectedAccountID;
+    private OptionalLong expectedSerialNum;
+    private Optional<ByteString> expectedMetadata;
+    private Optional<String> expectedTokenID;
+    private Optional<String> expectedAccountID;
 
     private HapiTokenNftInfo(Optional<String> tokenId, OptionalLong serialNum, Optional<String> accountId, Optional<ByteString> metadata) {
         this.expectedSerialNum = serialNum;
@@ -38,12 +38,28 @@ public class HapiTokenNftInfo {
         this.expectedAccountID = accountId;
     }
 
-    public static HapiTokenNftInfo newTokenNftInfo(String tokenId, long serialNum, String accountId, ByteString metadata) {
+    public static HapiTokenNftInfo newTokenNftInfo(final String tokenId, final long serialNum, final String accountId, final ByteString metadata) {
         return new HapiTokenNftInfo(
                 Optional.of(tokenId),
                 OptionalLong.of(serialNum),
                 Optional.of(accountId),
                 Optional.of(metadata)
         );
+    }
+
+    public OptionalLong getExpectedSerialNum() {
+        return expectedSerialNum;
+    }
+
+    public Optional<ByteString> getExpectedMetadata() {
+        return expectedMetadata;
+    }
+
+    public Optional<String> getExpectedTokenID() {
+        return expectedTokenID;
+    }
+
+    public Optional<String> getExpectedAccountID() {
+        return expectedAccountID;
     }
 }
