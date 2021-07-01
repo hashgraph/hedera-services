@@ -205,26 +205,29 @@ public final class FCVirtualMapHashStoreImpl<HK extends VKey> implements FCVirtu
     public Hash loadHash(HK hashKey) throws IOException {
         int keyHash = hashKey.hashCode();
         Object indexLock = hashIndex.acquireReadLock(keyHash); // TODO reuse hash with hashIndex call
-        Object storeLock = hashStore.acquireReadLock(keyHash);
         try {
             long slotLocation = hashIndex.getSlot(hashKey);
             if (slotLocation == SlotStore.NOT_FOUND_LOCATION) return null;
-            return hashStore.readSlot(slotLocation, inputStream -> {
-                int position = inputStream.position();
-                // skip hash key
-    //                SerializableLong key = inputStream.readSelfSerializable(position, SerializableLong::new);
-                position += hashKeySizeBytes;
-                // hash data
-                inputStream.position(position);
-                DigestType digestType = DigestType.valueOf(inputStream.readInt());
-                byte[] hashData = new byte[digestType.digestLength()];
-                //noinspection ResultOfMethodCallIgnored
-                inputStream.read(hashData);
-                return new VirtualHash(digestType, hashData);
-            });
+            Object storeLock = hashStore.acquireReadLock(slotLocation);
+            try {
+                return hashStore.readSlot(slotLocation, inputStream -> {
+                    int position = inputStream.position();
+                    // skip hash key
+                    //                SerializableLong key = inputStream.readSelfSerializable(position, SerializableLong::new);
+                    position += hashKeySizeBytes;
+                    // hash data
+                    inputStream.position(position);
+                    DigestType digestType = DigestType.valueOf(inputStream.readInt());
+                    byte[] hashData = new byte[digestType.digestLength()];
+                    //noinspection ResultOfMethodCallIgnored
+                    inputStream.read(hashData);
+                    return new VirtualHash(digestType, hashData);
+                });
+            } finally {
+                hashStore.releaseReadLock(slotLocation,storeLock);
+            }
         } finally {
             hashIndex.releaseReadLock(keyHash,indexLock);
-            hashStore.releaseReadLock(keyHash,storeLock);
         }
     }
 
@@ -238,24 +241,27 @@ public final class FCVirtualMapHashStoreImpl<HK extends VKey> implements FCVirtu
     public void saveHash(HK hashKey, Hash hash) throws IOException {
         int keyHash = hashKey.hashCode();
         Object indexLock = hashIndex.acquireWriteLock(keyHash); // TODO reuse hash with hashIndex call
-        Object storeLock = hashStore.acquireWriteLock(keyHash);
         try {
             // if already stored and if so it is an update
             long slotLocation = hashIndex.getSlotIfAbsentPut(hashKey, hashStore::getNewSlot);
-            // write hash into slot
-            hashStore.writeSlot(slotLocation, outputStream -> {
-                int position = outputStream.position();
-                // write hash key
-                outputStream.writeSelfSerializable(position, hashKey, hashKeySizeBytes);
-                position += hashKeySizeBytes;
-                // write hash data
-                outputStream.position(position);
-                outputStream.writeInt(hash.getDigestType().id());
-                outputStream.write(hash.getValue()); // TODO Badly need a way to save a hash here without copying the byte[]
-            });
+            Object storeLock = hashStore.acquireWriteLock(slotLocation);
+            try {
+                // write hash into slot
+                hashStore.writeSlot(slotLocation, outputStream -> {
+                    int position = outputStream.position();
+                    // write hash key
+                    outputStream.writeSelfSerializable(position, hashKey, hashKeySizeBytes);
+                    position += hashKeySizeBytes;
+                    // write hash data
+                    outputStream.position(position);
+                    outputStream.writeInt(hash.getDigestType().id());
+                    outputStream.write(hash.getValue()); // TODO Badly need a way to save a hash here without copying the byte[]
+                });
+            } finally {
+                hashStore.releaseWriteLock(slotLocation, storeLock);
+            }
         } finally {
             hashIndex.releaseWriteLock(keyHash, indexLock);
-            hashStore.releaseWriteLock(keyHash, storeLock);
         }
     }
 
