@@ -125,7 +125,7 @@ public class ContractLeafStore implements FCLeafStore<ContractUint256, ContractU
     }
 
     @Override
-    public FCLeafStore<ContractUint256, ContractUint256> copy() {
+    public ContractLeafStore copy() {
         return new ContractLeafStore(this);
     }
 
