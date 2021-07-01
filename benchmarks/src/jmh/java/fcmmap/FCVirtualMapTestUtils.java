@@ -10,6 +10,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.fcmap.VKey;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -233,7 +234,7 @@ public class FCVirtualMapTestUtils {
         }
     }
 
-    public static class SerializableAccount implements SelfSerializable {
+    public static class SerializableAccount implements VKey {
         private Account account;
 
         public SerializableAccount() {}
@@ -293,6 +294,21 @@ public class FCVirtualMapTestUtils {
         @Override
         public int hashCode() {
             return Objects.hash(account);
+        }
+
+        @Override
+        public void serialize(ByteBuffer byteBuffer) throws IOException {
+            throw new UnsupportedOperationException("To be implemented");
+        }
+
+        @Override
+        public void deserialize(ByteBuffer byteBuffer, int i) throws IOException {
+            throw new UnsupportedOperationException("To be implemented");
+        }
+
+        @Override
+        public boolean equals(ByteBuffer byteBuffer, int i) throws IOException {
+            throw new UnsupportedOperationException("To be implemented");
         }
     }
 }

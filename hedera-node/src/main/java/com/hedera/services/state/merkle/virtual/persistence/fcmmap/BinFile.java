@@ -512,6 +512,9 @@ public final class BinFile<K extends VKey> {
             final long newestVersionInQueue = mappedBuffer.getLong(newestMutationOffset);
             // read the old slot value
             oldSlotIndex = mappedBuffer.getLong(newestMutationOffset + Long.BYTES);
+            if (oldSlotIndex == RELEASED) {
+                oldSlotIndex = NOT_FOUND_LOCATION;
+            }
             // update for create new mutation
             if (newestVersionInQueue == version) { // update
                 mutationOffset = newestMutationOffset;

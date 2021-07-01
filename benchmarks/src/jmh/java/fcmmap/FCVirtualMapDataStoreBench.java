@@ -56,35 +56,35 @@ public class FCVirtualMapDataStoreBench {
 
         @Setup(Level.Iteration)
         public void setup() {
-            System.out.println("FCVirtualMapDataStoreBench.cleanAndCreate");
-            try {
-                ConstructableRegistry.registerConstructable(new ClassConstructorPair(EntityId.class,EntityId::new));
-            } catch (ConstructableRegistryException e) {
-                e.printStackTrace();
-            }
-            try {
-                // delete any old store
-                FCVirtualMapTestUtils.deleteDirectoryAndContents(STORE_PATH);
-                // create new store dir
-                Files.createDirectories(STORE_PATH);
-                // get slot index suppliers
-                Supplier<FCSlotIndex<SerializableLong>> longSlotIndexProvider = FCVirtualMapTestUtils.supplerFromClass(fcSlotIndexImpl);
-                Supplier<FCSlotIndex<SerializableAccount>> accountIndexProvider = FCVirtualMapTestUtils.supplerFromClass(fcSlotIndexImpl);
-                // get slot store suppler
-                Supplier<SlotStore> slotStoreSupplier = FCVirtualMapTestUtils.supplerFromClass(slotStoreImpl);
-                // measure the size of a MerkleAccountState
-                int sizeOfMerkleAccountState = FCVirtualMapTestUtils.measureLengthOfSerializable(FCVirtualMapTestUtils.createRandomMerkleAccountState(1, random));
-                // create and open store
-                store = new FCVirtualMapLeafStoreImpl<SerializableAccount, SerializableLong, MerkleAccountState>(STORE_PATH, 250,
-                        8 * 3, 8, sizeOfMerkleAccountState,
-                        longSlotIndexProvider.get(), accountIndexProvider.get(),
-                        SerializableAccount::new, SerializableLong::new, MerkleAccountState::new, slotStoreSupplier);
-                store.open();
-                // reset iteration counter
-                iteration = 0;
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+//            System.out.println("FCVirtualMapDataStoreBench.cleanAndCreate");
+//            try {
+//                ConstructableRegistry.registerConstructable(new ClassConstructorPair(EntityId.class,EntityId::new));
+//            } catch (ConstructableRegistryException e) {
+//                e.printStackTrace();
+//            }
+//            try {
+//                // delete any old store
+//                FCVirtualMapTestUtils.deleteDirectoryAndContents(STORE_PATH);
+//                // create new store dir
+//                Files.createDirectories(STORE_PATH);
+//                // get slot index suppliers
+//                Supplier<FCSlotIndex<SerializableLong>> longSlotIndexProvider = FCVirtualMapTestUtils.supplerFromClass(fcSlotIndexImpl);
+//                Supplier<FCSlotIndex<SerializableAccount>> accountIndexProvider = FCVirtualMapTestUtils.supplerFromClass(fcSlotIndexImpl);
+//                // get slot store suppler
+//                Supplier<SlotStore> slotStoreSupplier = FCVirtualMapTestUtils.supplerFromClass(slotStoreImpl);
+//                // measure the size of a MerkleAccountState
+//                int sizeOfMerkleAccountState = FCVirtualMapTestUtils.measureLengthOfSerializable(FCVirtualMapTestUtils.createRandomMerkleAccountState(1, random));
+//                // create and open store
+//                store = new FCVirtualMapLeafStoreImpl<SerializableAccount, SerializableLong, MerkleAccountState>(STORE_PATH, 250,
+//                        8 * 3, 8, sizeOfMerkleAccountState,
+//                        longSlotIndexProvider.get(), accountIndexProvider.get(),
+//                        SerializableAccount::new, SerializableLong::new, MerkleAccountState::new, slotStoreSupplier);
+//                store.open();
+//                // reset iteration counter
+//                iteration = 0;
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
         }
 
         @TearDown(Level.Iteration)

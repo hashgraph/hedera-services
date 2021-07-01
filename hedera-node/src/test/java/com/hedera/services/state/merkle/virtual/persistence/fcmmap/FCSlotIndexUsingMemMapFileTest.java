@@ -69,12 +69,13 @@ public class FCSlotIndexUsingMemMapFileTest {
         // create initial indexes
         FCSlotIndexUsingFCHashMap<LongVKey> fcHashMap = new FCSlotIndexUsingFCHashMap<>();
         FCSlotIndexUsingMemMapFile<LongVKey> memMapFile = new FCSlotIndexUsingMemMapFile<>(
-                STORE_PATH,"FCSlotIndexUsingMemMapFileTest",512,128,Long.BYTES,100,10);
+                STORE_PATH,"FCSlotIndexUsingMemMapFileTest",512*128,128,Long.BYTES,100,10);
         var currentIndex = new PairFCSlotIndex(fcHashMap, memMapFile, 0);
         List<PairFCSlotIndex> indexes = new ArrayList<>();
         indexes.add(currentIndex);
         for (int i = 0; i < 100_000; i++) {
-            switch(RANDOM.nextInt(11)){
+            currentIndex.keyCount();
+            switch(RANDOM.nextInt(11)) {
                 case 0:
                 case 1:
                 case 2:
@@ -129,19 +130,23 @@ public class FCSlotIndexUsingMemMapFileTest {
         public long getSlot(long key) {
             return getSlot(new LongVKey(key));
         }
-        public void putSlot(long key, long slot) { putSlot(new LongVKey(key),slot); }
-        public void removeSlot(long key) { removeSlot(new LongVKey(key)); }
+        public void putSlot(long key, long slot) { putSlot(new LongVKey(key), slot); }
+        public void removeSlot(long key) throws IOException { removeSlot(new LongVKey(key)); }
 
         @Override
         public long getSlot(LongVKey key) {
-            long fcHashMapValue = fcHashMap.getSlot(key);
-            long memMapFileValue = memMapFile.getSlot(key);
-            assertEquals(fcHashMapValue, memMapFileValue);
-            return memMapFileValue;
+            try {
+                long fcHashMapValue = fcHashMap.getSlot(key);
+                long memMapFileValue = memMapFile.getSlot(key);
+                assertEquals(fcHashMapValue, memMapFileValue);
+                return memMapFileValue;
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         @Override
-        public long getSlotIfAbsentPut(LongVKey key, LongSupplier newValueSupplier) {
+        public long getSlotIfAbsentPut(LongVKey key, LongSupplier newValueSupplier) throws IOException {
             LongSupplier longSupplier = new LongSupplier() {
                 boolean newValueAvailable = false;
                 long newValue;
@@ -162,12 +167,16 @@ public class FCSlotIndexUsingMemMapFileTest {
 
         @Override
         public void putSlot(LongVKey key, long slot) {
-            fcHashMap.putSlot(key,slot);
-            memMapFile.putSlot(key,slot);
+            try {
+                fcHashMap.putSlot(key, slot);
+                memMapFile.putSlot(key, slot);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         @Override
-        public long removeSlot(LongVKey key) {
+        public long removeSlot(LongVKey key) throws IOException {
             long fcHashMapValue = fcHashMap.removeSlot(key);
             long memMapFileValue = memMapFile.removeSlot(key);
             assertEquals(fcHashMapValue, memMapFileValue,"removeSlot returned different values for key["+toString(key)+"] and version["+version+"]");
@@ -178,8 +187,31 @@ public class FCSlotIndexUsingMemMapFileTest {
         public int keyCount() {
             int fcHashMapCount = fcHashMap.keyCount();
             int memMapFileCount = memMapFile.keyCount();
+            if (fcHashMapCount != memMapFileCount) {
+                System.out.println("Oops");
+            }
             assertEquals(fcHashMapCount, memMapFileCount);
             return 0;
+        }
+
+        @Override
+        public Object acquireWriteLock(int keyHash) {
+            return keyHash;
+        }
+
+        @Override
+        public void releaseWriteLock(int keyHash, Object lockStamp) {
+            // No-op
+        }
+
+        @Override
+        public Object acquireReadLock(int keyHash) {
+            return keyHash;
+        }
+
+        @Override
+        public void releaseReadLock(int keyHash, Object lockStamp) {
+            // No-op
         }
 
         @Override

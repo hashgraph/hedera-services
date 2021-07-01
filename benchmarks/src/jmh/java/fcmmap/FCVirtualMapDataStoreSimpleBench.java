@@ -51,28 +51,28 @@ public class FCVirtualMapDataStoreSimpleBench {
 
         @Setup(Level.Iteration)
         public void setup() {
-            System.out.println("FCVirtualMapDataStoreBench.cleanAndCreate");
-            try {
-                // delete any old store
-                FCVirtualMapTestUtils.deleteDirectoryAndContents(STORE_PATH);
-                // create new store dir
-                Files.createDirectories(STORE_PATH);
-                // get slot index suppliers
-                Supplier<FCSlotIndex<SerializableLong>> longSlotIndexProvider = FCVirtualMapTestUtils.supplerFromClass(fcSlotIndexImpl);
-                Supplier<FCSlotIndex<SerializableAccount>> accountIndexProvider = FCVirtualMapTestUtils.supplerFromClass(fcSlotIndexImpl);
-                // get slot store suppler
-                Supplier<SlotStore> slotStoreSupplier = FCVirtualMapTestUtils.supplerFromClass(slotStoreImpl);
-                // create and open store
-                store = new FCVirtualMapLeafStoreImpl<>(STORE_PATH, 10,
-                        8 * 3, 8, TestLeafData.SIZE_BYTES,
-                        longSlotIndexProvider.get(), accountIndexProvider.get(),
-                        SerializableAccount::new, SerializableLong::new, TestLeafData::new, slotStoreSupplier);
-                store.open();
-                // reset iteration counter
-                iteration = 0;
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+//            System.out.println("FCVirtualMapDataStoreBench.cleanAndCreate");
+//            try {
+//                // delete any old store
+//                FCVirtualMapTestUtils.deleteDirectoryAndContents(STORE_PATH);
+//                // create new store dir
+//                Files.createDirectories(STORE_PATH);
+//                // get slot index suppliers
+//                Supplier<FCSlotIndex<SerializableLong>> longSlotIndexProvider = FCVirtualMapTestUtils.supplerFromClass(fcSlotIndexImpl);
+//                Supplier<FCSlotIndex<SerializableAccount>> accountIndexProvider = FCVirtualMapTestUtils.supplerFromClass(fcSlotIndexImpl);
+//                // get slot store suppler
+//                Supplier<SlotStore> slotStoreSupplier = FCVirtualMapTestUtils.supplerFromClass(slotStoreImpl);
+//                // create and open store
+//                store = new FCVirtualMapLeafStoreImpl<>(STORE_PATH, 10,
+//                        8 * 3, 8, TestLeafData.SIZE_BYTES,
+//                        longSlotIndexProvider.get(), accountIndexProvider.get(),
+//                        SerializableAccount::new, SerializableLong::new, TestLeafData::new, slotStoreSupplier);
+//                store.open();
+//                // reset iteration counter
+//                iteration = 0;
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
         }
 
         @TearDown(Level.Iteration)

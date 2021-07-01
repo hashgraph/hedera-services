@@ -380,7 +380,7 @@ public final class FCVirtualMapLeafStoreImpl<LK extends VKey,
                 // find a new slot location
                 slotLocation = leafStore.getNewSlot();
                 // store in indexes
-                leafIndex.putSlot(leafKey,slotLocation);
+                leafIndex.putSlot(leafKey, slotLocation);
                 leafPathIndex.putSlot(leafPath, slotLocation);
             }
             // now we have location read from store

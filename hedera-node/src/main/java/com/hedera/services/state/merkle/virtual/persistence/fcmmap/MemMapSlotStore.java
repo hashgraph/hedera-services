@@ -103,7 +103,7 @@ public final class MemMapSlotStore implements SlotStore {
             if (!files.isEmpty()) currentFileForWriting = files.get(0);
         }
         // Change state to open
-        open = new AtomicBoolean(false);
+        open = new AtomicBoolean(true);
     }
 
     //==================================================================================================================
@@ -236,7 +236,7 @@ public final class MemMapSlotStore implements SlotStore {
         throwIfNotOpen(); // We will end up throwing with an NPE while accessing "files" below anyway.
         filesLock.readLock().lock();
         MemMapSlotFile fileToWriteTo = currentFileForWriting;
-        boolean currentFileHasRoom = fileToWriteTo != null && (fileToWriteTo.isFileFull());
+        boolean currentFileHasRoom = fileToWriteTo != null && !fileToWriteTo.isFileFull();
         filesLock.readLock().unlock();
         // search for a file to write to if currentFileForWriting is missing or full
         if (!currentFileHasRoom) {
@@ -282,20 +282,6 @@ public final class MemMapSlotStore implements SlotStore {
         filesLock.readLock().unlock();
         if (file == null) throw new IllegalArgumentException("There is no file for location ["+location+"]");
         file.deleteSlot(slotIndexFromLocation(location));
-    }
-
-    /**
-     * Make sure all data is flushed to disk. This is an expensive operation. The OS will write all data to disk in the
-     * background, so only call this if you need to insure it is written synchronously.
-     */
-    @Override
-    public void sync() {
-        throwIfNotOpen();
-        filesLock.readLock().lock();
-        for (MemMapSlotFile dataFile : files) {
-            dataFile.sync();
-        }
-        filesLock.readLock().unlock();
     }
 
     //==================================================================================================================

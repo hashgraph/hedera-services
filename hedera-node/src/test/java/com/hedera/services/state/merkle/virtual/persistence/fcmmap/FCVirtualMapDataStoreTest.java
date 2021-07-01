@@ -41,7 +41,6 @@ public class FCVirtualMapDataStoreTest {
                 STORE_PATH, 8, 8,
                 new FCSlotIndexUsingFCHashMap<>(), MemMapSlotStore::new);
 
-        hashStore.open();
         // create some data for a number of accounts
         for (int i = 0; i < COUNT; i++) {
             hashStore.saveHash(new LongVKey(i),hash(i));
@@ -89,7 +88,6 @@ public class FCVirtualMapDataStoreTest {
                         LongVKey::new, LongVKey::new, TestLeafData::new,
                         MemMapSlotStore::new);
 
-        store.open();
         // create some data for a number of accounts
         for (int i = 0; i < COUNT; i++) {
             LongVKey l = new LongVKey(i);
@@ -163,7 +161,6 @@ public class FCVirtualMapDataStoreTest {
                         LongVKey::new, LongVKey::new, TestLeafData::new,
                         MemMapSlotStore::new);
 
-        store.open();
         // create some data for a number of accounts
         for (int i = 0; i < COUNT; i++) {
             LongVKey l = new LongVKey(i);
@@ -218,8 +215,6 @@ public class FCVirtualMapDataStoreTest {
                 STORE_PATH, 8, 8,
                 new FCSlotIndexUsingFCHashMap<>(), MemMapSlotStore::new);
 
-        store.open();
-        hashStore.open();
         System.out.println("Files.exists(STORE_PATH) = " + Files.exists(STORE_PATH));
         // create some data for a number of accounts
         for (int i = 0; i < COUNT; i++) {
@@ -321,7 +316,4 @@ public class FCVirtualMapDataStoreTest {
 //        store.release();
 //        store2.release();
 //    }
-
-
-
 }
