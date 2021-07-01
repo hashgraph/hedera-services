@@ -83,4 +83,9 @@ public class ContractUint256 implements SelfSerializable, VKey {
         }
         return true;
     }
+
+    @Override
+    public String toString() {
+        return "ContractUint256{"+ value +'}';
+    }
 }
