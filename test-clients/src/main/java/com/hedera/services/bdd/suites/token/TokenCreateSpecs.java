@@ -499,14 +499,14 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.treasury(tokenCollector)
 								.withCustom(fractionalFee(
 										numerator, denominator,
-										minimumToCollect * 20, OptionalLong.of(maximumToCollect),
+										minimumToCollect, OptionalLong.of(minimumToCollect - 1),
 										tokenCollector))
 								.hasKnownStatus(FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT),
 						tokenCreate(token)
 								.treasury(tokenCollector)
 								.withCustom(fractionalFee(
 										numerator, denominator,
-										minimumToCollect * 10, OptionalLong.of(maximumToCollect),
+										minimumToCollect, OptionalLong.of(minimumToCollect),
 										tokenCollector))
 								.hasKnownStatus(SUCCESS),
 						fileUpdate(APP_PROPERTIES)
