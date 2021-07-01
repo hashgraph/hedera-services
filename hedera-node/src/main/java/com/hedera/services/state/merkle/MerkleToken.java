@@ -170,7 +170,8 @@ public class MerkleToken extends AbstractMerkleLeaf {
 				treasury,
 				autoRenewAccount,
 				autoRenewPeriod,
-				feeSchedule);
+				feeSchedule,
+				feeScheduleKey);
 	}
 
 	/* --- Bean --- */

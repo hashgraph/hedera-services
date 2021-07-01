@@ -135,23 +135,6 @@ class MerkleTokenTest {
 		subject = new MerkleToken(
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(subject);
-		subject.setExpiry(expiry);
-		subject.setTotalSupply(totalSupply);
-		subject.setAdminKey(adminKey);
-		subject.setFreezeKey(freezeKey);
-		subject.setKycKey(kycKey);
-		subject.setWipeKey(wipeKey);
-		subject.setSupplyKey(supplyKey);
-		subject.setDeleted(isDeleted);
-		subject.setMemo(memo);
-		subject.setTokenType(TokenType.FUNGIBLE_COMMON);
-		subject.setSupplyType(TokenSupplyType.INFINITE);
-		subject.setTreasury(treasury);
-		subject.setName(name);
-		subject.setSymbol(symbol);
-		subject.setAccountsFrozenByDefault(true);
-		subject.setFeeScheduleFrom(grpcFeeSchedule);
-		subject.setFeeScheduleKey(feeScheduleKey);
 
 		serdes = mock(DomainSerdes.class);
 		MerkleToken.serdes = serdes;
@@ -354,11 +337,24 @@ class MerkleTokenTest {
 		other = new MerkleToken(
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(other);
+
 		other.setWipeKey(otherWipeKey);
 
 		// expect:
 		assertNotEquals(subject, other);
 		// and:
+		assertNotEquals(subject.hashCode(), other.hashCode());
+	}
+
+	@Test
+	void objectContractHoldsForDifferentFeeScheduleKey() {
+		other = new MerkleToken(
+				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
+		setOptionalElements(other);
+
+		other.setFeeScheduleKey(otherFeeScheduleKey);
+
+		assertNotEquals(subject, other);
 		assertNotEquals(subject.hashCode(), other.hashCode());
 	}
 
@@ -612,6 +608,9 @@ class MerkleTokenTest {
 		token.setAutoRenewPeriod(autoRenewPeriod);
 		token.setMemo(memo);
 		token.setFeeScheduleFrom(grpcFeeSchedule);
+		token.setFeeScheduleKey(feeScheduleKey);
+		token.setTokenType(TokenType.FUNGIBLE_COMMON);
+		token.setSupplyType(TokenSupplyType.INFINITE);
 	}
 
 	@Test
