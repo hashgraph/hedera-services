@@ -292,7 +292,7 @@ public class HapiSpecRegistry {
 		put(name + "Expiry", value, Long.class);
 	}
 
-	public void saveCreationTime(String name, Long value) { put(name + "CreationTime", value, Long.class); }
+	public void saveCreationTime(String name, Timestamp value) { put(name + "CreationTime", value, Timestamp.class); }
 
 	public void saveSupplyKey(String name, Key key) {
 		put(name + "Supply", key, Key.class);
@@ -388,7 +388,7 @@ public class HapiSpecRegistry {
 
 	public Long getExpiry(String name) { return get(name + "Expiry", Long.class); }
 
-	public Long getCreationTime(String name) { return get(name + "CreationTime", Long.class); }
+	public Timestamp getCreationTime(String name) { return get(name + "CreationTime", Timestamp.class); }
 
 	public boolean hasKey(String name) {
 		return hasVia(this::getKey, name);

@@ -111,7 +111,7 @@ public enum TestContextValidator implements OptionValidator {
 	}
 
 	@Override
-	public ResponseCodeEnum nftMaxQueryRangeCheck(int start, int end) {
+	public ResponseCodeEnum nftMaxQueryRangeCheck(long start, long end) {
 		throw new UnsupportedOperationException();
 	}
 

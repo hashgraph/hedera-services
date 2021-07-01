@@ -92,10 +92,13 @@ import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenGetAccountNftInfosQuery;
 import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
+import com.hederahashgraph.api.proto.java.TokenGetNftInfoQuery;
 import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
@@ -155,10 +158,13 @@ import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hedera.services.utils.MiscUtils.functionalityOfQuery;
 import static com.hedera.services.utils.MiscUtils.getTxnStat;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
+import static com.hedera.services.utils.MiscUtils.readableNftTransferList;
 import static com.hedera.services.utils.MiscUtils.readableProperty;
 import static com.hedera.services.utils.MiscUtils.readableTransferList;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
+import static com.hedera.test.utils.TxnUtils.withNftAdjustments;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo;
@@ -399,6 +405,20 @@ public class MiscUtilsTest {
 		String s = readableTransferList(transfers);
 
 		assertEquals("[0.1.2 <- +500, 1.0.2 -> -250, 1.2.0 -> -9223372036854775808]", s);
+	}
+
+	@Test
+	void prettyPrintsNFTTransferList() {
+		// given:
+		TokenTransferList transfers = withNftAdjustments(
+				asToken("0.2.3"), asAccount("0.1.2"), asAccount("0.1.3"), 1L,
+				asAccount("1.0.4"), asAccount("1.0.5"), 2L,
+				asAccount("1.2.6"), asAccount("1.0.7"), 3L);
+
+		// when:
+		String s = readableNftTransferList(transfers);
+
+		assertEquals("[1 0.1.2 0.1.3, 2 1.0.4 1.0.5, 3 1.2.6 1.0.7]", s);
 	}
 
 	@Test
@@ -1097,6 +1117,26 @@ public class MiscUtilsTest {
 				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
 		var query = Query.newBuilder()
 				.setCryptoGetInfo(op)
+				.build();
+		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
+	}
+
+	@Test
+	void worksForTokenGetNftInfo() {
+		var op = TokenGetNftInfoQuery.newBuilder()
+				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
+		var query = Query.newBuilder()
+				.setTokenGetNftInfo(op)
+				.build();
+		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
+	}
+
+	@Test
+	void worksForTokenGetAccountNftInfos() {
+		var op = TokenGetAccountNftInfosQuery.newBuilder()
+				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
+		var query = Query.newBuilder()
+				.setTokenGetAccountNftInfos(op)
 				.build();
 		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
 	}

@@ -29,6 +29,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -82,6 +83,28 @@ public class TxnUtils {
 						.addNftTransfers(IdUtils.nftXfer(cId, cCounterpartyId, C))
 						.build()
 		);
+	}
+
+	public static TokenTransferList withNftAdjustments(
+			TokenID a, AccountID aSenderId, AccountID aReceiverId, Long aSerialNumber,
+			AccountID bSenderId, AccountID bReceiverId, Long bSerialNumber,
+			AccountID cSenderId, AccountID cReceiverId, Long cSerialNumber
+	) {
+		return TokenTransferList.newBuilder()
+						.setToken(a)
+						.addNftTransfers(NftTransfer.newBuilder()
+								.setSenderAccountID(aSenderId)
+								.setReceiverAccountID(aReceiverId)
+								.setSerialNumber(aSerialNumber))
+						.addNftTransfers(NftTransfer.newBuilder()
+								.setSenderAccountID(bSenderId)
+								.setReceiverAccountID(bReceiverId)
+								.setSerialNumber(bSerialNumber))
+						.addNftTransfers(NftTransfer.newBuilder()
+								.setSenderAccountID(cSenderId)
+								.setReceiverAccountID(cReceiverId)
+								.setSerialNumber(cSerialNumber))
+						.build();
 	}
 
 	public static List<TokenTransferList> withTokenAdjustments(

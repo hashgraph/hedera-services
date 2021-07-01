@@ -79,8 +79,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(37, subject.maxBatchSizeBurn());
 		assertEquals(38, subject.maxBatchSizeWipe());
 		assertEquals(39, subject.maxBatchSizeMint());
-		assertEquals(40, subject.maxNFTQueryRange());
-		assertEquals(41, subject.maxNFTMetadataBytes());
+		assertEquals(40, subject.maxNftQueryRange());
+		assertEquals(41, subject.maxNftMetadataBytes());
 		assertEquals(42, subject.maxTokenNameUtf8Bytes());
 	}
 
@@ -270,7 +270,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("tokens.nfts.maxBatchSizeBurn")).willReturn(i + 36);
 		given(properties.getIntProperty("tokens.nfts.maxBatchSizeWipe")).willReturn(i + 37);
 		given(properties.getIntProperty("tokens.nfts.maxBatchSizeMint")).willReturn(i + 38);
-		given(properties.getIntProperty("tokens.nfts.maxQueryRange")).willReturn(i + 39);
+		given(properties.getLongProperty("tokens.nfts.maxQueryRange")).willReturn(i + 39L);
 		given(properties.getIntProperty("tokens.nfts.maxMetadataBytes")).willReturn(i + 40);
 		given(properties.getIntProperty("tokens.maxTokenNameUtf8Bytes")).willReturn(i + 41);
 	}
