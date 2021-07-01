@@ -36,7 +36,7 @@ public class TokenCreateFactory extends SignedTxnFactory<TokenCreateFactory> {
 	private boolean omitAdmin = false;
 	private boolean omitTreasury = false;
 	private Optional<AccountID> autoRenew = Optional.empty();
-	private List<CustomFee> customFees = null;
+	private List<CustomFee> customFees = new ArrayList<>();
 
 	private TokenCreateFactory() {}
 
@@ -60,9 +60,6 @@ public class TokenCreateFactory extends SignedTxnFactory<TokenCreateFactory> {
 	}
 
 	public TokenCreateFactory plusCustomFee(CustomFee customFee) {
-		if (customFees == null) {
-			customFees = new ArrayList<>();
-		}
 		customFees.add(customFee);
 		return this;
 	}
@@ -89,10 +86,9 @@ public class TokenCreateFactory extends SignedTxnFactory<TokenCreateFactory> {
 		if (frozen) {
 			op.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey());
 		}
-		if (customFees != null) {
-			for (var fee : customFees) {
-				op.getCustomFeesBuilder().addCustomFees(fee.asGrpc());
-			}
+		var cfBuilder = op.getCustomFeesBuilder();
+		for (var fee : customFees) {
+			cfBuilder.addCustomFees(fee.asGrpc());
 		}
 		autoRenew.ifPresent(op::setAutoRenewAccount);
 		txn.setTokenCreation(op);
