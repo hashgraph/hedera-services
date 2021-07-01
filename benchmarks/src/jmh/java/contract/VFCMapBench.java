@@ -17,6 +17,8 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Random;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -70,6 +72,8 @@ public class VFCMapBench {
             contractMap.put(key, value);
         }
 
+        printDataStoreSize();
+
         // During setup we perform the full hashing and release the old copy. This way,
         // during the tests, we don't have an initial slow hash.
         unmodifiableContractMap = contractMap;
@@ -82,6 +86,7 @@ public class VFCMapBench {
 
     @TearDown
     public void destroy() {
+        printDataStoreSize();
         /*store.close();*/
     }
 
@@ -91,6 +96,26 @@ public class VFCMapBench {
 
     private ContractUint256 asContractValue(long index) {
         return new ContractUint256(BigInteger.valueOf(index));
+    }
+
+    private void printDataStoreSize() {
+        // print data dir size
+        Path dir =  Path.of("data");
+        if (Files.exists(dir) && Files.isDirectory(dir)) {
+            try {
+                long size = Files.walk(dir)
+                        .filter(p -> p.toFile().isFile())
+                        .mapToLong(p -> p.toFile().length())
+                        .sum();
+                long count = Files.walk(dir)
+                        .filter(p -> p.toFile().isFile())
+                        .count();
+                System.out.printf("\nTest data storage %d files totalling size: %,.1f Mb\n",count,(double)size/(1024d*1024d));
+            } catch (Exception e) {
+                System.err.println("Failed to measure size of directory. ["+dir.toFile().getAbsolutePath()+"]");
+                e.printStackTrace();
+            }
+        }
     }
 
     /**
