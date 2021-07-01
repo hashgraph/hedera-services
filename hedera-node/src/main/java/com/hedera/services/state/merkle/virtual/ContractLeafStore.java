@@ -20,7 +20,7 @@ public class ContractLeafStore implements FCLeafStore<ContractUint256, ContractU
         this.contractId = contractId;
         try {
             final var leafPathIndex = new FCSlotIndexUsingMemMapFile<ContractPath>(
-                    Path.of("data/contract-storage"),
+                    Path.of("data/contract-storage/leaf-path-index"),
                     "leaf-path-index",
                     256*1024,
                     1024,
@@ -29,7 +29,7 @@ public class ContractLeafStore implements FCLeafStore<ContractUint256, ContractU
                     20);
 
             final var leafKeyIndex = new FCSlotIndexUsingMemMapFile<ContractKey>(
-                    Path.of("data/contract-storage"),
+                    Path.of("data/contract-storage/leaf-key-index"),
                     "leaf-key-index",
                     256*1024,
                     1024,
