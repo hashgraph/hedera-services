@@ -21,6 +21,7 @@ package com.hedera.services.usage;
  */
 
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
@@ -39,10 +40,15 @@ public class TxnUsageEstimator {
 	}
 
 	public FeeData get() {
+		return get(SubType.DEFAULT);
+	}
+
+	public FeeData get(SubType subType) {
 		var usage = utils.baseEstimate(txn, sigUsage);
 		customize(usage);
 		return utils.withDefaultTxnPartitioning(
 				usage.build(),
+				subType,
 				utils.nonDegenerateDiv(networkRbs, HRS_DIVISOR),
 				sigUsage.numPayerKeys());
 	}

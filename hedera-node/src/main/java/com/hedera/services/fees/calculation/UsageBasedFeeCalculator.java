@@ -34,6 +34,7 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.FeeObject;
@@ -149,20 +150,20 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 
 	@Override
 	public FeeObject estimateFee(TxnAccessor accessor, JKey payerKey, StateView view, Timestamp at) {
-		final var prices = uncheckedPricesGiven(accessor, at);
+		Map<SubType, FeeData> prices = uncheckedPricesGiven(accessor, at);
 
 		return feeGiven(accessor, payerKey, view, prices, exchange.rate(at), false);
 	}
 
 	@Override
 	public long activeGasPriceInTinybars() {
-		return gasPriceInTinybars(usagePrices.activePrices(), exchange.activeRate());
+		return gasPriceInTinybars(usagePrices.defaultActivePrices(), exchange.activeRate());
 	}
 
 	@Override
 	public long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at) {
 		var rates = exchange.rate(at);
-		var prices = usagePrices.pricesGiven(function, at);
+		var prices = usagePrices.defaultPricesGiven(function, at);
 		return gasPriceInTinybars(prices, rates);
 	}
 
@@ -202,7 +203,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 		return Math.max(priceInTinyBars, 1L);
 	}
 
-	private FeeData uncheckedPricesGiven(TxnAccessor accessor, Timestamp at) {
+	private Map<SubType, FeeData> uncheckedPricesGiven(TxnAccessor accessor, Timestamp at) {
 		try {
 			return usagePrices.pricesGiven(accessor.getFunction(), at);
 		} catch (Exception e) {
@@ -215,21 +216,22 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 			TxnAccessor accessor,
 			JKey payerKey,
 			StateView view,
-			FeeData prices,
+			Map<SubType, FeeData> prices,
 			ExchangeRate rate,
 			boolean inHandle
 	) {
 		final var function = accessor.getFunction();
 		if (pricedUsageCalculator.supports(function)) {
+			// TODO this will not work for NonFungible Mints/Burn/Wipes
 			return inHandle
-					? pricedUsageCalculator.inHandleFees(accessor, prices, rate, payerKey)
-					: pricedUsageCalculator.extraHandleFees(accessor, prices, rate, payerKey);
+					? pricedUsageCalculator.inHandleFees(accessor, prices.get(SubType.DEFAULT), rate, payerKey)
+					: pricedUsageCalculator.extraHandleFees(accessor, prices.get(SubType.DEFAULT), rate, payerKey);
 		} else {
 			var sigUsage = getSigUsage(accessor, payerKey);
 			var usageEstimator = getTxnUsageEstimator(accessor);
 			try {
 				FeeData metrics = usageEstimator.usageGiven(accessor.getTxn(), sigUsage, view);
-				return getFeeObject(prices, metrics, rate, feeMultiplierSource.currentMultiplier());
+				return getFeeObject(prices.get(metrics.getSubType()), metrics, rate, feeMultiplierSource.currentMultiplier());
 			} catch (InvalidTxBodyException e) {
 				log.warn(
 						"Argument accessor={} malformed for implied estimator {}!",

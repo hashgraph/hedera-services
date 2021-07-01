@@ -23,6 +23,7 @@ package com.hedera.services.txns.span;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.state.submerkle.AssessedCustomFee;
 import com.hedera.services.state.submerkle.CustomFee;
 import com.hedera.services.state.submerkle.EntityId;
@@ -58,11 +59,16 @@ import static org.mockito.Mockito.verify;
 class SpanMapManagerTest {
 	private final int maxHbarAdjusts = 1;
 	private final int maxTokenAdjusts = 2;
+	private final int maxOwnershipChanges = 3;
+	private final ImpliedTransfersMeta.ValidationProps validationProps = new ImpliedTransfersMeta.ValidationProps(
+			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges);
+	private final ImpliedTransfersMeta.ValidationProps otherValidationProps = new ImpliedTransfersMeta.ValidationProps(
+			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges + 1);
 	private final TransactionBody pretendXferTxn = TransactionBody.getDefaultInstance();
 	private final ImpliedTransfers someImpliedXfers = ImpliedTransfers.invalid(
-			maxHbarAdjusts, maxTokenAdjusts, ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
+			validationProps, ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
 	private final ImpliedTransfers someOtherImpliedXfers = ImpliedTransfers.invalid(
-			maxHbarAdjusts, maxTokenAdjusts + 1, ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
+			otherValidationProps, ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
 
 	private final Id customFeeToken = new Id(0, 0, 123);
 	private final Id customFeeCollector = new Id(0, 0, 124);
@@ -81,9 +87,9 @@ class SpanMapManagerTest {
 	private final EntityId tokenID = new EntityId(4, 6, 6);
 
 	private final ImpliedTransfers validImpliedTransfers = ImpliedTransfers.valid(
-			maxHbarAdjusts, maxTokenAdjusts, new ArrayList<>(), entityCustomFees, assessedCustomFees);
+			validationProps, new ArrayList<>(), entityCustomFees, assessedCustomFees);
 	private final ImpliedTransfers feeChangedImpliedTransfers = ImpliedTransfers.valid(
-			maxHbarAdjusts, maxTokenAdjusts + 1, new ArrayList<>(), newCustomFeeChanges, assessedCustomFees);
+			otherValidationProps, new ArrayList<>(), newCustomFeeChanges, assessedCustomFees);
 
 	private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
 
@@ -150,6 +156,7 @@ class SpanMapManagerTest {
 		given(accessor.getFunction()).willReturn(CryptoTransfer);
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxTokenAdjusts);
+		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxOwnershipChanges);
 		spanMapAccessor.setImpliedTransfers(accessor, someImpliedXfers);
 
 		// when:

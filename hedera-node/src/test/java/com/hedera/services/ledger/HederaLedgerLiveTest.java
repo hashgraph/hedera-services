@@ -24,15 +24,20 @@ import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.exceptions.InconsistentAdjustmentsException;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.ledger.accounts.HashMapBackingAccounts;
+import com.hedera.services.ledger.accounts.HashMapBackingNfts;
 import com.hedera.services.ledger.accounts.HashMapBackingTokenRels;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
+import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.MerkleUniqueTokenId;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.mocks.TestContextValidator;
@@ -43,6 +48,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,7 +67,6 @@ import static org.mockito.BDDMockito.verify;
 
 public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 	long thisSecond = 1_234_567L;
-
 	@BeforeEach
 	void setup() {
 		commonSetup();
@@ -72,6 +77,13 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 				new HashMapBackingAccounts(),
 				new ChangeSummaryManager<>());
 		FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
+		FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAccountOwnerships = new FCOneToManyRelation<>();
+
+		nftsLedger = new TransactionalLedger<>(
+				NftProperty.class,
+				MerkleUniqueToken::new,
+				new HashMapBackingNfts(),
+				new ChangeSummaryManager<>());
 		tokenRelsLedger = new TransactionalLedger<>(
 				TokenRelProperty.class,
 				MerkleTokenRelStatus::new,
@@ -83,7 +95,9 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 				TestContextValidator.TEST_VALIDATOR,
 				new MockGlobalDynamicProps(),
 				() -> tokens,
-				tokenRelsLedger);
+				() -> uniqueTokenAccountOwnerships,
+				tokenRelsLedger,
+				nftsLedger);
 		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);
 	}
 

@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.transactions.token;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -28,6 +29,7 @@ import com.hedera.services.usage.token.TokenMintUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -36,17 +38,21 @@ import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 	static final Logger log = LogManager.getLogger(HapiTokenMint.class);
 
 	private long amount;
 	private String token;
+	private List<ByteString> metadata;
+	private SubType subType;
 
 	@Override
 	public HederaFunctionality type() {
@@ -56,6 +62,20 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 	public HapiTokenMint(String token, long amount) {
 		this.token = token;
 		this.amount = amount;
+		this.metadata = new ArrayList<>();
+		this.subType = figureSubType();
+	}
+
+	public HapiTokenMint(String token, List<ByteString> metadata){
+		this.token = token;
+		this.metadata = metadata;
+		this.subType = figureSubType();
+	}
+
+	public HapiTokenMint(String token, List<ByteString> metadata, String txNamePrefix) {
+		this.token = token;
+		this.metadata = metadata;
+		this.amount = 0;
 	}
 
 	@Override
@@ -66,11 +86,19 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		return spec.fees().forActivityBasedOp(
-				HederaFunctionality.TokenMint, this::usageEstimate, txn, numPayerKeys);
+				HederaFunctionality.TokenMint, subType, this::usageEstimate, txn, numPayerKeys);
+	}
+
+	private SubType figureSubType() {
+		if (metadata.isEmpty()) {
+			return SubType.TOKEN_FUNGIBLE_COMMON;
+		} else {
+			return SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+		}
 	}
 
 	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
-		return TokenMintUsage.newEstimate(txn, suFrom(svo)).get();
+		return TokenMintUsage.newEstimate(txn, suFrom(svo)).givenSubType(subType).get();
 	}
 
 	@Override
@@ -82,6 +110,7 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 						TokenMintTransactionBody.class, b -> {
 							b.setToken(tId);
 							b.setAmount(amount);
+							b.addAllMetadata(metadata);
 						});
 		return b -> b.setTokenMint(opBody);
 	}
@@ -99,14 +128,20 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 	}
 
 	@Override
-	protected void updateStateOf(HapiApiSpec spec) {
+	protected void updateStateOf(HapiApiSpec spec) throws Throwable {
+		if (actualStatus != SUCCESS) {
+			return;
+		}
+		lookupSubmissionRecord(spec);
+		spec.registry().saveCreationTime(token, recordOfSubmission.getConsensusTimestamp());
 	}
 
 	@Override
 	protected MoreObjects.ToStringHelper toStringHelper() {
 		MoreObjects.ToStringHelper helper = super.toStringHelper()
 				.add("token", token)
-				.add("amount", amount);
+				.add("amount", amount)
+				.add("metadata", metadata);
 		return helper;
 	}
 }

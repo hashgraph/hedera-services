@@ -21,8 +21,13 @@ package com.hedera.services.store.models;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.state.enums.TokenType;
+import javafx.util.Pair;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
@@ -38,8 +43,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NO
  * of this class as NFTs are fully supported. For example, a
  * {@link TokenRelationship#getBalanceChange()} signature only makes
  * sense for a token of type {@code FUNGIBLE_COMMON}; the analogous signature
- * for a {@code NON_FUNGIBLE_UNIQUE} will likely be {@code getOwnershipChanges())},
- * returning perhaps a type that is structurally equivalent to a
+ * for a {@code NON_FUNGIBLE_UNIQUE} is {@code getOwnershipChanges())},
+ * returning a type that is structurally equivalent to a
  * {@code Pair<long[], long[]>} of acquired and relinquished serial numbers.
  */
 public class TokenRelationship {
@@ -63,7 +68,7 @@ public class TokenRelationship {
 	}
 
 	/**
-	 * Set the balance of this relationship's ({@code FUNGIBLE_COMMON}) token that
+	 * Set the balance of this relationship's token that
 	 * the account holds at the beginning of a user transaction. (In particular, does
 	 * <b>not</b> change the return value of {@link TokenRelationship#getBalanceChange()}.)
 	 *
@@ -75,8 +80,7 @@ public class TokenRelationship {
 	}
 
 	/**
-	 * Update the balance of this relationship's ({@code FUNGIBLE_COMMMON}) token
-	 * held by the account.
+	 * Update the balance of this relationship token held by the account.
 	 *
 	 * This <b>does</b> change the return value of {@link TokenRelationship#getBalanceChange()}.
 	 *
@@ -129,6 +133,14 @@ public class TokenRelationship {
 
 	public void setNotYetPersisted(boolean notYetPersisted) {
 		this.notYetPersisted = notYetPersisted;
+	}
+
+	public boolean hasCommonRepresentation() {
+		return token.getType() == TokenType.FUNGIBLE_COMMON;
+	}
+
+	public boolean hasUniqueRepresentation() {
+		return token.getType() == TokenType.NON_FUNGIBLE_UNIQUE;
 	}
 
 	/* The object methods below are only overridden to improve

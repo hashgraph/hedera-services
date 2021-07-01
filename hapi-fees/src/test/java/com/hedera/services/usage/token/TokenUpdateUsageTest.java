@@ -117,7 +117,7 @@ public class TokenUpdateUsageTest {
 		verify(base).addBpt(expectedBytes);
 		verify(base).addRbs((newRb - curRb) * maxLifetime);
 		verify(base).addRbs(
-				TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 2) *
+				TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 2, 0) *
 						USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
@@ -141,7 +141,7 @@ public class TokenUpdateUsageTest {
 		verify(base).addBpt(expectedBytes);
 		verify(base).addRbs((newRb - curRb) * (expiry - now));
 		verify(base).addRbs(
-				TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 2) *
+				TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 2, 0) *
 						USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
@@ -186,7 +186,7 @@ public class TokenUpdateUsageTest {
 		verify(base).addBpt(expectedBytes);
 		verify(base).addRbs((newRb - curRb) * (expiry - now));
 		verify(base).addRbs(
-				TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 2) *
+				TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 2, 0) *
 						USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
@@ -213,7 +213,7 @@ public class TokenUpdateUsageTest {
 		verify(base).addBpt(expectedBytes);
 		verify(base).addRbs((newRb - curRb) * (expiry - now));
 		verify(base).addRbs(
-				TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 2) *
+				TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 2, 0) *
 						USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 

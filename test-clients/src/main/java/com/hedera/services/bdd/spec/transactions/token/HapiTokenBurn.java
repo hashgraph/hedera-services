@@ -28,6 +28,7 @@ import com.hedera.services.usage.token.TokenBurnUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -36,6 +37,7 @@ import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -47,6 +49,8 @@ public class HapiTokenBurn extends HapiTxnOp<HapiTokenBurn> {
 
 	private long amount;
 	private String token;
+	private List<Long> serialNumbers;
+	private SubType subType;
 
 	@Override
 	public HederaFunctionality type() {
@@ -56,6 +60,14 @@ public class HapiTokenBurn extends HapiTxnOp<HapiTokenBurn> {
 	public HapiTokenBurn(String token, long amount) {
 		this.token = token;
 		this.amount = amount;
+		this.serialNumbers = new ArrayList<>();
+		this.subType = SubType.TOKEN_FUNGIBLE_COMMON;
+	}
+
+	public HapiTokenBurn(String token, List<Long> serialNumbers) {
+		this.token = token;
+		this.serialNumbers = serialNumbers;
+		this.subType = SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 	}
 
 	@Override
@@ -66,11 +78,11 @@ public class HapiTokenBurn extends HapiTxnOp<HapiTokenBurn> {
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		return spec.fees().forActivityBasedOp(
-				HederaFunctionality.TokenBurn, this::usageEstimate, txn, numPayerKeys);
+				HederaFunctionality.TokenBurn, subType, this::usageEstimate, txn, numPayerKeys);
 	}
 
 	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
-		return TokenBurnUsage.newEstimate(txn, suFrom(svo)).get();
+		return TokenBurnUsage.newEstimate(txn, suFrom(svo)).givenSubType(subType).get();
 	}
 
 	@Override
@@ -82,6 +94,7 @@ public class HapiTokenBurn extends HapiTxnOp<HapiTokenBurn> {
 						TokenBurnTransactionBody.class, b -> {
 							b.setToken(tId);
 							b.setAmount(amount);
+							b.addAllSerialNumbers(serialNumbers);
 						});
 		return b -> b.setTokenBurn(opBody);
 	}
@@ -106,7 +119,8 @@ public class HapiTokenBurn extends HapiTxnOp<HapiTokenBurn> {
 	protected MoreObjects.ToStringHelper toStringHelper() {
 		MoreObjects.ToStringHelper helper = super.toStringHelper()
 				.add("token", token)
-				.add("amount", amount);
+				.add("amount", amount)
+				.add("serialNumbers", serialNumbers);
 		return helper;
 	}
 }

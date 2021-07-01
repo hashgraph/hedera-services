@@ -21,11 +21,15 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.state.enums.TokenType;
+import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
@@ -37,15 +41,22 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
+
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.BDDMockito.any;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -64,6 +75,10 @@ class TokenBurnTransitionLogicTest {
 	private TransactionContext txnCtx;
 	@Mock
 	private PlatformTxnAccessor accessor;
+	@Mock
+	private OptionValidator validator;
+	@Mock
+	private AccountStore accountStore;
 
 	private TokenRelationship treasuryRel;
 	private TransactionBody tokenBurnTxn;
@@ -72,11 +87,11 @@ class TokenBurnTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new TokenBurnTransitionLogic(store, txnCtx);
+		subject = new TokenBurnTransitionLogic(validator, accountStore, store, txnCtx);
 	}
 
 	@Test
-	void followsHappyPath() {
+	void followsHappyPathForCommon() {
 		// setup:
 		treasuryRel = new TokenRelationship(token, treasury);
 
@@ -86,7 +101,7 @@ class TokenBurnTransitionLogicTest {
 		given(store.loadToken(id)).willReturn(token);
 		given(token.getTreasury()).willReturn(treasury);
 		given(store.loadTokenRelationship(token, treasury)).willReturn(treasuryRel);
-
+		given(token.getType()).willReturn(TokenType.FUNGIBLE_COMMON);
 		// when:
 		subject.doStateTransition();
 
@@ -94,6 +109,30 @@ class TokenBurnTransitionLogicTest {
 		verify(token).burn(treasuryRel, amount);
 		verify(store).persistToken(token);
 		verify(store).persistTokenRelationship(treasuryRel);
+	}
+
+	@Test
+	void followsHappyPathForUnique(){
+		// setup:
+		treasuryRel = new TokenRelationship(token, treasury);
+
+		givenValidUniqueTxnCtx();
+		given(accessor.getTxn()).willReturn(tokenBurnTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(store.loadToken(id)).willReturn(token);
+		given(token.getTreasury()).willReturn(treasury);
+		given(store.loadTokenRelationship(token, treasury)).willReturn(treasuryRel);
+		given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(token).getType();
+		verify(token).burn(any(OwnershipTracker.class), eq(treasuryRel), any(List.class));
+		verify(store).persistToken(token);
+		verify(store).persistTokenRelationship(treasuryRel);
+		verify(store).persistTrackers(any(OwnershipTracker.class));
+		verify(accountStore).persistAccount(any(Account.class));
 	}
 
 	@Test
@@ -137,11 +176,70 @@ class TokenBurnTransitionLogicTest {
 		assertEquals(INVALID_TOKEN_BURN_AMOUNT, subject.semanticCheck().apply(tokenBurnTxn));
 	}
 
+	@Test
+	void rejectsInvalidTxnBodyWithBothProps(){
+		tokenBurnTxn = TransactionBody.newBuilder()
+				.setTokenBurn(
+						TokenBurnTransactionBody.newBuilder()
+								.addAllSerialNumbers(List.of(1L))
+								.setAmount(1)
+								.setToken(grpcId))
+				.build();
+
+		assertEquals(INVALID_TRANSACTION_BODY, subject.semanticCheck().apply(tokenBurnTxn));
+	}
+
+
+	@Test
+	void rejectsInvalidTxnBodyWithNoProps(){
+		tokenBurnTxn = TransactionBody.newBuilder()
+				.setTokenBurn(
+						TokenBurnTransactionBody.newBuilder()
+								.setToken(grpcId))
+				.build();
+
+		assertEquals(INVALID_TOKEN_BURN_AMOUNT, subject.semanticCheck().apply(tokenBurnTxn));
+	}
+
+	@Test
+	void rejectsInvalidTxnBodyWithInvalidBatch(){
+		tokenBurnTxn = TransactionBody.newBuilder()
+				.setTokenBurn(
+						TokenBurnTransactionBody.newBuilder()
+								.addAllSerialNumbers(LongStream.range(-20L, 0L).boxed().collect(Collectors.toList()))
+								.setToken(grpcId))
+				.build();
+
+		given(validator.maxBatchSizeBurnCheck(tokenBurnTxn.getTokenBurn().getSerialNumbersCount())).willReturn(OK);
+		assertEquals(INVALID_NFT_ID, subject.semanticCheck().apply(tokenBurnTxn));
+	}
+
+	@Test
+	void propagatesErrorOnBatchSizeExceeded(){
+		tokenBurnTxn = TransactionBody.newBuilder()
+				.setTokenBurn(
+						TokenBurnTransactionBody.newBuilder()
+								.addAllSerialNumbers(LongStream.range(1, 5).boxed().collect(Collectors.toList()))
+								.setToken(grpcId))
+				.build();
+
+		given(validator.maxBatchSizeBurnCheck(tokenBurnTxn.getTokenBurn().getSerialNumbersCount())).willReturn(BATCH_SIZE_LIMIT_EXCEEDED);
+		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.semanticCheck().apply(tokenBurnTxn));
+	}
+
 	private void givenValidTxnCtx() {
 		tokenBurnTxn = TransactionBody.newBuilder()
 				.setTokenBurn(TokenBurnTransactionBody.newBuilder()
 						.setToken(grpcId)
 						.setAmount(amount))
+				.build();
+	}
+
+	private void givenValidUniqueTxnCtx() {
+		tokenBurnTxn = TransactionBody.newBuilder()
+				.setTokenBurn(TokenBurnTransactionBody.newBuilder()
+						.setToken(grpcId)
+						.addAllSerialNumbers(List.of(1L)))
 				.build();
 	}
 

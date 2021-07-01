@@ -47,6 +47,7 @@ import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
@@ -550,9 +551,19 @@ public class HederaSigningOrder {
 
 		KeyOrderingFailure failure;
 		for (TokenTransferList xfers : op.getTokenTransfersList()) {
+			// fungible tokens
 			for (AccountAmount adjust : xfers.getTransfersList()) {
 				if ((failure = includeIfPresentAndNecessary(adjust, required)) != NONE) {
 					return accountFailure(adjust.getAccountID(), txnId, failure, factory);
+				}
+			}
+			// non fungible tokens
+			for (NftTransfer adjust : xfers.getNftTransfersList()) {
+				if ((failure = includeIfPresentAndNecessary(adjust.getSenderAccountID(), true, required)) != NONE) {
+					return accountFailure(adjust.getSenderAccountID(), txnId, failure, factory);
+				}
+				if ((failure = includeIfPresentAndNecessary(adjust.getReceiverAccountID(), false, required)) != NONE) {
+					return accountFailure(adjust.getReceiverAccountID(), txnId, failure, factory);
 				}
 			}
 		}
@@ -993,6 +1004,21 @@ public class HederaSigningOrder {
 			var meta = result.metadata();
 			if (adjust.getAmount() < 0 || meta.isReceiverSigRequired()) {
 				required.add(meta.getKey());
+			}
+		}
+		return result.failureIfAny();
+	}
+
+	private KeyOrderingFailure includeIfPresentAndNecessary(AccountID accountID, Boolean isSender, List<JKey> required) {
+		var result = sigMetaLookup.accountSigningMetaFor(accountID);
+		if (result.succeeded()) {
+			var meta = result.metadata();
+			if (Boolean.TRUE.equals(isSender)) {
+				required.add(meta.getKey());
+			} else {
+				if (meta.isReceiverSigRequired()) {
+					required.add(meta.getKey());
+				}
 			}
 		}
 		return result.failureIfAny();

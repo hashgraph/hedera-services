@@ -26,6 +26,7 @@ import com.hedera.services.usage.token.entities.TokenEntitySizes;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
+import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
 
 public abstract class TokenTxnUsage<T extends TokenTxnUsage<T>> extends TxnUsage {
 	static TokenEntitySizes tokenEntitySizes = TOKEN_ENTITY_SIZES;
@@ -36,8 +37,8 @@ public abstract class TokenTxnUsage<T extends TokenTxnUsage<T>> extends TxnUsage
 		super(tokenOp, usageEstimator);
 	}
 
-	void addTokenTransfersRecordRb(int numTokens, int numTransfers) {
-		addRecordRb(tokenEntitySizes.bytesUsedToRecordTokenTransfers(numTokens, numTransfers));
+	void addTokenTransfersRecordRb(int numTokens, int fungibleNumTransfers, int uniqueNumTransfers) {
+		addRecordRb(tokenEntitySizes.bytesUsedToRecordTokenTransfers(numTokens, fungibleNumTransfers, uniqueNumTransfers));
 	}
 
 	public T novelRelsLasting(int n, long secs) {

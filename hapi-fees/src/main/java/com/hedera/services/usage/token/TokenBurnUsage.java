@@ -23,11 +23,16 @@ package com.hedera.services.usage.token;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 
 public class TokenBurnUsage extends TokenTxnUsage<TokenBurnUsage> {
+
+	private SubType currentSubType;
+
 	private TokenBurnUsage(TransactionBody tokenBurnOp, TxnUsageEstimator usageEstimator) {
 		super(tokenBurnOp, usageEstimator);
 	}
@@ -36,15 +41,27 @@ public class TokenBurnUsage extends TokenTxnUsage<TokenBurnUsage> {
 		return new TokenBurnUsage(tokenBurnOp, estimatorFactory.get(sigUsage, tokenBurnOp, ESTIMATOR_UTILS));
 	}
 
+	public TokenBurnUsage givenSubType(SubType subType){
+		this.currentSubType = subType;
+		return this;
+	}
+
 	@Override
 	TokenBurnUsage self() {
 		return this;
 	}
 
 	public FeeData get() {
+		var op = this.op.getTokenBurn();
+
+		if (currentSubType == SubType.TOKEN_NON_FUNGIBLE_UNIQUE) {
+			usageEstimator.addBpt((long) op.getSerialNumbersCount() * LONG_SIZE);
+			addTokenTransfersRecordRb(1, 0, op.getSerialNumbersCount());
+		} else if (currentSubType == SubType.TOKEN_FUNGIBLE_COMMON) {
+			addAmountBpt();
+			addTokenTransfersRecordRb(1, 1, 0);
+		}
 		addEntityBpt();
-		addAmountBpt();
-		addTokenTransfersRecordRb(1, 1);
-		return usageEstimator.get();
+		return usageEstimator.get(currentSubType);
 	}
 }

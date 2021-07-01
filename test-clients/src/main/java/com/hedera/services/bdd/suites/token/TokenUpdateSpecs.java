@@ -197,15 +197,17 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec validatesMissingRef() {
-		return defaultHapiSpec("UpdateValidatesRef")
+		return defaultHapiSpec("ValidatesMissingRef")
 				.given(
 						cryptoCreate("payer")
 				).when().then(
 						tokenUpdate("0.0.0")
+								.fee(ONE_HBAR)
 								.payingWith("payer")
 								.signedBy("payer")
 								.hasKnownStatus(INVALID_TOKEN_ID),
 						tokenUpdate("1.2.3")
+								.fee(ONE_HBAR)
 								.payingWith("payer")
 								.signedBy("payer")
 								.hasKnownStatus(INVALID_TOKEN_ID)

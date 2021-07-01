@@ -61,22 +61,20 @@ public class ImpliedTransfers {
 	}
 
 	public static ImpliedTransfers valid(
-			int maxHbarAdjusts,
-			int maxTokenAdjusts,
+			ImpliedTransfersMeta.ValidationProps validationProps,
 			List<BalanceChange> changes,
-			List<Pair<Id, List<CustomFee>>> entityCustomFees,
+			List<Pair<Id, List<CustomFee>>> tokenFeeSchedules,
 			List<AssessedCustomFee> assessedCustomFees
 	) {
-		final var meta = new ImpliedTransfersMeta(maxHbarAdjusts, maxTokenAdjusts, OK, entityCustomFees);
-		return new ImpliedTransfers(meta, changes, entityCustomFees, assessedCustomFees);
+		final var meta = new ImpliedTransfersMeta(validationProps, OK, tokenFeeSchedules);
+		return new ImpliedTransfers(meta, changes, tokenFeeSchedules, assessedCustomFees);
 	}
 
 	public static ImpliedTransfers invalid(
-			int maxHbarAdjusts,
-			int maxTokenAdjusts,
+			ImpliedTransfersMeta.ValidationProps validationProps,
 			ResponseCodeEnum code
 	) {
-		final var meta = new ImpliedTransfersMeta(maxHbarAdjusts, maxTokenAdjusts, code, Collections.emptyList());
+		final var meta = new ImpliedTransfersMeta(validationProps, code, Collections.emptyList());
 		return new ImpliedTransfers(meta, Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
 	}
 
