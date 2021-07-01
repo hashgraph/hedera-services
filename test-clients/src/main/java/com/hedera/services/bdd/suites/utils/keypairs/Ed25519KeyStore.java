@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.utils.keypairs;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -46,11 +46,9 @@ import org.bouncycastle.pkcs.PKCSException;
 import org.bouncycastle.util.io.pem.PemGenerationException;
 import org.bouncycastle.util.io.pem.PemObject;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -76,24 +74,14 @@ public class Ed25519KeyStore extends ArrayList<KeyPair> implements KeyStore {
 			return this;
 		}
 
-		public Builder withConverter(final JcaPEMKeyConverter converter) {
-			this.converter = converter;
-			return this;
-		}
-
-		public Builder withSecureRandom(final SecureRandom secureRandom) {
-			this.random = secureRandom;
-			return this;
-		}
-
 		public Ed25519KeyStore build() throws KeyStoreException {
 			if (password == null) {
 				password = new char[0];
 			}
-			if(converter == null) {
+			if (converter == null) {
 				this.converter = new JcaPEMKeyConverter().setProvider(ED_PROVIDER);
 			}
-			if(random == null) {
+			if (random == null) {
 				try {
 					this.random = SecureRandom.getInstance("DRBG",
 							DrbgParameters.instantiation(256, DrbgParameters.Capability.RESEED_ONLY, null));
@@ -114,10 +102,13 @@ public class Ed25519KeyStore extends ArrayList<KeyPair> implements KeyStore {
 	private static final Provider ED_PROVIDER = new EdDSASecurityProvider();
 
 	/**
-	 * Issue #139, load from a pem file without a password.
+	 * Load from a pem file without a password
+	 *
 	 * @param source
-	 * @return
+	 * 		source pem file to be loaded
+	 * @return an {@link Ed25519KeyStore} after loading the source pem file
 	 * @throws KeyStoreException
+	 * 		when failing to load the source pem file
 	 */
 	public static Ed25519KeyStore read(final File source) throws KeyStoreException {
 		final Ed25519KeyStore keyStore = new Builder().build();
@@ -154,24 +145,6 @@ public class Ed25519KeyStore extends ArrayList<KeyPair> implements KeyStore {
 		return generator.generateKeyPair();
 	}
 
-	public static int getIndex(final String sourceFile) throws KeyStoreException{
-		BufferedReader reader;
-		try{
-			reader = new BufferedReader(new FileReader(sourceFile));
-			String line = reader.readLine();
-			while (line!=null){
-				if (line.contains("Index:")){
-					String[] parsedLine = line.split(":");
-					return Integer.parseInt(parsedLine[1].replace(" ", ""));
-				}
-				line = reader.readLine();
-			}
-		} catch (IOException e) {
-			throw new KeyStoreException(e);
-		}
-		return -1;
-	}
-
 	public KeyPair insertNewKeyPair() throws KeyStoreException {
 		try {
 			final KeyPair kp = createKeyPair();
@@ -182,7 +155,7 @@ public class Ed25519KeyStore extends ArrayList<KeyPair> implements KeyStore {
 		}
 	}
 
-	public KeyPair insertNewKeyPair(Ed25519PrivateKey privateKey) throws KeyStoreException{
+	public KeyPair insertNewKeyPair(Ed25519PrivateKey privateKey) throws KeyStoreException {
 		try {
 			final KeyPair kp = EncryptionUtils.buildKeyPairFromMainnetPrivateKey(privateKey);
 			this.add(kp);
@@ -258,7 +231,7 @@ public class Ed25519KeyStore extends ArrayList<KeyPair> implements KeyStore {
 			try (final JcaPEMWriter pemWriter = new JcaPEMWriter(new OutputStreamWriter(ostream))) {
 				pemWriter.write(String.format("Application: Hedera Transaction Tool\n"));
 				pemWriter.write(String.format("%s\n", version));
-				pemWriter.write(String.format("Index: %d\n",index));
+				pemWriter.write(String.format("Index: %d\n", index));
 				for (KeyPair kp : this) {
 					pemWriter.writeObject(encodeKeyPair(kp, encryptor));
 				}

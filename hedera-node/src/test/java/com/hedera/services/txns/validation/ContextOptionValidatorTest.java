@@ -56,8 +56,6 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.LongStream;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
 import static com.hedera.test.utils.IdUtils.asFile;
@@ -607,17 +605,38 @@ class ContextOptionValidatorTest {
 	}
 
 	@Test
-	void rejectsInvalidBatchSize(){
-		var list = LongStream.range(0, 1000).boxed().collect(Collectors.toList());
-		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.maxBatchSizeBurnCheck(list.size()));
-		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.maxBatchSizeMintCheck(list.size()));
-		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.maxBatchSizeWipeCheck(list.size()));
-		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.maxNftTransfersLenCheck(list.size()));
+	void rejectsInvalidBurnBatchSize(){
+		given(dynamicProperties.maxBatchSizeBurn()).willReturn(10);
+		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.maxBatchSizeBurnCheck(12));
 	}
 
 	@Test
-	void rejectsInvalidMetadata(){
-		assertEquals(INVALID_QUERY_RANGE, subject.nftMaxQueryRangeCheck(0, 1001));
-		assertEquals(METADATA_TOO_LONG, subject.nftMetadataCheck(ByteString.copyFromUtf8("aaaaaaaaaaaaaaa").toByteArray()));
+	void rejectsInvalidNftTransfersSize() {
+		given(dynamicProperties.maxNftTransfersLen()).willReturn(10);
+		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.maxNftTransfersLenCheck(12));
+	}
+
+	@Test
+	void rejectsInvalidWipeBatchSize() {
+		given(dynamicProperties.maxBatchSizeWipe()).willReturn(10);
+		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.maxBatchSizeWipeCheck(12));
+	}
+
+	@Test
+	void rejectsInvalidMintBatchSize() {
+		given(dynamicProperties.maxBatchSizeMint()).willReturn(10);
+		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.maxBatchSizeMintCheck(12));
+	}
+
+	@Test
+	void rejectsInvalidQueryRange() {
+		given(dynamicProperties.maxNFTQueryRange()).willReturn(0, 10);
+		assertEquals(INVALID_QUERY_RANGE, subject.nftMaxQueryRangeCheck(-10, 100000));
+	}
+
+	@Test
+	void rejectsInvalidMetadata() {
+		given(dynamicProperties.maxNFTMetadataBytes()).willReturn(2);
+		assertEquals(METADATA_TOO_LONG, subject.nftMetadataCheck(new byte[]{1, 2, 3, 4}));
 	}
 }

@@ -334,11 +334,10 @@ class ServicesStateTest {
 	@Test
 	void getsNodeAccount() {
 		// setup:
-		subject.nodeId = self;
 		subject.setChild(ServicesState.ChildIndices.ADDRESS_BOOK, book);
 
 		// when:
-		AccountID actual = subject.getNodeAccountId();
+		AccountID actual = subject.getAccountFromNodeId(self);
 
 		// then:
 		assertEquals(nodeAccount, actual);

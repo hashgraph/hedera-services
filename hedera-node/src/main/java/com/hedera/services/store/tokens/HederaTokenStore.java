@@ -510,8 +510,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 					}
 				}
 			} else if (customFee.hasFractionalFee()) {
-				/* TODO: Should fee collectors for fractional fees automatically be associated to the newly
-				    created token?  (This will require their keys to sign the TokenCreate transaction.) */
 				final var fractionalSpec = customFee.getFractionalFee();
 				final var fraction = fractionalSpec.getFractionalAmount();
 				if (fraction.getDenominator() == 0) {

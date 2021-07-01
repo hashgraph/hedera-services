@@ -20,6 +20,7 @@ package com.hedera.services.usage.token;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.test.IdUtils;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
@@ -34,6 +35,8 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
@@ -86,6 +89,33 @@ public class TokenMintUsageTest {
 		verify(base).addRbs(
 				TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 1, 0) *
 						USAGE_PROPERTIES.legacyReceiptStorageSecs());
+	}
+
+	@Test
+	public void createsExpectedDeltaForUnique() {
+		op = TokenMintTransactionBody.newBuilder()
+				.setToken(id)
+				.addAllMetadata(List.of(ByteString.copyFromUtf8("memo")))
+				.build();
+		setTxn();
+		// and:
+		subject = TokenMintUsage.newEstimate(txn, sigUsage);
+		subject.givenSubType(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
+		given(base.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE)).willReturn(A_USAGES_MATRIX);
+		// when:
+		var actual = subject.get();
+
+		// then:
+		assertEquals(A_USAGES_MATRIX, actual);
+		// and:
+		verify(base).addRbs(TOKEN_ENTITY_SIZES.bytesUsedForUniqueTokenTransfers(op.getMetadataCount()));
+		verify(base).addBpt(4L);
+	}
+
+	@Test
+	void selfTest() {
+		subject = TokenMintUsage.newEstimate(txn, sigUsage).givenSubType(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
+		assertEquals(subject, subject.self());
 	}
 
 	private void givenOp() {

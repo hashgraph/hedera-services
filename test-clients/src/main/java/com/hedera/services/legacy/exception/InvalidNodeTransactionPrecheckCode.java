@@ -26,7 +26,4 @@ public class InvalidNodeTransactionPrecheckCode extends Exception {
     super(errorMessage);
   }
 
-  public InvalidNodeTransactionPrecheckCode(String errorMessage, Throwable err) {
-    super(errorMessage, err);
-  }
 }
