@@ -252,7 +252,7 @@ class ImpliedTransfersMarshalTest {
 				"maxExplicitTokenAdjusts=50, maxExplicitOwnershipChanges=12, tokenFeeSchedules=[(Id{shard=0, " +
 				"realm=0, num=123},[])]}, changes=[BalanceChange{token=Id{shard=1, realm=2, num=3}, " +
 				"account=Id{shard=4, realm=5, num=6}, units=7}], tokenFeeSchedules=[(Id{shard=0, realm=0, num=123},[])], " +
-				"assessedCustomFees=[AssessedCustomFee{token=EntityId{shard=0, realm=0, num=123}, " +
+				"assessedCustomFees=[FcAssessedCustomFee{token=EntityId{shard=0, realm=0, num=123}, " +
 				"account=EntityId{shard=0, realm=0, num=124}, units=123}]}";
 
 		// expect:

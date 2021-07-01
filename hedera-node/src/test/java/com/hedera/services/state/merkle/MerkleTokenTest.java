@@ -654,10 +654,10 @@ class MerkleTokenTest {
 				", supplyKey=ed25519: \"not-a-real-supply-key\"\n" +
 				", freezeKey=ed25519: \"not-a-real-freeze-key\"\n" +
 				", accountsKycGrantedByDefault=true, accountsFrozenByDefault=true, " +
-				"feeSchedules=[CustomFee{feeType=FIXED_FEE, fixedFee=FixedFeeSpec{unitsToCollect=7, tokenDenomination=1" +
-				".2.3}, feeCollector=EntityId{shard=4, realm=5, num=6}}, CustomFee{feeType=FRACTIONAL_FEE, " +
+				"feeSchedules=[FcCustomFee{feeType=FIXED_FEE, fixedFee=FixedFeeSpec{unitsToCollect=7, tokenDenomination=1" +
+				".2.3}, feeCollector=EntityId{shard=4, realm=5, num=6}}, FcCustomFee{feeType=FRACTIONAL_FEE, " +
 				"fractionalFee=FractionalFeeSpec{numerator=5, denominator=100, minimumUnitsToCollect=1, " +
-				"maximumUnitsToCollect=55}, feeCollector=EntityId{shard=4, realm=5, num=6}}], feeScheduleMutable=true}";
+				"maximumUnitsToCollect=55}, feeCollector=EntityId{shard=4, realm=5, num=6}}]}";
 
 		// expect:
 		assertEquals(desired, subject.toString());
