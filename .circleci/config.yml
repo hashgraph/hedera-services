@@ -2229,6 +2229,7 @@ workflows:
             requires:
               - artifact-build
             workflow-name: "Continuous-integration-GCP"
+
         - build-platform-and-services:
             context: SonarCloud
             requires:
