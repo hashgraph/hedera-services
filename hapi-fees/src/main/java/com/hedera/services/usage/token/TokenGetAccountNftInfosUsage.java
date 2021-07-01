@@ -31,10 +31,12 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 
 public class TokenGetAccountNftInfosUsage extends QueryUsage {
+    private static final long INT_SIZE_AS_LONG = INT_SIZE;
+
     public TokenGetAccountNftInfosUsage(Query query) {
         super(query.getTokenGetAccountNftInfos().getHeader().getResponseType());
         updateTb(BASIC_ENTITY_ID_SIZE);
-        updateTb(2 * INT_SIZE);
+        updateTb(2 * INT_SIZE_AS_LONG);
     }
 
     public static TokenGetAccountNftInfosUsage newEstimate(Query query) {

@@ -53,7 +53,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 
-public class MerkleUniqueTokenIdTest {
+class MerkleUniqueTokenIdTest {
 
 	private MerkleUniqueTokenId subject;
 
@@ -63,7 +63,7 @@ public class MerkleUniqueTokenIdTest {
 	private int otherSerialNumber;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		tokenId = new EntityId(1, 2, 3);
 		otherTokenId = new EntityId(1, 2, 4);
 		serialNumber = 1;
@@ -73,11 +73,11 @@ public class MerkleUniqueTokenIdTest {
 	}
 
 	@AfterEach
-	public void cleanup() {
+	void cleanup() {
 	}
 
 	@Test
-	public void equalsContractWorks() {
+	void equalsContractWorks() {
 		// given
 		var other = new MerkleUniqueTokenId(otherTokenId, serialNumber);
 		var other2 = new MerkleUniqueTokenId(tokenId, otherSerialNumber);
@@ -90,7 +90,7 @@ public class MerkleUniqueTokenIdTest {
 	}
 
 	@Test
-	public void hashCodeWorks() {
+	void hashCodeWorks() {
 		// given:
 		var identical = new MerkleUniqueTokenId(tokenId, serialNumber);
 		var other = new MerkleUniqueTokenId(otherTokenId, otherSerialNumber);
@@ -101,7 +101,7 @@ public class MerkleUniqueTokenIdTest {
 	}
 
 	@Test
-	public void toStringWorks() {
+	void toStringWorks() {
 		// given:
 		assertEquals("MerkleUniqueTokenId{" +
 						"tokenId=" + tokenId + ", " +
@@ -110,20 +110,21 @@ public class MerkleUniqueTokenIdTest {
 	}
 
 	@Test
-	public void copyWorks() {
+	void copyWorks() {
 		// given:
 		var copyNftId = subject.copy();
 		var other = new Object();
+		var dup = subject;
 
 		// expect:
 		assertNotSame(copyNftId, subject);
 		assertEquals(subject, copyNftId);
-		assertEquals(subject, subject);
+		assertEquals(subject, dup);
 		assertNotEquals(subject, other);
 	}
 
 	@Test
-	public void serializeWorks() throws IOException {
+	void serializeWorks() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 		// and:
@@ -138,7 +139,7 @@ public class MerkleUniqueTokenIdTest {
 	}
 
 	@Test
-	public void deserializeWorks() throws IOException {
+	void deserializeWorks() throws IOException {
 		// setup:
 		SerializableDataInputStream in = mock(SerializableDataInputStream.class);
 
@@ -156,7 +157,7 @@ public class MerkleUniqueTokenIdTest {
 	}
 
 	@Test
-	public void merkleMethodsWork() {
+	void merkleMethodsWork() {
 		// expect;
 		assertEquals(MerkleUniqueTokenId.MERKLE_VERSION, subject.getVersion());
 		assertEquals(MerkleUniqueTokenId.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
