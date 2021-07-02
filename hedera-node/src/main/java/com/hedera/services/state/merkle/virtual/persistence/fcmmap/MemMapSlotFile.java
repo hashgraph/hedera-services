@@ -194,7 +194,7 @@ class MemMapSlotFile implements Closeable {
         subBuffer.limit(subBuffer.position() + slotSize - HEADER_SIZE);
         final PositionableByteBufferSerializableDataOutputStream outputStream = new PositionableByteBufferSerializableDataOutputStream(subBuffer);
         // call write
-        lock.writeLock().lock();
+        lock.writeLock().lock(); // <--- TODO Not sure we need to lock here. At least, we should be locking on bin??
         try {
             writer.write(outputStream);
         } finally {
@@ -219,7 +219,7 @@ class MemMapSlotFile implements Closeable {
         subBuffer.limit(subBuffer.position() + slotSize - HEADER_SIZE);
         final PositionableByteBufferSerializableDataInputStream inputStream = new PositionableByteBufferSerializableDataInputStream(subBuffer);
         // call read
-        lock.readLock().lock();
+        lock.readLock().lock(); // <--- TODO Not sure we need to lock here. At least, we should be locking on bin??
         try {
             return reader.read(inputStream);
         } finally {
@@ -234,7 +234,7 @@ class MemMapSlotFile implements Closeable {
      *
      * @return Slot index if the value was successfully stored, -1 if there was no space available
      */
-    public synchronized int getNewSlot() {
+    public int getNewSlot() {
         throwIfClosed();
         // grab free slot at the end
         int nextFreeSlot = nextFreeSlotAtEnd.getAndIncrement();
@@ -269,14 +269,14 @@ class MemMapSlotFile implements Closeable {
     public void deleteSlot(int slotIndex) {
         throwIfClosed();
         // mark slot as EMPTY
-        lock.writeLock().lock();
+        lock.writeLock().lock(); // <---- TODO not sure this is needed if concurrent writes works
         try {
             mappedBuffer.put(slotIndex, EMPTY);
         } finally {
             lock.writeLock().unlock();
         }
         // add slot to queue of empty slots
-        freeSlotsForReuse.add(slotIndex);
+        freeSlotsForReuse.add(slotIndex); // <--- TODO Might be wrong, what if multiple threads call deleteSlot with the same slotIndex?
     }
 
     //==================================================================================================================

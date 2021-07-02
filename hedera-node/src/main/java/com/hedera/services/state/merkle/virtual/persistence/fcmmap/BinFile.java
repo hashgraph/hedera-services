@@ -136,6 +136,7 @@ public final class BinFile<K extends VKey> {
     private final ConcurrentHashMap<Long, MutableIntList> changedKeysPerVersion = new ConcurrentHashMap<>();
     /** list of offsets for mutated keys for current version */
     private final AtomicReference<MutableIntList> changedKeysCurrentVersion = new AtomicReference<>();
+    private final int keySizeBytes;
 
     /**
      * Construct a new BinFile
@@ -155,6 +156,7 @@ public final class BinFile<K extends VKey> {
         this.numOfKeysPerBin = numOfKeysPerBin;
         this.numOfBinsPerFile = numOfBinsPerFile;
         this.maxNumberOfMutations = maxNumberOfMutations;
+        this.keySizeBytes = keySizeBytes;
         // calculate size of key,mutation store which contains:
         final int mutationArraySize = maxNumberOfMutations * MUTATION_SIZE;
         final int serializedKeySize = Integer.BYTES + keySizeBytes; // we store an int for class version
@@ -219,7 +221,9 @@ public final class BinFile<K extends VKey> {
         ReadLock lockedReadLock = acquireReadLock(keySubHash);
         try {
             int entryOffset = findEntryOffsetForKeyInBin(keySubHash, key);
-            return (entryOffset != -1) ? getMutationValue(entryOffset + queueOffsetInEntry, version) : NOT_FOUND_LOCATION;
+            return (entryOffset != -1)
+                    ? getMutationValue(entryOffset + queueOffsetInEntry, version)
+                    : NOT_FOUND_LOCATION;
         } finally {
             lockedReadLock.unlock();
         }
@@ -292,7 +296,7 @@ public final class BinFile<K extends VKey> {
             int entryOffset = findEntryOffsetForKeyInBin(keySubHash, key);
             long slotIndex = NOT_FOUND_LOCATION;
             if (entryOffset != -1) {
-                // we only need to write a deleted mutation if there was already a entry for the key
+                // we only need to write a deleted mutation if there was already an entry for the key
                 slotIndex = writeValueIntoMutationQueue(entryOffset + queueOffsetInEntry, false, version, DELETED_POINTER);
             }
             return slotIndex;
@@ -432,11 +436,14 @@ public final class BinFile<K extends VKey> {
         // read serialization version
         int version = mappedBuffer.getInt(offset);
         // position input stream for deserialize
-        mappedBuffer.position(offset+Integer.BYTES);
-        return key.equals(mappedBuffer,version);
+//        mappedBuffer.position(offset+Integer.BYTES); // <--- TODO Oops! Multiple threads hitting this
+        final var subBuffer = mappedBuffer.slice().asReadOnlyBuffer();
+        subBuffer.position(offset + Integer.BYTES);
+        subBuffer.limit(subBuffer.position() + keySizeBytes);
+        return key.equals(subBuffer, version);
     }
 
-    // Caller MUST hold the write lock.
+    // Caller MUST hold the write lock. Only a single thread at a time will come in here.
     private EntryReference getOrCreateEntry(int keySubHash, K key) {
         entryReference.wasCreated = false;
         // first we need to see if a entry exists for key
@@ -466,13 +473,15 @@ public final class BinFile<K extends VKey> {
                 // compute new entryOffset
                 entryOffset = binOffset + binHeaderSize + (keyMutationEntrySize * nextEntryIndex);
                 // write hash
-                mappedBuffer.putInt(entryOffset,keySubHash);
+                mappedBuffer.putInt(entryOffset, keySubHash);
                 // write serialized key version
-                mappedBuffer.putInt(entryOffset+Integer.BYTES,key.getVersion());
+                mappedBuffer.putInt(entryOffset + Integer.BYTES, key.getVersion());
                 // write serialized key
-                mappedBuffer.position(entryOffset+Integer.BYTES+Integer.BYTES);
+                final var subBuffer = mappedBuffer.slice();
+                subBuffer.position(entryOffset + Integer.BYTES + Integer.BYTES);
+//                subBuffer.limit(keySizeBytes); // TODO there should be a limit
                 try {
-                    key.serialize(mappedBuffer);
+                    key.serialize(subBuffer);
                 } catch (IOException e) {
                     e.printStackTrace(); // TODO something better
                 }
@@ -499,7 +508,7 @@ public final class BinFile<K extends VKey> {
         int mutationCount = mappedBuffer.getInt(mutationQueueOffset);
         // start with newest searching for version
         for (int i = mutationCount-1; i >= 0; i--) {
-            int mutationOffset = getMutationOffset(mutationQueueOffset,i);
+            int mutationOffset = getMutationOffset(mutationQueueOffset, i);
             long mutationVersion = mappedBuffer.getLong(mutationOffset);
             if (mutationVersion <= version) {
                 final long slotLocation =  mappedBuffer.getLong(mutationOffset+Long.BYTES);
@@ -515,6 +524,7 @@ public final class BinFile<K extends VKey> {
 
     /**
      * Write a new value into a specific version in mutation queue. This can be used for put and delete;
+     * WRITE LOCK FOR BIN MUST BE HELD.
      *
      * @param mutationQueueOffset the offset location for mutation queue
      * @param isEmptyMutationQueue if this is writing to a brand new mutation queue
@@ -560,7 +570,7 @@ public final class BinFile<K extends VKey> {
             }
         }
         // write value into mutation
-        mappedBuffer.putLong(mutationOffset+Long.BYTES,value);
+        mappedBuffer.putLong(mutationOffset+Long.BYTES, value);
         // stash mutation queue for later clean up, if this is a new mutation. If it was updating a mutation
         // then when that mutation was made it would have already been added.
         if (oldSlotIndex == NOT_FOUND_LOCATION) {

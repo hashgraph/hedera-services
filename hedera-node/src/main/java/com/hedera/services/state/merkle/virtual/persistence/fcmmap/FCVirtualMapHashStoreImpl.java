@@ -170,8 +170,8 @@ public final class FCVirtualMapHashStoreImpl<HK extends VKey> implements FCVirtu
         try {
           return hashIndex.getSlot(hashKey) != FCSlotIndex.NOT_FOUND_LOCATION;
         } finally {
-            hashIndex.releaseReadLock(keyHash,indexLock);
             hashStore.releaseReadLock(keyHash,storeLock);
+            hashIndex.releaseReadLock(keyHash,indexLock);
         }
     }
 
@@ -190,6 +190,7 @@ public final class FCVirtualMapHashStoreImpl<HK extends VKey> implements FCVirtu
             if (slotLocation != SlotStore.NOT_FOUND_LOCATION)
                 hashStore.deleteSlot(slotLocation); // TODO this is not fast copy safe
         } finally {
+            hashStore.releaseReadLock(keyHash,storeLock);
             hashIndex.releaseWriteLock(keyHash, indexLock);
         }
     }
@@ -223,10 +224,10 @@ public final class FCVirtualMapHashStoreImpl<HK extends VKey> implements FCVirtu
                     return new VirtualHash(digestType, hashData);
                 });
             } finally {
-                hashStore.releaseReadLock(slotLocation,storeLock);
+                hashStore.releaseReadLock(slotLocation, storeLock);
             }
         } finally {
-            hashIndex.releaseReadLock(keyHash,indexLock);
+            hashIndex.releaseReadLock(keyHash, indexLock);
         }
     }
 

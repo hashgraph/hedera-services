@@ -90,7 +90,7 @@ public final class FCSlotIndexUsingMemMapFile<K extends VKey> implements FCSlotI
         // print info
         int numOfLocks = numOfBinsPerFile / binsPerLock;
         System.out.printf("For [%s] creating %,d files each containing %,d bins and %,d locks, with %,d keys per bin and %,d total keys entries.\n",
-                name,numOfFiles,numOfBinsPerFile,numOfLocks,maxNumberOfKeys, numOfBins*maxNumberOfKeys);
+                name,numOfFiles,numOfBinsPerFile,numOfLocks,numOfKeysPerBin, maxNumberOfKeys);
         // compute shiftRightCountForFileSubKey
         shiftRightCountForFileSubKey = Integer.bitCount(numOfFiles-1);
         // set reference count
@@ -163,7 +163,7 @@ public final class FCSlotIndexUsingMemMapFile<K extends VKey> implements FCSlotI
 
     @Override
     public void release() {
-        isReleased.set(true);
+//        isReleased.set(true);
         // release version in all files
         for(BinFile<K> file:files) {
             file.releaseVersion(version);

@@ -20,6 +20,8 @@ import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -45,10 +47,14 @@ public class VFCMapBench {
     @Param({"10000", "100000", "1000000", "10000000", "100000000", "1000000000"})
     public long numEntities;
 
+    @Param("0")
+    public int preFill;
+
     private final Random rand = new Random();
     private VFCMap<ContractUint256, ContractUint256> contractMap;
     private Future<?> prevIterationHashingFuture;
     private VFCMap<ContractUint256, ContractUint256> unmodifiableContractMap;
+    private ExecutorService background = Executors.newSingleThreadScheduledExecutor();
 
     @Setup
     public void prepare() throws Exception {
@@ -56,32 +62,39 @@ public class VFCMapBench {
         final var hs = new ContractHashStore(new Id(1, 2, 3));
         contractMap = new VFCMap<>(ls, hs);
 
-        for (int i=0; i<numEntities; i++) {
-            if (i % 100000 == 0) {
-                System.out.println("Completed: " + i);
-                if (prevIterationHashingFuture != null) {
-                    prevIterationHashingFuture.get();
-                    unmodifiableContractMap.release();
+        if (preFill > 0) {
+            for (int i = 0; i < numEntities; i++) {
+                if (i % 100000 == 0) {
+                    System.out.println("Completed: " + i);
+                    if (prevIterationHashingFuture != null) {
+                        prevIterationHashingFuture.get();
+                    }
+                    unmodifiableContractMap = contractMap;
+                    contractMap = contractMap.copy();
+                    prevIterationHashingFuture = CryptoFactory.getInstance().digestTreeAsync2(unmodifiableContractMap);
                 }
-                unmodifiableContractMap = contractMap;
-                contractMap = contractMap.copy();
-                prevIterationHashingFuture = CryptoFactory.getInstance().digestTreeAsync(unmodifiableContractMap);
+                final var key = asContractKey(i);
+                final var value = asContractValue(i);
+                contractMap.put(key, value);
             }
-            final var key = asContractKey(i);
-            final var value = asContractValue(i);
-            contractMap.put(key, value);
+
+            // During setup we perform the full hashing and release the old copy. This way,
+            // during the tests, we don't have an initial slow hash.
+            unmodifiableContractMap = contractMap;
+            contractMap = contractMap.copy();
+            prevIterationHashingFuture = CryptoFactory.getInstance().digestTreeAsync2(unmodifiableContractMap);
+            prevIterationHashingFuture.get();
+            unmodifiableContractMap = null;
         }
 
         printDataStoreSize();
+    }
 
-        // During setup we perform the full hashing and release the old copy. This way,
-        // during the tests, we don't have an initial slow hash.
-        unmodifiableContractMap = contractMap;
-        contractMap = contractMap.copy();
-        prevIterationHashingFuture = CryptoFactory.getInstance().digestTreeAsync(unmodifiableContractMap);
-        prevIterationHashingFuture.get();
-        unmodifiableContractMap.release();
-        unmodifiableContractMap = null;
+    private Future<?> hashAndRelease() {
+        return background.submit(() -> {
+            CryptoFactory.getInstance().digestTreeAsync2(unmodifiableContractMap);
+            background.submit(() -> unmodifiableContractMap.release());
+        });
     }
 
     @TearDown
@@ -133,13 +146,12 @@ public class VFCMapBench {
             // Wait for the hashing of the previous iteration to complete. If it doesn't complete
             // in maxMillisPerHashRound, then a TimeoutException is raised and the test fails.
             prevIterationHashingFuture.get(maxMillisPerHashRound, TimeUnit.MILLISECONDS);
-            unmodifiableContractMap.release();
         }
 
         // Create a new fast copy and start hashing the old one in a background thread.
         unmodifiableContractMap = contractMap;
         contractMap = contractMap.copy();
-        prevIterationHashingFuture = CryptoFactory.getInstance().digestTreeAsync(unmodifiableContractMap);
+        prevIterationHashingFuture = CryptoFactory.getInstance().digestTreeAsync2(unmodifiableContractMap);
 
         // Start modifying the new fast copy
         final var iterationsPerRound = numUpdatesPerOperation * targetOpsPerSecond;
