@@ -148,6 +148,21 @@ class GetAccountNftInfosResourceUsageTest {
         assertNotSame(FeeData.getDefaultInstance(), usage);
     }
 
+    @Test
+    void doesntSetTokenInfoForAnswerOnlyType() {
+        // setup:
+        var queryCtx = new HashMap<String, Object>();
+
+        given(view.infoForAccountNfts(target, start, end)).willReturn(Optional.of(info));
+
+        // when:
+        var usage = subject.usageGivenType(satisfiableAnswerOnly, view, ANSWER_ONLY);
+
+        // then:
+        assertFalse(queryCtx.containsKey(ACCOUNT_NFT_INFO_CTX_KEY));
+        assertNotSame(FeeData.getDefaultInstance(), usage);
+    }
+
     private Query tokenGetAccountNftInfosQuery(AccountID id, long start, long end, ResponseType type) {
         TokenGetAccountNftInfosQuery.Builder op = TokenGetAccountNftInfosQuery.newBuilder()
                 .setAccountID(id)
