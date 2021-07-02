@@ -263,7 +263,6 @@ import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.HapiThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.throttling.TxnAwareHandleThrottling;
-import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.txns.TransitionLogic;
@@ -284,6 +283,8 @@ import com.hedera.services.txns.crypto.CryptoCreateTransitionLogic;
 import com.hedera.services.txns.crypto.CryptoDeleteTransitionLogic;
 import com.hedera.services.txns.crypto.CryptoTransferTransitionLogic;
 import com.hedera.services.txns.crypto.CryptoUpdateTransitionLogic;
+import com.hedera.services.txns.customfees.CustomFeeSchedules;
+import com.hedera.services.txns.customfees.FcmCustomFeeSchedules;
 import com.hedera.services.txns.file.FileAppendTransitionLogic;
 import com.hedera.services.txns.file.FileCreateTransitionLogic;
 import com.hedera.services.txns.file.FileDeleteTransitionLogic;
@@ -298,7 +299,6 @@ import com.hedera.services.txns.schedule.ScheduleExecutor;
 import com.hedera.services.txns.schedule.ScheduleSignTransitionLogic;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.services.txns.customfees.FcmCustomFeeSchedules;
 import com.hedera.services.txns.span.SpanMapManager;
 import com.hedera.services.txns.submission.BasicSubmissionFlow;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
@@ -315,6 +315,7 @@ import com.hedera.services.txns.token.TokenBurnTransitionLogic;
 import com.hedera.services.txns.token.TokenCreateTransitionLogic;
 import com.hedera.services.txns.token.TokenDeleteTransitionLogic;
 import com.hedera.services.txns.token.TokenDissociateTransitionLogic;
+import com.hedera.services.txns.token.TokenFeeScheduleUpdateTransitionLogic;
 import com.hedera.services.txns.token.TokenFreezeTransitionLogic;
 import com.hedera.services.txns.token.TokenGrantKycTransitionLogic;
 import com.hedera.services.txns.token.TokenMintTransitionLogic;
@@ -431,6 +432,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 import static java.util.Map.entry;
 
@@ -1161,6 +1163,7 @@ public class ServicesContext {
 				/* Token */
 				entry(TokenCreate, List.of(new TokenCreateResourceUsage())),
 				entry(TokenUpdate, List.of(new TokenUpdateResourceUsage())),
+				// TODO: add resourceUsage of TokenFeeScheduleUpdate to estimatorsMap
 				entry(TokenFreezeAccount, List.of(new TokenFreezeResourceUsage())),
 				entry(TokenUnfreezeAccount, List.of(new TokenUnfreezeResourceUsage())),
 				entry(TokenGrantKycToAccount, List.of(new TokenGrantKycResourceUsage())),
@@ -1437,6 +1440,8 @@ public class ServicesContext {
 				entry(TokenUpdate,
 						List.of(new TokenUpdateTransitionLogic(
 								validator(), tokenStore(), ledger(), txnCtx(), HederaTokenStore::affectsExpiryAtMost))),
+				entry(TokenFeeScheduleUpdate, List.of(new TokenFeeScheduleUpdateTransitionLogic(typedTokenStore(), txnCtx(),
+						validator))),
 				entry(TokenFreezeAccount,
 						List.of(new TokenFreezeTransitionLogic(tokenStore(), ledger(), txnCtx()))),
 				entry(TokenUnfreezeAccount,
