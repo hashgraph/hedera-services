@@ -38,7 +38,7 @@ public class BinFileTest {
 //        final int COUNT = 1;
         // create and open file
         Path file = getTempFile();
-        BinFile<LongVKey> binFile = new BinFile<>(file,8,150,100,20);
+        BinFile<LongVKey> binFile = new BinFile<>(1,file,8,150,100,20,20);
         System.out.printf("BinFile size: %,.1f Mb\n",(double) Files.size(file)/(1024d*1024d));
         // create some data for a number of accounts
         for (int i = 0; i < COUNT; i++) {
@@ -69,7 +69,7 @@ public class BinFileTest {
         // test I will add and remove things and keep track of how many mutations there should be. Eventually I will
         // overflow it to trigger an exception to prove the number of mutations is exactly as expected.
         Path file = getTempFile();
-        BinFile<LongVKey> binFile = new BinFile<>(file,8,5,5,10);
+        BinFile<LongVKey> binFile = new BinFile<>(1,file,8,5,10,10,1);
 
         // Release version 0 (nothing has been written yet, should have no effect)
         binFile.releaseVersion(0);
@@ -126,7 +126,7 @@ public class BinFileTest {
     public void testDelete() throws IOException {
         // create and open file
         Path file = getTempFile();
-        BinFile<LongVKey> binFile = new BinFile<>(file,8,5,5,20);
+        BinFile<LongVKey> binFile = new BinFile<>(1,file,8,5,5,20,1);
         // create some data for a number of accounts
         for (int i = 0; i < 10; i++) {
             LongVKey key = new LongVKey(i);
@@ -157,7 +157,7 @@ public class BinFileTest {
     public void versionsTest() throws IOException {
         // create and open file
         Path file = getTempFile();
-        BinFile<LongVKey> binFile = new BinFile<>(file,8,20,20,20);
+        BinFile<LongVKey> binFile = new BinFile<>(1,file,8,20,20,20,5);
         System.out.printf("BinFile size: %,.1f Mb\n",(double) Files.size(file)/(1024d*1024d));
         // create key array
         LongVKey[] keys = new LongVKey[20];

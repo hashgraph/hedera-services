@@ -69,10 +69,12 @@ public final class FCSlotIndexUsingMemMapFile<K extends VKey> implements FCSlotI
      * @param keySizeBytes The number of
      * @param maxNumberOfKeys The maximum number of key that this map can store, this assumes even key hash distribution.
      * @param maxNumberOfMutations The maximum number of mutations per key we can store
+     * @param binsPerLock number of bins that share a read/write, if it is same as numOfBinsPerFile then there will be
+     *                    one for the file.
      * @throws IOException
      */
     public FCSlotIndexUsingMemMapFile(Path storageDirectory, String name, int numOfBins, int numOfFiles, int keySizeBytes,
-                                      int maxNumberOfKeys, int maxNumberOfMutations) throws IOException {
+                                      int maxNumberOfKeys, int maxNumberOfMutations, int binsPerLock) throws IOException {
         if (!positivePowerOfTwo(numOfFiles)) throw new IllegalArgumentException("numOfFiles["+numOfFiles+"] must be a positive power of two.");
         if (!positivePowerOfTwo(numOfBins)) throw new IllegalArgumentException("numOfBins["+numOfBins+"] must be a positive power of two.");
         if (numOfBins <= (2*numOfFiles)) throw new IllegalArgumentException("numOfBins["+numOfBins+"] must be at least twice the size of numOfFiles["+numOfFiles+"].");
@@ -98,14 +100,16 @@ public final class FCSlotIndexUsingMemMapFile<K extends VKey> implements FCSlotI
         } else {
             // check that storage directory is a directory
             if (!Files.isDirectory(storageDirectory)) {
-                throw new IllegalArgumentException("storageDirectory must be a directory. ["+storageDirectory.toFile().getAbsolutePath()+"] is not a directory.");
+                throw new IllegalArgumentException("storageDirectory must be a directory. ["+
+                        storageDirectory.toFile().getAbsolutePath()+"] is not a directory.");
             }
         }
         // create files
         //noinspection unchecked
         files = new BinFile[numOfFiles];
         for (int i = 0; i < numOfFiles; i++) {
-            files[i] = new BinFile<>(storageDirectory.resolve(name+"_"+i+".index"),keySizeBytes, numOfKeysPerBin, numOfBinsPerFile, maxNumberOfMutations);
+            files[i] = new BinFile<>(version, storageDirectory.resolve(name+"_"+i+".index"),keySizeBytes,
+                    numOfKeysPerBin, numOfBinsPerFile, maxNumberOfMutations, binsPerLock);
         }
     }
 

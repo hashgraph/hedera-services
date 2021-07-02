@@ -1,30 +1,22 @@
 package contract;
 
-import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.virtual.ContractKey;
 import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.hedera.services.state.merkle.virtual.persistence.FCSlotIndex;
-import com.hedera.services.state.merkle.virtual.persistence.FCVirtualMapLeafStore;
-import com.hedera.services.state.merkle.virtual.persistence.SlotStore;
 import com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCSlotIndexUsingFCHashMap;
 import com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCSlotIndexUsingMemMapFile;
-import com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCVirtualMapLeafStoreImpl;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.merkle.utility.SerializableLong;
-import fcmmap.FCVirtualMapDataStoreBench;
 import fcmmap.FCVirtualMapTestUtils;
 import org.openjdk.jmh.annotations.*;
 
 import java.math.BigInteger;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 @State(Scope.Thread)
 @Warmup(iterations = 4, time = 3, timeUnit = TimeUnit.SECONDS)
@@ -66,7 +58,7 @@ public class FCSlotIndexGetBench {
             // get slot index suppliers
             switch (fcSlotIndexImpl) {
                 case "FCSlotIndexUsingMemMapFile" -> slotIndex = new FCSlotIndexUsingMemMapFile<>(STORE_PATH, "FCSlotIndexBench",
-                        1024*1024, 32, ContractKey.SERIALIZED_SIZE, 16, 16);
+                        1024*1024, 32, ContractKey.SERIALIZED_SIZE, 16, 16,256);
                 case "FCSlotIndexUsingFCHashMap" -> slotIndex = new FCSlotIndexUsingFCHashMap<>();
             }
             // create data

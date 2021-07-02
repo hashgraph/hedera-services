@@ -3,7 +3,6 @@ package contract;
 import com.hedera.services.state.merkle.virtual.ContractKey;
 import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.hedera.services.state.merkle.virtual.persistence.FCSlotIndex;
-import com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCSlotIndexUsingFCHashMap;
 import com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCSlotIndexUsingMemMapFile;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
@@ -19,26 +18,26 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 @State(Scope.Thread)
-@Warmup(iterations = 1, time = 3, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 4, time = 3, timeUnit = TimeUnit.SECONDS)
+@Warmup(iterations = 4, time = 3, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 50, time = 5, timeUnit = TimeUnit.SECONDS)
 @Fork(1)
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
-public class FCSlotIndexPutBench {
+public class FCSlotIndexUsingMemMapFileBench {
     public static final Path STORE_PATH = Path.of("store");
     public static final Id ID = new Id(1,2,3);
 
 
-    @Param({
-//                "FCSlotIndexUsingFCHashMap",
-            "FCSlotIndexUsingMemMapFile"
-    })
-    private String fcSlotIndexImpl;
+    @Param({"1","8","16","32","256","512","1024"})
+    public long numOfFiles;
+    @Param({"1000000"})
+    public long numEntities;
 
     // state
     public FCSlotIndex<ContractKey> slotIndex;
     public Random random = new Random(1234);
     public int iteration = 0;
+    private ContractKey key = null;
 
     @Setup(Level.Trial)
     public void setup() {
@@ -52,11 +51,14 @@ public class FCSlotIndexPutBench {
             // delete any old store
             FCVirtualMapTestUtils.deleteDirectoryAndContents(STORE_PATH);
             // get slot index suppliers
-            switch (fcSlotIndexImpl) {
-                case "FCSlotIndexUsingMemMapFile" -> slotIndex = new FCSlotIndexUsingMemMapFile<>(STORE_PATH, "FCSlotIndexBench",
-                        1024*1024, 32, ContractKey.SERIALIZED_SIZE, 16, 16,256);
-                case "FCSlotIndexUsingFCHashMap" -> slotIndex = new FCSlotIndexUsingFCHashMap<>();
+            slotIndex = new FCSlotIndexUsingMemMapFile<>(STORE_PATH, "FCSlotIndexBench",
+                    1024*1024, 32, ContractKey.SERIALIZED_SIZE, 16, 16,256);
+            // create data
+            for (long i = 0; i < numEntities; i++) {
+                if (i % 100_000 == 0) System.out.println("created = " + i);
+                slotIndex.putSlot(new ContractKey(ID,new ContractUint256(BigInteger.valueOf(i))), i);
             }
+            System.out.println("\nslotIndex.keyCount() = " + slotIndex.keyCount());
             // reset iteration counter
             iteration = 0;
         } catch (Exception e) {
@@ -70,17 +72,15 @@ public class FCSlotIndexPutBench {
         FCVirtualMapTestUtils.printDirectorySize(STORE_PATH);
     }
 
-
-    @TearDown(Level.Iteration)
-    public void count() {
-        System.out.println("slotIndex.keyCount() = " + slotIndex.keyCount());
+    @Setup(Level.Invocation)
+    public void randomIndex(){
+        final long index = (long)(random.nextDouble()*numEntities);
+        key = new ContractKey(ID,new ContractUint256(BigInteger.valueOf(index)));
     }
 
-
     @Benchmark
-    public void put() throws Exception {
-        slotIndex.putSlot(new ContractKey(ID,new ContractUint256(BigInteger.valueOf(iteration))), iteration);
-        iteration ++;
+    public void get() throws Exception {
+        slotIndex.getSlot(key);
     }
 
 }

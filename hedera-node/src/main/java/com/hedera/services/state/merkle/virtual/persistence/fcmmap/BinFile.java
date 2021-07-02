@@ -1,6 +1,7 @@
 package com.hedera.services.state.merkle.virtual.persistence.fcmmap;
 
 import com.swirlds.fcmap.VKey;
+import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -8,10 +9,10 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.LongSupplier;
 
@@ -90,7 +91,7 @@ public final class BinFile<K extends VKey> {
 
     /** Special pointer value used for when a value has been deleted */
     public static final long DELETED_POINTER = -1;
-    private boolean fileIsOpen;
+    private final AtomicBoolean fileIsOpen;
     private final RandomAccessFile randomAccessFile;
     private final FileChannel fileChannel;
     private final MappedByteBuffer mappedBuffer;
@@ -107,26 +108,27 @@ public final class BinFile<K extends VKey> {
     private final int queueOffsetInEntry;
     /** Single MutationQueueReference that we can reuse as we are synchronized */
     private final EntryReference entryReference = new EntryReference();
-    /** Map containing list of mutated queues for each version older than the current one that has not yet been released. */
-    private final Map<Long, List<Integer>> changedKeysPerVersion = new HashMap<>();
     /** Readwrite lock for this file */
-    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    private final ReentrantReadWriteLock[] lockArray;
+    /** Map containing list of mutated queues for each version older than the current one that has not yet been released. */
+    private final ConcurrentHashMap<Long, IntArrayList> changedKeysPerVersion = new ConcurrentHashMap<>();
     /** list of offsets for mutated keys for current version */
-    private List<Integer> changedKeysCurrentVersion = new ArrayList<>();
-    /** The current version we are working on */
-    private long currentVersion = -1;
+    private final AtomicReference<IntArrayList> changedKeysCurrentVersion = new AtomicReference<>();
 
     /**
      * Construct a new BinFile
      *
+     * @param currentVersion The version to start with
      * @param file the path to the file
      * @param keySizeBytes the size of serialized key in bytes
      * @param numOfKeysPerBin the max number of keys we can store in each bin, ie. max hash collisions
      * @param numOfBinsPerFile the number of bins, this is how many bins the hash space is divided into to avoid collisions.
      * @param maxNumberOfMutations the maximum number of mutations that can be stored for each key
+     * @param binsPerLock number of bins that share a read/write, if it is same as numOfBinsPerFile then there will be
+     *                    one for the file.
      * @throws IOException if there was a problem opening the file
      */
-    public BinFile(Path file, int keySizeBytes, int numOfKeysPerBin, int numOfBinsPerFile, int maxNumberOfMutations) throws IOException {
+    public BinFile(long currentVersion, Path file, int keySizeBytes, int numOfKeysPerBin, int numOfBinsPerFile, int maxNumberOfMutations, int binsPerLock) throws IOException {
         //this.file = file;
         this.numOfKeysPerBin = numOfKeysPerBin;
         this.numOfBinsPerFile = numOfBinsPerFile;
@@ -138,6 +140,17 @@ public final class BinFile<K extends VKey> {
         keyMutationEntrySize = queueOffsetInEntry + MUTATION_QUEUE_HEADER_SIZE + mutationArraySize;
         binSize = binHeaderSize + (numOfKeysPerBin * keyMutationEntrySize);
         final int fileSize = binSize * numOfBinsPerFile;
+        // create locks
+        int numOfLocks = numOfBinsPerFile / binsPerLock;
+        System.out.println("numOfLocks = " + numOfLocks);
+        lockArray = new ReentrantReadWriteLock[numOfLocks];
+        for (int i = 0; i < numOfLocks; i++) {
+            lockArray[i] = new ReentrantReadWriteLock();
+        }
+        // create version mutation history storage
+        var newChangedKeys = new IntArrayList();
+        changedKeysCurrentVersion.set(newChangedKeys);
+        changedKeysPerVersion.put(currentVersion,newChangedKeys);
         // OPEN FILE
         // check if file existed before
         boolean fileExisted = Files.exists(file);
@@ -151,7 +164,7 @@ public final class BinFile<K extends VKey> {
         fileChannel = randomAccessFile.getChannel();
         mappedBuffer = fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, fileSize);
         // mark file as open
-        fileIsOpen = true;
+        fileIsOpen = new AtomicBoolean(true);
     }
 
     //==================================================================================================================
@@ -163,17 +176,13 @@ public final class BinFile<K extends VKey> {
      * @throws IOException if there was a problem closing files and syncing everything to disk
      */
     public void close() throws IOException {
-        lock.writeLock().lock();
-        try {
-            if (fileIsOpen) {
-                fileIsOpen = false;
-                mappedBuffer.force();
-                fileChannel.force(true);
-                fileChannel.close();
-                randomAccessFile.close();
-            }
-        } finally {
-            lock.writeLock().unlock();
+        if (fileIsOpen.getAndSet(false)) {
+            // grab all write locks, should wait for everyone currently using file to finish
+            for(ReentrantReadWriteLock lock: lockArray) lock.writeLock().lock();
+            mappedBuffer.force();
+            fileChannel.force(true);
+            fileChannel.close();
+            randomAccessFile.close();
         }
     }
 
@@ -186,13 +195,10 @@ public final class BinFile<K extends VKey> {
      * @return the stored value or FCSlotIndex.NOT_FOUND_LOCATION if not found.
      */
     public long getSlot(long version, int keySubHash, K key) {
-        lock.readLock().lock();
-        try {
+        return whileReadLocked(keySubHash, () -> {
             int entryOffset = findEntryOffsetForKeyInBin(keySubHash, key);
             return (entryOffset != -1) ? getMutationValue(entryOffset + queueOffsetInEntry, version) : NOT_FOUND_LOCATION;
-        } finally {
-            lock.readLock().unlock();
-        }
+        });
     }
 
     /**
@@ -206,25 +212,18 @@ public final class BinFile<K extends VKey> {
      * @return either the slot index that was stored for key or the new slot index provided by supplier
      */
     public long getSlotIfAbsentPut(long version, int keySubHash, K key, LongSupplier newValueSupplier) {
-        lock.readLock().lock();
-        try {
+        Long foundSlot = whileReadLocked(keySubHash, () -> {
             int entryOffset = findEntryOffsetForKeyInBin(keySubHash, key);
-            if (entryOffset != -1) {
-                return getMutationValue(entryOffset + queueOffsetInEntry, version);
-            }
-        } finally {
-            lock.readLock().unlock();
-        }
-        lock.writeLock().lock();
-        try {
+            return (entryOffset == -1) ? null : getMutationValue(entryOffset + queueOffsetInEntry, version);
+        });
+        if (foundSlot != null) return foundSlot;
+        return whileWriteLocked(keySubHash, () -> {
             long newValue = newValueSupplier.getAsLong();
             EntryReference entry = getOrCreateEntry(keySubHash, key);
             // so we now have a entry, existing or a new one we just have to add/update the version in mutation queue
             writeValueIntoMutationQueue(entry.offset + queueOffsetInEntry, entry.wasCreated, version, newValue);
             return newValue;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        });
     }
 
     /**
@@ -238,15 +237,12 @@ public final class BinFile<K extends VKey> {
      * @return true if a new version was added or false if it was updating an existing version
      */
     public boolean putSlot(long version, int keySubHash, K key, long value) {
-        lock.writeLock().lock();
-        try {
+        return whileWriteLocked(keySubHash, () -> {
             EntryReference entry = getOrCreateEntry(keySubHash, key);
             // so we now have a entry, existing or a new one we just have to add/update the version in mutation queue
             long oldValue = writeValueIntoMutationQueue(entry.offset + queueOffsetInEntry, entry.wasCreated, version, value);
             return oldValue != NOT_FOUND_LOCATION;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        });
     }
 
     /**
@@ -258,8 +254,7 @@ public final class BinFile<K extends VKey> {
      * @return the value for the deleted key if there was one or FCSlotIndex.NOT_FOUND_LOCATION
      */
     public long removeKey(long version, int keySubHash, K key) {
-        lock.writeLock().lock();
-        try {
+        return whileWriteLocked(keySubHash, () -> {
             int entryOffset = findEntryOffsetForKeyInBin(keySubHash, key);
             long slotIndex = NOT_FOUND_LOCATION;
             if (entryOffset != -1) {
@@ -267,9 +262,7 @@ public final class BinFile<K extends VKey> {
                 slotIndex = writeValueIntoMutationQueue(entryOffset + queueOffsetInEntry, false, version, DELETED_POINTER);
             }
             return slotIndex;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        });
     }
 
     /**
@@ -279,15 +272,8 @@ public final class BinFile<K extends VKey> {
      * @param newVersion the new version number
      */
     public void versionChanged(long oldVersion, long newVersion) {
-        lock.writeLock().lock();
-        try {
-            currentVersion = newVersion;
-            // stash changedKeysCurrentVersion and create new list
-            changedKeysPerVersion.put(oldVersion, changedKeysCurrentVersion);
-            changedKeysCurrentVersion = new ArrayList<>();
-        } finally {
-            lock.writeLock().unlock();
-        }
+        // stash changedKeysCurrentVersion and create new list
+        changedKeysPerVersion.put(oldVersion, changedKeysCurrentVersion.getAndSet(new IntArrayList()));
     }
 
     /**
@@ -296,19 +282,12 @@ public final class BinFile<K extends VKey> {
      * @param version the version to release
      */
     public void releaseVersion(long version) {
-        lock.writeLock().lock();
-        try {
-            // version deleting entries for this version
-            List<Integer> changedKeys = (version == currentVersion || currentVersion == -1) ?
-                    changedKeysCurrentVersion : changedKeysPerVersion.remove(version);
-            // TODO maybe need to clear out changedKeysCurrentVersion but seems if current version has been released we are done
-            if (changedKeys != null) {
-                for (Integer mutationQueueOffset : changedKeys) {
-                    markQueue(mutationQueueOffset, version);
-                }
+        // version deleting entries for this version
+        IntArrayList changedKeys = changedKeysPerVersion.remove(version);
+        if (changedKeys != null) {
+            for (int i = 0; i < changedKeys.size(); i++) {
+                markQueue(changedKeys.get(i), version);
             }
-        } finally {
-            lock.writeLock().unlock();
         }
     }
 
@@ -319,8 +298,9 @@ public final class BinFile<K extends VKey> {
      * @return stamp representing the lock that needs to be returned to releaseWriteLock
      */
     public Object acquireWriteLock(int keySubHash) {
-        lock.writeLock().lock();
-        return lock.writeLock();
+        var lock = getLock(keySubHash).writeLock();
+        lock.lock();
+        return lock;
     }
 
     /**
@@ -330,7 +310,8 @@ public final class BinFile<K extends VKey> {
      * @param lockStamp stamp representing the lock that you got from acquireWriteLock
      */
     public void releaseWriteLock(int keySubHash, Object lockStamp) {
-        if (lockStamp == lock.writeLock()) lock.writeLock().unlock();
+        var lock = getLock(keySubHash).writeLock();
+        if (lockStamp == lock) lock.unlock();
     }
 
     /**
@@ -340,8 +321,9 @@ public final class BinFile<K extends VKey> {
      * @return stamp representing the lock that needs to be returned to releaseReadLock
      */
     public Object acquireReadLock(int keySubHash) {
-        lock.readLock().lock();
-        return lock.readLock();
+        var lock = getLock(keySubHash).readLock();
+        lock.lock();
+        return lock;
     }
 
     /**
@@ -351,7 +333,8 @@ public final class BinFile<K extends VKey> {
      * @param lockStamp stamp representing the lock that you got from acquireReadLock
      */
     public void releaseReadLock(int keySubHash, Object lockStamp) {
-        if (lockStamp == lock.readLock()) lock.readLock().unlock();
+        var lock = getLock(keySubHash).readLock();
+        if (lockStamp == lock) lock.unlock();
     }
 
     //==================================================================================================================
@@ -365,6 +348,36 @@ public final class BinFile<K extends VKey> {
      */
     private int findBinOffset(int keySubHash) {
         return (keySubHash % numOfBinsPerFile) * binSize;
+    }
+
+    private <V> V whileReadLocked(int keySubHash, Callable<V> code) {
+        ReentrantReadWriteLock lock = getLock(keySubHash);
+        lock.readLock().lock();
+        try {
+            return code.call();
+        } catch (Exception e) {
+            e.printStackTrace(); // TODO something better maybe
+            throw new RuntimeException(e);
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    private <V> V whileWriteLocked(int keySubHash, Callable<V> code) {
+        ReentrantReadWriteLock lock = getLock(keySubHash);
+        lock.writeLock().lock();
+        try {
+            return code.call();
+        } catch (Exception e) {
+            e.printStackTrace(); // TODO something better maybe
+            throw new RuntimeException(e);
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    private ReentrantReadWriteLock getLock(int keySubHash) {
+        return lockArray[keySubHash % lockArray.length];
     }
 
     //==================================================================================================================
@@ -536,7 +549,11 @@ public final class BinFile<K extends VKey> {
         // stash mutation queue for later clean up, if this is a new mutation. If it was updating a mutation
         // then when that mutation was made it would have already been added.
         if (oldSlotIndex == NOT_FOUND_LOCATION) {
-            changedKeysCurrentVersion.add(mutationQueueOffset);
+            changedKeysCurrentVersion.get().add(mutationQueueOffset);
+            changedKeysCurrentVersion.getAndUpdate(list -> {
+                list.add(mutationQueueOffset);
+                return list;
+            });
         }
         return oldSlotIndex;
     }
