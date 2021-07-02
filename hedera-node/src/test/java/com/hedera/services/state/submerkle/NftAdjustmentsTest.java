@@ -32,9 +32,8 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
@@ -69,7 +68,7 @@ class NftAdjustmentsTest {
 		SerializableDataInputStream stream = mock(SerializableDataInputStream.class);
 		given(stream.readSerializableList(eq(NftAdjustments.MAX_NUM_ADJUSTMENTS), anyBoolean(), any()))
 				.willReturn(Collections.emptyList());
-		given(stream.readLongArray(NftAdjustments.MAX_NUM_ADJUSTMENTS)).willReturn(new long[]{1, 2, 3});
+		given(stream.readLongArray(NftAdjustments.MAX_NUM_ADJUSTMENTS)).willReturn(new long[] { 1, 2, 3 });
 
 		subject.deserialize(stream, 1);
 		verify(stream).readLongArray(NftAdjustments.MAX_NUM_ADJUSTMENTS);
@@ -82,19 +81,19 @@ class NftAdjustmentsTest {
 		givenTransferList();
 		SerializableDataOutputStream stream = mock(SerializableDataOutputStream.class);
 		subject.serialize(stream);
-		verify(stream).writeLongArray(new long[]{1});
+		verify(stream).writeLongArray(new long[] { 1 });
 		verify(stream, times(1)).writeSerializableList(
-				eq(List.of(EntityId.fromGrpcAccountId(sender))), eq(true), eq(true));
+				List.of(EntityId.fromGrpcAccountId(sender)), true, true);
 		verify(stream, times(1)).writeSerializableList(
-				eq(List.of(EntityId.fromGrpcAccountId(recipient))), eq(true), eq(true));
+				List.of(EntityId.fromGrpcAccountId(recipient)), true, true);
 	}
 
 	@Test
 	void testEquals() {
 		NftAdjustments adjustments = new NftAdjustments();
 		assertEquals(adjustments, subject);
-		assertTrue(subject.equals(subject));
-		assertFalse(subject.equals(null));
+		assertEquals(subject, subject);
+		assertNotEquals(null, subject);
 	}
 
 	@Test
@@ -110,18 +109,18 @@ class NftAdjustmentsTest {
 	}
 
 	@Test
-	void toGrpc(){
+	void toGrpc() {
 		assertNotNull(subject.toGrpc());
 		givenTransferList();
-		var grpc =  subject.toGrpc();
+		var grpc = subject.toGrpc();
 		var transferList = grpc.getNftTransfersList();
-		assertEquals(transferList.get(0).getSerialNumber(), 1);
-		assertEquals(transferList.get(0).getSenderAccountID(), sender);
-		assertEquals(transferList.get(0).getReceiverAccountID(), recipient);
+		assertEquals(1, transferList.get(0).getSerialNumber());
+		assertEquals(sender, transferList.get(0).getSenderAccountID());
+		assertEquals(recipient, transferList.get(0).getReceiverAccountID());
 	}
 
 	@Test
-	void fromGrpc(){
+	void fromGrpc() {
 		givenTransferList();
 		var grpc = List.of(NftTransfer.newBuilder()
 				.setSerialNumber(1)
@@ -130,7 +129,7 @@ class NftAdjustmentsTest {
 		assertEquals(subject, NftAdjustments.fromGrpc(grpc));
 	}
 
-	private void givenTransferList(){
+	private void givenTransferList() {
 		subject = NftAdjustments.fromGrpc(List.of(
 				NftTransfer
 						.newBuilder()

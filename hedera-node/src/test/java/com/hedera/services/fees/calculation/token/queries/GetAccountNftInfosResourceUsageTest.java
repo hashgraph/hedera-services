@@ -50,7 +50,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class GetAccountNftInfosResourceUsageTest {
+class GetAccountNftInfosResourceUsageTest {
     ByteString m1 = ByteString.copyFromUtf8("metadata1"), m2 = ByteString.copyFromUtf8("metadata2");
     List<ByteString> metadata = List.of(m1, m2);
     TokenGetAccountNftInfosUsage estimator;
@@ -90,7 +90,7 @@ public class GetAccountNftInfosResourceUsageTest {
     }
 
     @Test
-    public void recognizesApplicableQuery() {
+     void recognizesApplicableQuery() {
         // given:
         var applicable = tokenGetAccountNftInfosQuery(target, start, end, COST_ANSWER);
         var inapplicable = Query.getDefaultInstance();
@@ -101,7 +101,7 @@ public class GetAccountNftInfosResourceUsageTest {
     }
 
     @Test
-    public void setsInfoInQueryCxtIfPresent() {
+     void setsInfoInQueryCxtIfPresent() {
         // setup:
         var queryCtx = new HashMap<String, Object>();
 
@@ -116,7 +116,7 @@ public class GetAccountNftInfosResourceUsageTest {
     }
 
     @Test
-    public void onlySetsTokenInfoInQueryCxtIfFound() {
+     void onlySetsTokenInfoInQueryCxtIfFound() {
         // setup:
         var queryCtx = new HashMap<String, Object>();
 

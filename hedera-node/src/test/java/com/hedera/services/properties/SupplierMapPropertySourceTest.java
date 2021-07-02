@@ -58,14 +58,14 @@ public class SupplierMapPropertySourceTest {
 	));
 
 	@Test
-	public void testsForPresence() {
+	 void testsForPresence() {
 		// expect:
 		assertTrue(subject.containsProperty(LONG_PROP));
 		assertFalse(subject.containsProperty(MISSING_PROP));
 	}
 
 	@Test
-	public void getsParseableAccount() {
+	 void getsParseableAccount() {
 		// expect:
 		assertEquals(
 				AccountID.newBuilder().setAccountNum(2L).build(),
@@ -73,14 +73,14 @@ public class SupplierMapPropertySourceTest {
 	}
 
 	@Test
-	public void allPropertyNames() {
+	 void allPropertyNames() {
 		assertNotNull(subject.allPropertyNames());
 		var propSet = Set.of("a.double.prop", "a.string.prop", "a.profile.prop", "a.boolean.prop", "a.bad.account", "a.long.prop", "a.good.account", "a.int.prop");
 		assertEquals(propSet, subject.allPropertyNames());
 	}
 
 	@Test
-	public void throwsOnUnparseableAccount() {
+	 void throwsOnUnparseableAccount() {
 		// setup:
 		UnparseablePropertyException e = null;
 
@@ -96,13 +96,13 @@ public class SupplierMapPropertySourceTest {
 	}
 
 	@Test
-	public void getsKnownProperty() {
+	 void getsKnownProperty() {
 		// expect:
 		assertEquals(1L, subject.getProperty(LONG_PROP));
 	}
 
 	@Test
-	public void castsToExpectedType() {
+	 void castsToExpectedType() {
 		// expect:
 		assertThrows(ClassCastException.class, () -> subject.getIntProperty(DOUBLE_PROP));
 		assertDoesNotThrow(() -> subject.getDoubleProperty(DOUBLE_PROP));

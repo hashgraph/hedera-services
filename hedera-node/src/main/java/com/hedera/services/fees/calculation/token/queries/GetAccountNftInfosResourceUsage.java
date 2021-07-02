@@ -29,8 +29,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TokenInfo;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,53 +41,51 @@ import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
 import static com.hedera.services.queries.token.GetAccountNftInfosAnswer.ACCOUNT_NFT_INFO_CTX_KEY;
 
 public class GetAccountNftInfosResourceUsage implements QueryResourceUsageEstimator {
-    private static final Logger log = LogManager.getLogger(GetAccountNftInfosResourceUsage.class);
 
-    static Function<Query, TokenGetAccountNftInfosUsage> factory = TokenGetAccountNftInfosUsage::newEstimate;
+	static Function<Query, TokenGetAccountNftInfosUsage> factory = TokenGetAccountNftInfosUsage::newEstimate;
 
-    @Override
-    public boolean applicableTo(Query query) {
-        return query.hasTokenGetAccountNftInfos();
-    }
+	@Override
+	public boolean applicableTo(Query query) {
+		return query.hasTokenGetAccountNftInfos();
+	}
 
-    @Override
-    public FeeData usageGiven(Query query, StateView view) {
-        return usageFor(query, view, query.getTokenGetAccountNftInfos().getHeader().getResponseType(), NO_QUERY_CTX);
-    }
+	@Override
+	public FeeData usageGiven(Query query, StateView view) {
+		return usageFor(query, view, NO_QUERY_CTX);
+	}
 
-    @Override
-    public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
-        return usageFor(query, view, type, NO_QUERY_CTX);
-    }
+	@Override
+	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
+		return usageFor(query, view, NO_QUERY_CTX);
+	}
 
-    @Override
-    public FeeData usageGiven(Query query, StateView view, Map<String, Object> queryCtx) {
-        return usageFor(
-                query,
-                view,
-                query.getTokenGetAccountNftInfos().getHeader().getResponseType(),
-                Optional.of(queryCtx));
-    }
+	@Override
+	public FeeData usageGiven(Query query, StateView view, Map<String, Object> queryCtx) {
+		return usageFor(
+				query,
+				view,
+				Optional.of(queryCtx));
+	}
 
-    private FeeData usageFor(Query query, StateView view, ResponseType type, Optional<Map<String, Object>> queryCtx) {
-        var op = query.getTokenGetAccountNftInfos();
-        var optionalInfo = view.infoForAccountNfts(
-                op.getAccountID(),
-                op.getStart(),
-                op.getEnd());
-        if (optionalInfo.isPresent()) {
-            var info = optionalInfo.get();
-            queryCtx.ifPresent(ctx -> ctx.put(ACCOUNT_NFT_INFO_CTX_KEY, info));
+	private FeeData usageFor(Query query, StateView view, Optional<Map<String, Object>> queryCtx) {
+		var op = query.getTokenGetAccountNftInfos();
+		var optionalInfo = view.infoForAccountNfts(
+				op.getAccountID(),
+				op.getStart(),
+				op.getEnd());
+		if (optionalInfo.isPresent()) {
+			var info = optionalInfo.get();
+			queryCtx.ifPresent(ctx -> ctx.put(ACCOUNT_NFT_INFO_CTX_KEY, info));
 
-            List<ByteString> m = new ArrayList<>();
-            info.forEach(s -> m.add(s.getMetadata()));
-            return factory.apply(query).givenMetadata(m).get();
-        } else {
-            return FeeData.getDefaultInstance();
-        }
-    }
+			List<ByteString> m = new ArrayList<>();
+			info.forEach(s -> m.add(s.getMetadata()));
+			return factory.apply(query).givenMetadata(m).get();
+		} else {
+			return FeeData.getDefaultInstance();
+		}
+	}
 
-    public static Optional<Key> ifPresent(TokenInfo info, Predicate<TokenInfo> check, Function<TokenInfo, Key> getter) {
-        return check.test(info) ? Optional.of(getter.apply(info)) : Optional.empty();
-    }
+	public static Optional<Key> ifPresent(TokenInfo info, Predicate<TokenInfo> check, Function<TokenInfo, Key> getter) {
+		return check.test(info) ? Optional.of(getter.apply(info)) : Optional.empty();
+	}
 }
