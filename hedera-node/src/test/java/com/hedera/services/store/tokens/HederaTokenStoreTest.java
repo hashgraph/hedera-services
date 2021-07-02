@@ -1965,6 +1965,7 @@ class HederaTokenStoreTest {
 		expected.setKycKey(TOKEN_KYC_KT.asJKeyUnchecked());
 		expected.setWipeKey(MISC_ACCOUNT_KT.asJKeyUnchecked());
 		expected.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked());
+		expected.setFeeScheduleKey(TOKEN_FEE_SCHEDULE_KT.asJKeyUnchecked());
 		expected.setTokenType(TokenType.FUNGIBLE_COMMON);
 		expected.setSupplyType(TokenSupplyType.INFINITE);
 		expected.setMemo(memo);
