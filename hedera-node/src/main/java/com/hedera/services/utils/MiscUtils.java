@@ -138,6 +138,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetAccountNftInfos;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
@@ -213,6 +214,7 @@ public class MiscUtils {
 	static final String TOKEN_GET_INFO_METRIC = "getTokenInfo";
 	static final String TOKEN_GET_NFT_INFO_METRIC = "getTokenNftInfo";
 	static final String TOKEN_GET_ACCOUNT_NFT_INFOS_METRIC = "getAccountNftInfos";
+	static final String TOKEN_FEE_SCHEDULE_UPDATE_METRIC = "tokenFeeSchedule";
 
 	static final String SCHEDULE_CREATE_METRIC = "createSchedule";
 	static final String SCHEDULE_DELETE_METRIC = "deleteSchedule";
@@ -307,6 +309,7 @@ public class MiscUtils {
 		BASE_STAT_NAMES.put(TokenGetNftInfo, TOKEN_GET_NFT_INFO_METRIC);
 		BASE_STAT_NAMES.put(ScheduleGetInfo, SCHEDULE_GET_INFO_METRIC);
 		BASE_STAT_NAMES.put(TokenGetAccountNftInfos, TOKEN_GET_ACCOUNT_NFT_INFOS_METRIC);
+		BASE_STAT_NAMES.put(TokenFeeScheduleUpdate, TOKEN_FEE_SCHEDULE_UPDATE_METRIC);
 	}
 
 	public static String baseStatNameOf(HederaFunctionality function) {
@@ -360,7 +363,8 @@ public class MiscUtils {
 		try {
 			return new JEd25519Key(CommonUtils.unhex(b64Reader.hexedABytesFrom(storeLoc, kpId)));
 		} catch (IllegalArgumentException e) {
-			var msg = String.format("Arguments 'storeLoc=%s' and 'kpId=%s' did not denote a valid key!", storeLoc, kpId);
+			var msg = String.format("Arguments 'storeLoc=%s' and 'kpId=%s' did not denote a valid key!", storeLoc,
+					kpId);
 			throw new IllegalArgumentException(msg, e);
 		}
 	}
@@ -544,6 +548,8 @@ public class MiscUtils {
 			return ScheduleDelete;
 		} else if (txn.hasUncheckedSubmit()) {
 			return UncheckedSubmit;
+		} else if (txn.hasTokenFeeScheduleUpdate()) {
+			return TokenFeeScheduleUpdate;
 		} else {
 			throw new UnknownHederaFunctionality();
 		}
