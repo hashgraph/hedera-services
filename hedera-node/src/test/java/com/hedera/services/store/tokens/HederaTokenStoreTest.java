@@ -1737,7 +1737,7 @@ class HederaTokenStoreTest {
 		given(properties.maxCustomFeesAllowed()).willReturn(1);
 
 		// given:
-		final var req = fullyValidAttempt().build();
+		final var req = fullyValidTokenCreateAttempt().build();
 
 		// when:
 		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
@@ -1750,7 +1750,7 @@ class HederaTokenStoreTest {
 	@Test
 	void rejectsUnderspecifiedFeeSchedules() {
 		// given:
-		final var req = fullyValidAttempt().addAllCustomFees(grpcUnderspecifiedCustomFees).build();
+		final var req = fullyValidTokenCreateAttempt().addAllCustomFees(grpcUnderspecifiedCustomFees).build();
 
 		// when:
 		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
@@ -1765,7 +1765,7 @@ class HederaTokenStoreTest {
 		given(accountsLedger.exists(anotherFeeCollector)).willReturn(false);
 
 		// given:
-		final var req = fullyValidAttempt().build();
+		final var req = fullyValidTokenCreateAttempt().build();
 
 		// when:
 		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
@@ -1780,7 +1780,7 @@ class HederaTokenStoreTest {
 		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
 
 		// given:
-		final var req = fullyValidAttempt().build();
+		final var req = fullyValidTokenCreateAttempt().build();
 
 		// when:
 		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
@@ -1795,7 +1795,7 @@ class HederaTokenStoreTest {
 		given(tokenRelsLedger.exists(anotherFeeCollectorMisc)).willReturn(false);
 
 		// given:
-		final var req = fullyValidAttempt().build();
+		final var req = fullyValidTokenCreateAttempt().build();
 
 		// when:
 		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
@@ -1807,7 +1807,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void rejectsZeroFractionInFractionalFee() {
-		final var req = fullyValidAttempt().addAllCustomFees(grpcZeroFractionCustomFees).build();
+		final var req = fullyValidTokenCreateAttempt().addAllCustomFees(grpcZeroFractionCustomFees).build();
 
 		// when:
 		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
@@ -1819,7 +1819,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void rejectsNegativeFractionInFractionalFee() {
-		final var req = fullyValidAttempt().addAllCustomFees(grpcNegativeFractionCustomFees).build();
+		final var req = fullyValidTokenCreateAttempt().addAllCustomFees(grpcNegativeFractionCustomFees).build();
 
 		// when:
 		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
@@ -1831,7 +1831,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void rejectsNegativeMaxInFractionalFee() {
-		final var req = fullyValidAttempt().addAllCustomFees(grpcNegativeMaximumCustomFees).build();
+		final var req = fullyValidTokenCreateAttempt().addAllCustomFees(grpcNegativeMaximumCustomFees).build();
 
 		// when:
 		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
@@ -1843,7 +1843,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void rejectsNegativeMinInFractionalFee() {
-		final var req = fullyValidAttempt().addAllCustomFees(grpcNegativeMinimumCustomFees).build();
+		final var req = fullyValidTokenCreateAttempt().addAllCustomFees(grpcNegativeMinimumCustomFees).build();
 
 		// when:
 		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
@@ -1855,7 +1855,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void rejectsNegativeAmountInFixedFee() {
-		final var req = fullyValidAttempt().addAllCustomFees(grpcNegativeFixedCustomFees).build();
+		final var req = fullyValidTokenCreateAttempt().addAllCustomFees(grpcNegativeFixedCustomFees).build();
 
 		// when:
 		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
@@ -1867,7 +1867,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void rejectsInvalidFractionInFractionalFee() {
-		final var req = fullyValidAttempt().addAllCustomFees(grpcDivideByZeroCustomFees).build();
+		final var req = fullyValidTokenCreateAttempt().addAllCustomFees(grpcDivideByZeroCustomFees).build();
 
 		// when:
 		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
@@ -1880,29 +1880,58 @@ class HederaTokenStoreTest {
 	@Test
 	void happyPathWorksWithAutoRenew() {
 		// setup:
-		final var expected = new MerkleToken(
-				CONSENSUS_NOW + autoRenewPeriod,
-				totalSupply,
-				decimals,
-				symbol,
-				name,
-				freezeDefault,
-				accountsKycGrantedByDefault,
-				new EntityId(treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
-		expected.setAutoRenewAccount(EntityId.fromGrpcAccountId(autoRenewAccount));
-		expected.setAutoRenewPeriod(autoRenewPeriod);
-		expected.setAdminKey(TOKEN_ADMIN_KT.asJKeyUnchecked());
-		expected.setFreezeKey(TOKEN_FREEZE_KT.asJKeyUnchecked());
-		expected.setKycKey(TOKEN_KYC_KT.asJKeyUnchecked());
-		expected.setWipeKey(MISC_ACCOUNT_KT.asJKeyUnchecked());
-		expected.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked());
-		expected.setTokenType(TokenType.FUNGIBLE_COMMON);
-		expected.setSupplyType(TokenSupplyType.INFINITE);
-		expected.setMemo(memo);
-		expected.setFeeScheduleFrom(grpcCustomFees);
+		final var expected = buildFullyValidExpectedToken();
 
 		// given:
-		final var req = fullyValidAttempt()
+		final var req = fullyValidTokenCreateAttempt()
+				.setExpiry(Timestamp.newBuilder().setSeconds(0))
+				.setAutoRenewAccount(autoRenewAccount)
+				.setAutoRenewPeriod(enduring(autoRenewPeriod))
+				.build();
+
+		// when:
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		// then:
+		assertEquals(OK, result.getStatus());
+		assertEquals(created, result.getCreated().get());
+		// and:
+		assertEquals(created, subject.pendingId);
+		assertEquals(expected, subject.pendingCreation);
+	}
+
+	@Test
+	void canCreateTokenWithImmutableFeeSchedule() {
+		// setup:
+
+		final var expected = buildFullyValidExpectedToken();
+		expected.setFeeScheduleKey(MerkleToken.UNUSED_KEY);
+		final var req = fullyValidTokenCreateAttempt()
+				.setFeeScheduleKey(Key.newBuilder().getDefaultInstanceForType())
+				.setExpiry(Timestamp.newBuilder().setSeconds(0))
+				.setAutoRenewAccount(autoRenewAccount)
+				.setAutoRenewPeriod(enduring(autoRenewPeriod))
+				.build();
+
+		// when:
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		// then:
+		assertEquals(OK, result.getStatus());
+		assertEquals(created, result.getCreated().get());
+		// and:
+		assertEquals(created, subject.pendingId);
+		assertEquals(expected, subject.pendingCreation);
+	}
+
+	@Test
+	void canCreateTokenWithFeeScheduleKeyButNoFeeSchedules() {
+		// setup:
+
+		final var expected = buildFullyValidExpectedToken();
+		expected.setFeeScheduleFrom(Collections.emptyList());
+		final var req = fullyValidTokenCreateAttempt()
+				.clearCustomFees()
 				.setExpiry(Timestamp.newBuilder().setSeconds(0))
 				.setAutoRenewAccount(autoRenewAccount)
 				.setAutoRenewPeriod(enduring(autoRenewPeriod))
@@ -1942,7 +1971,7 @@ class HederaTokenStoreTest {
 		expected.setFeeScheduleFrom(Collections.emptyList());
 
 		// given:
-		final var req = fullyValidAttempt().clearCustomFees().build();
+		final var req = fullyValidTokenCreateAttempt().clearCustomFees().build();
 
 		// when:
 		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
@@ -1960,7 +1989,7 @@ class HederaTokenStoreTest {
 		given(accountsLedger.exists(autoRenewAccount)).willReturn(false);
 
 		// given:
-		final var req = fullyValidAttempt()
+		final var req = fullyValidTokenCreateAttempt()
 				.setAutoRenewAccount(autoRenewAccount)
 				.setAutoRenewPeriod(enduring(1000L))
 				.build();
@@ -1976,7 +2005,7 @@ class HederaTokenStoreTest {
 	void rejectsMissingTreasury() {
 		given(accountsLedger.exists(treasury)).willReturn(false);
 		// and:
-		final var req = fullyValidAttempt()
+		final var req = fullyValidTokenCreateAttempt()
 				.build();
 
 		// when:
@@ -1991,7 +2020,7 @@ class HederaTokenStoreTest {
 		given(hederaLedger.isDeleted(treasury)).willReturn(true);
 
 		// and:
-		final var req = fullyValidAttempt()
+		final var req = fullyValidTokenCreateAttempt()
 				.build();
 
 		// when:
@@ -2004,7 +2033,7 @@ class HederaTokenStoreTest {
 	@Test
 	void allowsZeroInitialSupplyAndDecimals() {
 		// given:
-		final var req = fullyValidAttempt()
+		final var req = fullyValidTokenCreateAttempt()
 				.clearCustomFees()
 				.setInitialSupply(0L)
 				.setDecimals(0)
@@ -2020,7 +2049,7 @@ class HederaTokenStoreTest {
 	@Test
 	void allowsToCreateTokenWithTheBiggestAmountInLong() {
 		// given:
-		final var req = fullyValidAttempt()
+		final var req = fullyValidTokenCreateAttempt()
 				.clearCustomFees()
 				.setInitialSupply(9)
 				.setDecimals(18)
@@ -2036,7 +2065,7 @@ class HederaTokenStoreTest {
 	@Test
 	void forcesToTrueAccountsKycGrantedByDefaultWithoutKycKey() {
 		// given:
-		final var req = fullyValidAttempt()
+		final var req = fullyValidTokenCreateAttempt()
 				.clearCustomFees()
 				.clearKycKey()
 				.build();
@@ -2049,7 +2078,7 @@ class HederaTokenStoreTest {
 		assertTrue(subject.pendingCreation.accountsKycGrantedByDefault());
 	}
 
-	TokenCreateTransactionBody.Builder fullyValidAttempt() {
+	TokenCreateTransactionBody.Builder fullyValidTokenCreateAttempt() {
 		return TokenCreateTransactionBody.newBuilder()
 				.setExpiry(Timestamp.newBuilder().setSeconds(expiry))
 				.setMemo(memo)
@@ -2058,6 +2087,7 @@ class HederaTokenStoreTest {
 				.setFreezeKey(freezeKey)
 				.setWipeKey(wipeKey)
 				.setSupplyKey(supplyKey)
+				.setFeeScheduleKey(feeScheduleKey)
 				.setSymbol(symbol)
 				.setName(name)
 				.setInitialSupply(totalSupply)
@@ -2065,6 +2095,33 @@ class HederaTokenStoreTest {
 				.setDecimals(decimals)
 				.setFreezeDefault(freezeDefault)
 				.addAllCustomFees(grpcCustomFees);
+	}
+
+	private MerkleToken buildFullyValidExpectedToken() {
+		var expected = new MerkleToken(
+				CONSENSUS_NOW + autoRenewPeriod,
+				totalSupply,
+				decimals,
+				symbol,
+				name,
+				freezeDefault,
+				accountsKycGrantedByDefault,
+				new EntityId(treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
+
+		expected.setAutoRenewAccount(EntityId.fromGrpcAccountId(autoRenewAccount));
+		expected.setAutoRenewPeriod(autoRenewPeriod);
+		expected.setAdminKey(TOKEN_ADMIN_KT.asJKeyUnchecked());
+		expected.setFreezeKey(TOKEN_FREEZE_KT.asJKeyUnchecked());
+		expected.setKycKey(TOKEN_KYC_KT.asJKeyUnchecked());
+		expected.setWipeKey(MISC_ACCOUNT_KT.asJKeyUnchecked());
+		expected.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked());
+		expected.setFeeScheduleKey(TOKEN_FEE_SCHEDULE_KT.asJKeyUnchecked());
+		expected.setTokenType(TokenType.FUNGIBLE_COMMON);
+		expected.setSupplyType(TokenSupplyType.INFINITE);
+		expected.setMemo(memo);
+		expected.setFeeScheduleFrom(grpcCustomFees);
+
+		return expected;
 	}
 
 	private Duration enduring(long secs) {

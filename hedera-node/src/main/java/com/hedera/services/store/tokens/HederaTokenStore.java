@@ -444,6 +444,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		var kycKey = asUsableFcKey(request.getKycKey());
 		var wipeKey = asUsableFcKey(request.getWipeKey());
 		var supplyKey = asUsableFcKey(request.getSupplyKey());
+		var feeScheduleKey = asUsableFcKey(request.getFeeScheduleKey());
 
 		var expiry = expiryOf(request, now);
 		pendingId = ids.newTokenId(sponsor);
@@ -465,6 +466,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		wipeKey.ifPresent(pendingCreation::setWipeKey);
 		freezeKey.ifPresent(pendingCreation::setFreezeKey);
 		supplyKey.ifPresent(pendingCreation::setSupplyKey);
+		feeScheduleKey.ifPresent(pendingCreation::setFeeScheduleKey);
+
 		if (request.hasAutoRenewAccount()) {
 			pendingCreation.setAutoRenewAccount(fromGrpcAccountId(request.getAutoRenewAccount()));
 			pendingCreation.setAutoRenewPeriod(request.getAutoRenewPeriod().getSeconds());
@@ -747,6 +750,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				!op.hasWipeKey() &&
 				!op.hasFreezeKey() &&
 				!op.hasSupplyKey() &&
+				!op.hasFeeScheduleKey() &&
 				!op.hasTreasury() &&
 				!op.hasAutoRenewAccount() &&
 				op.getSymbol().length() == 0 &&
