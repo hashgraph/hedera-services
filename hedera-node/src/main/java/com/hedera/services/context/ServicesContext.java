@@ -579,7 +579,6 @@ public class ServicesContext {
 	private ValidatingCallbackInterceptor applicationPropertiesReloading;
 	private Supplier<ServicesRepositoryRoot> newPureRepo;
 	private Map<TransactionID, TxnIdRecentHistory> txnHistories;
-  private FcmCustomFeeSchedules activeCustomFeeSchedules;
 	private WorkingState workingState = new WorkingState();
 	private QueryableState queryableState = new QueryableState();
 	private AtomicReference<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> queryableUniqueTokens;
@@ -893,8 +892,8 @@ public class ServicesContext {
 					() -> queryableState.getQueryableTopics().get(),
 					() -> queryableState.getQueryableAccounts().get(),
 					() -> queryableState.getQueryableStorage().get(),
-					() -> queryableState.getQueryableTokenAssociations().get(),
 					() -> queryableUniqueTokens().get(),
+					() -> queryableState.getQueryableTokenAssociations().get(),
 					() -> queryableUniqueTokenAssociations().get(),
 					() -> queryableUniqueOwnershipAssociations().get(),
 					this::diskFs,

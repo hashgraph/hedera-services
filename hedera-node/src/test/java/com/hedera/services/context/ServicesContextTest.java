@@ -557,9 +557,8 @@ class ServicesContextTest {
 		assertThat(ctx.applicationPropertiesReloading(), instanceOf(ValidatingCallbackInterceptor.class));
 		assertThat(ctx.recordsHistorian(), instanceOf(TxnAwareRecordsHistorian.class));
 		assertThat(queryableState.getQueryableAccounts(), instanceOf(AtomicReference.class));
-		assertThat(ctx.queryableAccounts(), instanceOf(AtomicReference.class));
 		assertThat(ctx.queryableUniqueTokens(), instanceOf(AtomicReference.class));
-		assertThat(ctx.queryableTokenAssociations(), instanceOf(AtomicReference.class));
+		assertThat(queryableState.getQueryableTokenAssociations(), instanceOf(AtomicReference.class));
 		assertThat(ctx.queryableUniqueOwnershipAssociations(), instanceOf(AtomicReference.class));
 
     assertThat(ctx.txnChargingPolicy(), instanceOf(FeeChargingPolicy.class));
