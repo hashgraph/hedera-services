@@ -1106,6 +1106,20 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	void cannotUpdateImmutableTokenWithNewFeeScheduleKey() {
+		given(token.hasAdminKey()).willReturn(false);
+		given(token.hasFeeScheduleKey()).willReturn(true);
+		var op = updateWith(NO_KEYS, false, false, false);
+		op = op.toBuilder()
+				.setFeeScheduleKey(feeScheduleKey)
+				.setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1_234)).build();
+
+		final var outcome = subject.update(op, CONSENSUS_NOW);
+
+		assertEquals(TOKEN_IS_IMMUTABLE, outcome);
+	}
+
+	@Test
 	void ifImmutableWillStayImmutable(){
 		givenUpdateTarget(ALL_KEYS);
 		given(token.hasFeeScheduleKey()).willReturn(false);
@@ -2078,6 +2092,7 @@ class HederaTokenStoreTest {
 		assertEquals(ResponseCodeEnum.OK, result.getStatus());
 		assertTrue(subject.pendingCreation.accountsKycGrantedByDefault());
 	}
+
 
 	TokenCreateTransactionBody.Builder fullyValidTokenCreateAttempt() {
 		return TokenCreateTransactionBody.newBuilder()
