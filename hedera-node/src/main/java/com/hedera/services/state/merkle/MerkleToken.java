@@ -551,7 +551,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		return feeSchedule;
 	}
 
-	private void setFeeSchedule(List<FcCustomFee> feeSchedule) {
+	public void setFeeSchedule(List<FcCustomFee> feeSchedule) {
 		this.feeSchedule = unmodifiableList(feeSchedule);
 	}
 

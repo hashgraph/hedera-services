@@ -293,6 +293,10 @@ public class TypedTokenStore {
 		mutableToken.setTotalSupply(token.getTotalSupply());
 		mutableToken.setAccountsFrozenByDefault(token.isFrozenByDefault());
 		mutableToken.setLastUsedSerialNumber(token.getLastUsedSerialNumber());
+		mutableToken.setFeeSchedule(token.getFeeSchedule());
+		if(token.hasFeeScheduleKey()) {
+			mutableToken.setFeeScheduleKey(token.getFeeScheduleKey());
+		}
 	}
 
 	private void initModelAccounts(Token token, EntityId _treasuryId, @Nullable EntityId _autoRenewId) {
@@ -315,6 +319,8 @@ public class TypedTokenStore {
 		token.setFrozenByDefault(immutableToken.accountsAreFrozenByDefault());
 		token.setType(immutableToken.tokenType());
 		token.setLastUsedSerialNumber(immutableToken.getLastUsedSerialNumber());
+		token.setFeeScheduleKey(immutableToken.getFeeScheduleKey());
+		token.setFeeSchedule(immutableToken.customFeeSchedule());
 	}
 
 	private void alertTokenBackingStoreOfNew(TokenRelationship newRel) {
