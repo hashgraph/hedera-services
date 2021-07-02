@@ -206,6 +206,9 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 				if (FUNCTIONS_WITH_TOKEN_TYPE_SPECIALIZATIONS.contains(function)) {
 					map.put(SubType.TOKEN_FUNGIBLE_COMMON, untypedPrices);
 					map.put(SubType.TOKEN_NON_FUNGIBLE_UNIQUE, untypedPrices);
+					if (function == TokenAccountWipe) {
+						map.put(SubType.DEFAULT, untypedPrices);
+					}
 				} else {
 					map.put(SubType.DEFAULT, untypedPrices);
 				}
