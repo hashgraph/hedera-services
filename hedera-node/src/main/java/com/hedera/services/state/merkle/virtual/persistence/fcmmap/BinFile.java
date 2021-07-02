@@ -19,17 +19,37 @@ import java.util.function.LongSupplier;
 import static com.hedera.services.state.merkle.virtual.persistence.FCSlotIndex.NOT_FOUND_LOCATION;
 
 /**
- * A BinFile contains a fixed number of bins. Each bin contains entries for key in a section of the hash space. Each
- * entry contains the mutation list for a key.
- *
- * TODO this class assumes that only one thread will call it
- *
+ * A {@link BinFile} represents a file on disk that contains a fixed number of "bins". This class
+ * is part of the solution for a fast-copyable hash map stored entirely on disk. The hashing
+ * algorithm (such as in {@link FCSlotIndexUsingMemMapFile} will hash an incoming key to a specific
+ * {@link BinFile}, and within the {@link BinFile} to a specific bin.
+ * <p>
+ * In a typical hash map, each bin contains key/value pairs. When given a key, the hash map will hash
+ * the key, find the associated bin, and then walk over each key/value pair checking that the key hashes
+ * match (since multiple different key hashes can hash to the same bin), and then check that the keys are
+ * equal (using "equals" and not just an identity check). The value of the first equal key is returned
+ * (or replaced, depending on the operation).
+ * <p>
+ * The algorithm used here is similar, except that the "value" is a mutation queue, where each mutation
+ * in that queue points to a slot in another file (a
+ * {@link com.hedera.services.state.merkle.virtual.persistence.SlotStore}), where the actual value can be read.
+ * Each mutation in the mutation queue is a [long version][long slot index] pair. For every lookup or mutation,
+ * a version is supplied along with the operation. When the right mutation queue is found, we locate the most
+ * recent version that matches the requested version and return the result.
+ * <p>
+ * When a fast-copyable map using the bin releases, it calls release on the {@link BinFile} which uses a
+ * "Mark & Sweep" approach to cleaning out released mutations. For each mutation queue which was modified in
+ * that given release, {@link BinFile} will find the associated mutation and mark it as RELEASED. Then, the
+ * next time that mutation queue is modified, we first "sweep" it by removing all RELEASED mutations, making
+ * room for future mutations. This approach simplifies some of the threading concerns if there is a background
+ * thread removing RELEASED mutations.
+ * <p>
  * Each bin contains a header of
  *      [int] a single int for number of entries, this can include deleted entries
- * then a array of stored values
+ * then an array of stored values
  *      [int hash][int key class version][bytes key][mutation queue]
  * mutation queue is, oldest first
- *      [int size][mutation],[mutation],[mutation],[mutation]
+ *      [int size][mutation]*
  * mutation is two longs
  *      [long version][long slot index value]
  */
@@ -100,13 +120,13 @@ public final class BinFile<K extends VKey> {
     private final int maxNumberOfMutations;
     /** Size of a bin in bytes */
     private final int binSize;
-    /** Size one key/mutationQueue in a bin */
+    /** Size of one key/mutationQueue in a bin */
     private final int keyMutationEntrySize;
     /** The size of the header in each bin, contains single int for number of entries stored */
     private final int binHeaderSize = Integer.BYTES;
     /** The offset to the mutation queue inside a keyMutationEntry */
     private final int queueOffsetInEntry;
-    /** Single MutationQueueReference that we can reuse as we are synchronized */
+    /** Single EntryReference that we can reuse as we are synchronized */
     private final EntryReference entryReference = new EntryReference();
     /** Readwrite lock for this file */
     private final ReentrantReadWriteLock[] lockArray;
@@ -135,7 +155,7 @@ public final class BinFile<K extends VKey> {
         this.maxNumberOfMutations = maxNumberOfMutations;
         // calculate size of key,mutation store which contains:
         final int mutationArraySize = maxNumberOfMutations * MUTATION_SIZE;
-        final int serializedKeySize = Integer.BYTES + keySizeBytes; // we store a int for class version
+        final int serializedKeySize = Integer.BYTES + keySizeBytes; // we store an int for class version
         queueOffsetInEntry = Integer.BYTES + serializedKeySize;
         keyMutationEntrySize = queueOffsetInEntry + MUTATION_QUEUE_HEADER_SIZE + mutationArraySize;
         binSize = binHeaderSize + (numOfKeysPerBin * keyMutationEntrySize);
@@ -429,6 +449,7 @@ public final class BinFile<K extends VKey> {
         return key.equals(mappedBuffer,version);
     }
 
+    // Caller MUST hold the write lock.
     private EntryReference getOrCreateEntry(int keySubHash, K key) {
         entryReference.wasCreated = false;
         // first we need to see if a entry exists for key
@@ -550,10 +571,6 @@ public final class BinFile<K extends VKey> {
         // then when that mutation was made it would have already been added.
         if (oldSlotIndex == NOT_FOUND_LOCATION) {
             changedKeysCurrentVersion.get().add(mutationQueueOffset);
-            changedKeysCurrentVersion.getAndUpdate(list -> {
-                list.add(mutationQueueOffset);
-                return list;
-            });
         }
         return oldSlotIndex;
     }
@@ -640,7 +657,7 @@ public final class BinFile<K extends VKey> {
     }
 
     //==================================================================================================================
-    // Simple Struts
+    // Simple Structs
 
     private static class EntryReference {
         public int offset;
