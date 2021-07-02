@@ -32,18 +32,21 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
-import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
 import static com.hedera.services.utils.EntityIdUtils.readableId;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 
 /**
  * Implements a {@link UsagePricesProvider} by loading the required
@@ -53,6 +56,12 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
  */
 public class AwareFcfsUsagePrices implements UsagePricesProvider {
 	private static final Logger log = LogManager.getLogger(AwareFcfsUsagePrices.class);
+
+	private static EnumSet<HederaFunctionality> FUNCTIONS_WITH_TOKEN_TYPE_SPECIALIZATIONS = EnumSet.of(
+			TokenMint,
+			TokenBurn,
+			TokenAccountWipe
+	);
 
 	public static long DEFAULT_FEE = 100_000L;
 
@@ -181,17 +190,34 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 		return Timestamp.newBuilder().setSeconds(ts.getSeconds()).build();
 	}
 
-	private EnumMap<HederaFunctionality, Map<SubType, FeeData>> functionUsagePricesFrom(FeeSchedule feeSchedule) {
+	EnumMap<HederaFunctionality, Map<SubType, FeeData>> functionUsagePricesFrom(FeeSchedule feeSchedule) {
 		EnumMap<HederaFunctionality, Map<SubType, FeeData>> feeScheduleMap = new EnumMap<>(HederaFunctionality.class);
-		for (TransactionFeeSchedule transactionFeeSchedule : feeSchedule.getTransactionFeeScheduleList()) {
-			Map<SubType, FeeData> map = feeScheduleMap.get(transactionFeeSchedule.getHederaFunctionality());
+		for (var txnFeeSchedule : feeSchedule.getTransactionFeeScheduleList()) {
+			final var function = txnFeeSchedule.getHederaFunctionality();
+
+			Map<SubType, FeeData> map = feeScheduleMap.get(function);
 			if (map == null) {
 				map = new HashMap<>();
 			}
-			for (FeeData feeData : transactionFeeSchedule.getFeesList()) {
+
+			if (txnFeeSchedule.hasFeeData()) {
+				final var untypedPrices = txnFeeSchedule.getFeeData();
+				/* Must be from a pre-0.16.0 signed state when there were no fee sub-types */
+				if (FUNCTIONS_WITH_TOKEN_TYPE_SPECIALIZATIONS.contains(function)) {
+					map.put(SubType.TOKEN_FUNGIBLE_COMMON, untypedPrices);
+					map.put(SubType.TOKEN_NON_FUNGIBLE_UNIQUE, untypedPrices);
+					if (function == TokenAccountWipe) {
+						map.put(SubType.DEFAULT, untypedPrices);
+					}
+				} else {
+					map.put(SubType.DEFAULT, untypedPrices);
+				}
+			}
+
+			for (var feeData : txnFeeSchedule.getFeesList()) {
 				map.put(feeData.getSubType(), feeData);
 			}
-			feeScheduleMap.put(transactionFeeSchedule.getHederaFunctionality(), map);
+			feeScheduleMap.put(txnFeeSchedule.getHederaFunctionality(), map);
 		}
 		return feeScheduleMap;
 	}
