@@ -67,14 +67,14 @@ public final class FCSlotIndexUsingMemMapFile<K extends VKey> implements FCSlotI
      * @param numOfBins
      * @param numOfFiles
      * @param keySizeBytes The number of
-     * @param maxNumberOfKeys The maximum number of key that this map can store, this assumes even key hash distribution.
+     * @param numOfKeysPerBin The number of keys for each bin
      * @param maxNumberOfMutations The maximum number of mutations per key we can store
      * @param binsPerLock number of bins that share a read/write, if it is same as numOfBinsPerFile then there will be
      *                    one for the file.
-     * @throws IOException
+     * @throws IOException If there was a problem opening file
      */
     public FCSlotIndexUsingMemMapFile(Path storageDirectory, String name, int numOfBins, int numOfFiles, int keySizeBytes,
-                                      int maxNumberOfKeys, int maxNumberOfMutations, int binsPerLock) throws IOException {
+                                      int numOfKeysPerBin, int maxNumberOfMutations, int binsPerLock) throws IOException {
         if (!positivePowerOfTwo(numOfFiles)) throw new IllegalArgumentException("numOfFiles["+numOfFiles+"] must be a positive power of two.");
         if (!positivePowerOfTwo(numOfBins)) throw new IllegalArgumentException("numOfBins["+numOfBins+"] must be a positive power of two.");
         if (numOfBins <= (2*numOfFiles)) throw new IllegalArgumentException("numOfBins["+numOfBins+"] must be at least twice the size of numOfFiles["+numOfFiles+"].");
@@ -84,14 +84,13 @@ public final class FCSlotIndexUsingMemMapFile<K extends VKey> implements FCSlotI
         this.numOfFiles = numOfFiles;
         this.numOfBinsPerFile = numOfBins/numOfFiles;
         this.keySizeBytes = keySizeBytes;
-        this.maxNumberOfKeys = maxNumberOfKeys;
+        this.maxNumberOfKeys = numOfKeysPerBin*numOfBins;
         this.maxNumberOfMutations = maxNumberOfMutations;
+        this.numOfKeysPerBin = numOfKeysPerBin;
         // print info
         int numOfLocks = numOfBinsPerFile / binsPerLock;
-        System.out.printf("For [%s] creating %,d files each containing %,d bins and %,d locks, total key entries %,d\n",
-                name,numOfFiles,numOfBinsPerFile,numOfLocks, numOfBins*maxNumberOfKeys);
-        // compute numOfKeysPerBin
-        numOfKeysPerBin = 20; // TODO should be calculated based on maxNumberOfKeys and numOfBins
+        System.out.printf("For [%s] creating %,d files each containing %,d bins and %,d locks, with %,d keys per bin and %,d total keys entries.\n",
+                name,numOfFiles,numOfBinsPerFile,numOfLocks,maxNumberOfKeys, numOfBins*maxNumberOfKeys);
         // compute shiftRightCountForFileSubKey
         shiftRightCountForFileSubKey = Integer.bitCount(numOfFiles-1);
         // set reference count
