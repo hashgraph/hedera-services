@@ -566,4 +566,12 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	public void setFeeScheduleKey(final JKey feeScheduleKey) {
 		this.feeScheduleKey = feeScheduleKey;
 	}
+
+	public boolean hasFeeScheduleKey() {
+		return feeScheduleKey != UNUSED_KEY;
+	}
+
+	public JKey getFeeScheduleKey() {
+		return feeScheduleKey;
+	}
 }

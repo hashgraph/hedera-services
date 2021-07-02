@@ -84,6 +84,7 @@ import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_TREASURY_KT;
@@ -113,6 +114,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
@@ -157,7 +159,7 @@ class HederaTokenStoreTest {
 
 	private Key newKey = TxnHandlingScenario.TOKEN_REPLACE_KT.asKey();
 	private JKey newFcKey = TxnHandlingScenario.TOKEN_REPLACE_KT.asJKeyUnchecked();
-	private Key adminKey, kycKey, freezeKey, supplyKey, wipeKey;
+	private Key adminKey, kycKey, freezeKey, supplyKey, wipeKey, feeScheduleKey;
 	private String symbol = "NOTHBAR";
 	private String newSymbol = "REALLYSOM";
 	private String newMemo = "NEWMEMO";
@@ -285,6 +287,7 @@ class HederaTokenStoreTest {
 		freezeKey = TOKEN_FREEZE_KT.asKey();
 		wipeKey = MISC_ACCOUNT_KT.asKey();
 		supplyKey = COMPLEX_KEY_ACCOUNT_KT.asKey();
+		feeScheduleKey = TOKEN_FEE_SCHEDULE_KT.asKey();
 
 		token = mock(MerkleToken.class);
 		given(token.expiry()).willReturn(expiry);
@@ -1103,6 +1106,34 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	void ifImmutableWillStayImmutable(){
+		givenUpdateTarget(ALL_KEYS);
+		given(token.hasFeeScheduleKey()).willReturn(false);
+		var op = updateWith(ALL_KEYS, false, false, false);
+		op = op.toBuilder().setFeeScheduleKey(feeScheduleKey).build();
+
+		final var outcome = subject.update(op, CONSENSUS_NOW);
+
+		assertEquals(TOKEN_HAS_NO_FEE_SCHEDULE_KEY, outcome);
+	}
+
+	//TODO : Need to decide the logic if the new key is empty
+//	@Test
+//	void canMakeFeeScheduleImmutableOnUpdate() throws DecoderException {
+//		givenUpdateTarget(ALL_KEYS);
+//		given(token.hasFeeScheduleKey()).willReturn(true);
+//		var op = updateWith(ALL_KEYS, false, false, false);
+//		final var emptyFeeScheduleKey = Key.getDefaultInstance();
+//		op = op.toBuilder().setFeeScheduleKey(emptyFeeScheduleKey).build();
+//
+//		final var outcome = subject.update(op, CONSENSUS_NOW);
+//
+//		assertEquals(OK, outcome);
+//		assertEquals(JKey.mapKey(emptyFeeScheduleKey), token.getFeeScheduleKey());
+//	}
+
+
+	@Test
 	void updateRejectsInvalidNewAutoRenew() {
 		given(accountsLedger.exists(newAutoRenewAccount)).willReturn(false);
 		// and:
@@ -1344,6 +1375,7 @@ class HederaTokenStoreTest {
 		var op = updateWith(ALL_KEYS, true, true, true);
 		op = op.toBuilder()
 				.setExpiry(Timestamp.newBuilder().setSeconds(newExpiry))
+				.setFeeScheduleKey(newKey)
 				.build();
 
 		// when:
@@ -1359,6 +1391,7 @@ class HederaTokenStoreTest {
 		verify(token).setKycKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
 		verify(token).setSupplyKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
 		verify(token).setWipeKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
+		verify(token).setFeeScheduleKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
 		// and:
 		assertFalse(subject.knownTreasuries.containsKey(treasury));
 		assertEquals(subject.knownTreasuries.get(newTreasury), tokenSet);
@@ -1407,7 +1440,7 @@ class HederaTokenStoreTest {
 	}
 
 	enum KeyType {
-		WIPE, FREEZE, SUPPLY, KYC, ADMIN, EMPTY_ADMIN
+		WIPE, FREEZE, SUPPLY, KYC, ADMIN, EMPTY_ADMIN, FEE_SCHEDULE
 	}
 
 	private static EnumSet<KeyType> NO_KEYS = EnumSet.noneOf(KeyType.class);
@@ -1508,6 +1541,9 @@ class HederaTokenStoreTest {
 		}
 		if (keys.contains(KeyType.KYC)) {
 			given(token.hasKycKey()).willReturn(true);
+		}
+		if (keys.contains(KeyType.FEE_SCHEDULE)) {
+			given(token.hasFeeScheduleKey()).willReturn(true);
 		}
 	}
 

@@ -51,6 +51,7 @@ import java.util.List;
 
 import static com.hedera.services.state.merkle.MerkleTopic.serdes;
 import static java.util.stream.Collectors.toList;
+import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -595,6 +596,15 @@ class MerkleTokenTest {
 		assertEquals(freezeKey, subject.getFreezeKey());
 		// and:
 		assertEquals(memo, subject.memo());
+	}
+
+	@Test
+	void hasFeeScheduleKeyWorks() {
+		assertTrue(subject.hasFeeScheduleKey());
+
+		subject.setFeeScheduleKey(MerkleToken.UNUSED_KEY);
+
+		assertFalse(subject.hasFeeScheduleKey());
 	}
 
 	private void setOptionalElements(MerkleToken token) {

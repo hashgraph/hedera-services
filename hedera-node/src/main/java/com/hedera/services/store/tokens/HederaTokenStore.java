@@ -104,6 +104,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
@@ -646,6 +647,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		Optional<JKey> newWipeKey = changes.hasWipeKey() ? asUsableFcKey(changes.getWipeKey()) : Optional.empty();
 		Optional<JKey> newSupplyKey = changes.hasSupplyKey() ? asUsableFcKey(changes.getSupplyKey()) : Optional.empty();
 		Optional<JKey> newFreezeKey = changes.hasFreezeKey() ? asUsableFcKey(changes.getFreezeKey()) : Optional.empty();
+		Optional<JKey> newFeeScheduleKey = changes.hasFeeScheduleKey() ? asUsableFcKey(
+				changes.getFeeScheduleKey()) : Optional.empty();
 
 		var appliedValidity = new AtomicReference<>(OK);
 		apply(tId, token -> {
@@ -674,6 +677,9 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			}
 			if (!token.hasAdminKey() && !isExpiryOnly) {
 				appliedValidity.set(TOKEN_IS_IMMUTABLE);
+			}
+			if (!token.hasFeeScheduleKey() && newFeeScheduleKey.isPresent()) {
+				appliedValidity.set(TOKEN_HAS_NO_FEE_SCHEDULE_KEY);
 			}
 			if (OK != appliedValidity.get()) {
 				return;
@@ -706,6 +712,9 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			}
 			if (changes.hasWipeKey()) {
 				token.setWipeKey(asFcKeyUnchecked(changes.getWipeKey()));
+			}
+			if (changes.hasFeeScheduleKey()) {
+				token.setFeeScheduleKey(asFcKeyUnchecked(changes.getFeeScheduleKey()));
 			}
 			if (hasNewSymbol) {
 				var newSymbol = changes.getSymbol();
