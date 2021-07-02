@@ -189,7 +189,8 @@ public final class MemMapSlotStore implements SlotStore {
     @Override
     public void writeSlot(long location, SlotWriter writer) throws IOException {
         MemMapSlotFile file = files.get(fileIndexFromLocation(location));
-        if (file == null) throw new IllegalArgumentException("There is no file for location ["+location+"]");
+//        if (file == null) throw new IllegalArgumentException("There is no file for location ["+location+"]");
+        assert file != null;
         file.writeSlot(slotIndexFromLocation(location), writer);
     }
 
@@ -202,8 +203,23 @@ public final class MemMapSlotStore implements SlotStore {
     @Override
     public <R> R readSlot(long location, SlotReader<R> reader) throws IOException {
         MemMapSlotFile file = files.get(fileIndexFromLocation(location));
-        if (file == null) throw new IllegalArgumentException("There is no file for location ["+location+"]");
-        return file.readSlot(slotIndexFromLocation(location),reader);
+//        if (file == null) throw new IllegalArgumentException("There is no file for location ["+location+"]");
+        assert file != null;
+        return file.readSlot(slotIndexFromLocation(location), reader);
+    }
+
+    private long getNewSlotIfAvailable() {
+        // first try getting a slot form the currentFileForWriting
+        MemMapSlotFile file = currentFileForWriting.get();
+        if (file != null) {
+            // we have a currentFileForWriting, see if it has a free slot
+            int slotIndex = file.getNewSlot();
+            if (slotIndex != -1) {
+                // great we got one, lets return it
+                return locationFromParts(file.getFileIndex(), slotIndex);
+            }
+        }
+        return -1;
     }
 
     /**
@@ -218,14 +234,9 @@ public final class MemMapSlotStore implements SlotStore {
     public long getNewSlot() {
         throwIfNotOpen(); // We will end up throwing with an NPE while accessing "files" below anyway.
         // first try getting a slot form the currentFileForWriting
-        MemMapSlotFile file = currentFileForWriting.get();
-        if (file != null) {
-            // we have a currentFileForWriting, see if it has a free slot
-            int slotIndex = file.getNewSlot();
-            if (slotIndex != -1) {
-                // great we got one, lets return it
-                return locationFromParts(file.getFileIndex(), slotIndex);
-            }
+        var slot = getNewSlotIfAvailable();
+        if (slot != -1) {
+            return slot;
         }
         // doh the currentFileForWriting is full, so lets search existing files for free space
         for (MemMapSlotFile oldFile : files) {
@@ -239,6 +250,18 @@ public final class MemMapSlotStore implements SlotStore {
         }
         // we we got here, so there is no room in any file, we have to create a new file
         synchronized (this) { // we only want one thread to be creating a file at a time
+            // It is possible that multiple threads all found that there was no slot available
+            // and are piled up at this synchronization point. The first one created a new file,
+            // and the rest are now coming into this critical section. So we should check whether
+            // there are any free slots again, before proceeding to create *another* new file.
+            // Note that I don't bother checking for old free slots again. If a new file was created,
+            // there will be no need, and if a new file wasn't created but an old slot is available,
+            // we're so close to needing a new file we might as well create one anyway.
+            slot = getNewSlotIfAvailable();
+            if (slot != -1) {
+                return slot;
+            }
+
             // get index for new file
             final var newIndex = files.size();
             // create new file
@@ -264,10 +287,11 @@ public final class MemMapSlotStore implements SlotStore {
      * @param location the file and slot location to delete
      */
     @Override
-    public void deleteSlot(long location) throws IOException {
+    public void deleteSlot(long location) {
         throwIfNotOpen();
         MemMapSlotFile file = files.get(fileIndexFromLocation(location));
-        if (file == null) throw new IllegalArgumentException("There is no file for location ["+location+"]");
+//        if (file == null) throw new IllegalArgumentException("There is no file for location ["+location+"]");
+        assert file != null;
         file.deleteSlot(slotIndexFromLocation(location));
     }
 

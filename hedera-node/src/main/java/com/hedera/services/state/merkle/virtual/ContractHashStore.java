@@ -27,11 +27,11 @@ public class ContractHashStore implements FCHashStore {
                     ContractPath.SERIALIZED_SIZE,
                     16,
                     20,
-                    256);
+                    8);
 
             this.dataStore = new FCVirtualMapHashStoreImpl<>(
                     Path.of("data/contract-storage"),
-                    32,
+                    8,
                     ContractPath.SERIALIZED_SIZE,
                     index,
                     MemMapSlotStore::new);
