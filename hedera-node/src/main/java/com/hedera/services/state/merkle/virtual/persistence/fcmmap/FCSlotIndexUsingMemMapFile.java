@@ -86,6 +86,10 @@ public final class FCSlotIndexUsingMemMapFile<K extends VKey> implements FCSlotI
         this.keySizeBytes = keySizeBytes;
         this.maxNumberOfKeys = maxNumberOfKeys;
         this.maxNumberOfMutations = maxNumberOfMutations;
+        // print info
+        int numOfLocks = numOfBinsPerFile / binsPerLock;
+        System.out.printf("For [%s] creating %,d files each containing %,d bins and %,d locks, total key entries %,d\n",
+                name,numOfFiles,numOfBinsPerFile,numOfLocks, numOfBins*maxNumberOfKeys);
         // compute numOfKeysPerBin
         numOfKeysPerBin = 20; // TODO should be calculated based on maxNumberOfKeys and numOfBins
         // compute shiftRightCountForFileSubKey
