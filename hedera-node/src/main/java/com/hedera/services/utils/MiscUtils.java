@@ -214,7 +214,7 @@ public class MiscUtils {
 	static final String TOKEN_GET_INFO_METRIC = "getTokenInfo";
 	static final String TOKEN_GET_NFT_INFO_METRIC = "getTokenNftInfo";
 	static final String TOKEN_GET_ACCOUNT_NFT_INFOS_METRIC = "getAccountNftInfos";
-	static final String TOKEN_FEE_SCHEDULE_UPDATE_METRIC = "tokenFeeSchedule";
+	static final String TOKEN_FEE_SCHEDULE_UPDATE_METRIC = "tokenFeeScheduleUpdate";
 
 	static final String SCHEDULE_CREATE_METRIC = "createSchedule";
 	static final String SCHEDULE_DELETE_METRIC = "deleteSchedule";
@@ -540,6 +540,8 @@ public class MiscUtils {
 			return TokenAssociateToAccount;
 		} else if (txn.hasTokenDissociate()) {
 			return TokenDissociateFromAccount;
+		} else if (txn.hasTokenFeeScheduleUpdate()) {
+			return TokenFeeScheduleUpdate;
 		} else if (txn.hasScheduleCreate()) {
 			return ScheduleCreate;
 		} else if (txn.hasScheduleSign()) {
@@ -548,8 +550,6 @@ public class MiscUtils {
 			return ScheduleDelete;
 		} else if (txn.hasUncheckedSubmit()) {
 			return UncheckedSubmit;
-		} else if (txn.hasTokenFeeScheduleUpdate()) {
-			return TokenFeeScheduleUpdate;
 		} else {
 			throw new UnknownHederaFunctionality();
 		}

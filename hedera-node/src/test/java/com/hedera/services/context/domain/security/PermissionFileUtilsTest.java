@@ -9,9 +9,9 @@ package com.hedera.services.context.domain.security;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -58,6 +58,7 @@ import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionGetFastRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetReceiptQuery;
@@ -219,6 +220,15 @@ class PermissionFileUtilsTest {
 		var op = ContractCallTransactionBody.getDefaultInstance();
 		var txn = TransactionBody.newBuilder()
 				.setContractCall(op)
+				.build();
+		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
+	}
+
+	@Test
+	public void worksForTokenFeeScheduleUpdate() {
+		var op = TokenFeeScheduleUpdateTransactionBody.getDefaultInstance();
+		var txn = TransactionBody.newBuilder()
+				.setTokenFeeScheduleUpdate(op)
 				.build();
 		assertEquals(permissionFileKeyForTxn(txn), legacyKeyForTxn(txn));
 	}
@@ -555,6 +565,8 @@ class PermissionFileUtilsTest {
 			key = "scheduleSign";
 		} else if (txn.hasConsensusSubmitMessage()) {
 			key = "submitMessage";
+		} else if (txn.hasTokenFeeScheduleUpdate()) {
+			key = "tokenFeeScheduleUpdate";
 		}
 		return key;
 	}
