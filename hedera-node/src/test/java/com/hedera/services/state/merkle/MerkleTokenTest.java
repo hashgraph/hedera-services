@@ -550,7 +550,7 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void objectContractPropertiesCheck() {
+	 void objectContractPropertiesCheck() {
 		// setup:
 
 		// when:

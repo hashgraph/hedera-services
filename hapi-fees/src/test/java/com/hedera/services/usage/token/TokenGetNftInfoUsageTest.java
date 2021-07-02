@@ -34,7 +34,7 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static org.junit.Assert.assertEquals;
 
-public class TokenGetNftInfoUsageTest {
+class TokenGetNftInfoUsageTest {
 	String memo = "Hope";
 	NftID id = IdUtils.asNftID("0.0.75231", 1);
 
@@ -46,7 +46,7 @@ public class TokenGetNftInfoUsageTest {
 	}
 
 	@Test
-	public void assessesEverything() {
+	void assessesEverything() {
 		// given:
 		subject.givenMetadata(memo);
 		// and:

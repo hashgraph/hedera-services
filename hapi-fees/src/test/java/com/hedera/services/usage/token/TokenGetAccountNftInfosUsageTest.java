@@ -36,7 +36,7 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
 import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 import static org.junit.Assert.assertEquals;
 
-public class TokenGetAccountNftInfosUsageTest {
+class TokenGetAccountNftInfosUsageTest {
     private TokenGetAccountNftInfosUsage subject;
     private AccountID id;
     private List<ByteString> metadata;

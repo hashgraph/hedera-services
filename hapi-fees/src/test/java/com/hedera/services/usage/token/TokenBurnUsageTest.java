@@ -74,7 +74,7 @@ public class TokenBurnUsageTest {
 	}
 
 	@Test
-	public void createsExpectedDelta() {
+	 void createsExpectedDelta() {
 		givenOp();
 		// and:
 		subject = TokenBurnUsage.newEstimate(txn, sigUsage);
@@ -94,7 +94,7 @@ public class TokenBurnUsageTest {
 	}
 
 	@Test
-	public void createsExpectedDeltaForUnique() {
+	 void createsExpectedDeltaForUnique() {
 		op = TokenBurnTransactionBody.newBuilder()
 				.setToken(id)
 				.addAllSerialNumbers(List.of(1L, 2L, 3L))

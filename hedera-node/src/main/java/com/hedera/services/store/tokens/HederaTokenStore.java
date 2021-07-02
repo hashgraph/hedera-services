@@ -49,8 +49,6 @@ import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import proto.CustomFeesOuterClass;
 
 import java.util.Collections;
@@ -121,7 +119,6 @@ import static java.util.stream.Collectors.toList;
  * Provides a managing store for arbitrary tokens.
  */
 public class HederaTokenStore extends HederaStore implements TokenStore {
-	private static final Logger log = LogManager.getLogger(HederaTokenStore.class);
 
 	static final TokenID NO_PENDING_ID = TokenID.getDefaultInstance();
 

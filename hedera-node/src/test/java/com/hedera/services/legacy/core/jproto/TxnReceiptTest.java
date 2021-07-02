@@ -96,7 +96,7 @@ public class TxnReceiptTest {
 
 
 	@Test
-	public void constructorPostConsensusCreateTopic() {
+	 void constructorPostConsensusCreateTopic() {
 		final var topicId = getTopicJAccountId(1L, 22L, 333L);
 		final var sequenceNumber = 0L;
 		final var cut = TxnReceipt.newBuilder().setTopicId(topicId).setTopicSequenceNumber(sequenceNumber).build();
@@ -108,7 +108,7 @@ public class TxnReceiptTest {
 	}
 
 	@Test
-	public void constructorPostConsensusSubmitMessage() {
+	 void constructorPostConsensusSubmitMessage() {
 		final var sequenceNumber = 55555L;
 		final var cut = TxnReceipt.newBuilder().setTopicRunningHash(getSha384Hash()).setTopicSequenceNumber(
 				sequenceNumber).build();
@@ -120,14 +120,14 @@ public class TxnReceiptTest {
 	}
 
 	@Test
-	public void setRunning() {
+	 void setRunning() {
 		final var cut = new TxnReceipt();
 		cut.topicRunningHash = getSha384Hash();
 		assertArrayEquals(getSha384Hash(), cut.getTopicRunningHash());
 	}
 
 	@Test
-	public void convertToJTransactionReceiptPostConsensusCreateTopic() {
+	 void convertToJTransactionReceiptPostConsensusCreateTopic() {
 		final var topicId = getTopicId(1L, 22L, 333L);
 		final var receipt = TransactionReceipt.newBuilder()
 				.setExchangeRate(new ExchangeRates().toGrpc())
@@ -145,7 +145,7 @@ public class TxnReceiptTest {
 	}
 
 	@Test
-	public void scheduleCreateInterconversionWorks() {
+	 void scheduleCreateInterconversionWorks() {
 		final var scheduleId = IdUtils.asSchedule("0.0.123");
 
 		final var receipt = TransactionReceipt.newBuilder()
@@ -160,7 +160,7 @@ public class TxnReceiptTest {
 	}
 
 	@Test
-	public void postConsensusSubmitMessageInterconversionWorks() {
+	 void postConsensusSubmitMessageInterconversionWorks() {
 		final var topicSequenceNumber = 4444L;
 		final var topicRunningHash = getSha384Hash();
 
@@ -177,7 +177,7 @@ public class TxnReceiptTest {
 	}
 
 	@Test
-	public void postConsensusTokenMintBurnWipeInterconversionWorks() {
+	 void postConsensusTokenMintBurnWipeInterconversionWorks() {
 		final var totalSupply = 12345L;
 
 		final var receipt = TransactionReceipt.newBuilder()
@@ -191,7 +191,7 @@ public class TxnReceiptTest {
 	}
 
 	@Test
-	public void postConsensusTokenNftInterconversionWorks() {
+	 void postConsensusTokenNftInterconversionWorks() {
 		final var receipt = TransactionReceipt.newBuilder()
 				.setExchangeRate(new ExchangeRates().toGrpc())
 				.addAllSerialNumbers(List.of(1L, 2L, 3L, 4L, 5L))
@@ -203,7 +203,7 @@ public class TxnReceiptTest {
 	}
 
 	@Test
-	public void postConsensusTokenCreationInterconversionWorks() {
+	 void postConsensusTokenCreationInterconversionWorks() {
 		final TokenID.Builder tokenIdBuilder = TokenID.newBuilder().setTokenNum(1001L).setRealmNum(0).setShardNum(0);
 
 		final var receipt = TransactionReceipt.newBuilder()
@@ -218,7 +218,7 @@ public class TxnReceiptTest {
 
 
 	@Test
-	public void convertToJTransactionReceiptPostConsensusSubmitMessage() {
+	 void convertToJTransactionReceiptPostConsensusSubmitMessage() {
 		final var topicSequenceNumber = 4444L;
 		final var topicRunningHash = getSha384Hash();
 
@@ -238,7 +238,7 @@ public class TxnReceiptTest {
 	}
 
 	@Test
-	public void convertToTransactionReceiptPostConsensusCreateTopic() {
+	 void convertToTransactionReceiptPostConsensusCreateTopic() {
 		final var topicId = getTopicJAccountId(1L, 22L, 333L);
 		final var receipt = new TxnReceipt();
 		receipt.status = "OK";
@@ -254,7 +254,7 @@ public class TxnReceiptTest {
 	}
 
 	@Test
-	public void convertToTransactionReceiptPostConsensusSubmitMessage() {
+	 void convertToTransactionReceiptPostConsensusSubmitMessage() {
 		final var sequenceNumber = 666666L;
 		final var receipt = new TxnReceipt();
 		receipt.status = "OK";
@@ -270,12 +270,12 @@ public class TxnReceiptTest {
 
 
 	@Test
-	public void equalsDefaults() {
+	 void equalsDefaults() {
 		assertEquals(new TxnReceipt(), new TxnReceipt());
 	}
 
 	@Test
-	public void hashCodeWithNulls() {
+	 void hashCodeWithNulls() {
 		final var cut = new TxnReceipt();
 		assertNull(cut.getTopicId());
 		assertNull(cut.getTopicRunningHash());
@@ -284,7 +284,7 @@ public class TxnReceiptTest {
 	}
 
 	@Test
-	public void toStringWithNulls() {
+	 void toStringWithNulls() {
 		final var cut = new TxnReceipt();
 		assertNull(cut.getTopicId());
 		assertNull(cut.getTopicRunningHash());
@@ -294,7 +294,7 @@ public class TxnReceiptTest {
 	}
 
 	@Test
-	public void scheduleConstructor() {
+	 void scheduleConstructor() {
 		final var scheduleId = EntityId.fromGrpcScheduleId(IdUtils.asSchedule("0.0.123"));
 		final var cut = TxnReceipt.newBuilder()
 				.setStatus("SUCCESS")
@@ -311,7 +311,7 @@ public class TxnReceiptTest {
 	}
 
 	@Test
-	public void hcsConstructor() {
+	 void hcsConstructor() {
 		final var topicId = EntityId.fromGrpcTopicId(TopicID.newBuilder().setTopicNum(1L).build());
 		final var sequenceNumber = 2L;
 		final var runningHash = new byte[3];
@@ -331,7 +331,7 @@ public class TxnReceiptTest {
 	}
 
 	@Test
-	public void tokenConstructorWithTokenId() {
+	 void tokenConstructorWithTokenId() {
 		final var tokenId = EntityId.fromGrpcTokenId(
 				TokenID.newBuilder().setTokenNum(1001L).setRealmNum(0).setShardNum(0).build());
 		final var cut = TxnReceipt.newBuilder()
@@ -347,7 +347,7 @@ public class TxnReceiptTest {
 	}
 
 	@Test
-	public void tokenConstructorWithTotalSupply() {
+	 void tokenConstructorWithTotalSupply() {
 		final var tokenId = EntityId.fromGrpcTokenId(
 				TokenID.newBuilder().setTokenNum(1001L).setRealmNum(0).setShardNum(0).build());
 		final var cut = TxnReceipt.newBuilder()
@@ -366,7 +366,7 @@ public class TxnReceiptTest {
 	}
 
 	@Test
-	public void serializeWorks() throws IOException {
+	 void serializeWorks() throws IOException {
 		// setup:
 		SerializableDataOutputStream fout = mock(SerializableDataOutputStream.class);
 		// and:
@@ -397,7 +397,7 @@ public class TxnReceiptTest {
 	}
 
 	@Test
-	public void v0120DeserializeWorks() throws IOException {
+	 void v0120DeserializeWorks() throws IOException {
 		final var scheduleId = EntityId.fromGrpcScheduleId(IdUtils.asSchedule("0.0.312"));
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
 
@@ -444,7 +444,7 @@ public class TxnReceiptTest {
 	}
 
 	@Test
-	public void v0160DeserializeWorks() throws IOException {
+	 void v0160DeserializeWorks() throws IOException {
 		final var scheduleId = EntityId.fromGrpcScheduleId(IdUtils.asSchedule("0.0.312"));
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
 
@@ -494,7 +494,7 @@ public class TxnReceiptTest {
 	}
 
 	@Test
-	public void v0100DeserializeWorks() throws IOException {
+	 void v0100DeserializeWorks() throws IOException {
 		final var tokenId = EntityId.fromGrpcTokenId(
 				TokenID.newBuilder().setTokenNum(1001L).setRealmNum(0).setShardNum(0).build());
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);

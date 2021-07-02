@@ -92,7 +92,7 @@ public class TokenMintUsageTest {
 	}
 
 	@Test
-	public void createsExpectedDeltaForUnique() {
+	 void createsExpectedDeltaForUnique() {
 		op = TokenMintTransactionBody.newBuilder()
 				.setToken(id)
 				.addAllMetadata(List.of(ByteString.copyFromUtf8("memo")))
