@@ -22,20 +22,22 @@ public class ContractLeafStore implements FCLeafStore<ContractUint256, ContractU
             final var leafPathIndex = new FCSlotIndexUsingMemMapFile<ContractPath>(
                     Path.of("data/contract-storage/leaf-path-index"),
                     "leaf-path-index",
-                    256*1024,
-                    1024,
+                    1024*1024,
+                    32,
                     ContractPath.SERIALIZED_SIZE,
                     16,
-                    20);
+                    20,
+                    256);
 
             final var leafKeyIndex = new FCSlotIndexUsingMemMapFile<ContractKey>(
                     Path.of("data/contract-storage/leaf-key-index"),
                     "leaf-key-index",
-                    256*1024,
-                    1024,
+                    1024*1024,
+                    32,
                     ContractKey.SERIALIZED_SIZE,
                     256,
-                    20);
+                    20,
+                    256);
 
             this.dataStore = new FCVirtualMapLeafStoreImpl<>(
                     Path.of("data/contract-storage"),

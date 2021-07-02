@@ -413,5 +413,13 @@ public class FCVirtualMapTestUtils {
                 return this.value == that.value;
             }
         }
+
+        @Override
+        public String toString() {
+            return "LongVKey{" +
+                    "value=" + value +
+                    ", hashCode=" + hashCode +
+                    '}';
+        }
     }
 }

@@ -26,7 +26,7 @@ public class FCSlotIndexUsingMemMapFileTest {
         // create initial indexes
         FCSlotIndexUsingFCHashMap<LongVKey> fcHashMap = new FCSlotIndexUsingFCHashMap<>();
         FCSlotIndexUsingMemMapFile<LongVKey> memMapFile = new FCSlotIndexUsingMemMapFile<>(
-                STORE_PATH,"FCSlotIndexUsingMemMapFileTest",256,16,Long.BYTES,100,10);
+                STORE_PATH,"FCSlotIndexUsingMemMapFileTest",256,16,Long.BYTES,100,10, 16);
         var index_0 = new PairFCSlotIndex(fcHashMap, memMapFile, 0);
         // create 1000 entries
         range(0,1000).forEach(i -> index_0.putSlot(i, 10000+i));
@@ -69,7 +69,7 @@ public class FCSlotIndexUsingMemMapFileTest {
         // create initial indexes
         FCSlotIndexUsingFCHashMap<LongVKey> fcHashMap = new FCSlotIndexUsingFCHashMap<>();
         FCSlotIndexUsingMemMapFile<LongVKey> memMapFile = new FCSlotIndexUsingMemMapFile<>(
-                STORE_PATH,"FCSlotIndexUsingMemMapFileTest",512*128,128,Long.BYTES,100,10);
+                STORE_PATH,"FCSlotIndexUsingMemMapFileTest",512*128,16,Long.BYTES,100,10,128);
         var currentIndex = new PairFCSlotIndex(fcHashMap, memMapFile, 0);
         List<PairFCSlotIndex> indexes = new ArrayList<>();
         indexes.add(currentIndex);
