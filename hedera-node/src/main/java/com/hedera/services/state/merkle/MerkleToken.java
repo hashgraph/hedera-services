@@ -370,6 +370,10 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		return Optional.ofNullable(supplyKey);
 	}
 
+	public Optional<JKey> feeScheduleKey() {
+		return Optional.ofNullable(feeScheduleKey);
+	}
+
 	public boolean hasSupplyKey() {
 		return supplyKey != UNUSED_KEY;
 	}

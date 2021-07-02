@@ -42,7 +42,7 @@ public enum TokenKycRevokeScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenRevokeKyc()
-							.revoking(UNKNOWN_TOKEN, MISC_ACCOUNT)
+							.revoking(MISSING_TOKEN, MISC_ACCOUNT)
 							.nonPayerKts(TOKEN_KYC_KT)
 							.get()
 			));

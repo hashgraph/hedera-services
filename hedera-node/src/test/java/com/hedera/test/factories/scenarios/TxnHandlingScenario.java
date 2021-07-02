@@ -195,6 +195,7 @@ public interface TxnHandlingScenario {
 		var optionalWipeKey = TOKEN_WIPE_KT.asJKeyUnchecked();
 		var optionalSupplyKey = TOKEN_SUPPLY_KT.asJKeyUnchecked();
 		var optionalFreezeKey = TOKEN_FREEZE_KT.asJKeyUnchecked();
+		var optionalFeeScheduleKey = TOKEN_FEE_SCHEDULE_KT.asJKeyUnchecked();
 
 		var immutableToken = new MerkleToken(
 				Long.MAX_VALUE, 100, 1,
@@ -233,6 +234,15 @@ public interface TxnHandlingScenario {
 				.willReturn(KNOWN_TOKEN_WITH_KYC);
 		given(tokenStore.get(KNOWN_TOKEN_WITH_KYC)).willReturn(kycToken);
 
+		var feeScheduleToken = new MerkleToken(
+				Long.MAX_VALUE, 100, 1,
+				"FsToken", "FEE_SCHEDULETOKENNAME", false, true,
+				new EntityId(1, 2, 4));
+		feeScheduleToken.setFeeScheduleKey(optionalFeeScheduleKey);
+		given(tokenStore.resolve(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY))
+				.willReturn(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY);
+		given(tokenStore.get(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY)).willReturn(feeScheduleToken);
+
 		var supplyToken = new MerkleToken(
 				Long.MAX_VALUE, 100, 1,
 				"SupplyToken", "SUPPLYTOKENNAME", false, false,
@@ -253,7 +263,7 @@ public interface TxnHandlingScenario {
 				.willReturn(KNOWN_TOKEN_WITH_WIPE);
 		given(tokenStore.get(KNOWN_TOKEN_WITH_WIPE)).willReturn(wipeToken);
 
-		given(tokenStore.resolve(UNKNOWN_TOKEN))
+		given(tokenStore.resolve(MISSING_TOKEN))
 				.willReturn(TokenStore.MISSING_TOKEN);
 
 		return tokenStore;
@@ -425,6 +435,8 @@ public interface TxnHandlingScenario {
 	TokenID KNOWN_TOKEN_WITH_SUPPLY = asToken(KNOWN_TOKEN_WITH_SUPPLY_ID);
 	String KNOWN_TOKEN_WITH_WIPE_ID = "0.0.774";
 	TokenID KNOWN_TOKEN_WITH_WIPE = asToken(KNOWN_TOKEN_WITH_WIPE_ID);
+	String KNOWN_TOKEN_WITH_FEE_SCHEDULE_ID = "0.0.779";
+	TokenID KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY = asToken(KNOWN_TOKEN_WITH_FEE_SCHEDULE_ID);
 
 	String FIRST_TOKEN_SENDER_ID = "0.0.888";
 	AccountID FIRST_TOKEN_SENDER = asAccount(FIRST_TOKEN_SENDER_ID);
@@ -434,7 +446,7 @@ public interface TxnHandlingScenario {
 	AccountID TOKEN_RECEIVER = asAccount(TOKEN_RECEIVER_ID);
 
 	String UNKNOWN_TOKEN_ID = "0.0.666";
-	TokenID UNKNOWN_TOKEN = asToken(UNKNOWN_TOKEN_ID);
+	TokenID MISSING_TOKEN = asToken(UNKNOWN_TOKEN_ID);
 
 	KeyTree FIRST_TOKEN_SENDER_KT = withRoot(ed25519());
 	KeyTree SECOND_TOKEN_SENDER_KT = withRoot(ed25519());

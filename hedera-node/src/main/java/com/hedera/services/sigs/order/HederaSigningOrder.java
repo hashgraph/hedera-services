@@ -53,6 +53,7 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
@@ -276,6 +277,8 @@ public class HederaSigningOrder {
 			return Optional.of(tokenMutates(txn.getTransactionID(), txn.getTokenDeletion().getToken(), factory));
 		} else if (txn.hasTokenUpdate()) {
 			return Optional.of(tokenUpdates(txn.getTransactionID(), txn.getTokenUpdate(), factory));
+		} else if (txn.hasTokenFeeScheduleUpdate()) {
+			return Optional.of(tokenFeeScheduleUpdates(txn.getTransactionID(), txn.getTokenFeeScheduleUpdate(), factory));
 		} else {
 			return Optional.empty();
 		}
@@ -735,6 +738,35 @@ public class HederaSigningOrder {
 			SigningOrderResultFactory<T> factory
 	) {
 		return tokenAdjusts(txnId, id, factory, TokenSigningMetadata::optionalWipeKey);
+	}
+
+	private <T> SigningOrderResult<T> tokenFeeScheduleUpdates(
+			TransactionID txnId,
+			TokenFeeScheduleUpdateTransactionBody op,
+			SigningOrderResultFactory<T> factory
+	) {
+		final var id = op.getTokenId();
+		var result = sigMetaLookup.tokenSigningMetaFor(id);
+		if (result.succeeded()) {
+			final var feeScheduleKey = result.metadata().optionalFeeScheduleKey();
+			if (feeScheduleKey.isPresent()) {
+				final List<JKey> required = new ArrayList<>();
+				required.add(feeScheduleKey.get());
+				for (var customFee : op.getCustomFeesList()) {
+					final var collector = customFee.getFeeCollectorAccountId();
+					final var couldAddCollector = addAccountIfReceiverSigRequired(collector, required);
+					if (!couldAddCollector) {
+						return factory.forMissingFeeCollector(txnId);
+					}
+				}
+				return factory.forValidOrder(required);
+			} else {
+				/* We choose to fail with TOKEN_HAS_NO_FEE_SCHEDULE_KEY downstream in transition logic */
+				return SigningOrderResult.noKnownKeys();
+			}
+		} else {
+			return factory.forMissingToken(id, txnId);
+		}
 	}
 
 	private <T> SigningOrderResult<T> tokenUpdates(
