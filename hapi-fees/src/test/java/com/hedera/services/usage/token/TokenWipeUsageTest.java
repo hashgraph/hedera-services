@@ -83,7 +83,7 @@ public class TokenWipeUsageTest {
 		verify(base, times(2)).addBpt(FeeBuilder.BASIC_ENTITY_ID_SIZE);
 		verify(base).addBpt(8);
 		verify(base).addRbs(
-				TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 1) *
+				TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 1, 0) *
 						USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 

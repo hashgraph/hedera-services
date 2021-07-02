@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenBalances;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.common.NodeId;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.logging.log4j.LogManager;
@@ -128,8 +129,8 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 
 
 	@Override
-	public void exportBalancesFrom(ServicesState signedState, Instant when) {
-		if (!ensureExportDir(signedState.getNodeAccountId())) {
+	public void exportBalancesFrom(ServicesState signedState, Instant consensusTime, NodeId nodeId) {
+		if (!ensureExportDir(signedState.getAccountFromNodeId(nodeId))) {
 			return;
 		}
 		var watch = StopWatch.createStarted();
@@ -138,17 +139,17 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		if (!expected.equals(summary.getTotalFloat())) {
 			throw new IllegalStateException(String.format(
 					"Signed state @ %s had total balance %d not %d!",
-					when, summary.getTotalFloat(), expectedFloat));
+					consensusTime, summary.getTotalFloat(), expectedFloat));
 		}
 		log.info("Took {}ms to summarize signed state balances", watch.getTime(TimeUnit.MILLISECONDS));
 
 		// .pb account balances file is our focus, process it first to let its timestamp to stay close to
 		// epoch export period boundary
 		if (exportProto) {
-			toProtoFile(when);
+			toProtoFile(consensusTime);
 		}
 		if (exportCsv) {
-			toCsvFile(when);
+			toCsvFile(consensusTime);
 		}
 	}
 

@@ -49,30 +49,29 @@ import java.util.List;
  * validation result.
  */
 public class ImpliedTransfersMeta {
-	private final int maxExplicitHbarAdjusts;
-	private final int maxExplicitTokenAdjusts;
 	private final ResponseCodeEnum code;
-	private final List<Pair<Id, List<CustomFee>>> customFeeSchedulesUsedInMarshal;
+	private final ValidationProps validationProps;
+	private final List<Pair<Id, List<CustomFee>>> tokenFeeSchedules;
 
 	public ImpliedTransfersMeta(
-			int maxExplicitHbarAdjusts,
-			int maxExplicitTokenAdjusts,
+			ValidationProps validationProps,
 			ResponseCodeEnum code,
-			List<Pair<Id, List<CustomFee>>> customFeeSchedulesUsedInMarshal
+			List<Pair<Id, List<CustomFee>>> tokenFeeSchedules
 	) {
 		this.code = code;
-		this.maxExplicitHbarAdjusts = maxExplicitHbarAdjusts;
-		this.maxExplicitTokenAdjusts = maxExplicitTokenAdjusts;
-		this.customFeeSchedulesUsedInMarshal = customFeeSchedulesUsedInMarshal;
+		this.validationProps = validationProps;
+		this.tokenFeeSchedules = tokenFeeSchedules;
 	}
 
 	public boolean wasDerivedFrom(GlobalDynamicProperties dynamicProperties, CustomFeeSchedules customFeeSchedules) {
-		final var validationParamsMatch = maxExplicitHbarAdjusts == dynamicProperties.maxTransferListSize() &&
-				maxExplicitTokenAdjusts == dynamicProperties.maxTokenTransferListSize();
+		final var validationParamsMatch =
+				(validationProps.maxHbarAdjusts == dynamicProperties.maxTransferListSize()) &&
+				(validationProps.maxTokenAdjusts == dynamicProperties.maxTokenTransferListSize()) &&
+				(validationProps.maxOwnershipChanges == dynamicProperties.maxNftTransfersLen());
 		if (!validationParamsMatch) {
 			return false;
 		}
-		for (var pair : customFeeSchedulesUsedInMarshal) {
+		for (var pair : tokenFeeSchedules) {
 			var customFees = pair.getValue();
 			var newCustomFees = customFeeSchedules.lookupScheduleFor(pair.getKey().asEntityId());
 			if (!customFees.equals(newCustomFees)) {
@@ -86,9 +85,6 @@ public class ImpliedTransfersMeta {
 		return code;
 	}
 
-	/* NOTE: The object methods below are only overridden to improve
-			readability of unit tests; this model object is not used in hash-based
-			collections, so the performance of these methods doesn't matter. */
 	@Override
 	public boolean equals(Object obj) {
 		return EqualsBuilder.reflectionEquals(this, obj);
@@ -103,9 +99,44 @@ public class ImpliedTransfersMeta {
 	public String toString() {
 		return MoreObjects.toStringHelper(ImpliedTransfersMeta.class)
 				.add("code", code)
-				.add("maxExplicitHbarAdjusts", maxExplicitHbarAdjusts)
-				.add("maxExplicitTokenAdjusts", maxExplicitTokenAdjusts)
-				.add("customFeeSchedulesUsedInMarshal", customFeeSchedulesUsedInMarshal)
+				.add("maxExplicitHbarAdjusts", validationProps.maxHbarAdjusts)
+				.add("maxExplicitTokenAdjusts", validationProps.maxTokenAdjusts)
+				.add("maxExplicitOwnershipChanges", validationProps.maxOwnershipChanges)
+				.add("tokenFeeSchedules", tokenFeeSchedules)
 				.toString();
+	}
+
+	public static class ValidationProps {
+		private final int maxHbarAdjusts;
+		private final int maxTokenAdjusts;
+		private final int maxOwnershipChanges;
+
+		public ValidationProps(int maxHbarAdjusts, int maxTokenAdjusts, int maxOwnershipChanges) {
+			this.maxHbarAdjusts = maxHbarAdjusts;
+			this.maxTokenAdjusts = maxTokenAdjusts;
+			this.maxOwnershipChanges = maxOwnershipChanges;
+		}
+
+		public int getMaxHbarAdjusts() {
+			return maxHbarAdjusts;
+		}
+
+		public int getMaxTokenAdjusts() {
+			return maxTokenAdjusts;
+		}
+
+		public int getMaxOwnershipChanges() {
+			return maxOwnershipChanges;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			return EqualsBuilder.reflectionEquals(this, obj);
+		}
+
+		@Override
+		public int hashCode() {
+			return HashCodeBuilder.reflectionHashCode(this);
+		}
 	}
 }

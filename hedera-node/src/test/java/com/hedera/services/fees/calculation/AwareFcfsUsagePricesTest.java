@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -48,6 +49,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.time.Instant;
+import java.util.Map;
 
 import static com.hedera.services.fees.calculation.AwareFcfsUsagePrices.DEFAULT_USAGE_PRICES;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -89,8 +91,12 @@ class AwareFcfsUsagePricesTest {
 			.setServicedata(nextResourceUsagePrices)
 			.build();
 
-	FeeData nextCryptoTransferUsagePrices = nextUsagePrices;
-	FeeData currentCryptoTransferUsagePrices = currUsagePrices;
+	Map<SubType, FeeData> currUsagePricesMap = Map.of(SubType.DEFAULT, currUsagePrices);
+	Map<SubType, FeeData> nextUsagePricesMap = Map.of(SubType.DEFAULT, nextUsagePrices);
+
+	Map<SubType, FeeData> nextCryptoTransferUsagePrices = currUsagePricesMap;
+	Map<SubType, FeeData> currentCryptoTransferUsagePrices = nextUsagePricesMap;
+
 	FeeSchedule nextFeeSchedule, currentFeeSchedule;
 	CurrentAndNextFeeSchedule feeSchedules;
 
@@ -98,7 +104,7 @@ class AwareFcfsUsagePricesTest {
 
 	TransactionBody cryptoTransferTxn = TransactionBody.newBuilder()
 			.setTransactionID(TransactionID.newBuilder()
-					.setTransactionValidStart(Timestamp.newBuilder().setSeconds(nextExpiry - 1)))
+					.setTransactionValidStart(Timestamp.newBuilder().setSeconds(nextExpiry + 1)))
 			.setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()
 					.setTransfers(TxnUtils.withAdjustments(
 							IdUtils.asAccount("1.2.3"), 1,
@@ -116,13 +122,13 @@ class AwareFcfsUsagePricesTest {
 				.setExpiryTime(TimestampSeconds.newBuilder().setSeconds(nextExpiry))
 				.addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
 						.setHederaFunctionality(CryptoTransfer)
-						.setFeeData(nextCryptoTransferUsagePrices))
+						.addFees(nextCryptoTransferUsagePrices.get(SubType.DEFAULT)))
 				.build();
 		currentFeeSchedule = FeeSchedule.newBuilder()
 				.setExpiryTime(TimestampSeconds.newBuilder().setSeconds(currentExpiry))
 				.addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
 						.setHederaFunctionality(CryptoTransfer)
-						.setFeeData(currentCryptoTransferUsagePrices))
+						.addFees(currentCryptoTransferUsagePrices.get(SubType.DEFAULT)))
 				.build();
 		feeSchedules = CurrentAndNextFeeSchedule.newBuilder()
 				.setCurrentFeeSchedule(currentFeeSchedule)
@@ -161,15 +167,27 @@ class AwareFcfsUsagePricesTest {
 	}
 
 	@Test
+	void getsDefaultActivePrices() throws Exception {
+		// given:
+		subject.loadPriceSchedules();
+
+		// when:
+		FeeData actual = subject.defaultActivePrices();
+
+		// then:
+		assertEquals(nextUsagePrices, actual);
+	}
+
+	@Test
 	void getsActivePrices() throws Exception {
 		// given:
 		subject.loadPriceSchedules();
 
 		// when:
-		FeeData actual = subject.activePrices();
+		Map<SubType, FeeData> actual = subject.activePrices();
 
 		// then:
-		assertEquals(nextUsagePrices, actual);
+		assertEquals(nextUsagePricesMap, actual);
 	}
 
 	@Test
@@ -181,7 +199,7 @@ class AwareFcfsUsagePricesTest {
 		given(accessor.getFunction()).willReturn(UNRECOGNIZED);
 
 		// when:
-		FeeData actual = subject.activePrices();
+		Map<SubType, FeeData> actual = subject.activePrices();
 
 		// then:
 		assertEquals(DEFAULT_USAGE_PRICES, actual);
@@ -197,7 +215,7 @@ class AwareFcfsUsagePricesTest {
 				.build();
 
 		// when:
-		FeeData actual = subject.pricesGiven(CryptoTransfer, at);
+		Map<SubType, FeeData> actual = subject.pricesGiven(CryptoTransfer, at);
 
 		// then:
 		assertEquals(currentCryptoTransferUsagePrices, actual);
@@ -219,7 +237,7 @@ class AwareFcfsUsagePricesTest {
 				.build();
 
 		// when:
-		FeeData actual = subject.pricesGiven(UNRECOGNIZED, at);
+		Map<SubType, FeeData> actual = subject.pricesGiven(UNRECOGNIZED, at);
 
 		// then:
 		assertEquals(DEFAULT_USAGE_PRICES, actual);
@@ -242,7 +260,7 @@ class AwareFcfsUsagePricesTest {
 				.build();
 
 		// when:
-		FeeData actual = subject.pricesGiven(CryptoTransfer, at);
+		Map<SubType, FeeData> actual = subject.pricesGiven(CryptoTransfer, at);
 
 		// then:
 		assertEquals(nextCryptoTransferUsagePrices, actual);

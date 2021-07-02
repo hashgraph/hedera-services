@@ -22,6 +22,8 @@ package com.hedera.services.state.merkle;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.enums.TokenSupplyType;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.CustomFee;
 import com.hedera.services.state.submerkle.EntityId;
@@ -59,8 +61,12 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	public static final int UPPER_BOUND_SYMBOL_UTF8_BYTES = 1024;
 	public static final int UPPER_BOUND_TOKEN_NAME_UTF8_BYTES = 1024;
 
+	private TokenType tokenType;
+	private TokenSupplyType supplyType;
 	private int decimals;
+	private long lastUsedSerialNumber;
 	private long expiry;
+	private long maxSupply;
 	private long totalSupply;
 	private long autoRenewPeriod = UNUSED_AUTO_RENEW_PERIOD;
 	private JKey adminKey = UNUSED_KEY;
@@ -114,11 +120,15 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		}
 
 		var that = (MerkleToken) o;
-		return this.expiry == that.expiry &&
+		return this.tokenType == that.tokenType &&
+				this.supplyType == that.supplyType &&
+				this.expiry == that.expiry &&
 				this.autoRenewPeriod == that.autoRenewPeriod &&
 				this.deleted == that.deleted &&
+				this.maxSupply == that.maxSupply &&
 				this.totalSupply == that.totalSupply &&
 				this.decimals == that.decimals &&
+				this.lastUsedSerialNumber == that.lastUsedSerialNumber &&
 				this.accountsFrozenByDefault == that.accountsFrozenByDefault &&
 				this.accountsKycGrantedByDefault == that.accountsKycGrantedByDefault &&
 				this.feeScheduleMutable == that.feeScheduleMutable &&
@@ -138,10 +148,14 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	@Override
 	public int hashCode() {
 		return Objects.hash(
+				tokenType,
+				supplyType,
 				expiry,
 				deleted,
+				maxSupply,
 				totalSupply,
 				decimals,
+				lastUsedSerialNumber,
 				adminKey,
 				freezeKey,
 				kycKey,
@@ -164,14 +178,18 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	public String toString() {
 		return MoreObjects.toStringHelper(MerkleToken.class)
 				.omitNullValues()
+				.add("tokenType", tokenType)
+				.add("supplyType", supplyType)
 				.add("deleted", deleted)
 				.add("expiry", expiry)
 				.add("symbol", symbol)
 				.add("name", name)
 				.add("memo", memo)
 				.add("treasury", treasury.toAbbrevString())
+				.add("maxSupply", maxSupply)
 				.add("totalSupply", totalSupply)
 				.add("decimals", decimals)
+				.add("lastUsedSerialNumber", lastUsedSerialNumber)
 				.add("autoRenewAccount", readableAutoRenewAccount())
 				.add("autoRenewPeriod", autoRenewPeriod)
 				.add("adminKey", describe(adminKey))
@@ -222,8 +240,18 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		/* Memo present since 0.12.0 */
 		memo = in.readNormalisedString(UPPER_BOUND_MEMO_UTF8_BYTES);
 		if (version >= RELEASE_0160_VERSION) {
+			tokenType = TokenType.values()[in.readInt()];
+			supplyType = TokenSupplyType.values()[in.readInt()];
+			maxSupply = in.readLong();
+			lastUsedSerialNumber = in.readLong();
 			feeSchedule = unmodifiableList(in.readSerializableList(Integer.MAX_VALUE, true, CustomFee::new));
 			feeScheduleMutable = in.readBoolean();
+		}
+		if (tokenType == null) {
+			tokenType = TokenType.FUNGIBLE_COMMON;
+		}
+		if (supplyType == null) {
+			supplyType = TokenSupplyType.INFINITE;
 		}
 	}
 
@@ -246,6 +274,10 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		serdes.writeNullable(supplyKey, out, serdes::serializeKey);
 		serdes.writeNullable(wipeKey, out, serdes::serializeKey);
 		out.writeNormalisedString(memo);
+		out.writeInt(tokenType.ordinal());
+		out.writeInt(supplyType.ordinal());
+		out.writeLong(maxSupply);
+		out.writeLong(lastUsedSerialNumber);
 		out.writeSerializableList(feeSchedule, true, true);
 		out.writeBoolean(feeScheduleMutable);
 	}
@@ -268,6 +300,10 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		fc.setFeeScheduleMutable(feeScheduleMutable);
 		fc.setAutoRenewPeriod(autoRenewPeriod);
 		fc.setAutoRenewAccount(autoRenewAccount);
+		fc.lastUsedSerialNumber = lastUsedSerialNumber;
+		fc.setTokenType(tokenType);
+		fc.setSupplyType(supplyType);
+		fc.setMaxSupply(maxSupply);
 		if (adminKey != UNUSED_KEY) {
 			fc.setAdminKey(adminKey);
 		}
@@ -430,6 +466,11 @@ public class MerkleToken extends AbstractMerkleLeaf {
 					"Argument 'amount=%d' would negate totalSupply=%d!",
 					amount, totalSupply));
 		}
+		if (maxSupply != 0 && maxSupply < newTotalSupply) {
+			throw new IllegalArgumentException(String.format(
+					"Argument 'amount=%d' would exceed maxSupply=%d!",
+					amount, maxSupply));
+		}
 		totalSupply += amount;
 	}
 
@@ -459,6 +500,44 @@ public class MerkleToken extends AbstractMerkleLeaf {
 
 	public void setAccountsFrozenByDefault(boolean accountsFrozenByDefault) {
 		this.accountsFrozenByDefault = accountsFrozenByDefault;
+	}
+
+	public long getLastUsedSerialNumber() {
+		return lastUsedSerialNumber;
+	}
+
+	public void setLastUsedSerialNumber(long serialNum){
+		this.lastUsedSerialNumber = serialNum;
+	}
+
+	public TokenType tokenType() {
+		return tokenType;
+	}
+
+	public void setTokenType(TokenType tokenType) {
+		this.tokenType = tokenType;
+	}
+
+	public void setTokenType(int tokenTypeInt) {
+		this.tokenType = TokenType.values()[tokenTypeInt];
+	}
+
+	public TokenSupplyType supplyType() { return supplyType; }
+
+	public void setSupplyType(TokenSupplyType supplyType) {
+		this.supplyType = supplyType;
+	}
+
+	public void setSupplyType(int supplyTypeInt) {
+		this.supplyType = TokenSupplyType.values()[supplyTypeInt];
+	}
+
+	public long maxSupply() {
+		return maxSupply;
+	}
+
+	public void setMaxSupply(long maxSupply) {
+		this.maxSupply = maxSupply;
 	}
 
 	public boolean isFeeScheduleMutable() {

@@ -65,7 +65,7 @@ public class TokenCreateUsage extends TokenTxnUsage<TokenCreateUsage> {
 		usageEstimator.addBpt(baseSize);
 		usageEstimator.addRbs(baseSize * lifetime);
 		addNetworkRecordRb(BASIC_ENTITY_ID_SIZE);
-		addTokenTransfersRecordRb(1, 1);
+		addTokenTransfersRecordRb(1, op.getInitialSupply() > 0 ? 1 : 0, 0);
 
 		return usageEstimator.get();
 	}

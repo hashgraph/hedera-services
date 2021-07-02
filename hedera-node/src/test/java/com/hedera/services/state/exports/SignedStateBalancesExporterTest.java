@@ -41,6 +41,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.Address;
 import com.swirlds.common.AddressBook;
+import com.swirlds.common.NodeId;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -89,6 +90,7 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(LogCaptureExtension.class)
 class SignedStateBalancesExporterTest {
+	private final NodeId nodeId = new NodeId(false, 1);
 	private FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
 	private FCMap<MerkleEntityId, MerkleAccount> accounts = new FCMap<>();
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels = new FCMap<>();
@@ -190,7 +192,7 @@ class SignedStateBalancesExporterTest {
 		given(book.getAddress(1)).willReturn(secondNodeAddress);
 
 		state = mock(ServicesState.class);
-		given(state.getNodeAccountId()).willReturn(thisNode);
+		given(state.getAccountFromNodeId(nodeId)).willReturn(thisNode);
 		given(state.tokens()).willReturn(tokens);
 		given(state.accounts()).willReturn(accounts);
 		given(state.tokenAssociations()).willReturn(tokenRels);
@@ -222,7 +224,7 @@ class SignedStateBalancesExporterTest {
 
 		// when:
 		subject.exportProto = false;
-		subject.exportBalancesFrom(state, now);
+		subject.exportBalancesFrom(state, now, nodeId);
 
 		// then:
 		assertThat(logCaptor.errorLogs(), contains(Matchers.startsWith("Could not export to")));
@@ -237,7 +239,7 @@ class SignedStateBalancesExporterTest {
 
 		// when:
 		subject.exportProto = false;
-		subject.exportBalancesFrom(state, now);
+		subject.exportBalancesFrom(state, now, nodeId);
 
 		// then:
 		assertThat(logCaptor.errorLogs(), contains(Matchers.startsWith("Could not sign balance file")));
@@ -298,7 +300,7 @@ class SignedStateBalancesExporterTest {
 
 		// when:
 		subject.exportProto = false;
-		subject.exportBalancesFrom(state, now);
+		subject.exportBalancesFrom(state, now, nodeId);
 
 		// then:
 		var lines = Files.readAllLines(Paths.get(loc));
@@ -331,7 +333,7 @@ class SignedStateBalancesExporterTest {
 
 		// when:
 		subject.exportProto = false;
-		subject.exportBalancesFrom(state, now);
+		subject.exportBalancesFrom(state, now, nodeId);
 
 		// then:
 		var lines = Files.readAllLines(Paths.get(loc));
@@ -374,7 +376,7 @@ class SignedStateBalancesExporterTest {
 
 		// when:
 		subject.exportProto = false;
-		subject.exportBalancesFrom(state, now);
+		subject.exportBalancesFrom(state, now, nodeId);
 
 		// then:
 		var lines = Files.readAllLines(Paths.get(expectedExportLoc()));
@@ -409,7 +411,7 @@ class SignedStateBalancesExporterTest {
 
 		// when:
 		subject.exportCsv = false;
-		subject.exportBalancesFrom(state, now);
+		subject.exportBalancesFrom(state, now, nodeId);
 
 		// and:
 		java.util.Optional<AllAccountBalances> fileContent = importBalanceProtoFile(loc);
@@ -456,7 +458,7 @@ class SignedStateBalancesExporterTest {
 
 		// when:
 		subject.exportCsv = false;
-		subject.exportBalancesFrom(state, now);
+		subject.exportBalancesFrom(state, now, nodeId);
 
 		// then:
 		assertThat(logCaptor.errorLogs(), contains(Matchers.startsWith("Could not export to")));
@@ -472,7 +474,7 @@ class SignedStateBalancesExporterTest {
 
 		// when: Pretend the .csv file is a corrupted .pb file
 		subject.exportProto = false;
-		subject.exportBalancesFrom(state, now);
+		subject.exportBalancesFrom(state, now, nodeId);
 
 		// and:
 		java.util.Optional<AllAccountBalances> accounts = importBalanceProtoFile(loc);
@@ -488,7 +490,7 @@ class SignedStateBalancesExporterTest {
 
 		// when:
 		subject.exportCsv = false;
-		subject.exportBalancesFrom(state, now);
+		subject.exportBalancesFrom(state, now, nodeId);
 
 		// then:
 		verify(assurance).ensureExistenceOf(expectedExportDir());
@@ -518,7 +520,7 @@ class SignedStateBalancesExporterTest {
 
 		// when:
 		subject.exportCsv = false;
-		subject.exportBalancesFrom(state, now);
+		subject.exportBalancesFrom(state, now, nodeId);
 
 		// then:
 		assertThat(logCaptor.errorLogs(), contains(desiredMsg));
@@ -599,7 +601,7 @@ class SignedStateBalancesExporterTest {
 
 		// when:
 		subject.exportProto = false;
-		subject.exportBalancesFrom(state, now);
+		subject.exportBalancesFrom(state, now, nodeId);
 
 		// then:
 		verify(assurance).ensureExistenceOf(expectedExportDir());
@@ -615,7 +617,7 @@ class SignedStateBalancesExporterTest {
 
 		// then:
 		assertThrows(IllegalStateException.class,
-				() -> subject.exportBalancesFrom(state, now));
+				() -> subject.exportBalancesFrom(state, now, nodeId));
 	}
 
 	@Test
@@ -628,7 +630,7 @@ class SignedStateBalancesExporterTest {
 
 		// when:
 		subject.exportProto = false;
-		subject.exportBalancesFrom(state, now);
+		subject.exportBalancesFrom(state, now, nodeId);
 
 		// then:
 		assertThat(logCaptor.errorLogs(), contains(desiredError));

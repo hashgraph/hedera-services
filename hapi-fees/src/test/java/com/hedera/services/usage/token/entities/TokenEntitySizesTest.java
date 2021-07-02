@@ -70,13 +70,13 @@ public class TokenEntitySizesTest {
 	@Test
 	public void understandsRecordTransfersSize() {
 		// setup:
-		int numTokens = 3, numTransfers = 8;
+		int numTokens = 3, fungibleNumTransfers = 8, uniqueNumTransfers = 2;
 
 		// given:
-		var expected = 3 * BASIC_ENTITY_ID_SIZE + 8 * (8 + BASIC_ENTITY_ID_SIZE);
+		var expected = 3 * BASIC_ENTITY_ID_SIZE + 8 * (8 + BASIC_ENTITY_ID_SIZE) + 2 * (8 + 2 * BASIC_ENTITY_ID_SIZE);
 
 		// then:
-		assertEquals(expected, subject.bytesUsedToRecordTokenTransfers(numTokens, numTransfers));
+		assertEquals(expected, subject.bytesUsedToRecordTokenTransfers(numTokens, fungibleNumTransfers, uniqueNumTransfers));
 	}
 
 	@Test

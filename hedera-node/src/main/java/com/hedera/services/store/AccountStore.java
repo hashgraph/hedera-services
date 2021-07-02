@@ -76,6 +76,7 @@ public class AccountStore {
 		account.setExpiry(merkleAccount.getExpiry());
 		account.initBalance(merkleAccount.getBalance());
 		account.setAssociatedTokens(merkleAccount.tokens().getIds().copy());
+		account.setOwnedNfts(merkleAccount.getNftsOwned());
 
 		return account;
 	}
@@ -94,6 +95,7 @@ public class AccountStore {
 		final var currentAccounts = accounts.get();
 		final var mutableAccount = currentAccounts.getForModify(key);
 		mutableAccount.tokens().updateAssociationsFrom(account.getAssociatedTokens());
+		mutableAccount.setNftsOwned(account.getOwnedNfts());
 	}
 
 

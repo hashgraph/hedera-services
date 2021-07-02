@@ -25,11 +25,13 @@ import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.SubType;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
+import java.util.Map;
 
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
@@ -43,7 +45,7 @@ public class AutoRenewCalcs {
 
 	private final CryptoOpsUsage cryptoOpsUsage;
 
-	private Triple<FeeData, Instant, FeeData> cryptoAutoRenewPriceSeq = null;
+	private Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> cryptoAutoRenewPriceSeq = null;
 
 	private long firstConstantCryptoAutoRenewFee = 0L;
 	private long secondConstantCryptoAutoRenewFee = 0L;
@@ -54,17 +56,17 @@ public class AutoRenewCalcs {
 		this.cryptoOpsUsage = cryptoOpsUsage;
 	}
 
-	public void setCryptoAutoRenewPriceSeq(Triple<FeeData, Instant, FeeData> cryptoAutoRenewPriceSeq) {
+	public void setCryptoAutoRenewPriceSeq(Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> cryptoAutoRenewPriceSeq) {
 		this.cryptoAutoRenewPriceSeq = cryptoAutoRenewPriceSeq;
 
 		if (cryptoAutoRenewPriceSeq.getLeft() == null) {
 			log.warn("No prices known for CryptoAccountAutoRenew, will charge zero fees!");
 		} else {
-			this.firstConstantCryptoAutoRenewFee = constantFeeFrom(cryptoAutoRenewPriceSeq.getLeft());
-			this.secondConstantCryptoAutoRenewFee = constantFeeFrom(cryptoAutoRenewPriceSeq.getRight());
+			this.firstConstantCryptoAutoRenewFee = constantFeeFrom(cryptoAutoRenewPriceSeq.getLeft().get(SubType.DEFAULT));
+			this.secondConstantCryptoAutoRenewFee = constantFeeFrom(cryptoAutoRenewPriceSeq.getRight().get(SubType.DEFAULT));
 
-			this.firstServiceRbhPrice = cryptoAutoRenewPriceSeq.getLeft().getServicedata().getRbh();
-			this.secondServiceRbhPrice = cryptoAutoRenewPriceSeq.getRight().getServicedata().getRbh();
+			this.firstServiceRbhPrice = cryptoAutoRenewPriceSeq.getLeft().get(SubType.DEFAULT).getServicedata().getRbh();
+			this.secondServiceRbhPrice = cryptoAutoRenewPriceSeq.getRight().get(SubType.DEFAULT).getServicedata().getRbh();
 		}
 	}
 

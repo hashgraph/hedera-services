@@ -84,20 +84,26 @@ public class HederaLedgerTest extends BaseHederaLedgerTest {
 		// setup:
 		String zeroingGenesis = "{0.0.2: [BALANCE -> 0]}";
 		String creatingTreasury = "{0.0.2 <-> 0.0.1001: [TOKEN_BALANCE -> 1_000_000]}";
+		String changingOwner = "{NftId{shard=0, realm=0, num=10000, serialNo=1234}: " +
+				"[OWNER -> EntityId{shard=3, realm=4, num=5}]}";
 
 		given(accountsLedger.isInTransaction()).willReturn(true);
 		given(accountsLedger.changeSetSoFar()).willReturn(zeroingGenesis);
 		given(tokenRelsLedger.changeSetSoFar()).willReturn(creatingTreasury);
+		given(nftsLedger.changeSetSoFar()).willReturn(changingOwner);
 
 		// when:
 		String summary = subject.currentChangeSet();
 
 		// then:
 		verify(accountsLedger).changeSetSoFar();
-		assertEquals(String.format(
-				"--- ACCOUNTS ---\n%s\n--- TOKEN RELATIONSHIPS ---\n%s",
-				zeroingGenesis,
-				creatingTreasury), summary);
+		final var desired = "--- ACCOUNTS ---\n" +
+				"{0.0.2: [BALANCE -> 0]}\n" +
+				"--- TOKEN RELATIONSHIPS ---\n" +
+				"{0.0.2 <-> 0.0.1001: [TOKEN_BALANCE -> 1_000_000]}\n" +
+				"--- NFTS ---\n" +
+				"{NftId{shard=0, realm=0, num=10000, serialNo=1234}: [OWNER -> EntityId{shard=3, realm=4, num=5}]}";
+		assertEquals(desired, summary);
 	}
 
 	@Test

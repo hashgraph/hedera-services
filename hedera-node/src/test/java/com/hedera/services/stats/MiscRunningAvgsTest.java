@@ -94,22 +94,26 @@ class MiscRunningAvgsTest {
 		StatsRunningAverage waitMs = mock(StatsRunningAverage.class);
 		StatsRunningAverage queueSize = mock(StatsRunningAverage.class);
 		StatsRunningAverage submitSizes = mock(StatsRunningAverage.class);
+		StatsRunningAverage hashS = mock(StatsRunningAverage.class);
 		// and:
 		subject.accountLookupRetries = retries;
 		subject.accountRetryWaitMs = waitMs;
 		subject.handledSubmitMessageSize = submitSizes;
 		subject.writeQueueSizeRecordStream = queueSize;
+		subject.hashQueueSizeRecordStream = hashS;
 
 		// when:
 		subject.recordAccountLookupRetries(1);
 		subject.recordAccountRetryWaitMs(2.0);
 		subject.recordHandledSubmitMessageSize(3);
 		subject.writeQueueSizeRecordStream(4);
+		subject.hashQueueSizeRecordStream(5);
 
 		// then:
 		verify(retries).recordValue(1.0);
 		verify(waitMs).recordValue(2.0);
 		verify(submitSizes).recordValue(3.0);
 		verify(queueSize).recordValue(4.0);
+		verify(hashS).recordValue(5);
 	}
 }

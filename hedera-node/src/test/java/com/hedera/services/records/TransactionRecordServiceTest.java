@@ -21,6 +21,7 @@ package com.hedera.services.records;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
@@ -32,13 +33,11 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -84,8 +83,10 @@ class TransactionRecordServiceTest {
 	@Test
 	void updatesWithChangedRelationshipBalance() {
 		// setup:
+		var token = new Token(new Id(0, 0, 2));
+		token.setType(TokenType.FUNGIBLE_COMMON);
 		final var tokenRel = new TokenRelationship(
-				new Token(new Id(0, 0, 2)),
+				token,
 				new Account(new Id(0, 0, 3)));
 		tokenRel.initBalance(0L);
 		tokenRel.setBalance(246L);

@@ -2222,7 +2222,7 @@ workflows:
             filters:
               branches:
                 ignore:
-                  - /.*-PERF/
+                  - NONE
             workflow-name: "Continuous-integration"
         - sonar-check:
             context: SonarCloud

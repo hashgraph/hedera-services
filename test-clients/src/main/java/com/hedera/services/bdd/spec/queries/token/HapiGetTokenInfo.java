@@ -32,6 +32,8 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -58,8 +60,11 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		this.token = token;
 	}
 
+	private Optional<TokenType> expectedTokenType = Optional.empty();
+	private Optional<TokenSupplyType> expectedSupplyType = Optional.empty();
 	private OptionalInt expectedDecimals = OptionalInt.empty();
 	private OptionalLong expectedTotalSupply = OptionalLong.empty();
+	private OptionalLong expectedMaxSupply = OptionalLong.empty();
 	private Optional<String> expectedMemo = Optional.empty();
 	private Optional<String> expectedId = Optional.empty();
 	private Optional<String> expectedSymbol = Optional.empty();
@@ -72,7 +77,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 	private Optional<String> expectedWipeKey = Optional.empty();
 	private Optional<Boolean> expectedDeletion = Optional.empty();
 	private Optional<TokenKycStatus> expectedKycDefault = Optional.empty();
-	private Optional<TokenFreezeStatus>	expectedFreezeDefault = Optional.empty();
+	private Optional<TokenFreezeStatus> expectedFreezeDefault = Optional.empty();
 	private Optional<String> expectedAutoRenewAccount = Optional.empty();
 	private OptionalLong expectedAutoRenewPeriod = OptionalLong.empty();
 	private Optional<Boolean> expectedExpiry = Optional.empty();
@@ -89,82 +94,116 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		return this;
 	}
 
+	public HapiGetTokenInfo hasTokenType(TokenType t) {
+		expectedTokenType = Optional.of(t);
+		return this;
+	}
+
+	public HapiGetTokenInfo hasSupplyType(TokenSupplyType t) {
+		expectedSupplyType = Optional.of(t);
+		return this;
+	}
+
 	public HapiGetTokenInfo hasFreezeDefault(TokenFreezeStatus s) {
 		expectedFreezeDefault = Optional.of(s);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasKycDefault(TokenKycStatus s) {
 		expectedKycDefault = Optional.of(s);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasDecimals(int d) {
 		expectedDecimals = OptionalInt.of(d);
 		return this;
 	}
+
+	public HapiGetTokenInfo hasMaxSupply(long amount) {
+		expectedMaxSupply = OptionalLong.of(amount);
+		return this;
+	}
+
 	public HapiGetTokenInfo hasTotalSupply(long amount) {
 		expectedTotalSupply = OptionalLong.of(amount);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasRegisteredId(String token) {
 		expectedId = Optional.of(token);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasEntityMemo(String memo) {
 		expectedMemo = Optional.of(memo);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasAutoRenewPeriod(Long renewPeriod) {
 		expectedAutoRenewPeriod = OptionalLong.of(renewPeriod);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasAutoRenewAccount(String account) {
 		expectedAutoRenewAccount = Optional.of(account);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasValidExpiry() {
 		expectedExpiry = Optional.of(true);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasSymbol(String token) {
 		expectedSymbol = Optional.of(token);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasName(String name) {
 		expectedName = Optional.of(name);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasTreasury(String name) {
 		expectedTreasury = Optional.of(name);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasFreezeKey(String name) {
 		expectedFreezeKey = Optional.of(name);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasAdminKey(String name) {
 		expectedAdminKey = Optional.of(name);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasKycKey(String name) {
 		expectedKycKey = Optional.of(name);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasSupplyKey(String name) {
 		expectedSupplyKey = Optional.of(name);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasWipeKey(String name) {
 		expectedWipeKey = Optional.of(name);
 		return this;
 	}
+
 	public HapiGetTokenInfo isDeleted() {
 		expectedDeletion = Optional.of(Boolean.TRUE);
 		return this;
 	}
+
 	public HapiGetTokenInfo isNotDeleted() {
 		expectedDeletion = Optional.of(Boolean.FALSE);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasCustom(BiConsumer<HapiApiSpec, CustomFeesOuterClass.CustomFees> feeAssertion) {
 		expectedFees.add(feeAssertion);
 		return this;
@@ -177,6 +216,18 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 	@Override
 	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
 		var actualInfo = response.getTokenGetInfo().getTokenInfo();
+
+		expectedTokenType.ifPresent(tokenType -> Assert.assertEquals(
+				"Wrong token type!",
+				tokenType,
+				actualInfo.getTokenType()
+		));
+
+		expectedSupplyType.ifPresent(supplyType -> Assert.assertEquals(
+				"Wrong supply type!",
+				supplyType,
+				actualInfo.getSupplyType()
+		));
 
 		if (expectedSymbol.isPresent()) {
 			Assert.assertEquals(
@@ -205,6 +256,14 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 					"Wrong auto renew period!",
 					expectedAutoRenewPeriod.getAsLong(),
 					actualInfo.getAutoRenewPeriod().getSeconds());
+		}
+
+		if (expectedMaxSupply.isPresent()) {
+			Assert.assertEquals(
+					"Wrong max supply!",
+					expectedMaxSupply.getAsLong(),
+					actualInfo.getMaxSupply()
+			);
 		}
 
 		if (expectedTotalSupply.isPresent()) {
@@ -283,6 +342,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 				(n, r) -> r.getKycKey(n),
 				"Wrong token KYC key!",
 				registry);
+
 		assertFor(
 				actualInfo.getSupplyKey(),
 				expectedSupplyKey,

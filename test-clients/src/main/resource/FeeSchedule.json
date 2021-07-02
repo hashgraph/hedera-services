@@ -689,6 +689,92 @@
           }
         }
       },
+      {
+        "transactionFeeSchedule": {
+          "hederaFunctionality": "TokenGetNftInfo",
+          "feeData": {
+            "nodedata": {
+              "constant": 63990,
+              "bpt": 102,
+              "vpt": 255752,
+              "rbh": 0,
+              "sbh": 0,
+              "gas": 1,
+              "bpr": 102,
+              "sbpr": 3,
+              "min": 0,
+              "max": 1000000000000000
+            },
+            "networkdata": {
+              "constant": 831871,
+              "bpt": 1330,
+              "vpt": 3324781,
+              "rbh": 1,
+              "sbh": 0,
+              "gas": 9,
+              "bpr": 1330,
+              "sbpr": 33,
+              "min": 0,
+              "max": 1000000000000000
+            },
+            "servicedata": {
+              "constant": 831871,
+              "bpt": 1330,
+              "vpt": 3324781,
+              "rbh": 1,
+              "sbh": 0,
+              "gas": 9,
+              "bpr": 1330,
+              "sbpr": 33,
+              "min": 0,
+              "max": 1000000000000000
+            }
+          }
+        }
+      },
+      {
+        "transactionFeeSchedule": {
+          "hederaFunctionality": "TokenGetAccountNftInfos",
+          "feeData": {
+            "nodedata": {
+              "constant": 63990,
+              "bpt": 102,
+              "vpt": 255752,
+              "rbh": 0,
+              "sbh": 0,
+              "gas": 1,
+              "bpr": 102,
+              "sbpr": 3,
+              "min": 0,
+              "max": 1000000000000000
+            },
+            "networkdata": {
+              "constant": 831871,
+              "bpt": 1330,
+              "vpt": 3324781,
+              "rbh": 1,
+              "sbh": 0,
+              "gas": 9,
+              "bpr": 1330,
+              "sbpr": 33,
+              "min": 0,
+              "max": 1000000000000000
+            },
+            "servicedata": {
+              "constant": 831871,
+              "bpt": 1330,
+              "vpt": 3324781,
+              "rbh": 1,
+              "sbh": 0,
+              "gas": 9,
+              "bpr": 1330,
+              "sbpr": 33,
+              "min": 0,
+              "max": 1000000000000000
+            }
+          }
+        }
+      },
        {
         "transactionFeeSchedule": {
           "hederaFunctionality": "TokenCreate",
@@ -2978,6 +3064,92 @@
        {
         "transactionFeeSchedule": {
           "hederaFunctionality": "TokenGetInfo",
+          "feeData": {
+            "nodedata": {
+              "constant": 63990,
+              "bpt": 102,
+              "vpt": 255752,
+              "rbh": 0,
+              "sbh": 0,
+              "gas": 1,
+              "bpr": 102,
+              "sbpr": 3,
+              "min": 0,
+              "max": 1000000000000000
+            },
+            "networkdata": {
+              "constant": 831871,
+              "bpt": 1330,
+              "vpt": 3324781,
+              "rbh": 1,
+              "sbh": 0,
+              "gas": 9,
+              "bpr": 1330,
+              "sbpr": 33,
+              "min": 0,
+              "max": 1000000000000000
+            },
+            "servicedata": {
+              "constant": 831871,
+              "bpt": 1330,
+              "vpt": 3324781,
+              "rbh": 1,
+              "sbh": 0,
+              "gas": 9,
+              "bpr": 1330,
+              "sbpr": 33,
+              "min": 0,
+              "max": 1000000000000000
+            }
+          }
+        }
+      },
+      {
+        "transactionFeeSchedule": {
+          "hederaFunctionality": "TokenGetNftInfo",
+          "feeData": {
+            "nodedata": {
+              "constant": 63990,
+              "bpt": 102,
+              "vpt": 255752,
+              "rbh": 0,
+              "sbh": 0,
+              "gas": 1,
+              "bpr": 102,
+              "sbpr": 3,
+              "min": 0,
+              "max": 1000000000000000
+            },
+            "networkdata": {
+              "constant": 831871,
+              "bpt": 1330,
+              "vpt": 3324781,
+              "rbh": 1,
+              "sbh": 0,
+              "gas": 9,
+              "bpr": 1330,
+              "sbpr": 33,
+              "min": 0,
+              "max": 1000000000000000
+            },
+            "servicedata": {
+              "constant": 831871,
+              "bpt": 1330,
+              "vpt": 3324781,
+              "rbh": 1,
+              "sbh": 0,
+              "gas": 9,
+              "bpr": 1330,
+              "sbpr": 33,
+              "min": 0,
+              "max": 1000000000000000
+            }
+          }
+        }
+      },
+      {
+        "transactionFeeSchedule": {
+          "hederaFunctionality": "TokenGetAccountNftInfos",
           "feeData": {
             "nodedata": {
               "constant": 63990,
