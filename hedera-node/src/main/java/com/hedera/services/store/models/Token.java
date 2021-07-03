@@ -100,7 +100,7 @@ public class Token {
 	){
 		validateTrue( type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID, () ->
 				"Non fungible burn can be invoked only on Non fungible tokens!");
-		validateTrue( serialNumbers.size() > 0 , FAIL_INVALID, ()->
+		validateTrue( !serialNumbers.isEmpty() , FAIL_INVALID, ()->
 				"Non fungible burn cannot be invoked with no serial numbers");
 		for (final long serialNum : serialNumbers) {
 			ownershipTracker.add(id, OwnershipTracker.fromBurning(id, serialNum));

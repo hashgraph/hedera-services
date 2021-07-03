@@ -49,8 +49,6 @@ import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import proto.CustomFeesOuterClass;
 
 import java.util.Collections;
@@ -90,6 +88,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_AR
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
@@ -120,7 +119,6 @@ import static java.util.stream.Collectors.toList;
  * Provides a managing store for arbitrary tokens.
  */
 public class HederaTokenStore extends HederaStore implements TokenStore {
-	private static final Logger log = LogManager.getLogger(HederaTokenStore.class);
 
 	static final TokenID NO_PENDING_ID = TokenID.getDefaultInstance();
 
@@ -515,11 +513,15 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				if (fraction.getDenominator() == 0) {
 					return FRACTION_DIVIDES_BY_ZERO;
 				}
-				if (!signsMatch(fraction.getNumerator(), fraction.getDenominator())) {
+				if (!areValidPositiveNumbers(fraction.getNumerator(), fraction.getDenominator())) {
 					return CUSTOM_FEE_MUST_BE_POSITIVE;
 				}
 				if (fractionalSpec.getMaximumAmount() < 0 || fractionalSpec.getMinimumAmount() < 0) {
 					return CUSTOM_FEE_MUST_BE_POSITIVE;
+				}
+				if (fractionalSpec.getMaximumAmount() > 0 &&
+						fractionalSpec.getMaximumAmount() < fractionalSpec.getMinimumAmount()) {
+					return FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
 				}
 			} else {
 				return CUSTOM_FEE_NOT_FULLY_SPECIFIED;
@@ -529,8 +531,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		return OK;
 	}
 
-	private boolean signsMatch(long a, long b) {
-		return (a < 0 && b < 0) || (a > 0 && b > 0);
+	private boolean areValidPositiveNumbers(long a, long b) {
+		return (a > 0 && b > 0);
 	}
 
 	public void addKnownTreasury(AccountID aId, TokenID tId) {

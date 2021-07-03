@@ -97,6 +97,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_AR
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -282,7 +283,41 @@ class HederaTokenStoreTest {
 					.setFixedFee(CustomFeesOuterClass.FixedFee.newBuilder()
 							.setAmount(0L)
 					)).build();
-
+	private CustomFeesOuterClass.CustomFees grpcMaxLessThanMinCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
+			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
+					.setFeeCollectorAccountId(feeCollector)
+					.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
+							.setFractionalAmount(Fraction.newBuilder()
+									.setNumerator(123L).setDenominator(1_000L))
+							.setMaximumAmount(2L)
+							.setMinimumAmount(10L)
+					)).build();
+	private CustomFeesOuterClass.CustomFees grpcMaxEqualToMinCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
+			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
+					.setFeeCollectorAccountId(feeCollector)
+					.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
+							.setFractionalAmount(Fraction.newBuilder()
+									.setNumerator(123L).setDenominator(1_000L))
+							.setMaximumAmount(2L)
+							.setMinimumAmount(2L)
+					)).build();
+	private CustomFeesOuterClass.CustomFees grpcZeroMaxPositiveMinCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
+			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
+					.setFeeCollectorAccountId(feeCollector)
+					.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
+							.setFractionalAmount(Fraction.newBuilder()
+									.setNumerator(123L).setDenominator(1_000L))
+							.setMaximumAmount(0L)
+							.setMinimumAmount(10L)
+					)).build();
+	private CustomFeesOuterClass.CustomFees grpcBothNegativeFractionCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
+			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
+					.setFeeCollectorAccountId(feeCollector)
+					.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
+							.setFractionalAmount(Fraction.newBuilder()
+									.setNumerator(-123L).setDenominator(-1_000L)
+							)
+					)).build();
 	private HederaTokenStore subject;
 
 	@BeforeEach
@@ -1894,6 +1929,52 @@ class HederaTokenStoreTest {
 
 		// expect:
 		assertEquals(FRACTION_DIVIDES_BY_ZERO, result.getStatus());
+		assertTrue(result.getCreated().isEmpty());
+	}
+
+	@Test
+	void rejectsFractionalFeeMaxAmountLessThanMinAmount() {
+		final var req = fullyValidAttempt().setCustomFees(grpcMaxLessThanMinCustomFees).build();
+
+		// when:
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		// expect:
+		assertEquals(FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT, result.getStatus());
+		assertTrue(result.getCreated().isEmpty());
+	}
+
+	@Test
+	void acceptsFractionalFeeMaxAmountEqualToMinAmount() {
+		final var req = fullyValidAttempt().setCustomFees(grpcMaxEqualToMinCustomFees).build();
+
+		// when:
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		// expect:
+		assertEquals(OK, result.getStatus());
+		assertFalse(result.getCreated().isEmpty());
+	}
+
+	@Test
+	void acceptsFractionalFeeWithZeroMaxAmountPositiveMinAmount() {
+		final var req = fullyValidAttempt().setCustomFees(grpcZeroMaxPositiveMinCustomFees).build();
+
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		assertEquals(OK, result.getStatus());
+		assertFalse(result.getCreated().isEmpty());
+	}
+
+	@Test
+	void rejectsBothNumeratorAndDenominatorNegativeInFractionalFee() {
+		final var req = fullyValidAttempt().setCustomFees(grpcBothNegativeFractionCustomFees).build();
+
+		// when:
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		// expect:
+		assertEquals(CUSTOM_FEE_MUST_BE_POSITIVE, result.getStatus());
 		assertTrue(result.getCreated().isEmpty());
 	}
 

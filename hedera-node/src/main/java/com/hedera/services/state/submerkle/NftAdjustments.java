@@ -27,8 +27,6 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -40,7 +38,6 @@ import static com.hedera.services.utils.MiscUtils.readableNftTransferList;
 import static java.util.stream.Collectors.toList;
 
 public class NftAdjustments implements SelfSerializable {
-	private static final Logger log = LogManager.getLogger(NftAdjustments.class);
 
 	private static final int MERKLE_VERSION = 1;
 	private static final long RUNTIME_CONSTRUCTABLE_ID = 0xd7a02bf45e103466L;

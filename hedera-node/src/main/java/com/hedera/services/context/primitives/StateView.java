@@ -124,7 +124,7 @@ public class StateView {
 	public static final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> EMPTY_TOKEN_ASSOCS_SUPPLIER =
 			() -> EMPTY_TOKEN_ASSOCIATIONS;
 
-	public static final FCMap<MerkleUniqueTokenId, MerkleUniqueToken> EMPTY_UNIQUE_TOKENS =
+	protected static final FCMap<MerkleUniqueTokenId, MerkleUniqueToken> EMPTY_UNIQUE_TOKENS =
 			new FCMap<>();
 	public static final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> EMPTY_UNIQUE_TOKENS_SUPPLIER =
 			() -> EMPTY_UNIQUE_TOKENS;
@@ -157,7 +157,6 @@ public class StateView {
 	private final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations;
 
 	private Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens;
-	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations;
 	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAccountOwnerships;
 
 	private final NodeLocalProperties properties;
@@ -223,7 +222,6 @@ public class StateView {
 		this.uniqueTokens = uniqueTokens;
 		this.scheduleStore = scheduleStore;
 		this.tokenAssociations = tokenAssociations;
-		this.uniqueTokenAssociations = uniqueTokenAssociations;
 		this.uniqueTokenAccountOwnerships = uniqueTokenAccountOwnerships;
 
 		Map<String, byte[]> blobStore = unmodifiableMap(new FcBlobsBytesStore(MerkleOptionalBlob::new, storage));
