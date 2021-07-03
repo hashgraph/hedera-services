@@ -97,6 +97,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TRE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
@@ -203,6 +205,10 @@ class HederaTokenStoreTest {
 			.setDenominatingTokenId(misc)
 			.setAmount(100)
 			.build();
+	private FixedFee fixedFeeInNFTUnits = FixedFee.newBuilder()
+			.setDenominatingTokenId(nonfungible)
+			.setAmount(100)
+			.build();
 	private FixedFee fixedFeeInHbar = FixedFee.newBuilder()
 			.setAmount(100)
 			.build();
@@ -229,6 +235,10 @@ class HederaTokenStoreTest {
 			customFixedFeeInHbar,
 			customFixedFeeInHts,
 			customFractionalFee
+	);
+	private List<CustomFee> grpcNTFasDenominatingToken = List.of(
+			CustomFee.newBuilder().setFeeCollectorAccountId(feeCollector)
+					.setFixedFee(fixedFeeInNFTUnits).build()
 	);
 	private List<CustomFee> grpcUnderspecifiedCustomFees = List.of(
 			CustomFee.newBuilder().setFeeCollectorAccountId(feeCollector).build()
@@ -298,7 +308,8 @@ class HederaTokenStoreTest {
 		given(token.hasAdminKey()).willReturn(true);
 		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
 
-		nonfungibleToken = new MerkleToken();
+		nonfungibleToken = mock(MerkleToken.class);
+		given(nonfungibleToken.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 
 		ids = mock(EntityIdSource.class);
 		given(ids.newTokenId(sponsor)).willReturn(created);
@@ -1805,6 +1816,16 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	void rejectsNFTasCustomFeeDenomination() {
+		final var req = fullyValidTokenCreateAttempt().addAllCustomFees(grpcNTFasDenominatingToken).build();
+
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		assertEquals(CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON, result.getStatus());
+		assertTrue(result.getCreated().isEmpty());
+	}
+
+	@Test
 	void rejectsUnassociatedFeeCollector() {
 		given(tokenRelsLedger.exists(anotherFeeCollectorMisc)).willReturn(false);
 
@@ -1816,6 +1837,17 @@ class HederaTokenStoreTest {
 
 		// expect:
 		assertEquals(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR, result.getStatus());
+		assertTrue(result.getCreated().isEmpty());
+	}
+
+	@Test
+	void rejectsFrationalFeeInCustomFeeWhenCreatingNFT() {
+		final var req = fullyValidTokenCreateAttempt()
+				.setTokenType(com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE).build();
+
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		assertEquals(CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON, result.getStatus());
 		assertTrue(result.getCreated().isEmpty());
 	}
 

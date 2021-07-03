@@ -28,6 +28,7 @@ import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -114,6 +115,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -508,11 +511,18 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 					if (resolve(denom) == MISSING_TOKEN) {
 						return INVALID_TOKEN_ID_IN_CUSTOM_FEES;
 					}
+					final var merkleToken = get(denom);
+					if(merkleToken.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE) {
+						return CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
+					}
 					if (!associationExists(feeCollector, denom)) {
 						return TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 					}
 				}
 			} else if (customFee.hasFractionalFee()) {
+				if(pendingCreation.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE) {
+					return CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
+				}
 				final var fractionalSpec = customFee.getFractionalFee();
 				final var fraction = fractionalSpec.getFractionalAmount();
 				if (fraction.getDenominator() == 0) {
