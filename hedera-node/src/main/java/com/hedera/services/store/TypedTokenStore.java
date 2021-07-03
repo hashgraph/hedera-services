@@ -24,15 +24,16 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.BackingNfts;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.records.TransactionRecordService;
+import com.hedera.services.state.merkle.MerkleBatchedUniqTokens;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
@@ -50,6 +51,10 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.ledger.accounts.BackingNfts.asBatchLoc;
+import static com.hedera.services.ledger.accounts.BackingNfts.batchKeyFor;
+import static com.hedera.services.ledger.accounts.BackingNfts.extractModifiableBatch;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
@@ -85,7 +90,7 @@ public class TypedTokenStore {
 	private final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels;
 
 	/* Data Structures for Tokens of type Non-Fungible Unique  */
-	private final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens;
+	private final Supplier<FCMap<MerkleUniqueTokenId, MerkleBatchedUniqTokens>> uniqueTokens;
 	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations;
 	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueOwnershipAssociations;
 
@@ -98,7 +103,7 @@ public class TypedTokenStore {
 			AccountStore accountStore,
 			TransactionRecordService transactionRecordService,
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
-			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens,
+			Supplier<FCMap<MerkleUniqueTokenId, MerkleBatchedUniqTokens>> uniqueTokens,
 			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueOwnershipAssociations,
 			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations,
 			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels,
@@ -250,25 +255,47 @@ public class TypedTokenStore {
 		mapModelChangesToMutable(token, mutableToken);
 
 		if (token.hasMintedUniqueTokens()) {
+			final var curUniqueTokens = uniqueTokens.get();
 			for (var uniqueToken : token.mintedUniqueTokens()) {
+				final var nftId = new NftId(
+						id.getShard(), id.getRealm(), id.getNum(), uniqueToken.getSerialNumber());
 				final var merkleUniqueTokenId = new MerkleUniqueTokenId(
 						new EntityId(uniqueToken.getTokenId()), uniqueToken.getSerialNumber());
-				final var merkleUniqueToken = new MerkleUniqueToken(
-						new EntityId(uniqueToken.getOwner()), uniqueToken.getMetadata(), uniqueToken.getCreationTime());
-				uniqueTokens.get().put(merkleUniqueTokenId, merkleUniqueToken);
+
+				boolean firstInBatch = false;
+				var mutableBatch = extractModifiableBatch(curUniqueTokens, nftId);
+				if (mutableBatch == null) {
+					firstInBatch = true;
+					mutableBatch = new MerkleBatchedUniqTokens();
+				}
+				if (mutableBatch.getMintedSoFar() != asBatchLoc(nftId.serialNo())) {
+					throw new IllegalArgumentException("NFTs must be minted with ascending serial numbers");
+				}
+				mutableBatch.mintNextWith(
+						new EntityId(uniqueToken.getOwner()),
+						uniqueToken.getCreationTime(),
+						uniqueToken.getMetadata());
+				if (firstInBatch) {
+					curUniqueTokens.put(batchKeyFor(nftId), mutableBatch);
+				}
 				uniqueTokenAssociations.get().associate(new EntityId(uniqueToken.getTokenId()), merkleUniqueTokenId);
 				uniqueOwnershipAssociations.get().associate(treasury, merkleUniqueTokenId);
-				backingNfts.addToExistingNfts(merkleUniqueTokenId.asNftId());
 			}
 		}
 		if (token.hasBurnedUniqueTokens()) {
+			final var curUniqueTokens = uniqueTokens.get();
 			for (var uniqueToken : token.burnedUniqueTokens()) {
+				final var nftId = new NftId(id.getShard(), id.getRealm(), id.getNum(), uniqueToken.getSerialNumber());
 				final var merkleUniqueTokenId = new MerkleUniqueTokenId(
 						new EntityId(uniqueToken.getTokenId()), uniqueToken.getSerialNumber());
-				uniqueTokens.get().remove(merkleUniqueTokenId);
+				var mutableBatch = extractModifiableBatch(curUniqueTokens, nftId);
+				validateTrue(mutableBatch != null, FAIL_INVALID);
+				mutableBatch.burn(asBatchLoc(nftId.serialNo()));
+				if (mutableBatch.batchIsFullyBurned()) {
+					curUniqueTokens.remove(batchKeyFor(nftId));
+				}
 				uniqueTokenAssociations.get().disassociate(new EntityId(uniqueToken.getTokenId()), merkleUniqueTokenId);
 				uniqueOwnershipAssociations.get().disassociate(treasury, merkleUniqueTokenId);
-				backingNfts.removeFromExistingNfts(merkleUniqueTokenId.asNftId());
 			}
 		}
 

@@ -20,78 +20,107 @@ package com.hedera.services.ledger.accounts;
  * ‍
  */
 
+import com.hedera.services.state.merkle.MerkleBatchedUniqTokens;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 import com.swirlds.fcmap.FCMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.HashSet;
+import javax.annotation.Nullable;
 import java.util.Set;
 import java.util.function.Supplier;
-
-import static com.hedera.services.state.merkle.MerkleUniqueTokenId.fromNftId;
 
 public class BackingNfts implements BackingStore<NftId, MerkleUniqueToken> {
 	static final Logger log = LogManager.getLogger(BackingNfts.class);
 
-	private final Set<NftId> existing = new HashSet<>();
+	private final Supplier<FCMap<MerkleUniqueTokenId, MerkleBatchedUniqTokens>> delegate;
 
-	private final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> delegate;
-
-	public BackingNfts(Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> delegate) {
+	public BackingNfts(Supplier<FCMap<MerkleUniqueTokenId, MerkleBatchedUniqTokens>> delegate) {
 		this.delegate = delegate;
-		rebuildFromSources();
 	}
 
 	@Override
 	public void rebuildFromSources() {
-		existing.clear();
-		delegate.get().keySet().stream()
-				.map(MerkleUniqueTokenId::asNftId)
-				.forEach(existing::add);
+		/* No-op */
 	}
 
 	@Override
 	public MerkleUniqueToken getRef(NftId id) {
-		return delegate.get().getForModify(fromNftId(id));
+		return fromBatch(extractModifiableBatch(delegate.get(), id), id.serialNo());
 	}
 
 	@Override
 	public MerkleUniqueToken getImmutableRef(NftId id) {
-		return delegate.get().get(fromNftId(id));
+		return fromBatch(extractUnsafeBatch(delegate.get(), id), id.serialNo());
 	}
 
-	@Override
-	public void put(NftId id, MerkleUniqueToken nft) {
-		if (!existing.contains(id)) {
-			delegate.get().put(fromNftId(id), nft);
-			existing.add(id);
+	private MerkleUniqueToken fromBatch(@Nullable MerkleBatchedUniqTokens batch, long serialNo) {
+		if (batch == null) {
+			return null;
+		} else {
+			return batch.get(asBatchLoc(serialNo));
 		}
 	}
 
 	@Override
+	public void put(NftId id, MerkleUniqueToken nft) {
+		throw new AssertionError("Not implemented!");
+	}
+
+	@Override
 	public void remove(NftId id) {
-		existing.remove(id);
-		delegate.get().remove(fromNftId(id));
+		throw new AssertionError("Not implemented!");
 	}
 
 	@Override
 	public boolean contains(NftId id) {
-		return existing.contains(id);
+		final var currentNfts = delegate.get();
+		final var batchKey = batchKeyFor(id);
+		if (!currentNfts.containsKey(batchKey))	{
+			return false;
+		}
+		final var batch = currentNfts.get(batchKey);
+		return batch.isMinted(asBatchLoc(id.serialNo()));
 	}
 
 	@Override
 	public Set<NftId> idSet() {
-		return existing;
+		throw new UnsupportedOperationException();
 	}
 
-	public void addToExistingNfts(NftId nftId)	{
-		existing.add(nftId);
+	public static MerkleUniqueTokenId batchKeyFor(NftId id) {
+		final var startSerialNo = id.serialNo() / MerkleBatchedUniqTokens.TOKENS_IN_BATCH;
+		return new MerkleUniqueTokenId(EntityId.fromGrpcTokenId(id.tokenId()), startSerialNo);
 	}
 
-	public void removeFromExistingNfts(NftId nftId) {
-		existing.remove(nftId);
+	public static int asBatchLoc(long serialNo) {
+		return (int)(serialNo % MerkleBatchedUniqTokens.TOKENS_IN_BATCH);
+	}
+
+	public static MerkleBatchedUniqTokens extractModifiableBatch(
+			FCMap<MerkleUniqueTokenId, MerkleBatchedUniqTokens> batches,
+			NftId id
+	) {
+		final var batch = batchKeyFor(id);
+		if (batches.containsKey(batch)) {
+			return batches.getForModify(batch);
+		} else {
+			return null;
+		}
+	}
+
+	public static MerkleBatchedUniqTokens extractUnsafeBatch(
+			FCMap<MerkleUniqueTokenId, MerkleBatchedUniqTokens> batches,
+			NftId id
+	) {
+		final var batch = batchKeyFor(id);
+		if (batches.containsKey(batch)) {
+			return batches.get(batch);
+		} else {
+			return null;
+		}
 	}
 }

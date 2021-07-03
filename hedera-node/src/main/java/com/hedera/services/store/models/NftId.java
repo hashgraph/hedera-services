@@ -21,6 +21,7 @@ package com.hedera.services.store.models;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.TokenID;
 
 public class NftId {
@@ -34,6 +35,11 @@ public class NftId {
 		this.realm = realm;
 		this.num = num;
 		this.serialNo = serialNo;
+	}
+
+	public static NftId fromGrpc(NftID grpcId) {
+		final var tokenId = grpcId.getTokenID();
+		return new NftId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum(), grpcId.getSerialNumber());
 	}
 
 	public long shard() {

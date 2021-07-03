@@ -222,6 +222,7 @@ import com.hedera.services.state.logic.AwareNodeDiligenceScreen;
 import com.hedera.services.state.logic.InvariantChecks;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleBatchedUniqTokens;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
@@ -584,7 +585,7 @@ public class ServicesContext {
 	private AtomicReference<FCMap<MerkleEntityId, MerkleAccount>> queryableAccounts;
 	private AtomicReference<FCMap<MerkleEntityId, MerkleSchedule>> queryableSchedules;
 	private AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage;
-	private AtomicReference<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> queryableUniqueTokens;
+	private AtomicReference<FCMap<MerkleUniqueTokenId, MerkleBatchedUniqTokens>> queryableUniqueTokens;
 	private AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations;
 	private AtomicReference<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> queryableUniqueTokenAssociations;
 	private AtomicReference<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> queryableUniqueOwnershipAssociations;
@@ -2097,7 +2098,7 @@ public class ServicesContext {
 		return queryableSchedules;
 	}
 
-	public AtomicReference<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> queryableUniqueTokens() {
+	public AtomicReference<FCMap<MerkleUniqueTokenId, MerkleBatchedUniqTokens>> queryableUniqueTokens() {
 		if (queryableUniqueTokens == null) {
 			queryableUniqueTokens = new AtomicReference<>(uniqueTokens());
 		}
@@ -2229,7 +2230,7 @@ public class ServicesContext {
 		return state.tokenAssociations();
 	}
 
-	public FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens() {
+	public FCMap<MerkleUniqueTokenId, MerkleBatchedUniqTokens> uniqueTokens() {
 		return state.uniqueTokens();
 	}
 

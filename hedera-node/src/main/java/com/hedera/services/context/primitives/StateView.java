@@ -27,9 +27,11 @@ import com.hedera.services.files.DataMapFactory;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.files.store.FcBlobsBytesStore;
+import com.hedera.services.ledger.accounts.BackingNfts;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleBatchedUniqTokens;
 import com.hedera.services.state.merkle.MerkleBlobMeta;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
@@ -38,10 +40,10 @@ import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.MiscUtils;
@@ -78,6 +80,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
+import static com.hedera.services.ledger.accounts.BackingNfts.asBatchLoc;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
@@ -124,9 +127,9 @@ public class StateView {
 	public static final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> EMPTY_TOKEN_ASSOCS_SUPPLIER =
 			() -> EMPTY_TOKEN_ASSOCIATIONS;
 
-	protected static final FCMap<MerkleUniqueTokenId, MerkleUniqueToken> EMPTY_UNIQUE_TOKENS =
+	protected static final FCMap<MerkleUniqueTokenId, MerkleBatchedUniqTokens> EMPTY_UNIQUE_TOKENS =
 			new FCMap<>();
-	public static final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> EMPTY_UNIQUE_TOKENS_SUPPLIER =
+	public static final Supplier<FCMap<MerkleUniqueTokenId, MerkleBatchedUniqTokens>> EMPTY_UNIQUE_TOKENS_SUPPLIER =
 			() -> EMPTY_UNIQUE_TOKENS;
 
 	public static final FCOneToManyRelation<EntityId, MerkleUniqueTokenId> EMPTY_UNIQUE_TOKEN_ASSOCS =
@@ -156,7 +159,7 @@ public class StateView {
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 	private final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations;
 
-	private Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens;
+	private Supplier<FCMap<MerkleUniqueTokenId, MerkleBatchedUniqTokens>> uniqueTokens;
 	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAccountOwnerships;
 
 	private final NodeLocalProperties properties;
@@ -209,7 +212,7 @@ public class StateView {
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> storage,
-			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens,
+			Supplier<FCMap<MerkleUniqueTokenId, MerkleBatchedUniqTokens>> uniqueTokens,
 			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations,
 			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations,
 			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAccountOwnerships,
@@ -379,12 +382,14 @@ public class StateView {
 	}
 
 	public Optional<TokenNftInfo> infoForNft(NftID target) {
+		final var id = NftId.fromGrpc(target);
 		final var currentNfts = uniqueTokens.get();
-		final var targetKey = new MerkleUniqueTokenId(fromGrpcTokenId(target.getTokenID()), target.getSerialNumber());
-		if (!currentNfts.containsKey(targetKey)) {
+		final var batch = BackingNfts.extractUnsafeBatch(currentNfts, id);
+		final var batchLoc = asBatchLoc(id.serialNo());
+		if (batch != null || !batch.isMinted(batchLoc)) {
 			return Optional.empty();
 		}
-		final var targetNft = currentNfts.get(targetKey);
+		final var targetNft = batch.get(batchLoc);
 		final var info = TokenNftInfo.newBuilder()
 				.setNftID(target)
 				.setAccountID(targetNft.getOwner().toGrpcAccountId())
@@ -509,10 +514,12 @@ public class StateView {
 		}
 
 		List<TokenNftInfo> nftInfos = new ArrayList<>();
-		var uniqueTokensMap = uniqueTokens.get();
+		var curUniqTokens = uniqueTokens.get();
 		uniqueTokenAccountOwnerships.get()
 				.get(fromGrpcAccountId(aid), (int)start, (int)end).forEachRemaining(nftId -> {
-					var nft = uniqueTokensMap.get(nftId);
+					final var id = nftId.asNftId();
+					final var batch = BackingNfts.extractUnsafeBatch(curUniqTokens, id);
+					final var nft = batch.get(asBatchLoc(id.serialNo()));
 					nftInfos.add(
 							TokenNftInfo.newBuilder()
 								.setAccountID(aid)

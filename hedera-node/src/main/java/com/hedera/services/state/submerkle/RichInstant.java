@@ -22,6 +22,7 @@ package com.hedera.services.state.submerkle;
 
 import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.logging.log4j.LogManager;
@@ -32,8 +33,26 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 
-public class RichInstant {
+public class RichInstant implements SelfSerializable {
 	private static final Logger log = LogManager.getLogger(RichInstant.class);
+
+	static final int MERKLE_VERSION = 1;
+	static final long RUNTIME_CONSTRUCTABLE_ID = 0xc036951983bc9211L;
+
+	@Override
+	public void deserialize(SerializableDataInputStream serializableDataInputStream, int i) throws IOException {
+		throw new AssertionError("Not implemented!");
+	}
+
+	@Override
+	public long getClassId() {
+		return RUNTIME_CONSTRUCTABLE_ID;
+	}
+
+	@Override
+	public int getVersion() {
+		return MERKLE_VERSION;
+	}
 
 	public static final RichInstant MISSING_INSTANT = new RichInstant(0L, 0);
 

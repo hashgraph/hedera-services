@@ -27,6 +27,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleBatchedUniqTokens;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
@@ -289,8 +290,7 @@ class StateViewTest {
 		StateView.tokenRelsFn = mockTokenRelsFn;
 		given(mockTokenRelsFn.apply(any(), any())).willReturn(Collections.emptyList());
 
-		var uniqueTokens = new FCMap<MerkleUniqueTokenId, MerkleUniqueToken>();
-		uniqueTokens.put(targetNftKey, targetNft);
+		var uniqueTokens = new FCMap<MerkleUniqueTokenId, MerkleBatchedUniqTokens>();
 
 		final var uniqueTokenAccountOwnerships = new FCOneToManyRelation<EntityId, MerkleUniqueTokenId>();
 		uniqueTokenAccountOwnerships.associate(EntityId.fromGrpcAccountId(nftOwnerId), new MerkleUniqueTokenId(targetNftKey.tokenId(), 4));
