@@ -26,8 +26,6 @@ import com.hedera.services.usage.token.TokenGetNftInfoUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.Map;
 import java.util.Optional;
@@ -37,7 +35,6 @@ import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
 import static com.hedera.services.queries.token.GetTokenNftInfoAnswer.NFT_INFO_CTX_KEY;
 
 public class GetTokenNftInfoResourceUsage implements QueryResourceUsageEstimator {
-	private static final Logger log = LogManager.getLogger(GetTokenNftInfoResourceUsage.class);
 
 	static Function<Query, TokenGetNftInfoUsage> factory = TokenGetNftInfoUsage::newEstimate;
 
@@ -48,12 +45,12 @@ public class GetTokenNftInfoResourceUsage implements QueryResourceUsageEstimator
 
 	@Override
 	public FeeData usageGiven(Query query, StateView view) {
-		return usageFor(query, view, query.getTokenGetNftInfo().getHeader().getResponseType(), NO_QUERY_CTX);
+		return usageFor(query, view, NO_QUERY_CTX);
 	}
 
 	@Override
 	public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
-		return usageFor(query, view, type, NO_QUERY_CTX);
+		return usageFor(query, view, NO_QUERY_CTX);
 	}
 
 	@Override
@@ -61,11 +58,10 @@ public class GetTokenNftInfoResourceUsage implements QueryResourceUsageEstimator
 		return usageFor(
 				query,
 				view,
-				query.getTokenGetNftInfo().getHeader().getResponseType(),
 				Optional.of(queryCtx));
 	}
 
-	private FeeData usageFor(Query query, StateView view, ResponseType type, Optional<Map<String, Object>> queryCtx) {
+	private FeeData usageFor(Query query, StateView view, Optional<Map<String, Object>> queryCtx) {
 		var op = query.getTokenGetNftInfo();
 		var optionalInfo = view.infoForNft(op.getNftID());
 		if (optionalInfo.isPresent()) {

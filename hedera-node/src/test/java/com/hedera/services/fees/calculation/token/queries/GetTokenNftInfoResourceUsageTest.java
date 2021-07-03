@@ -50,7 +50,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class GetTokenNftInfoResourceUsageTest {
+class GetTokenNftInfoResourceUsageTest {
     NftID target = NftID.newBuilder().setTokenID(IdUtils.asToken("0.0.123")).setSerialNumber(1).build();
     FeeData expected;
     ByteString metadata = ByteString.copyFromUtf8("LMAO");
@@ -71,7 +71,7 @@ public class GetTokenNftInfoResourceUsageTest {
     GetTokenNftInfoResourceUsage subject;
 
     @BeforeEach
-    private void setup() throws Throwable {
+    private void setup() {
         expected = mock(FeeData.class);
         view = mock(StateView.class);
         estimator = mock(TokenGetNftInfoUsage.class);
@@ -89,7 +89,7 @@ public class GetTokenNftInfoResourceUsageTest {
     }
 
     @Test
-    public void recognizesApplicableQuery() {
+     void recognizesApplicableQuery() {
         // given:
         var applicable = TokenNftInfoQuery(target, COST_ANSWER);
         var inapplicable = Query.getDefaultInstance();
@@ -100,7 +100,7 @@ public class GetTokenNftInfoResourceUsageTest {
     }
 
     @Test
-    public void setsInfoInQueryCxtIfPresent() {
+     void setsInfoInQueryCxtIfPresent() {
         // setup:
         var queryCtx = new HashMap<String, Object>();
 
@@ -115,7 +115,7 @@ public class GetTokenNftInfoResourceUsageTest {
     }
 
     @Test
-    public void onlySetsTokenNftInfoInQueryCxtIfFound() {
+     void onlySetsTokenNftInfoInQueryCxtIfFound() {
         // setup:
         var queryCtx = new HashMap<String, Object>();
 
@@ -131,7 +131,7 @@ public class GetTokenNftInfoResourceUsageTest {
     }
 
     @Test
-    public void worksWithoutQueryContext() {
+     void worksWithoutQueryContext() {
         // setup:
         given(view.infoForNft(target)).willReturn(Optional.empty());
 
@@ -143,7 +143,7 @@ public class GetTokenNftInfoResourceUsageTest {
     }
 
     @Test
-    public void worksWithNoQueryContext() {
+     void worksWithNoQueryContext() {
         // setup:
         given(view.infoForNft(target)).willReturn(Optional.empty());
 

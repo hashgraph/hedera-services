@@ -23,7 +23,6 @@ package com.hedera.services.state.merkle;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
-import com.hederahashgraph.api.proto.java.NftID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;

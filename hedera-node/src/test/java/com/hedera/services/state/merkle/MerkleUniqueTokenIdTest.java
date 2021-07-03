@@ -151,7 +151,7 @@ class MerkleUniqueTokenIdTest {
 	}
 
 	@Test
-	public void fromNftIdWorks() {
+	 void fromNftIdWorks() {
 		// given
 		var expected = new MerkleUniqueTokenId(
 				new EntityId(0, 0, 1),

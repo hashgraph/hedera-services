@@ -28,11 +28,8 @@ public enum NftEntitySizes {
 	NFT_ENTITY_SIZES;
 
 	public long fixedBytesInNftRepr() {
-		/* { creation time } */
 		return BASIC_RICH_INSTANT_SIZE // creation time
-				/* { tokenID, accountID } */
-				+ 2 * BASIC_ENTITY_ID_SIZE
-				/* { serialNum } */
-				+ LONG_SIZE;
+				+ 2 * BASIC_ENTITY_ID_SIZE // { tokenID, accountID }
+				+ LONG_SIZE;// { serialNum }
 	}
 }

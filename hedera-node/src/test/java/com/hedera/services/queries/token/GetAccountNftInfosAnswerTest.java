@@ -60,7 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-public class GetAccountNftInfosAnswerTest {
+class GetAccountNftInfosAnswerTest {
     GetAccountNftInfosAnswer subject;
     Transaction paymentTxn;
     StateView view;
@@ -103,21 +103,21 @@ public class GetAccountNftInfosAnswerTest {
     }
 
     @Test
-    public void requiresAnswerOnlyPayment() throws Throwable {
+     void requiresAnswerOnlyPayment() throws Throwable {
         // expect:
         assertFalse(subject.requiresNodePayment(validQuery(COST_ANSWER, 0, accountId, start, end)));
         assertTrue(subject.requiresNodePayment(validQuery(ANSWER_ONLY, 0, accountId, start, end)));
     }
 
     @Test
-    public void requiresAnswerOnlyCostAsExpected() throws Throwable {
+     void requiresAnswerOnlyCostAsExpected() throws Throwable {
         // expect:
         assertTrue(subject.needsAnswerOnlyCost(validQuery(COST_ANSWER, 0, accountId, start, end)));
         assertFalse(subject.needsAnswerOnlyCost(validQuery(ANSWER_ONLY, 0, accountId, start, end)));
     }
 
     @Test
-    public void checksValidityProperly() throws Throwable {
+     void checksValidityProperly() throws Throwable {
         // given:
         given(view.accountNftsCount(accountId)).willReturn(3L);
         given(view.accounts()).willReturn(accountMap);
@@ -132,7 +132,7 @@ public class GetAccountNftInfosAnswerTest {
     }
 
     @Test
-    public void checksExceededQueryRangeProperly() throws Throwable {
+     void checksExceededQueryRangeProperly() throws Throwable {
         // given:
         given(optionValidator.nftMaxQueryRangeCheck(start, end)).willReturn(INVALID_QUERY_RANGE);
 
@@ -144,7 +144,7 @@ public class GetAccountNftInfosAnswerTest {
     }
 
     @Test
-    public void checksQueryRangeLargerThanNftCount() throws Throwable {
+     void checksQueryRangeLargerThanNftCount() throws Throwable {
         // given:
         given(view.accountNftsCount(accountId)).willReturn(1L);
         given(view.accounts()).willReturn(accountMap);
@@ -159,7 +159,7 @@ public class GetAccountNftInfosAnswerTest {
     }
 
     @Test
-    public void checksInvalidAccountId() throws Throwable {
+     void checksInvalidAccountId() throws Throwable {
         // given:
         given(view.accountNftsCount(accountId)).willReturn(10L);
         given(view.accounts()).willReturn(accountMap);
@@ -174,12 +174,12 @@ public class GetAccountNftInfosAnswerTest {
     }
 
     @Test
-    public void properCanonicalFunction() {
+     void properCanonicalFunction() {
         assertEquals(HederaFunctionality.TokenGetAccountNftInfos, subject.canonicalFunction());
     }
 
     @Test
-    public void getsValidity() {
+     void getsValidity() {
         // given:
         Response response = Response.newBuilder().setTokenGetAccountNftInfos(
                 TokenGetAccountNftInfosResponse.newBuilder()
@@ -190,7 +190,7 @@ public class GetAccountNftInfosAnswerTest {
     }
 
     @Test
-    public void getsExpectedPayment() throws Throwable {
+     void getsExpectedPayment() throws Throwable {
         // given:
         Query query = validQuery(COST_ANSWER, fee, accountId, start, end);
 
@@ -199,7 +199,7 @@ public class GetAccountNftInfosAnswerTest {
     }
 
     @Test
-    public void checksInvalidRangesProperly() throws Throwable {
+     void checksInvalidRangesProperly() throws Throwable {
         // when:
         var validity = subject.checkValidity(validQuery(ANSWER_ONLY, 0, accountId, end, start), view);
 
@@ -208,7 +208,7 @@ public class GetAccountNftInfosAnswerTest {
     }
 
     @Test
-    public void getsTheInfo() throws Throwable {
+     void getsTheInfo() throws Throwable {
         // setup:
         Query query = validQuery(ANSWER_ONLY, fee, accountId, start, end);
 
@@ -229,7 +229,7 @@ public class GetAccountNftInfosAnswerTest {
     }
 
     @Test
-    public void getsInfoFromCtxWhenAvailable() throws Throwable {
+     void getsInfoFromCtxWhenAvailable() throws Throwable {
         // setup:
         Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, accountId, start, end);
         Map<String, Object> ctx = new HashMap<>();
@@ -248,7 +248,7 @@ public class GetAccountNftInfosAnswerTest {
     }
 
     @Test
-    public void validatesQueryContext() throws Throwable {
+     void validatesQueryContext() throws Throwable {
         // setup:
         Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, accountId, start, end);
         Map<String, Object> ctx = new HashMap<>();
@@ -265,7 +265,7 @@ public class GetAccountNftInfosAnswerTest {
     }
 
     @Test
-    public void getsCostAnswerResponse() throws Throwable {
+     void getsCostAnswerResponse() throws Throwable {
         // setup:
         Query query = validQuery(COST_ANSWER, fee, accountId, start, end);
 
@@ -280,7 +280,7 @@ public class GetAccountNftInfosAnswerTest {
     }
 
     @Test
-    public void setsCorrectHeaderOnFailedValidity() throws Throwable {
+     void setsCorrectHeaderOnFailedValidity() throws Throwable {
         // setup:
         Query query = validQuery(COST_ANSWER, fee, accountId, start, end);
 
@@ -295,7 +295,7 @@ public class GetAccountNftInfosAnswerTest {
     }
 
     @Test
-    public void failsToGetTheInfo() throws Throwable {
+     void failsToGetTheInfo() throws Throwable {
         // setup:
         Query query = validQuery(ANSWER_ONLY, fee, invalidAccountId, start, end);
 
