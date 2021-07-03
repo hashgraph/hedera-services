@@ -1441,7 +1441,7 @@ public class ServicesContext {
 						List.of(new TokenUpdateTransitionLogic(
 								validator(), tokenStore(), ledger(), txnCtx(), HederaTokenStore::affectsExpiryAtMost))),
 				entry(TokenFeeScheduleUpdate, List.of(new TokenFeeScheduleUpdateTransitionLogic(typedTokenStore(), txnCtx(),
-						validator))),
+						validator, globalDynamicProperties()))),
 				entry(TokenFreezeAccount,
 						List.of(new TokenFreezeTransitionLogic(tokenStore(), ledger(), txnCtx()))),
 				entry(TokenUnfreezeAccount,

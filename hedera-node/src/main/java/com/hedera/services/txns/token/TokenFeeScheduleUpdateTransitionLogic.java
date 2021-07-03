@@ -21,6 +21,7 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -33,12 +34,14 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 	private final TypedTokenStore tokenStore;
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	public TokenFeeScheduleUpdateTransitionLogic(final TypedTokenStore tokenStore, final TransactionContext txnCtx,
-			final OptionValidator validator) {
+			final OptionValidator validator, final GlobalDynamicProperties dynamicProperties) {
 		this.tokenStore = tokenStore; // we can change this to HederaTokenStore for simplicity and refactor later.
 		this.txnCtx = txnCtx;
 		this.validator = validator;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
