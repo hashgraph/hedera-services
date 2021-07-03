@@ -380,12 +380,16 @@ class TypedTokenStoreTest {
 	private final JKey feeScheduleKey = TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT.asJKeyUnchecked();
 	private final List<FcCustomFee> feeSchedule = setUpFeeSchedule();
 	private final long tokenNum = 4_234L;
+	private final long nonfungibleTokenNum = 6_666L;
 	private final long tokenSupply = 777L;
 	private final String name = "Testing123";
 	private final String symbol = "T123";
 	private final MerkleEntityId merkleTokenId = new MerkleEntityId(0, 0, tokenNum);
 	private final Id tokenId = new Id(0, 0, tokenNum);
+	private final MerkleEntityId nonfungibleMerkleTokenId = new MerkleEntityId(0, 0, nonfungibleTokenNum);
+	private final Id nonfungibleTokenId = new Id(0, 0, nonfungibleTokenNum);
 	private final Token token = new Token(tokenId);
+	private final Token nonfungibleToken = new Token(nonfungibleTokenId);
 
 	private final boolean frozen = false;
 	private final boolean kycGranted = true;
@@ -394,7 +398,13 @@ class TypedTokenStoreTest {
 			0, 0, miscAccountNum,
 			0, 0, tokenNum);
 	private final TokenRelationship miscTokenRel = new TokenRelationship(token, miscAccount);
+	private final MerkleEntityAssociation nonfungibleTokenRelId = new MerkleEntityAssociation(
+			0, 0, miscAccountNum,
+			0, 0, nonfungibleTokenNum);
+	private final TokenRelationship nonfungibleTokenRel = new TokenRelationship(nonfungibleToken, miscAccount);
 
 	private MerkleToken merkleToken;
 	private MerkleTokenRelStatus miscTokenMerkleRel;
+	private MerkleToken nonFungibleMerkleToken;
+	private MerkleTokenRelStatus nonFungibleTokenMerkleRel;
 }
