@@ -269,7 +269,10 @@ public class TypedTokenStore {
 					mutableBatch = new MerkleBatchedUniqTokens();
 				}
 				if (mutableBatch.getMintedSoFar() != asBatchLoc(nftId.serialNo())) {
-					throw new IllegalArgumentException("NFTs must be minted with ascending serial numbers");
+					throw new IllegalArgumentException(
+							"NFTs must be minted with ascending serial numbers (but tried to mint at loc "
+									+ asBatchLoc(nftId.serialNo()) + " when next batch loc was "
+									+ mutableBatch.getMintedSoFar());
 				}
 				mutableBatch.mintNextWith(
 						new EntityId(uniqueToken.getOwner()),

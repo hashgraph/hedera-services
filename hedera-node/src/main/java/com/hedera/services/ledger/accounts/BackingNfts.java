@@ -97,7 +97,7 @@ public class BackingNfts implements BackingStore<NftId, MerkleUniqueToken> {
 	}
 
 	public static int asBatchLoc(long serialNo) {
-		return (int)(serialNo % MerkleBatchedUniqTokens.TOKENS_IN_BATCH);
+		return (int)((serialNo - 1) % MerkleBatchedUniqTokens.TOKENS_IN_BATCH);
 	}
 
 	public static MerkleBatchedUniqTokens extractModifiableBatch(

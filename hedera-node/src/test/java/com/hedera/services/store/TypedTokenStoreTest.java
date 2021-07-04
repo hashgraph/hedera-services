@@ -25,11 +25,11 @@ import com.hedera.services.ledger.accounts.BackingNfts;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.TransactionRecordService;
+import com.hedera.services.state.merkle.MerkleBatchedUniqTokens;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -66,7 +66,7 @@ class TypedTokenStoreTest {
 	@Mock
 	private FCMap<MerkleEntityId, MerkleToken> tokens;
 	@Mock
-	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens;
+	private FCMap<MerkleUniqueTokenId, MerkleBatchedUniqTokens> uniqueTokens;
 	@Mock
 	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenOwnerships;
 	@Mock
@@ -231,7 +231,7 @@ class TypedTokenStoreTest {
 		expectedReplacementToken.setAccountsFrozenByDefault(!freezeDefault);
 		// and:
 		final var expectedNewUniqTokenId = new MerkleUniqueTokenId(tokenEntityId, mintedSerialNo);
-		final var expectedNewUniqToken = new MerkleUniqueToken(treasuryId, nftMeta, creationTime);
+//		final var expectedNewUniqToken = new MerkleUniqueToken(treasuryId, nftMeta, creationTime);
 		final var expectedPastUniqTokenId = new MerkleUniqueTokenId(tokenEntityId, burnedSerialNo);
 
 		givenToken(merkleTokenId, merkleToken);
@@ -254,7 +254,7 @@ class TypedTokenStoreTest {
 		verify(tokens, never()).replace(merkleTokenId, expectedReplacementToken);
 		// and:
 		verify(transactionRecordService).includeChangesToToken(modelToken);
-		verify(uniqueTokens).put(expectedNewUniqTokenId, expectedNewUniqToken);
+//		verify(uniqueTokens).put(expectedNewUniqTokenId, expectedNewUniqToken);
 		verify(uniqueTokens).remove(expectedPastUniqTokenId);
 		verify(uniqueTokenAssociations).associate(new EntityId(modelToken.getId()), expectedNewUniqTokenId);
 		verify(uniqueTokenAssociations).disassociate(new EntityId(modelToken.getId()), expectedPastUniqTokenId);

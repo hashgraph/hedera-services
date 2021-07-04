@@ -1,5 +1,6 @@
 package com.hedera.services.state.initialization;
 
+import com.hedera.services.state.merkle.MerkleBatchedUniqTokens;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
@@ -16,14 +17,16 @@ public class ViewBuilderTest {
 	private static final EntityId tokenId = new EntityId(0, 0, 54321);
 	private static final EntityId ownerId = new EntityId(0, 0, 12345);
 
-	public static FCMap<MerkleUniqueTokenId, MerkleUniqueToken> someUniqueTokens() {
+	public static FCMap<MerkleUniqueTokenId, MerkleBatchedUniqTokens> someUniqueTokens() {
 		final var uniqId = new MerkleUniqueTokenId(tokenId, 2);
 		final var uniq = new MerkleUniqueToken(
 				ownerId,
 				"some-metadata".getBytes(),
 				RichInstant.fromJava(Instant.ofEpochSecond(1_234_567L, 8)));
-		final var ans = new FCMap<MerkleUniqueTokenId, MerkleUniqueToken>();
-		ans.put(uniqId, uniq);
+		final var batch = new MerkleBatchedUniqTokens();
+		batch.mintNextWith(uniq.getOwner(), uniq.getCreationTime(), uniq.getMetadata());
+		final var ans = new FCMap<MerkleUniqueTokenId, MerkleBatchedUniqTokens>();
+		ans.put(uniqId, batch);
 		return ans;
 	}
 

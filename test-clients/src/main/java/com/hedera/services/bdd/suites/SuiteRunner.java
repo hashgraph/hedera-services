@@ -98,6 +98,7 @@ import com.hedera.services.bdd.suites.perf.schedule.ReadyToRunScheduledXfersLoad
 import com.hedera.services.bdd.suites.perf.token.TokenRelStatusChanges;
 import com.hedera.services.bdd.suites.perf.token.TokenTransferBasicLoadTest;
 import com.hedera.services.bdd.suites.perf.token.TokenTransfersLoadProvider;
+import com.hedera.services.bdd.suites.perf.token.UniqueTokenStateSetup;
 import com.hedera.services.bdd.suites.perf.topic.CreateTopicPerfSuite;
 import com.hedera.services.bdd.suites.perf.topic.HCSChunkingRealisticPerfSuite;
 import com.hedera.services.bdd.suites.perf.topic.SubmitMessageLoadTest;
@@ -274,6 +275,7 @@ public class SuiteRunner {
 		put("FileContractMemoPerfSuite", aof(new FileContractMemoPerfSuite()));
 		put("MixedSmartContractOpsLoadTest", aof(new MixedSmartContractOpsLoadTest()));
 		put("MixedFileOpsLoadTest", aof(new MixedFileOpsLoadTest()));
+		put("UniqueTokenStateSetup", aof(new UniqueTokenStateSetup()));
 		/* Functional tests - RECONNECT */
 		put("CreateAccountsBeforeReconnect", aof(new CreateAccountsBeforeReconnect()));
 		put("CreateTopicsBeforeReconnect", aof(new CreateTopicsBeforeReconnect()));

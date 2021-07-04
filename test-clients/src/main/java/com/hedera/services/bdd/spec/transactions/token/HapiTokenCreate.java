@@ -23,6 +23,7 @@ package com.hedera.services.bdd.spec.transactions.token;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
@@ -79,6 +80,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	private Optional<String> adminKey = Optional.empty();
 	private Optional<Boolean> freezeDefault = Optional.empty();
 	private Optional<String> autoRenewAccount = Optional.empty();
+	private Optional<Consumer<String>> createdIdObs = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> symbolFn = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> nameFn = Optional.empty();
 	private final List<Function<HapiApiSpec, CustomFeesOuterClass.CustomFee>> feeScheduleSuppliers = new ArrayList<>();
@@ -104,6 +106,11 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 
 	public HapiTokenCreate customFeesMutable(boolean customFeesMutable) {
 		this.customFeesMutable = Optional.of(customFeesMutable);
+		return this;
+	}
+
+	public HapiTokenCreate exposingCreatedIdTo(Consumer<String> obs) {
+		createdIdObs = Optional.of(obs);
 		return this;
 	}
 
@@ -302,6 +309,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 		registry.saveMemo(token, memo.orElse(""));
 		registry.saveTokenId(token, lastReceipt.getTokenID());
 		registry.saveTreasury(token, treasury.orElse(spec.setup().defaultPayerName()));
+		createdIdObs.ifPresent(obs -> obs.accept(HapiPropertySource.asTokenString(lastReceipt.getTokenID())));
 
 		try {
 			var submittedBody = CommonUtils.extractTransactionBody(txnSubmitted);
