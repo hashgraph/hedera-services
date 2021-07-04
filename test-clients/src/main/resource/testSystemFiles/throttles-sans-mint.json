@@ -25,7 +25,8 @@
                     "opsPerSec": 6000,
                     "operations": [
                         "ScheduleSign", 
-                        "TokenCreate", "TokenDelete", "TokenBurn", "TokenUpdate", "TokenAssociateToAccount", "TokenAccountWipe",
+                        "TokenCreate", "TokenDelete", "TokenBurn", 
+                        "TokenUpdate", "TokenFeeScheduleUpdate", "TokenAssociateToAccount", "TokenAccountWipe",
                         "TokenDissociateFromAccount", "TokenFreezeAccount", "TokenUnfreezeAccount", "TokenGrantKycToAccount", "TokenRevokeKycFromAccount"
                     ]
                 }
