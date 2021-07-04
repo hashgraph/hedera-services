@@ -1,5 +1,25 @@
 package com.hedera.services.usage.token;
 
+/*-
+ * ‌
+ * Hedera Services API Fees
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
@@ -30,7 +50,7 @@ public class TokenOpsUsage {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 
 		accumulator.addBpt(LONG_BASIC_ENTITY_ID_SIZE + opMeta.numBytesInGrpcFeeScheduleRepr());
-		final var lifetime = ctx.getExpiry() - opMeta.effConsensusTime();
+		final var lifetime = Math.max(0, ctx.expiry() - opMeta.effConsensusTime());
 		final var rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(
 				ctx.numBytesInFeeScheduleRepr(),
 				lifetime,
@@ -57,7 +77,7 @@ public class TokenOpsUsage {
 		return bytesNeededToRepr(numFixedHbarFees, numFixedHtsFees, numFractionalFees);
 	}
 
-	int bytesNeededToRepr(int numFixedHbarFees, int numFixedHtsFees, int numFractionalFees) {
+	public int bytesNeededToRepr(int numFixedHbarFees, int numFixedHtsFees, int numFractionalFees) {
 		return numFixedHbarFees * FIXED_HBAR_REPR_SIZE
 				+ numFixedHtsFees * FIXED_HTS_REPR_SIZE
 				+ numFractionalFees * FRACTIONAL_REPR_SIZE;
