@@ -1,8 +1,21 @@
 package com.hedera.services.usage.token;
 
+import com.hedera.services.test.IdUtils;
+import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.state.UsageAccumulator;
+import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
+import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.FixedFee;
+import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.hedera.services.test.AdapterUtils.feeDataFrom;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class TokenOpsUsageTest {
@@ -28,12 +41,58 @@ class TokenOpsUsageTest {
 	}
 
 	@Test
+	void canCountFeeTypes() {
+		// setup:
+		final List<CustomFee> aSchedule = new ArrayList<>();
+		aSchedule.add(CustomFee.newBuilder().setFixedFee(FixedFee.getDefaultInstance()).build());
+		aSchedule.add(CustomFee.newBuilder().setFixedFee(FixedFee.newBuilder()
+				.setDenominatingTokenId(IdUtils.asToken("1.2.3")))
+				.build());
+		aSchedule.add(CustomFee.newBuilder().setFixedFee(FixedFee.newBuilder()
+				.setDenominatingTokenId(IdUtils.asToken("1.2.3")))
+				.build());
+		aSchedule.add(CustomFee.newBuilder().setFractionalFee(FractionalFee.getDefaultInstance()).build());
+		aSchedule.add(CustomFee.newBuilder().setFractionalFee(FractionalFee.getDefaultInstance()).build());
+		aSchedule.add(CustomFee.newBuilder().setFractionalFee(FractionalFee.getDefaultInstance()).build());
+
+		// given:
+		final var expected = subject.bytesNeededToRepr(1, 2, 3);
+
+		// when:
+		final var actual = subject.bytesNeededToRepr(aSchedule);
+
+		// expect:
+		assertEquals(expected, actual);
+	}
+
+	@Test
 	void accumulatesBptAndRbhAsExpected() {
 		// setup:
 		final var now = 1_234_567L;
-		final var expiry = now + 7776000L;
+		final var lifetime = 7776000L;
+		final var expiry = now + lifetime;
 		final var curSize = subject.bytesNeededToRepr(1, 0 ,1);
+		final var newSize = subject.bytesNeededToRepr(2, 1 ,0);
+		final var serSize = newSize / 2;
 		final var ctx = new ExtantFeeScheduleContext(expiry, curSize);
+		final var opMeta = new FeeScheduleUpdateMeta(now, newSize, serSize);
+		// and:
+		final var sigUsage = new SigUsage(1, 2, 3);
+		final var baseMeta = new BaseTransactionMeta(50, 0);
+		// and:
+		final var exp = new UsageAccumulator();
+		exp.resetForTransaction(baseMeta, sigUsage);
+		exp.addBpt(serSize + FeeBuilder.BASIC_ENTITY_ID_SIZE);
+		exp.addRbs((newSize - curSize) * lifetime);
+
+		// given:
+		final var ans = new UsageAccumulator();
+
+		// when:
+		subject.feeScheduleUpdateUsage(sigUsage, baseMeta, opMeta, ctx, ans);
+
+		// then:
+		assertEquals(feeDataFrom(exp), feeDataFrom(ans));
 	}
 
 }

@@ -1,10 +1,10 @@
-package com.hedera.services.usage.token;
+package com.hedera.services.usage.token.meta;
 
 public class ExtantFeeScheduleContext {
 	private final long expiry;
-	private final long numBytesInFeeScheduleRepr;
+	private final int numBytesInFeeScheduleRepr;
 
-	public ExtantFeeScheduleContext(long expiry, long numBytesInFeeScheduleRepr) {
+	public ExtantFeeScheduleContext(long expiry, int numBytesInFeeScheduleRepr) {
 		this.expiry = expiry;
 		this.numBytesInFeeScheduleRepr = numBytesInFeeScheduleRepr;
 	}
@@ -13,7 +13,7 @@ public class ExtantFeeScheduleContext {
 		return expiry;
 	}
 
-	public long getNumBytesInFeeScheduleRepr() {
+	public int numBytesInFeeScheduleRepr() {
 		return numBytesInFeeScheduleRepr;
 	}
 }
