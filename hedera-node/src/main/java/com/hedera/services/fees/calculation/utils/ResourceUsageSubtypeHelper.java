@@ -26,14 +26,18 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.Optional;
 
 public class ResourceUsageSubtypeHelper {
-	public static SubType determineTokenType(Optional<TokenType> tokenType) {
-		switch (tokenType.get()) {
-			case FUNGIBLE_COMMON:
-				return SubType.TOKEN_FUNGIBLE_COMMON;
-			case NON_FUNGIBLE_UNIQUE:
-				return SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
-			default:
-				return SubType.DEFAULT;
+	public SubType determineTokenType(Optional<TokenType> tokenType) {
+		if (tokenType.isPresent()) {
+			switch (tokenType.get()) {
+				case FUNGIBLE_COMMON:
+					return SubType.TOKEN_FUNGIBLE_COMMON;
+				case NON_FUNGIBLE_UNIQUE:
+					return SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+				default:
+					return SubType.DEFAULT;
+			}
+		} else {
+			return SubType.DEFAULT;
 		}
 	}
 }

@@ -550,7 +550,7 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void objectContractPropertiesCheck() {
+	 void objectContractPropertiesCheck() {
 		// setup:
 
 		// when:
@@ -682,6 +682,15 @@ class MerkleTokenTest {
 
 		// then:
 		assertEquals(1_500_000, subject.totalSupply());
+	}
+
+	@Test
+	void doesNotAdjustTotalSupplyWhenInvalid() {
+		// when:
+		subject.setMaxSupply(2);
+
+		// then:
+		assertThrows(IllegalArgumentException.class, () -> subject.adjustTotalSupplyBy(1_500_000));
 	}
 
 	@Test

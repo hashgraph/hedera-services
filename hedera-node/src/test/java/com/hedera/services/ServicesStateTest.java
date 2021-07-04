@@ -118,6 +118,7 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -674,6 +675,45 @@ class ServicesStateTest {
 		assertThat(
 				logCaptor.infoLogs(),
 				contains(equalTo(expected), equalTo("Not really a network context representation!")));
+	}
+
+	@Test
+	void canFastCopyFromASignedState() {
+		// setup:
+		subject.setChild(ServicesState.ChildIndices.TOPICS, topics);
+		subject.setChild(ServicesState.ChildIndices.STORAGE, storage);
+		subject.setChild(ServicesState.ChildIndices.ACCOUNTS, accounts);
+		subject.setChild(ServicesState.ChildIndices.ADDRESS_BOOK, book);
+		subject.setChild(ServicesState.ChildIndices.NETWORK_CTX, networkCtx);
+		subject.setChild(ServicesState.ChildIndices.TOKENS, tokens);
+		subject.setChild(ServicesState.ChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
+		subject.setChild(ServicesState.ChildIndices.DISK_FS, diskFs);
+		subject.setChild(ServicesState.ChildIndices.SCHEDULE_TXS, scheduledTxs);
+		subject.setChild(ServicesState.ChildIndices.RECORD_STREAM_RUNNING_HASH, runningHashLeaf);
+		subject.setChild(ServicesState.ChildIndices.UNIQUE_TOKENS, uniqueTokens);
+		subject.nodeId = self;
+		subject.ctx = ctx;
+
+		// when:
+		ServicesState copy = subject.copy();
+
+		// then:
+		assertEquals(subject.getNumberOfChildren(), copy.getNumberOfChildren());
+		assertTrue(subject.isImmutable());
+		assertEquals(self, copy.nodeId);
+		assertEquals(bookCopy, copy.addressBook());
+		assertEquals(networkCtxCopy, copy.networkCtx());
+		assertEquals(topicsCopy, copy.topics());
+		assertEquals(storageCopy, copy.storage());
+		assertEquals(accountsCopy, copy.accounts());
+		assertSame(tokensCopy, copy.tokens());
+		assertSame(tokenAssociationsCopy, copy.tokenAssociations());
+		assertSame(diskFsCopy, copy.diskFs());
+		assertSame(scheduledTxsCopy, copy.scheduleTxs());
+		assertSame(runningHashLeafCopy, copy.runningHashLeaf());
+		assertSame(uniqueTokensCopy, copy.uniqueTokens());
+		assertNull(copy.uniqueTokenAssociations());
+		assertNull(copy.uniqueOwnershipAssociations());
 	}
 
 	@Test

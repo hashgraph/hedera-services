@@ -45,8 +45,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	static final int MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE = 4_096;
 
 	static final int RELEASE_090_VERSION = 4;
-	static final int RELEASE_0150_VERSION = 5;
-	static final int MERKLE_VERSION = RELEASE_0150_VERSION;
+	static final int RELEASE_0160_VERSION = 5;
+	static final int MERKLE_VERSION = RELEASE_0160_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
 
 	static DomainSerdes serdes = new DomainSerdes();
@@ -110,8 +110,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		smartContract = in.readBoolean();
 		receiverSigRequired = in.readBoolean();
 		proxy = serdes.readNullableSerializable(in);
-		if (version >= RELEASE_0150_VERSION) {
-			/* The number of nfts owned is being saved in the state after RELEASE_0150_VERSION */
+		if (version >= RELEASE_0160_VERSION) {
+			/* The number of nfts owned is being saved in the state after RELEASE_0160_VERSION */
 			nftsOwned = in.readLong();
 		}
 	}

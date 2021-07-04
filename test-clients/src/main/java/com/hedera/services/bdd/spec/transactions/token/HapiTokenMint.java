@@ -133,7 +133,7 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 			return;
 		}
 		lookupSubmissionRecord(spec);
-		spec.registry().saveCreationTime(token, recordOfSubmission.getConsensusTimestamp().getSeconds());
+		spec.registry().saveCreationTime(token, recordOfSubmission.getConsensusTimestamp());
 	}
 
 	@Override

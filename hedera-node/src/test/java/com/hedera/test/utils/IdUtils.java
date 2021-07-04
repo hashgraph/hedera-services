@@ -128,12 +128,24 @@ public class IdUtils {
 				.build();
 	}
 
+	public static NftTransfer adjustFromNft(AccountID from, AccountID to, long serialNumber) {
+		return NftTransfer.newBuilder()
+				.setSenderAccountID(from)
+				.setReceiverAccountID(to)
+				.setSerialNumber(serialNumber)
+				.build();
+	}
+
 	public static BalanceChange hbarChange(final AccountID account, final long amount) {
 		return BalanceChange.changingHbar(adjustFrom(account, amount));
 	}
 
 	public static BalanceChange tokenChange(final Id token, final AccountID account, final long amount) {
 		return BalanceChange.changingFtUnits(token, token.asGrpcToken(), adjustFrom(account, amount));
+	}
+
+	public static BalanceChange nftChange(final Id token, final AccountID from, final AccountID to, final long serialNumber) {
+		return BalanceChange.changingNftOwnership(token, token.asGrpcToken(), adjustFromNft(from, to, serialNumber));
 	}
 
 	public static NftTransfer nftXfer(AccountID from, AccountID to, long serialNo) {

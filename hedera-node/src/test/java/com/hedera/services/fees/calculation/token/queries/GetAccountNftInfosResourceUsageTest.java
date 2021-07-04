@@ -22,27 +22,28 @@ package com.hedera.services.fees.calculation.token.queries;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.usage.token.TokenGetNftInfoUsage;
+import com.hedera.services.usage.token.TokenGetAccountNftInfosUsage;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.TokenGetNftInfoQuery;
+import com.hederahashgraph.api.proto.java.TokenGetAccountNftInfosQuery;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static com.hedera.services.queries.token.GetTokenNftInfoAnswer.NFT_INFO_CTX_KEY;
+import static com.hedera.services.queries.token.GetAccountNftInfosAnswer.ACCOUNT_NFT_INFO_CTX_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -50,48 +51,49 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-class GetTokenNftInfoResourceUsageTest {
-    NftID target = NftID.newBuilder().setTokenID(IdUtils.asToken("0.0.123")).setSerialNumber(1).build();
+class GetAccountNftInfosResourceUsageTest {
+    ByteString m1 = ByteString.copyFromUtf8("metadata1"), m2 = ByteString.copyFromUtf8("metadata2");
+    List<ByteString> metadata = List.of(m1, m2);
+    TokenGetAccountNftInfosUsage estimator;
+    Function<Query, TokenGetAccountNftInfosUsage> factory;
     FeeData expected;
-    ByteString metadata = ByteString.copyFromUtf8("LMAO");
-    AccountID owner = IdUtils.asAccount("0.0.321321");
-
-    TokenGetNftInfoUsage estimator;
-    Function<Query, TokenGetNftInfoUsage> factory;
+    AccountID target = IdUtils.asAccount("0.0.123");
+    int start = 0, end = 1;
 
     StateView view;
-    TokenNftInfo info = TokenNftInfo.newBuilder()
-            .setAccountID(owner)
-            .setMetadata(metadata)
-            .setNftID(target)
-            .build();
+    List<TokenNftInfo> info = List.of(TokenNftInfo.newBuilder()
+                    .setMetadata(m1)
+                    .build(),
+            TokenNftInfo.newBuilder()
+                    .setMetadata(m2)
+                    .build());
 
-    Query satisfiableAnswerOnly = TokenNftInfoQuery(target, ANSWER_ONLY);
+    Query satisfiableAnswerOnly = tokenGetAccountNftInfosQuery(target, start, end, ANSWER_ONLY);
 
-    GetTokenNftInfoResourceUsage subject;
+    GetAccountNftInfosResourceUsage subject;
 
     @BeforeEach
     private void setup() {
         expected = mock(FeeData.class);
         view = mock(StateView.class);
-        estimator = mock(TokenGetNftInfoUsage.class);
+        estimator = mock(TokenGetAccountNftInfosUsage.class);
         factory = mock(Function.class);
         given(factory.apply(any())).willReturn(estimator);
 
-        GetTokenNftInfoResourceUsage.factory = factory;
+        GetAccountNftInfosResourceUsage.factory = factory;
 
-        given(estimator.givenMetadata(metadata.toString())).willReturn(estimator);
+        given(estimator.givenMetadata(any())).willReturn(estimator);
         given(estimator.get()).willReturn(expected);
 
-        given(view.infoForNft(target)).willReturn(Optional.of(info));
+        given(view.infoForAccountNfts(target, start, end)).willReturn(Optional.of(info));
 
-        subject = new GetTokenNftInfoResourceUsage();
+        subject = new GetAccountNftInfosResourceUsage();
     }
 
     @Test
      void recognizesApplicableQuery() {
         // given:
-        var applicable = TokenNftInfoQuery(target, COST_ANSWER);
+        var applicable = tokenGetAccountNftInfosQuery(target, start, end, COST_ANSWER);
         var inapplicable = Query.getDefaultInstance();
 
         // expect:
@@ -108,58 +110,67 @@ class GetTokenNftInfoResourceUsageTest {
         var usage = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
 
         // then:
-        assertSame(info, queryCtx.get(NFT_INFO_CTX_KEY));
+        assertSame(info, queryCtx.get(ACCOUNT_NFT_INFO_CTX_KEY));
         assertSame(expected, usage);
         // and:
-        verify(estimator).givenMetadata(metadata.toString());
+        verify(estimator).givenMetadata(metadata);
     }
 
     @Test
-     void onlySetsTokenNftInfoInQueryCxtIfFound() {
+     void onlySetsTokenInfoInQueryCxtIfFound() {
         // setup:
         var queryCtx = new HashMap<String, Object>();
 
-        given(view.infoForNft(target)).willReturn(Optional.empty());
+        given(view.infoForAccountNfts(target, start, end)).willReturn(Optional.empty());
 
         // when:
         var usage = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
 
         // then:
-        assertFalse(queryCtx.containsKey(NFT_INFO_CTX_KEY));
+        assertFalse(queryCtx.containsKey(ACCOUNT_NFT_INFO_CTX_KEY));
         // and:
         assertSame(FeeData.getDefaultInstance(), usage);
     }
 
     @Test
-     void worksWithoutQueryContext() {
+    void doesntSetTokenInfoInQueryCxtNotFound() {
         // setup:
-        given(view.infoForNft(target)).willReturn(Optional.empty());
+        var queryCtx = new HashMap<String, Object>();
+
+        given(view.infoForAccountNfts(target, start, end)).willReturn(Optional.of(info));
 
         // when:
         var usage = subject.usageGiven(satisfiableAnswerOnly, view);
 
-        // and:
-        assertSame(FeeData.getDefaultInstance(), usage);
+        // then:
+        assertFalse(queryCtx.containsKey(ACCOUNT_NFT_INFO_CTX_KEY));
+        verify(estimator).givenMetadata(metadata);
+        assertNotSame(FeeData.getDefaultInstance(), usage);
     }
 
     @Test
-     void worksWithNoQueryContext() {
+    void doesntSetTokenInfoForAnswerOnlyType() {
         // setup:
-        given(view.infoForNft(target)).willReturn(Optional.empty());
+        var queryCtx = new HashMap<String, Object>();
+
+        given(view.infoForAccountNfts(target, start, end)).willReturn(Optional.of(info));
 
         // when:
         var usage = subject.usageGivenType(satisfiableAnswerOnly, view, ANSWER_ONLY);
 
-        // and:
-        assertSame(FeeData.getDefaultInstance(), usage);
+        // then:
+        assertFalse(queryCtx.containsKey(ACCOUNT_NFT_INFO_CTX_KEY));
+        assertNotSame(FeeData.getDefaultInstance(), usage);
     }
 
-    private Query TokenNftInfoQuery(NftID id, ResponseType type) {
-        TokenGetNftInfoQuery.Builder op = TokenGetNftInfoQuery.newBuilder()
-                .setNftID(id)
+    private Query tokenGetAccountNftInfosQuery(AccountID id, long start, long end, ResponseType type) {
+        TokenGetAccountNftInfosQuery.Builder op = TokenGetAccountNftInfosQuery.newBuilder()
+                .setAccountID(id)
+                .setStart(start)
+                .setEnd(end)
                 .setHeader(QueryHeader.newBuilder().setResponseType(type));
         return Query.newBuilder()
-                .setTokenGetNftInfo(op)
+                .setTokenGetAccountNftInfos(op)
                 .build();
     }
 }

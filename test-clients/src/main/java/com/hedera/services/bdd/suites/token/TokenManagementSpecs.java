@@ -26,6 +26,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -36,6 +37,7 @@ import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relat
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
@@ -89,6 +91,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
 				)
 		);
 	}
+
 
 	private HapiApiSpec frozenTreasuryCannotBeMintedOrBurned() {
 		return defaultHapiSpec("FrozenTreasuryCannotBeMintedOrBurned")
@@ -309,6 +312,11 @@ public class TokenManagementSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("FreezeMgmtFailureCasesWork")
 				.given(
+							fileUpdate(APP_PROPERTIES)
+									.payingWith(ADDRESS_BOOK_CONTROL)
+									.overridingProps(Map.of(
+											"tokens.maxPerAccount", "" + 1000
+									)),
 						newKeyNamed("oneFreeze"),
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						cryptoCreate("go").balance(0L),

@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
@@ -53,6 +54,9 @@ import java.util.Map;
 
 import static com.hedera.services.fees.calculation.AwareFcfsUsagePrices.DEFAULT_USAGE_PRICES;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UNRECOGNIZED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -164,6 +168,18 @@ class AwareFcfsUsagePricesTest {
 						Instant.ofEpochSecond(currentExpiry),
 						nextCryptoTransferUsagePrices),
 				actual);
+	}
+
+	@Test
+	void getsDefaultActivePrices() throws Exception {
+		// given:
+		subject.loadPriceSchedules();
+
+		// when:
+		FeeData actual = subject.defaultActivePrices();
+
+		// then:
+		assertEquals(nextUsagePrices, actual);
 	}
 
 	@Test
@@ -296,5 +312,47 @@ class AwareFcfsUsagePricesTest {
 
 		// then:
 		assertEquals(DEFAULT_USAGE_PRICES, prices);
+	}
+
+	@Test
+	void translatesFromUntypedFeeSchedule() {
+		// given:
+		final var inferred = subject.functionUsagePricesFrom(getPreSubTypeFeeSchedule());
+		// and:
+		final var xferTypedPricesMap = inferred.get(CryptoTransfer);
+		final var mintTypedPricesMap = inferred.get(TokenMint);
+		final var burnTypedPricesMap = inferred.get(TokenBurn);
+		final var wipeTypedPricesMap = inferred.get(TokenAccountWipe);
+
+		// expect:
+		assertEquals(1, xferTypedPricesMap.size());
+		assertEquals(2, mintTypedPricesMap.size());
+		assertEquals(2, burnTypedPricesMap.size());
+		assertEquals(3, wipeTypedPricesMap.size());
+		// and:
+		assertEquals(currUsagePrices, xferTypedPricesMap.get(SubType.DEFAULT));
+		assertEquals(currUsagePrices, mintTypedPricesMap.get(SubType.TOKEN_FUNGIBLE_COMMON));
+		assertEquals(currUsagePrices, mintTypedPricesMap.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE));
+		assertEquals(currUsagePrices, burnTypedPricesMap.get(SubType.TOKEN_FUNGIBLE_COMMON));
+		assertEquals(currUsagePrices, burnTypedPricesMap.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE));
+		assertEquals(currUsagePrices, wipeTypedPricesMap.get(SubType.DEFAULT));
+		assertEquals(currUsagePrices, wipeTypedPricesMap.get(SubType.TOKEN_FUNGIBLE_COMMON));
+		assertEquals(currUsagePrices, wipeTypedPricesMap.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE));
+	}
+
+	private FeeSchedule getPreSubTypeFeeSchedule() {
+		return FeeSchedule.newBuilder()
+				.addTransactionFeeSchedule(untypedTransactionFeeSchedule(CryptoTransfer))
+				.addTransactionFeeSchedule(untypedTransactionFeeSchedule(TokenMint))
+				.addTransactionFeeSchedule(untypedTransactionFeeSchedule(TokenBurn))
+				.addTransactionFeeSchedule(untypedTransactionFeeSchedule(TokenAccountWipe))
+				.build();
+	}
+
+	private TransactionFeeSchedule untypedTransactionFeeSchedule(HederaFunctionality function) {
+		return TransactionFeeSchedule.newBuilder()
+				.setHederaFunctionality(function)
+				.setFeeData(currUsagePrices)
+				.build();
 	}
 }

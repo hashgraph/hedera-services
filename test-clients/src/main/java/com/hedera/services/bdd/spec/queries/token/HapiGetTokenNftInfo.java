@@ -119,7 +119,7 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
                 actualInfo.getMetadata()));
 
         assertFor(
-                actualInfo.getCreationTime().getSeconds(),
+                actualInfo.getCreationTime(),
                 expectedCreationTime,
                 (n, r) -> r.getCreationTime(token),
                 "Wrong creation time!",

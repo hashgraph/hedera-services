@@ -20,27 +20,33 @@ package com.hedera.services.fees.calculation.token.queries;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
-import com.hedera.services.usage.token.TokenGetNftInfoUsage;
+import com.hedera.services.usage.token.TokenGetAccountNftInfosUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
+import com.hederahashgraph.api.proto.java.TokenInfo;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
-import static com.hedera.services.queries.token.GetTokenNftInfoAnswer.NFT_INFO_CTX_KEY;
+import static com.hedera.services.queries.token.GetAccountNftInfosAnswer.ACCOUNT_NFT_INFO_CTX_KEY;
 
-public class GetTokenNftInfoResourceUsage implements QueryResourceUsageEstimator {
+public class GetAccountNftInfosResourceUsage implements QueryResourceUsageEstimator {
 
-	static Function<Query, TokenGetNftInfoUsage> factory = TokenGetNftInfoUsage::newEstimate;
+	static Function<Query, TokenGetAccountNftInfosUsage> factory = TokenGetAccountNftInfosUsage::newEstimate;
 
 	@Override
 	public boolean applicableTo(Query query) {
-		return query.hasTokenGetNftInfo();
+		return query.hasTokenGetAccountNftInfos();
 	}
 
 	@Override
@@ -62,16 +68,24 @@ public class GetTokenNftInfoResourceUsage implements QueryResourceUsageEstimator
 	}
 
 	private FeeData usageFor(Query query, StateView view, Optional<Map<String, Object>> queryCtx) {
-		var op = query.getTokenGetNftInfo();
-		var optionalInfo = view.infoForNft(op.getNftID());
+		var op = query.getTokenGetAccountNftInfos();
+		var optionalInfo = view.infoForAccountNfts(
+				op.getAccountID(),
+				op.getStart(),
+				op.getEnd());
 		if (optionalInfo.isPresent()) {
 			var info = optionalInfo.get();
-			queryCtx.ifPresent(ctx -> ctx.put(NFT_INFO_CTX_KEY, info));
-			var estimate = factory.apply(query)
-					.givenMetadata(info.getMetadata().toString());
-			return estimate.get();
+			queryCtx.ifPresent(ctx -> ctx.put(ACCOUNT_NFT_INFO_CTX_KEY, info));
+
+			List<ByteString> m = new ArrayList<>();
+			info.forEach(s -> m.add(s.getMetadata()));
+			return factory.apply(query).givenMetadata(m).get();
 		} else {
 			return FeeData.getDefaultInstance();
 		}
+	}
+
+	public static Optional<Key> ifPresent(TokenInfo info, Predicate<TokenInfo> check, Function<TokenInfo, Key> getter) {
+		return check.test(info) ? Optional.of(getter.apply(info)) : Optional.empty();
 	}
 }

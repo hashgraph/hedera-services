@@ -36,6 +36,7 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
@@ -139,6 +140,13 @@ class TypedTokenStoreTest {
 		verify(tokenRels, never()).replace(miscTokenRelId, expectedReplacementTokenRel);
 		// and:
 		verify(transactionRecordService).includeChangesToTokenRel(modelTokenRel);
+	}
+
+	@Test
+	void persistTrackers() {
+		var ot = new OwnershipTracker();
+		subject.persistTrackers(ot);
+		verify(transactionRecordService).includeOwnershipChanges(ot);
 	}
 
 	@Test

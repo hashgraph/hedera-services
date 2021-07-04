@@ -20,21 +20,8 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
-/*
- * Hedera Services Node
- * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *     http://www.apache.org/licenses/LICENSE-2.0
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.models.NftId;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.AfterEach;
@@ -53,8 +40,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 
-public class MerkleUniqueTokenIdTest {
-
+class MerkleUniqueTokenIdTest {
 	private MerkleUniqueTokenId subject;
 
 	private EntityId tokenId = MISSING_ENTITY_ID;
@@ -63,7 +49,7 @@ public class MerkleUniqueTokenIdTest {
 	private int otherSerialNumber;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		tokenId = new EntityId(1, 2, 3);
 		otherTokenId = new EntityId(1, 2, 4);
 		serialNumber = 1;
@@ -73,11 +59,11 @@ public class MerkleUniqueTokenIdTest {
 	}
 
 	@AfterEach
-	public void cleanup() {
+	void cleanup() {
 	}
 
 	@Test
-	public void equalsContractWorks() {
+	void equalsContractWorks() {
 		// given
 		var other = new MerkleUniqueTokenId(otherTokenId, serialNumber);
 		var other2 = new MerkleUniqueTokenId(tokenId, otherSerialNumber);
@@ -90,7 +76,7 @@ public class MerkleUniqueTokenIdTest {
 	}
 
 	@Test
-	public void hashCodeWorks() {
+	void hashCodeWorks() {
 		// given:
 		var identical = new MerkleUniqueTokenId(tokenId, serialNumber);
 		var other = new MerkleUniqueTokenId(otherTokenId, otherSerialNumber);
@@ -101,7 +87,7 @@ public class MerkleUniqueTokenIdTest {
 	}
 
 	@Test
-	public void toStringWorks() {
+	void toStringWorks() {
 		// given:
 		assertEquals("MerkleUniqueTokenId{" +
 						"tokenId=" + tokenId + ", " +
@@ -110,20 +96,21 @@ public class MerkleUniqueTokenIdTest {
 	}
 
 	@Test
-	public void copyWorks() {
+	void copyWorks() {
 		// given:
 		var copyNftId = subject.copy();
 		var other = new Object();
+		var dup = subject;
 
 		// expect:
 		assertNotSame(copyNftId, subject);
 		assertEquals(subject, copyNftId);
-		assertEquals(subject, subject);
+		assertEquals(subject, dup);
 		assertNotEquals(subject, other);
 	}
 
 	@Test
-	public void serializeWorks() throws IOException {
+	void serializeWorks() throws IOException {
 		// setup:
 		var out = mock(SerializableDataOutputStream.class);
 		// and:
@@ -138,7 +125,7 @@ public class MerkleUniqueTokenIdTest {
 	}
 
 	@Test
-	public void deserializeWorks() throws IOException {
+	void deserializeWorks() throws IOException {
 		// setup:
 		SerializableDataInputStream in = mock(SerializableDataInputStream.class);
 
@@ -156,10 +143,22 @@ public class MerkleUniqueTokenIdTest {
 	}
 
 	@Test
-	public void merkleMethodsWork() {
+	void merkleMethodsWork() {
 		// expect;
 		assertEquals(MerkleUniqueTokenId.MERKLE_VERSION, subject.getVersion());
 		assertEquals(MerkleUniqueTokenId.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 		assertTrue(subject.isLeaf());
+	}
+
+	@Test
+	 void fromNftIdWorks() {
+		// given
+		var expected = new MerkleUniqueTokenId(
+				new EntityId(0, 0, 1),
+				1
+		);
+
+		// expect:
+		assertEquals(expected, MerkleUniqueTokenId.fromNftId(new NftId(0, 0, 1, 1)));
 	}
 }

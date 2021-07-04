@@ -39,6 +39,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetAccountNftInfos;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetNftInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
@@ -132,5 +133,10 @@ public class TokenController extends TokenServiceGrpc.TokenServiceImplBase {
 	@Override
 	public void getTokenNftInfo(Query query, StreamObserver<Response> observer) {
 		queryHelper.answer(query, observer, tokenAnswers.getNftInfoAnswer(), TokenGetNftInfo);
+	}
+
+	@Override
+	public void getAccountNftInfos(Query query, StreamObserver<Response> observer) {
+		queryHelper.answer(query, observer, tokenAnswers.getAccountNftInfosAnswer(), TokenGetAccountNftInfos);
 	}
 }

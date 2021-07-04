@@ -28,3 +28,13 @@ start a local network of Hedera Services nodes using Docker Compose.
 The [IntelliJ quickstart](docs/intellij-quickstart.md) covers how to 
 start a local network of Hedera Services nodes from IntelliJ for
 testing and development.
+
+## Contributing
+
+Contributions are welcome. Please see the [contributing guide](https://github.com/hashgraph/.github/blob/main/CONTRIBUTING.md) to see how you can get involved.
+
+## Code of Conduct
+
+This project is governed by the [Contributor Covenant Code of Conduct](https://github.com/hashgraph/.github/blob/main/CODE_OF_CONDUCT.md). By participating, you are
+expected to uphold this code of conduct.
+

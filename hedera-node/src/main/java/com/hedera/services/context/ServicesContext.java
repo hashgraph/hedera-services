@@ -87,6 +87,7 @@ import com.hedera.services.fees.calculation.schedule.txns.ScheduleCreateResource
 import com.hedera.services.fees.calculation.schedule.txns.ScheduleDeleteResourceUsage;
 import com.hedera.services.fees.calculation.schedule.txns.ScheduleSignResourceUsage;
 import com.hedera.services.fees.calculation.system.txns.FreezeResourceUsage;
+import com.hedera.services.fees.calculation.token.queries.GetAccountNftInfosResourceUsage;
 import com.hedera.services.fees.calculation.token.queries.GetTokenInfoResourceUsage;
 import com.hedera.services.fees.calculation.token.queries.GetTokenNftInfoResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenAssociateResourceUsage;
@@ -186,6 +187,7 @@ import com.hedera.services.queries.meta.GetVersionInfoAnswer;
 import com.hedera.services.queries.meta.MetaAnswers;
 import com.hedera.services.queries.schedule.GetScheduleInfoAnswer;
 import com.hedera.services.queries.schedule.ScheduleAnswers;
+import com.hedera.services.queries.token.GetAccountNftInfosAnswer;
 import com.hedera.services.queries.token.GetTokenInfoAnswer;
 import com.hedera.services.queries.token.GetTokenNftInfoAnswer;
 import com.hedera.services.queries.token.TokenAnswers;
@@ -1036,7 +1038,8 @@ public class ServicesContext {
 		if (tokenAnswers == null) {
 			tokenAnswers = new TokenAnswers(
 					new GetTokenInfoAnswer(),
-					new GetTokenNftInfoAnswer()
+					new GetTokenNftInfoAnswer(),
+					new GetAccountNftInfosAnswer(validator())
 			);
 		}
 		return tokenAnswers;
@@ -1116,7 +1119,8 @@ public class ServicesContext {
 							/* Schedule */
 							new GetScheduleInfoResourceUsage(scheduleOpsUsage),
 							/* NftInfo */
-							new GetTokenNftInfoResourceUsage()
+							new GetTokenNftInfoResourceUsage(),
+							new GetAccountNftInfosResourceUsage()
 					),
 					txnUsageEstimators(
 							cryptoOpsUsage, fileOpsUsage, fileFees, cryptoFees, contractFees, scheduleOpsUsage)

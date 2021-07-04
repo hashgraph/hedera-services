@@ -55,6 +55,8 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 
 import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
 import static com.hedera.test.utils.IdUtils.asFile;
@@ -73,7 +75,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.METADATA_TOO_L
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.QUERY_RANGE_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_QUERY_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
@@ -629,13 +631,13 @@ class ContextOptionValidatorTest {
 
 	@Test
 	void rejectsInvalidQueryRange() {
-		given(dynamicProperties.maxNFTQueryRange()).willReturn(0, 10);
-		assertEquals(QUERY_RANGE_LIMIT_EXCEEDED, subject.nftMaxQueryRangeCheck(-10, 100000));
+		given(dynamicProperties.maxNftQueryRange()).willReturn(10L);
+		assertEquals(INVALID_QUERY_RANGE, subject.nftMaxQueryRangeCheck(0, 11));
 	}
 
 	@Test
 	void rejectsInvalidMetadata() {
-		given(dynamicProperties.maxNFTMetadataBytes()).willReturn(2);
+		given(dynamicProperties.maxNftMetadataBytes()).willReturn(2);
 		assertEquals(METADATA_TOO_LONG, subject.nftMetadataCheck(new byte[]{1, 2, 3, 4}));
 	}
 }
