@@ -45,7 +45,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
@@ -96,9 +95,7 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 				.given().when().then(
 						runWithProvider(nftFactory())
 								.lasting(duration::get, unit::get)
-								.maxOpsPerSec(maxOpsPerSec::get),
-						freeze().startingIn(60).seconds().andLasting(1).minutes()
-								.payingWith(GENESIS)
+								.maxOpsPerSec(maxOpsPerSec::get)
 				);
 	}
 
