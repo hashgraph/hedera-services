@@ -65,6 +65,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
 		final var invalidEntityId = "1.2.786";
 
 		final var adminKey = "admin";
+		final var feeScheduleKey = "feeSchedule";
 
 		final var newHbarAmount = 17_234L;
 		final var newHtsAmount = 27_345L;
@@ -84,6 +85,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
 								.payingWith(GENESIS)
 								.overridingProps(Map.of("tokens.maxCustomFeesAllowed", "10")),
 						newKeyNamed(adminKey),
+						newKeyNamed(feeScheduleKey),
 						cryptoCreate(htsCollector),
 						cryptoCreate(newHtsCollector),
 						cryptoCreate(hbarCollector),
@@ -94,6 +96,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
 						tokenCreate(newFeeDenom).treasury(newHtsCollector),
 						tokenCreate(token)
 								.adminKey(adminKey)
+								.feeScheduleKey(feeScheduleKey)
 								.treasury(tokenCollector)
 								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
 								.withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
@@ -107,53 +110,67 @@ public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
 				)
 				.when(
 						tokenFeeScheduleUpdate(token)
+								.customFeesKey(feeScheduleKey)
 								.withCustom(fractionalFee(
 										numerator, 0,
 										minimumToCollect, OptionalLong.of(maximumToCollect),
 										tokenCollector))
 								.hasKnownStatus(FRACTION_DIVIDES_BY_ZERO),
 						tokenFeeScheduleUpdate(token)
+								.customFeesKey(feeScheduleKey)
 								.withCustom(fractionalFee(
 										-numerator, denominator,
 										minimumToCollect, OptionalLong.of(maximumToCollect),
 										tokenCollector))
 								.hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
 						tokenFeeScheduleUpdate(token)
+								.customFeesKey(feeScheduleKey)
 								.withCustom(fractionalFee(
 										numerator, denominator,
 										-minimumToCollect, OptionalLong.of(maximumToCollect),
 										tokenCollector))
 								.hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
 						tokenFeeScheduleUpdate(token)
+								.customFeesKey(feeScheduleKey)
 								.withCustom(fractionalFee(
 										numerator, denominator,
 										minimumToCollect, OptionalLong.of(-maximumToCollect),
 										tokenCollector))
 								.hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
 						tokenFeeScheduleUpdate(token)
+								.customFeesKey(feeScheduleKey)
 								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
 								.withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
 								.hasKnownStatus(CUSTOM_FEES_LIST_TOO_LONG),
 						tokenFeeScheduleUpdate(token)
+								.customFeesKey(feeScheduleKey)
 								.withCustom(fixedHbarFee(hbarAmount, invalidEntityId))
 								.hasKnownStatus(INVALID_CUSTOM_FEE_COLLECTOR),
 						tokenFeeScheduleUpdate(token)
+								.customFeesKey(feeScheduleKey)
 								.withCustom(fixedHtsFee(htsAmount, invalidEntityId, htsCollector))
 								.hasKnownStatus(INVALID_TOKEN_ID_IN_CUSTOM_FEES),
 						tokenFeeScheduleUpdate(token)
+								.customFeesKey(feeScheduleKey)
 								.withCustom(fixedHtsFee(htsAmount, feeDenom, hbarCollector))
 								.hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR),
 						tokenFeeScheduleUpdate(token)
+								.customFeesKey(feeScheduleKey)
 								.withCustom(fixedHtsFee(-htsAmount, feeDenom, htsCollector))
 								.hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
 						tokenFeeScheduleUpdate(token)
+								.customFeesKey(feeScheduleKey)
 								.withCustom(incompleteCustomFee(hbarCollector))
 								.hasKnownStatus(CUSTOM_FEE_NOT_FULLY_SPECIFIED),
+//						tokenFeeScheduleUpdate(token)
+//								.withCustom(fixedHbarFee(newHbarAmount, newHbarCollector))
+//						        .hasKnownStatus(INVALID_FEE_SCHEDULE_KEY),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
 								.overridingProps(Map.of("tokens.maxCustomFeesAllowed", "10")),
 						tokenAssociate(newTokenCollector, token),
 						tokenFeeScheduleUpdate(token)
+								.customFeesKey(feeScheduleKey)
 								.withCustom(fixedHbarFee(newHbarAmount, newHbarCollector))
 								.withCustom(fixedHtsFee(newHtsAmount, newFeeDenom, newHtsCollector))
 								.withCustom(fractionalFee(
