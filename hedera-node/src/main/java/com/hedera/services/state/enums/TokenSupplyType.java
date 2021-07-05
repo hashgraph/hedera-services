@@ -1,17 +1,17 @@
-package com.hedera.services.legacy.bip39utils;
+package com.hedera.services.state.enums;
 
 /*-
  * ‌
- * Hedera Services Test Clients
+ * Hedera Services Node
  * ​
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,22 +20,13 @@ package com.hedera.services.legacy.bip39utils;
  * ‍
  */
 
-
-
-public final class EDKeyChain implements KeyChain {
-  private final ServicesSeed servicesSeed;
-
-  
-  public KeyPair keyAtIndex(int index) {
-    byte[] var10000 = CryptoUtils.deriveKey(this.servicesSeed.getEntropy(), (long)index, 32);
-    byte[] edSeed = var10000;
-    return (KeyPair)(new EDKeyPair(edSeed));
-  }
-
-  public EDKeyChain( ServicesSeed servicesSeed) {
-    super();
-    this.servicesSeed = servicesSeed;
-  }
+/**
+ * Token Supply Types of {@link com.hedera.services.state.merkle.MerkleToken}
+ * Indicates how many tokens can have during its lifetime.
+ */
+public enum TokenSupplyType {
+	// Indicates that tokens of that type have an upper bound of Long.MAX_VALUE.
+	INFINITE,
+	// Indicates that tokens of that type have an upper bound of maxSupply, provided on token creation.
+	FINITE
 }
-
-

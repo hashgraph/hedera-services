@@ -9,9 +9,9 @@ package com.hedera.services.sysfiles.domain.throttling;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -105,6 +105,11 @@ public class ThrottleBucket {
 	 * Returns a deterministic throttle scoped to 1/nth of the nominal milliOpsPerSec
 	 * in each throttle group; and a list that maps each relevant {@code HederaFunctionality}
 	 * to the number of logical operations it requires from the throttle.
+	 *
+	 * @param n network size
+	 *
+	 * @return a throttle with 1/n-th the capacity of this bucket, and a list of how many logical
+	 * operations each assigned function will use from the throttle
 	 *
 	 * @throws IllegalStateException if this bucket was constructed with invalid throttle groups
 	 */

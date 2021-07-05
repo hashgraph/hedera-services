@@ -53,6 +53,7 @@ public class Account {
 	private long balance;
 	private boolean deleted = false;
 	private CopyOnWriteIds associatedTokens;
+	private long ownedNfts;
 
 	public Account(Id id) {
 		this.id = id;
@@ -69,6 +70,12 @@ public class Account {
 	public void initBalance(long balance) {
 		this.balance = balance;
 	}
+
+	public long getOwnedNfts() { return ownedNfts; }
+
+	public void setOwnedNfts(long ownedNfts) { this.ownedNfts = ownedNfts; }
+
+	public void incrementOwnedNfts() { this.ownedNfts++; }
 
 	public void associateWith(List<Token> tokens, int maxAllowed) {
 		final var alreadyAssociated = associatedTokens.size();

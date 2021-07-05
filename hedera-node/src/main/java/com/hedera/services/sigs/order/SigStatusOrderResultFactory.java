@@ -164,4 +164,14 @@ public class SigStatusOrderResultFactory implements SigningOrderResultFactory<Si
 				txnId);
 		return new SigningOrderResult<>(error);
 	}
+
+	@Override
+	public SigningOrderResult<SignatureStatus> forMissingFeeCollector(TransactionID txnId) {
+		SignatureStatus error = new SignatureStatus(
+				SignatureStatusCode.INVALID_FEE_COLLECTOR,
+				ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR,
+				inHandleTxnDynamicContext,
+				txnId);
+		return new SigningOrderResult<>(error);
+	}
 }

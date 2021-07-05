@@ -24,6 +24,9 @@ import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TokenType;
 
 import java.util.HashSet;
 import java.util.List;
@@ -36,21 +39,63 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KYC_KE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DECIMALS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_INITIAL_SUPPLY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class TokenListChecks {
-    static Predicate<Key> ADMIN_KEY_REMOVAL = ImmutableKeyUtils::signalsKeyRemoval;
+	static Predicate<Key> ADMIN_KEY_REMOVAL = ImmutableKeyUtils::signalsKeyRemoval;
 
-    public static boolean repeatsItself(List<TokenID> tokens) {
-        return new HashSet<>(tokens).size() < tokens.size();
+	public static boolean repeatsItself(List<TokenID> tokens) {
+		return new HashSet<>(tokens).size() < tokens.size();
+	}
+
+
+    public static ResponseCodeEnum typeCheck(TokenType type, long initialSupply, int decimals) {
+        switch (type) {
+            case FUNGIBLE_COMMON:
+                return fungibleCommonTypeCheck(initialSupply, decimals);
+            case NON_FUNGIBLE_UNIQUE:
+                return nonFungibleUniqueCheck(initialSupply, decimals);
+            default:
+                return NOT_SUPPORTED;
+        }
     }
 
-    public static ResponseCodeEnum initialSupplyAndDecimalsCheck(long initialSupply, int decimals) {
+    public static ResponseCodeEnum nonFungibleUniqueCheck(long initialSupply, int decimals) {
+        if (initialSupply != 0) {
+            return INVALID_TOKEN_INITIAL_SUPPLY;
+        }
+
+        return decimals != 0 ? INVALID_TOKEN_DECIMALS : OK;
+    }
+
+    public static ResponseCodeEnum fungibleCommonTypeCheck(long initialSupply, int decimals) {
         if (initialSupply < 0) {
             return INVALID_TOKEN_INITIAL_SUPPLY;
         }
+
         return decimals < 0 ? INVALID_TOKEN_DECIMALS : OK;
+    }
+
+    public static ResponseCodeEnum suppliesCheck(long initialSupply, long maxSupply) {
+        if (maxSupply > 0 && initialSupply > maxSupply) {
+            return INVALID_TOKEN_INITIAL_SUPPLY;
+        }
+
+        return OK;
+    }
+
+    public static ResponseCodeEnum supplyTypeCheck(TokenSupplyType supplyType, long maxSupply) {
+        switch (supplyType) {
+            case INFINITE:
+                return maxSupply != 0 ? INVALID_TOKEN_MAX_SUPPLY : OK;
+            case FINITE:
+                return maxSupply <= 0 ? INVALID_TOKEN_MAX_SUPPLY : OK;
+            default:
+                return NOT_SUPPORTED;
+        }
     }
 
     public static ResponseCodeEnum checkKeys(
@@ -88,6 +133,6 @@ public class TokenListChecks {
             }
         }
 
-        return validity;
-    }
+		return validity;
+	}
 }

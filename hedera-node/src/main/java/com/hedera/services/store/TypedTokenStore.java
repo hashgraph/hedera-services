@@ -21,21 +21,29 @@ package com.hedera.services.store;
  */
 
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.accounts.BackingNfts;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.store.models.UniqueToken;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -51,51 +59,69 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
  * Loads and saves token-related entities to and from the Swirlds state, hiding
  * the details of Merkle types from client code by providing an interface in
  * terms of model objects whose methods can perform validated business logic.
- *
+ * <p>
  * When loading an token, fails fast by throwing an {@link InvalidTransactionException}
  * if the token is not usable in normal business logic. There are three such
  * cases:
  * <ol>
- *     <li>The token is missing.</li>
- *     <li>The token is deleted.</li>
- *     <li>The token is expired and pending removal.</li>
+ * <li>The token is missing.</li>
+ * <li>The token is deleted.</li>
+ * <li>The token is expired and pending removal.</li>
  * </ol>
  * Note that in the third case, there <i>is</i> one valid use of the token;
  * namely, in an update transaction whose only purpose is to manually renew
  * the expired token. Such update transactions must use a dedicated
  * expiry-extension service, which will be implemented before TokenUpdate.
- *
+ * <p>
  * When saving a token or token relationship, invites an injected
  * {@link TransactionRecordService} to inspect the entity for changes that
  * may need to be included in the record of the transaction.
  */
 public class TypedTokenStore {
+	static final Logger log = LogManager.getLogger(TypedTokenStore.class);
+
 	private final AccountStore accountStore;
 	private final TransactionRecordService transactionRecordService;
 	private final Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens;
 	private final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels;
+
+	/* Data Structures for Tokens of type Non-Fungible Unique  */
+	private final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens;
+	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations;
+	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueOwnershipAssociations;
+
+
 	/* Only needed for interoperability with legacy HTS during refactor */
+	private final BackingNfts backingNfts;
 	private final BackingTokenRels backingTokenRels;
 
 	public TypedTokenStore(
 			AccountStore accountStore,
 			TransactionRecordService transactionRecordService,
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
+			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens,
+			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueOwnershipAssociations,
+			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations,
 			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels,
-			BackingTokenRels backingTokenRels
+			BackingTokenRels backingTokenRels,
+			BackingNfts backingNfts
 	) {
 		this.tokens = tokens;
+		this.uniqueTokenAssociations = uniqueTokenAssociations;
+		this.uniqueOwnershipAssociations = uniqueOwnershipAssociations;
 		this.tokenRels = tokenRels;
+		this.uniqueTokens = uniqueTokens;
 		this.accountStore = accountStore;
 		this.transactionRecordService = transactionRecordService;
 
+		this.backingNfts = backingNfts;
 		this.backingTokenRels = backingTokenRels;
 	}
 
 	/**
 	 * Returns a model of the requested token relationship, with operations that
 	 * can be used to implement business logic in a transaction.
-	 *
+	 * <p>
 	 * The arguments <i>should</i> be model objects that were returned by the
 	 * {@link TypedTokenStore#loadToken(Id)} and {@link AccountStore#loadAccount(Id)}
 	 * methods, respectively, since it will very rarely (or never) be correct
@@ -169,6 +195,19 @@ public class TypedTokenStore {
 	}
 
 	/**
+	 * Invites the injected {@link TransactionRecordService} to include the changes to the exported transaction record
+	 * Currently, the only implemented tracker is the {@link OwnershipTracker} which records the changes to the
+	 * ownership
+	 * of {@link UniqueToken}
+	 *
+	 * @param ownershipTracker
+	 * 		holds changes to {@link UniqueToken} ownership
+	 */
+	public void persistTrackers(OwnershipTracker ownershipTracker) {
+		transactionRecordService.includeOwnershipChanges(ownershipTracker);
+	}
+
+	/**
 	 * Returns a model of the requested token, with operations that can be used to
 	 * implement business logic in a transaction.
 	 *
@@ -232,7 +271,31 @@ public class TypedTokenStore {
 		final var currentTokens = tokens.get();
 
 		final var mutableToken = currentTokens.getForModify(key);
+		final var treasury = new EntityId(mutableToken.treasury());
 		mapModelChangesToMutable(token, mutableToken);
+
+		if (token.hasMintedUniqueTokens()) {
+			for (var uniqueToken : token.mintedUniqueTokens()) {
+				final var merkleUniqueTokenId = new MerkleUniqueTokenId(
+						new EntityId(uniqueToken.getTokenId()), uniqueToken.getSerialNumber());
+				final var merkleUniqueToken = new MerkleUniqueToken(
+						new EntityId(uniqueToken.getOwner()), uniqueToken.getMetadata(), uniqueToken.getCreationTime());
+				uniqueTokens.get().put(merkleUniqueTokenId, merkleUniqueToken);
+				uniqueTokenAssociations.get().associate(new EntityId(uniqueToken.getTokenId()), merkleUniqueTokenId);
+				uniqueOwnershipAssociations.get().associate(treasury, merkleUniqueTokenId);
+				backingNfts.addToExistingNfts(merkleUniqueTokenId.asNftId());
+			}
+		}
+		if (token.hasBurnedUniqueTokens()) {
+			for (var uniqueToken : token.burnedUniqueTokens()) {
+				final var merkleUniqueTokenId = new MerkleUniqueTokenId(
+						new EntityId(uniqueToken.getTokenId()), uniqueToken.getSerialNumber());
+				uniqueTokens.get().remove(merkleUniqueTokenId);
+				uniqueTokenAssociations.get().disassociate(new EntityId(uniqueToken.getTokenId()), merkleUniqueTokenId);
+				uniqueOwnershipAssociations.get().disassociate(treasury, merkleUniqueTokenId);
+				backingNfts.removeFromExistingNfts(merkleUniqueTokenId.asNftId());
+			}
+		}
 
 		transactionRecordService.includeChangesToToken(token);
 	}
@@ -254,6 +317,7 @@ public class TypedTokenStore {
 		mutableToken.setTreasury(new EntityId(token.getTreasury().getId()));
 		mutableToken.setTotalSupply(token.getTotalSupply());
 		mutableToken.setAccountsFrozenByDefault(token.isFrozenByDefault());
+		mutableToken.setLastUsedSerialNumber(token.getLastUsedSerialNumber());
 	}
 
 	private void initModelAccounts(Token token, EntityId _treasuryId, @Nullable EntityId _autoRenewId) {
@@ -269,10 +333,13 @@ public class TypedTokenStore {
 
 	private void initModelFields(Token token, MerkleToken immutableToken) {
 		token.initTotalSupply(immutableToken.totalSupply());
+		token.initSupplyConstraints(immutableToken.supplyType(), immutableToken.maxSupply());
 		token.setKycKey(immutableToken.getKycKey());
 		token.setFreezeKey(immutableToken.getFreezeKey());
 		token.setSupplyKey(immutableToken.getSupplyKey());
 		token.setFrozenByDefault(immutableToken.accountsAreFrozenByDefault());
+		token.setType(immutableToken.tokenType());
+		token.setLastUsedSerialNumber(immutableToken.getLastUsedSerialNumber());
 		token.setIsDeleted(immutableToken.isDeleted());
 		token.setExpiry(immutableToken.expiry());
 	}

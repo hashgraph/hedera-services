@@ -21,10 +21,17 @@ package com.hedera.services.store.models;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.enums.TokenSupplyType;
+import com.hedera.services.state.enums.TokenType;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.utils.MiscUtils.describe;
@@ -33,10 +40,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_MAX_SUPPLY_REACHED;
 
 /**
  * Encapsulates the state and operations of a Hedera token.
- *
+ * <p>
  * Operations are validated, and throw a {@link com.hedera.services.exceptions.InvalidTransactionException}
  * with response code capturing the failure when one occurs.
  *
@@ -50,8 +58,13 @@ public class Token {
 	private final Id id;
 
 	private boolean supplyHasChanged;
+	private final List<UniqueToken> mintedUniqueTokens = new ArrayList<>();
+	private final List<UniqueToken> burnedUniqueTokens = new ArrayList<>();
 
+	private TokenType type;
+	private TokenSupplyType supplyType;
 	private long totalSupply;
+	private long maxSupply;
 	private JKey kycKey;
 	private JKey freezeKey;
 	private JKey supplyKey;
@@ -60,6 +73,8 @@ public class Token {
 	private Account autoRenewAccount;
 	private boolean isDeleted;
 	private long expiry;
+
+	private long lastUsedSerialNumber;
 
 	public Token(Id id) {
 		this.id = id;
@@ -74,7 +89,49 @@ public class Token {
 	public void mint(TokenRelationship treasuryRel, long amount) {
 		validateTrue(amount > 0, FAIL_INVALID, () ->
 				"Cannot mint " + amount + " units of " + this + " from " + treasuryRel);
+		validateTrue(type == TokenType.FUNGIBLE_COMMON, FAIL_INVALID, () ->
+				"Fungible mint can be invoked only on Fungible token type");
+
 		changeSupply(treasuryRel, +amount, INVALID_TOKEN_MINT_AMOUNT);
+	}
+
+	public void burn(
+			final OwnershipTracker ownershipTracker,
+			final TokenRelationship treasuryRelationship,
+			final List<Long> serialNumbers
+	){
+		validateTrue( type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID, () ->
+				"Non fungible burn can be invoked only on Non fungible tokens!");
+		validateTrue( !serialNumbers.isEmpty() , FAIL_INVALID, ()->
+				"Non fungible burn cannot be invoked with no serial numbers");
+		for (final long serialNum : serialNumbers) {
+			ownershipTracker.add(id, OwnershipTracker.fromBurning(id, serialNum));
+			burnedUniqueTokens.add(new UniqueToken(id, serialNum));
+		}
+		treasury.setOwnedNfts(treasury.getOwnedNfts() - serialNumbers.size());
+		changeSupply(treasuryRelationship, -serialNumbers.size(), FAIL_INVALID);
+	}
+
+	public void mint(
+			final OwnershipTracker ownershipTracker,
+			final TokenRelationship treasuryRel,
+			final List<ByteString> metadata,
+			final RichInstant creationTime
+	) {
+		validateTrue(metadata.size() > 0, FAIL_INVALID, () ->
+				"Cannot mint " + metadata.size() + " numbers of Unique Tokens");
+		validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID, () ->
+				"Non fungible mint can be invoked only on Non fungible token type");
+
+		changeSupply(treasuryRel, metadata.size(), FAIL_INVALID);
+
+		for (ByteString m : metadata) {
+			lastUsedSerialNumber++;
+			var uniqueToken = new UniqueToken(id, lastUsedSerialNumber, creationTime, treasury.getId(), m.toByteArray());
+			mintedUniqueTokens.add(uniqueToken);
+			ownershipTracker.add(id, OwnershipTracker.fromMinting(treasury.getId(), lastUsedSerialNumber));
+		}
+		treasury.setOwnedNfts(treasury.getOwnedNfts() + metadata.size());
 	}
 
 	public TokenRelationship newRelationshipWith(Account account) {
@@ -96,6 +153,11 @@ public class Token {
 
 		final long newTotalSupply = totalSupply + amount;
 		validateTrue(newTotalSupply >= 0, negSupplyCode);
+
+		if (supplyType == TokenSupplyType.FINITE) {
+			validateTrue(maxSupply >= newTotalSupply, TOKEN_MAX_SUPPLY_REACHED, () ->
+					"Cannot mint new supply (" + amount + "). Max supply (" + maxSupply + ") reached");
+		}
 
 		final long newTreasuryBalance = treasuryRel.getBalance() + amount;
 		validateTrue(newTreasuryBalance >= 0, INSUFFICIENT_TOKEN_BALANCE);
@@ -133,6 +195,15 @@ public class Token {
 		this.totalSupply = totalSupply;
 	}
 
+	public void initSupplyConstraints(TokenSupplyType supplyType, long maxSupply) {
+		this.supplyType = supplyType;
+		this.maxSupply = maxSupply;
+	}
+
+	public long getMaxSupply() {
+		return maxSupply;
+	}
+
 	public void setSupplyKey(JKey supplyKey) {
 		this.supplyKey = supplyKey;
 	}
@@ -167,6 +238,34 @@ public class Token {
 
 	public Id getId() {
 		return id;
+	}
+
+	public void setType(TokenType type) {
+		this.type = type;
+	}
+
+	public TokenType getType() {
+		return type;
+	}
+
+	public void setLastUsedSerialNumber(long lastUsedSerialNumber) {
+		this.lastUsedSerialNumber = lastUsedSerialNumber;
+	}
+
+	public long getLastUsedSerialNumber() {
+		return lastUsedSerialNumber;
+	}
+
+	public boolean hasMintedUniqueTokens() {
+		return !mintedUniqueTokens.isEmpty();
+	}
+
+	public boolean hasBurnedUniqueTokens() { return !burnedUniqueTokens.isEmpty(); }
+
+	public List<UniqueToken> burnedUniqueTokens() { return burnedUniqueTokens; }
+
+	public List<UniqueToken> mintedUniqueTokens() {
+		return mintedUniqueTokens;
 	}
 
 	public boolean isDeleted() {

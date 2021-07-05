@@ -21,23 +21,19 @@ package com.hedera.services.store.models;
  */
 
 import com.hedera.services.exceptions.InvalidTransactionException;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.txns.validation.ContextOptionValidator;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TokenRelationshipTest {
 	private final Id tokenId = new Id(0, 0, 1234);
@@ -60,7 +56,7 @@ class TokenRelationshipTest {
 		account = new Account(accountId);
 		Account treasury = new Account(treasuryId);
 		validator = mock(ContextOptionValidator.class);
-		
+
 		subject = new TokenRelationship(token, account);
 		treasuryRealtionship = new TokenRelationship(token, treasury);
 		token.setTreasury(treasury);
@@ -188,6 +184,23 @@ class TokenRelationshipTest {
 		// then:
 		assertEquals(0, subject.getBalance());
 		assertEquals(2*balance, treasuryRealtionship.getBalance());
+	}
+
+	@Test
+	void givesCorrectRepresentation(){
+		subject.getToken().setType(TokenType.NON_FUNGIBLE_UNIQUE);
+		assertTrue(subject.hasUniqueRepresentation());
+
+
+		subject.getToken().setType(TokenType.FUNGIBLE_COMMON);
+		assertTrue(subject.hasCommonRepresentation());
+	}
+
+	@Test
+	void testHashCode(){
+		var rel = new TokenRelationship(token, account);
+		rel.initBalance(balance);
+		assertEquals(rel.hashCode(), subject.hashCode());
 	}
 
 	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {

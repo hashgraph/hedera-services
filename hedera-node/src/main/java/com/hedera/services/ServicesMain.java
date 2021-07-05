@@ -122,13 +122,15 @@ public class ServicesMain implements SwirldMain {
 	}
 
 	@Override
-	public void newSignedState(SwirldState signedState, Instant when, long round) {
+	public void newSignedState(SwirldState signedState, Instant consensusTime, long round) {
 		if (ctx.platformStatus().get() == MAINTENANCE) {
 			((ServicesState) signedState).logSummary();
 		}
-		if (ctx.globalDynamicProperties().shouldExportBalances() && ctx.balancesExporter().isTimeToExport(when)) {
+		final var exportIsEnabled = ctx.globalDynamicProperties().shouldExportBalances();
+		if (exportIsEnabled && ctx.balancesExporter().isTimeToExport(consensusTime)) {
 			try {
-				ctx.balancesExporter().exportBalancesFrom((ServicesState) signedState, when);
+				final var servicesState = (ServicesState) signedState;
+				ctx.balancesExporter().exportBalancesFrom(servicesState, consensusTime, ctx.id());
 			} catch (IllegalStateException ise) {
 				log.error("HederaNode#{} has invalid total balance in signed state, exiting!", ctx.id(), ise);
 				systemExits.fail(1);

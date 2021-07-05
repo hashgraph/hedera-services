@@ -21,6 +21,7 @@ package com.hedera.services.records;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
@@ -82,8 +83,10 @@ class TransactionRecordServiceTest {
 	@Test
 	void updatesWithChangedRelationshipBalance() {
 		// setup:
+		var token = new Token(new Id(0, 0, 2));
+		token.setType(TokenType.FUNGIBLE_COMMON);
 		final var tokenRel = new TokenRelationship(
-				new Token(new Id(0, 0, 2)),
+				token,
 				new Account(new Id(0, 0, 3)));
 		tokenRel.initBalance(0L);
 		tokenRel.setBalance(246L);

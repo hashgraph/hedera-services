@@ -31,8 +31,10 @@ import java.util.List;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AccountTest {
 	private Id subjectId = new Id(0, 0, 12345);
@@ -91,6 +93,50 @@ class AccountTest {
 
 		// expect:
 		assertEquals(expectedFinalTokens, assocTokens.toReadableIdList());
+	}
+
+	@Test
+	void accountEqualsCheck() {
+		// setup:
+		var account = new Account(subjectId);
+		account.setAssociatedTokens(assocTokens);
+		account.setExpiry(1000L);
+		account.initBalance(100L);
+		account.setOwnedNfts(1L);
+		account.incrementOwnedNfts();
+
+		subject.setExpiry(1000L);
+		subject.initBalance(100L);
+		subject.setOwnedNfts(1L);
+		subject.incrementOwnedNfts();
+
+		// when:
+		var actualResult = subject.equals(account);
+
+		// expect:
+		assertEquals(account.getOwnedNfts(), subject.getOwnedNfts());
+		// and:
+		assertEquals(account.getId(), subject.getId());
+		// and:
+		assertEquals(account.getAssociatedTokens(), subject.getAssociatedTokens());
+		// and:
+		assertTrue(actualResult);
+	}
+
+	@Test
+	void accountHashCodeCheck() {
+		// setup:
+		var otherSubject = new Account(subjectId);
+		otherSubject.incrementOwnedNfts();
+		otherSubject.setAssociatedTokens(assocTokens);
+
+		subject.incrementOwnedNfts();
+
+		// when:
+		var actualResult = subject.hashCode();
+
+		// expect:
+		assertEquals(otherSubject.hashCode(), actualResult);
 	}
 
 	@Test

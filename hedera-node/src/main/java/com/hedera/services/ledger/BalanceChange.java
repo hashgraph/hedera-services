@@ -22,8 +22,10 @@ package com.hedera.services.ledger;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -31,9 +33,10 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 
 /**
- * Process object that encapsulates a balance change, either ℏ or token unit.
+ * Process object that encapsulates a balance change, either ℏ or token unit .
  *
  * Includes an optional override for the {@link ResponseCodeEnum} to be used
  * in the case that the change is determined to result to an insufficient balance;
@@ -54,20 +57,43 @@ public class BalanceChange {
 	private long units;
 	private ResponseCodeEnum codeForInsufficientBalance;
 	private long newBalance;
+	private NftId nftId = null;
 	private TokenID tokenId = null;
 	private AccountID accountId;
+	private AccountID counterPartyAccountId = null;
 
-	private BalanceChange(final Id token, final AccountAmount aa, final ResponseCodeEnum code) {
+	private BalanceChange(Id token, AccountAmount aa, ResponseCodeEnum code) {
 		this.token = token;
-		final var account = aa.getAccountID();
-		this.accountId = account;
-		final var id = Id.fromGrpcAccount(account);
-		this.account = id;
+
+		this.accountId = aa.getAccountID();
+		this.account = Id.fromGrpcAccount(accountId);
 		this.units = aa.getAmount();
+
 		this.codeForInsufficientBalance = code;
 	}
 
-	private BalanceChange(final Id account, final long amount, final ResponseCodeEnum code) {
+	private BalanceChange(Id token, AccountID sender, AccountID receiver, long serialNo, ResponseCodeEnum code) {
+		this.token = token;
+
+		this.accountId = sender;
+		this.counterPartyAccountId = receiver;
+		this.account = Id.fromGrpcAccount(accountId);
+		this.units = serialNo;
+
+		this.codeForInsufficientBalance = code;
+	}
+
+	public static BalanceChange changingHbar(AccountAmount aa) {
+		return new BalanceChange(null, aa, INSUFFICIENT_ACCOUNT_BALANCE);
+	}
+
+	public static BalanceChange changingFtUnits(Id token, TokenID tokenId, AccountAmount aa) {
+		final var tokenChange = new BalanceChange(token, aa, INSUFFICIENT_TOKEN_BALANCE);
+		tokenChange.tokenId = tokenId;
+		return tokenChange;
+	}
+
+	private BalanceChange(Id account, long amount, ResponseCodeEnum code) {
 		this.token = null;
 		this.account = account;
 		this.accountId = account.asGrpcAccount();
@@ -75,25 +101,28 @@ public class BalanceChange {
 		this.codeForInsufficientBalance = code;
 	}
 
-	public void adjustUnits(final long units) {
+	public void adjustUnits(long units) {
 		this.units += units;
 	}
 
-	public static BalanceChange hbarAdjust(final AccountAmount aa) {
-		return new BalanceChange(null, aa, INSUFFICIENT_ACCOUNT_BALANCE);
-	}
-
-	public static BalanceChange hbarAdjust(final Id id, long amount) {
+	public static BalanceChange hbarAdjust(Id id, long amount) {
 		return new BalanceChange(id, amount, INSUFFICIENT_ACCOUNT_BALANCE);
 	}
 
-	public static BalanceChange tokenAdjust(final Id token, final TokenID tokenId, final AccountAmount aa) {
-		final var tokenChange = new BalanceChange(token, aa, INSUFFICIENT_TOKEN_BALANCE);
-		tokenChange.tokenId = tokenId;
-		return tokenChange;
-	}
+	public static BalanceChange changingNftOwnership(Id token, TokenID tokenId, NftTransfer nftTransfer) {
+		final var serialNo = nftTransfer.getSerialNumber();
+		final var nftChange = new BalanceChange(
+				token,
+				nftTransfer.getSenderAccountID(),
+				nftTransfer.getReceiverAccountID(),
+				serialNo,
+				SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
+		nftChange.nftId = new NftId(token.getShard(), token.getRealm(), token.getNum(), serialNo);
+		nftChange.tokenId = tokenId;
+		return nftChange;
+        }
 
-	public static BalanceChange tokenAdjust(final Id account, final Id token,  final long amount) {
+	public static BalanceChange tokenAdjust(Id account, Id token, long amount) {
 		final var tokenChange = new BalanceChange(account, amount, INSUFFICIENT_TOKEN_BALANCE);
 		tokenChange.token = token;
 		tokenChange.tokenId = token.asGrpcToken();
@@ -104,7 +133,19 @@ public class BalanceChange {
 		return token == null;
 	}
 
+	public boolean isForNft() {
+		return token != null && counterPartyAccountId != null;
+	}
+
+	public NftId nftId() {
+		return nftId;
+	}
+
 	public long units() {
+		return units;
+	}
+
+	public long serialNo() {
 		return units;
 	}
 
@@ -123,6 +164,10 @@ public class BalanceChange {
 	public AccountID accountId() {
 		return accountId;
 	}
+
+	public AccountID counterPartyAccountId() {
+		return counterPartyAccountId;
+        }
 
 	public Id getAccount() {
 		return account;
@@ -152,12 +197,20 @@ public class BalanceChange {
 
 	@Override
 	public String toString() {
-		return MoreObjects.toStringHelper(BalanceChange.class)
-				.add("token", token == null ? "ℏ" : token)
-				.add("account", account)
-				.add("units", units)
-				.add("codeForInsufficientBalance", codeForInsufficientBalance)
-				.toString();
+		if (counterPartyAccountId == null) {
+			return MoreObjects.toStringHelper(BalanceChange.class)
+					.add("token", token == null ? "ℏ" : token)
+					.add("account", account)
+					.add("units", units)
+					.toString();
+		} else {
+			return MoreObjects.toStringHelper(BalanceChange.class)
+					.add("nft", token)
+					.add("serialNo", units)
+					.add("from", account)
+					.add("to", Id.fromGrpcAccount(counterPartyAccountId))
+					.toString();
+		}
 	}
 
 	public void setCodeForInsufficientBalance(ResponseCodeEnum codeForInsufficientBalance) {

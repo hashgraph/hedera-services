@@ -33,6 +33,8 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -59,9 +61,12 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	private String token;
 
 	private boolean advertiseCreation = false;
+	private Optional<TokenType> tokenType = Optional.empty();
+	private Optional<TokenSupplyType> supplyType = Optional.empty();
 	private OptionalInt decimals = OptionalInt.empty();
 	private OptionalLong expiry = OptionalLong.empty();
 	private OptionalLong initialSupply = OptionalLong.empty();
+	private OptionalLong maxSupply = OptionalLong.empty();
 	private OptionalLong autoRenewPeriod = OptionalLong.empty();
 	private Optional<String> freezeKey = Optional.empty();
 	private Optional<String> kycKey = Optional.empty();
@@ -77,6 +82,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	private Optional<Function<HapiApiSpec, String>> symbolFn = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> nameFn = Optional.empty();
 	private final List<Function<HapiApiSpec, CustomFeesOuterClass.CustomFee>> feeScheduleSuppliers = new ArrayList<>();
+	private Optional<Boolean> customFeesMutable = Optional.empty();
 
 	@Override
 	public HederaFunctionality type() {
@@ -96,8 +102,23 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 		return this;
 	}
 
+	public HapiTokenCreate customFeesMutable(boolean customFeesMutable) {
+		this.customFeesMutable = Optional.of(customFeesMutable);
+		return this;
+	}
+
 	public HapiTokenCreate entityMemo(String memo) {
 		this.entityMemo = Optional.of(memo);
+		return this;
+	}
+
+	public HapiTokenCreate tokenType(TokenType tokenType) {
+		this.tokenType = Optional.of(tokenType);
+		return this;
+	}
+
+	public HapiTokenCreate supplyType(TokenSupplyType supplyType) {
+		this.supplyType = Optional.of(supplyType);
 		return this;
 	}
 
@@ -108,6 +129,11 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 
 	public HapiTokenCreate initialSupply(long initialSupply) {
 		this.initialSupply = OptionalLong.of(initialSupply);
+		return this;
+	}
+
+	public HapiTokenCreate maxSupply(long maxSupply) {
+		this.maxSupply = OptionalLong.of(maxSupply);
 		return this;
 	}
 
@@ -213,10 +239,13 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 				.txns()
 				.<TokenCreateTransactionBody, TokenCreateTransactionBody.Builder>body(
 						TokenCreateTransactionBody.class, b -> {
+							tokenType.ifPresent(b::setTokenType);
+							supplyType.ifPresent(b::setSupplyType);
 							symbol.ifPresent(b::setSymbol);
 							name.ifPresent(b::setName);
 							entityMemo.ifPresent(s -> b.setMemo(s));
 							initialSupply.ifPresent(b::setInitialSupply);
+							maxSupply.ifPresent(b::setMaxSupply);
 							decimals.ifPresent(b::setDecimals);
 							freezeDefault.ifPresent(b::setFreezeDefault);
 							adminKey.ifPresent(k -> b.setAdminKey(spec.registry().getKey(k)));
@@ -240,6 +269,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 								for (var supplier : feeScheduleSuppliers) {
 									fb.addCustomFees(supplier.apply(spec));
 								}
+								customFeesMutable.ifPresent(m -> fb.setCanUpdateWithAdminKey(m));
 							}
 						});
 		return b -> b.setTokenCreation(opBody);

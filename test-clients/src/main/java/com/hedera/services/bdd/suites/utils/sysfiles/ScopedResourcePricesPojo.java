@@ -21,10 +21,19 @@ package com.hedera.services.bdd.suites.utils.sysfiles;
  */
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.hederahashgraph.api.proto.java.SubType;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ScopedResourcePricesPojo {
+	SubType subType;
+
 	ResourcePricesPojo nodedata, networkdata, servicedata;
+
+	public SubType getSubType() { return subType; }
+
+	public void setSubType(SubType subType) {
+		this.subType = subType;
+	}
 
 	public ResourcePricesPojo getNodedata() {
 		return nodedata;

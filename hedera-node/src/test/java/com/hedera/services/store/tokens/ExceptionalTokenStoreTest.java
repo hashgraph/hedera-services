@@ -30,22 +30,43 @@ class ExceptionalTokenStoreTest {
 	@Test
 	public void allButSetAreUse() {
 		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.freeze(null, null));
-		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.unfreeze(null, null));
-		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.adjustBalance(null, null, 0));
-		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.createProvisionally(null, null, 0));
-		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.exists(null));
-		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.get(null));
-		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.update(null, 0));
-		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.isKnownTreasury(null));
-		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.grantKyc(null, null));
-		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.revokeKyc(null, null));
-		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.apply(null, token -> {}));
-		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.wipe(null,null, 0L, false));
-		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.associate(null, null));
-		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.dissociate(null, null));
-		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.associationExists(null, null));
-		assertThrows(UnsupportedOperationException.class, () -> NOOP_TOKEN_STORE.isTreasuryForToken(null, null));
+		assertThrows(UnsupportedOperationException.class,
+				() -> NOOP_TOKEN_STORE.freeze(null, null));
+		assertThrows(UnsupportedOperationException.class,
+				() -> NOOP_TOKEN_STORE.unfreeze(null, null));
+		assertThrows(UnsupportedOperationException.class,
+				() -> NOOP_TOKEN_STORE.adjustBalance(null, null, 0));
+		assertThrows(UnsupportedOperationException.class,
+				() -> NOOP_TOKEN_STORE.createProvisionally(null, null, 0));
+		assertThrows(UnsupportedOperationException.class,
+				() -> NOOP_TOKEN_STORE.changeOwner(null, null, null));
+		assertThrows(UnsupportedOperationException.class,
+				() -> NOOP_TOKEN_STORE.exists(null));
+		assertThrows(UnsupportedOperationException.class,
+				() -> NOOP_TOKEN_STORE.get(null));
+		assertThrows(UnsupportedOperationException.class,
+				() -> NOOP_TOKEN_STORE.update(null, 0));
+		assertThrows(UnsupportedOperationException.class,
+				() -> NOOP_TOKEN_STORE.isKnownTreasury(null));
+		assertThrows(UnsupportedOperationException.class,
+				() -> NOOP_TOKEN_STORE.grantKyc(null, null));
+		assertThrows(UnsupportedOperationException.class,
+				() -> NOOP_TOKEN_STORE.revokeKyc(null, null));
+		assertThrows(UnsupportedOperationException.class,
+				() -> NOOP_TOKEN_STORE.apply(null, token -> { }));
+		assertThrows(UnsupportedOperationException.class,
+				() -> NOOP_TOKEN_STORE.wipe(null, null, 0L, false));
+		assertThrows(UnsupportedOperationException.class,
+				() -> NOOP_TOKEN_STORE.associate(null, null));
+		assertThrows(UnsupportedOperationException.class,
+				() -> NOOP_TOKEN_STORE.dissociate(null, null));
+		assertThrows(UnsupportedOperationException.class,
+				() -> NOOP_TOKEN_STORE.associationExists(null, null));
+		assertThrows(UnsupportedOperationException.class,
+				() -> NOOP_TOKEN_STORE.isTreasuryForToken(null, null));
+		assertThrows(UnsupportedOperationException.class,
+				() -> NOOP_TOKEN_STORE.listOfTokensServed(null));
+
 		assertThrows(UnsupportedOperationException.class, NOOP_TOKEN_STORE::commitCreation);
 		assertThrows(UnsupportedOperationException.class, NOOP_TOKEN_STORE::rollbackCreation);
 		assertThrows(UnsupportedOperationException.class, NOOP_TOKEN_STORE::isCreationPending);

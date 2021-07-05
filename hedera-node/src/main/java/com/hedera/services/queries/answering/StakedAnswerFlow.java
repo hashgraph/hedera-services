@@ -122,7 +122,7 @@ public class StakedAnswerFlow implements AnswerFlow {
 		final var bestGuessNow = optionalPayment
 				.map(a -> a.getTxnId().getTransactionValidStart())
 				.orElse(asTimestamp(now.get()));
-		final var usagePrices = resourceCosts.pricesGiven(service.canonicalFunction(), bestGuessNow);
+		final var usagePrices = resourceCosts.defaultPricesGiven(service.canonicalFunction(), bestGuessNow);
 
 		long fee = 0L;
 		final Map<String, Object> queryCtx = new HashMap<>();

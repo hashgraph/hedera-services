@@ -24,7 +24,9 @@ import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.Store;
+import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -46,6 +48,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
  */
 public interface TokenStore extends Store<TokenID, MerkleToken> {
 	TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
+	NftID MISSING_NFT = NftID.getDefaultInstance();
 	Consumer<MerkleToken> DELETION = token -> token.setDeleted(true);
 
 	boolean isKnownTreasury(AccountID id);
@@ -54,14 +57,24 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 	List<TokenID> listOfTokensServed(AccountID treasury);
 
 	ResponseCodeEnum wipe(AccountID aId, TokenID tId, long wipingAmount, boolean skipKeyCheck);
+
 	ResponseCodeEnum freeze(AccountID aId, TokenID tId);
+
 	ResponseCodeEnum update(TokenUpdateTransactionBody changes, long now);
+
 	ResponseCodeEnum unfreeze(AccountID aId, TokenID tId);
+
 	ResponseCodeEnum grantKyc(AccountID aId, TokenID tId);
+
 	ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId);
+
 	ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens);
+
 	ResponseCodeEnum dissociate(AccountID aId, List<TokenID> tokens);
+
 	ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment);
+
+	ResponseCodeEnum changeOwner(NftId nftId, AccountID from, AccountID to);
 
 	CreationResult<TokenID> createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now);
 
@@ -94,9 +107,13 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 			validity = INVALID_TOKEN_ID;
 		}
 		if (validity == OK) {
-			validity = adjustBalance(change.accountId(), tokenId, change.units());
-			if (validity == INSUFFICIENT_TOKEN_BALANCE) {
-				validity = change.codeForInsufficientBalance();
+			if (change.isForNft()) {
+				validity = changeOwner(change.nftId(), change.accountId(), change.counterPartyAccountId());
+			} else {
+				validity = adjustBalance(change.accountId(), tokenId, change.units());
+				if (validity == INSUFFICIENT_TOKEN_BALANCE) {
+					validity = change.codeForInsufficientBalance();
+				}
 			}
 		}
 		return validity;

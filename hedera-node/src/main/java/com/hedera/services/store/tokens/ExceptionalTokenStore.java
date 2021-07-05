@@ -26,6 +26,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.CreationResult;
+import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
@@ -95,6 +96,11 @@ public enum ExceptionalTokenStore implements TokenStore {
 
 	@Override
 	public ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public ResponseCodeEnum changeOwner(NftId nftId, AccountID from, AccountID to) {
 		throw new UnsupportedOperationException();
 	}
 

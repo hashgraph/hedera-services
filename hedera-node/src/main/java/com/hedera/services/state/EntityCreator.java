@@ -80,8 +80,8 @@ public interface EntityCreator {
 	 * 		explicit list of token transfers
 	 * @param ctx
 	 * 		services context
-	 * @param customFeesCharged
-	 * 		custom fees charged
+	 * @param assessedCustomFees
+	 * 		the list of assessed custom fees
 	 * @return a {@link ExpirableTxnRecord.Builder} for the finalized record
 	 */
 	ExpirableTxnRecord.Builder buildExpiringRecord(
@@ -92,7 +92,7 @@ public interface EntityCreator {
 			TxnReceipt receipt,
 			List<TokenTransferList> explicitTokenTransfers,
 			ServicesContext ctx,
-			List<AssessedCustomFee> customFeesCharged);
+			List<AssessedCustomFee> assessedCustomFees);
 
 	/**
 	 * Build a {@link ExpirableTxnRecord.Builder} for a transaction failed to commit

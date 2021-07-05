@@ -81,6 +81,7 @@ public class PrivilegedOpsSuite extends HapiApiSuite {
 			.mapToObj(ignore ->
 					cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
 							.payingWith(payer)
+							.fee(ONE_HUNDRED_HBARS)
 							.deferStatusResolution())
 			.toArray(n -> new HapiSpecOperation[n]);
 	Function<String, HapiSpecOperation[]> miscTxnBurstFn = payer -> IntStream
@@ -111,7 +112,8 @@ public class PrivilegedOpsSuite extends HapiApiSuite {
 	private HapiApiSpec freezeAdminPrivilegesAsExpected() {
 		return defaultHapiSpec("FreezeAdminPrivilegesAsExpected")
 				.given(
-						cryptoCreate("civilian")
+						cryptoCreate("civilian"),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, ONE_HUNDRED_HBARS))
 				).when(
 
 						fileUpdate(UPDATE_ZIP_FILE)
@@ -197,8 +199,10 @@ public class PrivilegedOpsSuite extends HapiApiSuite {
 	private HapiApiSpec superusersAreNeverThrottledOnTransfers() {
 		return defaultHapiSpec("SuperusersAreNeverThrottledOnTransfers")
 				.given(
-						cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L))
+								.fee(ONE_HUNDRED_HBARS),
 						cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L))
+								.fee(ONE_HUNDRED_HBARS)
 				).when(
 						fileUpdate(THROTTLE_DEFS)
 								.payingWith(EXCHANGE_RATE_CONTROL)
@@ -217,8 +221,10 @@ public class PrivilegedOpsSuite extends HapiApiSuite {
 	private HapiApiSpec superusersAreNeverThrottledOnMiscTxns() {
 		return defaultHapiSpec("MasterIsNeverThrottledOnMiscTxns")
 				.given(
-						cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000_000L))
+								.fee(ONE_HUNDRED_HBARS),
 						cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1_000_000_000_000L))
+								.fee(ONE_HUNDRED_HBARS)
 				).when(
 						fileUpdate(THROTTLE_DEFS)
 								.payingWith(EXCHANGE_RATE_CONTROL)

@@ -582,6 +582,18 @@ class AwareTransactionContextTest {
 	}
 
 	@Test
+	void setsCreatedSerialNumbersInReceipt() {
+		// given:
+		List<Long> expected = List.of(1L, 2L, 3L, 4L, 5L, 6L);
+		var expectedArray = new long[]{1L, 2L, 3L, 4L, 5L, 6L};
+		// when:
+		subject.setCreated(expected);
+
+		// then:
+		assertArrayEquals(subject.receiptSoFar().build().getSerialNumbers(), expectedArray);
+	}
+
+	@Test
 	void throwsIfAccessorIsAlreadyTriggered() {
 		// given:
 		given(accessor.getScheduleRef()).willReturn(scheduleCreated);
