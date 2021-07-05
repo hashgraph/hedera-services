@@ -23,7 +23,6 @@ package com.hedera.services.state.merkle;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
-import com.hederahashgraph.api.proto.java.NftID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
@@ -59,13 +58,6 @@ public class MerkleUniqueTokenId extends AbstractMerkleLeaf {
 	) {
 		this.tokenId = tokenId;
 		this.serialNumber = serialNumber;
-	}
-
-	public static MerkleUniqueTokenId fromNftID(NftID grpc) {
-		final var tokenID = grpc.getTokenID();
-		final var entity = new EntityId(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum());
-
-		return new MerkleUniqueTokenId(entity, grpc.getSerialNumber());
 	}
 
 	public static MerkleUniqueTokenId fromNftId(NftId id) {

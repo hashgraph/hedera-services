@@ -44,7 +44,7 @@ class UniqueTokenTest {
 		subj.setMetadata(metadata);
 		assertEquals(metadata, subj.getMetadata());
 		subj.setTokenId(Id.DEFAULT);
-		assertEquals(subj.getTokenId(), Id.DEFAULT);
+		assertEquals(Id.DEFAULT, subj.getTokenId());
 		subj.setCreationTime(RichInstant.MISSING_INSTANT);
 		assertEquals(RichInstant.MISSING_INSTANT, subj.getCreationTime());
 	}

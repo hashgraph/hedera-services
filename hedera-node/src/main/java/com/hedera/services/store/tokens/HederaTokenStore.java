@@ -49,8 +49,6 @@ import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import proto.CustomFeesOuterClass;
 
 import java.util.Collections;
@@ -85,10 +83,12 @@ import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_ARE_MARKED_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
@@ -99,6 +99,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
@@ -118,7 +119,6 @@ import static java.util.stream.Collectors.toList;
  * Provides a managing store for arbitrary tokens.
  */
 public class HederaTokenStore extends HederaStore implements TokenStore {
-	private static final Logger log = LogManager.getLogger(HederaTokenStore.class);
 
 	static final TokenID NO_PENDING_ID = TokenID.getDefaultInstance();
 
@@ -398,6 +398,29 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	@Override
+	public ResponseCodeEnum wipe(AccountID aId, TokenID tId, long amount, boolean skipKeyCheck) {
+		return sanityChecked(aId, null, tId, token -> {
+			if (!skipKeyCheck && !token.hasWipeKey()) {
+				return TOKEN_HAS_NO_WIPE_KEY;
+			}
+			if (fromGrpcAccountId(aId).equals(token.treasury())) {
+				return CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
+			}
+
+			var relationship = asTokenRel(aId, tId);
+			long balance = (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
+			if (amount > balance) {
+				return INVALID_WIPING_AMOUNT;
+			}
+			tokenRelsLedger.set(relationship, TOKEN_BALANCE, balance - amount);
+			hederaLedger.updateTokenXfers(tId, aId, -amount);
+			apply(tId, t -> t.adjustTotalSupplyBy(-amount));
+
+			return OK;
+		});
+	}
+
+	@Override
 	public CreationResult<TokenID> createProvisionally(
 			TokenCreateTransactionBody request,
 			AccountID sponsor,
@@ -490,11 +513,15 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				if (fraction.getDenominator() == 0) {
 					return FRACTION_DIVIDES_BY_ZERO;
 				}
-				if (!signsMatch(fraction.getNumerator(), fraction.getDenominator())) {
+				if (!areValidPositiveNumbers(fraction.getNumerator(), fraction.getDenominator())) {
 					return CUSTOM_FEE_MUST_BE_POSITIVE;
 				}
 				if (fractionalSpec.getMaximumAmount() < 0 || fractionalSpec.getMinimumAmount() < 0) {
 					return CUSTOM_FEE_MUST_BE_POSITIVE;
+				}
+				if (fractionalSpec.getMaximumAmount() > 0 &&
+						fractionalSpec.getMaximumAmount() < fractionalSpec.getMinimumAmount()) {
+					return FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
 				}
 			} else {
 				return CUSTOM_FEE_NOT_FULLY_SPECIFIED;
@@ -504,8 +531,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		return OK;
 	}
 
-	private boolean signsMatch(long a, long b) {
-		return (a < 0 && b < 0) || (a > 0 && b > 0);
+	private boolean areValidPositiveNumbers(long a, long b) {
+		return (a > 0 && b > 0);
 	}
 
 	public void addKnownTreasury(AccountID aId, TokenID tId) {

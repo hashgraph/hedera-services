@@ -42,7 +42,7 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.toList;
 
 @Disabled
-class RecordStreamCmp {
+	class RecordStreamCmpTest {
 	static final String consRecordLoc = "/Users/tinkerm/Dev/wellllll/paired/node0";
 	static final String issRecordsLoc = "/Users/tinkerm/Dev/wellllll/paired/node3";
 

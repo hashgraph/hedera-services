@@ -59,6 +59,7 @@ class MerkleAccountStateTest {
 	private long expiry = 1_234_567L;
 	private long balance = 555_555L;
 	private long autoRenewSecs = 234_567L;
+	private long nftsOwned = 150L;
 	private String memo = "A memo";
 	private boolean deleted = true;
 	private boolean smartContract = true;
@@ -169,6 +170,37 @@ class MerkleAccountStateTest {
 		// and:
 		verify(in, never()).readLongArray(MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE);
 		verify(in, times(3)).readLong();
+	}
+
+	@Test
+	void deserializeV0160Works() throws IOException {
+		// setup:
+		var in = mock(SerializableDataInputStream.class);
+		subject.setNftsOwned(nftsOwned);
+		// and:
+		var newSubject = new MerkleAccountState();
+
+		given(serdes.readNullable(argThat(in::equals), any(IoReadingFunction.class))).willReturn(key);
+		given(in.readLong())
+				.willReturn(expiry)
+				.willReturn(balance)
+				.willReturn(autoRenewSecs)
+				.willReturn(nftsOwned);
+		given(in.readNormalisedString(anyInt())).willReturn(memo);
+		given(in.readBoolean())
+				.willReturn(deleted)
+				.willReturn(smartContract)
+				.willReturn(receiverSigRequired);
+		given(serdes.readNullableSerializable(in)).willReturn(proxy);
+
+		// when:
+		newSubject.deserialize(in, MerkleAccountState.RELEASE_0160_VERSION);
+
+		// then:
+		assertEquals(subject, newSubject);
+		// and:
+		verify(in, never()).readLongArray(MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE);
+		verify(in, times(4)).readLong();
 	}
 
 	@Test
@@ -340,7 +372,7 @@ class MerkleAccountStateTest {
 	@Test
 	void merkleMethodsWork() {
 		// expect;
-		assertEquals(MerkleAccountState.RELEASE_0150_VERSION, subject.getVersion());
+		assertEquals(MerkleAccountState.RELEASE_0160_VERSION, subject.getVersion());
 		assertEquals(MerkleAccountState.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 		assertTrue(subject.isLeaf());
 	}

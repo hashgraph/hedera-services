@@ -39,7 +39,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -64,8 +63,8 @@ public class TxnReceipt implements SelfSerializable {
 	static final int RELEASE_0100_VERSION = 4;
 	static final int RELEASE_0110_VERSION = 5;
 	static final int RELEASE_0120_VERSION = 6;
-	static final int RELEASE_0150_VERSION = 7;
-	static final int MERKLE_VERSION = RELEASE_0150_VERSION;
+	static final int RELEASE_0160_VERSION = 7;
+	static final int MERKLE_VERSION = RELEASE_0160_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x65ef569a77dcf125L;
 
 	static DomainSerdes serdes = new DomainSerdes();
@@ -167,7 +166,7 @@ public class TxnReceipt implements SelfSerializable {
 		if (version >= RELEASE_0120_VERSION) {
 			scheduledTxnId = serdes.readNullableSerializable(in);
 		}
-		if (version >= RELEASE_0150_VERSION) {
+		if (version >= RELEASE_0160_VERSION) {
 			serialNumbers = in.readLongArray(MAX_SERIAL_NUMBERS);
 		}
 	}

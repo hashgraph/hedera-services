@@ -97,6 +97,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_AR
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -107,6 +108,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
@@ -130,6 +132,7 @@ import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.longThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
@@ -280,7 +283,41 @@ class HederaTokenStoreTest {
 					.setFixedFee(CustomFeesOuterClass.FixedFee.newBuilder()
 							.setAmount(0L)
 					)).build();
-
+	private CustomFeesOuterClass.CustomFees grpcMaxLessThanMinCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
+			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
+					.setFeeCollectorAccountId(feeCollector)
+					.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
+							.setFractionalAmount(Fraction.newBuilder()
+									.setNumerator(123L).setDenominator(1_000L))
+							.setMaximumAmount(2L)
+							.setMinimumAmount(10L)
+					)).build();
+	private CustomFeesOuterClass.CustomFees grpcMaxEqualToMinCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
+			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
+					.setFeeCollectorAccountId(feeCollector)
+					.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
+							.setFractionalAmount(Fraction.newBuilder()
+									.setNumerator(123L).setDenominator(1_000L))
+							.setMaximumAmount(2L)
+							.setMinimumAmount(2L)
+					)).build();
+	private CustomFeesOuterClass.CustomFees grpcZeroMaxPositiveMinCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
+			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
+					.setFeeCollectorAccountId(feeCollector)
+					.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
+							.setFractionalAmount(Fraction.newBuilder()
+									.setNumerator(123L).setDenominator(1_000L))
+							.setMaximumAmount(0L)
+							.setMinimumAmount(10L)
+					)).build();
+	private CustomFeesOuterClass.CustomFees grpcBothNegativeFractionCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
+			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
+					.setFeeCollectorAccountId(feeCollector)
+					.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
+							.setFractionalAmount(Fraction.newBuilder()
+									.setNumerator(-123L).setDenominator(-1_000L)
+							)
+					)).build();
 	private HederaTokenStore subject;
 
 	@BeforeEach
@@ -889,6 +926,115 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	void wipingRejectsMissingAccount() {
+		given(accountsLedger.exists(sponsor)).willReturn(false);
+
+		// when:
+		final var status = subject.wipe(sponsor, misc, adjustment, false);
+
+		// expect:
+		assertEquals(INVALID_ACCOUNT_ID, status);
+	}
+
+	@Test
+	void wipingRejectsTokenWithNoWipeKey() {
+		// when:
+		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
+
+		final var status = subject.wipe(sponsor, misc, adjustment, false);
+
+		// expect:
+		assertEquals(TOKEN_HAS_NO_WIPE_KEY, status);
+		verify(hederaLedger, never()).updateTokenXfers(misc, sponsor, -adjustment);
+	}
+
+	@Test
+	void wipingRejectsTokenTreasury() {
+		long wiping = 3L;
+
+		given(token.hasWipeKey()).willReturn(true);
+		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(sponsor));
+
+		// when:
+		final var status = subject.wipe(sponsor, misc, wiping, false);
+
+		// expect:
+		assertEquals(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT, status);
+		verify(hederaLedger, never()).updateTokenXfers(misc, sponsor, -wiping);
+	}
+
+	@Test
+	void wipingWithoutTokenRelationshipFails() {
+		// setup:
+		given(token.hasWipeKey()).willReturn(false);
+		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
+		// and:
+		given(tokenRelsLedger.exists(sponsorMisc)).willReturn(false);
+
+		// when:
+		final var status = subject.wipe(sponsor, misc, adjustment, true);
+
+		// expect:
+		assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, status);
+		verify(hederaLedger, never()).updateTokenXfers(misc, sponsor, -adjustment);
+	}
+
+	@Test
+	void wipingWorksWithoutWipeKeyIfCheckSkipped() {
+		// setup:
+		given(token.hasWipeKey()).willReturn(false);
+		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
+
+		// when:
+		final var status = subject.wipe(sponsor, misc, adjustment, true);
+
+		// expect:
+		assertEquals(OK, status);
+		verify(hederaLedger).updateTokenXfers(misc, sponsor, -adjustment);
+		verify(token).adjustTotalSupplyBy(-adjustment);
+		verify(tokenRelsLedger).set(
+				argThat(sponsorMisc::equals),
+				argThat(TOKEN_BALANCE::equals),
+				longThat(l -> l == (sponsorBalance - adjustment)));
+	}
+
+	@Test
+	void wipingUpdatesTokenXfersAsExpected() {
+		// setup:
+		given(token.hasWipeKey()).willReturn(true);
+		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
+
+		// when:
+		final var status = subject.wipe(sponsor, misc, adjustment, false);
+
+		// expect:
+		assertEquals(OK, status);
+		// and:
+		verify(hederaLedger).updateTokenXfers(misc, sponsor, -adjustment);
+		verify(token).adjustTotalSupplyBy(-adjustment);
+		verify(tokenRelsLedger).set(
+				argThat(sponsorMisc::equals),
+				argThat(TOKEN_BALANCE::equals),
+				longThat(l -> l == (sponsorBalance - adjustment)));
+	}
+
+	@Test
+	void wipingFailsWithInvalidWipingAmount() {
+		// setup:
+		long wipe = 1_235L;
+
+		given(token.hasWipeKey()).willReturn(true);
+		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
+
+		// when:
+		final var status = subject.wipe(sponsor, misc, wipe, false);
+
+		// expect:
+		assertEquals(INVALID_WIPING_AMOUNT, status);
+		verify(hederaLedger, never()).updateTokenXfers(misc, sponsor, -wipe);
+	}
+
+	@Test
 	void adjustingRejectsMissingAccount() {
 		given(accountsLedger.exists(sponsor)).willReturn(false);
 
@@ -1491,6 +1637,17 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	public void wipingRejectsDeletedToken() {
+		given(token.isDeleted()).willReturn(true);
+
+		// when:
+		final var status = subject.wipe(sponsor, misc, adjustment, false);
+
+		// then:
+		assertEquals(ResponseCodeEnum.TOKEN_WAS_DELETED, status);
+	}
+
+	@Test
 	public void freezingRejectsDeletedToken() {
 		givenTokenWithFreezeKey(true);
 		given(token.isDeleted()).willReturn(true);
@@ -1772,6 +1929,52 @@ class HederaTokenStoreTest {
 
 		// expect:
 		assertEquals(FRACTION_DIVIDES_BY_ZERO, result.getStatus());
+		assertTrue(result.getCreated().isEmpty());
+	}
+
+	@Test
+	void rejectsFractionalFeeMaxAmountLessThanMinAmount() {
+		final var req = fullyValidAttempt().setCustomFees(grpcMaxLessThanMinCustomFees).build();
+
+		// when:
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		// expect:
+		assertEquals(FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT, result.getStatus());
+		assertTrue(result.getCreated().isEmpty());
+	}
+
+	@Test
+	void acceptsFractionalFeeMaxAmountEqualToMinAmount() {
+		final var req = fullyValidAttempt().setCustomFees(grpcMaxEqualToMinCustomFees).build();
+
+		// when:
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		// expect:
+		assertEquals(OK, result.getStatus());
+		assertFalse(result.getCreated().isEmpty());
+	}
+
+	@Test
+	void acceptsFractionalFeeWithZeroMaxAmountPositiveMinAmount() {
+		final var req = fullyValidAttempt().setCustomFees(grpcZeroMaxPositiveMinCustomFees).build();
+
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		assertEquals(OK, result.getStatus());
+		assertFalse(result.getCreated().isEmpty());
+	}
+
+	@Test
+	void rejectsBothNumeratorAndDenominatorNegativeInFractionalFee() {
+		final var req = fullyValidAttempt().setCustomFees(grpcBothNegativeFractionCustomFees).build();
+
+		// when:
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		// expect:
+		assertEquals(CUSTOM_FEE_MUST_BE_POSITIVE, result.getStatus());
 		assertTrue(result.getCreated().isEmpty());
 	}
 

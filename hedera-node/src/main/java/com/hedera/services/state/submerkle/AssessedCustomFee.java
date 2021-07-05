@@ -90,9 +90,9 @@ public class AssessedCustomFee implements SelfSerializable {
 		return new AssessedCustomFee(token, aa);
 	}
 
-	/* NOTE: The object methods below are only overridden to improve readability of unit tests;
-	this model object is not used in hash-based collections, so the performance of these
-	methods doesn't matter. */
+	// NOTE: The object methods below are only overridden to improve readability of unit tests;
+	// this model object is not used in hash-based collections, so the performance of these
+	// methods doesn't matter.
 
 	@Override
 	public boolean equals(final Object obj) {
