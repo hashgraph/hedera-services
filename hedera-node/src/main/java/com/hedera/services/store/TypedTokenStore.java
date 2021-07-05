@@ -61,6 +61,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DEN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -337,11 +338,15 @@ public class TypedTokenStore {
 					if (fraction.getDenominator() == 0) {
 						return FRACTION_DIVIDES_BY_ZERO;
 					}
-					if (!signsMatch(fraction.getNumerator(), fraction.getDenominator())) {
+					if (!areValidPositiveNumbers(fraction.getNumerator(), fraction.getDenominator())) {
 						return CUSTOM_FEE_MUST_BE_POSITIVE;
 					}
 					if (fractionalSpec.getMaximumAmount() < 0 || fractionalSpec.getMinimumAmount() < 0) {
 						return CUSTOM_FEE_MUST_BE_POSITIVE;
+					}
+					if (fractionalSpec.getMaximumAmount() > 0 &&
+							fractionalSpec.getMaximumAmount() < fractionalSpec.getMinimumAmount()) {
+						return FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
 					}
 				} else {
 					return CUSTOM_FEE_NOT_FULLY_SPECIFIED;
@@ -364,8 +369,8 @@ public class TypedTokenStore {
 		return OK;
 	}
 
-	private boolean signsMatch(long a, long b) {
-		return (a < 0 && b < 0) || (a > 0 && b > 0);
+	private boolean areValidPositiveNumbers(long a, long b) {
+		return (a > 0 && b > 0);
 	}
 
 	private void validateUsable(MerkleTokenRelStatus merkleTokenRelStatus) {
