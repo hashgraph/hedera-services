@@ -30,6 +30,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 
 public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
@@ -58,6 +60,8 @@ public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
 		final var maximumToCollect = 50;
 
 		final var token = "withCustomSchedules";
+		final var immutableToken = "immutableToken";
+		final var noFeeScheduleKeyToken = "tokenWithoutFeeScheduleKey";
 		final var feeDenom = "denom";
 		final var hbarCollector = "hbarFee";
 		final var htsCollector = "denomFee";
@@ -104,11 +108,42 @@ public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
 										numerator, denominator,
 										minimumToCollect, OptionalLong.of(maximumToCollect),
 										tokenCollector)),
+						tokenCreate(immutableToken)
+								.feeScheduleKey(feeScheduleKey)
+								.treasury(tokenCollector)
+								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
+								.withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
+								.withCustom(fractionalFee(
+										numerator, denominator,
+										minimumToCollect, OptionalLong.of(maximumToCollect),
+										tokenCollector)),
+						tokenCreate(noFeeScheduleKeyToken)
+								.adminKey(adminKey)
+								.treasury(tokenCollector)
+								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
+								.withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
+								.withCustom(fractionalFee(
+										numerator, denominator,
+										minimumToCollect, OptionalLong.of(maximumToCollect),
+										tokenCollector)),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
 								.overridingProps(Map.of("tokens.maxCustomFeesAllowed", "1"))
 				)
 				.when(
+						tokenFeeScheduleUpdate(immutableToken)
+								.customFeesKey(feeScheduleKey)
+								.withCustom(fractionalFee(
+										numerator, 0,
+										minimumToCollect, OptionalLong.of(maximumToCollect),
+										tokenCollector))
+								.hasKnownStatus(TOKEN_IS_IMMUTABLE),
+						tokenFeeScheduleUpdate(noFeeScheduleKeyToken)
+								.withCustom(fractionalFee(
+										numerator, 0,
+										minimumToCollect, OptionalLong.of(maximumToCollect),
+										tokenCollector))
+								.hasKnownStatus(TOKEN_HAS_NO_FEE_SCHEDULE_KEY),
 						tokenFeeScheduleUpdate(token)
 								.customFeesKey(feeScheduleKey)
 								.withCustom(fractionalFee(
@@ -162,9 +197,6 @@ public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
 								.customFeesKey(feeScheduleKey)
 								.withCustom(incompleteCustomFee(hbarCollector))
 								.hasKnownStatus(CUSTOM_FEE_NOT_FULLY_SPECIFIED),
-//						tokenFeeScheduleUpdate(token)
-//								.withCustom(fixedHbarFee(newHbarAmount, newHbarCollector))
-//						        .hasKnownStatus(INVALID_FEE_SCHEDULE_KEY),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
 								.overridingProps(Map.of("tokens.maxCustomFeesAllowed", "10")),
