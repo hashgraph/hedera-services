@@ -275,7 +275,16 @@ public class SuiteRunner {
 		put("FileContractMemoPerfSuite", aof(new FileContractMemoPerfSuite()));
 		put("MixedSmartContractOpsLoadTest", aof(new MixedSmartContractOpsLoadTest()));
 		put("MixedFileOpsLoadTest", aof(new MixedFileOpsLoadTest()));
-		put("UniqueTokenStateSetup", aof(new UniqueTokenStateSetup()));
+		put("UniqueTokenStateSetup0", aof(new UniqueTokenStateSetup()));
+		put("UniqueTokenStateSetup1", aof(new UniqueTokenStateSetup()));
+		put("UniqueTokenStateSetup2", aof(new UniqueTokenStateSetup()));
+		put("UniqueTokenStateSetup3", aof(new UniqueTokenStateSetup()));
+		put("UniqueTokenStateSetup4", aof(new UniqueTokenStateSetup()));
+		put("UniqueTokenStateSetup5", aof(new UniqueTokenStateSetup()));
+		put("UniqueTokenStateSetup6", aof(new UniqueTokenStateSetup()));
+		put("UniqueTokenStateSetup7", aof(new UniqueTokenStateSetup()));
+		put("UniqueTokenStateSetup8", aof(new UniqueTokenStateSetup()));
+		put("UniqueTokenStateSetup9", aof(new UniqueTokenStateSetup()));
 		/* Functional tests - RECONNECT */
 		put("CreateAccountsBeforeReconnect", aof(new CreateAccountsBeforeReconnect()));
 		put("CreateTopicsBeforeReconnect", aof(new CreateTopicsBeforeReconnect()));

@@ -231,6 +231,8 @@ public class HapiApiSpec implements Runnable {
 		} else if (hapiSetup.costSnapshotMode() == COMPARE) {
 			compareWithSnapshot();
 		}
+
+		nullOutInfrastructure();
 	}
 
 	public boolean tryReinitializingFees() {
@@ -534,7 +536,8 @@ public class HapiApiSpec implements Runnable {
 
 	private HapiApiSpec(
 			String name, HapiSpecSetup hapiSetup,
-			HapiSpecOperation[] given, HapiSpecOperation[] when, HapiSpecOperation[] then) {
+			HapiSpecOperation[] given, HapiSpecOperation[] when, HapiSpecOperation[] then
+	) {
 		status = PENDING;
 		this.name = name;
 		this.hapiSetup = hapiSetup;
@@ -700,16 +703,19 @@ public class HapiApiSpec implements Runnable {
 		return defaultPath;
 	}
 
-	public HapiApiSpec saveContext(boolean saveIt) {
-		saveContextFlag = saveIt;
-		return this;
+	private void nullOutInfrastructure() {
+		txnFactory = null;
+		keyFactory = null;
+		entities = null;
+		feeCalculator = null;
+		ratesProvider = null;
+		hapiSetup = null;
+		hapiClients = null;
+		hapiRegistry = null;
 	}
 
-
-	public HapiApiSpec withContext(String migrationPath) {
-		if (migrationPath.isEmpty()) {
-			restoreContextFlag = true;
-		}
+	public HapiApiSpec saveContext(boolean saveIt) {
+		saveContextFlag = saveIt;
 		return this;
 	}
 
