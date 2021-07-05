@@ -10,7 +10,7 @@
                         "ScheduleCreate",
                         "CryptoCreate", "CryptoTransfer", "CryptoUpdate", "CryptoDelete", "CryptoGetInfo", "CryptoGetAccountRecords",
                         "ConsensusCreateTopic", "ConsensusSubmitMessage", "ConsensusUpdateTopic", "ConsensusDeleteTopic", "ConsensusGetTopicInfo",
-                        "TokenGetInfo", "TokenNftGetInfo",
+                        "TokenGetInfo", "TokenGetNftInfo", "TokenGetAccountNftInfos",
                         "ScheduleDelete", "ScheduleGetInfo",
                         "FileGetContents", "FileGetInfo",
                         "ContractUpdate", "ContractDelete", "ContractGetInfo", "ContractGetBytecode", "ContractGetRecords", "ContractCallLocal", 
@@ -29,7 +29,8 @@
                 {
                     "opsPerSec": 3000,
                     "operations": [
-                        "TokenCreate", "TokenDelete", "TokenMint", "TokenBurn", "TokenUpdate", "TokenAssociateToAccount", "TokenAccountWipe",
+                        "TokenCreate", "TokenDelete", "TokenMint", "TokenBurn", 
+                        "TokenUpdate", "TokenFeeScheduleUpdate", "TokenAssociateToAccount", "TokenAccountWipe",
                         "TokenDissociateFromAccount","TokenFreezeAccount", "TokenUnfreezeAccount", "TokenGrantKycToAccount", "TokenRevokeKycFromAccount"
                     ]
                 }
