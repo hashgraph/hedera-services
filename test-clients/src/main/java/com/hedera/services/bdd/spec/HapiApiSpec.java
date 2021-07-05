@@ -709,7 +709,6 @@ public class HapiApiSpec implements Runnable {
 		entities = null;
 		feeCalculator = null;
 		ratesProvider = null;
-		hapiSetup = null;
 		hapiClients = null;
 		hapiRegistry = null;
 	}
