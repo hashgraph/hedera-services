@@ -90,6 +90,7 @@ import com.hedera.services.fees.calculation.system.txns.FreezeResourceUsage;
 import com.hedera.services.fees.calculation.token.queries.GetAccountNftInfosResourceUsage;
 import com.hedera.services.fees.calculation.token.queries.GetTokenInfoResourceUsage;
 import com.hedera.services.fees.calculation.token.queries.GetTokenNftInfoResourceUsage;
+import com.hedera.services.fees.calculation.token.queries.GetTokenNftInfosResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenAssociateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenBurnResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenCreateResourceUsage;
@@ -190,6 +191,7 @@ import com.hedera.services.queries.schedule.ScheduleAnswers;
 import com.hedera.services.queries.token.GetAccountNftInfosAnswer;
 import com.hedera.services.queries.token.GetTokenInfoAnswer;
 import com.hedera.services.queries.token.GetTokenNftInfoAnswer;
+import com.hedera.services.queries.token.GetTokenNftInfosAnswer;
 import com.hedera.services.queries.token.TokenAnswers;
 import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.records.AccountRecordsHistorian;
@@ -1039,6 +1041,7 @@ public class ServicesContext {
 			tokenAnswers = new TokenAnswers(
 					new GetTokenInfoAnswer(),
 					new GetTokenNftInfoAnswer(),
+					new GetTokenNftInfosAnswer(validator()),
 					new GetAccountNftInfosAnswer(validator())
 			);
 		}
@@ -1120,6 +1123,7 @@ public class ServicesContext {
 							new GetScheduleInfoResourceUsage(scheduleOpsUsage),
 							/* NftInfo */
 							new GetTokenNftInfoResourceUsage(),
+							new GetTokenNftInfosResourceUsage(),
 							new GetAccountNftInfosResourceUsage()
 					),
 					txnUsageEstimators(

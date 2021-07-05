@@ -47,6 +47,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountNftInfos
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfos;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
@@ -63,6 +64,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIM
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_QUERY_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
@@ -106,7 +108,13 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 						validatesQueryOutOfRange(),
 						failsWithInvalidQueryBoundaries(),
 						getAccountNftsInfoFailsWithDeletedAccount(),
-						getAccountNftsInfoFailsWithInexistentAccount()
+						getAccountNftsInfoFailsWithInexistentAccount(),
+						associatesTokenNftInfosAsExpected(),
+						validateTokenNftInfosOutOfRange(),
+						failsWithTokenWithoutNfts(),
+						failsWithTokenNftsInvalidQueryBoundaries(),
+						failsWithDeletedTokenNft(),
+						failsWithFungibleTokenGetNftInfos()
                 }
         );
     }
@@ -124,15 +132,15 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 				).when(
 						mintToken(NFT, List.of(
-								ByteString.copyFromUtf8("some metadata"),
-								ByteString.copyFromUtf8("some metadata2"),
-								ByteString.copyFromUtf8("some metadata3")
+								metadata("some metadata"),
+								metadata("some metadata2"),
+								metadata("some metadata3")
 						))
 				).then(
 						getAccountNftInfos(TOKEN_TREASURY, 0, 2)
 								.hasNfts(
-										newTokenNftInfo(NFT, 1, TOKEN_TREASURY, ByteString.copyFromUtf8("some metadata")),
-										newTokenNftInfo(NFT, 2, TOKEN_TREASURY, ByteString.copyFromUtf8("some metadata2"))
+										newTokenNftInfo(NFT, 1, TOKEN_TREASURY, metadata("some metadata")),
+										newTokenNftInfo(NFT, 2, TOKEN_TREASURY, metadata("some metadata2"))
 								)
 								.logged()
 				);
@@ -151,9 +159,9 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 				).when(
 						mintToken(NFT, List.of(
-								ByteString.copyFromUtf8("some metadata"),
-								ByteString.copyFromUtf8("some metadata2"),
-								ByteString.copyFromUtf8("some metadata3")
+								metadata("some metadata"),
+								metadata("some metadata2"),
+								metadata("some metadata3")
 						))
 				).then(
 						getAccountNftInfos(TOKEN_TREASURY, 0, 6)
@@ -223,6 +231,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 								.hasCostAnswerPrecheck(OK),
 						getTokenNftInfo(NFT, 1)
 								.hasCostAnswerPrecheck(INVALID_NFT_ID),
+						getTokenNftInfos(NFT, 0, 1).hasCostAnswerPrecheck(INVALID_QUERY_RANGE),
 						getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(0),
 						getAccountNftInfos(TOKEN_TREASURY, 0, 1).hasCostAnswerPrecheck(INVALID_QUERY_RANGE)
 				);
@@ -246,7 +255,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 						getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(1),
 						getAccountNftInfos(TOKEN_TREASURY, 0, 1)
 								.hasNfts(
-										newTokenNftInfo(NFT, 1, TOKEN_TREASURY, ByteString.copyFromUtf8("memo"))
+										newTokenNftInfo(NFT, 1, TOKEN_TREASURY, metadata("memo"))
 								)
 								.logged()
 				);
@@ -332,6 +341,12 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 								.hasTokenBalance(NFT, 2),
 						getAccountInfo(TOKEN_TREASURY)
 								.hasOwnedNfts(2),
+						getTokenNftInfos(NFT, 0, 2)
+								.hasNfts(
+										newTokenNftInfo(NFT, 1, TOKEN_TREASURY, metadata("1")),
+										newTokenNftInfo(NFT, 2, TOKEN_TREASURY, metadata("2"))
+								)
+								.logged(),
 						getAccountNftInfos(TOKEN_TREASURY, 0, 2)
 								.hasNfts(
 										newTokenNftInfo(NFT, 1, TOKEN_TREASURY, metadata("1")),
@@ -361,7 +376,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 								.supplyKey(SUPPLY_KEY)
 								.treasury(TOKEN_TREASURY)
 				).when(
-						mintToken(NFT, List.of(ByteString.copyFromUtf8("memo"))).payingWith("customPayer").signedBy("customPayer", "supplyKey").via("mintNFT"),
+						mintToken(NFT, List.of(metadata("memo"))).payingWith("customPayer").signedBy("customPayer", "supplyKey").via("mintNFT"),
 						mintToken(FUNGIBLE_TOKEN, 100L).payingWith("customPayer").signedBy("customPayer", "supplyKey").via("mintFungible")
 				).then(
 						UtilVerbs.withOpContext((spec, opLog) -> {
@@ -467,7 +482,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 						getReceipt("mintTxn").logged(),
 						getTokenNftInfo(NFT, 1)
 								.hasSerialNum(1)
-								.hasMetadata(ByteString.copyFromUtf8("memo"))
+								.hasMetadata(metadata("memo"))
 								.hasTokenID(NFT)
 								.hasAccountID(TOKEN_TREASURY)
 								.hasValidCreationTime(),
@@ -481,6 +496,25 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 
 						getTokenNftInfo(NFT, 3)
 								.hasCostAnswerPrecheck(INVALID_NFT_ID),
+
+						getTokenNftInfos(NFT, 0, 1)
+								.hasNfts(
+										newTokenNftInfo(NFT, 1, TOKEN_TREASURY, metadata("memo"))
+								)
+								.logged(),
+
+						getTokenNftInfos(NFT, 1, 2)
+								.hasNfts(
+										newTokenNftInfo(NFT, 2, TOKEN_TREASURY, metadata("memo1"))
+								)
+								.logged(),
+
+						getTokenNftInfos(NFT, 0, 2)
+								.hasNfts(
+										newTokenNftInfo(NFT, 1, TOKEN_TREASURY, metadata("memo")),
+										newTokenNftInfo(NFT, 2, TOKEN_TREASURY, metadata("memo1"))
+								)
+								.logged(),
 
 						getAccountBalance(TOKEN_TREASURY)
 								.hasTokenBalance(NFT, 2),
@@ -515,14 +549,21 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 								.initialSupply(0)
 								.treasury(TOKEN_TREASURY)
 				).when(
-						mintToken(NFT, List.of(ByteString.copyFromUtf8("memo")))
+						mintToken(NFT, List.of(metadata("memo")))
 								.via("mintTxn")
 				).then(
 						getTokenNftInfo(NFT, 1)
 								.hasTokenID(NFT)
 								.hasAccountID(TOKEN_TREASURY)
-								.hasMetadata(ByteString.copyFromUtf8("memo"))
+								.hasMetadata(metadata("memo"))
 								.hasValidCreationTime(),
+
+						getTokenNftInfos(NFT, 0, 1)
+								.hasNfts(
+										newTokenNftInfo(NFT, 1, TOKEN_TREASURY, metadata("memo"))
+								)
+								.logged(),
+
 						getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(1),
 
 						getAccountNftInfos(TOKEN_TREASURY, 0, 1)
@@ -545,7 +586,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 		).when(
 				tokenDelete(NFT)
 		).then(
-				mintToken(NFT, List.of(ByteString.copyFromUtf8("memo")))
+				mintToken(NFT, List.of(metadata("memo")))
 						.via("mintTxn")
 						.hasKnownStatus(TOKEN_WAS_DELETED),
 
@@ -570,7 +611,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 								.supplyKey(SUPPLY_KEY)
 								.initialSupply(0)
 								.treasury(TOKEN_TREASURY),
-						mintToken(NFT, List.of(ByteString.copyFromUtf8("memo"))).via("mintTxn")
+						mintToken(NFT, List.of(metadata("memo"))).via("mintTxn")
 				)
 				.then(
 						getTokenNftInfo(NFT, 0)
@@ -623,22 +664,30 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 								.initialSupply(0)
 								.treasury(TOKEN_TREASURY)
 				).when(
-						mintToken(NFT, List.of(ByteString.copyFromUtf8("memo"), ByteString.copyFromUtf8("memo")))
+						mintToken(NFT, List.of(metadata("memo"), metadata("memo")))
 								.via("mintTxn")
 				).then(
 						getTokenNftInfo(NFT, 1)
 								.hasSerialNum(1)
-								.hasMetadata(ByteString.copyFromUtf8("memo"))
+								.hasMetadata(metadata("memo"))
 								.hasAccountID(TOKEN_TREASURY)
 								.hasTokenID(NFT)
 								.hasValidCreationTime(),
 
 						getTokenNftInfo(NFT, 2)
 								.hasSerialNum(2)
-								.hasMetadata(ByteString.copyFromUtf8("memo"))
+								.hasMetadata(metadata("memo"))
 								.hasAccountID(TOKEN_TREASURY)
 								.hasTokenID(NFT)
 								.hasValidCreationTime(),
+
+						getTokenNftInfos(NFT, 0, 2)
+								.hasNfts(
+										newTokenNftInfo(NFT, 1, TOKEN_TREASURY, metadata("memo")),
+										newTokenNftInfo(NFT, 2, TOKEN_TREASURY, metadata("memo"))
+								)
+								.logged(),
+
 						getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(2),
 
 						getAccountNftInfos(TOKEN_TREASURY, 0, 2)
@@ -663,7 +712,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 				)
 				.when(
-						mintToken(A_TOKEN, List.of(ByteString.copyFromUtf8("memo"))).via("mintTransferTxn")
+						mintToken(A_TOKEN, List.of(metadata("memo"))).via("mintTransferTxn")
 				)
 				.then(
 						UtilVerbs.withOpContext((spec, opLog) -> {
@@ -682,6 +731,130 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 						}),
 						getTxnRecord("mintTransferTxn").logged(),
 						getReceipt("mintTransferTxn").logged()
+				);
+	}
+
+	private HapiApiSpec associatesTokenNftInfosAsExpected() {
+		return defaultHapiSpec("AssociatesTokenNftInfosAsExpected")
+				.given(
+						newKeyNamed(SUPPLY_KEY),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(NFT)
+								.initialSupply(0)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.supplyType(TokenSupplyType.INFINITE)
+								.supplyKey(SUPPLY_KEY)
+								.treasury(TOKEN_TREASURY)
+				).when(
+						mintToken(NFT, List.of(
+								metadata("some metadata"),
+								metadata("some metadata2"),
+								metadata("some metadata3")
+						))
+				).then(
+						getTokenNftInfos(NFT, 0, 3)
+								.hasNfts(
+										newTokenNftInfo(NFT, 1, TOKEN_TREASURY, metadata("some metadata")),
+										newTokenNftInfo(NFT, 2, TOKEN_TREASURY, metadata("some metadata2")),
+										newTokenNftInfo(NFT, 3, TOKEN_TREASURY, metadata("some metadata3"))
+								)
+								.logged()
+				);
+	}
+
+	private HapiApiSpec validateTokenNftInfosOutOfRange() {
+		return defaultHapiSpec("ValidateTokenNftInfosOutOfRange")
+				.given(
+						newKeyNamed(SUPPLY_KEY),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(NFT)
+								.initialSupply(0)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.supplyType(TokenSupplyType.INFINITE)
+								.supplyKey(SUPPLY_KEY)
+								.treasury(TOKEN_TREASURY)
+				).when(
+						mintToken(NFT, List.of(
+								metadata("some metadata"),
+								metadata("some metadata2"),
+								metadata("some metadata3")
+						))
+				).then(
+						getTokenNftInfos(NFT, 0, 6)
+								.hasCostAnswerPrecheck(INVALID_QUERY_RANGE)
+				);
+	}
+
+	private HapiApiSpec failsWithTokenWithoutNfts() {
+		return defaultHapiSpec("FailsWithTokenWithoutNfts")
+				.given(
+						newKeyNamed(SUPPLY_KEY),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(NFT)
+								.initialSupply(0)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.supplyType(TokenSupplyType.INFINITE)
+								.supplyKey(SUPPLY_KEY)
+								.treasury(TOKEN_TREASURY)
+				).when()
+				.then(
+						getTokenNftInfos(NFT, 0, 2)
+								.hasCostAnswerPrecheck(INVALID_QUERY_RANGE)
+				);
+	}
+
+	private HapiApiSpec failsWithTokenNftsInvalidQueryBoundaries() {
+		return defaultHapiSpec("FailsWithTokenNftsInvalidQueryBoundaries")
+				.given(
+						newKeyNamed(SUPPLY_KEY),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(NFT)
+								.initialSupply(0)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.supplyType(TokenSupplyType.INFINITE)
+								.supplyKey(SUPPLY_KEY)
+								.treasury(TOKEN_TREASURY)
+				).when().then(
+						getTokenNftInfos(NFT, 2, 0)
+								.hasCostAnswerPrecheck(INVALID_QUERY_RANGE),
+						getTokenNftInfos(NFT, 0, 100000000)
+								.hasCostAnswerPrecheck(INVALID_QUERY_RANGE)
+				);
+	}
+
+	private HapiApiSpec failsWithDeletedTokenNft() {
+		return defaultHapiSpec("FailsWithDeletedTokenNft")
+				.given(
+						newKeyNamed(SUPPLY_KEY),
+						newKeyNamed("nftAdmin"),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(NFT)
+								.initialSupply(0)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.supplyType(TokenSupplyType.INFINITE)
+								.supplyKey(SUPPLY_KEY)
+								.adminKey("nftAdmin")
+								.treasury(TOKEN_TREASURY)
+				).when(
+						tokenDelete(NFT)
+				)
+				.then(
+						getTokenNftInfos(NFT, 0, 2)
+								.hasCostAnswerPrecheck(TOKEN_WAS_DELETED)
+				);
+	}
+
+	public HapiApiSpec failsWithFungibleTokenGetNftInfos() {
+		return defaultHapiSpec("FailsWithFungibleTokenGetNftInfos")
+				.given(
+						cryptoCreate(TOKEN_TREASURY).balance(0L)
+				).when(
+						tokenCreate(A_TOKEN)
+								.initialSupply(1_000)
+								.treasury(TOKEN_TREASURY)
+				).then(
+						getTokenNftInfos(A_TOKEN, 0, 2)
+								.hasCostAnswerPrecheck(NOT_SUPPORTED)
 				);
 	}
 
