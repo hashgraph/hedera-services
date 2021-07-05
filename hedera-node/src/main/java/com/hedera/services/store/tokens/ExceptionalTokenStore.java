@@ -148,11 +148,4 @@ public enum ExceptionalTokenStore implements TokenStore {
 	public MerkleToken get(TokenID id) {
 		throw new UnsupportedOperationException();
 	}
-
-	@Override
-	public ResponseCodeEnum wipe(AccountID aId, TokenID tId, long wipingAmount, boolean skipKeyCheck) {
-		throw new UnsupportedOperationException();
-	}
-
-
 }

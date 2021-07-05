@@ -85,7 +85,6 @@ import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_ARE_MARKED_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
@@ -100,7 +99,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
@@ -394,29 +392,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 					merkleUniqueTokenId);
 
 			hederaLedger.updateOwnershipChanges(nftId, from, to);
-
-			return OK;
-		});
-	}
-
-	@Override
-	public ResponseCodeEnum wipe(AccountID aId, TokenID tId, long amount, boolean skipKeyCheck) {
-		return sanityChecked(aId, null, tId, token -> {
-			if (!skipKeyCheck && !token.hasWipeKey()) {
-				return TOKEN_HAS_NO_WIPE_KEY;
-			}
-			if (fromGrpcAccountId(aId).equals(token.treasury())) {
-				return CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
-			}
-
-			var relationship = asTokenRel(aId, tId);
-			long balance = (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
-			if (amount > balance) {
-				return INVALID_WIPING_AMOUNT;
-			}
-			tokenRelsLedger.set(relationship, TOKEN_BALANCE, balance - amount);
-			hederaLedger.updateTokenXfers(tId, aId, -amount);
-			apply(tId, t -> t.adjustTotalSupplyBy(-amount));
 
 			return OK;
 		});
