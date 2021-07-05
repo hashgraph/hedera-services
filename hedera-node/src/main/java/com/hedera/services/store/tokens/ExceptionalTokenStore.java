@@ -85,6 +85,11 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
+	public ResponseCodeEnum wipe(final AccountID aId, final TokenID tId, final long wipingAmount, final boolean skipKeyCheck) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public boolean associationExists(AccountID aId, TokenID tId) {
 		throw new UnsupportedOperationException();
 	}

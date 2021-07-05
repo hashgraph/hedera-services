@@ -36,9 +36,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
-import java.util.ArrayList;
-import java.util.List;
-
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
@@ -49,7 +46,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_MAX_SUPPLY_REACHED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_MAX_SUPPLY_REACHED;
 
 /**
@@ -70,9 +66,6 @@ public class Token {
 	private final List<UniqueToken> removedUniqueTokens = new ArrayList<>();
 	private Map<Long, UniqueToken> loadedUniqueTokens = new HashMap<>();
 	private boolean supplyHasChanged;
-	private final List<UniqueToken> mintedUniqueTokens = new ArrayList<>();
-	private final List<UniqueToken> burnedUniqueTokens = new ArrayList<>();
-
 	private TokenType type;
 	private TokenSupplyType supplyType;
 	private long totalSupply;
