@@ -228,6 +228,55 @@ class MemMapSlotFile implements Closeable {
     }
 
     /**
+     * Write data into a slot, your slot writer will be called with a bytebuffer while file is locked
+     *
+     * @param slotIndex the slot index of the data to write
+     * @param writer   slot writer to write into the slot with bytebuffer
+     */
+    public void writeSlotByteBuffer(int slotIndex, SlotStore.ByteBufferSlotWriter writer) throws IOException {
+        throwIfClosed();
+        if (writer == null) throw new IllegalArgumentException("Can not call writeSlot with null writer");
+        // calculate the offset position of the value in the file
+        final int slotOffset = slotSize * slotIndex;
+        // create sub buffer
+        final ByteBuffer subBuffer = mappedBuffer.slice();
+        subBuffer.position(slotOffset + HEADER_SIZE);
+        subBuffer.limit(subBuffer.position() + slotSize - HEADER_SIZE);
+        // call write
+        lock.writeLock().lock(); // <--- TODO Not sure we need to lock here. At least, we should be locking on bin??
+        try {
+            writer.write(subBuffer);
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Read data from a slot, your consumer reader will be called with a bytebuffer while file is locked
+     *
+     * @param slotIndex the slot index of the data to get
+     * @param reader   ByteBufferSlotReader to read from bytebuffer
+     * @return object read by reader
+     */
+    public <R> R readSlotByteBuffer(int slotIndex, SlotStore.ByteBufferSlotReader<R> reader) throws IOException {
+        throwIfClosed();
+        if (reader == null) throw new IllegalArgumentException("Can not call readSlot with null reader");
+        // calculate the offset position of the value in the file
+        final int slotOffset = slotSize * slotIndex;
+        // create sub buffer
+        final ByteBuffer subBuffer = mappedBuffer.asReadOnlyBuffer();
+        subBuffer.position(slotOffset + HEADER_SIZE);
+        subBuffer.limit(subBuffer.position() + slotSize - HEADER_SIZE);
+        // call read
+        lock.readLock().lock(); // <--- TODO Not sure we need to lock here. At least, we should be locking on bin??
+        try {
+            return reader.read(subBuffer);
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    /**
      * Finds a new slot in this file, if there is one available
      *
      * This trys to be concurrent and if the file is full

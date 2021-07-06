@@ -423,7 +423,7 @@ public final class FCVirtualMapLeafStoreImpl<LK extends VKey,
             // update the path in the leaf's slot // TODO this is not Fast Copy Safe Yet
             Object storeLock = leafStore.acquireWriteLock(leafSlot);
             try {
-                leafStore.writeSlot(leafSlot, outputStream -> {
+                leafStore.updateSlot(leafSlot, outputStream -> {
                     int position = outputStream.position();
                     // write key
                     position += leafKeySizeBytes;

@@ -195,6 +195,18 @@ public final class MemMapSlotStore implements SlotStore {
     }
 
     /**
+     * Write data into a slot, over the top of existing slot
+     *
+     * @param location slot location of the data to get
+     * @param writer   slot writer to write into the slot with output stream
+     */
+    @Override
+    public void updateSlot(long location, SlotWriter writer) throws IOException {
+        // as we are writing direct into file that already contains the old data we can just do a write here.
+        writeSlot(location,writer);
+    }
+
+    /**
      * Read data from a slot, your consumer reader will be called with a input stream while file is locked
      *
      * @param location slot location of the data to get
@@ -206,6 +218,34 @@ public final class MemMapSlotStore implements SlotStore {
 //        if (file == null) throw new IllegalArgumentException("There is no file for location ["+location+"]");
         assert file != null;
         return file.readSlot(slotIndexFromLocation(location), reader);
+    }
+
+    /**
+     * Write data into a slot, your slot writer will be called with a bytebuffer while file is locked
+     *
+     * @param location slot location of the data to get
+     * @param writer   slot writer to write into the slot with bytebuffer
+     */
+    @Override
+    public void writeSlotByteBuffer(long location, ByteBufferSlotWriter writer) throws IOException {
+        MemMapSlotFile file = files.get(fileIndexFromLocation(location));
+//        if (file == null) throw new IllegalArgumentException("There is no file for location ["+location+"]");
+        assert file != null;
+        file.writeSlotByteBuffer(slotIndexFromLocation(location), writer);
+    }
+
+    /**
+     * Read data from a slot, your consumer reader will be called with a bytebuffer while file is locked
+     *
+     * @param location slot location of the data to get
+     * @param reader   ByteBufferSlotReader to read from bytebuffer
+     * @return object read by reader
+     */
+    @Override
+    public <R> R readSlotByteBuffer(long location, ByteBufferSlotReader<R> reader) throws IOException {
+        MemMapSlotFile file = files.get(fileIndexFromLocation(location));
+        assert file != null;
+        return file.readSlotByteBuffer(slotIndexFromLocation(location), reader);
     }
 
     private long getNewSlotIfAvailable() {
