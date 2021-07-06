@@ -45,7 +45,14 @@ public class InMemorySlotStore implements SlotStore {
 
     @Override
     public void writeSlot(long location, SlotWriter writer) throws IOException {
-        // TODO at the moment the API assumes a overwrite in the case of writeSlot being a update, there for we have to read
+        ByteBuffer buffer = ByteBuffer.allocate(dataSize);
+        writer.write(new PositionableByteBufferSerializableDataOutputStream(buffer));
+//        buffer.rewind();
+        data.put(location,buffer.array());
+    }
+
+    @Override
+    public void updateSlot(long location, SlotWriter writer) throws IOException {
         ByteBuffer buffer;
         byte[] bytes = data.get(location);
         if (bytes != null) { // IS UPDATE
@@ -54,8 +61,7 @@ public class InMemorySlotStore implements SlotStore {
             buffer = ByteBuffer.allocate(dataSize);
         }
         writer.write(new PositionableByteBufferSerializableDataOutputStream(buffer));
-        buffer.rewind();
-//        System.out.println(location+" len = "+buffer.getInt(28)+" -- "+ Arrays.toString(buffer.array()));
+//        buffer.rewind();
         data.put(location,buffer.array());
     }
 
@@ -66,6 +72,36 @@ public class InMemorySlotStore implements SlotStore {
             ByteBuffer buffer = ByteBuffer.wrap(bytes);
             try {
                 return reader.read(new PositionableByteBufferSerializableDataInputStream(buffer));
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.err.println("location = "+location+" buffer.position()"+buffer.position()+" buffer data="+ Arrays.toString(buffer.array()));
+                throw e;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public void writeSlotByteBuffer(long location, ByteBufferSlotWriter writer) throws IOException {
+        ByteBuffer buffer;
+        byte[] bytes = data.get(location);
+        if (bytes != null) { // IS UPDATE
+            buffer = ByteBuffer.wrap(Arrays.copyOf(bytes,bytes.length));
+        } else { // IS NEW
+            buffer = ByteBuffer.allocate(dataSize);
+        }
+        writer.write(buffer);
+//        buffer.rewind();
+        data.put(location,buffer.array());
+    }
+
+    @Override
+    public <R> R readSlotByteBuffer(long location, ByteBufferSlotReader<R> reader) throws IOException {
+        byte[] bytes = data.get(location);
+        if (bytes != null) {
+            ByteBuffer buffer = ByteBuffer.wrap(bytes);
+            try {
+                return reader.read(buffer);
             } catch (Exception e) {
                 e.printStackTrace();
                 System.err.println("location = "+location+" buffer.position()"+buffer.position()+" buffer data="+ Arrays.toString(buffer.array()));

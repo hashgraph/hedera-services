@@ -1,6 +1,7 @@
 package com.hedera.services.state.merkle.virtual.persistence;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 
 /**
@@ -49,6 +50,22 @@ public interface SlotStore {
     void writeSlot(long location, SlotWriter writer) throws IOException;
 
     /**
+     * Write data into a slot, over the top of existing slot
+     *
+     * @param location slot location of the data to get
+     * @param writer slot writer to write into the slot with output stream
+     */
+    void updateSlot(long location, SlotWriter writer) throws IOException;
+
+    /**
+     * Write data into a slot, your slot writer will be called with a bytebuffer while file is locked
+     *
+     * @param location slot location of the data to get
+     * @param writer slot writer to write into the slot with bytebuffer
+     */
+    void writeSlotByteBuffer(long location, ByteBufferSlotWriter writer) throws IOException;
+
+    /**
      * Acquire a read lock for the given location
      *
      * @param location the location we want to be able to read to
@@ -72,6 +89,15 @@ public interface SlotStore {
      * @return object read by reader
      */
     <R> R readSlot(long location, SlotReader<R> reader) throws IOException;
+
+    /**
+     * Read data from a slot, your consumer reader will be called with a bytebuffer while file is locked
+     *
+     * @param location slot location of the data to get
+     * @param reader ByteBufferSlotReader to read from bytebuffer
+     * @return object read by reader
+     */
+    <R> R readSlotByteBuffer(long location, ByteBufferSlotReader<R> reader) throws IOException;
 
     /**
      * Finds a new slot ready for use
@@ -99,6 +125,20 @@ public interface SlotStore {
      */
     interface SlotReader<R> {
         R read(PositionableByteBufferSerializableDataInputStream inputStream) throws IOException;
+    }
+
+    /**
+     * Interface for a slot writer, that writes to a ByteBuffer
+     */
+    interface ByteBufferSlotWriter {
+        void write(ByteBuffer buffer) throws IOException;
+    }
+
+    /**
+     * Interface for a slot reader, that reads from a ByteBuffer
+     */
+    interface ByteBufferSlotReader<R> {
+        R read(ByteBuffer buffer) throws IOException;
     }
 
     /**

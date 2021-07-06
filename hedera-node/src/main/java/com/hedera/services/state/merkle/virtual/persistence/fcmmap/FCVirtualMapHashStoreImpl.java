@@ -210,19 +210,7 @@ public final class FCVirtualMapHashStoreImpl<HK extends VKey> implements FCVirtu
             if (slotLocation == SlotStore.NOT_FOUND_LOCATION) return null;
             Object storeLock = hashStore.acquireReadLock(slotLocation);
             try {
-                return hashStore.readSlot(slotLocation, inputStream -> {
-                    int position = inputStream.position();
-                    // skip hash key
-                    //                SerializableLong key = inputStream.readSelfSerializable(position, SerializableLong::new);
-                    position += hashKeySizeBytes;
-                    // hash data
-                    inputStream.position(position);
-                    DigestType digestType = DigestType.valueOf(inputStream.readInt());
-                    byte[] hashData = new byte[digestType.digestLength()];
-                    //noinspection ResultOfMethodCallIgnored
-                    inputStream.read(hashData);
-                    return new VirtualHash(digestType, hashData);
-                });
+                return hashStore.readSlotByteBuffer(slotLocation, Hash::fromByteBuffer);
             } finally {
                 hashStore.releaseReadLock(slotLocation, storeLock);
             }
@@ -247,15 +235,8 @@ public final class FCVirtualMapHashStoreImpl<HK extends VKey> implements FCVirtu
             Object storeLock = hashStore.acquireWriteLock(slotLocation);
             try {
                 // write hash into slot
-                hashStore.writeSlot(slotLocation, outputStream -> {
-                    int position = outputStream.position();
-                    // write hash key
-                    outputStream.writeSelfSerializable(position, hashKey, hashKeySizeBytes);
-                    position += hashKeySizeBytes;
-                    // write hash data
-                    outputStream.position(position);
-                    outputStream.writeInt(hash.getDigestType().id());
-                    outputStream.write(hash.getValue()); // TODO Badly need a way to save a hash here without copying the byte[]
+                hashStore.writeSlotByteBuffer(slotLocation, byteBuffer -> {
+                    Hash.toByteBuffer(hash,byteBuffer);
                 });
             } finally {
                 hashStore.releaseWriteLock(slotLocation, storeLock);
