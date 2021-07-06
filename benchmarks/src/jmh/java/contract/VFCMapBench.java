@@ -50,6 +50,12 @@ public class VFCMapBench {
     @Param("0")
     public int preFill;
 
+    @Param({"true", "false"})
+    public boolean inMemoryIndex;
+
+    @Param({"true", "false"})
+    public boolean inMemoryStore;
+
     private final Random rand = new Random();
     private VFCMap<ContractUint256, ContractUint256> contractMap;
     private Future<?> prevIterationHashingFuture;
@@ -58,9 +64,12 @@ public class VFCMapBench {
 
     @Setup
     public void prepare() throws Exception {
-        final var ls = new ContractLeafStore(new Id(1, 2, 3));
-        final var hs = new ContractHashStore(new Id(1, 2, 3));
+        final var ls = new ContractLeafStore(new Id(1, 2, 3),inMemoryIndex,inMemoryStore);
+        final var hs = new ContractHashStore(new Id(1, 2, 3),inMemoryIndex,inMemoryStore);
         contractMap = new VFCMap<>(ls, hs);
+
+        System.out.println("\nUsing inMemoryIndex = " + inMemoryIndex+"  -- inMemoryStore = " + inMemoryStore);
+
 
         if (preFill > 0) {
             for (int i = 0; i < numEntities; i++) {

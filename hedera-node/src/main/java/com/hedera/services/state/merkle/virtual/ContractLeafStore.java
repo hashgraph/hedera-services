@@ -1,10 +1,7 @@
 package com.hedera.services.state.merkle.virtual;
 
 import com.hedera.services.state.merkle.virtual.persistence.FCVirtualMapLeafStore;
-import com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCSlotIndexUsingFCHashMap;
-import com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCSlotIndexUsingMemMapFile;
-import com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCVirtualMapLeafStoreImpl;
-import com.hedera.services.state.merkle.virtual.persistence.fcmmap.MemMapSlotStore;
+import com.hedera.services.state.merkle.virtual.persistence.fcmmap.*;
 import com.hedera.services.store.models.Id;
 import com.swirlds.fcmap.FCLeafStore;
 import com.swirlds.fcmap.FCVirtualRecord;
@@ -17,9 +14,15 @@ public class ContractLeafStore implements FCLeafStore<ContractUint256, ContractU
     private final FCVirtualMapLeafStore<ContractKey, ContractPath, ContractUint256> dataStore;
 
     public ContractLeafStore(Id contractId) {
+        this(contractId, false, false);
+    }
+
+    public ContractLeafStore(Id contractId, boolean inMemoryIndex, boolean inMemoryStore) {
         this.contractId = contractId;
         try {
-            final var leafPathIndex = new FCSlotIndexUsingMemMapFile<ContractPath>(
+            final var leafPathIndex = inMemoryIndex ?
+                    new FCSlotIndexUsingFCHashMap<ContractPath>() :
+                    new FCSlotIndexUsingMemMapFile<ContractPath>(
                     Path.of("data/contract-storage/leaf-path-index"),
                     "leaf-path-index",
                     1024*1024,
@@ -29,7 +32,9 @@ public class ContractLeafStore implements FCLeafStore<ContractUint256, ContractU
                     20,
                     8);
 
-            final var leafKeyIndex = new FCSlotIndexUsingMemMapFile<ContractKey>(
+            final var leafKeyIndex = inMemoryIndex ?
+                    new FCSlotIndexUsingFCHashMap<ContractKey>() :
+                    new FCSlotIndexUsingMemMapFile<ContractKey>(
                     Path.of("data/contract-storage/leaf-key-index"),
                     "leaf-key-index",
                     1024*1024,
@@ -39,7 +44,7 @@ public class ContractLeafStore implements FCLeafStore<ContractUint256, ContractU
                     20,
                     8);
 
-            this.dataStore = new FCVirtualMapLeafStoreImpl<>(
+            this.dataStore = new FCVirtualMapLeafStoreImpl<ContractKey, ContractPath, ContractUint256>(
                     Path.of("data/contract-storage"),
                     8,
                     ContractKey.SERIALIZED_SIZE,
@@ -50,7 +55,7 @@ public class ContractLeafStore implements FCLeafStore<ContractUint256, ContractU
                     ContractKey::new,
                     ContractPath::new,
                     ContractUint256::new,
-                    MemMapSlotStore::new);
+                    inMemoryStore ? InMemorySlotStore::new : MemMapSlotStore::new);
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
