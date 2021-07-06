@@ -58,9 +58,7 @@ class AssetsLoader {
 			final Map<HederaFunctionality, BigDecimal> typedConstWeights = new EnumMap<>(HederaFunctionality.class);
 			constWeights.forEach((funcName, weight) -> {
 				final var function = HederaFunctionality.valueOf((String) funcName);
-				final var bdWeight = (weight instanceof Double)
-						? BigDecimal.valueOf((Double) weight)
-						: BigDecimal.valueOf((Integer) weight);
+				final var bdWeight = BigDecimal.valueOf((Double) weight);
 				typedConstWeights.put(function, bdWeight);
 			});
 
