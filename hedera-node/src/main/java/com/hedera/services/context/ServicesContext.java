@@ -626,15 +626,19 @@ public class ServicesContext {
 	 * Update the queryable state
 	 */
 	private void updateQueryableState(ServicesState state) {
-		queryableState.get().setAccounts(state.accounts());
-		queryableState.get().setTopics(state.topics());
-		queryableState.get().setStorage(state.storage());
-		queryableState.get().setTokens(state.tokens());
-		queryableState.get().setTokenAssociations(state.tokenAssociations());
-		queryableState.get().setSchedules(state.scheduleTxs());
-		queryableState.get().setUniqueTokens(state.uniqueTokens());
-		queryableState.get().setUniqueTokenAssociations(state.uniqueTokenAssociations());
-		queryableState.get().setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
+		final StateChildren newQueryableStateChildren = new StateChildren();
+
+		newQueryableStateChildren.setAccounts(state.accounts());
+		newQueryableStateChildren.setTopics(state.topics());
+		newQueryableStateChildren.setStorage(state.storage());
+		newQueryableStateChildren.setTokens(state.tokens());
+		newQueryableStateChildren.setTokenAssociations(state.tokenAssociations());
+		newQueryableStateChildren.setSchedules(state.scheduleTxs());
+		newQueryableStateChildren.setUniqueTokens(state.uniqueTokens());
+		newQueryableStateChildren.setUniqueTokenAssociations(state.uniqueTokenAssociations());
+		newQueryableStateChildren.setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
+
+		queryableState.set(newQueryableStateChildren);
 	}
 
 	/**
