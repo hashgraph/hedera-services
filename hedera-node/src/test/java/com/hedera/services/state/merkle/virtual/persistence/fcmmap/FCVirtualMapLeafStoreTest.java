@@ -1,7 +1,9 @@
 package com.hedera.services.state.merkle.virtual.persistence.fcmmap;
 
 import com.hedera.services.state.merkle.MerkleAccountState;
+import com.hedera.services.state.merkle.virtual.persistence.FCSlotIndex;
 import com.hedera.services.state.merkle.virtual.persistence.FCVirtualMapLeafStore;
+import com.hedera.services.state.merkle.virtual.persistence.SlotStore;
 import com.hedera.services.state.submerkle.EntityId;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -14,15 +16,20 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Random;
+import java.util.function.Supplier;
 
 import static com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCVirtualMapTestUtils.measureLengthOfSerializable;
 import static org.junit.jupiter.api.Assertions.*;
 import static com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCVirtualMapTestUtils.*;
 
+@SuppressWarnings("unchecked")
 public class FCVirtualMapLeafStoreTest {
     private static final Random RANDOM = new Random(1234);
     public static final Path STORE_PATH = Path.of("store");
     static { System.out.println("STORE_PATH = " + STORE_PATH.toAbsolutePath()); }
+    private static final Supplier<FCSlotIndex> INDEX_FACTORY = FCSlotIndexUsingFCHashMap::new;
+    private static final SlotStore.SlotStoreFactory SLOT_STORE_FACTORY = InMemorySlotStore::new;
+//    private static final SlotStore.SlotStoreFactory SLOT_STORE_FACTORY = MemMapSlotStore::new;
 
     /**
      * TEST LEAF FUNCTIONALITY
@@ -34,11 +41,11 @@ public class FCVirtualMapLeafStoreTest {
         deleteDirectoryAndContents(STORE_PATH);
         // create and open store
         FCVirtualMapLeafStore<LongVKey,LongVKey,TestLeafData> store
-                = new FCVirtualMapLeafStoreImpl<>(STORE_PATH,10,
-                        8,8,TestLeafData.SIZE_BYTES,
-                        new FCSlotIndexUsingFCHashMap<>(), new FCSlotIndexUsingFCHashMap<>(),
-                        LongVKey::new, LongVKey::new, TestLeafData::new,
-                        MemMapSlotStore::new);
+                = new FCVirtualMapLeafStoreImpl<LongVKey,LongVKey,TestLeafData>(STORE_PATH, 10,
+                8, 8, TestLeafData.SIZE_BYTES,
+                INDEX_FACTORY.get(), INDEX_FACTORY.get(),
+                LongVKey::new, LongVKey::new, TestLeafData::new,
+                SLOT_STORE_FACTORY);
 
         // create some data for a number of accounts
         for (int i = 0; i < COUNT; i++) {
@@ -103,16 +110,17 @@ public class FCVirtualMapLeafStoreTest {
      */
     @Test
     public void updateLeafPath() throws IOException {
-        final int COUNT = 5;
+//        final int COUNT = 5;
+        final int COUNT = 1000;
         // delete old store if it exists
         deleteDirectoryAndContents(STORE_PATH);
         // create and open store
         FCVirtualMapLeafStore<LongVKey,LongVKey,TestLeafData> store
-                = new FCVirtualMapLeafStoreImpl<>(STORE_PATH,10,
-                        8,8,TestLeafData.SIZE_BYTES,
-                        new FCSlotIndexUsingFCHashMap<>(), new FCSlotIndexUsingFCHashMap<>(),
-                        LongVKey::new, LongVKey::new, TestLeafData::new,
-                        MemMapSlotStore::new);
+                = new FCVirtualMapLeafStoreImpl<LongVKey,LongVKey,TestLeafData>(STORE_PATH, 10,
+                8, 8, TestLeafData.SIZE_BYTES,
+                INDEX_FACTORY.get(), INDEX_FACTORY.get(),
+                LongVKey::new, LongVKey::new, TestLeafData::new,
+                SLOT_STORE_FACTORY);
 
         // create some data for a number of accounts
         for (int i = 0; i < COUNT; i++) {
@@ -151,8 +159,8 @@ public class FCVirtualMapLeafStoreTest {
             e.printStackTrace();
         }
 
-//        final int COUNT = 10_000;
-        final int COUNT = 5;
+        final int COUNT = 10_000;
+//        final int COUNT = 5;
         // delete old store if it exists
         deleteDirectoryAndContents(STORE_PATH);
         // measure the size of a MerkleAccountState
@@ -160,10 +168,11 @@ public class FCVirtualMapLeafStoreTest {
         System.out.println("sizeOfMerkleAccountState = " + sizeOfMerkleAccountState);
         // create and open store
         FCVirtualMapLeafStore<SerializableAccount,LongVKey,MerkleAccountState> store
-                = new FCVirtualMapLeafStoreImpl<>(STORE_PATH,10,
+                = new FCVirtualMapLeafStoreImpl<SerializableAccount,LongVKey,MerkleAccountState>(STORE_PATH, 10,
                 8 * 3,8,sizeOfMerkleAccountState,
-                new FCSlotIndexUsingFCHashMap<>(), new FCSlotIndexUsingFCHashMap<>(),
-                SerializableAccount::new, LongVKey::new, MerkleAccountState::new, MemMapSlotStore::new);
+                INDEX_FACTORY.get(), INDEX_FACTORY.get(),
+                SerializableAccount::new, LongVKey::new, MerkleAccountState::new,
+                SLOT_STORE_FACTORY);
 
         final var hashStore = new FCVirtualMapHashStoreImpl<>(
                 STORE_PATH, 8, 8,
@@ -210,7 +219,7 @@ public class FCVirtualMapLeafStoreTest {
     }
 
 // TODO once fast copy is working add back in
-
+//
 //    @Test
 //    public void testFastCopy() throws IOException {
 //        final int COUNT = 1000;

@@ -1,9 +1,7 @@
 package com.hedera.services.state.merkle.virtual;
 
 import com.hedera.services.state.merkle.virtual.persistence.FCVirtualMapHashStore;
-import com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCSlotIndexUsingMemMapFile;
-import com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCVirtualMapHashStoreImpl;
-import com.hedera.services.state.merkle.virtual.persistence.fcmmap.MemMapSlotStore;
+import com.hedera.services.state.merkle.virtual.persistence.fcmmap.*;
 import com.hedera.services.store.models.Id;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.fcmap.FCHashStore;
@@ -16,25 +14,31 @@ public class ContractHashStore implements FCHashStore {
     private final FCVirtualMapHashStore<ContractPath> dataStore;
 
     public ContractHashStore(Id contractId) {
+        this(contractId,false,false);
+    }
+
+    public ContractHashStore(Id contractId, boolean inMemoryIndex, boolean inMemoryStore) {
         this.contractId = contractId;
 
         try {
-            final var index = new FCSlotIndexUsingMemMapFile<ContractPath>(
-                    Path.of("data/contract-storage/hash-index"),
-                    "hash-index",
-                    1024*1024,
-                    32,
-                    ContractPath.SERIALIZED_SIZE,
-                    16,
-                    20,
-                    8);
+            final var index = inMemoryIndex ?
+                    new FCSlotIndexUsingFCHashMap<ContractPath>() :
+                    new FCSlotIndexUsingMemMapFile<ContractPath>(
+                            Path.of("data/contract-storage/hash-index"),
+                            "hash-index",
+                            1024*1024,
+                            32,
+                            ContractPath.SERIALIZED_SIZE,
+                            16,
+                            20,
+                            8);
 
-            this.dataStore = new FCVirtualMapHashStoreImpl<>(
+            this.dataStore = new FCVirtualMapHashStoreImpl<ContractPath>(
                     Path.of("data/contract-storage"),
                     8,
                     ContractPath.SERIALIZED_SIZE,
                     index,
-                    MemMapSlotStore::new);
+                    inMemoryStore ? InMemorySlotStore::new : MemMapSlotStore::new);
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
