@@ -156,6 +156,9 @@ public class TxnVerbs {
 	public static HapiTokenWipe wipeTokenAccount(String token, String account, long amount) {
 		return new HapiTokenWipe(token, account, amount);
 	}
+	public static HapiTokenWipe wipeTokenAccount(String token, String account, List<Long> serialNumbers) {
+		return new HapiTokenWipe(token, account, serialNumbers);
+	}
 	public static HapiTokenMint mintToken(String token, long amount) {
 		return new HapiTokenMint(token, amount);
 	}

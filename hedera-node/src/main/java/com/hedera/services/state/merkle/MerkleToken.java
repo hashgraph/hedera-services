@@ -478,6 +478,10 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		return supplyKey;
 	}
 
+	public JKey getWipeKey() {
+		return wipeKey;
+	}
+
 	public JKey getKycKey() {
 		return kycKey;
 	}

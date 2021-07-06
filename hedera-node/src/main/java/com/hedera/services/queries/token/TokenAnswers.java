@@ -40,5 +40,4 @@ public class TokenAnswers {
 	public GetTokenNftInfosAnswer getTokenNftInfosAnswer() { return tokenNftInfos; }
 
 	public GetAccountNftInfosAnswer getAccountNftInfosAnswer() { return accountNftInfos; }
-
 }

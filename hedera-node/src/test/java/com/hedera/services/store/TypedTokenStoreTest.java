@@ -246,7 +246,7 @@ class TypedTokenStoreTest {
 		modelToken.setTreasury(autoRenewAccount);
 		modelToken.setFrozenByDefault(!freezeDefault);
 		modelToken.mintedUniqueTokens().add(mintedToken);
-		modelToken.burnedUniqueTokens().add(burnedToken);
+		modelToken.removedUniqueTokens().add(burnedToken);
 		// and:
 		subject.persistToken(modelToken);
 

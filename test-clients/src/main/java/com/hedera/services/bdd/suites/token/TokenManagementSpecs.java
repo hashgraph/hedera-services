@@ -76,17 +76,17 @@ public class TokenManagementSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
 				List.of(new HapiApiSpec[] {
-//								freezeMgmtFailureCasesWork(),
-//								freezeMgmtSuccessCasesWork(),
-//								kycMgmtFailureCasesWork(),
-//								kycMgmtSuccessCasesWork(),
-//								supplyMgmtSuccessCasesWork(),
-//								wipeAccountFailureCasesWork(),
-//								wipeAccountSuccessCasesWork(),
+								freezeMgmtFailureCasesWork(),
+								freezeMgmtSuccessCasesWork(),
+								kycMgmtFailureCasesWork(),
+								kycMgmtSuccessCasesWork(),
+								supplyMgmtSuccessCasesWork(),
+								wipeAccountFailureCasesWork(),
+								wipeAccountSuccessCasesWork(),
 								supplyMgmtFailureCasesWork(),
-//								burnTokenFailsDueToInsufficientTreasuryBalance(),
-//								frozenTreasuryCannotBeMintedOrBurned(),
-//								revokedKYCTreasuryCannotBeMintedOrBurned(),
+								burnTokenFailsDueToInsufficientTreasuryBalance(),
+								frozenTreasuryCannotBeMintedOrBurned(),
+								revokedKYCTreasuryCannotBeMintedOrBurned(),
 						}
 				)
 		);
@@ -261,7 +261,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						wipeTokenAccount(wipeableToken, TOKEN_TREASURY, 1)
 								.hasKnownStatus(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT),
 						wipeTokenAccount(anotherWipeableToken, "misc", 501)
-								.hasKnownStatus(INVALID_WIPING_AMOUNT),
+								.hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE),
 						wipeTokenAccount(anotherWipeableToken, "misc", -1)
 								.hasPrecheck(INVALID_WIPING_AMOUNT),
 						wipeTokenAccount(anotherWipeableToken, "misc", 0)

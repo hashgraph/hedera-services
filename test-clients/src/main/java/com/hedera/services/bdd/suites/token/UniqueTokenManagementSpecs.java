@@ -24,6 +24,7 @@ package com.hedera.services.bdd.suites.token;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -50,23 +51,29 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfos;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.queries.token.HapiTokenNftInfo.newTokenNftInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_QUERY_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_QUERY_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -85,39 +92,44 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[]{
-						getTokenNftInfoWorks(),
-						uniqueTokenHappyPath(),
-						tokenMintWorksWhenAccountsAreFrozenByDefault(),
-						failsWithDeletedToken(),
-						happyPathWithRepeatedMetadata(),
-						failsGetTokenNftInfoWithNoNft(),
-						failsWithDeletedToken(),
-						failsWithLargeBatchSize(),
-						failsWithTooLongMetadata(),
-						failsWithInvalidMetadataFromBatch(),
-						distinguishesFeeSubTypes(),
-						burnHappyPath(),
-						failsOnInvalidSerialNumber(),
-						respectsBurnBatchConstraints(),
-						treasuryBalanceCorrectAfterBurn(),
-						burnWorksWhenAccountsAreFrozenByDefault(),
-						uniqueTokenMintReceiptCheck(),
-                      	associatesNftAsExpected(),
-						failsWithAccountWithoutNfts(),
-						validatesQueryOutOfRange(),
-						failsWithInvalidQueryBoundaries(),
-						getAccountNftsInfoFailsWithDeletedAccount(),
-						getAccountNftsInfoFailsWithInexistentAccount(),
-						associatesTokenNftInfosAsExpected(),
-						validateTokenNftInfosOutOfRange(),
-						failsWithTokenWithoutNfts(),
-						failsWithTokenNftsInvalidQueryBoundaries(),
-						failsWithDeletedTokenNft(),
-						failsWithFungibleTokenGetNftInfos()
-                }
-        );
-    }
+		return List.of(
+				getTokenNftInfoWorks(),
+				mintHappyPath(),
+				tokenMintWorksWhenAccountsAreFrozenByDefault(),
+				mintFailsWithDeletedToken(),
+				mintWorksWithRepeatedMetadata(),
+				failsGetTokenNftInfoWithNoNft(),
+				mintRespectsConstraints(),
+				mintFailsWithTooLargeMetadata(),
+				mintFailsWithInvalidMetadata(),
+				distinguishesFeeSubTypes(),
+
+				burnHappyPath(),
+				burnFailsOnInvalidSerialNumber(),
+				burnRespectsConstraints(),
+				treasuryBalanceCorrectAfterBurn(),
+				burnWorksWhenAccountsAreFrozenByDefault(),
+
+				wipeHappyPath(),
+				wipeFailsWithInvalidSerialNumber(),
+				wipeRespectsConstraints(),
+				uniqueWipeFailsWhenInvokedOnFungibleToken(),
+				commonWipeFailsWhenInvokedOnUniqueToken(),
+
+				uniqueTokenMintReceiptCheck(),
+				associatesNftAsExpected(),
+				failsWithAccountWithoutNfts(),
+				validatesQueryOutOfRange(),
+				failsWithInvalidQueryBoundaries(),
+				getAccountNftsInfoFailsWithDeletedAccount(),
+				getAccountNftsInfoFailsWithInexistentAccount(),
+				associatesNftAsExpected(),
+				failsWithAccountWithoutNfts(),
+				validatesQueryOutOfRange(),
+				failsWithInvalidQueryBoundaries(),
+				getAccountNftsInfoFailsWithDeletedAccount(),
+				getAccountNftsInfoFailsWithInexistentAccount());
+	}
 
 	private HapiApiSpec associatesNftAsExpected() {
 		return defaultHapiSpec("AssociatesNftAsExpected")
@@ -237,7 +249,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec failsOnInvalidSerialNumber() {
+	private HapiApiSpec burnFailsOnInvalidSerialNumber() {
 		return defaultHapiSpec("failsOnInvalidSerialNumber")
 				.given(
 						newKeyNamed(SUPPLY_KEY),
@@ -261,7 +273,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec respectsBurnBatchConstraints() {
+	private HapiApiSpec burnRespectsConstraints() {
 		return defaultHapiSpec("respectsBurnBatchConstraints")
 				.given(
 						newKeyNamed(SUPPLY_KEY),
@@ -393,7 +405,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec failsWithTooLongMetadata() {
+	private HapiApiSpec mintFailsWithTooLargeMetadata() {
 		return defaultHapiSpec("failsWithTooLongMetadata")
 				.given(
 						newKeyNamed(SUPPLY_KEY),
@@ -411,7 +423,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec failsWithInvalidMetadataFromBatch() {
+	private HapiApiSpec mintFailsWithInvalidMetadata() {
 		return defaultHapiSpec("failsWithInvalidMetadataFromBatch")
 				.given(
 						newKeyNamed(SUPPLY_KEY),
@@ -430,7 +442,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec failsWithLargeBatchSize() {
+	private HapiApiSpec mintRespectsConstraints() {
 		return defaultHapiSpec("failsWithLargeBatchSize")
 				.given(
 						newKeyNamed(SUPPLY_KEY),
@@ -463,7 +475,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 		return ByteString.copyFromUtf8(contents);
 	}
 
-	private HapiApiSpec uniqueTokenHappyPath() {
+	private HapiApiSpec mintHappyPath() {
 		return defaultHapiSpec("UniqueTokenHappyPath")
 				.given(
 						newKeyNamed(SUPPLY_KEY),
@@ -557,15 +569,12 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 								.hasAccountID(TOKEN_TREASURY)
 								.hasMetadata(metadata("memo"))
 								.hasValidCreationTime(),
-
 						getTokenNftInfos(NFT, 0, 1)
 								.hasNfts(
 										newTokenNftInfo(NFT, 1, TOKEN_TREASURY, metadata("memo"))
 								)
 								.logged(),
-
 						getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(1),
-
 						getAccountNftInfos(TOKEN_TREASURY, 0, 1)
 								.hasNfts(
 										newTokenNftInfo(NFT, 1, TOKEN_TREASURY, metadata("memo"))
@@ -574,7 +583,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec failsWithDeletedToken() {
+	private HapiApiSpec mintFailsWithDeletedToken() {
 		return defaultHapiSpec("failsWithDeletedToken").given(
 				newKeyNamed(SUPPLY_KEY),
 				newKeyNamed("adminKey"),
@@ -652,7 +661,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec happyPathWithRepeatedMetadata() {
+	private HapiApiSpec mintWorksWithRepeatedMetadata() {
 		return defaultHapiSpec("happyPathWithRepeatedMetadata")
 				.given(
 						newKeyNamed(SUPPLY_KEY),
@@ -680,22 +689,173 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 								.hasAccountID(TOKEN_TREASURY)
 								.hasTokenID(NFT)
 								.hasValidCreationTime(),
-
 						getTokenNftInfos(NFT, 0, 2)
 								.hasNfts(
 										newTokenNftInfo(NFT, 1, TOKEN_TREASURY, metadata("memo")),
 										newTokenNftInfo(NFT, 2, TOKEN_TREASURY, metadata("memo"))
 								)
 								.logged(),
-
 						getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(2),
-
 						getAccountNftInfos(TOKEN_TREASURY, 0, 2)
 								.hasNfts(
 										newTokenNftInfo(NFT, 1, TOKEN_TREASURY, metadata("memo")),
 										newTokenNftInfo(NFT, 2, TOKEN_TREASURY, metadata("memo"))
 								)
 								.logged()
+				);
+	}
+
+	private HapiApiSpec wipeHappyPath() {
+		return defaultHapiSpec("wipeHappyEnd")
+				.given(
+						newKeyNamed(SUPPLY_KEY),
+						newKeyNamed("wipeKey"),
+						newKeyNamed("treasuryKey"),
+						newKeyNamed("accKey"),
+						cryptoCreate(TOKEN_TREASURY).key("treasuryKey"),
+						cryptoCreate("account").key("accKey"),
+						tokenCreate(NFT)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyType(TokenSupplyType.INFINITE)
+								.supplyKey(SUPPLY_KEY)
+								.initialSupply(0)
+								.treasury(TOKEN_TREASURY)
+								.wipeKey("wipeKey"),
+						tokenAssociate("account", NFT),
+						mintToken(NFT, List.of(ByteString.copyFromUtf8("memo"), ByteString.copyFromUtf8("memo2"))),
+						cryptoTransfer(
+								movingUnique(2L, NFT).between(TOKEN_TREASURY, "account")
+						)
+				)
+				.when(
+						wipeTokenAccount(NFT, "account", List.of(2L)).via("wipeTxn")
+				)
+				.then(
+						getAccountInfo("account").hasOwnedNfts(0),
+						getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(1),
+						getTokenInfo(NFT).hasTotalSupply(1),
+						getTokenNftInfo(NFT, 2).hasCostAnswerPrecheck(INVALID_NFT_ID),
+						getTokenNftInfo(NFT, 1).hasSerialNum(1),
+						wipeTokenAccount(NFT, "account", List.of(1L)).hasKnownStatus(FAIL_INVALID)
+				);
+	}
+
+	private HapiApiSpec wipeRespectsConstraints() {
+		return defaultHapiSpec("wipeRespectsConstraints").given(
+
+				newKeyNamed(SUPPLY_KEY),
+				newKeyNamed("wipeKey"),
+				cryptoCreate(TOKEN_TREASURY),
+				cryptoCreate("account"),
+				tokenCreate(NFT)
+						.tokenType(NON_FUNGIBLE_UNIQUE)
+						.supplyType(TokenSupplyType.INFINITE)
+						.supplyKey(SUPPLY_KEY)
+						.initialSupply(0)
+						.treasury(TOKEN_TREASURY)
+						.wipeKey("wipeKey"),
+				tokenAssociate("account", NFT),
+				mintToken(NFT, List.of(
+						metadata("memo"),
+						metadata("memo2")))
+						.via("mintTxn"),
+				cryptoTransfer(
+						movingUnique(1, NFT).between(TOKEN_TREASURY, "account"),
+						movingUnique(2, NFT).between(TOKEN_TREASURY, "account")
+				)
+		).when(
+				wipeTokenAccount(NFT, "account", LongStream.range(0, 1000).boxed().collect(Collectors.toList()))
+						.hasPrecheck(BATCH_SIZE_LIMIT_EXCEEDED),
+				getAccountNftInfos("account", 0, 2).hasNfts(
+						newTokenNftInfo(NFT, 1, "account", metadata("memo")),
+						newTokenNftInfo(NFT, 1, "account", metadata("memo2"))
+				)
+		).then();
+	}
+
+	private HapiApiSpec commonWipeFailsWhenInvokedOnUniqueToken() {
+		return defaultHapiSpec("commonWipeFailsWhenInvokedOnUniqueToken")
+				.given(
+						newKeyNamed(SUPPLY_KEY),
+						newKeyNamed("wipeKey"),
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate("account"),
+						tokenCreate(NFT)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyType(TokenSupplyType.INFINITE)
+								.supplyKey(SUPPLY_KEY)
+								.initialSupply(0)
+								.treasury(TOKEN_TREASURY)
+								.wipeKey("wipeKey"),
+						tokenAssociate("account", NFT),
+						mintToken(NFT, List.of(metadata("memo"))),
+						cryptoTransfer(
+								movingUnique(1, NFT).between(TOKEN_TREASURY, "account")
+						)
+				).when()
+				.then(
+						wipeTokenAccount(NFT, "account", 1L)
+								.hasKnownStatus(FAIL_INVALID)
+								.via("wipeTxn"),
+						// no new totalSupply
+						getTokenInfo(NFT).hasTotalSupply(1),
+						// no tx record
+						getTxnRecord("wipeTxn").showsNoTransfers(),
+						//verify balance not decreased
+						getAccountInfo("account").hasOwnedNfts(1),
+						getAccountBalance("account").hasTokenBalance(NFT, 1)
+				);
+	}
+
+	private HapiApiSpec uniqueWipeFailsWhenInvokedOnFungibleToken() { // invokes unique wipe on fungible tokens
+		return defaultHapiSpec("uniqueWipeFailsWhenInvokedOnFungibleToken")
+				.given(
+						newKeyNamed("wipeKey"),
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate("account"),
+						tokenCreate(A_TOKEN)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(10)
+								.treasury(TOKEN_TREASURY)
+								.wipeKey("wipeKey"),
+						tokenAssociate("account", A_TOKEN),
+						cryptoTransfer(
+								TokenMovement.moving(5, A_TOKEN).between(TOKEN_TREASURY, "account")
+						)
+				)
+				.when(
+						wipeTokenAccount(A_TOKEN, "account", List.of(1L, 2L))
+								.hasKnownStatus(INVALID_WIPING_AMOUNT)
+								.via("wipeTx")
+				)
+				.then(
+						getTokenInfo(A_TOKEN).hasTotalSupply(10),
+						getTxnRecord("wipeTx").showsNoTransfers(),
+						getAccountBalance("account").hasTokenBalance(A_TOKEN, 5)
+				);
+	}
+
+	private HapiApiSpec wipeFailsWithInvalidSerialNumber() {
+		return defaultHapiSpec("wipeFailsWithInvalidSerialNumber")
+				.given(
+						newKeyNamed(SUPPLY_KEY),
+						newKeyNamed("wipeKey"),
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate("account"),
+						tokenCreate(NFT)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyType(TokenSupplyType.INFINITE)
+								.supplyKey(SUPPLY_KEY)
+								.initialSupply(0)
+								.treasury(TOKEN_TREASURY)
+								.wipeKey("wipeKey"),
+						tokenAssociate("account", NFT),
+						mintToken(NFT, List.of(
+								metadata("memo"),
+								metadata("memo")))
+								.via("mintTxn")
+				).when().then(
+						wipeTokenAccount(NFT, "account", List.of(-5L, -6L)).hasPrecheck(INVALID_NFT_ID)
 				);
 	}
 
@@ -867,4 +1027,5 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 		(new Random()).nextBytes(contents);
 		return contents;
 	}
+
 }
