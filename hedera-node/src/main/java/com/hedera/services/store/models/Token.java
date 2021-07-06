@@ -187,7 +187,6 @@ public class Token {
 					"Cannot wipe tokens which given account does not own.");
 		}
 		baseWipeValidations(accountRel);
-		amountWipeValidations(accountRel, (long) serialNumbers.size());
 		var newTotalSupply = totalSupply - serialNumbers.size();
 		final var newAccountBalance = accountRel.getBalance() - serialNumbers.size();
 		var account = accountRel.getAccount();
@@ -250,7 +249,7 @@ public class Token {
 				"Wiping would negate the total supply of the given token.");
 
 		final var newAccountBalance = accountRel.getBalance() - amount;
-		validateTrue(newAccountBalance >= 0, INVALID_WIPING_AMOUNT, ()->
+		validateTrue(newAccountBalance >= 0, INVALID_WIPING_AMOUNT, () ->
 				"Wiping would negate account balance");
 	}
 

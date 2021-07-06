@@ -332,12 +332,6 @@ class TokenTest {
 			subject.wipe(ownershipTracker, nonTreasuryRel, List.of(1L));
 		});
 
-		subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
-		subject.setTotalSupply(0);
-		assertThrows(InvalidTransactionException.class, ()-> {
-			subject.wipe(ownershipTracker, nonTreasuryRel, List.of(1L));
-		});
-
 		subject.setTotalSupply(100);
 		treasuryRel.setBalance(0);
 		assertThrows(InvalidTransactionException.class, ()-> {
@@ -354,7 +348,7 @@ class TokenTest {
 			subject.wipe(ownershipTracker, nonTreasuryRel, List.of(1L, 2L));
 		}, "Cannot wipe Unique Tokens without wipe key");
 
-		given(nonTreasuryRel.getAccount().getId()).willReturn(new Id(1, 2, 3));
+		nonTreasuryRel = new TokenRelationship(subject, new Account(new Id(1, 2, 3)));
 		given(uniqueToken.getOwner()).willReturn(Id.DEFAULT);
 		assertFailsWith(() -> subject.wipe(ownershipTracker, nonTreasuryRel, List.of(1L)), FAIL_INVALID);
 	}
