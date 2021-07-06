@@ -41,7 +41,6 @@ import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -52,12 +51,38 @@ import static com.hederahashgraph.api.proto.java.TokenSupplyType.INFINITE;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+/**
+ * A client that creates some number of NON_FUNGIBLE_UNIQUE tokens, and then
+ * for each token mints some number of NFTs, each w/ the requested number of
+ * bytes of metadata. All tokens are created using the dev treasury key as
+ * the token supply key.
+ *
+ * The exact number of entities to create can be configured using the
+ * constants at the top of the class definition.
+ *
+ * <b>IMPORTANT:</b> Please note the following two items:
+ * <ol>
+ *   <li>
+ *     If creating a large number of NFTs, e.g. 1M+, it is essential to
+ *     comment out the body of the
+ *     {@link com.hedera.services.bdd.spec.transactions.token.HapiTokenMint#updateStateOf(HapiApiSpec)}
+ *     method, since it adds the minted token's creation time to the registry
+ *     and the client will run OOM fairly quickly with a 1GB heap.
+ *   </li>
+ *   <li>
+ *     There is evidence of slower memory leaks hidden elsewhere in the
+ *     EET infrastructure, so you should probably not try to create more
+ *     than 10M NFTs using a single run of this client; if more NFTs are
+ *     needed, then please run several instances in sequence.
+ *   </li>
+ * </ol>
+ */
 public class UniqueTokenStateSetup extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(UniqueTokenStateSetup.class);
 
-	private static final int MINT_TPS = 250;
 	private static final long SECS_TO_RUN = 4050;
 
+	private static final int MINT_TPS = 250;
 	private static final int NUM_UNIQ_TOKENS = 10_000;
 	private static final int UNIQ_TOKENS_BURST_SIZE = 1000;
 	private static final int UNIQ_TOKENS_POST_BURST_PAUSE_MS = 2500;
@@ -78,14 +103,13 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 	public static void main(String... args) {
 		UniqueTokenStateSetup suite = new UniqueTokenStateSetup();
 		suite.runSuiteSync();
-		System.out.println("Created from " + firstCreatedId + " + to " + lastCreatedId);
+		System.out.println("Created unique tokens from " + firstCreatedId + " + to " + lastCreatedId);
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						createNfts(),
-//						quickInfo(),
 				}
 		);
 	}
@@ -96,13 +120,6 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 						runWithProvider(nftFactory())
 								.lasting(duration::get, unit::get)
 								.maxOpsPerSec(maxOpsPerSec::get)
-				);
-	}
-
-	private HapiApiSpec quickInfo() {
-		return defaultHapiSpec("QuickInfo")
-				.given().when().then(
-						getTokenInfo("0.0.1080").logged()
 				);
 	}
 
@@ -169,11 +186,7 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 		};
 	}
 
-	private List<HapiSpecOperation> burstedUniqCreations(
-			int perBurst,
-			int numTreasuries,
-			long pauseMs
-	) {
+	private List<HapiSpecOperation> burstedUniqCreations(int perBurst, int numTreasuries, long pauseMs) {
 		final var createdSoFar = new AtomicInteger(0);
 		List<HapiSpecOperation> ans = new ArrayList<>();
 		while (createdSoFar.get() < NUM_UNIQ_TOKENS) {
