@@ -46,6 +46,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.swirlds.fchashmap.FCOneToManyRelation;
@@ -90,6 +91,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -758,6 +760,32 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		});
 		return appliedValidity.get();
 	}
+
+	@Override
+	public ResponseCodeEnum updateFeeSchedule(TokenFeeScheduleUpdateTransactionBody changes) {
+		var tId = resolve(changes.getTokenId());
+		if (tId == MISSING_TOKEN) {
+			return INVALID_TOKEN_ID;
+		}
+
+		List<CustomFee> customFees = changes.getCustomFeesList();
+
+		MerkleToken token = get(tId);
+
+		if(customFees.isEmpty() && token.grpcFeeSchedule().isEmpty()) {
+			return CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
+		}
+		var validity = validateFeeSchedule(changes.getCustomFeesList());
+		if(validity != OK) {
+			return validity;
+		}
+
+		token.setFeeScheduleFrom(customFees);
+
+		return OK;
+	}
+
+
 
 	public static boolean affectsExpiryAtMost(TokenUpdateTransactionBody op) {
 		return !op.hasAdminKey() &&

@@ -29,6 +29,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 
@@ -61,6 +62,8 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 	ResponseCodeEnum freeze(AccountID aId, TokenID tId);
 
 	ResponseCodeEnum update(TokenUpdateTransactionBody changes, long now);
+
+	ResponseCodeEnum updateFeeSchedule(TokenFeeScheduleUpdateTransactionBody changes);
 
 	ResponseCodeEnum unfreeze(AccountID aId, TokenID tId);
 

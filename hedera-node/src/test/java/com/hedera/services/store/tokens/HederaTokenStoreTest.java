@@ -55,6 +55,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
@@ -83,6 +84,7 @@ import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALAN
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISSING_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
@@ -101,6 +103,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DEN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -2171,8 +2174,71 @@ class HederaTokenStoreTest {
 
 		return expected;
 	}
-
 	private Duration enduring(long secs) {
 		return Duration.newBuilder().setSeconds(secs).build();
 	}
+
+
+	@Test
+	void rejectsMissingTokenIdCustomFeeUpdates() {
+		var op = updateFeeScheduleWithMissingTokenId();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(INVALID_TOKEN_ID, result);
+	}
+
+
+	@Test
+	void rejectsTooLongCustomFeeUpdates() {
+		var op = updateFeeScheduleWith();
+		given(properties.maxCustomFeesAllowed()).willReturn(1);
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(CUSTOM_FEES_LIST_TOO_LONG, result);
+	}
+
+	@Test
+	void rejectsEmptyFeesUpdatedWithEmptyFees() {
+		var op = updateFeeScheduleWithEmptyFees();
+		given(token.grpcFeeSchedule()).willReturn(List.of());
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES, result);
+	}
+
+	@Test
+	void happyPathCustomFeesUpdated() {
+		var op = updateFeeScheduleWith();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(OK, result);
+	}
+
+	private TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithEmptyFees() {
+		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
+				.setTokenId(misc)
+				.addAllCustomFees(List.of());
+		return op.build();
+	}
+
+
+	private TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithMissingTokenId() {
+		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
+				.addAllCustomFees(grpcCustomFees);
+		return op.build();
+	}
+
+	private TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWith() {
+		List<CustomFee> simpleCustomFees = List.of(customFixedFeeInHbar,customFixedFeeInHts);
+
+		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
+				.setTokenId(misc)
+				.addAllCustomFees(simpleCustomFees);
+		return op.build();
+	}
+
 }
