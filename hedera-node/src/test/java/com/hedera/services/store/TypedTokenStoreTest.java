@@ -220,7 +220,7 @@ class TypedTokenStoreTest {
 		subject.loadUniqueTokens(aToken, List.of(1L, 2L));
 
 		assertEquals(aToken.getLoadedUniqueTokens().size(), 2);
-		verify(aToken).setLoadedUniqueTokens(any());
+		
 		given(uniqueTokens.get(any())).willReturn(null);
 		assertThrows(InvalidTransactionException.class, () -> subject.loadUniqueTokens(aToken, List.of(1L, 2L)));
 	}

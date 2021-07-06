@@ -246,11 +246,11 @@ public class Token {
 				"Cannot wipe " + amount + " units of " + this + " from " + accountRel);
 
 		var newTotalSupply = totalSupply - amount;
-		validateTrue( newTotalSupply >= 0, INSUFFICIENT_TOKEN_BALANCE, () ->
+		validateTrue( newTotalSupply >= 0, INVALID_WIPING_AMOUNT, () ->
 				"Wiping would negate the total supply of the given token.");
 
 		final var newAccountBalance = accountRel.getBalance() - amount;
-		validateTrue(newAccountBalance >= 0, INSUFFICIENT_TOKEN_BALANCE, ()->
+		validateTrue(newAccountBalance >= 0, INVALID_WIPING_AMOUNT, ()->
 				"Wiping would negate account balance");
 	}
 

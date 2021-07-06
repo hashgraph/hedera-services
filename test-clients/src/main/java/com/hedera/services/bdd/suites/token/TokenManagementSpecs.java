@@ -261,7 +261,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						wipeTokenAccount(wipeableToken, TOKEN_TREASURY, 1)
 								.hasKnownStatus(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT),
 						wipeTokenAccount(anotherWipeableToken, "misc", 501)
-								.hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE),
+								.hasKnownStatus(INVALID_WIPING_AMOUNT),
 						wipeTokenAccount(anotherWipeableToken, "misc", -1)
 								.hasPrecheck(INVALID_WIPING_AMOUNT),
 						wipeTokenAccount(anotherWipeableToken, "misc", 0)
