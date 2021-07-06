@@ -44,6 +44,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
@@ -61,6 +62,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 
 public class TokenTransactSpecs extends HapiApiSuite {
@@ -97,6 +99,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						uniqueTokenTxnWithSenderNotSigned(),
 						uniqueTokenTxnWithReceiverNotSigned(),
 						uniqueTokenTxnsAreAtomic(),
+						uniqueTokenDeletedTxn()
 				}
 		);
 	}
@@ -637,6 +640,34 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.hasTokenBalance(A_TOKEN, 0),
 						getAccountBalance(SECOND_USER)
 								.hasTokenBalance(A_TOKEN, 0)
+				);
+	}
+
+	public HapiApiSpec uniqueTokenDeletedTxn() {
+		return defaultHapiSpec("UniqueTokenDeletedTxn")
+				.given(
+						newKeyNamed("supplyKey"),
+						newKeyNamed("nftAdmin"),
+						newKeyNamed("signingKeyTreasury"),
+						newKeyNamed("signingKeyFirstUser"),
+						cryptoCreate(FIRST_USER).key("signingKeyFirstUser"),
+						cryptoCreate(TOKEN_TREASURY).key("signingKeyTreasury"),
+						tokenCreate(A_TOKEN)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0)
+								.supplyKey("supplyKey")
+								.adminKey("nftAdmin")
+								.treasury(TOKEN_TREASURY),
+						mintToken(A_TOKEN, List.of(ByteString.copyFromUtf8("memo"))),
+						tokenAssociate(FIRST_USER, A_TOKEN)
+				).when(
+						tokenDelete(A_TOKEN)
+				).then(
+						cryptoTransfer(
+								movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+						)
+								.signedBy("signingKeyTreasury", "signingKeyFirstUser", DEFAULT_PAYER)
+								.hasKnownStatus(TOKEN_WAS_DELETED)
 				);
 	}
 

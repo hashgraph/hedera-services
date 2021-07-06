@@ -53,7 +53,6 @@ public class TokenBurnUsage extends TokenTxnUsage<TokenBurnUsage> {
 
 	public FeeData get() {
 		var op = this.op.getTokenBurn();
-
 		if (currentSubType == SubType.TOKEN_NON_FUNGIBLE_UNIQUE) {
 			usageEstimator.addBpt((long) op.getSerialNumbersCount() * LONG_SIZE);
 			addTokenTransfersRecordRb(1, 0, op.getSerialNumbersCount());

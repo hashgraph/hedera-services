@@ -38,6 +38,7 @@ import com.hedera.services.bdd.spec.queries.schedule.HapiGetScheduleInfo;
 import com.hedera.services.bdd.spec.queries.token.HapiGetAccountNftInfos;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenNftInfo;
+import com.hedera.services.bdd.spec.queries.token.HapiGetTokenNftInfos;
 import com.hederahashgraph.api.proto.java.TransactionID;
 
 import java.util.function.Function;
@@ -130,6 +131,10 @@ public class QueryVerbs {
 
 	public static HapiGetTokenNftInfo getTokenNftInfo(String token, long serialNum) {
 		return new HapiGetTokenNftInfo(token, serialNum);
+	}
+
+	public static HapiGetTokenNftInfos getTokenNftInfos(String token, long start, long end) {
+		return new HapiGetTokenNftInfos(token, start, end);
 	}
 
 	public static HapiGetAccountNftInfos getAccountNftInfos(String account, long start, long end) {

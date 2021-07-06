@@ -295,6 +295,9 @@ class StateViewTest {
 		final var uniqueTokenAccountOwnerships = new FCOneToManyRelation<EntityId, MerkleUniqueTokenId>();
 		uniqueTokenAccountOwnerships.associate(EntityId.fromGrpcAccountId(nftOwnerId), new MerkleUniqueTokenId(targetNftKey.tokenId(), 4));
 
+		final var uniqueTokenAssociations = new FCOneToManyRelation<EntityId, MerkleUniqueTokenId>();
+		uniqueTokenAssociations.associate(EntityId.fromGrpcTokenId(tokenId), new MerkleUniqueTokenId(targetNftKey.tokenId(), 4));
+
 		subject = new StateView(
 				tokenStore,
 				scheduleStore,
@@ -303,7 +306,7 @@ class StateViewTest {
 				StateView.EMPTY_STORAGE_SUPPLIER,
 				() -> uniqueTokens,
 				() -> tokenRels,
-				StateView.EMPTY_UNIQUE_TOKEN_ASSOCS_SUPPLIER,
+				() -> uniqueTokenAssociations,
 				() -> uniqueTokenAccountOwnerships,
 				() -> diskFs,
 				nodeProps);
@@ -956,6 +959,30 @@ class StateViewTest {
 		assertSame(
 				StateView.EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS,
 				StateView.EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS_SUPPLIER.get());
+	}
+
+	@Test
+	void infoForTokenNftsWorks() {
+		var expectedResult = new ArrayList<>();
+		expectedResult.add(TokenNftInfo.newBuilder()
+				.setAccountID(targetNft.getOwner().toGrpcAccountId())
+				.setCreationTime(targetNft.getCreationTime().toGrpc())
+				.setNftID(NftID.newBuilder()
+						.setTokenID(targetNftId.getTokenID())
+						.setSerialNumber(targetNftId.getSerialNumber())
+						.build())
+				.setMetadata(ByteString.copyFrom(targetNft.getMetadata()))
+				.build());
+
+		var result = subject.infosForTokenNfts(tokenId, 0, 1);
+		assertFalse(result.isEmpty());
+		assertEquals(expectedResult, result.get());
+	}
+
+	@Test
+	void infoForTokenNftsReturnsEmpty() {
+		var result = subject.infosForTokenNfts(missingTokenId, 0, 1);
+		assertTrue(result.isEmpty());
 	}
 
 	private final Instant nftCreation = Instant.ofEpochSecond(1_234_567L, 8);

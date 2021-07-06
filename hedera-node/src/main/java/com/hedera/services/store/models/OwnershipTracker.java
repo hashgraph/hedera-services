@@ -1,4 +1,6 @@
-package com.hedera.services.store.models;/*
+package com.hedera.services.store.models;
+
+/*
  * ‌
  * Hedera Services Node
  * ​
@@ -45,7 +47,7 @@ public class OwnershipTracker {
 
 	public boolean isEmpty() { return changes.isEmpty(); }
 
-	public static Change fromMinting(Id treasury, long serialNumber) {
+	public static Change forMinting(Id treasury, long serialNumber) {
 		var change = new Change();
 		change.setPreviousOwner(Id.DEFAULT);
 		change.setNewOwner(treasury);
@@ -53,10 +55,10 @@ public class OwnershipTracker {
 		return change;
 	}
 
-	public static Change fromBurning(Id treasury, long serialNumber) {
-		Change change = new Change();
+	public static Change forRemoving(Id accountId, long serialNumber) {
+		var change = new Change();
+		change.setPreviousOwner(accountId);
 		change.setNewOwner(Id.DEFAULT);
-		change.setPreviousOwner(treasury);
 		change.setSerialNumber(serialNumber);
 		return change;
 	}

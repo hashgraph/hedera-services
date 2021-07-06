@@ -157,6 +157,7 @@ public class StateView {
 	private final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations;
 
 	private Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens;
+	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations;
 	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAccountOwnerships;
 
 	private final NodeLocalProperties properties;
@@ -222,6 +223,7 @@ public class StateView {
 		this.uniqueTokens = uniqueTokens;
 		this.scheduleStore = scheduleStore;
 		this.tokenAssociations = tokenAssociations;
+		this.uniqueTokenAssociations = uniqueTokenAssociations;
 		this.uniqueTokenAccountOwnerships = uniqueTokenAccountOwnerships;
 
 		Map<String, byte[]> blobStore = unmodifiableMap(new FcBlobsBytesStore(MerkleOptionalBlob::new, storage));
@@ -392,6 +394,27 @@ public class StateView {
 				.setMetadata(ByteString.copyFrom(targetNft.getMetadata()))
 				.build();
 		return Optional.of(info);
+	}
+
+	public Optional<List<TokenNftInfo>> infosForTokenNfts(TokenID tid, long start, long end) {
+		if (!tokenExists(tid)) {
+			return Optional.empty();
+		}
+
+		List<TokenNftInfo> nftInfos = new ArrayList<>();
+		uniqueTokenAssociations.get().get(fromGrpcTokenId(tid), (int) start, (int) end).forEachRemaining(nftId -> {
+			final var nft = uniqueTokens.get().get(nftId);
+
+			nftInfos.add(TokenNftInfo.newBuilder()
+					.setAccountID(nft.getOwner().toGrpcAccountId())
+					.setCreationTime(nft.getCreationTime().toGrpc())
+					.setNftID(NftID.newBuilder()
+							.setTokenID(nftId.tokenId().toGrpcTokenId())
+							.setSerialNumber(nftId.serialNumber()))
+					.setMetadata(ByteString.copyFrom(nft.getMetadata()))
+					.build());
+		});
+		return Optional.of(nftInfos);
 	}
 
 	public boolean nftExists(NftID id) {
