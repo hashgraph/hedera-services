@@ -1,5 +1,25 @@
 package com.hedera.services.pricing;
 
+/*-
+ * ‌
+ * Hedera Services API Fees
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
@@ -9,12 +29,28 @@ import java.math.BigDecimal;
 import java.util.EnumMap;
 import java.util.Map;
 
-public class AssetsLoader {
+/**
+ * Loads assets used to generate a fee schedule from JSON resources on the classpath.
+ *
+ * Please see the individual methods for details.
+ */
+class AssetsLoader {
 	private static final String CAPACITIES_RESOURCE = "capacities.json";
 	private static final String CONSTANT_WEIGHTS_RESOURCE = "constant-weights.json";
 	private static final String CANONICAL_PRICES_RESOURCE = "canonical-prices.json";
 
-	public Map<HederaFunctionality, BigDecimal> loadConstWeights() throws IOException {
+	/**
+	 * Loads a map that, for each supported operation, gives the fraction of that
+	 * operation's total price that should come from its constant term in the fee
+	 * schedule.
+	 *
+	 * This fraction is the "weight" of the constant term; and is currently set at
+	 * 0.9 for operations that create new entities, and 0.2 for other operations.
+	 *
+	 * @return the "weight" of the constant term for each operation
+	 * @throws IOException if the backing JSON resource cannot be loaded
+	 */
+	Map<HederaFunctionality, BigDecimal> loadConstWeights() throws IOException {
 		try (var fin = AssetsLoader.class.getClassLoader().getResourceAsStream(CONSTANT_WEIGHTS_RESOURCE)) {
 			final var om = new ObjectMapper();
 			final var constWeights = om.readValue(fin, Map.class);
@@ -32,7 +68,15 @@ public class AssetsLoader {
 		}
 	}
 
-	public Map<UsableResource, BigDecimal> loadCapacities() throws IOException {
+	/**
+	 * Loads a map that, for each resource type available in the network, gives the
+	 * "capacity" of that resource. These capacities do not have an absolute meaning,
+	 * and are just compared to infer the relative scarcity of each resource.
+	 *
+	 * @return the network "capacity" of each resource type
+	 * @throws IOException if the backing JSON resource cannot be loaded
+	 */
+	Map<UsableResource, BigDecimal> loadCapacities() throws IOException {
 		try (var fin = AssetsLoader.class.getClassLoader().getResourceAsStream(CAPACITIES_RESOURCE)) {
 			final var om = new ObjectMapper();
 			final var capacities = om.readValue(fin, Map.class);
@@ -50,7 +94,16 @@ public class AssetsLoader {
 		}
 	}
 
-	public Map<HederaFunctionality, Map<SubType, BigDecimal>> loadCanonicalPrices() throws IOException {
+	/**
+	 * Loads a map that, for each supported operation, gives the desired price in
+	 * USD for the "base configuration" of each type of that operation. (Types are
+	 * given by the values of the {@link SubType} enum; that is, DEFAULT,
+	 * TOKEN_NON_FUNGIBLE_UNIQUE, and TOKEN_FUNGIBLE_COMMON.)
+	 *
+	 * @return the desired per-type prices, in USD
+	 * @throws IOException if the backing JSON resource cannot be loaded
+	 */
+	Map<HederaFunctionality, Map<SubType, BigDecimal>> loadCanonicalPrices() throws IOException {
 		try (var fin = AssetsLoader.class.getClassLoader().getResourceAsStream(CANONICAL_PRICES_RESOURCE)) {
 			final var om = new ObjectMapper();
 			final var prices = om.readValue(fin, Map.class);

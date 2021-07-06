@@ -1,5 +1,25 @@
 package com.hedera.services.pricing;
 
+/*-
+ * ‌
+ * Hedera Services API Fees
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
@@ -13,18 +33,31 @@ import static com.hedera.services.pricing.UsableResource.CONSTANT;
 import static java.math.MathContext.DECIMAL128;
 import static java.math.RoundingMode.HALF_UP;
 
-public class FeeSchedules {
+/**
+ * Given an operation and type, generates the "fee schedule" entry of
+ * the node, network, and service resource prices for that operation.
+ */
+class FeeSchedules {
 	static final BigDecimal USD_TO_TINYCENTS = BigDecimal.valueOf(100 * 100_000_000L);
 	static final BigDecimal FEE_SCHEDULE_MULTIPLIER = BigDecimal.valueOf(1_000L);
 
 	private static final AssetsLoader ASSETS_LOADER = new AssetsLoader();
-	private static final CanonicalOperations CANONICAL_OPS = new CanonicalOperations();
+	private static final BaseOperationUsage CANONICAL_OPS = new BaseOperationUsage();
 
-	public Map<ResourceProvider, Map<UsableResource, Long>> canonicalPricesFor(
+	/**
+	 * Computes the node, network, and service prices to charge for each resource type,
+	 * given a particular type of a particular Hedera operation.
+	 *
+	 * @param function the operation of interest
+	 * @param type the type of that operation to use
+	 * @return the node, network, and service resource prices
+	 * @throws IOException if a backing JSON resource cannot be loaded
+	 */
+	Map<ResourceProvider, Map<UsableResource, Long>> canonicalPricesFor(
 			HederaFunctionality function,
 			SubType type
 	) throws IOException {
-		final var canonicalUsage = CANONICAL_OPS.canonicalUsageFor(function, type);
+		final var canonicalUsage = CANONICAL_OPS.baseUsageFor(function, type);
 		final var genericPrices = genericPricesFor(function);
 		final var genericPrice = computeGenericGiven(canonicalUsage, genericPrices);
 		final var canonicalPrice = ASSETS_LOADER.loadCanonicalPrices().get(function).get(type);

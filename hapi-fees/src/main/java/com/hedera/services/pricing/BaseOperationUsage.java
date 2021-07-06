@@ -1,5 +1,25 @@
 package com.hedera.services.pricing;
 
+/*-
+ * ‌
+ * Hedera Services API Fees
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.google.protobuf.ByteString;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
@@ -21,7 +41,15 @@ import com.hederahashgraph.fee.FeeBuilder;
 
 import java.util.List;
 
-public class CanonicalOperations {
+/**
+ * Provides the resource usage of the "base configuration" for each Hedera operation.
+ *
+ * The base configuration of an operation is usually the cheapest version of the
+ * operation that still does something useful. (For example, the base CryptoTransfer
+ * adjusts only two ℏ accounts using one signature, the base TokenFeeScheduleUpdate
+ * adds a single custom HTS fee to a token, etc.)
+ */
+class BaseOperationUsage {
 	private static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 	private static final ByteString CANONICAL_SIG = ByteString.copyFromUtf8(
 			"0123456789012345678901234567890123456789012345678901234567890123");
@@ -38,7 +66,15 @@ public class CanonicalOperations {
 	private static final TokenOpsUsage TOKEN_OPS_USAGE = new TokenOpsUsage();
 	private static final ConsensusOpsUsage CONSENSUS_OPS_USAGE = new ConsensusOpsUsage();
 
-	public UsageAccumulator canonicalUsageFor(HederaFunctionality function, SubType type) {
+	/**
+	 * Returns the total resource usage for the base configuration of the given
+	 * type of the given operation.
+	 *
+	 * @param function the operation of interest
+	 * @param type the type of interest
+	 * @return the total resource usage of the base configuration
+	 */
+	UsageAccumulator baseUsageFor(HederaFunctionality function, SubType type) {
 		switch (function) {
 			case CryptoTransfer:
 				switch (type) {
