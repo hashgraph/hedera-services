@@ -49,9 +49,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_SCHEDUL
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
@@ -63,6 +65,7 @@ class TokenFeeScheduleUpdateTransitionLogicTest {
 	private AccountID oldAutoRenew = IdUtils.asAccount("4.2.1");
 	private JKey adminKey = new JEd25519Key("w/e".getBytes());
 	private TokenFeeScheduleUpdateTransactionBody tokenFeeScheduleUpdateTxn;
+	private TransactionBody tokenFeeScheduleUpdateTxnBody;
 	private MerkleToken token;
 
 	private TokenStore store;
@@ -73,7 +76,7 @@ class TokenFeeScheduleUpdateTransitionLogicTest {
 	private GlobalDynamicProperties dynamicProperties;
 
 	@BeforeEach
-	private void setup() {
+	public void setup() {
 		store = mock(TokenStore.class);
 		accessor = mock(PlatformTxnAccessor.class);
 
@@ -87,6 +90,16 @@ class TokenFeeScheduleUpdateTransitionLogicTest {
 		dynamicProperties = mock(GlobalDynamicProperties.class);
 
 		subject = new TokenFeeScheduleUpdateTransitionLogic(store, txnCtx, null, dynamicProperties);
+	}
+
+	@Test
+	void happyPathWorks() {
+		givenValidTxnCtx();
+		given(token.isDeleted()).willReturn(false);
+		given(store.updateFeeSchedule(any())).willReturn(OK);
+		subject.doStateTransition();
+
+		verify(txnCtx).setStatus(SUCCESS);
 	}
 
 	@Test
@@ -224,5 +237,35 @@ class TokenFeeScheduleUpdateTransitionLogicTest {
 		given(txn.getTokenFeeScheduleUpdate()).willReturn(tokenFeeScheduleUpdateTxn);
 
 		given(txnCtx.consensusTime()).willReturn(now);
+	}
+
+	@Test
+	void rejectsInvalidTokenId() {
+		givenInvalidTokenId();
+
+		// expect:
+		assertEquals(INVALID_TOKEN_ID, subject.semanticCheck().apply(tokenFeeScheduleUpdateTxnBody));
+	}
+
+	@Test
+	void acceptsValidTokenId() {
+		givenValidTokenId();
+
+		// expect:
+		assertEquals(OK, subject.semanticCheck().apply(tokenFeeScheduleUpdateTxnBody));
+	}
+
+	private void givenInvalidTokenId() {
+		tokenFeeScheduleUpdateTxnBody = TransactionBody.newBuilder()
+				.setTokenFeeScheduleUpdate(TokenFeeScheduleUpdateTransactionBody.newBuilder()
+						.addAllCustomFees(grpcCustomFees))
+				.build();
+	}
+
+	private void givenValidTokenId() {
+		tokenFeeScheduleUpdateTxnBody = TransactionBody.newBuilder()
+				.setTokenFeeScheduleUpdate(TokenFeeScheduleUpdateTransactionBody.newBuilder()
+						.addAllCustomFees(grpcCustomFees).setTokenId(target))
+				.build();
 	}
 }
