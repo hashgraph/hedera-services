@@ -579,11 +579,8 @@ public class ServicesContext {
 	private ValidatingCallbackInterceptor applicationPropertiesReloading;
 	private Supplier<ServicesRepositoryRoot> newPureRepo;
 	private Map<TransactionID, TxnIdRecentHistory> txnHistories;
-	private WorkingState workingState = new WorkingState();
-	private QueryableState queryableState = new QueryableState();
-	private AtomicReference<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> queryableUniqueTokens;
-	private AtomicReference<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> queryableUniqueTokenAssociations;
-	private AtomicReference<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> queryableUniqueOwnershipAssociations;
+	private StateChildren workingState = new StateChildren();
+	private AtomicReference<StateChildren> queryableState = new AtomicReference<>(new StateChildren());
 
 	/* Context-free infrastructure. */
 	private static Pause pause;
@@ -629,12 +626,15 @@ public class ServicesContext {
 	 * Update the queryable state
 	 */
 	private void updateQueryableState(ServicesState state) {
-		queryableState.setQueryableAccounts(new AtomicReference<>(state.accounts()));
-		queryableState.setQueryableTopics(new AtomicReference<>(state.topics()));
-		queryableState.setQueryableStorage(new AtomicReference<>(state.storage()));
-		queryableState.setQueryableTokens(new AtomicReference<>(state.tokens()));
-		queryableState.setQueryableTokenAssociations(new AtomicReference<>(state.tokenAssociations()));
-		queryableState.setQueryableSchedules(new AtomicReference<>(state.scheduleTxs()));
+		queryableState.get().setAccounts(state.accounts());
+		queryableState.get().setTopics(state.topics());
+		queryableState.get().setStorage(state.storage());
+		queryableState.get().setTokens(state.tokens());
+		queryableState.get().setTokenAssociations(state.tokenAssociations());
+		queryableState.get().setSchedules(state.scheduleTxs());
+		queryableState.get().setUniqueTokens(state.uniqueTokens());
+		queryableState.get().setUniqueTokenAssociations(state.uniqueTokenAssociations());
+		queryableState.get().setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
 	}
 
 	/**
@@ -652,10 +652,10 @@ public class ServicesContext {
 		workingState.setNetworkCtx(state.networkCtx());
 		workingState.setAddressBook(state.addressBook());
 		workingState.setDiskFs(state.diskFs());
-		
-		queryableUniqueTokens().set(uniqueTokens());
-		queryableUniqueTokenAssociations().set(uniqueTokenAssociations());
-		queryableUniqueOwnershipAssociations().set(uniqueOwnershipAssociations());
+		workingState.setUniqueTokens(state.uniqueTokens());
+		workingState.setUniqueTokenAssociations(state.uniqueTokenAssociations());
+		workingState.setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
+
 	}
 
 	public SwirldDualState getDualState() {
@@ -889,13 +889,13 @@ public class ServicesContext {
 			stateViews = () -> new StateView(
 					tokenStore(),
 					scheduleStore(),
-					() -> queryableState.getQueryableTopics().get(),
-					() -> queryableState.getQueryableAccounts().get(),
-					() -> queryableState.getQueryableStorage().get(),
-					() -> queryableUniqueTokens().get(),
-					() -> queryableState.getQueryableTokenAssociations().get(),
-					() -> queryableUniqueTokenAssociations().get(),
-					() -> queryableUniqueOwnershipAssociations().get(),
+					() -> queryableState.get().getTopics(),
+					() -> queryableState.get().getAccounts(),
+					() -> queryableState.get().getStorage(),
+					() -> queryableState.get().getUniqueTokens(),
+					() -> queryableState.get().getTokenAssociations(),
+					() -> queryableState.get().getUniqueTokenAssociations(),
+					() -> queryableState.get().getUniqueOwnershipAssociations(),
 					this::diskFs,
 					nodeLocalProperties());
 		}
@@ -2088,27 +2088,6 @@ public class ServicesContext {
 			address = addressBook().getAddress(id.getId());
 		}
 		return address;
-	}
-
-	public AtomicReference<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> queryableUniqueTokens() {
-		if (queryableUniqueTokens == null) {
-			queryableUniqueTokens = new AtomicReference<>(uniqueTokens());
-		}
-		return queryableUniqueTokens;
-	}
-
-	public AtomicReference<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> queryableUniqueTokenAssociations() {
-		if (queryableUniqueTokenAssociations == null) {
-			queryableUniqueTokenAssociations = new AtomicReference<>(uniqueTokenAssociations());
-		}
-		return queryableUniqueTokenAssociations;
-	}
-
-	public AtomicReference<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> queryableUniqueOwnershipAssociations() {
-		if (queryableUniqueOwnershipAssociations == null) {
-			queryableUniqueOwnershipAssociations = new AtomicReference<>(uniqueOwnershipAssociations());
-		}
-		return queryableUniqueOwnershipAssociations;
 	}
 
 	public UsagePricesProvider usagePrices() {

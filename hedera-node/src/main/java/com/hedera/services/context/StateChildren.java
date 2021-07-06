@@ -31,45 +31,59 @@ import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.MerkleUniqueTokenId;
+import com.hedera.services.state.submerkle.EntityId;
 import com.swirlds.common.AddressBook;
+import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Manages the working state of the services. This gets updated by {@link ServicesContext} on a regular interval. The
+ * Manages the state of the services. This gets updated by {@link ServicesContext} on a regular interval. The
  * intention of this class is to avoid making repetitive calls to get the state when we know it has not yet been updated.
  */
-public class WorkingState {
+public class StateChildren {
 
-	/** Working state of accounts */
+	/** State of accounts */
 	private FCMap<MerkleEntityId, MerkleAccount> accounts;
 
-	/** Working state of topics */
+	/** State of topics */
 	private FCMap<MerkleEntityId, MerkleTopic> topics;
 
-	/** Working state of tokens */
+	/** State of tokens */
 	private FCMap<MerkleEntityId, MerkleToken> tokens;
 
-	/** Working state of schedules */
+	/** State of unique tokens */
+	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens;
+
+	/** State of schedules */
 	private FCMap<MerkleEntityId, MerkleSchedule> schedules;
 
-	/** Working state of storage */
+	/** State of storage */
 	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
 
-	/** Working state of token associations */
+	/** State of token associations */
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
 
-	/** Working state of network context */
+	/** State of unique token associations */
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations;
+
+	/** State of unique ownership associations */
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations;
+
+	/** State of network context */
 	private MerkleNetworkContext networkCtx;
 
-	/** Working state of address book */
+	/** State of address book */
 	private AddressBook addressBook;
 
-	/** Working state of disk fs */
+	/** State of disk fs */
 	private MerkleDiskFs diskFs;
 
 	public FCMap<MerkleEntityId, MerkleAccount> getAccounts() {
-		Objects.requireNonNull(accounts, "A working state with null accounts map is never valid");
+		Objects.requireNonNull(accounts, "A state with null accounts map is never valid");
 		return accounts;
 	}
 
@@ -78,7 +92,7 @@ public class WorkingState {
 	}
 
 	public FCMap<MerkleEntityId, MerkleTopic> getTopics() {
-		Objects.requireNonNull(topics, "A working state with null topics map is never valid");
+		Objects.requireNonNull(topics, "A state with null topics map is never valid");
 		return topics;
 	}
 
@@ -87,7 +101,7 @@ public class WorkingState {
 	}
 
 	public FCMap<MerkleEntityId, MerkleToken> getTokens() {
-		Objects.requireNonNull(tokens, "A working state with null tokens map is never valid");
+		Objects.requireNonNull(tokens, "A state with null tokens map is never valid");
 		return tokens;
 	}
 
@@ -96,7 +110,7 @@ public class WorkingState {
 	}
 
 	public FCMap<MerkleEntityId, MerkleSchedule> getSchedules() {
-		Objects.requireNonNull(schedules, "A working state with null schedules map is never valid");
+		Objects.requireNonNull(schedules, "A state with null schedules map is never valid");
 		return schedules;
 	}
 
@@ -106,7 +120,7 @@ public class WorkingState {
 	}
 
 	public FCMap<MerkleBlobMeta, MerkleOptionalBlob> getStorage() {
-		Objects.requireNonNull(storage, "A working state with null storage map is never valid");
+		Objects.requireNonNull(storage, "A state with null storage map is never valid");
 		return storage;
 	}
 
@@ -116,7 +130,7 @@ public class WorkingState {
 	}
 
 	public FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> getTokenAssociations() {
-		Objects.requireNonNull(tokenAssociations, "A working state with null token associations map is never valid");
+		Objects.requireNonNull(tokenAssociations, "A state with null token associations map is never valid");
 		return tokenAssociations;
 	}
 
@@ -126,7 +140,7 @@ public class WorkingState {
 	}
 
 	public MerkleNetworkContext getNetworkCtx() {
-		Objects.requireNonNull(networkCtx, "A working state with null network ctx map is never valid");
+		Objects.requireNonNull(networkCtx, "A state with null network ctx map is never valid");
 		return networkCtx;
 	}
 
@@ -135,7 +149,7 @@ public class WorkingState {
 	}
 
 	public AddressBook getAddressBook() {
-		Objects.requireNonNull(addressBook, "A working state with null address book map is never valid");
+		Objects.requireNonNull(addressBook, "A state with null address book map is never valid");
 		return addressBook;
 	}
 
@@ -144,12 +158,42 @@ public class WorkingState {
 	}
 
 	public MerkleDiskFs getDiskFs() {
-		Objects.requireNonNull(diskFs, "A working state with null disk fs map is never valid");
+		Objects.requireNonNull(diskFs, "A state with null disk fs map is never valid");
 		return diskFs;
 	}
 
 	public void setDiskFs(MerkleDiskFs diskFs) {
 		this.diskFs = diskFs;
+	}
+
+	public FCMap<MerkleUniqueTokenId, MerkleUniqueToken> getUniqueTokens() {
+		Objects.requireNonNull(uniqueTokens, "A state with null unique tokens is never valid");
+		return uniqueTokens;
+	}
+
+	public void setUniqueTokens(
+			FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens) {
+		this.uniqueTokens = uniqueTokens;
+	}
+
+	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> getUniqueTokenAssociations() {
+		Objects.requireNonNull(uniqueTokenAssociations, "A state with null unique token associations is never valid");
+		return uniqueTokenAssociations;
+	}
+
+	public void setUniqueTokenAssociations(
+			FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations) {
+		this.uniqueTokenAssociations = uniqueTokenAssociations;
+	}
+
+	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> getUniqueOwnershipAssociations() {
+		Objects.requireNonNull(uniqueOwnershipAssociations, "A state with null unique ownership associations is never valid");
+		return uniqueOwnershipAssociations;
+	}
+
+	public void setUniqueOwnershipAssociations(
+			FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations) {
+		this.uniqueOwnershipAssociations = uniqueOwnershipAssociations;
 	}
 
 }
