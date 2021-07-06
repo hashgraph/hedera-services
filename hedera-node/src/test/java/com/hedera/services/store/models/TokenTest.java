@@ -25,14 +25,8 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hederahashgraph.api.proto.java.CustomFee;
-import com.hederahashgraph.api.proto.java.FixedFee;
-import com.hederahashgraph.api.proto.java.Fraction;
-import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,7 +40,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
-import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -65,7 +58,6 @@ class TokenTest {
 	private final Id nonTreasuryId = new Id(3,2 , 3);
 	private final Account treasuryAccount = new Account(treasuryId);
 	private final Account nonTreasuryAccount = new Account(nonTreasuryId);
-	private final List<FcCustomFee> feeSchedule = setUpFeeSchedule();
 
 	private Token subject;
 	private TokenRelationship treasuryRel;
@@ -267,33 +259,5 @@ class TokenTest {
 	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
 		var ex = assertThrows(InvalidTransactionException.class, something::run);
 		assertEquals(status, ex.getResponseCode());
-	}
-
-	private List<FcCustomFee> setUpFeeSchedule() {
-		final long validNumerator = 5;
-		final long validDenominator = 100;
-		final long fixedUnitsToCollect = 7;
-		final long minimumUnitsToCollect = 1;
-		final long maximumUnitsToCollect = 55;
-		final EntityId denom = new EntityId(1,2, 3);
-		final EntityId feeCollector = new EntityId(4,5, 6);
-		final CustomFee fractionalFee = CustomFee.newBuilder()
-				.setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
-				.setFractionalFee(FractionalFee.newBuilder()
-						.setFractionalAmount(Fraction.newBuilder()
-								.setNumerator(validNumerator)
-								.setDenominator(validDenominator)
-								.build())
-						.setMinimumAmount(minimumUnitsToCollect)
-						.setMaximumAmount(maximumUnitsToCollect)
-				).build();
-		final CustomFee fixedFee = CustomFee.newBuilder()
-				.setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
-				.setFixedFee(FixedFee.newBuilder()
-						.setDenominatingTokenId(denom.toGrpcTokenId())
-						.setAmount(fixedUnitsToCollect)
-				).build();
-		final List<CustomFee> grpcFeeSchedule = List.of(fixedFee, fractionalFee);
-		return grpcFeeSchedule.stream().map(FcCustomFee::fromGrpc).collect(toList());
 	}
 }
