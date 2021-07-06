@@ -4,7 +4,6 @@ import com.hedera.services.usage.state.UsageAccumulator;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Map;
 
@@ -34,9 +33,9 @@ class FeeSchedulesTest {
 		for (var provider : ResourceProvider.class.getEnumConstants()) {
 			final var providerPrices = prices.get(provider);
 			for (var resource : UsableResource.class.getEnumConstants()) {
-				final var bdPrice = BigInteger.valueOf()
-				final var bdUsage = BigDecimal.valueOf(usage.get(provider, resource));
-				sum = sum.add(providerPrices.get(resource).multiply(bdUsage));
+				final var biPrice = BigInteger.valueOf(providerPrices.get(resource));
+				final var biUsage = BigInteger.valueOf(usage.get(provider, resource));
+				sum = sum.add(biPrice.multiply(biUsage));
 			}
 		}
 		return sum.longValueExact();
