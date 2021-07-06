@@ -103,6 +103,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						balancesChangeOnTokenTransferWithFixedHbarCustomFees(),
 						transferFailsWithInsufficientBalanceForFixedCustomFees(),
 						balancesChangeOnTokenTransferWithFixedHtsCustomFees(),
+						transferFailsWithInsufficientBalanceForFixedHtsCustomFees(),
 				}
 		);
 	}
@@ -803,24 +804,27 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	public HapiApiSpec transferFailsWithInsufficientBalanceForFixedHtsCustomFees() {
 		return defaultHapiSpec("TransferFailsWithInsufficientBalanceForFixedHtsCustomFees")
 				.given(
-						cryptoCreate(FIRST_USER).balance(ONE_HBAR),
+						cryptoCreate(FIRST_USER).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(SECOND_USER).balance(0L),
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						tokenCreate(A_TOKEN)
 								.initialSupply(TOTAL_SUPPLY)
+								.treasury(TOKEN_TREASURY),
+						tokenCreate(B_TOKEN)
+								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY)
-								.withCustom(fixedHbarFee(5 * ONE_HBAR, TOKEN_TREASURY)),
-						tokenAssociate(FIRST_USER, A_TOKEN),
-						tokenAssociate(SECOND_USER, A_TOKEN)
+								.withCustom(fixedHtsFee(10L, A_TOKEN, TOKEN_TREASURY)),
+						tokenAssociate(FIRST_USER, A_TOKEN, B_TOKEN),
+						tokenAssociate(SECOND_USER, A_TOKEN, B_TOKEN)
 				).when(
 						cryptoTransfer(
-								moving(10, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+								moving(5, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
 						),
 						cryptoTransfer(
-								moving(10, A_TOKEN).between(TOKEN_TREASURY, SECOND_USER)
+								moving(100, B_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
 						),
 						cryptoTransfer(
-								moving(5, A_TOKEN).between(FIRST_USER, SECOND_USER)
+								moving(5, B_TOKEN).between(FIRST_USER, SECOND_USER)
 						).payingWith(FIRST_USER)
 								.signedBy(FIRST_USER)
 								.fee(ONE_HBAR)
@@ -828,15 +832,15 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				).then(
 						getAccountBalance(TOKEN_TREASURY)
 								.logged()
-								.hasTokenBalance(A_TOKEN, TOTAL_SUPPLY - 20)
+								.hasTokenBalance(A_TOKEN, TOTAL_SUPPLY - 5)
 								.hasTinyBars(10 * ONE_HBAR),
 						getAccountBalance(FIRST_USER)
 								.logged()
-								.hasTokenBalance(A_TOKEN, 10)
+								.hasTokenBalance(A_TOKEN, 5)
+								.hasTokenBalance(B_TOKEN, 100)
 								.hasTinyBars(99205334),
 						getAccountBalance(SECOND_USER)
 								.logged()
-								.hasTokenBalance(A_TOKEN, 10)
 								.hasTinyBars(0L)
 				);
 	}
