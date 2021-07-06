@@ -52,7 +52,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -121,7 +123,6 @@ class TokenFeeScheduleUpdateTransitionLogicTest {
 
 		verify(txnCtx).setStatus(INVALID_CUSTOM_FEE_SCHEDULE_KEY);
 	}
-
 
 
 	@Test
@@ -216,7 +217,9 @@ class TokenFeeScheduleUpdateTransitionLogicTest {
 		var builder = TokenFeeScheduleUpdateTransactionBody.newBuilder()
 				.addAllCustomFees(grpcCustomFees)
 				.setTokenId(target);
+		var txnBody = TransactionBody.newBuilder().setTokenFeeScheduleUpdate(builder);
 		tokenFeeScheduleUpdateTxn = builder.build();
+		tokenFeeScheduleUpdateTxnBody = txnBody.build();
 		TransactionBody txn = mock(TransactionBody.class);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(accessor.getTxn()).willReturn(txn);
@@ -225,6 +228,7 @@ class TokenFeeScheduleUpdateTransitionLogicTest {
 
 		given(txnCtx.consensusTime()).willReturn(now);
 	}
+
 	private void givenValidTxnCtxWithEmptyFees() {
 		var builder = TokenFeeScheduleUpdateTransactionBody.newBuilder()
 				.addAllCustomFees(List.of())
@@ -253,6 +257,15 @@ class TokenFeeScheduleUpdateTransitionLogicTest {
 
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(tokenFeeScheduleUpdateTxnBody));
+	}
+
+	@Test
+	void hasCorrectApplicability() {
+		givenValidTxnCtx();
+
+		// expect:
+		assertTrue(subject.applicability().test(tokenFeeScheduleUpdateTxnBody));
+		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
 	}
 
 	private void givenInvalidTokenId() {
