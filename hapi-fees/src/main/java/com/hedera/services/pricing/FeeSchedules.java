@@ -11,10 +11,11 @@ import java.util.Map;
 
 import static com.hedera.services.pricing.UsableResource.CONSTANT;
 import static java.math.MathContext.DECIMAL128;
+import static java.math.RoundingMode.HALF_UP;
 
 public class FeeSchedules {
-	private static final BigDecimal USD_TO_TINYCENTS = BigDecimal.valueOf(100 * 100_000_000L);
-	private static final BigDecimal FEE_SCHEDULE_MULTIPLIER = BigDecimal.valueOf(1_000L);
+	static final BigDecimal USD_TO_TINYCENTS = BigDecimal.valueOf(100 * 100_000_000L);
+	static final BigDecimal FEE_SCHEDULE_MULTIPLIER = BigDecimal.valueOf(1_000L);
 
 	private static final AssetsLoader ASSETS_LOADER = new AssetsLoader();
 	private static final CanonicalOperations CANONICAL_OPS = new CanonicalOperations();
@@ -24,18 +25,14 @@ public class FeeSchedules {
 			SubType type
 	) throws IOException {
 		final var canonicalUsage = CANONICAL_OPS.canonicalUsageFor(function, type);
-		System.out.println(canonicalUsage);
 		final var genericPrices = genericPricesFor(function);
-		System.out.println(genericPrices);
 		final var genericPrice = computeGenericGiven(canonicalUsage, genericPrices);
 		final var canonicalPrice = ASSETS_LOADER.loadCanonicalPrices().get(function).get(type);
-		System.out.println(genericPrice + " generic vs required " + canonicalPrice);
 
 		final var normalizingFactor = FEE_SCHEDULE_MULTIPLIER
 				.multiply(canonicalPrice)
 				.divide(genericPrice, DECIMAL128)
 				.multiply(USD_TO_TINYCENTS);
-		System.out.println("Normalizing: " + normalizingFactor);
 
 		return canonicalPricesGiven(normalizingFactor, genericPrices);
 	}
@@ -50,10 +47,8 @@ public class FeeSchedules {
 			final var providerGenerics = genericPrices.get(provider);
 			for (var resource : UsableResource.class.getEnumConstants()) {
 				final var genericPrice = providerGenerics.get(resource);
-				final var canonicalPrice = normalizingFactor
-						.multiply(genericPrice)
-						.toBigInteger()
-						.longValueExact();
+				final var exactCanonicalPrice = normalizingFactor.multiply(genericPrice);
+				final var canonicalPrice = exactCanonicalPrice.setScale(0, HALF_UP).longValueExact();
 				providerPrices.put(resource, canonicalPrice);
 			}
 			canonicalPrices.put(provider, providerPrices);
@@ -93,7 +88,6 @@ public class FeeSchedules {
 				final var scale = BigDecimal.valueOf(provider.multiplier());
 				final var capacity = capacities.get(resource);
 				final var generic = BigDecimal.ONE.divide(capacity, DECIMAL128).multiply(scale);
-//				System.out.println("One divided by " + capacity + " is " + BigDecimal.ONE.divide(capacity, DECIMAL128));
 				providerGenerics.put(resource, generic);
 				if (resource != CONSTANT) {
 					nonConstantGenerics = nonConstantGenerics.add(generic);

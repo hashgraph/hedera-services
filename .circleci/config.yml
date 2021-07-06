@@ -2223,7 +2223,6 @@ workflows:
               branches:
                 ignore:
                   - NONE
-                  - 01735-01722-AddFeeSchUpdPricing
             workflow-name: "Continuous-integration"
         - sonar-check:
             context: SonarCloud

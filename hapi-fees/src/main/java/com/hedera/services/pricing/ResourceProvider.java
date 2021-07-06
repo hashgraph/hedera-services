@@ -20,7 +20,7 @@ public enum ResourceProvider {
 
 		@Override
 		public int multiplier() {
-			return LEGACY_NETWORK_SIZE;
+			return NETWORK_SIZE;
 		}
 	},
 	SERVICE {
@@ -31,11 +31,12 @@ public enum ResourceProvider {
 
 		@Override
 		public int multiplier() {
-			return LEGACY_NETWORK_SIZE;
+			return NETWORK_SIZE;
 		}
 	};
 
-	private static final int LEGACY_NETWORK_SIZE = 13;
+	private static final int RELEASE_0160_NETWORK_SIZE = 20;
+	private static final int NETWORK_SIZE = RELEASE_0160_NETWORK_SIZE;
 
 	public abstract int multiplier();
 	public abstract String jsonKey();
