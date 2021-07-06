@@ -22,13 +22,13 @@ package com.hedera.services.txns.validation;
 
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.junit.jupiter.api.Test;
 
 import java.util.function.Predicate;
 
-import static com.hedera.services.txns.validation.PureValidation.checkKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DECIMALS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_INITIAL_SUPPLY;
@@ -123,9 +123,10 @@ class TokenListChecksTest {
 	}
 
 	@Test
-	void checksInvalidFeeScheduleKey(){
+	void checksInvalidFeeScheduleKey() {
 		// setup:
-		given(checkKey(any(), INVALID_CUSTOM_FEE_SCHEDULE_KEY)).willReturn(INVALID_CUSTOM_FEE_SCHEDULE_KEY);
+		KeyList invalidKeyList1 = KeyList.newBuilder().build();
+		Key invalidFeeScheduleKey = Key.newBuilder().setKeyList(invalidKeyList1).build();
 
 		// when:
 		var validity = TokenListChecks.checkKeys(
@@ -134,7 +135,7 @@ class TokenListChecksTest {
 				false, Key.getDefaultInstance(),
 				false, Key.getDefaultInstance(),
 				false, Key.getDefaultInstance(),
-				true, Key.getDefaultInstance());
+				true, invalidFeeScheduleKey);
 
 		// then:
 		assertEquals(INVALID_CUSTOM_FEE_SCHEDULE_KEY, validity);
