@@ -23,13 +23,11 @@ package com.hedera.services.txns.token;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,13 +36,10 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
-import static com.hedera.services.txns.validation.TokenListChecks.checkKeys;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
 public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
@@ -68,13 +63,12 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 	public void doStateTransition() {
 		try {
 			transitionFor(txnCtx.accessor().getTxn().getTokenFeeScheduleUpdate());
-		} catch(Exception e) {
+		} catch (Exception e) {
 			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
 			abortWith(FAIL_INVALID);
 		}
 
 	}
-
 
 	private void transitionFor(TokenFeeScheduleUpdateTransactionBody op) {
 		var id = store.resolve(op.getTokenId());
@@ -83,7 +77,6 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 			return;
 		}
 
-		//var outcome = OK;
 		MerkleToken token = store.get(id);
 
 		if (token.isDeleted()) {
@@ -92,7 +85,7 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 		}
 
 		var outcome = store.updateFeeSchedule(op);
-		if(outcome != OK) {
+		if (outcome != OK) {
 			abortWith(outcome);
 			return;
 		}
@@ -118,6 +111,7 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 
 		return OK;
 	}
+
 	private void abortWith(ResponseCodeEnum cause) {
 		txnCtx.setStatus(cause);
 	}

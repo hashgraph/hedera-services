@@ -20,12 +20,10 @@ package com.hedera.services.store;
  * ‍
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.BackingNfts;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.records.TransactionRecordService;
-import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -33,7 +31,6 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.OwnershipTracker;
@@ -41,8 +38,6 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CustomFee;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
@@ -51,26 +46,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
-import java.util.List;
 import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
-import static java.util.stream.Collectors.toList;
 
 /**
  * Loads and saves token-related entities to and from the Swirlds state, hiding
@@ -293,86 +275,6 @@ public class TypedTokenStore {
 		transactionRecordService.includeChangesToToken(token);
 	}
 
-	public List<FcCustomFee> validateAndGetFcCustomFees(List<CustomFee> grpcFeeSchedule,
-			GlobalDynamicProperties properties, Token tokenFor) {
-		var status = validateFeeSchedule(grpcFeeSchedule, properties, tokenFor);
-		validateTrue(status == OK, status);
-		return grpcFeeSchedule.stream().map(FcCustomFee::fromGrpc).collect(toList());
-	}
-
-	private ResponseCodeEnum validateFeeSchedule(List<CustomFee> grpcFeeSchedule, GlobalDynamicProperties properties,
-			final Token tokenFor) {
-		if (grpcFeeSchedule.size() > properties.maxCustomFeesAllowed()) {
-			return CUSTOM_FEES_LIST_TOO_LONG;
-		}
-
-		for (var customFee : grpcFeeSchedule) {
-			final var feeCollector = customFee.getFeeCollectorAccountId();
-			final var feeCollectorId = new Id(
-					feeCollector.getShardNum(), feeCollector.getRealmNum(), feeCollector.getAccountNum());
-			Account feeCollectorAccount;
-
-			try {
-				feeCollectorAccount = accountStore.loadAccount(feeCollectorId);
-
-				if (customFee.hasFixedFee()) {
-					final var fixedFee = customFee.getFixedFee();
-					if (fixedFee.getAmount() <= 0) {
-						return CUSTOM_FEE_MUST_BE_POSITIVE;
-					}
-					if (fixedFee.hasDenominatingTokenId()) {
-						final var denom = fixedFee.getDenominatingTokenId();
-						final var denomId = new Id(denom.getShardNum(), denom.getRealmNum(), denom.getTokenNum());
-						Token denomToken = loadToken(denomId);
-						if (denomToken.getType() == TokenType.NON_FUNGIBLE_UNIQUE) {
-							return CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
-						}
-						loadTokenRelationship(denomToken, feeCollectorAccount);
-					}
-				} else if (customFee.hasFractionalFee()) {
-					if (tokenFor.getType() == TokenType.NON_FUNGIBLE_UNIQUE) {
-						return CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
-					}
-					final var fractionalSpec = customFee.getFractionalFee();
-					final var fraction = fractionalSpec.getFractionalAmount();
-					if (fraction.getDenominator() == 0) {
-						return FRACTION_DIVIDES_BY_ZERO;
-					}
-					if (!areValidPositiveNumbers(fraction.getNumerator(), fraction.getDenominator())) {
-						return CUSTOM_FEE_MUST_BE_POSITIVE;
-					}
-					if (fractionalSpec.getMaximumAmount() < 0 || fractionalSpec.getMinimumAmount() < 0) {
-						return CUSTOM_FEE_MUST_BE_POSITIVE;
-					}
-					if (fractionalSpec.getMaximumAmount() > 0 &&
-							fractionalSpec.getMaximumAmount() < fractionalSpec.getMinimumAmount()) {
-						return FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
-					}
-				} else {
-					return CUSTOM_FEE_NOT_FULLY_SPECIFIED;
-				}
-			} catch (InvalidTransactionException ex) {
-				switch (ex.getResponseCode()) {
-					case INVALID_ACCOUNT_ID:
-					case ACCOUNT_DELETED:
-					case ACCOUNT_EXPIRED_AND_PENDING_REMOVAL:
-						return INVALID_CUSTOM_FEE_COLLECTOR;
-					case INVALID_TOKEN_ID:
-					case TOKEN_WAS_DELETED:
-						return INVALID_TOKEN_ID_IN_CUSTOM_FEES;
-					case TOKEN_NOT_ASSOCIATED_TO_ACCOUNT:
-						return TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
-				}
-			}
-		}
-
-		return OK;
-	}
-
-	private boolean areValidPositiveNumbers(long a, long b) {
-		return (a > 0 && b > 0);
-	}
-
 	private void validateUsable(MerkleTokenRelStatus merkleTokenRelStatus) {
 		validateTrue(merkleTokenRelStatus != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 	}
@@ -391,10 +293,6 @@ public class TypedTokenStore {
 		mutableToken.setTotalSupply(token.getTotalSupply());
 		mutableToken.setAccountsFrozenByDefault(token.isFrozenByDefault());
 		mutableToken.setLastUsedSerialNumber(token.getLastUsedSerialNumber());
-		mutableToken.setFeeSchedule(token.getFeeSchedule());
-		if(token.hasFeeScheduleKey()) {
-			mutableToken.setFeeScheduleKey(token.getFeeScheduleKey());
-		}
 	}
 
 	private void initModelAccounts(Token token, EntityId _treasuryId, @Nullable EntityId _autoRenewId) {
@@ -417,8 +315,6 @@ public class TypedTokenStore {
 		token.setFrozenByDefault(immutableToken.accountsAreFrozenByDefault());
 		token.setType(immutableToken.tokenType());
 		token.setLastUsedSerialNumber(immutableToken.getLastUsedSerialNumber());
-		token.setFeeScheduleKey(immutableToken.getFeeScheduleKey());
-		token.setFeeSchedule(immutableToken.customFeeSchedule());
 	}
 
 	private void alertTokenBackingStoreOfNew(TokenRelationship newRel) {

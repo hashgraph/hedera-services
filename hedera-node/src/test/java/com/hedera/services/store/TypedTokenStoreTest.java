@@ -32,7 +32,6 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -42,10 +41,6 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hederahashgraph.api.proto.java.CustomFee;
-import com.hederahashgraph.api.proto.java.FixedFee;
-import com.hederahashgraph.api.proto.java.Fraction;
-import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
@@ -55,13 +50,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
-
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
-import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
@@ -238,8 +230,6 @@ class TypedTokenStoreTest {
 		expectedReplacementToken.setFreezeKey(freezeKey);
 		expectedReplacementToken.setKycKey(kycKey);
 		expectedReplacementToken.setAccountsFrozenByDefault(!freezeDefault);
-		expectedReplacementToken.setFeeSchedule(feeSchedule);
-		expectedReplacementToken.setFeeScheduleKey(feeScheduleKey);
 		// and:
 		final var expectedNewUniqTokenId = new MerkleUniqueTokenId(tokenEntityId, mintedSerialNo);
 		final var expectedNewUniqToken = new MerkleUniqueToken(treasuryId, nftMeta, creationTime);
@@ -312,8 +302,6 @@ class TypedTokenStoreTest {
 		merkleToken.setSupplyKey(supplyKey);
 		merkleToken.setKycKey(kycKey);
 		merkleToken.setFreezeKey(freezeKey);
-		merkleToken.setFeeScheduleKey(feeScheduleKey);
-		merkleToken.setFeeSchedule(feeSchedule);
 
 		token.setTreasury(treasuryAccount);
 		token.setAutoRenewAccount(autoRenewAccount);
@@ -321,9 +309,7 @@ class TypedTokenStoreTest {
 		token.setKycKey(kycKey);
 		token.setSupplyKey(supplyKey);
 		token.setFreezeKey(freezeKey);
-		token.setFeeScheduleKey(feeScheduleKey);
 		token.setFrozenByDefault(freezeDefault);
-		token.setFeeSchedule(feeSchedule);
 	}
 
 	private void setupTokenRel() {
@@ -332,34 +318,6 @@ class TypedTokenStoreTest {
 		miscTokenRel.setFrozen(frozen);
 		miscTokenRel.setKycGranted(kycGranted);
 		miscTokenRel.setNotYetPersisted(false);
-	}
-
-	private List<FcCustomFee> setUpFeeSchedule() {
-		final long validNumerator = 5;
-		final long validDenominator = 100;
-		final long fixedUnitsToCollect = 7;
-		final long minimumUnitsToCollect = 1;
-		final long maximumUnitsToCollect = 55;
-		final EntityId denom = new EntityId(1,2, 3);
-		final EntityId feeCollector = new EntityId(4,5, 6);
-		final CustomFee fractionalFee = CustomFee.newBuilder()
-				.setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
-				.setFractionalFee(FractionalFee.newBuilder()
-						.setFractionalAmount(Fraction.newBuilder()
-								.setNumerator(validNumerator)
-								.setDenominator(validDenominator)
-								.build())
-						.setMinimumAmount(minimumUnitsToCollect)
-						.setMaximumAmount(maximumUnitsToCollect)
-				).build();
-		final CustomFee fixedFee = CustomFee.newBuilder()
-				.setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
-				.setFixedFee(FixedFee.newBuilder()
-						.setDenominatingTokenId(denom.toGrpcTokenId())
-						.setAmount(fixedUnitsToCollect)
-				).build();
-		final List<CustomFee> grpcFeeSchedule = List.of(fixedFee, fractionalFee);
-		return grpcFeeSchedule.stream().map(FcCustomFee::fromGrpc).collect(toList());
 	}
 
 	private final long expiry = 1_234_567L;
@@ -377,19 +335,13 @@ class TypedTokenStoreTest {
 	private final JKey kycKey = TxnHandlingScenario.TOKEN_KYC_KT.asJKeyUnchecked();
 	private final JKey freezeKey = TxnHandlingScenario.TOKEN_FREEZE_KT.asJKeyUnchecked();
 	private final JKey supplyKey = TxnHandlingScenario.TOKEN_SUPPLY_KT.asJKeyUnchecked();
-	private final JKey feeScheduleKey = TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT.asJKeyUnchecked();
-	private final List<FcCustomFee> feeSchedule = setUpFeeSchedule();
 	private final long tokenNum = 4_234L;
-	private final long nonfungibleTokenNum = 6_666L;
 	private final long tokenSupply = 777L;
 	private final String name = "Testing123";
 	private final String symbol = "T123";
 	private final MerkleEntityId merkleTokenId = new MerkleEntityId(0, 0, tokenNum);
 	private final Id tokenId = new Id(0, 0, tokenNum);
-	private final MerkleEntityId nonfungibleMerkleTokenId = new MerkleEntityId(0, 0, nonfungibleTokenNum);
-	private final Id nonfungibleTokenId = new Id(0, 0, nonfungibleTokenNum);
 	private final Token token = new Token(tokenId);
-	private final Token nonfungibleToken = new Token(nonfungibleTokenId);
 
 	private final boolean frozen = false;
 	private final boolean kycGranted = true;
@@ -398,13 +350,6 @@ class TypedTokenStoreTest {
 			0, 0, miscAccountNum,
 			0, 0, tokenNum);
 	private final TokenRelationship miscTokenRel = new TokenRelationship(token, miscAccount);
-	private final MerkleEntityAssociation nonfungibleTokenRelId = new MerkleEntityAssociation(
-			0, 0, miscAccountNum,
-			0, 0, nonfungibleTokenNum);
-	private final TokenRelationship nonfungibleTokenRel = new TokenRelationship(nonfungibleToken, miscAccount);
-
 	private MerkleToken merkleToken;
 	private MerkleTokenRelStatus miscTokenMerkleRel;
-	private MerkleToken nonFungibleMerkleToken;
-	private MerkleTokenRelStatus nonFungibleTokenMerkleRel;
 }

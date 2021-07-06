@@ -25,7 +25,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -69,11 +68,9 @@ public class Token {
 	private JKey kycKey;
 	private JKey freezeKey;
 	private JKey supplyKey;
-	private JKey feeScheduleKey;
 	private boolean frozenByDefault;
 	private Account treasury;
 	private Account autoRenewAccount;
-	List<FcCustomFee> feeSchedule;
 
 	private long lastUsedSerialNumber;
 
@@ -269,26 +266,6 @@ public class Token {
 		return mintedUniqueTokens;
 	}
 
-	public JKey getFeeScheduleKey() {
-		return feeScheduleKey;
-	}
-
-	public boolean hasFeeScheduleKey() {
-		return feeScheduleKey != null;
-	}
-
-	public void setFeeScheduleKey(final JKey feeScheduleKey) {
-		this.feeScheduleKey = feeScheduleKey;
-	}
-
-	public List<FcCustomFee> getFeeSchedule() {
-		return feeSchedule;
-	}
-
-	public void setFeeSchedule(final List<FcCustomFee> feeSchedule) {
-		this.feeSchedule = feeSchedule;
-	}
-
 	/* NOTE: The object methods below are only overridden to improve
 		readability of unit tests; this model object is not used in hash-based
 		collections, so the performance of these methods doesn't matter. */
@@ -312,8 +289,6 @@ public class Token {
 				.add("freezeKey", describe(freezeKey))
 				.add("frozenByDefault", frozenByDefault)
 				.add("supplyKey", describe(supplyKey))
-				.add("feeScheduleKey", describe(feeScheduleKey))
-				.add("feeSchedule", feeSchedule)
 				.toString();
 	}
 }

@@ -515,7 +515,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 						return INVALID_TOKEN_ID_IN_CUSTOM_FEES;
 					}
 					final var merkleToken = get(denom);
-					if(merkleToken.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE) {
+					if (merkleToken.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE) {
 						return CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
 					}
 					if (!associationExists(feeCollector, denom)) {
@@ -523,7 +523,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 					}
 				}
 			} else if (customFee.hasFractionalFee()) {
-				if(pendingCreation.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE) {
+				if (pendingCreation.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE) {
 					return CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 				}
 				final var fractionalSpec = customFee.getFractionalFee();
@@ -772,11 +772,11 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 		MerkleToken token = get(tId);
 
-		if(customFees.isEmpty() && token.grpcFeeSchedule().isEmpty()) {
+		if (customFees.isEmpty() && token.grpcFeeSchedule().isEmpty()) {
 			return CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
 		}
 		var validity = validateFeeSchedule(changes.getCustomFeesList());
-		if(validity != OK) {
+		if (validity != OK) {
 			return validity;
 		}
 
@@ -784,8 +784,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 		return OK;
 	}
-
-
 
 	public static boolean affectsExpiryAtMost(TokenUpdateTransactionBody op) {
 		return !op.hasAdminKey() &&

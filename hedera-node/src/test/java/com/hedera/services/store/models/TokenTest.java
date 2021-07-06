@@ -257,16 +257,11 @@ class TokenTest {
 
 	@Test
 	void toStringWorks() {
-		subject.setFeeSchedule(feeSchedule);
-		final var expected = "Token{id=Id{shard=1, realm=2, num=3}, treasury=Account{id=Id{shard=2, realm=2, num=3}, " +
-				"expiry=0, balance=0, deleted=false, tokens=<N/A>}, autoRenewAccount=null, kycKey=<N/A>, " +
-				"freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, feeScheduleKey=<N/A>" +
-				", feeSchedule=[FcCustomFee{feeType=FIXED_FEE, fixedFee=FixedFeeSpec{unitsToCollect=7, " +
-				"tokenDenomination=1.2.3}, feeCollector=EntityId{shard=4, realm=5, num=6}}, " +
-				"FcCustomFee{feeType=FRACTIONAL_FEE, fractionalFee=FractionalFeeSpec{numerator=5, denominator=100, " +
-				"minimumUnitsToCollect=1, maximumUnitsToCollect=55}, feeCollector=EntityId{shard=4, realm=5, num=6}}]}";
+		final var desired = "Token{id=Id{shard=1, realm=2, num=3}, treasury=Account{id=Id{shard=2, realm=2, num=3}, " +
+				"expiry=0, balance=0, deleted=false, tokens=<N/A>}, autoRenewAccount=null, kycKey=<N/A>, freezeKey=<N/A>, " +
+				"frozenByDefault=false, supplyKey=<N/A>}";
 
-		assertEquals(expected, subject.toString());
+		assertEquals(desired, subject.toString());
 	}
 
 	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
