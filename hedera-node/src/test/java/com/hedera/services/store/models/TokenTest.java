@@ -35,10 +35,6 @@ import org.mockito.Mockito;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
-import org.mockito.Mockito;
-
-import java.time.Instant;
-import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -53,14 +49,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -293,6 +281,8 @@ class TokenTest {
 		nonTreasuryRel.setBalance(0);
 		assertThrows(InvalidTransactionException.class, () -> subject.wipe(nonTreasuryRel, 5));
 
+		subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
+		assertThrows(InvalidTransactionException.class, () -> subject.wipe(nonTreasuryRel, 5));
 	}
 
 	@Test
@@ -320,6 +310,7 @@ class TokenTest {
 		assertTrue(subject.hasRemovedUniqueTokens());
 		assertEquals(1, subject.removedUniqueTokens().get(0).getSerialNumber());
 		assertTrue(subject.hasChangedSupply());
+		assertEquals(100000, subject.getMaxSupply());
 	}
 
 	@Test
@@ -362,6 +353,10 @@ class TokenTest {
 		assertThrows(InvalidTransactionException.class, ()-> {
 			subject.wipe(ownershipTracker, nonTreasuryRel, List.of(1L, 2L));
 		}, "Cannot wipe Unique Tokens without wipe key");
+
+		given(nonTreasuryRel.getAccount().getId()).willReturn(new Id(1, 2, 3));
+		given(uniqueToken.getOwner()).willReturn(Id.DEFAULT);
+		assertFailsWith(() -> subject.wipe(ownershipTracker, nonTreasuryRel, List.of(1L)), FAIL_INVALID);
 	}
 
 	@Test
@@ -413,6 +408,11 @@ class TokenTest {
 
 		subject.setAutoRenewAccount(account);
 		assertEquals(account, subject.getAutoRenewAccount());
+
+		var hmap = new HashMap<Long, UniqueToken>();
+		hmap.put(1L, new UniqueToken(new Id(1, 2, 3), 4));
+		subject.setLoadedUniqueTokens(hmap);
+		assertEquals(hmap, subject.getLoadedUniqueTokens());
 	}
 
 	@Test

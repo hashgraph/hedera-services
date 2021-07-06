@@ -50,13 +50,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
+
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -205,6 +209,22 @@ class TypedTokenStoreTest {
 
 		assertTokenLoadFailsWith(TOKEN_WAS_DELETED);
 	}
+
+	@Test
+	void loadsUniqueTokens() {
+		var aToken = new Token(miscId);
+		var merkleUniqueToken = mock(MerkleUniqueToken.class);
+		given(merkleUniqueToken.getOwner()).willReturn(new EntityId(Id.DEFAULT));
+		given(uniqueTokens.get(any())).willReturn(merkleUniqueToken);
+
+		subject.loadUniqueTokens(aToken, List.of(1L, 2L));
+
+		assertEquals(aToken.getLoadedUniqueTokens().size(), 2);
+		verify(aToken).setLoadedUniqueTokens(any());
+		given(uniqueTokens.get(any())).willReturn(null);
+		assertThrows(InvalidTransactionException.class, () -> subject.loadUniqueTokens(aToken, List.of(1L, 2L)));
+	}
+
 
 	/* --- Token saving --- */
 	@Test

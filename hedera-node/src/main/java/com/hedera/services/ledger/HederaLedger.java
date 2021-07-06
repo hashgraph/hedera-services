@@ -33,7 +33,6 @@ import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
-import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -648,9 +647,5 @@ public class HederaLedger {
 				updateXfers(accountId, change.units(), netTransfers);
 			}
 		}
-	}
-
-	private boolean isFungibleToken(TokenID token) {
-		return tokenStore.get(token).tokenType().equals(TokenType.FUNGIBLE_COMMON);
 	}
 }

@@ -247,7 +247,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec burnFailsOnInvalidSerialNumber() {
-		return defaultHapiSpec("failsOnInvalidSerialNumber")
+		return defaultHapiSpec("burnFailsOnInvalidSerialNumber")
 				.given(
 						newKeyNamed(SUPPLY_KEY),
 						cryptoCreate(TOKEN_TREASURY),
