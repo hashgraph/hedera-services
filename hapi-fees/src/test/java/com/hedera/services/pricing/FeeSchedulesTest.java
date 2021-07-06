@@ -1,24 +1,44 @@
 package com.hedera.services.pricing;
 
-import org.junit.jupiter.api.Assertions;
+import com.hedera.services.usage.state.UsageAccumulator;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 
 class FeeSchedulesTest {
 	private final FeeSchedules subject = new FeeSchedules();
+	private final AssetsLoader assetsLoader = new AssetsLoader();
 
 	@Test
 	void computesExpectedPriceForSubmitMessage() throws IOException {
-		AtomicReference<Map<ResourceProvider, Map<UsableResource, Long>>> ans = new AtomicReference<>();
+		// setup:
+		final var canonicalPrices = assetsLoader.loadCanonicalPrices();
+		final var canonicalSubmitMessagePrice = canonicalPrices.get(ConsensusSubmitMessage).get(DEFAULT);
 
-		Assertions.assertDoesNotThrow(() -> ans.set(subject.canonicalPricesFor(ConsensusSubmitMessage, DEFAULT)));
+		// given:
+		Map<ResourceProvider, Map<UsableResource, Long>> computedPrices =
+				subject.canonicalPricesFor(ConsensusSubmitMessage, DEFAULT);
 
-		System.out.println(ans.get());
+		// when:
+
+	}
+
+	private long feeInUsd(Map<ResourceProvider, Map<UsableResource, Long>> prices, UsageAccumulator usage) {
+		var sum = BigInteger.ZERO;
+		for (var provider : ResourceProvider.class.getEnumConstants()) {
+			final var providerPrices = prices.get(provider);
+			for (var resource : UsableResource.class.getEnumConstants()) {
+				final var bdPrice = BigInteger.valueOf()
+				final var bdUsage = BigDecimal.valueOf(usage.get(provider, resource));
+				sum = sum.add(providerPrices.get(resource).multiply(bdUsage));
+			}
+		}
+		return sum.longValueExact();
 	}
 }
