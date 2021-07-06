@@ -28,6 +28,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.function.Predicate;
 
+import static com.hedera.services.txns.validation.PureValidation.checkKey;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DECIMALS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_INITIAL_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MAX_SUPPLY;
@@ -118,6 +120,24 @@ class TokenListChecksTest {
 		//
 		validity = TokenListChecks.supplyTypeCheck(TokenSupplyType.UNRECOGNIZED, 10);
 		assertEquals(NOT_SUPPORTED, validity);
+	}
+
+	@Test
+	void checksInvalidFeeScheduleKey(){
+		// setup:
+		given(checkKey(any(), INVALID_CUSTOM_FEE_SCHEDULE_KEY)).willReturn(INVALID_CUSTOM_FEE_SCHEDULE_KEY);
+
+		// when:
+		var validity = TokenListChecks.checkKeys(
+				false, Key.getDefaultInstance(),
+				false, Key.getDefaultInstance(),
+				false, Key.getDefaultInstance(),
+				false, Key.getDefaultInstance(),
+				false, Key.getDefaultInstance(),
+				true, Key.getDefaultInstance());
+
+		// then:
+		assertEquals(INVALID_CUSTOM_FEE_SCHEDULE_KEY, validity);
 	}
 
 }
