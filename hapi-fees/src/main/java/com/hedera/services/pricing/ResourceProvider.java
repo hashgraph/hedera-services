@@ -21,9 +21,18 @@ package com.hedera.services.pricing;
  */
 
 /**
- * Represents the three kinds of
+ * Represents the three resources providers a transaction may consume
+ * resources from, and hence owe fees to.
+ *
+ * The {@link ResourceProvider#relativeWeight()} method returns the
+ * size of the network, since the network and service providers are
+ * essentially consuming resources from every node. (Unlike the node-
+ * specific work done in answering a query.)
  */
 public enum ResourceProvider {
+	/**
+	 * A single node in the network.
+	 */
 	NODE {
 		@Override
 		public String jsonKey() {
@@ -31,10 +40,13 @@ public enum ResourceProvider {
 		}
 
 		@Override
-		public int multiplier() {
+		public int relativeWeight() {
 			return 1;
 		}
 	},
+	/**
+	 * The gossip and consensus provisions of the entire network.
+	 */
 	NETWORK {
 		@Override
 		public String jsonKey() {
@@ -42,10 +54,13 @@ public enum ResourceProvider {
 		}
 
 		@Override
-		public int multiplier() {
+		public int relativeWeight() {
 			return NETWORK_SIZE;
 		}
 	},
+	/**
+	 * The provisions of the entire network for a specific service such as HTS.
+	 */
 	SERVICE {
 		@Override
 		public String jsonKey() {
@@ -53,7 +68,7 @@ public enum ResourceProvider {
 		}
 
 		@Override
-		public int multiplier() {
+		public int relativeWeight() {
 			return NETWORK_SIZE;
 		}
 	};
@@ -61,6 +76,6 @@ public enum ResourceProvider {
 	private static final int RELEASE_0160_NETWORK_SIZE = 20;
 	private static final int NETWORK_SIZE = RELEASE_0160_NETWORK_SIZE;
 
-	public abstract int multiplier();
+	public abstract int relativeWeight();
 	public abstract String jsonKey();
 }

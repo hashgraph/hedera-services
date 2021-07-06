@@ -118,7 +118,7 @@ class FeeSchedules {
 
 			var nonConstantGenerics = BigDecimal.ZERO;
 			for (var resource : UsableResource.class.getEnumConstants()) {
-				final var scale = BigDecimal.valueOf(provider.multiplier());
+				final var scale = BigDecimal.valueOf(provider.relativeWeight());
 				final var capacity = capacities.get(resource);
 				final var generic = BigDecimal.ONE.divide(capacity, DECIMAL128).multiply(scale);
 				providerGenerics.put(resource, generic);
