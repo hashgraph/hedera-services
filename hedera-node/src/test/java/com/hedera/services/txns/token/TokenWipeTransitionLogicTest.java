@@ -43,8 +43,11 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -205,6 +208,41 @@ class TokenWipeTransitionLogicTest {
         // expect:
         assertEquals(INVALID_WIPING_AMOUNT, subject.semanticCheck().apply(tokenWipeTxn));
     }
+
+    @Test
+	void rejectsBothAmountAndSerialNumbers(){
+    	tokenWipeTxn = TransactionBody.newBuilder()
+				.setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
+				.setToken(id)
+				.setAccount(account)
+				.setAmount(10)
+				.addAllSerialNumbers(List.of(1L, 2L)))
+				.build();
+
+    	assertEquals(INVALID_TRANSACTION_BODY, subject.semanticCheck().apply(tokenWipeTxn));
+	}
+
+	@Test
+	void rejectsInvalidNftId(){
+		tokenWipeTxn = TransactionBody.newBuilder()
+				.setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
+						.setToken(id)
+						.setAccount(account)
+						.addAllSerialNumbers(List.of(-1L)))
+				.build();
+		given(validator.maxBatchSizeWipeCheck(anyInt())).willReturn(OK);
+
+		assertEquals(INVALID_NFT_ID, subject.semanticCheck().apply(tokenWipeTxn));
+	}
+
+	@Test
+	void propagatesErrorOnInvalidBatch() {
+    	givenValidUniqueTxnCtx();
+    	given(validator.maxBatchSizeWipeCheck(anyInt())).willReturn(BATCH_SIZE_LIMIT_EXCEEDED);
+
+
+		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.semanticCheck().apply(tokenWipeTxn));
+	}
 
     private void givenValidCommonTxnCtx() {
         tokenWipeTxn = TransactionBody.newBuilder()

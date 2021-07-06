@@ -52,6 +52,7 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
@@ -310,7 +311,7 @@ public class TypedTokenStore {
 	}
 
 	private void validateUsable(MerkleUniqueToken merkleUniqueToken) {
-		validateTrue(merkleUniqueToken != null, INVALID_TOKEN_ID);
+		validateTrue(merkleUniqueToken != null, INVALID_NFT_ID);
 	}
 
 	private void mapModelChangesToMutable(Token token, MerkleToken mutableToken) {
