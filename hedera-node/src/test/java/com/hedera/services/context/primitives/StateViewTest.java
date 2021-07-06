@@ -974,14 +974,14 @@ class StateViewTest {
 				.setMetadata(ByteString.copyFrom(targetNft.getMetadata()))
 				.build());
 
-		var result = subject.infoForTokenNfts(tokenId, 0, 1);
+		var result = subject.infosForTokenNfts(tokenId, 0, 1);
 		assertFalse(result.isEmpty());
 		assertEquals(expectedResult, result.get());
 	}
 
 	@Test
 	void infoForTokenNftsReturnsEmpty() {
-		var result = subject.infoForTokenNfts(missingTokenId, 0, 1);
+		var result = subject.infosForTokenNfts(missingTokenId, 0, 1);
 		assertTrue(result.isEmpty());
 	}
 

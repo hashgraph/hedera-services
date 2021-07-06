@@ -396,22 +396,21 @@ public class StateView {
 		return Optional.of(info);
 	}
 
-	public Optional<List<TokenNftInfo>> infoForTokenNfts(TokenID tid, long start, long end) {
+	public Optional<List<TokenNftInfo>> infosForTokenNfts(TokenID tid, long start, long end) {
 		if (!tokenExists(tid)) {
 			return Optional.empty();
 		}
 
 		List<TokenNftInfo> nftInfos = new ArrayList<>();
 		uniqueTokenAssociations.get().get(fromGrpcTokenId(tid), (int) start, (int) end).forEachRemaining(nftId -> {
-			var nft = uniqueTokens.get().get(nftId);
+			final var nft = uniqueTokens.get().get(nftId);
 
 			nftInfos.add(TokenNftInfo.newBuilder()
 					.setAccountID(nft.getOwner().toGrpcAccountId())
 					.setCreationTime(nft.getCreationTime().toGrpc())
 					.setNftID(NftID.newBuilder()
 							.setTokenID(nftId.tokenId().toGrpcTokenId())
-							.setSerialNumber(nftId.serialNumber())
-							.build())
+							.setSerialNumber(nftId.serialNumber()))
 					.setMetadata(ByteString.copyFrom(nft.getMetadata()))
 					.build());
 		});

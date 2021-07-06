@@ -231,7 +231,7 @@ public class GetTokenNftInfosAnswerTest {
 	public void getsTokenNftInfos() throws Throwable {
 		// setup:
 		Query query = validQuery(ANSWER_ONLY, fee, tokenId, start, end);
-		given(view.infoForTokenNfts(tokenId, start, end)).willReturn(Optional.of(tokenNftInfos));
+		given(view.infosForTokenNfts(tokenId, start, end)).willReturn(Optional.of(tokenNftInfos));
 
 		// when:
 		Response response = subject.responseGiven(query, view, OK, fee);
@@ -318,7 +318,7 @@ public class GetTokenNftInfosAnswerTest {
 		// setup:
 		Query query = validQuery(ANSWER_ONLY, fee, invalidTokenId, start, end);
 
-		given(view.infoForTokenNfts(invalidTokenId, start, end)).willReturn(Optional.empty());
+		given(view.infosForTokenNfts(invalidTokenId, start, end)).willReturn(Optional.empty());
 
 		// when:
 		Response response = subject.responseGiven(query, view, OK, fee);

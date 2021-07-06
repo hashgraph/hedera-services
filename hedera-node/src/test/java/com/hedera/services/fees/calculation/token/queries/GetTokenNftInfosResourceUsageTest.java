@@ -85,7 +85,7 @@ public class GetTokenNftInfosResourceUsageTest {
 		given(estimator.givenMetadata(any())).willReturn(estimator);
 		given(estimator.get()).willReturn(expected);
 
-		given(view.infoForTokenNfts(target, start, end)).willReturn(Optional.of(info));
+		given(view.infosForTokenNfts(target, start, end)).willReturn(Optional.of(info));
 
 		subject = new GetTokenNftInfosResourceUsage();
 	}
@@ -93,8 +93,8 @@ public class GetTokenNftInfosResourceUsageTest {
 	@Test
 	public void recognizesApplicableQuery() {
 		// given:
-		var applicable = tokenGetNftInfosQuery(target, start, end, COST_ANSWER);
-		var inapplicable = Query.getDefaultInstance();
+		final var applicable = tokenGetNftInfosQuery(target, start, end, COST_ANSWER);
+		final var inapplicable = Query.getDefaultInstance();
 
 		// expect:
 		assertTrue(subject.applicableTo(applicable));
@@ -104,10 +104,10 @@ public class GetTokenNftInfosResourceUsageTest {
 	@Test
 	public void setsNftInfosInQueryCxtIfPresent() {
 		// setup:
-		var queryCtx = new HashMap<String, Object>();
+		final var queryCtx = new HashMap<String, Object>();
 
 		// when:
-		var usage = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
+		final var usage = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
 
 		// then:
 		assertSame(info, queryCtx.get(TOKEN_NFT_INFOS_CTX_KEY));
@@ -119,10 +119,10 @@ public class GetTokenNftInfosResourceUsageTest {
 	@Test
 	public void setsNftInfosInQueryCxtNotPresent() {
 		// setup:
-		var queryCtx = new HashMap<String, Object>();
+		final var queryCtx = new HashMap<String, Object>();
 
 		// when:
-		var usage = subject.usageGiven(satisfiableAnswerOnly, view);
+		final var usage = subject.usageGiven(satisfiableAnswerOnly, view);
 
 		// then:
 		assertNull(queryCtx.get(TOKEN_NFT_INFOS_CTX_KEY));
@@ -134,10 +134,10 @@ public class GetTokenNftInfosResourceUsageTest {
 	@Test
 	public void setsNftInfosInQueryCxtNotPresentWithType() {
 		// setup:
-		var queryCtx = new HashMap<String, Object>();
+		final var queryCtx = new HashMap<String, Object>();
 
 		// when:
-		var usage = subject.usageGivenType(satisfiableAnswerOnly, view, ANSWER_ONLY);
+		final var usage = subject.usageGivenType(satisfiableAnswerOnly, view, ANSWER_ONLY);
 
 		// then:
 		assertNull(queryCtx.get(TOKEN_NFT_INFOS_CTX_KEY));
@@ -149,12 +149,12 @@ public class GetTokenNftInfosResourceUsageTest {
 	@Test
 	public void onlySetsTokenNftInfosInQueryCxtIfFound() {
 		// setup:
-		var queryCtx = new HashMap<String, Object>();
+		final var queryCtx = new HashMap<String, Object>();
 
-		given(view.infoForTokenNfts(target, start, end)).willReturn(Optional.empty());
+		given(view.infosForTokenNfts(target, start, end)).willReturn(Optional.empty());
 
 		// when:
-		var usage = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
+		final var usage = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
 
 		// then:
 		assertFalse(queryCtx.containsKey(TOKEN_NFT_INFOS_CTX_KEY));

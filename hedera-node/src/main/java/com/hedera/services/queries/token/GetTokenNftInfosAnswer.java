@@ -79,20 +79,20 @@ public class GetTokenNftInfosAnswer implements AnswerService {
 
 	@Override
 	public ResponseCodeEnum checkValidity(Query query, StateView view) {
-		var tokenNftInfosQuery = query.getTokenGetNftInfos();
-		var id = tokenNftInfosQuery.getTokenID();
+		final var tokenNftInfosQuery = query.getTokenGetNftInfos();
+		final var id = tokenNftInfosQuery.getTokenID();
 
 		if (tokenNftInfosQuery.getStart() >= tokenNftInfosQuery.getEnd()) {
 			return INVALID_QUERY_RANGE;
 		}
 
-		var validity = validator.nftMaxQueryRangeCheck(
+		final var validity = validator.nftMaxQueryRangeCheck(
 				tokenNftInfosQuery.getStart(), tokenNftInfosQuery.getEnd());
 		if (validity != OK) {
 			return validity;
 		}
 
-		var optionalToken = view.tokenWith(id);
+		final var optionalToken = view.tokenWith(id);
 
 		if (!optionalToken.isPresent()) {
 			return INVALID_TOKEN_ID;
@@ -106,7 +106,7 @@ public class GetTokenNftInfosAnswer implements AnswerService {
 			return NOT_SUPPORTED;
 		}
 
-		var nftsCount = optionalToken.get().totalSupply();
+		final var nftsCount = optionalToken.get().totalSupply();
 
 		if (!(tokenNftInfosQuery.getStart() >= 0 && tokenNftInfosQuery.getEnd() <= nftsCount)) {
 			return INVALID_QUERY_RANGE;
@@ -127,21 +127,21 @@ public class GetTokenNftInfosAnswer implements AnswerService {
 
 	@Override
 	public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
-		var paymentTxn = query.getTokenGetNftInfos().getHeader().getPayment();
+		final var paymentTxn = query.getTokenGetNftInfos().getHeader().getPayment();
 		return Optional.ofNullable(uncheckedFrom(paymentTxn));
 	}
 
 	private Response responseFor(
-			Query query,
-			StateView view,
-			ResponseCodeEnum validity,
-			long cost,
-			Optional<Map<String, Object>> queryCtx
+			final Query query,
+			final StateView view,
+			final ResponseCodeEnum validity,
+			final long cost,
+			final Optional<Map<String, Object>> queryCtx
 	) {
-		var op = query.getTokenGetNftInfos();
+		final var op = query.getTokenGetNftInfos();
 		var response = TokenGetNftInfosResponse.newBuilder();
 
-		var type = op.getHeader().getResponseType();
+		final var type = op.getHeader().getResponseType();
 		if (validity != OK) {
 			response.setHeader(header(validity, type, cost));
 		} else {
@@ -159,13 +159,13 @@ public class GetTokenNftInfosAnswer implements AnswerService {
 
 	private void setAnswerOnly(
 			TokenGetNftInfosResponse.Builder response,
-			StateView view,
-			TokenGetNftInfosQuery op,
-			long cost,
-			Optional<Map<String, Object>> queryCtx
+			final StateView view,
+			final TokenGetNftInfosQuery op,
+			final long cost,
+			final Optional<Map<String, Object>> queryCtx
 	) {
 		if (queryCtx.isPresent()) {
-			var ctx = queryCtx.get();
+			final var ctx = queryCtx.get();
 			if (!ctx.containsKey(TOKEN_NFT_INFOS_CTX_KEY)) {
 				response.setHeader(answerOnlyHeader(INVALID_NFT_ID));
 			} else {
@@ -173,13 +173,13 @@ public class GetTokenNftInfosAnswer implements AnswerService {
 				response.addAllNfts((List<TokenNftInfo>) ctx.get(TOKEN_NFT_INFOS_CTX_KEY));
 			}
 		} else {
-			var info = view.infoForTokenNfts(op.getTokenID(), op.getStart(), op.getEnd());
-			if (info.isEmpty()) {
+			final var infos = view.infosForTokenNfts(op.getTokenID(), op.getStart(), op.getEnd());
+			if (infos.isEmpty()) {
 				response.setHeader(answerOnlyHeader(INVALID_NFT_ID));
 			} else {
 				response.setHeader(answerOnlyHeader(OK, cost));
 				response.setTokenID(op.getTokenID());
-				response.addAllNfts(info.get());
+				response.addAllNfts(infos.get());
 			}
 		}
 	}
