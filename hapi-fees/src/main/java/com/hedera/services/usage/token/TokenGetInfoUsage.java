@@ -33,8 +33,8 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 public class TokenGetInfoUsage extends QueryUsage {
 	private TokenGetInfoUsage(Query query) {
 		super(query.getTokenGetInfo().getHeader().getResponseType());
-		updateTb(BASIC_ENTITY_ID_SIZE);
-		updateRb(TOKEN_ENTITY_SIZES.fixedBytesInTokenRepr());
+		addTb(BASIC_ENTITY_ID_SIZE);
+		addRb(TOKEN_ENTITY_SIZES.fixedBytesInTokenRepr());
 	}
 
 	public static TokenGetInfoUsage newEstimate(Query query) {
@@ -42,47 +42,47 @@ public class TokenGetInfoUsage extends QueryUsage {
 	}
 
 	public TokenGetInfoUsage givenCurrentAdminKey(Optional<Key> adminKey) {
-		adminKey.map(FeeBuilder::getAccountKeyStorageSize).ifPresent(this::updateRb);
+		adminKey.map(FeeBuilder::getAccountKeyStorageSize).ifPresent(this::addRb);
 		return this;
 	}
 
 	public TokenGetInfoUsage givenCurrentWipeKey(Optional<Key> wipeKey) {
-		wipeKey.map(FeeBuilder::getAccountKeyStorageSize).ifPresent(this::updateRb);
+		wipeKey.map(FeeBuilder::getAccountKeyStorageSize).ifPresent(this::addRb);
 		return this;
 	}
 
 	public TokenGetInfoUsage givenCurrentSupplyKey(Optional<Key> supplyKey) {
-		supplyKey.map(FeeBuilder::getAccountKeyStorageSize).ifPresent(this::updateRb);
+		supplyKey.map(FeeBuilder::getAccountKeyStorageSize).ifPresent(this::addRb);
 		return this;
 	}
 
 	public TokenGetInfoUsage givenCurrentFreezeKey(Optional<Key> freezeKey) {
-		freezeKey.map(FeeBuilder::getAccountKeyStorageSize).ifPresent(this::updateRb);
+		freezeKey.map(FeeBuilder::getAccountKeyStorageSize).ifPresent(this::addRb);
 		return this;
 	}
 
 	public TokenGetInfoUsage givenCurrentKycKey(Optional<Key> kycKey) {
-		kycKey.map(FeeBuilder::getAccountKeyStorageSize).ifPresent(this::updateRb);
+		kycKey.map(FeeBuilder::getAccountKeyStorageSize).ifPresent(this::addRb);
 		return this;
 	}
 
 	public TokenGetInfoUsage givenCurrentMemo(String memo) {
-		updateRb(memo.length());
+		addRb(memo.length());
 		return this;
 	}
 
 	public TokenGetInfoUsage givenCurrentName(String name) {
-		updateRb(name.length());
+		addRb(name.length());
 		return this;
 	}
 
 	public TokenGetInfoUsage givenCurrentSymbol(String symbol) {
-		updateRb(symbol.length());
+		addRb(symbol.length());
 		return this;
 	}
 
 	public TokenGetInfoUsage givenCurrentlyUsingAutoRenewAccount() {
-		updateRb(BASIC_ENTITY_ID_SIZE);
+		addRb(BASIC_ENTITY_ID_SIZE);
 		return this;
 	}
 }

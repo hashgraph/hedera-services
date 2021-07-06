@@ -129,8 +129,8 @@ class CryptoOpsUsageTest {
 		// then:
 		assertSame(A_USAGES_MATRIX, estimate);
 		// and:
-		verify(queryBase).updateTb(BASIC_ENTITY_ID_SIZE);
-		verify(queryBase).updateRb(
+		verify(queryBase).addTb(BASIC_ENTITY_ID_SIZE);
+		verify(queryBase).addRb(
 				CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
 						+ BASIC_ENTITY_ID_SIZE
 						+ memo.length()

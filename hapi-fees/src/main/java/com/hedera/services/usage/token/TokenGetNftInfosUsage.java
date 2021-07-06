@@ -35,7 +35,7 @@ public class TokenGetNftInfosUsage extends QueryUsage {
 
 	public TokenGetNftInfosUsage(Query query) {
 		super(query.getTokenGetNftInfos().getHeader().getResponseType());
-		updateTb(BASIC_ENTITY_ID_SIZE + 2 * INT_SIZE_AS_LONG);
+		addTb(BASIC_ENTITY_ID_SIZE + 2 * INT_SIZE_AS_LONG);
 	}
 
 	public static TokenGetNftInfosUsage newEstimate(Query query) {
@@ -47,8 +47,8 @@ public class TokenGetNftInfosUsage extends QueryUsage {
 		for (ByteString m : metadata) {
 			additionalRb += m.size();
 		}
-		updateRb(additionalRb);
-		updateRb(NFT_ENTITY_SIZES.fixedBytesInNftRepr() * metadata.size());
+		addRb(additionalRb);
+		addRb(NFT_ENTITY_SIZES.fixedBytesInNftRepr() * metadata.size());
 
 		return this;
 	}

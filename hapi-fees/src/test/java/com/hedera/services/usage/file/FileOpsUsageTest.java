@@ -124,8 +124,8 @@ class FileOpsUsageTest {
 		// then:
 		assertSame(A_USAGES_MATRIX, estimate);
 		// and:
-		verify(queryBase).updateTb(BASIC_ENTITY_ID_SIZE);
-		verify(queryBase).updateSb(BASE_FILEINFO_SIZE + memo.length() + getAccountKeyStorageSize(wacl));
+		verify(queryBase).addTb(BASIC_ENTITY_ID_SIZE);
+		verify(queryBase).addSb(BASE_FILEINFO_SIZE + memo.length() + getAccountKeyStorageSize(wacl));
 	}
 
 	@Test
