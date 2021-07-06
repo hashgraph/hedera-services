@@ -96,7 +96,7 @@ class TokenWipeTransitionLogicTest {
     }
 
     @Test
-    public void capturesInvalidWipe() {
+    void capturesInvalidWipe() {
         givenValidCommonTxnCtx();
         // and:
 		doThrow(new InvalidTransactionException(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)).when(token).wipe(any(), anyLong());
@@ -111,7 +111,7 @@ class TokenWipeTransitionLogicTest {
     }
 
     @Test
-    public void followsHappyPathForCommon() {
+    void followsHappyPathForCommon() {
         givenValidCommonTxnCtx();
 
         // when:
@@ -123,7 +123,7 @@ class TokenWipeTransitionLogicTest {
 
 
 	@Test
-	public void followsHappyPathForUnique() {
+	void followsHappyPathForUnique() {
 		givenValidUniqueTxnCtx();
 		// needed only in the context of this test
 		Account acc = mock(Account.class);
@@ -143,7 +143,7 @@ class TokenWipeTransitionLogicTest {
 	}
 
     @Test
-    public void hasCorrectApplicability() {
+    void hasCorrectApplicability() {
         givenValidCommonTxnCtx();
 
         // expect:
@@ -152,7 +152,7 @@ class TokenWipeTransitionLogicTest {
     }
 
     @Test
-    public void setsFailInvalidIfUnhandledException() {
+    void setsFailInvalidIfUnhandledException() {
         givenValidCommonTxnCtx();
         // and:
         doThrow(InvalidTransactionException.class).when(token).wipe(any(), anyLong());
@@ -162,7 +162,7 @@ class TokenWipeTransitionLogicTest {
     }
 
     @Test
-    public void acceptsValidCommonTxn() {
+    void acceptsValidCommonTxn() {
         givenValidCommonTxnCtx();
 
         // expect:
@@ -170,7 +170,7 @@ class TokenWipeTransitionLogicTest {
     }
 
     @Test
-	public void acceptsValidUniqueTxn(){
+	void acceptsValidUniqueTxn(){
     	givenValidUniqueTxnCtx();
 
     	// expect:
@@ -178,7 +178,7 @@ class TokenWipeTransitionLogicTest {
 	}
 
     @Test
-    public void rejectsMissingToken() {
+    void rejectsMissingToken() {
         givenMissingToken();
 
         // expect:
@@ -186,7 +186,7 @@ class TokenWipeTransitionLogicTest {
     }
 
     @Test
-    public void rejectsMissingAccount() {
+    void rejectsMissingAccount() {
         givenMissingAccount();
 
         // expect:
@@ -194,7 +194,7 @@ class TokenWipeTransitionLogicTest {
     }
 
     @Test
-    public void rejectsInvalidZeroAmount() {
+    void rejectsInvalidZeroAmount() {
         givenInvalidZeroWipeAmount();
 
         // expect:
@@ -202,7 +202,7 @@ class TokenWipeTransitionLogicTest {
     }
 
     @Test
-    public void rejectsInvalidNegativeAmount() {
+    void rejectsInvalidNegativeAmount() {
         givenInvalidNegativeWipeAmount();
 
         // expect:

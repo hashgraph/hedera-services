@@ -26,13 +26,10 @@ import com.hedera.services.fees.calculation.utils.ResourceUsageSubtypeHelper;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.token.TokenWipeUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.SubType;
-import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 
-import java.util.Optional;
 import java.util.function.BiFunction;
 
 public class TokenWipeResourceUsage implements TxnResourceUsageEstimator {
@@ -47,10 +44,10 @@ public class TokenWipeResourceUsage implements TxnResourceUsageEstimator {
 
 	@Override
 	public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
-		Optional<TokenType> tokenType = view.tokenType(txn.getTokenWipe().getToken());
-		SubType subType = subtypeHelper.determineTokenType(tokenType);
-		var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
-		var estimate = factory.apply(txn, sigUsage).givenSubType(subType);
+		final var tokenType = view.tokenType(txn.getTokenWipe().getToken());
+		final var subType = subtypeHelper.determineTokenType(tokenType);
+		final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+		final var estimate = factory.apply(txn, sigUsage).givenSubType(subType);
 		return estimate.get();
 	}
 }

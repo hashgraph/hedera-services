@@ -64,10 +64,6 @@ public class EntityId implements SelfSerializable {
 		this.num = num;
 	}
 
-	public EntityId(EntityId that) {
-		this(that.shard, that.realm, that.num);
-	}
-
 	/* --- SelfSerializable --- */
 
 	@Override
@@ -131,7 +127,7 @@ public class EntityId implements SelfSerializable {
 	}
 
 	public EntityId copy() {
-		return new EntityId(this);
+		return new EntityId(shard, realm, num);
 	}
 
 	public long shard() {
