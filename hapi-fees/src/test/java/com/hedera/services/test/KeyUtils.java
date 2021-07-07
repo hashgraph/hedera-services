@@ -9,9 +9,9 @@ package com.hedera.services.test;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -42,12 +42,12 @@ public class KeyUtils {
 			.build();
 	public static Key A_KEY_LIST = Key.newBuilder()
 			.setKeyList(KeyList.newBuilder()
-							.addKeys(Key.newBuilder()
-									.setEd25519(ByteString.copyFrom("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes())))
-							.addKeys(Key.newBuilder()
-									.setEd25519(ByteString.copyFrom("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes())))
-							.addKeys(Key.newBuilder()
-									.setEd25519(ByteString.copyFrom("cccccccccccccccccccccccccccccccc".getBytes()))))
+					.addKeys(Key.newBuilder()
+							.setEd25519(ByteString.copyFrom("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes())))
+					.addKeys(Key.newBuilder()
+							.setEd25519(ByteString.copyFrom("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes())))
+					.addKeys(Key.newBuilder()
+							.setEd25519(ByteString.copyFrom("cccccccccccccccccccccccccccccccc".getBytes()))))
 			.build();
 	public static Key A_COMPLEX_KEY = Key.newBuilder()
 			.setThresholdKey(ThresholdKey.newBuilder()

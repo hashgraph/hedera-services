@@ -9,9 +9,9 @@ package com.hedera.services.usage.token;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -42,21 +42,21 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.times;
 
-public class TokenRevokeKycUsageTest {
-	long now = 1_234_567L;
-	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
-	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
-	TokenID id = IdUtils.asToken("0.0.75231");
+class TokenRevokeKycUsageTest {
+	private long now = 1_234_567L;
+	private int numSigs = 3, sigSize = 100, numPayerKeys = 1;
+	private SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
+	private TokenID id = IdUtils.asToken("0.0.75231");
 
-	TokenRevokeKycTransactionBody op;
-	TransactionBody txn;
+	private TokenRevokeKycTransactionBody op;
+	private TransactionBody txn;
 
-	EstimatorFactory factory;
-	TxnUsageEstimator base;
-	TokenRevokeKycUsage subject;
+	private EstimatorFactory factory;
+	private TxnUsageEstimator base;
+	private TokenRevokeKycUsage subject;
 
 	@BeforeEach
-	public void setUp() throws Exception {
+	void setUp() throws Exception {
 		base = mock(TxnUsageEstimator.class);
 		given(base.get()).willReturn(A_USAGES_MATRIX);
 
@@ -67,7 +67,7 @@ public class TokenRevokeKycUsageTest {
 	}
 
 	@Test
-	public void createsExpectedDelta() {
+	void createsExpectedDelta() {
 		givenOp();
 		// and:
 		subject = TokenRevokeKycUsage.newEstimate(txn, sigUsage);
