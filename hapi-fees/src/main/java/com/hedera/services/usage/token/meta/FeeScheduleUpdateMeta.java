@@ -1,4 +1,4 @@
-package com.hedera.services.usage;
+package com.hedera.services.usage.token.meta;
 
 /*-
  * ‌
@@ -23,21 +23,31 @@ package com.hedera.services.usage;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-public class BaseTransactionMeta {
-	private final int memoUtf8Bytes;
-	private final int numExplicitTransfers;
+public class FeeScheduleUpdateMeta {
+	private final long effConsensusTime;
+	private final int numBytesInNewFeeScheduleRepr;
+	private final int numBytesInGrpcFeeScheduleRepr;
 
-	public BaseTransactionMeta(int memoUtf8Bytes, int numExplicitTransfers) {
-		this.memoUtf8Bytes = memoUtf8Bytes;
-		this.numExplicitTransfers = numExplicitTransfers;
+	public FeeScheduleUpdateMeta(
+			long effConsensusTime,
+			int numBytesInNewFeeScheduleRepr,
+			int numBytesInGrpcFeeScheduleRepr
+	) {
+		this.effConsensusTime = effConsensusTime;
+		this.numBytesInNewFeeScheduleRepr = numBytesInNewFeeScheduleRepr;
+		this.numBytesInGrpcFeeScheduleRepr = numBytesInGrpcFeeScheduleRepr;
 	}
 
-	public int getMemoUtf8Bytes() {
-		return memoUtf8Bytes;
+	public long effConsensusTime() {
+		return effConsensusTime;
 	}
 
-	public int getNumExplicitTransfers() {
-		return numExplicitTransfers;
+	public int numBytesInNewFeeScheduleRepr() {
+		return numBytesInNewFeeScheduleRepr;
+	}
+
+	public int numBytesInGrpcFeeScheduleRepr() {
+		return numBytesInGrpcFeeScheduleRepr;
 	}
 
 	@Override
@@ -49,4 +59,5 @@ public class BaseTransactionMeta {
 	public int hashCode() {
 		return HashCodeBuilder.reflectionHashCode(this);
 	}
+
 }

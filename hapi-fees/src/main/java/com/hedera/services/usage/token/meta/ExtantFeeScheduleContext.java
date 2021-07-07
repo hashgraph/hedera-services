@@ -1,4 +1,4 @@
-package com.hedera.services.usage;
+package com.hedera.services.usage.token.meta;
 
 /*-
  * ‌
@@ -23,22 +23,23 @@ package com.hedera.services.usage;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-public class BaseTransactionMeta {
-	private final int memoUtf8Bytes;
-	private final int numExplicitTransfers;
+public class ExtantFeeScheduleContext {
+	private final long expiry;
+	private final int numBytesInFeeScheduleRepr;
 
-	public BaseTransactionMeta(int memoUtf8Bytes, int numExplicitTransfers) {
-		this.memoUtf8Bytes = memoUtf8Bytes;
-		this.numExplicitTransfers = numExplicitTransfers;
+	public ExtantFeeScheduleContext(long expiry, int numBytesInFeeScheduleRepr) {
+		this.expiry = expiry;
+		this.numBytesInFeeScheduleRepr = numBytesInFeeScheduleRepr;
 	}
 
-	public int getMemoUtf8Bytes() {
-		return memoUtf8Bytes;
+	public long expiry() {
+		return expiry;
 	}
 
-	public int getNumExplicitTransfers() {
-		return numExplicitTransfers;
+	public int numBytesInFeeScheduleRepr() {
+		return numBytesInFeeScheduleRepr;
 	}
+
 
 	@Override
 	public boolean equals(Object obj) {

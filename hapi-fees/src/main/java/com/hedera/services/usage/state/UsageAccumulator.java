@@ -21,6 +21,8 @@ package com.hedera.services.usage.state;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.pricing.ResourceProvider;
+import com.hedera.services.pricing.UsableResource;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
 
@@ -164,6 +166,46 @@ public class UsageAccumulator {
 
 	public long getServiceSbh() {
 		return ESTIMATOR_UTILS.nonDegenerateDiv(sbs, HRS_DIVISOR);
+	}
+
+
+	public long get(ResourceProvider provider, UsableResource resource) {
+		switch (provider) {
+			case NETWORK:
+				switch (resource) {
+					case BPT:
+						return getUniversalBpt();
+					case VPT:
+						return getNetworkVpt();
+					case RBH:
+						return getNetworkRbh();
+					case CONSTANT:
+						return 1;
+				}
+			case NODE:
+				switch (resource) {
+					case BPT:
+						return getUniversalBpt();
+					case BPR:
+						return getNodeBpr();
+					case SBPR:
+						return getNodeSbpr();
+					case VPT:
+						return getNodeVpt();
+					case CONSTANT:
+						return 1;
+				}
+			case SERVICE:
+				switch (resource) {
+					case RBH:
+						return getServiceRbh();
+					case SBH:
+						return getServiceSbh();
+					case CONSTANT:
+						return 1;
+				}
+		}
+		return 0L;
 	}
 
 	@Override
