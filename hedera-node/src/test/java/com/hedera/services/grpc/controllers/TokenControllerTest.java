@@ -37,6 +37,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetAccountNftInfos;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
@@ -206,5 +207,14 @@ class TokenControllerTest {
 
 		// expect:
 		verify(queryResponseHelper).answer(query, queryObserver,null , TokenGetAccountNftInfos);
+	}
+
+	@Test
+	public void forwardsFeeScheduleUpdate() {
+		// when:
+		subject.updateTokenFeeSchedule(txn, txnObserver);
+
+		// expect:
+		verify(txnResponseHelper).submit(txn, txnObserver, TokenFeeScheduleUpdate);
 	}
 }

@@ -103,6 +103,7 @@ import com.hedera.services.fees.calculation.token.txns.TokenUnfreezeResourceUsag
 import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
 import com.hedera.services.fees.calculation.utils.AccessorBasedUsages;
+import com.hedera.services.fees.calculation.utils.OpUsageCtxHelper;
 import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.fees.charging.FeeChargingPolicy;
 import com.hedera.services.fees.charging.NarratedCharging;
@@ -329,6 +330,7 @@ import com.hedera.services.usage.consensus.ConsensusOpsUsage;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.usage.schedule.ScheduleOpsUsage;
+import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
@@ -1875,8 +1877,11 @@ public class ServicesContext {
 
 	public AccessorBasedUsages accessorBasedUsages() {
 		if (accessorBasedUsages == null) {
+			final var opUsageCtxHelper = new OpUsageCtxHelper(this::tokens);
 			accessorBasedUsages = new AccessorBasedUsages(
+					new TokenOpsUsage(),
 					new CryptoOpsUsage(),
+					opUsageCtxHelper,
 					new ConsensusOpsUsage(),
 					globalDynamicProperties());
 		}

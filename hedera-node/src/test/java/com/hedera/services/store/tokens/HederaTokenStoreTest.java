@@ -1185,26 +1185,10 @@ class HederaTokenStoreTest {
 		assertEquals(TOKEN_HAS_NO_FEE_SCHEDULE_KEY, outcome);
 	}
 
-	//TODO : Need to decide the logic if the new key is empty
-//	@Test
-//	void canMakeFeeScheduleImmutableOnUpdate() throws DecoderException {
-//		givenUpdateTarget(ALL_KEYS);
-//		given(token.hasFeeScheduleKey()).willReturn(true);
-//		var op = updateWith(ALL_KEYS, false, false, false);
-//		final var emptyFeeScheduleKey = Key.getDefaultInstance();
-//		op = op.toBuilder().setFeeScheduleKey(emptyFeeScheduleKey).build();
-//
-//		final var outcome = subject.update(op, CONSENSUS_NOW);
-//
-//		assertEquals(OK, outcome);
-//		assertEquals(JKey.mapKey(emptyFeeScheduleKey), token.getFeeScheduleKey());
-//	}
-
-
 	@Test
 	void updateRejectsInvalidNewAutoRenew() {
 		given(accountsLedger.exists(newAutoRenewAccount)).willReturn(false);
-		// and:
+		// and:PermissionFileUtils
 		final var op = updateWith(NO_KEYS, true, true, false, true, false);
 
 		// when:
