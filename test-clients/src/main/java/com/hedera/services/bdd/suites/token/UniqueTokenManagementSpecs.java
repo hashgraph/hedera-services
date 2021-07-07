@@ -34,6 +34,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -63,6 +64,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccoun
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -127,7 +129,41 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 				validatesQueryOutOfRange(),
 				failsWithInvalidQueryBoundaries(),
 				getAccountNftsInfoFailsWithDeletedAccount(),
-				getAccountNftsInfoFailsWithInexistentAccount());
+				getAccountNftsInfoFailsWithInexistentAccount(),
+
+				baseUniqueMintOperationIsChargedExpectedFee()
+		);
+	}
+
+	private HapiApiSpec baseUniqueMintOperationIsChargedExpectedFee() {
+		final var uniqueToken = "nftType";
+		final var supplyKey = "mint!";
+		final var civilianPayer = "civilian";
+		final var standard100ByteMetadata = ByteString.copyFromUtf8(
+				"0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
+		final var baseTxn = "baseTxn";
+		final var expectedNftMintPriceUsd = 0.001;
+
+		return defaultHapiSpec("BaseUniqueMintOperationIsChargedExpectedFee")
+				.given(
+						newKeyNamed(supplyKey),
+						cryptoCreate(civilianPayer).key(supplyKey),
+						tokenCreate(uniqueToken)
+								.initialSupply(0L)
+								.expiry(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
+								.supplyKey(supplyKey)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+				)
+				.when(
+						mintToken(uniqueToken, List.of(standard100ByteMetadata))
+								.fee(ONE_HBAR)
+								.payingWith(civilianPayer)
+								.signedBy(supplyKey)
+								.blankMemo()
+								.via(baseTxn)
+				).then(
+						validateChargedUsdWithin(baseTxn, expectedNftMintPriceUsd, 0.01)
+				);
 	}
 
 	private HapiApiSpec associatesNftAsExpected() {

@@ -9,9 +9,9 @@ package com.hedera.services.pricing;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,12 +39,16 @@ import static com.hedera.services.pricing.FeeSchedules.FEE_SCHEDULE_MULTIPLIER;
 import static com.hedera.services.pricing.FeeSchedules.USD_TO_TINYCENTS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static java.math.MathContext.DECIMAL128;
 import static java.math.RoundingMode.HALF_EVEN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class FeeSchedulesTest {
+	private static final double ALLOWED_DEVIATION = 0.00000001;
+
 	private static final String FEE_SCHEDULE_FEES_KEY = "fees";
 	private static final String FEE_SCHEDULE_TYPE_KEY = "subType";
 	private static final String FEE_SCHEDULE_ENTRY_KEY = "transactionFeeSchedule";
@@ -53,6 +57,29 @@ class FeeSchedulesTest {
 	private final FeeSchedules subject = new FeeSchedules();
 	private final AssetsLoader assetsLoader = new AssetsLoader();
 	private final BaseOperationUsage baseOperationUsage = new BaseOperationUsage();
+
+	@Test
+	void computesExpectedPriceForUniqueTokenMint() throws IOException {
+		// setup:
+		final var canonicalTotalPricesInUsd = assetsLoader.loadCanonicalPrices();
+		final var expectedTotalBasePrice = canonicalTotalPricesInUsd.get(TokenMint).get(TOKEN_NON_FUNGIBLE_UNIQUE);
+
+		// given:
+		Map<ResourceProvider, Map<UsableResource, Long>> computedResourcePrices =
+				subject.canonicalPricesFor(TokenMint, TOKEN_NON_FUNGIBLE_UNIQUE);
+		// and:
+		final var canonicalUsage = baseOperationUsage.baseUsageFor(TokenMint, TOKEN_NON_FUNGIBLE_UNIQUE);
+		final var jsonRepr = reprAsSingleFeeScheduleEntry(
+				TokenMint, TOKEN_NON_FUNGIBLE_UNIQUE, computedResourcePrices);
+		System.out.println(jsonRepr);
+
+		// when:
+		final var actualBasePrice = feeInUsd(computedResourcePrices, canonicalUsage);
+		System.out.println(actualBasePrice);
+
+		// then:
+		assertEquals(expectedTotalBasePrice.doubleValue(), actualBasePrice.doubleValue(), ALLOWED_DEVIATION);
+	}
 
 	@Test
 	void computesExpectedPriceForFeeScheduleUpdate() throws IOException {

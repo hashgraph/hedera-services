@@ -26,6 +26,7 @@ import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.consensus.ConsensusOpsUsage;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.state.UsageAccumulator;
+import com.hedera.services.usage.token.TokenMintUsage;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
@@ -37,8 +38,12 @@ import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import java.util.List;
+
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
 /**
  * Provides the resource usage of the "base configuration" for each Hedera operation.
@@ -52,6 +57,8 @@ class BaseOperationUsage {
 	private static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 	private static final ByteString CANONICAL_SIG = ByteString.copyFromUtf8(
 			"0123456789012345678901234567890123456789012345678901234567890123");
+	private static final ByteString CANONICAL_NFT_METADATA = ByteString.copyFromUtf8(
+			"0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
 	private static final SignatureMap ONE_PAIR_SIG_MAP = SignatureMap.newBuilder()
 			.addSigPair(SignaturePair.newBuilder()
 					.setPubKeyPrefix(ByteString.copyFromUtf8("a"))
@@ -67,8 +74,8 @@ class BaseOperationUsage {
 	private static final String NOT_IMPLEMENTED = "Not implemented!";
 
 	/**
-	 * Returns the total resource usage for the base configuration of the given
-	 * type of the given operation.
+	 * Returns the total resource usage in the new {@link UsageAccumulator} process
+	 * object for the base configuration of the given type of the given operation.
 	 *
 	 * @param function
 	 * 		the operation of interest
@@ -90,6 +97,13 @@ class BaseOperationUsage {
 				break;
 			case ConsensusSubmitMessage:
 				return submitMessage();
+			case TokenMint:
+				switch (type) {
+					case TOKEN_NON_FUNGIBLE_UNIQUE:
+						return uniqueTokenMint();
+					case DEFAULT:
+						throw new IllegalArgumentException("Canonical usage unknown");
+				}
 			case TokenFeeScheduleUpdate:
 				return feeScheduleUpdate();
 			default:
@@ -98,6 +112,21 @@ class BaseOperationUsage {
 		}
 
 		throw new IllegalArgumentException("Canonical usage unknown");
+	}
+
+	private UsageAccumulator uniqueTokenMint() {
+		final var target = TokenID.newBuilder().setTokenNum(1_234).build();
+		final var canonicalTxn = TransactionBody.newBuilder()
+				.setTokenMint(TokenMintTransactionBody.newBuilder()
+						.setToken(target)
+						.addMetadata(CANONICAL_NFT_METADATA))
+				.build();
+
+		final var baseUsage = TokenMintUsage.newEstimate(canonicalTxn, SINGLE_SIG_USAGE)
+				.givenSubType(TOKEN_NON_FUNGIBLE_UNIQUE)
+				.givenExpectedLifetime(THREE_MONTHS_IN_SECONDS)
+				.get();
+		return UsageAccumulator.fromGrpc(baseUsage);
 	}
 
 	private UsageAccumulator submitMessage() {
