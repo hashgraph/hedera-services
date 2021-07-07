@@ -996,7 +996,10 @@ class HederaSigningOrderTest {
 				.willReturn(result);
 
 		// when:
-		subject.keysForOtherParties(txn, mockSummaryFactory);
+		var summary = subject.keysForOtherParties(txn, mockSummaryFactory);
+
+		//then:
+		verify(mockSummaryFactory).forInvalidContract(MISC_CONTRACT, txn.getTransactionID());
 	}
 
 	@Test

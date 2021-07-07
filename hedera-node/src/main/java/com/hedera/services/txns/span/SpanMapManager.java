@@ -53,7 +53,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
  * over time.
  */
 public class SpanMapManager {
-	private final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
 	private final CustomFeeSchedules customFeeSchedules;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final ImpliedTransfersMarshal impliedTransfersMarshal;

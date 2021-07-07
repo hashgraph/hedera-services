@@ -64,7 +64,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-public class GetTokenNftInfoAnswerTest {
+class GetTokenNftInfoAnswerTest {
     private Transaction paymentTxn;
     private String node = "0.0.3";
     private String payer = "0.0.12345";

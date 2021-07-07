@@ -60,7 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-public class GetAccountNftInfosAnswerTest {
+class GetAccountNftInfosAnswerTest {
     GetAccountNftInfosAnswer subject;
     Transaction paymentTxn;
     StateView view;
