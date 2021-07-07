@@ -1,5 +1,6 @@
 package com.hedera.services.state.merkle.virtual;
 
+import com.hedera.services.state.merkle.virtual.persistence.FCSlotIndex;
 import com.hedera.services.state.merkle.virtual.persistence.FCVirtualMapLeafStore;
 import com.hedera.services.state.merkle.virtual.persistence.fcmmap.*;
 import com.hedera.services.store.models.Id;
@@ -12,6 +13,8 @@ import java.nio.file.Path;
 public class ContractLeafStore implements FCLeafStore<ContractUint256, ContractUint256> {
     private final Id contractId;
     private final FCVirtualMapLeafStore<ContractKey, ContractPath, ContractUint256> dataStore;
+    private FCSlotIndex<ContractPath> leafPathIndex;
+    private FCSlotIndex<ContractKey> leafKeyIndex;
 
     public ContractLeafStore(Id contractId) {
         this(contractId, false, false);
@@ -20,7 +23,7 @@ public class ContractLeafStore implements FCLeafStore<ContractUint256, ContractU
     public ContractLeafStore(Id contractId, boolean inMemoryIndex, boolean inMemoryStore) {
         this.contractId = contractId;
         try {
-            final var leafPathIndex = inMemoryIndex ?
+            leafPathIndex = inMemoryIndex ?
                     new FCSlotIndexUsingFCHashMap<ContractPath>() :
                     new FCSlotIndexUsingMemMapFile<ContractPath>(
                     Path.of("data/contract-storage/leaf-path-index"),
@@ -32,7 +35,7 @@ public class ContractLeafStore implements FCLeafStore<ContractUint256, ContractU
                     20,
                     8);
 
-            final var leafKeyIndex = inMemoryIndex ?
+            leafKeyIndex = inMemoryIndex ?
                     new FCSlotIndexUsingFCHashMap<ContractKey>() :
                     new FCSlotIndexUsingMemMapFile<ContractKey>(
                     Path.of("data/contract-storage/leaf-key-index"),
@@ -139,5 +142,19 @@ public class ContractLeafStore implements FCLeafStore<ContractUint256, ContractU
     @Override
     public void release() {
         dataStore.release();
+    }
+
+    /**
+     * Debug print
+     */
+    public void printMutationQueueStats() {
+        if (leafPathIndex instanceof FCSlotIndexUsingMemMapFile) {
+            System.out.println("leafPathIndex");
+            ((FCSlotIndexUsingMemMapFile)leafPathIndex).printMutationQueueStats();
+        }
+        if (leafKeyIndex instanceof FCSlotIndexUsingMemMapFile) {
+            System.out.println("leafKeyIndex");
+            ((FCSlotIndexUsingMemMapFile)leafKeyIndex).printMutationQueueStats();
+        }
     }
 }

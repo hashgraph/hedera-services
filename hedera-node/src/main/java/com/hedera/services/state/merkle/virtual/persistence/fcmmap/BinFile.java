@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Deque;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -21,6 +22,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 import java.util.function.LongSupplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.hedera.services.state.merkle.virtual.persistence.FCSlotIndex.NOT_FOUND_LOCATION;
 
@@ -403,6 +406,21 @@ public final class BinFile<K extends VKey> {
      */
     private int findBinOffset(int keySubHash) {
         return (keySubHash % numOfBinsPerFile) * binSize;
+    }
+
+    /**
+     * Collect the number bins that contain a given number of mutation queues.
+     *
+     * @return Map: key = mutation queue count, value is count of bins in this file with that count of queues.
+     */
+    Map<Integer,Long> getMutationQueueStats() {
+        return IntStream.range(0,numOfBinsPerFile)
+                .map(bin -> {
+                    int size = mappedBuffer.getInt(bin* binSize);
+                    return size;
+                }) // read the count of mutation queues for a bin
+                .boxed()
+                .collect(Collectors.groupingBy(Integer::intValue, Collectors.counting()));
     }
 
     //==================================================================================================================
