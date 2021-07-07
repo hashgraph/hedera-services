@@ -108,7 +108,6 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						validatesMissingRef(),
 						validatesNewExpiry(),
 						/* HIP-18 */
-						onlyValidCustomFeeScheduleCanBeUpdated(),
 						customFeesOnceImmutableStayImmutable(),
 				}
 		);
@@ -226,6 +225,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						newKeyNamed("freezeThenKycKey"),
 						newKeyNamed("wipeThenSupplyKey"),
 						newKeyNamed("supplyThenWipeKey"),
+						newKeyNamed("oldFeeScheduleKey"),
+						newKeyNamed("newFeeScheduleKey"),
 						cryptoCreate("misc").balance(0L),
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						tokenCreate("tbu")
@@ -237,6 +238,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.freezeKey("freezeThenKycKey")
 								.supplyKey("supplyThenWipeKey")
 								.wipeKey("wipeThenSupplyKey")
+								.feeScheduleKey("oldFeeScheduleKey")
 				).when(
 						getTokenInfo("tbu").logged(),
 						tokenUpdate("tbu")
@@ -244,7 +246,8 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.kycKey("freezeThenKycKey")
 								.freezeKey("kycThenFreezeKey")
 								.wipeKey("supplyThenWipeKey")
-								.supplyKey("wipeThenSupplyKey"),
+								.supplyKey("wipeThenSupplyKey")
+								.feeScheduleKey("newFeeScheduleKey"),
 						tokenAssociate("misc", "tbu")
 				).then(
 						getTokenInfo("tbu").logged(),
@@ -581,142 +584,6 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec onlyValidCustomFeeScheduleCanBeUpdated() {
-		final var hbarAmount = 1_234L;
-		final var htsAmount = 2_345L;
-		final var numerator = 1;
-		final var denominator = 10;
-		final var minimumToCollect = 5;
-		final var maximumToCollect = 50;
-
-		final var token = "withCustomSchedules";
-		final var feeDenom = "denom";
-		final var hbarCollector = "hbarFee";
-		final var htsCollector = "denomFee";
-		final var tokenCollector = "fractionalFee";
-		final var invalidEntityId = "1.2.786";
-
-		final var adminKey = "admin";
-
-		final var newHbarAmount = 17_234L;
-		final var newHtsAmount = 27_345L;
-		final var newNumerator = 17;
-		final var newDenominator = 107;
-		final var newMinimumToCollect = 57;
-		final var newMaximumToCollect = 507;
-
-		final var newFeeDenom = "newDenom";
-		final var newHbarCollector = "newHbarFee";
-		final var newHtsCollector = "newDenomFee";
-		final var newTokenCollector = "newFractionalFee";
-
-		return defaultHapiSpec("OnlyValidCustomFeeScheduleCanBeUpdated")
-				.given(
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(GENESIS)
-								.overridingProps(Map.of("tokens.maxCustomFeesAllowed", "10")),
-						newKeyNamed(adminKey),
-						cryptoCreate(htsCollector),
-						cryptoCreate(newHtsCollector),
-						cryptoCreate(hbarCollector),
-						cryptoCreate(newHbarCollector),
-						cryptoCreate(tokenCollector),
-						cryptoCreate(newTokenCollector),
-						tokenCreate(feeDenom).treasury(htsCollector),
-						tokenCreate(newFeeDenom).treasury(newHtsCollector),
-						tokenCreate(token)
-								.adminKey(adminKey)
-								.treasury(tokenCollector)
-								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
-								.withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
-								.withCustom(fractionalFee(
-										numerator, denominator,
-										minimumToCollect, OptionalLong.of(maximumToCollect),
-										tokenCollector)),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(GENESIS)
-								.overridingProps(Map.of("tokens.maxCustomFeesAllowed", "1"))
-				)
-				.when(
-						/* These should use the new tokenFeeScheduleUpdate op */
-//						tokenUpdate(token)
-//								.treasury(tokenCollector)
-//								.withCustom(fractionalFee(
-//										numerator, 0,
-//										minimumToCollect, OptionalLong.of(maximumToCollect),
-//										tokenCollector))
-//								.hasKnownStatus(FRACTION_DIVIDES_BY_ZERO),
-//						tokenUpdate(token)
-//								.treasury(tokenCollector)
-//								.withCustom(fractionalFee(
-//										-numerator, denominator,
-//										minimumToCollect, OptionalLong.of(maximumToCollect),
-//										tokenCollector))
-//								.hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
-//						tokenUpdate(token)
-//								.treasury(tokenCollector)
-//								.withCustom(fractionalFee(
-//										numerator, denominator,
-//										-minimumToCollect, OptionalLong.of(maximumToCollect),
-//										tokenCollector))
-//								.hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
-//						tokenUpdate(token)
-//								.treasury(tokenCollector)
-//								.withCustom(fractionalFee(
-//										numerator, denominator,
-//										minimumToCollect, OptionalLong.of(-maximumToCollect),
-//										tokenCollector))
-//								.hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
-//						tokenUpdate(token)
-//								.treasury(tokenCollector)
-//								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
-//								.withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
-//								.hasKnownStatus(CUSTOM_FEES_LIST_TOO_LONG),
-//						tokenUpdate(token)
-//								.treasury(tokenCollector)
-//								.withCustom(fixedHbarFee(hbarAmount, invalidEntityId))
-//								.hasKnownStatus(INVALID_CUSTOM_FEE_COLLECTOR),
-//						tokenUpdate(token)
-//								.treasury(tokenCollector)
-//								.withCustom(fixedHtsFee(htsAmount, invalidEntityId, htsCollector))
-//								.hasKnownStatus(INVALID_TOKEN_ID_IN_CUSTOM_FEES),
-//						tokenUpdate(token)
-//								.treasury(tokenCollector)
-//								.withCustom(fixedHtsFee(htsAmount, feeDenom, hbarCollector))
-//								.hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR),
-//						tokenUpdate(token)
-//								.treasury(tokenCollector)
-//								.withCustom(fixedHtsFee(-htsAmount, feeDenom, htsCollector))
-//								.hasKnownStatus(CUSTOM_FEE_MUST_BE_POSITIVE),
-//						tokenUpdate(token)
-//								.treasury(tokenCollector)
-//								.withCustom(incompleteCustomFee(hbarCollector))
-//								.hasKnownStatus(CUSTOM_FEE_NOT_FULLY_SPECIFIED),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(GENESIS)
-								.overridingProps(Map.of("tokens.maxCustomFeesAllowed", "10")),
-						tokenAssociate(newTokenCollector, token)
-//						tokenUpdate(token)
-//								.treasury(newTokenCollector)
-//								.customFeesMutable(true)
-//								.withCustom(fixedHbarFee(newHbarAmount, newHbarCollector))
-//								.withCustom(fixedHtsFee(newHtsAmount, newFeeDenom, newHtsCollector))
-//								.withCustom(fractionalFee(
-//										newNumerator, newDenominator,
-//										newMinimumToCollect, OptionalLong.of(newMaximumToCollect),
-//										newTokenCollector))
-				)
-				.then(
-//						getTokenInfo(token)
-//								.hasCustomFeesMutable(true)
-//								.hasCustom(fixedHbarFeeInSchedule(newHbarAmount, newHbarCollector))
-//								.hasCustom(fixedHtsFeeInSchedule(newHtsAmount, newFeeDenom, newHtsCollector))
-//								.hasCustom(fractionalFeeInSchedule(
-//										newNumerator, newDenominator,
-//										newMinimumToCollect, OptionalLong.of(newMaximumToCollect),
-//										newTokenCollector))
-				);
-	}
 
 	private HapiApiSpec customFeesOnceImmutableStayImmutable() {
 		final var hbarAmount = 1_234L;

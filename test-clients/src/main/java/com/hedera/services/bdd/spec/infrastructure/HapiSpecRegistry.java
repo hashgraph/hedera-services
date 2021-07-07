@@ -280,6 +280,18 @@ public class HapiSpecRegistry {
 		put(name + "Freeze", key, Key.class);
 	}
 
+	public boolean hasFeeScheduleKey(String name) {
+		return has(name + "FeeSchedule", Key.class);
+	}
+
+	public void forgetFeeScheduleKey(String name) {
+		remove(name + "FeeSchedule", Key.class);
+	}
+
+	public void saveFeeScheduleKey(String name, Key key) {
+		put(name + "FeeSchedule", key, Key.class);
+	}
+
 	public boolean hasFreezeKey(String name) {
 		return has(name + "Freeze", Key.class);
 	}
@@ -384,6 +396,10 @@ public class HapiSpecRegistry {
 
 	public Key getKycKey(String name) {
 		return get(name + "Kyc", Key.class);
+	}
+
+	public Key getFeeScheduleKey(String name) {
+		return get(name + "FeeSchedule", Key.class);
 	}
 
 	public Long getExpiry(String name) { return get(name + "Expiry", Long.class); }
