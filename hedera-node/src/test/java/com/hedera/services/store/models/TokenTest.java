@@ -247,6 +247,15 @@ class TokenTest {
 		assertNotEquals(subject.hashCode(), otherToken.hashCode());
 	}
 
+	@Test
+	void toStringWorks() {
+		final var desired = "Token{id=Id{shard=1, realm=2, num=3}, treasury=Account{id=Id{shard=2, realm=2, num=3}, " +
+				"expiry=0, balance=0, deleted=false, tokens=<N/A>}, autoRenewAccount=null, kycKey=<N/A>, freezeKey=<N/A>, " +
+				"frozenByDefault=false, supplyKey=<N/A>}";
+
+		assertEquals(desired, subject.toString());
+	}
+
 	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
 		var ex = assertThrows(InvalidTransactionException.class, something::run);
 		assertEquals(status, ex.getResponseCode());

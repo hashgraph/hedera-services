@@ -41,6 +41,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_INITIAL_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -103,7 +104,8 @@ public class TokenListChecks {
             boolean hasKycKey, Key kycKey,
             boolean hasWipeKey, Key wipeKey,
             boolean hasSupplyKey, Key supplyKey,
-            boolean hasFreezeKey, Key freezeKey
+            boolean hasFreezeKey, Key freezeKey,
+            boolean hasFeeScheduleKey, Key feeScheduleKey
     ) {
         ResponseCodeEnum validity = OK;
 
@@ -129,6 +131,11 @@ public class TokenListChecks {
         }
         if (hasFreezeKey) {
             if ((validity = checkKey(freezeKey, INVALID_FREEZE_KEY)) != OK) {
+                return validity;
+            }
+        }
+        if (hasFeeScheduleKey) {
+            if ((validity = checkKey(feeScheduleKey, INVALID_CUSTOM_FEE_SCHEDULE_KEY)) != OK) {
                 return validity;
             }
         }

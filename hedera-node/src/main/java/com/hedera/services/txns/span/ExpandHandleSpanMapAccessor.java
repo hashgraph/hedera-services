@@ -28,7 +28,7 @@ import com.hedera.services.utils.TxnAccessor;
  * Minimal helper class for getting/setting entries in a span map.
  */
 public class ExpandHandleSpanMapAccessor {
-	private static final String IMPLIED_TRANSFERS_KEY = "validatedTransfers";
+	private static final String IMPLIED_TRANSFERS_KEY = "impliedTransfers";
 	private static final String FEE_SCHEDULE_UPDATE_META_KEY = "feeScheduleUpdateMeta";
 
 	public void setFeeScheduleUpdateMeta(TxnAccessor accessor, FeeScheduleUpdateMeta feeScheduleUpdateMeta) {

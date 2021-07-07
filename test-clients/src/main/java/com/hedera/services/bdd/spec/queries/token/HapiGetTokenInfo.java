@@ -75,6 +75,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 	private Optional<String> expectedFreezeKey = Optional.empty();
 	private Optional<String> expectedSupplyKey = Optional.empty();
 	private Optional<String> expectedWipeKey = Optional.empty();
+	private Optional<String> expectedFeeScheduleKey = Optional.empty();
 	private Optional<Boolean> expectedDeletion = Optional.empty();
 	private Optional<TokenKycStatus> expectedKycDefault = Optional.empty();
 	private Optional<TokenFreezeStatus> expectedFreezeDefault = Optional.empty();
@@ -190,6 +191,11 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 
 	public HapiGetTokenInfo hasWipeKey(String name) {
 		expectedWipeKey = Optional.of(name);
+		return this;
+	}
+
+	public HapiGetTokenInfo hasFeeScheduleKey(String name) {
+		expectedFeeScheduleKey = Optional.of(name);
 		return this;
 	}
 
@@ -338,6 +344,13 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 				expectedSupplyKey,
 				(n, r) -> r.getSupplyKey(n),
 				"Wrong token supply key!",
+				registry);
+
+		assertFor(
+				actualInfo.getFeeScheduleKey(),
+				expectedFeeScheduleKey,
+				(n, r) -> r.getFeeScheduleKey(n),
+				"Wrong token fee schedule key!",
 				registry);
 	}
 
