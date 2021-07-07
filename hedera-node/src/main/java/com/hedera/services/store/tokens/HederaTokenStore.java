@@ -481,7 +481,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 		if (request.getCustomFeesCount() > 0) {
 			final var customFees = request.getCustomFeesList();
-			validity = validateFeeSchedule(customFees,false, null);
+			validity = validateFeeSchedule(customFees, false, null);
 			if (validity != OK) {
 				return failure(validity);
 			}
@@ -491,7 +491,11 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		return success(pendingId);
 	}
 
-	private ResponseCodeEnum validateFeeSchedule(List<CustomFee> feeSchedule, boolean isFeeScheduleUpdate, TokenID tokenID) {
+	private ResponseCodeEnum validateFeeSchedule(
+			List<CustomFee> feeSchedule,
+			boolean isFeeScheduleUpdate,
+			TokenID tokenID
+	) {
 		if (feeSchedule.size() > properties.maxCustomFeesAllowed()) {
 			return CUSTOM_FEES_LIST_TOO_LONG;
 		}
@@ -523,7 +527,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 					}
 				}
 			} else if (customFee.hasFractionalFee()) {
-				if(!isFeeScheduleUpdate) {
+				if (!isFeeScheduleUpdate) {
 					if (pendingCreation.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE) {
 						return CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 					}
@@ -669,12 +673,16 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			}
 		}
 
-		Optional<JKey> newKycKey = changes.hasKycKey() ? asUsableFcKey(changes.getKycKey()) : Optional.empty();
-		Optional<JKey> newWipeKey = changes.hasWipeKey() ? asUsableFcKey(changes.getWipeKey()) : Optional.empty();
-		Optional<JKey> newSupplyKey = changes.hasSupplyKey() ? asUsableFcKey(changes.getSupplyKey()) : Optional.empty();
-		Optional<JKey> newFreezeKey = changes.hasFreezeKey() ? asUsableFcKey(changes.getFreezeKey()) : Optional.empty();
-		Optional<JKey> newFeeScheduleKey = changes.hasFeeScheduleKey() ? asUsableFcKey(
-				changes.getFeeScheduleKey()) : Optional.empty();
+		final var newKycKey = changes.hasKycKey()
+				? asUsableFcKey(changes.getKycKey()) : Optional.empty();
+		final var newWipeKey = changes.hasWipeKey()
+				? asUsableFcKey(changes.getWipeKey()) : Optional.empty();
+		final var newSupplyKey = changes.hasSupplyKey()
+				? asUsableFcKey(changes.getSupplyKey()) : Optional.empty();
+		final var newFreezeKey = changes.hasFreezeKey()
+				? asUsableFcKey(changes.getFreezeKey()) : Optional.empty();
+		final var newFeeScheduleKey = changes.hasFeeScheduleKey()
+				? asUsableFcKey(changes.getFeeScheduleKey()) : Optional.empty();
 
 		var appliedValidity = new AtomicReference<>(OK);
 		apply(tId, token -> {

@@ -323,6 +323,8 @@ public class StateView {
 			supplyCandidate.ifPresent(k -> info.setSupplyKey(asKeyUnchecked(k)));
 			var wipeCandidate = token.wipeKey();
 			wipeCandidate.ifPresent(k -> info.setWipeKey(asKeyUnchecked(k)));
+			var feeScheduleCandidate = token.feeScheduleKey();
+			feeScheduleCandidate.ifPresent(k -> info.setFeeScheduleKey(asKeyUnchecked(k)));
 
 			if (token.hasAutoRenewAccount()) {
 				info.setAutoRenewAccount(token.autoRenewAccount().toGrpcAccountId());

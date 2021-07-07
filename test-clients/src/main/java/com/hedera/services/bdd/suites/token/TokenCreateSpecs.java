@@ -298,7 +298,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.hasKycKey("primary")
 								.hasSupplyKey("primary")
 								.hasWipeKey("primary")
-								.hasFeeScheduleKey("feeScheduleKey")
+								.hasFeeScheduleKey("primary")
 								.hasMaxSupply(1000)
 								.hasTotalSupply(500)
 								.hasAutoRenewAccount("autoRenewAccount"),

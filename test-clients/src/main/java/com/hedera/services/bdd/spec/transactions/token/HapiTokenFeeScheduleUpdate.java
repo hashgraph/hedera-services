@@ -29,17 +29,14 @@ import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.usage.token.TokenUpdateUsage;
+import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.CustomFee.Builder;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-
-import com.hederahashgraph.api.proto.java.CustomFee;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -51,15 +48,11 @@ import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUpdate> {
 	static final Logger log = LogManager.getLogger(HapiTokenFeeScheduleUpdate.class);
 
 	private String token;
-	private Optional<String> newCustomFeesKey = Optional.empty();
-
-	private boolean useEmptyAdminKeyList = false;
 
 	private final List<Function<HapiApiSpec, CustomFee>> feeScheduleSuppliers = new ArrayList<>();
 
@@ -71,11 +64,6 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
 
 	public HapiTokenFeeScheduleUpdate(String token) {
 		this.token = token;
-	}
-
-	public HapiTokenFeeScheduleUpdate customFeesKey(String newCustomFeesKey) {
-		this.newCustomFeesKey = Optional.of(newCustomFeesKey);
-		return this;
 	}
 
 	public HapiTokenFeeScheduleUpdate withCustom(Function<HapiApiSpec, CustomFee> supplier) {
@@ -104,6 +92,17 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
 		}
 	}
 
+//	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo)	{
+//		final var op = txn.getTokenFeeScheduleUpdate();
+//		final var baseMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
+//		final var feeSchUpdMeta = new FeSM(op.getMessage().size());
+//
+//		final var accumulator = new UsageAccumulator();
+//		consensusOpsUsage.submitMessageUsage(suFrom(svo), submitMeta, baseMeta, accumulator);
+//
+//		return AdapterUtils.feeDataFrom(accumulator);
+//	}
+
 	private TokenInfo lookupInfo(HapiApiSpec spec) throws Throwable {
 		HapiGetTokenInfo subOp = getTokenInfo(token).noLogging();
 		Optional<Throwable> error = subOp.execFor(spec);
@@ -121,12 +120,11 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
 		var id = TxnUtils.asTokenId(token, spec);
-		TokenFeeScheduleUpdateTransactionBody opBody = spec
+		final var opBody = spec
 				.txns()
 				.<TokenFeeScheduleUpdateTransactionBody, TokenFeeScheduleUpdateTransactionBody.Builder>body(
 						TokenFeeScheduleUpdateTransactionBody.class, b -> {
 							b.setTokenId(id);
-
 							if (!feeScheduleSuppliers.isEmpty()) {
 								for (var supplier : feeScheduleSuppliers) {
 									b.addCustomFees(supplier.apply(spec));
@@ -141,11 +139,8 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
 		List<Function<HapiApiSpec, Key>> signers = new ArrayList<>();
 		signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
 		signers.add(spec -> {
-			try {
-				return spec.registry().getAdminKey(token); // TODO: switch to feeScheduleKey when it's ready
-			} catch (Exception ignore) {
-				return Key.getDefaultInstance();
-			}
+			final var registry = spec.registry();
+			return registry.hasFeeScheduleKey(token) ? registry.getFeeScheduleKey(token) : Key.getDefaultInstance();
 		});
 		return signers;
 	}
@@ -157,13 +152,6 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
 
 	@Override
 	protected void updateStateOf(HapiApiSpec spec) {
-		if (actualStatus != SUCCESS) {
-			return;
-		}
-		var registry = spec.registry();
-		if (useEmptyAdminKeyList) {
-			registry.forgetAdminKey(token);
-		}
 	}
 
 	@Override

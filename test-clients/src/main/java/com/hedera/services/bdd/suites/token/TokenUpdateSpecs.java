@@ -32,7 +32,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.OptionalLong;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -44,7 +43,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
@@ -108,7 +106,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						validatesMissingRef(),
 						validatesNewExpiry(),
 						/* HIP-18 */
-						customFeesOnceImmutableStayImmutable(),
+						customFeesOnlyUpdatableWithKey(),
 				}
 		);
 	}
@@ -585,7 +583,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	}
 
 
-	private HapiApiSpec customFeesOnceImmutableStayImmutable() {
+	private HapiApiSpec customFeesOnlyUpdatableWithKey() {
 		final var hbarAmount = 1_234L;
 		final var htsAmount = 2_345L;
 		final var numerator = 1;
@@ -593,22 +591,25 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 		final var minimumToCollect = 5;
 		final var maximumToCollect = 50;
 
-		final var token = "withCustomSchedules";
+		final var tokenNoFeeKey = "justSchedule";
+		final var tokenWithFeeKey = "bothScheduleAndKey";
 		final var feeDenom = "denom";
 		final var hbarCollector = "hbarFee";
 		final var htsCollector = "denomFee";
 		final var tokenCollector = "fractionalFee";
 
 		final var adminKey = "admin";
+		final var feeScheduleKey = "feeSchedule";
 
-		return defaultHapiSpec("CustomFeesOnceImmutableStayImmutable")
+		return defaultHapiSpec("CustomFeesOnlyUpdatableWithKey")
 				.given(
 						newKeyNamed(adminKey),
+						newKeyNamed(feeScheduleKey),
 						cryptoCreate(htsCollector),
 						cryptoCreate(hbarCollector),
 						cryptoCreate(tokenCollector),
 						tokenCreate(feeDenom).treasury(htsCollector),
-						tokenCreate(token)
+						tokenCreate(tokenNoFeeKey)
 								.adminKey(adminKey)
 								.treasury(tokenCollector)
 								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
@@ -616,10 +617,18 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.withCustom(fractionalFee(
 										numerator, denominator,
 										minimumToCollect, OptionalLong.of(maximumToCollect),
+										tokenCollector)),
+						tokenCreate(tokenWithFeeKey)
+								.adminKey(adminKey)
+								.feeScheduleKey(tokenWithFeeKey)
+								.treasury(tokenCollector)
+								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
+								.withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
+								.withCustom(fractionalFee(
+										numerator, denominator,
+										minimumToCollect, OptionalLong.of(maximumToCollect),
 										tokenCollector))
-
-				)
-				.when(
+				).when(
 //						tokenUpdate(token)
 //								.customFeesMutable(false)
 //								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
