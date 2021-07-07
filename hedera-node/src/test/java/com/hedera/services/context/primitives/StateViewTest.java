@@ -247,6 +247,7 @@ class StateViewTest {
 		token.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asJKey());
 		token.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKey());
 		token.setWipeKey(MISC_ACCOUNT_KT.asJKey());
+		token.setFeeScheduleKey(MISC_ACCOUNT_KT.asJKey());
 		token.setAutoRenewAccount(EntityId.fromGrpcAccountId(autoRenew));
 		token.setExpiry(expiry);
 		token.setAutoRenewPeriod(autoRenewPeriod);
@@ -501,6 +502,7 @@ class StateViewTest {
 		assertEquals(TOKEN_FREEZE_KT.asKey(), info.getFreezeKey());
 		assertEquals(TOKEN_KYC_KT.asKey(), info.getKycKey());
 		assertEquals(miscKey, info.getWipeKey());
+		assertEquals(miscKey, info.getFeeScheduleKey());
 		assertEquals(autoRenew, info.getAutoRenewAccount());
 		assertEquals(Duration.newBuilder().setSeconds(autoRenewPeriod).build(), info.getAutoRenewPeriod());
 		assertEquals(Timestamp.newBuilder().setSeconds(expiry).build(), info.getExpiry());

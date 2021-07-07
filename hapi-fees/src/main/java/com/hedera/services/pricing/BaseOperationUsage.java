@@ -37,7 +37,6 @@ import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.fee.FeeBuilder;
 
 import java.util.List;
 
@@ -124,7 +123,7 @@ class BaseOperationUsage {
 
 		/* The canonical usage and context */
 		final var newReprBytes = TOKEN_OPS_USAGE.bytesNeededToRepr(theNewSchedule);
-		final var grpcReprBytes = op.getSerializedSize() - FeeBuilder.BASIC_ENTITY_ID_SIZE;
+		final var grpcReprBytes = op.getSerializedSize() - op.getTokenId().getSerializedSize();
 		final var opMeta = new FeeScheduleUpdateMeta(0L, newReprBytes, grpcReprBytes);
 		final var feeScheduleCtx = new ExtantFeeScheduleContext(THREE_MONTHS_IN_SECONDS, 0);
 

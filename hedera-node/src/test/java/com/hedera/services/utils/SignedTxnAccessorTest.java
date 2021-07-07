@@ -22,18 +22,24 @@ package com.hedera.services.utils;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -47,7 +53,10 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
+import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -278,6 +287,62 @@ class SignedTxnAccessorTest {
 
 		// expect:
 		Assertions.assertThrows(UnsupportedOperationException.class, subject::getScheduleRef);
+	}
+
+	@Test
+	void setsFeeScheduleUpdateMeta() {
+		// setup:
+		final var txn = signedFeeScheduleUpdateTxn();
+		final var expectedGrpcReprBytes =
+				feeScheduleUpdateTxn().getTokenFeeScheduleUpdate().getSerializedSize()
+						- feeScheduleUpdateTxn().getTokenFeeScheduleUpdate().getTokenId().getSerializedSize();
+		final var tokenOpsUsage = new TokenOpsUsage();
+		final var expectedReprBytes = tokenOpsUsage.bytesNeededToRepr(fees());
+		final var spanMapAccessor = new ExpandHandleSpanMapAccessor();
+
+		// given:
+		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+
+		// when:
+		final var expandedMeta = spanMapAccessor.getFeeScheduleUpdateMeta(accessor);
+
+		// then:
+		assertEquals(now, expandedMeta.effConsensusTime());
+		assertEquals(expectedReprBytes, expandedMeta.numBytesInNewFeeScheduleRepr());
+		assertEquals(expectedGrpcReprBytes, expandedMeta.numBytesInGrpcFeeScheduleRepr());
+	}
+
+	private Transaction signedFeeScheduleUpdateTxn() {
+		return Transaction.newBuilder()
+				.setSignedTransactionBytes(SignedTransaction.newBuilder()
+						.setBodyBytes(feeScheduleUpdateTxn().toByteString())
+						.build().toByteString())
+				.build();
+	}
+
+	private TransactionBody feeScheduleUpdateTxn() {
+		return TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(now)))
+				.setTokenFeeScheduleUpdate(TokenFeeScheduleUpdateTransactionBody.newBuilder()
+						.addAllCustomFees(fees()))
+				.build();
+	}
+
+	private List<CustomFee> fees() {
+		final var collector = new EntityId(1, 2 ,3);
+		final var aDenom = new EntityId(2, 3 ,4);
+		final var bDenom = new EntityId(3, 4 ,5);
+
+		return List.of(
+				fixedFee(1, null, collector),
+				fixedFee(2, aDenom, collector),
+				fixedFee(2, bDenom, collector),
+				fractionalFee(1, 2, 1, 2, collector),
+				fractionalFee(1, 3, 1, 2, collector),
+				fractionalFee(1, 4, 1, 2, collector)
+		).stream().map(FcCustomFee::asGrpc).collect(toList());
 	}
 
 	private TransactionBody tokenXfers() {

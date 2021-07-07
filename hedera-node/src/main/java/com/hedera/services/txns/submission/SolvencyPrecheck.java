@@ -35,6 +35,8 @@ import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.fee.FeeObject;
 import com.swirlds.fcmap.FCMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.function.Supplier;
 
@@ -56,6 +58,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_
  * For more details, please see https://github.com/hashgraph/hedera-services/blob/master/docs/transaction-prechecks.md
  */
 public class SolvencyPrecheck {
+	private static final Logger log = LogManager.getLogger(SolvencyPrecheck.class);
+
 	private static final TxnValidityAndFeeReq VERIFIED_EXEMPT = new TxnValidityAndFeeReq(OK);
 	private static final TxnValidityAndFeeReq LOST_PAYER_EXPIRATION_RACE = new TxnValidityAndFeeReq(FAIL_FEE);
 
@@ -137,7 +141,8 @@ public class SolvencyPrecheck {
 			}
 
 			return new TxnValidityAndFeeReq(finalStatus, estimatedReqFee);
-		} catch (Exception ignore) {
+		} catch (Exception suspicious) {
+			log.warn("Fee calculation failure may be justifiable due to an expiring payer, but...", suspicious);
 			return LOST_PAYER_EXPIRATION_RACE;
 		}
 	}

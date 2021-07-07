@@ -81,6 +81,11 @@ public class TokenUpdateUsage extends TokenTxnUsage<TokenUpdateUsage> {
 		return this;
 	}
 
+	public TokenUpdateUsage givenCurrentFeeScheduleKey(Optional<Key> feeScheduleKey) {
+		feeScheduleKey.map(FeeBuilder::getAccountKeyStorageSize).ifPresent(this::updateCurrentRb);
+		return this;
+	}
+
 	public TokenUpdateUsage givenCurrentMemo(String memo) {
 		currentMemoLen = memo.length();
 		updateCurrentRb(currentMemoLen);

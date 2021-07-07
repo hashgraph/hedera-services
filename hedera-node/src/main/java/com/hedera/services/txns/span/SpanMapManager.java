@@ -26,15 +26,12 @@ import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.usage.token.TokenOpsUsage;
-import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hedera.services.utils.TxnAccessor;
-import com.hederahashgraph.fee.FeeBuilder;
 
 import java.util.HashSet;
 import java.util.Set;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 
 /**
  * Responsible for managing the properties in a {@link TxnAccessor#getSpanMap()}.
@@ -76,8 +73,6 @@ public class SpanMapManager {
 		final var function = accessor.getFunction();
 		if (function == CryptoTransfer) {
 			expandImpliedTransfers(accessor);
-		} else if (function == TokenFeeScheduleUpdate) {
-			expandFeeScheduleUpdateMeta(accessor);
 		}
 	}
 
@@ -92,16 +87,6 @@ public class SpanMapManager {
 		if (!impliedTransfers.getMeta().wasDerivedFrom(dynamicProperties, customFeeSchedules)) {
 			expandImpliedTransfers(accessor);
 		}
-	}
-
-	private void expandFeeScheduleUpdateMeta(TxnAccessor accessor) {
-		final var effConsTime = accessor.getTxnId().getTransactionValidStart().getSeconds();
-		final var op = accessor.getTxn().getTokenFeeScheduleUpdate();
-		final var reprBytes = tokenOpsUsage.bytesNeededToRepr(op.getCustomFeesList());
-		final var grpcReprBytes = op.getSerializedSize() - FeeBuilder.BASIC_ENTITY_ID_SIZE;
-
-		final var meta = new FeeScheduleUpdateMeta(effConsTime, reprBytes, grpcReprBytes);
-		spanMapAccessor.setFeeScheduleUpdateMeta(accessor, meta);
 	}
 
 	private void expandImpliedTransfers(TxnAccessor accessor) {

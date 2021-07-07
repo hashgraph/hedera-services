@@ -20,6 +20,7 @@ package com.hedera.services.usage.token.meta;
  * ‍
  */
 
+import com.google.common.base.MoreObjects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -60,4 +61,12 @@ public class FeeScheduleUpdateMeta {
 		return HashCodeBuilder.reflectionHashCode(this);
 	}
 
+	@Override
+	public String toString() {
+		return MoreObjects.toStringHelper(this)
+				.add("effConsensusTime", effConsensusTime)
+				.add("numBytesInNewFeeScheduleRepr", numBytesInNewFeeScheduleRepr)
+				.add("numBytesInGrpcFeeScheduleRepr", numBytesInGrpcFeeScheduleRepr)
+				.toString();
+	}
 }

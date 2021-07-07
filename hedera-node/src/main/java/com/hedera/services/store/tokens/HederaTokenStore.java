@@ -28,6 +28,7 @@ import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -45,6 +46,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.swirlds.fchashmap.FCOneToManyRelation;
@@ -85,8 +87,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TRE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
@@ -472,7 +478,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 		if (request.getCustomFeesCount() > 0) {
 			final var customFees = request.getCustomFeesList();
-			validity = validateFeeSchedule(customFees);
+			validity = validateFeeSchedule(customFees, false, null, null);
 			if (validity != OK) {
 				return failure(validity);
 			}
@@ -482,7 +488,12 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		return success(pendingId);
 	}
 
-	private ResponseCodeEnum validateFeeSchedule(List<CustomFee> feeSchedule) {
+	private ResponseCodeEnum validateFeeSchedule(
+			List<CustomFee> feeSchedule,
+			boolean isFeeScheduleUpdate,
+			TokenID targetTokenId,
+			MerkleToken targetToken
+	) {
 		if (feeSchedule.size() > properties.maxCustomFeesAllowed()) {
 			return CUSTOM_FEES_LIST_TOO_LONG;
 		}
@@ -495,14 +506,14 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				return INVALID_CUSTOM_FEE_COLLECTOR;
 			}
 			ResponseCodeEnum responseCode;
-
 			if (customFee.hasFixedFee()) {
 				responseCode = validateFixedFee(customFee, feeCollector);
 				if (responseCode != OK) {
 					return responseCode;
 				}
 			} else if (customFee.hasFractionalFee()) {
-				responseCode = validateFractionalFee(customFee);
+				responseCode = validateFractionalFee(customFee, isFeeScheduleUpdate, targetToken, targetTokenId,
+						feeCollector);
 				if (responseCode != OK) {
 					return responseCode;
 				}
@@ -514,20 +525,41 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		return OK;
 	}
 
-	private ResponseCodeEnum validateFractionalFee(CustomFee customFee) {
+	private ResponseCodeEnum validateFractionalFee(CustomFee customFee,
+			boolean isFeeScheduleUpdate,
+			MerkleToken targetToken,
+			TokenID targetTokenId,
+			AccountID feeCollector) {
+		if (!isFeeScheduleUpdate) {
+			if (pendingCreation.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE) {
+				return CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
+			}
+		} else {
+			if (targetToken.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE) {
+				return CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
+			}
+			if (!associationExists(feeCollector, targetTokenId)) {
+				return TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
+			}
+		}
 		final var fractionalSpec = customFee.getFractionalFee();
 		final var fraction = fractionalSpec.getFractionalAmount();
 		if (fraction.getDenominator() == 0) {
 			return FRACTION_DIVIDES_BY_ZERO;
 		}
-		if (!signsMatch(fraction.getNumerator(), fraction.getDenominator())) {
+		if (!areValidPositiveNumbers(fraction.getNumerator(), fraction.getDenominator())) {
 			return CUSTOM_FEE_MUST_BE_POSITIVE;
 		}
 		if (fractionalSpec.getMaximumAmount() < 0 || fractionalSpec.getMinimumAmount() < 0) {
 			return CUSTOM_FEE_MUST_BE_POSITIVE;
 		}
+		if (fractionalSpec.getMaximumAmount() > 0 &&
+				fractionalSpec.getMaximumAmount() < fractionalSpec.getMinimumAmount()) {
+			return FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
+		}
 		return OK;
 	}
+
 
 	private ResponseCodeEnum validateFixedFee(CustomFee customFee,
 			AccountID feeCollector) {
@@ -540,6 +572,10 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			if (resolve(denom) == MISSING_TOKEN) {
 				return INVALID_TOKEN_ID_IN_CUSTOM_FEES;
 			}
+			final var merkleToken = get(denom);
+			if (merkleToken.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE) {
+				return CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
+			}
 			if (!associationExists(feeCollector, denom)) {
 				return TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 			}
@@ -547,8 +583,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		return OK;
 	}
 
-	private boolean signsMatch(long a, long b) {
-		return (a < 0 && b < 0) || (a > 0 && b > 0);
+	private boolean areValidPositiveNumbers(long a, long b) {
+		return (a > 0 && b > 0);
 	}
 
 	public void addKnownTreasury(AccountID aId, TokenID tId) {
@@ -661,12 +697,16 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			}
 		}
 
-		Optional<JKey> newKycKey = changes.hasKycKey() ? asUsableFcKey(changes.getKycKey()) : Optional.empty();
-		Optional<JKey> newWipeKey = changes.hasWipeKey() ? asUsableFcKey(changes.getWipeKey()) : Optional.empty();
-		Optional<JKey> newSupplyKey = changes.hasSupplyKey() ? asUsableFcKey(changes.getSupplyKey()) : Optional.empty();
-		Optional<JKey> newFreezeKey = changes.hasFreezeKey() ? asUsableFcKey(changes.getFreezeKey()) : Optional.empty();
-		Optional<JKey> newFeeScheduleKey = changes.hasFeeScheduleKey() ? asUsableFcKey(
-				changes.getFeeScheduleKey()) : Optional.empty();
+		final var newKycKey = changes.hasKycKey()
+				? asUsableFcKey(changes.getKycKey()) : Optional.empty();
+		final var newWipeKey = changes.hasWipeKey()
+				? asUsableFcKey(changes.getWipeKey()) : Optional.empty();
+		final var newSupplyKey = changes.hasSupplyKey()
+				? asUsableFcKey(changes.getSupplyKey()) : Optional.empty();
+		final var newFreezeKey = changes.hasFreezeKey()
+				? asUsableFcKey(changes.getFreezeKey()) : Optional.empty();
+		final var newFeeScheduleKey = changes.hasFeeScheduleKey()
+				? asUsableFcKey(changes.getFeeScheduleKey()) : Optional.empty();
 
 		var appliedValidity = new AtomicReference<>(OK);
 		apply(tId, token -> {
@@ -757,6 +797,31 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			}
 		});
 		return appliedValidity.get();
+	}
+
+	@Override
+	public ResponseCodeEnum updateFeeSchedule(TokenFeeScheduleUpdateTransactionBody changes) {
+		final var tId = resolve(changes.getTokenId());
+		if (tId == MISSING_TOKEN) {
+			return INVALID_TOKEN_ID;
+		}
+
+		final var token = get(tId);
+		if (!token.hasFeeScheduleKey()) {
+			return TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
+		}
+		final var customFees = changes.getCustomFeesList();
+		if (customFees.isEmpty() && token.grpcFeeSchedule().isEmpty()) {
+			return CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
+		}
+
+		var validity = validateFeeSchedule(changes.getCustomFeesList(), true, tId, token);
+		if (validity != OK) {
+			return validity;
+		}
+		token.setFeeScheduleFrom(customFees);
+
+		return OK;
 	}
 
 	public static boolean affectsExpiryAtMost(TokenUpdateTransactionBody op) {
