@@ -71,17 +71,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class PermissionFileUtilsTest {
 	@Test
-	 void returnsEmptyKeyForBlankTxn() {
+	void returnsEmptyKeyForBlankTxn() {
 		assertEquals("", permissionFileKeyForTxn(TransactionBody.getDefaultInstance()));
 	}
 
 	@Test
-	 void returnsEmptyKeyForBlankQuery() {
+	void returnsEmptyKeyForBlankQuery() {
 		assertEquals("", permissionFileKeyForQuery(Query.getDefaultInstance()));
 	}
 
 	@Test
-	 void worksForScheduleCreate() {
+	void worksForScheduleCreate() {
 		var op = ScheduleCreateTransactionBody.getDefaultInstance();
 		var txn = TransactionBody.newBuilder()
 				.setScheduleCreate(op)
@@ -90,7 +90,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForScheduleDelete() {
+	void worksForScheduleDelete() {
 		var op = ScheduleDeleteTransactionBody.getDefaultInstance();
 		var txn = TransactionBody.newBuilder()
 				.setScheduleDelete(op)
@@ -99,7 +99,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForScheduleSign() {
+	void worksForScheduleSign() {
 		var op = ScheduleSignTransactionBody.getDefaultInstance();
 		var txn = TransactionBody.newBuilder()
 				.setScheduleSign(op)
@@ -108,7 +108,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForCryptoCreateAccount() {
+	void worksForCryptoCreateAccount() {
 		var op = CryptoCreateTransactionBody.getDefaultInstance();
 		var txn = TransactionBody.newBuilder()
 				.setCryptoCreateAccount(op)
@@ -117,7 +117,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForCryptoTransfer() {
+	void worksForCryptoTransfer() {
 		var op = CryptoTransferTransactionBody.getDefaultInstance();
 		var txn = TransactionBody.newBuilder()
 				.setCryptoTransfer(op)
@@ -126,7 +126,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForCryptoUpdateAccount() {
+	void worksForCryptoUpdateAccount() {
 		var op = CryptoUpdateTransactionBody.getDefaultInstance();
 		var txn = TransactionBody.newBuilder()
 				.setCryptoUpdateAccount(op)
@@ -135,7 +135,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForCryptoDelete() {
+	void worksForCryptoDelete() {
 		var op = CryptoDeleteTransactionBody.getDefaultInstance();
 		var txn = TransactionBody.newBuilder()
 				.setCryptoDelete(op)
@@ -144,7 +144,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForCryptoAddLiveHash() {
+	void worksForCryptoAddLiveHash() {
 		var op = CryptoAddLiveHashTransactionBody.getDefaultInstance();
 		var txn = TransactionBody.newBuilder()
 				.setCryptoAddLiveHash(op)
@@ -153,7 +153,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForCryptoDeleteLiveHash() {
+	void worksForCryptoDeleteLiveHash() {
 		var op = CryptoDeleteLiveHashTransactionBody.getDefaultInstance();
 		var txn = TransactionBody.newBuilder()
 				.setCryptoDeleteLiveHash(op)
@@ -162,7 +162,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForFileCreate() {
+	void worksForFileCreate() {
 		var op = FileCreateTransactionBody.getDefaultInstance();
 		var txn = TransactionBody.newBuilder()
 				.setFileCreate(op)
@@ -171,7 +171,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForFileUpdate() {
+	void worksForFileUpdate() {
 		var op = FileUpdateTransactionBody.getDefaultInstance();
 		var txn = TransactionBody.newBuilder()
 				.setFileUpdate(op)
@@ -180,7 +180,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForFileDelete() {
+	void worksForFileDelete() {
 		var op = FileDeleteTransactionBody.getDefaultInstance();
 		var txn = TransactionBody.newBuilder()
 				.setFileDelete(op)
@@ -189,7 +189,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForFileAppend() {
+	void worksForFileAppend() {
 		var op = FileAppendTransactionBody.getDefaultInstance();
 		var txn = TransactionBody.newBuilder()
 				.setFileAppend(op)
@@ -198,7 +198,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForContractCreateInstance() {
+	void worksForContractCreateInstance() {
 		var op = ContractCreateTransactionBody.getDefaultInstance();
 		var txn = TransactionBody.newBuilder()
 				.setContractCreateInstance(op)
@@ -207,7 +207,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForContractUpdateInstance() {
+	void worksForContractUpdateInstance() {
 		var op = ContractUpdateTransactionBody.getDefaultInstance();
 		var txn = TransactionBody.newBuilder()
 				.setContractUpdateInstance(op)
@@ -216,7 +216,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForContractCall() {
+	void worksForContractCall() {
 		var op = ContractCallTransactionBody.getDefaultInstance();
 		var txn = TransactionBody.newBuilder()
 				.setContractCall(op)
@@ -225,7 +225,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForTokenFeeScheduleUpdate() {
+	void worksForTokenFeeScheduleUpdate() {
 		var op = TokenFeeScheduleUpdateTransactionBody.getDefaultInstance();
 		var txn = TransactionBody.newBuilder()
 				.setTokenFeeScheduleUpdate(op)
@@ -234,7 +234,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForSystemDelete() {
+	void worksForSystemDelete() {
 		var op = SystemDeleteTransactionBody.getDefaultInstance();
 		var txn = TransactionBody.newBuilder()
 				.setSystemDelete(op)
@@ -243,7 +243,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForSystemUndelete() {
+	void worksForSystemUndelete() {
 		var op = SystemUndeleteTransactionBody.getDefaultInstance();
 		var txn = TransactionBody.newBuilder()
 				.setSystemUndelete(op)
@@ -252,7 +252,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForContractDeleteInstance() {
+	void worksForContractDeleteInstance() {
 		var op = ContractDeleteTransactionBody.getDefaultInstance();
 		var txn = TransactionBody.newBuilder()
 				.setContractDeleteInstance(op)
@@ -261,7 +261,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForFreeze() {
+	void worksForFreeze() {
 		var op = FreezeTransactionBody.getDefaultInstance();
 		var txn = TransactionBody.newBuilder()
 				.setFreeze(op)
@@ -270,7 +270,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForConsensusCreateTopic() {
+	void worksForConsensusCreateTopic() {
 		var op = ConsensusCreateTopicTransactionBody.getDefaultInstance();
 		var txn = TransactionBody.newBuilder()
 				.setConsensusCreateTopic(op)
@@ -279,7 +279,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForConsensusUpdateTopic() {
+	void worksForConsensusUpdateTopic() {
 		var op = ConsensusUpdateTopicTransactionBody.getDefaultInstance();
 		var txn = TransactionBody.newBuilder()
 				.setConsensusUpdateTopic(op)
@@ -288,7 +288,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForConsensusDeleteTopic() {
+	void worksForConsensusDeleteTopic() {
 		var op = ConsensusDeleteTopicTransactionBody.getDefaultInstance();
 		var txn = TransactionBody.newBuilder()
 				.setConsensusDeleteTopic(op)
@@ -297,7 +297,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForConsensusSubmitMessage() {
+	void worksForConsensusSubmitMessage() {
 		var op = ConsensusSubmitMessageTransactionBody.getDefaultInstance();
 		var txn = TransactionBody.newBuilder()
 				.setConsensusSubmitMessage(op)
@@ -306,7 +306,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForGetTopicInfo() {
+	void worksForGetTopicInfo() {
 		var op = ConsensusGetTopicInfoQuery.getDefaultInstance();
 		var query = Query.newBuilder()
 				.setConsensusGetTopicInfo(op)
@@ -315,7 +315,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForGetVersionInfo() {
+	void worksForGetVersionInfo() {
 		var op = NetworkGetVersionInfoQuery.getDefaultInstance();
 		var query = Query.newBuilder()
 				.setNetworkGetVersionInfo(op)
@@ -324,7 +324,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForGetSolidityId() {
+	void worksForGetSolidityId() {
 		var op = GetBySolidityIDQuery.getDefaultInstance();
 		var query = Query.newBuilder()
 				.setGetBySolidityID(op)
@@ -333,7 +333,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForGetContractCallLocal() {
+	void worksForGetContractCallLocal() {
 		var op = ContractCallLocalQuery.getDefaultInstance();
 		var query = Query.newBuilder()
 				.setContractCallLocal(op)
@@ -342,7 +342,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForGetContractInfo() {
+	void worksForGetContractInfo() {
 		var op = ContractGetInfoQuery.getDefaultInstance();
 		var query = Query.newBuilder()
 				.setContractGetInfo(op)
@@ -351,7 +351,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForGetContractBytecode() {
+	void worksForGetContractBytecode() {
 		var op = ContractGetBytecodeQuery.getDefaultInstance();
 		var query = Query.newBuilder()
 				.setContractGetBytecode(op)
@@ -360,7 +360,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForGetContractRecords() {
+	void worksForGetContractRecords() {
 		var op = ContractGetRecordsQuery.getDefaultInstance();
 		var query = Query.newBuilder()
 				.setContractGetRecords(op)
@@ -369,7 +369,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForGetCryptoBalance() {
+	void worksForGetCryptoBalance() {
 		var op = CryptoGetAccountBalanceQuery.getDefaultInstance();
 		var query = Query.newBuilder()
 				.setCryptogetAccountBalance(op)
@@ -378,7 +378,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForGetCryptoRecords() {
+	void worksForGetCryptoRecords() {
 		var op = CryptoGetAccountRecordsQuery.getDefaultInstance();
 		var query = Query.newBuilder()
 				.setCryptoGetAccountRecords(op)
@@ -387,7 +387,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForGetCryptoInfo() {
+	void worksForGetCryptoInfo() {
 		var op = CryptoGetInfoQuery.getDefaultInstance();
 		var query = Query.newBuilder()
 				.setCryptoGetInfo(op)
@@ -396,7 +396,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForGetLiveHash() {
+	void worksForGetLiveHash() {
 		var op = CryptoGetLiveHashQuery.getDefaultInstance();
 		var query = Query.newBuilder()
 				.setCryptoGetLiveHash(op)
@@ -405,7 +405,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForGetFileContents() {
+	void worksForGetFileContents() {
 		var op = FileGetContentsQuery.getDefaultInstance();
 		var query = Query.newBuilder()
 				.setFileGetContents(op)
@@ -414,7 +414,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForGetFileinfo() {
+	void worksForGetFileinfo() {
 		var op = FileGetInfoQuery.getDefaultInstance();
 		var query = Query.newBuilder()
 				.setFileGetInfo(op)
@@ -423,7 +423,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForReceipt() {
+	void worksForReceipt() {
 		var op = TransactionGetReceiptQuery.getDefaultInstance();
 		var query = Query.newBuilder()
 				.setTransactionGetReceipt(op)
@@ -432,7 +432,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForRecord() {
+	void worksForRecord() {
 		var op = TransactionGetRecordQuery.getDefaultInstance();
 		var query = Query.newBuilder()
 				.setTransactionGetRecord(op)
@@ -441,7 +441,7 @@ class PermissionFileUtilsTest {
 	}
 
 	@Test
-	 void worksForFastRecord() {
+	void worksForFastRecord() {
 		var op = TransactionGetFastRecordQuery.getDefaultInstance();
 		var query = Query.newBuilder()
 				.setTransactionGetFastRecord(op)

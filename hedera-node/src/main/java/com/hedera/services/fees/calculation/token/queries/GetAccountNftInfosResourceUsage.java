@@ -43,8 +43,6 @@ import static com.hedera.services.queries.token.GetAccountNftInfosAnswer.ACCOUNT
 public class GetAccountNftInfosResourceUsage implements QueryResourceUsageEstimator {
 	static Function<Query, TokenGetAccountNftInfosUsage> factory = TokenGetAccountNftInfosUsage::newEstimate;
 
-    static Function<Query, TokenGetAccountNftInfosUsage> factory = TokenGetAccountNftInfosUsage::newEstimate;
-
 	@Override
 	public boolean applicableTo(Query query) {
 		return query.hasTokenGetAccountNftInfos();

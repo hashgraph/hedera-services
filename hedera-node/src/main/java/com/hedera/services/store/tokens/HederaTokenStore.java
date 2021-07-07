@@ -546,10 +546,9 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		if (fraction.getDenominator() == 0) {
 			return FRACTION_DIVIDES_BY_ZERO;
 		}
-		if (!areValidPositiveNumbers(fraction.getNumerator(), fraction.getDenominator())) {
-			return CUSTOM_FEE_MUST_BE_POSITIVE;
-		}
-		if (fractionalSpec.getMaximumAmount() < 0 || fractionalSpec.getMinimumAmount() < 0) {
+		if (!areValidPositiveNumbers(fraction.getNumerator(), fraction.getDenominator()) ||
+				fractionalSpec.getMaximumAmount() < 0 ||
+				fractionalSpec.getMinimumAmount() < 0) {
 			return CUSTOM_FEE_MUST_BE_POSITIVE;
 		}
 		if (fractionalSpec.getMaximumAmount() > 0 &&

@@ -9,9 +9,9 @@ package com.hedera.services.sigs.order;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -254,6 +254,7 @@ class HederaSigningOrderTest {
 				}
 			};
 		}
+
 		public static FileSigMetaLookup withSafe(
 				Function<FileID, SafeLookupResult<FileSigningMetadata>> fn
 		) {
@@ -305,10 +306,12 @@ class HederaSigningOrderTest {
 	private interface ThrowingFileLookup {
 		FileSigningMetadata lookup(FileID id) throws Exception;
 	}
+
 	@FunctionalInterface
 	private interface ThrowingContractLookup {
 		ContractSigningMetadata lookup(ContractID id) throws Exception;
 	}
+
 	@FunctionalInterface
 	private interface ThrowingTopicLookup {
 		TopicSigningMetadata lookup(TopicID id) throws Exception;
@@ -319,13 +322,15 @@ class HederaSigningOrderTest {
 	private static final BiPredicate<TransactionBody, HederaFunctionality> WACL_ALWAYS_SIGNS = (txn, f) -> true;
 	private static final Predicate<TransactionBody> UPDATE_ACCOUNT_ALWAYS_SIGNS = txn -> true;
 	private static final Function<ContractSigMetaLookup, SigMetadataLookup> EXC_LOOKUP_FN = contractSigMetaLookup ->
-		new DelegatingSigMetadataLookup(
-				FileAdapter.with(id -> { throw new Exception(); }),
-				AccountAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
-				contractSigMetaLookup,
-				TopicAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
-				id -> null,
-				id -> null);
+			new DelegatingSigMetadataLookup(
+					FileAdapter.with(id -> {
+						throw new Exception();
+					}),
+					AccountAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
+					contractSigMetaLookup,
+					TopicAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
+					id -> null,
+					id -> null);
 	private static final SigMetadataLookup EXCEPTION_THROWING_LOOKUP = EXC_LOOKUP_FN.apply(
 			ContractAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.INVALID_CONTRACT))
 	);
@@ -347,7 +352,7 @@ class HederaSigningOrderTest {
 	private SigningOrderResultFactory<SignatureStatus> mockSummaryFactory;
 
 	@Test
-	 void reportsInvalidPayerId() throws Throwable {
+	void reportsInvalidPayerId() throws Throwable {
 		// given:
 		setupFor(INVALID_PAYER_ID_SCENARIO);
 		aMockSummaryFactory();
@@ -360,7 +365,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void reportsGeneralPayerError() throws Throwable {
+	void reportsGeneralPayerError() throws Throwable {
 		// given:
 		setupFor(CRYPTO_CREATE_NO_RECEIVER_SIG_SCENARIO, EXCEPTION_THROWING_LOOKUP);
 		aMockSummaryFactory();
@@ -373,7 +378,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsCryptoCreateNoReceiverSigReq() throws Throwable {
+	void getsCryptoCreateNoReceiverSigReq() throws Throwable {
 		// given:
 		setupFor(CRYPTO_CREATE_NO_RECEIVER_SIG_SCENARIO);
 
@@ -385,7 +390,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsCryptoCreateReceiverSigReq() throws Throwable {
+	void getsCryptoCreateReceiverSigReq() throws Throwable {
 		// given:
 		setupFor(CRYPTO_CREATE_RECEIVER_SIG_SCENARIO);
 
@@ -397,7 +402,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsCryptoTransferReceiverNoSigReq() throws Throwable {
+	void getsCryptoTransferReceiverNoSigReq() throws Throwable {
 		// given:
 		setupFor(CRYPTO_TRANSFER_NO_RECEIVER_SIG_SCENARIO);
 
@@ -411,7 +416,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsCryptoTransferReceiverSigReq() throws Throwable {
+	void getsCryptoTransferReceiverSigReq() throws Throwable {
 		// given:
 		setupFor(CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO);
 
@@ -425,7 +430,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void reportsMissingCryptoTransferReceiver() throws Throwable {
+	void reportsMissingCryptoTransferReceiver() throws Throwable {
 		// given:
 		setupFor(CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO);
 		aMockSummaryFactory();
@@ -443,15 +448,19 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void reportsGeneralErrorInCryptoTransfer() throws Throwable {
+	void reportsGeneralErrorInCryptoTransfer() throws Throwable {
 		// given:
 		setupFor(
 				CRYPTO_TRANSFER_NO_RECEIVER_SIG_SCENARIO,
 				new DelegatingSigMetadataLookup(
-						FileAdapter.with(id -> { throw new Exception(); }),
+						FileAdapter.with(id -> {
+							throw new Exception();
+						}),
 						AccountAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
 						ContractAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.INVALID_CONTRACT)),
-						TopicAdapter.with(id -> { throw new Exception(); }),
+						TopicAdapter.with(id -> {
+							throw new Exception();
+						}),
 						id -> null,
 						id -> null));
 		aMockSummaryFactory();
@@ -469,10 +478,10 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsCryptoUpdateVanillaNewKey() throws Throwable {
+	void getsCryptoUpdateVanillaNewKey() throws Throwable {
 		// given:
 		@SuppressWarnings("unchecked")
-		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>)mock(Predicate.class);
+		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>) mock(Predicate.class);
 		setupFor(CRYPTO_UPDATE_WITH_NEW_KEY_SCENARIO, updateSigReqs);
 		// and:
 		given(updateSigReqs.test(txn)).willReturn(true);
@@ -488,10 +497,10 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsCryptoUpdateProtectedNewKey() throws Throwable {
+	void getsCryptoUpdateProtectedNewKey() throws Throwable {
 		// given:
 		@SuppressWarnings("unchecked")
-		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>)mock(Predicate.class);
+		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>) mock(Predicate.class);
 		setupFor(CRYPTO_UPDATE_WITH_NEW_KEY_SCENARIO, updateSigReqs);
 		// and:
 		given(updateSigReqs.test(txn)).willReturn(false);
@@ -505,10 +514,10 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsCryptoUpdateProtectedSysAccountNewKey() throws Throwable {
+	void getsCryptoUpdateProtectedSysAccountNewKey() throws Throwable {
 		// given:
 		@SuppressWarnings("unchecked")
-		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>)mock(Predicate.class);
+		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>) mock(Predicate.class);
 		setupFor(CRYPTO_UPDATE_SYS_ACCOUNT_WITH_NEW_KEY_SCENARIO, updateSigReqs);
 		// and:
 		given(updateSigReqs.test(txn)).willReturn(false);
@@ -522,10 +531,10 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsCryptoUpdateProtectedNoNewKey() throws Throwable {
+	void getsCryptoUpdateProtectedNoNewKey() throws Throwable {
 		// given:
 		@SuppressWarnings("unchecked")
-		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>)mock(Predicate.class);
+		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>) mock(Predicate.class);
 		setupFor(CRYPTO_UPDATE_NO_NEW_KEY_SCENARIO, updateSigReqs);
 		// and:
 		given(updateSigReqs.test(txn)).willReturn(false);
@@ -539,10 +548,10 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsCryptoUpdateProtectedSysAccountNoNewKey() throws Throwable {
+	void getsCryptoUpdateProtectedSysAccountNoNewKey() throws Throwable {
 		// given:
 		@SuppressWarnings("unchecked")
-		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>)mock(Predicate.class);
+		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>) mock(Predicate.class);
 		setupFor(CRYPTO_UPDATE_SYS_ACCOUNT_WITH_NO_NEW_KEY_SCENARIO, updateSigReqs);
 		// and:
 		given(updateSigReqs.test(txn)).willReturn(false);
@@ -556,10 +565,10 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsCryptoUpdateVanillaNoNewKey() throws Throwable {
+	void getsCryptoUpdateVanillaNoNewKey() throws Throwable {
 		// given:
 		@SuppressWarnings("unchecked")
-		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>)mock(Predicate.class);
+		Predicate<TransactionBody> updateSigReqs = (Predicate<TransactionBody>) mock(Predicate.class);
 		setupFor(CRYPTO_UPDATE_NO_NEW_KEY_SCENARIO, updateSigReqs);
 		// and:
 		given(updateSigReqs.test(txn)).willReturn(true);
@@ -573,7 +582,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void reportsCryptoUpdateMissingAccount() throws Throwable {
+	void reportsCryptoUpdateMissingAccount() throws Throwable {
 		setupFor(CRYPTO_UPDATE_MISSING_ACCOUNT_SCENARIO);
 		// and:
 		aMockSummaryFactory();
@@ -591,7 +600,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsCryptoDeleteNoTransferSigRequired() throws Throwable {
+	void getsCryptoDeleteNoTransferSigRequired() throws Throwable {
 		// given:
 		setupFor(CRYPTO_DELETE_NO_TARGET_RECEIVER_SIG_SCENARIO);
 
@@ -603,7 +612,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsCryptoDeleteTransferSigRequired() throws Throwable {
+	void getsCryptoDeleteTransferSigRequired() throws Throwable {
 		// given:
 		setupFor(CRYPTO_DELETE_TARGET_RECEIVER_SIG_SCENARIO);
 
@@ -617,7 +626,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsFileCreate() throws Throwable {
+	void getsFileCreate() throws Throwable {
 		// given:
 		setupFor(VANILLA_FILE_CREATE_SCENARIO);
 
@@ -629,7 +638,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsFileAppend() throws Throwable {
+	void getsFileAppend() throws Throwable {
 		// given:
 		setupFor(VANILLA_FILE_APPEND_SCENARIO);
 
@@ -641,7 +650,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsFileAppendProtected() throws Throwable {
+	void getsFileAppendProtected() throws Throwable {
 		// given:
 		setupFor(VANILLA_FILE_APPEND_SCENARIO, WACL_NEVER_SIGNS);
 
@@ -653,7 +662,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsFileAppendImmutable() throws Throwable {
+	void getsFileAppendImmutable() throws Throwable {
 		// given:
 		setupFor(IMMUTABLE_FILE_APPEND_SCENARIO, WACL_ALWAYS_SIGNS);
 
@@ -665,7 +674,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsSysFileAppendByTreasury() throws Throwable {
+	void getsSysFileAppendByTreasury() throws Throwable {
 		// given:
 		setupFor(TREASURY_SYS_FILE_APPEND_SCENARIO, WACL_ALWAYS_SIGNS);
 
@@ -677,7 +686,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsSysFileAppendByMaster() throws Throwable {
+	void getsSysFileAppendByMaster() throws Throwable {
 		// given:
 		setupFor(MASTER_SYS_FILE_APPEND_SCENARIO, WACL_ALWAYS_SIGNS);
 
@@ -689,7 +698,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsSysFileUpdateByMaster() throws Throwable {
+	void getsSysFileUpdateByMaster() throws Throwable {
 		// given:
 		setupFor(MASTER_SYS_FILE_UPDATE_SCENARIO, WACL_ALWAYS_SIGNS);
 
@@ -701,7 +710,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsSysFileUpdateByTreasury() throws Throwable {
+	void getsSysFileUpdateByTreasury() throws Throwable {
 		// given:
 		setupFor(TREASURY_SYS_FILE_UPDATE_SCENARIO, WACL_ALWAYS_SIGNS);
 
@@ -713,7 +722,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void reportsMissingFile() throws Throwable {
+	void reportsMissingFile() throws Throwable {
 		// given:
 		setupFor(FILE_APPEND_MISSING_TARGET_SCENARIO);
 		aMockSummaryFactory();
@@ -731,7 +740,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsFileUpdateNoNewWacl() throws Throwable {
+	void getsFileUpdateNoNewWacl() throws Throwable {
 		// given:
 		setupFor(VANILLA_FILE_UPDATE_SCENARIO);
 
@@ -743,7 +752,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsFileUpdateImmutable() throws Throwable {
+	void getsFileUpdateImmutable() throws Throwable {
 		// given:
 		setupFor(IMMUTABLE_FILE_UPDATE_SCENARIO, WACL_ALWAYS_SIGNS);
 
@@ -755,7 +764,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsFileUpdateProtectedNoNewWacl() throws Throwable {
+	void getsFileUpdateProtectedNoNewWacl() throws Throwable {
 		// given:
 		setupFor(VANILLA_FILE_UPDATE_SCENARIO, WACL_NEVER_SIGNS);
 
@@ -767,7 +776,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsFileUpdateNewWacl() throws Throwable {
+	void getsFileUpdateNewWacl() throws Throwable {
 		// given:
 		setupFor(FILE_UPDATE_NEW_WACL_SCENARIO);
 
@@ -781,7 +790,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsFileUpdateProtectedNewWacl() throws Throwable {
+	void getsFileUpdateProtectedNewWacl() throws Throwable {
 		// given:
 		setupFor(FILE_UPDATE_NEW_WACL_SCENARIO, WACL_NEVER_SIGNS);
 
@@ -793,7 +802,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsFileDelete() throws Throwable {
+	void getsFileDelete() throws Throwable {
 		// given:
 		setupFor(VANILLA_FILE_DELETE_SCENARIO);
 
@@ -805,7 +814,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsFileDeleteProtected() throws Throwable {
+	void getsFileDeleteProtected() throws Throwable {
 		// given:
 		setupFor(VANILLA_FILE_DELETE_SCENARIO, WACL_NEVER_SIGNS);
 
@@ -817,7 +826,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsFileDeleteImmutable() throws Throwable {
+	void getsFileDeleteImmutable() throws Throwable {
 		// given:
 		setupFor(IMMUTABLE_FILE_DELETE_SCENARIO, WACL_ALWAYS_SIGNS);
 
@@ -829,7 +838,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsContractCreateNoAdminKey() throws Throwable {
+	void getsContractCreateNoAdminKey() throws Throwable {
 		// given:
 		setupFor(CONTRACT_CREATE_NO_ADMIN_KEY);
 
@@ -841,7 +850,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsContractCreateDeprecatedAdminKey() throws Throwable {
+	void getsContractCreateDeprecatedAdminKey() throws Throwable {
 		// given:
 		setupFor(CONTRACT_CREATE_DEPRECATED_CID_ADMIN_KEY);
 
@@ -853,7 +862,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsContractCreateWithAdminKey() throws Throwable {
+	void getsContractCreateWithAdminKey() throws Throwable {
 		// given:
 		setupFor(CONTRACT_CREATE_WITH_ADMIN_KEY);
 
@@ -865,7 +874,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsContractUpdateWithAdminKey() throws Throwable {
+	void getsContractUpdateWithAdminKey() throws Throwable {
 		// given:
 		setupFor(CONTRACT_UPDATE_WITH_NEW_ADMIN_KEY);
 
@@ -879,7 +888,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsContractUpdateNewExpirationTimeOnly() throws Throwable {
+	void getsContractUpdateNewExpirationTimeOnly() throws Throwable {
 		// given:
 		setupFor(CONTRACT_UPDATE_EXPIRATION_ONLY_SCENARIO);
 
@@ -891,7 +900,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsContractUpdateWithDeprecatedAdminKey() throws Throwable {
+	void getsContractUpdateWithDeprecatedAdminKey() throws Throwable {
 		// given:
 		setupFor(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_DEPRECATED_CID_ADMIN_KEY_SCENARIO);
 
@@ -903,7 +912,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsContractUpdateNewExpirationTimeAndAdminKey() throws Throwable {
+	void getsContractUpdateNewExpirationTimeAndAdminKey() throws Throwable {
 		// given:
 		setupFor(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_ADMIN_KEY_SCENARIO);
 
@@ -917,7 +926,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsContractUpdateNewExpirationTimeAndProxy() throws Throwable {
+	void getsContractUpdateNewExpirationTimeAndProxy() throws Throwable {
 		// given:
 		setupFor(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_PROXY_SCENARIO);
 
@@ -929,7 +938,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsContractUpdateNewExpirationTimeAndAutoRenew() throws Throwable {
+	void getsContractUpdateNewExpirationTimeAndAutoRenew() throws Throwable {
 		// given:
 		setupFor(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_AUTORENEW_SCENARIO);
 
@@ -941,7 +950,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsContractUpdateNewExpirationTimeAndFile() throws Throwable {
+	void getsContractUpdateNewExpirationTimeAndFile() throws Throwable {
 		// given:
 		setupFor(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_FILE_SCENARIO);
 
@@ -953,7 +962,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsContractUpdateNewExpirationTimeAndMemo() throws Throwable {
+	void getsContractUpdateNewExpirationTimeAndMemo() throws Throwable {
 		// given:
 		setupFor(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_MEMO);
 
@@ -965,7 +974,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void reportsInvalidContract() throws Throwable {
+	void reportsInvalidContract() throws Throwable {
 		// given:
 		setupFor(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_MEMO, INVALID_CONTRACT_THROWING_LOOKUP);
 		// and:
@@ -984,7 +993,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void reportsImmutableContract() throws Throwable {
+	void reportsImmutableContract() throws Throwable {
 		// given:
 		setupFor(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_MEMO, IMMUTABLE_CONTRACT_THROWING_LOOKUP);
 		// and:
@@ -1003,7 +1012,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsContractDelete() throws Throwable {
+	void getsContractDelete() throws Throwable {
 		// given:
 		setupFor(CONTRACT_DELETE_XFER_ACCOUNT_SCENARIO);
 
@@ -1016,7 +1025,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsContractDeleteContractXfer() throws Throwable {
+	void getsContractDeleteContractXfer() throws Throwable {
 		// given:
 		setupFor(CONTRACT_DELETE_XFER_CONTRACT_SCENARIO);
 
@@ -1029,7 +1038,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsSystemDelete() throws Throwable {
+	void getsSystemDelete() throws Throwable {
 		// given:
 		setupFor(SYSTEM_DELETE_FILE_SCENARIO);
 
@@ -1041,7 +1050,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsSystemUndelete() throws Throwable {
+	void getsSystemUndelete() throws Throwable {
 		// given:
 		setupFor(SYSTEM_UNDELETE_FILE_SCENARIO);
 
@@ -1053,7 +1062,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsConsensusCreateTopicNoAdminKeyOrAutoRenewAccount() throws Throwable {
+	void getsConsensusCreateTopicNoAdminKeyOrAutoRenewAccount() throws Throwable {
 		// given:
 		setupFor(CONSENSUS_CREATE_TOPIC_NO_ADDITIONAL_KEYS_SCENARIO);
 
@@ -1065,7 +1074,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsConsensusCreateTopicAdminKey() throws Throwable {
+	void getsConsensusCreateTopicAdminKey() throws Throwable {
 		// given:
 		setupFor(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_SCENARIO);
 
@@ -1077,7 +1086,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsConsensusCreateTopicAdminKeyAndAutoRenewAccount() throws Throwable {
+	void getsConsensusCreateTopicAdminKeyAndAutoRenewAccount() throws Throwable {
 		// given:
 		setupFor(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_SCENARIO);
 
@@ -1090,7 +1099,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void invalidAutoRenewAccountOnConsensusCreateTopicThrows() throws Throwable {
+	void invalidAutoRenewAccountOnConsensusCreateTopicThrows() throws Throwable {
 		// given:
 		setupFor(CONSENSUS_CREATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO);
 		// and:
@@ -1109,7 +1118,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsConsensusSubmitMessageNoSubmitKey() throws Throwable {
+	void getsConsensusSubmitMessageNoSubmitKey() throws Throwable {
 		// given:
 		setupFor(CONSENSUS_SUBMIT_MESSAGE_SCENARIO, hcsMetadataLookup(null, null));
 
@@ -1121,7 +1130,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsConsensusSubmitMessageWithSubmitKey() throws Throwable {
+	void getsConsensusSubmitMessageWithSubmitKey() throws Throwable {
 		// given:
 		setupFor(CONSENSUS_SUBMIT_MESSAGE_SCENARIO, hcsMetadataLookup(null, MISC_TOPIC_SUBMIT_KT.asJKey()));
 
@@ -1133,7 +1142,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void reportsConsensusSubmitMessageMissingTopic() throws Throwable {
+	void reportsConsensusSubmitMessageMissingTopic() throws Throwable {
 		// given:
 		setupFor(CONSENSUS_SUBMIT_MESSAGE_MISSING_TOPIC_SCENARIO);
 		// and:
@@ -1152,7 +1161,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsConsensusDeleteTopicNoAdminKey() throws Throwable {
+	void getsConsensusDeleteTopicNoAdminKey() throws Throwable {
 		// given:
 		setupFor(CONSENSUS_DELETE_TOPIC_SCENARIO, hcsMetadataLookup(null, null));
 
@@ -1164,7 +1173,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsConsensusDeleteTopicWithAdminKey() throws Throwable {
+	void getsConsensusDeleteTopicWithAdminKey() throws Throwable {
 		// given:
 		setupFor(CONSENSUS_DELETE_TOPIC_SCENARIO, hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
@@ -1176,7 +1185,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void reportsConsensusDeleteTopicMissingTopic() throws Throwable {
+	void reportsConsensusDeleteTopicMissingTopic() throws Throwable {
 		// given:
 		setupFor(CONSENSUS_DELETE_TOPIC_MISSING_TOPIC_SCENARIO);
 		// and:
@@ -1195,7 +1204,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsConsensusUpdateTopicNoAdminKey() throws Throwable {
+	void getsConsensusUpdateTopicNoAdminKey() throws Throwable {
 		// given:
 		setupFor(CONSENSUS_UPDATE_TOPIC_SCENARIO, hcsMetadataLookup(null, null));
 
@@ -1207,7 +1216,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsConsensusUpdateTopicWithExistingAdminKey() throws Throwable {
+	void getsConsensusUpdateTopicWithExistingAdminKey() throws Throwable {
 		// given:
 		setupFor(CONSENSUS_UPDATE_TOPIC_SCENARIO, hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
@@ -1219,7 +1228,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsConsensusUpdateTopicExpiryOnly() throws Throwable {
+	void getsConsensusUpdateTopicExpiryOnly() throws Throwable {
 		// given:
 		setupFor(CONSENSUS_UPDATE_TOPIC_EXPIRY_ONLY_SCENARIO,
 				hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
@@ -1232,7 +1241,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void reportsConsensusUpdateTopicMissingTopic() throws Throwable {
+	void reportsConsensusUpdateTopicMissingTopic() throws Throwable {
 		setupFor(CONSENSUS_UPDATE_TOPIC_MISSING_TOPIC_SCENARIO, hcsMetadataLookup(null, null));
 		// and:
 		aMockSummaryFactory();
@@ -1250,7 +1259,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void invalidAutoRenewAccountOnConsensusUpdateTopicThrows() throws Throwable {
+	void invalidAutoRenewAccountOnConsensusUpdateTopicThrows() throws Throwable {
 		// given:
 		setupFor(CONSENSUS_UPDATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO, hcsMetadataLookup(null, null));
 		// and:
@@ -1269,7 +1278,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsConsensusUpdateTopicNewAdminKey() throws Throwable {
+	void getsConsensusUpdateTopicNewAdminKey() throws Throwable {
 		// given:
 		setupFor(CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_SCENARIO, hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
@@ -1282,7 +1291,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsConsensusUpdateTopicNewAdminKeyAndAutoRenewAccount() throws Throwable {
+	void getsConsensusUpdateTopicNewAdminKeyAndAutoRenewAccount() throws Throwable {
 		// given:
 		setupFor(CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_SCENARIO,
 				hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
@@ -1296,7 +1305,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenCreateAdminKeyOnly() throws Throwable {
+	void getsTokenCreateAdminKeyOnly() throws Throwable {
 		// given:
 		setupFor(TOKEN_CREATE_WITH_ADMIN_ONLY);
 
@@ -1310,7 +1319,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenCreateAdminAndFreeze() throws Throwable {
+	void getsTokenCreateAdminAndFreeze() throws Throwable {
 		// given:
 		setupFor(TOKEN_CREATE_WITH_ADMIN_AND_FREEZE);
 
@@ -1379,7 +1388,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenCreateMissingAdmin() throws Throwable {
+	void getsTokenCreateMissingAdmin() throws Throwable {
 		// given:
 		setupFor(TOKEN_CREATE_MISSING_ADMIN);
 
@@ -1393,7 +1402,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenTransactAllSenders() throws Throwable {
+	void getsTokenTransactAllSenders() throws Throwable {
 		// given:
 		setupFor(TOKEN_TRANSACT_WITH_EXTANT_SENDERS);
 
@@ -1407,7 +1416,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenTransactMovingHbarsReceiverSigReq() throws Throwable {
+	void getsTokenTransactMovingHbarsReceiverSigReq() throws Throwable {
 		// given:
 		setupFor(TOKEN_TRANSACT_MOVING_HBARS_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDER);
 
@@ -1421,7 +1430,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenTransactMovingHbars() throws Throwable {
+	void getsTokenTransactMovingHbars() throws Throwable {
 		// given:
 		setupFor(TOKEN_TRANSACT_MOVING_HBARS_WITH_EXTANT_SENDER);
 
@@ -1435,7 +1444,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenTransactMissingSenders() throws Throwable {
+	void getsTokenTransactMissingSenders() throws Throwable {
 		// given:
 		setupFor(TOKEN_TRANSACT_WITH_MISSING_SENDERS);
 
@@ -1447,7 +1456,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenTransactWithReceiverSigReq() throws Throwable {
+	void getsTokenTransactWithReceiverSigReq() throws Throwable {
 		// given:
 		setupFor(TOKEN_TRANSACT_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDERS);
 
@@ -1464,7 +1473,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsAssociateWithKnownTarget() throws Throwable {
+	void getsAssociateWithKnownTarget() throws Throwable {
 		// given:
 		setupFor(TOKEN_ASSOCIATE_WITH_KNOWN_TARGET);
 
@@ -1478,7 +1487,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsAssociateWithMissingTarget() throws Throwable {
+	void getsAssociateWithMissingTarget() throws Throwable {
 		// given:
 		setupFor(TOKEN_ASSOCIATE_WITH_MISSING_TARGET);
 
@@ -1490,7 +1499,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsDissociateWithKnownTarget() throws Throwable {
+	void getsDissociateWithKnownTarget() throws Throwable {
 		// given:
 		setupFor(TOKEN_DISSOCIATE_WITH_KNOWN_TARGET);
 
@@ -1504,7 +1513,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsDissociateWithMissingTarget() throws Throwable {
+	void getsDissociateWithMissingTarget() throws Throwable {
 		// given:
 		setupFor(TOKEN_DISSOCIATE_WITH_MISSING_TARGET);
 
@@ -1516,7 +1525,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenFreezeWithExtantFreezable() throws Throwable {
+	void getsTokenFreezeWithExtantFreezable() throws Throwable {
 		// given:
 		setupFor(VALID_FREEZE_WITH_EXTANT_TOKEN);
 
@@ -1530,7 +1539,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenUnfreezeWithExtantFreezable() throws Throwable {
+	void getsTokenUnfreezeWithExtantFreezable() throws Throwable {
 		// given:
 		setupFor(VALID_UNFREEZE_WITH_EXTANT_TOKEN);
 
@@ -1544,7 +1553,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenGrantKycWithExtantFreezable() throws Throwable {
+	void getsTokenGrantKycWithExtantFreezable() throws Throwable {
 		// given:
 		setupFor(VALID_GRANT_WITH_EXTANT_TOKEN);
 
@@ -1558,7 +1567,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenRevokeKycWithExtantFreezable() throws Throwable {
+	void getsTokenRevokeKycWithExtantFreezable() throws Throwable {
 		// given:
 		setupFor(VALID_REVOKE_WITH_EXTANT_TOKEN);
 
@@ -1572,7 +1581,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenRevokeKycWithMissingToken() throws Throwable {
+	void getsTokenRevokeKycWithMissingToken() throws Throwable {
 		// given:
 		setupFor(REVOKE_WITH_MISSING_TOKEN);
 
@@ -1585,7 +1594,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenRevokeKycWithoutKyc() throws Throwable {
+	void getsTokenRevokeKycWithoutKyc() throws Throwable {
 		// given:
 		setupFor(REVOKE_FOR_TOKEN_WITHOUT_KYC);
 
@@ -1597,7 +1606,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenMintWithValidId() throws Throwable {
+	void getsTokenMintWithValidId() throws Throwable {
 		// given:
 		setupFor(MINT_WITH_SUPPLY_KEYED_TOKEN);
 
@@ -1611,7 +1620,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenBurnWithValidId() throws Throwable {
+	void getsTokenBurnWithValidId() throws Throwable {
 		// given:
 		setupFor(BURN_WITH_SUPPLY_KEYED_TOKEN);
 
@@ -1625,7 +1634,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenDeletionWithValidId() throws Throwable {
+	void getsTokenDeletionWithValidId() throws Throwable {
 		// given:
 		setupFor(DELETE_WITH_KNOWN_TOKEN);
 
@@ -1639,7 +1648,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenDeletionWithMissingToken() throws Throwable {
+	void getsTokenDeletionWithMissingToken() throws Throwable {
 		// given:
 		setupFor(DELETE_WITH_MISSING_TOKEN);
 
@@ -1652,7 +1661,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenDeletionWithNoAdminKey() throws Throwable {
+	void getsTokenDeletionWithNoAdminKey() throws Throwable {
 		// given:
 		setupFor(DELETE_WITH_MISSING_TOKEN_ADMIN_KEY);
 
@@ -1664,7 +1673,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenWipeWithRelevantKey() throws Throwable {
+	void getsTokenWipeWithRelevantKey() throws Throwable {
 		// given:
 		setupFor(VALID_WIPE_WITH_EXTANT_TOKEN);
 
@@ -1678,7 +1687,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsUpdateNoSpecialKeys() throws Throwable {
+	void getsUpdateNoSpecialKeys() throws Throwable {
 		// given:
 		setupFor(UPDATE_WITH_NO_KEYS_AFFECTED);
 
@@ -1692,7 +1701,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsUpdateWithWipe() throws Throwable {
+	void getsUpdateWithWipe() throws Throwable {
 		// given:
 		setupFor(UPDATE_WITH_WIPE_KEYED_TOKEN);
 
@@ -1706,7 +1715,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsUpdateWithSupply() throws Throwable {
+	void getsUpdateWithSupply() throws Throwable {
 		// given:
 		setupFor(UPDATE_WITH_SUPPLY_KEYED_TOKEN);
 
@@ -1720,7 +1729,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsUpdateWithKyc() throws Throwable {
+	void getsUpdateWithKyc() throws Throwable {
 		// given:
 		setupFor(UPDATE_WITH_KYC_KEYED_TOKEN);
 
@@ -1734,7 +1743,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsUpdateWithMissingTreasury() throws Throwable {
+	void getsUpdateWithMissingTreasury() throws Throwable {
 		// given:
 		setupFor(UPDATE_REPLACING_WITH_MISSING_TREASURY);
 
@@ -1747,7 +1756,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsUpdateWithNewTreasury() throws Throwable {
+	void getsUpdateWithNewTreasury() throws Throwable {
 		// given:
 		setupFor(UPDATE_REPLACING_TREASURY);
 
@@ -1761,7 +1770,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsUpdateWithFreeze() throws Throwable {
+	void getsUpdateWithFreeze() throws Throwable {
 		// given:
 		setupFor(UPDATE_WITH_FREEZE_KEYED_TOKEN);
 
@@ -1775,7 +1784,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsUpdateReplacingAdmin() throws Throwable {
+	void getsUpdateReplacingAdmin() throws Throwable {
 		// given:
 		setupFor(UPDATE_REPLACING_ADMIN_KEY);
 
@@ -1789,7 +1798,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenUpdateWithMissingToken() throws Throwable {
+	void getsTokenUpdateWithMissingToken() throws Throwable {
 		// given:
 		setupFor(UPDATE_WITH_MISSING_TOKEN);
 
@@ -1802,7 +1811,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenUpdateWithNoAdminKey() throws Throwable {
+	void getsTokenUpdateWithNoAdminKey() throws Throwable {
 		// given:
 		setupFor(UPDATE_WITH_MISSING_TOKEN_ADMIN_KEY);
 
@@ -1814,7 +1823,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenCreateWithAutoRenew() throws Throwable {
+	void getsTokenCreateWithAutoRenew() throws Throwable {
 		// given:
 		setupFor(TOKEN_CREATE_WITH_AUTO_RENEW);
 
@@ -1828,7 +1837,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenCreateWithMissingAutoRenew() throws Throwable {
+	void getsTokenCreateWithMissingAutoRenew() throws Throwable {
 		// given:
 		setupFor(TOKEN_CREATE_WITH_MISSING_AUTO_RENEW);
 
@@ -1842,7 +1851,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenUpdateWithAutoRenew() throws Throwable {
+	void getsTokenUpdateWithAutoRenew() throws Throwable {
 		// given:
 		setupFor(TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT);
 
@@ -1856,7 +1865,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenFeeScheduleUpdateWithMissingFeeScheduleKey() throws Throwable {
+	void getsTokenFeeScheduleUpdateWithMissingFeeScheduleKey() throws Throwable {
 		// given:
 		setupFor(UPDATE_TOKEN_WITH_NO_FEE_SCHEDULE_KEY);
 
@@ -1868,7 +1877,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenFeeScheduleUpdateWithMissingToken() throws Throwable {
+	void getsTokenFeeScheduleUpdateWithMissingToken() throws Throwable {
 		// given:
 		setupFor(UPDATE_TOKEN_FEE_SCHEDULE_BUT_TOKEN_DOESNT_EXIST);
 
@@ -1881,7 +1890,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorSigReq() throws Throwable {
+	void getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorSigReq() throws Throwable {
 		// given:
 		setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_MISSING_FEE_COLLECTOR);
 
@@ -1894,7 +1903,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenFeeScheduleUpdateWithFeeScheduleKey() throws Throwable {
+	void getsTokenFeeScheduleUpdateWithFeeScheduleKey() throws Throwable {
 		// given:
 		setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_SIG_REQ);
 
@@ -1908,7 +1917,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsTokenUpdateWithMissingAutoRenew() throws Throwable {
+	void getsTokenUpdateWithMissingAutoRenew() throws Throwable {
 		// given:
 		setupFor(TOKEN_CREATE_WITH_MISSING_AUTO_RENEW);
 
@@ -1922,7 +1931,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsScheduleCreateInvalidXfer() throws Throwable {
+	void getsScheduleCreateInvalidXfer() throws Throwable {
 		// given:
 		setupFor(SCHEDULE_CREATE_INVALID_XFER);
 
@@ -1935,7 +1944,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsScheduleCreateXferNoAdmin() throws Throwable {
+	void getsScheduleCreateXferNoAdmin() throws Throwable {
 		// given:
 		setupFor(SCHEDULE_CREATE_XFER_NO_ADMIN);
 
@@ -1952,7 +1961,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsScheduleCreateWithAdmin() throws Throwable {
+	void getsScheduleCreateWithAdmin() throws Throwable {
 		// given:
 		setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN);
 
@@ -1972,7 +1981,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsScheduleCreateWithMissingDesignatedPayer() throws Throwable {
+	void getsScheduleCreateWithMissingDesignatedPayer() throws Throwable {
 		// given:
 		setupFor(SCHEDULE_CREATE_XFER_WITH_MISSING_PAYER);
 
@@ -1985,7 +1994,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsScheduleCreateWithAdminAndDesignatedPayer() throws Throwable {
+	void getsScheduleCreateWithAdminAndDesignatedPayer() throws Throwable {
 		// given:
 		setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN_AND_PAYER);
 
@@ -2008,7 +2017,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsScheduleSignKnownScheduleWithPayer() throws Throwable {
+	void getsScheduleSignKnownScheduleWithPayer() throws Throwable {
 		// given:
 		setupFor(SCHEDULE_SIGN_KNOWN_SCHEDULE_WITH_PAYER);
 
@@ -2029,7 +2038,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsScheduleSignKnownScheduleWithNowInvalidPayer() throws Throwable {
+	void getsScheduleSignKnownScheduleWithNowInvalidPayer() throws Throwable {
 		// given:
 		setupFor(SCHEDULE_SIGN_KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER);
 
@@ -2042,7 +2051,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsScheduleSignKnownSchedule() throws Throwable {
+	void getsScheduleSignKnownSchedule() throws Throwable {
 		// given:
 		setupFor(SCHEDULE_SIGN_KNOWN_SCHEDULE);
 
@@ -2059,7 +2068,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsScheduleSignWithMissingSchedule() throws Throwable {
+	void getsScheduleSignWithMissingSchedule() throws Throwable {
 		// given:
 		setupFor(SCHEDULE_SIGN_MISSING_SCHEDULE);
 
@@ -2072,7 +2081,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsScheduleDeleteWithMissingSchedule() throws Throwable {
+	void getsScheduleDeleteWithMissingSchedule() throws Throwable {
 		// given:
 		setupFor(SCHEDULE_DELETE_WITH_MISSING_SCHEDULE);
 
@@ -2085,7 +2094,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsScheduleDeleteWithMissingAdminKey() throws Throwable {
+	void getsScheduleDeleteWithMissingAdminKey() throws Throwable {
 		// given:
 		setupFor(SCHEDULE_DELETE_WITH_MISSING_SCHEDULE_ADMIN_KEY);
 
@@ -2097,7 +2106,7 @@ class HederaSigningOrderTest {
 	}
 
 	@Test
-	 void getsScheduleDeleteKnownSchedule() throws Throwable {
+	void getsScheduleDeleteKnownSchedule() throws Throwable {
 		// given:
 		setupFor(SCHEDULE_DELETE_WITH_KNOWN_SCHEDULE);
 
@@ -2112,24 +2121,28 @@ class HederaSigningOrderTest {
 	private void setupFor(TxnHandlingScenario scenario) throws Throwable {
 		setupFor(scenario, WACL_ALWAYS_SIGNS);
 	}
+
 	private void setupFor(
 			TxnHandlingScenario scenario,
 			Predicate<TransactionBody> updateAccountSigns
 	) throws Throwable {
 		setupFor(scenario, WACL_ALWAYS_SIGNS, updateAccountSigns);
 	}
+
 	private void setupFor(
 			TxnHandlingScenario scenario,
 			BiPredicate<TransactionBody, HederaFunctionality> waclSigns
 	) throws Throwable {
 		setupFor(scenario, waclSigns, UPDATE_ACCOUNT_ALWAYS_SIGNS);
 	}
+
 	private void setupFor(
 			TxnHandlingScenario scenario,
 			SigMetadataLookup sigMetadataLookup
 	) throws Throwable {
 		setupFor(scenario, WACL_ALWAYS_SIGNS, UPDATE_ACCOUNT_ALWAYS_SIGNS, Optional.of(sigMetadataLookup));
 	}
+
 	private void setupFor(
 			TxnHandlingScenario scenario,
 			BiPredicate<TransactionBody, HederaFunctionality> waclSigns,
@@ -2137,6 +2150,7 @@ class HederaSigningOrderTest {
 	) throws Throwable {
 		setupFor(scenario, waclSigns, updateAccountSigns, Optional.empty());
 	}
+
 	private void setupFor(
 			TxnHandlingScenario scenario,
 			BiPredicate<TransactionBody, HederaFunctionality> waclSigns,
@@ -2165,12 +2179,14 @@ class HederaSigningOrderTest {
 	}
 
 	private void aMockSummaryFactory() {
-		mockSummaryFactory = (SigningOrderResultFactory<SignatureStatus>)mock(SigningOrderResultFactory.class);
+		mockSummaryFactory = (SigningOrderResultFactory<SignatureStatus>) mock(SigningOrderResultFactory.class);
 	}
 
 	private SigMetadataLookup hcsMetadataLookup(JKey adminKey, JKey submitKey) {
 		return new DelegatingSigMetadataLookup(
-				FileAdapter.with(id -> { throw new Exception(); }),
+				FileAdapter.with(id -> {
+					throw new Exception();
+				}),
 				AccountAdapter.withSafe(id -> {
 					if (id.equals(asAccount(MISC_ACCOUNT_ID))) {
 						try {
@@ -2200,9 +2216,10 @@ class HederaSigningOrderTest {
 		return jKeys.stream().map(jKey -> {
 					try {
 						return JKey.mapJKey(jKey);
-					} catch (Exception ignore) { }
+					} catch (Exception ignore) {
+					}
 					throw new AssertionError("All keys should be mappable!");
 				}
-			).collect(toList());
+		).collect(toList());
 	}
 }
