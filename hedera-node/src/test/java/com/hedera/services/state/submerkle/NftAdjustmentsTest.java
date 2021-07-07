@@ -94,7 +94,7 @@ class NftAdjustmentsTest {
 		NftAdjustments adjustments = new NftAdjustments();
 		assertEquals(adjustments, subject);
 		assertEquals(subject, same);
-		assertNotEquals(subject, null);
+		assertNotEquals(null, subject);
 	}
 
 	@Test

@@ -504,58 +504,80 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			if (feeCollectorValidity != OK) {
 				return INVALID_CUSTOM_FEE_COLLECTOR;
 			}
-
+			ResponseCodeEnum responseCode;
 			if (customFee.hasFixedFee()) {
-				final var fixedFee = customFee.getFixedFee();
-				if (fixedFee.getAmount() <= 0) {
-					return CUSTOM_FEE_MUST_BE_POSITIVE;
-				}
-				if (fixedFee.hasDenominatingTokenId()) {
-					final var denom = fixedFee.getDenominatingTokenId();
-					if (resolve(denom) == MISSING_TOKEN) {
-						return INVALID_TOKEN_ID_IN_CUSTOM_FEES;
-					}
-					final var merkleToken = get(denom);
-					if (merkleToken.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE) {
-						return CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
-					}
-					if (!associationExists(feeCollector, denom)) {
-						return TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
-					}
+				responseCode = validateFixedFee(customFee, feeCollector);
+				if (responseCode != OK) {
+					return responseCode;
 				}
 			} else if (customFee.hasFractionalFee()) {
-				if (!isFeeScheduleUpdate) {
-					if (pendingCreation.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE) {
-						return CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
-					}
-				} else {
-					if (targetToken.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE) {
-						return CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
-					}
-					if (!associationExists(feeCollector, targetTokenId)) {
-						return TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
-					}
-				}
-				final var fractionalSpec = customFee.getFractionalFee();
-				final var fraction = fractionalSpec.getFractionalAmount();
-				if (fraction.getDenominator() == 0) {
-					return FRACTION_DIVIDES_BY_ZERO;
-				}
-				if (!areValidPositiveNumbers(fraction.getNumerator(), fraction.getDenominator())) {
-					return CUSTOM_FEE_MUST_BE_POSITIVE;
-				}
-				if (fractionalSpec.getMaximumAmount() < 0 || fractionalSpec.getMinimumAmount() < 0) {
-					return CUSTOM_FEE_MUST_BE_POSITIVE;
-				}
-				if (fractionalSpec.getMaximumAmount() > 0 &&
-						fractionalSpec.getMaximumAmount() < fractionalSpec.getMinimumAmount()) {
-					return FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
+				responseCode = validateFractionalFee(customFee, isFeeScheduleUpdate, targetToken, targetTokenId,
+						feeCollector);
+				if (responseCode != OK) {
+					return responseCode;
 				}
 			} else {
 				return CUSTOM_FEE_NOT_FULLY_SPECIFIED;
 			}
 		}
 
+		return OK;
+	}
+
+	private ResponseCodeEnum validateFractionalFee(CustomFee customFee,
+			boolean isFeeScheduleUpdate,
+			MerkleToken targetToken,
+			TokenID targetTokenId,
+			AccountID feeCollector) {
+		if (!isFeeScheduleUpdate) {
+			if (pendingCreation.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE) {
+				return CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
+			}
+		} else {
+			if (targetToken.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE) {
+				return CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
+			}
+			if (!associationExists(feeCollector, targetTokenId)) {
+				return TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
+			}
+		}
+		final var fractionalSpec = customFee.getFractionalFee();
+		final var fraction = fractionalSpec.getFractionalAmount();
+		if (fraction.getDenominator() == 0) {
+			return FRACTION_DIVIDES_BY_ZERO;
+		}
+		if (!areValidPositiveNumbers(fraction.getNumerator(), fraction.getDenominator()) ||
+				fractionalSpec.getMaximumAmount() < 0 ||
+				fractionalSpec.getMinimumAmount() < 0) {
+			return CUSTOM_FEE_MUST_BE_POSITIVE;
+		}
+		if (fractionalSpec.getMaximumAmount() > 0 &&
+				fractionalSpec.getMaximumAmount() < fractionalSpec.getMinimumAmount()) {
+			return FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
+		}
+		return OK;
+	}
+
+
+	private ResponseCodeEnum validateFixedFee(CustomFee customFee,
+			AccountID feeCollector) {
+		final var fixedFee = customFee.getFixedFee();
+		if (fixedFee.getAmount() <= 0) {
+			return CUSTOM_FEE_MUST_BE_POSITIVE;
+		}
+		if (fixedFee.hasDenominatingTokenId()) {
+			final var denom = fixedFee.getDenominatingTokenId();
+			if (resolve(denom) == MISSING_TOKEN) {
+				return INVALID_TOKEN_ID_IN_CUSTOM_FEES;
+			}
+			final var merkleToken = get(denom);
+			if (merkleToken.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE) {
+				return CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
+			}
+			if (!associationExists(feeCollector, denom)) {
+				return TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
+			}
+		}
 		return OK;
 	}
 
