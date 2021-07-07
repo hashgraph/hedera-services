@@ -9,9 +9,9 @@ package com.hedera.services.pricing;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -64,13 +64,16 @@ class BaseOperationUsage {
 
 	private static final TokenOpsUsage TOKEN_OPS_USAGE = new TokenOpsUsage();
 	private static final ConsensusOpsUsage CONSENSUS_OPS_USAGE = new ConsensusOpsUsage();
+	private static final String NOT_IMPLEMENTED = "Not implemented!";
 
 	/**
 	 * Returns the total resource usage for the base configuration of the given
 	 * type of the given operation.
 	 *
-	 * @param function the operation of interest
-	 * @param type the type of interest
+	 * @param function
+	 * 		the operation of interest
+	 * @param type
+	 * 		the type of interest
 	 * @return the total resource usage of the base configuration
 	 */
 	UsageAccumulator baseUsageFor(HederaFunctionality function, SubType type) {
@@ -89,6 +92,9 @@ class BaseOperationUsage {
 				return submitMessage();
 			case TokenFeeScheduleUpdate:
 				return feeScheduleUpdate();
+			default:
+				throw new IllegalArgumentException("Canonical usage unknown");
+
 		}
 
 		throw new IllegalArgumentException("Canonical usage unknown");
@@ -132,14 +138,14 @@ class BaseOperationUsage {
 	}
 
 	private UsageAccumulator hbarCryptoTransfer() {
-		throw new AssertionError("Not implemented!");
+		throw new AssertionError(NOT_IMPLEMENTED);
 	}
 
 	private UsageAccumulator htsCryptoTransfer() {
-		throw new AssertionError("Not implemented!");
+		throw new AssertionError(NOT_IMPLEMENTED);
 	}
 
 	private UsageAccumulator nftCryptoTransfer() {
-		throw new AssertionError("Not implemented!");
+		throw new AssertionError(NOT_IMPLEMENTED);
 	}
 }

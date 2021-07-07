@@ -211,7 +211,7 @@ class TokenControllerTest {
 	}
 
 	@Test
-	public void forwardsAccountNftInfosAsExpected() {
+	void forwardsAccountNftInfosAsExpected() {
 		// when:
 		subject.getAccountNftInfos(query, queryObserver);
 
@@ -220,7 +220,7 @@ class TokenControllerTest {
 	}
 
 	@Test
-	public void forwardsFeeScheduleUpdate() {
+	void forwardsFeeScheduleUpdate() {
 		// when:
 		subject.updateTokenFeeSchedule(txn, txnObserver);
 
