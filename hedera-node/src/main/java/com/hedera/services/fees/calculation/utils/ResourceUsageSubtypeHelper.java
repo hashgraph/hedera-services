@@ -2,7 +2,7 @@ package com.hedera.services.fees.calculation.utils;
 
 /*-
  * ‌
- * Hedera Services API Fees
+ * Hedera Services Node
  * ​
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
@@ -25,6 +25,9 @@ import com.hederahashgraph.api.proto.java.TokenType;
 
 import java.util.Optional;
 
+/**
+ * A helper class used for determining the subtype of the token, involved in fee calculation.
+ */
 public class ResourceUsageSubtypeHelper {
 	public SubType determineTokenType(Optional<TokenType> tokenType) {
 		if (tokenType.isPresent()) {

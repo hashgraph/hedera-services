@@ -40,6 +40,7 @@ import org.mockito.Mockito;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.List;
+
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MAX_ASSESSED_CUSTOM_FEES_CHANGES;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MAX_INVOLVED_TOKENS;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.UNKNOWN_SUBMITTING_MEMBER;
@@ -68,8 +69,8 @@ class ExpirableTxnRecordTest {
 	AccountID beneficiary = IdUtils.asAccount("1.2.6");
 	AccountID magician = IdUtils.asAccount("1.2.7");
 
-	EntityId feeCollector = new EntityId(1,2,8);
-	EntityId token = new EntityId(1,2,9);
+	EntityId feeCollector = new EntityId(1, 2, 8);
+	EntityId token = new EntityId(1, 2, 9);
 	long units = 123L;
 
 	TokenTransferList aTokenTransfers = TokenTransferList.newBuilder()
@@ -309,14 +310,16 @@ class ExpirableTxnRecordTest {
 				"txnHash=6e6f742d7265616c6c792d612d68617368, txnId=TxnId{payer=EntityId{shard=0, realm=0, num=0}, " +
 				"validStart=RichInstant{seconds=9999999999, nanos=0}, scheduled=false}, " +
 				"consensusTimestamp=RichInstant{seconds=9999999999, nanos=0}, expiry=1234567, submittingMember=1, " +
-				"memo=Alpha bravo charlie, contractCreation=SolidityFnResult{gasUsed=55, bloom=, result=, error=null, " +
+				"memo=Alpha bravo charlie, contractCreation=SolidityFnResult{gasUsed=55, bloom=, result=, error=null," +
+				" " +
 				"contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[], " +
 				"logs=[SolidityLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}]}, " +
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, tokenAdjustments=1.2.3(CurrencyAdjustments{" +
 				"readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), 1.2.4(CurrencyAdjustments{" +
 				"readable=[1.2.5 -> -1, 1.2.6 <- +1, 1.2.7 <- +1000]}), assessedCustomFees=(" +
-				"FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=9}, account=EntityId{shard=1, realm=2, num=8}, " +
+				"FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=9}, account=EntityId{shard=1, realm=2, " +
+				"num=8}, " +
 				"units=123})}";
 
 		// expect:

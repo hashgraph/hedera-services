@@ -124,7 +124,6 @@ import static java.util.stream.Collectors.toList;
  * Provides a managing store for arbitrary tokens.
  */
 public class HederaTokenStore extends HederaStore implements TokenStore {
-
 	static final TokenID NO_PENDING_ID = TokenID.getDefaultInstance();
 
 	static Predicate<Key> REMOVES_ADMIN_KEY = ImmutableKeyUtils::signalsKeyRemoval;

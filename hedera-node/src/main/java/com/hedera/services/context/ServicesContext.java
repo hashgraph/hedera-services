@@ -90,6 +90,7 @@ import com.hedera.services.fees.calculation.system.txns.FreezeResourceUsage;
 import com.hedera.services.fees.calculation.token.queries.GetAccountNftInfosResourceUsage;
 import com.hedera.services.fees.calculation.token.queries.GetTokenInfoResourceUsage;
 import com.hedera.services.fees.calculation.token.queries.GetTokenNftInfoResourceUsage;
+import com.hedera.services.fees.calculation.token.queries.GetTokenNftInfosResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenAssociateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenBurnResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenCreateResourceUsage;
@@ -191,6 +192,7 @@ import com.hedera.services.queries.schedule.ScheduleAnswers;
 import com.hedera.services.queries.token.GetAccountNftInfosAnswer;
 import com.hedera.services.queries.token.GetTokenInfoAnswer;
 import com.hedera.services.queries.token.GetTokenNftInfoAnswer;
+import com.hedera.services.queries.token.GetTokenNftInfosAnswer;
 import com.hedera.services.queries.token.TokenAnswers;
 import com.hedera.services.queries.validation.QueryFeeCheck;
 import com.hedera.services.records.AccountRecordsHistorian;
@@ -583,15 +585,8 @@ public class ServicesContext {
 	private ValidatingCallbackInterceptor applicationPropertiesReloading;
 	private Supplier<ServicesRepositoryRoot> newPureRepo;
 	private Map<TransactionID, TxnIdRecentHistory> txnHistories;
-	private AtomicReference<FCMap<MerkleEntityId, MerkleTopic>> queryableTopics;
-	private AtomicReference<FCMap<MerkleEntityId, MerkleToken>> queryableTokens;
-	private AtomicReference<FCMap<MerkleEntityId, MerkleAccount>> queryableAccounts;
-	private AtomicReference<FCMap<MerkleEntityId, MerkleSchedule>> queryableSchedules;
-	private AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage;
-	private AtomicReference<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> queryableUniqueTokens;
-	private AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations;
-	private AtomicReference<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> queryableUniqueTokenAssociations;
-	private AtomicReference<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> queryableUniqueOwnershipAssociations;
+	private StateChildren workingState = new StateChildren();
+	private AtomicReference<StateChildren> queryableState = new AtomicReference<>(new StateChildren());
 
 	/* Context-free infrastructure. */
 	private static Pause pause;
@@ -616,20 +611,62 @@ public class ServicesContext {
 		this.platform = platform;
 		this.state = state;
 		this.propertySources = propertySources;
+
+		updateWorkingState(state);
+		updateQueryableState(state);
 	}
 
+	/**
+	 * Update the state and working state based on the provided service state
+	 *
+	 * @param state
+	 * 		latest state from the services
+	 */
 	public void update(ServicesState state) {
 		this.state = state;
 
-		queryableAccounts().set(accounts());
-		queryableTopics().set(topics());
-		queryableStorage().set(storage());
-		queryableTokens().set(tokens());
-		queryableTokenAssociations().set(tokenAssociations());
-		queryableSchedules().set(schedules());
-		queryableUniqueTokens().set(uniqueTokens());
-		queryableUniqueTokenAssociations().set(uniqueTokenAssociations());
-		queryableUniqueOwnershipAssociations().set(uniqueOwnershipAssociations());
+		updateWorkingState(state);
+		updateQueryableState(state);
+	}
+
+	/**
+	 * Update the queryable state
+	 */
+	private void updateQueryableState(ServicesState state) {
+		final StateChildren newQueryableStateChildren = new StateChildren();
+
+		newQueryableStateChildren.setAccounts(state.accounts());
+		newQueryableStateChildren.setTopics(state.topics());
+		newQueryableStateChildren.setStorage(state.storage());
+		newQueryableStateChildren.setTokens(state.tokens());
+		newQueryableStateChildren.setTokenAssociations(state.tokenAssociations());
+		newQueryableStateChildren.setSchedules(state.scheduleTxs());
+		newQueryableStateChildren.setUniqueTokens(state.uniqueTokens());
+		newQueryableStateChildren.setUniqueTokenAssociations(state.uniqueTokenAssociations());
+		newQueryableStateChildren.setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
+
+		queryableState.set(newQueryableStateChildren);
+	}
+
+	/**
+	 * Update the working state when given the state
+	 *
+	 * @param state
+	 * 		to set for the working state
+	 */
+	private void updateWorkingState(ServicesState state) {
+		workingState.setAccounts(state.accounts());
+		workingState.setTopics(state.topics());
+		workingState.setStorage(state.storage());
+		workingState.setTokens(state.tokens());
+		workingState.setTokenAssociations(state.tokenAssociations());
+		workingState.setSchedules(state.scheduleTxs());
+		workingState.setNetworkCtx(state.networkCtx());
+		workingState.setAddressBook(state.addressBook());
+		workingState.setDiskFs(state.diskFs());
+		workingState.setUniqueTokens(state.uniqueTokens());
+		workingState.setUniqueTokenAssociations(state.uniqueTokenAssociations());
+		workingState.setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
 	}
 
 	public SwirldDualState getDualState() {
@@ -863,13 +900,13 @@ public class ServicesContext {
 			stateViews = () -> new StateView(
 					tokenStore(),
 					scheduleStore(),
-					() -> queryableTopics().get(),
-					() -> queryableAccounts().get(),
-					() -> queryableStorage().get(),
-					() -> queryableUniqueTokens().get(),
-					() -> queryableTokenAssociations().get(),
-					() -> queryableUniqueTokenAssociations().get(),
-					() -> queryableUniqueOwnershipAssociations().get(),
+					() -> queryableState.get().getTopics(),
+					() -> queryableState.get().getAccounts(),
+					() -> queryableState.get().getStorage(),
+					() -> queryableState.get().getUniqueTokens(),
+					() -> queryableState.get().getTokenAssociations(),
+					() -> queryableState.get().getUniqueTokenAssociations(),
+					() -> queryableState.get().getUniqueOwnershipAssociations(),
 					this::diskFs,
 					nodeLocalProperties());
 		}
@@ -1043,6 +1080,7 @@ public class ServicesContext {
 			tokenAnswers = new TokenAnswers(
 					new GetTokenInfoAnswer(),
 					new GetTokenNftInfoAnswer(),
+					new GetTokenNftInfosAnswer(validator()),
 					new GetAccountNftInfosAnswer(validator())
 			);
 		}
@@ -1124,6 +1162,7 @@ public class ServicesContext {
 							new GetScheduleInfoResourceUsage(scheduleOpsUsage),
 							/* NftInfo */
 							new GetTokenNftInfoResourceUsage(),
+							new GetTokenNftInfosResourceUsage(),
 							new GetAccountNftInfosResourceUsage()
 					),
 					txnUsageEstimators(
@@ -1332,8 +1371,13 @@ public class ServicesContext {
 		return hfs;
 	}
 
+	/**
+	 * Get the current special file system from working state disk fs
+	 *
+	 * @return current working state disk fs
+	 */
 	MerkleDiskFs getCurrentSpecialFileSystem() {
-		return this.state.diskFs();
+		return this.workingState.getDiskFs();
 	}
 
 	public SoliditySigsVerifier soliditySigsVerifier() {
@@ -1461,7 +1505,8 @@ public class ServicesContext {
 						List.of(new TokenBurnTransitionLogic(validator(), accountStore(), typedTokenStore(),
 								txnCtx()))),
 				entry(TokenAccountWipe,
-						List.of(new TokenWipeTransitionLogic(tokenStore(), txnCtx()))),
+						List.of(new TokenWipeTransitionLogic(validator(), typedTokenStore(), accountStore(),
+								txnCtx()))),
 				entry(TokenAssociateToAccount,
 						List.of(new TokenAssociateTransitionLogic(
 								accountStore(), typedTokenStore(), txnCtx(), globalDynamicProperties()))),
@@ -2065,69 +2110,6 @@ public class ServicesContext {
 		return address;
 	}
 
-	public AtomicReference<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> queryableStorage() {
-		if (queryableStorage == null) {
-			queryableStorage = new AtomicReference<>(storage());
-		}
-		return queryableStorage;
-	}
-
-	public AtomicReference<FCMap<MerkleEntityId, MerkleAccount>> queryableAccounts() {
-		if (queryableAccounts == null) {
-			queryableAccounts = new AtomicReference<>(accounts());
-		}
-		return queryableAccounts;
-	}
-
-	public AtomicReference<FCMap<MerkleEntityId, MerkleTopic>> queryableTopics() {
-		if (queryableTopics == null) {
-			queryableTopics = new AtomicReference<>(topics());
-		}
-		return queryableTopics;
-	}
-
-	public AtomicReference<FCMap<MerkleEntityId, MerkleToken>> queryableTokens() {
-		if (queryableTokens == null) {
-			queryableTokens = new AtomicReference<>(tokens());
-		}
-		return queryableTokens;
-	}
-
-	public AtomicReference<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> queryableTokenAssociations() {
-		if (queryableTokenAssociations == null) {
-			queryableTokenAssociations = new AtomicReference<>(tokenAssociations());
-		}
-		return queryableTokenAssociations;
-	}
-
-	public AtomicReference<FCMap<MerkleEntityId, MerkleSchedule>> queryableSchedules() {
-		if (queryableSchedules == null) {
-			queryableSchedules = new AtomicReference<>(schedules());
-		}
-		return queryableSchedules;
-	}
-
-	public AtomicReference<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> queryableUniqueTokens() {
-		if (queryableUniqueTokens == null) {
-			queryableUniqueTokens = new AtomicReference<>(uniqueTokens());
-		}
-		return queryableUniqueTokens;
-	}
-
-	public AtomicReference<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> queryableUniqueTokenAssociations() {
-		if (queryableUniqueTokenAssociations == null) {
-			queryableUniqueTokenAssociations = new AtomicReference<>(uniqueTokenAssociations());
-		}
-		return queryableUniqueTokenAssociations;
-	}
-
-	public AtomicReference<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> queryableUniqueOwnershipAssociations() {
-		if (queryableUniqueOwnershipAssociations == null) {
-			queryableUniqueOwnershipAssociations = new AtomicReference<>(uniqueOwnershipAssociations());
-		}
-		return queryableUniqueOwnershipAssociations;
-	}
-
 	public UsagePricesProvider usagePrices() {
 		if (usagePrices == null) {
 			usagePrices = new AwareFcfsUsagePrices(hfs(), fileNums(), txnCtx());
@@ -2191,52 +2173,111 @@ public class ServicesContext {
 		return propertySources;
 	}
 
+	/**
+	 * Get consensus time of last handled transaction
+	 *
+	 * @return instant representing last handled transaction from working state
+	 */
 	public Instant consensusTimeOfLastHandledTxn() {
-		return state.networkCtx().consensusTimeOfLastHandledTxn();
+		return workingState.getNetworkCtx().consensusTimeOfLastHandledTxn();
 	}
 
 	public void updateConsensusTimeOfLastHandledTxn(Instant dataDrivenNow) {
 		state.networkCtx().setConsensusTimeOfLastHandledTxn(dataDrivenNow);
 	}
 
+	/**
+	 * Get the working state of address book
+	 *
+	 * @return current working state address book
+	 */
 	public AddressBook addressBook() {
-		return state.addressBook();
+		return workingState.getAddressBook();
 	}
 
+	/**
+	 * Get the working state network ctx and extract sequence number
+	 *
+	 * @return sequence number from the current working state network ctx
+	 */
 	public SequenceNumber seqNo() {
-		return state.networkCtx().seqNo();
+		return workingState.getNetworkCtx().seqNo();
 	}
 
+	/**
+	 * Get the working state network ctx and extract the last scanned entity
+	 *
+	 * @return last scanned entity from the current working state network ctx
+	 */
 	public long lastScannedEntity() {
-		return state.networkCtx().lastScannedEntity();
+		return workingState.getNetworkCtx().lastScannedEntity();
 	}
 
 	public void updateLastScannedEntity(long lastScannedEntity) {
 		state.networkCtx().updateLastScannedEntity(lastScannedEntity);
 	}
 
+	/**
+	 * Gets the working state of network ctx and extracts midnight rates
+	 *
+	 * @return current working state network ctx midnight rates
+	 */
 	public ExchangeRates midnightRates() {
-		return state.networkCtx().midnightRates();
+		return workingState.getNetworkCtx().midnightRates();
 	}
 
+	/**
+	 * Gets the working state of the accounts
+	 *
+	 * @return current working state of accounts
+	 */
 	public FCMap<MerkleEntityId, MerkleAccount> accounts() {
-		return state.accounts();
+		return workingState.getAccounts();
 	}
 
+	/**
+	 * Gets the working state of the topics
+	 *
+	 * @return current working state of topics
+	 */
 	public FCMap<MerkleEntityId, MerkleTopic> topics() {
-		return state.topics();
+		return workingState.getTopics();
 	}
 
+	/**
+	 * Gets the working state of storage
+	 *
+	 * @return current working state of storage
+	 */
 	public FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage() {
-		return state.storage();
+		return workingState.getStorage();
 	}
 
+	/**
+	 * Gets the working state of tokens
+	 *
+	 * @return current working state of tokens
+	 */
 	public FCMap<MerkleEntityId, MerkleToken> tokens() {
-		return state.tokens();
+		return workingState.getTokens();
 	}
 
+	/**
+	 * Gets the working state of token associations
+	 *
+	 * @return current working state of token associations
+	 */
 	public FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations() {
-		return state.tokenAssociations();
+		return workingState.getTokenAssociations();
+	}
+
+	/**
+	 * Gets the working state of schedules
+	 *
+	 * @return current working state of schedules
+	 */
+	public FCMap<MerkleEntityId, MerkleSchedule> schedules() {
+		return workingState.getSchedules();
 	}
 
 	public FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens() {
@@ -2251,16 +2292,22 @@ public class ServicesContext {
 		return state.uniqueOwnershipAssociations();
 	}
 
-	public FCMap<MerkleEntityId, MerkleSchedule> schedules() {
-		return state.scheduleTxs();
-	}
-
+	/**
+	 * Get the working state of disk fs
+	 *
+	 * @return current working state of disk fs
+	 */
 	public MerkleDiskFs diskFs() {
-		return state.diskFs();
+		return workingState.getDiskFs();
 	}
 
+	/**
+	 * Get the working state of network ctx
+	 *
+	 * @return current working state of network ctx
+	 */
 	public MerkleNetworkContext networkCtx() {
-		return state.networkCtx();
+		return workingState.getNetworkCtx();
 	}
 
 	/**

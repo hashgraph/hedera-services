@@ -80,6 +80,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreeze
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetAccountNftInfos;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetNftInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetNftInfos;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
@@ -168,6 +169,7 @@ public class PermissionFileUtils {
 		permissionKeys.put(TokenGetInfo, "tokenGetInfo");
 		permissionKeys.put(ScheduleGetInfo, "scheduleGetInfo");
 		permissionKeys.put(TokenGetNftInfo, "tokenGetNftInfo");
+		permissionKeys.put(TokenGetNftInfos, "tokenGetNftInfos");
 		permissionKeys.put(TokenGetAccountNftInfos, "tokenGetAccountNftInfos");
 		permissionKeys.put(TokenFeeScheduleUpdate, "tokenFeeScheduleUpdate");
 

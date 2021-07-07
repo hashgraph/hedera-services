@@ -106,7 +106,7 @@ public class ImpliedTransfersMarshal {
 						return ImpliedTransfers.invalid(validationProps, CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE);
 					}
 				}
-                        }
+			}
 			for (var oc : scopedTransfers.getNftTransfersList()) {
 				changes.add(changingNftOwnership(scopingToken, grpcTokenId, oc));
 			}
@@ -135,8 +135,8 @@ public class ImpliedTransfersMarshal {
 	private List<BalanceChange> computeBalanceChangeForCustomFee(
 			Id scopingToken,
 			Id payerId,
-			long totalAmount, 
-                        List<FcCustomFee> feeSchedule,
+			long totalAmount,
+			List<FcCustomFee> feeSchedule,
 			Map<Pair<Id, Id>, BalanceChange> existingBalanceChanges,
 			List<FcAssessedCustomFee> assessedCustomFees
 	) {
@@ -255,7 +255,8 @@ public class ImpliedTransfersMarshal {
 					tokenAdjust(payerId, spec.getTokenDenomination().asId(), -unitsToCollect),
 					true);
 			assessedCustomFees.add(
-					new FcAssessedCustomFee(fees.getFeeCollectorAccountId(), spec.getTokenDenomination(), unitsToCollect));
+					new FcAssessedCustomFee(fees.getFeeCollectorAccountId(), spec.getTokenDenomination(),
+							unitsToCollect));
 		}
 	}
 

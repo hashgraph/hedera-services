@@ -26,8 +26,8 @@ import org.junit.jupiter.api.Test;
 import static com.hederahashgraph.fee.FeeBuilder.KEY_SIZE;
 import static org.junit.Assert.assertEquals;
 
-public class ScheduleEntitySizesTest {
-	ScheduleEntitySizes subject = ScheduleEntitySizes.SCHEDULE_ENTITY_SIZES;
+class ScheduleEntitySizesTest {
+	private ScheduleEntitySizes subject = ScheduleEntitySizes.SCHEDULE_ENTITY_SIZES;
 
 	@Test
 	void estimatesSigsAsExpected() {

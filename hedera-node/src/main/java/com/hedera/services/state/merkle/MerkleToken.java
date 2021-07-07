@@ -485,6 +485,10 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		return supplyKey;
 	}
 
+	public JKey getWipeKey() {
+		return wipeKey;
+	}
+
 	public JKey getKycKey() {
 		return kycKey;
 	}
@@ -513,7 +517,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		return lastUsedSerialNumber;
 	}
 
-	public void setLastUsedSerialNumber(long serialNum){
+	public void setLastUsedSerialNumber(long serialNum) {
 		this.lastUsedSerialNumber = serialNum;
 	}
 
@@ -529,7 +533,9 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		this.tokenType = TokenType.values()[tokenTypeInt];
 	}
 
-	public TokenSupplyType supplyType() { return supplyType; }
+	public TokenSupplyType supplyType() {
+		return supplyType;
+	}
 
 	public void setSupplyType(TokenSupplyType supplyType) {
 		this.supplyType = supplyType;

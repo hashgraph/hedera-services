@@ -459,7 +459,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		}
 
 		if (assessedCustomFees != NO_CUSTOM_FEES) {
-			grpc.addAllAssessedCustomFees(assessedCustomFees.stream().map(FcAssessedCustomFee::toGrpc).collect(toList()));
+			grpc.addAllAssessedCustomFees(
+					assessedCustomFees.stream().map(FcAssessedCustomFee::toGrpc).collect(toList()));
 		}
 
 		return grpc.build();

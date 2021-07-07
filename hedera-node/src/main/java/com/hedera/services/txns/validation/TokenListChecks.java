@@ -53,92 +53,92 @@ public class TokenListChecks {
 	}
 
 
-    public static ResponseCodeEnum typeCheck(TokenType type, long initialSupply, int decimals) {
-        switch (type) {
-            case FUNGIBLE_COMMON:
-                return fungibleCommonTypeCheck(initialSupply, decimals);
-            case NON_FUNGIBLE_UNIQUE:
-                return nonFungibleUniqueCheck(initialSupply, decimals);
-            default:
-                return NOT_SUPPORTED;
-        }
-    }
+	public static ResponseCodeEnum typeCheck(TokenType type, long initialSupply, int decimals) {
+		switch (type) {
+			case FUNGIBLE_COMMON:
+				return fungibleCommonTypeCheck(initialSupply, decimals);
+			case NON_FUNGIBLE_UNIQUE:
+				return nonFungibleUniqueCheck(initialSupply, decimals);
+			default:
+				return NOT_SUPPORTED;
+		}
+	}
 
-    public static ResponseCodeEnum nonFungibleUniqueCheck(long initialSupply, int decimals) {
-        if (initialSupply != 0) {
-            return INVALID_TOKEN_INITIAL_SUPPLY;
-        }
+	public static ResponseCodeEnum nonFungibleUniqueCheck(long initialSupply, int decimals) {
+		if (initialSupply != 0) {
+			return INVALID_TOKEN_INITIAL_SUPPLY;
+		}
 
-        return decimals != 0 ? INVALID_TOKEN_DECIMALS : OK;
-    }
+		return decimals != 0 ? INVALID_TOKEN_DECIMALS : OK;
+	}
 
-    public static ResponseCodeEnum fungibleCommonTypeCheck(long initialSupply, int decimals) {
-        if (initialSupply < 0) {
-            return INVALID_TOKEN_INITIAL_SUPPLY;
-        }
+	public static ResponseCodeEnum fungibleCommonTypeCheck(long initialSupply, int decimals) {
+		if (initialSupply < 0) {
+			return INVALID_TOKEN_INITIAL_SUPPLY;
+		}
 
-        return decimals < 0 ? INVALID_TOKEN_DECIMALS : OK;
-    }
+		return decimals < 0 ? INVALID_TOKEN_DECIMALS : OK;
+	}
 
-    public static ResponseCodeEnum suppliesCheck(long initialSupply, long maxSupply) {
-        if (maxSupply > 0 && initialSupply > maxSupply) {
-            return INVALID_TOKEN_INITIAL_SUPPLY;
-        }
+	public static ResponseCodeEnum suppliesCheck(long initialSupply, long maxSupply) {
+		if (maxSupply > 0 && initialSupply > maxSupply) {
+			return INVALID_TOKEN_INITIAL_SUPPLY;
+		}
 
-        return OK;
-    }
+		return OK;
+	}
 
-    public static ResponseCodeEnum supplyTypeCheck(TokenSupplyType supplyType, long maxSupply) {
-        switch (supplyType) {
-            case INFINITE:
-                return maxSupply != 0 ? INVALID_TOKEN_MAX_SUPPLY : OK;
-            case FINITE:
-                return maxSupply <= 0 ? INVALID_TOKEN_MAX_SUPPLY : OK;
-            default:
-                return NOT_SUPPORTED;
-        }
-    }
+	public static ResponseCodeEnum supplyTypeCheck(TokenSupplyType supplyType, long maxSupply) {
+		switch (supplyType) {
+			case INFINITE:
+				return maxSupply != 0 ? INVALID_TOKEN_MAX_SUPPLY : OK;
+			case FINITE:
+				return maxSupply <= 0 ? INVALID_TOKEN_MAX_SUPPLY : OK;
+			default:
+				return NOT_SUPPORTED;
+		}
+	}
 
-    public static ResponseCodeEnum checkKeys(
-            boolean hasAdminKey, Key adminKey,
-            boolean hasKycKey, Key kycKey,
-            boolean hasWipeKey, Key wipeKey,
-            boolean hasSupplyKey, Key supplyKey,
-            boolean hasFreezeKey, Key freezeKey,
-            boolean hasFeeScheduleKey, Key feeScheduleKey
-    ) {
-        ResponseCodeEnum validity = OK;
+	public static ResponseCodeEnum checkKeys(
+			boolean hasAdminKey, Key adminKey,
+			boolean hasKycKey, Key kycKey,
+			boolean hasWipeKey, Key wipeKey,
+			boolean hasSupplyKey, Key supplyKey,
+			boolean hasFreezeKey, Key freezeKey,
+			boolean hasFeeScheduleKey, Key feeScheduleKey
+	) {
+		ResponseCodeEnum validity = OK;
 
-        if (hasAdminKey && !ADMIN_KEY_REMOVAL.test(adminKey)) {
-            if ((validity = checkKey(adminKey, INVALID_ADMIN_KEY)) != OK) {
-                return validity;
-            }
-        }
-        if (hasKycKey) {
-            if ((validity = checkKey(kycKey, INVALID_KYC_KEY)) != OK) {
-                return validity;
-            }
-        }
-        if (hasWipeKey) {
-            if ((validity = checkKey(wipeKey, INVALID_WIPE_KEY)) != OK) {
-                return validity;
-            }
-        }
-        if (hasSupplyKey) {
-            if ((validity = checkKey(supplyKey, INVALID_SUPPLY_KEY)) != OK) {
-                return validity;
-            }
-        }
-        if (hasFreezeKey) {
-            if ((validity = checkKey(freezeKey, INVALID_FREEZE_KEY)) != OK) {
-                return validity;
-            }
-        }
-        if (hasFeeScheduleKey) {
-            if ((validity = checkKey(feeScheduleKey, INVALID_CUSTOM_FEE_SCHEDULE_KEY)) != OK) {
-                return validity;
-            }
-        }
+		if (hasAdminKey && !ADMIN_KEY_REMOVAL.test(adminKey)) {
+			if ((validity = checkKey(adminKey, INVALID_ADMIN_KEY)) != OK) {
+				return validity;
+			}
+		}
+		if (hasKycKey) {
+			if ((validity = checkKey(kycKey, INVALID_KYC_KEY)) != OK) {
+				return validity;
+			}
+		}
+		if (hasWipeKey) {
+			if ((validity = checkKey(wipeKey, INVALID_WIPE_KEY)) != OK) {
+				return validity;
+			}
+		}
+		if (hasSupplyKey) {
+			if ((validity = checkKey(supplyKey, INVALID_SUPPLY_KEY)) != OK) {
+				return validity;
+			}
+		}
+		if (hasFreezeKey) {
+			if ((validity = checkKey(freezeKey, INVALID_FREEZE_KEY)) != OK) {
+				return validity;
+			}
+		}
+		if (hasFeeScheduleKey) {
+			if ((validity = checkKey(feeScheduleKey, INVALID_CUSTOM_FEE_SCHEDULE_KEY)) != OK) {
+				return validity;
+			}
+		}
 
 		return validity;
 	}

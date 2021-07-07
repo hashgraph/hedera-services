@@ -23,9 +23,9 @@ package com.hedera.services.grpc.marshalling;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -245,13 +245,16 @@ class ImpliedTransfersMarshalTest {
 		final var twoImpliedXfers = ImpliedTransfers.valid(
 				validationProps, twoChanges, entityCustomFees, assessedCustomFees);
 		// and:
-		final var oneRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=TOKEN_WAS_DELETED, maxExplicitHbarAdjusts=5, " +
+		final var oneRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=TOKEN_WAS_DELETED, " +
+				"maxExplicitHbarAdjusts=5, " +
 				"maxExplicitTokenAdjusts=50, maxExplicitOwnershipChanges=12, tokenFeeSchedules=[]}, changes=[], " +
 				"tokenFeeSchedules=[], assessedCustomFees=[]}";
 		final var twoRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=OK, maxExplicitHbarAdjusts=5, " +
 				"maxExplicitTokenAdjusts=50, maxExplicitOwnershipChanges=12, tokenFeeSchedules=[(Id{shard=0, " +
 				"realm=0, num=123},[])]}, changes=[BalanceChange{token=Id{shard=1, realm=2, num=3}, " +
-				"account=Id{shard=4, realm=5, num=6}, units=7}], tokenFeeSchedules=[(Id{shard=0, realm=0, num=123},[])], " +
+				"account=Id{shard=4, realm=5, num=6}, units=7}], tokenFeeSchedules=[(Id{shard=0, realm=0, num=123}," +
+				"[])" +
+				"], " +
 				"assessedCustomFees=[FcAssessedCustomFee{token=EntityId{shard=0, realm=0, num=123}, " +
 				"account=EntityId{shard=0, realm=0, num=124}, units=123}]}";
 

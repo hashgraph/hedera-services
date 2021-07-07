@@ -73,7 +73,7 @@ class GetAccountNftInfosResourceUsageTest {
     GetAccountNftInfosResourceUsage subject;
 
     @BeforeEach
-    public void setup() {
+    private void setup() {
         expected = mock(FeeData.class);
         view = mock(StateView.class);
         estimator = mock(TokenGetAccountNftInfosUsage.class);

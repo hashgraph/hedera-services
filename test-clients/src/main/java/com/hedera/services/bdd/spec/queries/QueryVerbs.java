@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.queries;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,6 +38,7 @@ import com.hedera.services.bdd.spec.queries.schedule.HapiGetScheduleInfo;
 import com.hedera.services.bdd.spec.queries.token.HapiGetAccountNftInfos;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenNftInfo;
+import com.hedera.services.bdd.spec.queries.token.HapiGetTokenNftInfos;
 import com.hederahashgraph.api.proto.java.TransactionID;
 
 import java.util.function.Function;
@@ -49,6 +50,7 @@ public class QueryVerbs {
 	public static HapiGetReceipt getReceipt(String txn) {
 		return new HapiGetReceipt(txn);
 	}
+
 	public static HapiGetReceipt getReceipt(TransactionID txnId) {
 		return new HapiGetReceipt(txnId);
 	}
@@ -56,9 +58,11 @@ public class QueryVerbs {
 	public static HapiGetFileInfo getFileInfo(String file) {
 		return new HapiGetFileInfo(file);
 	}
+
 	public static HapiGetFileInfo getFileInfo(Supplier<String> supplier) {
 		return new HapiGetFileInfo(supplier);
 	}
+
 	public static HapiGetFileContents getFileContents(String file) {
 		return new HapiGetFileContents(file);
 	}
@@ -66,6 +70,7 @@ public class QueryVerbs {
 	public static HapiGetAccountInfo getAccountInfo(String account) {
 		return new HapiGetAccountInfo(account);
 	}
+
 	public static HapiGetAccountRecords getAccountRecords(String account) {
 		return new HapiGetAccountRecords(account);
 	}
@@ -73,6 +78,7 @@ public class QueryVerbs {
 	public static HapiGetTxnRecord getTxnRecord(String txn) {
 		return new HapiGetTxnRecord(txn);
 	}
+
 	public static HapiGetTxnRecord getTxnRecord(TransactionID txnId) {
 		return new HapiGetTxnRecord(txnId);
 	}
@@ -80,15 +86,19 @@ public class QueryVerbs {
 	public static HapiGetContractInfo getContractInfo(String contract) {
 		return new HapiGetContractInfo(contract);
 	}
+
 	public static HapiGetContractInfo getContractInfo(String contract, boolean idPredefined) {
 		return new HapiGetContractInfo(contract, idPredefined);
 	}
+
 	public static HapiGetContractBytecode getContractBytecode(String contract) {
 		return new HapiGetContractBytecode(contract);
 	}
+
 	public static HapiGetContractRecords getContractRecords(String contract) {
 		return new HapiGetContractRecords(contract);
 	}
+
 	public static HapiContractCallLocal callContractLocal(String contract) {
 		return new HapiContractCallLocal(contract);
 	}
@@ -96,9 +106,11 @@ public class QueryVerbs {
 	public static HapiContractCallLocal contractCallLocal(String contract, String abi, Object... params) {
 		return new HapiContractCallLocal(abi, contract, params);
 	}
+
 	public static HapiContractCallLocal contractCallLocalFrom(String details) {
 		return fromDetails(details);
 	}
+
 	public static HapiContractCallLocal contractCallLocal(
 			String contract, String abi, Function<HapiApiSpec, Object[]> fn
 	) {
@@ -108,6 +120,7 @@ public class QueryVerbs {
 	public static HapiGetAccountBalance getAccountBalance(String account) {
 		return new HapiGetAccountBalance(account);
 	}
+
 	public static HapiGetAccountBalance getAccountBalance(Supplier<String> supplier) {
 		return new HapiGetAccountBalance(supplier);
 	}
@@ -130,6 +143,10 @@ public class QueryVerbs {
 
 	public static HapiGetTokenNftInfo getTokenNftInfo(String token, long serialNum) {
 		return new HapiGetTokenNftInfo(token, serialNum);
+	}
+
+	public static HapiGetTokenNftInfos getTokenNftInfos(String token, long start, long end) {
+		return new HapiGetTokenNftInfos(token, start, end);
 	}
 
 	public static HapiGetAccountNftInfos getAccountNftInfos(String account, long start, long end) {

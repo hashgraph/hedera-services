@@ -66,8 +66,8 @@ public class ImpliedTransfersMeta {
 	public boolean wasDerivedFrom(GlobalDynamicProperties dynamicProperties, CustomFeeSchedules customFeeSchedules) {
 		final var validationParamsMatch =
 				(validationProps.maxHbarAdjusts == dynamicProperties.maxTransferListSize()) &&
-				(validationProps.maxTokenAdjusts == dynamicProperties.maxTokenTransferListSize()) &&
-				(validationProps.maxOwnershipChanges == dynamicProperties.maxNftTransfersLen());
+						(validationProps.maxTokenAdjusts == dynamicProperties.maxTokenTransferListSize()) &&
+						(validationProps.maxOwnershipChanges == dynamicProperties.maxNftTransfersLen());
 		if (!validationParamsMatch) {
 			return false;
 		}

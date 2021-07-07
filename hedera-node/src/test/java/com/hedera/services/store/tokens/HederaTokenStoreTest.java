@@ -153,6 +153,7 @@ class HederaTokenStoreTest {
 	private EntityIdSource ids;
 	private GlobalDynamicProperties properties;
 	private FCMap<MerkleEntityId, MerkleToken> tokens;
+	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens;
 	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAccountOwnerships;
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
@@ -209,7 +210,7 @@ class HederaTokenStoreTest {
 			.setDenominatingTokenId(misc)
 			.setAmount(100)
 			.build();
-	private FixedFee fixedFeeInNFTUnits = FixedFee.newBuilder()
+	private FixedFee fixedFeeInNftUnits = FixedFee.newBuilder()
 			.setDenominatingTokenId(nonfungible)
 			.setAmount(100)
 			.build();
@@ -240,9 +241,9 @@ class HederaTokenStoreTest {
 			customFixedFeeInHts,
 			customFractionalFee
 	);
-	private List<CustomFee> grpcNTFasDenominatingToken = List.of(
+	private List<CustomFee> grpcNftAsDenominatingToken = List.of(
 			CustomFee.newBuilder().setFeeCollectorAccountId(feeCollector)
-					.setFixedFee(fixedFeeInNFTUnits).build()
+					.setFixedFee(fixedFeeInNftUnits).build()
 	);
 	private List<CustomFee> grpcUnderspecifiedCustomFees = List.of(
 			CustomFee.newBuilder().setFeeCollectorAccountId(feeCollector).build()
@@ -400,6 +401,7 @@ class HederaTokenStoreTest {
 		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
 		given(tokens.get(fromTokenId(nonfungible))).willReturn(nonfungibleToken);
 
+		uniqueTokens = (FCMap<MerkleUniqueTokenId, MerkleUniqueToken>) mock(FCMap.class);
 		uniqueTokenAccountOwnerships = (FCOneToManyRelation<EntityId, MerkleUniqueTokenId>) mock(
 				FCOneToManyRelation.class);
 
@@ -1844,8 +1846,8 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	void rejectsNFTasCustomFeeDenomination() {
-		final var req = fullyValidTokenCreateAttempt().addAllCustomFees(grpcNTFasDenominatingToken).build();
+	void rejectsNftAsCustomFeeDenomination() {
+		final var req = fullyValidTokenCreateAttempt().addAllCustomFees(grpcNftAsDenominatingToken).build();
 
 		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
 
@@ -1869,7 +1871,7 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	void rejectsFrationalFeeInCustomFeeWhenCreatingNFT() {
+	void rejectsFractionalFeeInCustomFeeWhenCreatingNft() {
 		final var req = fullyValidTokenCreateAttempt()
 				.setTokenType(com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE).build();
 
@@ -2000,7 +2002,6 @@ class HederaTokenStoreTest {
 		assertEquals(CUSTOM_FEE_MUST_BE_POSITIVE, result.getStatus());
 		assertTrue(result.getCreated().isEmpty());
 	}
-
 
 	@Test
 	void happyPathWorksWithAutoRenew() {

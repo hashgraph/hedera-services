@@ -20,6 +20,9 @@ package com.hedera.services.store.models;
  * ‍
  */
 
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.test.utils.IdUtils;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -27,14 +30,12 @@ import static org.junit.jupiter.api.Assertions.*;
 class IdTest {
 	@Test
 	void hashCodeDiscriminates() {
-		// given:
 		final var aId = new Id(1, 2, 3);
 		final var bId = new Id(0,2, 3);
 		final var cId = new Id(1, 0, 3);
 		final var dId = new Id(1, 2, 0);
 		final var eId = new Id(1, 2, 3);
 
-		// expect:
 		assertNotEquals(bId.hashCode(), aId.hashCode());
 		assertNotEquals(cId.hashCode(), aId.hashCode());
 		assertNotEquals(dId.hashCode(), aId.hashCode());
@@ -43,21 +44,50 @@ class IdTest {
 
 	@Test
 	void equalsDiscriminates() {
-		// given:
 		final var aId = new Id(1, 2, 3);
 		final var bId = new Id(0,2, 3);
 		final var cId = new Id(1, 0, 3);
 		final var dId = new Id(1, 2, 0);
 		final var eId = new Id(1, 2, 3);
 
-		// expect:
 		assertNotEquals(bId, aId);
 		assertNotEquals(cId, aId);
 		assertNotEquals(dId, aId);
 		assertEquals(eId, aId);
-		// and:
 		assertNotEquals(aId, null);
 		assertNotEquals(aId, new Object());
 		assertEquals(aId, aId);
+	}
+
+	@Test
+	void conversionsWork() {
+		final var id = new Id(1, 2, 3);
+		final var entityId = new EntityId(1, 2, 3);
+		final var merkleEntityId = new MerkleEntityId(1, 2, 3);
+		final var grpcAccount = IdUtils.asAccount("1.2.3");
+		final var grpcToken = IdUtils.asToken("1.2.3");
+
+		assertEquals(entityId, id.asEntityId());
+		assertEquals(merkleEntityId, id.asMerkle());
+		assertEquals(grpcAccount, id.asGrpcAccount());
+		assertEquals(grpcToken, id.asGrpcToken());
+		assertEquals(id, Id.fromGrpcAccount(grpcAccount));
+		assertEquals(id, Id.fromGrpcToken(grpcToken));
+	}
+
+	@Test
+	void gettersWork() {
+		final var id = new Id(11, 22, 33);
+
+		assertEquals(11, id.getShard());
+		assertEquals(22, id.getRealm());
+		assertEquals(33, id.getNum());
+	}
+
+	@Test
+	void toStringWorks() {
+		final var id = new Id(4, 5, 6);
+
+		assertEquals("Id{shard=4, realm=5, num=6}", id.toString());
 	}
 }

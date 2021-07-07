@@ -33,8 +33,8 @@ import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 public class CryptoGetInfoUsage extends QueryUsage {
 	private CryptoGetInfoUsage(Query query) {
 		super(query.getCryptoGetInfo().getHeader().getResponseType());
-		updateTb(BASIC_ENTITY_ID_SIZE);
-		updateRb(CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr());
+		addTb(BASIC_ENTITY_ID_SIZE);
+		addRb(CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr());
 	}
 
 	public static CryptoGetInfoUsage newEstimate(Query query) {
@@ -42,22 +42,22 @@ public class CryptoGetInfoUsage extends QueryUsage {
 	}
 
 	public CryptoGetInfoUsage givenCurrentKey(Key key) {
-		updateRb(getAccountKeyStorageSize(key));
+		addRb(getAccountKeyStorageSize(key));
 		return this;
 	}
 
 	public CryptoGetInfoUsage givenCurrentMemo(String memo) {
-		updateRb(memo.getBytes(Charset.forName("UTF-8")).length);
+		addRb(memo.getBytes(Charset.forName("UTF-8")).length);
 		return this;
 	}
 
 	public CryptoGetInfoUsage givenCurrentTokenAssocs(int count) {
-		updateRb(count * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr());
+		addRb(count * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr());
 		return this;
 	}
 
 	public CryptoGetInfoUsage givenCurrentlyUsingProxy() {
-		updateRb(BASIC_ENTITY_ID_SIZE);
+		addRb(BASIC_ENTITY_ID_SIZE);
 		return this;
 	}
 }

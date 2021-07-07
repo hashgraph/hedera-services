@@ -1,16 +1,16 @@
 package com.hedera.services.store.models;
 
-/*-
+/*
  * ‌
- * Hedera Services API Fees
+ * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,13 +27,11 @@ import java.util.Map;
 
 /**
  * Encapsulates the changes of {@link UniqueToken} ownership within the context of one Transaction
- *
  */
 public class OwnershipTracker {
-
 	private Map<Id, List<Change>> changes = new HashMap<>();
 
-	public void add(Id token, Change change) {
+	public void add(final Id token, final Change change) {
 		if (changes.containsKey(token)) {
 			changes.get(token).add(change);
 		} else {
@@ -43,65 +41,46 @@ public class OwnershipTracker {
 		}
 	}
 
-	public Map<Id, List<Change>> getChanges() { return changes; }
-
-	public boolean isEmpty() { return changes.isEmpty(); }
-
-	public static Change fromMinting(Id treasury, long serialNumber) {
-		var change = new Change();
-		change.setPreviousOwner(Id.DEFAULT);
-		change.setNewOwner(treasury);
-		change.setSerialNumber(serialNumber);
-		return change;
+	public Map<Id, List<Change>> getChanges() {
+		return changes;
 	}
 
-	public static Change fromBurning(Id treasury, long serialNumber) {
-		Change change = new Change();
-		change.setNewOwner(Id.DEFAULT);
-		change.setPreviousOwner(treasury);
-		change.setSerialNumber(serialNumber);
-		return change;
+	public boolean isEmpty() {
+		return changes.isEmpty();
+	}
+
+	public static Change forMinting(final Id treasury, final long serialNumber) {
+		return new Change(Id.DEFAULT, treasury, serialNumber);
+	}
+
+	public static Change forRemoving(final Id accountId, final long serialNumber) {
+		return new Change(accountId, Id.DEFAULT, serialNumber);
 	}
 
 	/**
 	 * Encapsulates one set of Change of a given {@link UniqueToken}
 	 */
 	public static class Change {
-
 		private Id previousOwner;
 		private Id newOwner;
 		private long serialNumber;
 
-		public Change(Id previousOwner, Id newOwner, long serialNumber) {
+		public Change(final Id previousOwner, final Id newOwner, final long serialNumber) {
 			this.previousOwner = previousOwner;
 			this.newOwner = newOwner;
 			this.serialNumber = serialNumber;
 		}
 
-		public Change() { }
-
 		public Id getPreviousOwner() {
 			return previousOwner;
-		}
-
-		public void setPreviousOwner(Id previousOwner) {
-			this.previousOwner = previousOwner;
 		}
 
 		public Id getNewOwner() {
 			return newOwner;
 		}
 
-		public void setNewOwner(Id newOwner) {
-			this.newOwner = newOwner;
-		}
-
 		public long getSerialNumber() {
 			return serialNumber;
-		}
-
-		public void setSerialNumber(long serialNumber) {
-			this.serialNumber = serialNumber;
 		}
 	}
 }
