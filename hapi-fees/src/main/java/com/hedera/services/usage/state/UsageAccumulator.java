@@ -9,9 +9,9 @@ package com.hedera.services.usage.state;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -181,6 +181,8 @@ public class UsageAccumulator {
 						return getNetworkRbh();
 					case CONSTANT:
 						return 1;
+					default:
+						throw new IllegalArgumentException("Network type usage unknown");
 				}
 			case NODE:
 				switch (resource) {
@@ -194,6 +196,8 @@ public class UsageAccumulator {
 						return getNodeVpt();
 					case CONSTANT:
 						return 1;
+					default:
+						throw new IllegalArgumentException("Node type usage unknown");
 				}
 			case SERVICE:
 				switch (resource) {
@@ -203,6 +207,8 @@ public class UsageAccumulator {
 						return getServiceSbh();
 					case CONSTANT:
 						return 1;
+					default:
+						throw new IllegalArgumentException("Service type usage unknown");
 				}
 		}
 		return 0L;
