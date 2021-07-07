@@ -182,7 +182,7 @@ public class UsageAccumulator {
 					case CONSTANT:
 						return 1;
 					default:
-						return 0;
+						return 0L;
 				}
 			case NODE:
 				switch (resource) {
@@ -197,7 +197,7 @@ public class UsageAccumulator {
 					case CONSTANT:
 						return 1;
 					default:
-						return 0;
+						return 0L;
 				}
 			case SERVICE:
 				switch (resource) {
@@ -208,7 +208,7 @@ public class UsageAccumulator {
 					case CONSTANT:
 						return 1;
 					default:
-						return 0;
+						return 0L;
 				}
 		}
 		return 0L;
