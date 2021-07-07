@@ -76,17 +76,17 @@ public class TokenManagementSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
 				List.of(new HapiApiSpec[] {
-//								freezeMgmtFailureCasesWork(),
-//								freezeMgmtSuccessCasesWork(),
-//								kycMgmtFailureCasesWork(),
-//								kycMgmtSuccessCasesWork(),
-//								supplyMgmtSuccessCasesWork(),
-//								wipeAccountFailureCasesWork(),
-//								wipeAccountSuccessCasesWork(),
+								freezeMgmtFailureCasesWork(),
+								freezeMgmtSuccessCasesWork(),
+								kycMgmtFailureCasesWork(),
+								kycMgmtSuccessCasesWork(),
+								supplyMgmtSuccessCasesWork(),
+								wipeAccountFailureCasesWork(),
+								wipeAccountSuccessCasesWork(),
 								supplyMgmtFailureCasesWork(),
-//								burnTokenFailsDueToInsufficientTreasuryBalance(),
-//								frozenTreasuryCannotBeMintedOrBurned(),
-//								revokedKYCTreasuryCannotBeMintedOrBurned(),
+								burnTokenFailsDueToInsufficientTreasuryBalance(),
+								frozenTreasuryCannotBeMintedOrBurned(),
+								revokedKYCTreasuryCannotBeMintedOrBurned(),
 						}
 				)
 		);

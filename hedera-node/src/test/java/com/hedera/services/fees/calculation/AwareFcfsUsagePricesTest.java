@@ -330,14 +330,13 @@ class AwareFcfsUsagePricesTest {
 		assertEquals(1, xferTypedPricesMap.size());
 		assertEquals(2, mintTypedPricesMap.size());
 		assertEquals(2, burnTypedPricesMap.size());
-		assertEquals(3, wipeTypedPricesMap.size());
+		assertEquals(2, wipeTypedPricesMap.size());
 		// and:
 		assertEquals(currUsagePrices, xferTypedPricesMap.get(SubType.DEFAULT));
 		assertEquals(currUsagePrices, mintTypedPricesMap.get(SubType.TOKEN_FUNGIBLE_COMMON));
 		assertEquals(currUsagePrices, mintTypedPricesMap.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE));
 		assertEquals(currUsagePrices, burnTypedPricesMap.get(SubType.TOKEN_FUNGIBLE_COMMON));
 		assertEquals(currUsagePrices, burnTypedPricesMap.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE));
-		assertEquals(currUsagePrices, wipeTypedPricesMap.get(SubType.DEFAULT));
 		assertEquals(currUsagePrices, wipeTypedPricesMap.get(SubType.TOKEN_FUNGIBLE_COMMON));
 		assertEquals(currUsagePrices, wipeTypedPricesMap.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE));
 	}

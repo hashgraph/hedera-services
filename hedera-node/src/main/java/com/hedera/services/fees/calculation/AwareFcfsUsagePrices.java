@@ -32,7 +32,6 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
-import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -210,9 +209,6 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 				if (FUNCTIONS_WITH_TOKEN_TYPE_SPECIALIZATIONS.contains(function)) {
 					map.put(SubType.TOKEN_FUNGIBLE_COMMON, untypedPrices);
 					map.put(SubType.TOKEN_NON_FUNGIBLE_UNIQUE, untypedPrices);
-					if (function == TokenAccountWipe) {
-						map.put(SubType.DEFAULT, untypedPrices);
-					}
 				} else {
 					map.put(SubType.DEFAULT, untypedPrices);
 				}
