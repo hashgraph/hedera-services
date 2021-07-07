@@ -38,7 +38,7 @@ class TokenGetNftInfoUsageTest {
 	private String memo = "Hope";
 	private NftID id = IdUtils.asNftID("0.0.75231", 1);
 
-	TokenGetNftInfoUsage subject;
+	private TokenGetNftInfoUsage subject;
 
 	@BeforeEach
 	void setup() {

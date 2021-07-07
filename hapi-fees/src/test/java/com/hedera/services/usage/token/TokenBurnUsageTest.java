@@ -50,20 +50,20 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 class TokenBurnUsageTest {
-	long now = 1_234_567L;
-	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
-	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
-	TokenID id = IdUtils.asToken("0.0.75231");
+	private long now = 1_234_567L;
+	private int numSigs = 3, sigSize = 100, numPayerKeys = 1;
+	private SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
+	private TokenID id = IdUtils.asToken("0.0.75231");
 
-	TokenBurnTransactionBody op;
-	TransactionBody txn;
+	private TokenBurnTransactionBody op;
+	private TransactionBody txn;
 
-	EstimatorFactory factory;
-	TxnUsageEstimator base;
-	TokenBurnUsage subject;
+	private EstimatorFactory factory;
+	private TxnUsageEstimator base;
+	private TokenBurnUsage subject;
 
 	@BeforeEach
-	void setUp() {
+	void setUp() throws Exception {
 		base = mock(TxnUsageEstimator.class);
 		given(base.get()).willReturn(A_USAGES_MATRIX);
 

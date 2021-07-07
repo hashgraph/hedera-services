@@ -50,21 +50,21 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-public class TokenWipeUsageTest {
-	long now = 1_234_567L;
-	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
-	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
-	TokenID id = IdUtils.asToken("0.0.75231");
+class TokenWipeUsageTest {
+	private long now = 1_234_567L;
+	private int numSigs = 3, sigSize = 100, numPayerKeys = 1;
+	private SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
+	private TokenID id = IdUtils.asToken("0.0.75231");
 
-	TransactionBody txn;
-	TokenWipeAccountTransactionBody op;
+	private TransactionBody txn;
+	private TokenWipeAccountTransactionBody op;
 
-	EstimatorFactory factory;
-	TxnUsageEstimator base;
-	TokenWipeUsage subject;
+	private EstimatorFactory factory;
+	private TxnUsageEstimator base;
+	private TokenWipeUsage subject;
 
 	@BeforeEach
-	public void setUp() throws Exception {
+	void setUp() throws Exception {
 		base = mock(TxnUsageEstimator.class);
 		given(base.get()).willReturn(A_USAGES_MATRIX);
 
@@ -75,7 +75,7 @@ public class TokenWipeUsageTest {
 	}
 
 	@Test
-	public void createsExpectedDelta() {
+	void createsExpectedDelta() {
 		givenOp();
 		// and:
 		subject = TokenWipeUsage.newEstimate(txn, sigUsage).givenSubType(SubType.TOKEN_FUNGIBLE_COMMON);

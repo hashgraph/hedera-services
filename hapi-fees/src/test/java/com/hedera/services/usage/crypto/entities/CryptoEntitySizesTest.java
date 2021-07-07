@@ -28,16 +28,16 @@ import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class CryptoEntitySizesTest {
-	CryptoEntitySizes subject = CRYPTO_ENTITY_SIZES;
+	private CryptoEntitySizes subject = CRYPTO_ENTITY_SIZES;
 
 	@Test
-	public void knowsExpectedFixedBytes() {
+	void knowsExpectedFixedBytes() {
 		// expect:
 		assertEquals(3 * BOOL_SIZE + 5 * LONG_SIZE, subject.fixedBytesInAccountRepr());
 	}
 
 	@Test
-	public void knowsTotalBytes() {
+	void knowsTotalBytes() {
 		// when:
 		var actual = subject.bytesInTokenAssocRepr();
 

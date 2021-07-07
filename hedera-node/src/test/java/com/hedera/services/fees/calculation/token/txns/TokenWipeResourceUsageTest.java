@@ -50,16 +50,16 @@ class TokenWipeResourceUsageTest {
 	private TransactionBody nonTokenWipeTxn;
 	private TransactionBody tokenWipeTxn;
 
-	StateView view;
-	int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
-	SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
-	SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
-	FeeData expected;
+	private StateView view;
+	private int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
+	private SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
+	private SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
+	private FeeData expected;
 
-	TokenWipeUsage usage;
-	BiFunction<TransactionBody, SigUsage, TokenWipeUsage> factory;
-	TokenWipeAccountTransactionBody txBody;
-	TokenID token;
+	private TokenWipeUsage usage;
+	private BiFunction<TransactionBody, SigUsage, TokenWipeUsage> factory;
+	private TokenWipeAccountTransactionBody txBody;
+	private TokenID token;
 
 	@BeforeEach
 	private void setup() throws Throwable {
@@ -90,14 +90,14 @@ class TokenWipeResourceUsageTest {
 	}
 
 	@Test
-	public void recognizesApplicability() {
+	void recognizesApplicability() {
 		// expect:
 		assertTrue(subject.applicableTo(tokenWipeTxn));
 		assertFalse(subject.applicableTo(nonTokenWipeTxn));
 	}
 
 	@Test
-	public void delegatesToCorrectEstimate() throws Exception {
+	void delegatesToCorrectEstimate() throws Exception {
 		/// expect:
 		given(view.tokenType(token)).willReturn(Optional.of(TokenType.FUNGIBLE_COMMON));
 		given(factory.apply(any(), any())).willReturn(usage);

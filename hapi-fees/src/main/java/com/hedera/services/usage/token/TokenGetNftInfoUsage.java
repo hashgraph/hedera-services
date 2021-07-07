@@ -30,9 +30,9 @@ import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 public class TokenGetNftInfoUsage extends QueryUsage {
 	public TokenGetNftInfoUsage(Query query) {
 		super(query.getTokenGetNftInfo().getHeader().getResponseType());
-		updateTb(BASIC_ENTITY_ID_SIZE);
-		updateTb(LONG_SIZE);
-		updateRb(NFT_ENTITY_SIZES.fixedBytesInNftRepr());
+		addTb(BASIC_ENTITY_ID_SIZE);
+		addTb(LONG_SIZE);
+		addRb(NFT_ENTITY_SIZES.fixedBytesInNftRepr());
 	}
 
 	public static TokenGetNftInfoUsage newEstimate(Query query) {
@@ -40,7 +40,7 @@ public class TokenGetNftInfoUsage extends QueryUsage {
 	}
 
 	public TokenGetNftInfoUsage givenMetadata(String memo) {
-		updateRb(memo.length());
+		addRb(memo.length());
 		return this;
 	}
 }

@@ -44,23 +44,23 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class TokenAssociateUsageTest {
-	long now = 1_234_567L, expiry = now + 1_000_000L;
-	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
-	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
-	TokenID firstId = IdUtils.asToken("0.0.75231");
-	TokenID secondId = IdUtils.asToken("0.0.75232");
-	AccountID id = IdUtils.asAccount("1.2.3");
+class TokenAssociateUsageTest {
+	private long now = 1_234_567L, expiry = now + 1_000_000L;
+	private int numSigs = 3, sigSize = 100, numPayerKeys = 1;
+	private SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
+	private TokenID firstId = IdUtils.asToken("0.0.75231");
+	private TokenID secondId = IdUtils.asToken("0.0.75232");
+	private AccountID id = IdUtils.asAccount("1.2.3");
 
-	TokenAssociateTransactionBody op;
-	TransactionBody txn;
+	private TokenAssociateTransactionBody op;
+	private TransactionBody txn;
 
-	EstimatorFactory factory;
-	TxnUsageEstimator base;
-	TokenAssociateUsage subject;
+	private EstimatorFactory factory;
+	private TxnUsageEstimator base;
+	private TokenAssociateUsage subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		base = mock(TxnUsageEstimator.class);
 		given(base.get()).willReturn(A_USAGES_MATRIX);
 
@@ -71,7 +71,7 @@ public class TokenAssociateUsageTest {
 	}
 
 	@Test
-	public void assessesEverything() {
+	void assessesEverything() {
 		givenOpWithTwoAssociations();
 		// and:
 		subject = TokenAssociateUsage.newEstimate(txn, sigUsage);

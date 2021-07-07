@@ -247,11 +247,11 @@ public class TypedTokenStore {
 	 * 		if the requested token class is missing, deleted, or expired and pending removal
 	 */
 	public void loadUniqueTokens(Token token, List<Long> serialNumbers) {
-		var tokenId = token.getId();
+		final var tokenId = token.getId();
+		final var tokenAsEntityId = tokenId.asEntityId();
 		final var loadedUniqueTokens = new HashMap<Long, UniqueToken>();
 		for (long serialNumber : serialNumbers) {
-			final var uniqueTokenKey = new MerkleUniqueTokenId(
-					new EntityId(tokenId.getShard(), tokenId.getRealm(), tokenId.getNum()), serialNumber);
+			final var uniqueTokenKey = new MerkleUniqueTokenId(tokenAsEntityId, serialNumber);
 			final var merkleUniqueToken = uniqueTokens.get().get(uniqueTokenKey);
 			validateUsable(merkleUniqueToken);
 
@@ -271,13 +271,14 @@ public class TypedTokenStore {
 	 * 		the token to save
 	 */
 	public void persistToken(Token token) {
-		final var id = token.getId();
-		final var key = new MerkleEntityId(id.getShard(), id.getRealm(), id.getNum());
-		final var currentTokens = tokens.get();
-
-		final var mutableToken = currentTokens.getForModify(key);
-		final var treasury = new EntityId(mutableToken.treasury());
+		final var key = token.getId().asMerkle();
+		final var mutableToken = tokens.get().getForModify(key);
+		final var treasury = mutableToken.treasury().copy();
 		mapModelChangesToMutable(token, mutableToken);
+
+		final var currentUniqueTokens = uniqueTokens.get();
+		final var currentUniqueTokenAssociations = uniqueTokenAssociations.get();
+		final var currentUniqueOwnershipAssociations = uniqueOwnershipAssociations.get();
 
 		if (token.hasMintedUniqueTokens()) {
 			for (var uniqueToken : token.mintedUniqueTokens()) {
@@ -285,9 +286,9 @@ public class TypedTokenStore {
 						new EntityId(uniqueToken.getTokenId()), uniqueToken.getSerialNumber());
 				final var merkleUniqueToken = new MerkleUniqueToken(
 						new EntityId(uniqueToken.getOwner()), uniqueToken.getMetadata(), uniqueToken.getCreationTime());
-				uniqueTokens.get().put(merkleUniqueTokenId, merkleUniqueToken);
-				uniqueTokenAssociations.get().associate(new EntityId(uniqueToken.getTokenId()), merkleUniqueTokenId);
-				uniqueOwnershipAssociations.get().associate(treasury, merkleUniqueTokenId);
+				currentUniqueTokens.put(merkleUniqueTokenId, merkleUniqueToken);
+				currentUniqueTokenAssociations.associate(new EntityId(uniqueToken.getTokenId()), merkleUniqueTokenId);
+				currentUniqueOwnershipAssociations.associate(treasury, merkleUniqueTokenId);
 				backingNfts.addToExistingNfts(merkleUniqueTokenId.asNftId());
 			}
 		}
@@ -296,9 +297,9 @@ public class TypedTokenStore {
 				final var merkleUniqueTokenId = new MerkleUniqueTokenId(
 						new EntityId(uniqueToken.getTokenId()), uniqueToken.getSerialNumber());
 				final var accountId = new EntityId(uniqueToken.getOwner());
-				uniqueTokens.get().remove(merkleUniqueTokenId);
-				uniqueTokenAssociations.get().disassociate(new EntityId(uniqueToken.getTokenId()), merkleUniqueTokenId);
-				uniqueOwnershipAssociations.get().disassociate(accountId, merkleUniqueTokenId);
+				currentUniqueTokens.remove(merkleUniqueTokenId);
+				currentUniqueTokenAssociations.disassociate(new EntityId(uniqueToken.getTokenId()), merkleUniqueTokenId);
+				currentUniqueOwnershipAssociations.disassociate(accountId, merkleUniqueTokenId);
 				backingNfts.removeFromExistingNfts(merkleUniqueTokenId.asNftId());
 			}
 		}
@@ -355,14 +356,7 @@ public class TypedTokenStore {
 	private void initModelFields(UniqueToken uniqueToken, MerkleUniqueToken immutableUniqueToken) {
 		uniqueToken.setCreationTime(immutableUniqueToken.getCreationTime());
 		uniqueToken.setMetadata(immutableUniqueToken.getMetadata());
-		uniqueToken.setOwner(
-				new Id(
-						immutableUniqueToken.getOwner().shard(),
-						immutableUniqueToken.getOwner().realm(),
-						immutableUniqueToken.getOwner().num()
-				)
-		);
-
+		uniqueToken.setOwner(immutableUniqueToken.getOwner().asId());
 	}
 
 	private void alertTokenBackingStoreOfNew(TokenRelationship newRel) {

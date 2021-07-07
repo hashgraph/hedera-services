@@ -28,10 +28,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class OwnershipTrackerTest {
 
-	OwnershipTracker subject = new OwnershipTracker();
-	final Id treasury = new Id(1, 2, 3);
-	final Id account = new Id(4, 5, 6);
-	final Id token = new Id(0, 0, 1);
+	private OwnershipTracker subject = new OwnershipTracker();
+	private final Id treasury = new Id(1, 2, 3);
+	private final Id account = new Id(4, 5, 6);
+	private final Id token = new Id(0, 0, 1);
 
 	@BeforeEach
 	void setup(){
@@ -41,43 +41,40 @@ class OwnershipTrackerTest {
 
 	@Test
 	void add() {
-		OwnershipTracker.Change burn = OwnershipTracker.forRemoving(treasury, 1);
+		final var burn = OwnershipTracker.forRemoving(treasury, 1L);
+
 		subject.add(token, burn);
-		assertEquals(subject.getChanges().size(), 1);
+		assertEquals(1, subject.getChanges().size());
+
 		subject.add(token, burn);
-		assertEquals(subject.getChanges().size(), 1);
+		assertEquals(1, subject.getChanges().size());
 		assertFalse(subject.isEmpty());
 	}
 
 	@Test
 	void fromMinting() {
-		OwnershipTracker.Change change = OwnershipTracker.forMinting(treasury, 2);
-		assertEquals(change.getNewOwner(), treasury);
-		assertEquals(change.getPreviousOwner(), Id.DEFAULT);
-		assertEquals(change.getSerialNumber(), 2);
+		final var change = OwnershipTracker.forMinting(treasury, 2L);
+
+		assertEquals(treasury, change.getNewOwner());
+		assertEquals(Id.DEFAULT, change.getPreviousOwner());
+		assertEquals(2L, change.getSerialNumber());
 	}
 
 	@Test
 	void fromWiping() {
-		OwnershipTracker.Change change = OwnershipTracker.forRemoving(account, 2);
-		assertEquals(change.getNewOwner(), Id.DEFAULT);
-		assertEquals(change.getPreviousOwner(), account);
-		assertEquals(change.getSerialNumber(), 2);
-	}
+		final var change = OwnershipTracker.forRemoving(account, 2L);
 
-	@Test
-	void fromBurning() {
-		OwnershipTracker.Change change = OwnershipTracker.forMinting(treasury, 2);
-		assertEquals(change.getNewOwner(), treasury);
-		assertEquals(change.getPreviousOwner(), Id.DEFAULT);
-		assertEquals(change.getSerialNumber(), 2);
+		assertEquals(Id.DEFAULT, change.getNewOwner());
+		assertEquals(account, change.getPreviousOwner());
+		assertEquals(2L, change.getSerialNumber());
 	}
 
 	@Test
 	void newChange(){
-		OwnershipTracker.Change change = new OwnershipTracker.Change(treasury, Id.DEFAULT, 1);
-		assertEquals(change.getSerialNumber(), 1);
-		assertEquals(change.getNewOwner(), Id.DEFAULT);
-		assertEquals(change.getPreviousOwner(), treasury);
+		final var change = new OwnershipTracker.Change(treasury, Id.DEFAULT, 1L);
+
+		assertEquals(1L, change.getSerialNumber());
+		assertEquals(Id.DEFAULT, change.getNewOwner());
+		assertEquals(treasury, change.getPreviousOwner());
 	}
 }
