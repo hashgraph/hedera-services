@@ -1,6 +1,7 @@
 package com.hedera.services.state.merkle.virtual.persistence.fcmmap;
 
 import com.swirlds.fcmap.VKey;
+import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableIntList;
 import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 
@@ -10,7 +11,10 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Deque;
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -60,10 +64,8 @@ public final class BinFile<K extends VKey> {
     /** a mutation in mutation queue size, consists of a Version long and slot location value long */
     private static final int MUTATION_SIZE = Long.BYTES * 2;
     private static final int MUTATION_QUEUE_HEADER_SIZE = Integer.BYTES;
-
-    /** A flag used in place of the mutation version indicating that the associated copy has been released. */
-    private static final int RELEASED = -1;
-
+    private static final long SWEPT_FLAGGED_VERSION = -1;
+    private static final long SWEPT_VERSION = Long.MAX_VALUE;
     /**
      * Special key for a hash for a empty entry. -1 is known to be safe as it is all ones and keys are always shifted
      * left at least 2 by FCSlotIndexUsingMemMapFile.
@@ -137,6 +139,12 @@ public final class BinFile<K extends VKey> {
     /** list of offsets for mutated keys for current version */
     private final AtomicReference<MutableIntList> changedKeysCurrentVersion = new AtomicReference<>();
     private final int keySizeBytes;
+    /**
+     * A list of all live versions (those not yet released). This has to be kept to make sure we don't
+     * sweep mutations that a live version depends on. Because BinFile is always created up front,
+     * we know that the "version" is 0. TODO I'm not sure this is always true, for example if we load from state?
+     */
+    private final ConcurrentLinkedDeque<Long> liveVersions = new ConcurrentLinkedDeque<>();
 
     /**
      * Construct a new BinFile
@@ -188,6 +196,9 @@ public final class BinFile<K extends VKey> {
         mappedBuffer = fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, fileSize);
         // mark file as open
         fileIsOpen = new AtomicBoolean(true);
+
+        // Put in the original version
+        liveVersions.push(currentVersion);
     }
 
     //==================================================================================================================
@@ -311,8 +322,9 @@ public final class BinFile<K extends VKey> {
      * @param oldVersion the old version number
      * @param newVersion the new version number
      */
-    @SuppressWarnings("unused")
     public void versionChanged(long oldVersion, long newVersion) {
+        // Keep track of this new version
+        liveVersions.add(newVersion);
         // stash changedKeysCurrentVersion and create new list
         changedKeysPerVersion.put(oldVersion, changedKeysCurrentVersion.getAndSet(new IntArrayList().asSynchronized()));
     }
@@ -323,6 +335,8 @@ public final class BinFile<K extends VKey> {
      * @param version the version to release
      */
     public void releaseVersion(long version) {
+        // Remove this version from the liveVersions
+        liveVersions.remove(version);
         // version deleting entries for this version
         MutableIntList changedKeys = changedKeysPerVersion.remove(version);
         if (changedKeys != null) {
@@ -509,14 +523,10 @@ public final class BinFile<K extends VKey> {
         // start with newest searching for version
         for (int i = mutationCount-1; i >= 0; i--) {
             int mutationOffset = getMutationOffset(mutationQueueOffset, i);
-            long mutationVersion = mappedBuffer.getLong(mutationOffset);
+            long mutationVersion = readVersion(mappedBuffer.getLong(mutationOffset));
             if (mutationVersion <= version) {
                 final long slotLocation =  mappedBuffer.getLong(mutationOffset+Long.BYTES);
-                if (slotLocation != DELETED_POINTER) {
-                    return slotLocation;
-                } else { // explicit deleted means it was deleted for version, so return not found
-                    return NOT_FOUND_LOCATION;
-                }
+                return slotLocation == DELETED_POINTER ? NOT_FOUND_LOCATION : slotLocation;
             }
         }
         return NOT_FOUND_LOCATION;
@@ -544,13 +554,14 @@ public final class BinFile<K extends VKey> {
             mutationOffset = getMutationOffset(mutationQueueOffset,0);
             // write version into mutation
             mappedBuffer.putLong(mutationOffset, version);
+            changedKeysCurrentVersion.get().add(mutationQueueOffset);
         } else {
             // check if the newest version saved is same version
             final int newestMutationOffset = getMutationOffset(mutationQueueOffset, mutationCount - 1);
             final long newestVersionInQueue = mappedBuffer.getLong(newestMutationOffset);
             // read the old slot value
             oldSlotIndex = mappedBuffer.getLong(newestMutationOffset + Long.BYTES);
-            if (oldSlotIndex == RELEASED) {
+            if (isReleased(oldSlotIndex)) {
                 oldSlotIndex = NOT_FOUND_LOCATION;
             }
             // update for create new mutation
@@ -567,16 +578,45 @@ public final class BinFile<K extends VKey> {
                 mutationOffset = getMutationOffset(mutationQueueOffset, mutationCount);
                 // write version into mutation
                 mappedBuffer.putLong(mutationOffset, version);
+                // add the queue to the changed keys
+                changedKeysCurrentVersion.get().add(mutationQueueOffset);
             }
         }
         // write value into mutation
         mappedBuffer.putLong(mutationOffset+Long.BYTES, value);
-        // stash mutation queue for later clean up, if this is a new mutation. If it was updating a mutation
-        // then when that mutation was made it would have already been added.
-        if (oldSlotIndex == NOT_FOUND_LOCATION) {
-            changedKeysCurrentVersion.get().add(mutationQueueOffset);
-        }
         return oldSlotIndex;
+    }
+
+    public String printMutationQueues(K keyProto) throws IOException {
+        final var sb = new StringBuilder("Queues:\n");
+        for (int i=0; i<numOfBinsPerFile; i++) {
+            final var binOffset = i * binSize;
+            sb.append("\t").append(i).append(":\n");
+            for (int j=0; j<numOfKeysPerBin; j++) {
+                final var keyQueueOffset = binOffset + binHeaderSize + (keyMutationEntrySize * j);
+                final var mutationQueueOffset = keyQueueOffset + queueOffsetInEntry;
+                if (mappedBuffer.getInt(mutationQueueOffset) > 0) {
+                    final var subBuffer = mappedBuffer.slice().asReadOnlyBuffer();
+                    subBuffer.position(keyQueueOffset + Integer.BYTES + Integer.BYTES);
+                    subBuffer.limit(subBuffer.position() + keySizeBytes);
+                    keyProto.deserialize(subBuffer, 1);
+                    sb.append("\t\t").append(keyProto).append(": ").append(printMutationQueue(mutationQueueOffset)).append("\n");
+                }
+            }
+        }
+        sb.append("\n");
+        return sb.toString();
+    }
+
+    public String printMutationQueue(int mutationQueueOffset) {
+        final var sb = new StringBuilder("[");
+        final var mutationCount = mappedBuffer.getInt(mutationQueueOffset);
+        for (int i=0; i<mutationCount; i++) {
+            final var mutationOffset = getMutationOffset(mutationQueueOffset, i);
+            final var flaggedVersion = mappedBuffer.getLong(mutationOffset);
+            sb.append("(v=").append(readVersion(flaggedVersion)).append(isReleased(flaggedVersion) ? "x)" : ") ");
+        }
+        return sb.append("]").toString();
     }
 
     /**
@@ -596,10 +636,10 @@ public final class BinFile<K extends VKey> {
         final var mutationCount = mappedBuffer.getInt(mutationQueueOffset);
         for (int i=0; i<mutationCount; i++) {
             final var mutationOffset = getMutationOffset(mutationQueueOffset, i);
-            final var mutationVersion = mappedBuffer.getLong(mutationOffset);
+            final var mutationVersion = readVersion(mappedBuffer.getLong(mutationOffset));
             if (mutationVersion == version) {
                 // This is the mutation. Mark it by setting the version to RELEASED.
-                mappedBuffer.putLong(mutationOffset, RELEASED);
+                mappedBuffer.putLong(mutationOffset, convertToReleased(version));
             } else if (mutationVersion > version) {
                 // There is no such mutation here (which is surprising, but maybe it got swept already).
                 return;
@@ -620,26 +660,41 @@ public final class BinFile<K extends VKey> {
         // Visit all of the mutations. Anything marked RELEASED can be replaced.
         int i = 0;
         int j = 1;
+        final var liveItr = new PeekIterator<>(liveVersions.iterator());
         for (; i < mutationCount; i++, j++) {
+            // The offset and flagged version (possibly containing the release bit flag)
+            // of the mutation we are currently processing
             final var offset = getMutationOffset(mutationQueueOffset, i);
-            final var version = mappedBuffer.getLong(offset);
-            if (version == RELEASED) {
-                // This mutation has been released. Now we need to look for the first non-released mutation
-                // and copy it here.
+            final var flaggedVersion = mappedBuffer.getLong(offset);
+            // The offset and flagged version of the next mutation to process, if there is
+            // a next mutation to process.
+            final var hasNextMutation = j < mutationCount;
+            var nextOffset = hasNextMutation ? getMutationOffset(mutationQueueOffset, j) : -1;
+            var nextFlaggedVersion = hasNextMutation ? mappedBuffer.getLong(nextOffset) : -1;
+            if (flaggedVersion == SWEPT_FLAGGED_VERSION || (isReleased(flaggedVersion) &&
+                    !isNeeded(liveItr, readVersion(flaggedVersion), hasNextMutation, nextFlaggedVersion))) {
+                // This mutation has been released and no live versions need it. Now we need to look for
+                // the first non-released mutation and copy it here.
                 while (j < mutationCount) {
-                    final var offset2 = getMutationOffset(mutationQueueOffset, j);
-                    final var version2 = mappedBuffer.getLong(offset2);
-                    if (version2 != RELEASED) {
+                    nextOffset = getMutationOffset(mutationQueueOffset, j);
+                    nextFlaggedVersion = mappedBuffer.getLong(nextOffset);
+                    final var hasNextNextMutation = j + 1 < mutationCount;
+                    final var nextNextOffset = hasNextNextMutation ? getMutationOffset(mutationQueueOffset, j + 1) : -1;
+                    final var nextNextFlaggedVersion = hasNextNextMutation ? mappedBuffer.getLong(nextNextOffset) : -1;
+                    if (!isReleased(nextFlaggedVersion) ||
+                            isNeeded(liveItr, readVersion(nextFlaggedVersion), hasNextNextMutation, nextNextFlaggedVersion)) {
                         // Copy from mutation2 to mutation
-                        mappedBuffer.putLong(offset, version2);
-                        mappedBuffer.putLong(offset + Long.BYTES, mappedBuffer.getLong(offset2 + Long.BYTES));
+                        mappedBuffer.putLong(offset, nextFlaggedVersion);
+                        mappedBuffer.putLong(offset + Long.BYTES, mappedBuffer.getLong(nextOffset + Long.BYTES));
                         // Tombstone the old mutation location (it will be removed by this code)
-                        mappedBuffer.putLong(offset2, RELEASED);
+                        mappedBuffer.putLong(nextOffset, SWEPT_FLAGGED_VERSION);
                         // Step out of the inner loop and let "i" increment again. But increment j so that next time
                         // we need a keeper mutation, we start from looking one past j (since we already know by this
                         // point that only SWEPT mutations or keepers are behind j).
                         break;
                     } else {
+                        // Tombstone the old mutation location (it will be removed by this code)
+                        mappedBuffer.putLong(nextOffset, SWEPT_FLAGGED_VERSION);
                         j++;
                     }
                 }
@@ -656,6 +711,47 @@ public final class BinFile<K extends VKey> {
         return i;
     }
 
+    private boolean isNeeded(PeekIterator<Long> itr, long mutationVersion, boolean hasNextMutation, long nextMutationFlaggedVersion) {
+        var liveVersion = itr.peek();
+
+        // Advance the iterator until it is either pointing at the mutation version
+        // or something newer than the mutation version (since by definition older
+        // live versions cannot depend on a newer mutation version).
+        while (liveVersion != null && mutationVersion > liveVersion) {
+            itr.next();
+            liveVersion = itr.peek();
+        }
+
+        // This means we have no live versions that are equal to or newer than the mutation version,
+        // so we need to keep it.
+        if (liveVersion == null) {
+            return true;
+        }
+
+        // This is a weird situation. It was marked deleted but still a live version??
+        if (liveVersion == mutationVersion) {
+            throw new IllegalStateException("A released mutation still has a live version!");
+        }
+
+        // If there is no later mutation version, then I am still needed
+        if (!hasNextMutation) {
+            return true;
+        }
+
+        // You don't need me. Ever? TODO
+        if (isReleased(nextMutationFlaggedVersion)) {
+            return false;
+        }
+
+        // If nextMutation == liveVersion, then I am NOT NEEDED
+        // If nextMutation > liveVersion, then I AM needed
+        // If nextMutation < liveVersion, then I am NOT NEEDED
+        // Therefore both of the following are true:
+        // if nextMutation <= liveVersion, then I am NOT NEEDED
+        // if nextMutation > liveVersion, then I AM needed
+        return readVersion(nextMutationFlaggedVersion) > liveVersion;
+    }
+
     /**
      * get the offset for a single mutation in a mutation queue
      *
@@ -667,11 +763,55 @@ public final class BinFile<K extends VKey> {
         return mutationQueueOffset + Integer.BYTES + (mutationIndex*MUTATION_SIZE);
     }
 
+    private boolean isReleased(long version) {
+        return version < 0;
+    }
+
+    private long convertToReleased(long version) {
+        return version | Long.MIN_VALUE;
+    }
+
+    private long readVersion(long possiblyReleasedVersion) {
+        return possiblyReleasedVersion & Long.MAX_VALUE;
+    }
+
     //==================================================================================================================
-    // Simple Structs
+    // Simple Structs and utilities
 
     private static class EntryReference {
         public int offset;
         public boolean wasCreated;
+    }
+
+    private static final class PeekIterator<T> implements Iterator<T> {
+        private final Iterator<T> delegate;
+        private T peeked;
+
+        PeekIterator(Iterator<T> delegate) {
+            this.delegate = delegate;
+        }
+
+        public T peek() {
+            if (peeked == null) {
+                peeked = delegate.hasNext() ? delegate.next() : null;
+            }
+            return peeked;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return peeked != null || delegate.hasNext();
+        }
+
+        @Override
+        public T next() {
+            if (peeked != null) {
+                final var returnValue = peeked;
+                peeked = null;
+                return returnValue;
+            }
+
+            return delegate.next();
+        }
     }
 }
