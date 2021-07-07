@@ -777,23 +777,24 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 	@Override
 	public ResponseCodeEnum updateFeeSchedule(TokenFeeScheduleUpdateTransactionBody changes) {
-		var tId = resolve(changes.getTokenId());
+		final var tId = resolve(changes.getTokenId());
 		if (tId == MISSING_TOKEN) {
 			return INVALID_TOKEN_ID;
 		}
 
-		List<CustomFee> customFees = changes.getCustomFeesList();
-
-		MerkleToken token = get(tId);
-
+		final var token = get(tId);
+		if (!token.hasFeeScheduleKey()) {
+			return TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
+		}
+		final var customFees = changes.getCustomFeesList();
 		if (customFees.isEmpty() && token.grpcFeeSchedule().isEmpty()) {
 			return CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
 		}
+
 		var validity = validateFeeSchedule(changes.getCustomFeesList(), true, tId);
 		if (validity != OK) {
 			return validity;
 		}
-
 		token.setFeeScheduleFrom(customFees);
 
 		return OK;

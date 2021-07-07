@@ -75,6 +75,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 	private Optional<Function<HapiApiSpec, String>> newNameFn = Optional.empty();
 	private boolean useImproperEmptyKey = false;
 	private boolean useEmptyAdminKeyList = false;
+	private boolean useInvalidFeeScheduleKey = false;
 
 	@Override
 	public HederaFunctionality type() {
@@ -170,6 +171,11 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 		return this;
 	}
 
+	public HapiTokenUpdate usingInvalidFeeScheduleKey() {
+		useInvalidFeeScheduleKey = true;
+		return this;
+	}
+
 	@Override
 	protected HapiTokenUpdate self() {
 		return this;
@@ -257,7 +263,11 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 							newSupplyKey.ifPresent(k -> b.setSupplyKey(spec.registry().getKey(k)));
 							newWipeKey.ifPresent(k -> b.setWipeKey(spec.registry().getKey(k)));
 							newKycKey.ifPresent(k -> b.setKycKey(spec.registry().getKey(k)));
-							newFeeScheduleKey.ifPresent(k -> b.setFeeScheduleKey(spec.registry().getKey(k)));
+							if (useInvalidFeeScheduleKey) {
+								b.setFeeScheduleKey(TxnUtils.EMPTY_THRESHOLD_KEY);
+							} else {
+								newFeeScheduleKey.ifPresent(k -> b.setFeeScheduleKey(spec.registry().getKey(k)));
+							}
 							newFreezeKey.ifPresent(k -> b.setFreezeKey(spec.registry().getKey(k)));
 							if (autoRenewAccount.isPresent()) {
 								var autoRenewId = TxnUtils.asId(autoRenewAccount.get(), spec);

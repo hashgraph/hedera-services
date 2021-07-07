@@ -138,6 +138,7 @@ public class SolvencyPrecheck {
 
 			return new TxnValidityAndFeeReq(finalStatus, estimatedReqFee);
 		} catch (Exception ignore) {
+			ignore.printStackTrace();
 			return LOST_PAYER_EXPIRATION_RACE;
 		}
 	}

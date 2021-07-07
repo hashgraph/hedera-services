@@ -345,6 +345,7 @@ class HederaTokenStoreTest {
 		given(token.adminKey()).willReturn(Optional.of(TOKEN_ADMIN_KT.asJKeyUnchecked()));
 		given(token.name()).willReturn(name);
 		given(token.hasAdminKey()).willReturn(true);
+		given(token.hasFeeScheduleKey()).willReturn(true);
 		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
 
 		nonfungibleToken = mock(MerkleToken.class);
@@ -2264,7 +2265,6 @@ class HederaTokenStoreTest {
 		assertEquals(INVALID_TOKEN_ID, result);
 	}
 
-
 	@Test
 	void rejectsTooLongCustomFeeUpdates() {
 		var op = updateFeeScheduleWith();
@@ -2292,6 +2292,17 @@ class HederaTokenStoreTest {
 		final var result = subject.updateFeeSchedule(op);
 
 		assertEquals(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR, result);
+	}
+
+	@Test
+	void canOnlyUpdateTokensWithFeeScheduleKey() {
+		given(token.hasFeeScheduleKey()).willReturn(false);
+
+		var op = updateFeeScheduleWith();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(TOKEN_HAS_NO_FEE_SCHEDULE_KEY, result);
 	}
 
 	@Test

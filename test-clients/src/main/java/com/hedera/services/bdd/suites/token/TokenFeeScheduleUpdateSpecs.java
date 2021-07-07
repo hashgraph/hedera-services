@@ -5,6 +5,7 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
@@ -24,6 +25,7 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fix
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHtsFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fractionalFeeInSchedule;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
@@ -31,7 +33,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVID
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 
 public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
@@ -46,10 +47,40 @@ public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						onlyValidCustomFeeScheduleCanBeUpdated(),
+						baseOperationIsChargedExpectedFee(),
 				}
 		);
 	}
 
+	private HapiApiSpec baseOperationIsChargedExpectedFee() {
+		final var htsAmount = 2_345L;
+		final var targetToken = "immutableToken";
+		final var feeDenom = "denom";
+		final var htsCollector = "denomFee";
+		final var feeScheduleKey = "feeSchedule";
+		final var expectedBasePriceUsd = 0.001;
+
+		return defaultHapiSpec("BaseOperationIsChargedExpectedFee")
+				.given(
+						newKeyNamed(feeScheduleKey),
+						cryptoCreate("civilian").key(feeScheduleKey),
+						cryptoCreate(htsCollector),
+						tokenCreate(feeDenom).treasury(htsCollector),
+						tokenCreate(targetToken)
+								.expiry(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
+								.feeScheduleKey(feeScheduleKey)
+				)
+				.when(
+						tokenFeeScheduleUpdate(targetToken)
+								.signedBy(feeScheduleKey)
+								.payingWith("civilian")
+								.blankMemo()
+								.withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
+								.via("baseFeeSchUpd")
+				).then(
+						validateChargedUsdWithin("baseFeeSchUpd", expectedBasePriceUsd, 1.0)
+				);
+	}
 
 	private HapiApiSpec onlyValidCustomFeeScheduleCanBeUpdated() {
 		final var hbarAmount = 1_234L;
@@ -60,7 +91,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
 		final var maximumToCollect = 50;
 
 		final var token = "withCustomSchedules";
-		final var immutableToken = "immutableToken";
+		final var immutableTokenWithFeeScheduleKey = "immutableToken";
 		final var noFeeScheduleKeyToken = "tokenWithoutFeeScheduleKey";
 		final var feeDenom = "denom";
 		final var hbarCollector = "hbarFee";
@@ -108,7 +139,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
 										numerator, denominator,
 										minimumToCollect, OptionalLong.of(maximumToCollect),
 										tokenCollector)),
-						tokenCreate(immutableToken)
+						tokenCreate(immutableTokenWithFeeScheduleKey)
 								.feeScheduleKey(feeScheduleKey)
 								.treasury(tokenCollector)
 								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
@@ -131,15 +162,15 @@ public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
 								.overridingProps(Map.of("tokens.maxCustomFeesAllowed", "1"))
 				)
 				.when(
-						tokenFeeScheduleUpdate(immutableToken)
+						tokenFeeScheduleUpdate(immutableTokenWithFeeScheduleKey)
 								.withCustom(fractionalFee(
 										numerator, 0,
 										minimumToCollect, OptionalLong.of(maximumToCollect),
 										tokenCollector))
-								.hasKnownStatus(TOKEN_IS_IMMUTABLE),
+								.hasKnownStatus(FRACTION_DIVIDES_BY_ZERO),
 						tokenFeeScheduleUpdate(noFeeScheduleKeyToken)
 								.withCustom(fractionalFee(
-										numerator, 0,
+										numerator, denominator,
 										minimumToCollect, OptionalLong.of(maximumToCollect),
 										tokenCollector))
 								.hasKnownStatus(TOKEN_HAS_NO_FEE_SCHEDULE_KEY),
@@ -197,8 +228,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
 										newNumerator, newDenominator,
 										newMinimumToCollect, OptionalLong.of(newMaximumToCollect),
 										newTokenCollector))
-				)
-				.then(
+				).then(
 						getTokenInfo(token)
 								.hasCustom(fixedHbarFeeInSchedule(newHbarAmount, newHbarCollector))
 								.hasCustom(fixedHtsFeeInSchedule(newHtsAmount, newFeeDenom, newHtsCollector))
@@ -208,7 +238,6 @@ public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
 										newTokenCollector))
 				);
 	}
-
 
 
 	@Override
