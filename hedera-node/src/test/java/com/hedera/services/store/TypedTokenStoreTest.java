@@ -212,17 +212,18 @@ class TypedTokenStoreTest {
 
 	@Test
 	void loadsUniqueTokens() {
-		var aToken = new Token(miscId);
-		var merkleUniqueToken = mock(MerkleUniqueToken.class);
+		final var aToken = new Token(miscId);
+		final var merkleUniqueToken = mock(MerkleUniqueToken.class);
+		final var serialNumbers = List.of(1L, 2L);
 		given(merkleUniqueToken.getOwner()).willReturn(new EntityId(Id.DEFAULT));
 		given(uniqueTokens.get(any())).willReturn(merkleUniqueToken);
 
-		subject.loadUniqueTokens(aToken, List.of(1L, 2L));
+		subject.loadUniqueTokens(aToken, serialNumbers);
 
-		assertEquals(aToken.getLoadedUniqueTokens().size(), 2);
+		assertEquals(2, aToken.getLoadedUniqueTokens().size());
 		
 		given(uniqueTokens.get(any())).willReturn(null);
-		assertThrows(InvalidTransactionException.class, () -> subject.loadUniqueTokens(aToken, List.of(1L, 2L)));
+		assertThrows(InvalidTransactionException.class, () -> subject.loadUniqueTokens(aToken, serialNumbers));
 	}
 
 

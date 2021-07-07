@@ -31,8 +31,6 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -50,7 +48,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * @author Michael Tinker
  */
 public class TokenWipeTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(TokenWipeTransitionLogic.class);
 	private final TransactionContext txnCtx;
 	private final TypedTokenStore tokenStore;
 	private final AccountStore accountStore;

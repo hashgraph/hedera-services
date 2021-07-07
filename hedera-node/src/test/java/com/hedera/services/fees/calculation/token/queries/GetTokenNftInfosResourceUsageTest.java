@@ -51,26 +51,26 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class GetTokenNftInfosResourceUsageTest {
-	ByteString m1 = ByteString.copyFromUtf8("metadata1"), m2 = ByteString.copyFromUtf8("metadata2");
-	List<ByteString> metadatas = List.of(m1, m2);
-	TokenGetNftInfosUsage estimator;
-	Function<Query, TokenGetNftInfosUsage> factory;
-	FeeData expected;
-	TokenID target = IdUtils.asToken("0.0.123");
-	int start = 0, end = 1;
+class GetTokenNftInfosResourceUsageTest {
+	private ByteString m1 = ByteString.copyFromUtf8("metadata1"), m2 = ByteString.copyFromUtf8("metadata2");
+	private List<ByteString> metadatas = List.of(m1, m2);
+	private TokenGetNftInfosUsage estimator;
+	private Function<Query, TokenGetNftInfosUsage> factory;
+	private FeeData expected;
+	private TokenID target = IdUtils.asToken("0.0.123");
+	private int start = 0, end = 1;
 
-	StateView view;
-	List<TokenNftInfo> info = List.of(TokenNftInfo.newBuilder()
+	private StateView view;
+	private List<TokenNftInfo> info = List.of(TokenNftInfo.newBuilder()
 					.setMetadata(m1)
 					.build(),
 			TokenNftInfo.newBuilder()
 					.setMetadata(m2)
 					.build());
 
-	Query satisfiableAnswerOnly = tokenGetNftInfosQuery(target, start, end, ResponseType.ANSWER_ONLY);
+	private Query satisfiableAnswerOnly = tokenGetNftInfosQuery(target, start, end, ResponseType.ANSWER_ONLY);
 
-	GetTokenNftInfosResourceUsage subject;
+	private GetTokenNftInfosResourceUsage subject;
 
 	@BeforeEach
 	private void setup() throws Throwable {
@@ -91,7 +91,7 @@ public class GetTokenNftInfosResourceUsageTest {
 	}
 
 	@Test
-	public void recognizesApplicableQuery() {
+	void recognizesApplicableQuery() {
 		// given:
 		final var applicable = tokenGetNftInfosQuery(target, start, end, COST_ANSWER);
 		final var inapplicable = Query.getDefaultInstance();
@@ -102,7 +102,7 @@ public class GetTokenNftInfosResourceUsageTest {
 	}
 
 	@Test
-	public void setsNftInfosInQueryCxtIfPresent() {
+	void setsNftInfosInQueryCxtIfPresent() {
 		// setup:
 		final var queryCtx = new HashMap<String, Object>();
 
@@ -117,7 +117,7 @@ public class GetTokenNftInfosResourceUsageTest {
 	}
 
 	@Test
-	public void setsNftInfosInQueryCxtNotPresent() {
+	void setsNftInfosInQueryCxtNotPresent() {
 		// setup:
 		final var queryCtx = new HashMap<String, Object>();
 
@@ -132,7 +132,7 @@ public class GetTokenNftInfosResourceUsageTest {
 	}
 
 	@Test
-	public void setsNftInfosInQueryCxtNotPresentWithType() {
+	void setsNftInfosInQueryCxtNotPresentWithType() {
 		// setup:
 		final var queryCtx = new HashMap<String, Object>();
 
@@ -147,7 +147,7 @@ public class GetTokenNftInfosResourceUsageTest {
 	}
 
 	@Test
-	public void onlySetsTokenNftInfosInQueryCxtIfFound() {
+	void onlySetsTokenNftInfosInQueryCxtIfFound() {
 		// setup:
 		final var queryCtx = new HashMap<String, Object>();
 

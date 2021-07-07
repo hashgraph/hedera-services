@@ -320,32 +320,35 @@ class TokenTest {
 		subject.setSupplyKey(someKey);
 		subject.setWipeKey(someKey);
 
-		var loadedUniqueTokensMap = (HashMap<Long, UniqueToken>) mock(HashMap.class);
-		var uniqueToken = mock(UniqueToken.class);
-		var owner = nonTreasuryAccount.getId();
+		final var loadedUniqueTokensMap = (HashMap<Long, UniqueToken>) mock(HashMap.class);
+		final var uniqueToken = mock(UniqueToken.class);
+		final var owner = nonTreasuryAccount.getId();
 		given(uniqueToken.getOwner()).willReturn(owner);
 		given(loadedUniqueTokensMap.get(any())).willReturn(uniqueToken);
 		subject.setLoadedUniqueTokens(loadedUniqueTokensMap);
+		final var ownershipTracker = mock(OwnershipTracker.class);
+		final List<Long> emptySerialNumber = List.of();
+		final var singleSerialNumber = List.of(1L);
+		final var serialNumbers = List.of(1L, 2L);
 
-		var ownershipTracker = mock(OwnershipTracker.class);
 		assertThrows(InvalidTransactionException.class, ()->{
-			subject.wipe(ownershipTracker, nonTreasuryRel, List.of(1L));
+			subject.wipe(ownershipTracker, nonTreasuryRel, singleSerialNumber);
 		});
 
 		subject.setTotalSupply(100);
 		treasuryRel.setBalance(0);
 		assertThrows(InvalidTransactionException.class, ()-> {
-			subject.wipe(ownershipTracker, nonTreasuryRel, List.of(1L));
+			subject.wipe(ownershipTracker, nonTreasuryRel, singleSerialNumber);
 		});
 
 		treasuryRel.setBalance(100);
 		assertThrows(InvalidTransactionException.class, ()-> {
-			subject.wipe(ownershipTracker, nonTreasuryRel, List.of());
+			subject.wipe(ownershipTracker, nonTreasuryRel, emptySerialNumber);
 		});
 
 		subject.setWipeKey(null);
 		assertThrows(InvalidTransactionException.class, ()-> {
-			subject.wipe(ownershipTracker, nonTreasuryRel, List.of(1L, 2L));
+			subject.wipe(ownershipTracker, nonTreasuryRel, serialNumbers);
 		}, "Cannot wipe Unique Tokens without wipe key");
 
 		nonTreasuryRel = new TokenRelationship(subject, new Account(new Id(1, 2, 3)));
@@ -358,14 +361,17 @@ class TokenTest {
 		subject.setType(TokenType.FUNGIBLE_COMMON);
 		subject.initSupplyConstraints(TokenSupplyType.FINITE, 100000);
 		subject.setSupplyKey(someKey);
-		var ownershipTracker = mock(OwnershipTracker.class);
+		final var ownershipTracker = mock(OwnershipTracker.class);
+		final List<Long> emptySerialNumber = List.of();
+		final var singleSerialNumber = List.of(1L);
+
 		assertThrows(InvalidTransactionException.class, ()->{
-			subject.burn(ownershipTracker, treasuryRel, List.of(1L));
+			subject.burn(ownershipTracker, treasuryRel, singleSerialNumber);
 		});
 
 		subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
 		assertThrows(InvalidTransactionException.class, ()->{
-			subject.burn(ownershipTracker, treasuryRel, List.of());
+			subject.burn(ownershipTracker, treasuryRel, emptySerialNumber);
 		}, "Non fungible burn cannot be invoked with no serial numbers");
 	}
 
@@ -374,14 +380,17 @@ class TokenTest {
 		subject.setType(TokenType.FUNGIBLE_COMMON);
 		subject.initSupplyConstraints(TokenSupplyType.FINITE, 100000);
 		subject.setSupplyKey(someKey);
-		var ownershipTracker = mock(OwnershipTracker.class);
+		final var ownershipTracker = mock(OwnershipTracker.class);
+		final var metadata = List.of(ByteString.copyFromUtf8("kur"));
+		final List<ByteString> emptyMetadata = List.of();
+
 		assertThrows(InvalidTransactionException.class, ()->{
-			subject.mint(ownershipTracker, treasuryRel, List.of(ByteString.copyFromUtf8("kur")), RichInstant.fromJava(Instant.now()));
+			subject.mint(ownershipTracker, treasuryRel, metadata, RichInstant.fromJava(Instant.now()));
 		});
 
 		subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
 		assertThrows(InvalidTransactionException.class, ()->{
-			subject.mint(ownershipTracker, treasuryRel, List.of(), RichInstant.fromJava(Instant.now()));
+			subject.mint(ownershipTracker, treasuryRel, emptyMetadata, RichInstant.fromJava(Instant.now()));
 		});
 	}
 

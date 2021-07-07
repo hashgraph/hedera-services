@@ -105,7 +105,7 @@ class TokenWipeTransitionLogicTest {
 			subject.doStateTransition();
 		}catch (InvalidTransactionException e){
 			// then:
-			assertEquals(e.getResponseCode(), TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+			assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, e.getResponseCode());
 		}
 
     }
