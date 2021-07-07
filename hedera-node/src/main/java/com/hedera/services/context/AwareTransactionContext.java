@@ -77,8 +77,10 @@ public class AwareTransactionContext implements TransactionContext {
 	private final ServicesContext ctx;
 	private TxnAccessor triggeredTxn = null;
 
-	private static final Consumer<TxnReceipt.Builder> noopReceiptConfig = ignore -> { };
-	private static final Consumer<ExpirableTxnRecord.Builder> noopRecordConfig = ignore -> { };
+	private static final Consumer<TxnReceipt.Builder> noopReceiptConfig = ignore -> {
+	};
+	private static final Consumer<ExpirableTxnRecord.Builder> noopRecordConfig = ignore -> {
+	};
 
 	private long submittingMember;
 	private long otherNonThresholdFees;
@@ -129,7 +131,7 @@ public class AwareTransactionContext implements TransactionContext {
 	}
 
 	@Override
-	public void setAssessedCustomFees(List<FcAssessedCustomFee> assessedCustomFees){
+	public void setAssessedCustomFees(List<FcAssessedCustomFee> assessedCustomFees) {
 		this.assessedCustomFees = assessedCustomFees;
 	}
 

@@ -9,9 +9,9 @@ package com.hedera.services.files.interceptors;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,8 +31,6 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import com.swirlds.common.AddressBook;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.AbstractMap;
 import java.util.EnumSet;
@@ -51,8 +49,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNPARSEABLE_THROTTLE_DEFINITIONS;
 
 public class ThrottleDefsManager implements FileUpdateInterceptor {
-	private static final Logger log = LogManager.getLogger(ThrottleDefsManager.class);
-
 	static final Map.Entry<ResponseCodeEnum, Boolean> YES_VERDICT =
 			new AbstractMap.SimpleImmutableEntry<>(SUCCESS, true);
 	static final Map.Entry<ResponseCodeEnum, Boolean> YES_BUT_MISSING_OP_VERDICT =
@@ -64,7 +60,7 @@ public class ThrottleDefsManager implements FileUpdateInterceptor {
 
 	static final int APPLICABLE_PRIORITY = 0;
 
-	EnumSet<HederaFunctionality> expectedOps = ExpectedCustomThrottles.OPS_FOR_RELEASE_0160;
+	Set<HederaFunctionality> expectedOps = ExpectedCustomThrottles.OPS_FOR_RELEASE_0160;
 
 	private final FileNumbers fileNums;
 	private final Supplier<AddressBook> addressBook;

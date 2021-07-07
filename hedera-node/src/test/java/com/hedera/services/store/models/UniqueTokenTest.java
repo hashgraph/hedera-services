@@ -26,25 +26,24 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class UniqueTokenTest {
-
 	@Test
-	void objectContractWorks(){
+	void objectContractWorks() {
 		var subj = new UniqueToken(Id.DEFAULT, 1);
 		assertEquals(1, subj.getSerialNumber());
 		assertEquals(Id.DEFAULT, subj.getTokenId());
 
-		var metadata = new byte[]{107, 117, 114};
-		subj = new UniqueToken(Id.DEFAULT, 1, RichInstant.MISSING_INSTANT, new Id(1, 2, 3), new byte[]{111, 23, 85});
+		var metadata = new byte[] { 107, 117, 114 };
+		subj = new UniqueToken(Id.DEFAULT, 1, RichInstant.MISSING_INSTANT, new Id(1, 2, 3), new byte[] { 111, 23, 85 });
 		assertEquals(RichInstant.MISSING_INSTANT, subj.getCreationTime());
-		assertEquals(new Id(1,2 ,3), subj.getOwner());
+		assertEquals(new Id(1, 2, 3), subj.getOwner());
 		subj.setSerialNumber(2);
 		assertEquals(2, subj.getSerialNumber());
 
-		metadata = new byte[]{1, 2, 3};
+		metadata = new byte[] { 1, 2, 3 };
 		subj.setMetadata(metadata);
 		assertEquals(metadata, subj.getMetadata());
 		subj.setTokenId(Id.DEFAULT);
-		assertEquals(subj.getTokenId(), Id.DEFAULT);
+		assertEquals(Id.DEFAULT, subj.getTokenId());
 		subj.setCreationTime(RichInstant.MISSING_INSTANT);
 		assertEquals(RichInstant.MISSING_INSTANT, subj.getCreationTime());
 	}

@@ -337,6 +337,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	@Override
 	public synchronized ServicesState copy() {
 		setImmutable(true);
+		final var mutableUniqTokenAssocsIfInit =
+				(uniqueTokenAssociations == null) ? null : uniqueTokenAssociations.copy();
+		final var mutableOwnerAssocsIfInit =
+				(uniqueOwnershipAssociations == null) ? null : uniqueOwnershipAssociations.copy();
 		return new ServicesState(ctx, nodeId, List.of(
 				addressBook().copy(),
 				networkCtx().copy(),
@@ -349,7 +353,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				scheduleTxs().copy(),
 				runningHashLeaf().copy(),
 				uniqueTokens().copy()
-		), uniqueTokenAssociations.copy(), uniqueOwnershipAssociations.copy(), this);
+		), mutableUniqTokenAssocsIfInit, mutableOwnerAssocsIfInit, this);
 	}
 
 	/* --------------- */

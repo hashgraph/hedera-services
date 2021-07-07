@@ -49,7 +49,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-public class TokenBurnUsageTest {
+class TokenBurnUsageTest {
 	long now = 1_234_567L;
 	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
 	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
@@ -63,7 +63,7 @@ public class TokenBurnUsageTest {
 	TokenBurnUsage subject;
 
 	@BeforeEach
-	public void setUp() throws Exception {
+	void setUp() {
 		base = mock(TxnUsageEstimator.class);
 		given(base.get()).willReturn(A_USAGES_MATRIX);
 
@@ -74,7 +74,7 @@ public class TokenBurnUsageTest {
 	}
 
 	@Test
-	public void createsExpectedDelta() {
+	void createsExpectedDelta() {
 		givenOp();
 		// and:
 		subject = TokenBurnUsage.newEstimate(txn, sigUsage);
@@ -94,7 +94,7 @@ public class TokenBurnUsageTest {
 	}
 
 	@Test
-	public void createsExpectedDeltaForUnique() {
+	void createsExpectedDeltaForUnique() {
 		op = TokenBurnTransactionBody.newBuilder()
 				.setToken(id)
 				.addAllSerialNumbers(List.of(1L, 2L, 3L))

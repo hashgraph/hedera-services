@@ -43,6 +43,7 @@ import static com.hedera.services.queries.token.GetAccountNftInfosAnswer.ACCOUNT
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -50,7 +51,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class GetAccountNftInfosResourceUsageTest {
+class GetAccountNftInfosResourceUsageTest {
     ByteString m1 = ByteString.copyFromUtf8("metadata1"), m2 = ByteString.copyFromUtf8("metadata2");
     List<ByteString> metadata = List.of(m1, m2);
     TokenGetAccountNftInfosUsage estimator;
@@ -72,7 +73,7 @@ public class GetAccountNftInfosResourceUsageTest {
     GetAccountNftInfosResourceUsage subject;
 
     @BeforeEach
-    private void setup() throws Throwable {
+    private void setup() {
         expected = mock(FeeData.class);
         view = mock(StateView.class);
         estimator = mock(TokenGetAccountNftInfosUsage.class);
@@ -90,7 +91,7 @@ public class GetAccountNftInfosResourceUsageTest {
     }
 
     @Test
-    public void recognizesApplicableQuery() {
+     void recognizesApplicableQuery() {
         // given:
         var applicable = tokenGetAccountNftInfosQuery(target, start, end, COST_ANSWER);
         var inapplicable = Query.getDefaultInstance();
@@ -101,7 +102,7 @@ public class GetAccountNftInfosResourceUsageTest {
     }
 
     @Test
-    public void setsInfoInQueryCxtIfPresent() {
+     void setsInfoInQueryCxtIfPresent() {
         // setup:
         var queryCtx = new HashMap<String, Object>();
 
@@ -116,7 +117,7 @@ public class GetAccountNftInfosResourceUsageTest {
     }
 
     @Test
-    public void onlySetsTokenInfoInQueryCxtIfFound() {
+     void onlySetsTokenInfoInQueryCxtIfFound() {
         // setup:
         var queryCtx = new HashMap<String, Object>();
 
@@ -129,6 +130,37 @@ public class GetAccountNftInfosResourceUsageTest {
         assertFalse(queryCtx.containsKey(ACCOUNT_NFT_INFO_CTX_KEY));
         // and:
         assertSame(FeeData.getDefaultInstance(), usage);
+    }
+
+    @Test
+    void doesntSetTokenInfoInQueryCxtNotFound() {
+        // setup:
+        var queryCtx = new HashMap<String, Object>();
+
+        given(view.infoForAccountNfts(target, start, end)).willReturn(Optional.of(info));
+
+        // when:
+        var usage = subject.usageGiven(satisfiableAnswerOnly, view);
+
+        // then:
+        assertFalse(queryCtx.containsKey(ACCOUNT_NFT_INFO_CTX_KEY));
+        verify(estimator).givenMetadata(metadata);
+        assertNotSame(FeeData.getDefaultInstance(), usage);
+    }
+
+    @Test
+    void doesntSetTokenInfoForAnswerOnlyType() {
+        // setup:
+        var queryCtx = new HashMap<String, Object>();
+
+        given(view.infoForAccountNfts(target, start, end)).willReturn(Optional.of(info));
+
+        // when:
+        var usage = subject.usageGivenType(satisfiableAnswerOnly, view, ANSWER_ONLY);
+
+        // then:
+        assertFalse(queryCtx.containsKey(ACCOUNT_NFT_INFO_CTX_KEY));
+        assertNotSame(FeeData.getDefaultInstance(), usage);
     }
 
     private Query tokenGetAccountNftInfosQuery(AccountID id, long start, long end, ResponseType type) {

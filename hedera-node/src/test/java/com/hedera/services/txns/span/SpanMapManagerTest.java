@@ -9,9 +9,9 @@ package com.hedera.services.txns.span;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -77,8 +77,8 @@ class SpanMapManagerTest {
 					customFeeCollector.asEntityId()))));
 	private final List<FcAssessedCustomFee> assessedCustomFees = List.of(
 			new FcAssessedCustomFee(customFeeCollector.asEntityId(), customFeeToken.asEntityId(), 123L),
-			new FcAssessedCustomFee( customFeeCollector.asEntityId(), 123L)
-			);
+			new FcAssessedCustomFee(customFeeCollector.asEntityId(), 123L)
+	);
 
 	private final ImpliedTransfers validImpliedTransfers = ImpliedTransfers.valid(
 			validationProps, new ArrayList<>(), entityCustomFees, assessedCustomFees);
@@ -124,7 +124,7 @@ class SpanMapManagerTest {
 		// then:
 		assertSame(someImpliedXfers, spanMapAccessor.getImpliedTransfers(accessor));
 	}
-	
+
 	@Test
 	void expandsImpliedTransfersWithDetails() {
 		given(accessor.getTxn()).willReturn(pretendXferTxn);

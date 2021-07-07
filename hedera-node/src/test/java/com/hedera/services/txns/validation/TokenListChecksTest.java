@@ -140,5 +140,4 @@ class TokenListChecksTest {
 		// then:
 		assertEquals(INVALID_CUSTOM_FEE_SCHEDULE_KEY, validity);
 	}
-
 }

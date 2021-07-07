@@ -26,6 +26,7 @@ import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.Store;
 import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
@@ -51,8 +52,11 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 	Consumer<MerkleToken> DELETION = token -> token.setDeleted(true);
 
 	boolean isKnownTreasury(AccountID id);
+
 	boolean associationExists(AccountID aId, TokenID tId);
+
 	boolean isTreasuryForToken(AccountID aId, TokenID tId);
+
 	List<TokenID> listOfTokensServed(AccountID treasury);
 
 	ResponseCodeEnum wipe(AccountID aId, TokenID tId, long wipingAmount, boolean skipKeyCheck);

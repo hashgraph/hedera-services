@@ -235,7 +235,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 			} catch (InvalidTxBodyException e) {
 				log.warn(
 						"Argument accessor={} malformed for implied estimator {}!",
-					        accessor.getSignedTxnWrapper(), usageEstimator);
+						accessor.getSignedTxnWrapper(), usageEstimator);
 				throw new IllegalArgumentException(e);
 			}
 		}

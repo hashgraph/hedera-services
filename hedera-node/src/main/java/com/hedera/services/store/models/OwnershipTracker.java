@@ -1,16 +1,16 @@
 package com.hedera.services.store.models;
 
-/*-
+/*
  * ‌
- * Hedera Services API Fees
+ * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2020 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,10 +27,8 @@ import java.util.Map;
 
 /**
  * Encapsulates the changes of {@link UniqueToken} ownership within the context of one Transaction
- *
  */
 public class OwnershipTracker {
-
 	private Map<Id, List<Change>> changes = new HashMap<>();
 
 	public void add(Id token, Change change) {
@@ -43,11 +41,15 @@ public class OwnershipTracker {
 		}
 	}
 
-	public Map<Id, List<Change>> getChanges() { return changes; }
+	public Map<Id, List<Change>> getChanges() {
+		return changes;
+	}
 
-	public boolean isEmpty() { return changes.isEmpty(); }
+	public boolean isEmpty() {
+		return changes.isEmpty();
+	}
 
-	public static Change fromMinting(Id treasury, long serialNumber) {
+	public static Change forMinting(Id treasury, long serialNumber) {
 		var change = new Change();
 		change.setPreviousOwner(Id.DEFAULT);
 		change.setNewOwner(treasury);
@@ -55,10 +57,10 @@ public class OwnershipTracker {
 		return change;
 	}
 
-	public static Change fromBurning(Id treasury, long serialNumber) {
-		Change change = new Change();
+	public static Change forRemoving(Id accountId, long serialNumber) {
+		var change = new Change();
+		change.setPreviousOwner(accountId);
 		change.setNewOwner(Id.DEFAULT);
-		change.setPreviousOwner(treasury);
 		change.setSerialNumber(serialNumber);
 		return change;
 	}
@@ -67,7 +69,6 @@ public class OwnershipTracker {
 	 * Encapsulates one set of Change of a given {@link UniqueToken}
 	 */
 	public static class Change {
-
 		private Id previousOwner;
 		private Id newOwner;
 		private long serialNumber;
@@ -78,7 +79,8 @@ public class OwnershipTracker {
 			this.serialNumber = serialNumber;
 		}
 
-		public Change() { }
+		public Change() {
+		}
 
 		public Id getPreviousOwner() {
 			return previousOwner;

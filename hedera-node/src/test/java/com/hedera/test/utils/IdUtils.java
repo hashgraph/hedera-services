@@ -9,9 +9,9 @@ package com.hedera.test.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -144,12 +144,13 @@ public class IdUtils {
 		return BalanceChange.changingFtUnits(token, token.asGrpcToken(), adjustFrom(account, amount));
 	}
 
-	public static BalanceChange nftChange(final Id token, final AccountID from, final AccountID to, final long serialNumber) {
+	public static BalanceChange nftChange(final Id token, final AccountID from, final AccountID to,
+			final long serialNumber) {
 		return BalanceChange.changingNftOwnership(token, token.asGrpcToken(), adjustFromNft(from, to, serialNumber));
 	}
 
 	public static NftTransfer nftXfer(AccountID from, AccountID to, long serialNo) {
-		return  NftTransfer.newBuilder()
+		return NftTransfer.newBuilder()
 				.setSenderAccountID(from)
 				.setReceiverAccountID(to)
 				.setSerialNumber(serialNo)
@@ -160,8 +161,8 @@ public class IdUtils {
 		return FcAssessedCustomFee.assessedHbarFeeFrom(adjustFrom(account, amount));
 	}
 
-	public static FcAssessedCustomFee tokenChangeForCustomFees(final EntityId token, final AccountID account, final long amount) {
+	public static FcAssessedCustomFee tokenChangeForCustomFees(final EntityId token, final AccountID account,
+			final long amount) {
 		return FcAssessedCustomFee.assessedHtsFeeFrom(token, adjustFrom(account, amount));
 	}
-
 }

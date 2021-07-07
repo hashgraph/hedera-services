@@ -564,7 +564,7 @@ class FcCustomFeeTest {
 		// expect:
 		assertEquals(aFixedSpec, bFixedSpec);
 		assertEquals(aFixedSpec, eFixedSpec);
-		assertNotEquals(aFixedSpec, null);
+		assertNotEquals(null, aFixedSpec);
 		assertNotEquals(aFixedSpec, new Object());
 		assertNotEquals(aFixedSpec, cFixedSpec);
 		assertNotEquals(aFixedSpec, dFixedSpec);
@@ -590,7 +590,7 @@ class FcCustomFeeTest {
 		// expect:
 		assertEquals(aFractionalSpec, fFractionalSpec);
 		assertEquals(aFractionalSpec, gFractionalSpec);
-		assertNotEquals(aFractionalSpec, null);
+		assertNotEquals(null, aFractionalSpec);
 		assertNotEquals(aFractionalSpec, new Object());
 		assertNotEquals(aFractionalSpec, bFractionalSpec);
 		assertNotEquals(aFractionalSpec, cFractionalSpec);
@@ -620,7 +620,7 @@ class FcCustomFeeTest {
 		// expect:
 		assertEquals(aCustomFee, eCustomFee);
 		assertEquals(aCustomFee, fCustomFee);
-		assertNotEquals(aCustomFee, null);
+		assertNotEquals(null, aCustomFee);
 		assertNotEquals(aCustomFee, new Object());
 		assertNotEquals(aCustomFee, bCustomFee);
 		assertNotEquals(aCustomFee, cCustomFee);

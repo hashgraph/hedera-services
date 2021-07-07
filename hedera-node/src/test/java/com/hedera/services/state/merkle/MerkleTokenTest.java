@@ -94,8 +94,8 @@ class MerkleTokenTest {
 	private final long fixedUnitsToCollect = 7;
 	private final long minimumUnitsToCollect = 1;
 	private final long maximumUnitsToCollect = 55;
-	private final EntityId denom = new EntityId(1,2, 3);
-	private final EntityId feeCollector = new EntityId(4,5, 6);
+	private final EntityId denom = new EntityId(1, 2, 3);
+	private final EntityId feeCollector = new EntityId(4, 5, 6);
 	final CustomFee fractionalFee = CustomFee.newBuilder()
 			.setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
 			.setFractionalFee(FractionalFee.newBuilder()
@@ -136,6 +136,22 @@ class MerkleTokenTest {
 		subject = new MerkleToken(
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		setOptionalElements(subject);
+		subject.setExpiry(expiry);
+		subject.setTotalSupply(totalSupply);
+		subject.setAdminKey(adminKey);
+		subject.setFreezeKey(freezeKey);
+		subject.setKycKey(kycKey);
+		subject.setWipeKey(wipeKey);
+		subject.setSupplyKey(supplyKey);
+		subject.setDeleted(isDeleted);
+		subject.setMemo(memo);
+		subject.setTokenType(TokenType.FUNGIBLE_COMMON);
+		subject.setSupplyType(TokenSupplyType.INFINITE);
+		subject.setTreasury(treasury);
+		subject.setName(name);
+		subject.setSymbol(symbol);
+		subject.setAccountsFrozenByDefault(true);
+		subject.setFeeScheduleFrom(grpcFeeSchedule);
 
 		serdes = mock(DomainSerdes.class);
 		MerkleToken.serdes = serdes;
@@ -551,7 +567,7 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	public void objectContractPropertiesCheck() {
+	void objectContractPropertiesCheck() {
 		// setup:
 
 		// when:
@@ -662,8 +678,10 @@ class MerkleTokenTest {
 	@Test
 	void toStringWorks() {
 		// setup:
-		final var desired = "MerkleToken{tokenType=FUNGIBLE_COMMON, supplyType=INFINITE, deleted=true, expiry=1234567, " +
-				"symbol=NotAnHbar, name=NotAnHbarName, memo=NotAMemo, treasury=1.2.3, maxSupply=0, totalSupply=1000000," +
+		final var desired = "MerkleToken{tokenType=FUNGIBLE_COMMON, supplyType=INFINITE, deleted=true, expiry=1234567," +
+				" " +
+				"symbol=NotAnHbar, name=NotAnHbarName, memo=NotAMemo, treasury=1.2.3, maxSupply=0, " +
+				"totalSupply=1000000," +
 				" decimals=2, lastUsedSerialNumber=0, autoRenewAccount=2.3.4, autoRenewPeriod=1234567, " +
 				"adminKey=ed25519: \"not-a-real-admin-key\"\n" +
 				", kycKey=ed25519: \"not-a-real-kyc-key\"\n" +
@@ -671,7 +689,8 @@ class MerkleTokenTest {
 				", supplyKey=ed25519: \"not-a-real-supply-key\"\n" +
 				", freezeKey=ed25519: \"not-a-real-freeze-key\"\n" +
 				", accountsKycGrantedByDefault=true, accountsFrozenByDefault=true, " +
-				"feeSchedules=[FcCustomFee{feeType=FIXED_FEE, fixedFee=FixedFeeSpec{unitsToCollect=7, tokenDenomination=1" +
+				"feeSchedules=[FcCustomFee{feeType=FIXED_FEE, fixedFee=FixedFeeSpec{unitsToCollect=7, " +
+				"tokenDenomination=1" +
 				".2.3}, feeCollector=EntityId{shard=4, realm=5, num=6}}, FcCustomFee{feeType=FRACTIONAL_FEE, " +
 				"fractionalFee=FractionalFeeSpec{numerator=5, denominator=100, minimumUnitsToCollect=1, " +
 				"maximumUnitsToCollect=55}, feeCollector=EntityId{shard=4, realm=5, num=6}}], " +

@@ -36,44 +36,44 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
 import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 import static org.junit.Assert.assertEquals;
 
-public class TokenGetAccountNftInfosUsageTest {
-    private TokenGetAccountNftInfosUsage subject;
-    private AccountID id;
-    private List<ByteString> metadata;
+class TokenGetAccountNftInfosUsageTest {
+	private TokenGetAccountNftInfosUsage subject;
+	private AccountID id;
+	private List<ByteString> metadata;
 
-    @BeforeEach
-    private void setup() {
-        metadata = List.of(ByteString.copyFromUtf8("some metadata"));
-        id = AccountID.newBuilder()
-                .setShardNum(0)
-                .setRealmNum(0)
-                .setAccountNum(1)
-                .build();
-        subject = TokenGetAccountNftInfosUsage.newEstimate(tokenQuery());
-    }
+	@BeforeEach
+	private void setup() {
+		metadata = List.of(ByteString.copyFromUtf8("some metadata"));
+		id = AccountID.newBuilder()
+				.setShardNum(0)
+				.setRealmNum(0)
+				.setAccountNum(1)
+				.build();
+		subject = TokenGetAccountNftInfosUsage.newEstimate(tokenQuery());
+	}
 
-    @Test
-    void assessesEverything() {
-        // given:
-        subject.givenMetadata(metadata);
+	@Test
+	void assessesEverything() {
+		// given:
+		subject.givenMetadata(metadata);
 
-        // when:
-        var usage = subject.get();
-        int additionalRb = metadata.stream().mapToInt(ByteString::size).sum();
-        var expectedBytes = BASIC_QUERY_RES_HEADER
-                + NFT_ENTITY_SIZES.fixedBytesInNftRepr() * metadata.size()
-                + additionalRb;
+		// when:
+		var usage = subject.get();
+		int additionalRb = metadata.stream().mapToInt(ByteString::size).sum();
+		var expectedBytes = BASIC_QUERY_RES_HEADER
+				+ NFT_ENTITY_SIZES.fixedBytesInNftRepr() * metadata.size()
+				+ additionalRb;
 
-        // then:
-        var node = usage.getNodedata();
-        assertEquals(FeeBuilder.BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE + 2 * INT_SIZE, node.getBpt());
-        assertEquals(expectedBytes, node.getBpr());
-    }
+		// then:
+		var node = usage.getNodedata();
+		assertEquals(FeeBuilder.BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE + 2 * INT_SIZE, node.getBpt());
+		assertEquals(expectedBytes, node.getBpr());
+	}
 
-    private Query tokenQuery() {
-        var op = TokenGetAccountNftInfosQuery.newBuilder()
-                .setAccountID(id)
-                .build();
-        return Query.newBuilder().setTokenGetAccountNftInfos(op).build();
-    }
+	private Query tokenQuery() {
+		var op = TokenGetAccountNftInfosQuery.newBuilder()
+				.setAccountID(id)
+				.build();
+		return Query.newBuilder().setTokenGetAccountNftInfos(op).build();
+	}
 }

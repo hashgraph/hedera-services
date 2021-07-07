@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
-public class MerkleUniqueTokenTest {
+ class MerkleUniqueTokenTest {
 
     private MerkleUniqueToken subject;
 
@@ -67,7 +67,7 @@ public class MerkleUniqueTokenTest {
     }
 
     @Test
-    public void equalsContractWorks() {
+     void equalsContractWorks() {
         // given
         var other = new MerkleUniqueToken(owner, metadata, otherTimestamp);
         var other2 = new MerkleUniqueToken(owner, otherMetadata, timestamp);
@@ -82,7 +82,7 @@ public class MerkleUniqueTokenTest {
     }
 
     @Test
-    public void hashCodeWorks() {
+     void hashCodeWorks() {
         // given:
         var identical = new MerkleUniqueToken(owner, metadata, timestamp);
         var other = new MerkleUniqueToken(otherOwner, otherMetadata, otherTimestamp);
@@ -93,7 +93,7 @@ public class MerkleUniqueTokenTest {
     }
 
     @Test
-    public void toStringWorks() {
+     void toStringWorks() {
         // given:
         assertEquals("MerkleUniqueToken{" +
                         "owner=" + owner + ", " +
@@ -103,7 +103,7 @@ public class MerkleUniqueTokenTest {
     }
 
     @Test
-    public void copyWorks() {
+     void copyWorks() {
         // given:
         var copyNft = subject.copy();
         var other = new Object();
@@ -115,7 +115,7 @@ public class MerkleUniqueTokenTest {
     }
 
     @Test
-    public void serializeWorks() throws IOException {
+     void serializeWorks() throws IOException {
         // setup:
         var out = mock(SerializableDataOutputStream.class);
         // and:
@@ -133,7 +133,7 @@ public class MerkleUniqueTokenTest {
     }
 
     @Test
-    public void deserializeWorks() throws IOException {
+     void deserializeWorks() throws IOException {
         // setup:
         SerializableDataInputStream in = mock(SerializableDataInputStream.class);
 
@@ -153,7 +153,7 @@ public class MerkleUniqueTokenTest {
     }
 
     @Test
-    public void merkleMethodsWork() {
+     void merkleMethodsWork() {
         // expect;
         assertEquals(MerkleUniqueToken.MERKLE_VERSION, subject.getVersion());
         assertEquals(MerkleUniqueToken.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
@@ -161,13 +161,13 @@ public class MerkleUniqueTokenTest {
     }
 
     @Test
-    public void setsAndGetsOwner() {
+     void setsAndGetsOwner() {
         subject.setOwner(new EntityId(0, 0, 1));
         assertEquals(new EntityId(0, 0, 1), subject.getOwner());
     }
 
     @Test
-    public void getsMetadata() {
+     void getsMetadata() {
         assertEquals(metadata, subject.getMetadata());
     }
 
