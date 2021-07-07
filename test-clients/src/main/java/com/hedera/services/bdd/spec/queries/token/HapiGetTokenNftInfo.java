@@ -122,7 +122,7 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
                 actualInfo.getCreationTime(),
                 expectedCreationTime,
                 (n, r) -> r.getCreationTime(token),
-                "Wrong creation time!",
+                "Wrong creation time (seconds)!",
                 spec.registry());
 
         var registry = spec.registry();

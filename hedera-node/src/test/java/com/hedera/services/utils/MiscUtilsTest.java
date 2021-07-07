@@ -95,6 +95,7 @@ import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenGetAccountNftInfosQuery;
 import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
 import com.hederahashgraph.api.proto.java.TokenGetNftInfoQuery;
+import com.hederahashgraph.api.proto.java.TokenGetNftInfosQuery;
 import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
@@ -1127,6 +1128,16 @@ public class MiscUtilsTest {
 				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
 		var query = Query.newBuilder()
 				.setTokenGetNftInfo(op)
+				.build();
+		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
+	}
+
+	@Test
+	void worksForTokenGetNftInfos() {
+		var op = TokenGetNftInfosQuery.newBuilder()
+				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
+		var query = Query.newBuilder()
+				.setTokenGetNftInfos(op)
 				.build();
 		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
 	}
