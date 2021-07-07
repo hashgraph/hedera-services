@@ -320,7 +320,7 @@ public final class FCSlotIndexUsingMemMapFile<K extends VKey> implements FCSlotI
 
     /** Gets the sub key hash from key hash, this is the part of key that specifies the bin inside a file */
     private int getFileSubKeyHash(int keyHash) {
-        return keyHash >> shiftRightCountForFileSubKey;
+        return keyHash >>> shiftRightCountForFileSubKey;
     }
 }
 
