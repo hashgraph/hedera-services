@@ -49,15 +49,15 @@ public class QueryUsage {
 		return ESTIMATOR_UTILS.withDefaultQueryPartitioning(usage);
 	}
 
-	public void updateRb(long amount) {
+	public void addRb(long amount) {
 		rb += amount;
 	}
 
-	public void updateTb(long amount) {
+	public void addTb(long amount) {
 		tb += amount;
 	}
 
-	public void updateSb(long amount) {
+	public void addSb(long amount) {
 		sb += amount;
 	}
 }

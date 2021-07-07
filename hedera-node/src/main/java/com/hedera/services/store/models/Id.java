@@ -21,6 +21,7 @@ package com.hedera.services.store.models;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -45,25 +46,25 @@ public class Id {
 
 	public AccountID asGrpcAccount() {
 		return AccountID.newBuilder()
-				.setShardNum(getShard())
-				.setRealmNum(getRealm())
-				.setAccountNum(getNum())
+				.setShardNum(shard)
+				.setRealmNum(realm)
+				.setAccountNum(num)
 				.build();
 	}
 
 	public TokenID asGrpcToken() {
 		return TokenID.newBuilder()
-				.setShardNum(getShard())
-				.setRealmNum(getRealm())
-				.setTokenNum(getNum())
+				.setShardNum(shard)
+				.setRealmNum(realm)
+				.setTokenNum(num)
 				.build();
 	}
 
-	public static Id fromGrpcAccount(AccountID id) {
+	public static Id fromGrpcAccount(final AccountID id) {
 		return new Id(id.getShardNum(), id.getRealmNum(), id.getAccountNum());
 	}
 
-	public static Id fromGrpcToken(TokenID id) {
+	public static Id fromGrpcToken(final TokenID id) {
 		return new Id(id.getShardNum(), id.getRealmNum(), id.getTokenNum());
 	}
 
@@ -110,5 +111,9 @@ public class Id {
 
 	public EntityId asEntityId() {
 		return new EntityId(shard, realm, num);
+	}
+
+	public MerkleEntityId asMerkle() {
+		return new MerkleEntityId(shard, realm, num);
 	}
 }

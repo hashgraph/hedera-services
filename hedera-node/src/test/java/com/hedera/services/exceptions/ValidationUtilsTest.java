@@ -38,11 +38,11 @@ class ValidationUtilsTest {
 		final var falseExCapturedByCode = assertThrows(InvalidTransactionException.class, () ->
 				validateTrue(false, MEMO_TOO_LONG));
 		final var falseExCapturedByCodeAndMsg = assertThrows(InvalidTransactionException.class, () ->
-				validateTrue(false, INVALID_TOKEN_BURN_AMOUNT, () -> "Should be true!"));
+				validateTrue(false, INVALID_TOKEN_BURN_AMOUNT, "Should be true!"));
 		final var trueExCapturedByCode = assertThrows(InvalidTransactionException.class, () ->
 				validateFalse(true, CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT));
 		final var trueExCapturedByCodeAndMsg = assertThrows(InvalidTransactionException.class, () ->
-				validateFalse(true, TOKEN_HAS_NO_SUPPLY_KEY, () -> "Should be false!"));
+				validateFalse(true, TOKEN_HAS_NO_SUPPLY_KEY, "Should be false!"));
 
 		// then:
 		assertEquals(MEMO_TOO_LONG, falseExCapturedByCode.getResponseCode());

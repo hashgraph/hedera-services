@@ -551,49 +551,26 @@ class MerkleTokenTest {
 
 	@Test
 	 void objectContractPropertiesCheck() {
-		// setup:
-
-		// when:
-
-		// expect:
 		assertTrue(subject.hasAdminKey());
-		// and:
 		assertEquals(adminKey, subject.adminKey().get());
-		// and:
 		assertEquals(freezeKey, subject.freezeKey().get());
-		// and:
 		assertTrue(subject.hasFreezeKey());
-		// and:
 		assertEquals(kycKey, subject.kycKey().get());
-		// and:
 		assertTrue(subject.hasKycKey());
-		// and:
 		assertEquals(supplyKey, subject.supplyKey().get());
-		// and:
 		assertTrue(subject.hasSupplyKey());
-		// and:
 		assertEquals(wipeKey, subject.wipeKey().get());
-		// and:
 		assertTrue(subject.hasWipeKey());
-		// and:
 		assertTrue(subject.isDeleted());
-		// and:
 		assertEquals(symbol, subject.symbol());
-		// and:
 		assertEquals(name, subject.name());
-		// and:
 		assertTrue(subject.accountsKycGrantedByDefault());
-		// and:
 		assertEquals(autoRenewAccount, subject.autoRenewAccount());
-		// and:
 		assertTrue(subject.hasAutoRenewAccount());
-		// and:
 		assertEquals(supplyKey, subject.getSupplyKey());
-		// and:
+		assertEquals(wipeKey, subject.getWipeKey());
 		assertEquals(kycKey, subject.getKycKey());
-		// and:
 		assertEquals(freezeKey, subject.getFreezeKey());
-		// and:
 		assertEquals(memo, subject.memo());
 	}
 

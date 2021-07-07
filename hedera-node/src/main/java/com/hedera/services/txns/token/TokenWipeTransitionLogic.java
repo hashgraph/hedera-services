@@ -31,8 +31,6 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -50,7 +48,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * @author Michael Tinker
  */
 public class TokenWipeTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(TokenWipeTransitionLogic.class);
 	private final TransactionContext txnCtx;
 	private final TypedTokenStore tokenStore;
 	private final AccountStore accountStore;
@@ -72,11 +69,9 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 	@Override
 	public void doStateTransition() {
 		/* --- Translate from gRPC types --- */
-		var op = txnCtx.accessor().getTxn().getTokenWipe();
-		final var grpcTokenId = op.getToken();
-		final var grpcAccountId = op.getAccount();
-		final var targetTokenId = new Id(grpcTokenId.getShardNum(), grpcTokenId.getRealmNum(), grpcTokenId.getTokenNum());
-		final var targetAccountId = new Id(grpcAccountId.getShardNum(), grpcAccountId.getRealmNum(), grpcAccountId.getAccountNum());
+		final var op = txnCtx.accessor().getTxn().getTokenWipe();
+		final var targetTokenId = Id.fromGrpcToken(op.getToken());
+		final var targetAccountId = Id.fromGrpcAccount(op.getAccount());
 
 		/* --- Load the model objects --- */
 		final var token = tokenStore.loadToken(targetTokenId);
@@ -100,7 +95,6 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 		accountStore.persistAccount(account);
 	}
 
-
 	@Override
 	public Predicate<TransactionBody> applicability() {
 		return TransactionBody::hasTokenWipe;
@@ -121,8 +115,8 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 		if (!op.hasAccount()) {
 			return INVALID_ACCOUNT_ID;
 		}
-		boolean bothPresent = (op.getAmount() > 0 && op.getSerialNumbersCount() > 0);
-		boolean nonePresent = (op.getAmount() <= 0 && op.getSerialNumbersCount() == 0);
+		final boolean bothPresent = (op.getAmount() > 0 && op.getSerialNumbersCount() > 0);
+		final boolean nonePresent = (op.getAmount() <= 0 && op.getSerialNumbersCount() == 0);
 
 		if (nonePresent) {
 			return INVALID_WIPING_AMOUNT;

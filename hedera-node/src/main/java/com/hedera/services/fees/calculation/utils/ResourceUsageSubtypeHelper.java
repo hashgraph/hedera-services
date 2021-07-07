@@ -2,7 +2,7 @@ package com.hedera.services.fees.calculation.utils;
 
 /*-
  * ‌
- * Hedera Services API Fees
+ * Hedera Services Node
  * ​
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​

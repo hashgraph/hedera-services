@@ -82,7 +82,7 @@ public class CryptoOpsUsage {
 		var op = cryptoInfoReq.getCryptoGetInfo();
 
 		var estimate = queryEstimateFactory.apply(op.getHeader().getResponseType());
-		estimate.updateTb(BASIC_ENTITY_ID_SIZE);
+		estimate.addTb(BASIC_ENTITY_ID_SIZE);
 		long extraRb = 0;
 		extraRb += ctx.currentMemo().getBytes(StandardCharsets.UTF_8).length;
 		extraRb += getAccountKeyStorageSize(ctx.currentKey());
@@ -90,7 +90,7 @@ public class CryptoOpsUsage {
 			extraRb += BASIC_ENTITY_ID_SIZE;
 		}
 		extraRb += ctx.currentNumTokenRels() * TOKEN_ENTITY_SIZES.bytesUsedPerAccountRelationship();
-		estimate.updateRb(CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + extraRb);
+		estimate.addRb(CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + extraRb);
 
 		return estimate.get();
 	}
