@@ -1,10 +1,13 @@
 package com.hedera.services.state.merkle.virtual;
 
+import com.hedera.services.state.merkle.virtual.persistence.FCSlotIndex;
 import com.hedera.services.state.merkle.virtual.persistence.FCVirtualMapHashStore;
 import com.hedera.services.state.merkle.virtual.persistence.fcmmap.*;
 import com.hedera.services.store.models.Id;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.fcmap.FCHashStore;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -12,6 +15,7 @@ import java.nio.file.Path;
 public class ContractHashStore implements FCHashStore {
     private final Id contractId;
     private final FCVirtualMapHashStore<ContractPath> dataStore;
+    private FCSlotIndex<ContractPath> index;
 
     public ContractHashStore(Id contractId) {
         this(contractId,false,false);
@@ -21,7 +25,7 @@ public class ContractHashStore implements FCHashStore {
         this.contractId = contractId;
 
         try {
-            final var index = inMemoryIndex ?
+            this.index = inMemoryIndex ?
                     new FCSlotIndexUsingFCHashMap<ContractPath>() :
                     new FCSlotIndexUsingMemMapFile<ContractPath>(
                             Path.of("data/contract-storage/hash-index"),
@@ -86,5 +90,14 @@ public class ContractHashStore implements FCHashStore {
     @Override
     public void release() {
         dataStore.release();
+    }
+
+    /**
+     * Debug print
+     */
+    public void printMutationQueueStats() {
+        if (index instanceof FCSlotIndexUsingMemMapFile) {
+            ((FCSlotIndexUsingMemMapFile)index).printMutationQueueStats();
+        }
     }
 }

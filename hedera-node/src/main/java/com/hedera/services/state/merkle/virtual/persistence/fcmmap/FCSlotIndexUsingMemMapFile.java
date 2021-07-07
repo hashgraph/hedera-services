@@ -6,6 +6,8 @@ import com.swirlds.fcmap.VKey;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongSupplier;
@@ -305,6 +307,29 @@ public final class FCSlotIndexUsingMemMapFile<K extends VKey> implements FCSlotI
 
     //==================================================================================================================
     // Util functions
+
+
+    /**
+     * Collect the number bins that contain a given number of mutation queues.
+     *
+     * @return Map: key = mutation queue count, value is count of bins in this file with that count of queues.
+     */
+    public void printMutationQueueStats() {
+        Map<Integer,Long> results = new HashMap<>();
+        for(BinFile<K> file: files) {
+            file.getMutationQueueStats().forEach((key,value) -> {
+                Long current = results.get(key);
+                if (current == null) current = 0L;
+                results.put(key,current+value);
+            });
+        }
+        System.out.println("============================================================================================");
+        System.out.println("\"Queue Count\",\"Number of Bins\"");
+        results.forEach((key,value) -> {
+            System.out.println(key+", "+value);
+        });
+        System.out.println("============================================================================================");
+    }
 
     /** Simple way to check of a integer is a power of two */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
