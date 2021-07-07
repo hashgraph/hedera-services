@@ -105,7 +105,7 @@ public class Token {
 			final TokenRelationship treasuryRel,
 			final List<ByteString> metadata,
 			final RichInstant creationTime) {
-		validateTrue(metadata.size() > 0, FAIL_INVALID,
+		validateFalse(metadata.isEmpty(), FAIL_INVALID,
 				"Cannot mint " + metadata.size() + " numbers of Unique Tokens");
 		validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID,
 				"Non fungible mint can be invoked only on Non fungible token type");
