@@ -47,8 +47,8 @@ public class VFCMapBench {
     @Param({"10000", "100000", "1000000", "10000000", "100000000", "1000000000"})
     public long numEntities;
 
-    @Param("0")
-    public int preFill;
+    @Param("true")
+    public boolean preFill;
 
     @Param({"true", "false"})
     public boolean inMemoryIndex;
@@ -59,7 +59,6 @@ public class VFCMapBench {
     private final Random rand = new Random();
     private VFCMap<ContractUint256, ContractUint256> contractMap;
     private Future<?> prevIterationHashingFuture;
-    private VFCMap<ContractUint256, ContractUint256> unmodifiableContractMap;
     private ExecutorService background = Executors.newSingleThreadScheduledExecutor();
 
     @Setup
@@ -70,39 +69,47 @@ public class VFCMapBench {
 
         System.out.println("\nUsing inMemoryIndex = " + inMemoryIndex+"  -- inMemoryStore = " + inMemoryStore);
 
-
-        if (preFill > 0) {
+        if (preFill) {
             for (int i = 0; i < numEntities; i++) {
-                if (i % 100000 == 0) {
+                if (i % 100000 == 0 && i > 0) {
                     System.out.println("Completed: " + i);
                     if (prevIterationHashingFuture != null) {
-                        prevIterationHashingFuture.get();
+                        prevIterationHashingFuture.get(); // block in case the previous iteration hasn't finished yet
                     }
-                    unmodifiableContractMap = contractMap;
+                    final var unmodifiableContractMap = contractMap;
                     contractMap = contractMap.copy();
-                    prevIterationHashingFuture = CryptoFactory.getInstance().digestTreeAsync2(unmodifiableContractMap);
+                    prevIterationHashingFuture = hashAndRelease(unmodifiableContractMap);
                 }
                 final var key = asContractKey(i);
                 final var value = asContractValue(i);
                 contractMap.put(key, value);
             }
 
+            System.out.println("Completed: " + numEntities);
+
             // During setup we perform the full hashing and release the old copy. This way,
             // during the tests, we don't have an initial slow hash.
-            unmodifiableContractMap = contractMap;
+            if (prevIterationHashingFuture != null) {
+                prevIterationHashingFuture.get(); // block in case the previous iteration hasn't finished yet
+            }
+            final var unmodifiableContractMap = contractMap;
             contractMap = contractMap.copy();
-            prevIterationHashingFuture = CryptoFactory.getInstance().digestTreeAsync2(unmodifiableContractMap);
-            prevIterationHashingFuture.get();
-            unmodifiableContractMap = null;
+            prevIterationHashingFuture = hashAndRelease(unmodifiableContractMap);
+            prevIterationHashingFuture.get(); // Block until the hashing is done
         }
 
         printDataStoreSize();
     }
 
-    private Future<?> hashAndRelease() {
+    private Future<?> hashAndRelease(VFCMap<ContractUint256, ContractUint256> unmodifiableContractMap) {
         return background.submit(() -> {
-            CryptoFactory.getInstance().digestTreeAsync2(unmodifiableContractMap);
-            background.submit(() -> unmodifiableContractMap.release());
+            try {
+                final var hashFuture = CryptoFactory.getInstance().digestTreeAsync2(unmodifiableContractMap);
+                hashFuture.get();
+                unmodifiableContractMap.release();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         });
     }
 
@@ -151,16 +158,17 @@ public class VFCMapBench {
         // for the old hashing to complete because in the real world we cannot have hashing fall
         // behind, so the fastest we can go is the max of the speed of modifying the latest and
         // hashing the previous.
-        if (unmodifiableContractMap != null) {
+        if (prevIterationHashingFuture != null) {
             // Wait for the hashing of the previous iteration to complete. If it doesn't complete
             // in maxMillisPerHashRound, then a TimeoutException is raised and the test fails.
             prevIterationHashingFuture.get(maxMillisPerHashRound, TimeUnit.MILLISECONDS);
+//            prevIterationHashingFuture.get();
         }
 
         // Create a new fast copy and start hashing the old one in a background thread.
-        unmodifiableContractMap = contractMap;
+        final var unmodifiableContractMap = contractMap;
         contractMap = contractMap.copy();
-        prevIterationHashingFuture = CryptoFactory.getInstance().digestTreeAsync2(unmodifiableContractMap);
+        prevIterationHashingFuture = hashAndRelease(unmodifiableContractMap);
 
         // Start modifying the new fast copy
         final var iterationsPerRound = numUpdatesPerOperation * targetOpsPerSecond;
