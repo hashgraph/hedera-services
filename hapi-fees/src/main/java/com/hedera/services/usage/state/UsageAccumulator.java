@@ -180,7 +180,7 @@ public class UsageAccumulator {
 					case RBH:
 						return getNetworkRbh();
 					case CONSTANT:
-						return 1;
+						return 1L;
 					default:
 						return 0L;
 				}
@@ -195,7 +195,7 @@ public class UsageAccumulator {
 					case VPT:
 						return getNodeVpt();
 					case CONSTANT:
-						return 1;
+						return 1L;
 					default:
 						return 0L;
 				}
@@ -206,7 +206,7 @@ public class UsageAccumulator {
 					case SBH:
 						return getServiceSbh();
 					case CONSTANT:
-						return 1;
+						return 1L;
 					default:
 						return 0L;
 				}

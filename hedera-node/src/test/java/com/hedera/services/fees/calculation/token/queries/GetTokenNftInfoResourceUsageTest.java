@@ -51,24 +51,24 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 class GetTokenNftInfoResourceUsageTest {
-	NftID target = NftID.newBuilder().setTokenID(IdUtils.asToken("0.0.123")).setSerialNumber(1).build();
-	FeeData expected;
-	ByteString metadata = ByteString.copyFromUtf8("LMAO");
-	AccountID owner = IdUtils.asAccount("0.0.321321");
+	private NftID target = NftID.newBuilder().setTokenID(IdUtils.asToken("0.0.123")).setSerialNumber(1).build();
+	private FeeData expected;
+	private ByteString metadata = ByteString.copyFromUtf8("LMAO");
+	private AccountID owner = IdUtils.asAccount("0.0.321321");
 
-	TokenGetNftInfoUsage estimator;
-	Function<Query, TokenGetNftInfoUsage> factory;
+	private TokenGetNftInfoUsage estimator;
+	private Function<Query, TokenGetNftInfoUsage> factory;
 
-	StateView view;
-	TokenNftInfo info = TokenNftInfo.newBuilder()
+	private StateView view;
+	private TokenNftInfo info = TokenNftInfo.newBuilder()
 			.setAccountID(owner)
 			.setMetadata(metadata)
 			.setNftID(target)
 			.build();
 
-	Query satisfiableAnswerOnly = TokenNftInfoQuery(target, ANSWER_ONLY);
+	private Query satisfiableAnswerOnly = TokenNftInfoQuery(target, ANSWER_ONLY);
 
-	GetTokenNftInfoResourceUsage subject;
+	private GetTokenNftInfoResourceUsage subject;
 
 	@BeforeEach
 	void setup() {
