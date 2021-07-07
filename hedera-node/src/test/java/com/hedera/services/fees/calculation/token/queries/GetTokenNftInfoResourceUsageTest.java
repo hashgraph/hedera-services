@@ -51,115 +51,115 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 class GetTokenNftInfoResourceUsageTest {
-    NftID target = NftID.newBuilder().setTokenID(IdUtils.asToken("0.0.123")).setSerialNumber(1).build();
-    FeeData expected;
-    ByteString metadata = ByteString.copyFromUtf8("LMAO");
-    AccountID owner = IdUtils.asAccount("0.0.321321");
+	private NftID target = NftID.newBuilder().setTokenID(IdUtils.asToken("0.0.123")).setSerialNumber(1).build();
+	private FeeData expected;
+	private ByteString metadata = ByteString.copyFromUtf8("LMAO");
+	private AccountID owner = IdUtils.asAccount("0.0.321321");
 
-    TokenGetNftInfoUsage estimator;
-    Function<Query, TokenGetNftInfoUsage> factory;
+	private TokenGetNftInfoUsage estimator;
+	private Function<Query, TokenGetNftInfoUsage> factory;
 
-    StateView view;
-    TokenNftInfo info = TokenNftInfo.newBuilder()
-            .setAccountID(owner)
-            .setMetadata(metadata)
-            .setNftID(target)
-            .build();
+	private StateView view;
+	private TokenNftInfo info = TokenNftInfo.newBuilder()
+			.setAccountID(owner)
+			.setMetadata(metadata)
+			.setNftID(target)
+			.build();
 
-    Query satisfiableAnswerOnly = TokenNftInfoQuery(target, ANSWER_ONLY);
+	private Query satisfiableAnswerOnly = TokenNftInfoQuery(target, ANSWER_ONLY);
 
-    GetTokenNftInfoResourceUsage subject;
+	private GetTokenNftInfoResourceUsage subject;
 
-    @BeforeEach
-    private void setup() {
-        expected = mock(FeeData.class);
-        view = mock(StateView.class);
-        estimator = mock(TokenGetNftInfoUsage.class);
-        factory = mock(Function.class);
-        given(factory.apply(any())).willReturn(estimator);
+	@BeforeEach
+	void setup() {
+		expected = mock(FeeData.class);
+		view = mock(StateView.class);
+		estimator = mock(TokenGetNftInfoUsage.class);
+		factory = mock(Function.class);
+		given(factory.apply(any())).willReturn(estimator);
 
-        GetTokenNftInfoResourceUsage.factory = factory;
+		GetTokenNftInfoResourceUsage.factory = factory;
 
-        given(estimator.givenMetadata(metadata.toString())).willReturn(estimator);
-        given(estimator.get()).willReturn(expected);
+		given(estimator.givenMetadata(metadata.toString())).willReturn(estimator);
+		given(estimator.get()).willReturn(expected);
 
-        given(view.infoForNft(target)).willReturn(Optional.of(info));
+		given(view.infoForNft(target)).willReturn(Optional.of(info));
 
-        subject = new GetTokenNftInfoResourceUsage();
-    }
+		subject = new GetTokenNftInfoResourceUsage();
+	}
 
-    @Test
-     void recognizesApplicableQuery() {
-        // given:
-        var applicable = TokenNftInfoQuery(target, COST_ANSWER);
-        var inapplicable = Query.getDefaultInstance();
+	@Test
+	void recognizesApplicableQuery() {
+		// given:
+		var applicable = TokenNftInfoQuery(target, COST_ANSWER);
+		var inapplicable = Query.getDefaultInstance();
 
-        // expect:
-        assertTrue(subject.applicableTo(applicable));
-        assertFalse(subject.applicableTo(inapplicable));
-    }
+		// expect:
+		assertTrue(subject.applicableTo(applicable));
+		assertFalse(subject.applicableTo(inapplicable));
+	}
 
-    @Test
-     void setsInfoInQueryCxtIfPresent() {
-        // setup:
-        var queryCtx = new HashMap<String, Object>();
+	@Test
+	void setsInfoInQueryCxtIfPresent() {
+		// setup:
+		var queryCtx = new HashMap<String, Object>();
 
-        // when:
-        var usage = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
+		// when:
+		var usage = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
 
-        // then:
-        assertSame(info, queryCtx.get(NFT_INFO_CTX_KEY));
-        assertSame(expected, usage);
-        // and:
-        verify(estimator).givenMetadata(metadata.toString());
-    }
+		// then:
+		assertSame(info, queryCtx.get(NFT_INFO_CTX_KEY));
+		assertSame(expected, usage);
+		// and:
+		verify(estimator).givenMetadata(metadata.toString());
+	}
 
-    @Test
-     void onlySetsTokenNftInfoInQueryCxtIfFound() {
-        // setup:
-        var queryCtx = new HashMap<String, Object>();
+	@Test
+	void onlySetsTokenNftInfoInQueryCxtIfFound() {
+		// setup:
+		var queryCtx = new HashMap<String, Object>();
 
-        given(view.infoForNft(target)).willReturn(Optional.empty());
+		given(view.infoForNft(target)).willReturn(Optional.empty());
 
-        // when:
-        var usage = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
+		// when:
+		var usage = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
 
-        // then:
-        assertFalse(queryCtx.containsKey(NFT_INFO_CTX_KEY));
-        // and:
-        assertSame(FeeData.getDefaultInstance(), usage);
-    }
+		// then:
+		assertFalse(queryCtx.containsKey(NFT_INFO_CTX_KEY));
+		// and:
+		assertSame(FeeData.getDefaultInstance(), usage);
+	}
 
-    @Test
-     void worksWithoutQueryContext() {
-        // setup:
-        given(view.infoForNft(target)).willReturn(Optional.empty());
+	@Test
+	void worksWithoutQueryContext() {
+		// setup:
+		given(view.infoForNft(target)).willReturn(Optional.empty());
 
-        // when:
-        var usage = subject.usageGiven(satisfiableAnswerOnly, view);
+		// when:
+		var usage = subject.usageGiven(satisfiableAnswerOnly, view);
 
-        // and:
-        assertSame(FeeData.getDefaultInstance(), usage);
-    }
+		// and:
+		assertSame(FeeData.getDefaultInstance(), usage);
+	}
 
-    @Test
-     void worksWithNoQueryContext() {
-        // setup:
-        given(view.infoForNft(target)).willReturn(Optional.empty());
+	@Test
+	void worksWithNoQueryContext() {
+		// setup:
+		given(view.infoForNft(target)).willReturn(Optional.empty());
 
-        // when:
-        var usage = subject.usageGivenType(satisfiableAnswerOnly, view, ANSWER_ONLY);
+		// when:
+		var usage = subject.usageGivenType(satisfiableAnswerOnly, view, ANSWER_ONLY);
 
-        // and:
-        assertSame(FeeData.getDefaultInstance(), usage);
-    }
+		// and:
+		assertSame(FeeData.getDefaultInstance(), usage);
+	}
 
-    private Query TokenNftInfoQuery(NftID id, ResponseType type) {
-        TokenGetNftInfoQuery.Builder op = TokenGetNftInfoQuery.newBuilder()
-                .setNftID(id)
-                .setHeader(QueryHeader.newBuilder().setResponseType(type));
-        return Query.newBuilder()
-                .setTokenGetNftInfo(op)
-                .build();
-    }
+	private Query TokenNftInfoQuery(NftID id, ResponseType type) {
+		TokenGetNftInfoQuery.Builder op = TokenGetNftInfoQuery.newBuilder()
+				.setNftID(id)
+				.setHeader(QueryHeader.newBuilder().setResponseType(type));
+		return Query.newBuilder()
+				.setTokenGetNftInfo(op)
+				.build();
+	}
 }

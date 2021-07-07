@@ -81,7 +81,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[]{
+		return List.of(new HapiApiSpec[] {
 						balancesChangeOnTokenTransfer(),
 						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
 						senderSigsAreValid(),
@@ -489,7 +489,8 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.hasAccountID(FIRST_USER),
 						getAccountNftInfos(FIRST_USER, 0, 1)
 								.hasNfts(
-										HapiTokenNftInfo.newTokenNftInfo(A_TOKEN, 1, FIRST_USER, ByteString.copyFromUtf8("memo"))
+										HapiTokenNftInfo.newTokenNftInfo(A_TOKEN, 1, FIRST_USER,
+												ByteString.copyFromUtf8("memo"))
 								),
 						getTxnRecord("cryptoTransferTxn").logged()
 				);
@@ -517,7 +518,8 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
 						getAccountNftInfos(TOKEN_TREASURY, 0, 1)
 								.hasNfts(
-										HapiTokenNftInfo.newTokenNftInfo(A_TOKEN, 1, TOKEN_TREASURY, ByteString.copyFromUtf8("memo"))
+										HapiTokenNftInfo.newTokenNftInfo(A_TOKEN, 1, TOKEN_TREASURY,
+												ByteString.copyFromUtf8("memo"))
 								)
 				);
 	}

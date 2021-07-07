@@ -41,7 +41,6 @@ import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
 import static com.hedera.services.queries.token.GetAccountNftInfosAnswer.ACCOUNT_NFT_INFO_CTX_KEY;
 
 public class GetAccountNftInfosResourceUsage implements QueryResourceUsageEstimator {
-
 	static Function<Query, TokenGetAccountNftInfosUsage> factory = TokenGetAccountNftInfosUsage::newEstimate;
 
 	@Override

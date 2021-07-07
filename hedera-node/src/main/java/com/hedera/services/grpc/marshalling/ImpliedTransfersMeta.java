@@ -22,7 +22,7 @@ package com.hedera.services.grpc.marshalling;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.submerkle.CustomFee;
+import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -51,12 +51,12 @@ import java.util.List;
 public class ImpliedTransfersMeta {
 	private final ResponseCodeEnum code;
 	private final ValidationProps validationProps;
-	private final List<Pair<Id, List<CustomFee>>> tokenFeeSchedules;
+	private final List<Pair<Id, List<FcCustomFee>>> tokenFeeSchedules;
 
 	public ImpliedTransfersMeta(
 			ValidationProps validationProps,
 			ResponseCodeEnum code,
-			List<Pair<Id, List<CustomFee>>> tokenFeeSchedules
+			List<Pair<Id, List<FcCustomFee>>> tokenFeeSchedules
 	) {
 		this.code = code;
 		this.validationProps = validationProps;
@@ -66,8 +66,8 @@ public class ImpliedTransfersMeta {
 	public boolean wasDerivedFrom(GlobalDynamicProperties dynamicProperties, CustomFeeSchedules customFeeSchedules) {
 		final var validationParamsMatch =
 				(validationProps.maxHbarAdjusts == dynamicProperties.maxTransferListSize()) &&
-				(validationProps.maxTokenAdjusts == dynamicProperties.maxTokenTransferListSize()) &&
-				(validationProps.maxOwnershipChanges == dynamicProperties.maxNftTransfersLen());
+						(validationProps.maxTokenAdjusts == dynamicProperties.maxTokenTransferListSize()) &&
+						(validationProps.maxOwnershipChanges == dynamicProperties.maxNftTransfersLen());
 		if (!validationParamsMatch) {
 			return false;
 		}

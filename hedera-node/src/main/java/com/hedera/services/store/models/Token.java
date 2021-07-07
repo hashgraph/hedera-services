@@ -94,11 +94,17 @@ public class Token {
 
 	/**
 	 * Minting unique tokens creates new instances of the given base unique token.
-	 * Increments the serial number of the given base unique token, and assigns each of the numbers to each new unique token instance.
-	 * @param ownershipTracker - a tracker of changes made to the ownership of the tokens
-	 * @param treasuryRel - the relationship between the treasury account and the token
-	 * @param metadata - a list of user-defined metadata, related to the nft instances.
-	 * @param creationTime - the consensus time of the token mint transaction
+	 * Increments the serial number of the given base unique token, and assigns each of the numbers to each new unique
+	 * token instance.
+	 *
+	 * @param ownershipTracker
+	 * 		- a tracker of changes made to the ownership of the tokens
+	 * @param treasuryRel
+	 * 		- the relationship between the treasury account and the token
+	 * @param metadata
+	 * 		- a list of user-defined metadata, related to the nft instances.
+	 * @param creationTime
+	 * 		- the consensus time of the token mint transaction
 	 */
 	public void mint(
 			final OwnershipTracker ownershipTracker,
@@ -128,9 +134,13 @@ public class Token {
 
 	/**
 	 * Burning unique tokens effectively destroys them, as well as reduces the total supply of the token.
-	 * @param ownershipTracker - a tracker of changes made to the nft ownership
-	 * @param treasuryRelationship - the relationship between the treasury account and the token
-	 * @param serialNumbers - the serial numbers, representing the unique tokens which will be destroyed.
+	 *
+	 * @param ownershipTracker
+	 * 		- a tracker of changes made to the nft ownership
+	 * @param treasuryRelationship
+	 * 		- the relationship between the treasury account and the token
+	 * @param serialNumbers
+	 * 		- the serial numbers, representing the unique tokens which will be destroyed.
 	 */
 	public void burn(
 			final OwnershipTracker ownershipTracker,
@@ -151,8 +161,11 @@ public class Token {
 
 	/**
 	 * Wiping fungible tokens removes the balance of the given account, as well as reduces the total supply.
-	 * @param accountRel - the relationship between the account which owns the tokens and the token
-	 * @param amount - amount to be wiped
+	 *
+	 * @param accountRel
+	 * 		- the relationship between the account which owns the tokens and the token
+	 * @param amount
+	 * 		- amount to be wiped
 	 */
 	public void wipe(final TokenRelationship accountRel, final long amount){
 		validateTrue(type == TokenType.FUNGIBLE_COMMON, FAIL_INVALID,
@@ -168,10 +181,15 @@ public class Token {
 	}
 
 	/**
-	 * Wiping unique tokens removes the unique token instances, associated to the given account, as well as reduces the total supply.
-	 * @param ownershipTracker - a tracker of changes made to the ownership of the tokens
-	 * @param accountRel - the relationship between the account, which owns the tokens, and the token
-	 * @param serialNumbers - a list of serial numbers, representing the tokens to be wiped
+	 * Wiping unique tokens removes the unique token instances, associated to the given account, as well as reduces the
+	 * total supply.
+	 *
+	 * @param ownershipTracker
+	 * 		- a tracker of changes made to the ownership of the tokens
+	 * @param accountRel
+	 * 		- the relationship between the account, which owns the tokens, and the token
+	 * @param serialNumbers
+	 * 		- a list of serial numbers, representing the tokens to be wiped
 	 */
 	public void wipe(OwnershipTracker ownershipTracker, TokenRelationship accountRel, List<Long> serialNumbers) {
 		validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID,
@@ -242,7 +260,7 @@ public class Token {
 		validateTrue(amount > 0, INVALID_WIPING_AMOUNT, errorMessage("wipe", amount, accountRel));
 
 		final var newTotalSupply = totalSupply - amount;
-		validateTrue( newTotalSupply >= 0, INVALID_WIPING_AMOUNT,
+		validateTrue(newTotalSupply >= 0, INVALID_WIPING_AMOUNT,
 				"Wiping would negate the total supply of the given token.");
 
 		final var newAccountBalance = accountRel.getBalance() - amount;

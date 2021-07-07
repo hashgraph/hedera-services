@@ -239,9 +239,12 @@ public class TypedTokenStore {
 	 * Returns a {@link UniqueToken} model of the requested unique token, with operations that can be used to
 	 * implement business logic in a transaction.
 	 *
-	 * @param token the token model, on which to load the of the unique token
-	 * @param serialNumbers the serial numbers to load
-	 * @throws InvalidTransactionException if the requested token class is missing, deleted, or expired and pending removal
+	 * @param token
+	 * 		the token model, on which to load the of the unique token
+	 * @param serialNumbers
+	 * 		the serial numbers to load
+	 * @throws InvalidTransactionException
+	 * 		if the requested token class is missing, deleted, or expired and pending removal
 	 */
 	public void loadUniqueTokens(Token token, List<Long> serialNumbers) {
 		final var tokenId = token.getId();

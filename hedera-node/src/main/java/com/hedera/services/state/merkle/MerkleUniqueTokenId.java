@@ -48,9 +48,10 @@ public class MerkleUniqueTokenId extends AbstractMerkleLeaf {
 	}
 
 	/**
-	 *
-	 * @param tokenId The underlying token id.
-	 * @param serialNumber Represents the serial num of the token.
+	 * @param tokenId
+	 * 		The underlying token id.
+	 * @param serialNumber
+	 * 		Represents the serial num of the token.
 	 */
 	public MerkleUniqueTokenId(
 			EntityId tokenId,

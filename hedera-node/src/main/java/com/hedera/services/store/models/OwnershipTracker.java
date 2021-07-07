@@ -27,10 +27,8 @@ import java.util.Map;
 
 /**
  * Encapsulates the changes of {@link UniqueToken} ownership within the context of one Transaction
- *
  */
 public class OwnershipTracker {
-
 	private Map<Id, List<Change>> changes = new HashMap<>();
 
 	public void add(final Id token, final Change change) {
@@ -43,9 +41,13 @@ public class OwnershipTracker {
 		}
 	}
 
-	public Map<Id, List<Change>> getChanges() { return changes; }
+	public Map<Id, List<Change>> getChanges() {
+		return changes;
+	}
 
-	public boolean isEmpty() { return changes.isEmpty(); }
+	public boolean isEmpty() {
+		return changes.isEmpty();
+	}
 
 	public static Change forMinting(final Id treasury, final long serialNumber) {
 		return new Change(Id.DEFAULT, treasury, serialNumber);
@@ -59,7 +61,6 @@ public class OwnershipTracker {
 	 * Encapsulates one set of Change of a given {@link UniqueToken}
 	 */
 	public static class Change {
-
 		private Id previousOwner;
 		private Id newOwner;
 		private long serialNumber;

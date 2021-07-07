@@ -9,9 +9,9 @@ package com.hedera.services.context;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -161,7 +161,9 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
+
 import java.lang.reflect.Field;
+
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -199,7 +201,7 @@ class ServicesContextTest {
 	private ExchangeRates midnightRates;
 	private MerkleNetworkContext networkCtx;
 	private ServicesState state;
-  private StateChildren workingState;
+	private StateChildren workingState;
 	private Cryptography crypto;
 	private PropertySource properties;
 	private StandardizedPropertySources propertySources;
@@ -212,7 +214,7 @@ class ServicesContextTest {
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
 	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations;
 	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations;
-  private AddressBook addresses;
+	private AddressBook addresses;
 	private MerkleDiskFs diskFs;
 
 	@BeforeEach
@@ -240,7 +242,7 @@ class ServicesContextTest {
 		given(state.tokenAssociations()).willReturn(tokenAssociations);
 		given(state.scheduleTxs()).willReturn(schedules);
 
-    given(state.addressBook()).willReturn(addresses);
+		given(state.addressBook()).willReturn(addresses);
 		given(state.diskFs()).willReturn(diskFs);
 		workingState = mock(StateChildren.class);
 		given(workingState.getNetworkCtx()).willReturn(networkCtx);
@@ -256,7 +258,7 @@ class ServicesContextTest {
 		given(state.uniqueTokenAssociations()).willReturn(uniqueTokenAssociations);
 		given(state.uniqueOwnershipAssociations()).willReturn(uniqueOwnershipAssociations);
 
-    crypto = mock(Cryptography.class);
+		crypto = mock(Cryptography.class);
 		platform = mock(Platform.class);
 		given(platform.getSelfId()).willReturn(new NodeId(false, 0L));
 		given(platform.getCryptography()).willReturn(crypto);
@@ -288,8 +290,7 @@ class ServicesContextTest {
 		given(newState.uniqueTokens()).willReturn(newUniqueTokens);
 		given(newState.uniqueTokenAssociations()).willReturn(newUniqueTokenAssociations);
 		given(newState.uniqueOwnershipAssociations()).willReturn(newUniqueOwnershipAssociations);
-
-    // given:
+		// given:
 		var subject = new ServicesContext(nodeId, platform, state, propertySources);
 
 		AtomicReference<StateChildren> queryableState = getQueryableState(subject);
@@ -569,7 +570,7 @@ class ServicesContextTest {
 		assertThat(queryableState.get().getTokenAssociations(), instanceOf(FCMap.class));
 		assertThat(queryableState.get().getUniqueOwnershipAssociations(), instanceOf(FCOneToManyRelation.class));
 
-    assertThat(ctx.txnChargingPolicy(), instanceOf(FeeChargingPolicy.class));
+		assertThat(ctx.txnChargingPolicy(), instanceOf(FeeChargingPolicy.class));
 		assertThat(ctx.txnResponseHelper(), instanceOf(TxnResponseHelper.class));
 		assertThat(ctx.statusCounts(), instanceOf(ConsensusStatusCounts.class));
 		assertThat(queryableState.get().getStorage(), instanceOf(FCMap.class));
@@ -770,9 +771,12 @@ class ServicesContextTest {
 
 	/**
 	 * Use reflection to extract the private field queryableState from ServiceContext
-	 * @param serviceContext service context
+	 *
+	 * @param serviceContext
+	 * 		service context
 	 * @return queryable state
-	 * @throws Exception if unable to extract field
+	 * @throws Exception
+	 * 		if unable to extract field
 	 */
 	private AtomicReference<StateChildren> getQueryableState(ServicesContext serviceContext) throws Exception {
 
@@ -788,9 +792,9 @@ class ServicesContextTest {
 		}
 
 		return queryableState;
-  }
+	}
 
-  private void compareFCOTMR(FCOneToManyRelation expected, FCOneToManyRelation actual) {
+	private void compareFCOTMR(FCOneToManyRelation expected, FCOneToManyRelation actual) {
 		assertEquals(expected.getKeySet(), actual.getKeySet());
 		expected.getKeySet().forEach(key -> {
 			assertEquals(expected.getList(key), actual.getList(key));

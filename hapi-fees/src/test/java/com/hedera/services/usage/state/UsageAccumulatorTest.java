@@ -20,11 +20,21 @@ package com.hedera.services.usage.state;
  * ‍
  */
 
-import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.SigUsage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.hedera.services.pricing.ResourceProvider.NETWORK;
+import static com.hedera.services.pricing.ResourceProvider.NODE;
+import static com.hedera.services.pricing.ResourceProvider.SERVICE;
+import static com.hedera.services.pricing.UsableResource.BPR;
+import static com.hedera.services.pricing.UsableResource.BPT;
+import static com.hedera.services.pricing.UsableResource.CONSTANT;
+import static com.hedera.services.pricing.UsableResource.RBH;
+import static com.hedera.services.pricing.UsableResource.SBH;
+import static com.hedera.services.pricing.UsableResource.SBPR;
+import static com.hedera.services.pricing.UsableResource.VPT;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ACCOUNT_AMT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_RECEIPT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_BODY_SIZE;
@@ -32,7 +42,7 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_RECORD_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
 import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class UsageAccumulatorTest {
 	final private int memoBytes = 100;
@@ -62,8 +72,12 @@ class UsageAccumulatorTest {
 
 		// then:
 		assertEquals(1, subject.getUniversalBpt());
+		assertEquals(1, subject.get(NETWORK, BPT));
 		assertEquals(4, subject.getNetworkVpt());
+		assertEquals(4, subject.get(NETWORK, VPT));
 		assertEquals(8, subject.getNetworkRbh());
+		assertEquals(8, subject.get(NETWORK, RBH));
+		assertEquals(1, subject.get(NETWORK, CONSTANT));
 	}
 
 	@Test
@@ -76,9 +90,14 @@ class UsageAccumulatorTest {
 
 		// then:
 		assertEquals(baseBpt + 1, subject.getUniversalBpt());
+		assertEquals(baseBpt + 1, subject.get(NODE, BPT));
 		assertEquals(baseBpr + 2, subject.getNodeBpr());
+		assertEquals(baseBpr + 2, subject.get(NODE, BPR));
 		assertEquals(3, subject.getNodeSbpr());
+		assertEquals(3, subject.get(NODE, SBPR));
 		assertEquals(sigUsage.numPayerKeys(), subject.getNodeVpt());
+		assertEquals(sigUsage.numPayerKeys(), subject.get(NODE, VPT));
+		assertEquals(1, subject.get(NODE, CONSTANT));
 	}
 
 	@Test
@@ -89,7 +108,10 @@ class UsageAccumulatorTest {
 
 		// then:
 		assertEquals(6, subject.getServiceRbh());
+		assertEquals(6, subject.get(SERVICE, RBH));
 		assertEquals(7, subject.getServiceSbh());
+		assertEquals(7, subject.get(SERVICE, SBH));
+		assertEquals(1, subject.get(SERVICE, CONSTANT));
 	}
 
 

@@ -9,9 +9,9 @@ package com.hedera.services.txns.span;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,14 +24,12 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
-import com.hedera.services.state.submerkle.AssessedCustomFee;
-import com.hedera.services.state.submerkle.CustomFee;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.utils.TxnAccessor;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,7 +43,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -72,19 +69,16 @@ class SpanMapManagerTest {
 
 	private final Id customFeeToken = new Id(0, 0, 123);
 	private final Id customFeeCollector = new Id(0, 0, 124);
-	final List<Pair<Id, List<CustomFee>>> entityCustomFees = List.of(
+	final List<Pair<Id, List<FcCustomFee>>> entityCustomFees = List.of(
 			Pair.of(customFeeToken, new ArrayList<>()));
 
-	final List<Pair<Id, List<CustomFee>>> newCustomFeeChanges = List.of(
-			Pair.of(customFeeToken, List.of(CustomFee.fixedFee(10L, customFeeToken.asEntityId(),
+	final List<Pair<Id, List<FcCustomFee>>> newCustomFeeChanges = List.of(
+			Pair.of(customFeeToken, List.of(FcCustomFee.fixedFee(10L, customFeeToken.asEntityId(),
 					customFeeCollector.asEntityId()))));
-	private final List<AssessedCustomFee> assessedCustomFees = List.of(
-			new AssessedCustomFee(customFeeCollector.asEntityId(), customFeeToken.asEntityId(), 123L),
-			new AssessedCustomFee( customFeeCollector.asEntityId(), 123L)
-			);
-
-	private final AccountID acctID = asAccount("1.2.3");
-	private final EntityId tokenID = new EntityId(4, 6, 6);
+	private final List<FcAssessedCustomFee> assessedCustomFees = List.of(
+			new FcAssessedCustomFee(customFeeCollector.asEntityId(), customFeeToken.asEntityId(), 123L),
+			new FcAssessedCustomFee(customFeeCollector.asEntityId(), 123L)
+	);
 
 	private final ImpliedTransfers validImpliedTransfers = ImpliedTransfers.valid(
 			validationProps, new ArrayList<>(), entityCustomFees, assessedCustomFees);
@@ -130,7 +124,7 @@ class SpanMapManagerTest {
 		// then:
 		assertSame(someImpliedXfers, spanMapAccessor.getImpliedTransfers(accessor));
 	}
-	
+
 	@Test
 	void expandsImpliedTransfersWithDetails() {
 		given(accessor.getTxn()).willReturn(pretendXferTxn);

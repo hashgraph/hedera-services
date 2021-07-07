@@ -323,13 +323,15 @@ public class StateView {
 			supplyCandidate.ifPresent(k -> info.setSupplyKey(asKeyUnchecked(k)));
 			var wipeCandidate = token.wipeKey();
 			wipeCandidate.ifPresent(k -> info.setWipeKey(asKeyUnchecked(k)));
+			var feeScheduleCandidate = token.feeScheduleKey();
+			feeScheduleCandidate.ifPresent(k -> info.setFeeScheduleKey(asKeyUnchecked(k)));
 
 			if (token.hasAutoRenewAccount()) {
 				info.setAutoRenewAccount(token.autoRenewAccount().toGrpcAccountId());
 				info.setAutoRenewPeriod(Duration.newBuilder().setSeconds(token.autoRenewPeriod()));
 			}
 
-			info.setCustomFees(token.grpcFeeSchedule());
+			info.addAllCustomFees(token.grpcFeeSchedule());
 
 			return Optional.of(info.build());
 		} catch (Exception unexpected) {
@@ -418,7 +420,8 @@ public class StateView {
 	}
 
 	public boolean nftExists(NftID id) {
-		return uniqueTokens.get().containsKey(new MerkleUniqueTokenId(fromGrpcTokenId(id.getTokenID()), id.getSerialNumber()));
+		return uniqueTokens.get().containsKey(
+				new MerkleUniqueTokenId(fromGrpcTokenId(id.getTokenID()), id.getSerialNumber()));
 	}
 
 	public Optional<TokenType> tokenType(TokenID tokenID) {
@@ -534,20 +537,20 @@ public class StateView {
 		List<TokenNftInfo> nftInfos = new ArrayList<>();
 		var uniqueTokensMap = uniqueTokens.get();
 		uniqueTokenAccountOwnerships.get()
-				.get(fromGrpcAccountId(aid), (int)start, (int)end).forEachRemaining(nftId -> {
-					var nft = uniqueTokensMap.get(nftId);
-					nftInfos.add(
-							TokenNftInfo.newBuilder()
-								.setAccountID(aid)
-								.setCreationTime(nft.getCreationTime().toGrpc())
-								.setNftID(NftID.newBuilder()
-										.setTokenID(nftId.tokenId().toGrpcTokenId())
-										.setSerialNumber(nftId.serialNumber())
-										.build())
-								.setMetadata(ByteString.copyFrom(nft.getMetadata()))
+				.get(fromGrpcAccountId(aid), (int) start, (int) end).forEachRemaining(nftId -> {
+			var nft = uniqueTokensMap.get(nftId);
+			nftInfos.add(
+					TokenNftInfo.newBuilder()
+							.setAccountID(aid)
+							.setCreationTime(nft.getCreationTime().toGrpc())
+							.setNftID(NftID.newBuilder()
+									.setTokenID(nftId.tokenId().toGrpcTokenId())
+									.setSerialNumber(nftId.serialNumber())
+									.build())
+							.setMetadata(ByteString.copyFrom(nft.getMetadata()))
 							.build()
-					);
-				});
+			);
+		});
 		return Optional.of(nftInfos);
 	}
 

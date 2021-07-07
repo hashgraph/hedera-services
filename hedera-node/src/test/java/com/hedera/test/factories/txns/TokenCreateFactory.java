@@ -20,7 +20,7 @@ package com.hedera.test.factories.txns;
  * ‍
  */
 
-import com.hedera.services.state.submerkle.CustomFee;
+import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
@@ -36,7 +36,7 @@ public class TokenCreateFactory extends SignedTxnFactory<TokenCreateFactory> {
 	private boolean omitAdmin = false;
 	private boolean omitTreasury = false;
 	private Optional<AccountID> autoRenew = Optional.empty();
-	private List<CustomFee> customFees = new ArrayList<>();
+	private List<FcCustomFee> customFees = new ArrayList<>();
 
 	private TokenCreateFactory() {}
 
@@ -59,7 +59,7 @@ public class TokenCreateFactory extends SignedTxnFactory<TokenCreateFactory> {
 		return this;
 	}
 
-	public TokenCreateFactory plusCustomFee(CustomFee customFee) {
+	public TokenCreateFactory plusCustomFee(FcCustomFee customFee) {
 		customFees.add(customFee);
 		return this;
 	}
@@ -86,9 +86,8 @@ public class TokenCreateFactory extends SignedTxnFactory<TokenCreateFactory> {
 		if (frozen) {
 			op.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey());
 		}
-		var cfBuilder = op.getCustomFeesBuilder();
 		for (var fee : customFees) {
-			cfBuilder.addCustomFees(fee.asGrpc());
+			op.addCustomFees(fee.asGrpc());
 		}
 		autoRenew.ifPresent(op::setAutoRenewAccount);
 		txn.setTokenCreation(op);

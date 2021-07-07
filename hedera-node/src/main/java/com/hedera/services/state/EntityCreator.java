@@ -23,7 +23,7 @@ package com.hedera.services.state;
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordCache;
-import com.hedera.services.state.submerkle.AssessedCustomFee;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -92,7 +92,7 @@ public interface EntityCreator {
 			TxnReceipt receipt,
 			List<TokenTransferList> explicitTokenTransfers,
 			ServicesContext ctx,
-			List<AssessedCustomFee> assessedCustomFees);
+			List<FcAssessedCustomFee> assessedCustomFees);
 
 	/**
 	 * Build a {@link ExpirableTxnRecord.Builder} for a transaction failed to commit

@@ -1,5 +1,4 @@
 package com.hedera.services.bdd.suites.token;
-
 /*-
  * ‌
  * Hedera Services Test Clients
@@ -329,7 +328,8 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 								.initialSupply(0)
 								.supplyKey(SUPPLY_KEY)
 								.treasury(TOKEN_TREASURY),
-						mintToken(NFT, List.of(metadata("1"), metadata("2"), metadata("3"), metadata("4"), metadata("5")))
+						mintToken(NFT,
+								List.of(metadata("1"), metadata("2"), metadata("3"), metadata("4"), metadata("5")))
 				)
 				.when(
 						burnToken(NFT, List.of(3L, 4L, 5L)).via("burnTxn")
@@ -388,8 +388,10 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 								.supplyKey(SUPPLY_KEY)
 								.treasury(TOKEN_TREASURY)
 				).when(
-						mintToken(NFT, List.of(metadata("memo"))).payingWith("customPayer").signedBy("customPayer", "supplyKey").via("mintNFT"),
-						mintToken(FUNGIBLE_TOKEN, 100L).payingWith("customPayer").signedBy("customPayer", "supplyKey").via("mintFungible")
+						mintToken(NFT, List.of(metadata("memo"))).payingWith("customPayer").signedBy("customPayer",
+								"supplyKey").via("mintNFT"),
+						mintToken(FUNGIBLE_TOKEN, 100L).payingWith("customPayer").signedBy("customPayer",
+								"supplyKey").via("mintFungible")
 				).then(
 						UtilVerbs.withOpContext((spec, opLog) -> {
 							var mintNFT = getTxnRecord("mintNFT");
@@ -883,8 +885,10 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 							tokenTransferLists.stream().forEach(tokenTransferList -> {
 								Assert.assertEquals(1, tokenTransferList.getNftTransfersList().size());
 								tokenTransferList.getNftTransfersList().stream().forEach(nftTransfers -> {
-									Assert.assertEquals(AccountID.getDefaultInstance(), nftTransfers.getSenderAccountID());
-									Assert.assertEquals(TxnUtils.asId(TOKEN_TREASURY, spec), nftTransfers.getReceiverAccountID());
+									Assert.assertEquals(AccountID.getDefaultInstance(),
+											nftTransfers.getSenderAccountID());
+									Assert.assertEquals(TxnUtils.asId(TOKEN_TREASURY, spec),
+											nftTransfers.getReceiverAccountID());
 									Assert.assertEquals(1L, nftTransfers.getSerialNumber());
 								});
 							});

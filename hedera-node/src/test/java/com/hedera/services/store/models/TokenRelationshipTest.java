@@ -9,9 +9,9 @@ package com.hedera.services.store.models;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -50,7 +50,7 @@ class TokenRelationshipTest {
 	void setUp() {
 		token = new Token(tokenId);
 		account = new Account(accountId);
-		
+
 		subject = new TokenRelationship(token, account);
 		subject.initBalance(balance);
 	}
@@ -60,8 +60,10 @@ class TokenRelationshipTest {
 		// given:
 		final var desired = "TokenRelationship{notYetPersisted=true, " +
 				"account=Account{id=Id{shard=1, realm=0, num=1234}, expiry=0, balance=0, deleted=false, " +
-				"tokens=<N/A>}, token=Token{id=Id{shard=0, realm=0, num=1234}, type=null, treasury=null, autoRenewAccount=null, " +
-				"kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0}, balance=1234, " +
+				"tokens=<N/A>}, token=Token{id=Id{shard=0, realm=0, num=1234}, type=null, treasury=null, " +
+				"autoRenewAccount=null, " +
+				"kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0}, " +
+				"balance=1234, " +
 				"balanceChange=0, frozen=false, kycGranted=false}";
 
 		// expect:
@@ -137,7 +139,7 @@ class TokenRelationshipTest {
 	}
 
 	@Test
-	void givesCorrectRepresentation(){
+	void givesCorrectRepresentation() {
 		subject.getToken().setType(TokenType.NON_FUNGIBLE_UNIQUE);
 		assertTrue(subject.hasUniqueRepresentation());
 
@@ -147,7 +149,7 @@ class TokenRelationshipTest {
 	}
 
 	@Test
-	void testHashCode(){
+	void testHashCode() {
 		var rel = new TokenRelationship(token, account);
 		rel.initBalance(balance);
 		assertEquals(rel.hashCode(), subject.hashCode());

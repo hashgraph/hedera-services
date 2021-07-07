@@ -29,8 +29,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.service.proto.java.TokenServiceGrpc;
 import io.grpc.stub.StreamObserver;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
@@ -38,6 +36,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetAccountNftInfos;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
@@ -50,7 +49,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfree
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 
 public class TokenController extends TokenServiceGrpc.TokenServiceImplBase {
-	private static final Logger log = LogManager.getLogger(TokenController.class);
 
 	private final TokenAnswers tokenAnswers;
 	private final TxnResponseHelper txnHelper;
@@ -137,12 +135,17 @@ public class TokenController extends TokenServiceGrpc.TokenServiceImplBase {
 	}
 
 	@Override
-	public void getTokenNftInfos(Query query, StreamObserver<Response> observer) {
-		queryHelper.answer(query, observer, tokenAnswers.getTokenNftInfosAnswer(), TokenGetNftInfos);
+	public void getAccountNftInfos(Query query, StreamObserver<Response> observer) {
+		queryHelper.answer(query, observer, tokenAnswers.getAccountNftInfosAnswer(), TokenGetAccountNftInfos);
 	}
 
 	@Override
-	public void getAccountNftInfos(Query query, StreamObserver<Response> observer) {
-		queryHelper.answer(query, observer, tokenAnswers.getAccountNftInfosAnswer(), TokenGetAccountNftInfos);
+	public void updateTokenFeeSchedule(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+		txnHelper.submit(signedTxn, observer, TokenFeeScheduleUpdate);
+	}
+
+	@Override
+	public void getTokenNftInfos(Query query, StreamObserver<Response> observer) {
+		queryHelper.answer(query, observer, tokenAnswers.getTokenNftInfosAnswer(), TokenGetNftInfos);
 	}
 }

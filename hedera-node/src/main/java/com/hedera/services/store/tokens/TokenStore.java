@@ -29,6 +29,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 
@@ -48,12 +49,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
  */
 public interface TokenStore extends Store<TokenID, MerkleToken> {
 	TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
-	NftID MISSING_NFT = NftID.getDefaultInstance();
 	Consumer<MerkleToken> DELETION = token -> token.setDeleted(true);
 
 	boolean isKnownTreasury(AccountID id);
+
 	boolean associationExists(AccountID aId, TokenID tId);
+
 	boolean isTreasuryForToken(AccountID aId, TokenID tId);
+
 	List<TokenID> listOfTokensServed(AccountID treasury);
 
 	ResponseCodeEnum wipe(AccountID aId, TokenID tId, long wipingAmount, boolean skipKeyCheck);
@@ -61,6 +64,8 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 	ResponseCodeEnum freeze(AccountID aId, TokenID tId);
 
 	ResponseCodeEnum update(TokenUpdateTransactionBody changes, long now);
+
+	ResponseCodeEnum updateFeeSchedule(TokenFeeScheduleUpdateTransactionBody changes);
 
 	ResponseCodeEnum unfreeze(AccountID aId, TokenID tId);
 

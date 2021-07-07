@@ -66,7 +66,7 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 		this.subType = figureSubType();
 	}
 
-	public HapiTokenMint(String token, List<ByteString> metadata){
+	public HapiTokenMint(String token, List<ByteString> metadata) {
 		this.token = token;
 		this.metadata = metadata;
 		this.subType = figureSubType();
