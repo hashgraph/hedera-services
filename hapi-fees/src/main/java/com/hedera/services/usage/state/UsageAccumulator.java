@@ -182,7 +182,7 @@ public class UsageAccumulator {
 					case CONSTANT:
 						return 1;
 					default:
-						throw new IllegalArgumentException("Network type usage unknown");
+						return 0;
 				}
 			case NODE:
 				switch (resource) {
@@ -197,7 +197,7 @@ public class UsageAccumulator {
 					case CONSTANT:
 						return 1;
 					default:
-						throw new IllegalArgumentException("Node type usage unknown");
+						return 0;
 				}
 			case SERVICE:
 				switch (resource) {
@@ -208,7 +208,7 @@ public class UsageAccumulator {
 					case CONSTANT:
 						return 1;
 					default:
-						throw new IllegalArgumentException("Service type usage unknown");
+						return 0;
 				}
 		}
 		return 0L;
