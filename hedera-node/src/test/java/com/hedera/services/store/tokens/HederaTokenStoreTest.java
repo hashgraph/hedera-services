@@ -193,6 +193,7 @@ class HederaTokenStoreTest {
 	private AccountID counterparty = IdUtils.asAccount("1.2.777");
 	private AccountID feeCollector = treasury;
 	private AccountID anotherFeeCollector = IdUtils.asAccount("1.2.777");
+	private AccountID someFeeCollector = IdUtils.asAccount("1.2.778");
 	private TokenID created = IdUtils.asToken("1.2.666666");
 	private TokenID pending = IdUtils.asToken("1.2.555555");
 	private int MAX_TOKENS_PER_ACCOUNT = 100;
@@ -362,6 +363,7 @@ class HederaTokenStoreTest {
 				TransactionalLedger.class);
 		given(accountsLedger.exists(treasury)).willReturn(true);
 		given(accountsLedger.exists(anotherFeeCollector)).willReturn(true);
+		given(accountsLedger.exists(someFeeCollector)).willReturn(true);
 		given(accountsLedger.exists(autoRenewAccount)).willReturn(true);
 		given(accountsLedger.exists(newAutoRenewAccount)).willReturn(true);
 		given(accountsLedger.exists(sponsor)).willReturn(true);
@@ -2300,6 +2302,15 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	void rejectsFeesUpdatedWithInvalidFractionalFees() {
+		var op = updateFeeScheduleWithInvalidFractionalFee();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR, result);
+	}
+
+	@Test
 	void happyPathCustomFeesUpdated() {
 		var op = updateFeeScheduleWith();
 
@@ -2323,12 +2334,22 @@ class HederaTokenStoreTest {
 	}
 
 	private TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWith() {
-		List<CustomFee> simpleCustomFees = List.of(customFixedFeeInHbar, customFixedFeeInHts);
-
 		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
 				.setTokenId(misc)
-				.addAllCustomFees(simpleCustomFees);
+				.addAllCustomFees(grpcCustomFees);
 		return op.build();
 	}
 
+	private TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithInvalidFractionalFee() {
+		CustomFee badFractionalFee = CustomFee.newBuilder()
+				.setFeeCollectorAccountId(someFeeCollector)
+				.setFractionalFee(fractionalFee)
+				.build();
+
+		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
+				.setTokenId(misc)
+				.addAllCustomFees(List.of(badFractionalFee));
+
+		return op.build();
+	}
 }

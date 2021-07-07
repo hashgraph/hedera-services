@@ -481,7 +481,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 		if (request.getCustomFeesCount() > 0) {
 			final var customFees = request.getCustomFeesList();
-			validity = validateFeeSchedule(customFees);
+			validity = validateFeeSchedule(customFees,false, null);
 			if (validity != OK) {
 				return failure(validity);
 			}
@@ -491,7 +491,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		return success(pendingId);
 	}
 
-	private ResponseCodeEnum validateFeeSchedule(List<CustomFee> feeSchedule) {
+	private ResponseCodeEnum validateFeeSchedule(List<CustomFee> feeSchedule, boolean isFeeScheduleUpdate, TokenID tokenID) {
 		if (feeSchedule.size() > properties.maxCustomFeesAllowed()) {
 			return CUSTOM_FEES_LIST_TOO_LONG;
 		}
@@ -523,8 +523,14 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 					}
 				}
 			} else if (customFee.hasFractionalFee()) {
-				if (pendingCreation.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE) {
-					return CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
+				if(!isFeeScheduleUpdate) {
+					if (pendingCreation.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE) {
+						return CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
+					}
+				} else {
+					if (!associationExists(feeCollector, tokenID)) {
+						return TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
+					}
 				}
 				final var fractionalSpec = customFee.getFractionalFee();
 				final var fraction = fractionalSpec.getFractionalAmount();
@@ -775,7 +781,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		if (customFees.isEmpty() && token.grpcFeeSchedule().isEmpty()) {
 			return CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
 		}
-		var validity = validateFeeSchedule(changes.getCustomFeesList());
+		var validity = validateFeeSchedule(changes.getCustomFeesList(), true, tId);
 		if (validity != OK) {
 			return validity;
 		}
