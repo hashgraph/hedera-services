@@ -128,7 +128,7 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 	}
 
 	@Override
-	protected void updateStateOf(HapiApiSpec spec) throws Throwable {
+	public void updateStateOf(HapiApiSpec spec) throws Throwable {
 		if (actualStatus != SUCCESS) {
 			return;
 		}
