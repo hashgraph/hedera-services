@@ -222,6 +222,7 @@ public class BootstrapProperties implements PropertySource {
 			"tokens.maxSymbolUtf8Bytes",
 			"tokens.maxTokenNameUtf8Bytes",
 			"tokens.maxCustomFeesAllowed",
+			"tokens.nfts.areEnabled",
 			"tokens.nfts.maxMetadataBytes",
 			"tokens.nfts.maxBatchSizeBurn",
 			"tokens.nfts.maxBatchSizeWipe",
@@ -369,6 +370,7 @@ public class BootstrapProperties implements PropertySource {
 			entry("stats.hapiOps.speedometerUpdateIntervalMs", AS_LONG),
 			entry("stats.runningAvgHalfLifeSecs", AS_DOUBLE),
 			entry("stats.speedometerHalfLifeSecs", AS_DOUBLE),
-			entry("consensus.message.maxBytesAllowed", AS_INT)
+			entry("consensus.message.maxBytesAllowed", AS_INT),
+			entry("tokens.nfts.areEnabled", AS_BOOLEAN)
 	);
 }

@@ -114,10 +114,12 @@ class ImpliedTransfersMarshalTest {
 	private final int maxExplicitHbarAdjusts = 5;
 	private final int maxExplicitTokenAdjusts = 50;
 	private final int maxExplicitOwnershipChanges = 12;
+	private final boolean areNftsEnabled = false;
 	final ImpliedTransfersMeta.ValidationProps validationProps = new ImpliedTransfersMeta.ValidationProps(
 			maxExplicitHbarAdjusts,
 			maxExplicitTokenAdjusts,
-			maxExplicitOwnershipChanges);
+			maxExplicitOwnershipChanges,
+			areNftsEnabled);
 
 	private final EntityId customFeeToken = new EntityId(0, 0, 123);
 	private final EntityId customFeeCollector = new EntityId(0, 0, 124);
@@ -222,9 +224,11 @@ class ImpliedTransfersMarshalTest {
 		final var twoMeta = new ImpliedTransfersMeta(validationProps, TOKEN_WAS_DELETED, Collections.emptyList());
 		// and:
 		final var oneRepr = "ImpliedTransfersMeta{code=OK, maxExplicitHbarAdjusts=5, maxExplicitTokenAdjusts=50, " +
-				"maxExplicitOwnershipChanges=12, tokenFeeSchedules=[(Id{shard=0, realm=0, num=123},[])]}";
+				"maxExplicitOwnershipChanges=12, areNftsEnabled=false, " +
+				"tokenFeeSchedules=[(Id{shard=0, realm=0, num=123},[])]}";
 		final var twoRepr = "ImpliedTransfersMeta{code=TOKEN_WAS_DELETED, maxExplicitHbarAdjusts=5, " +
-				"maxExplicitTokenAdjusts=50, maxExplicitOwnershipChanges=12, tokenFeeSchedules=[]}";
+				"maxExplicitTokenAdjusts=50, maxExplicitOwnershipChanges=12, areNftsEnabled=false, " +
+				"tokenFeeSchedules=[]}";
 
 		// expect:
 		assertNotEquals(oneMeta, twoMeta);
@@ -247,10 +251,12 @@ class ImpliedTransfersMarshalTest {
 		// and:
 		final var oneRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=TOKEN_WAS_DELETED, " +
 				"maxExplicitHbarAdjusts=5, " +
-				"maxExplicitTokenAdjusts=50, maxExplicitOwnershipChanges=12, tokenFeeSchedules=[]}, changes=[], " +
+				"maxExplicitTokenAdjusts=50, maxExplicitOwnershipChanges=12, areNftsEnabled=false, " +
+				"tokenFeeSchedules=[]}, changes=[], " +
 				"tokenFeeSchedules=[], assessedCustomFees=[]}";
 		final var twoRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=OK, maxExplicitHbarAdjusts=5, " +
-				"maxExplicitTokenAdjusts=50, maxExplicitOwnershipChanges=12, tokenFeeSchedules=[(Id{shard=0, " +
+				"maxExplicitTokenAdjusts=50, maxExplicitOwnershipChanges=12, areNftsEnabled=false, " +
+				"tokenFeeSchedules=[(Id{shard=0, " +
 				"realm=0, num=123},[])]}, changes=[BalanceChange{token=Id{shard=1, realm=2, num=3}, " +
 				"account=Id{shard=4, realm=5, num=6}, units=7}], tokenFeeSchedules=[(Id{shard=0, realm=0, num=123}," +
 				"[])" +
@@ -318,8 +324,10 @@ class ImpliedTransfersMarshalTest {
 		// expect:
 		assertTrue(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules));
 
-		//modify customFeeChanges to see test fails
+		// and:
 		given(newCustomFeeSchedules.lookupScheduleFor(any())).willReturn(newCustomFeeChanges.get(0).getValue());
+
+		// expect:
 		assertFalse(meta.wasDerivedFrom(dynamicProperties, newCustomFeeSchedules));
 
 		// and:
@@ -333,15 +341,20 @@ class ImpliedTransfersMarshalTest {
 		// and:
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxExplicitHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxExplicitTokenAdjusts + 1);
-		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxExplicitOwnershipChanges);
 
 		// expect:
 		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules));
 
 		// and:
-		given(dynamicProperties.maxTransferListSize()).willReturn(maxExplicitHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxExplicitTokenAdjusts);
 		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxExplicitOwnershipChanges - 1);
+
+		// expect:
+		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules));
+
+		// and:
+		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxExplicitOwnershipChanges);
+		given(dynamicProperties.areNftsEnabled()).willReturn(true);
 
 		// expect:
 		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules));

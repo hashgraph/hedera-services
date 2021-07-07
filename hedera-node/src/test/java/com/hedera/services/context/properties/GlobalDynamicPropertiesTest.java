@@ -68,6 +68,7 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.shouldExportBalances());
 		assertTrue(subject.shouldExportTokenBalances());
 		assertTrue(subject.autoRenewEnabled());
+		assertFalse(subject.areNftsEnabled());
 	}
 
 	@Test
@@ -159,6 +160,7 @@ class GlobalDynamicPropertiesTest {
 		assertFalse(subject.shouldExportBalances());
 		assertFalse(subject.shouldExportTokenBalances());
 		assertFalse(subject.autoRenewEnabled());
+		assertTrue(subject.areNftsEnabled());
 	}
 
 	@Test
@@ -273,6 +275,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("tokens.nfts.maxQueryRange")).willReturn(i + 39L);
 		given(properties.getIntProperty("tokens.nfts.maxMetadataBytes")).willReturn(i + 40);
 		given(properties.getIntProperty("tokens.maxTokenNameUtf8Bytes")).willReturn(i + 41);
+		given(properties.getBooleanProperty("tokens.nfts.areEnabled")).willReturn((i + 42) % 2 == 0);
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {

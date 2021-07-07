@@ -21,6 +21,7 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
@@ -50,6 +51,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -79,6 +81,8 @@ class TokenBurnTransitionLogicTest {
 	private OptionValidator validator;
 	@Mock
 	private AccountStore accountStore;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	private TokenRelationship treasuryRel;
 	private TransactionBody tokenBurnTxn;
@@ -87,7 +91,7 @@ class TokenBurnTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new TokenBurnTransitionLogic(validator, accountStore, store, txnCtx);
+		subject = new TokenBurnTransitionLogic(validator, accountStore, store, txnCtx, dynamicProperties);
 	}
 
 	@Test
@@ -112,7 +116,7 @@ class TokenBurnTransitionLogicTest {
 	}
 
 	@Test
-	void followsHappyPathForUnique(){
+	void followsHappyPathForUnique() {
 		// setup:
 		treasuryRel = new TokenRelationship(token, treasury);
 
@@ -147,9 +151,19 @@ class TokenBurnTransitionLogicTest {
 	@Test
 	void acceptsValidTxn() {
 		givenValidTxnCtx();
+		given(dynamicProperties.areNftsEnabled()).willReturn(false);
 
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(tokenBurnTxn));
+	}
+
+	@Test
+	void rejectsUniqueWhenNftsNotEnabled() {
+		givenValidUniqueTxnCtx();
+		given(dynamicProperties.areNftsEnabled()).willReturn(false);
+
+		// expect:
+		assertEquals(NOT_SUPPORTED, subject.semanticCheck().apply(tokenBurnTxn));
 	}
 
 	@Test
@@ -171,13 +185,16 @@ class TokenBurnTransitionLogicTest {
 	@Test
 	void rejectsInvalidZeroAmount() {
 		givenInvalidZeroAmount();
+		given(dynamicProperties.areNftsEnabled()).willReturn(true);
 
 		// expect:
 		assertEquals(INVALID_TOKEN_BURN_AMOUNT, subject.semanticCheck().apply(tokenBurnTxn));
 	}
 
 	@Test
-	void rejectsInvalidTxnBodyWithBothProps(){
+	void rejectsInvalidTxnBodyWithBothProps() {
+		given(dynamicProperties.areNftsEnabled()).willReturn(true);
+
 		tokenBurnTxn = TransactionBody.newBuilder()
 				.setTokenBurn(
 						TokenBurnTransactionBody.newBuilder()
@@ -191,7 +208,9 @@ class TokenBurnTransitionLogicTest {
 
 
 	@Test
-	void rejectsInvalidTxnBodyWithNoProps(){
+	void rejectsInvalidTxnBodyWithNoProps() {
+		given(dynamicProperties.areNftsEnabled()).willReturn(true);
+
 		tokenBurnTxn = TransactionBody.newBuilder()
 				.setTokenBurn(
 						TokenBurnTransactionBody.newBuilder()
@@ -202,7 +221,8 @@ class TokenBurnTransitionLogicTest {
 	}
 
 	@Test
-	void rejectsInvalidTxnBodyWithInvalidBatch(){
+	void rejectsInvalidTxnBodyWithInvalidBatch() {
+		given(dynamicProperties.areNftsEnabled()).willReturn(true);
 		tokenBurnTxn = TransactionBody.newBuilder()
 				.setTokenBurn(
 						TokenBurnTransactionBody.newBuilder()
@@ -215,7 +235,8 @@ class TokenBurnTransitionLogicTest {
 	}
 
 	@Test
-	void propagatesErrorOnBatchSizeExceeded(){
+	void propagatesErrorOnBatchSizeExceeded() {
+		given(dynamicProperties.areNftsEnabled()).willReturn(true);
 		tokenBurnTxn = TransactionBody.newBuilder()
 				.setTokenBurn(
 						TokenBurnTransactionBody.newBuilder()
@@ -223,7 +244,8 @@ class TokenBurnTransitionLogicTest {
 								.setToken(grpcId))
 				.build();
 
-		given(validator.maxBatchSizeBurnCheck(tokenBurnTxn.getTokenBurn().getSerialNumbersCount())).willReturn(BATCH_SIZE_LIMIT_EXCEEDED);
+		given(validator.maxBatchSizeBurnCheck(tokenBurnTxn.getTokenBurn().getSerialNumbersCount())).willReturn(
+				BATCH_SIZE_LIMIT_EXCEEDED);
 		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.semanticCheck().apply(tokenBurnTxn));
 	}
 

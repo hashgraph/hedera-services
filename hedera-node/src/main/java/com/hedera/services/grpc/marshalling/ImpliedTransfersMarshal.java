@@ -70,9 +70,10 @@ public class ImpliedTransfersMarshal {
 		final var maxHbarAdjusts = dynamicProperties.maxTransferListSize();
 		final var maxTokenAdjusts = dynamicProperties.maxTokenTransferListSize();
 		final var maxOwnershipChanges = dynamicProperties.maxNftTransfersLen();
+		final var areNftsEnabled = dynamicProperties.areNftsEnabled();
 
 		final var validationProps = new ImpliedTransfersMeta.ValidationProps(
-				maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges);
+				maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, areNftsEnabled);
 
 		final var validity = transferSemanticChecks.fullPureValidation(
 				op.getTransfers(), op.getTokenTransfersList(), validationProps);

@@ -21,6 +21,7 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
@@ -31,8 +32,6 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -41,29 +40,32 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
  * Provides the state transition for token burning.
  */
 public class TokenBurnTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(TokenBurnTransitionLogic.class);
 	private final OptionValidator validator;
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 	private final TypedTokenStore store;
 	private final TransactionContext txnCtx;
 	private final AccountStore accountStore;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	public TokenBurnTransitionLogic(
 			final OptionValidator validator,
 			final AccountStore accountStore,
 			TypedTokenStore store,
-			TransactionContext txnCtx
+			TransactionContext txnCtx,
+			GlobalDynamicProperties dynamicProperties
 	) {
 		this.validator = validator;
 		this.store = store;
 		this.txnCtx = txnCtx;
 		this.accountStore = accountStore;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -109,13 +111,16 @@ public class TokenBurnTransitionLogic implements TransitionLogic {
 			return INVALID_TOKEN_ID;
 		}
 
-		boolean bothPresent = (op.getAmount() > 0 && op.getSerialNumbersCount() > 0);
-		boolean nonePresent = (op.getAmount() <= 0 && op.getSerialNumbersCount() == 0);
+		final var numSerialNumbers = op.getSerialNumbersCount();
+		if (!dynamicProperties.areNftsEnabled() && numSerialNumbers > 0) {
+			return NOT_SUPPORTED;
+		}
 
+		boolean bothPresent = (op.getAmount() > 0 && numSerialNumbers > 0);
+		boolean nonePresent = (op.getAmount() <= 0 && numSerialNumbers == 0);
 		if (nonePresent) {
 			return INVALID_TOKEN_BURN_AMOUNT;
 		}
-
 		if (bothPresent) {
 			return INVALID_TRANSACTION_BODY;
 		}

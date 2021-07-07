@@ -22,6 +22,7 @@ package com.hedera.services.txns.token;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.tokens.TokenStore;
@@ -40,6 +41,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,6 +67,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_K
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
@@ -98,6 +101,7 @@ class TokenCreateTransitionLogicTest {
 	private HederaLedger ledger;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
+	private GlobalDynamicProperties dynamicProperties;
 
 	private TokenCreateTransitionLogic subject;
 
@@ -107,13 +111,14 @@ class TokenCreateTransitionLogicTest {
 		store = mock(TokenStore.class);
 		ledger = mock(HederaLedger.class);
 		accessor = mock(PlatformTxnAccessor.class);
+		dynamicProperties = mock(GlobalDynamicProperties.class);
 
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.activePayer()).willReturn(payer);
 		given(txnCtx.consensusTime()).willReturn(Instant.now());
 		withAlwaysValidValidator();
 
-		subject = new TokenCreateTransitionLogic(validator, store, ledger, txnCtx);
+		subject = new TokenCreateTransitionLogic(validator, store, ledger, txnCtx, dynamicProperties);
 	}
 
 	@Test
@@ -213,7 +218,7 @@ class TokenCreateTransitionLogicTest {
 
 	@Test
 	void abortsIfAssociationFails() {
-		givenValidTxnCtx(false, true, false);
+		givenValidTxnCtx(false, true, false, false);
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willReturn(CreationResult.success(created));
@@ -233,7 +238,7 @@ class TokenCreateTransitionLogicTest {
 
 	@Test
 	void abortsIfUnfreezeFails() {
-		givenValidTxnCtx(false, true, false);
+		givenValidTxnCtx(false, true, false, false);
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willReturn(CreationResult.success(created));
@@ -254,7 +259,7 @@ class TokenCreateTransitionLogicTest {
 
 	@Test
 	void followsHappyPathWithAllKeys() {
-		givenValidTxnCtx(true, true, true);
+		givenValidTxnCtx(true, true, true, false);
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willReturn(CreationResult.success(created));
@@ -286,7 +291,7 @@ class TokenCreateTransitionLogicTest {
 
 	@Test
 	void abortsIfFeeCollectorEnablementFails() {
-		givenValidTxnCtx(true, true, true);
+		givenValidTxnCtx(true, true, true, false);
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willReturn(CreationResult.success(created));
@@ -313,7 +318,7 @@ class TokenCreateTransitionLogicTest {
 
 	@Test
 	void doesntUnfreezeIfNoKeyIsPresent() {
-		givenValidTxnCtx(true, false, false);
+		givenValidTxnCtx(true, false, false, false);
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willReturn(CreationResult.success(created));
@@ -337,7 +342,7 @@ class TokenCreateTransitionLogicTest {
 
 	@Test
 	void doesntGrantKycIfNoKeyIsPresent() {
-		givenValidTxnCtx(false, true, false);
+		givenValidTxnCtx(false, true, false, false);
 		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willReturn(CreationResult.success(created));
@@ -374,6 +379,23 @@ class TokenCreateTransitionLogicTest {
 
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(tokenCreateTxn));
+	}
+
+	@Test
+	void uniqueNotSupportedIfNftsNotEnabled() {
+		givenValidTxnCtx(false, false, false, true);
+
+		// expect:
+		assertEquals(NOT_SUPPORTED, subject.semanticCheck().apply(tokenCreateTxn));
+	}
+
+	@Test
+	void uniqueSupportedIfNftsEnabled() {
+		given(dynamicProperties.areNftsEnabled()).willReturn(true);
+		givenValidTxnCtx(false, false, false, true);
+
+		// expect:
+		assertEquals(INVALID_TOKEN_INITIAL_SUPPLY, subject.semanticCheck().apply(tokenCreateTxn));
 	}
 
 	@Test
@@ -591,10 +613,15 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	private void givenValidTxnCtx() {
-		givenValidTxnCtx(false, false, false);
+		givenValidTxnCtx(false, false, false, false);
 	}
 
-	private void givenValidTxnCtx(boolean withKyc, boolean withFreeze, boolean withCustomFees) {
+	private void givenValidTxnCtx(
+			boolean withKyc,
+			boolean withFreeze,
+			boolean withCustomFees,
+			boolean isUnique
+	) {
 		final var expiry = Timestamp.newBuilder().setSeconds(thisSecond + thisSecond).build();
 		var builder = TransactionBody.newBuilder()
 				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
@@ -605,6 +632,9 @@ class TokenCreateTransitionLogicTest {
 						.setAdminKey(key)
 						.setAutoRenewAccount(renewAccount)
 						.setExpiry(expiry));
+		if (isUnique) {
+			builder.getTokenCreationBuilder().setTokenType(TokenType.NON_FUNGIBLE_UNIQUE);
+		}
 		if (withCustomFees) {
 			builder.getTokenCreationBuilder().addAllCustomFees(grpcCustomFees);
 		}

@@ -21,6 +21,7 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
@@ -40,30 +41,32 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
  * Provides the state transition for wiping [part of] a token balance.
- *
- * @author Michael Tinker
  */
 public class TokenWipeTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
 	private final TypedTokenStore tokenStore;
 	private final AccountStore accountStore;
 	private final OptionValidator validator;
+	private final GlobalDynamicProperties dynamicProperties;
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	public TokenWipeTransitionLogic(
 			final OptionValidator validator,
 			final TypedTokenStore tokenStore,
 			final AccountStore accountStore,
-			final TransactionContext txnCtx
+			final TransactionContext txnCtx,
+			final GlobalDynamicProperties dynamicProperties
 	) {
 		this.txnCtx = txnCtx;
 		this.tokenStore = tokenStore;
 		this.accountStore = accountStore;
 		this.validator = validator;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -115,8 +118,13 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 		if (!op.hasAccount()) {
 			return INVALID_ACCOUNT_ID;
 		}
-		final boolean bothPresent = (op.getAmount() > 0 && op.getSerialNumbersCount() > 0);
-		final boolean nonePresent = (op.getAmount() <= 0 && op.getSerialNumbersCount() == 0);
+
+		final var numSerialNumbers = op.getSerialNumbersCount();
+		if (!dynamicProperties.areNftsEnabled() && numSerialNumbers > 0) {
+			return NOT_SUPPORTED;
+		}
+		final boolean bothPresent = (op.getAmount() > 0 && numSerialNumbers > 0);
+		final boolean nonePresent = (op.getAmount() <= 0 && numSerialNumbers == 0);
 
 		if (nonePresent) {
 			return INVALID_WIPING_AMOUNT;

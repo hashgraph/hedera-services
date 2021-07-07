@@ -73,8 +73,9 @@ class CryptoTransferTransitionLogicTest {
 	final private int maxHbarAdjusts = 5;
 	final private int maxTokenAdjusts = 10;
 	final private int maxOwnershipChanges = 15;
+	private final boolean areNftsEnabled = false;
 	private final ImpliedTransfersMeta.ValidationProps validationProps = new ImpliedTransfersMeta.ValidationProps(
-			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges);
+			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, areNftsEnabled);
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private AccountID a = AccountID.newBuilder().setAccountNum(9_999L).build();
 	final private AccountID b = AccountID.newBuilder().setAccountNum(8_999L).build();

@@ -41,6 +41,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TR
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
@@ -57,8 +58,9 @@ class PureTransferSemanticChecksTest {
 	final private int maxHbarAdjusts = 5;
 	final private int maxTokenAdjusts = 10;
 	final private int maxOwnershipChanges = 3;
+	private final boolean areNftsEnabled = true;
 	final ImpliedTransfersMeta.ValidationProps validationProps = new ImpliedTransfersMeta.ValidationProps(
-			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges);
+			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, areNftsEnabled);
 	final private AccountID a = AccountID.newBuilder().setAccountNum(9_999L).build();
 	final private AccountID b = AccountID.newBuilder().setAccountNum(8_999L).build();
 	final private AccountID c = AccountID.newBuilder().setAccountNum(7_999L).build();
@@ -81,7 +83,7 @@ class PureTransferSemanticChecksTest {
 
 		given(subject.isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList())).willReturn(true);
 		given(subject.isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts)).willReturn(true);
-		given(subject.validateTokenTransferSizes(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges)).willReturn(OK);
+		given(subject.validateTokenTransferSizes(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true)).willReturn(OK);
 		given(subject.validateTokenTransferSemantics(tokenAdjusts)).willReturn(OK);
 		// and:
 		doCallRealMethod().when(subject)
@@ -94,7 +96,7 @@ class PureTransferSemanticChecksTest {
 		inOrder.verify(subject).hasRepeatedAccount(hbarAdjusts.getAccountAmountsList());
 		inOrder.verify(subject).isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList());
 		inOrder.verify(subject).isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts);
-		inOrder.verify(subject).validateTokenTransferSizes(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges);
+		inOrder.verify(subject).validateTokenTransferSizes(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true);
 		inOrder.verify(subject).validateTokenTransferSemantics(tokenAdjusts);
 		// and:
 		assertEquals(OK, result);
@@ -110,7 +112,7 @@ class PureTransferSemanticChecksTest {
 
 		given(subject.isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList())).willReturn(true);
 		given(subject.isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts)).willReturn(true);
-		given(subject.validateTokenTransferSizes(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges))
+		given(subject.validateTokenTransferSizes(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true))
 				.willReturn(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
 		// and:
 		doCallRealMethod().when(subject)
@@ -132,11 +134,11 @@ class PureTransferSemanticChecksTest {
 		subject = mock(PureTransferSemanticChecks.class);
 
 		final var validationProps = new ImpliedTransfersMeta.ValidationProps(
-				maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges);
+				maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, areNftsEnabled);
 		// and:
 		given(subject.isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList())).willReturn(true);
 		given(subject.isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts)).willReturn(true);
-		given(subject.validateTokenTransferSizes(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges)).willReturn(OK);
+		given(subject.validateTokenTransferSizes(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true)).willReturn(OK);
 		given(subject.validateTokenTransferSemantics(tokenAdjusts)).willReturn(TOKEN_ID_REPEATED_IN_TOKEN_LIST);
 		// and:
 		doCallRealMethod().when(subject).fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
@@ -179,7 +181,7 @@ class PureTransferSemanticChecksTest {
 		final var tokenAdjusts = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
 		// and:
 		final var strictValProps = new ImpliedTransfersMeta.ValidationProps(
-				1, 1, 1);
+				1, 1, 1, areNftsEnabled);
 
 		// expect:
 		assertEquals(
@@ -202,7 +204,7 @@ class PureTransferSemanticChecksTest {
 		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
 
 		// when:
-		final var result = subject.validateTokenTransferSizes(wrapper, 4, 2);
+		final var result = subject.validateTokenTransferSizes(wrapper, 4, 2, true);
 
 		// expect:
 		assertEquals(OK, result);
@@ -211,7 +213,7 @@ class PureTransferSemanticChecksTest {
 	@Test
 	void acceptsNoTokenTransfers() {
 		// given:
-		final var result = subject.validateTokenTransferSizes(Collections.emptyList(), 10, 2);
+		final var result = subject.validateTokenTransferSizes(Collections.emptyList(), 10, 2, true);
 
 		// expect:
 		assertEquals(OK, result);
@@ -310,6 +312,21 @@ class PureTransferSemanticChecksTest {
 	}
 
 	@Test
+	void rejectsOwnershipChangesIfNftsNotEnabled() {
+		// given:
+		List<TokenTransferList> wrapper = withOwnershipChanges(
+				aTId, a, a, 123,
+				bTId, b, c, 234,
+				cTId, c, a, 345);
+
+		// when:
+		final var result = subject.validateTokenTransferSizes(wrapper, 20, 1, false);
+
+		// then:
+		assertEquals(NOT_SUPPORTED, result);
+	}
+
+	@Test
 	void rejectsExceedingMaxOwnershipChanges() {
 		// given:
 		List<TokenTransferList> wrapper = withOwnershipChanges(
@@ -318,7 +335,7 @@ class PureTransferSemanticChecksTest {
 				cTId, c, a, 345);
 
 		// when:
-		final var result = subject.validateTokenTransferSizes(wrapper, 20, 1);
+		final var result = subject.validateTokenTransferSizes(wrapper, 20, 1, true);
 
 		// then:
 		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, result);
@@ -330,7 +347,7 @@ class PureTransferSemanticChecksTest {
 		List<TokenTransferList> wrapper = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3, dTId, d, -4);
 
 		// when:
-		final var result = subject.validateTokenTransferSizes(wrapper, 4, 2);
+		final var result = subject.validateTokenTransferSizes(wrapper, 4, 2, true);
 
 		// then:
 		assertEquals(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, result);
@@ -344,7 +361,7 @@ class PureTransferSemanticChecksTest {
 				.build());
 
 		// when:
-		final var result = subject.validateTokenTransferSizes(wrapper, 10, 2);
+		final var result = subject.validateTokenTransferSizes(wrapper, 10, 2, true);
 
 		// then:
 		assertEquals(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS, result);

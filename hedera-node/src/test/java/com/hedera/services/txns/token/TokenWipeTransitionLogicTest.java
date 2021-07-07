@@ -21,6 +21,7 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -49,6 +50,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static junit.framework.TestCase.assertTrue;
@@ -80,6 +82,7 @@ class TokenWipeTransitionLogicTest {
 	private TypedTokenStore typedTokenStore;
 	private AccountStore accountStore;
 	private OptionValidator validator;
+	private GlobalDynamicProperties dynamicProperties;
 
     @BeforeEach
     private void setup() {
@@ -92,7 +95,8 @@ class TokenWipeTransitionLogicTest {
         typedTokenStore = mock(TypedTokenStore.class);
         accountStore = mock(AccountStore.class);
 		validator = mock(ContextOptionValidator.class);
-        subject = new TokenWipeTransitionLogic(validator, typedTokenStore, accountStore, txnCtx);
+		dynamicProperties = mock(GlobalDynamicProperties.class);
+        subject = new TokenWipeTransitionLogic(validator, typedTokenStore, accountStore, txnCtx, dynamicProperties);
     }
 
     @Test
@@ -121,6 +125,14 @@ class TokenWipeTransitionLogicTest {
         verify(token).wipe( any(), anyLong());
     }
 
+	@Test
+	void rejectsUniqueWhenNftsNotEnabled() {
+		givenValidUniqueTxnCtx();
+		given(dynamicProperties.areNftsEnabled()).willReturn(false);
+
+		// expect:
+		assertEquals(NOT_SUPPORTED, subject.semanticCheck().apply(tokenWipeTxn));
+	}
 
 	@Test
 	void followsHappyPathForUnique() {
@@ -211,6 +223,8 @@ class TokenWipeTransitionLogicTest {
 
     @Test
 	void rejectsBothAmountAndSerialNumbers(){
+		given(dynamicProperties.areNftsEnabled()).willReturn(true);
+
     	tokenWipeTxn = TransactionBody.newBuilder()
 				.setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
 				.setToken(id)
@@ -224,6 +238,8 @@ class TokenWipeTransitionLogicTest {
 
 	@Test
 	void rejectsInvalidNftId(){
+		given(dynamicProperties.areNftsEnabled()).willReturn(true);
+
 		tokenWipeTxn = TransactionBody.newBuilder()
 				.setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
 						.setToken(id)
@@ -272,6 +288,7 @@ class TokenWipeTransitionLogicTest {
 		given(merkleToken.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 		given(typedTokenStore.loadToken(any())).willReturn(token);
 		given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+		given(dynamicProperties.areNftsEnabled()).willReturn(true);
 
 		given(validator.maxBatchSizeWipeCheck(anyInt())).willReturn(OK);
 	}

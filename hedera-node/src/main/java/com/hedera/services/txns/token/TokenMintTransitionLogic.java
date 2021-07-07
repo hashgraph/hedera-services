@@ -22,6 +22,7 @@ package com.hedera.services.txns.token;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
@@ -42,6 +43,7 @@ import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
@@ -58,17 +60,20 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 	private final TypedTokenStore tokenStore;
 	private final TransactionContext txnCtx;
 	private final AccountStore accountStore;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	public TokenMintTransitionLogic(
 			OptionValidator validator,
 			AccountStore accountStore,
 			TypedTokenStore tokenStore,
-			TransactionContext txnCtx
+			TransactionContext txnCtx,
+			GlobalDynamicProperties dynamicProperties
 	) {
 		this.validator = validator;
 		this.tokenStore = tokenStore;
 		this.txnCtx = txnCtx;
 		this.accountStore = accountStore;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -116,14 +121,18 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 			return INVALID_TOKEN_ID;
 		}
 
-		boolean bothPresent = (op.getAmount() > 0 && op.getMetadataCount() > 0);
-		boolean nonePresent = (op.getAmount() <= 0 && op.getMetadataCount() == 0);
-		boolean onlyMetadataIsPresent = (op.getAmount() <= 0 && op.getMetadataCount() > 0);
+		/* --- Temporarily enforce the NFT feature toggle --- */
+		final var numMetadata = op.getMetadataCount();
+		if (!dynamicProperties.areNftsEnabled() && numMetadata > 0) {
+			return NOT_SUPPORTED;
+		}
 
+		boolean bothPresent = (op.getAmount() > 0 && numMetadata > 0);
+		boolean nonePresent = (op.getAmount() <= 0 && numMetadata == 0);
+		boolean onlyMetadataIsPresent = (op.getAmount() <= 0 && op.getMetadataCount() > 0);
 		if (nonePresent) {
 			return INVALID_TOKEN_MINT_AMOUNT;
 		}
-
 		if (bothPresent) {
 			return INVALID_TRANSACTION_BODY;
 		}

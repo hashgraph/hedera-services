@@ -67,7 +67,8 @@ public class ImpliedTransfersMeta {
 		final var validationParamsMatch =
 				(validationProps.maxHbarAdjusts == dynamicProperties.maxTransferListSize()) &&
 						(validationProps.maxTokenAdjusts == dynamicProperties.maxTokenTransferListSize()) &&
-						(validationProps.maxOwnershipChanges == dynamicProperties.maxNftTransfersLen());
+						(validationProps.maxOwnershipChanges == dynamicProperties.maxNftTransfersLen()) &&
+						(validationProps.areNftsEnabled == dynamicProperties.areNftsEnabled());
 		if (!validationParamsMatch) {
 			return false;
 		}
@@ -102,6 +103,7 @@ public class ImpliedTransfersMeta {
 				.add("maxExplicitHbarAdjusts", validationProps.maxHbarAdjusts)
 				.add("maxExplicitTokenAdjusts", validationProps.maxTokenAdjusts)
 				.add("maxExplicitOwnershipChanges", validationProps.maxOwnershipChanges)
+				.add("areNftsEnabled", validationProps.areNftsEnabled)
 				.add("tokenFeeSchedules", tokenFeeSchedules)
 				.toString();
 	}
@@ -110,11 +112,18 @@ public class ImpliedTransfersMeta {
 		private final int maxHbarAdjusts;
 		private final int maxTokenAdjusts;
 		private final int maxOwnershipChanges;
+		private final boolean areNftsEnabled;
 
-		public ValidationProps(int maxHbarAdjusts, int maxTokenAdjusts, int maxOwnershipChanges) {
+		public ValidationProps(
+				int maxHbarAdjusts,
+				int maxTokenAdjusts,
+				int maxOwnershipChanges,
+				boolean areNftsEnabled
+		) {
 			this.maxHbarAdjusts = maxHbarAdjusts;
 			this.maxTokenAdjusts = maxTokenAdjusts;
 			this.maxOwnershipChanges = maxOwnershipChanges;
+			this.areNftsEnabled = areNftsEnabled;
 		}
 
 		public int getMaxHbarAdjusts() {
@@ -127,6 +136,10 @@ public class ImpliedTransfersMeta {
 
 		public int getMaxOwnershipChanges() {
 			return maxOwnershipChanges;
+		}
+
+		public boolean areNftsEnabled() {
+			return areNftsEnabled;
 		}
 
 		@Override

@@ -22,6 +22,7 @@ package com.hedera.services.txns.token;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.AccountStore;
@@ -51,6 +52,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.METADATA_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -80,6 +82,8 @@ class TokenMintTransitionLogicTest {
 	private OptionValidator validator;
 	@Mock
 	private AccountStore accountStore;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	private TokenRelationship treasuryRel;
 	private TransactionBody tokenMintTxn;
@@ -88,7 +92,7 @@ class TokenMintTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new TokenMintTransitionLogic(validator, accountStore, store, txnCtx);
+		subject = new TokenMintTransitionLogic(validator, accountStore, store, txnCtx, dynamicProperties);
 	}
 
 	@Test
@@ -137,6 +141,15 @@ class TokenMintTransitionLogicTest {
 	}
 
 	@Test
+	void rejectsUniqueWhenNftsNotEnabled() {
+		givenValidUniqueTxnCtx();
+		given(dynamicProperties.areNftsEnabled()).willReturn(false);
+
+		// expect:
+		assertEquals(NOT_SUPPORTED, subject.semanticCheck().apply(tokenMintTxn));
+	}
+
+	@Test
 	void hasCorrectApplicability() {
 		givenValidTxnCtx();
 
@@ -179,6 +192,7 @@ class TokenMintTransitionLogicTest {
 
 	@Test
 	void rejectsInvalidTxnBody(){
+		given(dynamicProperties.areNftsEnabled()).willReturn(true);
 		tokenMintTxn = TransactionBody.newBuilder()
 				.setTokenMint(TokenMintTransactionBody.newBuilder()
 						.setToken(grpcId)
@@ -203,6 +217,7 @@ class TokenMintTransitionLogicTest {
 
 	@Test
 	void propagatesErrorOnBadMetadata(){
+		given(dynamicProperties.areNftsEnabled()).willReturn(true);
 		tokenMintTxn = TransactionBody.newBuilder()
 				.setTokenMint(
 						TokenMintTransactionBody.newBuilder()
@@ -216,6 +231,7 @@ class TokenMintTransitionLogicTest {
 
 	@Test
 	void propagatesErrorOnMaxBatchSizeReached() {
+		given(dynamicProperties.areNftsEnabled()).willReturn(true);
 		tokenMintTxn = TransactionBody.newBuilder()
 				.setTokenMint(
 						TokenMintTransactionBody.newBuilder()
