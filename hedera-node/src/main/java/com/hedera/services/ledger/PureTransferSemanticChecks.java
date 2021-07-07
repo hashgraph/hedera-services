@@ -97,15 +97,14 @@ public class PureTransferSemanticChecks {
 			return OK;
 		}
 
-		if (!areNftsEnabled) {
-			return NOT_SUPPORTED;
-		}
-
 		var count = 0;
 		var numOwnershipChanges = 0;
 		for (var scopedTransfers : tokenTransfersList) {
 			final var ownershipChangesHere = scopedTransfers.getNftTransfersCount();
 			if (ownershipChangesHere > 0) {
+				if (!areNftsEnabled) {
+					return NOT_SUPPORTED;
+				}
 				numOwnershipChanges += ownershipChangesHere;
 				if (numOwnershipChanges > maxOwnershipChanges) {
 					return BATCH_SIZE_LIMIT_EXCEEDED;

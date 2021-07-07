@@ -121,15 +121,14 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 			return INVALID_TOKEN_ID;
 		}
 
-		/* --- Temporarily enforce the NFT feature toggle --- */
 		final var numMetadata = op.getMetadataCount();
-		if (!dynamicProperties.areNftsEnabled() && numMetadata > 0) {
+		if (numMetadata > 0 && !dynamicProperties.areNftsEnabled()) {
 			return NOT_SUPPORTED;
 		}
 
 		boolean bothPresent = (op.getAmount() > 0 && numMetadata > 0);
 		boolean nonePresent = (op.getAmount() <= 0 && numMetadata == 0);
-		boolean onlyMetadataIsPresent = (op.getAmount() <= 0 && op.getMetadataCount() > 0);
+		boolean onlyMetadataIsPresent = (op.getAmount() <= 0 && numMetadata > 0);
 		if (nonePresent) {
 			return INVALID_TOKEN_MINT_AMOUNT;
 		}

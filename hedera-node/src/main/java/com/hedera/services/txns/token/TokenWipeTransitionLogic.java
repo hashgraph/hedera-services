@@ -120,7 +120,7 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 		}
 
 		final var numSerialNumbers = op.getSerialNumbersCount();
-		if (!dynamicProperties.areNftsEnabled() && numSerialNumbers > 0) {
+		if (numSerialNumbers > 0 && !dynamicProperties.areNftsEnabled()) {
 			return NOT_SUPPORTED;
 		}
 		final boolean bothPresent = (op.getAmount() > 0 && numSerialNumbers > 0);

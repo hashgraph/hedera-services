@@ -92,6 +92,7 @@ public class TypedTokenStore {
 	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations;
 	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueOwnershipAssociations;
 
+
 	/* Only needed for interoperability with legacy HTS during refactor */
 	private final BackingNfts backingNfts;
 	private final BackingTokenRels backingTokenRels;

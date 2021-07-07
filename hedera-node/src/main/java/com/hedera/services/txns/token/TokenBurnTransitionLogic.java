@@ -112,7 +112,7 @@ public class TokenBurnTransitionLogic implements TransitionLogic {
 		}
 
 		final var numSerialNumbers = op.getSerialNumbersCount();
-		if (!dynamicProperties.areNftsEnabled() && numSerialNumbers > 0) {
+		if (numSerialNumbers > 0 && !dynamicProperties.areNftsEnabled()) {
 			return NOT_SUPPORTED;
 		}
 
