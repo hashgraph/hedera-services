@@ -23,6 +23,7 @@ package com.hedera.services.sysfiles.validation;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
 import java.util.EnumSet;
+import java.util.Set;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
@@ -75,7 +76,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.Transaction
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
 
 public class ExpectedCustomThrottles {
-	public static final EnumSet<HederaFunctionality> OPS_FOR_RELEASE_0160 = EnumSet.of(
+	public static final Set<HederaFunctionality> OPS_FOR_RELEASE_0160 = EnumSet.of(
 			CryptoCreate,
 			CryptoTransfer,
 			CryptoUpdate,

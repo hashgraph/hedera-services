@@ -29,8 +29,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TokenInfo;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +41,6 @@ import static com.hedera.services.queries.AnswerService.NO_QUERY_CTX;
 import static com.hedera.services.queries.token.GetAccountNftInfosAnswer.ACCOUNT_NFT_INFO_CTX_KEY;
 
 public class GetAccountNftInfosResourceUsage implements QueryResourceUsageEstimator {
-    private static final Logger log = LogManager.getLogger(GetAccountNftInfosResourceUsage.class);
 
     static Function<Query, TokenGetAccountNftInfosUsage> factory = TokenGetAccountNftInfosUsage::newEstimate;
 
@@ -54,12 +51,12 @@ public class GetAccountNftInfosResourceUsage implements QueryResourceUsageEstima
 
     @Override
     public FeeData usageGiven(Query query, StateView view) {
-        return usageFor(query, view, query.getTokenGetAccountNftInfos().getHeader().getResponseType(), NO_QUERY_CTX);
+        return usageFor(query, view, NO_QUERY_CTX);
     }
 
     @Override
     public FeeData usageGivenType(Query query, StateView view, ResponseType type) {
-        return usageFor(query, view, type, NO_QUERY_CTX);
+        return usageFor(query, view, NO_QUERY_CTX);
     }
 
     @Override
@@ -67,11 +64,10 @@ public class GetAccountNftInfosResourceUsage implements QueryResourceUsageEstima
         return usageFor(
                 query,
                 view,
-                query.getTokenGetAccountNftInfos().getHeader().getResponseType(),
                 Optional.of(queryCtx));
     }
 
-    private FeeData usageFor(Query query, StateView view, ResponseType type, Optional<Map<String, Object>> queryCtx) {
+    private FeeData usageFor(Query query, StateView view, Optional<Map<String, Object>> queryCtx) {
         var op = query.getTokenGetAccountNftInfos();
         var optionalInfo = view.infoForAccountNfts(
                 op.getAccountID(),

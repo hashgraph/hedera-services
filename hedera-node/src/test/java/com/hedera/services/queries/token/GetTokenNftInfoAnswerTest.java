@@ -96,7 +96,7 @@ public class GetTokenNftInfoAnswerTest {
     }
 
     @Test
-    public void getsTheInfo() throws Throwable {
+     void getsTheInfo() throws Throwable {
         // setup:
         Query query = validQuery(ANSWER_ONLY, fee, nftId);
 
@@ -117,7 +117,7 @@ public class GetTokenNftInfoAnswerTest {
     }
 
     @Test
-    public void usesViewToValidate() throws Throwable {
+     void usesViewToValidate() throws Throwable {
         // setup:
         Query query = validQuery(COST_ANSWER, fee, nftId);
 
@@ -131,7 +131,7 @@ public class GetTokenNftInfoAnswerTest {
     }
 
     @Test
-    public void validatesInexistingTokenId() throws Throwable {
+     void validatesInexistingTokenId() throws Throwable {
         // setup:
         nftId = NftID.newBuilder().setSerialNumber(2).build();
         Query query = validQuery(COST_ANSWER, fee, nftId);
@@ -144,7 +144,7 @@ public class GetTokenNftInfoAnswerTest {
     }
 
     @Test
-    public void validatesWrongSerialNumber() throws Throwable {
+     void validatesWrongSerialNumber() throws Throwable {
         // setup:
         nftId = NftID.newBuilder().setTokenID(nftId.getTokenID()).build();
         Query query = validQuery(COST_ANSWER, fee, nftId);
@@ -157,7 +157,7 @@ public class GetTokenNftInfoAnswerTest {
     }
 
     @Test
-    public void getsExpectedPayment() throws Throwable {
+     void getsExpectedPayment() throws Throwable {
         // given:
         Query query = validQuery(COST_ANSWER, fee, nftId);
 
@@ -166,7 +166,7 @@ public class GetTokenNftInfoAnswerTest {
     }
 
     @Test
-    public void getsInfoFromCtxWhenAvailable() throws Throwable {
+     void getsInfoFromCtxWhenAvailable() throws Throwable {
         // setup:
         Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, nftId);
         Map<String, Object> ctx = new HashMap<>();
@@ -187,7 +187,7 @@ public class GetTokenNftInfoAnswerTest {
     }
 
     @Test
-    public void validatesInvalidNftIdInContext() throws Throwable {
+     void validatesInvalidNftIdInContext() throws Throwable {
         // setup:
         Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, nftId);
         Map<String, Object> ctx = new HashMap<>();
@@ -204,7 +204,7 @@ public class GetTokenNftInfoAnswerTest {
     }
 
     @Test
-    public void doesNotGetInfoWithInvalidValidity() throws Throwable {
+     void doesNotGetInfoWithInvalidValidity() throws Throwable {
         // setup:
         Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, nftId);
         Map<String, Object> ctx = new HashMap<>();
@@ -224,7 +224,7 @@ public class GetTokenNftInfoAnswerTest {
     }
 
     @Test
-    public void doesNotGetInfoWithEmptyContext() throws Throwable {
+     void doesNotGetInfoWithEmptyContext() throws Throwable {
         // setup:
         Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, nftId);
 
@@ -240,7 +240,7 @@ public class GetTokenNftInfoAnswerTest {
     }
 
     @Test
-    public void validatesEmptyInfo() throws Throwable {
+     void validatesEmptyInfo() throws Throwable {
         // setup:
         Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, nftId);
 
@@ -256,7 +256,7 @@ public class GetTokenNftInfoAnswerTest {
     }
 
     @Test
-    public void getsCostAnswerResponse() throws Throwable {
+     void getsCostAnswerResponse() throws Throwable {
         // setup:
         Query query = validQuery(COST_ANSWER, fee, nftId);
 
@@ -271,13 +271,13 @@ public class GetTokenNftInfoAnswerTest {
     }
 
     @Test
-    public void recognizesFunction() {
+     void recognizesFunction() {
         // expect:
         assertEquals(HederaFunctionality.TokenGetNftInfo, subject.canonicalFunction());
     }
 
     @Test
-    public void getsValidity() {
+     void getsValidity() {
         // given:
         Response response = Response.newBuilder().setTokenGetNftInfo(
                 TokenGetNftInfoResponse.newBuilder()
@@ -288,14 +288,14 @@ public class GetTokenNftInfoAnswerTest {
     }
 
     @Test
-    public void requiresAnswerOnlyPayment() throws Throwable {
+     void requiresAnswerOnlyPayment() throws Throwable {
         // expect:
         assertFalse(subject.requiresNodePayment(validQuery(COST_ANSWER, 0, nftId)));
         assertTrue(subject.requiresNodePayment(validQuery(ANSWER_ONLY, 0, nftId)));
     }
 
     @Test
-    public void requiresAnswerOnlyCostAsExpected() throws Throwable {
+     void requiresAnswerOnlyCostAsExpected() throws Throwable {
         // expect:
         assertTrue(subject.needsAnswerOnlyCost(validQuery(COST_ANSWER, 0, nftId)));
         assertFalse(subject.needsAnswerOnlyCost(validQuery(ANSWER_ONLY, 0, nftId)));

@@ -50,8 +50,6 @@ import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -120,7 +118,6 @@ import static java.util.stream.Collectors.toList;
  * Provides a managing store for arbitrary tokens.
  */
 public class HederaTokenStore extends HederaStore implements TokenStore {
-	private static final Logger log = LogManager.getLogger(HederaTokenStore.class);
 
 	static final TokenID NO_PENDING_ID = TokenID.getDefaultInstance();
 
@@ -497,38 +494,56 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			if (feeCollectorValidity != OK) {
 				return INVALID_CUSTOM_FEE_COLLECTOR;
 			}
+			ResponseCodeEnum responseCode;
 
 			if (customFee.hasFixedFee()) {
-				final var fixedFee = customFee.getFixedFee();
-				if (fixedFee.getAmount() <= 0) {
-					return CUSTOM_FEE_MUST_BE_POSITIVE;
-				}
-				if (fixedFee.hasDenominatingTokenId()) {
-					final var denom = fixedFee.getDenominatingTokenId();
-					if (resolve(denom) == MISSING_TOKEN) {
-						return INVALID_TOKEN_ID_IN_CUSTOM_FEES;
-					}
-					if (!associationExists(feeCollector, denom)) {
-						return TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
-					}
+				responseCode = validateFixedFee(customFee, feeCollector);
+				if (responseCode != OK) {
+					return responseCode;
 				}
 			} else if (customFee.hasFractionalFee()) {
-				final var fractionalSpec = customFee.getFractionalFee();
-				final var fraction = fractionalSpec.getFractionalAmount();
-				if (fraction.getDenominator() == 0) {
-					return FRACTION_DIVIDES_BY_ZERO;
-				}
-				if (!signsMatch(fraction.getNumerator(), fraction.getDenominator())) {
-					return CUSTOM_FEE_MUST_BE_POSITIVE;
-				}
-				if (fractionalSpec.getMaximumAmount() < 0 || fractionalSpec.getMinimumAmount() < 0) {
-					return CUSTOM_FEE_MUST_BE_POSITIVE;
+				responseCode = validateFractionalFee(customFee);
+				if (responseCode != OK) {
+					return responseCode;
 				}
 			} else {
 				return CUSTOM_FEE_NOT_FULLY_SPECIFIED;
 			}
 		}
 
+		return OK;
+	}
+
+	private ResponseCodeEnum validateFractionalFee(CustomFee customFee) {
+		final var fractionalSpec = customFee.getFractionalFee();
+		final var fraction = fractionalSpec.getFractionalAmount();
+		if (fraction.getDenominator() == 0) {
+			return FRACTION_DIVIDES_BY_ZERO;
+		}
+		if (!signsMatch(fraction.getNumerator(), fraction.getDenominator())) {
+			return CUSTOM_FEE_MUST_BE_POSITIVE;
+		}
+		if (fractionalSpec.getMaximumAmount() < 0 || fractionalSpec.getMinimumAmount() < 0) {
+			return CUSTOM_FEE_MUST_BE_POSITIVE;
+		}
+		return OK;
+	}
+
+	private ResponseCodeEnum validateFixedFee(CustomFee customFee,
+			AccountID feeCollector) {
+		final var fixedFee = customFee.getFixedFee();
+		if (fixedFee.getAmount() <= 0) {
+			return CUSTOM_FEE_MUST_BE_POSITIVE;
+		}
+		if (fixedFee.hasDenominatingTokenId()) {
+			final var denom = fixedFee.getDenominatingTokenId();
+			if (resolve(denom) == MISSING_TOKEN) {
+				return INVALID_TOKEN_ID_IN_CUSTOM_FEES;
+			}
+			if (!associationExists(feeCollector, denom)) {
+				return TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
+			}
+		}
 		return OK;
 	}
 
