@@ -2306,6 +2306,17 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
+	void cannotUseFractionalFeeWithNonfungibleUpdateTarget() {
+		given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+
+		var op = updateFeeScheduleWithOnlyFractional();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON, result);
+	}
+
+	@Test
 	void happyPathCustomFeesUpdated() {
 		var op = updateFeeScheduleWith();
 
@@ -2332,6 +2343,13 @@ class HederaTokenStoreTest {
 		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
 				.setTokenId(misc)
 				.addAllCustomFees(grpcCustomFees);
+		return op.build();
+	}
+
+	private TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithOnlyFractional() {
+		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
+				.setTokenId(misc)
+				.addAllCustomFees(List.of(customFractionalFee));
 		return op.build();
 	}
 

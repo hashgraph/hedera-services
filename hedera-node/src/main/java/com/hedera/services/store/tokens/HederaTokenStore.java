@@ -89,8 +89,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TRE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
@@ -118,8 +120,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -481,7 +481,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 		if (request.getCustomFeesCount() > 0) {
 			final var customFees = request.getCustomFeesList();
-			validity = validateFeeSchedule(customFees, false, null);
+			validity = validateFeeSchedule(customFees, false, null, null);
 			if (validity != OK) {
 				return failure(validity);
 			}
@@ -494,7 +494,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	private ResponseCodeEnum validateFeeSchedule(
 			List<CustomFee> feeSchedule,
 			boolean isFeeScheduleUpdate,
-			TokenID tokenID
+			TokenID targetTokenId,
+			MerkleToken targetToken
 	) {
 		if (feeSchedule.size() > properties.maxCustomFeesAllowed()) {
 			return CUSTOM_FEES_LIST_TOO_LONG;
@@ -532,7 +533,10 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 						return CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 					}
 				} else {
-					if (!associationExists(feeCollector, tokenID)) {
+					if (targetToken.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE) {
+						return CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
+					}
+					if (!associationExists(feeCollector, targetTokenId)) {
 						return TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 					}
 				}
@@ -791,7 +795,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			return CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
 		}
 
-		var validity = validateFeeSchedule(changes.getCustomFeesList(), true, tId);
+		var validity = validateFeeSchedule(changes.getCustomFeesList(), true, tId, token);
 		if (validity != OK) {
 			return validity;
 		}
