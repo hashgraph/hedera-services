@@ -85,9 +85,9 @@ public class Token {
 	}
 
 	public void mint(TokenRelationship treasuryRel, long amount) {
-		validateTrue(amount > 0, FAIL_INVALID, () ->
+		validateTrue(amount > 0, FAIL_INVALID,
 				"Cannot mint " + amount + " units of " + this + " from " + treasuryRel);
-		validateTrue(type == TokenType.FUNGIBLE_COMMON, FAIL_INVALID, () ->
+		validateTrue(type == TokenType.FUNGIBLE_COMMON, FAIL_INVALID,
 				"Fungible mint can be invoked only on Fungible token type");
 
 		changeSupply(treasuryRel, +amount, INVALID_TOKEN_MINT_AMOUNT);
@@ -106,9 +106,9 @@ public class Token {
 			final TokenRelationship treasuryRel,
 			final List<ByteString> metadata,
 			final RichInstant creationTime) {
-		validateTrue(metadata.size() > 0, FAIL_INVALID, () ->
+		validateTrue(metadata.size() > 0, FAIL_INVALID,
 				"Cannot mint " + metadata.size() + " numbers of Unique Tokens");
-		validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID, () ->
+		validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID,
 				"Non fungible mint can be invoked only on Non fungible token type");
 
 		changeSupply(treasuryRel, metadata.size(), FAIL_INVALID);
@@ -123,7 +123,7 @@ public class Token {
 	}
 
 	public void burn(TokenRelationship treasuryRel, long amount) {
-		validateTrue(amount > 0, FAIL_INVALID, () ->
+		validateTrue(amount > 0, FAIL_INVALID,
 				"Cannot burn " + amount + " units of " + this + " from " + treasuryRel);
 		changeSupply(treasuryRel, -amount, INVALID_TOKEN_BURN_AMOUNT);
 	}
@@ -139,9 +139,9 @@ public class Token {
 			final TokenRelationship treasuryRelationship,
 			final List<Long> serialNumbers
 	){
-		validateTrue( type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID, () ->
+		validateTrue( type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID,
 				"Non fungible burn can be invoked only on Non fungible tokens!");
-		validateTrue(serialNumbers.size() > 0, FAIL_INVALID, () ->
+		validateTrue(serialNumbers.size() > 0, FAIL_INVALID,
 				"Non fungible burn cannot be invoked with no serial numbers");
 		for (final long serialNum : serialNumbers) {
 			ownershipTracker.add(id, OwnershipTracker.forRemoving(id, serialNum));
@@ -157,7 +157,7 @@ public class Token {
 	 * @param amount - amount to be wiped
 	 */
 	public void wipe(TokenRelationship accountRel, long amount){
-		validateTrue(type == TokenType.FUNGIBLE_COMMON, FAIL_INVALID, () ->
+		validateTrue(type == TokenType.FUNGIBLE_COMMON, FAIL_INVALID,
 				"Fungible wipe can be invoked only on Fungible token type.");
 
 		baseWipeValidations(accountRel);
@@ -176,14 +176,14 @@ public class Token {
 	 * @param serialNumbers - a list of serial numbers, representing the tokens to be wiped
 	 */
 	public void wipe(OwnershipTracker ownershipTracker, TokenRelationship accountRel, List<Long> serialNumbers) {
-		validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID, () ->
+		validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID,
 				"Non fungible wipe can be invoked only on Non fungible token type.");
 
-		validateTrue(serialNumbers.size() > 0, FAIL_INVALID, () ->
+		validateTrue(serialNumbers.size() > 0, FAIL_INVALID,
 				"Cannot wipe " + serialNumbers.size() + " number of Unique Tokens.");
 		for (Long serialNum : serialNumbers) {
 			var uniqueToken = loadedUniqueTokens.get(serialNum);
-			validateTrue(uniqueToken.getOwner().equals(accountRel.getAccount().getId()), FAIL_INVALID, () ->
+			validateTrue(uniqueToken.getOwner().equals(accountRel.getAccount().getId()), FAIL_INVALID,
 					"Cannot wipe tokens which given account does not own.");
 		}
 		baseWipeValidations(accountRel);
@@ -210,9 +210,9 @@ public class Token {
 	}
 
 	private void changeSupply(TokenRelationship treasuryRel, long amount, ResponseCodeEnum negSupplyCode) {
-		validateTrue(treasuryRel != null, FAIL_INVALID, () ->
+		validateTrue(treasuryRel != null, FAIL_INVALID,
 				"Cannot mint with a null treasuryRel");
-		validateTrue(treasuryRel.hasInvolvedIds(id, treasury.getId()), FAIL_INVALID, () ->
+		validateTrue(treasuryRel.hasInvolvedIds(id, treasury.getId()), FAIL_INVALID,
 				"Cannot change " + this + " supply (" + amount + ") with non-treasury rel " + treasuryRel);
 
 		validateTrue(supplyKey != null, TOKEN_HAS_NO_SUPPLY_KEY);
@@ -221,7 +221,7 @@ public class Token {
 		validateTrue(newTotalSupply >= 0, negSupplyCode);
 
 		if (supplyType == TokenSupplyType.FINITE) {
-			validateTrue(maxSupply >= newTotalSupply, TOKEN_MAX_SUPPLY_REACHED, () ->
+			validateTrue(maxSupply >= newTotalSupply, TOKEN_MAX_SUPPLY_REACHED,
 					"Cannot mint new supply (" + amount + "). Max supply (" + maxSupply + ") reached");
 		}
 
@@ -233,23 +233,23 @@ public class Token {
 	}
 
 	private void baseWipeValidations(TokenRelationship accountRel) {
-		validateTrue(hasWipeKey(), TOKEN_HAS_NO_WIPE_KEY, () ->
+		validateTrue(hasWipeKey(), TOKEN_HAS_NO_WIPE_KEY,
 				"Cannot wipe Tokens without wipe key.");
 
-		validateFalse(treasury.getId().equals(accountRel.getAccount().getId()), CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT, ()->
+		validateFalse(treasury.getId().equals(accountRel.getAccount().getId()), CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT,
 				"Cannot wipe treasury account of token.");
 	}
 
 	private void amountWipeValidations(TokenRelationship accountRel, long amount) {
-		validateTrue(amount > 0, INVALID_WIPING_AMOUNT, () ->
+		validateTrue(amount > 0, INVALID_WIPING_AMOUNT,
 				"Cannot wipe " + amount + " units of " + this + " from " + accountRel);
 
 		var newTotalSupply = totalSupply - amount;
-		validateTrue( newTotalSupply >= 0, INVALID_WIPING_AMOUNT, () ->
+		validateTrue( newTotalSupply >= 0, INVALID_WIPING_AMOUNT,
 				"Wiping would negate the total supply of the given token.");
 
 		final var newAccountBalance = accountRel.getBalance() - amount;
-		validateTrue(newAccountBalance >= 0, INVALID_WIPING_AMOUNT, () ->
+		validateTrue(newAccountBalance >= 0, INVALID_WIPING_AMOUNT,
 				"Wiping would negate account balance");
 	}
 
