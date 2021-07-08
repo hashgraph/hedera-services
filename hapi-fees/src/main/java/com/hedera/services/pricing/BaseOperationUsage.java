@@ -126,6 +126,7 @@ class BaseOperationUsage {
 				.givenSubType(TOKEN_NON_FUNGIBLE_UNIQUE)
 				.givenExpectedLifetime(THREE_MONTHS_IN_SECONDS)
 				.get();
+		System.out.println(baseUsage);
 		return UsageAccumulator.fromGrpc(baseUsage);
 	}
 
