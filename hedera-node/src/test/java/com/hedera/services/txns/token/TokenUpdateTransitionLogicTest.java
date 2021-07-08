@@ -25,6 +25,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.tokens.TokenStore;
@@ -108,6 +109,7 @@ class TokenUpdateTransitionLogicTest {
 		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(oldTreasury));
 		given(token.autoRenewAccount()).willReturn(EntityId.fromGrpcAccountId(oldAutoRenew));
 		given(token.hasAutoRenewAccount()).willReturn(true);
+		given(token.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
 		given(store.resolve(target)).willReturn(target);
 		given(store.get(target)).willReturn(token);
 		given(store.associationExists(newTreasury, target)).willReturn(true);
@@ -545,6 +547,10 @@ class TokenUpdateTransitionLogicTest {
 	}
 
 	private void givenToken(boolean hasKyc, boolean hasFreeze) {
+		givenToken(hasKyc, hasFreeze, false);
+	}
+
+	private void givenToken(boolean hasKyc, boolean hasFreeze, boolean isUnique) {
 		given(token.hasKycKey()).willReturn(hasKyc);
 		given(token.hasFreezeKey()).willReturn(hasFreeze);
 	}
