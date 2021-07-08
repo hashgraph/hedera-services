@@ -374,7 +374,7 @@ public final class MemMapSlotStore implements SlotStore {
      *
      * @param file The file location
      * @param slot The slot location
-     * @return long containg file and slot location
+     * @return long containing file and slot location
      */
     private static long locationFromParts(int file, int slot) {
         return (long)file << 32 | slot & 0xFFFFFFFFL;
