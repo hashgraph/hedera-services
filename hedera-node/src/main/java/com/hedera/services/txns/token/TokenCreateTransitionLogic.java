@@ -29,6 +29,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -123,10 +124,12 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			}
 		}
 
-		status = ledger.adjustTokenBalance(treasury, created, op.getInitialSupply());
-		if (status != OK) {
-			abortWith(status);
-			return;
+		if (op.getTokenType() != TokenType.NON_FUNGIBLE_UNIQUE) {
+			status = ledger.adjustTokenBalance(treasury, created, op.getInitialSupply());
+			if (status != OK) {
+				abortWith(status);
+				return;
+			}
 		}
 
 		store.commitCreation();

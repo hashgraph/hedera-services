@@ -43,11 +43,9 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.Writer;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -77,18 +75,16 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	static final String CURRENT_VERSION = "version:2";
 
 	private static final String PROTO_FILE_EXTENSION = ".pb";
-	private static final String CSV_FILE_EXTENSION = ".csv";
 
 	private static final Instant NEVER = null;
-	private static final int ALLOWED_EXPORT_TIME_SKEW = 1;
 	private static final Base64.Encoder encoder = Base64.getEncoder();
+
+	private Instant nextExportTime = null;
 
 	final long expectedFloat;
 	private final UnaryOperator<byte[]> signer;
 	private final GlobalDynamicProperties dynamicProperties;
 
-	/* Used to toggle output for testing. */
-	boolean exportCsv = true, exportProto = true;
 	SigFileWriter sigFileWriter = new StandardSigFileWriter();
 	FileHashReader hashReader = new Sha384HashReader();
 	DirectoryAssurance directories = loc -> Files.createDirectories(Paths.get(loc));
@@ -96,7 +92,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	private String lastUsedExportDir = UNKNOWN_EXPORT_DIR;
 	private BalancesSummary summary;
 
-	Instant periodBegin = NEVER;
+	private final int exportPeriod;
 
 	static final Comparator<SingleAccountBalances> SINGLE_ACCOUNT_BALANCES_COMPARATOR =
 			Comparator.comparing(SingleAccountBalances::getAccountID, ACCOUNT_ID_COMPARATOR);
@@ -109,24 +105,31 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		this.signer = signer;
 		this.expectedFloat = properties.getLongProperty("ledger.totalTinyBarFloat");
 		this.dynamicProperties = dynamicProperties;
+		exportPeriod = dynamicProperties.balancesExportPeriodSecs();
+	}
+
+	private Instant getFirstExportTime(Instant now, final int exportPeriodInSecs) {
+		final long epochSeconds = now.getEpochSecond();
+		long elapsedSecs = epochSeconds % exportPeriodInSecs;
+		return elapsedSecs == 0 ? Instant.ofEpochSecond(now.getEpochSecond())
+				:Instant.ofEpochSecond(now.plusSeconds(exportPeriodInSecs - elapsedSecs).getEpochSecond());
+	}
+
+	Instant getNextExportTime() {
+		return nextExportTime;
 	}
 
 	@Override
 	public boolean isTimeToExport(Instant now) {
-		final int exportPeriod = dynamicProperties.balancesExportPeriodSecs();
-		if ( periodBegin != NEVER
-				&& now.getEpochSecond() % exportPeriod <= ALLOWED_EXPORT_TIME_SKEW
-				&& now.getEpochSecond() / exportPeriod != periodBegin.getEpochSecond() / exportPeriod) {
-			periodBegin = now;
-			return true;
+		if(nextExportTime == null) {
+			nextExportTime = getFirstExportTime(now, exportPeriod);
 		}
-		periodBegin = now;
-		if(log.isDebugEnabled()) {
-			log.debug("Now {} is NOT time to export.", now);
+		if(!now.isBefore(nextExportTime)) {
+			nextExportTime = nextExportTime.plusSeconds(exportPeriod);
+			return true;
 		}
 		return false;
 	}
-
 
 	@Override
 	public void exportBalancesFrom(ServicesState signedState, Instant consensusTime, NodeId nodeId) {
@@ -143,27 +146,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		}
 		log.info("Took {}ms to summarize signed state balances", watch.getTime(TimeUnit.MILLISECONDS));
 
-		// .pb account balances file is our focus, process it first to let its timestamp to stay close to
-		// epoch export period boundary
-		if (exportProto) {
-			toProtoFile(consensusTime);
-		}
-		if (exportCsv) {
-			toCsvFile(consensusTime);
-		}
-	}
-
-	private void toCsvFile(Instant exportTimeStamp) {
-		var watch = StopWatch.createStarted();
-
-		var csvLoc = lastUsedExportDir
-				+ exportTimeStamp.toString().replace(":", "_") + "_Balances" + CSV_FILE_EXTENSION;
-		boolean exportSucceeded = exportBalancesFile(summary, csvLoc, exportTimeStamp);
-		if (exportSucceeded) {
-			tryToSign(csvLoc);
-		}
-
-		log.info(" -> Took {}ms to export and sign CSV balances file at {}", watch.getTime(TimeUnit.MILLISECONDS), exportTimeStamp);
+		toProtoFile(consensusTime);
 	}
 
 	private void toProtoFile(Instant exportTimeStamp) {
@@ -181,49 +164,17 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 		log.info(" -> Took {}ms to export and sign proto balances file at {}", watch.getTime(TimeUnit.MILLISECONDS), exportTimeStamp);
 	}
 
-	private void tryToSign(String csvLoc) {
+	private void tryToSign(String fileLoc) {
 		try {
-			var hash = hashReader.readHash(csvLoc);
+			var hash = hashReader.readHash(fileLoc);
 			var sig = signer.apply(hash);
-			var sigFileLoc = sigFileWriter.writeSigFile(csvLoc, sig, hash);
+			var sigFileLoc = sigFileWriter.writeSigFile(fileLoc, sig, hash);
 			if (log.isDebugEnabled()) {
 				log.debug(GOOD_SIGNING_ATTEMPT_DEBUG_MSG_TPL, sigFileLoc);
 			}
 		} catch (Exception e) {
-			log.error(BAD_SIGNING_ATTEMPT_ERROR_MSG_TPL, csvLoc, e);
+			log.error(BAD_SIGNING_ATTEMPT_ERROR_MSG_TPL, fileLoc, e);
 		}
-	}
-
-	private boolean exportBalancesFile(BalancesSummary summary, String csvLoc, Instant when) {
-		try (BufferedWriter fout = Files.newBufferedWriter(Paths.get(csvLoc))) {
-			if (dynamicProperties.shouldExportTokenBalances()) {
-				addRelease090Header(fout, when);
-			} else {
-				addLegacyHeader(fout, when);
-			}
-			for (SingleAccountBalances singleAccountBalances : summary.getOrderedBalances()) {
-				fout.write(Long.toString(singleAccountBalances.getAccountID().getShardNum()));
-				fout.write(",");
-				fout.write(Long.toString(singleAccountBalances.getAccountID().getRealmNum()));
-				fout.write(",");
-				fout.write(Long.toString(singleAccountBalances.getAccountID().getAccountNum()));
-				fout.write(",");
-				fout.write(Long.toString(singleAccountBalances.getHbarBalance()));
-				if (dynamicProperties.shouldExportTokenBalances()) {
-					if (singleAccountBalances.getTokenUnitBalancesList().size() > 0) {
-						fout.write(",");
-						fout.write(b64Encode(singleAccountBalances));
-					} else {
-						fout.write(",");
-					}
-				}
-				fout.write(LINE_SEPARATOR);
-			}
-		} catch (IOException e) {
-			log.error(BAD_EXPORT_ATTEMPT_ERROR_MSG_TPL, csvLoc, e);
-			return false;
-		}
-		return true;
 	}
 
 	private void summarizeAsProto(Instant exportTimeStamp, AllAccountBalances.Builder builder) {
@@ -241,25 +192,6 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			return false;
 		}
 		return true;
-	}
-
-	private void addLegacyHeader(Writer writer, Instant at) throws IOException {
-		writer.write("TimeStamp:");
-		writer.write(at.toString());
-		writer.write(LINE_SEPARATOR);
-		writer.write("shardNum,realmNum,accountNum,balance");
-		writer.write(LINE_SEPARATOR);
-	}
-
-	private void addRelease090Header(Writer writer, Instant at) throws IOException {
-		writer.write("# ");
-		writer.write(CURRENT_VERSION);
-		writer.write(LINE_SEPARATOR);
-		writer.write("# TimeStamp:");
-		writer.write(at.toString());
-		writer.write(LINE_SEPARATOR);
-		writer.write("shardNum,realmNum,accountNum,balance,tokenBalances");
-		writer.write(LINE_SEPARATOR);
 	}
 
 	BalancesSummary summarized(ServicesState signedState) {

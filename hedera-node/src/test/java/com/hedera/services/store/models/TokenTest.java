@@ -142,8 +142,8 @@ class TokenTest {
 
 	@Test
 	void cantBurnOrMintNegativeAmounts() {
-		assertFailsWith(() -> subject.burn(treasuryRel, -1L), FAIL_INVALID);
-		assertFailsWith(() -> subject.mint(treasuryRel, -1L), FAIL_INVALID);
+		assertFailsWith(() -> subject.burn(treasuryRel, -1L), INVALID_TOKEN_BURN_AMOUNT);
+		assertFailsWith(() -> subject.mint(treasuryRel, -1L), INVALID_TOKEN_MINT_AMOUNT);
 	}
 
 	@Test
