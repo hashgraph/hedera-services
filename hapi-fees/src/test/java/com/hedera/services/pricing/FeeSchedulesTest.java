@@ -38,6 +38,7 @@ import java.util.Map;
 import static com.hedera.services.pricing.FeeSchedules.FEE_SCHEDULE_MULTIPLIER;
 import static com.hedera.services.pricing.FeeSchedules.USD_TO_TINYCENTS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
@@ -71,6 +72,29 @@ class FeeSchedulesTest {
 		final var canonicalUsage = baseOperationUsage.baseUsageFor(TokenMint, TOKEN_NON_FUNGIBLE_UNIQUE);
 		final var jsonRepr = reprAsSingleFeeScheduleEntry(
 				TokenMint, TOKEN_NON_FUNGIBLE_UNIQUE, computedResourcePrices);
+		System.out.println(jsonRepr);
+
+		// when:
+		final var actualBasePrice = feeInUsd(computedResourcePrices, canonicalUsage);
+		System.out.println(actualBasePrice);
+
+		// then:
+		assertEquals(expectedTotalBasePrice.doubleValue(), actualBasePrice.doubleValue(), ALLOWED_DEVIATION);
+	}
+
+	@Test
+	void computesExpectedPriceForUniqueTokenBurn() throws IOException {
+		// setup:
+		final var canonicalTotalPricesInUsd = assetsLoader.loadCanonicalPrices();
+		final var expectedTotalBasePrice = canonicalTotalPricesInUsd.get(TokenBurn).get(TOKEN_NON_FUNGIBLE_UNIQUE);
+
+		// given:
+		Map<ResourceProvider, Map<UsableResource, Long>> computedResourcePrices =
+				subject.canonicalPricesFor(TokenBurn, TOKEN_NON_FUNGIBLE_UNIQUE);
+		// and:
+		final var canonicalUsage = baseOperationUsage.baseUsageFor(TokenBurn, TOKEN_NON_FUNGIBLE_UNIQUE);
+		final var jsonRepr = reprAsSingleFeeScheduleEntry(
+				TokenBurn, TOKEN_NON_FUNGIBLE_UNIQUE, computedResourcePrices);
 		System.out.println(jsonRepr);
 
 		// when:

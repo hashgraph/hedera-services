@@ -94,45 +94,79 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-				getTokenNftInfoWorks(),
-				mintHappyPath(),
-				tokenMintWorksWhenAccountsAreFrozenByDefault(),
-				mintFailsWithDeletedToken(),
-				mintWorksWithRepeatedMetadata(),
-				failsGetTokenNftInfoWithNoNft(),
-				mintRespectsConstraints(),
-				mintFailsWithTooLargeMetadata(),
-				mintFailsWithInvalidMetadata(),
-				distinguishesFeeSubTypes(),
-
-				burnHappyPath(),
-				burnFailsOnInvalidSerialNumber(),
-				burnRespectsConstraints(),
-				treasuryBalanceCorrectAfterBurn(),
-				burnWorksWhenAccountsAreFrozenByDefault(),
-
-				wipeHappyPath(),
-				wipeFailsWithInvalidSerialNumber(),
-				wipeRespectsConstraints(),
-				uniqueWipeFailsWhenInvokedOnFungibleToken(),
-				commonWipeFailsWhenInvokedOnUniqueToken(),
-
-				uniqueTokenMintReceiptCheck(),
-				associatesNftAsExpected(),
-				failsWithAccountWithoutNfts(),
-				validatesQueryOutOfRange(),
-				failsWithInvalidQueryBoundaries(),
-				getAccountNftsInfoFailsWithDeletedAccount(),
-				getAccountNftsInfoFailsWithInexistentAccount(),
-				associatesNftAsExpected(),
-				failsWithAccountWithoutNfts(),
-				validatesQueryOutOfRange(),
-				failsWithInvalidQueryBoundaries(),
-				getAccountNftsInfoFailsWithDeletedAccount(),
-				getAccountNftsInfoFailsWithInexistentAccount(),
-
-				baseUniqueMintOperationIsChargedExpectedFee()
+//				getTokenNftInfoWorks(),
+//				mintHappyPath(),
+//				tokenMintWorksWhenAccountsAreFrozenByDefault(),
+//				mintFailsWithDeletedToken(),
+//				mintWorksWithRepeatedMetadata(),
+//				failsGetTokenNftInfoWithNoNft(),
+//				mintRespectsConstraints(),
+//				mintFailsWithTooLargeMetadata(),
+//				mintFailsWithInvalidMetadata(),
+//				distinguishesFeeSubTypes(),
+//
+//				burnHappyPath(),
+//				burnFailsOnInvalidSerialNumber(),
+//				burnRespectsConstraints(),
+//				treasuryBalanceCorrectAfterBurn(),
+//				burnWorksWhenAccountsAreFrozenByDefault(),
+//
+//				wipeHappyPath(),
+//				wipeFailsWithInvalidSerialNumber(),
+//				wipeRespectsConstraints(),
+//				uniqueWipeFailsWhenInvokedOnFungibleToken(),
+//				commonWipeFailsWhenInvokedOnUniqueToken(),
+//
+//				uniqueTokenMintReceiptCheck(),
+//				associatesNftAsExpected(),
+//				failsWithAccountWithoutNfts(),
+//				validatesQueryOutOfRange(),
+//				failsWithInvalidQueryBoundaries(),
+//				getAccountNftsInfoFailsWithDeletedAccount(),
+//				getAccountNftsInfoFailsWithInexistentAccount(),
+//				associatesNftAsExpected(),
+//				failsWithAccountWithoutNfts(),
+//				validatesQueryOutOfRange(),
+//				failsWithInvalidQueryBoundaries(),
+//				getAccountNftsInfoFailsWithDeletedAccount(),
+//				getAccountNftsInfoFailsWithInexistentAccount(),
+//
+//				baseUniqueMintOperationIsChargedExpectedFee(),
+				baseUniqueBurnOperationIsChargedExpectedFee()
 		);
+	}
+
+	private HapiApiSpec baseUniqueBurnOperationIsChargedExpectedFee() {
+		final var uniqueToken = "nftType";
+		final var supplyKey = "burn!";
+
+
+
+		final var civilianPayer = "civilian";
+		final var standard100SerialNums = LongStream.range(1, 100).boxed().collect(Collectors.toList());
+		final var baseTxn = "baseTxn";
+		final var expectedNftBurnPriceUsd = 0.001;
+
+		return defaultHapiSpec("BaseUniqueBurnOperationIsChargedExpectedFee")
+				.given(
+						newKeyNamed(supplyKey),
+						cryptoCreate(civilianPayer).key(supplyKey),
+						tokenCreate(uniqueToken)
+								.initialSupply(0L)
+								.expiry(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
+								.supplyKey(supplyKey)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+				)
+				.when(
+						burnToken(uniqueToken, standard100SerialNums)
+								.fee(ONE_HBAR)
+								.payingWith(civilianPayer)
+								.signedBy(supplyKey)
+								.blankMemo()
+								.via(baseTxn)
+				).then(
+						validateChargedUsdWithin(baseTxn, expectedNftBurnPriceUsd, 0.01)
+				);
 	}
 
 	private HapiApiSpec baseUniqueMintOperationIsChargedExpectedFee() {

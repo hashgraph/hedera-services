@@ -47,10 +47,15 @@ public class TokenBurnResourceUsage implements TxnResourceUsageEstimator {
 
 	@Override
 	public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
-		Optional<TokenType> tokenType = view.tokenType(txn.getTokenBurn().getToken());
+		final var target = txn.getTokenBurn().getToken();
+		Optional<TokenType> tokenType = view.tokenType(target);
 		SubType subType = subtypeHelper.determineTokenType(tokenType);
 		var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
 		var estimate = factory.apply(txn, sigUsage).givenSubType(subType);
+		if (subType == SubType.TOKEN_NON_FUNGIBLE_UNIQUE) {
+			final var serialNumsCount = txn.getTokenBurn().getSerialNumbersCount();
+			estimate.givenSerialNumsCount(serialNumsCount);
+		}
 		return estimate.get();
 	}
 }

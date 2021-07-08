@@ -31,6 +31,7 @@ import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 
 public class TokenBurnUsage extends TokenTxnUsage<TokenBurnUsage> {
 	private SubType currentSubType;
+	private int serialNumsCount = 0;
 
 	private TokenBurnUsage(TransactionBody tokenBurnOp, TxnUsageEstimator usageEstimator) {
 		super(tokenBurnOp, usageEstimator);
@@ -45,6 +46,11 @@ public class TokenBurnUsage extends TokenTxnUsage<TokenBurnUsage> {
 		return this;
 	}
 
+	public TokenBurnUsage givenSerialNumsCount(int serialNumsCount) {
+		this.serialNumsCount = serialNumsCount;
+		return this;
+	}
+
 	@Override
 	TokenBurnUsage self() {
 		return this;
@@ -54,7 +60,8 @@ public class TokenBurnUsage extends TokenTxnUsage<TokenBurnUsage> {
 		var op = this.op.getTokenBurn();
 		if (currentSubType == SubType.TOKEN_NON_FUNGIBLE_UNIQUE) {
 			usageEstimator.addBpt((long) op.getSerialNumbersCount() * LONG_SIZE);
-			addTokenTransfersRecordRb(1, 0, op.getSerialNumbersCount());
+			serialNumsCount = op.getSerialNumbersCount();
+			addTokenTransfersRecordRb(1, 0, serialNumsCount);
 		} else if (currentSubType == SubType.TOKEN_FUNGIBLE_COMMON) {
 			addAmountBpt();
 			addTokenTransfersRecordRb(1, 1, 0);
