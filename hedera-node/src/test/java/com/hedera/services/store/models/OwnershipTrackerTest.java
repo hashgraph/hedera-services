@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class OwnershipTrackerTest {
 
@@ -76,5 +77,17 @@ class OwnershipTrackerTest {
 		assertEquals(1L, change.getSerialNumber());
 		assertEquals(Id.DEFAULT, change.getNewOwner());
 		assertEquals(treasury, change.getPreviousOwner());
+	}
+
+	@Test
+	void compareChanges() {
+		final var change1 = new OwnershipTracker.Change(treasury, account, 7L);
+		final var change2 = new OwnershipTracker.Change(treasury, account, 7L);
+
+		assertNotEquals(null, change1);
+		assertFalse(change1.equals(treasury));
+		assertEquals(change1, change1);
+		assertEquals(change1, change2);
+		assertEquals(change1.hashCode(), change2.hashCode());
 	}
 }
