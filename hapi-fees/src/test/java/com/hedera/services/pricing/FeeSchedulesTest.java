@@ -187,10 +187,10 @@ class FeeSchedulesTest {
 
 		// when:
 		final var actualBasePrice = feeInUsd(computedResourcePrices, canonicalUsage);
-		//System.out.println(actualBasePrice);
+		System.out.println(actualBasePrice);
 
 		// then:
-		assertEquals(expectedTotalBasePrice.doubleValue(), actualBasePrice.doubleValue(), ALLOWED_DEVIATION);
+		assertEquals(expectedTotalBasePrice.doubleValue(), actualBasePrice.doubleValue(), 0);
 		assertEquals(desiredJson, jsonRepr);
 	}
 

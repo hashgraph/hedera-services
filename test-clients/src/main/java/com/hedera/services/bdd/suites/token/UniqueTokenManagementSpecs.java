@@ -1240,7 +1240,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 								.blankMemo()
 								.via(baseTxn)
 				).then(
-						validateChargedUsdWithin(baseTxn, expectedNftBurnPriceUsd, 0.1)
+						validateChargedUsdWithin(baseTxn, expectedNftBurnPriceUsd, 0.01)
 				);
 	}
 
