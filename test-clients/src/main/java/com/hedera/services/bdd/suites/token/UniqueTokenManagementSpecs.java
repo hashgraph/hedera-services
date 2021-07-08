@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -55,12 +56,16 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
@@ -73,7 +78,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public class UniqueTokenManagementSpecs extends HapiApiSuite {
@@ -127,7 +136,55 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 				validatesQueryOutOfRange(),
 				failsWithInvalidQueryBoundaries(),
 				getAccountNftsInfoFailsWithDeletedAccount(),
-				getAccountNftsInfoFailsWithInexistentAccount());
+				getAccountNftsInfoFailsWithInexistentAccount(),
+				tokenDissociateHappyPath(),
+				tokenDissociateFailsIfAccountOwnsUniqueTokens()
+		);
+	}
+
+	private HapiApiSpec tokenDissociateFailsIfAccountOwnsUniqueTokens() {
+		return defaultHapiSpec("tokenDissociateFailsIfAccountOwnsUniqueTokens")
+				.given(
+						newKeyNamed(SUPPLY_KEY),
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate("acc"),
+						tokenCreate(NFT)
+								.initialSupply(0)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.supplyType(TokenSupplyType.INFINITE)
+								.supplyKey(SUPPLY_KEY)
+								.treasury(TOKEN_TREASURY)
+				).when(
+						tokenAssociate("acc", NFT),
+						mintToken(NFT, List.of(metadata("memo1"), metadata("memo2")))
+				).then(
+						cryptoTransfer(TokenMovement.movingUnique(1L, NFT).between(TOKEN_TREASURY, "acc")),
+						cryptoTransfer(TokenMovement.movingUnique(2L, NFT).between(TOKEN_TREASURY, "acc")),
+						tokenDissociate("acc", NFT).hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)
+				);
+	}
+
+	private HapiApiSpec tokenDissociateHappyPath(){
+		return defaultHapiSpec("tokenDissociateHappyPath")
+				.given(
+
+						newKeyNamed(SUPPLY_KEY),
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate("acc"),
+						tokenCreate(NFT)
+								.initialSupply(0)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.supplyType(TokenSupplyType.INFINITE)
+								.supplyKey(SUPPLY_KEY)
+								.treasury(TOKEN_TREASURY)
+				)
+				.when(
+						tokenAssociate("acc", NFT)
+				)
+				.then(
+						tokenDissociate("acc", NFT).hasKnownStatus(SUCCESS),
+						getAccountInfo("acc").hasNoTokenRelationship(NFT)
+				);
 	}
 
 	private HapiApiSpec associatesNftAsExpected() {

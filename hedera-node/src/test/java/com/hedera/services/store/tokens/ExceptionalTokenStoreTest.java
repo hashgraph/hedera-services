@@ -59,8 +59,6 @@ class ExceptionalTokenStoreTest {
 		assertThrows(UnsupportedOperationException.class,
 				() -> NOOP_TOKEN_STORE.associate(null, null));
 		assertThrows(UnsupportedOperationException.class,
-				() -> NOOP_TOKEN_STORE.dissociate(null, null));
-		assertThrows(UnsupportedOperationException.class,
 				() -> NOOP_TOKEN_STORE.associationExists(null, null));
 		assertThrows(UnsupportedOperationException.class,
 				() -> NOOP_TOKEN_STORE.isTreasuryForToken(null, null));

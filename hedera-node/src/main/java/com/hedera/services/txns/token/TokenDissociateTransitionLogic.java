@@ -26,9 +26,11 @@ import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.TransitionLogic;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -55,51 +57,51 @@ public class TokenDissociateTransitionLogic implements TransitionLogic {
 	private final AccountStore accountStore;
 	private final TypedTokenStore tokenStore;
 	private final TransactionContext txnCtx;
+	private final OptionValidator validator;
 
 	public TokenDissociateTransitionLogic(
 			TypedTokenStore tokenStore,
 			AccountStore accountStore,
-			TransactionContext txnCtx
+			TransactionContext txnCtx,
+			OptionValidator validator
 	) {
 		this.accountStore = accountStore;
 		this.tokenStore = tokenStore;
 		this.txnCtx = txnCtx;
+		this.validator = validator;
 	}
 
 	@Override
 	public void doStateTransition() {
 		/* --- Translate from gRPC types --- */
 		var op = txnCtx.accessor().getTxn().getTokenDissociate();
-		/* First the account */
-		final var grpcId = op.getAccount();
-		final var accountId = new Id(grpcId.getShardNum(), grpcId.getRealmNum(), grpcId.getAccountNum());
-		/* And then the tokens */
-		final List<Id> tokenIds = new ArrayList<>();
-		for (final var _grpcId : op.getTokensList()) {
-			tokenIds.add(new Id(_grpcId.getShardNum(), _grpcId.getRealmNum(), _grpcId.getTokenNum()));
-		}
+		final var accountId = Id.fromGrpcAccount(op.getAccount());
 
 		/* --- Load the model objects --- */
 		final var account = accountStore.loadAccount(accountId);
-		final List<TokenRelationship> tokenRelationships = new ArrayList<>();
-		for (final var tokenId : tokenIds) {
-			final var token = tokenStore.loadPossiblyDeletedToken(tokenId);
-			var tokenRelationShip = tokenStore.loadTokenRelationship(token, account);
-			tokenRelationships.add(tokenRelationShip);
+		final List<Pair<TokenRelationship, TokenRelationship>> tokenRelationships = new ArrayList<>();
+		for (final var tokenId : op.getTokensList()) {
+			final var token = tokenStore.loadPossiblyDeletedToken(Id.fromGrpcToken(tokenId));
+			var accountRelationship = tokenStore.loadTokenRelationship(token, account);
+			var treasuryRelationship = tokenStore.loadTokenRelationship(token, token.getTreasury());
+			tokenRelationships.add(Pair.of(accountRelationship, treasuryRelationship));
 		}
 
 		/* --- Do the business logic --- */
-		for(TokenRelationship tokenRelationship : tokenRelationships) {
-			var token = tokenRelationship.getToken();
-			var treasury = token.getTreasury();
-			var treasuryRelationShip = tokenStore.loadTokenRelationship(token, treasury);
-			tokenRelationship.validateAndDissociate(accountStore.getValidator(), treasuryRelationShip);
-			account.dissociateWith(List.of(token));
+		account.dissociateWith(tokenRelationships, validator);
 
-			/* --- Persist the updated models --- */
-			accountStore.persistAccount(account);
-			tokenStore.persistTokenRelationships(List.of(treasuryRelationShip, tokenRelationship));
+		/* --- Persist the updated models --- */
+		accountStore.persistAccount(account); // tx account
+		for (Pair<TokenRelationship, TokenRelationship> accountAndTreasuryPair : tokenRelationships) {
+			tokenStore.persistToken(accountAndTreasuryPair.getKey().getToken()); // token from tx token list
+			accountStore.persistAccount(accountAndTreasuryPair.getKey().getToken().getTreasury()); // treasury
 		}
+		var flatTokenRels = new ArrayList<TokenRelationship>();
+		for (var pair : tokenRelationships) {
+			flatTokenRels.add(pair.getValue());
+			flatTokenRels.add(pair.getKey());
+		}
+		tokenStore.persistTokenRelationships(flatTokenRels); // all relations
 	}
 
 	@Override

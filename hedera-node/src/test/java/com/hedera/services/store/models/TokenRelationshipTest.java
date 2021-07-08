@@ -31,14 +31,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 class TokenRelationshipTest {
@@ -152,46 +148,6 @@ class TokenRelationshipTest {
 
 		// then:
 		assertEquals(1, subject.getBalanceChange());
-	}
-
-	@Test
-	void dissociateWithTreasuryFails() {
-		assertFailsWith(() -> treasuryRealtionship.validateAndDissociate(validator, treasuryRealtionship), ACCOUNT_IS_TREASURY);
-	}
-
-	@Test
-	void dissociateWithFrozenRelationshipFails() {
-		// given:
-		subject.setFrozen(true);
-
-		// verify:
-		assertFailsWith(() -> subject.validateAndDissociate(validator, treasuryRealtionship), ACCOUNT_FROZEN_FOR_TOKEN);
-		assertEquals(balance, subject.getBalance());
-		assertEquals(balance, treasuryRealtionship.getBalance());
-	}
-
-	@Test
-	void dissociateWithNonZeroBalanceFails() {
-		// given:
-		given(validator.isValidExpiry(any())).willReturn(true);
-
-		// verify:
-		assertFailsWith(() -> subject.validateAndDissociate(validator, treasuryRealtionship), TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
-		assertEquals(balance, subject.getBalance());
-		assertEquals(balance, treasuryRealtionship.getBalance());
-	}
-
-	@Test
-	void dissociationTransfersBalanceAsExpectedToTreasuryOfExpiredToken() {
-		// given:
-		given(validator.isValidExpiry(any())).willReturn(false);
-
-		// when:
-		subject.validateAndDissociate(validator, treasuryRealtionship);
-
-		// then:
-		assertEquals(0, subject.getBalance());
-		assertEquals(2*balance, treasuryRealtionship.getBalance());
 	}
 
 	@Test

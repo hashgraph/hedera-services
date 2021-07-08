@@ -37,8 +37,10 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.util.List;
 
@@ -95,7 +97,7 @@ class TokenDissociateTransitionLogicTest {
 
 		txnCtx = mock(TransactionContext.class);
 
-		subject = new TokenDissociateTransitionLogic(tokenStore, accountStore, txnCtx);
+		subject = new TokenDissociateTransitionLogic(tokenStore, accountStore, txnCtx, validator);
 	}
 
 	@Test
@@ -122,10 +124,10 @@ class TokenDissociateTransitionLogicTest {
 		verify(tokenStore).loadPossiblyDeletedToken(tokenId);
 		verify(tokenStore).loadTokenRelationship(token, account);
 		verify(tokenStore).loadTokenRelationship(token, treasury);
-		verify(tokenRelationship).validateAndDissociate(validator, treasuryRelationship);
-		verify(account).dissociateWith(List.of(token));
+		verify(account).dissociateWith(List.of(Pair.of(tokenRelationship, treasuryRelationship)), validator);
 		verify(accountStore).persistAccount(account);
-		verify(tokenStore).persistTokenRelationships(List.of(treasuryRelationship, tokenRelationship));
+		var inOrder = Mockito.inOrder(tokenStore);
+		inOrder.verify(tokenStore).persistTokenRelationships(List.of(treasuryRelationship, tokenRelationship));
 	}
 
 	@Test

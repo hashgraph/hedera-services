@@ -21,9 +21,13 @@ package com.hedera.services.store.models;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
+import com.hedera.services.txns.validation.OptionValidator;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.HashSet;
 import java.util.List;
@@ -32,13 +36,16 @@ import java.util.Set;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
 /**
  * Encapsulates the state and operations of a Hedera account.
- *
+ * <p>
  * Operations are validated, and throw a {@link com.hedera.services.exceptions.InvalidTransactionException}
  * with response code capturing the failure when one occurs.
  *
@@ -71,11 +78,17 @@ public class Account {
 		this.balance = balance;
 	}
 
-	public long getOwnedNfts() { return ownedNfts; }
+	public long getOwnedNfts() {
+		return ownedNfts;
+	}
 
-	public void setOwnedNfts(long ownedNfts) { this.ownedNfts = ownedNfts; }
+	public void setOwnedNfts(long ownedNfts) {
+		this.ownedNfts = ownedNfts;
+	}
 
-	public void incrementOwnedNfts() { this.ownedNfts++; }
+	public void incrementOwnedNfts() {
+		this.ownedNfts++;
+	}
 
 	public void associateWith(List<Token> tokens, int maxAllowed) {
 		final var alreadyAssociated = associatedTokens.size();
@@ -92,13 +105,52 @@ public class Account {
 		associatedTokens.addAllIds(uniqueIds);
 	}
 
-	public void dissociateWith(List<Token> tokens) {
+	/**
+	 * Performs validation and dissociation - removing relationships between tokens and accounts.
+	 * Expired tokens of type {@link TokenType#FUNGIBLE_COMMON} are transferred back to the treasury
+	 *
+	 * @param relations a {@link List} of {@link Pair}<{@link TokenRelationship}, {@link TokenRelationship}>,
+	 *                  in the form of < AccountRel, TreasuryRel >
+	 * @param validator - injected {@link OptionValidator} used to verify whether the token is expired
+	 */
+	public void dissociateWith(List<Pair<TokenRelationship, TokenRelationship>> relations, final OptionValidator validator) {
 		final Set<Id> uniqueIds = new HashSet<>();
-		for (var token : tokens) {
-			final var id = token.getId();
-			validateTrue(associatedTokens.contains(id), TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
-			uniqueIds.add(id);
+		for (var rel : relations) {
+			/*	Extraction	 */
+			final var accountRel = rel.getKey();
+			final var treasuryRel = rel.getValue();
+			final var account = accountRel.getAccount();
+			final var treasury = treasuryRel.getAccount();
+			final var token = accountRel.getToken();
+
+			/*	Validation	 */
+			validateTrue(associatedTokens.contains(token.getId()), TOKEN_NOT_ASSOCIATED_TO_ACCOUNT,
+					"Given account is not associated to the given token");
+			if (!token.isDeleted()) {
+				validateFalse(treasury.getId().equals(account.getId()), ACCOUNT_IS_TREASURY,
+						"Given account is treasury");
+				validateFalse(accountRel.isFrozen(), ACCOUNT_FROZEN_FOR_TOKEN,
+						"Account is frozen for given token");
+			}
+
+			var tokenBalance = accountRel.getBalance();
+			if (tokenBalance > 0) {
+				validateTrue(token.getType().equals(TokenType.FUNGIBLE_COMMON), TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES,
+						"Cannot dissociate given account while it has " + accountRel.getBalance() + " instances of unique tokens");
+
+				final var expiry = Timestamp.newBuilder().setSeconds(token.getExpiry()).build();
+				final var isTokenExpired = !validator.isValidExpiry(expiry);
+				validateFalse(!isTokenExpired && !token.isDeleted(), TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+
+				if (!token.isDeleted()) {
+					/* Must be expired; return tokenBalance to treasury account. */
+					treasuryRel.adjustBalance(tokenBalance);
+					accountRel.adjustBalance(-tokenBalance);
+				}
+			}
+			uniqueIds.add(token.getId());
 		}
+		/* Commit	 */
 		associatedTokens.removeAllIds(uniqueIds);
 	}
 

@@ -45,6 +45,7 @@ public class TransitionRunner {
 	private static final EnumSet<HederaFunctionality> refactoredOps = EnumSet.of(
 			TokenMint, TokenBurn,
 			TokenAssociateToAccount,
+			TokenDissociateFromAccount,
 			TokenAccountWipe
 	);
 

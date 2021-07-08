@@ -192,8 +192,7 @@ public class TypedTokenStore {
 				alertTokenBackingStoreOfNew(tokenRelationship);
 			}
 		}
-
-		transactionRecordService.includeChangesToTokenRel(tokenRelationships);
+		transactionRecordService.includeChangesToTokenRels(tokenRelationships);
 	}
 
 	/**

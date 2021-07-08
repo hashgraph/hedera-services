@@ -72,7 +72,7 @@ public class TokenBurnTransitionLogic implements TransitionLogic {
 		/* --- Translate from gRPC types --- */
 		final var op = txnCtx.accessor().getTxn().getTokenBurn();
 		final var grpcId = op.getToken();
-		final var targetId = new Id(grpcId.getShardNum(), grpcId.getRealmNum(), grpcId.getTokenNum());
+		final var targetId = Id.fromGrpcToken(grpcId);
 
 		/* --- Load the model objects --- */
 		final var token = store.loadToken(targetId);

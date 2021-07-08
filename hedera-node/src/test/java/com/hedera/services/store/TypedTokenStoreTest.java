@@ -143,7 +143,7 @@ class TypedTokenStoreTest {
 		assertEquals(expectedReplacementTokenRel, miscTokenMerkleRel);
 		verify(tokenRels, never()).replace(miscTokenRelId, expectedReplacementTokenRel);
 		// and:
-		verify(transactionRecordService).includeChangesToTokenRel(List.of(modelTokenRel));
+		verify(transactionRecordService).includeChangesToTokenRels(List.of(modelTokenRel));
 	}
 
 	@Test
@@ -170,7 +170,7 @@ class TypedTokenStoreTest {
 		// then:
 		verify(tokenRels).put(miscTokenRelId, expectedNewTokenRel);
 		// and:
-		verify(transactionRecordService).includeChangesToTokenRel(List.of(newTokenRel));
+		verify(transactionRecordService).includeChangesToTokenRels(List.of(newTokenRel));
 	}
 
 	/* --- Token loading --- */

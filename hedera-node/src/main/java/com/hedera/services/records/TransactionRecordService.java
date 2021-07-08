@@ -32,8 +32,8 @@ import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 
-import java.util.HashMap;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -80,14 +80,13 @@ public class TransactionRecordService {
 	 * be able to aggregate balance changes from one or more token relationships
 	 * into token-scoped transfer lists for the record. Since we are beginning
 	 * with just a refactor of burn and mint, the below implementation suffices
-	 * for now.
 	 *
 	 * @param tokenRels
-	 * 		List of the model of a changed token relationship
+	 * 		List of models of the changed relationship
 	 */
-	public void includeChangesToTokenRel(List<TokenRelationship> tokenRels) {
+	public void includeChangesToTokenRels(List<TokenRelationship> tokenRels) {
 		Map<Id, TokenTransferList.Builder> transferListMap = new HashMap<>();
-		for(var tokenRel : tokenRels) {
+		for (var tokenRel : tokenRels) {
 			if (tokenRel.getBalanceChange() == 0L) {
 				continue;
 			}
@@ -108,7 +107,6 @@ public class TransactionRecordService {
 					.setAmount(tokenRel.getBalanceChange()));
 			transferListMap.put(tokenId, tokenTransferListBuilder);
 		}
-
 		if(!transferListMap.isEmpty()) {
 			txnCtx.setTokenTransferLists(
 					transferListMap.values().stream().map(TokenTransferList.Builder::build).collect(Collectors.toList())

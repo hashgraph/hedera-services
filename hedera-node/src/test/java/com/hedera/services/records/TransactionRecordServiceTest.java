@@ -93,7 +93,7 @@ class TransactionRecordServiceTest {
 		tokenRel.setBalance(123L);
 
 		// when:
-		subject.includeChangesToTokenRel(List.of(tokenRel));
+		subject.includeChangesToTokenRels(List.of(tokenRel));
 
 		// then:
 		verify(txnCtx).setTokenTransferLists(List.of(TokenTransferList.newBuilder()
@@ -113,7 +113,7 @@ class TransactionRecordServiceTest {
 		tokenRel.initBalance(123L);
 
 		// when:
-		subject.includeChangesToTokenRel(List.of(tokenRel));
+		subject.includeChangesToTokenRels(List.of(tokenRel));
 
 		// then:
 		verify(txnCtx, never()).setTokenTransferLists(any());
