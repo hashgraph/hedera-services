@@ -71,6 +71,20 @@ public class OwnershipTracker {
 			this.serialNumber = serialNumber;
 		}
 
+		@Override
+		public boolean equals(final Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (o == null || Change.class != o.getClass()) {
+				return false;
+			}
+			final var that = (Change) o;
+			return this.previousOwner == that.previousOwner
+					&& this.newOwner == that.newOwner
+					&& this.serialNumber == that.serialNumber;
+		}
+
 		public Id getPreviousOwner() {
 			return previousOwner;
 		}

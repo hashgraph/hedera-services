@@ -200,14 +200,21 @@ class TokenTest {
 		subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
 		subject.initSupplyConstraints(TokenSupplyType.FINITE, 20000L);
 		subject.setSupplyKey(someKey);
+		final var ownershipTracker = mock(OwnershipTracker.class);
+		final long serialNumber0 = 10L;
+		final long serialNumber1 = 11L;
 
-		var ownershipTracker = mock(OwnershipTracker.class);
-		subject.burn(ownershipTracker, treasuryRel, List.of(1L));
-		assertEquals(initialSupply - 1, subject.getTotalSupply());
-		assertEquals(-1, treasuryRel.getBalanceChange());
-		verify(ownershipTracker).add(eq(subject.getId()), any());
+		subject.burn(ownershipTracker, treasuryRel, List.of(serialNumber0, serialNumber1));
+
+		assertEquals(initialSupply - 2, subject.getTotalSupply());
+		assertEquals(-2, treasuryRel.getBalanceChange());
+		verify(ownershipTracker).add(eq(subject.getId()), eq(OwnershipTracker.forRemoving(treasuryId, serialNumber0)));
+		verify(ownershipTracker).add(eq(subject.getId()), eq(OwnershipTracker.forRemoving(treasuryId, serialNumber1)));
 		assertTrue(subject.hasRemovedUniqueTokens());
-		assertEquals(1, subject.removedUniqueTokens().get(0).getSerialNumber());
+		final var removedUniqueTokens = subject.removedUniqueTokens();
+		assertEquals(2, removedUniqueTokens.size());
+		assertEquals(serialNumber0, removedUniqueTokens.get(0).getSerialNumber());
+		assertEquals(serialNumber1, removedUniqueTokens.get(1).getSerialNumber());
 	}
 
 	@Test
