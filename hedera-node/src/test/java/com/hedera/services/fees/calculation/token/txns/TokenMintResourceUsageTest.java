@@ -21,14 +21,18 @@ package com.hedera.services.fees.calculation.token.txns;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.token.TokenMintUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.SubType;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.SigValueObj;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,6 +55,7 @@ class TokenMintResourceUsageTest {
 	int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
 	SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
 	SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
+	private final long now = 123L;
 
 	BiFunction<TransactionBody, SigUsage, TokenMintUsage> factory;
 	FeeData expected;
@@ -69,6 +74,8 @@ class TokenMintResourceUsageTest {
 		token = mock(TokenID.class);
 
 		tokenMintTxn = mock(TransactionBody.class);
+		given(tokenMintTxn.getTransactionID()).willReturn(TransactionID.newBuilder()
+				.setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)).build());
 		given(tokenMintTxn.hasTokenMint()).willReturn(true);
 		given(tokenMintTxn.getTokenMint()).willReturn(transactionBody);
 		given(transactionBody.getToken()).willReturn(token);
@@ -89,18 +96,23 @@ class TokenMintResourceUsageTest {
 	}
 
 	@Test
-	public void recognizesApplicability() {
+	void recognizesApplicability() {
 		// expect:
 		assertTrue(subject.applicableTo(tokenMintTxn));
 		assertFalse(subject.applicableTo(nonTokenMintTxn));
 	}
 
 	@Test
-	public void delegatesToCorrectEstimate() throws Exception {
-		// expect:
+	void delegatesToCorrectEstimate() throws Exception {
+		final long expiry = 1_234_567L;
+		final long lifetime = expiry - now;
+		final var aToken = new MerkleToken(expiry, 1, 1, "A",
+				"B", true, false, EntityId.MISSING_ENTITY_ID);
 		given(view.tokenType(token)).willReturn(Optional.of(TokenType.FUNGIBLE_COMMON));
 		given(factory.apply(any(), any())).willReturn(usage);
 		given(usage.givenSubType(any())).willReturn(usage);
+		given(usage.givenExpectedLifetime(lifetime)).willReturn(usage);
+		given(view.tokenWith(token)).willReturn(Optional.of(aToken));
 
 		assertEquals(
 				expected,
@@ -112,6 +124,6 @@ class TokenMintResourceUsageTest {
 				expected,
 				subject.usageGiven(tokenMintTxn, obj, view));
 		verify(usage).givenSubType(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
-
+		verify(usage).givenExpectedLifetime(lifetime);
 	}
 }

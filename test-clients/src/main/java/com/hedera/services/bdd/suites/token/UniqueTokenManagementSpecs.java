@@ -35,6 +35,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -64,6 +65,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccoun
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -99,50 +101,52 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-						mintFailsWithLargeBatchSize(),
-						mintFailsWithTooLongMetadata(),
-						mintFailsWithInvalidMetadataFromBatch(),
-						mintUniqueTokenHappyPath(),
-						mintTokenWorksWhenAccountsAreFrozenByDefault(),
-						mintFailsWithDeletedToken(),
-						mintUniqueTokenWorksWithRepeatedMetadata(),
-						mintDistinguishesFeeSubTypes(),
-						mintUniqueTokenReceiptCheck(),
-						mintUniqueTokenAssociatesAsExpected(),
-						populatingMetadataForFungibleDoesNotWork(),
-						populatingAmountForNonFungibleDoesNotWork(),
-						finiteNftReachesMaxSupplyProperly(),
+				mintFailsWithLargeBatchSize(),
+				mintFailsWithTooLongMetadata(),
+				mintFailsWithInvalidMetadataFromBatch(),
+				mintUniqueTokenHappyPath(),
+				mintTokenWorksWhenAccountsAreFrozenByDefault(),
+				mintFailsWithDeletedToken(),
+				mintUniqueTokenWorksWithRepeatedMetadata(),
+				mintDistinguishesFeeSubTypes(),
+				mintUniqueTokenReceiptCheck(),
+				mintUniqueTokenAssociatesAsExpected(),
+				populatingMetadataForFungibleDoesNotWork(),
+				populatingAmountForNonFungibleDoesNotWork(),
+				finiteNftReachesMaxSupplyProperly(),
 
-						burnHappyPath(),
-						burnFailsOnInvalidSerialNumber(),
-						burnRespectsBurnBatchConstraints(),
-						treasuryBalanceCorrectAfterBurn(),
-						burnWorksWhenAccountsAreFrozenByDefault(),
-						serialNumbersOnlyOnFungibleBurnFails(),
-						amountOnlyOnNonFungibleBurnFails(),
+				burnHappyPath(),
+				burnFailsOnInvalidSerialNumber(),
+				burnRespectsBurnBatchConstraints(),
+				treasuryBalanceCorrectAfterBurn(),
+				burnWorksWhenAccountsAreFrozenByDefault(),
+				serialNumbersOnlyOnFungibleBurnFails(),
+				amountOnlyOnNonFungibleBurnFails(),
 
-						failsWithAccountWithoutNfts(),
-						validatesQueryOutOfRange(),
-						getAccountNftInfosFailsWithInvalidQueryBoundaries(),
-						getAccountNftInfosFailsWithDeletedAccount(),
-						getAccountNftInfosFailsWithInexistentAccount(),
+				failsWithAccountWithoutNfts(),
+				validatesQueryOutOfRange(),
+				getAccountNftInfosFailsWithInvalidQueryBoundaries(),
+				getAccountNftInfosFailsWithDeletedAccount(),
+				getAccountNftInfosFailsWithInexistentAccount(),
 
-						wipeHappyPath(),
-						wipeRespectsConstraints(),
-						commonWipeFailsWhenInvokedOnUniqueToken(),
-						uniqueWipeFailsWhenInvokedOnFungibleToken(),
-						wipeFailsWithInvalidSerialNumber(),
+				wipeHappyPath(),
+				wipeRespectsConstraints(),
+				commonWipeFailsWhenInvokedOnUniqueToken(),
+				uniqueWipeFailsWhenInvokedOnFungibleToken(),
+				wipeFailsWithInvalidSerialNumber(),
 
-						getTokenNftInfoWorks(),
-						getTokenNftInfoFailsWithNoNft(),
+				getTokenNftInfoWorks(),
+				getTokenNftInfoFailsWithNoNft(),
 
-						getTokenNftInfosAssociatesTokenNftInfosAsExpected(),
-						getTokenNftInfosValidatesQueryRange(),
-						getTokenNftInfosFailsWithTokenWithoutNfts(),
-						getTokenNftInfosFailsWithInvalidQueryBoundaries(),
-						getTokenNftInfosFailsWithDeletedTokenNft()
-        );
-    }
+				getTokenNftInfosAssociatesTokenNftInfosAsExpected(),
+				getTokenNftInfosValidatesQueryRange(),
+				getTokenNftInfosFailsWithTokenWithoutNfts(),
+				getTokenNftInfosFailsWithInvalidQueryBoundaries(),
+				getTokenNftInfosFailsWithDeletedTokenNft(),
+
+				baseUniqueMintOperationIsChargedExpectedFee()
+		);
+	}
 
 	private HapiApiSpec populatingMetadataForFungibleDoesNotWork() {
 		return defaultHapiSpec("PopulatingMetadataForFungibleDoesNotWork")
@@ -248,7 +252,8 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 						mintToken(FUNGIBLE_TOKEN, 300)
 				)
 				.then(
-						burnToken(FUNGIBLE_TOKEN, List.of(1L, 2L, 3L)).hasKnownStatus(INVALID_TOKEN_BURN_AMOUNT).via("burn-failure"),
+						burnToken(FUNGIBLE_TOKEN, List.of(1L, 2L, 3L)).hasKnownStatus(INVALID_TOKEN_BURN_AMOUNT).via(
+								"burn-failure"),
 						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, 300),
 						getTxnRecord("burn-failure").showsNoTransfers(),
 						UtilVerbs.withOpContext((spec, opLog) -> {
@@ -1175,6 +1180,36 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 				).then(
 						getTokenNftInfos(A_TOKEN, 0, 2)
 								.hasCostAnswerPrecheck(NOT_SUPPORTED)
+				);
+	}
+
+	private HapiApiSpec baseUniqueMintOperationIsChargedExpectedFee() {
+		final var uniqueToken = "nftType";
+		final var supplyKey = "mint!";
+		final var civilianPayer = "civilian";
+		final var standard100ByteMetadata = ByteString.copyFromUtf8(
+				"0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
+		final var baseTxn = "baseTxn";
+		final var expectedNftMintPriceUsd = 0.001;
+
+		return defaultHapiSpec("BaseUniqueMintOperationIsChargedExpectedFee")
+				.given(
+						newKeyNamed(supplyKey),
+						cryptoCreate(civilianPayer).key(supplyKey),
+						tokenCreate(uniqueToken)
+								.initialSupply(0L)
+								.expiry(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
+								.supplyKey(supplyKey)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+				)
+				.when(
+						mintToken(uniqueToken, List.of(standard100ByteMetadata))
+								.payingWith(civilianPayer)
+								.signedBy(supplyKey)
+								.blankMemo()
+								.via(baseTxn)
+				).then(
+						validateChargedUsdWithin(baseTxn, expectedNftMintPriceUsd, 0.01)
 				);
 	}
 

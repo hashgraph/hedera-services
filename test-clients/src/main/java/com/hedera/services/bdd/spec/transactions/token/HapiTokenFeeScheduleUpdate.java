@@ -88,7 +88,7 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		try {
-			final TokenInfo info = lookupInfo(spec);
+			final TokenInfo info = lookupInfo(spec, token, log, loggingOff);
 			final FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) -> usageEstimate(_txn, svo, info);
 			return spec.fees().forActivityBasedOp(TokenFeeScheduleUpdate, metricsCalc, txn, numPayerKeys);
 		} catch (Throwable ignore) {
@@ -156,12 +156,17 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
 		return AdapterUtils.feeDataFrom(accumulator);
 	}
 
-	private TokenInfo lookupInfo(HapiApiSpec spec) throws Throwable {
+	static TokenInfo lookupInfo(
+			HapiApiSpec spec,
+			String token,
+			Logger scopedLog,
+			boolean loggingOff
+	) throws Throwable {
 		HapiGetTokenInfo subOp = getTokenInfo(token).noLogging();
 		Optional<Throwable> error = subOp.execFor(spec);
 		if (error.isPresent()) {
 			if (!loggingOff) {
-				log.warn("Unable to look up current info for "
+				scopedLog.warn("Unable to look up current info for "
 								+ HapiPropertySource.asTokenString(spec.registry().getTokenID(token)),
 						error.get());
 			}
