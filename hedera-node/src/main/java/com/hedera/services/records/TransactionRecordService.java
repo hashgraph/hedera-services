@@ -27,7 +27,6 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
 import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -85,7 +84,7 @@ public class TransactionRecordService {
 	public void includeChangesToTokenRels(final List<TokenRelationship> tokenRels) {
 		Map<Id, TokenTransferList.Builder> transferListMap = new HashMap<>();
 		for (final var tokenRel : tokenRels) {
-			if (tokenRel.getBalanceChange() == 0L && !tokenRel.hasCommonRepresentation()) {
+			if (tokenRel.getBalanceChange() == 0L || !tokenRel.hasCommonRepresentation()) {
 				continue;
 			}
 			final var tokenId = tokenRel.getToken().getId();
@@ -120,25 +119,15 @@ public class TransactionRecordService {
 		List<TokenTransferList> transferLists = new ArrayList<>();
 		var changes = ownershipTracker.getChanges();
 		for (Id token : changes.keySet()) {
-			TokenID tokenID = TokenID.newBuilder()
-					.setShardNum(token.getShard())
-					.setRealmNum(token.getRealm())
-					.setTokenNum(token.getNum())
-					.build();
+			TokenID tokenID = token.asGrpcToken();
 
 			List<NftTransfer> transfers = new ArrayList<>();
 			for (OwnershipTracker.Change change : changes.get(token)) {
 				Id previousOwner = change.getPreviousOwner();
 				Id newOwner = change.getNewOwner();
 				transfers.add(NftTransfer.newBuilder()
-						.setSenderAccountID(AccountID.newBuilder()
-								.setShardNum(previousOwner.getShard())
-								.setRealmNum(previousOwner.getRealm())
-								.setAccountNum(previousOwner.getNum()))
-						.setReceiverAccountID(AccountID.newBuilder()
-								.setShardNum(newOwner.getShard())
-								.setRealmNum(newOwner.getRealm())
-								.setAccountNum(newOwner.getNum()))
+						.setSenderAccountID(previousOwner.asGrpcAccount())
+						.setReceiverAccountID(newOwner.asGrpcAccount())
 						.setSerialNumber(change.getSerialNumber()).build());
 			}
 			transferLists.add(TokenTransferList.newBuilder()
