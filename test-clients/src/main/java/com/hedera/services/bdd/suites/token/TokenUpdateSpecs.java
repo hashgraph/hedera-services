@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.token;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
@@ -55,6 +56,7 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fix
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHbarFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CURRENT_TREASURY_STILL_OWNS_NFTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
@@ -69,6 +71,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public class TokenUpdateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenUpdateSpecs.class);
@@ -108,6 +111,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						validatesNewExpiry(),
 						/* HIP-18 */
 						canUpdateFeeScheduleKeyWithAdmin(),
+						tmpCannotUpdateUniqTreasuryWithNfts(),
 				}
 		);
 	}
@@ -625,6 +629,40 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 						getTokenInfo(tokenWithFeeKey)
 								.hasCustom(fixedHbarFeeInSchedule(newHbarFee, hbarCollector))
 								.hasFeeScheduleKey(tokenWithFeeKey)
+				);
+	}
+
+	public HapiApiSpec tmpCannotUpdateUniqTreasuryWithNfts() {
+		final var specialKey = "special";
+
+		return defaultHapiSpec("TmpCannotUpdateUniqTreasuryWithNfts")
+				.given(
+						newKeyNamed(specialKey),
+						cryptoCreate("oldTreasury").balance(0L),
+						cryptoCreate("newTreasury").balance(0L),
+						tokenCreate("tbu")
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0L)
+								.adminKey(specialKey)
+								.supplyKey(specialKey)
+								.treasury("oldTreasury")
+				).when(
+						mintToken("tbu", List.of(ByteString.copyFromUtf8("BLAMMO"))),
+						getAccountInfo("oldTreasury").logged(),
+						getAccountInfo("newTreasury").logged(),
+						tokenAssociate("newTreasury", "tbu"),
+						tokenUpdate("tbu")
+								.treasury("newTreasury")
+								.hasKnownStatus(CURRENT_TREASURY_STILL_OWNS_NFTS),
+						burnToken("tbu", List.of(1L)),
+						getTokenInfo("tbu").hasTreasury("oldTreasury"),
+						tokenUpdate("tbu")
+								.treasury("newTreasury")
+								.via("treasuryUpdateTxn")
+				).then(
+						getAccountInfo("oldTreasury").logged(),
+						getAccountInfo("newTreasury").logged(),
+						getTokenInfo("tbu").hasTreasury("newTreasury")
 				);
 	}
 

@@ -194,6 +194,7 @@ class FeeSchedulesTest {
 		assertEquals(desiredJson, jsonRepr);
 	}
 
+
 	@Test
 	void computesExpectedPriceForFeeScheduleUpdate() throws IOException {
 		// setup:

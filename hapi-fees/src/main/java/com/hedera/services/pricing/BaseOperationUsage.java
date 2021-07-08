@@ -27,6 +27,7 @@ import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.consensus.ConsensusOpsUsage;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.state.UsageAccumulator;
+import com.hedera.services.usage.token.TokenMintUsage;
 import com.hedera.services.usage.token.TokenBurnUsage;
 import com.hedera.services.usage.token.TokenMintUsage;
 import com.hedera.services.usage.token.TokenOpsUsage;

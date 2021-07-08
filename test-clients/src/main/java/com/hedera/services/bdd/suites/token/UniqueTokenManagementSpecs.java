@@ -149,36 +149,6 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 		);
 	}
 
-	private HapiApiSpec baseUniqueBurnOperationIsChargedExpectedFee() {
-		final var uniqueToken = "nftType";
-		final var supplyKey = "burn!";
-		final var civilianPayer = "civilian";
-		final var baseTxn = "baseTxn";
-		final var expectedNftBurnPriceUsd = 0.001;
-
-		return defaultHapiSpec("BaseUniqueBurnOperationIsChargedExpectedFee")
-				.given(
-						newKeyNamed(supplyKey),
-						cryptoCreate(civilianPayer).key(supplyKey),
-						cryptoCreate(TOKEN_TREASURY),
-						tokenCreate(uniqueToken)
-								.initialSupply(0)
-								.supplyKey(supplyKey)
-								.tokenType(NON_FUNGIBLE_UNIQUE)
-								.treasury(TOKEN_TREASURY),
-						mintToken(uniqueToken, List.of(metadata("memo")))
-				)
-				.when(
-						burnToken(uniqueToken, List.of(1L))
-								.fee(ONE_HBAR)
-								.payingWith(civilianPayer)
-								.blankMemo()
-								.via(baseTxn)
-				).then(
-						validateChargedUsdWithin(baseTxn, expectedNftBurnPriceUsd, 0.1)
-				);
-	}
-
 	private HapiApiSpec populatingMetadataForFungibleDoesNotWork() {
 		return defaultHapiSpec("PopulatingMetadataForFungibleDoesNotWork")
 				.given(
@@ -1243,6 +1213,37 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 						validateChargedUsdWithin(baseTxn, expectedNftMintPriceUsd, 0.01)
 				);
 	}
+
+	private HapiApiSpec baseUniqueBurnOperationIsChargedExpectedFee() {
+		final var uniqueToken = "nftType";
+		final var supplyKey = "burn!";
+		final var civilianPayer = "civilian";
+		final var baseTxn = "baseTxn";
+		final var expectedNftBurnPriceUsd = 0.001;
+
+		return defaultHapiSpec("BaseUniqueBurnOperationIsChargedExpectedFee")
+				.given(
+						newKeyNamed(supplyKey),
+						cryptoCreate(civilianPayer).key(supplyKey),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(uniqueToken)
+								.initialSupply(0)
+								.supplyKey(supplyKey)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.treasury(TOKEN_TREASURY),
+						mintToken(uniqueToken, List.of(metadata("memo")))
+				)
+				.when(
+						burnToken(uniqueToken, List.of(1L))
+								.fee(ONE_HBAR)
+								.payingWith(civilianPayer)
+								.blankMemo()
+								.via(baseTxn)
+				).then(
+						validateChargedUsdWithin(baseTxn, expectedNftBurnPriceUsd, 0.1)
+				);
+	}
+
 
 	protected Logger getResultsLogger() {
 		return log;
