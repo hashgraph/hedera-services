@@ -27,13 +27,14 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
 import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class TransactionRecordService {
 	private final TransactionContext txnCtx;
@@ -70,39 +71,40 @@ public class TransactionRecordService {
 
 	/**
 	 * Update the record of the active transaction with the changes to the
-	 * given token relationship. Only balance changes need to be included in
+	 * given token relationships. Only balance changes need to be included in
 	 * the record.
 	 *
 	 * <b>IMPORTANT:</b> In general, the {@code TransactionRecordService} must
 	 * be able to aggregate balance changes from one or more token relationships
-	 * into token-scoped transfer lists for the record. Since we are beginning
-	 * with just a refactor of burn and mint, the below implementation suffices
-	 * for now.
+	 * into token-scoped transfer lists for the record.
 	 *
-	 * @param tokenRel the model of a changed token relationship
+	 * @param tokenRels
+	 * 		List of models of the changed relationship
 	 */
-	public void includeChangesToTokenRel(TokenRelationship tokenRel) {
-		if (tokenRel.getBalanceChange() == 0L || !tokenRel.hasCommonRepresentation()) {
-			return;
+	public void includeChangesToTokenRels(final List<TokenRelationship> tokenRels) {
+		Map<Id, TokenTransferList.Builder> transferListMap = new HashMap<>();
+		for (final var tokenRel : tokenRels) {
+			if (tokenRel.getBalanceChange() == 0L || !tokenRel.hasCommonRepresentation()) {
+				continue;
+			}
+			final var tokenId = tokenRel.getToken().getId();
+			final var accountId = tokenRel.getAccount().getId();
+
+			final var tokenTransferListBuilder = transferListMap.getOrDefault(tokenId,
+					TokenTransferList.newBuilder().setToken(tokenId.asGrpcToken()));
+
+			tokenTransferListBuilder.addTransfers(AccountAmount.newBuilder()
+					.setAccountID(accountId.asGrpcAccount())
+					.setAmount(tokenRel.getBalanceChange()));
+			transferListMap.put(tokenId, tokenTransferListBuilder);
 		}
-
-		final var tokenId = tokenRel.getToken().getId();
-		final var accountId = tokenRel.getAccount().getId();
-
-		final var supplyChangeXfers = List.of(TokenTransferList.newBuilder()
-				.setToken(TokenID.newBuilder()
-						.setShardNum(tokenId.getShard())
-						.setRealmNum(tokenId.getRealm())
-						.setTokenNum(tokenId.getNum()))
-				.addTransfers(AccountAmount.newBuilder()
-						.setAccountID(AccountID.newBuilder()
-								.setShardNum(accountId.getShard())
-								.setRealmNum(accountId.getRealm())
-								.setAccountNum(accountId.getNum()))
-						.setAmount(tokenRel.getBalanceChange()))
-				.build()
-		);
-		txnCtx.setTokenTransferLists(supplyChangeXfers);
+		if(!transferListMap.isEmpty()) {
+			var transferList = new ArrayList<TokenTransferList>();
+			for (final var transferBuilder : transferListMap.values()) {
+				transferList.add(transferBuilder.build());
+			}
+			txnCtx.setTokenTransferLists(transferList);
+		}
 	}
 
 	/**
@@ -117,25 +119,15 @@ public class TransactionRecordService {
 		List<TokenTransferList> transferLists = new ArrayList<>();
 		var changes = ownershipTracker.getChanges();
 		for (Id token : changes.keySet()) {
-			TokenID tokenID = TokenID.newBuilder()
-					.setShardNum(token.getShard())
-					.setRealmNum(token.getRealm())
-					.setTokenNum(token.getNum())
-					.build();
+			TokenID tokenID = token.asGrpcToken();
 
 			List<NftTransfer> transfers = new ArrayList<>();
 			for (OwnershipTracker.Change change : changes.get(token)) {
 				Id previousOwner = change.getPreviousOwner();
 				Id newOwner = change.getNewOwner();
 				transfers.add(NftTransfer.newBuilder()
-						.setSenderAccountID(AccountID.newBuilder()
-								.setShardNum(previousOwner.getShard())
-								.setRealmNum(previousOwner.getRealm())
-								.setAccountNum(previousOwner.getNum()))
-						.setReceiverAccountID(AccountID.newBuilder()
-								.setShardNum(newOwner.getShard())
-								.setRealmNum(newOwner.getRealm())
-								.setAccountNum(newOwner.getNum()))
+						.setSenderAccountID(previousOwner.asGrpcAccount())
+						.setReceiverAccountID(newOwner.asGrpcAccount())
 						.setSerialNumber(change.getSerialNumber()).build());
 			}
 			transferLists.add(TokenTransferList.newBuilder()

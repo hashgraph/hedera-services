@@ -109,7 +109,7 @@ class TokenMintTransitionLogicTest {
 		// then:
 		verify(token).mint(treasuryRel, amount);
 		verify(store).persistToken(token);
-		verify(store).persistTokenRelationship(treasuryRel);
+		verify(store).persistTokenRelationships(List.of(treasuryRel));
 	}
 
 	@Test
@@ -131,7 +131,7 @@ class TokenMintTransitionLogicTest {
 		// then:
 		verify(token).mint(any(OwnershipTracker.class), eq(treasuryRel), any(List.class), any(RichInstant.class));
 		verify(store).persistToken(token);
-		verify(store).persistTokenRelationship(treasuryRel);
+		verify(store).persistTokenRelationships(List.of(treasuryRel));
 		verify(store).persistTrackers(any(OwnershipTracker.class));
 		verify(accountStore).persistAccount(any(Account.class));
 	}

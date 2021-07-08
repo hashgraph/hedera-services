@@ -79,6 +79,8 @@ public class Token {
 	private boolean frozenByDefault;
 	private Account treasury;
 	private Account autoRenewAccount;
+	private boolean isDeleted;
+	private long expiry;
 
 	private long lastUsedSerialNumber;
 
@@ -383,6 +385,22 @@ public class Token {
 
 	public List<UniqueToken> mintedUniqueTokens() {
 		return mintedUniqueTokens;
+	}
+
+	public boolean isDeleted() {
+		return isDeleted;
+	}
+
+	public void setIsDeleted(final boolean deleted) {
+		isDeleted = deleted;
+	}
+
+	public long getExpiry() {
+		return expiry;
+	}
+
+	public void setExpiry(final long expiry) {
+		this.expiry = expiry;
 	}
 
 	public boolean hasRemovedUniqueTokens() {

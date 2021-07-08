@@ -61,11 +61,6 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public ResponseCodeEnum dissociate(AccountID aId, List<TokenID> tokens) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public ResponseCodeEnum freeze(AccountID aId, TokenID tId) {
 		throw new UnsupportedOperationException();
 	}

@@ -108,7 +108,7 @@ class TokenBurnTransitionLogicTest {
 		// then:
 		verify(token).burn(treasuryRel, amount);
 		verify(store).persistToken(token);
-		verify(store).persistTokenRelationship(treasuryRel);
+		verify(store).persistTokenRelationships(List.of(treasuryRel));
 	}
 
 	@Test
@@ -130,7 +130,7 @@ class TokenBurnTransitionLogicTest {
 		verify(token).getType();
 		verify(token).burn(any(OwnershipTracker.class), eq(treasuryRel), any(List.class));
 		verify(store).persistToken(token);
-		verify(store).persistTokenRelationship(treasuryRel);
+		verify(store).persistTokenRelationships(List.of(treasuryRel));
 		verify(store).persistTrackers(any(OwnershipTracker.class));
 		verify(accountStore).persistAccount(any(Account.class));
 	}
