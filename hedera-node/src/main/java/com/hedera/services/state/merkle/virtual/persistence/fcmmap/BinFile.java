@@ -254,16 +254,17 @@ public final class BinFile<K extends VKey> {
      * @return either the slot index that was stored for key or the new slot index provided by supplier
      */
     public long getSlotIfAbsentPut(long version, int keySubHash, K key, LongSupplier newValueSupplier) {
-        ReadLock lockedReadLock = acquireReadLock(keySubHash);
+        WriteLock lockedLock = acquireWriteLock(keySubHash);
+//        ReadLock lockedReadLock = acquireReadLock(keySubHash);
         try {
             int entryOffset = findEntryOffsetForKeyInBin(keySubHash, key);
             if (entryOffset != -1) return getMutationValue(entryOffset + queueOffsetInEntry, version);
-        } finally {
-            lockedReadLock.unlock();
-        }
+//        } finally {
+//            lockedReadLock.unlock();
+//        }
         // failed to get so now put
-        WriteLock lockedLock = acquireWriteLock(keySubHash);
-        try {
+//        WriteLock lockedLock = acquireWriteLock(keySubHash);
+//        try {
             long newValue = newValueSupplier.getAsLong();
             EntryReference entry = getOrCreateEntry(keySubHash, key);
             // so we now have a entry, existing or a new one we just have to add/update the version in mutation queue

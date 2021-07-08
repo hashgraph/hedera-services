@@ -80,19 +80,25 @@ public class VFCMapBench {
                     contractMap = contractMap.copy();
                     prevIterationHashingFuture = hashAndRelease(unmodifiableContractMap);
                 }
-                if (i % 1000_000 == 0 && i > 0) {
-                    System.out.println("hashIndex");
-                    hs.printMutationQueueStats();
-                    ls.printMutationQueueStats();
-//                    hs.printUniqueHashes();
-                }
+//                if (i % 1000_000 == 0 && i > 0) {
+//                    System.out.println("hashIndex");
+//                    hs.printMutationQueueStats();
+//                    ls.printMutationQueueStats();
+////                    hs.printUniqueHashes();
+//                }
                 final var key = asContractKey(i);
                 final var value = asContractValue(i);
-                contractMap.put(key, value);
+                try {
+                    contractMap.put(key, value);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.err.println(i);
+                    throw e;
+                }
             }
 
             System.out.println("Completed: " + numEntities);
-            hs.printMutationQueueStats();
+//            hs.printMutationQueueStats();
 
             // During setup we perform the full hashing and release the old copy. This way,
             // during the tests, we don't have an initial slow hash.
