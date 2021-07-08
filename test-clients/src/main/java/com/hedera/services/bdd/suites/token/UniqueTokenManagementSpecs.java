@@ -153,15 +153,17 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 								.initialSupply(0)
 								.supplyKey(supplyKey)
 								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.treasury(TOKEN_TREASURY),
+						mintToken(uniqueToken, List.of(metadata("memo")))
 				)
 				.when(
-						burnToken(uniqueToken, standard10SerialNums)
+						burnToken(uniqueToken, List.of(1L))
 								.fee(ONE_HBAR)
 								.payingWith(civilianPayer)
 								.blankMemo()
 								.via(baseTxn)
 				).then(
-						validateChargedUsdWithin(baseTxn, expectedNftBurnPriceUsd, 0.01)
+						validateChargedUsdWithin(baseTxn, expectedNftBurnPriceUsd, 0.1)
 				);
 	}
 

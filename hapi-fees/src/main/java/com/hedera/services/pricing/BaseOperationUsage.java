@@ -44,8 +44,6 @@ import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.LongStream;
 
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
@@ -61,7 +59,7 @@ class BaseOperationUsage {
 	private static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 	private static final ByteString CANONICAL_SIG = ByteString.copyFromUtf8(
 			"0123456789012345678901234567890123456789012345678901234567890123");
-	private static final List<Long> CANONICAL_SERIAL_NUMS = LongStream.range(1, 10).boxed().collect(Collectors.toList());
+	private static final List<Long> SINGLE_SERIAL_NUM = List.of(1L);
 	private static final ByteString CANONICAL_NFT_METADATA = ByteString.copyFromUtf8(
 			"0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
 	private static final SignatureMap ONE_PAIR_SIG_MAP = SignatureMap.newBuilder()
@@ -131,7 +129,7 @@ class BaseOperationUsage {
 		final var canonicalTxn = TransactionBody.newBuilder()
 				.setTokenBurn(TokenBurnTransactionBody.newBuilder()
 						.setToken(target)
-						.addAllSerialNumbers(CANONICAL_SERIAL_NUMS))
+						.addAllSerialNumbers(SINGLE_SERIAL_NUM))
 				.build();
 
 		final var baseUsage = TokenBurnUsage.newEstimate(canonicalTxn, SINGLE_SIG_USAGE)
