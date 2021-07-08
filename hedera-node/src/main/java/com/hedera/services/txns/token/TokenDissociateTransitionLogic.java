@@ -21,22 +21,27 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.TransitionLogic;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.txns.validation.TokenListChecks.repeatsItself;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 
 /**
@@ -49,27 +54,54 @@ public class TokenDissociateTransitionLogic implements TransitionLogic {
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
-	private final TokenStore store;
+	private final AccountStore accountStore;
+	private final TypedTokenStore tokenStore;
 	private final TransactionContext txnCtx;
+	private final OptionValidator validator;
 
 	public TokenDissociateTransitionLogic(
-			TokenStore store,
-			TransactionContext txnCtx
+			TypedTokenStore tokenStore,
+			AccountStore accountStore,
+			TransactionContext txnCtx,
+			OptionValidator validator
 	) {
-		this.store = store;
+		this.accountStore = accountStore;
+		this.tokenStore = tokenStore;
 		this.txnCtx = txnCtx;
+		this.validator = validator;
 	}
 
 	@Override
 	public void doStateTransition() {
-		try {
-			var op = txnCtx.accessor().getTxn().getTokenDissociate();
-			var outcome = store.dissociate(op.getAccount(), op.getTokensList());
-			txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
-		} catch (Exception e) {
-			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
-			txnCtx.setStatus(FAIL_INVALID);
+		/* --- Translate from gRPC types --- */
+		var op = txnCtx.accessor().getTxn().getTokenDissociate();
+		final var accountId = Id.fromGrpcAccount(op.getAccount());
+
+		/* --- Load the model objects --- */
+		final var account = accountStore.loadAccount(accountId);
+		final List<Pair<TokenRelationship, TokenRelationship>> tokenRelationships = new ArrayList<>();
+		for (final var tokenId : op.getTokensList()) {
+			final var token = tokenStore.loadPossiblyDeletedToken(Id.fromGrpcToken(tokenId));
+			var accountRelationship = tokenStore.loadTokenRelationship(token, account);
+			var treasuryRelationship = tokenStore.loadTokenRelationship(token, token.getTreasury());
+			tokenRelationships.add(Pair.of(accountRelationship, treasuryRelationship));
 		}
+
+		/* --- Do the business logic --- */
+		account.dissociateWith(tokenRelationships, validator);
+
+		/* --- Persist the updated models --- */
+		accountStore.persistAccount(account); // tx account
+		for (Pair<TokenRelationship, TokenRelationship> accountAndTreasuryPair : tokenRelationships) {
+			tokenStore.persistToken(accountAndTreasuryPair.getKey().getToken()); // token from tx token list
+			accountStore.persistAccount(accountAndTreasuryPair.getKey().getToken().getTreasury()); // treasury
+		}
+		var flatTokenRels = new ArrayList<TokenRelationship>();
+		for (var pair : tokenRelationships) {
+			flatTokenRels.add(pair.getValue());
+			flatTokenRels.add(pair.getKey());
+		}
+		tokenStore.persistTokenRelationships(flatTokenRels); // all relations
 	}
 
 	@Override

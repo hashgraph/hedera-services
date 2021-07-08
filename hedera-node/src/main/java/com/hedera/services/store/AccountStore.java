@@ -109,4 +109,8 @@ public class AccountStore {
 			}
 		}
 	}
+
+	public OptionValidator getValidator() {
+		return validator;
+	}
 }
