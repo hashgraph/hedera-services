@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.records;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -30,11 +31,18 @@ import java.util.List;
 import java.util.Set;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.takeBalanceSnapshots;
@@ -42,6 +50,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateRecordTrans
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateTransferListForBalances;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoRecordsSanityCheckSuite.class);
@@ -60,10 +69,45 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
 						cryptoUpdateRecordSanityChecks(),
 						insufficientAccountBalanceRecordSanityChecks(),
 						invalidPayerSigCryptoTransferRecordSanityChecks(),
+						ownershipChangeShowsInRecord(),
 				}
 		);
 	}
 
+	private HapiApiSpec ownershipChangeShowsInRecord() {
+		final var firstOwner = "A";
+		final var secondOwner = "B";
+		final var uniqueToken = "DoubleVision";
+		final var metadata = ByteString.copyFromUtf8("A sphinx, a buddha, and so on.");
+		final var supplyKey = "minting";
+		final var mintRecord = "mint";
+		final var xferRecord = "xfer";
+
+		return defaultHapiSpec("OwnershipChangeShowsInRecord")
+				.given(
+						newKeyNamed(supplyKey),
+						cryptoCreate(firstOwner),
+						cryptoCreate(secondOwner),
+						tokenCreate(uniqueToken)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.treasury(firstOwner)
+								.supplyKey(supplyKey)
+								.initialSupply(0L)
+				).when(
+						tokenAssociate(secondOwner, uniqueToken),
+						mintToken(uniqueToken, List.of(metadata))
+								.via(mintRecord),
+						getAccountBalance(firstOwner).logged(),
+						cryptoTransfer(
+								movingHbar(1_234_567L).between(secondOwner, firstOwner),
+								movingUnique(1L, uniqueToken)
+								.between(firstOwner, secondOwner))
+								.via(xferRecord)
+				).then(
+						getTxnRecord(mintRecord).logged(),
+						getTxnRecord(xferRecord).logged()
+				);
+	}
 
 	private HapiApiSpec cryptoCreateRecordSanityChecks() {
 		return defaultHapiSpec("CryptoCreateRecordSanityChecks")
