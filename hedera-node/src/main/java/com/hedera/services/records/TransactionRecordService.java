@@ -36,7 +36,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class TransactionRecordService {
 	private final TransactionContext txnCtx;
@@ -78,39 +77,34 @@ public class TransactionRecordService {
 	 *
 	 * <b>IMPORTANT:</b> In general, the {@code TransactionRecordService} must
 	 * be able to aggregate balance changes from one or more token relationships
-	 * into token-scoped transfer lists for the record. Since we are beginning
-	 * with just a refactor of burn and mint, the below implementation suffices
+	 * into token-scoped transfer lists for the record.
 	 *
 	 * @param tokenRels
 	 * 		List of models of the changed relationship
 	 */
-	public void includeChangesToTokenRels(List<TokenRelationship> tokenRels) {
+	public void includeChangesToTokenRels(final List<TokenRelationship> tokenRels) {
 		Map<Id, TokenTransferList.Builder> transferListMap = new HashMap<>();
-		for (var tokenRel : tokenRels) {
-			if (tokenRel.getBalanceChange() == 0L) {
+		for (final var tokenRel : tokenRels) {
+			if (tokenRel.getBalanceChange() == 0L && !tokenRel.hasCommonRepresentation()) {
 				continue;
 			}
 			final var tokenId = tokenRel.getToken().getId();
 			final var accountId = tokenRel.getAccount().getId();
 
-			var tokenTransferListBuilder = transferListMap.getOrDefault(tokenId,
-					TokenTransferList.newBuilder().setToken(TokenID.newBuilder()
-							.setShardNum(tokenId.getShard())
-							.setRealmNum(tokenId.getRealm())
-							.setTokenNum(tokenId.getNum())));
+			final var tokenTransferListBuilder = transferListMap.getOrDefault(tokenId,
+					TokenTransferList.newBuilder().setToken(tokenId.asGrpcToken()));
 
 			tokenTransferListBuilder.addTransfers(AccountAmount.newBuilder()
-					.setAccountID(AccountID.newBuilder()
-							.setShardNum(accountId.getShard())
-							.setRealmNum(accountId.getRealm())
-							.setAccountNum(accountId.getNum()))
+					.setAccountID(accountId.asGrpcAccount())
 					.setAmount(tokenRel.getBalanceChange()));
 			transferListMap.put(tokenId, tokenTransferListBuilder);
 		}
 		if(!transferListMap.isEmpty()) {
-			txnCtx.setTokenTransferLists(
-					transferListMap.values().stream().map(TokenTransferList.Builder::build).collect(Collectors.toList())
-			);
+			var transferList = new ArrayList<TokenTransferList>();
+			for (final var transferBuilder : transferListMap.values()) {
+				transferList.add(transferBuilder.build());
+			}
+			txnCtx.setTokenTransferLists(transferList);
 		}
 	}
 
