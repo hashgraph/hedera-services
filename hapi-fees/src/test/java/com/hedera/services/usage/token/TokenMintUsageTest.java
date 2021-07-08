@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -49,6 +50,7 @@ import static org.mockito.BDDMockito.verify;
 
 class TokenMintUsageTest {
 	private long now = 1_234_567L;
+	private long lifetime = 7776000L;
 	private int numSigs = 3, sigSize = 100, numPayerKeys = 1;
 	private SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
 	private TokenID id = IdUtils.asToken("0.0.75231");
@@ -72,6 +74,11 @@ class TokenMintUsageTest {
 		TxnUsage.estimatorFactory = factory;
 	}
 
+	@AfterEach
+	void cleanup() {
+		TxnUsage.estimatorFactory = TxnUsageEstimator::new;
+	}
+
 	@Test
 	void createsExpectedDelta() {
 		givenOp();
@@ -93,23 +100,22 @@ class TokenMintUsageTest {
 
 	@Test
 	void createsExpectedDeltaForUnique() {
-		op = TokenMintTransactionBody.newBuilder()
-				.setToken(id)
-				.addAllMetadata(List.of(ByteString.copyFromUtf8("memo")))
-				.build();
+		// setup:
+		givenUniqueTokenMintOp();
+		final var totalBytesOfMetadata = op.getMetadataList().stream().mapToInt(ByteString::size).sum();
 		setTxn();
 		// and:
 		subject = TokenMintUsage.newEstimate(txn, sigUsage);
 		subject.givenSubType(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
 		given(base.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE)).willReturn(A_USAGES_MATRIX);
 		// when:
-		var actual = subject.get();
+		var actual = subject.givenExpectedLifetime(lifetime).get();
 
 		// then:
 		assertEquals(A_USAGES_MATRIX, actual);
 		// and:
-		verify(base).addRbs(TOKEN_ENTITY_SIZES.bytesUsedForUniqueTokenTransfers(op.getMetadataCount()));
-		verify(base).addBpt(4L);
+		verify(base).addRbs(totalBytesOfMetadata * lifetime);
+		verify(base).addBpt(totalBytesOfMetadata);
 	}
 
 	@Test
@@ -122,6 +128,16 @@ class TokenMintUsageTest {
 		op = TokenMintTransactionBody.newBuilder()
 				.setToken(id)
 				.build();
+		setTxn();
+	}
+
+	private void givenUniqueTokenMintOp() {
+		op = TokenMintTransactionBody.newBuilder()
+				.setToken(id)
+				.addAllMetadata(List.of(
+						ByteString.copyFromUtf8("This is fine"),
+						ByteString.copyFromUtf8("This is terrible")
+				)).build();
 		setTxn();
 	}
 

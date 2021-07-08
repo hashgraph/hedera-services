@@ -20,6 +20,7 @@ package com.hedera.services.usage.state;
  * ‍
  */
 
+import com.hedera.services.test.AdapterUtils;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
 import org.junit.jupiter.api.BeforeEach;
@@ -159,6 +160,56 @@ class UsageAccumulatorTest {
 		assertEquals(6, subject.getRbs());
 		assertEquals(7, subject.getSbs());
 		assertEquals(8, subject.getNetworkRbs());
+	}
+
+	@Test
+	void fromGrpcRoundsUpToAnHourForInputsLessThanAnHour() {
+		// setup:
+		final var expectedReconstructed = new UsageAccumulator();
+		expectedReconstructed.addBpt(1);
+		expectedReconstructed.addBpr(2);
+		expectedReconstructed.addSbpr(3);
+		expectedReconstructed.addVpt(4);
+		expectedReconstructed.addRbs(HRS_DIVISOR);
+		expectedReconstructed.addSbs(HRS_DIVISOR);
+		expectedReconstructed.addNetworkRbs(HRS_DIVISOR);
+
+		// given:
+		subject.addBpt(1);
+		subject.addBpr(2);
+		subject.addSbpr(3);
+		subject.addVpt(4);
+		subject.addRbs(6);
+		subject.addSbs(7);
+		subject.addNetworkRbs(8);
+		// and:
+		final var equivGrpc = AdapterUtils.feeDataFrom(subject);
+
+		// when:
+		final var reconstructed = UsageAccumulator.fromGrpc(equivGrpc);
+
+		// then:
+		assertEquals(expectedReconstructed, reconstructed);
+	}
+
+	@Test
+	void fromGrpcWorks() {
+		// given:
+		subject.addBpt(1);
+		subject.addBpr(2);
+		subject.addSbpr(3);
+		subject.addVpt(4);
+		subject.addRbs(6 * 3600);
+		subject.addSbs(7 * 3600);
+		subject.addNetworkRbs(8 * 3600);
+		// and:
+		final var equivGrpc = AdapterUtils.feeDataFrom(subject);
+
+		// when:
+		final var reconstructed = UsageAccumulator.fromGrpc(equivGrpc);
+
+		// then:
+		assertEquals(subject, reconstructed);
 	}
 
 	@Test

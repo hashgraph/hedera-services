@@ -23,9 +23,7 @@ package com.hedera.services.bdd.spec.transactions.token;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.StringValue;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
-import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -49,7 +47,6 @@ import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -184,7 +181,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		try {
-			final TokenInfo info = lookupInfo(spec);
+			final TokenInfo info = HapiTokenFeeScheduleUpdate.lookupInfo(spec, token, log, loggingOff);
 			FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) -> {
 				var estimate = TokenUpdateUsage.newEstimate(_txn, suFrom(svo));
 				if (info.hasFreezeKey()) {
@@ -218,21 +215,6 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 		} catch (Throwable ignore) {
 			return HapiApiSuite.ONE_HBAR;
 		}
-	}
-
-	private TokenInfo lookupInfo(HapiApiSpec spec) throws Throwable {
-		HapiGetTokenInfo subOp = getTokenInfo(token).noLogging();
-		Optional<Throwable> error = subOp.execFor(spec);
-		if (error.isPresent()) {
-			if (!loggingOff) {
-				log.warn(
-						"Unable to look up current info for "
-								+ HapiPropertySource.asTokenString(spec.registry().getTokenID(token)),
-						error.get());
-			}
-			throw error.get();
-		}
-		return subOp.getResponse().getTokenGetInfo().getTokenInfo();
 	}
 
 	@Override
