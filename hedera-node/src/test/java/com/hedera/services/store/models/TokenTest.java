@@ -208,8 +208,8 @@ class TokenTest {
 
 		assertEquals(initialSupply - 2, subject.getTotalSupply());
 		assertEquals(-2, treasuryRel.getBalanceChange());
-		verify(ownershipTracker).add(eq(subject.getId()), eq(OwnershipTracker.forRemoving(treasuryId, serialNumber0)));
-		verify(ownershipTracker).add(eq(subject.getId()), eq(OwnershipTracker.forRemoving(treasuryId, serialNumber1)));
+		verify(ownershipTracker).add(subject.getId(), OwnershipTracker.forRemoving(treasuryId, serialNumber0));
+		verify(ownershipTracker).add(subject.getId(), OwnershipTracker.forRemoving(treasuryId, serialNumber1));
 		assertTrue(subject.hasRemovedUniqueTokens());
 		final var removedUniqueTokens = subject.removedUniqueTokens();
 		assertEquals(2, removedUniqueTokens.size());
