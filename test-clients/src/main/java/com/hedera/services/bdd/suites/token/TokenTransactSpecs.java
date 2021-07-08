@@ -64,6 +64,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
 
 public class TokenTransactSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenTransactSpecs.class);
