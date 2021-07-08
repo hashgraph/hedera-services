@@ -156,7 +156,6 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 				)
 				.when(
 						mintToken(uniqueToken, List.of(standard100ByteMetadata))
-								.fee(ONE_HBAR)
 								.payingWith(civilianPayer)
 								.signedBy(supplyKey)
 								.blankMemo()
