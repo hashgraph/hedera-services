@@ -33,7 +33,7 @@ public class TokenBurnUsage extends TokenTxnUsage<TokenBurnUsage> {
 	private SubType currentSubType;
 	private int serialNumsCount = 0;
 
-	private TokenBurnUsage(TransactionBody tokenBurnOp, TxnUsageEstimator usageEstimator) {
+	public TokenBurnUsage(TransactionBody tokenBurnOp, TxnUsageEstimator usageEstimator) {
 		super(tokenBurnOp, usageEstimator);
 	}
 

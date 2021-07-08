@@ -27,7 +27,6 @@ import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.consensus.ConsensusOpsUsage;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.state.UsageAccumulator;
-import com.hedera.services.usage.token.TokenMintUsage;
 import com.hedera.services.usage.token.TokenBurnUsage;
 import com.hedera.services.usage.token.TokenMintUsage;
 import com.hedera.services.usage.token.TokenOpsUsage;
@@ -134,8 +133,9 @@ class BaseOperationUsage {
 						.setToken(target)
 						.addAllSerialNumbers(SINGLE_SERIAL_NUM))
 				.build();
-
-		final var baseUsage = TokenBurnUsage.newEstimate(canonicalTxn, SINGLE_SIG_USAGE)
+		final var helper = new TxnUsageEstimator(SINGLE_SIG_USAGE, canonicalTxn, ESTIMATOR_UTILS);
+		final var estimator = new TokenBurnUsage(canonicalTxn, helper);
+		final var baseUsage = estimator
 				.givenSubType(TOKEN_NON_FUNGIBLE_UNIQUE)
 				.get();
 		return UsageAccumulator.fromGrpc(baseUsage);

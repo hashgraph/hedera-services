@@ -51,7 +51,7 @@ class TokenBurnResourceUsageTest {
 	private TransactionBody tokenBurnTxn;
 
 	StateView view;
-	int numSigs = 10, sigsSize = 100, numPayerKeys = 3, serialNumsCount = 10;
+	int numSigs = 10, sigsSize = 100, numPayerKeys = 3, serialNumsCount = 1;
 	SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
 	SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
 	FeeData expected;
