@@ -109,8 +109,7 @@ public class Account {
 	 * Performs validation and dissociation - removing relationships between tokens and accounts.
 	 * Expired tokens of type {@link TokenType#FUNGIBLE_COMMON} are transferred back to the treasury
 	 *
-	 * @param relations a {@link List} of {@link Pair}<{@link TokenRelationship}, {@link TokenRelationship}>,
-	 *                  in the form of < AccountRel, TreasuryRel >
+	 * @param relations a list of {@link TokenRelationship}, {@link TokenRelationship}> pairs
 	 * @param validator - injected {@link OptionValidator} used to verify whether the token is expired
 	 */
 	public void dissociateWith(List<Pair<TokenRelationship, TokenRelationship>> relations, final OptionValidator validator) {
