@@ -20,10 +20,11 @@ package com.hedera.services.usage;
  * ‍
  */
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
 public class BaseTransactionMeta {
 	private final int memoUtf8Bytes;
-	// Note: This field only records original grpc transaction's transfers.
-	// Keep it this way till we have a comprehensive solution for custom fee enhancement.
 	private final int numExplicitTransfers;
 
 	public BaseTransactionMeta(int memoUtf8Bytes, int numExplicitTransfers) {
@@ -37,5 +38,15 @@ public class BaseTransactionMeta {
 
 	public int getNumExplicitTransfers() {
 		return numExplicitTransfers;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		return EqualsBuilder.reflectionEquals(this, obj);
+	}
+
+	@Override
+	public int hashCode() {
+		return HashCodeBuilder.reflectionHashCode(this);
 	}
 }

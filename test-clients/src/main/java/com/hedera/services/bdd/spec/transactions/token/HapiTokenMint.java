@@ -66,7 +66,7 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 		this.subType = figureSubType();
 	}
 
-	public HapiTokenMint(String token, List<ByteString> metadata){
+	public HapiTokenMint(String token, List<ByteString> metadata) {
 		this.token = token;
 		this.metadata = metadata;
 		this.subType = figureSubType();
@@ -128,7 +128,7 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 	}
 
 	@Override
-	protected void updateStateOf(HapiApiSpec spec) throws Throwable {
+	public void updateStateOf(HapiApiSpec spec) throws Throwable {
 		if (actualStatus != SUCCESS) {
 			return;
 		}

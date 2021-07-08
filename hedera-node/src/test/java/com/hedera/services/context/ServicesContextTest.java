@@ -9,9 +9,9 @@ package com.hedera.services.context;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -161,6 +161,9 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
+
+import java.lang.reflect.Field;
+
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -198,6 +201,7 @@ class ServicesContextTest {
 	private ExchangeRates midnightRates;
 	private MerkleNetworkContext networkCtx;
 	private ServicesState state;
+	private StateChildren workingState;
 	private Cryptography crypto;
 	private PropertySource properties;
 	private StandardizedPropertySources propertySources;
@@ -210,6 +214,8 @@ class ServicesContextTest {
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
 	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations;
 	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations;
+	private AddressBook addresses;
+	private MerkleDiskFs diskFs;
 
 	@BeforeEach
 	void setup() {
@@ -220,8 +226,10 @@ class ServicesContextTest {
 		tokens = mock(FCMap.class);
 		tokenAssociations = mock(FCMap.class);
 		schedules = mock(FCMap.class);
+		addresses = mock(AddressBook.class);
 		storage = mock(FCMap.class);
 		accounts = mock(FCMap.class);
+		diskFs = mock(MerkleDiskFs.class);
 		seqNo = mock(SequenceNumber.class);
 		midnightRates = mock(ExchangeRates.class);
 		networkCtx = new MerkleNetworkContext(consensusTimeOfLastHandledTxn, seqNo, 1000L, midnightRates);
@@ -233,9 +241,23 @@ class ServicesContextTest {
 		given(state.tokens()).willReturn(tokens);
 		given(state.tokenAssociations()).willReturn(tokenAssociations);
 		given(state.scheduleTxs()).willReturn(schedules);
+
+		given(state.addressBook()).willReturn(addresses);
+		given(state.diskFs()).willReturn(diskFs);
+		workingState = mock(StateChildren.class);
+		given(workingState.getNetworkCtx()).willReturn(networkCtx);
+		given(workingState.getAccounts()).willReturn(accounts);
+		given(workingState.getStorage()).willReturn(storage);
+		given(workingState.getTopics()).willReturn(topics);
+		given(workingState.getTokens()).willReturn(tokens);
+		given(workingState.getTokenAssociations()).willReturn(tokenAssociations);
+		given(workingState.getSchedules()).willReturn(schedules);
+		given(workingState.getAddressBook()).willReturn(addresses);
+		given(workingState.getDiskFs()).willReturn(diskFs);
 		given(state.uniqueTokens()).willReturn(uniqueTokens);
 		given(state.uniqueTokenAssociations()).willReturn(uniqueTokenAssociations);
 		given(state.uniqueOwnershipAssociations()).willReturn(uniqueOwnershipAssociations);
+
 		crypto = mock(Cryptography.class);
 		platform = mock(Platform.class);
 		given(platform.getSelfId()).willReturn(new NodeId(false, 0L));
@@ -246,7 +268,7 @@ class ServicesContextTest {
 	}
 
 	@Test
-	void updatesStateAsExpected() {
+	void updatesStateAsExpected() throws Exception {
 		// setup:
 		var newState = mock(ServicesState.class);
 		var newAccounts = mock(FCMap.class);
@@ -270,62 +292,70 @@ class ServicesContextTest {
 		given(newState.uniqueOwnershipAssociations()).willReturn(newUniqueOwnershipAssociations);
 		// given:
 		var subject = new ServicesContext(nodeId, platform, state, propertySources);
+
+		AtomicReference<StateChildren> queryableState = getQueryableState(subject);
+
 		// and:
-		var accountsRef = subject.queryableAccounts();
-		var topicsRef = subject.queryableTopics();
-		var storageRef = subject.queryableStorage();
-		var tokensRef = subject.queryableTokens();
-		var tokenRelsRef = subject.queryableTokenAssociations();
-		var schedulesRef = subject.queryableSchedules();
-		var uniqueTokensRef = subject.queryableUniqueTokens();
-		var uniqueUtaRef = subject.queryableUniqueTokenAssociations();
-		var uniqueUtaoRef = subject.queryableUniqueOwnershipAssociations();
+		assertSame(state, subject.state);
+		assertSame(state.accounts(), queryableState.get().getAccounts());
+		assertSame(state.topics(), queryableState.get().getTopics());
+		assertSame(state.storage(), queryableState.get().getStorage());
+		assertSame(state.tokens(), queryableState.get().getTokens());
+		assertSame(state.tokenAssociations(), queryableState.get().getTokenAssociations());
+		assertSame(state.scheduleTxs(), queryableState.get().getSchedules());
+		assertSame(state.uniqueTokens(), queryableState.get().getUniqueTokens());
+		assertSame(state.uniqueTokenAssociations(), queryableState.get().getUniqueTokenAssociations());
+		assertSame(state.uniqueOwnershipAssociations(), queryableState.get().getUniqueOwnershipAssociations());
 
 		// when:
 		subject.update(newState);
 
-		// then:
 		assertSame(newState, subject.state);
-		assertSame(accountsRef, subject.queryableAccounts());
-		assertSame(topicsRef, subject.queryableTopics());
-		assertSame(storageRef, subject.queryableStorage());
-		assertSame(tokensRef, subject.queryableTokens());
-		assertSame(tokenRelsRef, subject.queryableTokenAssociations());
-		assertSame(schedulesRef, subject.queryableSchedules());
-		assertSame(uniqueTokensRef, subject.queryableUniqueTokens());
-		assertSame(uniqueUtaRef, subject.queryableUniqueTokenAssociations());
-		assertSame(uniqueUtaoRef, subject.queryableUniqueOwnershipAssociations());
-		// and:
-		assertSame(newAccounts, subject.queryableAccounts().get());
-		assertSame(newTopics, subject.queryableTopics().get());
-		assertSame(newStorage, subject.queryableStorage().get());
-		assertSame(newTokens, subject.queryableTokens().get());
-		assertSame(newTokenRels, subject.queryableTokenAssociations().get());
-		assertSame(newSchedules, subject.queryableSchedules().get());
-		assertSame(newUniqueTokens, subject.queryableUniqueTokens().get());
-		assertSame(newUniqueTokenAssociations, subject.queryableUniqueTokenAssociations().get());
-		assertSame(newUniqueOwnershipAssociations, subject.queryableUniqueOwnershipAssociations().get());
+		assertSame(newState.accounts(), queryableState.get().getAccounts());
+		assertSame(newState.topics(), queryableState.get().getTopics());
+		assertSame(newState.storage(), queryableState.get().getStorage());
+		assertSame(newState.tokens(), queryableState.get().getTokens());
+		assertSame(newState.tokenAssociations(), queryableState.get().getTokenAssociations());
+		assertSame(newState.scheduleTxs(), queryableState.get().getSchedules());
+
+		assertSame(newState.uniqueTokens(), queryableState.get().getUniqueTokens());
+		assertSame(newState.uniqueTokenAssociations(), queryableState.get().getUniqueTokenAssociations());
+		assertSame(newState.uniqueOwnershipAssociations(), queryableState.get().getUniqueOwnershipAssociations());
 	}
 
 	@Test
-	void queryableUniqueTokenAssociationsReturnsProperReference() {
+	void queryableUniqueTokenAssociationsReturnsProperReference() throws Exception {
 		var subject = new ServicesContext(nodeId, platform, state, propertySources);
-		compareFCOTMR(subject.uniqueTokenAssociations(), subject.queryableUniqueTokenAssociations().get());
+		AtomicReference<StateChildren> queryableState = getQueryableState(subject);
+
+		compareFCOTMR(subject.uniqueTokenAssociations(), queryableState.get().getUniqueTokenAssociations());
 	}
 
 	@Test
-	void queryableUniqueTokenAccountOwnershipsReturnsProperReference() {
+	void queryableUniqueTokenAccountOwnershipsReturnsProperReference() throws Exception {
 		var subject = new ServicesContext(nodeId, platform, state, propertySources);
-		compareFCOTMR(subject.uniqueOwnershipAssociations(), subject.queryableUniqueOwnershipAssociations().get());
+		AtomicReference<StateChildren> queryableState = getQueryableState(subject);
+
+		compareFCOTMR(subject.uniqueOwnershipAssociations(), queryableState.get().getUniqueOwnershipAssociations());
 	}
 
 	@Test
-	void delegatesPrimitivesToState() {
+	void delegatesPrimitivesToState() throws Exception {
 		// setup:
-		InOrder inOrder = inOrder(state);
+		InOrder inOrder = inOrder(workingState);
 
 		// given:
-		var subject = new ServicesContext(nodeId, platform, state, propertySources);
+		ServicesContext subject = new ServicesContext(nodeId, platform, state, propertySources);
+
+		Field workingStateField = null;
+
+		try {
+			workingStateField = subject.getClass().getDeclaredField("workingState");
+			workingStateField.setAccessible(true);
+			workingStateField.set(subject, workingState);
+		} catch (NoSuchFieldException e) {
+			throw new Exception("Unable to set working state field", e);
+		}
 
 		// when:
 		subject.addressBook();
@@ -337,13 +367,28 @@ class ServicesContextTest {
 		subject.accounts();
 
 		// then:
-		inOrder.verify(state).addressBook();
+		inOrder.verify(workingState).getAddressBook();
 		assertEquals(seqNo, actualSeqNo);
 		assertEquals(midnightRates, actualMidnightRates);
 		assertEquals(consensusTimeOfLastHandledTxn, actualLastHandleTime);
-		inOrder.verify(state).topics();
-		inOrder.verify(state).storage();
-		inOrder.verify(state).accounts();
+		inOrder.verify(workingState).getTopics();
+		inOrder.verify(workingState).getStorage();
+		inOrder.verify(workingState).getAccounts();
+	}
+
+	@Test
+	void constructorSetsWorkingState() {
+		ServicesContext subject = new ServicesContext(nodeId, platform, state, propertySources);
+
+		assertEquals(state.accounts(), subject.accounts());
+		assertEquals(state.topics(), subject.topics());
+		assertEquals(state.storage(), subject.storage());
+		assertEquals(state.tokens(), subject.tokens());
+		assertEquals(state.tokenAssociations(), subject.tokenAssociations());
+		assertEquals(state.scheduleTxs(), subject.schedules());
+		assertEquals(state.networkCtx(), subject.networkCtx());
+		assertEquals(state.addressBook(), subject.addressBook());
+		assertEquals(state.diskFs(), subject.diskFs());
 	}
 
 	@Test
@@ -449,7 +494,7 @@ class ServicesContextTest {
 	}
 
 	@Test
-	void hasExpectedStakedInfrastructure() {
+	void hasExpectedStakedInfrastructure() throws Exception {
 		// setup:
 		Address address = mock(Address.class);
 		AddressBook book = mock(AddressBook.class);
@@ -462,6 +507,8 @@ class ServicesContextTest {
 		ServicesContext ctx = new ServicesContext(nodeId, platform, state, propertySources);
 		// and:
 		ctx.platformStatus().set(PlatformStatus.DISCONNECTED);
+
+		AtomicReference<StateChildren> queryableState = getQueryableState(ctx);
 
 		// expect:
 		assertEquals(SleepingPause.SLEEPING_PAUSE, ctx.pause());
@@ -509,20 +556,24 @@ class ServicesContextTest {
 		assertThat(ctx.submissionFlow(), instanceOf(BasicSubmissionFlow.class));
 		assertThat(ctx.answerFunctions(), instanceOf(AnswerFunctions.class));
 		assertThat(ctx.queryFeeCheck(), instanceOf(QueryFeeCheck.class));
-		assertThat(ctx.queryableTopics(), instanceOf(AtomicReference.class));
+		assertThat(queryableState, instanceOf(AtomicReference.class));
+		assertThat(queryableState.get(), instanceOf(StateChildren.class));
+		assertThat(queryableState.get().getTopics(), instanceOf(FCMap.class));
+
 		assertThat(ctx.transitionLogic(), instanceOf(TransitionLogicLookup.class));
 		assertThat(ctx.precheckVerifier(), instanceOf(PrecheckVerifier.class));
 		assertThat(ctx.apiPermissionsReloading(), instanceOf(ValidatingCallbackInterceptor.class));
 		assertThat(ctx.applicationPropertiesReloading(), instanceOf(ValidatingCallbackInterceptor.class));
 		assertThat(ctx.recordsHistorian(), instanceOf(TxnAwareRecordsHistorian.class));
-		assertThat(ctx.queryableAccounts(), instanceOf(AtomicReference.class));
-		assertThat(ctx.queryableUniqueTokens(), instanceOf(AtomicReference.class));
-		assertThat(ctx.queryableTokenAssociations(), instanceOf(AtomicReference.class));
-		assertThat(ctx.queryableUniqueOwnershipAssociations(), instanceOf(AtomicReference.class));
+		assertThat(queryableState.get().getAccounts(), instanceOf(FCMap.class));
+		assertThat(queryableState.get().getUniqueTokens(), instanceOf(FCMap.class));
+		assertThat(queryableState.get().getTokenAssociations(), instanceOf(FCMap.class));
+		assertThat(queryableState.get().getUniqueOwnershipAssociations(), instanceOf(FCOneToManyRelation.class));
+
 		assertThat(ctx.txnChargingPolicy(), instanceOf(FeeChargingPolicy.class));
 		assertThat(ctx.txnResponseHelper(), instanceOf(TxnResponseHelper.class));
 		assertThat(ctx.statusCounts(), instanceOf(ConsensusStatusCounts.class));
-		assertThat(ctx.queryableStorage(), instanceOf(AtomicReference.class));
+		assertThat(queryableState.get().getStorage(), instanceOf(FCMap.class));
 		assertThat(ctx.systemFilesManager(), instanceOf(HfsSystemFilesManager.class));
 		assertThat(ctx.queryResponseHelper(), instanceOf(QueryResponseHelper.class));
 		assertThat(ctx.solidityLifecycle(), instanceOf(SolidityLifecycle.class));
@@ -716,6 +767,31 @@ class ServicesContextTest {
 
 		// then:
 		verify(recordStreamManager).setInitialHash(initialHash);
+	}
+
+	/**
+	 * Use reflection to extract the private field queryableState from ServiceContext
+	 *
+	 * @param serviceContext
+	 * 		service context
+	 * @return queryable state
+	 * @throws Exception
+	 * 		if unable to extract field
+	 */
+	private AtomicReference<StateChildren> getQueryableState(ServicesContext serviceContext) throws Exception {
+
+		Field workingStateField;
+		AtomicReference<StateChildren> queryableState;
+
+		try {
+			workingStateField = serviceContext.getClass().getDeclaredField("queryableState");
+			workingStateField.setAccessible(true);
+			queryableState = (AtomicReference<StateChildren>) workingStateField.get(serviceContext);
+		} catch (NoSuchFieldException | IllegalAccessException e) {
+			throw new Exception("Unable to set working state field", e);
+		}
+
+		return queryableState;
 	}
 
 	private void compareFCOTMR(FCOneToManyRelation expected, FCOneToManyRelation actual) {

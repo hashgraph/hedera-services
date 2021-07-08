@@ -31,15 +31,20 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.utils.MiscUtils.describe;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_MAX_SUPPLY_REACHED;
 
 /**
@@ -56,11 +61,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_MAX_SUPP
  */
 public class Token {
 	private final Id id;
-
-	private boolean supplyHasChanged;
 	private final List<UniqueToken> mintedUniqueTokens = new ArrayList<>();
-	private final List<UniqueToken> burnedUniqueTokens = new ArrayList<>();
-
+	private final List<UniqueToken> removedUniqueTokens = new ArrayList<>();
+	private Map<Long, UniqueToken> loadedUniqueTokens = new HashMap<>();
+	private boolean supplyHasChanged;
 	private TokenType type;
 	private TokenSupplyType supplyType;
 	private long totalSupply;
@@ -68,6 +72,7 @@ public class Token {
 	private JKey kycKey;
 	private JKey freezeKey;
 	private JKey supplyKey;
+	private JKey wipeKey;
 	private boolean frozenByDefault;
 	private Account treasury;
 	private Account autoRenewAccount;
@@ -80,61 +85,139 @@ public class Token {
 		this.id = id;
 	}
 
-	public void burn(TokenRelationship treasuryRel, long amount) {
-		validateTrue(amount > 0, FAIL_INVALID, () ->
-				"Cannot burn " + amount + " units of " + this + " from " + treasuryRel);
-		changeSupply(treasuryRel, -amount, INVALID_TOKEN_BURN_AMOUNT);
-	}
-
-	public void mint(TokenRelationship treasuryRel, long amount) {
-		validateTrue(amount > 0, FAIL_INVALID, () ->
-				"Cannot mint " + amount + " units of " + this + " from " + treasuryRel);
-		validateTrue(type == TokenType.FUNGIBLE_COMMON, FAIL_INVALID, () ->
+	public void mint(final TokenRelationship treasuryRel, final long amount) {
+		validateTrue(amount > 0, FAIL_INVALID, errorMessage("mint", amount, treasuryRel));
+		validateTrue(type == TokenType.FUNGIBLE_COMMON, FAIL_INVALID,
 				"Fungible mint can be invoked only on Fungible token type");
 
 		changeSupply(treasuryRel, +amount, INVALID_TOKEN_MINT_AMOUNT);
 	}
 
-	public void burn(
-			final OwnershipTracker ownershipTracker,
-			final TokenRelationship treasuryRelationship,
-			final List<Long> serialNumbers
-	){
-		validateTrue( type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID, () ->
-				"Non fungible burn can be invoked only on Non fungible tokens!");
-		validateTrue( !serialNumbers.isEmpty() , FAIL_INVALID, ()->
-				"Non fungible burn cannot be invoked with no serial numbers");
-		for (final long serialNum : serialNumbers) {
-			ownershipTracker.add(id, OwnershipTracker.fromBurning(id, serialNum));
-			burnedUniqueTokens.add(new UniqueToken(id, serialNum));
-		}
-		treasury.setOwnedNfts(treasury.getOwnedNfts() - serialNumbers.size());
-		changeSupply(treasuryRelationship, -serialNumbers.size(), FAIL_INVALID);
-	}
-
+	/**
+	 * Minting unique tokens creates new instances of the given base unique token.
+	 * Increments the serial number of the given base unique token, and assigns each of the numbers to each new unique
+	 * token instance.
+	 *
+	 * @param ownershipTracker
+	 * 		- a tracker of changes made to the ownership of the tokens
+	 * @param treasuryRel
+	 * 		- the relationship between the treasury account and the token
+	 * @param metadata
+	 * 		- a list of user-defined metadata, related to the nft instances.
+	 * @param creationTime
+	 * 		- the consensus time of the token mint transaction
+	 */
 	public void mint(
 			final OwnershipTracker ownershipTracker,
 			final TokenRelationship treasuryRel,
 			final List<ByteString> metadata,
-			final RichInstant creationTime
-	) {
-		validateTrue(metadata.size() > 0, FAIL_INVALID, () ->
+			final RichInstant creationTime) {
+		validateFalse(metadata.isEmpty(), FAIL_INVALID,
 				"Cannot mint " + metadata.size() + " numbers of Unique Tokens");
-		validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID, () ->
+		validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID,
 				"Non fungible mint can be invoked only on Non fungible token type");
 
 		changeSupply(treasuryRel, metadata.size(), FAIL_INVALID);
 
 		for (ByteString m : metadata) {
 			lastUsedSerialNumber++;
-			var uniqueToken = new UniqueToken(id, lastUsedSerialNumber, creationTime, treasury.getId(), m.toByteArray());
+			final var uniqueToken = new UniqueToken(id, lastUsedSerialNumber, creationTime, treasury.getId(), m.toByteArray());
 			mintedUniqueTokens.add(uniqueToken);
-			ownershipTracker.add(id, OwnershipTracker.fromMinting(treasury.getId(), lastUsedSerialNumber));
+			ownershipTracker.add(id, OwnershipTracker.forMinting(treasury.getId(), lastUsedSerialNumber));
 		}
 		treasury.setOwnedNfts(treasury.getOwnedNfts() + metadata.size());
 	}
 
-	public TokenRelationship newRelationshipWith(Account account) {
+	public void burn(final TokenRelationship treasuryRel, final long amount) {
+		validateTrue(amount > 0, FAIL_INVALID, errorMessage("burn", amount, treasuryRel));
+		changeSupply(treasuryRel, -amount, INVALID_TOKEN_BURN_AMOUNT);
+	}
+
+	/**
+	 * Burning unique tokens effectively destroys them, as well as reduces the total supply of the token.
+	 *
+	 * @param ownershipTracker
+	 * 		- a tracker of changes made to the nft ownership
+	 * @param treasuryRelationship
+	 * 		- the relationship between the treasury account and the token
+	 * @param serialNumbers
+	 * 		- the serial numbers, representing the unique tokens which will be destroyed.
+	 */
+	public void burn(
+			final OwnershipTracker ownershipTracker,
+			final TokenRelationship treasuryRelationship,
+			final List<Long> serialNumbers
+	) {
+		validateTrue( type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID,
+				"Non fungible burn can be invoked only on Non fungible tokens!");
+		validateFalse(serialNumbers.isEmpty(), FAIL_INVALID,
+				"Non fungible burn cannot be invoked with no serial numbers");
+		for (final long serialNum : serialNumbers) {
+			ownershipTracker.add(id, OwnershipTracker.forRemoving(id, serialNum));
+			removedUniqueTokens.add(new UniqueToken(id, serialNum, treasury.getId()));
+		}
+		treasury.setOwnedNfts(treasury.getOwnedNfts() - serialNumbers.size());
+		changeSupply(treasuryRelationship, -serialNumbers.size(), FAIL_INVALID);
+	}
+
+	/**
+	 * Wiping fungible tokens removes the balance of the given account, as well as reduces the total supply.
+	 *
+	 * @param accountRel
+	 * 		- the relationship between the account which owns the tokens and the token
+	 * @param amount
+	 * 		- amount to be wiped
+	 */
+	public void wipe(final TokenRelationship accountRel, final long amount){
+		validateTrue(type == TokenType.FUNGIBLE_COMMON, FAIL_INVALID,
+				"Fungible wipe can be invoked only on Fungible token type.");
+
+		baseWipeValidations(accountRel);
+		amountWipeValidations(accountRel, amount);
+		final var newTotalSupply = totalSupply - amount;
+		final var newAccBalance  = accountRel.getBalance() - amount;
+
+		accountRel.setBalance(newAccBalance);
+		setTotalSupply(newTotalSupply);
+	}
+
+	/**
+	 * Wiping unique tokens removes the unique token instances, associated to the given account, as well as reduces the
+	 * total supply.
+	 *
+	 * @param ownershipTracker
+	 * 		- a tracker of changes made to the ownership of the tokens
+	 * @param accountRel
+	 * 		- the relationship between the account, which owns the tokens, and the token
+	 * @param serialNumbers
+	 * 		- a list of serial numbers, representing the tokens to be wiped
+	 */
+	public void wipe(OwnershipTracker ownershipTracker, TokenRelationship accountRel, List<Long> serialNumbers) {
+		validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID,
+				"Non fungible wipe can be invoked only on Non fungible token type.");
+
+		validateFalse(serialNumbers.isEmpty(), FAIL_INVALID,
+				"Cannot wipe " + serialNumbers.size() + " number of Unique Tokens.");
+		for (Long serialNum : serialNumbers) {
+			final var uniqueToken = loadedUniqueTokens.get(serialNum);
+			validateTrue(uniqueToken.getOwner().equals(accountRel.getAccount().getId()), FAIL_INVALID,
+					"Cannot wipe tokens which given account does not own.");
+		}
+		baseWipeValidations(accountRel);
+		final var newTotalSupply = totalSupply - serialNumbers.size();
+		final var newAccountBalance = accountRel.getBalance() - serialNumbers.size();
+		final var account = accountRel.getAccount();
+		for (long serialNum : serialNumbers) {
+			ownershipTracker.add(id, OwnershipTracker.forRemoving(account.getId(), serialNum));
+			removedUniqueTokens.add(new UniqueToken(id, serialNum, account.getId()));
+		}
+
+		account.setOwnedNfts(account.getOwnedNfts() - serialNumbers.size());
+		accountRel.setBalance(newAccountBalance);
+		setTotalSupply(newTotalSupply);
+	}
+
+	public TokenRelationship newRelationshipWith(final Account account) {
 		final var newRel = new TokenRelationship(this, account);
 		if (hasFreezeKey() && frozenByDefault) {
 			newRel.setFrozen(true);
@@ -144,9 +227,9 @@ public class Token {
 	}
 
 	private void changeSupply(TokenRelationship treasuryRel, long amount, ResponseCodeEnum negSupplyCode) {
-		validateTrue(treasuryRel != null, FAIL_INVALID, () ->
+		validateTrue(treasuryRel != null, FAIL_INVALID,
 				"Cannot mint with a null treasuryRel");
-		validateTrue(treasuryRel.hasInvolvedIds(id, treasury.getId()), FAIL_INVALID, () ->
+		validateTrue(treasuryRel.hasInvolvedIds(id, treasury.getId()), FAIL_INVALID,
 				"Cannot change " + this + " supply (" + amount + ") with non-treasury rel " + treasuryRel);
 
 		validateTrue(supplyKey != null, TOKEN_HAS_NO_SUPPLY_KEY);
@@ -155,7 +238,7 @@ public class Token {
 		validateTrue(newTotalSupply >= 0, negSupplyCode);
 
 		if (supplyType == TokenSupplyType.FINITE) {
-			validateTrue(maxSupply >= newTotalSupply, TOKEN_MAX_SUPPLY_REACHED, () ->
+			validateTrue(maxSupply >= newTotalSupply, TOKEN_MAX_SUPPLY_REACHED,
 					"Cannot mint new supply (" + amount + "). Max supply (" + maxSupply + ") reached");
 		}
 
@@ -166,11 +249,35 @@ public class Token {
 		treasuryRel.setBalance(newTreasuryBalance);
 	}
 
+	private void baseWipeValidations(final TokenRelationship accountRel) {
+		validateTrue(hasWipeKey(), TOKEN_HAS_NO_WIPE_KEY,
+				"Cannot wipe Tokens without wipe key.");
+
+		validateFalse(treasury.getId().equals(accountRel.getAccount().getId()), CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT,
+				"Cannot wipe treasury account of token.");
+	}
+
+	private void amountWipeValidations(final TokenRelationship accountRel, final long amount) {
+		validateTrue(amount > 0, INVALID_WIPING_AMOUNT, errorMessage("wipe", amount, accountRel));
+
+		final var newTotalSupply = totalSupply - amount;
+		validateTrue(newTotalSupply >= 0, INVALID_WIPING_AMOUNT,
+				"Wiping would negate the total supply of the given token.");
+
+		final var newAccountBalance = accountRel.getBalance() - amount;
+		validateTrue(newAccountBalance >= 0, INVALID_WIPING_AMOUNT,
+				"Wiping would negate account balance");
+	}
+
+	private String errorMessage(final String op, final long amount, final TokenRelationship rel) {
+		return "Cannot " + op + " " + amount + " units of " + this + " from " + rel;
+	}
+
 	public Account getTreasury() {
 		return treasury;
 	}
 
-	public void setTreasury(Account treasury) {
+	public void setTreasury(final Account treasury) {
 		this.treasury = treasury;
 	}
 
@@ -178,7 +285,7 @@ public class Token {
 		return autoRenewAccount;
 	}
 
-	public void setAutoRenewAccount(Account autoRenewAccount) {
+	public void setAutoRenewAccount(final Account autoRenewAccount) {
 		this.autoRenewAccount = autoRenewAccount;
 	}
 
@@ -204,15 +311,15 @@ public class Token {
 		return maxSupply;
 	}
 
-	public void setSupplyKey(JKey supplyKey) {
+	public void setSupplyKey(final JKey supplyKey) {
 		this.supplyKey = supplyKey;
 	}
 
-	public void setKycKey(JKey kycKey) {
+	public void setKycKey(final JKey kycKey) {
 		this.kycKey = kycKey;
 	}
 
-	public void setFreezeKey(JKey freezeKey) {
+	public void setFreezeKey(final JKey freezeKey) {
 		this.freezeKey = freezeKey;
 	}
 
@@ -222,6 +329,18 @@ public class Token {
 
 	public boolean hasKycKey() {
 		return kycKey != null;
+	}
+
+	private boolean hasWipeKey() {
+		return wipeKey != null;
+	}
+
+	public JKey getWipeKey() {
+		return wipeKey;
+	}
+
+	public void setWipeKey(final JKey wipeKey) {
+		this.wipeKey = wipeKey;
 	}
 
 	public boolean hasChangedSupply() {
@@ -260,10 +379,6 @@ public class Token {
 		return !mintedUniqueTokens.isEmpty();
 	}
 
-	public boolean hasBurnedUniqueTokens() { return !burnedUniqueTokens.isEmpty(); }
-
-	public List<UniqueToken> burnedUniqueTokens() { return burnedUniqueTokens; }
-
 	public List<UniqueToken> mintedUniqueTokens() {
 		return mintedUniqueTokens;
 	}
@@ -284,6 +399,22 @@ public class Token {
 		this.expiry = expiry;
 	}
 
+	public boolean hasRemovedUniqueTokens() {
+		return !removedUniqueTokens.isEmpty();
+	}
+
+	public List<UniqueToken> removedUniqueTokens() {
+		return removedUniqueTokens;
+	}
+
+	public Map<Long, UniqueToken> getLoadedUniqueTokens() {
+		return loadedUniqueTokens;
+	}
+
+	public void setLoadedUniqueTokens(final Map<Long, UniqueToken> loadedUniqueTokens) {
+		this.loadedUniqueTokens = loadedUniqueTokens;
+	}
+
 	/* NOTE: The object methods below are only overridden to improve
 	readability of unit tests; this model object is not used in hash-based
 	collections, so the performance of these methods doesn't matter. */
@@ -301,12 +432,14 @@ public class Token {
 	public String toString() {
 		return MoreObjects.toStringHelper(Token.class)
 				.add("id", id)
+				.add("type", type)
 				.add("treasury", treasury)
 				.add("autoRenewAccount", autoRenewAccount)
 				.add("kycKey", describe(kycKey))
 				.add("freezeKey", describe(freezeKey))
 				.add("frozenByDefault", frozenByDefault)
 				.add("supplyKey", describe(supplyKey))
+				.add("currentSerialNumber", lastUsedSerialNumber)
 				.toString();
 	}
 }

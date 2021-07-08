@@ -42,7 +42,7 @@ public enum TokenWipeScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenWipe()
-							.wiping(UNKNOWN_TOKEN, MISC_ACCOUNT)
+							.wiping(MISSING_TOKEN, MISC_ACCOUNT)
 							.get()
 			));
 		}

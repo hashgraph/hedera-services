@@ -37,10 +37,12 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetAccountNftInfos;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetNftInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetNftInfos;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
@@ -74,7 +76,7 @@ class TokenControllerTest {
 	}
 
 	@Test
-	 void forwardTokenCreateAsExpected() {
+	void forwardTokenCreateAsExpected() {
 		// when:
 		subject.createToken(txn, txnObserver);
 
@@ -83,7 +85,7 @@ class TokenControllerTest {
 	}
 
 	@Test
-	 void forwardTokenFreezeAsExpected() {
+	void forwardTokenFreezeAsExpected() {
 		// when:
 		subject.freezeTokenAccount(txn, txnObserver);
 
@@ -92,7 +94,7 @@ class TokenControllerTest {
 	}
 
 	@Test
-	 void forwardTokenUnfreezeAsExpected() {
+	void forwardTokenUnfreezeAsExpected() {
 		// when:
 		subject.unfreezeTokenAccount(txn, txnObserver);
 
@@ -101,7 +103,7 @@ class TokenControllerTest {
 	}
 
 	@Test
-	 void forwardGrantKyc() {
+	void forwardGrantKyc() {
 		// when:
 		subject.grantKycToTokenAccount(txn, txnObserver);
 
@@ -110,7 +112,7 @@ class TokenControllerTest {
 	}
 
 	@Test
-	 void forwardRevokeKyc() {
+	void forwardRevokeKyc() {
 		// when:
 		subject.revokeKycFromTokenAccount(txn, txnObserver);
 
@@ -119,7 +121,7 @@ class TokenControllerTest {
 	}
 
 	@Test
-	 void forwardDelete() {
+	void forwardDelete() {
 		// when:
 		subject.deleteToken(txn, txnObserver);
 
@@ -128,7 +130,7 @@ class TokenControllerTest {
 	}
 
 	@Test
-	 void forwardUpdate() {
+	void forwardUpdate() {
 		// when:
 		subject.updateToken(txn, txnObserver);
 
@@ -137,7 +139,7 @@ class TokenControllerTest {
 	}
 
 	@Test
-	 void forwardMint() {
+	void forwardMint() {
 		// when:
 		subject.mintToken(txn, txnObserver);
 
@@ -146,7 +148,7 @@ class TokenControllerTest {
 	}
 
 	@Test
-	 void forwardBurn() {
+	void forwardBurn() {
 		// when:
 		subject.burnToken(txn, txnObserver);
 
@@ -155,7 +157,7 @@ class TokenControllerTest {
 	}
 
 	@Test
-	 void forwardWipe() {
+	void forwardWipe() {
 		// when:
 		subject.wipeTokenAccount(txn, txnObserver);
 
@@ -164,7 +166,7 @@ class TokenControllerTest {
 	}
 
 	@Test
-	 void forwardDissociate() {
+	void forwardDissociate() {
 		// when:
 		subject.dissociateTokens(txn, txnObserver);
 
@@ -173,7 +175,7 @@ class TokenControllerTest {
 	}
 
 	@Test
-	 void forwardAssociate() {
+	void forwardAssociate() {
 		// when:
 		subject.associateTokens(txn, txnObserver);
 
@@ -182,29 +184,47 @@ class TokenControllerTest {
 	}
 
 	@Test
-	 void forwardsTokenInfoAsExpected() {
+	void forwardsTokenInfoAsExpected() {
 		// when:
 		subject.getTokenInfo(query, queryObserver);
 
 		// expect:
-		verify(queryResponseHelper).answer(query, queryObserver,null , TokenGetInfo);
+		verify(queryResponseHelper).answer(query, queryObserver, null, TokenGetInfo);
 	}
 
 	@Test
-	 void forwardsTokenNftInfoAsExpected() {
+	void forwardsTokenNftInfosAsExpected() {
+		// when:
+		subject.getTokenNftInfos(query, queryObserver);
+
+		// expect:
+		verify(queryResponseHelper).answer(query, queryObserver, null, TokenGetNftInfos);
+	}
+
+	@Test
+	public void forwardsTokenNftInfoAsExpected() {
 		// when:
 		subject.getTokenNftInfo(query, queryObserver);
 
 		// expect:
-		verify(queryResponseHelper).answer(query, queryObserver,null , TokenGetNftInfo);
+		verify(queryResponseHelper).answer(query, queryObserver, null, TokenGetNftInfo);
 	}
 
 	@Test
-	 void forwardsAccountNftInfosAsExpected() {
+	void forwardsAccountNftInfosAsExpected() {
 		// when:
 		subject.getAccountNftInfos(query, queryObserver);
 
 		// expect:
-		verify(queryResponseHelper).answer(query, queryObserver,null , TokenGetAccountNftInfos);
+		verify(queryResponseHelper).answer(query, queryObserver, null, TokenGetAccountNftInfos);
+	}
+
+	@Test
+	void forwardsFeeScheduleUpdate() {
+		// when:
+		subject.updateTokenFeeSchedule(txn, txnObserver);
+
+		// expect:
+		verify(txnResponseHelper).submit(txn, txnObserver, TokenFeeScheduleUpdate);
 	}
 }

@@ -23,8 +23,8 @@ package com.hedera.test.factories.scenarios;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.PlatformTxnAccessor;
 
-import static com.hedera.services.state.submerkle.CustomFee.fixedFee;
-import static com.hedera.services.state.submerkle.CustomFee.fractionalFee;
+import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
+import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.TokenCreateFactory.newSignedTokenCreate;
 

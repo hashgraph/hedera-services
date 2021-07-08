@@ -22,7 +22,7 @@ package com.hedera.services.txns.customfees;
 
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.submerkle.CustomFee;
+import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.EntityId;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -43,7 +43,7 @@ public class FcmCustomFeeSchedules implements CustomFeeSchedules {
 	}
 
 	@Override
-	public List<CustomFee> lookupScheduleFor(EntityId tokenId) {
+	public List<FcCustomFee> lookupScheduleFor(EntityId tokenId) {
 		final var currentTokens = tokens.get();
 		if (!currentTokens.containsKey(tokenId.asMerkle())) {
 			return Collections.emptyList();

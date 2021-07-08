@@ -27,8 +27,8 @@ import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
-import com.hedera.services.state.submerkle.AssessedCustomFee;
-import com.hedera.services.state.submerkle.CustomFee;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -166,9 +166,9 @@ class CryptoTransferTransitionLogicTest {
 
 		// and :
 		final var customFeesBalanceChange = List.of(
-				new AssessedCustomFee(a.asEntityId(), 10L));
-		final var customFee = List.of(CustomFee.fixedFee(20L, null, a.asEntityId()));
-		final List<Pair<Id, List<CustomFee>>> customFees = List.of(Pair.of(c, customFee));
+				new FcAssessedCustomFee(a.asEntityId(), 10L));
+		final var customFee = List.of(FcCustomFee.fixedFee(20L, null, a.asEntityId()));
+		final List<Pair<Id, List<FcCustomFee>>> customFees = List.of(Pair.of(c, customFee));
 		final var impliedTransfers = ImpliedTransfers.valid(
 				validationProps, List.of(
 						hbarChange(a.asGrpcAccount(), +100),

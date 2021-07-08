@@ -9,9 +9,9 @@ package com.hedera.services.state.submerkle;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,7 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AssessedCustomFee;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -32,7 +33,6 @@ import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import proto.CustomFeesOuterClass;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -46,8 +46,8 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-class AssessedCustomFeeTest {
-	private final EntityId account = new EntityId(4,5,6);
+class FcAssessedCustomFeeTest {
+	private final EntityId account = new EntityId(4, 5, 6);
 	private final long units = -1_234L;
 	private final EntityId token = new EntityId(1, 2, 3);
 
@@ -62,8 +62,9 @@ class AssessedCustomFeeTest {
 		final var hbarChange = IdUtils.hbarChangeForCustomFees(account.toGrpcAccountId(), units);
 		final var tokenChange = IdUtils.tokenChangeForCustomFees(token, account.toGrpcAccountId(), units);
 		// and:
-		final var hbarRepr = "AssessedCustomFee{token=ℏ, account=EntityId{shard=4, realm=5, num=6}, units=-1234}";
-		final var tokenRepr = "AssessedCustomFee{token=EntityId{shard=1, realm=2, num=3}, account=EntityId{shard=4, realm=5, num=6}, units=-1234}";
+		final var hbarRepr = "FcAssessedCustomFee{token=ℏ, account=EntityId{shard=4, realm=5, num=6}, units=-1234}";
+		final var tokenRepr = "FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=3}, account=EntityId{shard=4, " +
+				"realm=5, num=6}, units=-1234}";
 
 		// expect:
 		assertNotEquals(hbarChange, tokenChange);
@@ -85,7 +86,7 @@ class AssessedCustomFeeTest {
 		final var account = new EntityId(1, 2, 3);
 		final var token = new EntityId(2, 3, 4);
 		final var amount = 345L;
-		final var subject = new AssessedCustomFee(account, token, amount);
+		final var subject = new FcAssessedCustomFee(account, token, amount);
 		// and:
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(EntityId.class, EntityId::new));
@@ -102,8 +103,8 @@ class AssessedCustomFeeTest {
 		final var din = new SerializableDataInputStream(bais);
 
 		// when:
-		final var newSubject = new AssessedCustomFee();
-		newSubject.deserialize(din, AssessedCustomFee.MERKLE_VERSION);
+		final var newSubject = new FcAssessedCustomFee();
+		newSubject.deserialize(din, FcAssessedCustomFee.MERKLE_VERSION);
 
 		// then:
 		assertEquals(subject, newSubject);
@@ -114,7 +115,7 @@ class AssessedCustomFeeTest {
 		// setup:
 		final var account = new EntityId(1, 2, 3);
 		final var amount = 345L;
-		final var subject = new AssessedCustomFee(account, amount);
+		final var subject = new FcAssessedCustomFee(account, amount);
 		// and:
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(EntityId.class, EntityId::new));
@@ -131,8 +132,8 @@ class AssessedCustomFeeTest {
 		final var din = new SerializableDataInputStream(bais);
 
 		// when:
-		final var newSubject = new AssessedCustomFee();
-		newSubject.deserialize(din, AssessedCustomFee.MERKLE_VERSION);
+		final var newSubject = new FcAssessedCustomFee();
+		newSubject.deserialize(din, FcAssessedCustomFee.MERKLE_VERSION);
 
 		// then:
 		assertEquals(subject, newSubject);
@@ -144,7 +145,7 @@ class AssessedCustomFeeTest {
 		InOrder inOrder = Mockito.inOrder(dos);
 
 		// given:
-		final var subject = new AssessedCustomFee(account, token, units);
+		final var subject = new FcAssessedCustomFee(account, token, units);
 
 		// when:
 		subject.serialize(dos);
@@ -159,7 +160,7 @@ class AssessedCustomFeeTest {
 	@Test
 	void deserializeWorksAsExpected() throws IOException {
 		// setup:
-		final var expectedBalanceChange = new AssessedCustomFee(account, token, units);
+		final var expectedBalanceChange = new FcAssessedCustomFee(account, token, units);
 
 		given(din.readSerializable())
 				.willReturn(account)
@@ -167,10 +168,10 @@ class AssessedCustomFeeTest {
 		given(din.readLong()).willReturn(units);
 
 		// given:
-		final var subject = new AssessedCustomFee();
+		final var subject = new FcAssessedCustomFee();
 
 		// when:
-		subject.deserialize(din, AssessedCustomFee.MERKLE_VERSION);
+		subject.deserialize(din, FcAssessedCustomFee.MERKLE_VERSION);
 
 		// then:
 		assertNotNull(subject);
@@ -182,7 +183,7 @@ class AssessedCustomFeeTest {
 	@Test
 	void gettersWork() {
 		//given
-		final var  subject = new AssessedCustomFee(account, token, units);
+		final var subject = new FcAssessedCustomFee(account, token, units);
 		// expect:
 		assertEquals(account, subject.account());
 		assertEquals(token, subject.token());
@@ -201,11 +202,11 @@ class AssessedCustomFeeTest {
 	}
 
 	@Test
-	void testToGrpc(){
+	void testToGrpc() {
 		// given:
-		final var subject = new AssessedCustomFee(account, token, units);
+		final var subject = new FcAssessedCustomFee(account, token, units);
 		// then:
-		CustomFeesOuterClass.AssessedCustomFee grpc = subject.toGrpc();
+		AssessedCustomFee grpc = subject.toGrpc();
 
 		//expect:
 		assertEquals(subject.account().toGrpcAccountId(), grpc.getFeeCollectorAccountId());
@@ -214,11 +215,11 @@ class AssessedCustomFeeTest {
 	}
 
 	@Test
-	void testToGrpcForHbar(){
+	void testToGrpcForHbar() {
 		// given:
-		final var subject = new AssessedCustomFee(account, units);
+		final var subject = new FcAssessedCustomFee(account, units);
 		// then:
-		CustomFeesOuterClass.AssessedCustomFee grpc = subject.toGrpc();
+		AssessedCustomFee grpc = subject.toGrpc();
 
 		//expect:
 		assertEquals(subject.account().toGrpcAccountId(), grpc.getFeeCollectorAccountId());
@@ -227,9 +228,9 @@ class AssessedCustomFeeTest {
 	}
 
 	@Test
-	void testFromGrpc(){
+	void testFromGrpc() {
 		// given:
-		final var grpc = CustomFeesOuterClass.AssessedCustomFee
+		final var grpc = AssessedCustomFee
 				.newBuilder()
 				.setTokenId(token.toGrpcTokenId())
 				.setFeeCollectorAccountId(account.toGrpcAccountId())
@@ -237,23 +238,23 @@ class AssessedCustomFeeTest {
 				.build();
 
 		//expect:
-		final var fcFee = AssessedCustomFee.fromGrpc(grpc);
+		final var fcFee = FcAssessedCustomFee.fromGrpc(grpc);
 		assertEquals(account, fcFee.account());
 		assertEquals(token, fcFee.token());
 		assertEquals(units, fcFee.units());
 	}
 
 	@Test
-	void testFromGrpcForHbarAdjust(){
+	void testFromGrpcForHbarAdjust() {
 		// given:
-		final var grpc = CustomFeesOuterClass.AssessedCustomFee
+		final var grpc = AssessedCustomFee
 				.newBuilder()
 				.setFeeCollectorAccountId(account.toGrpcAccountId())
 				.setAmount(units)
 				.build();
 
 		//expect:
-		final var fcFee = AssessedCustomFee.fromGrpc(grpc);
+		final var fcFee = FcAssessedCustomFee.fromGrpc(grpc);
 		assertEquals(account, fcFee.account());
 		assertEquals(null, fcFee.token());
 		assertEquals(units, fcFee.units());
@@ -262,9 +263,9 @@ class AssessedCustomFeeTest {
 	@Test
 	void merkleMethodsWork() {
 		// given:
-		final var subject = new AssessedCustomFee();
+		final var subject = new FcAssessedCustomFee();
 
-		assertEquals(AssessedCustomFee.MERKLE_VERSION, subject.getVersion());
-		assertEquals(AssessedCustomFee.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
+		assertEquals(FcAssessedCustomFee.MERKLE_VERSION, subject.getVersion());
+		assertEquals(FcAssessedCustomFee.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 }

@@ -42,7 +42,7 @@ public enum TokenBurnScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenBurn()
-							.burning(UNKNOWN_TOKEN)
+							.burning(MISSING_TOKEN)
 							.get()
 			));
 		}

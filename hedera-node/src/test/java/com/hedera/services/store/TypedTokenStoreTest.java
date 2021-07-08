@@ -9,9 +9,9 @@ package com.hedera.services.store;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -58,7 +58,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -223,6 +225,23 @@ class TypedTokenStoreTest {
 		assertTokenLoadFailsWith(TOKEN_WAS_DELETED);
 	}
 
+	@Test
+	void loadsUniqueTokens() {
+		final var aToken = new Token(miscId);
+		final var merkleUniqueToken = mock(MerkleUniqueToken.class);
+		final var serialNumbers = List.of(1L, 2L);
+		given(merkleUniqueToken.getOwner()).willReturn(new EntityId(Id.DEFAULT));
+		given(uniqueTokens.get(any())).willReturn(merkleUniqueToken);
+
+		subject.loadUniqueTokens(aToken, serialNumbers);
+
+		assertEquals(2, aToken.getLoadedUniqueTokens().size());
+
+		given(uniqueTokens.get(any())).willReturn(null);
+		assertThrows(InvalidTransactionException.class, () -> subject.loadUniqueTokens(aToken, serialNumbers));
+	}
+
+
 	/* --- Token saving --- */
 	@Test
 	void savesTokenAsExpected() {
@@ -263,9 +282,9 @@ class TypedTokenStoreTest {
 		modelToken.setTreasury(autoRenewAccount);
 		modelToken.setFrozenByDefault(!freezeDefault);
 		modelToken.mintedUniqueTokens().add(mintedToken);
-		modelToken.burnedUniqueTokens().add(burnedToken);
 		modelToken.setIsDeleted(false);
 		modelToken.setExpiry(expiry);
+		modelToken.removedUniqueTokens().add(burnedToken);
 		// and:
 		subject.persistToken(modelToken);
 
@@ -376,7 +395,6 @@ class TypedTokenStoreTest {
 			0, 0, miscAccountNum,
 			0, 0, tokenNum);
 	private final TokenRelationship miscTokenRel = new TokenRelationship(token, miscAccount);
-
 	private MerkleToken merkleToken;
 	private MerkleTokenRelStatus miscTokenMerkleRel;
 }

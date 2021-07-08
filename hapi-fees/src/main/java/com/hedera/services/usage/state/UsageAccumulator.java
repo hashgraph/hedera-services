@@ -9,9 +9,9 @@ package com.hedera.services.usage.state;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,8 @@ package com.hedera.services.usage.state;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.pricing.ResourceProvider;
+import com.hedera.services.pricing.UsableResource;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
 
@@ -164,6 +166,52 @@ public class UsageAccumulator {
 
 	public long getServiceSbh() {
 		return ESTIMATOR_UTILS.nonDegenerateDiv(sbs, HRS_DIVISOR);
+	}
+
+
+	public long get(ResourceProvider provider, UsableResource resource) {
+		switch (provider) {
+			case NETWORK:
+				switch (resource) {
+					case BPT:
+						return getUniversalBpt();
+					case VPT:
+						return getNetworkVpt();
+					case RBH:
+						return getNetworkRbh();
+					case CONSTANT:
+						return 1L;
+					default:
+						return 0L;
+				}
+			case NODE:
+				switch (resource) {
+					case BPT:
+						return getUniversalBpt();
+					case BPR:
+						return getNodeBpr();
+					case SBPR:
+						return getNodeSbpr();
+					case VPT:
+						return getNodeVpt();
+					case CONSTANT:
+						return 1L;
+					default:
+						return 0L;
+				}
+			case SERVICE:
+				switch (resource) {
+					case RBH:
+						return getServiceRbh();
+					case SBH:
+						return getServiceSbh();
+					case CONSTANT:
+						return 1L;
+					default:
+						return 0L;
+				}
+		}
+		return 0L;
 	}
 
 	@Override

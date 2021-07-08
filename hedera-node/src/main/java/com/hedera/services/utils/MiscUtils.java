@@ -138,10 +138,12 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetAccountNftInfos;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetNftInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetNftInfos;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
@@ -168,6 +170,7 @@ import static com.hederahashgraph.api.proto.java.Query.QueryCase.SCHEDULEGETINFO
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TOKENGETACCOUNTNFTINFOS;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TOKENGETINFO;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TOKENGETNFTINFO;
+import static com.hederahashgraph.api.proto.java.Query.QueryCase.TOKENGETNFTINFOS;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETRECEIPT;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETRECORD;
 import static java.util.Comparator.comparing;
@@ -195,6 +198,7 @@ public class MiscUtils {
 			TokenGetInfo,
 			ScheduleGetInfo,
 			TokenGetNftInfo,
+			TokenGetNftInfos,
 			TokenGetAccountNftInfos
 	);
 
@@ -213,6 +217,8 @@ public class MiscUtils {
 	static final String TOKEN_GET_INFO_METRIC = "getTokenInfo";
 	static final String TOKEN_GET_NFT_INFO_METRIC = "getTokenNftInfo";
 	static final String TOKEN_GET_ACCOUNT_NFT_INFOS_METRIC = "getAccountNftInfos";
+	static final String TOKEN_FEE_SCHEDULE_UPDATE_METRIC = "tokenFeeScheduleUpdate";
+	static final String TOKEN_GET_NFT_INFOS_METRIC = "getTokenNftInfos";
 
 	static final String SCHEDULE_CREATE_METRIC = "createSchedule";
 	static final String SCHEDULE_DELETE_METRIC = "deleteSchedule";
@@ -241,6 +247,7 @@ public class MiscUtils {
 		queryFunctions.put(TRANSACTIONGETRECORD, TransactionGetRecord);
 		queryFunctions.put(TOKENGETINFO, TokenGetInfo);
 		queryFunctions.put(TOKENGETNFTINFO, TokenGetNftInfo);
+		queryFunctions.put(TOKENGETNFTINFOS, TokenGetNftInfos);
 		queryFunctions.put(TOKENGETACCOUNTNFTINFOS, TokenGetAccountNftInfos);
 		queryFunctions.put(SCHEDULEGETINFO, ScheduleGetInfo);
 	}
@@ -305,8 +312,10 @@ public class MiscUtils {
 		BASE_STAT_NAMES.put(GetVersionInfo, GET_VERSION_INFO_METRIC);
 		BASE_STAT_NAMES.put(TokenGetInfo, TOKEN_GET_INFO_METRIC);
 		BASE_STAT_NAMES.put(TokenGetNftInfo, TOKEN_GET_NFT_INFO_METRIC);
+		BASE_STAT_NAMES.put(TokenGetNftInfos, TOKEN_GET_NFT_INFOS_METRIC);
 		BASE_STAT_NAMES.put(ScheduleGetInfo, SCHEDULE_GET_INFO_METRIC);
 		BASE_STAT_NAMES.put(TokenGetAccountNftInfos, TOKEN_GET_ACCOUNT_NFT_INFOS_METRIC);
+		BASE_STAT_NAMES.put(TokenFeeScheduleUpdate, TOKEN_FEE_SCHEDULE_UPDATE_METRIC);
 	}
 
 	public static String baseStatNameOf(HederaFunctionality function) {
@@ -360,7 +369,8 @@ public class MiscUtils {
 		try {
 			return new JEd25519Key(CommonUtils.unhex(b64Reader.hexedABytesFrom(storeLoc, kpId)));
 		} catch (IllegalArgumentException e) {
-			var msg = String.format("Arguments 'storeLoc=%s' and 'kpId=%s' did not denote a valid key!", storeLoc, kpId);
+			var msg = String.format("Arguments 'storeLoc=%s' and 'kpId=%s' did not denote a valid key!", storeLoc,
+					kpId);
 			throw new IllegalArgumentException(msg, e);
 		}
 	}
@@ -416,6 +426,8 @@ public class MiscUtils {
 		switch (query.getQueryCase()) {
 			case TOKENGETNFTINFO:
 				return Optional.of(query.getTokenGetNftInfo().getHeader());
+			case TOKENGETNFTINFOS:
+				return Optional.of(query.getTokenGetNftInfos().getHeader());
 			case TOKENGETACCOUNTNFTINFOS:
 				return Optional.of(query.getTokenGetAccountNftInfos().getHeader());
 			case TOKENGETINFO:
@@ -536,6 +548,8 @@ public class MiscUtils {
 			return TokenAssociateToAccount;
 		} else if (txn.hasTokenDissociate()) {
 			return TokenDissociateFromAccount;
+		} else if (txn.hasTokenFeeScheduleUpdate()) {
+			return TokenFeeScheduleUpdate;
 		} else if (txn.hasScheduleCreate()) {
 			return ScheduleCreate;
 		} else if (txn.hasScheduleSign()) {

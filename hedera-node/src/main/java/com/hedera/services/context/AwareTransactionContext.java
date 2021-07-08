@@ -24,7 +24,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.submerkle.AssessedCustomFee;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.SolidityFnResult;
@@ -77,8 +77,10 @@ public class AwareTransactionContext implements TransactionContext {
 	private final ServicesContext ctx;
 	private TxnAccessor triggeredTxn = null;
 
-	private static final Consumer<TxnReceipt.Builder> noopReceiptConfig = ignore -> { };
-	private static final Consumer<ExpirableTxnRecord.Builder> noopRecordConfig = ignore -> { };
+	private static final Consumer<TxnReceipt.Builder> noopReceiptConfig = ignore -> {
+	};
+	private static final Consumer<ExpirableTxnRecord.Builder> noopRecordConfig = ignore -> {
+	};
 
 	private long submittingMember;
 	private long otherNonThresholdFees;
@@ -91,7 +93,7 @@ public class AwareTransactionContext implements TransactionContext {
 	private Consumer<TxnReceipt.Builder> receiptConfig = noopReceiptConfig;
 	private Consumer<ExpirableTxnRecord.Builder> recordConfig = noopRecordConfig;
 	private List<TokenTransferList> explicitTokenTransfers;
-	private List<AssessedCustomFee> assessedCustomFees;
+	private List<FcAssessedCustomFee> assessedCustomFees;
 
 	boolean hasComputedRecordSoFar;
 	ExpirableTxnRecord.Builder recordSoFar = ExpirableTxnRecord.newBuilder();
@@ -129,7 +131,7 @@ public class AwareTransactionContext implements TransactionContext {
 	}
 
 	@Override
-	public void setAssessedCustomFees(List<AssessedCustomFee> assessedCustomFees){
+	public void setAssessedCustomFees(List<FcAssessedCustomFee> assessedCustomFees) {
 		this.assessedCustomFees = assessedCustomFees;
 	}
 
@@ -315,7 +317,7 @@ public class AwareTransactionContext implements TransactionContext {
 		receiptConfig = receipt -> receipt.setSerialNumbers(serialNumbers.stream().mapToLong(l -> l).toArray());
 	}
 
-	List<AssessedCustomFee> getAssessedCustomFees() {
+	List<FcAssessedCustomFee> getAssessedCustomFees() {
 		return assessedCustomFees;
 	}
 }

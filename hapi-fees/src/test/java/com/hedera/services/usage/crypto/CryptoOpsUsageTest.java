@@ -9,9 +9,9 @@ package com.hedera.services.usage.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -129,8 +129,8 @@ class CryptoOpsUsageTest {
 		// then:
 		assertSame(A_USAGES_MATRIX, estimate);
 		// and:
-		verify(queryBase).updateTb(BASIC_ENTITY_ID_SIZE);
-		verify(queryBase).updateRb(
+		verify(queryBase).addTb(BASIC_ENTITY_ID_SIZE);
+		verify(queryBase).addRb(
 				CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr()
 						+ BASIC_ENTITY_ID_SIZE
 						+ memo.length()
@@ -160,7 +160,8 @@ class CryptoOpsUsageTest {
 	@Test
 	void estimatesAutoRenewAsExpected() {
 		// setup:
-		var expectedRbsUsedInRenewal = (basicReprBytes() + (numTokenRels * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr()));
+		var expectedRbsUsedInRenewal =
+				(basicReprBytes() + (numTokenRels * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr()));
 
 		// given:
 		var ctx = ExtantCryptoContext.newBuilder()
@@ -190,13 +191,13 @@ class CryptoOpsUsageTest {
 		// and:
 		long oldRbs = (oldExpiry - now) *
 				(oldMemo.length() + getAccountKeyStorageSize(oldKey)
-				+ CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr() * numTokenRels
-				+ CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr());
+						+ CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr() * numTokenRels
+						+ CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr());
 		// and:
 		long newRbs = (expiry - now) *
 				(memo.length() + getAccountKeyStorageSize(key) + BASIC_ENTITY_ID_SIZE
-				+ CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr() * numTokenRels
-				+ CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr());
+						+ CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr() * numTokenRels
+						+ CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr());
 
 		givenUpdateOp();
 		// and:
@@ -260,7 +261,7 @@ class CryptoOpsUsageTest {
 				.setTransactionID(TransactionID.newBuilder()
 						.setTransactionValidStart(Timestamp.newBuilder()
 								.setSeconds(now)))
-				.setCryptoCreateAccount(creationOp) .build();
+				.setCryptoCreateAccount(creationOp).build();
 	}
 
 	private void givenInfoOp() {

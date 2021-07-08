@@ -35,13 +35,13 @@ import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static org.junit.Assert.assertEquals;
 
 class TokenGetNftInfoUsageTest {
-	String memo = "Hope";
-	NftID id = IdUtils.asNftID("0.0.75231", 1);
+	private String memo = "Hope";
+	private NftID id = IdUtils.asNftID("0.0.75231", 1);
 
-	TokenGetNftInfoUsage subject;
+	private TokenGetNftInfoUsage subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		subject = TokenGetNftInfoUsage.newEstimate(query());
 	}
 

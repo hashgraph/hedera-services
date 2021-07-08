@@ -157,6 +157,7 @@ public class StateView {
 	private final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations;
 
 	private Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens;
+	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations;
 	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAccountOwnerships;
 
 	private final NodeLocalProperties properties;
@@ -222,6 +223,7 @@ public class StateView {
 		this.uniqueTokens = uniqueTokens;
 		this.scheduleStore = scheduleStore;
 		this.tokenAssociations = tokenAssociations;
+		this.uniqueTokenAssociations = uniqueTokenAssociations;
 		this.uniqueTokenAccountOwnerships = uniqueTokenAccountOwnerships;
 
 		Map<String, byte[]> blobStore = unmodifiableMap(new FcBlobsBytesStore(MerkleOptionalBlob::new, storage));
@@ -321,13 +323,15 @@ public class StateView {
 			supplyCandidate.ifPresent(k -> info.setSupplyKey(asKeyUnchecked(k)));
 			var wipeCandidate = token.wipeKey();
 			wipeCandidate.ifPresent(k -> info.setWipeKey(asKeyUnchecked(k)));
+			var feeScheduleCandidate = token.feeScheduleKey();
+			feeScheduleCandidate.ifPresent(k -> info.setFeeScheduleKey(asKeyUnchecked(k)));
 
 			if (token.hasAutoRenewAccount()) {
 				info.setAutoRenewAccount(token.autoRenewAccount().toGrpcAccountId());
 				info.setAutoRenewPeriod(Duration.newBuilder().setSeconds(token.autoRenewPeriod()));
 			}
 
-			info.setCustomFees(token.grpcFeeSchedule());
+			info.addAllCustomFees(token.grpcFeeSchedule());
 
 			return Optional.of(info.build());
 		} catch (Exception unexpected) {
@@ -394,8 +398,30 @@ public class StateView {
 		return Optional.of(info);
 	}
 
+	public Optional<List<TokenNftInfo>> infosForTokenNfts(TokenID tid, long start, long end) {
+		if (!tokenExists(tid)) {
+			return Optional.empty();
+		}
+
+		List<TokenNftInfo> nftInfos = new ArrayList<>();
+		uniqueTokenAssociations.get().get(fromGrpcTokenId(tid), (int) start, (int) end).forEachRemaining(nftId -> {
+			final var nft = uniqueTokens.get().get(nftId);
+
+			nftInfos.add(TokenNftInfo.newBuilder()
+					.setAccountID(nft.getOwner().toGrpcAccountId())
+					.setCreationTime(nft.getCreationTime().toGrpc())
+					.setNftID(NftID.newBuilder()
+							.setTokenID(nftId.tokenId().toGrpcTokenId())
+							.setSerialNumber(nftId.serialNumber()))
+					.setMetadata(ByteString.copyFrom(nft.getMetadata()))
+					.build());
+		});
+		return Optional.of(nftInfos);
+	}
+
 	public boolean nftExists(NftID id) {
-		return uniqueTokens.get().containsKey(new MerkleUniqueTokenId(fromGrpcTokenId(id.getTokenID()), id.getSerialNumber()));
+		return uniqueTokens.get().containsKey(
+				new MerkleUniqueTokenId(fromGrpcTokenId(id.getTokenID()), id.getSerialNumber()));
 	}
 
 	public Optional<TokenType> tokenType(TokenID tokenID) {
@@ -511,20 +537,20 @@ public class StateView {
 		List<TokenNftInfo> nftInfos = new ArrayList<>();
 		var uniqueTokensMap = uniqueTokens.get();
 		uniqueTokenAccountOwnerships.get()
-				.get(fromGrpcAccountId(aid), (int)start, (int)end).forEachRemaining(nftId -> {
-					var nft = uniqueTokensMap.get(nftId);
-					nftInfos.add(
-							TokenNftInfo.newBuilder()
-								.setAccountID(aid)
-								.setCreationTime(nft.getCreationTime().toGrpc())
-								.setNftID(NftID.newBuilder()
-										.setTokenID(nftId.tokenId().toGrpcTokenId())
-										.setSerialNumber(nftId.serialNumber())
-										.build())
-								.setMetadata(ByteString.copyFrom(nft.getMetadata()))
+				.get(fromGrpcAccountId(aid), (int) start, (int) end).forEachRemaining(nftId -> {
+			var nft = uniqueTokensMap.get(nftId);
+			nftInfos.add(
+					TokenNftInfo.newBuilder()
+							.setAccountID(aid)
+							.setCreationTime(nft.getCreationTime().toGrpc())
+							.setNftID(NftID.newBuilder()
+									.setTokenID(nftId.tokenId().toGrpcTokenId())
+									.setSerialNumber(nftId.serialNumber())
+									.build())
+							.setMetadata(ByteString.copyFrom(nft.getMetadata()))
 							.build()
-					);
-				});
+			);
+		});
 		return Optional.of(nftInfos);
 	}
 

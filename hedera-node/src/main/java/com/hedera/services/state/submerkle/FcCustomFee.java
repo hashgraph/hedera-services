@@ -22,17 +22,19 @@ package com.hedera.services.state.submerkle;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.store.models.Id;
+import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.Fraction;
+import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import proto.CustomFeesOuterClass;
 
 import java.io.IOException;
 import java.util.Objects;
 
-import static com.hedera.services.state.submerkle.CustomFee.FeeType.FIXED_FEE;
+import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FIXED_FEE;
 
 /**
  * Represents a custom fee attached to an HTS token type. Custom fees are
@@ -51,7 +53,7 @@ import static com.hedera.services.state.submerkle.CustomFee.FeeType.FIXED_FEE;
  * moved that should go to the fee collection account, along with an
  * optional minimum and maximum number of units to be charged.
  */
-public class CustomFee implements SelfSerializable {
+public class FcCustomFee implements SelfSerializable {
 	static final byte FIXED_CODE = (byte) (1 << 0);
 	static final byte FRACTIONAL_CODE = (byte) (1 << 1);
 
@@ -67,11 +69,11 @@ public class CustomFee implements SelfSerializable {
 		FRACTIONAL_FEE, FIXED_FEE
 	}
 
-	public CustomFee() {
+	public FcCustomFee() {
 		/* For RuntimeConstructable */
 	}
 
-	private CustomFee(
+	private FcCustomFee(
 			FeeType feeType,
 			EntityId feeCollector,
 			FixedFeeSpec fixedFeeSpec,
@@ -83,7 +85,7 @@ public class CustomFee implements SelfSerializable {
 		this.fractionalFeeSpec = fractionalFeeSpec;
 	}
 
-	public static CustomFee fractionalFee(
+	public static FcCustomFee fractionalFee(
 			long numerator,
 			long denominator,
 			long minimumUnitsToCollect,
@@ -92,20 +94,20 @@ public class CustomFee implements SelfSerializable {
 	) {
 		Objects.requireNonNull(feeCollector);
 		final var spec = new FractionalFeeSpec(numerator, denominator, minimumUnitsToCollect, maximumUnitsToCollect);
-		return new CustomFee(FeeType.FRACTIONAL_FEE, feeCollector, null, spec);
+		return new FcCustomFee(FeeType.FRACTIONAL_FEE, feeCollector, null, spec);
 	}
 
-	public static CustomFee fixedFee(
+	public static FcCustomFee fixedFee(
 			long unitsToCollect,
 			EntityId tokenDenomination,
 			EntityId feeCollector
 	) {
 		Objects.requireNonNull(feeCollector);
 		final var spec = new FixedFeeSpec(unitsToCollect, tokenDenomination);
-		return new CustomFee(FIXED_FEE, feeCollector, spec, null);
+		return new FcCustomFee(FIXED_FEE, feeCollector, spec, null);
 	}
 
-	public static CustomFee fromGrpc(CustomFeesOuterClass.CustomFee source) {
+	public static FcCustomFee fromGrpc(CustomFee source) {
 		final var feeCollector = EntityId.fromGrpcAccountId(source.getFeeCollectorAccountId());
 		if (source.hasFixedFee()) {
 			EntityId denom = null;
@@ -128,12 +130,12 @@ public class CustomFee implements SelfSerializable {
 		}
 	}
 
-	public CustomFeesOuterClass.CustomFee asGrpc() {
-		final var builder = CustomFeesOuterClass.CustomFee.newBuilder()
+	public CustomFee asGrpc() {
+		final var builder = CustomFee.newBuilder()
 				.setFeeCollectorAccountId(feeCollector.toGrpcAccountId());
 		if (feeType == FIXED_FEE) {
 			final var spec = fixedFeeSpec;
-			final var fixedBuilder = CustomFeesOuterClass.FixedFee.newBuilder()
+			final var fixedBuilder = FixedFee.newBuilder()
 					.setAmount(spec.getUnitsToCollect());
 			if (spec.getTokenDenomination() != null) {
 				fixedBuilder.setDenominatingTokenId(spec.getTokenDenomination().toGrpcTokenId());
@@ -141,7 +143,7 @@ public class CustomFee implements SelfSerializable {
 			builder.setFixedFee(fixedBuilder);
 		} else {
 			final var spec = fractionalFeeSpec;
-			final var fracBuilder = CustomFeesOuterClass.FractionalFee.newBuilder()
+			final var fracBuilder = FractionalFee.newBuilder()
 					.setFractionalAmount(Fraction.newBuilder()
 							.setNumerator(spec.getNumerator())
 							.setDenominator(spec.getDenominator()))
@@ -179,11 +181,11 @@ public class CustomFee implements SelfSerializable {
 		if (this == obj) {
 			return true;
 		}
-		if (obj == null || !obj.getClass().equals(CustomFee.class)) {
+		if (obj == null || !obj.getClass().equals(FcCustomFee.class)) {
 			return false;
 		}
 
-		final var that = (CustomFee) obj;
+		final var that = (FcCustomFee) obj;
 		return this.feeType == that.feeType &&
 				Objects.equals(this.feeCollector, that.feeCollector) &&
 				Objects.equals(this.fixedFeeSpec, that.fixedFeeSpec) &&
@@ -197,7 +199,7 @@ public class CustomFee implements SelfSerializable {
 
 	@Override
 	public String toString() {
-		return MoreObjects.toStringHelper(CustomFee.class)
+		return MoreObjects.toStringHelper(FcCustomFee.class)
 				.omitNullValues()
 				.add("feeType", feeType)
 				.add("fixedFee", fixedFeeSpec)

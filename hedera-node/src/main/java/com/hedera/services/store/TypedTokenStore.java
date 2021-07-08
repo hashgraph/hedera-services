@@ -46,11 +46,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
+import java.util.HashMap;
 import java.util.List;
 import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
@@ -236,6 +238,33 @@ public class TypedTokenStore {
 	}
 
 	/**
+	 * Returns a {@link UniqueToken} model of the requested unique token, with operations that can be used to
+	 * implement business logic in a transaction.
+	 *
+	 * @param token
+	 * 		the token model, on which to load the of the unique token
+	 * @param serialNumbers
+	 * 		the serial numbers to load
+	 * @throws InvalidTransactionException
+	 * 		if the requested token class is missing, deleted, or expired and pending removal
+	 */
+	public void loadUniqueTokens(Token token, List<Long> serialNumbers) {
+		final var tokenId = token.getId();
+		final var tokenAsEntityId = tokenId.asEntityId();
+		final var loadedUniqueTokens = new HashMap<Long, UniqueToken>();
+		for (long serialNumber : serialNumbers) {
+			final var uniqueTokenKey = new MerkleUniqueTokenId(tokenAsEntityId, serialNumber);
+			final var merkleUniqueToken = uniqueTokens.get().get(uniqueTokenKey);
+			validateUsable(merkleUniqueToken);
+
+			final var uniqueToken = new UniqueToken(tokenId, serialNumber);
+			initModelFields(uniqueToken, merkleUniqueToken);
+			loadedUniqueTokens.put(serialNumber, uniqueToken);
+		}
+		token.setLoadedUniqueTokens(loadedUniqueTokens);
+	}
+
+	/**
 	 * Use carefully.
 	 * Returns a model of the requested token which may be marked as deleted.
 	 * @param id
@@ -266,13 +295,14 @@ public class TypedTokenStore {
 	 * 		the token to save
 	 */
 	public void persistToken(Token token) {
-		final var id = token.getId();
-		final var key = new MerkleEntityId(id.getShard(), id.getRealm(), id.getNum());
-		final var currentTokens = tokens.get();
-
-		final var mutableToken = currentTokens.getForModify(key);
-		final var treasury = new EntityId(mutableToken.treasury());
+		final var key = token.getId().asMerkle();
+		final var mutableToken = tokens.get().getForModify(key);
+		final var treasury = mutableToken.treasury().copy();
 		mapModelChangesToMutable(token, mutableToken);
+
+		final var currentUniqueTokens = uniqueTokens.get();
+		final var currentUniqueTokenAssociations = uniqueTokenAssociations.get();
+		final var currentUniqueOwnershipAssociations = uniqueOwnershipAssociations.get();
 
 		if (token.hasMintedUniqueTokens()) {
 			for (var uniqueToken : token.mintedUniqueTokens()) {
@@ -280,23 +310,23 @@ public class TypedTokenStore {
 						new EntityId(uniqueToken.getTokenId()), uniqueToken.getSerialNumber());
 				final var merkleUniqueToken = new MerkleUniqueToken(
 						new EntityId(uniqueToken.getOwner()), uniqueToken.getMetadata(), uniqueToken.getCreationTime());
-				uniqueTokens.get().put(merkleUniqueTokenId, merkleUniqueToken);
-				uniqueTokenAssociations.get().associate(new EntityId(uniqueToken.getTokenId()), merkleUniqueTokenId);
-				uniqueOwnershipAssociations.get().associate(treasury, merkleUniqueTokenId);
+				currentUniqueTokens.put(merkleUniqueTokenId, merkleUniqueToken);
+				currentUniqueTokenAssociations.associate(new EntityId(uniqueToken.getTokenId()), merkleUniqueTokenId);
+				currentUniqueOwnershipAssociations.associate(treasury, merkleUniqueTokenId);
 				backingNfts.addToExistingNfts(merkleUniqueTokenId.asNftId());
 			}
 		}
-		if (token.hasBurnedUniqueTokens()) {
-			for (var uniqueToken : token.burnedUniqueTokens()) {
+		if (token.hasRemovedUniqueTokens()) {
+			for (var uniqueToken : token.removedUniqueTokens()) {
 				final var merkleUniqueTokenId = new MerkleUniqueTokenId(
 						new EntityId(uniqueToken.getTokenId()), uniqueToken.getSerialNumber());
-				uniqueTokens.get().remove(merkleUniqueTokenId);
-				uniqueTokenAssociations.get().disassociate(new EntityId(uniqueToken.getTokenId()), merkleUniqueTokenId);
-				uniqueOwnershipAssociations.get().disassociate(treasury, merkleUniqueTokenId);
+				final var accountId = new EntityId(uniqueToken.getOwner());
+				currentUniqueTokens.remove(merkleUniqueTokenId);
+				currentUniqueTokenAssociations.disassociate(new EntityId(uniqueToken.getTokenId()), merkleUniqueTokenId);
+				currentUniqueOwnershipAssociations.disassociate(accountId, merkleUniqueTokenId);
 				backingNfts.removeFromExistingNfts(merkleUniqueTokenId.asNftId());
 			}
 		}
-
 		transactionRecordService.includeChangesToToken(token);
 	}
 
@@ -307,6 +337,10 @@ public class TypedTokenStore {
 	private void validateUsable(MerkleToken merkleToken) {
 		validateTrue(merkleToken != null, INVALID_TOKEN_ID);
 		validateFalse(merkleToken.isDeleted(), TOKEN_WAS_DELETED);
+	}
+
+	private void validateUsable(MerkleUniqueToken merkleUniqueToken) {
+		validateTrue(merkleUniqueToken != null, INVALID_NFT_ID);
 	}
 
 	private void mapModelChangesToMutable(Token token, MerkleToken mutableToken) {
@@ -337,11 +371,18 @@ public class TypedTokenStore {
 		token.setKycKey(immutableToken.getKycKey());
 		token.setFreezeKey(immutableToken.getFreezeKey());
 		token.setSupplyKey(immutableToken.getSupplyKey());
+		token.setWipeKey(immutableToken.getWipeKey());
 		token.setFrozenByDefault(immutableToken.accountsAreFrozenByDefault());
 		token.setType(immutableToken.tokenType());
 		token.setLastUsedSerialNumber(immutableToken.getLastUsedSerialNumber());
 		token.setIsDeleted(immutableToken.isDeleted());
 		token.setExpiry(immutableToken.expiry());
+	}
+
+	private void initModelFields(UniqueToken uniqueToken, MerkleUniqueToken immutableUniqueToken) {
+		uniqueToken.setCreationTime(immutableUniqueToken.getCreationTime());
+		uniqueToken.setMetadata(immutableUniqueToken.getMetadata());
+		uniqueToken.setOwner(immutableUniqueToken.getOwner().asId());
 	}
 
 	private void alertTokenBackingStoreOfNew(TokenRelationship newRel) {
