@@ -61,7 +61,7 @@ class BaseOperationUsage {
 	private static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 	private static final ByteString CANONICAL_SIG = ByteString.copyFromUtf8(
 			"0123456789012345678901234567890123456789012345678901234567890123");
-	private static final List<Long> CANONICAL_SERIAL_NUMS = LongStream.range(1, 100).boxed().collect(Collectors.toList());
+	private static final List<Long> CANONICAL_SERIAL_NUMS = LongStream.range(1, 10).boxed().collect(Collectors.toList());
 	private static final ByteString CANONICAL_NFT_METADATA = ByteString.copyFromUtf8(
 			"0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
 	private static final SignatureMap ONE_PAIR_SIG_MAP = SignatureMap.newBuilder()
