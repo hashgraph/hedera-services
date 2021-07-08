@@ -151,9 +151,10 @@ public class Token {
 				"Non fungible burn can be invoked only on Non fungible tokens!");
 		validateFalse(serialNumbers.isEmpty(), FAIL_INVALID,
 				"Non fungible burn cannot be invoked with no serial numbers");
+		final var treasuryId = treasury.getId();
 		for (final long serialNum : serialNumbers) {
-			ownershipTracker.add(id, OwnershipTracker.forRemoving(id, serialNum));
-			removedUniqueTokens.add(new UniqueToken(id, serialNum, treasury.getId()));
+			ownershipTracker.add(id, OwnershipTracker.forRemoving(treasuryId, serialNum));
+			removedUniqueTokens.add(new UniqueToken(id, serialNum, treasuryId));
 		}
 		treasury.setOwnedNfts(treasury.getOwnedNfts() - serialNumbers.size());
 		changeSupply(treasuryRelationship, -serialNumbers.size(), FAIL_INVALID);
