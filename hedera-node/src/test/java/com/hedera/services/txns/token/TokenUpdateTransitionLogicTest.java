@@ -46,6 +46,7 @@ import java.util.Optional;
 import java.util.function.Predicate;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CURRENT_TREASURY_STILL_OWNS_NFTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
@@ -382,12 +383,26 @@ class TokenUpdateTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		verify(ledger).unfreeze(newTreasury, target);
-		verify(ledger).grantKyc(newTreasury, target);
-		verify(ledger).getTokenBalance(oldTreasury, target);
-		verify(ledger).doTokenTransfer(target, oldTreasury, newTreasury, oldTreasuryBalance);
-		// and:
 		verify(txnCtx).setStatus(SUCCESS);
+	}
+
+	@Test
+	void rejectsTreasuryUpdateIfNonzeroBalanceForUnique() {
+		// setup:
+		long oldTreasuryBalance = 1;
+		givenValidTxnCtx(true);
+		givenToken(true, true, true);
+		// and:
+		given(ledger.unfreeze(newTreasury, target)).willReturn(OK);
+		given(ledger.grantKyc(newTreasury, target)).willReturn(OK);
+		given(store.update(any(), anyLong())).willReturn(OK);
+		given(ledger.getTokenBalance(oldTreasury, target)).willReturn(oldTreasuryBalance);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(txnCtx).setStatus(CURRENT_TREASURY_STILL_OWNS_NFTS);
 	}
 
 	@Test
@@ -553,6 +568,11 @@ class TokenUpdateTransitionLogicTest {
 	private void givenToken(boolean hasKyc, boolean hasFreeze, boolean isUnique) {
 		given(token.hasKycKey()).willReturn(hasKyc);
 		given(token.hasFreezeKey()).willReturn(hasFreeze);
+		if (isUnique) {
+			given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+		} else {
+			given(token.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
+		}
 	}
 
 	private void givenValidTxnCtx(boolean withNewTreasury) {
