@@ -129,10 +129,21 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						/* HIP-18 */
 						onlyValidCustomFeeScheduleCanBeCreated(),
 						feeCollectorSigningReqsWorkForTokenCreate(),
+						createsFungibleInfiniteByDefault(),
 				}
 		);
 	}
 
+	private HapiApiSpec createsFungibleInfiniteByDefault() {
+		return defaultHapiSpec("CreatesFungibleInfiniteByDefault")
+				.given().when(
+						tokenCreate("DefaultFungible")
+				).then(
+						getTokenInfo("DefaultFungible")
+								.hasTokenType(TokenType.FUNGIBLE_COMMON)
+								.hasSupplyType(TokenSupplyType.INFINITE)
+				);
+	}
 
 	private HapiApiSpec worksAsExpectedWithDefaultTokenId() {
 		return defaultHapiSpec("WorksAsExpectedWithDefaultTokenId")

@@ -34,7 +34,7 @@ public class TokenMintUsage extends TokenTxnUsage<TokenMintUsage> {
 
 	private SubType currentSubType;
 
-	private TokenMintUsage(TransactionBody tokenMintOp, TxnUsageEstimator usageEstimator) {
+	public TokenMintUsage(TransactionBody tokenMintOp, TxnUsageEstimator usageEstimator) {
 		super(tokenMintOp, usageEstimator);
 	}
 

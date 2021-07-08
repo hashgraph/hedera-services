@@ -55,7 +55,7 @@ public class TokenMintResourceUsage implements TxnResourceUsageEstimator {
 		if (subType == SubType.TOKEN_NON_FUNGIBLE_UNIQUE) {
 			final var now = txn.getTransactionID().getTransactionValidStart().getSeconds();
 			final var tokenIfPresent = view.tokenWith(target);
-			final var lifetime = tokenIfPresent.map(token -> token.expiry() - now).orElse(now);
+			final var lifetime = tokenIfPresent.map(token -> Math.max(0L, token.expiry() - now)).orElse(0L);
 			estimate.givenExpectedLifetime(lifetime);
 		}
 		return estimate.get();
