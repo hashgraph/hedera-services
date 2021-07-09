@@ -110,11 +110,9 @@ class TokenBurnResourceUsageTest {
 		verify(usage).givenSubType(SubType.TOKEN_FUNGIBLE_COMMON);
 
 		given(view.tokenType(token)).willReturn(Optional.of(TokenType.NON_FUNGIBLE_UNIQUE));
-		given(usage.givenSerialNumsCount(serialNumsCount)).willReturn(usage);
 		assertEquals(
 				expected,
 				subject.usageGiven(tokenBurnTxn, obj, view));
 		verify(usage).givenSubType(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
-		verify(usage).givenSerialNumsCount(serialNumsCount);
 	}
 }

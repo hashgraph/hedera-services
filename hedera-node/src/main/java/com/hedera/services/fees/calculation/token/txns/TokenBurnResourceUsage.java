@@ -52,10 +52,6 @@ public class TokenBurnResourceUsage implements TxnResourceUsageEstimator {
 		SubType subType = subtypeHelper.determineTokenType(tokenType);
 		var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
 		var estimate = factory.apply(txn, sigUsage).givenSubType(subType);
-		if (subType == SubType.TOKEN_NON_FUNGIBLE_UNIQUE) {
-			final var serialNumsCount = txn.getTokenBurn().getSerialNumbersCount();
-			estimate.givenSerialNumsCount(serialNumsCount);
-		}
 		return estimate.get();
 	}
 }
