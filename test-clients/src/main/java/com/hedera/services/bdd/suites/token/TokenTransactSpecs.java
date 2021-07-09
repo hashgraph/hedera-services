@@ -37,6 +37,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountNftInfos;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -82,28 +83,48 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						balancesChangeOnTokenTransfer(),
-						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
-						senderSigsAreValid(),
-						balancesAreChecked(),
-						duplicateAccountsInTokenTransferRejected(),
-						tokenOnlyTxnsAreAtomic(),
-						tokenPlusHbarTxnsAreAtomic(),
-						nonZeroTransfersRejected(),
-						prechecksWork(),
-						missingEntitiesRejected(),
-						allRequiredSigsAreChecked(),
-						uniqueTokenTxnAccountBalance(),
-						uniqueTokenTxnWithNoAssociation(),
-						uniqueTokenTxnWithFrozenAccount(),
-						uniqueTokenTxnWithSenderNotSigned(),
-						uniqueTokenTxnWithReceiverNotSigned(),
-						uniqueTokenTxnsAreAtomic(),
-						uniqueTokenDeletedTxn()
+//						balancesChangeOnTokenTransfer(),
+//						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
+//						senderSigsAreValid(),
+//						balancesAreChecked(),
+//						duplicateAccountsInTokenTransferRejected(),
+//						tokenOnlyTxnsAreAtomic(),
+//						tokenPlusHbarTxnsAreAtomic(),
+//						nonZeroTransfersRejected(),
+//						prechecksWork(),
+//						missingEntitiesRejected(),
+//						allRequiredSigsAreChecked(),
+//						uniqueTokenTxnAccountBalance(),
+//						uniqueTokenTxnWithNoAssociation(),
+//						uniqueTokenTxnWithFrozenAccount(),
+//						uniqueTokenTxnWithSenderNotSigned(),
+//						uniqueTokenTxnWithReceiverNotSigned(),
+//						uniqueTokenTxnsAreAtomic(),
+//						uniqueTokenDeletedTxn(),
+						
 				}
 		);
 	}
-
+	public HapiApiSpec cannotSendFungibleToDissociatedContract() {
+		final var theContract = "tbd";
+		return defaultHapiSpec("CannotSendFungibleToDissociatedContract")
+				.given(
+						contractCreate(theContract),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(A_TOKEN)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(1_234_567L)
+								.treasury(TOKEN_TREASURY)
+				).when(
+						tokenDelete(A_TOKEN)
+				).then(
+						cryptoTransfer(
+								movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+						)
+								.signedBy("signingKeyTreasury", "signingKeyFirstUser", DEFAULT_PAYER)
+								.hasKnownStatus(TOKEN_WAS_DELETED)
+				);
+	}
 	private HapiApiSpec prechecksWork() {
 		return defaultHapiSpec("PrechecksWork")
 				.given(
