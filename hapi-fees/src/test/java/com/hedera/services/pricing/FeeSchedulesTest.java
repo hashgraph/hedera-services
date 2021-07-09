@@ -195,12 +195,9 @@ class FeeSchedulesTest {
 		// System.out.println(actualBasePrice);
 
 		// then:
-		assertEquals(expectedTotalBasePrice.doubleValue(), actualBasePrice.doubleValue());
+		assertEquals(expectedTotalBasePrice.doubleValue(), actualBasePrice.doubleValue(), ALLOWED_DEVIATION);
 		assertEquals(desired, jsonRepr);
 	}
-
-
-
 
 	@Test
 	void computesExpectedPriceForFeeScheduleUpdate() throws IOException {

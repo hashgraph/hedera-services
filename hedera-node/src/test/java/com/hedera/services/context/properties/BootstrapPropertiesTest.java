@@ -70,7 +70,7 @@ class BootstrapPropertiesTest {
 			entry("accounts.addressBookAdmin", 55L),
 			entry("balances.exportDir.path", "/opt/hgcapp/accountBalances/"),
 			entry("balances.exportEnabled", true),
-			entry("balances.exportPeriodSecs", 600),
+			entry("balances.exportPeriodSecs", 900),
 			entry("balances.exportTokenBalances", true),
 			entry("balances.nodeBalanceWarningThreshold", 0L),
 			entry("accounts.exchangeRatesAdmin", 57L),

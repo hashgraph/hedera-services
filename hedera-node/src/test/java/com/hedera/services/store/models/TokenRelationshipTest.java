@@ -23,6 +23,8 @@ package com.hedera.services.store.models;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenType;
+import com.hedera.services.txns.validation.ContextOptionValidator;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,26 +35,36 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NO
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 class TokenRelationshipTest {
 	private final Id tokenId = new Id(0, 0, 1234);
 	private final Id accountId = new Id(1, 0, 1234);
+	private final Id treasuryId = new Id(1, 0, 4321);
 	private final long balance = 1_234L;
 	private final JKey kycKey = TxnHandlingScenario.TOKEN_KYC_KT.asJKeyUnchecked();
 	private final JKey freezeKey = TxnHandlingScenario.TOKEN_FREEZE_KT.asJKeyUnchecked();
 
 	private Token token;
 	private Account account;
+	private OptionValidator validator;
 
 	private TokenRelationship subject;
+	TokenRelationship treasuryRealtionship;
 
 	@BeforeEach
 	void setUp() {
 		token = new Token(tokenId);
 		account = new Account(accountId);
+		Account treasury = new Account(treasuryId);
+		validator = mock(ContextOptionValidator.class);
+
 
 		subject = new TokenRelationship(token, account);
+		treasuryRealtionship = new TokenRelationship(token, treasury);
+		token.setTreasury(treasury);
 		subject.initBalance(balance);
+		treasuryRealtionship.setBalance(balance);
 	}
 
 	@Test
@@ -60,7 +72,7 @@ class TokenRelationshipTest {
 		// given:
 		final var desired = "TokenRelationship{notYetPersisted=true, " +
 				"account=Account{id=Id{shard=1, realm=0, num=1234}, expiry=0, balance=0, deleted=false, " +
-				"tokens=<N/A>}, token=Token{id=Id{shard=0, realm=0, num=1234}, type=null, treasury=null, " +
+				"tokens=<N/A>}, token=Token{id=Id{shard=0, realm=0, num=1234}, type=null, treasury=Account{id=Id{shard=1, realm=0, num=4321}, expiry=0, balance=0, deleted=false, tokens=<N/A>}, " +
 				"autoRenewAccount=null, " +
 				"kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0}, " +
 				"balance=1234, " +

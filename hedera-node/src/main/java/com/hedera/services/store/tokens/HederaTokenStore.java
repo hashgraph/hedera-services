@@ -44,7 +44,6 @@ import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -83,7 +82,6 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
@@ -117,7 +115,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -229,50 +226,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			}
 			hederaLedger.setAssociatedTokens(aId, accountTokens);
 			return validity;
-		});
-	}
-
-	@Override
-	public ResponseCodeEnum dissociate(AccountID aId, List<TokenID> targetTokens) {
-		return fullySanityChecked(false, aId, targetTokens, (account, tokenIds) -> {
-			var accountTokens = hederaLedger.getAssociatedTokens(aId);
-			for (TokenID tId : tokenIds) {
-				if (!accountTokens.includes(tId)) {
-					return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-				}
-				if (!tokens.get().containsKey(fromTokenId(tId))) {
-					/* Expired tokens that have been removed from state (either because they
-					were also deleted, or their grace period ended) should be dissociated
-					with no additional checks. */
-					continue;
-				}
-				var token = get(tId);
-				var isTokenDeleted = token.isDeleted();
-				/* Once a token is deleted, this always returns false. */
-				if (isTreasuryForToken(aId, tId)) {
-					return ACCOUNT_IS_TREASURY;
-				}
-				var relationship = asTokenRel(aId, tId);
-				if (!isTokenDeleted && (boolean) tokenRelsLedger.get(relationship, IS_FROZEN)) {
-					return ACCOUNT_FROZEN_FOR_TOKEN;
-				}
-				long balance = (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
-				if (balance > 0) {
-					var expiry = Timestamp.newBuilder().setSeconds(token.expiry()).build();
-					var isTokenExpired = !validator.isValidExpiry(expiry);
-					if (!isTokenDeleted && !isTokenExpired) {
-						return TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
-					}
-					if (!isTokenDeleted) {
-						/* Must be expired; return balance to treasury account. */
-						hederaLedger.doTokenTransfer(tId, aId, token.treasury().toGrpcAccountId(), balance);
-					}
-				}
-			}
-			accountTokens.dissociateAll(new HashSet<>(tokenIds));
-			tokenIds.forEach(id -> tokenRelsLedger.destroy(asTokenRel(aId, id)));
-			hederaLedger.setAssociatedTokens(aId, accountTokens);
-			return OK;
 		});
 	}
 

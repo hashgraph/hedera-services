@@ -131,7 +131,7 @@ public class TypedTokenStore {
 	 * been validated as usable.
 	 *
 	 * <b>IMPORTANT:</b> Changes to the returned model are not automatically persisted
-	 * to state! The altered model must be passed to {@link TypedTokenStore#persistTokenRelationship(TokenRelationship)}
+	 * to state! The altered model must be passed to {@link TypedTokenStore#persistTokenRelationships(List)}
 	 * in order for its changes to be applied to the Swirlds state, and included in the
 	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
 	 *
@@ -164,34 +164,35 @@ public class TypedTokenStore {
 	}
 
 	/**
-	 * Persists the given token relationship to the Swirlds state, inviting the injected
+	 * Persists the given token relationships to the Swirlds state, inviting the injected
 	 * {@link TransactionRecordService} to update the {@link com.hedera.services.state.submerkle.ExpirableTxnRecord}
 	 * of the active transaction with these changes.
 	 *
-	 * @param tokenRelationship
-	 * 		the token relationship to save
+	 * @param tokenRelationships
+	 * 		the token relationships to save
 	 */
-	public void persistTokenRelationship(TokenRelationship tokenRelationship) {
-		final var tokenId = tokenRelationship.getToken().getId();
-		final var accountId = tokenRelationship.getAccount().getId();
-		final var key = new MerkleEntityAssociation(
-				accountId.getShard(), accountId.getRealm(), accountId.getNum(),
-				tokenId.getShard(), tokenId.getRealm(), tokenId.getNum());
-		final var currentTokenRels = tokenRels.get();
+	public void persistTokenRelationships(List<TokenRelationship> tokenRelationships) {
+		for(var tokenRelationship : tokenRelationships) {
+			final var tokenId = tokenRelationship.getToken().getId();
+			final var accountId = tokenRelationship.getAccount().getId();
+			final var key = new MerkleEntityAssociation(
+					accountId.getShard(), accountId.getRealm(), accountId.getNum(),
+					tokenId.getShard(), tokenId.getRealm(), tokenId.getNum());
+			final var currentTokenRels = tokenRels.get();
 
-		final var isNewRel = tokenRelationship.isNotYetPersisted();
-		final var mutableTokenRel = isNewRel ? new MerkleTokenRelStatus() : currentTokenRels.getForModify(key);
-		mutableTokenRel.setBalance(tokenRelationship.getBalance());
-		mutableTokenRel.setFrozen(tokenRelationship.isFrozen());
-		mutableTokenRel.setKycGranted(tokenRelationship.isKycGranted());
+			final var isNewRel = tokenRelationship.isNotYetPersisted();
+			final var mutableTokenRel = isNewRel ? new MerkleTokenRelStatus() : currentTokenRels.getForModify(key);
+			mutableTokenRel.setBalance(tokenRelationship.getBalance());
+			mutableTokenRel.setFrozen(tokenRelationship.isFrozen());
+			mutableTokenRel.setKycGranted(tokenRelationship.isKycGranted());
 
-		if (isNewRel) {
-			currentTokenRels.put(key, mutableTokenRel);
-			/* Only done for interoperability with legacy HTS code during refactor */
-			alertTokenBackingStoreOfNew(tokenRelationship);
+			if (isNewRel) {
+				currentTokenRels.put(key, mutableTokenRel);
+				/* Only done for interoperability with legacy HTS code during refactor */
+				alertTokenBackingStoreOfNew(tokenRelationship);
+			}
 		}
-
-		transactionRecordService.includeChangesToTokenRel(tokenRelationship);
+		transactionRecordService.includeChangesToTokenRels(tokenRelationships);
 	}
 
 	/**
@@ -260,6 +261,28 @@ public class TypedTokenStore {
 			loadedUniqueTokens.put(serialNumber, uniqueToken);
 		}
 		token.setLoadedUniqueTokens(loadedUniqueTokens);
+	}
+
+	/**
+	 * Use carefully.
+	 * Returns a model of the requested token which may be marked as deleted.
+	 * @param id
+	 * 		the token to load
+	 * @return a usable model of the token
+	 * @throws 	InvalidTransactionException
+	 * 		if the requested token is missing
+	 */
+	public Token loadPossiblyDeletedToken(Id id) {
+		final var key = new MerkleEntityId(id.getShard(), id.getRealm(), id.getNum());
+		final var merkleToken = tokens.get().get(key);
+
+		validateTrue(merkleToken != null, INVALID_TOKEN_ID);
+
+		final var token = new Token(id);
+		initModelAccounts(token, merkleToken.treasury(), merkleToken.autoRenewAccount());
+		initModelFields(token, merkleToken);
+
+		return token;
 	}
 
 	/**
@@ -351,6 +374,8 @@ public class TypedTokenStore {
 		token.setFrozenByDefault(immutableToken.accountsAreFrozenByDefault());
 		token.setType(immutableToken.tokenType());
 		token.setLastUsedSerialNumber(immutableToken.getLastUsedSerialNumber());
+		token.setIsDeleted(immutableToken.isDeleted());
+		token.setExpiry(immutableToken.expiry());
 	}
 
 	private void initModelFields(UniqueToken uniqueToken, MerkleUniqueToken immutableUniqueToken) {

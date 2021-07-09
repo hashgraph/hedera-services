@@ -23,6 +23,7 @@ package com.hedera.services.pricing;
 import com.google.protobuf.ByteString;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
+import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.consensus.ConsensusOpsUsage;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.state.UsageAccumulator;
@@ -48,6 +49,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.lang.Long;
 
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+
+import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
 /**
@@ -136,7 +140,9 @@ class BaseOperationUsage {
 						.addMetadata(CANONICAL_NFT_METADATA))
 				.build();
 
-		final var baseUsage = TokenMintUsage.newEstimate(canonicalTxn, SINGLE_SIG_USAGE)
+		final var helper = new TxnUsageEstimator(SINGLE_SIG_USAGE, canonicalTxn, ESTIMATOR_UTILS);
+		final var estimator = new TokenMintUsage(canonicalTxn, helper);
+		final var baseUsage = estimator
 				.givenSubType(TOKEN_NON_FUNGIBLE_UNIQUE)
 				.givenExpectedLifetime(THREE_MONTHS_IN_SECONDS)
 				.get();

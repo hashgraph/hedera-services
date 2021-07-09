@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -71,6 +72,11 @@ class TokenMintUsageTest {
 		given(factory.get(any(), any(), any())).willReturn(base);
 
 		TxnUsage.estimatorFactory = factory;
+	}
+
+	@AfterEach
+	void cleanup() {
+		TxnUsage.estimatorFactory = TxnUsageEstimator::new;
 	}
 
 	@Test
