@@ -658,12 +658,22 @@ public class SuiteRunner {
 		}
 	}
 
-	@SafeVarargs
-	public static <T> Supplier<T[]> aof(Supplier<T>... items) {
-		return () -> (T[]) List.of(items)
-				.stream()
-				.map(Supplier::get)
-				.toArray();
+//	@SafeVarargs
+//	public static <T> Supplier<T[]> aof(Supplier<T>... items) {
+//		return () -> (T[]) List.of(items)
+//				.stream()
+//				.map(Supplier::get)
+//				.toArray();
+//	}
+
+	public static Supplier<HapiApiSuite[]> aof(Supplier<HapiApiSuite>... items) {
+		return () -> {
+			HapiApiSuite[] suites = new HapiApiSuite[items.length];
+			for(int i = 0; i < items.length; i++) {
+				suites[i] = items[i].get();
+			};
+			return suites;
+		};
 	}
 
 	public static void setPayerId(String payerId) {
