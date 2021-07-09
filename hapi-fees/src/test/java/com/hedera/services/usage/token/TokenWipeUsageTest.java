@@ -110,17 +110,10 @@ class TokenWipeUsageTest {
 		assertEquals(A_USAGES_MATRIX, actual);
 
 		InOrder inOrder = Mockito.inOrder(base);
-		inOrder.verify(base, times(2)).addBpt((long) op.getSerialNumbersCount() * LONG_SIZE);
+		inOrder.verify(base).addBpt((long) op.getSerialNumbersCount() * LONG_SIZE);
 		inOrder.verify(base)
 				.addBpt(BASIC_ENTITY_ID_SIZE);
 	}
-
-	@Test
-	void givenSerialNumsCountWorks() {
-		subject = TokenWipeUsage.newEstimate(txn, sigUsage).givenSerialNumsCount(2);
-		assertEquals(subject, subject.self());
-	}
-
 
 	@Test
 	void selfTest() {

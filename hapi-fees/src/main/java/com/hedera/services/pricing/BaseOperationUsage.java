@@ -45,14 +45,12 @@ import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.lang.Long;
 
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
-import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
 /**
  * Provides the resource usage of the "base configuration" for each Hedera operation.
@@ -160,7 +158,9 @@ class BaseOperationUsage {
 						.addAllSerialNumbers(serialNums))
 						.build();
 
-		final var baseUsage = TokenWipeUsage.newEstimate(canonicalTxn, SINGLE_SIG_USAGE)
+		final var helper = new TxnUsageEstimator(SINGLE_SIG_USAGE, canonicalTxn, ESTIMATOR_UTILS);
+		final var estimator = new TokenWipeUsage(canonicalTxn, helper);
+		final var baseUsage = estimator
 				.givenSubType(TOKEN_NON_FUNGIBLE_UNIQUE)
 				.get();
 

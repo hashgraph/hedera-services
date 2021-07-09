@@ -176,8 +176,8 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 				.given(
 						newKeyNamed(SUPPLY_KEY),
 						newKeyNamed(wipeKey),
-						cryptoCreate(civilian),
-						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(civilian).key(wipeKey),
+						cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS).key(wipeKey),
 						tokenCreate(uniqueToken)
 								.tokenType(NON_FUNGIBLE_UNIQUE)
 								.supplyType(TokenSupplyType.INFINITE)
@@ -187,12 +187,15 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY),
 						tokenAssociate(civilian, uniqueToken),
 						mintToken(uniqueToken,
-								List.of(ByteString.copyFromUtf8("token_to_wipe2"))),
+								List.of(ByteString.copyFromUtf8("token_to_wipe"))),
 						cryptoTransfer(movingUnique(1L, uniqueToken)
 								.between(TOKEN_TREASURY, civilian))
 				)
 				.when(
 						wipeTokenAccount(uniqueToken, civilian, List.of(1L))
+								.payingWith(TOKEN_TREASURY)
+								.fee(ONE_HBAR)
+								.blankMemo()
 								.via(wipeTxn)
 				).then(
 						validateChargedUsdWithin(wipeTxn, expectedNftWipePriceUsd, 0.01)

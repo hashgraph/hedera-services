@@ -26,7 +26,6 @@ import com.hedera.services.fees.calculation.utils.ResourceUsageSubtypeHelper;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.token.TokenWipeUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
@@ -49,10 +48,6 @@ public class TokenWipeResourceUsage implements TxnResourceUsageEstimator {
 		final var subType = subtypeHelper.determineTokenType(tokenType);
 		final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
 		final var estimate = factory.apply(txn, sigUsage).givenSubType(subType);
-		if(subType == SubType.TOKEN_NON_FUNGIBLE_UNIQUE) {
-			final var serialNumCount = txn.getTokenWipe().getSerialNumbersCount();
-			estimate.givenSerialNumsCount(serialNumCount);
-		}
 		return estimate.get();
 	}
 }
