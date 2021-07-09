@@ -38,6 +38,7 @@ import java.util.Map;
 import static com.hedera.services.pricing.FeeSchedules.FEE_SCHEDULE_MULTIPLIER;
 import static com.hedera.services.pricing.FeeSchedules.USD_TO_TINYCENTS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
@@ -128,6 +129,78 @@ class FeeSchedulesTest {
 //		assertEquals(expectedTotalBasePrice.doubleValue(), actualBasePrice.doubleValue(), ALLOWED_DEVIATION);
 //		assertEquals(desired, jsonRepr);
 	}
+
+
+	@Test
+	void computesExpectedPriceForUniqueTokenWipe() throws IOException {
+		// setup:
+		final var canonicalTotalPricesInUsd = assetsLoader.loadCanonicalPrices();
+		final var expectedTotalBasePrice = canonicalTotalPricesInUsd.get(TokenAccountWipe).get(TOKEN_NON_FUNGIBLE_UNIQUE);
+		final var desired = "{\n" +
+				"  \"transactionFeeSchedule\" : {\n" +
+				"    \"hederaFunctionality\" : \"TokenAccountWipe\",\n" +
+				"    \"fees\" : [ {\n" +
+				"      \"subType\" : \"TOKEN_NON_FUNGIBLE_UNIQUE\",\n" +
+				"      \"nodedata\" : {\n" +
+				"        \"constant\" : 75899222,\n" +
+				"        \"bpt\" : 121340,\n" +
+				"        \"vpt\" : 303350278,\n" +
+				"        \"rbh\" : 81,\n" +
+				"        \"sbh\" : 6,\n" +
+				"        \"gas\" : 809,\n" +
+				"        \"bpr\" : 121340,\n" +
+				"        \"sbpr\" : 3034,\n" +
+				"        \"min\" : 0,\n" +
+				"        \"max\" : 1000000000000000\n" +
+				"      },\n" +
+				"      \"networkdata\" : {\n" +
+				"        \"constant\" : 1517984440,\n" +
+				"        \"bpt\" : 2426802,\n" +
+				"        \"vpt\" : 6067005568,\n" +
+				"        \"rbh\" : 1618,\n" +
+				"        \"sbh\" : 121,\n" +
+				"        \"gas\" : 16179,\n" +
+				"        \"bpr\" : 2426802,\n" +
+				"        \"sbpr\" : 60670,\n" +
+				"        \"min\" : 0,\n" +
+				"        \"max\" : 1000000000000000\n" +
+				"      },\n" +
+				"      \"servicedata\" : {\n" +
+				"        \"constant\" : 1517984440,\n" +
+				"        \"bpt\" : 2426802,\n" +
+				"        \"vpt\" : 6067005568,\n" +
+				"        \"rbh\" : 1618,\n" +
+				"        \"sbh\" : 121,\n" +
+				"        \"gas\" : 16179,\n" +
+				"        \"bpr\" : 2426802,\n" +
+				"        \"sbpr\" : 60670,\n" +
+				"        \"min\" : 0,\n" +
+				"        \"max\" : 1000000000000000\n" +
+				"      }\n" +
+				"    } ]\n" +
+				"  }\n" +
+				"}";
+
+		// given:
+		Map<ResourceProvider, Map<UsableResource, Long>> computedPrices =
+				subject.canonicalPricesFor(TokenAccountWipe, TOKEN_NON_FUNGIBLE_UNIQUE);
+		// and:
+		final var canonicalUsage = baseOperationUsage.baseUsageFor(TokenAccountWipe, TOKEN_NON_FUNGIBLE_UNIQUE);
+		final var jsonRepr = reprAsSingleFeeScheduleEntry(TokenAccountWipe, TOKEN_NON_FUNGIBLE_UNIQUE, computedPrices);
+
+		// System.out.println(jsonRepr);
+
+		// when:
+		final var actualBasePrice = feeInUsd(computedPrices, canonicalUsage);
+		// System.out.println(actualBasePrice);
+
+		// then:
+		assertEquals(expectedTotalBasePrice.doubleValue(), actualBasePrice.doubleValue());
+		assertEquals(desired, jsonRepr);
+	}
+
+
+
 
 	@Test
 	void computesExpectedPriceForFeeScheduleUpdate() throws IOException {

@@ -131,7 +131,8 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 				getAccountNftsInfoFailsWithDeletedAccount(),
 				getAccountNftsInfoFailsWithInexistentAccount(),
 
-				baseUniqueMintOperationIsChargedExpectedFee()
+				baseUniqueMintOperationIsChargedExpectedFee(),
+				baseUniqueWipeOperationIsChargedExpectedFee()
 		);
 	}
 
@@ -164,6 +165,42 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 						validateChargedUsdWithin(baseTxn, expectedNftMintPriceUsd, 0.01)
 				);
 	}
+
+
+	private HapiApiSpec baseUniqueWipeOperationIsChargedExpectedFee() {
+		final var uniqueToken = "nftType";
+		final var wipeKey = "wipeKey";
+		final var civilian = "civilian";
+		final var wipeTxn = "wipeTxn";
+		final var expectedNftWipePriceUsd = 0.001;
+
+		return defaultHapiSpec("BaseUniqueWipeOperationIsChargedExpectedFee")
+				.given(
+						newKeyNamed(SUPPLY_KEY),
+						newKeyNamed(wipeKey),
+						cryptoCreate(civilian),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(uniqueToken)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyType(TokenSupplyType.INFINITE)
+								.initialSupply(0L)
+								.supplyKey(SUPPLY_KEY)
+								.wipeKey(wipeKey)
+								.treasury(TOKEN_TREASURY),
+						tokenAssociate(civilian, uniqueToken),
+						mintToken(uniqueToken,
+								List.of(ByteString.copyFromUtf8("token_to_wipe2"))),
+						cryptoTransfer(movingUnique(1L, uniqueToken)
+								.between(TOKEN_TREASURY, civilian))
+				)
+				.when(
+						wipeTokenAccount(uniqueToken, civilian, List.of(1L))
+								.via(wipeTxn)
+				).then(
+						validateChargedUsdWithin(wipeTxn, expectedNftWipePriceUsd, 0.01)
+				);
+	}
+
 
 	private HapiApiSpec associatesNftAsExpected() {
 		return defaultHapiSpec("AssociatesNftAsExpected")

@@ -31,6 +31,7 @@ import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 
 public class TokenWipeUsage extends TokenTxnUsage<TokenWipeUsage> {
 	private SubType currentSubType;
+	private int serialNumsCount = 0;
 
 	private TokenWipeUsage(TransactionBody tokenWipeOp, TxnUsageEstimator usageEstimator) {
 		super(tokenWipeOp, usageEstimator);
@@ -45,6 +46,11 @@ public class TokenWipeUsage extends TokenTxnUsage<TokenWipeUsage> {
 		return this;
 	}
 
+	public TokenWipeUsage givenSerialNumsCount(final int serialNumsCount) {
+		this.serialNumsCount = serialNumsCount;
+		return this;
+	}
+
 	@Override
 	TokenWipeUsage self() {
 		return this;
@@ -54,7 +60,9 @@ public class TokenWipeUsage extends TokenTxnUsage<TokenWipeUsage> {
 		var op = this.op.getTokenWipe();
 		if (currentSubType == SubType.TOKEN_NON_FUNGIBLE_UNIQUE) {
 			usageEstimator.addBpt((long) op.getSerialNumbersCount() * LONG_SIZE);
-			addTokenTransfersRecordRb(1, 0, op.getSerialNumbersCount());
+			serialNumsCount = op.getSerialNumbersCount();
+			addEntityBpt();
+			addTokenTransfersRecordRb(1, 0, serialNumsCount);
 		} else if (currentSubType == SubType.TOKEN_FUNGIBLE_COMMON) {
 			addAmountBpt();
 			addTokenTransfersRecordRb(1, 1, 0);

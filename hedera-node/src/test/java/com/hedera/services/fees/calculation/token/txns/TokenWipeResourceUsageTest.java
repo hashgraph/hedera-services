@@ -40,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.verify;
@@ -109,9 +110,11 @@ class TokenWipeResourceUsageTest {
 		verify(usage).givenSubType(SubType.TOKEN_FUNGIBLE_COMMON);
 
 		given(view.tokenType(token)).willReturn(Optional.of(TokenType.NON_FUNGIBLE_UNIQUE));
+		given(usage.givenSerialNumsCount(anyInt())).willReturn(usage);
 		assertEquals(
 				expected,
 				subject.usageGiven(tokenWipeTxn, obj, view));
 		verify(usage).givenSubType(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
+		verify(usage).givenSerialNumsCount(anyInt());
 	}
 }

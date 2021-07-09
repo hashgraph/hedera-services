@@ -28,8 +28,10 @@ import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.TokenMintUsage;
 import com.hedera.services.usage.token.TokenOpsUsage;
+import com.hedera.services.usage.token.TokenWipeUsage;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -39,9 +41,12 @@ import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.lang.Long;
 
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
@@ -68,6 +73,8 @@ class BaseOperationUsage {
 			1, ONE_PAIR_SIG_MAP.getSerializedSize(), 1
 	);
 	private static final BaseTransactionMeta NO_MEMO_AND_NO_EXPLICIT_XFERS = new BaseTransactionMeta(0, 0);
+
+	private static final  List<Long> serialNums = List.of(9L);
 
 	private static final TokenOpsUsage TOKEN_OPS_USAGE = new TokenOpsUsage();
 	private static final ConsensusOpsUsage CONSENSUS_OPS_USAGE = new ConsensusOpsUsage();
@@ -104,6 +111,13 @@ class BaseOperationUsage {
 					case DEFAULT:
 						throw new IllegalArgumentException("Canonical usage unknown");
 				}
+			case TokenAccountWipe:
+				switch (type) {
+					case TOKEN_NON_FUNGIBLE_UNIQUE:
+						return uniqueTokenWipe();
+					case DEFAULT:
+						throw new IllegalArgumentException("Canonical usage unknown");
+				}
 			case TokenFeeScheduleUpdate:
 				return feeScheduleUpdate();
 			default:
@@ -126,6 +140,24 @@ class BaseOperationUsage {
 				.givenSubType(TOKEN_NON_FUNGIBLE_UNIQUE)
 				.givenExpectedLifetime(THREE_MONTHS_IN_SECONDS)
 				.get();
+		return UsageAccumulator.fromGrpc(baseUsage);
+	}
+
+
+	private UsageAccumulator uniqueTokenWipe() {
+		final var target = TokenID.newBuilder().setTokenNum(1_234).build();
+		final var targetAcct = AccountID.newBuilder().setAccountNum(5_678).build();
+		final var canonicalTxn = TransactionBody.newBuilder()
+				.setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
+						.setToken(target)
+						.setAccount(targetAcct)
+						.addAllSerialNumbers(serialNums))
+						.build();
+
+		final var baseUsage = TokenWipeUsage.newEstimate(canonicalTxn, SINGLE_SIG_USAGE)
+				.givenSubType(TOKEN_NON_FUNGIBLE_UNIQUE)
+				.get();
+
 		return UsageAccumulator.fromGrpc(baseUsage);
 	}
 
