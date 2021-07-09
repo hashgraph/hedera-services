@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class OwnershipTrackerTest {
 
@@ -81,13 +80,16 @@ class OwnershipTrackerTest {
 
 	@Test
 	void compareChanges() {
-		final var change1 = new OwnershipTracker.Change(treasury, account, 7L);
-		final var change2 = new OwnershipTracker.Change(treasury, account, 7L);
+		final var change = new OwnershipTracker.Change(treasury, account, 7L);
+		final var otherChange = new OwnershipTracker.Change(treasury, account, 7L);
+		final var refChange = change;
 
-		assertNotEquals(null, change1);
-		assertFalse(change1.equals(treasury));
-		assertEquals(change1, change1);
-		assertEquals(change1, change2);
-		assertEquals(change1.hashCode(), change2.hashCode());
+		boolean result = change.equals(null);
+		assertFalse(result);
+		result = change.equals(treasury);
+		assertFalse(result);
+		assertEquals(change, refChange);
+		assertEquals(change, otherChange);
+		assertEquals(change.hashCode(), otherChange.hashCode());
 	}
 }
