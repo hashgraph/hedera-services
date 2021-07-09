@@ -137,13 +137,13 @@ class TypedTokenStoreTest {
 		modelTokenRel.setFrozen(!frozen);
 		modelTokenRel.setKycGranted(!kycGranted);
 		// and:
-		subject.persistTokenRelationship(modelTokenRel);
+		subject.persistTokenRelationships(List.of(modelTokenRel));
 
 		// then:
 		assertEquals(expectedReplacementTokenRel, miscTokenMerkleRel);
 		verify(tokenRels, never()).replace(miscTokenRelId, expectedReplacementTokenRel);
 		// and:
-		verify(transactionRecordService).includeChangesToTokenRel(modelTokenRel);
+		verify(transactionRecordService).includeChangesToTokenRels(List.of(modelTokenRel));
 	}
 
 	@Test
@@ -165,12 +165,12 @@ class TypedTokenStoreTest {
 		newTokenRel.setKycGranted(true);
 		newTokenRel.setBalance(balance * 2);
 		// and:
-		subject.persistTokenRelationship(newTokenRel);
+		subject.persistTokenRelationships(List.of(newTokenRel));
 
 		// then:
 		verify(tokenRels).put(miscTokenRelId, expectedNewTokenRel);
 		// and:
-		verify(transactionRecordService).includeChangesToTokenRel(newTokenRel);
+		verify(transactionRecordService).includeChangesToTokenRels(List.of(newTokenRel));
 	}
 
 	/* --- Token loading --- */
@@ -203,6 +203,21 @@ class TypedTokenStoreTest {
 	}
 
 	@Test
+	void failsLoadingMissingTokenWithloadPossiblyDeletedToken() {
+		assertloadPossiblyDeletedTokenFailsWith(INVALID_TOKEN_ID);
+	}
+
+	@Test
+	void successfullyLoadDeletedToken() {
+		givenToken(merkleTokenId, merkleToken);
+		merkleToken.setDeleted(true);
+
+		var deltedToken = subject.loadPossiblyDeletedToken(tokenId);
+
+		assertEquals(token.getId(), deltedToken.getId());
+	}
+
+	@Test
 	void failsLoadingDeletedToken() {
 		givenToken(merkleTokenId, merkleToken);
 		merkleToken.setDeleted(true);
@@ -221,7 +236,7 @@ class TypedTokenStoreTest {
 		subject.loadUniqueTokens(aToken, serialNumbers);
 
 		assertEquals(2, aToken.getLoadedUniqueTokens().size());
-		
+
 		given(uniqueTokens.get(any())).willReturn(null);
 		assertThrows(InvalidTransactionException.class, () -> subject.loadUniqueTokens(aToken, serialNumbers));
 	}
@@ -267,6 +282,8 @@ class TypedTokenStoreTest {
 		modelToken.setTreasury(autoRenewAccount);
 		modelToken.setFrozenByDefault(!freezeDefault);
 		modelToken.mintedUniqueTokens().add(mintedToken);
+		modelToken.setIsDeleted(false);
+		modelToken.setExpiry(expiry);
 		modelToken.removedUniqueTokens().add(burnedToken);
 		// and:
 		subject.persistToken(modelToken);
@@ -307,6 +324,11 @@ class TypedTokenStoreTest {
 		assertEquals(status, ex.getResponseCode());
 	}
 
+	private void assertloadPossiblyDeletedTokenFailsWith(ResponseCodeEnum status) {
+		var ex = assertThrows(InvalidTransactionException.class, () -> subject.loadPossiblyDeletedToken(tokenId));
+		assertEquals(status, ex.getResponseCode());
+	}
+
 	private void assertMiscRelLoadFailsWith(ResponseCodeEnum status) {
 		var ex = assertThrows(InvalidTransactionException.class,
 				() -> subject.loadTokenRelationship(token, miscAccount));
@@ -331,6 +353,8 @@ class TypedTokenStoreTest {
 		token.setSupplyKey(supplyKey);
 		token.setFreezeKey(freezeKey);
 		token.setFrozenByDefault(freezeDefault);
+		token.setIsDeleted(false);
+		token.setExpiry(expiry);
 	}
 
 	private void setupTokenRel() {

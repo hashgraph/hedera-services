@@ -107,20 +107,21 @@ class BaseOperationUsage {
 					case TOKEN_NON_FUNGIBLE_UNIQUE:
 						return uniqueTokenMint();
 					case DEFAULT:
-						throw new IllegalArgumentException("Canonical usage unknown");
+						break;
 				}
+				break;
 			case TokenBurn:
 				switch (type) {
 					case TOKEN_NON_FUNGIBLE_UNIQUE:
 						return uniqueTokenBurn();
 					case DEFAULT:
-						throw new IllegalArgumentException("Canonical usage unknown");
+						break;
 				}
+				break;
 			case TokenFeeScheduleUpdate:
 				return feeScheduleUpdate();
 			default:
-				throw new IllegalArgumentException("Canonical usage unknown");
-
+				break;
 		}
 
 		throw new IllegalArgumentException("Canonical usage unknown");
