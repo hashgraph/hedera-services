@@ -54,6 +54,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -124,8 +125,9 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.blankMemo()
 								.payingWith(sender)
 								.via(htsXferTxn),
-						cryptoTransfer(moving(1, nonFungibleToken).between(sender, receiver))
+						cryptoTransfer(movingUnique(1, nonFungibleToken).between(sender, receiver))
 								.blankMemo()
+								.fee(ONE_HBAR)
 								.payingWith(sender)
 								.via(nftXferTxn)
 				)
