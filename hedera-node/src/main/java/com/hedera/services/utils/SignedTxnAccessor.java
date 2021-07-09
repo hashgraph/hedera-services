@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -147,6 +148,16 @@ public class SignedTxnAccessor implements TxnAccessor {
 			function = functionExtractor.apply(getTxn());
 		}
 		return function;
+	}
+
+	@Override
+	public SubType getSubType() {
+		if(getFunction() == CryptoTransfer) {
+			if(xferUsageMeta.getNumNftOwnershipChanges() != 0) {
+				return SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+			}
+		}
+		return SubType.DEFAULT;
 	}
 
 	@Override
@@ -283,12 +294,14 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private void setXferUsageMeta() {
 		var totalTokensInvolved = 0;
 		var totalTokenTransfers = 0;
+		var numNftOwnershipChanges = 0;
 		final var op = txn.getCryptoTransfer();
 		for (var tokenTransfers : op.getTokenTransfersList()) {
 			totalTokensInvolved++;
 			totalTokenTransfers += tokenTransfers.getTransfersCount();
+			numNftOwnershipChanges += tokenTransfers.getNftTransfersCount();
 		}
-		xferUsageMeta = new CryptoTransferMeta(1, totalTokensInvolved, totalTokenTransfers);
+		xferUsageMeta = new CryptoTransferMeta(1, totalTokensInvolved, totalTokenTransfers, numNftOwnershipChanges);
 	}
 
 	private void setSubmitUsageMeta() {

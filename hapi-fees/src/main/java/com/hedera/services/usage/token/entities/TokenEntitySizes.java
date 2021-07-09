@@ -22,7 +22,6 @@ package com.hedera.services.usage.token.entities;
 
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
@@ -55,8 +54,8 @@ public enum TokenEntitySizes {
 				+ uniqueNumTransfers * USAGE_PROPERTIES.nftTransferBytes();
 	}
 
-	public long bytesUsedForUniqueTokenTransfers(int numTokens) {
-		return numTokens * (BASIC_RICH_INSTANT_SIZE + BASIC_ENTITY_ID_SIZE + LONG_SIZE + BASIC_ENTITY_ID_SIZE);
+	public long bytesUsedForUniqueTokenTransfers(int numOwnershipChanges) {
+		return numOwnershipChanges * (BASIC_ENTITY_ID_SIZE + LONG_SIZE + BASIC_ENTITY_ID_SIZE);
 	}
 
 	public int bytesUsedPerAccountRelationship() {

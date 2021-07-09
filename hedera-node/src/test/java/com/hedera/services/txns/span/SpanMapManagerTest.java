@@ -87,7 +87,8 @@ class SpanMapManagerTest {
 
 	private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
 
-	private CryptoTransferMeta xferMeta = new CryptoTransferMeta(1, 1, 1);
+	private CryptoTransferMeta xferMeta = new CryptoTransferMeta(1, 1,
+			1, 0);
 
 	private Map<String, Object> span = new HashMap<>();
 

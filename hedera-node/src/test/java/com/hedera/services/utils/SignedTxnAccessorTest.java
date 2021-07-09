@@ -175,7 +175,7 @@ class SignedTxnAccessorTest {
 		// then:
 		assertEquals(1, xferMeta.getTokenMultiplier());
 		assertEquals(3, xferMeta.getNumTokensInvolved());
-		assertEquals(7, xferMeta.getNumTokenTransfers());
+		assertEquals(7, xferMeta.getNumFungibleTokenTransfers());
 	}
 
 	@Test

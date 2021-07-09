@@ -20,24 +20,32 @@ package com.hedera.services.pricing;
  * ‍
  */
 
-import org.junit.jupiter.api.Test;
-
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
-import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
-import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 class BaseOperationUsageTest {
 	final BaseOperationUsage subject = new BaseOperationUsage();
 
-	@Test
-	void cryptoTransferTbd() {
-		assertThrows(AssertionError.class,
-				() -> subject.baseUsageFor(CryptoTransfer, DEFAULT));
-		assertThrows(AssertionError.class,
-				() -> subject.baseUsageFor(CryptoTransfer, TOKEN_FUNGIBLE_COMMON));
-		assertThrows(AssertionError.class,
-				() -> subject.baseUsageFor(CryptoTransfer, TOKEN_NON_FUNGIBLE_UNIQUE));
-	}
+//	@Test
+//	void baseHbarTransferAsExpected() {
+//		var cryptoOpsUsageMock = mock(CryptoOpsUsage.class);
+//		subject.CRYPTO_OPS_USAGE = cryptoOpsUsageMock;
+//		final var expectedTxnUsageMeta = new BaseTransactionMeta(0, 2);
+//		final var expectedXferUsageMeta = new CryptoTransferMeta(380, 0,
+//				0, 0);
+//		subject.baseUsageFor(CryptoTransfer, SubType.DEFAULT);
+//
+//		verify(cryptoOpsUsageMock).cryptoTransferUsage(any(), expectedXferUsageMeta, expectedTxnUsageMeta, any());
+//	}
+//
+//	@Test
+//	void htsCryptoTransfer() {
+//		subject.baseUsageFor(CryptoTransfer, SubType.TOKEN_FUNGIBLE_COMMON);
+//
+//		verify(subject).hbarCryptoTransfer();
+//	}
+//
+//	@Test
+//	void baseNftTransferAsExpected() {
+//		subject.baseUsageFor(CryptoTransfer, SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
+//
+//		verify(subject).nftCryptoTransfer();
+//	}
 }

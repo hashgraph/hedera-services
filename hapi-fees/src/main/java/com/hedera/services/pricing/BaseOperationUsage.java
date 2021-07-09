@@ -26,6 +26,8 @@ import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.consensus.ConsensusOpsUsage;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
+import com.hedera.services.usage.crypto.CryptoOpsUsage;
+import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.TokenMintUsage;
 import com.hedera.services.usage.token.TokenOpsUsage;
@@ -73,7 +75,7 @@ class BaseOperationUsage {
 
 	private static final TokenOpsUsage TOKEN_OPS_USAGE = new TokenOpsUsage();
 	private static final ConsensusOpsUsage CONSENSUS_OPS_USAGE = new ConsensusOpsUsage();
-	private static final String NOT_IMPLEMENTED = "Not implemented!";
+	private static final CryptoOpsUsage CRYPTO_OPS_USAGE = new CryptoOpsUsage();
 
 	/**
 	 * Returns the total resource usage in the new {@link UsageAccumulator} process
@@ -171,14 +173,32 @@ class BaseOperationUsage {
 	}
 
 	private UsageAccumulator hbarCryptoTransfer() {
-		throw new AssertionError(NOT_IMPLEMENTED);
+		final var txnUsageMeta = new BaseTransactionMeta(0, 2);
+		final var xferUsageMeta = new CryptoTransferMeta(380, 0,
+				0, 0);
+		final var into = new UsageAccumulator();
+		CRYPTO_OPS_USAGE.cryptoTransferUsage(SINGLE_SIG_USAGE, xferUsageMeta, txnUsageMeta, into);
+
+		return into;
 	}
 
 	private UsageAccumulator htsCryptoTransfer() {
-		throw new AssertionError(NOT_IMPLEMENTED);
+		final var txnUsageMeta = new BaseTransactionMeta(0, 0);
+		final var xferUsageMeta = new CryptoTransferMeta(380, 1,
+				2, 0);
+		final var into = new UsageAccumulator();
+		CRYPTO_OPS_USAGE.cryptoTransferUsage(SINGLE_SIG_USAGE, xferUsageMeta, txnUsageMeta, into);
+
+		return into;
 	}
 
 	private UsageAccumulator nftCryptoTransfer() {
-		throw new AssertionError(NOT_IMPLEMENTED);
+		final var txnUsageMeta = new BaseTransactionMeta(0, 0);
+		final var xferUsageMeta = new CryptoTransferMeta(380, 1,
+				0, 1);
+		final var into = new UsageAccumulator();
+		CRYPTO_OPS_USAGE.cryptoTransferUsage(SINGLE_SIG_USAGE, xferUsageMeta, txnUsageMeta, into);
+
+		return into;
 	}
 }
