@@ -60,7 +60,6 @@ public class TokenBurnUsage extends TokenTxnUsage<TokenBurnUsage> {
 		var op = this.op.getTokenBurn();
 		if (currentSubType == SubType.TOKEN_NON_FUNGIBLE_UNIQUE) {
 			usageEstimator.addBpt((long) op.getSerialNumbersCount() * LONG_SIZE);
-			serialNumsCount = op.getSerialNumbersCount();
 			addTokenTransfersRecordRb(1, 0, serialNumsCount);
 		} else if (currentSubType == SubType.TOKEN_FUNGIBLE_COMMON) {
 			addAmountBpt();
