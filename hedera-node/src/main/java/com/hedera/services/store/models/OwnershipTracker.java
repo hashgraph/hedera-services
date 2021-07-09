@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Encapsulates the changes of {@link UniqueToken} ownership within the context of one Transaction
@@ -70,6 +71,26 @@ public class OwnershipTracker {
 			this.newOwner = newOwner;
 			this.serialNumber = serialNumber;
 		}
+
+		@Override
+		public boolean equals(final Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (o == null || Change.class != o.getClass()) {
+				return false;
+			}
+			final var that = (Change) o;
+			return this.previousOwner == that.previousOwner
+					&& this.newOwner == that.newOwner
+					&& this.serialNumber == that.serialNumber;
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(previousOwner, newOwner, serialNumber);
+		}
+
 
 		public Id getPreviousOwner() {
 			return previousOwner;
