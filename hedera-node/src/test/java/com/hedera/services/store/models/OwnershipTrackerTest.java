@@ -77,4 +77,19 @@ class OwnershipTrackerTest {
 		assertEquals(Id.DEFAULT, change.getNewOwner());
 		assertEquals(treasury, change.getPreviousOwner());
 	}
+
+	@Test
+	void compareChanges() {
+		final var change = new OwnershipTracker.Change(treasury, account, 7L);
+		final var otherChange = new OwnershipTracker.Change(treasury, account, 7L);
+		final var refChange = change;
+
+		boolean result = change.equals(null);
+		assertFalse(result);
+		result = change.equals(treasury);
+		assertFalse(result);
+		assertEquals(change, refChange);
+		assertEquals(change, otherChange);
+		assertEquals(change.hashCode(), otherChange.hashCode());
+	}
 }

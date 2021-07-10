@@ -50,19 +50,19 @@ class TokenBurnResourceUsageTest {
 	private TransactionBody nonTokenBurnTxn;
 	private TransactionBody tokenBurnTxn;
 
-	StateView view;
-	int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
-	SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
-	SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
-	FeeData expected;
+	private StateView view;
+	private int numSigs = 10, sigsSize = 100, numPayerKeys = 3, serialNumsCount = 1;
+	private SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
+	private SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
+	private FeeData expected;
 
-	TokenBurnUsage usage;
-	BiFunction<TransactionBody, SigUsage, TokenBurnUsage> factory;
-	TokenID token;
-	TokenBurnTransactionBody txBody;
+	private TokenBurnUsage usage;
+	private BiFunction<TransactionBody, SigUsage, TokenBurnUsage> factory;
+	private TokenID token;
+	private TokenBurnTransactionBody txBody;
 
 	@BeforeEach
-	private void setup() throws Throwable {
+	void setup() throws Throwable {
 		expected = mock(FeeData.class);
 		view = mock(StateView.class);
 		token = mock(TokenID.class);
@@ -72,6 +72,7 @@ class TokenBurnResourceUsageTest {
 
 		txBody = mock(TokenBurnTransactionBody.class);
 		given(tokenBurnTxn.getTokenBurn()).willReturn(txBody);
+		given(tokenBurnTxn.getTokenBurn().getSerialNumbersCount()).willReturn(serialNumsCount);
 		given(txBody.getToken()).willReturn(token);
 
 		nonTokenBurnTxn = mock(TransactionBody.class);
@@ -90,14 +91,14 @@ class TokenBurnResourceUsageTest {
 	}
 
 	@Test
-	public void recognizesApplicability() {
+	void recognizesApplicability() {
 		// expect:
 		assertTrue(subject.applicableTo(tokenBurnTxn));
 		assertFalse(subject.applicableTo(nonTokenBurnTxn));
 	}
 
 	@Test
-	public void delegatesToCorrectEstimate() throws Exception {
+	void delegatesToCorrectEstimate() throws Exception {
 		// expect:
 		given(view.tokenType(token)).willReturn(Optional.of(TokenType.FUNGIBLE_COMMON));
 		given(factory.apply(any(), any())).willReturn(usage);
@@ -113,6 +114,5 @@ class TokenBurnResourceUsageTest {
 				expected,
 				subject.usageGiven(tokenBurnTxn, obj, view));
 		verify(usage).givenSubType(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
-
 	}
 }

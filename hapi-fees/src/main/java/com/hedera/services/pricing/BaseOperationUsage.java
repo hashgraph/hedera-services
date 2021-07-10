@@ -27,6 +27,7 @@ import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.consensus.ConsensusOpsUsage;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.state.UsageAccumulator;
+import com.hedera.services.usage.token.TokenBurnUsage;
 import com.hedera.services.usage.token.TokenMintUsage;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.TokenWipeUsage;
@@ -39,6 +40,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SubType;
+import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
@@ -64,6 +66,7 @@ class BaseOperationUsage {
 	private static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 	private static final ByteString CANONICAL_SIG = ByteString.copyFromUtf8(
 			"0123456789012345678901234567890123456789012345678901234567890123");
+	private static final List<Long> SINGLE_SERIAL_NUM = List.of(1L);
 	private static final ByteString CANONICAL_NFT_METADATA = ByteString.copyFromUtf8(
 			"0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
 	private static final SignatureMap ONE_PAIR_SIG_MAP = SignatureMap.newBuilder()
@@ -111,7 +114,7 @@ class BaseOperationUsage {
 					case TOKEN_NON_FUNGIBLE_UNIQUE:
 						return uniqueTokenMint();
 					case DEFAULT:
-						throw new IllegalArgumentException("Canonical usage unknown");
+						break;
 				}
 			case TokenAccountWipe:
 				switch (type) {
@@ -120,14 +123,37 @@ class BaseOperationUsage {
 					case DEFAULT:
 						throw new IllegalArgumentException("Canonical usage unknown");
 				}
+				break;
+			case TokenBurn:
+				switch (type) {
+					case TOKEN_NON_FUNGIBLE_UNIQUE:
+						return uniqueTokenBurn();
+					case DEFAULT:
+						break;
+				}
+				break;
 			case TokenFeeScheduleUpdate:
 				return feeScheduleUpdate();
 			default:
-				throw new IllegalArgumentException("Canonical usage unknown");
-
+				break;
 		}
 
 		throw new IllegalArgumentException("Canonical usage unknown");
+	}
+
+	private UsageAccumulator uniqueTokenBurn() {
+		final var target = TokenID.newBuilder().setTokenNum(1_234).build();
+		final var canonicalTxn = TransactionBody.newBuilder()
+				.setTokenBurn(TokenBurnTransactionBody.newBuilder()
+						.setToken(target)
+						.addAllSerialNumbers(SINGLE_SERIAL_NUM))
+				.build();
+		final var helper = new TxnUsageEstimator(SINGLE_SIG_USAGE, canonicalTxn, ESTIMATOR_UTILS);
+		final var estimator = new TokenBurnUsage(canonicalTxn, helper);
+		final var baseUsage = estimator
+				.givenSubType(TOKEN_NON_FUNGIBLE_UNIQUE)
+				.get();
+		return UsageAccumulator.fromGrpc(baseUsage);
 	}
 
 	private UsageAccumulator uniqueTokenMint() {
