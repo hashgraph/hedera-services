@@ -102,6 +102,8 @@ class BaseOperationUsage {
 					return uniqueTokenWipe();
 				case TokenBurn:
 					return uniqueTokenBurn();
+				default:
+					break;
 			}
 		} else {
 			switch (function) {
@@ -156,7 +158,6 @@ class BaseOperationUsage {
 				.get();
 		return UsageAccumulator.fromGrpc(baseUsage);
 	}
-
 
 	private UsageAccumulator uniqueTokenWipe() {
 		final var target = TokenID.newBuilder().setTokenNum(1_234).build();
