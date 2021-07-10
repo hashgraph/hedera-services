@@ -48,11 +48,9 @@ import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import java.util.List;
-import java.lang.Long;
-
-import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
 /**
  * Provides the resource usage of the "base configuration" for each Hedera operation.
@@ -79,8 +77,6 @@ class BaseOperationUsage {
 	);
 	private static final BaseTransactionMeta NO_MEMO_AND_NO_EXPLICIT_XFERS = new BaseTransactionMeta(0, 0);
 
-	private static final  List<Long> serialNums = List.of(9L);
-
 	private static final TokenOpsUsage TOKEN_OPS_USAGE = new TokenOpsUsage();
 	private static final ConsensusOpsUsage CONSENSUS_OPS_USAGE = new ConsensusOpsUsage();
 	private static final String NOT_IMPLEMENTED = "Not implemented!";
@@ -96,46 +92,34 @@ class BaseOperationUsage {
 	 * @return the total resource usage of the base configuration
 	 */
 	UsageAccumulator baseUsageFor(HederaFunctionality function, SubType type) {
-		switch (function) {
-			case CryptoTransfer:
-				switch (type) {
-					case DEFAULT:
-						return hbarCryptoTransfer();
-					case TOKEN_FUNGIBLE_COMMON:
-						return htsCryptoTransfer();
-					case TOKEN_NON_FUNGIBLE_UNIQUE:
-						return nftCryptoTransfer();
-				}
-				break;
-			case ConsensusSubmitMessage:
-				return submitMessage();
-			case TokenMint:
-				switch (type) {
-					case TOKEN_NON_FUNGIBLE_UNIQUE:
-						return uniqueTokenMint();
-					case DEFAULT:
-						break;
-				}
-			case TokenAccountWipe:
-				switch (type) {
-					case TOKEN_NON_FUNGIBLE_UNIQUE:
-						return uniqueTokenWipe();
-					case DEFAULT:
-						throw new IllegalArgumentException("Canonical usage unknown");
-				}
-				break;
-			case TokenBurn:
-				switch (type) {
-					case TOKEN_NON_FUNGIBLE_UNIQUE:
-						return uniqueTokenBurn();
-					case DEFAULT:
-						break;
-				}
-				break;
-			case TokenFeeScheduleUpdate:
-				return feeScheduleUpdate();
-			default:
-				break;
+		if (type == TOKEN_NON_FUNGIBLE_UNIQUE) {
+			switch (function) {
+				case CryptoTransfer:
+					return nftCryptoTransfer();
+				case TokenMint:
+					return uniqueTokenMint();
+				case TokenAccountWipe:
+					return uniqueTokenWipe();
+				case TokenBurn:
+					return uniqueTokenBurn();
+			}
+		} else {
+			switch (function) {
+				case CryptoTransfer:
+					switch (type) {
+						case DEFAULT:
+							return hbarCryptoTransfer();
+						case TOKEN_FUNGIBLE_COMMON:
+							return htsCryptoTransfer();
+					}
+					break;
+				case ConsensusSubmitMessage:
+					return submitMessage();
+				case TokenFeeScheduleUpdate:
+					return feeScheduleUpdate();
+				default:
+					break;
+			}
 		}
 
 		throw new IllegalArgumentException("Canonical usage unknown");
@@ -181,8 +165,8 @@ class BaseOperationUsage {
 				.setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
 						.setToken(target)
 						.setAccount(targetAcct)
-						.addAllSerialNumbers(serialNums))
-						.build();
+						.addAllSerialNumbers(SINGLE_SERIAL_NUM))
+				.build();
 
 		final var helper = new TxnUsageEstimator(SINGLE_SIG_USAGE, canonicalTxn, ESTIMATOR_UTILS);
 		final var estimator = new TokenWipeUsage(canonicalTxn, helper);
