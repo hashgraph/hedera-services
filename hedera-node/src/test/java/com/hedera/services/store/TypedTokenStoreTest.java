@@ -212,9 +212,9 @@ class TypedTokenStoreTest {
 		givenToken(merkleTokenId, merkleToken);
 		merkleToken.setDeleted(true);
 
-		var deltedToken = subject.loadPossiblyDeletedToken(tokenId);
+		var deletedToken = subject.loadPossiblyDeletedOrAutoRemovedToken(tokenId);
 
-		assertEquals(token.getId(), deltedToken.getId());
+		assertEquals(token.getId(), deletedToken.getId());
 	}
 
 	@Test
@@ -325,7 +325,7 @@ class TypedTokenStoreTest {
 	}
 
 	private void assertloadPossiblyDeletedTokenFailsWith(ResponseCodeEnum status) {
-		var ex = assertThrows(InvalidTransactionException.class, () -> subject.loadPossiblyDeletedToken(tokenId));
+		var ex = assertThrows(InvalidTransactionException.class, () -> subject.loadPossiblyDeletedOrAutoRemovedToken(tokenId));
 		assertEquals(status, ex.getResponseCode());
 	}
 
@@ -362,7 +362,7 @@ class TypedTokenStoreTest {
 		miscTokenRel.initBalance(balance);
 		miscTokenRel.setFrozen(frozen);
 		miscTokenRel.setKycGranted(kycGranted);
-		miscTokenRel.setNotYetPersisted(false);
+		miscTokenRel.markAsPersisted();
 	}
 
 	private final long expiry = 1_234_567L;

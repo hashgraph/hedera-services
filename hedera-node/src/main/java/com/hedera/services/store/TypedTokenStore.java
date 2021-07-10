@@ -92,7 +92,6 @@ public class TypedTokenStore {
 	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations;
 	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueOwnershipAssociations;
 
-
 	/* Only needed for interoperability with legacy HTS during refactor */
 	private final BackingNfts backingNfts;
 	private final BackingTokenRels backingTokenRels;
@@ -158,7 +157,7 @@ public class TypedTokenStore {
 		tokenRelationship.setKycGranted(merkleTokenRel.isKycGranted());
 		tokenRelationship.setFrozen(merkleTokenRel.isFrozen());
 
-		tokenRelationship.setNotYetPersisted(false);
+		tokenRelationship.markAsPersisted();
 
 		return tokenRelationship;
 	}
@@ -264,15 +263,15 @@ public class TypedTokenStore {
 	}
 
 	/**
-	 * Use carefully.
-	 * Returns a model of the requested token which may be marked as deleted.
+	 * Use carefully. Returns a model of the requested token which may be marked as deleted.
+	 *
 	 * @param id
 	 * 		the token to load
 	 * @return a usable model of the token
 	 * @throws 	InvalidTransactionException
 	 * 		if the requested token is missing
 	 */
-	public Token loadPossiblyDeletedToken(Id id) {
+	public Token loadPossiblyDeletedOrAutoRemovedToken(Id id) {
 		final var key = new MerkleEntityId(id.getShard(), id.getRealm(), id.getNum());
 		final var merkleToken = tokens.get().get(key);
 

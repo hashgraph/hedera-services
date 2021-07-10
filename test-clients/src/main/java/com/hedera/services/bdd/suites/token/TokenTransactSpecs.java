@@ -34,9 +34,12 @@ import java.util.Map;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountNftInfos;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
@@ -46,6 +49,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
@@ -101,30 +105,77 @@ public class TokenTransactSpecs extends HapiApiSuite {
 //						uniqueTokenTxnWithReceiverNotSigned(),
 //						uniqueTokenTxnsAreAtomic(),
 //						uniqueTokenDeletedTxn(),
-						
+//						cannotSendFungibleToDissociatedContract(),
+						recordsIncludeBothFungibleTokenChangesAndOwnershipChange(),
 				}
 		);
 	}
+
+	public HapiApiSpec recordsIncludeBothFungibleTokenChangesAndOwnershipChange() {
+		final var theUniqueToken = "special";
+		final var theCommonToken = "quotidian";
+		final var theAccount = "lucky";
+		final var theKey = "multipurpose";
+		final var theTxn = "diverseXfer";
+
+		return defaultHapiSpec("recordsIncludeBothFungibleTokenChangesAndOwnershipChange")
+				.given(
+						newKeyNamed(theKey),
+						cryptoCreate(theAccount),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(theCommonToken)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(1_234_567L)
+								.treasury(TOKEN_TREASURY),
+						tokenCreate(theUniqueToken)
+								.supplyKey(theKey)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0L)
+								.treasury(TOKEN_TREASURY),
+						mintToken(theUniqueToken, List.of(ByteString.copyFromUtf8("Doesn't matter"))),
+						tokenAssociate(theAccount, theUniqueToken),
+						tokenAssociate(theAccount, theCommonToken)
+				).when(
+						cryptoTransfer(
+								moving(1, theCommonToken).between(TOKEN_TREASURY, theAccount),
+								movingUnique(1, theUniqueToken).between(TOKEN_TREASURY, theAccount)
+						).via(theTxn)
+				).then(
+						getTxnRecord(theTxn).logged()
+				);
+	}
+
 	public HapiApiSpec cannotSendFungibleToDissociatedContract() {
 		final var theContract = "tbd";
+		final var theAccount = "alsoTbd";
 		return defaultHapiSpec("CannotSendFungibleToDissociatedContract")
 				.given(
 						contractCreate(theContract),
+						cryptoCreate(theAccount),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(A_TOKEN)
 								.tokenType(TokenType.FUNGIBLE_COMMON)
 								.initialSupply(1_234_567L)
-								.treasury(TOKEN_TREASURY)
+								.treasury(TOKEN_TREASURY),
+						tokenAssociate(theContract, A_TOKEN),
+						tokenAssociate(theAccount, A_TOKEN)
 				).when(
-						tokenDelete(A_TOKEN)
+						getContractInfo(theContract).hasToken(relationshipWith(A_TOKEN)),
+						getAccountInfo(theAccount).hasToken(relationshipWith(A_TOKEN)),
+						tokenDissociate(theContract, A_TOKEN),
+						tokenDissociate(theAccount, A_TOKEN),
+						getContractInfo(theContract).hasNoTokenRelationship(A_TOKEN),
+						getAccountInfo(theAccount).hasNoTokenRelationship(A_TOKEN)
 				).then(
 						cryptoTransfer(
-								movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+								moving(1, A_TOKEN).between(TOKEN_TREASURY, theContract)
+						),
+						cryptoTransfer(
+								moving(1, A_TOKEN).between(TOKEN_TREASURY, theAccount)
 						)
-								.signedBy("signingKeyTreasury", "signingKeyFirstUser", DEFAULT_PAYER)
-								.hasKnownStatus(TOKEN_WAS_DELETED)
 				);
 	}
+
 	private HapiApiSpec prechecksWork() {
 		return defaultHapiSpec("PrechecksWork")
 				.given(

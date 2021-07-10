@@ -90,6 +90,18 @@ class TokenTest {
 	}
 
 	@Test
+	void markAutoRemovedWorks() {
+		// expect:
+		assertFalse(subject.isBelievedToHaveBeenAutoRemoved());
+
+		// when:
+		subject.markAutoRemoved();
+
+		// then:
+		assertTrue(subject.isBelievedToHaveBeenAutoRemoved());
+	}
+
+	@Test
 	void constructsExpectedDefaultRelWithFreezeKeyAndFrozenByDefault() {
 		// setup:
 		nonTreasuryRel.setFrozen(true);
@@ -436,7 +448,7 @@ class TokenTest {
 
 	@Test
 	void toStringWorks() {
-		final var desired = "Token{id=Id{shard=1, realm=2, num=3}, type=null, " +
+		final var desired = "Token{id=Id{shard=1, realm=2, num=3}, type=null, deleted=false, autoRemoved=false, " +
 				"treasury=Account{id=Id{shard=2, realm=2, num=3}, expiry=0, balance=0, deleted=false, tokens=<N/A>}, " +
 				"autoRenewAccount=null, kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, " +
 				"currentSerialNumber=0}";

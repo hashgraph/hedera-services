@@ -121,7 +121,7 @@ class TokenDissociateTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		verify(tokenStore).loadPossiblyDeletedToken(tokenId);
+		verify(tokenStore).loadPossiblyDeletedOrAutoRemovedToken(tokenId);
 		verify(tokenStore).loadTokenRelationship(token, account);
 		verify(tokenStore).loadTokenRelationship(token, treasury);
 		verify(account).dissociateWith(List.of(Pair.of(tokenRelationship, treasuryRelationship)), validator);
@@ -177,7 +177,7 @@ class TokenDissociateTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(tokenDissociateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(token.getTreasury()).willReturn(treasury);
-		given(tokenStore.loadPossiblyDeletedToken(tokenId)).willReturn(token);
+		given(tokenStore.loadPossiblyDeletedOrAutoRemovedToken(tokenId)).willReturn(token);
 		given(validator.isValidExpiry(any())).willReturn(true);
 		given(accountStore.getValidator()).willReturn(validator);
 		given(accountStore.loadAccount(accountId)).willReturn(account);

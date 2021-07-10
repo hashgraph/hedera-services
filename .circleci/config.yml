@@ -2222,6 +2222,7 @@ workflows:
             filters:
               branches:
                 ignore:
+                  - 01783-M-RestoreDissocCheck
                   - NONE
             workflow-name: "Continuous-integration"
         - sonar-check:

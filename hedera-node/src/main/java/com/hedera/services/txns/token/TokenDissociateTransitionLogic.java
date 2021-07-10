@@ -31,8 +31,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,12 +44,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEA
 
 /**
  * Provides the state transition for dissociating tokens from an account.
- *
- * @author Michael Tinker
  */
 public class TokenDissociateTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(TokenDissociateTransitionLogic.class);
-
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	private final AccountStore accountStore;
@@ -81,7 +75,7 @@ public class TokenDissociateTransitionLogic implements TransitionLogic {
 		final var account = accountStore.loadAccount(accountId);
 		final List<Pair<TokenRelationship, TokenRelationship>> tokenRelationships = new ArrayList<>();
 		for (final var tokenId : op.getTokensList()) {
-			final var token = tokenStore.loadPossiblyDeletedToken(Id.fromGrpcToken(tokenId));
+			final var token = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(Id.fromGrpcToken(tokenId));
 			var accountRelationship = tokenStore.loadTokenRelationship(token, account);
 			var treasuryRelationship = tokenStore.loadTokenRelationship(token, token.getTreasury());
 			tokenRelationships.add(Pair.of(accountRelationship, treasuryRelationship));
@@ -91,17 +85,17 @@ public class TokenDissociateTransitionLogic implements TransitionLogic {
 		account.dissociateWith(tokenRelationships, validator);
 
 		/* --- Persist the updated models --- */
-		accountStore.persistAccount(account); // tx account
+		accountStore.persistAccount(account);
 		for (Pair<TokenRelationship, TokenRelationship> accountAndTreasuryPair : tokenRelationships) {
-			tokenStore.persistToken(accountAndTreasuryPair.getKey().getToken()); // token from tx token list
-			accountStore.persistAccount(accountAndTreasuryPair.getKey().getToken().getTreasury()); // treasury
+			tokenStore.persistToken(accountAndTreasuryPair.getKey().getToken());
+			accountStore.persistAccount(accountAndTreasuryPair.getKey().getToken().getTreasury());
 		}
 		var flatTokenRels = new ArrayList<TokenRelationship>();
 		for (var pair : tokenRelationships) {
 			flatTokenRels.add(pair.getValue());
 			flatTokenRels.add(pair.getKey());
 		}
-		tokenStore.persistTokenRelationships(flatTokenRels); // all relations
+		tokenStore.persistTokenRelationships(flatTokenRels);
 	}
 
 	@Override

@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -50,7 +51,7 @@ class TokenRelationshipTest {
 	private OptionValidator validator;
 
 	private TokenRelationship subject;
-	TokenRelationship treasuryRealtionship;
+	private TokenRelationship treasuryRelationship;
 
 	@BeforeEach
 	void setUp() {
@@ -59,12 +60,11 @@ class TokenRelationshipTest {
 		Account treasury = new Account(treasuryId);
 		validator = mock(ContextOptionValidator.class);
 
-
 		subject = new TokenRelationship(token, account);
-		treasuryRealtionship = new TokenRelationship(token, treasury);
+		treasuryRelationship = new TokenRelationship(token, treasury);
 		token.setTreasury(treasury);
 		subject.initBalance(balance);
-		treasuryRealtionship.setBalance(balance);
+		treasuryRelationship.setBalance(balance);
 	}
 
 	@Test
@@ -80,6 +80,24 @@ class TokenRelationshipTest {
 
 		// expect:
 		assertEquals(desired, subject.toString());
+	}
+
+	@Test
+	void cannotDestroyUnpersistedRels() {
+		// expect:
+		assertFailsWith(() -> subject.markAsDestroyed(), FAIL_INVALID);
+	}
+
+	@Test
+	void destructionWorksAsExpected() {
+		// given:
+		subject.markAsPersisted();
+
+		// when:
+		subject.markAsDestroyed();
+
+		// then:
+		assertTrue(subject.isDestroyed());
 	}
 
 	@Test

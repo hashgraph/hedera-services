@@ -23,6 +23,7 @@ package com.hedera.services.store.models;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
+import com.hedera.services.txns.token.process.DissociationRels;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -38,6 +39,7 @@ import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -103,6 +105,16 @@ public class Account {
 		}
 
 		associatedTokens.addAllIds(uniqueIds);
+	}
+
+	public void dissociateUsing(List<DissociationRels> dissociations, OptionValidator validator) {
+		final Set<Id> dissociatedTokenIds = new HashSet<>();
+		for (var dissociation : dissociations) {
+			validateTrue(id.equals(dissociation.dissociatingAccountId()), FAIL_INVALID);
+			dissociation.updateModelRelsSubjectTo(validator);
+			dissociatedTokenIds.add(dissociation.dissociatedTokenId());
+		}
+		associatedTokens.removeAllIds(dissociatedTokenIds);
 	}
 
 	/**

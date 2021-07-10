@@ -23,6 +23,7 @@ package com.hedera.services.store.models;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
+import com.hedera.services.txns.token.process.DissociationRels;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Set;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -43,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class AccountTest {
 	private Id subjectId = new Id(0, 0, 12345);
@@ -51,7 +54,7 @@ class AccountTest {
 
 	private Account subject;
 	private Account treasuryAccount;
-	private OptionValidator optionValidator;
+	private OptionValidator validator;
 
 	@BeforeEach
 	void setUp() {
@@ -59,7 +62,7 @@ class AccountTest {
 		treasuryAccount = new Account(treasuryId);
 		subject.setAssociatedTokens(assocTokens);
 
-		optionValidator = mock(ContextOptionValidator.class);
+		validator = mock(ContextOptionValidator.class);
 	}
 
 	@Test
@@ -70,6 +73,37 @@ class AccountTest {
 
 		// expect:
 		assertEquals(desired, subject.toString());
+	}
+
+	@Test
+	void dissociationHappyPathWorks() {
+		// setup:
+		final var alreadyAssocTokenId = new Id(0, 0, 666);
+		final var dissociationRel = mock(DissociationRels.class);
+		// and:
+		final var expectedFinalTokens = "[0.0.777]";
+
+		given(dissociationRel.dissociatingAccountId()).willReturn(subjectId);
+		given(dissociationRel.dissociatedTokenId()).willReturn(alreadyAssocTokenId);
+
+		// when:
+		subject.dissociateUsing(List.of(dissociationRel), validator);
+
+		// then:
+		verify(dissociationRel).updateModelRelsSubjectTo(validator);
+		assertEquals(expectedFinalTokens, assocTokens.toReadableIdList());
+	}
+
+	@Test
+	void dissociationFailsInvalidIfRelDoesntReferToUs() {
+		// setup:
+		final var notOurId = new Id(0, 0, 666);
+		final var dissociationRel = mock(DissociationRels.class);
+
+		given(dissociationRel.dissociatingAccountId()).willReturn(notOurId);
+
+		// expect:
+		assertFailsWith(() -> subject.dissociateUsing(List.of(dissociationRel), validator), FAIL_INVALID);
 	}
 
 	@Test
@@ -161,10 +195,10 @@ class AccountTest {
 		final var dissocRel = new TokenRelationship(dissociatingToken, subject);
 		final var treasuryRel = new TokenRelationship(dissociatingToken, treasuryAccount);
 		dissociatingToken.setType(TokenType.FUNGIBLE_COMMON);
-		given(optionValidator.isValidExpiry(any())).willReturn(true);
+		given(validator.isValidExpiry(any())).willReturn(true);
 
 		// when:
-		subject.dissociateWith(List.of(Pair.of(dissocRel, treasuryRel)), optionValidator);
+		subject.dissociateWith(List.of(Pair.of(dissocRel, treasuryRel)), validator);
 
 		// expect:
 		assertEquals(expectedFinalTokens, assocTokens.toReadableIdList());
@@ -178,10 +212,10 @@ class AccountTest {
 		final var dissocRel = new TokenRelationship(dissociatingToken, subject);
 		final var treasuryRel = new TokenRelationship(dissociatingToken, treasuryAccount);
 		dissociatingToken.setType(TokenType.NON_FUNGIBLE_UNIQUE);
-		given(optionValidator.isValidExpiry(any())).willReturn(true);
+		given(validator.isValidExpiry(any())).willReturn(true);
 
 		// when:
-		subject.dissociateWith(List.of(Pair.of(dissocRel, treasuryRel)), optionValidator);
+		subject.dissociateWith(List.of(Pair.of(dissocRel, treasuryRel)), validator);
 
 		// expect:
 		assertEquals(expectedFinalTokens, assocTokens.toReadableIdList());
@@ -196,7 +230,7 @@ class AccountTest {
 		dissociatingToken.setType(TokenType.FUNGIBLE_COMMON);
 		// expect:
 		assertFailsWith(
-				() -> subject.dissociateWith(List.of(Pair.of(dissocRel, treasuryRel)), optionValidator),
+				() -> subject.dissociateWith(List.of(Pair.of(dissocRel, treasuryRel)), validator),
 				TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 	}
 
@@ -212,7 +246,7 @@ class AccountTest {
 
 		// then:
 		assertFailsWith(
-				() -> subject.dissociateWith(List.of(Pair.of(dissocRel, treasuryRel)), optionValidator),
+				() -> subject.dissociateWith(List.of(Pair.of(dissocRel, treasuryRel)), validator),
 				TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES
 		);
 	}

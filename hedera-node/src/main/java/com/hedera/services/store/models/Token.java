@@ -79,7 +79,8 @@ public class Token {
 	private boolean frozenByDefault;
 	private Account treasury;
 	private Account autoRenewAccount;
-	private boolean isDeleted;
+	private boolean deleted;
+	private boolean autoRemoved = false;
 	private long expiry;
 
 	private long lastUsedSerialNumber;
@@ -388,11 +389,11 @@ public class Token {
 	}
 
 	public boolean isDeleted() {
-		return isDeleted;
+		return deleted;
 	}
 
 	public void setIsDeleted(final boolean deleted) {
-		isDeleted = deleted;
+		this.deleted = deleted;
 	}
 
 	public long getExpiry() {
@@ -419,9 +420,17 @@ public class Token {
 		this.loadedUniqueTokens = loadedUniqueTokens;
 	}
 
+	public boolean isBelievedToHaveBeenAutoRemoved() {
+		return autoRemoved;
+	}
+
+	public void markAutoRemoved() {
+		this.autoRemoved = true;
+	}
+
 	/* NOTE: The object methods below are only overridden to improve
-	readability of unit tests; this model object is not used in hash-based
-	collections, so the performance of these methods doesn't matter. */
+		readability of unit tests; this model object is not used in hash-based
+		collections, so the performance of these methods doesn't matter. */
 	@Override
 	public boolean equals(Object obj) {
 		return EqualsBuilder.reflectionEquals(this, obj);
@@ -437,6 +446,8 @@ public class Token {
 		return MoreObjects.toStringHelper(Token.class)
 				.add("id", id)
 				.add("type", type)
+				.add("deleted", deleted)
+				.add("autoRemoved", autoRemoved)
 				.add("treasury", treasury)
 				.add("autoRenewAccount", autoRenewAccount)
 				.add("kycKey", describe(kycKey))
