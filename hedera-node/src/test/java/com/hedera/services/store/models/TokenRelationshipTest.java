@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -50,7 +51,7 @@ class TokenRelationshipTest {
 	private OptionValidator validator;
 
 	private TokenRelationship subject;
-	TokenRelationship treasuryRealtionship;
+	private TokenRelationship treasuryRelationship;
 
 	@BeforeEach
 	void setUp() {
@@ -59,27 +60,43 @@ class TokenRelationshipTest {
 		Account treasury = new Account(treasuryId);
 		validator = mock(ContextOptionValidator.class);
 
-
 		subject = new TokenRelationship(token, account);
-		treasuryRealtionship = new TokenRelationship(token, treasury);
+		treasuryRelationship = new TokenRelationship(token, treasury);
 		token.setTreasury(treasury);
 		subject.initBalance(balance);
-		treasuryRealtionship.setBalance(balance);
+		treasuryRelationship.setBalance(balance);
 	}
 
 	@Test
 	void toStringAsExpected() {
 		// given:
 		final var desired = "TokenRelationship{notYetPersisted=true, " +
-				"account=Account{id=Id{shard=1, realm=0, num=1234}, expiry=0, balance=0, deleted=false, " +
-				"tokens=<N/A>}, token=Token{id=Id{shard=0, realm=0, num=1234}, type=null, treasury=Account{id=Id{shard=1, realm=0, num=4321}, expiry=0, balance=0, deleted=false, tokens=<N/A>}, " +
-				"autoRenewAccount=null, " +
-				"kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0}, " +
-				"balance=1234, " +
-				"balanceChange=0, frozen=false, kycGranted=false}";
+				"account=Account{id=Id{shard=1, realm=0, num=1234}, expiry=0, balance=0, deleted=false, tokens=<N/A>}, " +
+				"token=Token{id=Id{shard=0, realm=0, num=1234}, type=null, deleted=false, autoRemoved=false, " +
+				"treasury=Account{id=Id{shard=1, realm=0, num=4321}, expiry=0, balance=0, deleted=false, tokens=<N/A>}, " +
+				"autoRenewAccount=null, kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, " +
+				"currentSerialNumber=0}, balance=1234, balanceChange=0, frozen=false, kycGranted=false}";
 
 		// expect:
 		assertEquals(desired, subject.toString());
+	}
+
+	@Test
+	void cannotDestroyUnpersistedRels() {
+		// expect:
+		assertFailsWith(() -> subject.markAsDestroyed(), FAIL_INVALID);
+	}
+
+	@Test
+	void destructionWorksAsExpected() {
+		// given:
+		subject.markAsPersisted();
+
+		// when:
+		subject.markAsDestroyed();
+
+		// then:
+		assertTrue(subject.isDestroyed());
 	}
 
 	@Test

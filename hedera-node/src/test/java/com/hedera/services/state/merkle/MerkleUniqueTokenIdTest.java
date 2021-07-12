@@ -45,8 +45,8 @@ class MerkleUniqueTokenIdTest {
 
 	private EntityId tokenId = MISSING_ENTITY_ID;
 	private EntityId otherTokenId = MISSING_ENTITY_ID;
-	private int serialNumber;
-	private int otherSerialNumber;
+	private long serialNumber;
+	private long otherSerialNumber;
 
 	@BeforeEach
 	void setup() {
@@ -130,7 +130,7 @@ class MerkleUniqueTokenIdTest {
 		SerializableDataInputStream in = mock(SerializableDataInputStream.class);
 
 		given(in.readSerializable()).willReturn(tokenId);
-		given(in.readInt()).willReturn(serialNumber);
+		given(in.readLong()).willReturn(serialNumber);
 
 		// and:
 		var read = new MerkleUniqueTokenId();

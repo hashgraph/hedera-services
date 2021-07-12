@@ -25,7 +25,11 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.test.utils.IdUtils;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class IdTest {
 	@Test
@@ -89,5 +93,25 @@ class IdTest {
 		final var id = new Id(4, 5, 6);
 
 		assertEquals("Id{shard=4, realm=5, num=6}", id.toString());
+	}
+
+	@Test
+	void comparatorWorks() {
+		// given:
+		final var a = new Id(0, 0, 1);
+		final var b = new Id(1, 0, 0);
+		final var c = new Id(0, 1, 0);
+		// and:
+		final var l = new ArrayList<Id>();
+
+		// when:
+		l.add(a);
+		l.add(b);
+		l.add(c);
+		// and:
+		l.sort(Id.ID_COMPARATOR);
+
+		// then:
+		assertEquals(List.of(c, b, a), l);
 	}
 }

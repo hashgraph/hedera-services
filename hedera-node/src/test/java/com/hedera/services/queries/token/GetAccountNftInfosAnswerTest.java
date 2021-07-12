@@ -25,6 +25,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -171,6 +172,22 @@ class GetAccountNftInfosAnswerTest {
 
 		// then:
 		assertEquals(INVALID_ACCOUNT_ID, validity);
+	}
+
+	@Test
+	void fallsbackToCheckContractId() throws Throwable {
+		// given:
+		given(view.accountNftsCount(accountId)).willReturn(10L);
+		given(view.accounts()).willReturn(accountMap);
+		given(optionValidator.nftMaxQueryRangeCheck(start, end)).willReturn(OK);
+		given(optionValidator.queryableAccountStatus(accountId, accountMap)).willReturn(INVALID_ACCOUNT_ID);
+		given(optionValidator.queryableContractStatus(EntityIdUtils.asContract(accountId), accountMap)).willReturn(OK);
+
+		// when:
+		var validity = subject.checkValidity(validQuery(ANSWER_ONLY, 0, accountId, start, end), view);
+
+		// then:
+		assertEquals(OK, validity);
 	}
 
 	@Test
