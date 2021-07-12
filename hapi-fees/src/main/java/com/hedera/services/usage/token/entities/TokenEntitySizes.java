@@ -55,7 +55,7 @@ public enum TokenEntitySizes {
 	}
 
 	public long bytesUsedForUniqueTokenTransfers(int numOwnershipChanges) {
-		return numOwnershipChanges * (BASIC_ENTITY_ID_SIZE + LONG_SIZE + BASIC_ENTITY_ID_SIZE);
+		return numOwnershipChanges * (2 * BASIC_ENTITY_ID_SIZE + LONG_SIZE);
 	}
 
 	public int bytesUsedPerAccountRelationship() {
