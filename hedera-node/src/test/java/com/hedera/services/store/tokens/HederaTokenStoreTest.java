@@ -126,6 +126,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_W
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFERS_LIST_ONLY_USABLE_WITH_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -1519,6 +1520,17 @@ class HederaTokenStoreTest {
 
 		// then:
 		assertEquals(ResponseCodeEnum.TOKEN_WAS_DELETED, status);
+	}
+
+	@Test
+	void adjustingRejectsFungibleUniqueToken() {
+		given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+
+		// when:
+		final var status = subject.adjustBalance(treasury, misc, 1);
+
+		// then:
+		assertEquals(TOKEN_TRANSFERS_LIST_ONLY_USABLE_WITH_FUNGIBLE_COMMON, status);
 	}
 
 	@Test

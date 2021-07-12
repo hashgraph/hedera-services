@@ -259,11 +259,11 @@ public class TypedTokenStore {
 		final var tokenId = token.getId();
 		final var tokenAsEntityId = tokenId.asEntityId();
 		final var loadedUniqueTokens = new HashMap<Long, UniqueToken>();
+		final var curUniqueTokens = uniqueTokens.get();
 		for (long serialNumber : serialNumbers) {
 			final var uniqueTokenKey = new MerkleUniqueTokenId(tokenAsEntityId, serialNumber);
-			final var merkleUniqueToken = uniqueTokens.get().get(uniqueTokenKey);
+			final var merkleUniqueToken = curUniqueTokens.get(uniqueTokenKey);
 			validateUsable(merkleUniqueToken);
-
 			final var uniqueToken = new UniqueToken(tokenId, serialNumber);
 			initModelFields(uniqueToken, merkleUniqueToken);
 			loadedUniqueTokens.put(serialNumber, uniqueToken);

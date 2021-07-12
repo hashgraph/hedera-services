@@ -28,7 +28,6 @@ import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
-import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -72,6 +71,7 @@ import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
+import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
 import static com.hedera.services.state.merkle.MerkleToken.UNUSED_KEY;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
@@ -114,6 +114,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_W
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFERS_LIST_ONLY_USABLE_WITH_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static java.util.stream.Collectors.toList;
 
@@ -483,11 +484,11 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			TokenID targetTokenId,
 			AccountID feeCollector) {
 		if (!isFeeScheduleUpdate) {
-			if (pendingCreation.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE) {
+			if (pendingCreation.tokenType() == NON_FUNGIBLE_UNIQUE) {
 				return CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 			}
 		} else {
-			if (targetToken.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE) {
+			if (targetToken.tokenType() == NON_FUNGIBLE_UNIQUE) {
 				return CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 			}
 			if (!associationExists(feeCollector, targetTokenId)) {
@@ -524,7 +525,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				return INVALID_TOKEN_ID_IN_CUSTOM_FEES;
 			}
 			final var merkleToken = get(denom);
-			if (merkleToken.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE) {
+			if (merkleToken.tokenType() == NON_FUNGIBLE_UNIQUE) {
 				return CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
 			}
 			if (!associationExists(feeCollector, denom)) {
@@ -888,6 +889,9 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		var token = get(tId);
 		if (token.isDeleted()) {
 			return TOKEN_WAS_DELETED;
+		}
+		if (aCounterPartyId == null && token.tokenType() == NON_FUNGIBLE_UNIQUE) {
+			return TOKEN_TRANSFERS_LIST_ONLY_USABLE_WITH_FUNGIBLE_COMMON;
 		}
 
 		var key = asTokenRel(aId, tId);

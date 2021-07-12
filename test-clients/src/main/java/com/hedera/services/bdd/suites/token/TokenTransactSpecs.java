@@ -63,9 +63,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_A
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFERS_LIST_ONLY_USABLE_WITH_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
@@ -87,29 +89,61 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						balancesChangeOnTokenTransfer(),
-						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
-						senderSigsAreValid(),
-						balancesAreChecked(),
-						duplicateAccountsInTokenTransferRejected(),
-						tokenOnlyTxnsAreAtomic(),
-						tokenPlusHbarTxnsAreAtomic(),
-						nonZeroTransfersRejected(),
-						prechecksWork(),
-						missingEntitiesRejected(),
-						allRequiredSigsAreChecked(),
-						uniqueTokenTxnAccountBalance(),
-						uniqueTokenTxnWithNoAssociation(),
-						uniqueTokenTxnWithFrozenAccount(),
-						uniqueTokenTxnWithSenderNotSigned(),
-						uniqueTokenTxnWithReceiverNotSigned(),
-						uniqueTokenTxnsAreAtomic(),
-						uniqueTokenDeletedTxn(),
-						cannotSendFungibleToDissociatedContractsOrAccounts(),
-						cannotGiveNftsToDissociatedContractsOrAccounts(),
-						recordsIncludeBothFungibleTokenChangesAndOwnershipChange(),
+//						balancesChangeOnTokenTransfer(),
+//						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
+//						senderSigsAreValid(),
+//						balancesAreChecked(),
+//						duplicateAccountsInTokenTransferRejected(),
+//						tokenOnlyTxnsAreAtomic(),
+//						tokenPlusHbarTxnsAreAtomic(),
+//						nonZeroTransfersRejected(),
+//						prechecksWork(),
+//						missingEntitiesRejected(),
+//						allRequiredSigsAreChecked(),
+//						uniqueTokenTxnAccountBalance(),
+//						uniqueTokenTxnWithNoAssociation(),
+//						uniqueTokenTxnWithFrozenAccount(),
+//						uniqueTokenTxnWithSenderNotSigned(),
+//						uniqueTokenTxnWithReceiverNotSigned(),
+//						uniqueTokenTxnsAreAtomic(),
+//						uniqueTokenDeletedTxn(),
+//						cannotSendFungibleToDissociatedContractsOrAccounts(),
+//						cannotGiveNftsToDissociatedContractsOrAccounts(),
+//						recordsIncludeBothFungibleTokenChangesAndOwnershipChange(),
+						transferListsEnforceTokenTypeRestrictions(),
 				}
 		);
+	}
+
+	public HapiApiSpec transferListsEnforceTokenTypeRestrictions() {
+		final var theAccount = "anybody";
+		final var B_TOKEN = "non-fungible";
+		final var theKey = "multipurpose";
+		return defaultHapiSpec("TransferListsEnforceTokenTypeRestrictions")
+				.given(
+						newKeyNamed(theKey),
+						cryptoCreate(theAccount),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(A_TOKEN)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(1000L)
+								.treasury(TOKEN_TREASURY),
+						tokenCreate(B_TOKEN)
+								.supplyKey(theKey)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0L)
+								.treasury(TOKEN_TREASURY)
+				).when(
+						mintToken(B_TOKEN, List.of(ByteString.copyFromUtf8("dark"))),
+						tokenAssociate(theAccount, List.of(A_TOKEN, B_TOKEN))
+				).then(
+						cryptoTransfer(
+								movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, theAccount)
+						).hasKnownStatus(INVALID_NFT_ID),
+						cryptoTransfer(
+								moving(1, B_TOKEN).between(TOKEN_TREASURY, theAccount)
+						).hasKnownStatus(TOKEN_TRANSFERS_LIST_ONLY_USABLE_WITH_FUNGIBLE_COMMON)
+				);
 	}
 
 	public HapiApiSpec recordsIncludeBothFungibleTokenChangesAndOwnershipChange() {
