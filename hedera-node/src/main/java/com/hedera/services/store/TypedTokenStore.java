@@ -321,7 +321,6 @@ public class TypedTokenStore {
 				currentUniqueTokens.put(merkleUniqueTokenId, merkleUniqueToken);
 				currentUniqueTokenAssociations.associate(new EntityId(uniqueToken.getTokenId()), merkleUniqueTokenId);
 				currentUniqueOwnershipAssociations.associate(treasury, merkleUniqueTokenId);
-				backingNfts.addToExistingNfts(merkleUniqueTokenId.asNftId());
 			}
 		}
 		if (token.hasRemovedUniqueTokens()) {
@@ -333,7 +332,6 @@ public class TypedTokenStore {
 				currentUniqueTokenAssociations.disassociate(new EntityId(uniqueToken.getTokenId()),
 						merkleUniqueTokenId);
 				currentUniqueOwnershipAssociations.disassociate(accountId, merkleUniqueTokenId);
-				backingNfts.removeFromExistingNfts(merkleUniqueTokenId.asNftId());
 			}
 		}
 		transactionRecordService.includeChangesToToken(token);
@@ -401,16 +399,6 @@ public class TypedTokenStore {
 	static Pair<AccountID, TokenID> legacyReprOf(TokenRelationship rel) {
 		final var tokenId = rel.getToken().getId();
 		final var accountId = rel.getAccount().getId();
-		return Pair.of(
-				AccountID.newBuilder()
-						.setShardNum(accountId.getShard())
-						.setRealmNum(accountId.getRealm())
-						.setAccountNum(accountId.getNum())
-						.build(),
-				TokenID.newBuilder()
-						.setShardNum(tokenId.getShard())
-						.setRealmNum(tokenId.getRealm())
-						.setTokenNum(tokenId.getNum())
-						.build());
+		return Pair.of(accountId.asGrpcAccount(), tokenId.asGrpcToken());
 	}
 }

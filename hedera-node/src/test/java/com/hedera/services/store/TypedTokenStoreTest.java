@@ -35,7 +35,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
@@ -320,8 +319,6 @@ class TypedTokenStoreTest {
 		verify(uniqueTokenAssociations).disassociate(new EntityId(modelToken.getId()), expectedPastUniqTokenId);
 		verify(uniqueTokenOwnerships).associate(treasuryId, expectedNewUniqTokenId);
 		verify(uniqueTokenOwnerships).disassociate(treasuryId, expectedPastUniqTokenId);
-		verify(backingNfts).addToExistingNfts(new NftId(0, 0, tokenNum, mintedSerialNo));
-		verify(backingNfts).removeFromExistingNfts(new NftId(0, 0, tokenNum, burnedSerialNo));
 	}
 
 	private void givenRelationship(MerkleEntityAssociation anAssoc, MerkleTokenRelStatus aRelationship) {
