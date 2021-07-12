@@ -30,8 +30,10 @@ import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.TokenBurnUsage;
 import com.hedera.services.usage.token.TokenMintUsage;
 import com.hedera.services.usage.token.TokenOpsUsage;
+import com.hedera.services.usage.token.TokenWipeUsage;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -42,6 +44,7 @@ import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import java.util.List;
@@ -89,39 +92,36 @@ class BaseOperationUsage {
 	 * @return the total resource usage of the base configuration
 	 */
 	UsageAccumulator baseUsageFor(HederaFunctionality function, SubType type) {
-		switch (function) {
-			case CryptoTransfer:
-				switch (type) {
-					case DEFAULT:
-						return hbarCryptoTransfer();
-					case TOKEN_FUNGIBLE_COMMON:
-						return htsCryptoTransfer();
-					case TOKEN_NON_FUNGIBLE_UNIQUE:
-						return nftCryptoTransfer();
-				}
-				break;
-			case ConsensusSubmitMessage:
-				return submitMessage();
-			case TokenMint:
-				switch (type) {
-					case TOKEN_NON_FUNGIBLE_UNIQUE:
-						return uniqueTokenMint();
-					case DEFAULT:
-						break;
-				}
-				break;
-			case TokenBurn:
-				switch (type) {
-					case TOKEN_NON_FUNGIBLE_UNIQUE:
-						return uniqueTokenBurn();
-					case DEFAULT:
-						break;
-				}
-				break;
-			case TokenFeeScheduleUpdate:
-				return feeScheduleUpdate();
-			default:
-				break;
+		if (type == TOKEN_NON_FUNGIBLE_UNIQUE) {
+			switch (function) {
+				case CryptoTransfer:
+					return nftCryptoTransfer();
+				case TokenMint:
+					return uniqueTokenMint();
+				case TokenAccountWipe:
+					return uniqueTokenWipe();
+				case TokenBurn:
+					return uniqueTokenBurn();
+				default:
+					break;
+			}
+		} else {
+			switch (function) {
+				case CryptoTransfer:
+					switch (type) {
+						case DEFAULT:
+							return hbarCryptoTransfer();
+						case TOKEN_FUNGIBLE_COMMON:
+							return htsCryptoTransfer();
+					}
+					break;
+				case ConsensusSubmitMessage:
+					return submitMessage();
+				case TokenFeeScheduleUpdate:
+					return feeScheduleUpdate();
+				default:
+					break;
+			}
 		}
 
 		throw new IllegalArgumentException("Canonical usage unknown");
@@ -156,6 +156,25 @@ class BaseOperationUsage {
 				.givenSubType(TOKEN_NON_FUNGIBLE_UNIQUE)
 				.givenExpectedLifetime(THREE_MONTHS_IN_SECONDS)
 				.get();
+		return UsageAccumulator.fromGrpc(baseUsage);
+	}
+
+	private UsageAccumulator uniqueTokenWipe() {
+		final var target = TokenID.newBuilder().setTokenNum(1_234).build();
+		final var targetAcct = AccountID.newBuilder().setAccountNum(5_678).build();
+		final var canonicalTxn = TransactionBody.newBuilder()
+				.setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
+						.setToken(target)
+						.setAccount(targetAcct)
+						.addAllSerialNumbers(SINGLE_SERIAL_NUM))
+				.build();
+
+		final var helper = new TxnUsageEstimator(SINGLE_SIG_USAGE, canonicalTxn, ESTIMATOR_UTILS);
+		final var estimator = new TokenWipeUsage(canonicalTxn, helper);
+		final var baseUsage = estimator
+				.givenSubType(TOKEN_NON_FUNGIBLE_UNIQUE)
+				.get();
+
 		return UsageAccumulator.fromGrpc(baseUsage);
 	}
 
