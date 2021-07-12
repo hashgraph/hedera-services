@@ -45,6 +45,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
@@ -64,6 +66,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
 
 public class TokenTransactSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenTransactSpecs.class);
@@ -99,7 +102,11 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						uniqueTokenTxnWithSenderNotSigned(),
 						uniqueTokenTxnWithReceiverNotSigned(),
 						uniqueTokenTxnsAreAtomic(),
-						uniqueTokenDeletedTxn()
+						uniqueTokenDeletedTxn(),
+						balancesChangeOnTokenTransferWithFixedHbarCustomFees(),
+						transferFailsWithInsufficientBalanceForFixedCustomFees(),
+						balancesChangeOnTokenTransferWithFixedHtsCustomFees(),
+						transferFailsWithInsufficientBalanceForFixedHtsCustomFees(),
 				}
 		);
 	}
@@ -670,6 +677,174 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						)
 								.signedBy("signingKeyTreasury", "signingKeyFirstUser", DEFAULT_PAYER)
 								.hasKnownStatus(TOKEN_WAS_DELETED)
+				);
+	}
+
+	public HapiApiSpec balancesChangeOnTokenTransferWithFixedHbarCustomFees() {
+		return defaultHapiSpec("BalancesChangeOnTokenTransferWithFixedHbarCustomFees")
+				.given(
+						cryptoCreate(FIRST_USER).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(SECOND_USER).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						tokenCreate(A_TOKEN)
+								.initialSupply(TOTAL_SUPPLY)
+								.treasury(TOKEN_TREASURY)
+								.withCustom(fixedHbarFee(ONE_HBAR, TOKEN_TREASURY)),
+						tokenAssociate(FIRST_USER, A_TOKEN),
+						tokenAssociate(SECOND_USER, A_TOKEN)
+				).when(
+						cryptoTransfer(
+								moving(100, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+						),
+						cryptoTransfer(
+								moving(100, A_TOKEN).between(TOKEN_TREASURY, SECOND_USER)
+						),
+						cryptoTransfer(
+								moving(10, A_TOKEN).between(FIRST_USER, SECOND_USER)
+						).payingWith(FIRST_USER)
+								.signedBy(FIRST_USER)
+								.fee(ONE_HBAR)
+				).then(
+						getAccountBalance(TOKEN_TREASURY)
+								.logged()
+								.hasTokenBalance(A_TOKEN, TOTAL_SUPPLY - 200)
+								.hasTinyBars(3 * ONE_HBAR),
+						getAccountBalance(FIRST_USER)
+								.logged()
+								.hasTokenBalance(A_TOKEN, 90)
+								.hasTinyBars(9899205334L),
+						getAccountBalance(SECOND_USER)
+								.logged()
+								.hasTokenBalance(A_TOKEN, 110)
+								.hasTinyBars(ONE_HUNDRED_HBARS)
+				);
+	}
+
+	public HapiApiSpec transferFailsWithInsufficientBalanceForFixedCustomFees() {
+		return defaultHapiSpec("TransferFailsWithInsufficientBalanceForFixedCustomFees")
+				.given(
+						cryptoCreate(FIRST_USER).balance(ONE_HBAR),
+						cryptoCreate(SECOND_USER).balance(0L),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						tokenCreate(A_TOKEN)
+								.initialSupply(TOTAL_SUPPLY)
+								.treasury(TOKEN_TREASURY)
+								.withCustom(fixedHbarFee(5 * ONE_HBAR, TOKEN_TREASURY)),
+						tokenAssociate(FIRST_USER, A_TOKEN),
+						tokenAssociate(SECOND_USER, A_TOKEN)
+				).when(
+						cryptoTransfer(
+								moving(10, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+						),
+						cryptoTransfer(
+								moving(10, A_TOKEN).between(TOKEN_TREASURY, SECOND_USER)
+						),
+						cryptoTransfer(
+								moving(5, A_TOKEN).between(FIRST_USER, SECOND_USER)
+						).payingWith(FIRST_USER)
+								.signedBy(FIRST_USER)
+								.fee(ONE_HBAR)
+						.hasKnownStatus(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE)
+				).then(
+						getAccountBalance(TOKEN_TREASURY)
+								.logged()
+								.hasTokenBalance(A_TOKEN, TOTAL_SUPPLY - 20)
+								.hasTinyBars(10 * ONE_HBAR),
+						getAccountBalance(FIRST_USER)
+								.logged()
+								.hasTokenBalance(A_TOKEN, 10)
+								.hasTinyBars(99205334),
+						getAccountBalance(SECOND_USER)
+								.logged()
+								.hasTokenBalance(A_TOKEN, 10)
+								.hasTinyBars(0L)
+				);
+	}
+
+	public HapiApiSpec balancesChangeOnTokenTransferWithFixedHtsCustomFees() {
+		return defaultHapiSpec("BalancesChangeOnTokenTransferWithFixedHtsCustomFees")
+				.given(
+						cryptoCreate(FIRST_USER).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(SECOND_USER).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						tokenCreate(A_TOKEN)
+								.initialSupply(TOTAL_SUPPLY)
+								.treasury(TOKEN_TREASURY),
+						tokenCreate(B_TOKEN)
+								.initialSupply(TOTAL_SUPPLY)
+								.treasury(TOKEN_TREASURY)
+								.withCustom(fixedHtsFee(10L, A_TOKEN, TOKEN_TREASURY)),
+						tokenAssociate(FIRST_USER, A_TOKEN, B_TOKEN),
+						tokenAssociate(SECOND_USER, A_TOKEN, B_TOKEN)
+				).when(
+						cryptoTransfer(
+								moving(100, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+						),
+						cryptoTransfer(
+								moving(100, B_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+						),
+						cryptoTransfer(
+								moving(50, B_TOKEN).between(FIRST_USER, SECOND_USER)
+						).payingWith(FIRST_USER)
+								.fee(ONE_HBAR)
+				).then(
+						getAccountBalance(TOKEN_TREASURY)
+								.logged()
+								.hasTokenBalance(A_TOKEN, TOTAL_SUPPLY - 90)
+								.hasTokenBalance(B_TOKEN, TOTAL_SUPPLY - 100),
+						getAccountBalance(FIRST_USER)
+								.logged()
+								.hasTokenBalance(A_TOKEN, 90)
+								.hasTokenBalance(B_TOKEN, 50)
+								.hasTinyBars(9899205334L),
+						getAccountBalance(SECOND_USER)
+								.logged()
+								.hasTokenBalance(B_TOKEN, 50)
+								.hasTinyBars(ONE_HUNDRED_HBARS)
+				);
+	}
+
+	public HapiApiSpec transferFailsWithInsufficientBalanceForFixedHtsCustomFees() {
+		return defaultHapiSpec("TransferFailsWithInsufficientBalanceForFixedHtsCustomFees")
+				.given(
+						cryptoCreate(FIRST_USER).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(SECOND_USER).balance(0L),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						tokenCreate(A_TOKEN)
+								.initialSupply(TOTAL_SUPPLY)
+								.treasury(TOKEN_TREASURY),
+						tokenCreate(B_TOKEN)
+								.initialSupply(TOTAL_SUPPLY)
+								.treasury(TOKEN_TREASURY)
+								.withCustom(fixedHtsFee(10L, A_TOKEN, TOKEN_TREASURY)),
+						tokenAssociate(FIRST_USER, A_TOKEN, B_TOKEN),
+						tokenAssociate(SECOND_USER, A_TOKEN, B_TOKEN)
+				).when(
+						cryptoTransfer(
+								moving(5, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+						),
+						cryptoTransfer(
+								moving(100, B_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+						),
+						cryptoTransfer(
+								moving(5, B_TOKEN).between(FIRST_USER, SECOND_USER)
+						).payingWith(FIRST_USER)
+								.signedBy(FIRST_USER)
+								.fee(ONE_HBAR)
+								.hasKnownStatus(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE)
+				).then(
+						getAccountBalance(TOKEN_TREASURY)
+								.logged()
+								.hasTokenBalance(A_TOKEN, TOTAL_SUPPLY - 5)
+								.hasTinyBars(10 * ONE_HBAR),
+						getAccountBalance(FIRST_USER)
+								.logged()
+								.hasTokenBalance(A_TOKEN, 5)
+								.hasTokenBalance(B_TOKEN, 100)
+								.hasTinyBars(99205334),
+						getAccountBalance(SECOND_USER)
+								.logged()
+								.hasTinyBars(0L)
 				);
 	}
 
