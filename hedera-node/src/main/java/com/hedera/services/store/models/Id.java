@@ -26,11 +26,17 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 
+import java.util.Comparator;
+
 /**
  * Represents the id of a Hedera entity (account, topic, token, contract, file, or schedule).
  */
 public class Id {
 	public static final Id DEFAULT = new Id(0, 0, 0);
+	public static final Comparator<Id> ID_COMPARATOR = Comparator
+			.comparingLong(Id::getNum)
+			.thenComparingLong(Id::getShard)
+			.thenComparingLong(Id::getRealm);
 
 	private final long shard;
 	private final long realm;

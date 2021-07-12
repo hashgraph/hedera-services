@@ -31,14 +31,24 @@ public class HapiTokenNftInfo {
     private Optional<String> expectedTokenID;
     private Optional<String> expectedAccountID;
 
-    private HapiTokenNftInfo(Optional<String> tokenId, OptionalLong serialNum, Optional<String> accountId, Optional<ByteString> metadata) {
+    private HapiTokenNftInfo(
+            Optional<String> tokenId,
+            OptionalLong serialNum,
+            Optional<String> accountId,
+            Optional<ByteString> metadata
+    ) {
         this.expectedSerialNum = serialNum;
         this.expectedMetadata = metadata;
         this.expectedTokenID = tokenId;
         this.expectedAccountID = accountId;
     }
 
-    public static HapiTokenNftInfo newTokenNftInfo(final String tokenId, final long serialNum, final String accountId, final ByteString metadata) {
+    public static HapiTokenNftInfo newTokenNftInfo(
+            final String tokenId,
+            final long serialNum,
+            final String accountId,
+            final ByteString metadata
+    ) {
         return new HapiTokenNftInfo(
                 Optional.of(tokenId),
                 OptionalLong.of(serialNum),

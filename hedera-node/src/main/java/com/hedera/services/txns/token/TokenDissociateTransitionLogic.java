@@ -26,13 +26,12 @@ import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.TransitionLogic;
+import com.hedera.services.txns.token.process.Dissociation;
+import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,29 +45,28 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEA
 
 /**
  * Provides the state transition for dissociating tokens from an account.
- *
- * @author Michael Tinker
  */
 public class TokenDissociateTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(TokenDissociateTransitionLogic.class);
-
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
 	private final AccountStore accountStore;
 	private final TypedTokenStore tokenStore;
 	private final TransactionContext txnCtx;
 	private final OptionValidator validator;
+	private final DissociationFactory dissociationFactory;
 
 	public TokenDissociateTransitionLogic(
 			TypedTokenStore tokenStore,
 			AccountStore accountStore,
 			TransactionContext txnCtx,
-			OptionValidator validator
+			OptionValidator validator,
+			DissociationFactory dissociationFactory
 	) {
 		this.accountStore = accountStore;
 		this.tokenStore = tokenStore;
 		this.txnCtx = txnCtx;
 		this.validator = validator;
+		this.dissociationFactory = dissociationFactory;
 	}
 
 	@Override
@@ -79,29 +77,21 @@ public class TokenDissociateTransitionLogic implements TransitionLogic {
 
 		/* --- Load the model objects --- */
 		final var account = accountStore.loadAccount(accountId);
-		final List<Pair<TokenRelationship, TokenRelationship>> tokenRelationships = new ArrayList<>();
-		for (final var tokenId : op.getTokensList()) {
-			final var token = tokenStore.loadPossiblyDeletedToken(Id.fromGrpcToken(tokenId));
-			var accountRelationship = tokenStore.loadTokenRelationship(token, account);
-			var treasuryRelationship = tokenStore.loadTokenRelationship(token, token.getTreasury());
-			tokenRelationships.add(Pair.of(accountRelationship, treasuryRelationship));
+		final List<Dissociation> dissociations = new ArrayList<>();
+		for (var tokenId : op.getTokensList()) {
+			dissociations.add(dissociationFactory.loadFrom(tokenStore, account, Id.fromGrpcToken(tokenId)));
 		}
 
 		/* --- Do the business logic --- */
-		account.dissociateWith(tokenRelationships, validator);
+		account.dissociateUsing(dissociations, validator);
 
 		/* --- Persist the updated models --- */
-		accountStore.persistAccount(account); // tx account
-		for (Pair<TokenRelationship, TokenRelationship> accountAndTreasuryPair : tokenRelationships) {
-			tokenStore.persistToken(accountAndTreasuryPair.getKey().getToken()); // token from tx token list
-			accountStore.persistAccount(accountAndTreasuryPair.getKey().getToken().getTreasury()); // treasury
+		accountStore.persistAccount(account);
+		final List<TokenRelationship> allUpdatedRels = new ArrayList<>();
+		for (var dissociation : dissociations) {
+			dissociation.addUpdatedModelRelsTo(allUpdatedRels);
 		}
-		var flatTokenRels = new ArrayList<TokenRelationship>();
-		for (var pair : tokenRelationships) {
-			flatTokenRels.add(pair.getValue());
-			flatTokenRels.add(pair.getKey());
-		}
-		tokenStore.persistTokenRelationships(flatTokenRels); // all relations
+		tokenStore.persistTokenRelationships(allUpdatedRels);
 	}
 
 	@Override

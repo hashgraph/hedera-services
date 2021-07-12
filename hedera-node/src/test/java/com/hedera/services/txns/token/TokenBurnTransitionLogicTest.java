@@ -128,6 +128,7 @@ class TokenBurnTransitionLogicTest {
 
 		// then:
 		verify(token).getType();
+		verify(store).loadUniqueTokens(token, tokenBurnTxn.getTokenBurn().getSerialNumbersList());
 		verify(token).burn(any(OwnershipTracker.class), eq(treasuryRel), any(List.class));
 		verify(store).persistToken(token);
 		verify(store).persistTokenRelationships(List.of(treasuryRel));

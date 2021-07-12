@@ -24,20 +24,13 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.store.models.NftId;
 import com.swirlds.fcmap.FCMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
-import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
 
 import static com.hedera.services.state.merkle.MerkleUniqueTokenId.fromNftId;
 
 public class BackingNfts implements BackingStore<NftId, MerkleUniqueToken> {
-	static final Logger log = LogManager.getLogger(BackingNfts.class);
-
-	private final Set<NftId> existing = new HashSet<>();
-
 	private final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> delegate;
 
 	public BackingNfts(Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> delegate) {
@@ -47,10 +40,7 @@ public class BackingNfts implements BackingStore<NftId, MerkleUniqueToken> {
 
 	@Override
 	public void rebuildFromSources() {
-		existing.clear();
-		delegate.get().keySet().stream()
-				.map(MerkleUniqueTokenId::asNftId)
-				.forEach(existing::add);
+		/* No-op */
 	}
 
 	@Override
@@ -65,33 +55,25 @@ public class BackingNfts implements BackingStore<NftId, MerkleUniqueToken> {
 
 	@Override
 	public void put(NftId id, MerkleUniqueToken nft) {
-		if (!existing.contains(id)) {
-			delegate.get().put(fromNftId(id), nft);
-			existing.add(id);
+		final var key = fromNftId(id);
+		final var currentNfts = delegate.get();
+		if (!currentNfts.containsKey(key)) {
+			currentNfts.put(key, nft);
 		}
 	}
 
 	@Override
 	public void remove(NftId id) {
-		existing.remove(id);
 		delegate.get().remove(fromNftId(id));
 	}
 
 	@Override
 	public boolean contains(NftId id) {
-		return existing.contains(id);
+		return delegate.get().containsKey(fromNftId(id));
 	}
 
 	@Override
 	public Set<NftId> idSet() {
-		return existing;
-	}
-
-	public void addToExistingNfts(NftId nftId)	{
-		existing.add(nftId);
-	}
-
-	public void removeFromExistingNfts(NftId nftId) {
-		existing.remove(nftId);
+		throw new UnsupportedOperationException();
 	}
 }
