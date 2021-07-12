@@ -44,6 +44,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freeze;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
@@ -80,10 +81,10 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class UniqueTokenStateSetup extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(UniqueTokenStateSetup.class);
 
-	private static final long SECS_TO_RUN = 4050;
+	private static final long SECS_TO_RUN = 515;
 
-	private static final int MINT_TPS = 250;
-	private static final int NUM_UNIQ_TOKENS = 10_000;
+	private static final int MINT_TPS = 200;
+	private static final int NUM_UNIQ_TOKENS = 1_000;
 	private static final int UNIQ_TOKENS_BURST_SIZE = 1000;
 	private static final int UNIQ_TOKENS_POST_BURST_PAUSE_MS = 2500;
 	private static final int NFTS_PER_UNIQ_TOKEN = 1000;
@@ -119,7 +120,8 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 				.given().when().then(
 						runWithProvider(nftFactory())
 								.lasting(duration::get, unit::get)
-								.maxOpsPerSec(maxOpsPerSec::get)
+								.maxOpsPerSec(maxOpsPerSec::get),
+						freeze().startingIn(60).seconds().andLasting(60).seconds()
 				);
 	}
 

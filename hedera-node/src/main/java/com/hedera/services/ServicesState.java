@@ -101,11 +101,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	/* Order of Merkle node children */
 	static class ChildIndices {
-		static final int ADDRESS_BOOK = 0;
-		static final int NETWORK_CTX = 1;
+		static final int ADDRESS_BOOK = 10;
+		static final int NETWORK_CTX = 4;
 		static final int TOPICS = 2;
 		static final int STORAGE = 3;
-		static final int ACCOUNTS = 4;
+		static final int ACCOUNTS = 1;
 		static final int NUM_070_CHILDREN = 5;
 		static final int TOKENS = 5;
 		static final int NUM_080_CHILDREN = 6;
@@ -120,7 +120,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		static final int NUM_0130_CHILDREN = 10;
 		static final int NUM_0140_CHILDREN = 10;
 		static final int NUM_0150_CHILDREN = 10;
-		static final int UNIQUE_TOKENS = 10;
+		static final int UNIQUE_TOKENS = 0;
 		static final int NUM_0160_CHILDREN = 11;
 	}
 
@@ -207,6 +207,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		nodeId = platform.getSelfId();
 
 		/* Note this overrides the address book from the saved state if it is present. */
+		boolean isGenesis = getNumberOfChildren() < ChildIndices.NUM_0150_CHILDREN;
 		setChild(ChildIndices.ADDRESS_BOOK, addressBook);
 
 		var bootstrapProps = new BootstrapProperties();
@@ -216,7 +217,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		} catch (ContextNotFoundException ignoreToInstantiateNewContext) {
 			ctx = new ServicesContext(nodeId, platform, this, properties);
 		}
-		if (getNumberOfChildren() < ChildIndices.NUM_0150_CHILDREN) {
+		if (isGenesis) {
 			log.info("Init called on Services node {} WITHOUT Merkle saved state", nodeId);
 			long seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
 			setChild(ChildIndices.NETWORK_CTX, new MerkleNetworkContext(
@@ -342,17 +343,17 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		final var mutableOwnerAssocsIfInit =
 				(uniqueOwnershipAssociations == null) ? null : uniqueOwnershipAssociations.copy();
 		return new ServicesState(ctx, nodeId, List.of(
-				addressBook().copy(),
-				networkCtx().copy(),
+				uniqueTokens().copy(),
+				accounts().copy(),
 				topics().copy(),
 				storage().copy(),
-				accounts().copy(),
+				networkCtx().copy(),
 				tokens().copy(),
 				tokenAssociations().copy(),
 				diskFs().copy(),
 				scheduleTxs().copy(),
 				runningHashLeaf().copy(),
-				uniqueTokens().copy()
+				addressBook().copy()
 		), mutableUniqTokenAssocsIfInit, mutableOwnerAssocsIfInit, this);
 	}
 

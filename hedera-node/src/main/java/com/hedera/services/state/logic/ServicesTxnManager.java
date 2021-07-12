@@ -99,7 +99,8 @@ public class ServicesTxnManager {
 		} catch (Exception commitFailure) {
 			warning.accept(commitFailure, "txn commit");
 			log.error(commitFailure);
-			attemptRollback(accessor, consensusTime, submittingMember, ctx);
+			throw commitFailure;
+//			attemptRollback(accessor, consensusTime, submittingMember, ctx);
 		}
 	}
 

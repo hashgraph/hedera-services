@@ -319,6 +319,7 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<MerkleEntit
 		fc.setTokenType(tokenType);
 		fc.setSupplyType(supplyType);
 		fc.setMaxSupply(maxSupply);
+		fc.setKey(this.key);
 		if (adminKey != UNUSED_KEY) {
 			fc.setAdminKey(adminKey);
 		}

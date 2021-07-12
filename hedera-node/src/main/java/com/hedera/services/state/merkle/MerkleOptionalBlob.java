@@ -67,7 +67,7 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 	}
 
 	@Override
-	public void setKey(MerkleBlobMeta merkleBlobMeta) {
+	public void setKey(MerkleBlobMeta key) {
 		this.key = key;
 	}
 
@@ -167,7 +167,9 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 	/* --- FastCopyable --- */
 	@Override
 	public MerkleOptionalBlob copy() {
-		return new MerkleOptionalBlob(delegate.copy());
+		final var fc = new MerkleOptionalBlob(delegate.copy());
+		fc.setKey(this.key);
+		return fc;
 	}
 
 	@Override

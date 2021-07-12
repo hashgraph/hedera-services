@@ -261,6 +261,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<MerkleEn
 		fc.scheduledTxn = scheduledTxn;
 		fc.ordinaryScheduledTxn = ordinaryScheduledTxn;
 		fc.resolutionTime = resolutionTime;
+		fc.setKey(this.key);
 
 		/* Signatories are mutable */
 		for (byte[] signatory : signatories) {

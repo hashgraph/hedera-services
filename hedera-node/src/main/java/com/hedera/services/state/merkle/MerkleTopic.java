@@ -204,7 +204,9 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<Merkl
 
 	@Override
 	public MerkleTopic copy() {
-		return new MerkleTopic(this);
+		final var fc = new MerkleTopic(this);
+		fc.setKey(this.key);
+		return fc;
 	}
 
 	@Override

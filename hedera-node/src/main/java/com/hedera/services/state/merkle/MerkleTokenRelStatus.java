@@ -146,7 +146,9 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<Me
 	/* --- FastCopyable --- */
 	@Override
 	public MerkleTokenRelStatus copy() {
-		return new MerkleTokenRelStatus(balance, frozen, kycGranted);
+		final var fc = new MerkleTokenRelStatus(balance, frozen, kycGranted);
+		fc.setKey(this.key);
+		return fc;
 	}
 
 	@Override

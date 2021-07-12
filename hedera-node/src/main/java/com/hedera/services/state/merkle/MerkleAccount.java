@@ -80,7 +80,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 				new MerkleAccountState(),
 				new FCQueue<ExpirableTxnRecord>(),
 				new MerkleAccountTokens(),
-				null), MERKLE_VERSION);
+				new MerkleEntityId()), MERKLE_VERSION);
 	}
 
 	@Override
@@ -126,7 +126,8 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		return new MerkleAccount(List.of(
 				state().copy(),
 				records().copy(),
-				tokens().copy()), this);
+				tokens().copy(),
+				getKey()), this);
 	}
 
 	/* ---- Object ---- */

@@ -141,7 +141,9 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<NftId
 	/* --- FastCopyable --- */
 	@Override
 	public MerkleUniqueToken copy() {
-		return new MerkleUniqueToken(owner, metadata, creationTime);
+		final var fc = new MerkleUniqueToken(owner, metadata, creationTime);
+		fc.setKey(this.key);
+		return fc;
 	}
 
 	public void setOwner(EntityId owner) {
