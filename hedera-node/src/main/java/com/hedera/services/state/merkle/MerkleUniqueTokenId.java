@@ -124,7 +124,7 @@ public class MerkleUniqueTokenId extends AbstractMerkleLeaf {
 	@Override
 	public void deserialize(SerializableDataInputStream in, int i) throws IOException {
 		tokenId = in.readSerializable();
-		serialNumber = in.readInt();
+		serialNumber = in.readLong();
 	}
 
 	@Override
