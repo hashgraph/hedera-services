@@ -85,6 +85,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_MAX_SUPPLY_REACHED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TREASURY_MUST_OWN_BURNED_NFT;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -119,6 +120,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 				finiteNftReachesMaxSupplyProperly(),
 
 				burnHappyPath(),
+				canOnlyBurnFromTreasury(),
 				burnFailsOnInvalidSerialNumber(),
 				burnRespectsBurnBatchConstraints(),
 				treasuryBalanceCorrectAfterBurn(),
@@ -482,6 +484,53 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 						getAccountBalance(TOKEN_TREASURY)
 								.hasTokenBalance(NFT, 0),
 						getAccountInfo(TOKEN_TREASURY).hasToken(relationshipWith(NFT)).hasOwnedNfts(0)
+				);
+	}
+
+	private HapiApiSpec canOnlyBurnFromTreasury() {
+		final var nonTreasury = "anybodyElse";
+
+		return defaultHapiSpec("CanOnlyBurnFromTreasury")
+				.given(
+						newKeyNamed(SUPPLY_KEY),
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(nonTreasury),
+						tokenCreate(NFT)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyType(TokenSupplyType.INFINITE)
+								.initialSupply(0)
+								.supplyKey(SUPPLY_KEY)
+								.treasury(TOKEN_TREASURY),
+						mintToken(NFT, List.of(
+								metadata("1"),
+								metadata("2"))),
+						tokenAssociate(nonTreasury, NFT),
+						cryptoTransfer(movingUnique(2L, NFT).between(TOKEN_TREASURY, nonTreasury))
+				).when(
+						burnToken(NFT, List.of(1L, 2L))
+								.via("burnTxn")
+								.hasKnownStatus(TREASURY_MUST_OWN_BURNED_NFT)
+				).then(
+						getTokenNftInfo(NFT, 1).hasSerialNum(1),
+						getTokenNftInfo(NFT, 2).hasSerialNum(2),
+						getTokenInfo(NFT).hasTotalSupply(2),
+						getAccountBalance(nonTreasury).hasTokenBalance(NFT, 1),
+						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NFT, 1),
+						getAccountInfo(nonTreasury).hasOwnedNfts(1),
+						getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(1),
+						getTokenNftInfos(NFT, 0, 2)
+								.hasNfts(
+										newTokenNftInfo(NFT, 1, TOKEN_TREASURY, metadata("1")),
+										newTokenNftInfo(NFT, 2, nonTreasury, metadata("2"))
+								) .logged(),
+						getAccountNftInfos(TOKEN_TREASURY, 0, 1)
+								.hasNfts(
+										newTokenNftInfo(NFT, 1, TOKEN_TREASURY, metadata("1"))
+								),
+						getAccountNftInfos(nonTreasury, 0, 1)
+								.hasNfts(
+										newTokenNftInfo(NFT, 2, nonTreasury, metadata("2"))
+								)
 				);
 	}
 

@@ -141,11 +141,6 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 		ids.addAll(tokenIds);
 	}
 
-	public void dissociateAll(Set<TokenID> tokenIds) {
-		throwIfImmutable();
-		ids.removeAll(tokenIds);
-	}
-
 	public void shareTokensOf(MerkleAccountTokens other) {
 		throwIfImmutable();
 		ids = other.getIds();
