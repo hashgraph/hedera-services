@@ -52,12 +52,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
+import static com.hedera.services.store.TypedTokenStore.legacyReprOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -147,6 +149,22 @@ class TypedTokenStoreTest {
 	}
 
 	@Test
+	void removesDestroyedRel() {
+		// setup:
+		final var destroyedRel = new TokenRelationship(token, miscAccount);
+		destroyedRel.markAsPersisted();
+		destroyedRel.markAsDestroyed();
+
+		// when:
+		subject.persistTokenRelationships(List.of(destroyedRel));
+
+		// then:
+		verify(tokenRels).remove(miscTokenRelId);
+		verify(backingTokenRels).removeFromExistingRels(legacyReprOf(destroyedRel));
+		verify(transactionRecordService).includeChangesToTokenRels(List.of(destroyedRel));
+	}
+
+	@Test
 	void persistTrackers() {
 		var ot = new OwnershipTracker();
 		subject.persistTrackers(ot);
@@ -203,12 +221,15 @@ class TypedTokenStoreTest {
 	}
 
 	@Test
-	void failsLoadingMissingTokenWithloadPossiblyDeletedToken() {
-		assertloadPossiblyDeletedTokenFailsWith(INVALID_TOKEN_ID);
+	void canLoadAutoRemovedTokenIfAllowed() {
+		final var autoRemovedToken = subject.loadPossiblyDeletedOrAutoRemovedToken(tokenId);
+
+		assertEquals(tokenId, autoRemovedToken.getId());
+		assertTrue(autoRemovedToken.isBelievedToHaveBeenAutoRemoved());
 	}
 
 	@Test
-	void successfullyLoadDeletedToken() {
+	void loadsActuallyDeletedTokenAsExpected() {
 		givenToken(merkleTokenId, merkleToken);
 		merkleToken.setDeleted(true);
 

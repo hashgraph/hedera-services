@@ -32,29 +32,33 @@ import java.util.List;
 import java.util.Objects;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
-public class DissociationRels {
+public class Dissociation {
 	private final TokenRelationship dissociatingAccountRel;
 	private final TokenRelationship dissociatedTokenTreasuryRel;
 
 	private boolean modelsAreUpdated = false;
 	private boolean expiredTokenTreasuryReceivedBalance = false;
 
-	public static DissociationRels loadFrom(TypedTokenStore tokenStore, Account account, Id tokenId) {
+	public static Dissociation loadFrom(TypedTokenStore tokenStore, Account account, Id tokenId) {
 		final var token = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(tokenId);
 		final var dissociatingAccountRel = tokenStore.loadTokenRelationship(token, account);
 		if (token.isBelievedToHaveBeenAutoRemoved()) {
-			return new DissociationRels(dissociatingAccountRel, null);
+			return new Dissociation(dissociatingAccountRel, null);
 		} else {
 			final var treasury = token.getTreasury();
 			final var dissociatedTokenTreasuryRel = tokenStore.loadTokenRelationship(token, treasury);
-			return new DissociationRels(dissociatingAccountRel, dissociatedTokenTreasuryRel);
+			return new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
 		}
 	}
 
-	public DissociationRels(
+	public Dissociation(
 			TokenRelationship dissociatingAccountRel,
 			@Nullable TokenRelationship dissociatedTokenTreasuryRel
 	) {
@@ -80,40 +84,61 @@ public class DissociationRels {
 		return dissociatedTokenTreasuryRel;
 	}
 
-	public boolean didExpiredTokenTreasuryReceiveBalance() {
-		return expiredTokenTreasuryReceivedBalance;
+	public void updateModelRelsSubjectTo(OptionValidator validator) {
+		/* The token-treasury relationship is null only if the token has been
+		auto-removed; and there is nothing more to do or validate in that case. */
+		if (dissociatedTokenTreasuryRel != null) {
+			/* Also nothing more to do for an association with a deleted token. */
+			if (!dissociatingAccountRel.getToken().isDeleted()) {
+				updateModelsForDissociationFromActiveToken(validator);
+			}
+		}
+		dissociatingAccountRel.markAsDestroyed();
+		modelsAreUpdated = true;
 	}
 
-	public void updateModelRelsSubjectTo(OptionValidator validator) {
-		if (dissociatedTokenTreasuryRel == null) {
-			dissociatingAccountRel.markAsDestroyed();
-			return;
-		}
+	private void updateModelsForDissociationFromActiveToken(OptionValidator validator) {
+		Objects.requireNonNull(dissociatedTokenTreasuryRel);
 
+		final var token = dissociatingAccountRel.getToken();
 		final var isAccountTreasuryOfDissociatedToken =
-				dissociatingAccountId().equals(dissociatedTokenTreasuryRel.getToken().getTreasury().getId());
+				dissociatingAccountId().equals(token.getTreasury().getId());
 		validateFalse(isAccountTreasuryOfDissociatedToken, ACCOUNT_IS_TREASURY);
-
 		validateFalse(dissociatingAccountRel.isFrozen(), ACCOUNT_FROZEN_FOR_TOKEN);
 
-		throw new AssertionError("Not implemented!");
+		final var balance = dissociatingAccountRel.getBalance();
+		if (balance > 0L) {
+			validateFalse(token.getType() == NON_FUNGIBLE_UNIQUE, ACCOUNT_STILL_OWNS_NFTS);
+
+			final var isTokenExpired = !validator.isAfterConsensusSecond(token.getExpiry());
+			validateTrue(isTokenExpired, TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+
+			/* If the fungible common token is expired, we automatically transfer the
+			dissociating account's balance back to the treasury. */
+			dissociatingAccountRel.setBalance(0L);
+			final var newTreasuryBalance = dissociatedTokenTreasuryRel.getBalance() + balance;
+			dissociatedTokenTreasuryRel.setBalance(newTreasuryBalance);
+			expiredTokenTreasuryReceivedBalance = true;
+		}
 	}
 
 	public void addUpdatedModelRelsTo(List<TokenRelationship> accumulator) {
+		if (!modelsAreUpdated) {
+			throw new IllegalStateException("Cannot reveal changed relationships before update");
+		}
 		accumulator.add(dissociatingAccountRel);
+		if (expiredTokenTreasuryReceivedBalance) {
+			accumulator.add(dissociatedTokenTreasuryRel);
+		}
 	}
 
 	@Override
 	public String toString() {
-		return MoreObjects.toStringHelper(DissociationRels.class)
+		return MoreObjects.toStringHelper(Dissociation.class)
 				.add("dissociatingAccountId", dissociatingAccountRel.getAccount().getId())
 				.add("dissociatedTokenId", dissociatingAccountRel.getToken().getId())
 				.add("dissociatedTokenTreasuryId", dissociatedTokenTreasuryRel.getAccount().getId())
 				.add("expiredTokenTreasuryReceivedBalance", expiredTokenTreasuryReceivedBalance)
 				.toString();
-	}
-
-	void expiredTokenTreasuryReceivedBalance() {
-		this.expiredTokenTreasuryReceivedBalance = true;
 	}
 }

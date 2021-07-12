@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.token;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.queries.token.HapiTokenNftInfo;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
@@ -40,6 +39,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
+import static com.hedera.services.bdd.spec.queries.token.HapiTokenNftInfo.newTokenNftInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
@@ -87,25 +87,26 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						balancesChangeOnTokenTransfer(),
-//						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
-//						senderSigsAreValid(),
-//						balancesAreChecked(),
-//						duplicateAccountsInTokenTransferRejected(),
-//						tokenOnlyTxnsAreAtomic(),
-//						tokenPlusHbarTxnsAreAtomic(),
-//						nonZeroTransfersRejected(),
-//						prechecksWork(),
-//						missingEntitiesRejected(),
-//						allRequiredSigsAreChecked(),
-//						uniqueTokenTxnAccountBalance(),
-//						uniqueTokenTxnWithNoAssociation(),
-//						uniqueTokenTxnWithFrozenAccount(),
-//						uniqueTokenTxnWithSenderNotSigned(),
-//						uniqueTokenTxnWithReceiverNotSigned(),
-//						uniqueTokenTxnsAreAtomic(),
-//						uniqueTokenDeletedTxn(),
-//						cannotSendFungibleToDissociatedContract(),
+						balancesChangeOnTokenTransfer(),
+						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
+						senderSigsAreValid(),
+						balancesAreChecked(),
+						duplicateAccountsInTokenTransferRejected(),
+						tokenOnlyTxnsAreAtomic(),
+						tokenPlusHbarTxnsAreAtomic(),
+						nonZeroTransfersRejected(),
+						prechecksWork(),
+						missingEntitiesRejected(),
+						allRequiredSigsAreChecked(),
+						uniqueTokenTxnAccountBalance(),
+						uniqueTokenTxnWithNoAssociation(),
+						uniqueTokenTxnWithFrozenAccount(),
+						uniqueTokenTxnWithSenderNotSigned(),
+						uniqueTokenTxnWithReceiverNotSigned(),
+						uniqueTokenTxnsAreAtomic(),
+						uniqueTokenDeletedTxn(),
+						cannotSendFungibleToDissociatedContractsOrAccounts(),
+						cannotGiveNftsToDissociatedContractsOrAccounts(),
 						recordsIncludeBothFungibleTokenChangesAndOwnershipChange(),
 				}
 		);
@@ -145,7 +146,56 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				);
 	}
 
-	public HapiApiSpec cannotSendFungibleToDissociatedContract() {
+	public HapiApiSpec cannotGiveNftsToDissociatedContractsOrAccounts() {
+		final var theContract = "tbd";
+		final var theAccount = "alsoTbd";
+		final var theKey = "multipurpose";
+		return defaultHapiSpec("CannotGiveNftsToDissociatedContractsOrAccounts")
+				.given(
+						newKeyNamed(theKey),
+						contractCreate(theContract),
+						cryptoCreate(theAccount),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(A_TOKEN)
+								.supplyKey(theKey)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0L)
+								.treasury(TOKEN_TREASURY),
+						tokenAssociate(theContract, A_TOKEN),
+						tokenAssociate(theAccount, A_TOKEN),
+						mintToken(A_TOKEN, List.of(ByteString.copyFromUtf8("dark"), ByteString.copyFromUtf8("matter")))
+				).when(
+						getContractInfo(theContract).hasToken(relationshipWith(A_TOKEN)),
+						getAccountInfo(theAccount).hasToken(relationshipWith(A_TOKEN)),
+						tokenDissociate(theContract, A_TOKEN),
+						tokenDissociate(theAccount, A_TOKEN),
+						getContractInfo(theContract).hasNoTokenRelationship(A_TOKEN),
+						getAccountInfo(theAccount).hasNoTokenRelationship(A_TOKEN)
+				).then(
+						cryptoTransfer(
+								movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, theContract)
+						).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+						cryptoTransfer(
+								movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, theAccount)
+						).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+						tokenAssociate(theContract, A_TOKEN),
+						tokenAssociate(theAccount, A_TOKEN),
+						cryptoTransfer(movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, theContract)),
+						cryptoTransfer(movingUnique(2, A_TOKEN).between(TOKEN_TREASURY, theAccount)),
+						getAccountBalance(theAccount).hasTokenBalance(A_TOKEN, 1),
+						getAccountBalance(theContract).hasTokenBalance(A_TOKEN, 1),
+						getAccountNftInfos(theAccount, 0, 1)
+								.hasNfts(
+										newTokenNftInfo(A_TOKEN,
+												2, theAccount, ByteString.copyFromUtf8("matter"))),
+						getAccountNftInfos(theContract, 0, 1)
+								.hasNfts(
+										newTokenNftInfo(A_TOKEN,
+												1, theContract, ByteString.copyFromUtf8("dark")))
+				);
+	}
+
+	public HapiApiSpec cannotSendFungibleToDissociatedContractsOrAccounts() {
 		final var theContract = "tbd";
 		final var theAccount = "alsoTbd";
 		return defaultHapiSpec("CannotSendFungibleToDissociatedContract")
@@ -169,10 +219,16 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				).then(
 						cryptoTransfer(
 								moving(1, A_TOKEN).between(TOKEN_TREASURY, theContract)
-						),
+						).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
 						cryptoTransfer(
 								moving(1, A_TOKEN).between(TOKEN_TREASURY, theAccount)
-						)
+						).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+						tokenAssociate(theContract, A_TOKEN),
+						tokenAssociate(theAccount, A_TOKEN),
+						cryptoTransfer(moving(1, A_TOKEN).between(TOKEN_TREASURY, theContract)),
+						cryptoTransfer(moving(1, A_TOKEN).between(TOKEN_TREASURY, theAccount)),
+						getAccountBalance(theAccount).hasTokenBalance(A_TOKEN, 1L),
+						getAccountBalance(theContract).hasTokenBalance(A_TOKEN, 1L)
 				);
 	}
 
@@ -561,9 +617,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.hasAccountID(FIRST_USER),
 						getAccountNftInfos(FIRST_USER, 0, 1)
 								.hasNfts(
-										HapiTokenNftInfo.newTokenNftInfo(A_TOKEN, 1, FIRST_USER,
-												ByteString.copyFromUtf8("memo"))
-								),
+										newTokenNftInfo(A_TOKEN, 1, FIRST_USER, ByteString.copyFromUtf8("memo"))),
 						getTxnRecord("cryptoTransferTxn").logged()
 				);
 	}
@@ -590,7 +644,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
 						getAccountNftInfos(TOKEN_TREASURY, 0, 1)
 								.hasNfts(
-										HapiTokenNftInfo.newTokenNftInfo(A_TOKEN, 1, TOKEN_TREASURY,
+										newTokenNftInfo(A_TOKEN, 1, TOKEN_TREASURY,
 												ByteString.copyFromUtf8("memo"))
 								)
 				);

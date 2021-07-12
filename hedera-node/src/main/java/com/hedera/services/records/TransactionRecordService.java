@@ -80,10 +80,10 @@ public class TransactionRecordService {
 	 * valid when CryptoTransfer is refactored!
 	 *
 	 * @param tokenRels
-	 * 		List of models of the changed relationship
+	 * 		List of models of the changed relationships
 	 */
 	public void includeChangesToTokenRels(final List<TokenRelationship> tokenRels) {
-		Map<Id, TokenTransferList.Builder> transferListMap = new HashMap<>();
+		final Map<Id, TokenTransferList.Builder> transferListMap = new HashMap<>();
 		for (final var tokenRel : tokenRels) {
 			if (tokenRel.getBalanceChange() == 0L || !tokenRel.hasCommonRepresentation()) {
 				continue;
@@ -91,13 +91,12 @@ public class TransactionRecordService {
 			final var tokenId = tokenRel.getToken().getId();
 			final var accountId = tokenRel.getAccount().getId();
 
-			final var tokenTransferListBuilder = transferListMap.getOrDefault(tokenId,
-					TokenTransferList.newBuilder().setToken(tokenId.asGrpcToken()));
-
-			tokenTransferListBuilder.addTransfers(AccountAmount.newBuilder()
+			final var builder = transferListMap.computeIfAbsent(
+					tokenId, ignore -> TokenTransferList.newBuilder().setToken(tokenId.asGrpcToken()));
+			builder.addTransfers(AccountAmount.newBuilder()
 					.setAccountID(accountId.asGrpcAccount())
 					.setAmount(tokenRel.getBalanceChange()));
-			transferListMap.put(tokenId, tokenTransferListBuilder);
+			transferListMap.put(tokenId, builder);
 		}
 		if (!transferListMap.isEmpty()) {
 			var transferList = new ArrayList<TokenTransferList>();

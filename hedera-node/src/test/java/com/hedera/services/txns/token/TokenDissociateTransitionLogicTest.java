@@ -1,207 +1,146 @@
 package com.hedera.services.txns.token;
 
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- */
-
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
-import com.hedera.services.txns.validation.ContextOptionValidator;
+import com.hedera.services.txns.token.process.Dissociation;
+import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.BDDMockito.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
+import static org.mockito.BDDMockito.willAnswer;
+import static org.mockito.Mockito.verify;
 
+@ExtendWith(MockitoExtension.class)
 class TokenDissociateTransitionLogicTest {
-	private long tokenNum = 12345L;
-	private long accountNum = 54321L;
-	private long treasuryNum = 77777L;
-	private AccountID accountID = IdUtils.asAccount("0.0." + accountNum);
-	private TokenID tokenID = IdUtils.asToken("0.0." + tokenNum);
-	private Id accountId = new Id(0,0,accountNum);
-	private Id tokenId = new Id(0,0,tokenNum);
-	private Id treasuryId = new Id(0,0,treasuryNum);
+	private final Id accountId = new Id(1, 2, 3);
+	private final Id tokenId = new Id(2, 3, 4);
+	private final AccountID targetAccount = IdUtils.asAccount("1.2.3");
+	private final TokenID firstTargetToken = IdUtils.asToken("2.3.4");
 
-	private AccountStore accountStore;
-	private TypedTokenStore tokenStore;
-	private TransactionContext txnCtx;
-	private PlatformTxnAccessor accessor;
+	@Mock
 	private Account account;
-	private Account treasury;
-	private Token token;
+	@Mock
 	private TokenRelationship tokenRelationship;
-	private TokenRelationship treasuryRelationship;
+	@Mock
+	private AccountStore accountStore;
+	@Mock
+	private TypedTokenStore tokenStore;
+	@Mock
+	private TransactionContext txnCtx;
+	@Mock
 	private OptionValidator validator;
+	@Mock
+	private DissociationFactory relsFactory;
+	@Mock
+	private TxnAccessor accessor;
+	@Mock
+	private Dissociation dissociation;
 
-	private TransactionBody tokenDissociateTxn;
 	private TokenDissociateTransitionLogic subject;
 
 	@BeforeEach
-	private void setup() {
-		tokenStore = mock(TypedTokenStore.class);
-		accountStore = mock(AccountStore.class);
-		accessor = mock(PlatformTxnAccessor.class);
-		account = mock(Account.class);
-		treasury = mock(Account.class);
-		token = mock(Token.class);
-		tokenRelationship = mock(TokenRelationship.class);
-		treasuryRelationship = mock(TokenRelationship.class);
-		validator = mock(ContextOptionValidator.class);
-
-		txnCtx = mock(TransactionContext.class);
-
-		subject = new TokenDissociateTransitionLogic(tokenStore, accountStore, txnCtx, validator);
+	void setUp() {
+		subject = new TokenDissociateTransitionLogic(tokenStore, accountStore, txnCtx, validator, relsFactory);
 	}
 
 	@Test
-	public void capturesInvalidDissociate() {
-		givenValidTxnCtx();
+	void performsExpectedLogic() {
+		given(accessor.getTxn()).willReturn(validDissociateTxn());
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accountStore.loadAccount(accountId)).willReturn(account);
 		// and:
-		doThrow(new InvalidTransactionException(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)).when(tokenStore).loadTokenRelationship(token, account);
-
-		// verify:
-		assertFailsWith(() -> subject.doStateTransition(), TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
-		verify(tokenStore, never()).loadTokenRelationship(token, treasury);
-
-	}
-
-	@Test
-	public void followsHappyPath() {
-		givenValidTxnCtx();
-		// and:
+		given(relsFactory.loadFrom(tokenStore, account, tokenId)).willReturn(dissociation);
+		willAnswer(invocationOnMock -> {
+			((List<TokenRelationship>)invocationOnMock.getArgument(0)).add(tokenRelationship);
+			return null;
+		}).given(dissociation).addUpdatedModelRelsTo(anyList());
 
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(tokenStore).loadPossiblyDeletedOrAutoRemovedToken(tokenId);
-		verify(tokenStore).loadTokenRelationship(token, account);
-		verify(tokenStore).loadTokenRelationship(token, treasury);
-		verify(account).dissociateWith(List.of(Pair.of(tokenRelationship, treasuryRelationship)), validator);
+		verify(account).dissociateUsing(List.of(dissociation), validator);
+		// and:
 		verify(accountStore).persistAccount(account);
-		var inOrder = Mockito.inOrder(tokenStore);
-		inOrder.verify(tokenStore).persistTokenRelationships(List.of(treasuryRelationship, tokenRelationship));
+		verify(tokenStore).persistTokenRelationships(List.of(tokenRelationship));
 	}
 
 	@Test
-	public void hasCorrectApplicability() {
-		givenValidTxnCtx();
-
+	void oksValidTxn() {
 		// expect:
-		assertTrue(subject.applicability().test(tokenDissociateTxn));
-		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
+		assertEquals(OK, subject.semanticCheck().apply(validDissociateTxn()));
 	}
 
 	@Test
-	public void acceptsValidTxn() {
-		givenValidTxnCtx();
+	void rejectsMissingAccountId() {
+		// given:
+		final var check = subject.semanticCheck();
 
 		// expect:
-		assertEquals(OK, subject.semanticCheck().apply(tokenDissociateTxn));
+		assertEquals(INVALID_ACCOUNT_ID, check.apply(dissociateTxnWith(missingAccountIdOp())));
 	}
 
 	@Test
-	public void rejectsMissingAccount() {
-		givenMissingAccount();
+	void rejectsRepatedTokenId() {
+		// given:
+		final var check = subject.semanticCheck();
 
 		// expect:
-		assertEquals(INVALID_ACCOUNT_ID, subject.semanticCheck().apply(tokenDissociateTxn));
+		assertEquals(TOKEN_ID_REPEATED_IN_TOKEN_LIST, check.apply(dissociateTxnWith(repeatedTokenIdOp())));
 	}
 
-	@Test
-	public void rejectsDuplicateTokens() {
-		givenDuplicateTokens();
-
-		// expect:
-		assertEquals(TOKEN_ID_REPEATED_IN_TOKEN_LIST, subject.semanticCheck().apply(tokenDissociateTxn));
-	}
-
-	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
-		var ex = assertThrows(InvalidTransactionException.class, something::run);
-		assertEquals(status, ex.getResponseCode());
-	}
-
-	private void givenValidTxnCtx() {
-		tokenDissociateTxn = TransactionBody.newBuilder()
-				.setTokenDissociate(TokenDissociateTransactionBody.newBuilder()
-						.setAccount(accountID)
-						.addTokens(tokenID))
-				.build();
-		given(accessor.getTxn()).willReturn(tokenDissociateTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(token.getTreasury()).willReturn(treasury);
-		given(tokenStore.loadPossiblyDeletedOrAutoRemovedToken(tokenId)).willReturn(token);
-		given(validator.isValidExpiry(any())).willReturn(true);
-		given(accountStore.getValidator()).willReturn(validator);
-		given(accountStore.loadAccount(accountId)).willReturn(account);
-		given(accountStore.loadAccount(treasuryId)).willReturn(treasury);
-		given(tokenStore.loadTokenRelationship(token, account)).willReturn(tokenRelationship);
-		given(tokenStore.loadTokenRelationship(token, treasury)).willReturn(treasuryRelationship);
-		given(tokenRelationship.getAccount()).willReturn(account);
-		given(tokenRelationship.getToken()).willReturn(token);
-		given(treasuryRelationship.getAccount()).willReturn(treasury);
-		given(treasuryRelationship.getToken()).willReturn(token);
-	}
-
-	private void givenMissingAccount() {
-		tokenDissociateTxn = TransactionBody.newBuilder()
-				.setTokenDissociate(TokenDissociateTransactionBody.newBuilder())
+	private TransactionBody validDissociateTxn() {
+		return TransactionBody.newBuilder()
+				.setTokenDissociate(validOp())
 				.build();
 	}
 
-	private void givenDuplicateTokens() {
-		tokenDissociateTxn = TransactionBody.newBuilder()
-				.setTokenDissociate(TokenDissociateTransactionBody.newBuilder()
-						.setAccount(accountID)
-						.addTokens(tokenID)
-						.addTokens(tokenID))
+	private TransactionBody dissociateTxnWith(TokenDissociateTransactionBody op) {
+		return TransactionBody.newBuilder()
+				.setTokenDissociate(op)
+				.build();
+	}
+
+	private TokenDissociateTransactionBody validOp() {
+		return TokenDissociateTransactionBody.newBuilder()
+				.setAccount(targetAccount)
+				.addTokens(firstTargetToken)
+				.build();
+	}
+
+	private TokenDissociateTransactionBody missingAccountIdOp() {
+		return TokenDissociateTransactionBody.newBuilder()
+				.addTokens(firstTargetToken)
+				.build();
+	}
+
+	private TokenDissociateTransactionBody repeatedTokenIdOp() {
+		return TokenDissociateTransactionBody.newBuilder()
+				.setAccount(targetAccount)
+				.addTokens(firstTargetToken)
+				.addTokens(firstTargetToken)
 				.build();
 	}
 }
