@@ -33,7 +33,6 @@ import java.util.Set;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -51,7 +50,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateRecordTrans
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateTransferListForBalances;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TREASURY_MUST_OWN_BURNED_NFT;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
@@ -104,9 +102,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
 								movingHbar(1_234_567L).between(secondOwner, firstOwner),
 								movingUnique(1L, uniqueToken)
 								.between(firstOwner, secondOwner))
-								.via(xferRecord),
-						burnToken(uniqueToken, List.of(1L))
-								.hasKnownStatus(TREASURY_MUST_OWN_BURNED_NFT)
+								.via(xferRecord)
 				).then(
 						getTxnRecord(mintRecord).logged(),
 						getTxnRecord(xferRecord).logged()
