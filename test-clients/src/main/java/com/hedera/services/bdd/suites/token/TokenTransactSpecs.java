@@ -115,7 +115,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						recordsIncludeBothFungibleTokenChangesAndOwnershipChange(),
 						transferListsEnforceTokenTypeRestrictions(),
 						balancesChangeOnTokenTransferWithFixedHbarCustomFees(),
-						transferFailsWithInsufficientBalanceForFixedCustomFees(),
+						transferFailsWithInsufficientBalanceForFixedHbarCustomFees(),
 						balancesChangeOnTokenTransferWithFixedHtsCustomFees(),
 						transferFailsWithInsufficientBalanceForFixedHtsCustomFees(),
 				}
@@ -841,8 +841,11 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	}
 
 	public HapiApiSpec balancesChangeOnTokenTransferWithFixedHbarCustomFees() {
+		final var defaultPayerRepl = "civilian";
+
 		return defaultHapiSpec("BalancesChangeOnTokenTransferWithFixedHbarCustomFees")
 				.given(
+						cryptoCreate(defaultPayerRepl).balance(10 * ONE_HUNDRED_HBARS),
 						cryptoCreate(FIRST_USER).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(SECOND_USER).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -855,10 +858,10 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				).when(
 						cryptoTransfer(
 								moving(100, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
-						),
+						).payingWith(defaultPayerRepl).fee(ONE_HBAR),
 						cryptoTransfer(
 								moving(100, A_TOKEN).between(TOKEN_TREASURY, SECOND_USER)
-						),
+						).payingWith(defaultPayerRepl).fee(ONE_HBAR),
 						cryptoTransfer(
 								moving(10, A_TOKEN).between(FIRST_USER, SECOND_USER)
 						).payingWith(FIRST_USER)
@@ -866,23 +869,23 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.fee(ONE_HBAR)
 				).then(
 						getAccountBalance(TOKEN_TREASURY)
-								.logged()
 								.hasTokenBalance(A_TOKEN, TOTAL_SUPPLY - 200)
 								.hasTinyBars(3 * ONE_HBAR),
 						getAccountBalance(FIRST_USER)
-								.logged()
 								.hasTokenBalance(A_TOKEN, 90)
 								.hasTinyBars(9899205334L),
 						getAccountBalance(SECOND_USER)
-								.logged()
 								.hasTokenBalance(A_TOKEN, 110)
 								.hasTinyBars(ONE_HUNDRED_HBARS)
 				);
 	}
 
-	public HapiApiSpec transferFailsWithInsufficientBalanceForFixedCustomFees() {
+	public HapiApiSpec transferFailsWithInsufficientBalanceForFixedHbarCustomFees() {
+		final var defaultPayerRepl = "civilian";
+
 		return defaultHapiSpec("TransferFailsWithInsufficientBalanceForFixedCustomFees")
 				.given(
+						cryptoCreate(defaultPayerRepl).balance(10 * ONE_HUNDRED_HBARS),
 						cryptoCreate(FIRST_USER).balance(ONE_HBAR),
 						cryptoCreate(SECOND_USER).balance(0L),
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -895,10 +898,10 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				).when(
 						cryptoTransfer(
 								moving(10, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
-						),
+						).payingWith(defaultPayerRepl).fee(ONE_HBAR),
 						cryptoTransfer(
 								moving(10, A_TOKEN).between(TOKEN_TREASURY, SECOND_USER)
-						),
+						).payingWith(defaultPayerRepl).fee(ONE_HBAR),
 						cryptoTransfer(
 								moving(5, A_TOKEN).between(FIRST_USER, SECOND_USER)
 						).payingWith(FIRST_USER)
@@ -907,17 +910,12 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						.hasKnownStatus(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE)
 				).then(
 						getAccountBalance(TOKEN_TREASURY)
-								.logged()
-								.hasTokenBalance(A_TOKEN, TOTAL_SUPPLY - 20)
-								.hasTinyBars(10 * ONE_HBAR),
+								.hasTokenBalance(A_TOKEN, TOTAL_SUPPLY - 20),
 						getAccountBalance(FIRST_USER)
-								.logged()
-								.hasTokenBalance(A_TOKEN, 10)
-								.hasTinyBars(99205334),
+								.hasTokenBalance(A_TOKEN, 10),
 						getAccountBalance(SECOND_USER)
 								.logged()
 								.hasTokenBalance(A_TOKEN, 10)
-								.hasTinyBars(0L)
 				);
 	}
 
@@ -942,8 +940,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						),
 						cryptoTransfer(
 								moving(100, B_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
-						).payingWith(TOKEN_TREASURY).fee(ONE_HBAR).via("hmm"),
-						getTxnRecord("hmm").logged(),
+						).payingWith(TOKEN_TREASURY).fee(ONE_HBAR),
 						cryptoTransfer(
 								moving(50, B_TOKEN).between(FIRST_USER, SECOND_USER)
 						).payingWith(FIRST_USER)
