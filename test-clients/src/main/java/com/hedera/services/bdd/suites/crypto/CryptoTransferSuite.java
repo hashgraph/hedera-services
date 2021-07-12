@@ -62,6 +62,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdW
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public class CryptoTransferSuite extends HapiApiSuite {
@@ -74,19 +75,19 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						vanillaTransferSucceeds(),
-//						complexKeyAcctPaysForOwnTransfer(),
-//						twoComplexKeysRequired(),
-//						specialAccountsBalanceCheck(),
-//						transferToTopicReturnsInvalidAccountId(),
-//						tokenTransferFeesScaleAsExpected(),
-//						okToSetInvalidPaymentHeaderForCostAnswer(),
-						baseCryptoTransferIsChargedAsExpected()
+						vanillaTransferSucceeds(),
+						complexKeyAcctPaysForOwnTransfer(),
+						twoComplexKeysRequired(),
+						specialAccountsBalanceCheck(),
+						transferToTopicReturnsInvalidAccountId(),
+						tokenTransferFeesScaleAsExpected(),
+						okToSetInvalidPaymentHeaderForCostAnswer(),
+						baseCryptoTransferFeeChargedAsExpected()
 				}
 		);
 	}
 
-	private HapiApiSpec baseCryptoTransferIsChargedAsExpected() {
+	private HapiApiSpec baseCryptoTransferFeeChargedAsExpected() {
 		final var expectedHbarXferPriceUsd = 0.0001;
 		final var expectedHtsXferPriceUsd = 0.001;
 		final var expectedNftXferPriceUsd = 0.001;
@@ -105,6 +106,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						cryptoCreate(receiver),
 						tokenCreate(fungibleToken)
 								.treasury(sender)
+								.tokenType(FUNGIBLE_COMMON)
 								.initialSupply(100L),
 						tokenAssociate(receiver, fungibleToken),
 						newKeyNamed(supplyKey),
@@ -123,6 +125,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.via(hbarXferTxn),
 						cryptoTransfer(moving(1, fungibleToken).between(sender, receiver))
 								.blankMemo()
+								.fee(ONE_HBAR)
 								.payingWith(sender)
 								.via(htsXferTxn),
 						cryptoTransfer(movingUnique(1, nonFungibleToken).between(sender, receiver))

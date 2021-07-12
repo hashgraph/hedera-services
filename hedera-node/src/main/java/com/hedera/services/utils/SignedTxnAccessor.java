@@ -156,6 +156,9 @@ public class SignedTxnAccessor implements TxnAccessor {
 			if(xferUsageMeta.getNumNftOwnershipChanges() != 0) {
 				return SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 			}
+			if(xferUsageMeta.getNumFungibleTokenTransfers() != 0) {
+				return SubType.TOKEN_FUNGIBLE_COMMON;
+			}
 		}
 		return SubType.DEFAULT;
 	}
