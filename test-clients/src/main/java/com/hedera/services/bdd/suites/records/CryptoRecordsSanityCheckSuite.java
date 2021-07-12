@@ -50,8 +50,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.takeBalanceSnapshot
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateRecordTransactionFees;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateTransferListForBalances;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TREASURY_MUST_OWN_BURNED_NFT;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
@@ -106,7 +106,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
 								.between(firstOwner, secondOwner))
 								.via(xferRecord),
 						burnToken(uniqueToken, List.of(1L))
-								.hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE)
+								.hasKnownStatus(TREASURY_MUST_OWN_BURNED_NFT)
 				).then(
 						getTxnRecord(mintRecord).logged(),
 						getTxnRecord(xferRecord).logged()

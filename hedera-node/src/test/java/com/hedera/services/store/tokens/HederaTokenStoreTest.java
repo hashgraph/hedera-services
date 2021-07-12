@@ -95,7 +95,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
@@ -113,7 +112,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
@@ -138,7 +136,6 @@ import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.longThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
@@ -174,7 +171,6 @@ class HederaTokenStoreTest {
 	private long expiry = CONSENSUS_NOW + 1_234_567;
 	private long newExpiry = CONSENSUS_NOW + 1_432_765;
 	private long totalSupply = 1_000_000;
-	private long adjustment = 1;
 	private int decimals = 10;
 	private long treasuryBalance = 50_000, sponsorBalance = 1_000;
 	private TokenID misc = IdUtils.asToken("3.2.1");
@@ -755,115 +751,6 @@ class HederaTokenStoreTest {
 
 		// expect:
 		assertEquals(INVALID_ACCOUNT_ID, status);
-	}
-
-	@Test
-	void wipingRejectsMissingAccount() {
-		given(accountsLedger.exists(sponsor)).willReturn(false);
-
-		// when:
-		final var status = subject.wipe(sponsor, misc, adjustment, false);
-
-		// expect:
-		assertEquals(INVALID_ACCOUNT_ID, status);
-	}
-
-	@Test
-	void wipingRejectsTokenWithNoWipeKey() {
-		// when:
-		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
-
-		final var status = subject.wipe(sponsor, misc, adjustment, false);
-
-		// expect:
-		assertEquals(TOKEN_HAS_NO_WIPE_KEY, status);
-		verify(hederaLedger, never()).updateTokenXfers(misc, sponsor, -adjustment);
-	}
-
-	@Test
-	void wipingRejectsTokenTreasury() {
-		long wiping = 3L;
-
-		given(token.hasWipeKey()).willReturn(true);
-		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(sponsor));
-
-		// when:
-		final var status = subject.wipe(sponsor, misc, wiping, false);
-
-		// expect:
-		assertEquals(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT, status);
-		verify(hederaLedger, never()).updateTokenXfers(misc, sponsor, -wiping);
-	}
-
-	@Test
-	void wipingWithoutTokenRelationshipFails() {
-		// setup:
-		given(token.hasWipeKey()).willReturn(false);
-		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
-		// and:
-		given(tokenRelsLedger.exists(sponsorMisc)).willReturn(false);
-
-		// when:
-		final var status = subject.wipe(sponsor, misc, adjustment, true);
-
-		// expect:
-		assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, status);
-		verify(hederaLedger, never()).updateTokenXfers(misc, sponsor, -adjustment);
-	}
-
-	@Test
-	void wipingWorksWithoutWipeKeyIfCheckSkipped() {
-		// setup:
-		given(token.hasWipeKey()).willReturn(false);
-		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
-
-		// when:
-		final var status = subject.wipe(sponsor, misc, adjustment, true);
-
-		// expect:
-		assertEquals(OK, status);
-		verify(hederaLedger).updateTokenXfers(misc, sponsor, -adjustment);
-		verify(token).adjustTotalSupplyBy(-adjustment);
-		verify(tokenRelsLedger).set(
-				argThat(sponsorMisc::equals),
-				argThat(TOKEN_BALANCE::equals),
-				longThat(l -> l == (sponsorBalance - adjustment)));
-	}
-
-	@Test
-	void wipingUpdatesTokenXfersAsExpected() {
-		// setup:
-		given(token.hasWipeKey()).willReturn(true);
-		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
-
-		// when:
-		final var status = subject.wipe(sponsor, misc, adjustment, false);
-
-		// expect:
-		assertEquals(OK, status);
-		// and:
-		verify(hederaLedger).updateTokenXfers(misc, sponsor, -adjustment);
-		verify(token).adjustTotalSupplyBy(-adjustment);
-		verify(tokenRelsLedger).set(
-				argThat(sponsorMisc::equals),
-				argThat(TOKEN_BALANCE::equals),
-				longThat(l -> l == (sponsorBalance - adjustment)));
-	}
-
-	@Test
-	void wipingFailsWithInvalidWipingAmount() {
-		// setup:
-		long wipe = 1_235L;
-
-		given(token.hasWipeKey()).willReturn(true);
-		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
-
-		// when:
-		final var status = subject.wipe(sponsor, misc, wipe, false);
-
-		// expect:
-		assertEquals(INVALID_WIPING_AMOUNT, status);
-		verify(hederaLedger, never()).updateTokenXfers(misc, sponsor, -wipe);
 	}
 
 	@Test
@@ -1461,17 +1348,6 @@ class HederaTokenStoreTest {
 
 		// then:
 		assertEquals(ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY, status);
-	}
-
-	@Test
-	public void wipingRejectsDeletedToken() {
-		given(token.isDeleted()).willReturn(true);
-
-		// when:
-		final var status = subject.wipe(sponsor, misc, adjustment, false);
-
-		// then:
-		assertEquals(ResponseCodeEnum.TOKEN_WAS_DELETED, status);
 	}
 
 	@Test

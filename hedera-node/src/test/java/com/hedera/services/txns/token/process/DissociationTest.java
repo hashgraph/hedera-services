@@ -58,11 +58,14 @@ class DissociationTest {
 	private final Id accountId = new Id(1, 2, 3);
 	private final Id tokenId = new Id(2, 3, 4);
 	private final Id treasuryId = new Id(3, 4, 5);
+	private final Id veryAncientTreasuryId = new Id(0, 0, 3);
 	private final Token token = new Token(tokenId);
 	private final Account account = new Account(accountId);
 	private final Account treasury = new Account(treasuryId);
+	private final Account ancientTreasury = new Account(veryAncientTreasuryId);
 	private TokenRelationship dissociatingAccountRel = new TokenRelationship(token, account);
 	private TokenRelationship dissociatedTokenTreasuryRel = new TokenRelationship(token, treasury);
+	private TokenRelationship ancientTokenTreasuryRel = new TokenRelationship(token, ancientTreasury);
 
 	{
 		token.setTreasury(treasury);
@@ -230,6 +233,32 @@ class DissociationTest {
 		// and:
 		assertSame(dissociatedTokenTreasuryRel, accum.get(1));
 		assertEquals(dissociatedTokenTreasuryRel.getBalanceChange(), +balance);
+	}
+
+	@Test
+	void autoTransfersBalanceBackToTreasuryRespectingIdOrdering() {
+		// setup:
+		final long balance = 1_234;
+		dissociatingAccountRel.initBalance(balance);
+		ancientTokenTreasuryRel.initBalance(balance);
+		// and:
+		final var subject = new Dissociation(dissociatingAccountRel, ancientTokenTreasuryRel);
+		// and:
+		final List<TokenRelationship> accum = new ArrayList<>();
+
+		// when:
+		subject.updateModelRelsSubjectTo(validator);
+		// and:
+		subject.addUpdatedModelRelsTo(accum);
+
+		// then:
+		assertEquals(accum.size(), 2);
+		assertEquals(dissociatingAccountRel.getBalanceChange(), -balance);
+		assertSame(dissociatingAccountRel, accum.get(1));
+		assertTrue(dissociatingAccountRel.isDestroyed());
+		// and:
+		assertSame(ancientTokenTreasuryRel, accum.get(0));
+		assertEquals(ancientTokenTreasuryRel.getBalanceChange(), +balance);
 	}
 
 	@Test

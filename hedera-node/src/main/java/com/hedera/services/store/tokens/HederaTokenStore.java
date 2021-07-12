@@ -83,7 +83,6 @@ import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
@@ -101,7 +100,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
@@ -302,13 +300,13 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 	@Override
 	public ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment) {
-		return sanityChecked(aId, null, tId, token -> tryAdjustment(aId, tId, adjustment));
+		return sanityCheckedFungibleCommon(aId, tId, token -> tryAdjustment(aId, tId, adjustment));
 	}
 
 	@Override
 	public ResponseCodeEnum changeOwner(NftId nftId, AccountID from, AccountID to) {
 		final var tId = nftId.tokenId();
-		return sanityChecked(from, to, tId, token -> {
+		return sanityChecked(false, from, to, tId, token -> {
 			if (!nftsLedger.exists(nftId)) {
 				return INVALID_NFT_ID;
 			}
@@ -350,29 +348,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 					merkleUniqueTokenId);
 
 			hederaLedger.updateOwnershipChanges(nftId, from, to);
-
-			return OK;
-		});
-	}
-
-	@Override
-	public ResponseCodeEnum wipe(AccountID aId, TokenID tId, long amount, boolean skipKeyCheck) {
-		return sanityChecked(aId, null, tId, token -> {
-			if (!skipKeyCheck && !token.hasWipeKey()) {
-				return TOKEN_HAS_NO_WIPE_KEY;
-			}
-			if (fromGrpcAccountId(aId).equals(token.treasury())) {
-				return CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
-			}
-
-			var relationship = asTokenRel(aId, tId);
-			long balance = (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
-			if (amount > balance) {
-				return INVALID_WIPING_AMOUNT;
-			}
-			tokenRelsLedger.set(relationship, TOKEN_BALANCE, balance - amount);
-			hederaLedger.updateTokenXfers(tId, aId, -amount);
-			apply(tId, t -> t.adjustTotalSupplyBy(-amount));
 
 			return OK;
 		});
@@ -854,7 +829,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			TokenRelProperty flagProperty,
 			Function<MerkleToken, Optional<JKey>> controlKeyFn
 	) {
-		return sanityChecked(aId, null, tId, token -> {
+		return sanityChecked(false, aId, null, tId, token -> {
 			if (controlKeyFn.apply(token).isEmpty()) {
 				return keyFailure;
 			}
@@ -864,7 +839,16 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		});
 	}
 
+	private ResponseCodeEnum sanityCheckedFungibleCommon(
+			AccountID aId,
+			TokenID tId,
+			Function<MerkleToken, ResponseCodeEnum> action
+	) {
+		return sanityChecked(true, aId, null, tId, action);
+	}
+
 	private ResponseCodeEnum sanityChecked(
+			boolean onlyFungibleCommon,
 			AccountID aId,
 			AccountID aCounterPartyId,
 			TokenID tId,
@@ -890,7 +874,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		if (token.isDeleted()) {
 			return TOKEN_WAS_DELETED;
 		}
-		if (aCounterPartyId == null && token.tokenType() == NON_FUNGIBLE_UNIQUE) {
+		if (onlyFungibleCommon && token.tokenType() == NON_FUNGIBLE_UNIQUE) {
 			return TOKEN_TRANSFERS_LIST_ONLY_USABLE_WITH_FUNGIBLE_COMMON;
 		}
 

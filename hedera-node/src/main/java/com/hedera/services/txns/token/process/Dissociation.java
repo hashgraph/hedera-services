@@ -126,9 +126,17 @@ public class Dissociation {
 		if (!modelsAreUpdated) {
 			throw new IllegalStateException("Cannot reveal changed relationships before update");
 		}
-		accumulator.add(dissociatingAccountRel);
 		if (expiredTokenTreasuryReceivedBalance) {
-			accumulator.add(dissociatedTokenTreasuryRel);
+			final var treasuryId = dissociatedTokenTreasuryRel.getAccount().getId();
+			if (Id.ID_COMPARATOR.compare(dissociatingAccountId(), treasuryId) < 0) {
+				accumulator.add(dissociatingAccountRel);
+				accumulator.add(dissociatedTokenTreasuryRel);
+			} else {
+				accumulator.add(dissociatedTokenTreasuryRel);
+				accumulator.add(dissociatingAccountRel);
+			}
+		} else {
+			accumulator.add(dissociatingAccountRel);
 		}
 	}
 
