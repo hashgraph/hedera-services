@@ -28,12 +28,13 @@ import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleExternalLeaf;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.common.merkle.utility.Keyed;
 
 import java.io.IOException;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExternalLeaf {
+public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExternalLeaf, Keyed<MerkleBlobMeta> {
 	static final int MERKLE_VERSION = BinaryObject.ClassVersion.ORIGINAL;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x4cefb15eb131d9e3L;
 	static final Hash MISSING_DELEGATE_HASH = new Hash(new byte[] {
@@ -57,6 +58,18 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 	static Supplier<BinaryObjectStore> blobStoreSupplier = BinaryObjectStore::getInstance;
 
 	private BinaryObject delegate;
+
+	private MerkleBlobMeta key;
+
+	@Override
+	public MerkleBlobMeta getKey() {
+		return key;
+	}
+
+	@Override
+	public void setKey(MerkleBlobMeta merkleBlobMeta) {
+		this.key = key;
+	}
 
 	public MerkleOptionalBlob() {
 		delegate = MISSING_DELEGATE;
@@ -116,6 +129,7 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 			out.writeBoolean(true);
 			delegate.serialize(out);
 		}
+		out.writeSerializable(key, true);
 	}
 
 	@Override
@@ -125,6 +139,7 @@ public class MerkleOptionalBlob extends AbstractMerkleLeaf implements MerkleExte
 			delegate = blobSupplier.get();
 			delegate.deserialize(in, MerkleOptionalBlob.MERKLE_VERSION);
 		}
+		key = in.readSerializable();
 	}
 
 	@Override

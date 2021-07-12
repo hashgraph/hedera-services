@@ -121,7 +121,7 @@ public class SolvencyPrecheck {
 
 		try {
 			final var now = accessor.getTxnId().getTransactionValidStart();
-			final var payerKey = payerAccount.getKey();
+			final var payerKey = payerAccount.getAccountKey();
 			final var estimatedFees = feeCalculator.estimateFee(accessor, payerKey, stateView.get(), now);
 			final var estimatedReqFee = totalOf(estimatedFees, includeSvcFee);
 

@@ -21,19 +21,16 @@ package com.hedera.services.ledger.accounts;
  */
 
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.store.models.NftId;
 import com.swirlds.fcmap.FCMap;
 
 import java.util.Set;
 import java.util.function.Supplier;
 
-import static com.hedera.services.state.merkle.MerkleUniqueTokenId.fromNftId;
-
 public class BackingNfts implements BackingStore<NftId, MerkleUniqueToken> {
-	private final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> delegate;
+	private final Supplier<FCMap<NftId, MerkleUniqueToken>> delegate;
 
-	public BackingNfts(Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> delegate) {
+	public BackingNfts(Supplier<FCMap<NftId, MerkleUniqueToken>> delegate) {
 		this.delegate = delegate;
 		rebuildFromSources();
 	}
@@ -45,31 +42,30 @@ public class BackingNfts implements BackingStore<NftId, MerkleUniqueToken> {
 
 	@Override
 	public MerkleUniqueToken getRef(NftId id) {
-		return delegate.get().getForModify(fromNftId(id));
+		return delegate.get().getForModify(id);
 	}
 
 	@Override
 	public MerkleUniqueToken getImmutableRef(NftId id) {
-		return delegate.get().get(fromNftId(id));
+		return delegate.get().get(id);
 	}
 
 	@Override
 	public void put(NftId id, MerkleUniqueToken nft) {
-		final var key = fromNftId(id);
 		final var currentNfts = delegate.get();
-		if (!currentNfts.containsKey(key)) {
-			currentNfts.put(key, nft);
+		if (!currentNfts.containsKey(id)) {
+			currentNfts.put(id, nft);
 		}
 	}
 
 	@Override
 	public void remove(NftId id) {
-		delegate.get().remove(fromNftId(id));
+		delegate.get().remove(id);
 	}
 
 	@Override
 	public boolean contains(NftId id) {
-		return delegate.get().containsKey(fromNftId(id));
+		return delegate.get().containsKey(id);
 	}
 
 	@Override

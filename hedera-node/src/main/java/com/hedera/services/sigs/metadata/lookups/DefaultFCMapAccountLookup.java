@@ -50,7 +50,7 @@ public class DefaultFCMapAccountLookup implements AccountSigMetaLookup {
 				? SafeLookupResult.failure(MISSING_ACCOUNT)
 				: new SafeLookupResult<>(
 						new AccountSigningMetadata(
-								account.getKey(),
+								account.getAccountKey(),
 								account.isReceiverSigRequired()));
 	}
 }

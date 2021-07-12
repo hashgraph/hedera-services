@@ -42,7 +42,7 @@ public class BackedAccountLookup implements AccountSigMetaLookup {
 		var account = accounts.getImmutableRef(id);
 		return new SafeLookupResult<>(
 				new AccountSigningMetadata(
-						account.getKey(),
+						account.getAccountKey(),
 						account.isReceiverSigRequired()));
 	}
 }

@@ -35,10 +35,11 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.merkle.utility.Keyed;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -54,7 +55,7 @@ import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static java.util.stream.Collectors.toList;
 
-public class MerkleSchedule extends AbstractMerkleLeaf {
+public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<MerkleEntityId> {
 	static final int MERKLE_VERSION = 1;
 
 	static final int NUM_ED25519_PUBKEY_BYTES = 32;
@@ -84,6 +85,17 @@ public class MerkleSchedule extends AbstractMerkleLeaf {
 
 	private Set<ByteString> notary = ConcurrentHashMap.newKeySet();
 	private List<byte[]> signatories = new ArrayList<>();
+	private MerkleEntityId key;
+
+	@Override
+	public MerkleEntityId getKey() {
+		return key;
+	}
+
+	@Override
+	public void setKey(MerkleEntityId merkleEntityId) {
+		this.key = key;
+	}
 
 	public MerkleSchedule() {
 	}
@@ -203,7 +215,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf {
 		while (numSignatories-- > 0) {
 			witnessValidEd25519Signature(in.readByteArray(NUM_ED25519_PUBKEY_BYTES));
 		}
-
+		key = in.readSerializable();
 		initFromBodyBytes();
 	}
 
@@ -218,6 +230,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf {
 		for (byte[] key : signatories) {
 			out.writeByteArray(key);
 		}
+		out.writeSerializable(key, true);
 	}
 
 	@Override

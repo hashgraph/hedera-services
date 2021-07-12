@@ -23,9 +23,11 @@ package com.hedera.services.state.merkle;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.store.models.NftId;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.common.merkle.utility.Keyed;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -33,7 +35,7 @@ import java.util.Objects;
 /**
  * Represents an uniqueToken entity. Part of the nft implementation.
  */
-public class MerkleUniqueToken extends AbstractMerkleLeaf {
+public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<NftId> {
 	public static final int UPPER_BOUND_METADATA_BYTES = 1024;
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x899641dafcc39164L;
@@ -41,6 +43,7 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 	private EntityId owner;
 	private RichInstant creationTime;
 	private byte[] metadata;
+	private NftId key;
 
 	/**
 	 * @param owner        The entity which owns the unique token.
@@ -59,6 +62,16 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 
 	public MerkleUniqueToken() {
 		/* No-op. */
+	}
+
+	@Override
+	public NftId getKey() {
+		return key;
+	}
+
+	@Override
+	public void setKey(NftId nftId) {
+		this.key = key;
 	}
 
 	/* Object */
@@ -111,6 +124,7 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 		owner = in.readSerializable();
 		creationTime = RichInstant.from(in);
 		metadata = in.readByteArray(UPPER_BOUND_METADATA_BYTES);
+		key = new NftId(in.readLong(), in.readLong(), in.readLong(), in.readLong());
 	}
 
 	@Override
@@ -118,6 +132,10 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf {
 		out.writeSerializable(owner, true);
 		creationTime.serialize(out);
 		out.writeByteArray(metadata);
+		out.writeLong(key.shard());
+		out.writeLong(key.realm());
+		out.writeLong(key.num());
+		out.writeLong(key.serialNo());
 	}
 
 	/* --- FastCopyable --- */

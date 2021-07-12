@@ -24,12 +24,13 @@ import com.google.common.base.MoreObjects;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.common.merkle.utility.Keyed;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.io.IOException;
 
-public class MerkleTokenRelStatus extends AbstractMerkleLeaf {
+public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<MerkleEntityAssociation> {
 	static final int RELEASE_090_VERSION = 1;
 
 	static final int MERKLE_VERSION = RELEASE_090_VERSION;
@@ -48,6 +49,18 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf {
 		this.kycGranted = kycGranted;
 	}
 
+	private MerkleEntityAssociation	key;
+
+	@Override
+	public MerkleEntityAssociation getKey() {
+		return key;
+	}
+
+	@Override
+	public void setKey(MerkleEntityAssociation merkleEntityAssociation) {
+		this.key = key;
+	}
+
 	/* --- MerkleLeaf --- */
 	@Override
 	public long getClassId() {
@@ -64,6 +77,7 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf {
 		balance = in.readLong();
 		frozen = in.readBoolean();
 		kycGranted = in.readBoolean();
+		key = in.readSerializable();
 	}
 
 	@Override
@@ -71,6 +85,7 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf {
 		out.writeLong(balance);
 		out.writeBoolean(frozen);
 		out.writeBoolean(kycGranted);
+		out.writeSerializable(key, true);
 	}
 
 	/* --- Object --- */

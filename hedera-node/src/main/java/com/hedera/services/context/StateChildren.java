@@ -32,13 +32,13 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.models.NftId;
 import com.swirlds.common.AddressBook;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
+
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Manages the state of the services. This gets updated by {@link ServicesContext} on a regular interval. The
@@ -56,7 +56,7 @@ public class StateChildren {
 	private FCMap<MerkleEntityId, MerkleToken> tokens;
 
 	/** State of unique tokens */
-	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens;
+	private FCMap<NftId, MerkleUniqueToken> uniqueTokens;
 
 	/** State of schedules */
 	private FCMap<MerkleEntityId, MerkleSchedule> schedules;
@@ -68,10 +68,10 @@ public class StateChildren {
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
 
 	/** State of unique token associations */
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations;
+	private FCOneToManyRelation<EntityId, NftId> uniqueTokenAssociations;
 
 	/** State of unique ownership associations */
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations;
+	private FCOneToManyRelation<EntityId, NftId> uniqueOwnershipAssociations;
 
 	/** State of network context */
 	private MerkleNetworkContext networkCtx;
@@ -166,33 +166,32 @@ public class StateChildren {
 		this.diskFs = diskFs;
 	}
 
-	public FCMap<MerkleUniqueTokenId, MerkleUniqueToken> getUniqueTokens() {
+	public FCMap<NftId, MerkleUniqueToken> getUniqueTokens() {
 		Objects.requireNonNull(uniqueTokens, "A state with null unique tokens is never valid");
 		return uniqueTokens;
 	}
 
-	public void setUniqueTokens(
-			FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens) {
+	public void setUniqueTokens(FCMap<NftId, MerkleUniqueToken> uniqueTokens) {
 		this.uniqueTokens = uniqueTokens;
 	}
 
-	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> getUniqueTokenAssociations() {
+	public FCOneToManyRelation<EntityId, NftId> getUniqueTokenAssociations() {
 		Objects.requireNonNull(uniqueTokenAssociations, "A state with null unique token associations is never valid");
 		return uniqueTokenAssociations;
 	}
 
 	public void setUniqueTokenAssociations(
-			FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations) {
+			FCOneToManyRelation<EntityId, NftId> uniqueTokenAssociations) {
 		this.uniqueTokenAssociations = uniqueTokenAssociations;
 	}
 
-	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> getUniqueOwnershipAssociations() {
+	public FCOneToManyRelation<EntityId, NftId> getUniqueOwnershipAssociations() {
 		Objects.requireNonNull(uniqueOwnershipAssociations, "A state with null unique ownership associations is never valid");
 		return uniqueOwnershipAssociations;
 	}
 
 	public void setUniqueOwnershipAssociations(
-			FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations) {
+			FCOneToManyRelation<EntityId, NftId> uniqueOwnershipAssociations) {
 		this.uniqueOwnershipAssociations = uniqueOwnershipAssociations;
 	}
 

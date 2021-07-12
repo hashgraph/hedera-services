@@ -29,6 +29,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
+import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.fcqueue.FCQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,7 +38,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleInternal {
+public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleInternal, Keyed<MerkleEntityId> {
 	private static final Logger log = LogManager.getLogger(MerkleAccount.class);
 
 	static Runnable stackDump = Thread::dumpStack;
@@ -60,7 +61,8 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		static final int STATE = 0;
 		static final int RELEASE_090_RECORDS = 1;
 		static final int RELEASE_090_ASSOCIATED_TOKENS = 2;
-		static final int NUM_090_CHILDREN = 3;
+		static final int RELEASE_0160_KEY = 3;
+		static final int NUM_090_CHILDREN = 4;
 	}
 
 	public MerkleAccount(List<MerkleNode> children, MerkleAccount immutableAccount) {
@@ -77,7 +79,18 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		addDeserializedChildren(List.of(
 				new MerkleAccountState(),
 				new FCQueue<ExpirableTxnRecord>(),
-				new MerkleAccountTokens()), MERKLE_VERSION);
+				new MerkleAccountTokens(),
+				null), MERKLE_VERSION);
+	}
+
+	@Override
+	public MerkleEntityId getKey() {
+		return getChild(ChildIndices.RELEASE_0160_KEY);
+	}
+
+	@Override
+	public void setKey(MerkleEntityId merkleEntityId) {
+		setChild(ChildIndices.RELEASE_0160_KEY, merkleEntityId);
 	}
 
 	/* --- MerkleInternal --- */
@@ -214,11 +227,11 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setReceiverSigRequired(receiverSigRequired);
 	}
 
-	public JKey getKey() {
+	public JKey getAccountKey() {
 		return state().key();
 	}
 
-	public void setKey(JKey key) {
+	public void setAccountKey(JKey key) {
 		state().setKey(key);
 	}
 

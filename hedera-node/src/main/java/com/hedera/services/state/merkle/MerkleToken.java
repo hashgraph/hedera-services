@@ -31,6 +31,7 @@ import com.hederahashgraph.api.proto.java.CustomFee;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.common.merkle.utility.Keyed;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -45,7 +46,7 @@ import static com.hedera.services.utils.MiscUtils.describe;
 import static java.util.Collections.unmodifiableList;
 import static java.util.stream.Collectors.toList;
 
-public class MerkleToken extends AbstractMerkleLeaf {
+public class MerkleToken extends AbstractMerkleLeaf implements Keyed<MerkleEntityId> {
 	static final int PRE_RELEASE_0120_VERSION = 1;
 	static final int RELEASE_0120_VERSION = 2;
 	static final int RELEASE_0160_VERSION = 3;
@@ -85,6 +86,18 @@ public class MerkleToken extends AbstractMerkleLeaf {
 	private EntityId treasury;
 	private EntityId autoRenewAccount = null;
 	private List<FcCustomFee> feeSchedule = Collections.emptyList();
+
+	private MerkleEntityId key;
+
+	@Override
+	public MerkleEntityId getKey() {
+		return key;
+	}
+
+	@Override
+	public void setKey(MerkleEntityId merkleEntityId) {
+		this.key = key;
+	}
 
 	public MerkleToken() {
 		/* No-op. */
@@ -254,6 +267,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		if (supplyType == null) {
 			supplyType = TokenSupplyType.INFINITE;
 		}
+		key = in.readSerializable();
 	}
 
 	@Override
@@ -281,6 +295,7 @@ public class MerkleToken extends AbstractMerkleLeaf {
 		out.writeLong(lastUsedSerialNumber);
 		out.writeSerializableList(feeSchedule, true, true);
 		serdes.writeNullable(feeScheduleKey, out, serdes::serializeKey);
+		out.writeSerializable(key, true);
 	}
 
 	/* --- FastCopyable --- */

@@ -21,19 +21,19 @@ package com.hedera.services.state.initialization;
  */
 
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.models.NftId;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 
 public class ViewBuilder {
 	public static void rebuildUniqueTokenViews(
-			FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens,
-			FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations,
-			FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations
+			FCMap<NftId, MerkleUniqueToken> uniqueTokens,
+			FCOneToManyRelation<EntityId, NftId> uniqueTokenAssociations,
+			FCOneToManyRelation<EntityId, NftId> uniqueOwnershipAssociations
 	) {
 		uniqueTokens.forEach((id, uniq) -> {
-			uniqueTokenAssociations.associate(id.tokenId(), id);
+			uniqueTokenAssociations.associate(new EntityId(id.shard(), id.realm(), id.num()), id);
 			uniqueOwnershipAssociations.associate(uniq.getOwner(), id);
 		});
 	}

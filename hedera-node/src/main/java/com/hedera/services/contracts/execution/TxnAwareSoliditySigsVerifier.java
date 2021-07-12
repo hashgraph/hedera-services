@@ -87,7 +87,7 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 		return Optional.ofNullable(accounts.get().get(fromAccountId(id)))
 				.filter(account -> !account.isSmartContract())
 				.filter(MerkleAccount::isReceiverSigRequired)
-				.map(MerkleAccount::getKey)
+				.map(MerkleAccount::getAccountKey)
 				.stream();
 	}
 }

@@ -42,6 +42,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.MiscUtils;
@@ -124,19 +125,19 @@ public class StateView {
 	public static final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> EMPTY_TOKEN_ASSOCS_SUPPLIER =
 			() -> EMPTY_TOKEN_ASSOCIATIONS;
 
-	protected static final FCMap<MerkleUniqueTokenId, MerkleUniqueToken> EMPTY_UNIQUE_TOKENS =
+	protected static final FCMap<NftId, MerkleUniqueToken> EMPTY_UNIQUE_TOKENS =
 			new FCMap<>();
-	public static final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> EMPTY_UNIQUE_TOKENS_SUPPLIER =
+	public static final Supplier<FCMap<NftId, MerkleUniqueToken>> EMPTY_UNIQUE_TOKENS_SUPPLIER =
 			() -> EMPTY_UNIQUE_TOKENS;
 
-	public static final FCOneToManyRelation<EntityId, MerkleUniqueTokenId> EMPTY_UNIQUE_TOKEN_ASSOCS =
+	public static final FCOneToManyRelation<EntityId, NftId> EMPTY_UNIQUE_TOKEN_ASSOCS =
 			new FCOneToManyRelation<>();
-	public static final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> EMPTY_UNIQUE_TOKEN_ASSOCS_SUPPLIER =
+	public static final Supplier<FCOneToManyRelation<EntityId, NftId>> EMPTY_UNIQUE_TOKEN_ASSOCS_SUPPLIER =
 			() -> EMPTY_UNIQUE_TOKEN_ASSOCS;
 
-	public static final FCOneToManyRelation<EntityId, MerkleUniqueTokenId> EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS =
+	public static final FCOneToManyRelation<EntityId, NftId> EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS =
 			new FCOneToManyRelation<>();
-	public static final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS_SUPPLIER =
+	public static final Supplier<FCOneToManyRelation<EntityId, NftId>> EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS_SUPPLIER =
 			() -> EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS;
 
 	public static final StateView EMPTY_VIEW = new StateView(
@@ -156,9 +157,9 @@ public class StateView {
 	private final Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts;
 	private final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations;
 
-	private Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens;
-	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations;
-	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAccountOwnerships;
+	private Supplier<FCMap<NftId, MerkleUniqueToken>> uniqueTokens;
+	private final Supplier<FCOneToManyRelation<EntityId, NftId>> uniqueTokenAssociations;
+	private final Supplier<FCOneToManyRelation<EntityId, NftId>> uniqueTokenAccountOwnerships;
 
 	private final NodeLocalProperties properties;
 
@@ -210,10 +211,10 @@ public class StateView {
 			Supplier<FCMap<MerkleEntityId, MerkleTopic>> topics,
 			Supplier<FCMap<MerkleEntityId, MerkleAccount>> accounts,
 			Supplier<FCMap<MerkleBlobMeta, MerkleOptionalBlob>> storage,
-			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens,
+			Supplier<FCMap<NftId, MerkleUniqueToken>> uniqueTokens,
 			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenAssociations,
-			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations,
-			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAccountOwnerships,
+			Supplier<FCOneToManyRelation<EntityId, NftId>> uniqueTokenAssociations,
+			Supplier<FCOneToManyRelation<EntityId, NftId>> uniqueTokenAccountOwnerships,
 			Supplier<MerkleDiskFs> diskFs,
 			NodeLocalProperties properties
 	) {
@@ -411,8 +412,8 @@ public class StateView {
 					.setAccountID(nft.getOwner().toGrpcAccountId())
 					.setCreationTime(nft.getCreationTime().toGrpc())
 					.setNftID(NftID.newBuilder()
-							.setTokenID(nftId.tokenId().toGrpcTokenId())
-							.setSerialNumber(nftId.serialNumber()))
+							.setTokenID(nftId.tokenId())
+							.setSerialNumber(nftId.serialNo()))
 					.setMetadata(ByteString.copyFrom(nft.getMetadata()))
 					.build());
 		});
@@ -507,7 +508,7 @@ public class StateView {
 		}
 
 		var info = CryptoGetInfoResponse.AccountInfo.newBuilder()
-				.setKey(asKeyUnchecked(account.getKey()))
+				.setKey(asKeyUnchecked(account.getAccountKey()))
 				.setAccountID(id)
 				.setReceiverSigRequired(account.isReceiverSigRequired())
 				.setDeleted(account.isDeleted())
@@ -544,8 +545,8 @@ public class StateView {
 							.setAccountID(aid)
 							.setCreationTime(nft.getCreationTime().toGrpc())
 							.setNftID(NftID.newBuilder()
-									.setTokenID(nftId.tokenId().toGrpcTokenId())
-									.setSerialNumber(nftId.serialNumber())
+									.setTokenID(nftId.tokenId())
+									.setSerialNumber(nftId.serialNo())
 									.build())
 							.setMetadata(ByteString.copyFrom(nft.getMetadata()))
 							.build()
@@ -581,7 +582,7 @@ public class StateView {
 		}
 
 		try {
-			var adminKey = JKey.mapJKey(contract.getKey());
+			var adminKey = JKey.mapJKey(contract.getAccountKey());
 			info.setAdminKey(adminKey);
 		} catch (Exception ignore) {
 		}

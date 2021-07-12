@@ -37,10 +37,10 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.blob.BinaryObjectStore;
@@ -96,8 +96,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	NodeId nodeId = null;
 	boolean skipDiskFsHashCheck = false;
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations;
-	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations;
+	private FCOneToManyRelation<EntityId, NftId> uniqueTokenAssociations;
+	private FCOneToManyRelation<EntityId, NftId> uniqueOwnershipAssociations;
 
 	/* Order of Merkle node children */
 	static class ChildIndices {
@@ -134,8 +134,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			ServicesContext ctx,
 			NodeId nodeId,
 			List<MerkleNode> children,
-			FCOneToManyRelation<EntityId, MerkleUniqueTokenId> mutableUniqueTokenAssociations,
-			FCOneToManyRelation<EntityId, MerkleUniqueTokenId> mutableUniqueOwnershipAssociations,
+			FCOneToManyRelation<EntityId, NftId> mutableUniqueTokenAssociations,
+			FCOneToManyRelation<EntityId, NftId> mutableUniqueOwnershipAssociations,
 			ServicesState immutableState
 	) {
 		super(immutableState);
@@ -231,7 +231,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			setChild(ChildIndices.TOKEN_ASSOCIATIONS, new FCMap<>());
 			setChild(ChildIndices.DISK_FS, new MerkleDiskFs());
 			setChild(ChildIndices.SCHEDULE_TXS, new FCMap<>());
-			setChild(ChildIndices.UNIQUE_TOKENS, new FCMap<MerkleUniqueTokenId, MerkleUniqueToken>());
+			setChild(ChildIndices.UNIQUE_TOKENS, new FCMap<NftId, MerkleUniqueToken>());
 
 			/* Initialize the running hash leaf at genesis to an empty hash. */
 			final var firstRunningHash = new RunningHash();
@@ -438,23 +438,23 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return getChild(ChildIndices.RECORD_STREAM_RUNNING_HASH);
 	}
 
-	public FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens() {
+	public FCMap<NftId, MerkleUniqueToken> uniqueTokens() {
 		return getChild(ChildIndices.UNIQUE_TOKENS);
 	}
 
-	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations() {
+	public FCOneToManyRelation<EntityId, NftId> uniqueTokenAssociations() {
 		return uniqueTokenAssociations;
 	}
 
-	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations() {
+	public FCOneToManyRelation<EntityId, NftId> uniqueOwnershipAssociations() {
 		return uniqueOwnershipAssociations;
 	}
 
-	void setUniqueTokenAssociations(FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations) {
+	void setUniqueTokenAssociations(FCOneToManyRelation<EntityId, NftId> uniqueTokenAssociations) {
 		this.uniqueTokenAssociations = uniqueTokenAssociations;
 	}
 
-	void setUniqueOwnershipAssociations(FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations) {
+	void setUniqueOwnershipAssociations(FCOneToManyRelation<EntityId, NftId> uniqueOwnershipAssociations) {
 		this.uniqueOwnershipAssociations = uniqueOwnershipAssociations;
 	}
 }

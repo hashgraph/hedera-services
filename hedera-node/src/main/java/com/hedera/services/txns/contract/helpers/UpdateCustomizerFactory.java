@@ -92,7 +92,7 @@ public class UpdateCustomizerFactory {
 	}
 
 	boolean isMutable(MerkleAccount contract) {
-		return Optional.ofNullable(contract.getKey()).map(key -> !key.hasContractID()).orElse(false);
+		return Optional.ofNullable(contract.getAccountKey()).map(key -> !key.hasContractID()).orElse(false);
 	}
 
 	boolean onlyAffectsExpiry(ContractUpdateTransactionBody op) {

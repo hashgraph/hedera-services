@@ -33,6 +33,7 @@ import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
@@ -88,9 +89,9 @@ public class TypedTokenStore {
 	private final Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels;
 
 	/* Data Structures for Tokens of type Non-Fungible Unique  */
-	private final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens;
-	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations;
-	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueOwnershipAssociations;
+	private final Supplier<FCMap<NftId, MerkleUniqueToken>> uniqueTokens;
+	private final Supplier<FCOneToManyRelation<EntityId, NftId>> uniqueTokenAssociations;
+	private final Supplier<FCOneToManyRelation<EntityId, NftId>> uniqueOwnershipAssociations;
 
 	/* Only needed for interoperability with legacy HTS during refactor */
 	private final BackingNfts backingNfts;
@@ -100,9 +101,9 @@ public class TypedTokenStore {
 			AccountStore accountStore,
 			TransactionRecordService transactionRecordService,
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
-			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens,
-			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueOwnershipAssociations,
-			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations,
+			Supplier<FCMap<NftId, MerkleUniqueToken>> uniqueTokens,
+			Supplier<FCOneToManyRelation<EntityId, NftId>> uniqueOwnershipAssociations,
+			Supplier<FCOneToManyRelation<EntityId, NftId>> uniqueTokenAssociations,
 			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels,
 			BackingTokenRels backingTokenRels,
 			BackingNfts backingNfts
@@ -314,24 +315,25 @@ public class TypedTokenStore {
 
 		if (token.hasMintedUniqueTokens()) {
 			for (var uniqueToken : token.mintedUniqueTokens()) {
-				final var merkleUniqueTokenId = new MerkleUniqueTokenId(
-						new EntityId(uniqueToken.getTokenId()), uniqueToken.getSerialNumber());
+				final var tokenId = uniqueToken.getTokenId();
+				final var nftId = new NftId(
+						tokenId.getShard(), tokenId.getRealm(), tokenId.getNum(), uniqueToken.getSerialNumber());
 				final var merkleUniqueToken = new MerkleUniqueToken(
 						new EntityId(uniqueToken.getOwner()), uniqueToken.getMetadata(), uniqueToken.getCreationTime());
-				currentUniqueTokens.put(merkleUniqueTokenId, merkleUniqueToken);
-				currentUniqueTokenAssociations.associate(new EntityId(uniqueToken.getTokenId()), merkleUniqueTokenId);
-				currentUniqueOwnershipAssociations.associate(treasury, merkleUniqueTokenId);
+				currentUniqueTokens.put(nftId, merkleUniqueToken);
+				currentUniqueTokenAssociations.associate(new EntityId(uniqueToken.getTokenId()), nftId);
+				currentUniqueOwnershipAssociations.associate(treasury, nftId);
 			}
 		}
 		if (token.hasRemovedUniqueTokens()) {
 			for (var uniqueToken : token.removedUniqueTokens()) {
-				final var merkleUniqueTokenId = new MerkleUniqueTokenId(
-						new EntityId(uniqueToken.getTokenId()), uniqueToken.getSerialNumber());
+				final var tokenId = uniqueToken.getTokenId();
+				final var nftId = new NftId(
+						tokenId.getShard(), tokenId.getRealm(), tokenId.getNum(), uniqueToken.getSerialNumber());
 				final var accountId = new EntityId(uniqueToken.getOwner());
-				currentUniqueTokens.remove(merkleUniqueTokenId);
-				currentUniqueTokenAssociations.disassociate(new EntityId(uniqueToken.getTokenId()),
-						merkleUniqueTokenId);
-				currentUniqueOwnershipAssociations.disassociate(accountId, merkleUniqueTokenId);
+				currentUniqueTokens.remove(nftId);
+				currentUniqueTokenAssociations.disassociate(new EntityId(uniqueToken.getTokenId()), nftId);
+				currentUniqueOwnershipAssociations.disassociate(accountId, nftId);
 			}
 		}
 		transactionRecordService.includeChangesToToken(token);

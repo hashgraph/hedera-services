@@ -2282,15 +2282,15 @@ public class ServicesContext {
 		return workingState.getSchedules();
 	}
 
-	public FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens() {
+	public FCMap<NftId, MerkleUniqueToken> uniqueTokens() {
 		return state.uniqueTokens();
 	}
 
-	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations() {
+	public FCOneToManyRelation<EntityId, NftId> uniqueTokenAssociations() {
 		return state.uniqueTokenAssociations();
 	}
 
-	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations() {
+	public FCOneToManyRelation<EntityId, NftId> uniqueOwnershipAssociations() {
 		return state.uniqueOwnershipAssociations();
 	}
 

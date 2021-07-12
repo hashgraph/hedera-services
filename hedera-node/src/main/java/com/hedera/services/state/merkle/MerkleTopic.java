@@ -34,6 +34,7 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
+import com.swirlds.common.merkle.utility.Keyed;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -69,7 +70,7 @@ import static com.swirlds.common.CommonUtils.hex;
  *   replace the Topic in the map.</li>
  * </ul>
  */
-public final class MerkleTopic extends AbstractMerkleLeaf {
+public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<MerkleEntityId> {
 	private static final Logger log = LogManager.getLogger(MerkleTopic.class);
 
 	public static final int RUNNING_HASH_BYTE_ARRAY_SIZE = 48;
@@ -92,6 +93,18 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 	// Before the first message is submitted to this topic, its sequenceNumber is 0 and runningHash is 48 bytes of '\0'
 	private long sequenceNumber;
 	private byte[] runningHash;
+
+	private MerkleEntityId key;
+
+	@Override
+	public MerkleEntityId getKey() {
+		return key;
+	}
+
+	@Override
+	public void setKey(MerkleEntityId merkleEntityId) {
+		this.key = key;
+	}
 
 	@Override
 	public String toString() {
@@ -178,11 +191,13 @@ public final class MerkleTopic extends AbstractMerkleLeaf {
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		topicSerde.deserializeV1(in, this);
+		key = in.readSerializable();
 	}
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
 		topicSerde.serialize(this, out);
+		out.writeSerializable(key, true);
 	}
 
 	/* --- FastCopyable --- */

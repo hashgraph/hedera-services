@@ -48,7 +48,7 @@ public class DefaultFCMapContractLookup implements ContractSigMetaLookup {
 			return SafeLookupResult.failure(INVALID_CONTRACT);
 		} else {
 			JKey key;
-			if ((key = contract.getKey()) == null || key instanceof JContractIDKey) {
+			if ((key = contract.getAccountKey()) == null || key instanceof JContractIDKey) {
 				return SafeLookupResult.failure(IMMUTABLE_CONTRACT);
 			} else {
 				return new SafeLookupResult<>(new ContractSigningMetadata(key, contract.isReceiverSigRequired()));

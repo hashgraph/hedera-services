@@ -138,7 +138,7 @@ public class AwareTransactionContext implements TransactionContext {
 	@Override
 	public JKey activePayerKey() {
 		return isPayerSigKnownActive
-				? ctx.accounts().get(fromAccountId(accessor.getPayer())).getKey()
+				? ctx.accounts().get(fromAccountId(accessor.getPayer())).getAccountKey()
 				: EMPTY_KEY;
 	}
 

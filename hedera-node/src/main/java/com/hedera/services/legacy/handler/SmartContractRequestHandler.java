@@ -398,7 +398,7 @@ public class SmartContractRequestHandler {
 
 	private void setParentPropertiesForChildrenContracts(AccountID parent, List<ContractID> children) {
 		MerkleAccount parentAccount = ledger.get(parent);
-		HederaAccountCustomizer customizer = new HederaAccountCustomizer().key(parentAccount.getKey())
+		HederaAccountCustomizer customizer = new HederaAccountCustomizer().key(parentAccount.getAccountKey())
 				.memo(parentAccount.getMemo())
 				.expiry(parentAccount.getExpiry())
 				.autoRenewPeriod(parentAccount.getAutoRenewSecs())
