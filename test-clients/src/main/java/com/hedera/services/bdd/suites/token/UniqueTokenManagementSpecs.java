@@ -120,7 +120,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 				finiteNftReachesMaxSupplyProperly(),
 
 				burnHappyPath(),
-				canOnlyBurnFromTreasury()
+				canOnlyBurnFromTreasury(),
 				burnFailsOnInvalidSerialNumber(),
 				burnRespectsBurnBatchConstraints(),
 				treasuryBalanceCorrectAfterBurn(),
