@@ -21,6 +21,7 @@ package com.hedera.services.utils;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
@@ -35,9 +36,11 @@ import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -157,6 +160,36 @@ class SignedTxnAccessorTest {
 		assertEquals(zeroByteMemo, accessor.getMemo());
 		// and:
 		assertEquals(memoUtf8Bytes.length, txnUsageMeta.getMemoUtf8Bytes());
+	}
+
+	@Test
+	void fetchesSubTypeAsExpected() throws InvalidProtocolBufferException {
+		final var nftTransfers = TokenTransferList.newBuilder()
+				.setToken(anId)
+				.addNftTransfers(NftTransfer.newBuilder()
+						.setSenderAccountID(a)
+						.setReceiverAccountID(b)
+						.setSerialNumber(1))
+				.build();
+		final var fungibleTokenXfers = TokenTransferList.newBuilder()
+				.setToken(anotherId)
+				.addAllTransfers(List.of(
+						adjustFrom(a, -50),
+						adjustFrom(b, 25),
+						adjustFrom(c, 25)
+				))
+				.build();
+
+		var txn = buildTokenTransferTxn(nftTransfers);
+
+		SignedTxnAccessor subject = new SignedTxnAccessor(txn);
+
+		assertEquals(SubType.TOKEN_NON_FUNGIBLE_UNIQUE, subject.getSubType());
+
+		txn = buildTokenTransferTxn(fungibleTokenXfers);
+		subject = new SignedTxnAccessor(txn);
+
+		assertEquals(SubType.TOKEN_FUNGIBLE_COMMON, subject.getSubType());
 	}
 
 	@Test
@@ -343,6 +376,24 @@ class SignedTxnAccessorTest {
 				fractionalFee(1, 3, 1, 2, collector),
 				fractionalFee(1, 4, 1, 2, collector)
 		).stream().map(FcCustomFee::asGrpc).collect(toList());
+	}
+
+	private Transaction buildTokenTransferTxn(final TokenTransferList tokenTransferList) {
+		var op = CryptoTransferTransactionBody.newBuilder()
+				.addTokenTransfers(tokenTransferList)
+				.build();
+
+		var txnBody = TransactionBody.newBuilder()
+				.setMemo(memo)
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(now)))
+				.setCryptoTransfer(op)
+				.build();
+
+		return Transaction.newBuilder()
+				.setBodyBytes(txnBody.toByteString())
+				.build();
 	}
 
 	private TransactionBody tokenXfers() {
