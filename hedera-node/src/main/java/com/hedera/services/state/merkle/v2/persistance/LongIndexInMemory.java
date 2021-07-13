@@ -1,6 +1,6 @@
 package com.hedera.services.state.merkle.v2.persistance;
 
-import com.hedera.services.state.merkle.v2_swirlds.VKey;
+import com.swirlds.fcmap.VKey;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;

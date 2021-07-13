@@ -3,9 +3,6 @@ package com.hedera.services.state.merkle.v2;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.state.merkle.MerkleAccountState;
-import com.hedera.services.state.merkle.v2_swirlds.VFCDataSource;
-import com.hedera.services.state.merkle.v2_swirlds.VValue;
-import com.hedera.services.state.merkle.v2_swirlds.VKey;
 import com.hedera.services.state.merkle.virtualh.Account;
 import com.hedera.services.state.submerkle.EntityId;
 import com.swirlds.common.FastCopyable;
@@ -14,6 +11,9 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.fcmap.VFCDataSource;
+import com.swirlds.fcmap.VKey;
+import com.swirlds.fcmap.VValue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -243,6 +243,16 @@ public class VFCDataSourceTestUtils {
         }
 
         @Override
+        public VValue copy() {
+            return this;
+        }
+
+        @Override
+        public VValue asReadOnly() {
+            return this;
+        }
+
+        @Override
         public long getClassId() {
             return 1234;
         }
@@ -273,6 +283,11 @@ public class VFCDataSourceTestUtils {
                     "id=" + id +
                     ", data=" + Arrays.toString(data) +
                     '}';
+        }
+
+        @Override
+        public void release() {
+
         }
     }
 

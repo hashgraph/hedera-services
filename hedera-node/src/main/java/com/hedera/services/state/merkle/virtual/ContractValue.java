@@ -4,10 +4,12 @@ import com.hedera.services.store.models.Id;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.fcmap.VValue;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
-class ContractValue implements SelfSerializable {
+class ContractValue implements VValue {
     private final Id contractId;
     private final ContractUint256 key;
 
@@ -36,4 +38,33 @@ class ContractValue implements SelfSerializable {
 
     }
 
+    @Override
+    public void serialize(ByteBuffer byteBuffer) throws IOException {
+
+    }
+
+    @Override
+    public void deserialize(ByteBuffer byteBuffer, int i) throws IOException {
+
+    }
+
+    @Override
+    public void update(ByteBuffer byteBuffer) throws IOException {
+
+    }
+
+    @Override
+    public VValue copy() {
+        return this;
+    }
+
+    @Override
+    public VValue asReadOnly() {
+        return this;
+    }
+
+    @Override
+    public void release() {
+
+    }
 }

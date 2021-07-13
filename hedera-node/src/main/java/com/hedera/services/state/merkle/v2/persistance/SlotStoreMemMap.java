@@ -165,7 +165,7 @@ public final class SlotStoreMemMap extends SlotStore {
             // create new file
             MemMapSlotFile newFile = null;
             try {
-                newFile = new MemMapSlotFile(slotSizeBytes, slotSizeBytes*slotsPerFile, fileForIndex(newIndex), newIndex);
+                newFile = new MemMapSlotFile(slotSizeBytes, slotsPerFile, fileForIndex(newIndex), newIndex);
                 // add to files
                 files.add(newFile);
                 // set it as the currentFileForWriting
@@ -319,8 +319,12 @@ public final class SlotStoreMemMap extends SlotStore {
             fileChannel = FileChannel.open(file,
                     StandardOpenOption.CREATE,
                     StandardOpenOption.WRITE,
-                    StandardOpenOption.READ,
-                    StandardOpenOption.DELETE_ON_CLOSE
+                    StandardOpenOption.READ
+//            fileChannel = FileChannel.open(file,
+//                    StandardOpenOption.CREATE,
+//                    StandardOpenOption.WRITE,
+//                    StandardOpenOption.READ,
+//                    StandardOpenOption.DELETE_ON_CLOSE
             );
             // get file channel and memory map the file
             mappedBuffer = fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, fileSize);

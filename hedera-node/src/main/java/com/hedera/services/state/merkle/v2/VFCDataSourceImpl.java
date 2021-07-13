@@ -2,11 +2,11 @@ package com.hedera.services.state.merkle.v2;
 
 import com.hedera.services.state.merkle.v2.persistance.LongIndex;
 import com.hedera.services.state.merkle.v2.persistance.SlotStore;
-import com.hedera.services.state.merkle.v2_swirlds.VFCDataSource;
-import com.hedera.services.state.merkle.v2_swirlds.VKey;
-import com.hedera.services.state.merkle.v2_swirlds.VValue;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.fcmap.VFCDataSource;
+import com.swirlds.fcmap.VKey;
+import com.swirlds.fcmap.VValue;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

@@ -1,7 +1,6 @@
 package com.hedera.services.state.merkle.v2.persistance;
 
-import com.hedera.services.state.merkle.v2_swirlds.VKey;
-import com.hedera.services.state.merkle.virtual.persistence.fcmmap.FCSlotIndexUsingMemMapFile;
+import com.swirlds.fcmap.VKey;
 
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
@@ -210,8 +209,12 @@ public class LongIndexMemMap<K extends VKey> implements LongIndex<K> {
             fileChannel = FileChannel.open(file,
                     StandardOpenOption.CREATE,
                     StandardOpenOption.WRITE,
-                    StandardOpenOption.READ,
-                    StandardOpenOption.DELETE_ON_CLOSE
+                    StandardOpenOption.READ
+//            fileChannel = FileChannel.open(file,
+//                    StandardOpenOption.CREATE,
+//                    StandardOpenOption.WRITE,
+//                    StandardOpenOption.READ,
+//                    StandardOpenOption.DELETE_ON_CLOSE
             );
             mappedBuffer = fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, fileSize);
             // mark file as open

@@ -4,6 +4,7 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.fcmap.VKey;
+import com.swirlds.fcmap.VValue;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -13,7 +14,7 @@ import java.util.Objects;
 /**
  * Representation of a 256bit unsigned int, stored internally as 4 longs.
  */
-public class ContractUint256 implements SelfSerializable, VKey {
+public class ContractUint256 implements VKey, VValue {
     public static final int SERIALIZED_SIZE = Long.BYTES * 4; // 32 for BigInt of 256 bytes
     private long value_0 = 0; // low order
     private long value_1 = 0;
@@ -22,6 +23,13 @@ public class ContractUint256 implements SelfSerializable, VKey {
 
     public ContractUint256() {
         // Should only be used by deserialization...
+    }
+
+    private ContractUint256(ContractUint256 source) {
+        this.value_0 = source.value_0;
+        this.value_1 = source.value_1;
+        this.value_2 = source.value_2;
+        this.value_3 = source.value_3;
     }
 
     public ContractUint256(BigInteger value) {
@@ -89,6 +97,23 @@ public class ContractUint256 implements SelfSerializable, VKey {
     }
 
     @Override
+    public void update(ByteBuffer byteBuffer) throws IOException {
+        serialize(byteBuffer);
+    }
+
+    @Override
+    public VValue copy() {
+        // It is immutable anyway
+        return new ContractUint256(this);
+    }
+
+    @Override
+    public VValue asReadOnly() {
+        // It is immutable anyway
+        return this;
+    }
+
+    @Override
     public boolean equals(ByteBuffer byteBuffer, int i) throws IOException {
         return value_3 == byteBuffer.getLong() &&
                value_2 == byteBuffer.getLong() &&
@@ -104,5 +129,10 @@ public class ContractUint256 implements SelfSerializable, VKey {
                 ", value_2=" + value_2 +
                 ", value_3=" + value_3 +
                 '}';
+    }
+
+    @Override
+    public void release() {
+
     }
 }

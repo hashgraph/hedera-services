@@ -1,10 +1,13 @@
 package contract;
 
-import com.hedera.services.state.merkle.virtual.ContractHashStore;
-import com.hedera.services.state.merkle.virtual.ContractLeafStore;
+import com.hedera.services.state.merkle.v2.VFCDataSourceImpl;
+import com.hedera.services.state.merkle.v2.persistance.LongIndexInMemory;
+import com.hedera.services.state.merkle.v2.persistance.LongIndexMemMap;
+import com.hedera.services.state.merkle.v2.persistance.SlotStoreInMemory;
+import com.hedera.services.state.merkle.v2.persistance.SlotStoreMemMap;
 import com.hedera.services.state.merkle.virtual.ContractUint256;
-import com.hedera.services.store.models.Id;
 import com.swirlds.common.crypto.CryptoFactory;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.fcmap.VFCMap;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -19,11 +22,22 @@ import org.openjdk.jmh.annotations.TearDown;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Exchanger;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Microbenchmark tests for the VirtualMap. These benchmarks are just of the tree itself,
@@ -31,10 +45,13 @@ import java.util.concurrent.TimeUnit;
  * hash maps as the backing VirtualDataSource, and benchmarks those too just so we have
  * baseline numbers.
  */
+@SuppressWarnings("jol")
 @State(Scope.Thread)
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
 public class VFCMapBench {
+    private static final int FILE_SIZE = 32*1024*1024;
+
     @Param({"5", "10", "15", "20", "25"})
     public int numUpdatesPerOperation;
 
@@ -56,16 +73,86 @@ public class VFCMapBench {
     @Param({"true", "false"})
     public boolean inMemoryStore;
 
-    private final Random rand = new Random();
+    private final Random rand = new Random(1234);
     private VFCMap<ContractUint256, ContractUint256> contractMap;
-    private Future<?> prevIterationHashingFuture;
-    private final ExecutorService background = Executors.newSingleThreadScheduledExecutor();
+
+    private final Exchanger<Blar> hashingExchanger = new Exchanger<>();
+    private final Exchanger<VFCMap<?, ?>> archiveExchanger = new Exchanger<>();
+    private final Exchanger<VFCMap<?, ?>> releaseExchanger = new Exchanger<>();
+    private final ExecutorService releaseService = Executors.newSingleThreadExecutor(threadFactory("ReleaseService"));
+    private final ExecutorService archiveService = Executors.newSingleThreadExecutor(threadFactory("ArchiveService"));
+    private final ExecutorService hashingService = Executors.newSingleThreadExecutor(threadFactory("HashingService"));
+
+    private Future<Hash> hashingFuture = null;
 
     @Setup
     public void prepare() throws Exception {
-        final var ls = new ContractLeafStore(new Id(1, 2, 3),inMemoryIndex,inMemoryStore);
-        final var hs = new ContractHashStore(new Id(1, 2, 3),inMemoryIndex,inMemoryStore);
-        contractMap = new VFCMap<>(ls, hs);
+        releaseService.submit(() -> {
+            while (true) {
+                final var map = releaseExchanger.exchange(null);
+//                map.release();
+            }
+        });
+
+        archiveService.submit(() -> {
+            while (true) {
+                final var map = archiveExchanger.exchange(null);
+                try {
+                    map.archive();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                releaseExchanger.exchange(map);
+            }
+        });
+
+        hashingService.submit(() -> {
+            while (true) {
+                final var cf = new CompletableFuture<Hash>();
+                final var map = hashingExchanger.exchange(new Blar(cf)).map;
+                try {
+                    final var hashingFuture = map.hash();
+                    cf.complete(hashingFuture.get());
+                    archiveExchanger.exchange(map);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.exit(1);
+                }
+            }
+        });
+        final var numBinsAsPowerOf2 = Long.highestOneBit(numEntities);
+        final var keysPerBin = 4;
+        final var keySize = ContractUint256.SERIALIZED_SIZE;
+        final var sizeOfBin = (Integer.BYTES+(keysPerBin*(Integer.BYTES+Long.BYTES+keySize)));
+        final var numFilesForIndex = (numBinsAsPowerOf2 * sizeOfBin) / (1024*1024*1024);
+        final var numFilesAsPowerOf2 = Math.max(2, Long.highestOneBit(numFilesForIndex * 2));
+        final var ds = new VFCDataSourceImpl<>(
+                ContractUint256.SERIALIZED_SIZE,
+                ContractUint256::new,
+                ContractUint256.SERIALIZED_SIZE,
+                ContractUint256::new,
+                new SlotStoreMemMap(
+                        false,
+                        VFCDataSourceImpl.NODE_STORE_SLOTS_SIZE,
+                        FILE_SIZE,
+                        Path.of("data"),
+                        "nodes",
+                        "dat"),
+                new SlotStoreMemMap(
+                        true,
+                        Integer.BYTES + ContractUint256.SERIALIZED_SIZE + Integer.BYTES + ContractUint256.SERIALIZED_SIZE,
+                        FILE_SIZE,
+                        Path.of("data"),
+                        "data",
+                        "dat"),
+                new LongIndexMemMap<>(
+                        Path.of("data"),
+                        "index",
+                        (int) numBinsAsPowerOf2,
+                        (int) numFilesAsPowerOf2,
+                        ContractUint256.SERIALIZED_SIZE,
+                        keysPerBin));
+        contractMap = new VFCMap<>(ds);
 
         System.out.println("\nUsing inMemoryIndex = " + inMemoryIndex+"  -- inMemoryStore = " + inMemoryStore);
 
@@ -73,19 +160,9 @@ public class VFCMapBench {
             for (int i = 0; i < numEntities; i++) {
                 if (i % 100000 == 0 && i > 0) {
                     System.out.println("Completed: " + i);
-                    if (prevIterationHashingFuture != null) {
-                        prevIterationHashingFuture.get(); // block in case the previous iteration hasn't finished yet
-                    }
-                    final var unmodifiableContractMap = contractMap;
-                    contractMap = contractMap.copy();
-                    prevIterationHashingFuture = hashAndRelease(unmodifiableContractMap);
+                    hash();
                 }
-//                if (i % 1000_000 == 0 && i > 0) {
-//                    System.out.println("hashIndex");
-//                    hs.printMutationQueueStats();
-//                    ls.printMutationQueueStats();
-////                    hs.printUniqueHashes();
-//                }
+
                 final var key = asContractKey(i);
                 final var value = asContractValue(i);
                 try {
@@ -98,38 +175,36 @@ public class VFCMapBench {
             }
 
             System.out.println("Completed: " + numEntities);
-//            hs.printMutationQueueStats();
 
             // During setup we perform the full hashing and release the old copy. This way,
             // during the tests, we don't have an initial slow hash.
-            if (prevIterationHashingFuture != null) {
-                prevIterationHashingFuture.get(); // block in case the previous iteration hasn't finished yet
-            }
-            final var unmodifiableContractMap = contractMap;
-            contractMap = contractMap.copy();
-            prevIterationHashingFuture = hashAndRelease(unmodifiableContractMap);
-            prevIterationHashingFuture.get(); // Block until the hashing is done
+            hash();
         }
 
         printDataStoreSize();
-    }
-
-    private Future<?> hashAndRelease(VFCMap<ContractUint256, ContractUint256> unmodifiableContractMap) {
-        return background.submit(() -> {
-            try {
-                final var hashFuture = CryptoFactory.getInstance().digestTreeAsync2(unmodifiableContractMap);
-                hashFuture.get();
-                unmodifiableContractMap.release();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
     }
 
     @TearDown
     public void destroy() {
         printDataStoreSize();
         /*store.close();*/
+    }
+
+    /**
+     * Benchmarks update operations of an existing tree.
+     *
+     * @throws Exception Any exception should be treated as fatal.
+     */
+    @Benchmark
+    public void update() throws BrokenBarrierException, InterruptedException {
+        // Start modifying the new fast copy
+        final var iterationsPerRound = numUpdatesPerOperation * targetOpsPerSecond;
+        for (int j=0; j<iterationsPerRound; j++) {
+            final var i = rand.nextInt((int)numEntities);
+            contractMap.put(asContractKey(i), asContractValue(i + numEntities));
+        }
+
+        hash();
     }
 
     private ContractUint256 asContractKey(long index) {
@@ -160,34 +235,48 @@ public class VFCMapBench {
         }
     }
 
-    /**
-     * Benchmarks update operations of an existing tree.
-     *
-     * @throws Exception Any exception should be treated as fatal.
-     */
-    @Benchmark
-    public void update() throws Exception {
-        // Release the old contract after hashing has finished. We specifically block here waiting
-        // for the old hashing to complete because in the real world we cannot have hashing fall
-        // behind, so the fastest we can go is the max of the speed of modifying the latest and
-        // hashing the previous.
-        if (prevIterationHashingFuture != null) {
-            // Wait for the hashing of the previous iteration to complete. If it doesn't complete
-            // in maxMillisPerHashRound, then a TimeoutException is raised and the test fails.
-            prevIterationHashingFuture.get(maxMillisPerHashRound, TimeUnit.MILLISECONDS);
-//            prevIterationHashingFuture.get();
+    private void hash() {
+        try {
+            // Block on a previous hash job, if there is one
+            if (hashingFuture != null) {
+                hashingFuture.get();
+            }
+
+            // Make our fast copy
+            final var completedMap = contractMap;
+            contractMap = completedMap.copy();
+
+            // Exchange our fast copy for a new hashing future
+            hashingFuture = hashingExchanger.exchange(new Blar(completedMap)).hashingFuture;
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private ThreadFactory threadFactory(String namePrefix) {
+        return r -> {
+            Thread th = new Thread(r);
+            th.setName(namePrefix);
+            th.setDaemon(true);
+            th.setUncaughtExceptionHandler((t, e) -> {
+                e.printStackTrace();
+            });
+            return th;
+        };
+    }
+
+    private static final class Blar {
+        Future<Hash> hashingFuture;
+        VFCMap<?, ?> map;
+
+        public Blar(VFCMap<?, ?> map) {
+            this.hashingFuture = null;
+            this.map = map;
         }
 
-        // Create a new fast copy and start hashing the old one in a background thread.
-        final var unmodifiableContractMap = contractMap;
-        contractMap = contractMap.copy();
-        prevIterationHashingFuture = hashAndRelease(unmodifiableContractMap);
-
-        // Start modifying the new fast copy
-        final var iterationsPerRound = numUpdatesPerOperation * targetOpsPerSecond;
-        for (int j=0; j<iterationsPerRound; j++) {
-            final var i = rand.nextInt((int)numEntities);
-            contractMap.put(asContractKey(i), asContractValue(i + numEntities));
+        public Blar(Future<Hash> hashingFuture) {
+            this.hashingFuture = hashingFuture;
+            this.map = map;
         }
     }
 }
