@@ -47,6 +47,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.TokenSupplyType.INFINITE;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -60,43 +61,17 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * The exact number of entities to create can be configured using the
  * constants at the top of the class definition.
  *
- * <b>IMPORTANT:</b> Please note the following two items:
- * <ol>
- *   <li>
- *     If creating a large number of NFTs, e.g. 1M+, it is essential to
- *     comment out the body of the
- *     {@link com.hedera.services.bdd.spec.transactions.token.HapiTokenMint#updateStateOf(HapiApiSpec)}
- *     method, since it adds the minted token's creation time to the registry
- *     and the client will run OOM fairly quickly with a 1GB heap.
- *   </li>
- *   <li>
- *     There is evidence of slower memory leaks hidden elsewhere in the
- *     EET infrastructure, so you should probably not try to create more
- *     than 10M NFTs using a single run of this client; if more NFTs are
- *     needed, then please run several instances in sequence.
- *   </li>
- * </ol>
+ * <b>IMPORTANT:</b> Please note there is evidence of slow memory leaks
+ * hidden somewhere in the EET infrastructure, so you should probably not
+ * try to create more than 10M NFTs using a single run of this client; if
+ * more NFTs are needed, then please run several instances of this suite
+ * in sequence.
  */
 public class UniqueTokenStateSetup extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(UniqueTokenStateSetup.class);
 
-	private static final long SECS_TO_RUN = 4050;
-
-	private static final int MINT_TPS = 250;
-	private static final int NUM_UNIQ_TOKENS = 10_000;
-	private static final int UNIQ_TOKENS_BURST_SIZE = 1000;
-	private static final int UNIQ_TOKENS_POST_BURST_PAUSE_MS = 2500;
-	private static final int NFTS_PER_UNIQ_TOKEN = 1000;
-	private static final int NEW_NFTS_PER_MINT_OP = 10;
-	private static final int UNIQ_TOKENS_PER_TREASURY = 500;
-	private static final int METADATA_SIZE = 100;
-
 	final IntFunction<String> treasuryNameFn = i -> "treasury" + i;
 	final IntFunction<String> uniqueTokenNameFn = i -> "uniqueToken" + i;
-	private AtomicLong duration = new AtomicLong(SECS_TO_RUN);
-	private AtomicInteger maxOpsPerSec = new AtomicInteger(MINT_TPS);
-	private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
-
 	private static final AtomicReference<String> firstCreatedId = new AtomicReference<>(null);
 	private static final AtomicReference<String> lastCreatedId = new AtomicReference<>(null);
 
@@ -116,10 +91,12 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 
 	private HapiApiSpec createNfts() {
 		return defaultHapiSpec("CreateNfts")
-				.given().when().then(
+				.given(
+						customPropsMgmt()
+				).when().then(
 						runWithProvider(nftFactory())
-								.lasting(duration::get, unit::get)
-								.maxOpsPerSec(maxOpsPerSec::get)
+								.lasting(durationToRunMints::get, mintDurationUnit::get)
+								.maxOpsPerSec(mintTps::get)
 				);
 	}
 
@@ -132,8 +109,8 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 		return spec -> new OpProvider() {
 			@Override
 			public List<HapiSpecOperation> suggestedInitializers() {
-				final var numTreasuries = NUM_UNIQ_TOKENS / UNIQ_TOKENS_PER_TREASURY
-						+ Math.min(1, NUM_UNIQ_TOKENS % UNIQ_TOKENS_PER_TREASURY);
+				final var numTreasuries = numUniqTokens.get() / uniqTokensPerTreasury.get()
+						+ Math.min(1, numUniqTokens.get() % uniqTokensPerTreasury.get());
 
 				final List<HapiSpecOperation> inits = new ArrayList<>();
 				inits.add(
@@ -146,7 +123,9 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 								.toArray(HapiSpecOperation[]::new)));
 				inits.add(sleepFor(5_000L));
 				inits.addAll(burstedUniqCreations(
-						UNIQ_TOKENS_BURST_SIZE, numTreasuries, UNIQ_TOKENS_POST_BURST_PAUSE_MS));
+						setupUniqTokensBurstSize.get(),
+						numTreasuries,
+						setupUniqTokensBurstPauseMs.get()));
 				return inits;
 			}
 
@@ -157,10 +136,10 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 				}
 
 				final var currentToken = currentUniqueToken.get();
-				if (nftsMintedForCurrentUniqueToken.get() < NFTS_PER_UNIQ_TOKEN) {
+				if (nftsMintedForCurrentUniqueToken.get() < nftsPerUniqToken.get()) {
 					final List<ByteString> allMeta = new ArrayList<>();
-					final int noMoreThan = NFTS_PER_UNIQ_TOKEN - nftsMintedForCurrentUniqueToken.get();
-					for (int i = 0, n = Math.min(noMoreThan, NEW_NFTS_PER_MINT_OP); i < n; i++) {
+					final int noMoreThan = nftsPerUniqToken.get() - nftsMintedForCurrentUniqueToken.get();
+					for (int i = 0, n = Math.min(noMoreThan, nftsPerMintOp.get()); i < n; i++) {
 						final var nextSerialNo = nftsMintedForCurrentUniqueToken.incrementAndGet();
 						allMeta.add(metadataFor(currentToken, nextSerialNo));
 					}
@@ -168,16 +147,17 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 							.payingWith(GENESIS)
 							.deferStatusResolution()
 							.fee(ONE_HBAR)
+							.forgettingEverything()
 							.noLogging();
 					return Optional.of(op);
 				} else {
 					nftsMintedForCurrentUniqueToken.set(0);
 					final var nextUniqTokenNo = uniqueTokensCreated.incrementAndGet();
 					currentUniqueToken.set(uniqueTokenNameFn.apply(nextUniqTokenNo));
-					if (nextUniqTokenNo >= NUM_UNIQ_TOKENS) {
+					if (nextUniqTokenNo >= numUniqTokens.get()) {
 						System.out.println("Done creating " + nextUniqTokenNo
 								+ " unique tokens w/ at least "
-								+ (NFTS_PER_UNIQ_TOKEN * nextUniqTokenNo) + " NFTs");
+								+ (nftsPerUniqToken.get() * nextUniqTokenNo) + " NFTs");
 						done.set(true);
 					}
 					return Optional.empty();
@@ -189,8 +169,9 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 	private List<HapiSpecOperation> burstedUniqCreations(int perBurst, int numTreasuries, long pauseMs) {
 		final var createdSoFar = new AtomicInteger(0);
 		List<HapiSpecOperation> ans = new ArrayList<>();
-		while (createdSoFar.get() < NUM_UNIQ_TOKENS) {
-			var thisBurst = Math.min(NUM_UNIQ_TOKENS - createdSoFar.get(), perBurst);
+		final var configuredNumUniqTokens = numUniqTokens.get();
+		while (createdSoFar.get() < configuredNumUniqTokens) {
+			var thisBurst = Math.min(configuredNumUniqTokens - createdSoFar.get(), perBurst);
 			final var burst = inParallel(IntStream.range(0, thisBurst)
 					.mapToObj(i -> tokenCreate(uniqueTokenNameFn.apply(i + createdSoFar.get()))
 							.payingWith(GENESIS)
@@ -229,15 +210,102 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 
 	private ByteString metadataFor(String uniqToken, int nftNo) {
 		final var base = new StringBuilder(uniqToken).append("-SN").append(nftNo);
-		var padding = METADATA_SIZE - base.length();
+		var padding = metadataSize.get() - base.length();
 		while (padding-- > 0) {
 			base.append("_");
 		}
 		return ByteString.copyFromUtf8(base.toString());
 	}
 
+	private HapiSpecOperation customPropsMgmt() {
+		return withOpContext((spec, opLog) -> {
+			var ciProps = spec.setup().ciPropertiesMap();
+			if (ciProps.has("mintTps")) {
+				mintTps.set(ciProps.getInteger("mintTps"));
+			}
+			if (ciProps.has("numUniqTokens")) {
+				numUniqTokens.set(ciProps.getInteger("numUniqTokens"));
+			}
+			if (ciProps.has("setupUniqTokensBurstSize")) {
+				setupUniqTokensBurstSize.set(ciProps.getInteger("setupUniqTokensBurstSize"));
+			}
+			if (ciProps.has("setupUniqTokensBurstPauseMs")) {
+				setupUniqTokensBurstPauseMs.set(ciProps.getInteger("setupUniqTokensBurstPauseMs"));
+			}
+			if (ciProps.has("nftsPerUniqToken")) {
+				nftsPerUniqToken.set(ciProps.getInteger("nftsPerUniqToken"));
+			}
+			if (ciProps.has("nftsPerMintOp")) {
+				nftsPerMintOp.set(ciProps.getInteger("nftsPerMintOp"));
+			}
+			if (ciProps.has("uniqTokensPerTreasury")) {
+				uniqTokensPerTreasury.set(ciProps.getInteger("uniqTokensPerTreasury"));
+			}
+			if (ciProps.has("metadataSize")) {
+				metadataSize.set(ciProps.getInteger("metadataSize"));
+			}
+			if (ciProps.has("durationToRunMints")) {
+				durationToRunMints.set(ciProps.getLong("durationToRunMints"));
+			}
+			if (ciProps.has("secsToRunPostMintXfers")) {
+				durationToRunPostMintXfers.set(ciProps.getLong("secsToRunPostMintXfers"));
+			}
+			if (ciProps.has("mintDurationUnit")) {
+				mintDurationUnit.set(ciProps.getTimeUnit("mintDurationUnit"));
+			}
+			if (ciProps.has("xferDurationUnit")) {
+				xferDurationUnit.set(ciProps.getTimeUnit("xferDurationUnit"));
+			}
+
+			opLog.info("Running with configuration: " +
+					"\n\t\tnumUniqTokens               =" + numUniqTokens.get() +
+					"\n\t\tnftsPerUniqToken            =" + nftsPerUniqToken.get() +
+					"\n\t\t  --> TOTAL NFTs            = " + (numUniqTokens.get() * nftsPerUniqToken.get()) +
+					"\n\t\tmintTps                     =" + mintTps.get() +
+					"\n\t\tmintDurationUnit            =" + mintDurationUnit.get() +
+					"\n\t\tdurationToRunMints          =" + durationToRunMints.get() +
+					"\n\t\tnftsPerMintOp               =" + nftsPerMintOp.get() +
+					"\n\t\tmetadataSize                =" + metadataSize.get() +
+					"\n\t\txferTps                     =" + xferTps.get() +
+					"\n\t\txferDurationUnit            =" + xferDurationUnit.get() +
+					"\n\t\tdurationToRunPostMintXfers  =" + durationToRunPostMintXfers.get() +
+					"\n\t\tsetupUniqTokensBurstSize    =" + setupUniqTokensBurstSize.get() +
+					"\n\t\tsetupUniqTokensBurstPauseMs =" + setupUniqTokensBurstPauseMs.get() +
+					"\n\t\tuniqTokensPerTreasury       =" + uniqTokensPerTreasury.get()
+			);
+		});
+	}
+
 	@Override
 	protected Logger getResultsLogger() {
 		return log;
 	}
+
+	private static final int DEFAULT_XFER_TPS = 250;
+	private final AtomicInteger xferTps = new AtomicInteger(DEFAULT_XFER_TPS);
+	private static final int DEFAULT_MINT_TPS = 250;
+	private final AtomicInteger mintTps = new AtomicInteger(DEFAULT_MINT_TPS);
+	private static final int DEFAULT_NUM_UNIQ_TOKENS = 10_000;
+	private final AtomicInteger numUniqTokens = new AtomicInteger(DEFAULT_NUM_UNIQ_TOKENS);
+	private static final int DEFAULT_SETUP_UNIQ_TOKENS_BURST_SIZE = 1000;
+	private final AtomicInteger setupUniqTokensBurstSize = new AtomicInteger(DEFAULT_SETUP_UNIQ_TOKENS_BURST_SIZE);
+	private static final int DEFAULT_SETUP_UNIQ_TOKENS_BURST_PAUSE_MS = 2500;
+	private final AtomicInteger setupUniqTokensBurstPauseMs = new AtomicInteger(
+			DEFAULT_SETUP_UNIQ_TOKENS_BURST_PAUSE_MS);
+	private static final int DEFAULT_NFTS_PER_UNIQ_TOKEN = 1000;
+	private final AtomicInteger nftsPerUniqToken = new AtomicInteger(DEFAULT_NFTS_PER_UNIQ_TOKEN);
+	private static final int DEFAULT_NFTS_PER_MINT_OP = 10;
+	private final AtomicInteger nftsPerMintOp = new AtomicInteger(DEFAULT_NFTS_PER_MINT_OP);
+	private static final int DEFAULT_UNIQ_TOKENS_PER_TREASURY = 500;
+	private final AtomicInteger uniqTokensPerTreasury = new AtomicInteger(DEFAULT_UNIQ_TOKENS_PER_TREASURY);
+	private static final int DEFAULT_METADATA_SIZE = 100;
+	private final AtomicInteger metadataSize = new AtomicInteger(DEFAULT_METADATA_SIZE);
+	private static final long DEFAULT_SECS_TO_RUN_MINTS =
+			(DEFAULT_NUM_UNIQ_TOKENS * DEFAULT_NFTS_PER_UNIQ_TOKEN)
+					/ (DEFAULT_MINT_TPS * DEFAULT_NFTS_PER_MINT_OP);
+	private final AtomicLong durationToRunMints = new AtomicLong(DEFAULT_SECS_TO_RUN_MINTS);
+	private static final long DEFAULT_SEC_TO_RUN_POST_MINT_XFERS = 24 * 3600;
+	private final AtomicLong durationToRunPostMintXfers = new AtomicLong(DEFAULT_SEC_TO_RUN_POST_MINT_XFERS);
+	private final AtomicReference<TimeUnit> mintDurationUnit = new AtomicReference<>(SECONDS);
+	private final AtomicReference<TimeUnit> xferDurationUnit = new AtomicReference<>(SECONDS);
 }

@@ -52,6 +52,7 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 	static final Logger log = LogManager.getLogger(HapiTokenMint.class);
 
 	private long amount;
+	private boolean rememberingNothing = false;
 	private String token;
 	private List<ByteString> metadata;
 	private SubType subType;
@@ -78,6 +79,11 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 		this.token = token;
 		this.metadata = metadata;
 		this.amount = 0;
+	}
+
+	public HapiTokenMint forgettingEverything() {
+		rememberingNothing = true;
+		return this;
 	}
 
 	@Override
@@ -143,7 +149,7 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 
 	@Override
 	public void updateStateOf(HapiApiSpec spec) throws Throwable {
-		if (actualStatus != SUCCESS) {
+		if (rememberingNothing || actualStatus != SUCCESS) {
 			return;
 		}
 		lookupSubmissionRecord(spec);
