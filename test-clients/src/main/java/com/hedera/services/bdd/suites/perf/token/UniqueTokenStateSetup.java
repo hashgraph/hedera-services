@@ -42,9 +42,12 @@ import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -85,6 +88,7 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						createNfts(),
+						runPostMintXfers(),
 				}
 		);
 	}
@@ -98,6 +102,51 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 								.lasting(durationToRunMints::get, mintDurationUnit::get)
 								.maxOpsPerSec(mintTps::get)
 				);
+	}
+
+	private HapiApiSpec runPostMintXfers() {
+		return defaultHapiSpec("RunPostMintXfers")
+				.given().when().then(
+						runWithProvider(avoidantXfersFactory())
+								.lasting(durationToRunPostMintXfers::get, xferDurationUnit::get)
+								.maxOpsPerSec(xferTps::get)
+				);
+	}
+
+	private Function<HapiApiSpec, OpProvider> avoidantXfersFactory() {
+		final var nextSender = new AtomicInteger();
+		final IntFunction<String> nameFn = i -> "account" + i;
+
+		return spec -> new OpProvider() {
+			@Override
+			public List<HapiSpecOperation> suggestedInitializers() {
+				return List.of(inParallel(IntStream.range(0, numXferAccounts.get())
+								.mapToObj(i -> cryptoCreate(nameFn.apply(i))
+										.noLogging()
+										.balance(ONE_HUNDRED_HBARS * 1_000)
+										.payingWith(GENESIS)
+										.key(GENESIS)
+										.deferStatusResolution())
+								.toArray(HapiSpecOperation[]::new)),
+						logIt("Finished submitting " + numXferAccounts.get() + " account creations"),
+						sleepFor(30_000L));
+			}
+
+			@Override
+			public Optional<HapiSpecOperation> get() {
+				final int configuredNumAccounts = numXferAccounts.get();
+				final int sender = nextSender.getAndUpdate(i -> (i + 1) % configuredNumAccounts);
+				final int receiver = (sender + 1) % configuredNumAccounts;
+				final var senderName = nameFn.apply(sender);
+				final var op = cryptoTransfer(
+						tinyBarsFromTo(senderName, nameFn.apply(receiver), 1))
+						.payingWith(nameFn.apply(sender))
+						.signedBy(GENESIS)
+						.deferStatusResolution()
+						.noLogging();
+				return Optional.of(op);
+			}
+		};
 	}
 
 	private Function<HapiApiSpec, OpProvider> nftFactory() {
@@ -223,6 +272,12 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 			if (ciProps.has("mintTps")) {
 				mintTps.set(ciProps.getInteger("mintTps"));
 			}
+			if (ciProps.has("xferTps")) {
+				xferTps.set(ciProps.getInteger("xferTps"));
+			}
+			if (ciProps.has("numXferAccounts")) {
+				numXferAccounts.set(ciProps.getInteger("numXferAccounts"));
+			}
 			if (ciProps.has("numUniqTokens")) {
 				numUniqTokens.set(ciProps.getInteger("numUniqTokens"));
 			}
@@ -247,8 +302,8 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 			if (ciProps.has("durationToRunMints")) {
 				durationToRunMints.set(ciProps.getLong("durationToRunMints"));
 			}
-			if (ciProps.has("secsToRunPostMintXfers")) {
-				durationToRunPostMintXfers.set(ciProps.getLong("secsToRunPostMintXfers"));
+			if (ciProps.has("durationToRunPostMintXfers")) {
+				durationToRunPostMintXfers.set(ciProps.getLong("durationToRunPostMintXfers"));
 			}
 			if (ciProps.has("mintDurationUnit")) {
 				mintDurationUnit.set(ciProps.getTimeUnit("mintDurationUnit"));
@@ -258,20 +313,21 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 			}
 
 			opLog.info("Running with configuration: " +
-					"\n\t\tnumUniqTokens               =" + numUniqTokens.get() +
-					"\n\t\tnftsPerUniqToken            =" + nftsPerUniqToken.get() +
-					"\n\t\t  --> TOTAL NFTs            = " + (numUniqTokens.get() * nftsPerUniqToken.get()) +
-					"\n\t\tmintTps                     =" + mintTps.get() +
-					"\n\t\tmintDurationUnit            =" + mintDurationUnit.get() +
-					"\n\t\tdurationToRunMints          =" + durationToRunMints.get() +
-					"\n\t\tnftsPerMintOp               =" + nftsPerMintOp.get() +
-					"\n\t\tmetadataSize                =" + metadataSize.get() +
-					"\n\t\txferTps                     =" + xferTps.get() +
-					"\n\t\txferDurationUnit            =" + xferDurationUnit.get() +
-					"\n\t\tdurationToRunPostMintXfers  =" + durationToRunPostMintXfers.get() +
-					"\n\t\tsetupUniqTokensBurstSize    =" + setupUniqTokensBurstSize.get() +
-					"\n\t\tsetupUniqTokensBurstPauseMs =" + setupUniqTokensBurstPauseMs.get() +
-					"\n\t\tuniqTokensPerTreasury       =" + uniqTokensPerTreasury.get()
+					"\n\tnumUniqTokens               = " + numUniqTokens.get() +
+					"\n\tnftsPerUniqToken            = " + nftsPerUniqToken.get() +
+					"\n\t  --> TOTAL NFTs            = " + (numUniqTokens.get() * nftsPerUniqToken.get()) +
+					"\n\tmintTps                     = " + mintTps.get() +
+					"\n\tmintDurationUnit            = " + mintDurationUnit.get() +
+					"\n\tdurationToRunMints          = " + durationToRunMints.get() +
+					"\n\tnftsPerMintOp               = " + nftsPerMintOp.get() +
+					"\n\tmetadataSize                = " + metadataSize.get() +
+					"\n\txferTps                     = " + xferTps.get() +
+					"\n\tnumXferAccounts             = " + numXferAccounts.get() +
+					"\n\txferDurationUnit            = " + xferDurationUnit.get() +
+					"\n\tdurationToRunPostMintXfers  = " + durationToRunPostMintXfers.get() +
+					"\n\tsetupUniqTokensBurstSize    = " + setupUniqTokensBurstSize.get() +
+					"\n\tsetupUniqTokensBurstPauseMs = " + setupUniqTokensBurstPauseMs.get() +
+					"\n\tuniqTokensPerTreasury       = " + uniqTokensPerTreasury.get()
 			);
 		});
 	}
@@ -281,6 +337,8 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 		return log;
 	}
 
+	private static final int DEFAULT_NUM_XFER_ACCOUNTS = 10_000;
+	private final AtomicInteger numXferAccounts = new AtomicInteger(DEFAULT_NUM_XFER_ACCOUNTS);
 	private static final int DEFAULT_XFER_TPS = 250;
 	private final AtomicInteger xferTps = new AtomicInteger(DEFAULT_XFER_TPS);
 	private static final int DEFAULT_MINT_TPS = 250;
