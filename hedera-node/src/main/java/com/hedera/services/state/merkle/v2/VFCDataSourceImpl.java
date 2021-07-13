@@ -1,15 +1,17 @@
 package com.hedera.services.state.merkle.v2;
 
-import com.hedera.services.state.merkle.v2.persistance.LongIndex;
-import com.hedera.services.state.merkle.v2.persistance.SlotStore;
+import com.hedera.services.state.merkle.v2.persistance.*;
+import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.fcmap.VFCDataSource;
+import com.swirlds.fcmap.VFCMap;
 import com.swirlds.fcmap.VKey;
 import com.swirlds.fcmap.VValue;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.function.Supplier;
 
 /**
@@ -37,6 +39,17 @@ public class VFCDataSourceImpl<K extends VKey, V extends VValue> implements VFCD
     private final SlotStore leafDataStore;
     private final LongIndex<K> leafKeyIndex;
 
+    /**
+     * Construct a new VFCDataSourceImpl, try the static factory methods if you want a simpler way of creating one.
+     *
+     * @param keySizeBytes the size of key when serialized in bytes
+     * @param keyConstructor constructor for creating keys for deserialization
+     * @param valueSizeBytes the size of value when serialized in bytes
+     * @param valueConstructor constructor for creating values for deserialization
+     * @param nodeStore the node store implementation to use
+     * @param leafDataStore the leaf store implementation to use
+     * @param leafKeyIndex the leaf index implementation to use
+     */
     public VFCDataSourceImpl(int keySizeBytes, Supplier<K> keyConstructor, int valueSizeBytes, Supplier<V> valueConstructor,
                              SlotStore nodeStore, SlotStore leafDataStore, LongIndex<K> leafKeyIndex) {
         this.keySizeBytes = Integer.BYTES + keySizeBytes; // needs to include serialization version
@@ -47,6 +60,89 @@ public class VFCDataSourceImpl<K extends VKey, V extends VValue> implements VFCD
         this.leafDataStore = leafDataStore;
         this.leafKeyIndex = leafKeyIndex;
     }
+
+    //==================================================================================================================
+    // static factories
+
+    /**
+     * Construct a new on disk VFCDataSourceImpl that can store "numEntities" number of leaves.
+     *
+     * @param dataDirectory the directory to store data in
+     * @param numEntities the max number of leaves that can be stores
+     * @param keySizeBytes the size of key when serialized in bytes
+     * @param keyConstructor constructor for creating keys for deserialization
+     * @param valueSizeBytes the size of value when serialized in bytes
+     * @param valueConstructor constructor for creating values for deserialization
+     * @param <K> type for keys
+     * @param <V> type for values
+     * @return new VFCDataSourceImpl configured for disk storage
+     * @throws IOException If there was a problem creating files on disk
+     */
+    public static <K extends VKey, V extends VValue> VFCDataSourceImpl<K,V> createOnDisk(
+            Path dataDirectory, long numEntities,
+            int keySizeBytes, Supplier<K> keyConstructor,
+            int valueSizeBytes, Supplier<V> valueConstructor) throws IOException {
+        final var slotStoreFileSize = 256 * 1024*1024; // 256Mb
+        final var numBinsAsPowerOf2 = Long.highestOneBit(numEntities);
+        final var keysPerBin = 4;
+        final var sizeOfBin = (Integer.BYTES+(keysPerBin*(Integer.BYTES+Long.BYTES+keySizeBytes)));
+        final var numFilesForIndex = (numBinsAsPowerOf2 * sizeOfBin) / (1024*1024*1024);
+        final var numFilesAsPowerOf2 = Math.max(2, Long.highestOneBit(numFilesForIndex * 2));
+        return new VFCDataSourceImpl<K,V>(
+                keySizeBytes,
+                keyConstructor,
+                valueSizeBytes,
+                valueConstructor,
+                new SlotStoreMemMap(
+                        false,
+                        NODE_STORE_SLOTS_SIZE,
+                        slotStoreFileSize,
+                        dataDirectory.resolve("nodes"),
+                        "nodes",
+                        "dat"),
+                new SlotStoreMemMap(
+                        true,
+                        Integer.BYTES + keySizeBytes + Integer.BYTES + valueSizeBytes,
+                        slotStoreFileSize,
+                        dataDirectory.resolve("leaves"),
+                        "leaves",
+                        "dat"),
+                new LongIndexMemMap<>(
+                        dataDirectory.resolve("index"),
+                        "index",
+                        (int) numBinsAsPowerOf2,
+                        (int) numFilesAsPowerOf2,
+                        keySizeBytes,
+                        keysPerBin));
+    }
+
+    /**
+     * Construct a new in memory VFCDataSourceImpl that can store "numEntities" number of leaves.
+     *
+     * @param keySizeBytes the size of key when serialized in bytes
+     * @param keyConstructor constructor for creating keys for deserialization
+     * @param valueSizeBytes the size of value when serialized in bytes
+     * @param valueConstructor constructor for creating values for deserialization
+     * @param <K> type for keys
+     * @param <V> type for values
+     * @return new VFCDataSourceImpl configured for disk storage
+     * @throws IOException If there was a problem creating stores
+     */
+    public static <K extends VKey, V extends VValue> VFCDataSourceImpl<K,V> createInMemory(
+            int keySizeBytes, Supplier<K> keyConstructor,
+            int valueSizeBytes, Supplier<V> valueConstructor) throws IOException {
+        return new VFCDataSourceImpl<K,V>(
+                keySizeBytes,
+                keyConstructor,
+                valueSizeBytes,
+                valueConstructor,
+                new SlotStoreInMemory(false,NODE_STORE_SLOTS_SIZE),
+                new SlotStoreInMemory(true, Integer.BYTES + keySizeBytes + Integer.BYTES + valueSizeBytes),
+                new LongIndexInMemory<>());
+    }
+
+    //==================================================================================================================
+    // Public API methods
 
     /**
      * Close all data stores

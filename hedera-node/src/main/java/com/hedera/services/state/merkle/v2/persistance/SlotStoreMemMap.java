@@ -115,9 +115,8 @@ public final class SlotStoreMemMap extends SlotStore {
             if (create) {
                 // create new files till we have enough
                 synchronized (this) {
-                    final int fileSize = slotsPerFile * slotSizeBytes;
                     for (int newFileIndex = files.size(); newFileIndex <= fileIndex; newFileIndex++) {
-                        files.add(new MemMapSlotFile(slotSizeBytes, fileSize, fileForIndex(newFileIndex), newFileIndex));
+                        files.add(new MemMapSlotFile(slotSizeBytes, slotsPerFile, fileForIndex(newFileIndex), newFileIndex));
                     }
                 }
             } else {
