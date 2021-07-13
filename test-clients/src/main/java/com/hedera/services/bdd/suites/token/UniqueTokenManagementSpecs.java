@@ -85,6 +85,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_MAX_SUPPLY_REACHED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TREASURY_MUST_OWN_BURNED_NFT;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -119,6 +120,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 				finiteNftReachesMaxSupplyProperly(),
 
 				burnHappyPath(),
+				canOnlyBurnFromTreasury(),
 				burnFailsOnInvalidSerialNumber(),
 				burnRespectsBurnBatchConstraints(),
 				treasuryBalanceCorrectAfterBurn(),
@@ -151,8 +153,50 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 				tokenDissociateHappyPath(),
 				tokenDissociateFailsIfAccountOwnsUniqueTokens(),
 
-				baseUniqueMintOperationIsChargedExpectedFee()
+				getAccountNftsInfoFailsWithDeletedAccount(),
+				getAccountNftsInfoFailsWithInexistentAccount(),
+
+				baseUniqueMintOperationIsChargedExpectedFee(),
+				baseUniqueWipeOperationIsChargedExpectedFee(),
+				baseUniqueBurnOperationIsChargedExpectedFee()
 		);
+	}
+
+	private HapiApiSpec baseUniqueWipeOperationIsChargedExpectedFee() {
+		final var uniqueToken = "nftType";
+		final var wipeKey = "wipeKey";
+		final var civilian = "civilian";
+		final var wipeTxn = "wipeTxn";
+		final var expectedNftWipePriceUsd = 0.001;
+
+		return defaultHapiSpec("BaseUniqueWipeOperationIsChargedExpectedFee")
+				.given(
+						newKeyNamed(SUPPLY_KEY),
+						newKeyNamed(wipeKey),
+						cryptoCreate(civilian).key(wipeKey),
+						cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS).key(wipeKey),
+						tokenCreate(uniqueToken)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyType(TokenSupplyType.INFINITE)
+								.initialSupply(0L)
+								.supplyKey(SUPPLY_KEY)
+								.wipeKey(wipeKey)
+								.treasury(TOKEN_TREASURY),
+						tokenAssociate(civilian, uniqueToken),
+						mintToken(uniqueToken,
+								List.of(ByteString.copyFromUtf8("token_to_wipe"))),
+						cryptoTransfer(movingUnique(1L, uniqueToken)
+								.between(TOKEN_TREASURY, civilian))
+				)
+				.when(
+						wipeTokenAccount(uniqueToken, civilian, List.of(1L))
+								.payingWith(TOKEN_TREASURY)
+								.fee(ONE_HBAR)
+								.blankMemo()
+								.via(wipeTxn)
+				).then(
+						validateChargedUsdWithin(wipeTxn, expectedNftWipePriceUsd, 0.01)
+				);
 	}
 
 	private HapiApiSpec populatingMetadataForFungibleDoesNotWork() {
@@ -482,6 +526,53 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 						getAccountBalance(TOKEN_TREASURY)
 								.hasTokenBalance(NFT, 0),
 						getAccountInfo(TOKEN_TREASURY).hasToken(relationshipWith(NFT)).hasOwnedNfts(0)
+				);
+	}
+
+	private HapiApiSpec canOnlyBurnFromTreasury() {
+		final var nonTreasury = "anybodyElse";
+
+		return defaultHapiSpec("CanOnlyBurnFromTreasury")
+				.given(
+						newKeyNamed(SUPPLY_KEY),
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(nonTreasury),
+						tokenCreate(NFT)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyType(TokenSupplyType.INFINITE)
+								.initialSupply(0)
+								.supplyKey(SUPPLY_KEY)
+								.treasury(TOKEN_TREASURY),
+						mintToken(NFT, List.of(
+								metadata("1"),
+								metadata("2"))),
+						tokenAssociate(nonTreasury, NFT),
+						cryptoTransfer(movingUnique(2L, NFT).between(TOKEN_TREASURY, nonTreasury))
+				).when(
+						burnToken(NFT, List.of(1L, 2L))
+								.via("burnTxn")
+								.hasKnownStatus(TREASURY_MUST_OWN_BURNED_NFT)
+				).then(
+						getTokenNftInfo(NFT, 1).hasSerialNum(1),
+						getTokenNftInfo(NFT, 2).hasSerialNum(2),
+						getTokenInfo(NFT).hasTotalSupply(2),
+						getAccountBalance(nonTreasury).hasTokenBalance(NFT, 1),
+						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NFT, 1),
+						getAccountInfo(nonTreasury).hasOwnedNfts(1),
+						getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(1),
+						getTokenNftInfos(NFT, 0, 2)
+								.hasNfts(
+										newTokenNftInfo(NFT, 1, TOKEN_TREASURY, metadata("1")),
+										newTokenNftInfo(NFT, 2, nonTreasury, metadata("2"))
+								) .logged(),
+						getAccountNftInfos(TOKEN_TREASURY, 0, 1)
+								.hasNfts(
+										newTokenNftInfo(NFT, 1, TOKEN_TREASURY, metadata("1"))
+								),
+						getAccountNftInfos(nonTreasury, 0, 1)
+								.hasNfts(
+										newTokenNftInfo(NFT, 2, nonTreasury, metadata("2"))
+								)
 				);
 	}
 
@@ -1283,6 +1374,37 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 						validateChargedUsdWithin(baseTxn, expectedNftMintPriceUsd, 0.01)
 				);
 	}
+
+	private HapiApiSpec baseUniqueBurnOperationIsChargedExpectedFee() {
+		final var uniqueToken = "nftType";
+		final var supplyKey = "burn!";
+		final var civilianPayer = "civilian";
+		final var baseTxn = "baseTxn";
+		final var expectedNftBurnPriceUsd = 0.001;
+
+		return defaultHapiSpec("BaseUniqueBurnOperationIsChargedExpectedFee")
+				.given(
+						newKeyNamed(supplyKey),
+						cryptoCreate(civilianPayer).key(supplyKey),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(uniqueToken)
+								.initialSupply(0)
+								.supplyKey(supplyKey)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.treasury(TOKEN_TREASURY),
+						mintToken(uniqueToken, List.of(metadata("memo")))
+				)
+				.when(
+						burnToken(uniqueToken, List.of(1L))
+								.fee(ONE_HBAR)
+								.payingWith(civilianPayer)
+								.blankMemo()
+								.via(baseTxn)
+				).then(
+						validateChargedUsdWithin(baseTxn, expectedNftBurnPriceUsd, 0.01)
+				);
+	}
+
 
 	protected Logger getResultsLogger() {
 		return log;

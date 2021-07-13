@@ -32,7 +32,7 @@ import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 public class TokenWipeUsage extends TokenTxnUsage<TokenWipeUsage> {
 	private SubType currentSubType;
 
-	private TokenWipeUsage(TransactionBody tokenWipeOp, TxnUsageEstimator usageEstimator) {
+	public TokenWipeUsage(TransactionBody tokenWipeOp, TxnUsageEstimator usageEstimator) {
 		super(tokenWipeOp, usageEstimator);
 	}
 

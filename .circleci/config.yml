@@ -2929,7 +2929,7 @@ jobs:
         default: false
     executor:
       name: << parameters.runtime >>
-      workflow-name:  << parameters.workflow-name >>
+      workflow-name: << parameters.workflow-name >>
     steps:
       - gcp_import_credentials:
          username_variable: GCLOUD_SERVICE_ACCOUNT_NAME

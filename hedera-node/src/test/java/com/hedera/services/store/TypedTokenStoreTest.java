@@ -35,7 +35,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
@@ -52,12 +51,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
+import static com.hedera.services.store.TypedTokenStore.legacyReprOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -147,6 +148,22 @@ class TypedTokenStoreTest {
 	}
 
 	@Test
+	void removesDestroyedRel() {
+		// setup:
+		final var destroyedRel = new TokenRelationship(token, miscAccount);
+		destroyedRel.markAsPersisted();
+		destroyedRel.markAsDestroyed();
+
+		// when:
+		subject.persistTokenRelationships(List.of(destroyedRel));
+
+		// then:
+		verify(tokenRels).remove(miscTokenRelId);
+		verify(backingTokenRels).removeFromExistingRels(legacyReprOf(destroyedRel));
+		verify(transactionRecordService).includeChangesToTokenRels(List.of(destroyedRel));
+	}
+
+	@Test
 	void persistTrackers() {
 		var ot = new OwnershipTracker();
 		subject.persistTrackers(ot);
@@ -203,18 +220,21 @@ class TypedTokenStoreTest {
 	}
 
 	@Test
-	void failsLoadingMissingTokenWithloadPossiblyDeletedToken() {
-		assertloadPossiblyDeletedTokenFailsWith(INVALID_TOKEN_ID);
+	void canLoadAutoRemovedTokenIfAllowed() {
+		final var autoRemovedToken = subject.loadPossiblyDeletedOrAutoRemovedToken(tokenId);
+
+		assertEquals(tokenId, autoRemovedToken.getId());
+		assertTrue(autoRemovedToken.isBelievedToHaveBeenAutoRemoved());
 	}
 
 	@Test
-	void successfullyLoadDeletedToken() {
+	void loadsActuallyDeletedTokenAsExpected() {
 		givenToken(merkleTokenId, merkleToken);
 		merkleToken.setDeleted(true);
 
-		var deltedToken = subject.loadPossiblyDeletedToken(tokenId);
+		var deletedToken = subject.loadPossiblyDeletedOrAutoRemovedToken(tokenId);
 
-		assertEquals(token.getId(), deltedToken.getId());
+		assertEquals(token.getId(), deletedToken.getId());
 	}
 
 	@Test
@@ -299,8 +319,6 @@ class TypedTokenStoreTest {
 		verify(uniqueTokenAssociations).disassociate(new EntityId(modelToken.getId()), expectedPastUniqTokenId);
 		verify(uniqueTokenOwnerships).associate(treasuryId, expectedNewUniqTokenId);
 		verify(uniqueTokenOwnerships).disassociate(treasuryId, expectedPastUniqTokenId);
-		verify(backingNfts).addToExistingNfts(new NftId(0, 0, tokenNum, mintedSerialNo));
-		verify(backingNfts).removeFromExistingNfts(new NftId(0, 0, tokenNum, burnedSerialNo));
 	}
 
 	private void givenRelationship(MerkleEntityAssociation anAssoc, MerkleTokenRelStatus aRelationship) {
@@ -325,7 +343,7 @@ class TypedTokenStoreTest {
 	}
 
 	private void assertloadPossiblyDeletedTokenFailsWith(ResponseCodeEnum status) {
-		var ex = assertThrows(InvalidTransactionException.class, () -> subject.loadPossiblyDeletedToken(tokenId));
+		var ex = assertThrows(InvalidTransactionException.class, () -> subject.loadPossiblyDeletedOrAutoRemovedToken(tokenId));
 		assertEquals(status, ex.getResponseCode());
 	}
 
@@ -362,7 +380,7 @@ class TypedTokenStoreTest {
 		miscTokenRel.initBalance(balance);
 		miscTokenRel.setFrozen(frozen);
 		miscTokenRel.setKycGranted(kycGranted);
-		miscTokenRel.setNotYetPersisted(false);
+		miscTokenRel.markAsPersisted();
 	}
 
 	private final long expiry = 1_234_567L;

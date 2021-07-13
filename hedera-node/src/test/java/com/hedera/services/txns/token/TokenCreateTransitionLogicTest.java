@@ -70,9 +70,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyList;
 import static org.mockito.BDDMockito.given;
@@ -250,6 +252,30 @@ class TokenCreateTransitionLogicTest {
 		verify(store, never()).commitCreation();
 		verify(store).rollbackCreation();
 		verify(ledger).dropPendingTokenChanges();
+	}
+
+	@Test
+	void skipsTokenBalanceAdjustmentForNft() {
+		givenValidTxnCtx();
+		tokenCreateTxn = TransactionBody.newBuilder()
+				.setTokenCreation(tokenCreateTxn.getTokenCreation().toBuilder().setTokenType(NON_FUNGIBLE_UNIQUE))
+				.build();
+		given(accessor.getTxn()).willReturn(tokenCreateTxn);
+		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
+				.willReturn(CreationResult.success(created));
+		given(store.associate(treasury, List.of(created))).willReturn(OK);
+
+		subject.doStateTransition();
+
+		verify(store).associate(treasury, List.of(created));
+		verify(ledger, never()).unfreeze(any(), any());
+		verify(ledger, never()).grantKyc(any(), any());
+
+		verify(ledger, never()).adjustTokenBalance(any(AccountID.class), any(TokenID.class), anyLong());
+
+		verify(store).commitCreation();
+		verify(txnCtx).setCreated(created);
+		verify(txnCtx).setStatus(SUCCESS);
 	}
 
 	@Test

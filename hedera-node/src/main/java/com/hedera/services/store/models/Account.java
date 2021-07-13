@@ -21,13 +21,11 @@ package com.hedera.services.store.models;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
+import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.HashSet;
 import java.util.List;
@@ -36,12 +34,9 @@ import java.util.Set;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
 /**
  * Encapsulates the state and operations of a Hedera account.
@@ -106,51 +101,20 @@ public class Account {
 	}
 
 	/**
-	 * Performs validation and dissociation - removing relationships between tokens and accounts.
-	 * Expired tokens of type {@link TokenType#FUNGIBLE_COMMON} are transferred back to the treasury
+	 * Applies the given list of {@link Dissociation}s, validating that this account is
+	 * indeed associated to each involved token.
 	 *
-	 * @param relations a list of {@link TokenRelationship}, {@link TokenRelationship} pairs
-	 * @param validator - injected {@link OptionValidator} used to verify whether the token is expired
+	 * @param dissociations the dissociations to perform.
+	 * @param validator the validator to use for each dissociation
 	 */
-	public void dissociateWith(List<Pair<TokenRelationship, TokenRelationship>> relations, final OptionValidator validator) {
-		final Set<Id> uniqueIds = new HashSet<>();
-		for (var rel : relations) {
-			/*	Extraction	 */
-			final var accountRel = rel.getKey();
-			final var treasuryRel = rel.getValue();
-			final var account = accountRel.getAccount();
-			final var treasury = treasuryRel.getAccount();
-			final var token = accountRel.getToken();
-
-			/*	Validation	 */
-			validateTrue(associatedTokens.contains(token.getId()), TOKEN_NOT_ASSOCIATED_TO_ACCOUNT,
-					"Given account is not associated to the given token");
-			if (!token.isDeleted()) {
-				validateFalse(treasury.getId().equals(account.getId()), ACCOUNT_IS_TREASURY,
-						"Given account is treasury");
-				validateFalse(accountRel.isFrozen(), ACCOUNT_FROZEN_FOR_TOKEN,
-						"Account is frozen for given token");
-			}
-
-			var tokenBalance = accountRel.getBalance();
-			if (tokenBalance > 0) {
-				validateTrue(token.getType().equals(TokenType.FUNGIBLE_COMMON), TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES,
-						"Cannot dissociate given account while it has " + accountRel.getBalance() + " instances of unique tokens");
-
-				final var expiry = Timestamp.newBuilder().setSeconds(token.getExpiry()).build();
-				final var isTokenExpired = !validator.isValidExpiry(expiry);
-				validateFalse(!isTokenExpired && !token.isDeleted(), TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
-
-				if (!token.isDeleted()) {
-					/* Must be expired; return tokenBalance to treasury account. */
-					treasuryRel.adjustBalance(tokenBalance);
-					accountRel.adjustBalance(-tokenBalance);
-				}
-			}
-			uniqueIds.add(token.getId());
+	public void dissociateUsing(List<Dissociation> dissociations, OptionValidator validator) {
+		final Set<Id> dissociatedTokenIds = new HashSet<>();
+		for (var dissociation : dissociations) {
+			validateTrue(id.equals(dissociation.dissociatingAccountId()), FAIL_INVALID);
+			dissociation.updateModelRelsSubjectTo(validator);
+			dissociatedTokenIds.add(dissociation.dissociatedTokenId());
 		}
-		/* Commit	 */
-		associatedTokens.removeAllIds(uniqueIds);
+		associatedTokens.removeAllIds(dissociatedTokenIds);
 	}
 
 	public Id getId() {

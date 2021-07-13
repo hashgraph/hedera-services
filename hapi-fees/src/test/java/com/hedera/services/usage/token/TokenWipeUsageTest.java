@@ -49,6 +49,7 @@ import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.times;
 
 class TokenWipeUsageTest {
 	private long now = 1_234_567L;

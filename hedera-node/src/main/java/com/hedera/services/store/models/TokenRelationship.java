@@ -25,9 +25,11 @@ import com.hedera.services.state.enums.TokenType;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 /**
  * Encapsulates the state and operations of a Hedera account-token relationship.
@@ -50,6 +52,7 @@ public class TokenRelationship {
 	private long balance;
 	private boolean frozen;
 	private boolean kycGranted;
+	private boolean destroyed = false;
 	private boolean notYetPersisted = true;
 
 	private long balanceChange = 0L;
@@ -130,8 +133,17 @@ public class TokenRelationship {
 		return notYetPersisted;
 	}
 
-	public void setNotYetPersisted(boolean notYetPersisted) {
-		this.notYetPersisted = notYetPersisted;
+	public void markAsPersisted() {
+		notYetPersisted = false;
+	}
+
+	public boolean isDestroyed() {
+		return destroyed;
+	}
+
+	public void markAsDestroyed() {
+		validateFalse(notYetPersisted, FAIL_INVALID);
+		destroyed = true;
 	}
 
 	public boolean hasCommonRepresentation() {

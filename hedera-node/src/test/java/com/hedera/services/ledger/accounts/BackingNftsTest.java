@@ -25,24 +25,24 @@ import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.NftId;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fcmap.FCMap;
+import com.swirlds.fcmap.internal.FCMLeaf;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Set;
+import java.nio.charset.StandardCharsets;
 
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class BackingNftsTest {
@@ -51,35 +51,45 @@ class BackingNftsTest {
 	private NftId cNftId = new NftId(3, 4, 5, 6);
 	private MerkleUniqueTokenId aKey =
 			new MerkleUniqueTokenId(new EntityId(1, 2, 3), 4);
+	private MerkleUniqueTokenId bKey =
+			new MerkleUniqueTokenId(new EntityId(2, 3, 4), 5);
 	private MerkleUniqueTokenId cKey =
 			new MerkleUniqueTokenId(new EntityId(3, 4, 5), 6);
 	private MerkleUniqueToken aValue = new MerkleUniqueToken(
 			new EntityId(1, 2, 3),
 			"abcdefgh".getBytes(),
 			new RichInstant(1_234_567L, 1));
+	private MerkleUniqueToken theToken = new MerkleUniqueToken(
+			MISSING_ENTITY_ID,
+			"HI".getBytes(StandardCharsets.UTF_8),
+			MISSING_INSTANT);
+	private MerkleUniqueToken notTheToken = new MerkleUniqueToken(
+			MISSING_ENTITY_ID,
+			"IH".getBytes(StandardCharsets.UTF_8),
+			MISSING_INSTANT);
 
-	@Mock
 	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> delegate;
 
 	private BackingNfts subject;
 
 	@BeforeEach
-	void setUp() {
-		given(delegate.keySet()).willReturn(Set.of(
-				aKey,
-				new MerkleUniqueTokenId(new EntityId(2, 3, 4), 5)
-		));
+	void setUp() throws ConstructableRegistryException {
+		ConstructableRegistry.registerConstructable(new ClassConstructorPair(FCMLeaf.class, FCMLeaf::new));
+
+		delegate = new FCMap<>();
+		delegate.put(aKey, theToken);
+		delegate.put(bKey, notTheToken);
 
 		subject = new BackingNfts(() -> delegate);
 	}
 
 	@Test
-	void rebuildWorks() {
+	void doesntSupportGettingIdSet() {
 		// when:
 		subject = new BackingNfts(() -> delegate);
 
 		// expect:
-		assertEquals(Set.of(aNftId, bNftId), subject.idSet());
+		assertThrows(UnsupportedOperationException.class, subject::idSet);
 	}
 
 	@Test
@@ -92,34 +102,31 @@ class BackingNftsTest {
 
 	@Test
 	void getRefDelegatesToGetForModify() {
-		given(delegate.getForModify(aKey)).willReturn(aValue);
-
 		// when:
 		final var mutable = subject.getRef(aNftId);
 
 		// then:
-		assertSame(aValue, mutable);
+		assertEquals(theToken, mutable);
+		assertFalse(mutable.isImmutable());
 	}
 
 	@Test
 	void getImmutableRefDelegatesToGet() {
-		given(delegate.get(aKey)).willReturn(aValue);
-
 		// when:
 		final var immutable = subject.getImmutableRef(aNftId);
 
 		// then:
-		assertSame(aValue, immutable);
+		assertEquals(theToken, immutable);
 	}
 
 	@Test
 	void putWorks() {
 		// when:
-		subject.put(cNftId, aValue);
+		subject.put(aNftId, aValue);
 		subject.put(cNftId, aValue);
 
 		// then:
-		verify(delegate, times(1)).put(cKey, aValue);
+		assertEquals(aValue, subject.getImmutableRef(cNftId));
 	}
 
 	@Test
@@ -128,20 +135,6 @@ class BackingNftsTest {
 		subject.remove(aNftId);
 
 		// then:
-		assertEquals(Set.of(bNftId), subject.idSet());
-		verify(delegate).remove(aKey);
-	}
-
-	@Test
-	void canAddAndRemoveFromIdSetOnly() {
-		// when:
-		subject.removeFromExistingNfts(aNftId);
-		subject.addToExistingNfts(cNftId);
-
-		// then:
-		assertEquals(Set.of(bNftId, cNftId), subject.idSet());
-		// and:
-		verify(delegate, never()).put(any(), any());
-		verify(delegate, never()).remove(any());
+		assertFalse(subject.contains(aNftId));
 	}
 }

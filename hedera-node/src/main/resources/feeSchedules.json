@@ -1074,46 +1074,46 @@
 				"max": 1000000000000000
 			  }
 			},
-			{
-			  "subType": "TOKEN_NON_FUNGIBLE_UNIQUE",
-			  "nodedata": {
-				"constant": 94092119,
-				"bpt": 150425,
-				"vpt": 376062755,
-				"rbh": 100,
-				"sbh": 8,
-				"gas": 1003,
-				"bpr": 150425,
-				"sbpr": 3761,
-				"min": 0,
-				"max": 1000000000000000
-			  },
-			  "networkdata": {
-				"constant": 1505473906,
-				"bpt": 2406802,
-				"vpt": 6017004081,
-				"rbh": 1605,
-				"sbh": 120,
-				"gas": 16045,
-				"bpr": 2406802,
-				"sbpr": 60170,
-				"min": 0,
-				"max": 1000000000000000
-			  },
-			  "servicedata": {
-				"constant": 1505473906,
-				"bpt": 2406802,
-				"vpt": 6017004081,
-				"rbh": 1605,
-				"sbh": 120,
-				"gas": 16045,
-				"bpr": 2406802,
-				"sbpr": 60170,
-				"min": 0,
-				"max": 1000000000000000
-			  }
-			}
-		  ]
+            {
+              "subType" : "TOKEN_NON_FUNGIBLE_UNIQUE",
+              "nodedata" : {
+                "constant" : 76366243,
+                "bpt" : 122087,
+                "vpt" : 305216845,
+                "rbh" : 81,
+                "sbh" : 6,
+                "gas" : 814,
+                "bpr" : 122087,
+                "sbpr" : 3052,
+                "min" : 0,
+                "max" : 1000000000000000
+              },
+              "networkdata" : {
+                "constant" : 1527324859,
+                "bpt" : 2441735,
+                "vpt" : 6104336894,
+                "rbh" : 1628,
+                "sbh" : 122,
+                "gas" : 16278,
+                "bpr" : 2441735,
+                "sbpr" : 61043,
+                "min" : 0,
+                "max" : 1000000000000000
+              },
+              "servicedata" : {
+                "constant" : 1527324859,
+                "bpt" : 2441735,
+                "vpt" : 6104336894,
+                "rbh" : 1628,
+                "sbh" : 122,
+                "gas" : 16278,
+                "bpr" : 2441735,
+                "sbpr" : 61043,
+                "min" : 0,
+                "max" : 1000000000000000
+              }
+            }
+          ]
 		}
 	  },
 	  {
@@ -1430,42 +1430,42 @@
 			  }
 			},
 			{
-			  "subType": "TOKEN_NON_FUNGIBLE_UNIQUE",
-			  "nodedata": {
-				"constant": 94092119,
-				"bpt": 150425,
-				"vpt": 376062755,
-				"rbh": 100,
-				"sbh": 8,
-				"gas": 1003,
-				"bpr": 150425,
-				"sbpr": 3761,
-				"min": 0,
-				"max": 1000000000000000
+			  "subType" : "TOKEN_NON_FUNGIBLE_UNIQUE",
+			  "nodedata" : {
+				"constant" : 76366243,
+				"bpt" : 122087,
+				"vpt" : 305216845,
+				"rbh" : 81,
+				"sbh" : 6,
+				"gas" : 814,
+				"bpr" : 122087,
+				"sbpr" : 3052,
+				"min" : 0,
+				"max" : 1000000000000000
 			  },
-			  "networkdata": {
-				"constant": 1505473906,
-				"bpt": 2406802,
-				"vpt": 6017004081,
-				"rbh": 1605,
-				"sbh": 120,
-				"gas": 16045,
-				"bpr": 2406802,
-				"sbpr": 60170,
-				"min": 0,
-				"max": 1000000000000000
+			  "networkdata" : {
+				"constant" : 1527324859,
+				"bpt" : 2441735,
+				"vpt" : 6104336894,
+				"rbh" : 1628,
+				"sbh" : 122,
+				"gas" : 16278,
+				"bpr" : 2441735,
+				"sbpr" : 61043,
+				"min" : 0,
+				"max" : 1000000000000000
 			  },
-			  "servicedata": {
-				"constant": 1505473906,
-				"bpt": 2406802,
-				"vpt": 6017004081,
-				"rbh": 1605,
-				"sbh": 120,
-				"gas": 16045,
-				"bpr": 2406802,
-				"sbpr": 60170,
-				"min": 0,
-				"max": 1000000000000000
+			  "servicedata" : {
+				"constant" : 1527324859,
+				"bpt" : 2441735,
+				"vpt" : 6104336894,
+				"rbh" : 1628,
+				"sbh" : 122,
+				"gas" : 16278,
+				"bpr" : 2441735,
+				"sbpr" : 61043,
+				"min" : 0,
+				"max" : 1000000000000000
 			  }
 			}
 		  ]
@@ -3767,42 +3767,42 @@
 			  }
 			},
 			{
-			  "subType": "TOKEN_NON_FUNGIBLE_UNIQUE",
-			  "nodedata": {
-				"constant": 94092119,
-				"bpt": 150425,
-				"vpt": 376062755,
-				"rbh": 100,
-				"sbh": 8,
-				"gas": 1003,
-				"bpr": 150425,
-				"sbpr": 3761,
-				"min": 0,
-				"max": 1000000000000000
+			  "subType" : "TOKEN_NON_FUNGIBLE_UNIQUE",
+			  "nodedata" : {
+				"constant" : 76366243,
+				"bpt" : 122087,
+				"vpt" : 305216845,
+				"rbh" : 81,
+				"sbh" : 6,
+				"gas" : 814,
+				"bpr" : 122087,
+				"sbpr" : 3052,
+				"min" : 0,
+				"max" : 1000000000000000
 			  },
-			  "networkdata": {
-				"constant": 1505473906,
-				"bpt": 2406802,
-				"vpt": 6017004081,
-				"rbh": 1605,
-				"sbh": 120,
-				"gas": 16045,
-				"bpr": 2406802,
-				"sbpr": 60170,
-				"min": 0,
-				"max": 1000000000000000
+			  "networkdata" : {
+				"constant" : 1527324859,
+				"bpt" : 2441735,
+				"vpt" : 6104336894,
+				"rbh" : 1628,
+				"sbh" : 122,
+				"gas" : 16278,
+				"bpr" : 2441735,
+				"sbpr" : 61043,
+				"min" : 0,
+				"max" : 1000000000000000
 			  },
-			  "servicedata": {
-				"constant": 1505473906,
-				"bpt": 2406802,
-				"vpt": 6017004081,
-				"rbh": 1605,
-				"sbh": 120,
-				"gas": 16045,
-				"bpr": 2406802,
-				"sbpr": 60170,
-				"min": 0,
-				"max": 1000000000000000
+			  "servicedata" : {
+				"constant" : 1527324859,
+				"bpt" : 2441735,
+				"vpt" : 6104336894,
+				"rbh" : 1628,
+				"sbh" : 122,
+				"gas" : 16278,
+				"bpr" : 2441735,
+				"sbpr" : 61043,
+				"min" : 0,
+				"max" : 1000000000000000
 			  }
 			}
 		  ]
@@ -4122,42 +4122,42 @@
 			  }
 			},
 			{
-			  "subType": "TOKEN_NON_FUNGIBLE_UNIQUE",
-			  "nodedata": {
-				"constant": 94092119,
-				"bpt": 150425,
-				"vpt": 376062755,
-				"rbh": 100,
-				"sbh": 8,
-				"gas": 1003,
-				"bpr": 150425,
-				"sbpr": 3761,
-				"min": 0,
-				"max": 1000000000000000
+			  "subType" : "TOKEN_NON_FUNGIBLE_UNIQUE",
+			  "nodedata" : {
+				"constant" : 76366243,
+				"bpt" : 122087,
+				"vpt" : 305216845,
+				"rbh" : 81,
+				"sbh" : 6,
+				"gas" : 814,
+				"bpr" : 122087,
+				"sbpr" : 3052,
+				"min" : 0,
+				"max" : 1000000000000000
 			  },
-			  "networkdata": {
-				"constant": 1505473906,
-				"bpt": 2406802,
-				"vpt": 6017004081,
-				"rbh": 1605,
-				"sbh": 120,
-				"gas": 16045,
-				"bpr": 2406802,
-				"sbpr": 60170,
-				"min": 0,
-				"max": 1000000000000000
+			  "networkdata" : {
+				"constant" : 1527324859,
+				"bpt" : 2441735,
+				"vpt" : 6104336894,
+				"rbh" : 1628,
+				"sbh" : 122,
+				"gas" : 16278,
+				"bpr" : 2441735,
+				"sbpr" : 61043,
+				"min" : 0,
+				"max" : 1000000000000000
 			  },
-			  "servicedata": {
-				"constant": 1505473906,
-				"bpt": 2406802,
-				"vpt": 6017004081,
-				"rbh": 1605,
-				"sbh": 120,
-				"gas": 16045,
-				"bpr": 2406802,
-				"sbpr": 60170,
-				"min": 0,
-				"max": 1000000000000000
+			  "servicedata" : {
+				"constant" : 1527324859,
+				"bpt" : 2441735,
+				"vpt" : 6104336894,
+				"rbh" : 1628,
+				"sbh" : 122,
+				"gas" : 16278,
+				"bpr" : 2441735,
+				"sbpr" : 61043,
+				"min" : 0,
+				"max" : 1000000000000000
 			  }
 			}
 		  ]
