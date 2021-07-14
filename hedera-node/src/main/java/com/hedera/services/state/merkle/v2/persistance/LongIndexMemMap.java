@@ -10,7 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class LongIndexMemMap<K extends VKey> implements LongIndex<K> {
+public final class LongIndexMemMap<K extends VKey> implements LongIndex<K> {
 
     //==================================================================================================================
     // Config
@@ -177,7 +177,7 @@ public class LongIndexMemMap<K extends VKey> implements LongIndex<K> {
         /** Size of one key/value entry in a bin */
         private final int keyValueEntrySize;
         /** The size of the header in each bin, contains single int for number of entries stored */
-        private final int binHeaderSize = Integer.BYTES;
+        private final int binHeaderSize = Long.BYTES;
         /** Size of serialized key in bytes */
         private final int keySizeBytes;
         private final int valueOffsetInEntry;
@@ -196,9 +196,9 @@ public class LongIndexMemMap<K extends VKey> implements LongIndex<K> {
             this.numOfKeysPerBin = numOfKeysPerBin;
             this.numOfBinsPerFile = numOfBinsPerFile;
             this.keySizeBytes = keySizeBytes;
-            int serializedKeySizeBytes = Integer.BYTES + keySizeBytes;
+            int serializedKeySizeBytes = Long.BYTES + keySizeBytes;
             // calculate size of key,mutation store which contains:
-            valueOffsetInEntry = Integer.BYTES + serializedKeySizeBytes;
+            valueOffsetInEntry = Long.BYTES + serializedKeySizeBytes;
             keyValueEntrySize = valueOffsetInEntry + Long.BYTES;
             binSize = binHeaderSize + (numOfKeysPerBin * keyValueEntrySize);
             final int fileSize = binSize * numOfBinsPerFile;
@@ -243,15 +243,17 @@ public class LongIndexMemMap<K extends VKey> implements LongIndex<K> {
          */
         public void put(int keySubHash, K key, long value) throws IOException {
             // first we need to see if a entry exists for key
-            int entryOffset = findEntryOffsetForKeyInBin(keySubHash, key);
+            final int binOffset = findBinOffset(keySubHash);
+            // read count of mutation queues.
+            final int entryCount = (int)mappedBuffer.getLong(binOffset);
+            int entryOffset = findEntryOffsetForKeyInBin(binOffset,entryCount,keySubHash,key);
+
             // if no entry exists we need to create one
             if (entryOffset == NOT_FOUND) {
-                final int binOffset = findBinOffset(keySubHash);
-                final int entryCount = mappedBuffer.getInt(binOffset);
                 // first search for empty entry
                 for(int i=0; i< entryCount; i++) {
                     final int eOffset = binOffset + binHeaderSize + (keyValueEntrySize * i);
-                    final int hash = mappedBuffer.getInt(eOffset);
+                    final var hash = mappedBuffer.getLong(eOffset);
                     if (hash == EMPTY_ENTRY_HASH) {
                         entryOffset = eOffset;
                         break;
@@ -263,16 +265,16 @@ public class LongIndexMemMap<K extends VKey> implements LongIndex<K> {
                     // find next entry index
                     @SuppressWarnings("UnnecessaryLocalVariable") final int nextEntryIndex = entryCount;
                     // increment entryCount
-                    mappedBuffer.putInt(binOffset,entryCount + 1);
+                    mappedBuffer.putLong(binOffset,entryCount + 1);
                     // compute new entryOffset
                     entryOffset = binOffset + binHeaderSize + (keyValueEntrySize * nextEntryIndex);
                     // write hash
-                    mappedBuffer.putInt(entryOffset, keySubHash);
+                    mappedBuffer.putLong(entryOffset, keySubHash);
                     // write serialized key version
-                    mappedBuffer.putInt(entryOffset + Integer.BYTES, key.getVersion());
+                    mappedBuffer.putLong(entryOffset + Long.BYTES, key.getVersion());
                     // write serialized key
                     final var subBuffer = mappedBuffer.slice();
-                    subBuffer.position(entryOffset + Integer.BYTES + Integer.BYTES);
+                    subBuffer.position(entryOffset + Long.BYTES + Long.BYTES);
     //                subBuffer.limit(keySizeBytes); // TODO there should be a limit
                     key.serialize(subBuffer);
                 }
@@ -311,7 +313,7 @@ public class LongIndexMemMap<K extends VKey> implements LongIndex<K> {
                 // read the old value long
                 oldValue = mappedBuffer.getLong(entryOffset+valueOffsetInEntry);
                 // mark entry as empty
-                mappedBuffer.putInt(entryOffset,EMPTY_ENTRY_HASH);
+                mappedBuffer.putLong(entryOffset,EMPTY_ENTRY_HASH);
             }
             return oldValue;
         }
@@ -342,16 +344,20 @@ public class LongIndexMemMap<K extends VKey> implements LongIndex<K> {
         private int findEntryOffsetForKeyInBin(int keySubHash, K key) {
             final int binOffset = findBinOffset(keySubHash);
             // read count of mutation queues.
-            int queueCount = mappedBuffer.getInt(binOffset);
+            final int queueCount = (int)mappedBuffer.getLong(binOffset);
+            return findEntryOffsetForKeyInBin(binOffset,queueCount,keySubHash,key);
+        }
+
+        private int findEntryOffsetForKeyInBin(int binOffset, int queueCount, int keySubHash, K key) {
             // iterate searching
             int foundOffset = NOT_FOUND;
             try {
                 for (int i = 0; i < queueCount; i++) {
                     final int keyQueueOffset = binOffset + binHeaderSize + (keyValueEntrySize * i);
                     // read hash
-                    final int readHash = mappedBuffer.getInt(keyQueueOffset);
+                    final var readHash = mappedBuffer.getLong(keyQueueOffset);
                     // dont need to check for EMPTY_ENTRY_HASH as it will never match keySubHash
-                    if (readHash == keySubHash && keyEquals(keyQueueOffset + Integer.BYTES, key)) {
+                    if (readHash == keySubHash && keyEquals(keyQueueOffset + Long.BYTES, key)) {
                         // we found the key
                         foundOffset = keyQueueOffset;
                         break;
@@ -372,10 +378,10 @@ public class LongIndexMemMap<K extends VKey> implements LongIndex<K> {
          */
         private boolean keyEquals(int offset, K key) throws IOException {
             // read serialization version
-            int version = mappedBuffer.getInt(offset);
+            int version = (int)mappedBuffer.getLong(offset);
             // position input stream for deserialize
             final var subBuffer = mappedBuffer.slice().asReadOnlyBuffer();
-            subBuffer.position(offset + Integer.BYTES);
+            subBuffer.position(offset + Long.BYTES);
             subBuffer.limit(subBuffer.position() + keySizeBytes);
             return key.equals(subBuffer, version);
         }
