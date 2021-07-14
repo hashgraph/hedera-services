@@ -125,12 +125,10 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.via(hbarXferTxn),
 						cryptoTransfer(moving(1, fungibleToken).between(sender, receiver))
 								.blankMemo()
-								.fee(ONE_HBAR)
 								.payingWith(sender)
 								.via(htsXferTxn),
 						cryptoTransfer(movingUnique(1, nonFungibleToken).between(sender, receiver))
 								.blankMemo()
-								.fee(ONE_HBAR)
 								.payingWith(sender)
 								.via(nftXferTxn)
 				)

@@ -20,6 +20,8 @@ package com.hedera.services.usage.crypto;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.SubType;
+
 public class CryptoTransferMeta {
 	private int tokenMultiplier = 1;
 
@@ -80,5 +82,15 @@ public class CryptoTransferMeta {
 
 	public int getNumNftOwnershipChanges() {
 		return numNftOwnershipChanges;
+	}
+
+	public SubType getSubType() {
+		if(numNftOwnershipChanges != 0) {
+			return SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+		}
+		if(numFungibleTokenTransfers != 0) {
+			return SubType.TOKEN_FUNGIBLE_COMMON;
+		}
+		return SubType.DEFAULT;
 	}
 }

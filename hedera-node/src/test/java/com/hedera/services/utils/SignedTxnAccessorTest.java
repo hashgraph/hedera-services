@@ -207,6 +207,7 @@ class SignedTxnAccessorTest {
 
 		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
 
+		assertEquals(SubType.DEFAULT, subject.getSubType());
 		assertThrows(IllegalStateException.class, subject::availXferUsageMeta);
 		assertThrows(IllegalStateException.class, subject::availSubmitUsageMeta);
 	}

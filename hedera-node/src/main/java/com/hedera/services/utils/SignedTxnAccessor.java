@@ -153,12 +153,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 	@Override
 	public SubType getSubType() {
 		if(getFunction() == CryptoTransfer) {
-			if(xferUsageMeta.getNumNftOwnershipChanges() != 0) {
-				return SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
-			}
-			if(xferUsageMeta.getNumFungibleTokenTransfers() != 0) {
-				return SubType.TOKEN_FUNGIBLE_COMMON;
-			}
+			return xferUsageMeta.getSubType();
 		}
 		return SubType.DEFAULT;
 	}

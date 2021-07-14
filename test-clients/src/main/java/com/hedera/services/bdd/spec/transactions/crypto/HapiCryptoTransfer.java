@@ -306,7 +306,9 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 		final var accumulator = new UsageAccumulator();
 		cryptoOpsUsage.cryptoTransferUsage(suFrom(svo), xferMeta, baseMeta, accumulator);
 
-		return AdapterUtils.feeDataFrom(accumulator);
+		var feeData = AdapterUtils.feeDataFrom(accumulator);
+
+		return feeData.toBuilder().setSubType(xferMeta.getSubType()).build();
 	}
 
 	@Override
