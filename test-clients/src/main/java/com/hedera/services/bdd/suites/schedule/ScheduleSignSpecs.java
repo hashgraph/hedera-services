@@ -521,6 +521,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						newKeyNamed("somebody")
 				).when().then(
 						scheduleSign("0.0.123321")
+								.fee(ONE_HBAR)
 								.alsoSigningWith("somebody", "sender")
 								.hasKnownStatus(INVALID_SCHEDULE_ID)
 				);

@@ -98,6 +98,10 @@ public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, 
 		existingRels.add(key);
 	}
 
+	public void removeFromExistingRels(Pair<AccountID, TokenID> key)	{
+		existingRels.remove(key);
+	}
+
 	public static Pair<AccountID, TokenID> asTokenRel(AccountID account, TokenID token) {
 		return Pair.of(account, token);
 	}

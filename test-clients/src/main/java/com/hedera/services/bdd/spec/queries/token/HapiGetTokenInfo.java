@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.queries.token;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,6 +25,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -32,11 +33,12 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
-import proto.CustomFeesOuterClass;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,25 +60,29 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		this.token = token;
 	}
 
-	OptionalInt expectedDecimals = OptionalInt.empty();
-	OptionalLong expectedTotalSupply = OptionalLong.empty();
-	Optional<String> expectedMemo = Optional.empty();
-	Optional<String> expectedId = Optional.empty();
-	Optional<String> expectedSymbol = Optional.empty();
-	Optional<String> expectedName = Optional.empty();
-	Optional<String> expectedTreasury = Optional.empty();
-	Optional<String> expectedAdminKey = Optional.empty();
-	Optional<String> expectedKycKey = Optional.empty();
-	Optional<String> expectedFreezeKey = Optional.empty();
-	Optional<String> expectedSupplyKey = Optional.empty();
-	Optional<String> expectedWipeKey = Optional.empty();
-	Optional<Boolean> expectedDeletion = Optional.empty();
-	Optional<TokenKycStatus> expectedKycDefault = Optional.empty();
-	Optional<TokenFreezeStatus>	expectedFreezeDefault = Optional.empty();
-	Optional<String> expectedAutoRenewAccount = Optional.empty();
-	OptionalLong expectedAutoRenewPeriod = OptionalLong.empty();
-	Optional<Boolean> expectedExpiry = Optional.empty();
-	List<BiConsumer<HapiApiSpec, CustomFeesOuterClass.CustomFees>> expectedFees = new ArrayList<>();
+	private Optional<TokenType> expectedTokenType = Optional.empty();
+	private Optional<TokenSupplyType> expectedSupplyType = Optional.empty();
+	private OptionalInt expectedDecimals = OptionalInt.empty();
+	private OptionalLong expectedTotalSupply = OptionalLong.empty();
+	private OptionalLong expectedMaxSupply = OptionalLong.empty();
+	private Optional<String> expectedMemo = Optional.empty();
+	private Optional<String> expectedId = Optional.empty();
+	private Optional<String> expectedSymbol = Optional.empty();
+	private Optional<String> expectedName = Optional.empty();
+	private Optional<String> expectedTreasury = Optional.empty();
+	private Optional<String> expectedAdminKey = Optional.empty();
+	private Optional<String> expectedKycKey = Optional.empty();
+	private Optional<String> expectedFreezeKey = Optional.empty();
+	private Optional<String> expectedSupplyKey = Optional.empty();
+	private Optional<String> expectedWipeKey = Optional.empty();
+	private Optional<String> expectedFeeScheduleKey = Optional.empty();
+	private Optional<Boolean> expectedDeletion = Optional.empty();
+	private Optional<TokenKycStatus> expectedKycDefault = Optional.empty();
+	private Optional<TokenFreezeStatus> expectedFreezeDefault = Optional.empty();
+	private Optional<String> expectedAutoRenewAccount = Optional.empty();
+	private OptionalLong expectedAutoRenewPeriod = OptionalLong.empty();
+	private Optional<Boolean> expectedExpiry = Optional.empty();
+	private List<BiConsumer<HapiApiSpec, List<CustomFee>>> expectedFees = new ArrayList<>();
 
 	@Override
 	public HederaFunctionality type() {
@@ -88,90 +94,141 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		return this;
 	}
 
+	public HapiGetTokenInfo hasTokenType(TokenType t) {
+		expectedTokenType = Optional.of(t);
+		return this;
+	}
+
+	public HapiGetTokenInfo hasSupplyType(TokenSupplyType t) {
+		expectedSupplyType = Optional.of(t);
+		return this;
+	}
+
 	public HapiGetTokenInfo hasFreezeDefault(TokenFreezeStatus s) {
 		expectedFreezeDefault = Optional.of(s);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasKycDefault(TokenKycStatus s) {
 		expectedKycDefault = Optional.of(s);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasDecimals(int d) {
 		expectedDecimals = OptionalInt.of(d);
 		return this;
 	}
+
+	public HapiGetTokenInfo hasMaxSupply(long amount) {
+		expectedMaxSupply = OptionalLong.of(amount);
+		return this;
+	}
+
 	public HapiGetTokenInfo hasTotalSupply(long amount) {
 		expectedTotalSupply = OptionalLong.of(amount);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasRegisteredId(String token) {
 		expectedId = Optional.of(token);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasEntityMemo(String memo) {
 		expectedMemo = Optional.of(memo);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasAutoRenewPeriod(Long renewPeriod) {
 		expectedAutoRenewPeriod = OptionalLong.of(renewPeriod);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasAutoRenewAccount(String account) {
 		expectedAutoRenewAccount = Optional.of(account);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasValidExpiry() {
 		expectedExpiry = Optional.of(true);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasSymbol(String token) {
 		expectedSymbol = Optional.of(token);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasName(String name) {
 		expectedName = Optional.of(name);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasTreasury(String name) {
 		expectedTreasury = Optional.of(name);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasFreezeKey(String name) {
 		expectedFreezeKey = Optional.of(name);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasAdminKey(String name) {
 		expectedAdminKey = Optional.of(name);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasKycKey(String name) {
 		expectedKycKey = Optional.of(name);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasSupplyKey(String name) {
 		expectedSupplyKey = Optional.of(name);
 		return this;
 	}
+
 	public HapiGetTokenInfo hasWipeKey(String name) {
 		expectedWipeKey = Optional.of(name);
 		return this;
 	}
+
+	public HapiGetTokenInfo hasFeeScheduleKey(String name) {
+		expectedFeeScheduleKey = Optional.of(name);
+		return this;
+	}
+
 	public HapiGetTokenInfo isDeleted() {
 		expectedDeletion = Optional.of(Boolean.TRUE);
 		return this;
 	}
+
 	public HapiGetTokenInfo isNotDeleted() {
 		expectedDeletion = Optional.of(Boolean.FALSE);
 		return this;
 	}
-	public HapiGetTokenInfo hasCustom(BiConsumer<HapiApiSpec, CustomFeesOuterClass.CustomFees> feeAssertion) {
+
+	public HapiGetTokenInfo hasCustom(BiConsumer<HapiApiSpec, List<CustomFee>> feeAssertion) {
 		expectedFees.add(feeAssertion);
 		return this;
 	}
 
 	@Override
-	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
+	protected void assertExpectationsGiven(HapiApiSpec spec) {
 		var actualInfo = response.getTokenGetInfo().getTokenInfo();
+
+		expectedTokenType.ifPresent(tokenType -> Assert.assertEquals(
+				"Wrong token type!",
+				tokenType,
+				actualInfo.getTokenType()
+		));
+
+		expectedSupplyType.ifPresent(supplyType -> Assert.assertEquals(
+				"Wrong supply type!",
+				supplyType,
+				actualInfo.getSupplyType()
+		));
 
 		if (expectedSymbol.isPresent()) {
 			Assert.assertEquals(
@@ -202,6 +259,14 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 					actualInfo.getAutoRenewPeriod().getSeconds());
 		}
 
+		if (expectedMaxSupply.isPresent()) {
+			Assert.assertEquals(
+					"Wrong max supply!",
+					expectedMaxSupply.getAsLong(),
+					actualInfo.getMaxSupply()
+			);
+		}
+
 		if (expectedTotalSupply.isPresent()) {
 			Assert.assertEquals(
 					"Wrong total supply!",
@@ -224,7 +289,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 					actualInfo.getTreasury());
 		}
 
-		final var actualFees = actualInfo.getCustomFees();
+		final var actualFees = actualInfo.getCustomFeesList();
 		for (var expectedFee : expectedFees) {
 			expectedFee.accept(spec, actualFees);
 		}
@@ -273,11 +338,19 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 				(n, r) -> r.getKycKey(n),
 				"Wrong token KYC key!",
 				registry);
+
 		assertFor(
 				actualInfo.getSupplyKey(),
 				expectedSupplyKey,
 				(n, r) -> r.getSupplyKey(n),
 				"Wrong token supply key!",
+				registry);
+
+		assertFor(
+				actualInfo.getFeeScheduleKey(),
+				expectedFeeScheduleKey,
+				(n, r) -> r.getFeeScheduleKey(n),
+				"Wrong token fee schedule key!",
 				registry);
 	}
 

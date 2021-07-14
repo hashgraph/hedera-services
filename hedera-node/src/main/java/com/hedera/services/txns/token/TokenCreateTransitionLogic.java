@@ -25,19 +25,25 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.txns.validation.TokenListChecks.checkKeys;
-import static com.hedera.services.txns.validation.TokenListChecks.initialSupplyAndDecimalsCheck;
+import static com.hedera.services.txns.validation.TokenListChecks.suppliesCheck;
+import static com.hedera.services.txns.validation.TokenListChecks.supplyTypeCheck;
+import static com.hedera.services.txns.validation.TokenListChecks.typeCheck;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
@@ -105,30 +111,73 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		}
 
 		var treasury = op.getTreasury();
-		var status = OK;
-		status = store.associate(treasury, List.of(created));
+		var status = autoEnableAccountForNewToken(treasury, created, op);
 		if (status != OK) {
 			abortWith(status);
 			return;
 		}
-		if (op.hasFreezeKey()) {
-			status = ledger.unfreeze(treasury, created);
-		}
-		if (status == OK && op.hasKycKey()) {
-			status = ledger.grantKyc(treasury, created);
-		}
-		if (status == OK) {
-			status = ledger.adjustTokenBalance(treasury, created, op.getInitialSupply());
+		if (op.getCustomFeesCount() > 0) {
+			status = autoEnableFeeCollectors(created, treasury, op);
+			if (status != OK) {
+				abortWith(status);
+				return;
+			}
 		}
 
-		if (status != OK) {
-			abortWith(status);
-			return;
+		if (op.getTokenType() != TokenType.NON_FUNGIBLE_UNIQUE) {
+			status = ledger.adjustTokenBalance(treasury, created, op.getInitialSupply());
+			if (status != OK) {
+				abortWith(status);
+				return;
+			}
 		}
 
 		store.commitCreation();
 		txnCtx.setCreated(created);
 		txnCtx.setStatus(SUCCESS);
+	}
+
+	private ResponseCodeEnum autoEnableFeeCollectors(
+			TokenID created,
+			AccountID alreadyEnabledTreasury,
+			TokenCreateTransactionBody op
+	) {
+		/* TokenStore.associate() returns TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT if the
+		account-token relationship already exists. */
+		final Set<AccountID> customCollectorsEnabled = new HashSet<>();
+		customCollectorsEnabled.add(alreadyEnabledTreasury);
+		ResponseCodeEnum status = OK;
+		for (var fee : op.getCustomFeesList()) {
+			if (fee.hasFractionalFee()) {
+				final var collector = fee.getFeeCollectorAccountId();
+				if (!customCollectorsEnabled.contains(collector)) {
+					status = autoEnableAccountForNewToken(collector, created, op);
+					if (status != OK) {
+						return status;
+					}
+					customCollectorsEnabled.add(collector);
+				}
+			}
+		}
+		return status;
+	}
+
+	private ResponseCodeEnum autoEnableAccountForNewToken(
+			AccountID id,
+			TokenID created,
+			TokenCreateTransactionBody op
+	) {
+		var status = store.associate(id, List.of(created));
+		if (status != OK) {
+			return status;
+		}
+		if (op.hasFreezeKey()) {
+			status = ledger.unfreeze(id, created);
+		}
+		if (status == OK && op.hasKycKey()) {
+			status = ledger.grantKyc(id, created);
+		}
+		return status;
 	}
 
 	private void abortWith(ResponseCodeEnum cause) {
@@ -167,7 +216,17 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			return validity;
 		}
 
-		validity = initialSupplyAndDecimalsCheck(op.getInitialSupply(), op.getDecimals());
+		validity = typeCheck(op.getTokenType(), op.getInitialSupply(), op.getDecimals());
+		if (validity != OK) {
+			return validity;
+		}
+
+		validity = supplyTypeCheck(op.getSupplyType(), op.getMaxSupply());
+		if (validity != OK) {
+			return validity;
+		}
+
+		validity = suppliesCheck(op.getInitialSupply(), op.getMaxSupply());
 		if (validity != OK) {
 			return validity;
 		}
@@ -181,7 +240,8 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 				op.hasKycKey(), op.getKycKey(),
 				op.hasWipeKey(), op.getWipeKey(),
 				op.hasSupplyKey(), op.getSupplyKey(),
-				op.hasFreezeKey(), op.getFreezeKey());
+				op.hasFreezeKey(), op.getFreezeKey(),
+				op.hasFeeScheduleKey(), op.getFeeScheduleKey());
 		if (validity != OK) {
 			return validity;
 		}

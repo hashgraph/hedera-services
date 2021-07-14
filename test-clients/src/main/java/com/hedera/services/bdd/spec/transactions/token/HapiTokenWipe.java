@@ -28,6 +28,7 @@ import com.hedera.services.usage.token.TokenWipeUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -36,6 +37,7 @@ import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -48,6 +50,8 @@ public class HapiTokenWipe extends HapiTxnOp<HapiTokenWipe> {
 	private String account;
 	private String token;
 	private long amount;
+	private List<Long> serialNumbers;
+	private SubType subType;
 
 	@Override
 	public HederaFunctionality type() {
@@ -58,6 +62,15 @@ public class HapiTokenWipe extends HapiTxnOp<HapiTokenWipe> {
 		this.token = token;
 		this.account = account;
 		this.amount = amount;
+		this.serialNumbers = new ArrayList<>();
+		this.subType = SubType.TOKEN_FUNGIBLE_COMMON;
+	}
+
+	public HapiTokenWipe(String token, String account, List<Long> serialNumbers) {
+		this.token = token;
+		this.account = account;
+		this.serialNumbers = serialNumbers;
+		this.subType = SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 	}
 
 	@Override
@@ -68,11 +81,11 @@ public class HapiTokenWipe extends HapiTxnOp<HapiTokenWipe> {
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		return spec.fees().forActivityBasedOp(
-				HederaFunctionality.TokenAccountWipe, this::wipeUsage, txn, numPayerKeys);
+				HederaFunctionality.TokenAccountWipe, subType, this::wipeUsage, txn, numPayerKeys);
 	}
 
 	private FeeData wipeUsage(TransactionBody txn, SigValueObj svo) {
-		return TokenWipeUsage.newEstimate(txn, suFrom(svo)).get();
+		return TokenWipeUsage.newEstimate(txn, suFrom(svo)).givenSubType(subType).get();
 	}
 
 	@Override
@@ -86,6 +99,7 @@ public class HapiTokenWipe extends HapiTxnOp<HapiTokenWipe> {
 							b.setToken(tId);
 							b.setAccount(aId);
 							b.setAmount(amount);
+							b.addAllSerialNumbers(serialNumbers);
 						});
 		return b -> b.setTokenWipe(opBody);
 	}
@@ -111,7 +125,8 @@ public class HapiTokenWipe extends HapiTxnOp<HapiTokenWipe> {
 		MoreObjects.ToStringHelper helper = super.toStringHelper()
 				.add("token", token)
 				.add("account", account)
-				.add("amount", amount);
+				.add("amount", amount)
+				.add("serialNumbers", serialNumbers);
 		return helper;
 	}
 }

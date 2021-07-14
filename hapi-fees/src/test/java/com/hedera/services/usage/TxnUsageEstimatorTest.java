@@ -20,6 +20,7 @@ package com.hedera.services.usage;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,29 +36,30 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-public class TxnUsageEstimatorTest {
-	int numPayerKeys = 2;
-	long networkRbs = 123;
-	SigUsage sigUsage = new SigUsage(A_SIG_MAP.getSigPairCount(), A_SIG_MAP.getSerializedSize(), numPayerKeys);
-	TransactionBody txn = TransactionBody.newBuilder().build();
+class TxnUsageEstimatorTest {
+	private int numPayerKeys = 2;
+	private long networkRbs = 123;
+	private SigUsage sigUsage = new SigUsage(A_SIG_MAP.getSigPairCount(), A_SIG_MAP.getSerializedSize(), numPayerKeys);
+	private TransactionBody txn = TransactionBody.newBuilder().build();
 
-	EstimatorUtils utils;
-	TxnUsageEstimator subject;
+	private EstimatorUtils utils;
+	private TxnUsageEstimator subject;
 
 	@BeforeEach
-	public void setUp() throws Exception {
+	void setUp() throws Exception {
 		utils = mock(EstimatorUtils.class);
 
 		subject = new TxnUsageEstimator(sigUsage, txn, utils);
 	}
 
 	@Test
-	public void plusHelpersWork() {
+	void plusHelpersWork() {
 		given(utils.nonDegenerateDiv(anyLong(), anyInt())).willReturn(1L);
 		given(utils.baseNetworkRbs()).willReturn(networkRbs);
 		given(utils.baseEstimate(txn, sigUsage)).willReturn(baseEstimate());
 		given(utils.withDefaultTxnPartitioning(
 				expectedEstimate().build(),
+				SubType.DEFAULT,
 				ESTIMATOR_UTILS.nonDegenerateDiv(2 * networkRbs, HRS_DIVISOR),
 				sigUsage.numPayerKeys())).willReturn(A_USAGES_MATRIX);
 		// and:
@@ -101,12 +103,13 @@ public class TxnUsageEstimatorTest {
 	}
 
 	@Test
-	public void baseEstimateDelegatesAsExpected() {
+	void baseEstimateDelegatesAsExpected() {
 		given(utils.nonDegenerateDiv(anyLong(), anyInt())).willReturn(1L);
 		given(utils.baseNetworkRbs()).willReturn(networkRbs);
 		given(utils.baseEstimate(txn, sigUsage)).willReturn(baseEstimate());
 		given(utils.withDefaultTxnPartitioning(
 				baseEstimate().build(),
+				SubType.DEFAULT,
 				ESTIMATOR_UTILS.nonDegenerateDiv(networkRbs, HRS_DIVISOR),
 				sigUsage.numPayerKeys())).willReturn(A_USAGES_MATRIX);
 

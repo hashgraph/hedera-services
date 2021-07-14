@@ -6,7 +6,7 @@
     "throttleGroups" : [ {
       "opsPerSec" : 0,
       "milliOpsPerSec" : 2,
-      "operations" : [ "CryptoCreate", "CryptoTransfer", "CryptoUpdate", "CryptoDelete", "CryptoGetInfo", "CryptoGetAccountRecords", "ConsensusCreateTopic", "ConsensusSubmitMessage", "ConsensusUpdateTopic", "ConsensusDeleteTopic", "ConsensusGetTopicInfo", "TokenGetInfo", "ScheduleDelete", "ScheduleGetInfo", "FileGetContents", "FileGetInfo", "ContractUpdate", "ContractDelete", "ContractGetInfo", "ContractGetBytecode", "ContractGetRecords", "ContractCallLocal", "TransactionGetRecord", "GetVersionInfo" ]
+      "operations" : [ "CryptoCreate", "CryptoTransfer", "CryptoUpdate", "CryptoDelete", "CryptoGetInfo", "CryptoGetAccountRecords", "ConsensusCreateTopic", "ConsensusSubmitMessage", "ConsensusUpdateTopic", "ConsensusDeleteTopic", "ConsensusGetTopicInfo", "TokenGetInfo", "TokenGetAccountNftInfos", "TokenGetNftInfo", "TokenGetNftInfos", "ScheduleDelete", "ScheduleGetInfo", "FileGetContents", "FileGetInfo", "ContractUpdate", "ContractDelete", "ContractGetInfo", "ContractGetBytecode", "ContractGetRecords", "ContractCallLocal", "TransactionGetRecord", "GetVersionInfo" ]
     }, {
       "opsPerSec" : 0,
       "milliOpsPerSec" : 25000,

@@ -40,6 +40,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static com.swirlds.common.CommonUtils.getNormalisedStringFromBytes;
 
@@ -48,9 +49,11 @@ public class TxnReceipt implements SelfSerializable {
 
 	private static final int MAX_STATUS_BYTES = 128;
 	private static final int MAX_RUNNING_HASH_BYTES = 1024;
+	private static final int MAX_SERIAL_NUMBERS = 1024; // Is this number enough?
 
 	static final TxnId MISSING_SCHEDULED_TXN_ID = null;
 	static final byte[] MISSING_RUNNING_HASH = null;
+	static final long[] MISSING_SERIAL_NUMBERS = null;
 	static final long MISSING_TOPIC_SEQ_NO = 0L;
 	static final long MISSING_RUNNING_HASH_VERSION = 0L;
 
@@ -60,7 +63,8 @@ public class TxnReceipt implements SelfSerializable {
 	static final int RELEASE_0100_VERSION = 4;
 	static final int RELEASE_0110_VERSION = 5;
 	static final int RELEASE_0120_VERSION = 6;
-	static final int MERKLE_VERSION = RELEASE_0120_VERSION;
+	static final int RELEASE_0160_VERSION = 7;
+	static final int MERKLE_VERSION = RELEASE_0160_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x65ef569a77dcf125L;
 
 	static DomainSerdes serdes = new DomainSerdes();
@@ -78,6 +82,7 @@ public class TxnReceipt implements SelfSerializable {
 	EntityId scheduleId;
 	ExchangeRates exchangeRates;
 	long newTotalSupply = -1L;
+	long[] serialNumbers;
 
 	public TxnReceipt() { }
 
@@ -97,6 +102,7 @@ public class TxnReceipt implements SelfSerializable {
 		this.runningHashVersion = builder.runningHashVersion;
 		this.newTotalSupply = builder.newTotalSupply;
 		this.scheduledTxnId = builder.scheduledTxnId;
+		this.serialNumbers = ((builder.serialNumbers != MISSING_SERIAL_NUMBERS) && (builder.serialNumbers.length > 0)) ? builder.serialNumbers : MISSING_SERIAL_NUMBERS;
 	}
 
 	/* --- SelfSerializable --- */
@@ -131,6 +137,7 @@ public class TxnReceipt implements SelfSerializable {
 		}
 		out.writeLong(newTotalSupply);
 		serdes.writeNullableSerializable(scheduledTxnId, out);
+		out.writeLongArray(serialNumbers);
 	}
 
 	@Override
@@ -158,6 +165,9 @@ public class TxnReceipt implements SelfSerializable {
 		}
 		if (version >= RELEASE_0120_VERSION) {
 			scheduledTxnId = serdes.readNullableSerializable(in);
+		}
+		if (version >= RELEASE_0160_VERSION) {
+			serialNumbers = in.readLongArray(MAX_SERIAL_NUMBERS);
 		}
 	}
 
@@ -213,6 +223,10 @@ public class TxnReceipt implements SelfSerializable {
 		return scheduledTxnId;
 	}
 
+	public long[] getSerialNumbers() {
+		return serialNumbers;
+	}
+
 	/* --- Object --- */
 
 	@Override
@@ -234,7 +248,8 @@ public class TxnReceipt implements SelfSerializable {
 				Objects.equals(topicSequenceNumber, that.topicSequenceNumber) &&
 				Arrays.equals(topicRunningHash, that.topicRunningHash) &&
 				Objects.equals(newTotalSupply, that.newTotalSupply) &&
-				Objects.equals(scheduledTxnId, that.scheduledTxnId);
+				Objects.equals(scheduledTxnId, that.scheduledTxnId) &&
+				Arrays.equals(serialNumbers, that.serialNumbers);
 	}
 
 	@Override
@@ -243,7 +258,7 @@ public class TxnReceipt implements SelfSerializable {
 				runningHashVersion, status,
 				accountId, fileId, contractId, topicId, tokenId,
 				topicSequenceNumber, Arrays.hashCode(topicRunningHash),
-				newTotalSupply, scheduledTxnId);
+				newTotalSupply, scheduledTxnId, Arrays.hashCode(serialNumbers));
 	}
 
 	@Override
@@ -258,7 +273,8 @@ public class TxnReceipt implements SelfSerializable {
 				.add("contractCreated", contractId)
 				.add("topicCreated", topicId)
 				.add("newTotalTokenSupply", newTotalSupply)
-				.add("scheduledTxnId", scheduledTxnId);
+				.add("scheduledTxnId", scheduledTxnId)
+				.add("serialNumbers", serialNumbers);
 		if (topicRunningHash != MISSING_RUNNING_HASH) {
 			helper.add("topicSeqNo", topicSequenceNumber);
 			helper.add("topicRunningHash", CommonUtils.hex(topicRunningHash));
@@ -283,6 +299,7 @@ public class TxnReceipt implements SelfSerializable {
 		EntityId scheduleId = grpc.hasScheduleID() ? EntityId.fromGrpcScheduleId(grpc.getScheduleID()) : null;
 		long runningHashVersion = Math.max(MISSING_RUNNING_HASH_VERSION, grpc.getTopicRunningHashVersion());
 		long newTotalSupply = grpc.getNewTotalSupply();
+		long[] serialNumbers = grpc.getSerialNumbersList().stream().mapToLong(l -> l).toArray();
 		TxnId scheduledTxnId = grpc.hasScheduledTransactionID()
 				? TxnId.fromGrpc(grpc.getScheduledTransactionID())
 				: MISSING_SCHEDULED_TXN_ID;
@@ -300,6 +317,7 @@ public class TxnReceipt implements SelfSerializable {
 				.setRunningHashVersion(runningHashVersion)
 				.setNewTotalSupply(newTotalSupply)
 				.setScheduledTxnId(scheduledTxnId)
+				.setSerialNumbers(serialNumbers)
 				.build();
 	}
 
@@ -360,6 +378,10 @@ public class TxnReceipt implements SelfSerializable {
 		if (txReceipt.getScheduledTxnId() != MISSING_SCHEDULED_TXN_ID) {
 			builder.setScheduledTransactionID(txReceipt.getScheduledTxnId().toGrpc());
 		}
+
+		if (txReceipt.getSerialNumbers() != MISSING_SERIAL_NUMBERS) {
+			builder.addAllSerialNumbers(Arrays.stream(txReceipt.getSerialNumbers()).boxed().collect(Collectors.toList()));
+		}
 		return builder.build();
 	}
 
@@ -381,6 +403,7 @@ public class TxnReceipt implements SelfSerializable {
 		private long runningHashVersion;
 		private long newTotalSupply;
 		private TxnId scheduledTxnId;
+		private long[] serialNumbers;
 
 		public Builder setStatus(String status) {
 			this.status = status;
@@ -444,6 +467,11 @@ public class TxnReceipt implements SelfSerializable {
 
 		public Builder setScheduledTxnId(TxnId scheduledTxnId) {
 			this.scheduledTxnId = scheduledTxnId;
+			return this;
+		}
+
+		public Builder setSerialNumbers (long[] serialNumbers) {
+			this.serialNumbers = serialNumbers;
 			return this;
 		}
 

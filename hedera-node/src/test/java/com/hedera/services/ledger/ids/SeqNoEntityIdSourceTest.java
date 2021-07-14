@@ -32,6 +32,7 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asFile;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -102,5 +103,19 @@ class SeqNoEntityIdSourceTest {
 		assertThrows(UnsupportedOperationException.class,
 				() -> NOOP_ID_SOURCE.newScheduleId(AccountID.getDefaultInstance()));
 		assertThrows(UnsupportedOperationException.class, NOOP_ID_SOURCE::reclaimLastId);
+	}
+
+	@Test
+	void newScheduleId() {
+		given(seqNo.getAndIncrement()).willReturn(3L);
+		var scheduleId = subject.newScheduleId(AccountID.newBuilder()
+				.setRealmNum(1)
+				.setShardNum(2)
+				.setAccountNum(3)
+				.build());
+		assertNotNull(scheduleId);
+		assertEquals(3, scheduleId.getScheduleNum());
+		assertEquals(1, scheduleId.getRealmNum());
+		assertEquals(2, scheduleId.getShardNum());
 	}
 }

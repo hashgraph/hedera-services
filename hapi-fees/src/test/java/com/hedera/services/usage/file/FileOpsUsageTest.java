@@ -9,9 +9,9 @@ package com.hedera.services.usage.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -61,26 +61,26 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 class FileOpsUsageTest {
-	byte[] contents = "Pineapple and eggplant and avocado too".getBytes();
-	long now = 1_234_567L;
-	long expiry = 2_345_678L;
-	long period = expiry - now;
-	Key wacl = KeyUtils.A_KEY_LIST;
-	String memo = "Verily, I say unto you";
-	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
-	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
+	private byte[] contents = "Pineapple and eggplant and avocado too".getBytes();
+	private long now = 1_234_567L;
+	private long expiry = 2_345_678L;
+	private long period = expiry - now;
+	private Key wacl = KeyUtils.A_KEY_LIST;
+	private String memo = "Verily, I say unto you";
+	private int numSigs = 3, sigSize = 100, numPayerKeys = 1;
+	private SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
 
-	Function<ResponseType, QueryUsage> queryEstimatorFactory;
-	EstimatorFactory factory;
-	TxnUsageEstimator base;
-	QueryUsage queryBase;
+	private Function<ResponseType, QueryUsage> queryEstimatorFactory;
+	private EstimatorFactory factory;
+	private TxnUsageEstimator base;
+	private QueryUsage queryBase;
 
-	FileCreateTransactionBody creationOp;
-	FileUpdateTransactionBody updateOp;
-	TransactionBody txn;
-	Query query;
+	private FileCreateTransactionBody creationOp;
+	private FileUpdateTransactionBody updateOp;
+	private TransactionBody txn;
+	private Query query;
 
-	FileOpsUsage subject = new FileOpsUsage();
+	private FileOpsUsage subject = new FileOpsUsage();
 
 	@BeforeEach
 	@SuppressWarnings("unchecked")
@@ -124,8 +124,8 @@ class FileOpsUsageTest {
 		// then:
 		assertSame(A_USAGES_MATRIX, estimate);
 		// and:
-		verify(queryBase).updateTb(BASIC_ENTITY_ID_SIZE);
-		verify(queryBase).updateSb(BASE_FILEINFO_SIZE + memo.length() + getAccountKeyStorageSize(wacl));
+		verify(queryBase).addTb(BASIC_ENTITY_ID_SIZE);
+		verify(queryBase).addSb(BASE_FILEINFO_SIZE + memo.length() + getAccountKeyStorageSize(wacl));
 	}
 
 	@Test

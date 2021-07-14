@@ -20,6 +20,7 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -33,6 +34,7 @@ import java.util.List;
 import java.util.Set;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -54,11 +56,14 @@ import static java.math.BigInteger.ZERO;
  */
 public class PureTransferSemanticChecks {
 	public ResponseCodeEnum fullPureValidation(
-			int maxHbarAdjusts,
-			int maxTokenAdjusts,
 			TransferList hbarAdjustsWrapper,
-			List<TokenTransferList> tokenAdjustsList
+			List<TokenTransferList> tokenAdjustsList,
+			ImpliedTransfersMeta.ValidationProps validationProps
 	) {
+		final var maxHbarAdjusts = validationProps.getMaxHbarAdjusts();
+		final var maxTokenAdjusts = validationProps.getMaxTokenAdjusts();
+		final var maxOwnershipChanges = validationProps.getMaxOwnershipChanges();
+
 		final var hbarAdjusts = hbarAdjustsWrapper.getAccountAmountsList();
 
 		if (hasRepeatedAccount(hbarAdjusts)) {
@@ -71,7 +76,7 @@ public class PureTransferSemanticChecks {
 			return TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 		}
 
-		final var tokenValidity = validateTokenTransferSizes(tokenAdjustsList, maxTokenAdjusts);
+		final var tokenValidity = validateTokenTransferSizes(tokenAdjustsList, maxTokenAdjusts, maxOwnershipChanges);
 		if (tokenValidity != OK) {
 			return tokenValidity;
 		}
@@ -80,28 +85,32 @@ public class PureTransferSemanticChecks {
 
 	ResponseCodeEnum validateTokenTransferSizes(
 			List<TokenTransferList> tokenTransfersList,
-			int maxListLen
+			int maxListLen,
+			int maxOwnershipChanges
 	) {
 		final int numScopedTransfers = tokenTransfersList.size();
 		if (numScopedTransfers == 0) {
 			return OK;
 		}
 
-		if (numScopedTransfers > maxListLen) {
-			return TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
-		}
-
 		var count = 0;
+		var numOwnershipChanges = 0;
 		for (var scopedTransfers : tokenTransfersList) {
-			int transferCounts = scopedTransfers.getTransfersCount();
-			if (transferCounts == 0) {
-				return EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
-			}
-
-			count += transferCounts;
-
-			if (count > maxListLen) {
-				return TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
+			final var ownershipChangesHere = scopedTransfers.getNftTransfersCount();
+			if (ownershipChangesHere > 0) {
+				numOwnershipChanges += ownershipChangesHere;
+				if (numOwnershipChanges > maxOwnershipChanges) {
+					return BATCH_SIZE_LIMIT_EXCEEDED;
+				}
+			} else {
+				int transferCounts = scopedTransfers.getTransfersCount();
+				if (transferCounts == 0) {
+					return EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
+				}
+				count += transferCounts;
+				if (count > maxListLen) {
+					return TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
+				}
 			}
 		}
 

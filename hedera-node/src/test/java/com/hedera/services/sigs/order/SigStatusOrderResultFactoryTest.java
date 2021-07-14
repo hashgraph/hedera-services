@@ -43,13 +43,13 @@ import static com.hedera.test.utils.IdUtils.asTopic;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class SigStatusOrderResultFactoryTest {
+class SigStatusOrderResultFactoryTest {
 	private SigStatusOrderResultFactory subject;
 	private boolean inHandleTxnDynamicContext = true;
 	private TransactionID txnId = TransactionID.getDefaultInstance();
 
 	@Test
-	public void returnsNormalSummaryForValidOrder() {
+	void returnsNormalSummaryForValidOrder() {
 		// given:
 		subject = new SigStatusOrderResultFactory(false);
 		SigningOrderResult<SignatureStatus> summary = subject.forValidOrder(new ArrayList<>());
@@ -59,7 +59,7 @@ public class SigStatusOrderResultFactoryTest {
 	}
 
 	@Test
-	public void reportsInvalidAccountError() {
+	void reportsInvalidAccountError() {
 		// setup:
 		AccountID invalidAccount = asAccount("1.2.3");
 		SignatureStatus expectedError = new SignatureStatus(
@@ -76,7 +76,7 @@ public class SigStatusOrderResultFactoryTest {
 	}
 
 	@Test
-	public void reportsGeneralPayerError() {
+	void reportsGeneralPayerError() {
 		// setup:
 		AccountID payer = asAccount("0.0.3");
 		SignatureStatus expectedError = new SignatureStatus(
@@ -93,7 +93,7 @@ public class SigStatusOrderResultFactoryTest {
 	}
 
 	@Test
-	public void reportsGeneralError() {
+	void reportsGeneralError() {
 		// setup:
 		SignatureStatus expectedError = new SignatureStatus(
 				SignatureStatusCode.GENERAL_ERROR, ResponseCodeEnum.INVALID_SIGNATURE,
@@ -109,7 +109,7 @@ public class SigStatusOrderResultFactoryTest {
 	}
 
 	@Test
-	public void reportsMissingAccount() {
+	void reportsMissingAccount() {
 		// setup:
 		AccountID missing = asAccount("1.2.3");
 		SignatureStatus expectedError = new SignatureStatus(
@@ -126,7 +126,7 @@ public class SigStatusOrderResultFactoryTest {
 	}
 
 	@Test
-	public void reportsMissingFile() {
+	void reportsMissingFile() {
 		// setup:
 		FileID missing = asFile("1.2.3");
 		SignatureStatus expectedError = new SignatureStatus(
@@ -143,7 +143,7 @@ public class SigStatusOrderResultFactoryTest {
 	}
 
 	@Test
-	public void reportsInvalidContract() {
+	void reportsInvalidContract() {
 		// setup:
 		ContractID invalid = asContract("1.2.3");
 		SignatureStatus expectedError = new SignatureStatus(
@@ -159,7 +159,7 @@ public class SigStatusOrderResultFactoryTest {
 	}
 
 	@Test
-	public void reportsImmutableContract() {
+	void reportsImmutableContract() {
 		// setup:
 		ContractID immutable = asContract("1.2.3");
 		SignatureStatus expectedError = new SignatureStatus(
@@ -176,7 +176,7 @@ public class SigStatusOrderResultFactoryTest {
 	}
 
 	@Test
-	public void reportsMissingToken() {
+	void reportsMissingToken() {
 		// setup:
 		TokenID missing = IdUtils.asToken("1.2.3");
 		SignatureStatus expectedError = new SignatureStatus(
@@ -193,7 +193,7 @@ public class SigStatusOrderResultFactoryTest {
 	}
 
 	@Test
-	public void reportsMissingSchedule() {
+	void reportsMissingSchedule() {
 		// setup:
 		ScheduleID missing = IdUtils.asSchedule("1.2.3");
 		SignatureStatus expectedError = new SignatureStatus(
@@ -210,7 +210,7 @@ public class SigStatusOrderResultFactoryTest {
 	}
 
 	@Test
-	public void reportsMissingTopic() {
+	void reportsMissingTopic() {
 		// setup:
 		TopicID missing = asTopic("1.2.3");
 		SignatureStatus expectedError = new SignatureStatus(
@@ -227,7 +227,7 @@ public class SigStatusOrderResultFactoryTest {
 	}
 
 	@Test
-	public void reportsInvalidAutoRenewAccount() {
+	void reportsInvalidAutoRenewAccount() {
 		// setup:
 		AccountID missing = asAccount("11.22.33");
 		SignatureStatus expectedError = new SignatureStatus(
@@ -244,7 +244,7 @@ public class SigStatusOrderResultFactoryTest {
 	}
 
 	@Test
-	public void reportsUnresolvableSigners() {
+	void reportsUnresolvableSigners() {
 		// setup:
 		var errorReport = new SignatureStatus(
 				SignatureStatusCode.INVALID_SCHEDULE_ID,
@@ -267,7 +267,7 @@ public class SigStatusOrderResultFactoryTest {
 	}
 
 	@Test
-	public void reportsNestedScheduleCreate() {
+	void reportsNestedScheduleCreate() {
 		// setup:
 		SignatureStatus expectedError = new SignatureStatus(
 				SignatureStatusCode.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST,
@@ -278,6 +278,24 @@ public class SigStatusOrderResultFactoryTest {
 		// given:
 		subject = new SigStatusOrderResultFactory(inHandleTxnDynamicContext);
 		var summary = subject.forUnschedulableTxn(txnId);
+		SignatureStatus error = summary.getErrorReport();
+
+		// expect:
+		assertEquals(expectedError.toLogMessage(), error.toLogMessage());
+	}
+
+	@Test
+	void reportsInvalidFeeCollector() {
+		// setup:
+		SignatureStatus expectedError = new SignatureStatus(
+				SignatureStatusCode.INVALID_FEE_COLLECTOR,
+				ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR,
+				inHandleTxnDynamicContext,
+				txnId);
+
+		// given:
+		subject = new SigStatusOrderResultFactory(inHandleTxnDynamicContext);
+		var summary = subject.forMissingFeeCollector(txnId);
 		SignatureStatus error = summary.getErrorReport();
 
 		// expect:

@@ -9,9 +9,9 @@ package com.hedera.services.properties;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,14 +27,16 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class SupplierMapPropertySourceTest {
+class SupplierMapPropertySourceTest {
 	private final String INT_PROP = "a.int.prop";
 	private final String LONG_PROP = "a.long.prop";
 	private final String STRING_PROP = "a.string.prop";
@@ -56,14 +58,14 @@ public class SupplierMapPropertySourceTest {
 	));
 
 	@Test
-	public void testsForPresence() {
+	void testsForPresence() {
 		// expect:
 		assertTrue(subject.containsProperty(LONG_PROP));
 		assertFalse(subject.containsProperty(MISSING_PROP));
 	}
 
 	@Test
-	public void getsParseableAccount() {
+	void getsParseableAccount() {
 		// expect:
 		assertEquals(
 				AccountID.newBuilder().setAccountNum(2L).build(),
@@ -71,7 +73,15 @@ public class SupplierMapPropertySourceTest {
 	}
 
 	@Test
-	public void throwsOnUnparseableAccount() {
+	void allPropertyNames() {
+		assertNotNull(subject.allPropertyNames());
+		var propSet = Set.of("a.double.prop", "a.string.prop", "a.profile.prop", "a.boolean.prop", "a.bad.account",
+				"a.long.prop", "a.good.account", "a.int.prop");
+		assertEquals(propSet, subject.allPropertyNames());
+	}
+
+	@Test
+	void throwsOnUnparseableAccount() {
 		// setup:
 		UnparseablePropertyException e = null;
 
@@ -87,13 +97,13 @@ public class SupplierMapPropertySourceTest {
 	}
 
 	@Test
-	public void getsKnownProperty() {
+	void getsKnownProperty() {
 		// expect:
 		assertEquals(1L, subject.getProperty(LONG_PROP));
 	}
 
 	@Test
-	public void castsToExpectedType() {
+	void castsToExpectedType() {
 		// expect:
 		assertThrows(ClassCastException.class, () -> subject.getIntProperty(DOUBLE_PROP));
 		assertDoesNotThrow(() -> subject.getDoubleProperty(DOUBLE_PROP));

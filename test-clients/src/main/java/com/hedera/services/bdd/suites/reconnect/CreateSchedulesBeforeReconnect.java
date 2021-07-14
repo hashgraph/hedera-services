@@ -35,7 +35,6 @@ import java.util.function.Supplier;
 import static com.cedarsoftware.util.UrlUtilities.getHostName;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.STANDARD_PERMISSIBLE_PRECHECKS;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
@@ -44,6 +43,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.LoadTest.defaultLoadTest;
 import static com.hedera.services.bdd.spec.utilops.LoadTest.initialBalance;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.scheduleOpsEnablement;
 import static com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeReconnect.DEFAULT_MINS_FOR_RECONNECT_TESTS;
@@ -73,10 +73,7 @@ public class CreateSchedulesBeforeReconnect extends HapiApiSuite {
 
 	private HapiSpecOperation generateScheduleCreateOperation() {
 		if (scheduleNumber.getAndIncrement() > SCHEDULE_CREATION_LIMIT) {
-			return getVersionInfo()
-					.fee(ONE_HUNDRED_HBARS)
-					.payingWith(GENESIS)
-					.noLogging();
+			return noOp();
 		}
 
 		return scheduleCreate("schedule-" + getHostName() + "-" +

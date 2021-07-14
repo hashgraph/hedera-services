@@ -24,6 +24,9 @@ import com.hedera.services.sigs.utils.ImmutableKeyUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TokenType;
 
 import java.util.HashSet;
 import java.util.List;
@@ -36,58 +39,107 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KYC_KE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_DECIMALS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_INITIAL_SUPPLY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class TokenListChecks {
-    static Predicate<Key> ADMIN_KEY_REMOVAL = ImmutableKeyUtils::signalsKeyRemoval;
+	static Predicate<Key> ADMIN_KEY_REMOVAL = ImmutableKeyUtils::signalsKeyRemoval;
 
-    public static boolean repeatsItself(List<TokenID> tokens) {
-        return new HashSet<>(tokens).size() < tokens.size();
-    }
+	public static boolean repeatsItself(List<TokenID> tokens) {
+		return new HashSet<>(tokens).size() < tokens.size();
+	}
 
-    public static ResponseCodeEnum initialSupplyAndDecimalsCheck(long initialSupply, int decimals) {
-        if (initialSupply < 0) {
-            return INVALID_TOKEN_INITIAL_SUPPLY;
-        }
-        return decimals < 0 ? INVALID_TOKEN_DECIMALS : OK;
-    }
 
-    public static ResponseCodeEnum checkKeys(
-            boolean hasAdminKey, Key adminKey,
-            boolean hasKycKey, Key kycKey,
-            boolean hasWipeKey, Key wipeKey,
-            boolean hasSupplyKey, Key supplyKey,
-            boolean hasFreezeKey, Key freezeKey
-    ) {
-        ResponseCodeEnum validity = OK;
+	public static ResponseCodeEnum typeCheck(TokenType type, long initialSupply, int decimals) {
+		switch (type) {
+			case FUNGIBLE_COMMON:
+				return fungibleCommonTypeCheck(initialSupply, decimals);
+			case NON_FUNGIBLE_UNIQUE:
+				return nonFungibleUniqueCheck(initialSupply, decimals);
+			default:
+				return NOT_SUPPORTED;
+		}
+	}
 
-        if (hasAdminKey && !ADMIN_KEY_REMOVAL.test(adminKey)) {
-            if ((validity = checkKey(adminKey, INVALID_ADMIN_KEY)) != OK) {
-                return validity;
-            }
-        }
-        if (hasKycKey) {
-            if ((validity = checkKey(kycKey, INVALID_KYC_KEY)) != OK) {
-                return validity;
-            }
-        }
-        if (hasWipeKey) {
-            if ((validity = checkKey(wipeKey, INVALID_WIPE_KEY)) != OK) {
-                return validity;
-            }
-        }
-        if (hasSupplyKey) {
-            if ((validity = checkKey(supplyKey, INVALID_SUPPLY_KEY)) != OK) {
-                return validity;
-            }
-        }
-        if (hasFreezeKey) {
-            if ((validity = checkKey(freezeKey, INVALID_FREEZE_KEY)) != OK) {
-                return validity;
-            }
-        }
+	public static ResponseCodeEnum nonFungibleUniqueCheck(long initialSupply, int decimals) {
+		if (initialSupply != 0) {
+			return INVALID_TOKEN_INITIAL_SUPPLY;
+		}
 
-        return validity;
-    }
+		return decimals != 0 ? INVALID_TOKEN_DECIMALS : OK;
+	}
+
+	public static ResponseCodeEnum fungibleCommonTypeCheck(long initialSupply, int decimals) {
+		if (initialSupply < 0) {
+			return INVALID_TOKEN_INITIAL_SUPPLY;
+		}
+
+		return decimals < 0 ? INVALID_TOKEN_DECIMALS : OK;
+	}
+
+	public static ResponseCodeEnum suppliesCheck(long initialSupply, long maxSupply) {
+		if (maxSupply > 0 && initialSupply > maxSupply) {
+			return INVALID_TOKEN_INITIAL_SUPPLY;
+		}
+
+		return OK;
+	}
+
+	public static ResponseCodeEnum supplyTypeCheck(TokenSupplyType supplyType, long maxSupply) {
+		switch (supplyType) {
+			case INFINITE:
+				return maxSupply != 0 ? INVALID_TOKEN_MAX_SUPPLY : OK;
+			case FINITE:
+				return maxSupply <= 0 ? INVALID_TOKEN_MAX_SUPPLY : OK;
+			default:
+				return NOT_SUPPORTED;
+		}
+	}
+
+	public static ResponseCodeEnum checkKeys(
+			boolean hasAdminKey, Key adminKey,
+			boolean hasKycKey, Key kycKey,
+			boolean hasWipeKey, Key wipeKey,
+			boolean hasSupplyKey, Key supplyKey,
+			boolean hasFreezeKey, Key freezeKey,
+			boolean hasFeeScheduleKey, Key feeScheduleKey
+	) {
+		ResponseCodeEnum validity = OK;
+
+		if (hasAdminKey && !ADMIN_KEY_REMOVAL.test(adminKey)) {
+			if ((validity = checkKey(adminKey, INVALID_ADMIN_KEY)) != OK) {
+				return validity;
+			}
+		}
+		if (hasKycKey) {
+			if ((validity = checkKey(kycKey, INVALID_KYC_KEY)) != OK) {
+				return validity;
+			}
+		}
+		if (hasWipeKey) {
+			if ((validity = checkKey(wipeKey, INVALID_WIPE_KEY)) != OK) {
+				return validity;
+			}
+		}
+		if (hasSupplyKey) {
+			if ((validity = checkKey(supplyKey, INVALID_SUPPLY_KEY)) != OK) {
+				return validity;
+			}
+		}
+		if (hasFreezeKey) {
+			if ((validity = checkKey(freezeKey, INVALID_FREEZE_KEY)) != OK) {
+				return validity;
+			}
+		}
+		if (hasFeeScheduleKey) {
+			if ((validity = checkKey(feeScheduleKey, INVALID_CUSTOM_FEE_SCHEDULE_KEY)) != OK) {
+				return validity;
+			}
+		}
+
+		return validity;
+	}
 }

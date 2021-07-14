@@ -21,6 +21,7 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -38,11 +39,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-public class EntityIdTest {
+class EntityIdTest {
 	long shard = 1L, realm = 2L, num = 3L;
 
 	SerializableDataInputStream in;
@@ -84,14 +86,14 @@ public class EntityIdTest {
 	EntityId subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		in = mock(SerializableDataInputStream.class);
 
 		subject = new EntityId(shard, realm, num);
 	}
 
 	@Test
-	public void objectContractWorks() {
+	void objectContractWorks() {
 		// given:
 		var one = subject;
 		var two = EntityId.MISSING_ENTITY_ID;
@@ -108,7 +110,7 @@ public class EntityIdTest {
 	}
 
 	@Test
-	public void toStringWorks() {
+	void toStringWorks() {
 		// expect;
 		assertEquals(
 				"EntityId{shard=" + shard + ", realm=" + realm + ", num=" + num + "}",
@@ -116,7 +118,7 @@ public class EntityIdTest {
 	}
 
 	@Test
-	public void copyWorks() {
+	void copyWorks() {
 		// given:
 		var copySubject = subject.copy();
 
@@ -126,7 +128,7 @@ public class EntityIdTest {
 	}
 
 	@Test
-	public void gettersWork() {
+	void gettersWork() {
 		// expect:
 		assertEquals(shard, subject.shard());
 		assertEquals(realm, subject.realm());
@@ -134,7 +136,7 @@ public class EntityIdTest {
 	}
 
 	@Test
-	public void factoriesWork() {
+	void factoriesWork() {
 		// expect:
 		assertThrows(IllegalArgumentException.class, () -> EntityId.fromGrpcAccountId(null));
 		assertThrows(IllegalArgumentException.class, () -> EntityId.fromGrpcFileId(null));
@@ -152,14 +154,14 @@ public class EntityIdTest {
 	}
 
 	@Test
-	public void serializableDetWorks() {
+	void serializableDetWorks() {
 		// expect;
 		assertEquals(EntityId.MERKLE_VERSION, subject.getVersion());
 		assertEquals(EntityId.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 
 	@Test
-	public void deserializeWorks() throws IOException {
+	void deserializeWorks() throws IOException {
 		// setup:
 		var newSubject = new EntityId();
 
@@ -176,7 +178,7 @@ public class EntityIdTest {
 	}
 
 	@Test
-	public void serializeWorks() throws IOException {
+	void serializeWorks() throws IOException {
 		// setup:
 		out = mock(SerializableDataOutputStream.class);
 
@@ -190,12 +192,25 @@ public class EntityIdTest {
 	}
 
 	@Test
-	public void viewsWork() {
+	void viewsWork() {
 		// expect:
 		assertEquals(accountId, subject.toGrpcAccountId());
 		assertEquals(contractId, subject.toGrpcContractId());
 		assertEquals(tokenId, subject.toGrpcTokenId());
 		assertEquals(scheduleId, subject.toGrpcScheduleId());
 		assertEquals(merkleId, subject.asMerkle());
+	}
+
+	@Test
+	void matcherWorks() {
+		// setup:
+		final var diffShard = IdUtils.asAccount("2.2.3");
+		final var diffRealm = IdUtils.asAccount("1.3.3");
+		final var diffNum = IdUtils.asAccount("1.2.4");
+
+		assertTrue(subject.matches(subject.toGrpcAccountId()));
+		assertFalse(subject.matches(diffShard));
+		assertFalse(subject.matches(diffRealm));
+		assertFalse(subject.matches(diffNum));
 	}
 }

@@ -47,11 +47,13 @@ import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
@@ -275,6 +277,8 @@ public class HederaSigningOrder {
 			return Optional.of(tokenMutates(txn.getTransactionID(), txn.getTokenDeletion().getToken(), factory));
 		} else if (txn.hasTokenUpdate()) {
 			return Optional.of(tokenUpdates(txn.getTransactionID(), txn.getTokenUpdate(), factory));
+		} else if (txn.hasTokenFeeScheduleUpdate()) {
+			return Optional.of(tokenFeeScheduleUpdates(txn.getTransactionID(), txn.getTokenFeeScheduleUpdate(), factory));
 		} else {
 			return Optional.empty();
 		}
@@ -550,9 +554,19 @@ public class HederaSigningOrder {
 
 		KeyOrderingFailure failure;
 		for (TokenTransferList xfers : op.getTokenTransfersList()) {
+			// fungible tokens
 			for (AccountAmount adjust : xfers.getTransfersList()) {
 				if ((failure = includeIfPresentAndNecessary(adjust, required)) != NONE) {
 					return accountFailure(adjust.getAccountID(), txnId, failure, factory);
+				}
+			}
+			// non fungible tokens
+			for (NftTransfer adjust : xfers.getNftTransfersList()) {
+				if ((failure = includeIfPresentAndNecessary(adjust.getSenderAccountID(), true, required)) != NONE) {
+					return accountFailure(adjust.getSenderAccountID(), txnId, failure, factory);
+				}
+				if ((failure = includeIfPresentAndNecessary(adjust.getReceiverAccountID(), false, required)) != NONE) {
+					return accountFailure(adjust.getReceiverAccountID(), txnId, failure, factory);
 				}
 			}
 		}
@@ -656,9 +670,9 @@ public class HederaSigningOrder {
 			TokenCreateTransactionBody op,
 			SigningOrderResultFactory<T> factory
 	) {
-		List<JKey> required = new ArrayList<>();
+		final List<JKey> required = new ArrayList<>();
 
-		var couldAddTreasury = addAccount(
+		final var couldAddTreasury = addAccount(
 				op,
 				TokenCreateTransactionBody::hasTreasury,
 				TokenCreateTransactionBody::getTreasury,
@@ -666,7 +680,7 @@ public class HederaSigningOrder {
 		if (!couldAddTreasury) {
 			return accountFailure(op.getTreasury(), txnId, MISSING_ACCOUNT, factory);
 		}
-		var couldAddAutoRenew = addAccount(
+		final var couldAddAutoRenew = addAccount(
 				op,
 				TokenCreateTransactionBody::hasAutoRenewAccount,
 				TokenCreateTransactionBody::getAutoRenewAccount,
@@ -679,6 +693,17 @@ public class HederaSigningOrder {
 				TokenCreateTransactionBody::hasAdminKey,
 				TokenCreateTransactionBody::getAdminKey,
 				required);
+		for (var customFee : op.getCustomFeesList()) {
+			final var collector = customFee.getFeeCollectorAccountId();
+			/* A fractional fee collector must always sign a TokenCreate, since it is
+			automatically associated to the newly created token. */
+			final var couldAddCollector = customFee.hasFixedFee()
+					? addAccountIfReceiverSigRequired(collector, required)
+					: addAccount(collector, required, true);
+			if (!couldAddCollector) {
+				return factory.forMissingFeeCollector(txnId);
+			}
+		}
 
 		return factory.forValidOrder(required);
 	}
@@ -715,6 +740,35 @@ public class HederaSigningOrder {
 		return tokenAdjusts(txnId, id, factory, TokenSigningMetadata::optionalWipeKey);
 	}
 
+	private <T> SigningOrderResult<T> tokenFeeScheduleUpdates(
+			TransactionID txnId,
+			TokenFeeScheduleUpdateTransactionBody op,
+			SigningOrderResultFactory<T> factory
+	) {
+		final var id = op.getTokenId();
+		var result = sigMetaLookup.tokenSigningMetaFor(id);
+		if (result.succeeded()) {
+			final var feeScheduleKey = result.metadata().optionalFeeScheduleKey();
+			if (feeScheduleKey.isPresent()) {
+				final List<JKey> required = new ArrayList<>();
+				required.add(feeScheduleKey.get());
+				for (var customFee : op.getCustomFeesList()) {
+					final var collector = customFee.getFeeCollectorAccountId();
+					final var couldAddCollector = addAccountIfReceiverSigRequired(collector, required);
+					if (!couldAddCollector) {
+						return factory.forMissingFeeCollector(txnId);
+					}
+				}
+				return factory.forValidOrder(required);
+			} else {
+				/* We choose to fail with TOKEN_HAS_NO_FEE_SCHEDULE_KEY downstream in transition logic */
+				return SigningOrderResult.noKnownKeys();
+			}
+		} else {
+			return factory.forMissingToken(id, txnId);
+		}
+	}
+
 	private <T> SigningOrderResult<T> tokenUpdates(
 			TransactionID txnId,
 			TokenUpdateTransactionBody op,
@@ -745,14 +799,30 @@ public class HederaSigningOrder {
 		return basic;
 	}
 
+	private boolean addAccountIfReceiverSigRequired(AccountID id, List<JKey> reqs) {
+		return addAccount(id, reqs, false);
+	}
+
 	private <T> boolean addAccount(T op, Predicate<T> isPresent, Function<T, AccountID> getter, List<JKey> reqs) {
 		if (isPresent.test(op)) {
-			var result = sigMetaLookup.accountSigningMetaFor(getter.apply(op));
-			if (result.succeeded()) {
-				reqs.add(result.metadata().getKey());
-			} else {
-				return false;
+			return addAccount(getter.apply(op), reqs, true);
+		}
+		return true;
+	}
+
+	private boolean addAccount(
+			AccountID id,
+			List<JKey> reqs,
+			boolean alwaysAdd
+	) {
+		var result = sigMetaLookup.accountSigningMetaFor(id);
+		if (result.succeeded()) {
+			final var metadata = result.metadata();
+			if (alwaysAdd || metadata.isReceiverSigRequired()) {
+				reqs.add(metadata.getKey());
 			}
+		} else {
+			return false;
 		}
 		return true;
 	}
@@ -966,6 +1036,21 @@ public class HederaSigningOrder {
 			var meta = result.metadata();
 			if (adjust.getAmount() < 0 || meta.isReceiverSigRequired()) {
 				required.add(meta.getKey());
+			}
+		}
+		return result.failureIfAny();
+	}
+
+	private KeyOrderingFailure includeIfPresentAndNecessary(AccountID accountID, Boolean isSender, List<JKey> required) {
+		var result = sigMetaLookup.accountSigningMetaFor(accountID);
+		if (result.succeeded()) {
+			var meta = result.metadata();
+			if (Boolean.TRUE.equals(isSender)) {
+				required.add(meta.getKey());
+			} else {
+				if (meta.isReceiverSigRequired()) {
+					required.add(meta.getKey());
+				}
 			}
 		}
 		return result.failureIfAny();

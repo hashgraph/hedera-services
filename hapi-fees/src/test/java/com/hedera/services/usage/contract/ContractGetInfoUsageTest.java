@@ -37,16 +37,16 @@ import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ContractGetInfoUsageTest {
-	Query query = Query.newBuilder().setContractGetInfo(ContractGetInfoQuery.getDefaultInstance()).build();
+	private Query query = Query.newBuilder().setContractGetInfo(ContractGetInfoQuery.getDefaultInstance()).build();
 
-	int numTokenAssocs = 3;
-	Key key = KeyUtils.A_CONTRACT_KEY;
-	String memo = "Hey there!";
+	private int numTokenAssocs = 3;
+	private Key key = KeyUtils.A_CONTRACT_KEY;
+	private String memo = "Hey there!";
 
-	ContractGetInfoUsage subject;
+	private ContractGetInfoUsage subject;
 
 	@Test
-	public void getsExpectedUsage() {
+	void getsExpectedUsage() {
 		// setup:
 		long expectedTb = BASIC_QUERY_HEADER + BASIC_ENTITY_ID_SIZE;
 		long expectedRb = BASIC_QUERY_RES_HEADER + numTokenAssocs * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr()
