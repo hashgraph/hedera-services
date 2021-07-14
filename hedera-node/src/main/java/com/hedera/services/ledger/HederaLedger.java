@@ -29,18 +29,22 @@ import com.hedera.services.exceptions.NonZeroNetTransfersException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -124,6 +128,7 @@ public class HederaLedger {
 	private final AccountRecordsHistorian historian;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
+	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = null;
 	private TransactionalLedger<
 			Pair<AccountID, TokenID>,
 			TokenRelProperty,
@@ -132,6 +137,7 @@ public class HederaLedger {
 	int numTouches = 0;
 	final TokenID[] tokensTouched = new TokenID[MAX_CONCEIVABLE_TOKENS_PER_TXN];
 	final Map<TokenID, TransferList.Builder> netTokenTransfers = new HashMap<>();
+	final Map<TokenID, TokenTransferList.Builder> uniqueTokenTransfers = new HashMap<>();
 
 	public HederaLedger(
 			TokenStore tokenStore,
@@ -154,11 +160,16 @@ public class HederaLedger {
 		tokenStore.setHederaLedger(this);
 	}
 
+	public void setNftsLedger(TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger) {
+		this.nftsLedger = nftsLedger;
+	}
+
 	public void setTokenRelsLedger(
 			TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger
 	) {
 		this.tokenRelsLedger = tokenRelsLedger;
 	}
+
 
 	/* -- TRANSACTIONAL SEMANTICS -- */
 	public void begin() {
@@ -166,12 +177,18 @@ public class HederaLedger {
 		if (tokenRelsLedger != null) {
 			tokenRelsLedger.begin();
 		}
+		if (nftsLedger != null) {
+			nftsLedger.begin();
+		}
 	}
 
 	public void rollback() {
 		accountsLedger.rollback();
 		if (tokenRelsLedger != null && tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.rollback();
+		}
+		if (nftsLedger != null && nftsLedger.isInTransaction()) {
+			nftsLedger.rollback();
 		}
 		netTransfers.clear();
 		clearNetTokenTransfers();
@@ -185,6 +202,9 @@ public class HederaLedger {
 		historian.noteNewExpirationEvents();
 		if (tokenRelsLedger != null && tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.commit();
+		}
+		if (nftsLedger != null && nftsLedger.isInTransaction()) {
+			nftsLedger.commit();
 		}
 		netTransfers.clear();
 		clearNetTokenTransfers();
@@ -209,12 +229,22 @@ public class HederaLedger {
 		for (int i = 0; i < numTouches; i++) {
 			var token = tokensTouched[i];
 			if (i == 0 || !token.equals(tokensTouched[i - 1])) {
-				var netTransfersHere = netTokenTransfers.get(token);
-				purgeZeroAdjustments(netTransfersHere);
-				all.add(TokenTransferList.newBuilder()
-						.setToken(token)
-						.addAllTransfers(netTransfersHere.getAccountAmountsList())
-						.build());
+				final var fungibleTransfersHere = netTokenTransfers.get(token);
+				if (fungibleTransfersHere != null) {
+					purgeZeroAdjustments(fungibleTransfersHere);
+					all.add(TokenTransferList.newBuilder()
+							.setToken(token)
+							.addAllTransfers(fungibleTransfersHere.getAccountAmountsList())
+							.build());
+				} else {
+					var uniqueTransfersHere = uniqueTokenTransfers.get(token);
+					if (uniqueTransfersHere != null) {
+						all.add(TokenTransferList.newBuilder()
+								.setToken(token)
+								.addAllNftTransfers(uniqueTransfersHere.getNftTransfersList())
+								.build());
+					}
+				}
 			}
 		}
 		return all;
@@ -227,6 +257,10 @@ public class HederaLedger {
 			if (tokenRelsLedger != null) {
 				sb.append("\n--- TOKEN RELATIONSHIPS ---\n")
 						.append(tokenRelsLedger.changeSetSoFar());
+			}
+			if (nftsLedger != null) {
+				sb.append("\n--- NFTS ---\n")
+						.append(nftsLedger.changeSetSoFar());
 			}
 			return sb.toString();
 		} else {
@@ -353,7 +387,7 @@ public class HederaLedger {
 	public ResponseCodeEnum doZeroSum(List<BalanceChange> changes) {
 		var validity = OK;
 		for (var change : changes) {
-			if (change.isForHbar())	 {
+			if (change.isForHbar()) {
 				validity = plausibilityOf(change);
 			} else {
 				validity = tokenStore.tryTokenChange(change);
@@ -540,6 +574,13 @@ public class HederaLedger {
 		updateXfers(aId, amount, xfers);
 	}
 
+	public void updateOwnershipChanges(NftId nftId, AccountID from, AccountID to) {
+		final var tId = nftId.tokenId();
+		tokensTouched[numTouches++] = tId;
+		var xfers = uniqueTokenTransfers.computeIfAbsent(tId, ignore -> TokenTransferList.newBuilder());
+		xfers.addNftTransfers(nftTransferBuilderWith(from, to, nftId.serialNo()));
+	}
+
 	private void updateXfers(AccountID account, long amount, TransferList.Builder xfers) {
 		int loc = 0, diff = -1;
 		var soFar = xfers.getAccountAmountsBuilderList();
@@ -566,9 +607,20 @@ public class HederaLedger {
 		return AccountAmount.newBuilder().setAccountID(account).setAmount(amount);
 	}
 
+	private NftTransfer.Builder nftTransferBuilderWith(AccountID senderId, AccountID receiverId, long serialNumber) {
+		var nftTransfer = NftTransfer.newBuilder().setReceiverAccountID(receiverId).setSerialNumber(serialNumber);
+		return nftTransfer.setSenderAccountID(senderId);
+	}
+
 	private void clearNetTokenTransfers() {
+		TransferList.Builder fungibleBuilder;
 		for (int i = 0; i < numTouches; i++) {
-			netTokenTransfers.get(tokensTouched[i]).clearAccountAmounts();
+			fungibleBuilder = netTokenTransfers.get(tokensTouched[i]);
+			if (fungibleBuilder != null) {
+				fungibleBuilder.clearAccountAmounts();
+			} else {
+				uniqueTokenTransfers.get(tokensTouched[i]).clearNftTransfers();
+			}
 		}
 		numTouches = 0;
 	}
@@ -589,7 +641,7 @@ public class HederaLedger {
 
 	private void adjustHbarUnchecked(List<BalanceChange> changes) {
 		for (var change : changes) {
-			if (change.isForHbar())	{
+			if (change.isForHbar()) {
 				final var accountId = change.accountId();
 				setBalance(accountId, change.getNewBalance());
 				updateXfers(accountId, change.units(), netTransfers);

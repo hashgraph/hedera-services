@@ -30,8 +30,10 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.EnumSet;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
@@ -45,7 +47,9 @@ public class TransitionRunner {
 	private static final EnumSet<HederaFunctionality> refactoredOps = EnumSet.of(
 			TokenMint, TokenBurn,
 			TokenFreezeAccount, TokenUnfreezeAccount,
-			TokenAssociateToAccount
+			TokenAssociateToAccount,
+			TokenDissociateFromAccount,
+			TokenAccountWipe
 	);
 
 	private final TransactionContext txnCtx;

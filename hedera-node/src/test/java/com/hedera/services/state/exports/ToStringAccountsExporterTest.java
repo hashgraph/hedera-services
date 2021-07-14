@@ -74,7 +74,7 @@ class ToStringAccountsExporterTest {
 				"---\n" +
 				"MerkleAccount{state=MerkleAccountState{key=ed25519: \"first-fake\"\n" +
 				", expiry=1234567, balance=1, autoRenewSecs=555555, memo=This ecstasy doth unperplex, deleted=false, " +
-				"smartContract=true, receiverSigRequired=true, proxy=EntityId{shard=0, realm=0, num=0}}, # records=0, " +
+				"smartContract=true, receiverSigRequired=true, proxy=EntityId{shard=0, realm=0, num=0}, nftsOwned=0}, # records=0, " +
 				"tokens=[3.2.1, 1.2.3]}\n" +
 				"\n" +
 				"0.0.2\n" +
@@ -82,7 +82,7 @@ class ToStringAccountsExporterTest {
 				"MerkleAccount{state=MerkleAccountState{key=ed25519: \"second-fake\"\n" +
 				", expiry=7654321, balance=2, autoRenewSecs=444444, memo=We said, and show us what we love, " +
 				"deleted=true, smartContract=false, receiverSigRequired=false, proxy=EntityId{shard=0, realm=0, " +
-				"num=0}}, # records=0, tokens=[1234.0.0]}\n";
+				"num=0}, nftsOwned=0}, # records=0, tokens=[1234.0.0]}\n";
 
 		// given:
 		FCMap<MerkleEntityId, MerkleAccount> accounts = new FCMap<>();

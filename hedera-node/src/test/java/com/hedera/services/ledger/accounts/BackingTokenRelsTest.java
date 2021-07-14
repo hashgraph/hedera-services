@@ -52,22 +52,22 @@ import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
 
 class BackingTokenRelsTest {
-	long aBalance = 100, bBalance = 200, cBalance = 300;
-	boolean aFrozen = true, bFrozen = false, cFrozen = true;
-	boolean aKyc = false, bKyc = true, cKyc = false;
-	AccountID a = asAccount("1.2.3");
-	AccountID b = asAccount("3.2.1");
-	AccountID c = asAccount("4.3.0");
-	TokenID at = asToken("9.8.7");
-	TokenID bt = asToken("9.8.6");
-	TokenID ct = asToken("9.8.5");
+	private long aBalance = 100, bBalance = 200, cBalance = 300;
+	private boolean aFrozen = true, bFrozen = false, cFrozen = true;
+	private boolean aKyc = false, bKyc = true, cKyc = false;
+	private AccountID a = asAccount("1.2.3");
+	private AccountID b = asAccount("3.2.1");
+	private AccountID c = asAccount("4.3.0");
+	private TokenID at = asToken("9.8.7");
+	private TokenID bt = asToken("9.8.6");
+	private TokenID ct = asToken("9.8.5");
 
-	MerkleEntityAssociation aKey = fromAccountTokenRel(a, at);
-	MerkleEntityAssociation bKey = fromAccountTokenRel(b, bt);
-	MerkleEntityAssociation cKey = fromAccountTokenRel(c, ct);
-	MerkleTokenRelStatus aValue = new MerkleTokenRelStatus(aBalance, aFrozen, aKyc);
-	MerkleTokenRelStatus bValue = new MerkleTokenRelStatus(bBalance, bFrozen, bKyc);
-	MerkleTokenRelStatus cValue = new MerkleTokenRelStatus(cBalance, cFrozen, cKyc);
+	private MerkleEntityAssociation aKey = fromAccountTokenRel(a, at);
+	private MerkleEntityAssociation bKey = fromAccountTokenRel(b, bt);
+	private MerkleEntityAssociation cKey = fromAccountTokenRel(c, ct);
+	private MerkleTokenRelStatus aValue = new MerkleTokenRelStatus(aBalance, aFrozen, aKyc);
+	private MerkleTokenRelStatus bValue = new MerkleTokenRelStatus(bBalance, bFrozen, bKyc);
+	private MerkleTokenRelStatus cValue = new MerkleTokenRelStatus(cBalance, cFrozen, cKyc);
 
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> rels;
 
@@ -91,7 +91,19 @@ class BackingTokenRelsTest {
 		subject.addToExistingRels(aNewPair);
 
 		// then:
-		subject.contains(aNewPair);
+		assertTrue(subject.contains(aNewPair));
+	}
+
+	@Test
+	void manualRemoveFromExistingWorks() {
+		// given:
+		final var destroyedPair = Pair.of(a, at);
+
+		// when:
+		subject.removeFromExistingRels(destroyedPair);
+
+		// then:
+		assertFalse(subject.contains(destroyedPair));
 	}
 
 	@Test

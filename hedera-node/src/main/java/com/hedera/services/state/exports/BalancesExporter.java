@@ -21,10 +21,11 @@ package com.hedera.services.state.exports;
  */
 
 import com.hedera.services.ServicesState;
+import com.swirlds.common.NodeId;
 
 import java.time.Instant;
 
 public interface BalancesExporter {
 	boolean isTimeToExport(Instant now);
-	void exportBalancesFrom(ServicesState signedState, Instant when);
+	void exportBalancesFrom(ServicesState signedState, Instant consensusTime, NodeId nodeId);
 }

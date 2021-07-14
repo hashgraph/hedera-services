@@ -21,23 +21,27 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.state.enums.TokenType;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.txns.TransitionLogic;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 /**
  * Provides the state transition for wiping [part of] a token balance.
@@ -45,37 +49,52 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
  * @author Michael Tinker
  */
 public class TokenWipeTransitionLogic implements TransitionLogic {
-	private static final Logger log = LogManager.getLogger(TokenWipeTransitionLogic.class);
-
+	private final TransactionContext txnCtx;
+	private final TypedTokenStore tokenStore;
+	private final AccountStore accountStore;
+	private final OptionValidator validator;
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
-	private final TokenStore store;
-	private final TransactionContext txnCtx;
-
 	public TokenWipeTransitionLogic(
-			TokenStore store,
-			TransactionContext txnCtx
+			final OptionValidator validator,
+			final TypedTokenStore tokenStore,
+			final AccountStore accountStore,
+			final TransactionContext txnCtx
 	) {
-		this.store = store;
 		this.txnCtx = txnCtx;
+		this.tokenStore = tokenStore;
+		this.accountStore = accountStore;
+		this.validator = validator;
 	}
 
 	@Override
 	public void doStateTransition() {
-		try {
-			var op = txnCtx.accessor().getTxn().getTokenWipe();
-			var outcome = store.wipe(op.getAccount(), store.resolve(op.getToken()), op.getAmount(),false);
-			var id = store.resolve(op.getToken());
-			txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
-			if(outcome == OK) {
-				txnCtx.setNewTotalSupply(store.get(id).totalSupply());
-			}
-		} catch (Exception e) {
-			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
-			txnCtx.setStatus(FAIL_INVALID);
-		}
-	}
+		/* --- Translate from gRPC types --- */
+		final var op = txnCtx.accessor().getTxn().getTokenWipe();
+		final var targetTokenId = Id.fromGrpcToken(op.getToken());
+		final var targetAccountId = Id.fromGrpcAccount(op.getAccount());
 
+		/* --- Load the model objects --- */
+		final var token = tokenStore.loadToken(targetTokenId);
+		final var account = accountStore.loadAccount(targetAccountId);
+		final var accountRel = tokenStore.loadTokenRelationship(token, account);
+
+		/* --- Instantiate change trackers --- */
+		final var ownershipTracker = new OwnershipTracker();
+
+		/* --- Do the business logic --- */
+		if (token.getType().equals(TokenType.FUNGIBLE_COMMON)) {
+			token.wipe(accountRel, op.getAmount());
+		} else {
+			tokenStore.loadUniqueTokens(token, op.getSerialNumbersList());
+			token.wipe(ownershipTracker, accountRel, op.getSerialNumbersList());
+		}
+		/* --- Persist the updated models --- */
+		tokenStore.persistToken(token);
+		tokenStore.persistTokenRelationships(List.of(accountRel));
+		tokenStore.persistTrackers(ownershipTracker);
+		accountStore.persistAccount(account);
+	}
 
 	@Override
 	public Predicate<TransactionBody> applicability() {
@@ -97,9 +116,26 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 		if (!op.hasAccount()) {
 			return INVALID_ACCOUNT_ID;
 		}
+		final boolean bothPresent = (op.getAmount() > 0 && op.getSerialNumbersCount() > 0);
+		final boolean nonePresent = (op.getAmount() <= 0 && op.getSerialNumbersCount() == 0);
 
-		if (op.getAmount() <= 0) {
+		if (nonePresent) {
 			return INVALID_WIPING_AMOUNT;
+		}
+
+		if (bothPresent) {
+			return INVALID_TRANSACTION_BODY;
+		}
+		if (op.getAmount() <= 0 && op.getSerialNumbersCount() > 0) {
+			var validity = validator.maxBatchSizeWipeCheck(op.getSerialNumbersCount());
+			if (validity != OK) {
+				return validity;
+			}
+			for (long serialNum : op.getSerialNumbersList()) {
+				if (serialNum <= 0) {
+					return INVALID_NFT_ID;
+				}
+			}
 		}
 
 		return OK;

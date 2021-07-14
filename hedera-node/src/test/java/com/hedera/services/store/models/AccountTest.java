@@ -22,27 +22,41 @@ package com.hedera.services.store.models;
 
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
+import com.hedera.services.txns.token.process.Dissociation;
+import com.hedera.services.txns.validation.ContextOptionValidator;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class AccountTest {
 	private Id subjectId = new Id(0, 0, 12345);
+	private Id treasuryId = new Id(0, 0, 123456);
 	private CopyOnWriteIds assocTokens = new CopyOnWriteIds(new long[] { 666, 0, 0, 777, 0, 0 });
 
 	private Account subject;
+	private Account treasuryAccount;
+	private OptionValidator validator;
 
 	@BeforeEach
 	void setUp() {
 		subject = new Account(subjectId);
+		treasuryAccount = new Account(treasuryId);
 		subject.setAssociatedTokens(assocTokens);
+
+		validator = mock(ContextOptionValidator.class);
 	}
 
 	@Test
@@ -53,6 +67,37 @@ class AccountTest {
 
 		// expect:
 		assertEquals(desired, subject.toString());
+	}
+
+	@Test
+	void dissociationHappyPathWorks() {
+		// setup:
+		final var alreadyAssocTokenId = new Id(0, 0, 666);
+		final var dissociationRel = mock(Dissociation.class);
+		// and:
+		final var expectedFinalTokens = "[0.0.777]";
+
+		given(dissociationRel.dissociatingAccountId()).willReturn(subjectId);
+		given(dissociationRel.dissociatedTokenId()).willReturn(alreadyAssocTokenId);
+
+		// when:
+		subject.dissociateUsing(List.of(dissociationRel), validator);
+
+		// then:
+		verify(dissociationRel).updateModelRelsSubjectTo(validator);
+		assertEquals(expectedFinalTokens, assocTokens.toReadableIdList());
+	}
+
+	@Test
+	void dissociationFailsInvalidIfRelDoesntReferToUs() {
+		// setup:
+		final var notOurId = new Id(0, 0, 666);
+		final var dissociationRel = mock(Dissociation.class);
+
+		given(dissociationRel.dissociatingAccountId()).willReturn(notOurId);
+
+		// expect:
+		assertFailsWith(() -> subject.dissociateUsing(List.of(dissociationRel), validator), FAIL_INVALID);
 	}
 
 	@Test
@@ -90,6 +135,50 @@ class AccountTest {
 
 		// expect:
 		assertEquals(expectedFinalTokens, assocTokens.toReadableIdList());
+	}
+
+	@Test
+	void accountEqualsCheck() {
+		// setup:
+		var account = new Account(subjectId);
+		account.setAssociatedTokens(assocTokens);
+		account.setExpiry(1000L);
+		account.initBalance(100L);
+		account.setOwnedNfts(1L);
+		account.incrementOwnedNfts();
+
+		subject.setExpiry(1000L);
+		subject.initBalance(100L);
+		subject.setOwnedNfts(1L);
+		subject.incrementOwnedNfts();
+
+		// when:
+		var actualResult = subject.equals(account);
+
+		// expect:
+		assertEquals(account.getOwnedNfts(), subject.getOwnedNfts());
+		// and:
+		assertEquals(account.getId(), subject.getId());
+		// and:
+		assertEquals(account.getAssociatedTokens(), subject.getAssociatedTokens());
+		// and:
+		assertTrue(actualResult);
+	}
+
+	@Test
+	void accountHashCodeCheck() {
+		// setup:
+		var otherSubject = new Account(subjectId);
+		otherSubject.incrementOwnedNfts();
+		otherSubject.setAssociatedTokens(assocTokens);
+
+		subject.incrementOwnedNfts();
+
+		// when:
+		var actualResult = subject.hashCode();
+
+		// expect:
+		assertEquals(otherSubject.hashCode(), actualResult);
 	}
 
 	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {

@@ -36,19 +36,22 @@ public class TokenSigningMetadata {
 	private final Optional<JKey> wipeKey;
 	private final Optional<JKey> freezeKey;
 	private final Optional<JKey> supplyKey;
+	private final Optional<JKey> feeScheduleKey;
 
 	private TokenSigningMetadata(
 			Optional<JKey> adminKey,
 			Optional<JKey> kycKey,
 			Optional<JKey> wipeKey,
 			Optional<JKey> freezeKey,
-			Optional<JKey> supplyKey
+			Optional<JKey> supplyKey,
+			Optional<JKey> feeScheduleKey
 	) {
 		this.adminKey = adminKey;
 		this.kycKey = kycKey;
 		this.wipeKey = wipeKey;
 		this.freezeKey = freezeKey;
 		this.supplyKey = supplyKey;
+		this.feeScheduleKey = feeScheduleKey;
 	}
 
 	public static TokenSigningMetadata from(MerkleToken token) {
@@ -57,7 +60,8 @@ public class TokenSigningMetadata {
 				token.kycKey(),
 				token.wipeKey(),
 				token.freezeKey(),
-				token.supplyKey());
+				token.supplyKey(),
+				token.feeScheduleKey());
 	}
 
 	public Optional<JKey> adminKey() {
@@ -78,5 +82,9 @@ public class TokenSigningMetadata {
 
 	public Optional<JKey> optionalSupplyKey() {
 		return supplyKey;
+	}
+
+	public Optional<JKey> optionalFeeScheduleKey() {
+		return feeScheduleKey;
 	}
 }

@@ -21,10 +21,12 @@ package com.hedera.services.fees.calculation.utils;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.consensus.ConsensusOpsUsage;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
+import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
@@ -32,23 +34,33 @@ import java.util.EnumSet;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 
 public class AccessorBasedUsages {
 	private static final EnumSet<HederaFunctionality> supportedOps = EnumSet.of(
 			CryptoTransfer,
-			ConsensusSubmitMessage
+			ConsensusSubmitMessage,
+			TokenFeeScheduleUpdate
 	);
 
+	private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
+
+	private final TokenOpsUsage tokenOpsUsage;
 	private final CryptoOpsUsage cryptoOpsUsage;
+	private final OpUsageCtxHelper opUsageCtxHelper;
 	private final ConsensusOpsUsage consensusOpsUsage;
 	private final GlobalDynamicProperties dynamicProperties;
 
 	public AccessorBasedUsages(
+			TokenOpsUsage tokenOpsUsage,
 			CryptoOpsUsage cryptoOpsUsage,
+			OpUsageCtxHelper opUsageCtxHelper,
 			ConsensusOpsUsage consensusOpsUsage,
 			GlobalDynamicProperties dynamicProperties
 	) {
+		this.tokenOpsUsage = tokenOpsUsage;
 		this.cryptoOpsUsage = cryptoOpsUsage;
+		this.opUsageCtxHelper = opUsageCtxHelper;
 		this.consensusOpsUsage = consensusOpsUsage;
 		this.dynamicProperties = dynamicProperties;
 	}
@@ -67,6 +79,11 @@ public class AccessorBasedUsages {
 		} else if (function == ConsensusSubmitMessage) {
 			final var submitMeta = accessor.availSubmitUsageMeta();
 			consensusOpsUsage.submitMessageUsage(sigUsage, submitMeta, baseMeta, into);
+		} else if (function == TokenFeeScheduleUpdate) {
+			final var op = accessor.getTxn().getTokenFeeScheduleUpdate();
+			final var opMeta = spanMapAccessor.getFeeScheduleUpdateMeta(accessor);
+			final var usageCtx = opUsageCtxHelper.ctxForFeeScheduleUpdate(op);
+			tokenOpsUsage.feeScheduleUpdateUsage(sigUsage, baseMeta, opMeta, usageCtx, into);
 		}
 	}
 

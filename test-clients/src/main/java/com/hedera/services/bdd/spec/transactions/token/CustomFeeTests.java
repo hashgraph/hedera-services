@@ -21,9 +21,10 @@ package com.hedera.services.bdd.spec.transactions.token;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hederahashgraph.api.proto.java.CustomFee;
 import org.junit.Assert;
-import proto.CustomFeesOuterClass;
 
+import java.util.List;
 import java.util.OptionalLong;
 import java.util.function.BiConsumer;
 
@@ -31,7 +32,7 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.bui
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.builtFractional;
 
 public class CustomFeeTests {
-	public static BiConsumer<HapiApiSpec, CustomFeesOuterClass.CustomFees> fixedHbarFeeInSchedule(
+	public static BiConsumer<HapiApiSpec, List<CustomFee>> fixedHbarFeeInSchedule(
 			long amount,
 			String collector
 	) {
@@ -41,7 +42,7 @@ public class CustomFeeTests {
 		};
 	}
 
-	public static BiConsumer<HapiApiSpec, CustomFeesOuterClass.CustomFees> fixedHtsFeeInSchedule(
+	public static BiConsumer<HapiApiSpec, List<CustomFee>> fixedHtsFeeInSchedule(
 			long amount,
 			String denom,
 			String collector
@@ -52,7 +53,7 @@ public class CustomFeeTests {
 		};
 	}
 
-	public static BiConsumer<HapiApiSpec, CustomFeesOuterClass.CustomFees> fractionalFeeInSchedule(
+	public static BiConsumer<HapiApiSpec, List<CustomFee>> fractionalFeeInSchedule(
 			long numerator,
 			long denominator,
 			long min,
@@ -67,14 +68,14 @@ public class CustomFeeTests {
 
 	private static void failUnlessPresent(
 			String detail,
-			CustomFeesOuterClass.CustomFees actual,
-			CustomFeesOuterClass.CustomFee expected
+			List<CustomFee> actual,
+			CustomFee expected
 	) {
-		for (var customFee : actual.getCustomFeesList()) {
+		for (var customFee : actual) {
 			if (expected.equals(customFee))	{
 				return;
 			}
 		}
-		Assert.fail("Expected a " + detail + " fee " + expected + ", but only had: " + actual.getCustomFeesList());
+		Assert.fail("Expected a " + detail + " fee " + expected + ", but only had: " + actual);
 	}
 }

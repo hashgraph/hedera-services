@@ -22,36 +22,32 @@ package com.hedera.services.exceptions;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
-import java.util.function.Supplier;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-
 /**
  * A minimalist collection of helpers to improve readability of code
  * that throws an {@code InvalidTransactionException}.
  */
 public class ValidationUtils {
-	public static void validateTrue(boolean flag, ResponseCodeEnum code) {
+	public static void validateTrue(final boolean flag, final ResponseCodeEnum code) {
 		if (!flag) {
 			throw new InvalidTransactionException(code);
 		}
 	}
 
-	public static void validateTrue(boolean flag, ResponseCodeEnum code, Supplier<String> failureMsg) {
+	public static void validateTrue(final boolean flag, final ResponseCodeEnum code, final String failureMsg) {
 		if (!flag) {
-			throw new InvalidTransactionException(failureMsg.get(), code);
+			throw new InvalidTransactionException(failureMsg, code);
 		}
 	}
 
-	public static void validateFalse(boolean flag, ResponseCodeEnum code) {
+	public static void validateFalse(final boolean flag, final ResponseCodeEnum code) {
 		if (flag) {
 			throw new InvalidTransactionException(code);
 		}
 	}
 
-	public static void validateFalse(boolean flag, ResponseCodeEnum code, Supplier<String> failureMsg) {
+	public static void validateFalse(final boolean flag, final ResponseCodeEnum code, final String failureMsg) {
 		if (flag) {
-			throw new InvalidTransactionException(failureMsg.get(), code);
+			throw new InvalidTransactionException(failureMsg, code);
 		}
 	}
 }

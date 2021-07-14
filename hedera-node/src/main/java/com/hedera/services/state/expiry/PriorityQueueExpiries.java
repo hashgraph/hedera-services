@@ -20,6 +20,7 @@ package com.hedera.services.state.expiry;
  * ‍
  */
 
+import java.util.Comparator;
 import java.util.PriorityQueue;
 
 /**
@@ -27,7 +28,11 @@ import java.util.PriorityQueue;
  */
 public class PriorityQueueExpiries<K> implements KeyedExpirations<K> {
 	private long now = 0L;
-	private PriorityQueue<ExpiryEvent<K>> allExpiries = new PriorityQueue<>();
+	private final PriorityQueue<ExpiryEvent<K>> allExpiries;
+
+	public PriorityQueueExpiries(Comparator<ExpiryEvent<K>> eventCmp) {
+		allExpiries = new PriorityQueue<>(eventCmp);
+	}
 
 	@Override
 	public void reset() {
@@ -37,7 +42,7 @@ public class PriorityQueueExpiries<K> implements KeyedExpirations<K> {
 
 	@Override
 	public void track(K id, long expiry) {
-		allExpiries.offer(new ExpiryEvent(id, expiry));
+		allExpiries.offer(new ExpiryEvent<>(id, expiry));
 		now = allExpiries.peek().getExpiry();
 	}
 
@@ -52,8 +57,7 @@ public class PriorityQueueExpiries<K> implements KeyedExpirations<K> {
 			throw new IllegalStateException("No ids are queued for expiration!");
 		}
 		if (!allExpiries.peek().isExpiredAt(now)) {
-			throw new IllegalArgumentException(String.format("Argument 'now=%d' is earlier than the next expiry!",
-					now));
+			throw new IllegalArgumentException(String.format("Argument 'now=%d' is earlier than the next expiry!", now));
 		}
 		return allExpiries.remove().getId();
 	}

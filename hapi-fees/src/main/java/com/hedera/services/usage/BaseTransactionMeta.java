@@ -20,6 +20,9 @@ package com.hedera.services.usage;
  * ‍
  */
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
 public class BaseTransactionMeta {
 	private final int memoUtf8Bytes;
 	private final int numExplicitTransfers;
@@ -35,5 +38,15 @@ public class BaseTransactionMeta {
 
 	public int getNumExplicitTransfers() {
 		return numExplicitTransfers;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		return EqualsBuilder.reflectionEquals(this, obj);
+	}
+
+	@Override
+	public int hashCode() {
+		return HashCodeBuilder.reflectionHashCode(this);
 	}
 }

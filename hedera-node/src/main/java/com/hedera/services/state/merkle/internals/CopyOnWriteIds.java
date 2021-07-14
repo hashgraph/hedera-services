@@ -148,18 +148,6 @@ public class CopyOnWriteIds {
 
 	/**
 	 * Removes all appearances of any managed {@code (num, realm, shard)} ids
-	 * represented in the given set of gRPC {@link TokenID} objects.
-	 *
-	 * @param grpcIds
-	 * 		the ids to remove
-	 */
-	@Deprecated
-	public void removeAll(Set<TokenID> grpcIds) {
-		remove(nativeId -> grpcIds.contains(asGrpcTokenId(nativeId)));
-	}
-
-	/**
-	 * Removes all appearances of any managed {@code (num, realm, shard)} ids
 	 * represented in the given set of model {@link Id} objects.
 	 *
 	 * @param modelIds

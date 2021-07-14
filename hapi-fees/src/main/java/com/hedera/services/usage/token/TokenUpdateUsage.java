@@ -81,6 +81,11 @@ public class TokenUpdateUsage extends TokenTxnUsage<TokenUpdateUsage> {
 		return this;
 	}
 
+	public TokenUpdateUsage givenCurrentFeeScheduleKey(Optional<Key> feeScheduleKey) {
+		feeScheduleKey.map(FeeBuilder::getAccountKeyStorageSize).ifPresent(this::updateCurrentRb);
+		return this;
+	}
+
 	public TokenUpdateUsage givenCurrentMemo(String memo) {
 		currentMemoLen = memo.length();
 		updateCurrentRb(currentMemoLen);
@@ -142,7 +147,7 @@ public class TokenUpdateUsage extends TokenTxnUsage<TokenUpdateUsage> {
 		long txnBytes = newMutableRb + BASIC_ENTITY_ID_SIZE + noRbImpactBytes(op);
 		usageEstimator.addBpt(txnBytes);
 		if (op.hasTreasury()) {
-			addTokenTransfersRecordRb(1, 2);
+			addTokenTransfersRecordRb(1, 2, 0);
 		}
 
 		return usageEstimator.get();

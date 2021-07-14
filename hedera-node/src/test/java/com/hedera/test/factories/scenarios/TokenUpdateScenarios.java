@@ -118,7 +118,7 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenUpdate()
-							.updating(UNKNOWN_TOKEN)
+							.updating(MISSING_TOKEN)
 							.get()
 			));
 		}

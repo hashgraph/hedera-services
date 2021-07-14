@@ -38,9 +38,11 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.txns.validation.TokenListChecks.checkKeys;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CURRENT_TREASURY_STILL_OWNS_NFTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -133,6 +135,13 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 				return;
 			}
 			var existingTreasury = token.treasury().toGrpcAccountId();
+			if (token.tokenType() == NON_FUNGIBLE_UNIQUE) {
+				var existingTreasuryBalance = ledger.getTokenBalance(existingTreasury, id);
+				if (existingTreasuryBalance > 0L) {
+					abortWith(CURRENT_TREASURY_STILL_OWNS_NFTS);
+					return;
+				}
+			}
 			if (!newTreasury.equals(existingTreasury)) {
 				if (ledger.isDetached(existingTreasury)) {
 					txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
@@ -211,7 +220,8 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 				op.hasKycKey(), op.getKycKey(),
 				op.hasWipeKey(), op.getWipeKey(),
 				op.hasSupplyKey(), op.getSupplyKey(),
-				op.hasFreezeKey(), op.getFreezeKey());
+				op.hasFreezeKey(), op.getFreezeKey(),
+				op.hasFeeScheduleKey(), op.getFeeScheduleKey());
 		if (validity != OK) {
 			return validity;
 		}

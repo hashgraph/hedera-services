@@ -9,9 +9,9 @@ package com.hedera.services.txns.span;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,9 +21,15 @@ package com.hedera.services.txns.span;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
+import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.utils.TxnAccessor;
+
+import java.util.HashSet;
+import java.util.Set;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 
@@ -31,12 +37,12 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
  * Responsible for managing the properties in a {@link TxnAccessor#getSpanMap()}.
  * This management happens in two steps:
  * <ol>
- *     <li>In {@link SpanMapManager#expandSpan(TxnAccessor)}, the span map is
- *     "expanded" to include the results of any work that can likely be reused
- *     in {@code handleTransaction}.</li>
- *     <li>In {@link SpanMapManager#rationalizeSpan(TxnAccessor)}, the span map
- *     "rationalized" to be sure that any pre-computed work can still be reused
- *     safely.</li>
+ * <li>In {@link SpanMapManager#expandSpan(TxnAccessor)}, the span map is
+ * "expanded" to include the results of any work that can likely be reused
+ * in {@code handleTransaction}.</li>
+ * <li>In {@link SpanMapManager#rationalizeSpan(TxnAccessor)}, the span map
+ * "rationalized" to be sure that any pre-computed work can still be reused
+ * safely.</li>
  * </ol>
  *
  * The only entry currently in the span map is the {@link com.hedera.services.grpc.marshalling.ImpliedTransfers}
@@ -47,10 +53,10 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
  * over time.
  */
 public class SpanMapManager {
+	private final CustomFeeSchedules customFeeSchedules;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final ImpliedTransfersMarshal impliedTransfersMarshal;
 	private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
-	private final CustomFeeSchedules customFeeSchedules;
 
 	public SpanMapManager(
 			ImpliedTransfersMarshal impliedTransfersMarshal,
@@ -63,7 +69,8 @@ public class SpanMapManager {
 	}
 
 	public void expandSpan(TxnAccessor accessor) {
-		if (accessor.getFunction() == CryptoTransfer) {
+		final var function = accessor.getFunction();
+		if (function == CryptoTransfer) {
 			expandImpliedTransfers(accessor);
 		}
 	}
@@ -84,7 +91,26 @@ public class SpanMapManager {
 	private void expandImpliedTransfers(TxnAccessor accessor) {
 		final var op = accessor.getTxn().getCryptoTransfer();
 		final var impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op, accessor.getPayer());
-
+		reCalculateXferMeta(accessor, impliedTransfers);
 		spanMapAccessor.setImpliedTransfers(accessor, impliedTransfers);
+	}
+
+	private void reCalculateXferMeta(TxnAccessor accessor, ImpliedTransfers impliedTransfers) {
+		final var xferMeta = accessor.availXferUsageMeta();
+
+		var customFeeTokenTransfers = 0;
+		var customFeeHbarTransfers = 0;
+		final Set<EntityId> involvedTokens = new HashSet<>();
+		for (var assessedFee : impliedTransfers.getAssessedCustomFees()) {
+			if (assessedFee.isForHbar()) {
+				customFeeHbarTransfers++;
+			} else {
+				customFeeTokenTransfers++;
+				involvedTokens.add(assessedFee.token());
+			}
+		}
+		xferMeta.setCustomFeeHbarTransfers(customFeeHbarTransfers);
+		xferMeta.setCustomFeeTokensInvolved(involvedTokens.size());
+		xferMeta.setCustomFeeTokenTransfers(customFeeTokenTransfers);
 	}
 }

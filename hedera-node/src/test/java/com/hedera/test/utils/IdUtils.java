@@ -9,9 +9,9 @@ package com.hedera.test.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,13 +22,14 @@ package com.hedera.test.utils;
 
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.submerkle.AssessedCustomFee;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -37,7 +38,6 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import java.util.stream.Stream;
 
 public class IdUtils {
-
 	public static TokenID tokenWith(long num) {
 		return TokenID.newBuilder()
 				.setShardNum(0)
@@ -128,19 +128,41 @@ public class IdUtils {
 				.build();
 	}
 
+	public static NftTransfer adjustFromNft(AccountID from, AccountID to, long serialNumber) {
+		return NftTransfer.newBuilder()
+				.setSenderAccountID(from)
+				.setReceiverAccountID(to)
+				.setSerialNumber(serialNumber)
+				.build();
+	}
+
 	public static BalanceChange hbarChange(final AccountID account, final long amount) {
-		return BalanceChange.hbarAdjust(adjustFrom(account, amount));
+		return BalanceChange.changingHbar(adjustFrom(account, amount));
 	}
 
 	public static BalanceChange tokenChange(final Id token, final AccountID account, final long amount) {
-		return BalanceChange.tokenAdjust(token, token.asGrpcToken(), adjustFrom(account, amount));
+		return BalanceChange.changingFtUnits(token, token.asGrpcToken(), adjustFrom(account, amount));
 	}
 
-	public static AssessedCustomFee hbarChangeForCustomFees(final AccountID account, final long amount) {
-		return AssessedCustomFee.assessedHbarFeeFrom(adjustFrom(account, amount));
+	public static BalanceChange nftChange(final Id token, final AccountID from, final AccountID to,
+			final long serialNumber) {
+		return BalanceChange.changingNftOwnership(token, token.asGrpcToken(), adjustFromNft(from, to, serialNumber));
 	}
 
-	public static AssessedCustomFee tokenChangeForCustomFees(final EntityId token, final AccountID account, final long amount) {
-		return AssessedCustomFee.assessedHtsFeeFrom(token, adjustFrom(account, amount));
+	public static NftTransfer nftXfer(AccountID from, AccountID to, long serialNo) {
+		return NftTransfer.newBuilder()
+				.setSenderAccountID(from)
+				.setReceiverAccountID(to)
+				.setSerialNumber(serialNo)
+				.build();
+	}
+
+	public static FcAssessedCustomFee hbarChangeForCustomFees(final AccountID account, final long amount) {
+		return FcAssessedCustomFee.assessedHbarFeeFrom(adjustFrom(account, amount));
+	}
+
+	public static FcAssessedCustomFee tokenChangeForCustomFees(final EntityId token, final AccountID account,
+			final long amount) {
+		return FcAssessedCustomFee.assessedHtsFeeFrom(token, adjustFrom(account, amount));
 	}
 }

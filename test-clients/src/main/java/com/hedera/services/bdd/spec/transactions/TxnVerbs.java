@@ -20,6 +20,7 @@ package com.hedera.services.bdd.spec.transactions;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicCreate;
@@ -48,6 +49,7 @@ import com.hedera.services.bdd.spec.transactions.token.HapiTokenBurn;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenDelete;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenDissociate;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenFeeScheduleUpdate;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenFreeze;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenKycGrant;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenKycRevoke;
@@ -137,6 +139,9 @@ public class TxnVerbs {
 	public static HapiTokenUpdate tokenUpdate(String token) {
 		return new HapiTokenUpdate(token);
 	}
+	public static HapiTokenFeeScheduleUpdate tokenFeeScheduleUpdate(String token) {
+		return new HapiTokenFeeScheduleUpdate(token);
+	}
 	public static HapiTokenDelete tokenDelete(String token) {
 		return new HapiTokenDelete(token);
 	}
@@ -155,11 +160,23 @@ public class TxnVerbs {
 	public static HapiTokenWipe wipeTokenAccount(String token, String account, long amount) {
 		return new HapiTokenWipe(token, account, amount);
 	}
+	public static HapiTokenWipe wipeTokenAccount(String token, String account, List<Long> serialNumbers) {
+		return new HapiTokenWipe(token, account, serialNumbers);
+	}
 	public static HapiTokenMint mintToken(String token, long amount) {
 		return new HapiTokenMint(token, amount);
 	}
+	public static HapiTokenMint mintToken(String token, List<ByteString> meta, String txName) {
+		return new HapiTokenMint(token, meta, txName);
+	}
+	public static HapiTokenMint mintToken(String token, List<ByteString> metadata){
+		return new HapiTokenMint(token,  metadata);
+	}
 	public static HapiTokenBurn burnToken(String token, long amount) {
 		return new HapiTokenBurn(token, amount);
+	}
+	public static HapiTokenBurn burnToken(String token, List<Long> serialNumbers){
+		return new HapiTokenBurn(token, serialNumbers);
 	}
 
 	/* SCHEDULE */

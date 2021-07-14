@@ -9,9 +9,9 @@ package com.hedera.services.usage.token;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,22 +37,22 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
 import static org.junit.Assert.assertEquals;
 
-public class TokenGetInfoUsageTest {
-	Optional<Key> aKey = Optional.of(KeyUtils.A_COMPLEX_KEY);
-	String memo = "Hope";
-	String name = "WhyWhyWhyWHY";
-	String symbol = "OKITSFINE";
-	TokenID id = IdUtils.asToken("0.0.75231");
+class TokenGetInfoUsageTest {
+	private Optional<Key> aKey = Optional.of(KeyUtils.A_COMPLEX_KEY);
+	private String memo = "Hope";
+	private String name = "WhyWhyWhyWHY";
+	private String symbol = "OKITSFINE";
+	private TokenID id = IdUtils.asToken("0.0.75231");
 
-	TokenGetInfoUsage subject;
+	private TokenGetInfoUsage subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		subject = TokenGetInfoUsage.newEstimate(tokenQuery());
 	}
 
 	@Test
-	public void assessesEverything() {
+	void assessesEverything() {
 		// given:
 		subject.givenCurrentAdminKey(aKey)
 				.givenCurrentFreezeKey(aKey)
@@ -66,7 +66,7 @@ public class TokenGetInfoUsageTest {
 		// and:
 		var expectedKeyBytes = 5 * FeeBuilder.getAccountKeyStorageSize(aKey.get());
 		var expectedBytes = BASIC_QUERY_RES_HEADER
-                                + expectedKeyBytes
+				+ expectedKeyBytes
 				+ TOKEN_ENTITY_SIZES.totalBytesInTokenReprGiven(symbol, name)
 				+ memo.length()
 				+ BASIC_ENTITY_ID_SIZE;
