@@ -226,6 +226,7 @@ public class BootstrapProperties implements PropertySource {
 			"tokens.nfts.maxBatchSizeBurn",
 			"tokens.nfts.maxBatchSizeWipe",
 			"tokens.nfts.maxBatchSizeMint",
+			"tokens.nfts.maxAllowedMints",
 			"tokens.nfts.maxQueryRange",
 			"consensus.message.maxBytesAllowed"
 	);
@@ -358,6 +359,7 @@ public class BootstrapProperties implements PropertySource {
 			entry("tokens.nfts.maxBatchSizeBurn", AS_INT),
 			entry("tokens.nfts.maxBatchSizeWipe", AS_INT),
 			entry("tokens.nfts.maxBatchSizeMint", AS_INT),
+			entry("tokens.nfts.maxAllowedMints", AS_LONG),
 			entry("tokens.nfts.maxQueryRange", AS_LONG),
 			entry("contracts.localCall.estRetBytes", AS_INT),
 			entry("contracts.maxStorageKb", AS_INT),

@@ -20,7 +20,9 @@ package com.hedera.services.bdd.suites.token;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -62,6 +64,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
@@ -71,9 +74,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public class TokenManagementSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenManagementSpecs.class);
+	private static final String defaultMaxNftMints =
+			HapiSpecSetup.getDefaultNodeProps().get("tokens.nfts.maxAllowedMints");
 
 	public static void main(String... args) {
 		new TokenManagementSpecs().runSuiteSync();
@@ -501,6 +507,33 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						mintToken("fungibleToken", Long.MAX_VALUE).via("mintTxn")
 				).then(
 						getAccountBalance(TOKEN_TREASURY).hasTokenBalance("fungibleToken", Long.MAX_VALUE)
+				);
+	}
+
+	private HapiApiSpec nftMintingCapIsEnforced() {
+		return defaultHapiSpec("MintingCapIsEnforced")
+				.given(
+						newKeyNamed("supplyKey"),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+										"tokens.nfts.maxAllowedMints", "" + 1
+								))
+				).when(
+						tokenCreate("fungibleToken")
+								.initialSupply(0)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyType(TokenSupplyType.INFINITE)
+								.supplyKey("supplyKey")
+				).then(
+						mintToken("fungibleToken", List.of(ByteString.copyFromUtf8("NeverToBe")))
+								.hasKnownStatus(MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+										"tokens.nfts.maxAllowedMints", "" + defaultMaxNftMints
+								)),
+						mintToken("fungibleToken", List.of(ByteString.copyFromUtf8("AbInitio")))
 				);
 	}
 

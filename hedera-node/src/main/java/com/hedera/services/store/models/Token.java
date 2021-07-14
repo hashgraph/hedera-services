@@ -117,7 +117,8 @@ public class Token {
 			final OwnershipTracker ownershipTracker,
 			final TokenRelationship treasuryRel,
 			final List<ByteString> metadata,
-			final RichInstant creationTime) {
+			final RichInstant creationTime
+	) {
 		validateFalse(metadata.isEmpty(), INVALID_TOKEN_MINT_METADATA,
 				"Cannot mint " + metadata.size() + " numbers of Unique Tokens");
 		validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID,
@@ -127,7 +128,8 @@ public class Token {
 
 		for (ByteString m : metadata) {
 			lastUsedSerialNumber++;
-			final var uniqueToken = new UniqueToken(id, lastUsedSerialNumber, creationTime, treasury.getId(), m.toByteArray());
+			final var uniqueToken = new UniqueToken(id, lastUsedSerialNumber, creationTime, treasury.getId(),
+					m.toByteArray());
 			mintedUniqueTokens.add(uniqueToken);
 			ownershipTracker.add(id, OwnershipTracker.forMinting(treasury.getId(), lastUsedSerialNumber));
 		}
@@ -154,7 +156,7 @@ public class Token {
 			final TokenRelationship treasuryRelationship,
 			final List<Long> serialNumbers
 	) {
-		validateTrue( type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
+		validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
 		validateFalse(serialNumbers.isEmpty(), INVALID_TOKEN_BURN_METADATA);
 		final var treasuryId = treasury.getId();
 		for (final long serialNum : serialNumbers) {
@@ -179,14 +181,14 @@ public class Token {
 	 * @param amount
 	 * 		- amount to be wiped
 	 */
-	public void wipe(final TokenRelationship accountRel, final long amount){
+	public void wipe(final TokenRelationship accountRel, final long amount) {
 		validateTrue(type == TokenType.FUNGIBLE_COMMON, FAIL_INVALID,
 				"Fungible wipe can be invoked only on Fungible token type.");
 
 		baseWipeValidations(accountRel);
 		amountWipeValidations(accountRel, amount);
 		final var newTotalSupply = totalSupply - amount;
-		final var newAccBalance  = accountRel.getBalance() - amount;
+		final var newAccBalance = accountRel.getBalance() - amount;
 
 		accountRel.setBalance(newAccBalance);
 		setTotalSupply(newTotalSupply);
