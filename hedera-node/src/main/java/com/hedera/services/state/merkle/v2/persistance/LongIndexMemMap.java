@@ -205,16 +205,12 @@ public class LongIndexMemMap<K extends VKey> implements LongIndex<K> {
             // OPEN FILE
             // check if file existed before
             if (Files.exists(file)) throw new IOException("File should not already exist for BinFile ["+file.toFile().getAbsolutePath()+"]");
+            // create file
+            PersistenceUtils.createFile(file,fileSize);
             // open file
             fileChannel = FileChannel.open(file,
-                    StandardOpenOption.CREATE,
                     StandardOpenOption.WRITE,
                     StandardOpenOption.READ
-//            fileChannel = FileChannel.open(file,
-//                    StandardOpenOption.CREATE,
-//                    StandardOpenOption.WRITE,
-//                    StandardOpenOption.READ,
-//                    StandardOpenOption.DELETE_ON_CLOSE
             );
             mappedBuffer = fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, fileSize);
             // mark file as open
