@@ -21,13 +21,13 @@ import java.util.function.Supplier;
  * Stores [KeySerializationVersion],[KeyBytes],[ValueSerializationVersion],[ValueBytes] in leafDataStore
  *
  * Node store data size is NODE_STORE_SLOTS_SIZE
- * Leaf store data size is Integer.BYTES + keySizeBytes + Integer.BYTES + valueSizeBytes
+ * Leaf store data size is Long.BYTES + keySizeBytes + Long.BYTES + valueSizeBytes
  *
  * @param <K> the type for leaf keys
  * @param <V> the type for leaf values
  */
 public class VFCDataSourceImpl<K extends VKey, V extends VValue> implements VFCDataSource<K, V> {
-    private final static int HASH_SIZE = Integer.BYTES+DigestType.SHA_384.digestLength();
+    private final static int HASH_SIZE = Long.BYTES+DigestType.SHA_384.digestLength();
     public final static int NODE_STORE_SLOTS_SIZE = HASH_SIZE + Long.BYTES;
     private final static int NULL_DATA_INDEX = -1;
     private final Supplier<K> keyConstructor;
@@ -52,9 +52,9 @@ public class VFCDataSourceImpl<K extends VKey, V extends VValue> implements VFCD
      */
     public VFCDataSourceImpl(int keySizeBytes, Supplier<K> keyConstructor, int valueSizeBytes, Supplier<V> valueConstructor,
                              SlotStore nodeStore, SlotStore leafDataStore, LongIndex<K> leafKeyIndex) {
-        this.keySizeBytes = Integer.BYTES + keySizeBytes; // needs to include serialization version
+        this.keySizeBytes = Long.BYTES + keySizeBytes; // needs to include serialization version
         this.keyConstructor = keyConstructor;
-        this.valueSizeBytes = Integer.BYTES + valueSizeBytes; // needs to include serialization version
+        this.valueSizeBytes = Long.BYTES + valueSizeBytes; // needs to include serialization version
         this.valueConstructor = valueConstructor;
         this.nodeStore = nodeStore;
         this.leafDataStore = leafDataStore;
@@ -82,12 +82,15 @@ public class VFCDataSourceImpl<K extends VKey, V extends VValue> implements VFCD
             Path dataDirectory, long numEntities,
             int keySizeBytes, Supplier<K> keyConstructor,
             int valueSizeBytes, Supplier<V> valueConstructor) throws IOException {
-        final var slotStoreFileSize = 256 * 1024*1024; // 256Mb
+        final var slotStoreFileSize = 1024 * 1024*1024; // 1Gb
         final var numBinsAsPowerOf2 = Long.highestOneBit(numEntities);
         final var keysPerBin = 4;
-        final var sizeOfBin = (Integer.BYTES+(keysPerBin*(Integer.BYTES+Long.BYTES+keySizeBytes)));
-        final var numFilesForIndex = (numBinsAsPowerOf2 * sizeOfBin) / (1024*1024*1024);
+        final var sizeOfBin = (Long.BYTES+(keysPerBin*(Long.BYTES+Long.BYTES+keySizeBytes)));
+        System.out.println("sizeOfBin = " + sizeOfBin);
+        final var numFilesForIndex = (numBinsAsPowerOf2 * sizeOfBin) / (2*1024*1024*1024L);
+        System.out.println("numFilesForIndex = " + numFilesForIndex);
         final var numFilesAsPowerOf2 = Math.max(2, Long.highestOneBit(numFilesForIndex * 2));
+        System.out.println("numFilesAsPowerOf2 = " + numFilesAsPowerOf2);
         return new VFCDataSourceImpl<K,V>(
                 keySizeBytes,
                 keyConstructor,
@@ -102,7 +105,7 @@ public class VFCDataSourceImpl<K extends VKey, V extends VValue> implements VFCD
                         "dat"),
                 new SlotStoreMemMap(
                         true,
-                        Integer.BYTES + keySizeBytes + Integer.BYTES + valueSizeBytes,
+                        Long.BYTES + keySizeBytes + Long.BYTES + valueSizeBytes,
                         slotStoreFileSize,
                         dataDirectory.resolve("leaves"),
                         "leaves",
@@ -137,7 +140,7 @@ public class VFCDataSourceImpl<K extends VKey, V extends VValue> implements VFCD
                 valueSizeBytes,
                 valueConstructor,
                 new SlotStoreInMemory(false,NODE_STORE_SLOTS_SIZE),
-                new SlotStoreInMemory(true, Integer.BYTES + keySizeBytes + Integer.BYTES + valueSizeBytes),
+                new SlotStoreInMemory(true, Long.BYTES + keySizeBytes + Long.BYTES + valueSizeBytes),
                 new LongIndexInMemory<>());
     }
 

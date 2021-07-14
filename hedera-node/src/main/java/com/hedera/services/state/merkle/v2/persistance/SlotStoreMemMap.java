@@ -108,7 +108,6 @@ public final class SlotStoreMemMap extends SlotStore {
      */
     @Override
     public ByteBuffer accessSlot(long location, boolean create) throws IOException {
-        throwIfNotOpen();
         int fileIndex = fileIndexFromLocation(location);
         if (fileIndex >= files.size()) {
             // file doesn't exist yet
@@ -134,7 +133,6 @@ public final class SlotStoreMemMap extends SlotStore {
      */
     @Override
     public long getNewSlot() {
-        throwIfNotOpen();
         // first try getting a slot form the currentFileForWriting
         var slot = getNewSlotIfAvailable();
         if (slot != -1) return slot;
@@ -204,15 +202,6 @@ public final class SlotStoreMemMap extends SlotStore {
 
     //==================================================================================================================
     // Private methods
-
-    /**
-     * Little helper method that throws an ISE if the class isn't open
-     */
-    private void throwIfNotOpen() {
-        if (!open.get()) {
-            throw new IllegalStateException("SlotStoreMemMap is not open");
-        }
-    }
 
     /**
      * Get the Path for a file with given index
@@ -362,7 +351,6 @@ public final class SlotStoreMemMap extends SlotStore {
          * null if create=false and location did not exist
          */
         public ByteBuffer accessSlot(int slotIndex, boolean create) throws IOException {
-            throwIfClosed();
             if (slotIndex > size)
                 throw new IOException("Tried to write to slot index [" + slotIndex + "] which is greater than file size [" + size + "].");
             if (slotIndex < 0)
@@ -379,7 +367,6 @@ public final class SlotStoreMemMap extends SlotStore {
          * @return Index for new slot ready for use
          */
         public int getNewSlot() {
-            throwIfClosed();
             // grab free slot at the end
             int nextFreeSlot = nextFreeSlotAtEnd.getAndIncrement();
             // check if we ran out of free slots
@@ -405,16 +392,6 @@ public final class SlotStoreMemMap extends SlotStore {
          */
         public void deleteSlot(long location) throws IOException {
             // don't care LOL
-        }
-
-        //==================================================================================================================
-        // Private methods
-
-        /**
-         * Throw an exception if closed
-         */
-        private void throwIfClosed() {
-            if (!fileIsOpen.get()) throw new IllegalStateException("Can not access from a closed file.");
         }
     }
 }

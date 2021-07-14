@@ -77,7 +77,13 @@ public class ContractUint256 implements VKey, VValue {
 
     @Override
     public int hashCode() {
-        return Objects.hash(value_0, value_1, value_2, value_3);
+        // was using Objects.hash but it is horrible as has to box longs into Longs and create a Object[]
+        int result = 1;
+        result = 31 * result + (int)(value_0 ^ (value_0 >>> 32));
+        result = 31 * result + (int)(value_1 ^ (value_1 >>> 32));
+        result = 31 * result + (int)(value_2 ^ (value_2 >>> 32));
+        result = 31 * result + (int)(value_3 ^ (value_3 >>> 32));
+        return result;
     }
 
     @Override
