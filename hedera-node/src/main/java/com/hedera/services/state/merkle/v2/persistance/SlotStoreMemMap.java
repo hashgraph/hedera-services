@@ -314,16 +314,12 @@ public final class SlotStoreMemMap extends SlotStore {
             // check file doesn't exist as we want to create it
             if (Files.exists(file))
                 throw new IOException("File [" + file.toAbsolutePath().toFile() + "] already existed and should not have.");
+            // create file
+            PersistenceUtils.createFile(file,fileSize);
             // open file
             fileChannel = FileChannel.open(file,
-                    StandardOpenOption.CREATE,
                     StandardOpenOption.WRITE,
                     StandardOpenOption.READ
-//            fileChannel = FileChannel.open(file,
-//                    StandardOpenOption.CREATE,
-//                    StandardOpenOption.WRITE,
-//                    StandardOpenOption.READ,
-//                    StandardOpenOption.DELETE_ON_CLOSE
             );
             // get file channel and memory map the file
             mappedBuffer = fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, fileSize);
