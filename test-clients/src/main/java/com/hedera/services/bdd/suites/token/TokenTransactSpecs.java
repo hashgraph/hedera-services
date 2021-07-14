@@ -873,7 +873,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.hasTinyBars(3 * ONE_HBAR),
 						getAccountBalance(FIRST_USER)
 								.hasTokenBalance(A_TOKEN, 90)
-								.hasTinyBars(9899205334L),
+								.hasTinyBars(9899165240L),
 						getAccountBalance(SECOND_USER)
 								.hasTokenBalance(A_TOKEN, 110)
 								.hasTinyBars(ONE_HUNDRED_HBARS)
