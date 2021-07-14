@@ -178,11 +178,13 @@ class SignedTxnAccessorTest {
 
 		var txn = buildTokenTransferTxn(nftTransfers);
 		SignedTxnAccessor subject = new SignedTxnAccessor(txn);
-		assertEquals(SubType.TOKEN_NON_FUNGIBLE_UNIQUE, subject.getSubType());
+		assertEquals(SubType.TOKEN_NON_FUNGIBLE_UNIQUE , subject.availXferUsageMeta().getSubType());
+		assertEquals(subject.availXferUsageMeta().getSubType(), subject.getSubType());
 
 		txn = buildTokenTransferTxn(fungibleTokenXfers);
 		subject = new SignedTxnAccessor(txn);
-		assertEquals(SubType.TOKEN_FUNGIBLE_COMMON, subject.getSubType());
+		assertEquals(SubType.TOKEN_FUNGIBLE_COMMON , subject.availXferUsageMeta().getSubType());
+		assertEquals(subject.availXferUsageMeta().getSubType(), subject.getSubType());
 
 		txn = buildDefaultCryptoCreateTxn();
 		subject = new SignedTxnAccessor(txn);
