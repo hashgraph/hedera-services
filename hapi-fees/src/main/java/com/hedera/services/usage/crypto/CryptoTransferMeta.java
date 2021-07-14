@@ -26,6 +26,11 @@ public class CryptoTransferMeta {
 	private final int numTokensInvolved;
 	private final int numTokenTransfers;
 
+	// Short term solution to not impact existing transaction fee calculation
+	private int customFeeTokensInvolved;
+	private int customFeeHbarTransfers;
+	private int customFeeTokenTransfers;
+
 	public CryptoTransferMeta(int tokenMultiplier, int numTokensInvolved, int numTokenTransfers) {
 		this.tokenMultiplier = tokenMultiplier;
 		this.numTokensInvolved = numTokensInvolved;
@@ -48,8 +53,30 @@ public class CryptoTransferMeta {
 	public int getNumTokenTransfers() {
 		return numTokenTransfers;
 	}
-
 	public void setTokenMultiplier(int tokenMultiplier) {
 		this.tokenMultiplier = tokenMultiplier;
+	}
+
+	public void setCustomFeeTokensInvolved(final int customFeeTokensInvolved) {
+		this.customFeeTokensInvolved = customFeeTokensInvolved;
+	}
+
+	public int getCustomFeeTokensInvolved() {
+		return customFeeTokensInvolved;
+	}
+
+	public void setCustomFeeTokenTransfers(final int customFeeTokenTransfers) {
+		this.customFeeTokenTransfers = customFeeTokenTransfers;
+	}
+
+	public int getCustomFeeTokenTransfers() {
+		return customFeeTokenTransfers;
+	}
+	public void setCustomFeeHbarTransfers(final int customFeeHbarTransfers) {
+		this.customFeeHbarTransfers = customFeeHbarTransfers;
+	}
+
+	public int getCustomFeeHbarTransfers() {
+		return customFeeHbarTransfers;
 	}
 }

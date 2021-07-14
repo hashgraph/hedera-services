@@ -20,8 +20,10 @@ package com.hedera.services.bdd.suites.token;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -31,17 +33,31 @@ import java.util.Map;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountNftInfos;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
+import static com.hedera.services.bdd.spec.queries.token.HapiTokenNftInfo.newTokenNftInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
@@ -50,10 +66,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_A
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
 
 public class TokenTransactSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenTransactSpecs.class);
@@ -83,8 +103,174 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						prechecksWork(),
 						missingEntitiesRejected(),
 						allRequiredSigsAreChecked(),
+						uniqueTokenTxnAccountBalance(),
+						uniqueTokenTxnWithNoAssociation(),
+						uniqueTokenTxnWithFrozenAccount(),
+						uniqueTokenTxnWithSenderNotSigned(),
+						uniqueTokenTxnWithReceiverNotSigned(),
+						uniqueTokenTxnsAreAtomic(),
+						uniqueTokenDeletedTxn(),
+						cannotSendFungibleToDissociatedContractsOrAccounts(),
+						cannotGiveNftsToDissociatedContractsOrAccounts(),
+						recordsIncludeBothFungibleTokenChangesAndOwnershipChange(),
+						transferListsEnforceTokenTypeRestrictions(),
+						balancesChangeOnTokenTransferWithFixedHbarCustomFees(),
+						transferFailsWithInsufficientBalanceForFixedHbarCustomFees(),
+						balancesChangeOnTokenTransferWithFixedHtsCustomFees(),
+						transferFailsWithInsufficientBalanceForFixedHtsCustomFees(),
 				}
 		);
+	}
+
+	public HapiApiSpec transferListsEnforceTokenTypeRestrictions() {
+		final var theAccount = "anybody";
+		final var B_TOKEN = "non-fungible";
+		final var theKey = "multipurpose";
+		return defaultHapiSpec("TransferListsEnforceTokenTypeRestrictions")
+				.given(
+						newKeyNamed(theKey),
+						cryptoCreate(theAccount),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(A_TOKEN)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(1000L)
+								.treasury(TOKEN_TREASURY),
+						tokenCreate(B_TOKEN)
+								.supplyKey(theKey)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0L)
+								.treasury(TOKEN_TREASURY)
+				).when(
+						mintToken(B_TOKEN, List.of(ByteString.copyFromUtf8("dark"))),
+						tokenAssociate(theAccount, List.of(A_TOKEN, B_TOKEN))
+				).then(
+						cryptoTransfer(
+								movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, theAccount)
+						).hasKnownStatus(INVALID_NFT_ID),
+						cryptoTransfer(
+								moving(1, B_TOKEN).between(TOKEN_TREASURY, theAccount)
+						).hasKnownStatus(ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON)
+				);
+	}
+
+	public HapiApiSpec recordsIncludeBothFungibleTokenChangesAndOwnershipChange() {
+		final var theUniqueToken = "special";
+		final var theCommonToken = "quotidian";
+		final var theAccount = "lucky";
+		final var theKey = "multipurpose";
+		final var theTxn = "diverseXfer";
+
+		return defaultHapiSpec("RecordsIncludeBothFungibleTokenChangesAndOwnershipChange")
+				.given(
+						newKeyNamed(theKey),
+						cryptoCreate(theAccount),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(theCommonToken)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(1_234_567L)
+								.treasury(TOKEN_TREASURY),
+						tokenCreate(theUniqueToken)
+								.supplyKey(theKey)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0L)
+								.treasury(TOKEN_TREASURY),
+						mintToken(theUniqueToken, List.of(ByteString.copyFromUtf8("Doesn't matter"))),
+						tokenAssociate(theAccount, theUniqueToken),
+						tokenAssociate(theAccount, theCommonToken)
+				).when(
+						cryptoTransfer(
+								moving(1, theCommonToken).between(TOKEN_TREASURY, theAccount),
+								movingUnique(1, theUniqueToken).between(TOKEN_TREASURY, theAccount)
+						).via(theTxn)
+				).then(
+						getTxnRecord(theTxn).logged()
+				);
+	}
+
+	public HapiApiSpec cannotGiveNftsToDissociatedContractsOrAccounts() {
+		final var theContract = "tbd";
+		final var theAccount = "alsoTbd";
+		final var theKey = "multipurpose";
+		return defaultHapiSpec("CannotGiveNftsToDissociatedContractsOrAccounts")
+				.given(
+						newKeyNamed(theKey),
+						contractCreate(theContract),
+						cryptoCreate(theAccount),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(A_TOKEN)
+								.supplyKey(theKey)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0L)
+								.treasury(TOKEN_TREASURY),
+						tokenAssociate(theContract, A_TOKEN),
+						tokenAssociate(theAccount, A_TOKEN),
+						mintToken(A_TOKEN, List.of(ByteString.copyFromUtf8("dark"), ByteString.copyFromUtf8("matter")))
+				).when(
+						getContractInfo(theContract).hasToken(relationshipWith(A_TOKEN)),
+						getAccountInfo(theAccount).hasToken(relationshipWith(A_TOKEN)),
+						tokenDissociate(theContract, A_TOKEN),
+						tokenDissociate(theAccount, A_TOKEN),
+						getContractInfo(theContract).hasNoTokenRelationship(A_TOKEN),
+						getAccountInfo(theAccount).hasNoTokenRelationship(A_TOKEN)
+				).then(
+						cryptoTransfer(
+								movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, theContract)
+						).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+						cryptoTransfer(
+								movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, theAccount)
+						).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+						tokenAssociate(theContract, A_TOKEN),
+						tokenAssociate(theAccount, A_TOKEN),
+						cryptoTransfer(movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, theContract)),
+						cryptoTransfer(movingUnique(2, A_TOKEN).between(TOKEN_TREASURY, theAccount)),
+						getAccountBalance(theAccount).hasTokenBalance(A_TOKEN, 1),
+						getAccountBalance(theContract).hasTokenBalance(A_TOKEN, 1),
+						getAccountNftInfos(theAccount, 0, 1)
+								.hasNfts(
+										newTokenNftInfo(A_TOKEN,
+												2, theAccount, ByteString.copyFromUtf8("matter"))),
+						getAccountNftInfos(theContract, 0, 1)
+								.hasNfts(
+										newTokenNftInfo(A_TOKEN,
+												1, theContract, ByteString.copyFromUtf8("dark")))
+				);
+	}
+
+	public HapiApiSpec cannotSendFungibleToDissociatedContractsOrAccounts() {
+		final var theContract = "tbd";
+		final var theAccount = "alsoTbd";
+		return defaultHapiSpec("CannotSendFungibleToDissociatedContract")
+				.given(
+						contractCreate(theContract),
+						cryptoCreate(theAccount),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(A_TOKEN)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(1_234_567L)
+								.treasury(TOKEN_TREASURY),
+						tokenAssociate(theContract, A_TOKEN),
+						tokenAssociate(theAccount, A_TOKEN)
+				).when(
+						getContractInfo(theContract).hasToken(relationshipWith(A_TOKEN)),
+						getAccountInfo(theAccount).hasToken(relationshipWith(A_TOKEN)),
+						tokenDissociate(theContract, A_TOKEN),
+						tokenDissociate(theAccount, A_TOKEN),
+						getContractInfo(theContract).hasNoTokenRelationship(A_TOKEN),
+						getAccountInfo(theAccount).hasNoTokenRelationship(A_TOKEN)
+				).then(
+						cryptoTransfer(
+								moving(1, A_TOKEN).between(TOKEN_TREASURY, theContract)
+						).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+						cryptoTransfer(
+								moving(1, A_TOKEN).between(TOKEN_TREASURY, theAccount)
+						).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+						tokenAssociate(theContract, A_TOKEN),
+						tokenAssociate(theAccount, A_TOKEN),
+						cryptoTransfer(moving(1, A_TOKEN).between(TOKEN_TREASURY, theContract)),
+						cryptoTransfer(moving(1, A_TOKEN).between(TOKEN_TREASURY, theAccount)),
+						getAccountBalance(theAccount).hasTokenBalance(A_TOKEN, 1L),
+						getAccountBalance(theContract).hasTokenBalance(A_TOKEN, 1L)
+				);
 	}
 
 	private HapiApiSpec prechecksWork() {
@@ -179,12 +365,14 @@ public class TokenTransactSpecs extends HapiApiSuite {
 										.between("firstTreasury", "beneficiary")
 						).payingWith("payer")
 								.signedBy("payer", "firstTreasury")
+								.fee(ONE_HUNDRED_HBARS)
 								.hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE),
 						cryptoTransfer(
 								moving(1, A_TOKEN).between("firstTreasury", "beneficiary"),
 								movingHbar(ONE_HUNDRED_HBARS).between("firstTreasury", "beneficiary")
 						).payingWith("payer")
 								.signedBy("payer", "firstTreasury")
+								.fee(ONE_HUNDRED_HBARS)
 								.hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE)
 				);
 	}
@@ -246,6 +434,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								movingHbar(1_000).between("sponsor", "firstTreasury")
 						).payingWith("payer")
 								.signedBy("payer", "firstTreasury", "beneficiary", "sponsor")
+								.fee(ONE_HUNDRED_HBARS)
 								.hasKnownStatus(INVALID_SIGNATURE),
 						cryptoTransfer(
 								moving(100, A_TOKEN).between("firstTreasury", "beneficiary"),
@@ -253,19 +442,24 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								movingHbar(1_000).between("sponsor", "firstTreasury")
 						).payingWith("payer")
 								.signedBy("payer", "firstTreasury", "secondTreasury", "sponsor")
+								.fee(ONE_HUNDRED_HBARS)
 								.hasKnownStatus(INVALID_SIGNATURE),
 						cryptoTransfer(
 								moving(100, A_TOKEN).between("firstTreasury", "beneficiary"),
 								moving(100, B_TOKEN).between("secondTreasury", "beneficiary"),
 								movingHbar(1_000).between("sponsor", "firstTreasury")
 						).payingWith("payer")
+								.fee(ONE_HUNDRED_HBARS)
 								.signedBy("payer", "firstTreasury", "secondTreasury", "beneficiary")
 								.hasKnownStatus(INVALID_SIGNATURE),
 						cryptoTransfer(
 								moving(100, A_TOKEN).between("firstTreasury", "beneficiary"),
 								moving(100, B_TOKEN).between("secondTreasury", "beneficiary"),
-								movingHbar(1_000).between("sponsor", "firstTreasury")
-						).payingWith("payer")
+								movingHbar(1_000).between("sponsor", "firstTreasury"))
+
+								.fee(ONE_HUNDRED_HBARS)
+								.payingWith("payer")
+
 				);
 	}
 
@@ -292,6 +486,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								movingHbar(ONE_HBAR).between("beneficiary", "firstTreasury")
 						).payingWith("payer")
 								.signedBy("firstTreasury", "payer", "beneficiary")
+								.fee(ONE_HUNDRED_HBARS)
 								.via("transactTxn"),
 						getAccountBalance("firstTreasury")
 								.hasTinyBars(changeFromSnapshot("treasuryBefore", +1 * ONE_HBAR))
@@ -324,8 +519,10 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						cryptoTransfer(
 								moving(100, A_TOKEN).between("firstTreasury", "beneficiary"),
 								moving(10, B_TOKEN).between("secondTreasury", "beneficiary"),
-								movingHbar(1).between("beneficiary", "tbd")
-						).hasKnownStatus(ACCOUNT_DELETED)
+								movingHbar(1).between("beneficiary", "tbd"))
+								.fee(ONE_HUNDRED_HBARS)
+								.hasKnownStatus(ACCOUNT_DELETED)
+
 				).then(
 						getAccountBalance("firstTreasury")
 								.logged()
@@ -427,6 +624,375 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.hasTokenBalance(A_TOKEN, 100),
 						getAccountBalance(SECOND_USER)
 								.hasTokenBalance(B_TOKEN, 100)
+				);
+	}
+
+	public HapiApiSpec uniqueTokenTxnAccountBalance() {
+		return defaultHapiSpec("UniqueTokenTxnAccountBalance")
+				.given(
+						newKeyNamed("supplyKey"),
+						newKeyNamed("signingKeyTreasury"),
+						newKeyNamed("signingKeyFirstUser"),
+						cryptoCreate(FIRST_USER).key("signingKeyFirstUser"),
+						cryptoCreate(TOKEN_TREASURY).key("signingKeyTreasury"),
+						tokenCreate(A_TOKEN)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0)
+								.supplyKey("supplyKey")
+								.treasury(TOKEN_TREASURY),
+						mintToken(A_TOKEN, List.of(ByteString.copyFromUtf8("memo"))),
+						tokenAssociate(FIRST_USER, A_TOKEN)
+				).when(
+						cryptoTransfer(
+								movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+						).signedBy("signingKeyTreasury", "signingKeyFirstUser", DEFAULT_PAYER).via("cryptoTransferTxn")
+				).then(
+						getAccountBalance(TOKEN_TREASURY)
+								.hasTokenBalance(A_TOKEN, 0),
+						getAccountBalance(FIRST_USER)
+								.hasTokenBalance(A_TOKEN, 1),
+						getTokenNftInfo(A_TOKEN, 1)
+								.hasSerialNum(1)
+								.hasMetadata(ByteString.copyFromUtf8("memo"))
+								.hasTokenID(A_TOKEN)
+								.hasAccountID(FIRST_USER),
+						getAccountNftInfos(FIRST_USER, 0, 1)
+								.hasNfts(
+										newTokenNftInfo(A_TOKEN, 1, FIRST_USER, ByteString.copyFromUtf8("memo"))),
+						getTxnRecord("cryptoTransferTxn").logged()
+				);
+	}
+
+	public HapiApiSpec uniqueTokenTxnWithNoAssociation() {
+		return defaultHapiSpec("UniqueTokenTxnWithNoAssociation")
+				.given(
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(FIRST_USER),
+						newKeyNamed("supplyKey"),
+						tokenCreate(A_TOKEN)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0)
+								.supplyKey("supplyKey")
+								.treasury(TOKEN_TREASURY)
+				)
+				.when(
+						mintToken(A_TOKEN, List.of(ByteString.copyFromUtf8("memo")))
+				)
+				.then(
+						cryptoTransfer(
+								movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+
+						).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+						getAccountNftInfos(TOKEN_TREASURY, 0, 1)
+								.hasNfts(
+										newTokenNftInfo(A_TOKEN, 1, TOKEN_TREASURY,
+												ByteString.copyFromUtf8("memo"))
+								)
+				);
+	}
+
+	public HapiApiSpec uniqueTokenTxnWithFrozenAccount() {
+		return defaultHapiSpec("UniqueTokenTxnWithFrozenAccount")
+				.given(
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						cryptoCreate(FIRST_USER).balance(0L),
+						newKeyNamed("freezeKey"),
+						newKeyNamed("supplyKey"),
+						tokenCreate(A_TOKEN)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0)
+								.freezeKey("freezeKey")
+								.freezeDefault(true)
+								.supplyKey("supplyKey")
+								.treasury(TOKEN_TREASURY),
+						tokenAssociate(FIRST_USER, A_TOKEN)
+				)
+				.when(
+						mintToken(A_TOKEN, List.of(ByteString.copyFromUtf8("memo")))
+				)
+				.then(
+						cryptoTransfer(
+								movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+						)
+								.hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN)
+				);
+	}
+
+	public HapiApiSpec uniqueTokenTxnWithSenderNotSigned() {
+		return defaultHapiSpec("UniqueTokenTxnWithOwnerNotSigned")
+				.given(
+						newKeyNamed("supplyKey"),
+						newKeyNamed("signingKeyTreasury"),
+						cryptoCreate(TOKEN_TREASURY).key("signingKeyTreasury"),
+						cryptoCreate(FIRST_USER),
+						tokenCreate(A_TOKEN)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0)
+								.supplyKey("supplyKey")
+								.treasury(TOKEN_TREASURY),
+						tokenAssociate(FIRST_USER, A_TOKEN)
+				)
+				.when(
+						mintToken(A_TOKEN, List.of(ByteString.copyFromUtf8("memo")))
+				)
+				.then(
+						cryptoTransfer(
+								movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+						)
+								.signedBy(DEFAULT_PAYER)
+								.hasKnownStatus(INVALID_SIGNATURE)
+				);
+	}
+
+	public HapiApiSpec uniqueTokenTxnWithReceiverNotSigned() {
+		return defaultHapiSpec("UniqueTokenTxnWithOwnerNotSigned")
+				.given(
+						newKeyNamed("supplyKey"),
+						newKeyNamed("signingKeyTreasury"),
+						newKeyNamed("signingKeyFirstUser"),
+						cryptoCreate(TOKEN_TREASURY).key("signingKeyTreasury"),
+						cryptoCreate(FIRST_USER).key("signingKeyFirstUser").receiverSigRequired(true),
+						tokenCreate(A_TOKEN)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0)
+								.supplyKey("supplyKey")
+								.treasury(TOKEN_TREASURY),
+						tokenAssociate(FIRST_USER, A_TOKEN)
+				)
+				.when(
+						mintToken(A_TOKEN, List.of(ByteString.copyFromUtf8("memo")))
+				)
+				.then(
+						cryptoTransfer(
+								movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+						)
+								.signedBy("signingKeyTreasury", DEFAULT_PAYER)
+								.hasKnownStatus(INVALID_SIGNATURE)
+				);
+	}
+
+	public HapiApiSpec uniqueTokenTxnsAreAtomic() {
+		return defaultHapiSpec("UniqueTokenTxnsAreAtomic")
+				.given(
+						newKeyNamed("supplyKey"),
+						newKeyNamed("signingKeyTreasury"),
+						newKeyNamed("signingKeyFirstUser"),
+						cryptoCreate(FIRST_USER).key("signingKeyFirstUser"),
+						cryptoCreate(SECOND_USER),
+						cryptoCreate(TOKEN_TREASURY).key("signingKeyTreasury"),
+						tokenCreate(A_TOKEN)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0)
+								.supplyKey("supplyKey")
+								.treasury(TOKEN_TREASURY),
+						tokenCreate(B_TOKEN)
+								.initialSupply(100)
+								.treasury(TOKEN_TREASURY),
+						mintToken(A_TOKEN, List.of(ByteString.copyFromUtf8("memo"))),
+						tokenAssociate(FIRST_USER, A_TOKEN),
+						tokenAssociate(FIRST_USER, B_TOKEN),
+						tokenAssociate(SECOND_USER, A_TOKEN)
+				)
+				.when(
+						cryptoTransfer(
+								movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, SECOND_USER),
+								moving(101, B_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+						)
+								.hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE)
+				)
+				.then(
+						getAccountBalance(TOKEN_TREASURY)
+								.hasTokenBalance(A_TOKEN, 1),
+						getAccountBalance(TOKEN_TREASURY)
+								.hasTokenBalance(B_TOKEN, 100),
+						getAccountBalance(FIRST_USER)
+								.hasTokenBalance(A_TOKEN, 0),
+						getAccountBalance(SECOND_USER)
+								.hasTokenBalance(A_TOKEN, 0)
+				);
+	}
+
+	public HapiApiSpec uniqueTokenDeletedTxn() {
+		return defaultHapiSpec("UniqueTokenDeletedTxn")
+				.given(
+						newKeyNamed("supplyKey"),
+						newKeyNamed("nftAdmin"),
+						newKeyNamed("signingKeyTreasury"),
+						newKeyNamed("signingKeyFirstUser"),
+						cryptoCreate(FIRST_USER).key("signingKeyFirstUser"),
+						cryptoCreate(TOKEN_TREASURY).key("signingKeyTreasury"),
+						tokenCreate(A_TOKEN)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0)
+								.supplyKey("supplyKey")
+								.adminKey("nftAdmin")
+								.treasury(TOKEN_TREASURY),
+						mintToken(A_TOKEN, List.of(ByteString.copyFromUtf8("memo"))),
+						tokenAssociate(FIRST_USER, A_TOKEN)
+				).when(
+						tokenDelete(A_TOKEN)
+				).then(
+						cryptoTransfer(
+								movingUnique(1, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+						)
+								.signedBy("signingKeyTreasury", "signingKeyFirstUser", DEFAULT_PAYER)
+								.hasKnownStatus(TOKEN_WAS_DELETED)
+				);
+	}
+
+	public HapiApiSpec balancesChangeOnTokenTransferWithFixedHbarCustomFees() {
+		final var defaultPayerRepl = "civilian";
+
+		return defaultHapiSpec("BalancesChangeOnTokenTransferWithFixedHbarCustomFees")
+				.given(
+						cryptoCreate(defaultPayerRepl).balance(10 * ONE_HUNDRED_HBARS),
+						cryptoCreate(FIRST_USER).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(SECOND_USER).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						tokenCreate(A_TOKEN)
+								.initialSupply(TOTAL_SUPPLY)
+								.treasury(TOKEN_TREASURY)
+								.withCustom(fixedHbarFee(ONE_HBAR, TOKEN_TREASURY)),
+						tokenAssociate(FIRST_USER, A_TOKEN),
+						tokenAssociate(SECOND_USER, A_TOKEN)
+				).when(
+						cryptoTransfer(
+								moving(100, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+						).payingWith(defaultPayerRepl).fee(ONE_HBAR),
+						cryptoTransfer(
+								moving(100, A_TOKEN).between(TOKEN_TREASURY, SECOND_USER)
+						).payingWith(defaultPayerRepl).fee(ONE_HBAR),
+						cryptoTransfer(
+								moving(10, A_TOKEN).between(FIRST_USER, SECOND_USER)
+						).payingWith(FIRST_USER)
+								.signedBy(FIRST_USER)
+								.fee(ONE_HBAR)
+				).then(
+						getAccountBalance(TOKEN_TREASURY)
+								.hasTokenBalance(A_TOKEN, TOTAL_SUPPLY - 200)
+								.hasTinyBars(3 * ONE_HBAR),
+						getAccountBalance(FIRST_USER)
+								.hasTokenBalance(A_TOKEN, 90)
+								.hasTinyBars(9899205334L),
+						getAccountBalance(SECOND_USER)
+								.hasTokenBalance(A_TOKEN, 110)
+								.hasTinyBars(ONE_HUNDRED_HBARS)
+				);
+	}
+
+	public HapiApiSpec transferFailsWithInsufficientBalanceForFixedHbarCustomFees() {
+		final var defaultPayerRepl = "civilian";
+
+		return defaultHapiSpec("TransferFailsWithInsufficientBalanceForFixedCustomFees")
+				.given(
+						cryptoCreate(defaultPayerRepl).balance(10 * ONE_HUNDRED_HBARS),
+						cryptoCreate(FIRST_USER).balance(ONE_HBAR),
+						cryptoCreate(SECOND_USER).balance(0L),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						tokenCreate(A_TOKEN)
+								.initialSupply(TOTAL_SUPPLY)
+								.treasury(TOKEN_TREASURY)
+								.withCustom(fixedHbarFee(5 * ONE_HBAR, TOKEN_TREASURY)),
+						tokenAssociate(FIRST_USER, A_TOKEN),
+						tokenAssociate(SECOND_USER, A_TOKEN)
+				).when(
+						cryptoTransfer(
+								moving(10, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+						).payingWith(defaultPayerRepl).fee(ONE_HBAR),
+						cryptoTransfer(
+								moving(10, A_TOKEN).between(TOKEN_TREASURY, SECOND_USER)
+						).payingWith(defaultPayerRepl).fee(ONE_HBAR),
+						cryptoTransfer(
+								moving(5, A_TOKEN).between(FIRST_USER, SECOND_USER)
+						).payingWith(FIRST_USER)
+								.signedBy(FIRST_USER)
+								.fee(ONE_HBAR)
+						.hasKnownStatus(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE)
+				).then(
+						getAccountBalance(TOKEN_TREASURY)
+								.hasTokenBalance(A_TOKEN, TOTAL_SUPPLY - 20),
+						getAccountBalance(FIRST_USER)
+								.hasTokenBalance(A_TOKEN, 10),
+						getAccountBalance(SECOND_USER)
+								.logged()
+								.hasTokenBalance(A_TOKEN, 10)
+				);
+	}
+
+	public HapiApiSpec balancesChangeOnTokenTransferWithFixedHtsCustomFees() {
+		return defaultHapiSpec("BalancesChangeOnTokenTransferWithFixedHtsCustomFees")
+				.given(
+						cryptoCreate(FIRST_USER).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(SECOND_USER).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(A_TOKEN)
+								.initialSupply(TOTAL_SUPPLY)
+								.treasury(TOKEN_TREASURY),
+						tokenCreate(B_TOKEN)
+								.initialSupply(TOTAL_SUPPLY)
+								.treasury(TOKEN_TREASURY)
+								.withCustom(fixedHtsFee(10L, A_TOKEN, TOKEN_TREASURY)),
+						tokenAssociate(FIRST_USER, A_TOKEN, B_TOKEN),
+						tokenAssociate(SECOND_USER, A_TOKEN, B_TOKEN)
+				).when(
+						cryptoTransfer(
+								moving(100, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+						),
+						cryptoTransfer(
+								moving(100, B_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+						).payingWith(TOKEN_TREASURY).fee(ONE_HBAR),
+						cryptoTransfer(
+								moving(50, B_TOKEN).between(FIRST_USER, SECOND_USER)
+						).payingWith(FIRST_USER)
+								.fee(ONE_HBAR)
+				).then(
+						getAccountBalance(TOKEN_TREASURY)
+								.hasTokenBalance(A_TOKEN, TOTAL_SUPPLY - 90)
+								.hasTokenBalance(B_TOKEN, TOTAL_SUPPLY - 100),
+						getAccountBalance(FIRST_USER)
+								.hasTokenBalance(A_TOKEN, 90)
+								.hasTokenBalance(B_TOKEN, 50),
+						getAccountBalance(SECOND_USER)
+								.hasTokenBalance(B_TOKEN, 50)
+				);
+	}
+
+	public HapiApiSpec transferFailsWithInsufficientBalanceForFixedHtsCustomFees() {
+		return defaultHapiSpec("TransferFailsWithInsufficientBalanceForFixedHtsCustomFees")
+				.given(
+						cryptoCreate(FIRST_USER).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(SECOND_USER).balance(0L),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(A_TOKEN)
+								.initialSupply(TOTAL_SUPPLY)
+								.treasury(TOKEN_TREASURY),
+						tokenCreate(B_TOKEN)
+								.initialSupply(TOTAL_SUPPLY)
+								.treasury(TOKEN_TREASURY)
+								.withCustom(fixedHtsFee(10L, A_TOKEN, TOKEN_TREASURY)),
+						tokenAssociate(FIRST_USER, A_TOKEN, B_TOKEN),
+						tokenAssociate(SECOND_USER, A_TOKEN, B_TOKEN)
+				).when(
+						cryptoTransfer(
+								moving(5, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+						),
+						cryptoTransfer(
+								moving(100, B_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
+						).payingWith(TOKEN_TREASURY).fee(ONE_HBAR),
+						cryptoTransfer(
+								moving(5, B_TOKEN).between(FIRST_USER, SECOND_USER)
+						).payingWith(FIRST_USER)
+								.signedBy(FIRST_USER)
+								.fee(ONE_HBAR)
+								.hasKnownStatus(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE)
+				).then(
+						getAccountBalance(TOKEN_TREASURY)
+								.hasTokenBalance(A_TOKEN, TOTAL_SUPPLY - 5),
+						getAccountBalance(FIRST_USER)
+								.hasTokenBalance(A_TOKEN, 5)
+								.hasTokenBalance(B_TOKEN, 100),
+						getAccountBalance(SECOND_USER)
+								.hasTinyBars(0L)
 				);
 	}
 

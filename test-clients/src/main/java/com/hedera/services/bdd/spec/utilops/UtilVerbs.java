@@ -62,6 +62,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
+import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Setting;
@@ -309,7 +310,7 @@ public class UtilVerbs {
 	}
 
 	public static HapiSpecOperation chunkAFile(String filePath, int chunkSize, String payer, String topic,
-											   AtomicLong count) {
+			AtomicLong count) {
 		return withOpContext((spec, ctxLog) -> {
 			List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
 			String overriddenFile = new String(filePath);
@@ -450,15 +451,18 @@ public class UtilVerbs {
 
 	private static void reduceFeeComponentsFor(FeeSchedule.Builder feeSchedule, HederaFunctionality function,
 			long maxNodeFee, long maxNetworkFee, long maxServiceFee) {
-		var feeData = feeSchedule.getTransactionFeeScheduleBuilderList()
+		var feesList = feeSchedule.getTransactionFeeScheduleBuilderList()
 				.stream()
 				.filter(tfs -> tfs.getHederaFunctionality() == function)
 				.findAny()
 				.get()
-				.getFeeDataBuilder();
-		feeData.getNodedataBuilder().setMax(maxNodeFee);
-		feeData.getNetworkdataBuilder().setMax(maxNetworkFee);
-		feeData.getServicedataBuilder().setMax(maxServiceFee);
+				.getFeesBuilderList();
+
+		for (FeeData.Builder builder : feesList) {
+			builder.getNodedataBuilder().setMax(maxNodeFee);
+			builder.getNetworkdataBuilder().setMax(maxNetworkFee);
+			builder.getServicedataBuilder().setMax(maxServiceFee);
+		}
 	}
 
 	public static HapiSpecOperation uploadDefaultFeeSchedules(String payer) {
@@ -503,7 +507,8 @@ public class UtilVerbs {
 			boolean signOnlyWithPayer,
 			OptionalLong tinyBarsToOffer
 	) {
-		return updateLargeFile(payer, fileName, byteString, signOnlyWithPayer, tinyBarsToOffer, op -> {}, op -> {});
+		return updateLargeFile(payer, fileName, byteString, signOnlyWithPayer, tinyBarsToOffer,
+				op -> {}, op -> {});
 	}
 
 	public static HapiSpecOperation updateLargeFile(
@@ -516,7 +521,7 @@ public class UtilVerbs {
 			Consumer<HapiFileAppend> appendCustomizer
 	) {
 		return withOpContext((spec, ctxLog) -> {
-			List<HapiSpecOperation> opsList = new ArrayList<HapiSpecOperation>();
+			List<HapiSpecOperation> opsList = new ArrayList<>();
 
 			int fileSize = byteString.size();
 			int position = Math.min(BYTES_4K, fileSize);
@@ -607,6 +612,12 @@ public class UtilVerbs {
 	/**
 	 * Validates that fee charged for a transaction is within +/- 0.0001$ of
 	 * expected fee (taken from pricing calculator)
+	 *
+	 * @param txn
+	 * 		transaction to be validated
+	 * @param expectedUsd
+	 * 		expected fee in USD
+	 * @return assertion for the validation
 	 */
 	public static CustomSpecAssert validateChargedUsd(String txn, double expectedUsd) {
 		return validateChargedUsdWithin(txn, expectedUsd, 1.0);

@@ -280,6 +280,22 @@ public class HapiSpecRegistry {
 		put(name + "Freeze", key, Key.class);
 	}
 
+	public boolean hasFeeScheduleKey(String name) {
+		return has(name + "FeeSchedule", Key.class);
+	}
+
+	public void forgetFeeScheduleKey(String name) {
+		remove(name + "FeeSchedule", Key.class);
+	}
+
+	public void saveFeeScheduleKey(String name, Key key) {
+		put(name + "FeeSchedule", key, Key.class);
+	}
+
+	public Key getFeeScheduleKey(String name) {
+		return get(name + "FeeSchedule", Key.class);
+	}
+
 	public boolean hasFreezeKey(String name) {
 		return has(name + "Freeze", Key.class);
 	}
@@ -291,6 +307,8 @@ public class HapiSpecRegistry {
 	public void saveExpiry(String name, Long value) {
 		put(name + "Expiry", value, Long.class);
 	}
+
+	public void saveCreationTime(String name, Timestamp value) { put(name + "CreationTime", value, Timestamp.class); }
 
 	public void saveSupplyKey(String name, Key key) {
 		put(name + "Supply", key, Key.class);
@@ -385,6 +403,8 @@ public class HapiSpecRegistry {
 	}
 
 	public Long getExpiry(String name) { return get(name + "Expiry", Long.class); }
+
+	public Timestamp getCreationTime(String name) { return get(name + "CreationTime", Timestamp.class); }
 
 	public boolean hasKey(String name) {
 		return hasVia(this::getKey, name);

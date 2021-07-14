@@ -9,9 +9,9 @@ package com.hedera.services.usage.schedule;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -63,28 +63,28 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 class ScheduleOpsUsageTest {
-	int numSigs = 3, sigSize = 144, numPayerKeys = 1;
-	int scheduledTxnIdSize = BASIC_TX_ID_SIZE + BOOL_SIZE;
-	long now = 1_234_567L;
-	long lifetimeSecs = 1800L;
-	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
+	private int numSigs = 3, sigSize = 144, numPayerKeys = 1;
+	private int scheduledTxnIdSize = BASIC_TX_ID_SIZE + BOOL_SIZE;
+	private long now = 1_234_567L;
+	private long lifetimeSecs = 1800L;
+	private SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
 
-	Key adminKey = KeyUtils.A_COMPLEX_KEY;
-	ScheduleID id = IdUtils.asSchedule("0.0.1");
-	String memo = "This is just a memo?";
-	AccountID payer = IdUtils.asAccount("0.0.2");
-	SchedulableTransactionBody scheduledTxn = SchedulableTransactionBody.newBuilder()
+	private Key adminKey = KeyUtils.A_COMPLEX_KEY;
+	private ScheduleID id = IdUtils.asSchedule("0.0.1");
+	private String memo = "This is just a memo?";
+	private AccountID payer = IdUtils.asAccount("0.0.2");
+	private SchedulableTransactionBody scheduledTxn = SchedulableTransactionBody.newBuilder()
 			.setTransactionFee(1_234_567L)
 			.setCryptoDelete(CryptoDeleteTransactionBody.newBuilder()
 					.setDeleteAccountID(payer))
 			.build();
 
-	EstimatorFactory factory;
-	TxnUsageEstimator base;
-	Function<ResponseType, QueryUsage> queryEstimatorFactory;
-	QueryUsage queryBase;
+	private EstimatorFactory factory;
+	private TxnUsageEstimator base;
+	private Function<ResponseType, QueryUsage> queryEstimatorFactory;
+	private QueryUsage queryBase;
 
-	ScheduleOpsUsage subject = new ScheduleOpsUsage();
+	private ScheduleOpsUsage subject = new ScheduleOpsUsage();
 
 	@BeforeEach
 	@SuppressWarnings("unchecked")
@@ -104,7 +104,7 @@ class ScheduleOpsUsageTest {
 	}
 
 	@Test
-	public void estimatesSignAsExpected() {
+	void estimatesSignAsExpected() {
 		// setup:
 		long lifetimeSecs = 1800L;
 
@@ -121,7 +121,7 @@ class ScheduleOpsUsageTest {
 	}
 
 	@Test
-	public void estimatesDeleteExpected() {
+	void estimatesDeleteExpected() {
 		// setup:
 		long lifetimeSecs = 1800L;
 
@@ -136,7 +136,7 @@ class ScheduleOpsUsageTest {
 	}
 
 	@Test
-	public void estimatesCreateAsExpected() {
+	void estimatesCreateAsExpected() {
 		// given:
 		var createdCtx = ExtantScheduleContext.newBuilder()
 				.setAdminKey(adminKey)
@@ -165,7 +165,7 @@ class ScheduleOpsUsageTest {
 	}
 
 	@Test
-	public void estimatesGetInfoAsExpected() {
+	void estimatesGetInfoAsExpected() {
 		// given:
 		var ctx = ExtantScheduleContext.newBuilder()
 				.setAdminKey(adminKey)
@@ -181,8 +181,8 @@ class ScheduleOpsUsageTest {
 		// then:
 		assertSame(A_USAGES_MATRIX, estimate);
 		// and:
-		verify(queryBase).updateTb(BASIC_ENTITY_ID_SIZE);
-		verify(queryBase).updateRb(ctx.nonBaseRb());
+		verify(queryBase).addTb(BASIC_ENTITY_ID_SIZE);
+		verify(queryBase).addRb(ctx.nonBaseRb());
 	}
 
 	private Query scheduleQuery() {

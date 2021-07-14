@@ -49,8 +49,9 @@ public class TransactionSigner {
   /**
    * Signs a transaction using SignatureMap format with provided private keys.
    * 
-   * @param transaction
-   * @param privKeyList
+   * @param transaction transaction
+   * @param privKeyList private key list
+   *
    * @return signed transaction
    */
   public static Transaction signTransaction(Transaction transaction, List<PrivateKey> privKeyList) {
@@ -82,8 +83,9 @@ public class TransactionSigner {
    *
    * @param transaction transaction to be singed
    * @param keys complex keys for signing
-   * @param pubKey2privKeyMap
+   * @param pubKey2privKeyMap public key to private key map
    * @return transaction with signatures as a SignatureMap object
+   * @throws Exception when transaction sign fails
    */
   public static Transaction signTransactionComplexWithSigMap(TransactionOrBuilder transaction, List<Key> keys,
       Map<String, PrivateKey> pubKey2privKeyMap) throws Exception {
@@ -110,11 +112,11 @@ public class TransactionSigner {
    * Signs a message with provided key and public to private key map. The generated signatures are
    * contained in a SignatureMap object.
    * 
-   * @param messageBytes
+   * @param messageBytes message bytes
    * @param keys complex keys for signing
-   * @param pubKey2privKeyMap
+   * @param pubKey2privKeyMap public key to private key map
    * @return transaction with signatures as a SignatureMap object
-   * @throws Exception
+   * @throws Exception when sign fails
    */
   public static SignatureMap signAsSignatureMap(byte[] messageBytes, List<Key> keys,
     Map<String, PrivateKey> pubKey2privKeyMap) throws Exception {

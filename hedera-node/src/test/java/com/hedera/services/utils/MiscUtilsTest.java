@@ -9,9 +9,9 @@ package com.hedera.services.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -91,11 +91,16 @@ import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenGetAccountNftInfosQuery;
 import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
+import com.hederahashgraph.api.proto.java.TokenGetNftInfoQuery;
+import com.hederahashgraph.api.proto.java.TokenGetNftInfosQuery;
 import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
@@ -138,6 +143,7 @@ import static com.hedera.services.utils.MiscUtils.TOKEN_BURN_METRIC;
 import static com.hedera.services.utils.MiscUtils.TOKEN_CREATE_METRIC;
 import static com.hedera.services.utils.MiscUtils.TOKEN_DELETE_METRIC;
 import static com.hedera.services.utils.MiscUtils.TOKEN_DISSOCIATE_METRIC;
+import static com.hedera.services.utils.MiscUtils.TOKEN_FEE_SCHEDULE_UPDATE_METRIC;
 import static com.hedera.services.utils.MiscUtils.TOKEN_FREEZE_METRIC;
 import static com.hedera.services.utils.MiscUtils.TOKEN_GRANT_KYC_METRIC;
 import static com.hedera.services.utils.MiscUtils.TOKEN_MINT_METRIC;
@@ -155,10 +161,13 @@ import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hedera.services.utils.MiscUtils.functionalityOfQuery;
 import static com.hedera.services.utils.MiscUtils.getTxnStat;
 import static com.hedera.services.utils.MiscUtils.lookupInCustomStore;
+import static com.hedera.services.utils.MiscUtils.readableNftTransferList;
 import static com.hedera.services.utils.MiscUtils.readableProperty;
 import static com.hedera.services.utils.MiscUtils.readableTransferList;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
+import static com.hedera.test.utils.TxnUtils.withNftAdjustments;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo;
@@ -204,6 +213,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
@@ -322,7 +332,7 @@ public class MiscUtilsTest {
 
 		// given:
 		KeyPair kp = new KeyPairGenerator().generateKeyPair();
-		byte[] expected = ((EdDSAPublicKey)kp.getPublic()).getAbyte();
+		byte[] expected = ((EdDSAPublicKey) kp.getPublic()).getAbyte();
 		// and:
 		writeB64EncodedKeyPair(new File(tmpLoc), kp);
 
@@ -399,6 +409,20 @@ public class MiscUtilsTest {
 		String s = readableTransferList(transfers);
 
 		assertEquals("[0.1.2 <- +500, 1.0.2 -> -250, 1.2.0 -> -9223372036854775808]", s);
+	}
+
+	@Test
+	void prettyPrintsNFTTransferList() {
+		// given:
+		TokenTransferList transfers = withNftAdjustments(
+				asToken("0.2.3"), asAccount("0.1.2"), asAccount("0.1.3"), 1L,
+				asAccount("1.0.4"), asAccount("1.0.5"), 2L,
+				asAccount("1.2.6"), asAccount("1.0.7"), 3L);
+
+		// when:
+		String s = readableNftTransferList(transfers);
+
+		assertEquals("[1 0.1.2 0.1.3, 2 1.0.4 1.0.5, 3 1.2.6 1.0.7]", s);
 	}
 
 	@Test
@@ -915,7 +939,8 @@ public class MiscUtilsTest {
 			put(ConsensusController.CREATE_TOPIC_METRIC, new BodySetter<>(ConsensusCreateTopicTransactionBody.class));
 			put(ConsensusController.UPDATE_TOPIC_METRIC, new BodySetter<>(ConsensusUpdateTopicTransactionBody.class));
 			put(ConsensusController.DELETE_TOPIC_METRIC, new BodySetter<>(ConsensusDeleteTopicTransactionBody.class));
-			put(ConsensusController.SUBMIT_MESSAGE_METRIC, new BodySetter<>(ConsensusSubmitMessageTransactionBody.class));
+			put(ConsensusController.SUBMIT_MESSAGE_METRIC,
+					new BodySetter<>(ConsensusSubmitMessageTransactionBody.class));
 			put(TOKEN_CREATE_METRIC, new BodySetter<>(TokenCreateTransactionBody.class));
 			put(TOKEN_FREEZE_METRIC, new BodySetter<>(TokenFreezeAccountTransactionBody.class));
 			put(TOKEN_UNFREEZE_METRIC, new BodySetter<>(TokenUnfreezeAccountTransactionBody.class));
@@ -928,6 +953,7 @@ public class MiscUtilsTest {
 			put(TOKEN_WIPE_ACCOUNT_METRIC, new BodySetter<>(TokenWipeAccountTransactionBody.class));
 			put(TOKEN_ASSOCIATE_METRIC, new BodySetter<>(TokenAssociateTransactionBody.class));
 			put(TOKEN_DISSOCIATE_METRIC, new BodySetter<>(TokenDissociateTransactionBody.class));
+			put(TOKEN_FEE_SCHEDULE_UPDATE_METRIC, new BodySetter<>(TokenFeeScheduleUpdateTransactionBody.class));
 			put(SCHEDULE_CREATE_METRIC, new BodySetter<>(ScheduleCreateTransactionBody.class));
 			put(SCHEDULE_SIGN_METRIC, new BodySetter<>(ScheduleSignTransactionBody.class));
 			put(SCHEDULE_DELETE_METRIC, new BodySetter<>(ScheduleDeleteTransactionBody.class));
@@ -1102,6 +1128,36 @@ public class MiscUtilsTest {
 	}
 
 	@Test
+	void worksForTokenGetNftInfo() {
+		var op = TokenGetNftInfoQuery.newBuilder()
+				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
+		var query = Query.newBuilder()
+				.setTokenGetNftInfo(op)
+				.build();
+		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
+	}
+
+	@Test
+	void worksForTokenGetNftInfos() {
+		var op = TokenGetNftInfosQuery.newBuilder()
+				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
+		var query = Query.newBuilder()
+				.setTokenGetNftInfos(op)
+				.build();
+		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
+	}
+
+	@Test
+	void worksForTokenGetAccountNftInfos() {
+		var op = TokenGetAccountNftInfosQuery.newBuilder()
+				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
+		var query = Query.newBuilder()
+				.setTokenGetAccountNftInfos(op)
+				.build();
+		assertEquals(ANSWER_ONLY, activeHeaderFrom(query).get().getResponseType());
+	}
+
+	@Test
 	void worksForGetLiveHash() {
 		var op = CryptoGetLiveHashQuery.newBuilder()
 				.setHeader(QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
@@ -1207,6 +1263,7 @@ public class MiscUtilsTest {
 			put(ConsensusDeleteTopic, new BodySetter<>(ConsensusDeleteTopicTransactionBody.class));
 			put(ConsensusSubmitMessage, new BodySetter<>(ConsensusSubmitMessageTransactionBody.class));
 			put(UncheckedSubmit, new BodySetter<>(UncheckedSubmitBody.class));
+			put(TokenFeeScheduleUpdate, new BodySetter<>(TokenFeeScheduleUpdateTransactionBody.class));
 		}};
 
 		// expect:
@@ -1257,7 +1314,7 @@ public class MiscUtilsTest {
 						.findFirst()
 						.get();
 				Method defaultGetter = type.getMethod("getDefaultInstance");
-				T defaultInstance = (T)defaultGetter.invoke(null);
+				T defaultInstance = (T) defaultGetter.invoke(null);
 				setter.invoke(query, defaultInstance);
 			} catch (Exception e) {
 				throw new IllegalStateException(e);
@@ -1271,7 +1328,7 @@ public class MiscUtilsTest {
 						.findFirst()
 						.get();
 				Method defaultGetter = type.getMethod("getDefaultInstance");
-				T defaultInstance = (T)defaultGetter.invoke(null);
+				T defaultInstance = (T) defaultGetter.invoke(null);
 				setter.invoke(txn, defaultInstance);
 			} catch (Exception e) {
 				throw new IllegalStateException(e);

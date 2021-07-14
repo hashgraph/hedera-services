@@ -26,7 +26,7 @@ import com.google.common.base.MoreObjects;
 /**
  * Expiry event with the id and expiration time
  */
-public class ExpiryEvent<K> implements Comparable<ExpiryEvent> {
+public class ExpiryEvent<K> {
 	private final K id;
 	private final long expiry;
 
@@ -53,10 +53,5 @@ public class ExpiryEvent<K> implements Comparable<ExpiryEvent> {
 				.add("id", id)
 				.add("expiry", expiry)
 				.toString();
-	}
-
-	@Override
-	public int compareTo(ExpiryEvent that) {
-		return Long.compare(this.expiry, that.expiry);
 	}
 }

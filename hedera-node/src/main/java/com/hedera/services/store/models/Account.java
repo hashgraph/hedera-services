@@ -22,6 +22,8 @@ package com.hedera.services.store.models;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
+import com.hedera.services.txns.token.process.Dissociation;
+import com.hedera.services.txns.validation.OptionValidator;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -32,12 +34,13 @@ import java.util.Set;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 
 /**
  * Encapsulates the state and operations of a Hedera account.
- *
+ * <p>
  * Operations are validated, and throw a {@link com.hedera.services.exceptions.InvalidTransactionException}
  * with response code capturing the failure when one occurs.
  *
@@ -52,6 +55,7 @@ public class Account {
 	private long balance;
 	private boolean deleted = false;
 	private CopyOnWriteIds associatedTokens;
+	private long ownedNfts;
 
 	public Account(Id id) {
 		this.id = id;
@@ -69,6 +73,18 @@ public class Account {
 		this.balance = balance;
 	}
 
+	public long getOwnedNfts() {
+		return ownedNfts;
+	}
+
+	public void setOwnedNfts(long ownedNfts) {
+		this.ownedNfts = ownedNfts;
+	}
+
+	public void incrementOwnedNfts() {
+		this.ownedNfts++;
+	}
+
 	public void associateWith(List<Token> tokens, int maxAllowed) {
 		final var alreadyAssociated = associatedTokens.size();
 		final var proposedNewAssociations = tokens.size() + alreadyAssociated;
@@ -82,6 +98,23 @@ public class Account {
 		}
 
 		associatedTokens.addAllIds(uniqueIds);
+	}
+
+	/**
+	 * Applies the given list of {@link Dissociation}s, validating that this account is
+	 * indeed associated to each involved token.
+	 *
+	 * @param dissociations the dissociations to perform.
+	 * @param validator the validator to use for each dissociation
+	 */
+	public void dissociateUsing(List<Dissociation> dissociations, OptionValidator validator) {
+		final Set<Id> dissociatedTokenIds = new HashSet<>();
+		for (var dissociation : dissociations) {
+			validateTrue(id.equals(dissociation.dissociatingAccountId()), FAIL_INVALID);
+			dissociation.updateModelRelsSubjectTo(validator);
+			dissociatedTokenIds.add(dissociation.dissociatedTokenId());
+		}
+		associatedTokens.removeAllIds(dissociatedTokenIds);
 	}
 
 	public Id getId() {

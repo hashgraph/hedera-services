@@ -23,9 +23,7 @@ package com.hedera.services.bdd.spec.transactions.token;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.StringValue;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
-import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -41,7 +39,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import proto.CustomFeesOuterClass;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,7 +47,6 @@ import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -67,15 +63,16 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 	private Optional<String> newWipeKey = Optional.empty();
 	private Optional<String> newSupplyKey = Optional.empty();
 	private Optional<String> newFreezeKey = Optional.empty();
+	private Optional<String> newFeeScheduleKey = Optional.empty();
 	private Optional<String> newSymbol = Optional.empty();
 	private Optional<String> newName = Optional.empty();
 	private Optional<String> newTreasury = Optional.empty();
 	private Optional<String> autoRenewAccount = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> newSymbolFn = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> newNameFn = Optional.empty();
-	private final List<Function<HapiApiSpec, CustomFeesOuterClass.CustomFee>> feeScheduleSuppliers = new ArrayList<>();
 	private boolean useImproperEmptyKey = false;
 	private boolean useEmptyAdminKeyList = false;
+	private boolean useInvalidFeeScheduleKey = false;
 
 	@Override
 	public HederaFunctionality type() {
@@ -84,11 +81,6 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 
 	public HapiTokenUpdate(String token) {
 		this.token = token;
-	}
-
-	public HapiTokenUpdate withCustom(Function<HapiApiSpec, CustomFeesOuterClass.CustomFee> supplier) {
-		feeScheduleSuppliers.add(supplier);
-		return this;
 	}
 
 	public HapiTokenUpdate freezeKey(String name) {
@@ -108,6 +100,11 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 
 	public HapiTokenUpdate supplyKey(String name) {
 		newSupplyKey = Optional.of(name);
+		return this;
+	}
+
+	public HapiTokenUpdate feeScheduleKey(String name) {
+		newFeeScheduleKey = Optional.of(name);
 		return this;
 	}
 
@@ -171,6 +168,11 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 		return this;
 	}
 
+	public HapiTokenUpdate usingInvalidFeeScheduleKey() {
+		useInvalidFeeScheduleKey = true;
+		return this;
+	}
+
 	@Override
 	protected HapiTokenUpdate self() {
 		return this;
@@ -179,7 +181,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		try {
-			final TokenInfo info = lookupInfo(spec);
+			final TokenInfo info = HapiTokenFeeScheduleUpdate.lookupInfo(spec, token, log, loggingOff);
 			FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) -> {
 				var estimate = TokenUpdateUsage.newEstimate(_txn, suFrom(svo));
 				if (info.hasFreezeKey()) {
@@ -197,6 +199,9 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 				if (info.hasWipeKey()) {
 					estimate.givenCurrentWipeKey(Optional.of(info.getWipeKey()));
 				}
+				if (info.hasFeeScheduleKey()) {
+					estimate.givenCurrentFeeScheduleKey(Optional.of(info.getFeeScheduleKey()));
+				}
 				estimate.givenCurrentExpiry(info.getExpiry().getSeconds())
 						.givenCurrentMemo(info.getMemo())
 						.givenCurrentName(info.getName())
@@ -210,21 +215,6 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 		} catch (Throwable ignore) {
 			return HapiApiSuite.ONE_HBAR;
 		}
-	}
-
-	private TokenInfo lookupInfo(HapiApiSpec spec) throws Throwable {
-		HapiGetTokenInfo subOp = getTokenInfo(token).noLogging();
-		Optional<Throwable> error = subOp.execFor(spec);
-		if (error.isPresent()) {
-			if (!loggingOff) {
-				log.warn(
-						"Unable to look up current info for "
-								+ HapiPropertySource.asTokenString(spec.registry().getTokenID(token)),
-						error.get());
-			}
-			throw error.get();
-		}
-		return subOp.getResponse().getTokenGetInfo().getTokenInfo();
 	}
 
 	@Override
@@ -255,6 +245,11 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 							newSupplyKey.ifPresent(k -> b.setSupplyKey(spec.registry().getKey(k)));
 							newWipeKey.ifPresent(k -> b.setWipeKey(spec.registry().getKey(k)));
 							newKycKey.ifPresent(k -> b.setKycKey(spec.registry().getKey(k)));
+							if (useInvalidFeeScheduleKey) {
+								b.setFeeScheduleKey(TxnUtils.EMPTY_THRESHOLD_KEY);
+							} else {
+								newFeeScheduleKey.ifPresent(k -> b.setFeeScheduleKey(spec.registry().getKey(k)));
+							}
 							newFreezeKey.ifPresent(k -> b.setFreezeKey(spec.registry().getKey(k)));
 							if (autoRenewAccount.isPresent()) {
 								var autoRenewId = TxnUtils.asId(autoRenewAccount.get(), spec);
@@ -263,12 +258,6 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 							expiry.ifPresent(t -> b.setExpiry(Timestamp.newBuilder().setSeconds(t).build()));
 							autoRenewPeriod.ifPresent(secs ->
 									b.setAutoRenewPeriod(Duration.newBuilder().setSeconds(secs).build()));
-							if (!feeScheduleSuppliers.isEmpty()) {
-								final var fb = b.getCustomFeesBuilder();
-								for (var supplier : feeScheduleSuppliers) {
-									fb.addCustomFees(supplier.apply(spec));
-								}
-							}
 						});
 		return b -> b.setTokenUpdate(opBody);
 	}
@@ -312,6 +301,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 		newSupplyKey.ifPresent(n -> registry.saveSupplyKey(token, registry.getKey(n)));
 		newWipeKey.ifPresent(n -> registry.saveWipeKey(token, registry.getKey(n)));
 		newKycKey.ifPresent(n -> registry.saveKycKey(token, registry.getKey(n)));
+		newFeeScheduleKey.ifPresent(n -> registry.saveFeeScheduleKey(token, registry.getKey(n)));
 	}
 
 	@Override

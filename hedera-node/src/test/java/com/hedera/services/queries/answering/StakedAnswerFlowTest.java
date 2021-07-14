@@ -376,7 +376,7 @@ class StakedAnswerFlowTest {
 	}
 
 	private void givenAvailableResourcePrices() {
-		given(resourceCosts.pricesGiven(ConsensusGetTopicInfo, now)).willReturn(usagePrices);
+		given(resourceCosts.defaultPricesGiven(ConsensusGetTopicInfo, now)).willReturn(usagePrices);
 	}
 
 	private void givenHappyService() {

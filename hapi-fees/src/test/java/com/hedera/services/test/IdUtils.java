@@ -23,6 +23,7 @@ package com.hedera.services.test;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenBalance;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -96,6 +97,15 @@ public class IdUtils {
 	static long[] asDotDelimitedLongArray(String s) {
 		String[] parts = s.split("[.]");
 		return Stream.of(parts).mapToLong(Long::valueOf).toArray();
+	}
+
+	public static NftID asNftID(String v, long serialNum) {
+		final var tokenID = asToken(v);
+
+		return NftID.newBuilder()
+				.setTokenID(tokenID)
+				.setSerialNumber(serialNum)
+				.build();
 	}
 
 	public static String asAccountString(AccountID account) {

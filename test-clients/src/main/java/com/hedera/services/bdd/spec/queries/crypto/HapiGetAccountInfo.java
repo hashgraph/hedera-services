@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.queries.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -57,6 +58,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	Optional<BiConsumer<AccountInfo, Logger>> customLog = Optional.empty();
 	Optional<LongConsumer> exposingExpiryTo = Optional.empty();
 	Optional<LongConsumer> exposingBalanceTo = Optional.empty();
+	Optional<Long> ownedNfts = Optional.empty();
 
 	public HapiGetAccountInfo(String account) {
 		this.account = account;
@@ -71,6 +73,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 		expectations = Optional.of(provider);
 		return this;
 	}
+
 	public HapiGetAccountInfo plusCustomLog(BiConsumer<AccountInfo, Logger> custom) {
 		customLog = Optional.of(custom);
 		return this;
@@ -101,6 +104,11 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 		return this;
 	}
 
+	public HapiGetAccountInfo hasOwnedNfts(long ownedNftsLen) {
+		this.ownedNfts = Optional.of(ownedNftsLen);
+		return this;
+	}
+
 	@Override
 	protected HapiGetAccountInfo self() {
 		return this;
@@ -108,17 +116,19 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 
 	@Override
 	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
+		final var actualInfo = response.getCryptoGetInfo().getAccountInfo();
 		if (expectations.isPresent()) {
-			AccountInfo actualInfo = response.getCryptoGetInfo().getAccountInfo();
 			ErroringAsserts<AccountInfo> asserts = expectations.get().assertsFor(spec);
 			List<Throwable> errors = asserts.errorsIn(actualInfo);
 			rethrowSummaryError(log, "Bad account info!", errors);
 		}
-		var actualTokenRels = response.getCryptoGetInfo().getAccountInfo().getTokenRelationshipsList();
+		var actualTokenRels = actualInfo.getTokenRelationshipsList();
 		ExpectedTokenRel.assertExpectedRels(account, relationships, actualTokenRels, spec);
 		ExpectedTokenRel.assertNoUnexpectedRels(account, absentRelationships, actualTokenRels, spec);
-	}
 
+		var actualOwnedNfts = actualInfo.getOwnedNfts();
+		ownedNfts.ifPresent(nftsOwned -> Assert.assertEquals((long) nftsOwned, actualOwnedNfts));
+	}
 
 	@Override
 	protected void submitWith(HapiApiSpec spec, Transaction payment) throws Throwable {
@@ -138,7 +148,6 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 		if (registryEntry.isPresent()) {
 			spec.registry().saveAccountInfo(registryEntry.get(), response.getCryptoGetInfo().getAccountInfo());
 		}
-
 	}
 
 	@Override

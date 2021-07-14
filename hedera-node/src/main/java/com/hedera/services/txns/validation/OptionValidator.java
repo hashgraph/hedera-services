@@ -59,6 +59,13 @@ public interface OptionValidator {
 	ResponseCodeEnum tokenNameCheck(String name);
 	ResponseCodeEnum tokenSymbolCheck(String symbol);
 
+	ResponseCodeEnum nftMetadataCheck(byte[] metadata);
+	ResponseCodeEnum maxBatchSizeMintCheck(int length);
+	ResponseCodeEnum maxBatchSizeWipeCheck(int length);
+	ResponseCodeEnum maxBatchSizeBurnCheck(int length);
+	ResponseCodeEnum maxNftTransfersLenCheck(int length);
+	ResponseCodeEnum nftMaxQueryRangeCheck(long start, long end);
+
 	ResponseCodeEnum queryableTopicStatus(TopicID id, FCMap<MerkleEntityId, MerkleTopic> topics);
 
 	default ResponseCodeEnum queryableAccountStatus(AccountID id, FCMap<MerkleEntityId, MerkleAccount> accounts) {

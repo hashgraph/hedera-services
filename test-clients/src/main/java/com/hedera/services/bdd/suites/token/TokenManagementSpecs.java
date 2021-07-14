@@ -21,11 +21,16 @@ package com.hedera.services.bdd.suites.token;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
 
 import java.util.List;
+import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -36,6 +41,7 @@ import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relat
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
@@ -45,6 +51,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
@@ -59,9 +66,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_F
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_MAX_SUPPLY_REACHED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 public class TokenManagementSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenManagementSpecs.class);
@@ -85,10 +94,13 @@ public class TokenManagementSpecs extends HapiApiSuite {
 								burnTokenFailsDueToInsufficientTreasuryBalance(),
 								frozenTreasuryCannotBeMintedOrBurned(),
 								revokedKYCTreasuryCannotBeMintedOrBurned(),
+								fungibleCommonMaxSupplyReachWork(),
+								mintingMaxLongValueWorks()
 						}
 				)
 		);
 	}
+
 
 	private HapiApiSpec frozenTreasuryCannotBeMintedOrBurned() {
 		return defaultHapiSpec("FrozenTreasuryCannotBeMintedOrBurned")
@@ -309,6 +321,11 @@ public class TokenManagementSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("FreezeMgmtFailureCasesWork")
 				.given(
+							fileUpdate(APP_PROPERTIES)
+									.payingWith(ADDRESS_BOOK_CONTROL)
+									.overridingProps(Map.of(
+											"tokens.maxPerAccount", "" + 1000
+									)),
 						newKeyNamed("oneFreeze"),
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						cryptoCreate("go").balance(0L),
@@ -438,6 +455,52 @@ public class TokenManagementSpecs extends HapiApiSuite {
 						getTokenInfo("supple").logged(),
 						getTxnRecord("mintTxn").logged(),
 						getTxnRecord("burnTxn").logged()
+				);
+	}
+
+	private HapiApiSpec fungibleCommonMaxSupplyReachWork() {
+		return defaultHapiSpec("FungibleCommonMaxSupplyReachWork")
+				.given(
+						newKeyNamed("supplyKey"),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate("fungibleToken")
+								.initialSupply(0)
+								.maxSupply(500)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.supplyType(TokenSupplyType.FINITE)
+								.supplyKey("supplyKey")
+								.treasury(TOKEN_TREASURY)
+				)
+				.when(
+						mintToken("fungibleToken", 3000).hasKnownStatus(TOKEN_MAX_SUPPLY_REACHED).via("should-not-appear")
+				)
+				.then(
+						getTxnRecord("should-not-appear").showsNoTransfers(),
+						getAccountBalance(TOKEN_TREASURY).hasTokenBalance("fungibleToken", 0),
+						UtilVerbs.withOpContext((spec, opLog) -> {
+							var mintNFT = getTxnRecord("should-not-appear");
+							allRunFor(spec, mintNFT);
+							var receipt = mintNFT.getResponseRecord().getReceipt();
+							Assert.assertEquals(0, receipt.getNewTotalSupply());
+						})
+				);
+	}
+
+	private HapiApiSpec mintingMaxLongValueWorks() {
+		return defaultHapiSpec("MintingMaxLongValueWorks")
+				.given(
+						newKeyNamed("supplyKey"),
+						cryptoCreate(TOKEN_TREASURY).balance(10L),
+						tokenCreate("fungibleToken")
+								.initialSupply(0)
+								.tokenType(FUNGIBLE_COMMON)
+								.supplyType(TokenSupplyType.INFINITE)
+								.supplyKey("supplyKey")
+								.treasury(TOKEN_TREASURY)
+				).when(
+						mintToken("fungibleToken", Long.MAX_VALUE).via("mintTxn")
+				).then(
+						getAccountBalance(TOKEN_TREASURY).hasTokenBalance("fungibleToken", Long.MAX_VALUE)
 				);
 	}
 

@@ -43,23 +43,23 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class TokenDissociateUsageTest {
-	long now = 1_234_567L;
-	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
-	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
-	TokenID firstId = IdUtils.asToken("0.0.75231");
-	TokenID secondId = IdUtils.asToken("0.0.75232");
-	AccountID id = IdUtils.asAccount("1.2.3");
+class TokenDissociateUsageTest {
+	private long now = 1_234_567L;
+	private int numSigs = 3, sigSize = 100, numPayerKeys = 1;
+	private SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
+	private TokenID firstId = IdUtils.asToken("0.0.75231");
+	private TokenID secondId = IdUtils.asToken("0.0.75232");
+	private AccountID id = IdUtils.asAccount("1.2.3");
 
-	TokenDissociateTransactionBody op;
-	TransactionBody txn;
+	private TokenDissociateTransactionBody op;
+	private TransactionBody txn;
 
-	EstimatorFactory factory;
-	TxnUsageEstimator base;
-	TokenDissociateUsage subject;
+	private EstimatorFactory factory;
+	private TxnUsageEstimator base;
+	private TokenDissociateUsage subject;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		base = mock(TxnUsageEstimator.class);
 		given(base.get()).willReturn(A_USAGES_MATRIX);
 
@@ -70,7 +70,7 @@ public class TokenDissociateUsageTest {
 	}
 
 	@Test
-	public void assessesEverything() {
+	void assessesEverything() {
 		givenOpWithTwoDissociations();
 		// and:
 		subject = TokenDissociateUsage.newEstimate(txn, sigUsage);

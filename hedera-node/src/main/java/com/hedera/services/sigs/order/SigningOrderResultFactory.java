@@ -168,10 +168,18 @@ public interface SigningOrderResultFactory<T> {
 			T errorReport);
 
 	/**
-	 * Report an invalid attempt to schedule a schedule create txn .
+	 * Report an invalid attempt to schedule a ScheduleCreate transaction.
 	 *
-	 * @param txnId the {@link TransactionID} of the problematic {@code ScheduleCreate}.
-	 * @return the error summary.
+	 * @param txnId the {@link TransactionID} of the problematic {@code ScheduleCreate}
+	 * @return the error summary
 	 */
 	SigningOrderResult<T> forUnschedulableTxn(TransactionID txnId);
+
+	/**
+	 * Report an invalid fee collection account in a TokenCreate or TokenUpdate.
+	 *
+	 * @param txnId the {@link TransactionID} of the problematic token operation
+	 * @return the error summary
+	 */
+	SigningOrderResult<T> forMissingFeeCollector(TransactionID txnId);
 }
