@@ -89,19 +89,20 @@ public class TokenManagementSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
 				List.of(new HapiApiSpec[] {
-								freezeMgmtFailureCasesWork(),
-								freezeMgmtSuccessCasesWork(),
-								kycMgmtFailureCasesWork(),
-								kycMgmtSuccessCasesWork(),
-								supplyMgmtSuccessCasesWork(),
-								wipeAccountFailureCasesWork(),
-								wipeAccountSuccessCasesWork(),
-								supplyMgmtFailureCasesWork(),
-								burnTokenFailsDueToInsufficientTreasuryBalance(),
-								frozenTreasuryCannotBeMintedOrBurned(),
-								revokedKYCTreasuryCannotBeMintedOrBurned(),
-								fungibleCommonMaxSupplyReachWork(),
-								mintingMaxLongValueWorks()
+//								freezeMgmtFailureCasesWork(),
+//								freezeMgmtSuccessCasesWork(),
+//								kycMgmtFailureCasesWork(),
+//								kycMgmtSuccessCasesWork(),
+//								supplyMgmtSuccessCasesWork(),
+//								wipeAccountFailureCasesWork(),
+//								wipeAccountSuccessCasesWork(),
+//								supplyMgmtFailureCasesWork(),
+//								burnTokenFailsDueToInsufficientTreasuryBalance(),
+//								frozenTreasuryCannotBeMintedOrBurned(),
+//								revokedKYCTreasuryCannotBeMintedOrBurned(),
+//								fungibleCommonMaxSupplyReachWork(),
+//								mintingMaxLongValueWorks()
+								nftMintingCapIsEnforced(),
 						}
 				)
 		);
@@ -327,11 +328,11 @@ public class TokenManagementSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("FreezeMgmtFailureCasesWork")
 				.given(
-							fileUpdate(APP_PROPERTIES)
-									.payingWith(ADDRESS_BOOK_CONTROL)
-									.overridingProps(Map.of(
-											"tokens.maxPerAccount", "" + 1000
-									)),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+										"tokens.maxPerAccount", "" + 1000
+								)),
 						newKeyNamed("oneFreeze"),
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						cryptoCreate("go").balance(0L),
@@ -478,7 +479,8 @@ public class TokenManagementSpecs extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 				)
 				.when(
-						mintToken("fungibleToken", 3000).hasKnownStatus(TOKEN_MAX_SUPPLY_REACHED).via("should-not-appear")
+						mintToken("fungibleToken", 3000).hasKnownStatus(TOKEN_MAX_SUPPLY_REACHED).via(
+								"should-not-appear")
 				)
 				.then(
 						getTxnRecord("should-not-appear").showsNoTransfers(),
@@ -511,29 +513,30 @@ public class TokenManagementSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec nftMintingCapIsEnforced() {
-		return defaultHapiSpec("MintingCapIsEnforced")
+		return defaultHapiSpec("NftMintingCapIsEnforced")
 				.given(
 						newKeyNamed("supplyKey"),
+						tokenCreate("fungibleToken")
+								.initialSupply(0)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyType(TokenSupplyType.INFINITE)
+								.supplyKey("supplyKey"),
+						mintToken("fungibleToken", List.of(ByteString.copyFromUtf8("Why not?")))
+				).when(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
 										"tokens.nfts.maxAllowedMints", "" + 1
 								))
-				).when(
-						tokenCreate("fungibleToken")
-								.initialSupply(0)
-								.tokenType(NON_FUNGIBLE_UNIQUE)
-								.supplyType(TokenSupplyType.INFINITE)
-								.supplyKey("supplyKey")
 				).then(
-						mintToken("fungibleToken", List.of(ByteString.copyFromUtf8("NeverToBe")))
+						mintToken("fungibleToken", List.of(ByteString.copyFromUtf8("Again, why not?")))
 								.hasKnownStatus(MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
 										"tokens.nfts.maxAllowedMints", "" + defaultMaxNftMints
 								)),
-						mintToken("fungibleToken", List.of(ByteString.copyFromUtf8("AbInitio")))
+						mintToken("fungibleToken", List.of(ByteString.copyFromUtf8("Again, why not?")))
 				);
 	}
 
