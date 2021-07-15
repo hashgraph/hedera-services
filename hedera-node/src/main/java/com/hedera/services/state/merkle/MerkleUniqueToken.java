@@ -34,7 +34,6 @@ import java.util.Objects;
  * Represents an uniqueToken entity. Part of the nft implementation.
  */
 public class MerkleUniqueToken extends AbstractMerkleLeaf {
-
 	public static final int UPPER_BOUND_METADATA_BYTES = 1024;
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x899641dafcc39164L;

@@ -29,6 +29,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -115,7 +116,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			abortWith(status);
 			return;
 		}
-		if (op.getCustomFees().getCustomFeesCount() > 0) {
+		if (op.getCustomFeesCount() > 0) {
 			status = autoEnableFeeCollectors(created, treasury, op);
 			if (status != OK) {
 				abortWith(status);
@@ -123,10 +124,12 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 			}
 		}
 
-		status = ledger.adjustTokenBalance(treasury, created, op.getInitialSupply());
-		if (status != OK) {
-			abortWith(status);
-			return;
+		if (op.getTokenType() != TokenType.NON_FUNGIBLE_UNIQUE) {
+			status = ledger.adjustTokenBalance(treasury, created, op.getInitialSupply());
+			if (status != OK) {
+				abortWith(status);
+				return;
+			}
 		}
 
 		store.commitCreation();
@@ -144,7 +147,7 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		final Set<AccountID> customCollectorsEnabled = new HashSet<>();
 		customCollectorsEnabled.add(alreadyEnabledTreasury);
 		ResponseCodeEnum status = OK;
-		for (var fee : op.getCustomFees().getCustomFeesList()) {
+		for (var fee : op.getCustomFeesList()) {
 			if (fee.hasFractionalFee()) {
 				final var collector = fee.getFeeCollectorAccountId();
 				if (!customCollectorsEnabled.contains(collector)) {
@@ -237,7 +240,8 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 				op.hasKycKey(), op.getKycKey(),
 				op.hasWipeKey(), op.getWipeKey(),
 				op.hasSupplyKey(), op.getSupplyKey(),
-				op.hasFreezeKey(), op.getFreezeKey());
+				op.hasFreezeKey(), op.getFreezeKey(),
+				op.hasFeeScheduleKey(), op.getFeeScheduleKey());
 		if (validity != OK) {
 			return validity;
 		}

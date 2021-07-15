@@ -9,9 +9,9 @@ package com.hedera.services.state.merkle;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -45,8 +45,8 @@ class MerkleUniqueTokenIdTest {
 
 	private EntityId tokenId = MISSING_ENTITY_ID;
 	private EntityId otherTokenId = MISSING_ENTITY_ID;
-	private int serialNumber;
-	private int otherSerialNumber;
+	private long serialNumber;
+	private long otherSerialNumber;
 
 	@BeforeEach
 	void setup() {
@@ -130,7 +130,7 @@ class MerkleUniqueTokenIdTest {
 		SerializableDataInputStream in = mock(SerializableDataInputStream.class);
 
 		given(in.readSerializable()).willReturn(tokenId);
-		given(in.readInt()).willReturn(serialNumber);
+		given(in.readLong()).willReturn(serialNumber);
 
 		// and:
 		var read = new MerkleUniqueTokenId();
@@ -151,7 +151,7 @@ class MerkleUniqueTokenIdTest {
 	}
 
 	@Test
-	 void fromNftIdWorks() {
+	void fromNftIdWorks() {
 		// given
 		var expected = new MerkleUniqueTokenId(
 				new EntityId(0, 0, 1),

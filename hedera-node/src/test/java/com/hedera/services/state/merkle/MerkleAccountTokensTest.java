@@ -82,7 +82,6 @@ class MerkleAccountTokensTest {
 		assertTrue(subject.isImmutable());
 		Assertions.assertThrows(MutabilityException.class, () -> subject.associateAll(someSet));
 		Assertions.assertThrows(MutabilityException.class, () -> subject.associate(someModelSet));
-		Assertions.assertThrows(MutabilityException.class, () -> subject.dissociateAll(someSet));
 		Assertions.assertThrows(MutabilityException.class, () -> subject.dissociate(someModelSet));
 		Assertions.assertThrows(MutabilityException.class, () -> subject.shareTokensOf(subjectCopy));
 		Assertions.assertThrows(MutabilityException.class, () -> subject.updateAssociationsFrom(someIds));
@@ -99,7 +98,6 @@ class MerkleAccountTokensTest {
 		// then:
 		assertFalse(subject.isImmutable());
 		Assertions.assertDoesNotThrow(() -> subject.associateAll(someSet));
-		Assertions.assertDoesNotThrow(() -> subject.dissociateAll(someSet));
 		Assertions.assertDoesNotThrow(() -> subject.shareTokensOf(subjectCopy));
 	}
 
@@ -133,17 +131,6 @@ class MerkleAccountTokensTest {
 		subject = new MerkleAccountTokens();
 		// then:
 		assertEquals(Collections.emptyList(), subject.asTokenIds());
-	}
-
-	@Test
-	void dissociateAllWorks() {
-		// when:
-		subject.dissociateAll(Set.of(a, e));
-
-		// then:
-		assertArrayEquals(new long[] { 2, 1, 0 }, Arrays.copyOfRange(subject.getRawIds(), 0, 3));
-		// and:
-		assertFalse(subject.includes(a));
 	}
 
 	@Test

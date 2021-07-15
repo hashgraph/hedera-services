@@ -104,6 +104,7 @@ import com.hedera.services.fees.calculation.token.txns.TokenUnfreezeResourceUsag
 import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenWipeResourceUsage;
 import com.hedera.services.fees.calculation.utils.AccessorBasedUsages;
+import com.hedera.services.fees.calculation.utils.OpUsageCtxHelper;
 import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.fees.charging.FeeChargingPolicy;
 import com.hedera.services.fees.charging.NarratedCharging;
@@ -265,7 +266,6 @@ import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.HapiThrottling;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.throttling.TxnAwareHandleThrottling;
-import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.txns.TransitionLogic;
@@ -286,6 +286,8 @@ import com.hedera.services.txns.crypto.CryptoCreateTransitionLogic;
 import com.hedera.services.txns.crypto.CryptoDeleteTransitionLogic;
 import com.hedera.services.txns.crypto.CryptoTransferTransitionLogic;
 import com.hedera.services.txns.crypto.CryptoUpdateTransitionLogic;
+import com.hedera.services.txns.customfees.CustomFeeSchedules;
+import com.hedera.services.txns.customfees.FcmCustomFeeSchedules;
 import com.hedera.services.txns.file.FileAppendTransitionLogic;
 import com.hedera.services.txns.file.FileCreateTransitionLogic;
 import com.hedera.services.txns.file.FileDeleteTransitionLogic;
@@ -300,7 +302,6 @@ import com.hedera.services.txns.schedule.ScheduleExecutor;
 import com.hedera.services.txns.schedule.ScheduleSignTransitionLogic;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.services.txns.customfees.FcmCustomFeeSchedules;
 import com.hedera.services.txns.span.SpanMapManager;
 import com.hedera.services.txns.submission.BasicSubmissionFlow;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
@@ -317,6 +318,7 @@ import com.hedera.services.txns.token.TokenBurnTransitionLogic;
 import com.hedera.services.txns.token.TokenCreateTransitionLogic;
 import com.hedera.services.txns.token.TokenDeleteTransitionLogic;
 import com.hedera.services.txns.token.TokenDissociateTransitionLogic;
+import com.hedera.services.txns.token.TokenFeeScheduleUpdateTransitionLogic;
 import com.hedera.services.txns.token.TokenFreezeTransitionLogic;
 import com.hedera.services.txns.token.TokenGrantKycTransitionLogic;
 import com.hedera.services.txns.token.TokenMintTransitionLogic;
@@ -324,12 +326,14 @@ import com.hedera.services.txns.token.TokenRevokeKycTransitionLogic;
 import com.hedera.services.txns.token.TokenUnfreezeTransitionLogic;
 import com.hedera.services.txns.token.TokenUpdateTransitionLogic;
 import com.hedera.services.txns.token.TokenWipeTransitionLogic;
+import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.usage.consensus.ConsensusOpsUsage;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.usage.schedule.ScheduleOpsUsage;
+import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
@@ -433,6 +437,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 import static java.util.Map.entry;
 
@@ -615,7 +620,8 @@ public class ServicesContext {
 	/**
 	 * Update the state and working state based on the provided service state
 	 *
-	 * @param state latest state from the services
+	 * @param state
+	 * 		latest state from the services
 	 */
 	public void update(ServicesState state) {
 		this.state = state;
@@ -646,7 +652,8 @@ public class ServicesContext {
 	/**
 	 * Update the working state when given the state
 	 *
-	 * @param state to set for the working state
+	 * @param state
+	 * 		to set for the working state
 	 */
 	private void updateWorkingState(ServicesState state) {
 		workingState.setAccounts(state.accounts());
@@ -661,7 +668,6 @@ public class ServicesContext {
 		workingState.setUniqueTokens(state.uniqueTokens());
 		workingState.setUniqueTokenAssociations(state.uniqueTokenAssociations());
 		workingState.setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
-
 	}
 
 	public SwirldDualState getDualState() {
@@ -1031,8 +1037,7 @@ public class ServicesContext {
 					this::uniqueOwnershipAssociations,
 					this::uniqueTokenAssociations,
 					this::tokenAssociations,
-					(BackingTokenRels) backingTokenRels(),
-					backingNfts());
+					(BackingTokenRels) backingTokenRels());
 		}
 		return typedTokenStore;
 	}
@@ -1199,6 +1204,7 @@ public class ServicesContext {
 				/* Token */
 				entry(TokenCreate, List.of(new TokenCreateResourceUsage())),
 				entry(TokenUpdate, List.of(new TokenUpdateResourceUsage())),
+				// TODO: add resourceUsage of TokenFeeScheduleUpdate to estimatorsMap
 				entry(TokenFreezeAccount, List.of(new TokenFreezeResourceUsage())),
 				entry(TokenUnfreezeAccount, List.of(new TokenUnfreezeResourceUsage())),
 				entry(TokenGrantKycToAccount, List.of(new TokenGrantKycResourceUsage())),
@@ -1480,6 +1486,8 @@ public class ServicesContext {
 				entry(TokenUpdate,
 						List.of(new TokenUpdateTransitionLogic(
 								validator(), tokenStore(), ledger(), txnCtx(), HederaTokenStore::affectsExpiryAtMost))),
+				entry(TokenFeeScheduleUpdate, List.of(new TokenFeeScheduleUpdateTransitionLogic(tokenStore(), txnCtx(),
+						validator, globalDynamicProperties()))),
 				entry(TokenFreezeAccount,
 						List.of(new TokenFreezeTransitionLogic(tokenStore(), ledger(), txnCtx()))),
 				entry(TokenUnfreezeAccount,
@@ -1497,12 +1505,14 @@ public class ServicesContext {
 						List.of(new TokenBurnTransitionLogic(validator(), accountStore(), typedTokenStore(),
 								txnCtx()))),
 				entry(TokenAccountWipe,
-						List.of(new TokenWipeTransitionLogic(validator(), typedTokenStore(), accountStore(), txnCtx()))),
+						List.of(new TokenWipeTransitionLogic(validator(), typedTokenStore(), accountStore(),
+								txnCtx()))),
 				entry(TokenAssociateToAccount,
 						List.of(new TokenAssociateTransitionLogic(
 								accountStore(), typedTokenStore(), txnCtx(), globalDynamicProperties()))),
 				entry(TokenDissociateFromAccount,
-						List.of(new TokenDissociateTransitionLogic(tokenStore(), txnCtx()))),
+						List.of(new TokenDissociateTransitionLogic(
+								typedTokenStore(), accountStore(), txnCtx(), validator(), Dissociation::loadFrom))),
 				/* Schedule */
 				entry(ScheduleCreate,
 						List.of(new ScheduleCreateTransitionLogic(
@@ -1913,8 +1923,11 @@ public class ServicesContext {
 
 	public AccessorBasedUsages accessorBasedUsages() {
 		if (accessorBasedUsages == null) {
+			final var opUsageCtxHelper = new OpUsageCtxHelper(this::tokens);
 			accessorBasedUsages = new AccessorBasedUsages(
+					new TokenOpsUsage(),
 					new CryptoOpsUsage(),
+					opUsageCtxHelper,
 					new ConsensusOpsUsage(),
 					globalDynamicProperties());
 		}
@@ -2179,7 +2192,9 @@ public class ServicesContext {
 	 *
 	 * @return current working state address book
 	 */
-	public AddressBook addressBook() { return workingState.getAddressBook(); }
+	public AddressBook addressBook() {
+		return workingState.getAddressBook();
+	}
 
 	/**
 	 * Get the working state network ctx and extract sequence number
@@ -2262,9 +2277,11 @@ public class ServicesContext {
 	 *
 	 * @return current working state of schedules
 	 */
-	public FCMap<MerkleEntityId, MerkleSchedule> schedules() { return workingState.getSchedules(); }
+	public FCMap<MerkleEntityId, MerkleSchedule> schedules() {
+		return workingState.getSchedules();
+	}
 
-  public FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens() {
+	public FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens() {
 		return state.uniqueTokens();
 	}
 
@@ -2290,7 +2307,9 @@ public class ServicesContext {
 	 *
 	 * @return current working state of network ctx
 	 */
-	public MerkleNetworkContext networkCtx() { return workingState.getNetworkCtx(); }
+	public MerkleNetworkContext networkCtx() {
+		return workingState.getNetworkCtx();
+	}
 
 	/**
 	 * return the directory to which record stream files should be write

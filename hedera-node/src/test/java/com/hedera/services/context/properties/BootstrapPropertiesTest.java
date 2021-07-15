@@ -70,7 +70,7 @@ class BootstrapPropertiesTest {
 			entry("accounts.addressBookAdmin", 55L),
 			entry("balances.exportDir.path", "/opt/hgcapp/accountBalances/"),
 			entry("balances.exportEnabled", true),
-			entry("balances.exportPeriodSecs", 600),
+			entry("balances.exportPeriodSecs", 900),
 			entry("balances.exportTokenBalances", true),
 			entry("balances.nodeBalanceWarningThreshold", 0L),
 			entry("accounts.exchangeRatesAdmin", 57L),
@@ -162,7 +162,8 @@ class BootstrapPropertiesTest {
 			entry("tokens.nfts.maxBatchSizeWipe", 10),
 			entry("tokens.nfts.maxBatchSizeMint", 10),
 			entry("tokens.nfts.maxBatchSizeBurn", 10),
-			entry("tokens.nfts.maxMetadataBytes", 100)
+			entry("tokens.nfts.maxMetadataBytes", 100),
+			entry("tokens.nfts.maxAllowedMints", 5000000L)
 	);
 
 	@BeforeEach

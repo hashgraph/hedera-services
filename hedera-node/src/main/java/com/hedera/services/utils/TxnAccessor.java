@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -67,6 +68,7 @@ public interface TxnAccessor {
     AccountID getPayer();
     TransactionID getTxnId();
     HederaFunctionality getFunction();
+    SubType getSubType();
 
     byte[] getMemoUtf8Bytes();
     String getMemo();

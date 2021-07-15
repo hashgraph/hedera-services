@@ -50,10 +50,13 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
+import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.Fraction;
+import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NftID;
@@ -72,7 +75,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import proto.CustomFeesOuterClass;
 
 import javax.inject.Inject;
 import java.time.Instant;
@@ -245,6 +247,7 @@ class StateViewTest {
 		token.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asJKey());
 		token.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKey());
 		token.setWipeKey(MISC_ACCOUNT_KT.asJKey());
+		token.setFeeScheduleKey(MISC_ACCOUNT_KT.asJKey());
 		token.setAutoRenewAccount(EntityId.fromGrpcAccountId(autoRenew));
 		token.setExpiry(expiry);
 		token.setAutoRenewPeriod(autoRenewPeriod);
@@ -293,10 +296,12 @@ class StateViewTest {
 		uniqueTokens.put(targetNftKey, targetNft);
 
 		final var uniqueTokenAccountOwnerships = new FCOneToManyRelation<EntityId, MerkleUniqueTokenId>();
-		uniqueTokenAccountOwnerships.associate(EntityId.fromGrpcAccountId(nftOwnerId), new MerkleUniqueTokenId(targetNftKey.tokenId(), 4));
+		uniqueTokenAccountOwnerships.associate(EntityId.fromGrpcAccountId(nftOwnerId),
+				new MerkleUniqueTokenId(targetNftKey.tokenId(), 4));
 
 		final var uniqueTokenAssociations = new FCOneToManyRelation<EntityId, MerkleUniqueTokenId>();
-		uniqueTokenAssociations.associate(EntityId.fromGrpcTokenId(tokenId), new MerkleUniqueTokenId(targetNftKey.tokenId(), 4));
+		uniqueTokenAssociations.associate(EntityId.fromGrpcTokenId(tokenId),
+				new MerkleUniqueTokenId(targetNftKey.tokenId(), 4));
 
 		subject = new StateView(
 				tokenStore,
@@ -497,11 +502,12 @@ class StateViewTest {
 		assertEquals(token.treasury().toGrpcAccountId(), info.getTreasury());
 		assertEquals(token.totalSupply(), info.getTotalSupply());
 		assertEquals(token.decimals(), info.getDecimals());
-		assertEquals(token.grpcFeeSchedule(), info.getCustomFees());
+		assertEquals(token.grpcFeeSchedule(), info.getCustomFeesList());
 		assertEquals(TOKEN_ADMIN_KT.asKey(), info.getAdminKey());
 		assertEquals(TOKEN_FREEZE_KT.asKey(), info.getFreezeKey());
 		assertEquals(TOKEN_KYC_KT.asKey(), info.getKycKey());
 		assertEquals(miscKey, info.getWipeKey());
+		assertEquals(miscKey, info.getFeeScheduleKey());
 		assertEquals(autoRenew, info.getAutoRenewAccount());
 		assertEquals(Duration.newBuilder().setSeconds(autoRenewPeriod).build(), info.getAutoRenewPeriod());
 		assertEquals(Timestamp.newBuilder().setSeconds(expiry).build(), info.getExpiry());
@@ -996,36 +1002,37 @@ class StateViewTest {
 			.setSerialNumber(5L)
 			.build();
 	private final MerkleUniqueTokenId targetNftKey = new MerkleUniqueTokenId(new EntityId(1, 2, 3), 4);
-	private final MerkleUniqueToken targetNft = new MerkleUniqueToken(EntityId.fromGrpcAccountId(nftOwnerId), nftMeta, fromJava(nftCreation));
+	private final MerkleUniqueToken targetNft = new MerkleUniqueToken(EntityId.fromGrpcAccountId(nftOwnerId), nftMeta,
+			fromJava(nftCreation));
 
-	private CustomFeesOuterClass.FixedFee fixedFeeInTokenUnits = CustomFeesOuterClass.FixedFee.newBuilder()
+	private FixedFee fixedFeeInTokenUnits = FixedFee.newBuilder()
 			.setDenominatingTokenId(tokenId)
 			.setAmount(100)
 			.build();
-	private CustomFeesOuterClass.FixedFee fixedFeeInHbar = CustomFeesOuterClass.FixedFee.newBuilder()
+	private FixedFee fixedFeeInHbar = FixedFee.newBuilder()
 			.setAmount(100)
 			.build();
 	private Fraction fraction = Fraction.newBuilder().setNumerator(15).setDenominator(100).build();
-	private CustomFeesOuterClass.FractionalFee fractionalFee = CustomFeesOuterClass.FractionalFee.newBuilder()
+	private FractionalFee fractionalFee = FractionalFee.newBuilder()
 			.setFractionalAmount(fraction)
 			.setMaximumAmount(50)
 			.setMinimumAmount(10)
 			.build();
-	private CustomFeesOuterClass.CustomFee customFixedFeeInHbar = CustomFeesOuterClass.CustomFee.newBuilder()
+	private CustomFee customFixedFeeInHbar = CustomFee.newBuilder()
 			.setFeeCollectorAccountId(payerAccountId)
 			.setFixedFee(fixedFeeInHbar)
 			.build();
-	private CustomFeesOuterClass.CustomFee customFixedFeeInHts = CustomFeesOuterClass.CustomFee.newBuilder()
+	private CustomFee customFixedFeeInHts = CustomFee.newBuilder()
 			.setFeeCollectorAccountId(payerAccountId)
 			.setFixedFee(fixedFeeInTokenUnits)
 			.build();
-	private CustomFeesOuterClass.CustomFee customFractionalFee = CustomFeesOuterClass.CustomFee.newBuilder()
+	private CustomFee customFractionalFee = CustomFee.newBuilder()
 			.setFeeCollectorAccountId(payerAccountId)
 			.setFractionalFee(fractionalFee)
 			.build();
-	private CustomFeesOuterClass.CustomFees grpcCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
-			.addCustomFees(customFixedFeeInHbar)
-			.addCustomFees(customFixedFeeInHts)
-			.addCustomFees(customFractionalFee)
-			.build();
+	private List<CustomFee> grpcCustomFees = List.of(
+			customFixedFeeInHbar,
+			customFixedFeeInHts,
+			customFractionalFee
+	);
 }

@@ -81,11 +81,11 @@ public class FileOpsUsage {
 		var op = fileInfoReq.getFileGetInfo();
 
 		var estimate = queryEstimateFactory.apply(op.getHeader().getResponseType());
-		estimate.updateTb(BASIC_ENTITY_ID_SIZE);
+		estimate.addTb(BASIC_ENTITY_ID_SIZE);
 		long extraSb = 0;
 		extraSb += ctx.currentMemo().getBytes(StandardCharsets.UTF_8).length;
 		extraSb += getAccountKeyStorageSize(asKey(ctx.currentWacl()));
-		estimate.updateSb(BASE_FILEINFO_SIZE + extraSb);
+		estimate.addSb(BASE_FILEINFO_SIZE + extraSb);
 
 		return estimate.get();
 	}

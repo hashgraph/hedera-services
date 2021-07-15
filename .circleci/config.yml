@@ -1685,7 +1685,7 @@ workflows:
   GCP-Daily-Services-Account-Balances-client-validation-6N-1C:
     triggers:
       - schedule:
-          cron: "40 6 * * *"
+          cron: "30 6 * * *"
           filters:
             branches:
               only:
@@ -2929,7 +2929,7 @@ jobs:
         default: false
     executor:
       name: << parameters.runtime >>
-      workflow-name:  << parameters.workflow-name >>
+      workflow-name: << parameters.workflow-name >>
     steps:
       - gcp_import_credentials:
          username_variable: GCLOUD_SERVICE_ACCOUNT_NAME

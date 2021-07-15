@@ -20,7 +20,6 @@ package com.hedera.services.usage.crypto;
  * ‍
  */
 
-import com.hedera.services.test.AdapterUtils;
 import com.hedera.services.test.IdUtils;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
@@ -42,7 +41,7 @@ import java.util.List;
 
 import static com.hedera.services.test.AdapterUtils.feeDataFrom;
 import static com.hedera.services.test.IdUtils.asAccount;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class OpsTransferUsageTest {
 	private CryptoOpsUsage subject = new CryptoOpsUsage();
@@ -71,7 +70,7 @@ class OpsTransferUsageTest {
 		final var accum = new UsageAccumulator();
 		subject.cryptoTransferUsage(
 				sigUsage,
-				new CryptoTransferMeta(tokenMultiplier, 3, 7),
+				new CryptoTransferMeta(tokenMultiplier, 3, 7, 0),
 				new BaseTransactionMeta(memo.getBytes().length, 3),
 				accum);
 

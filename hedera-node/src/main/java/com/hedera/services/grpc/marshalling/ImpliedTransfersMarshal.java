@@ -23,8 +23,8 @@ package com.hedera.services.grpc.marshalling;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
-import com.hedera.services.state.submerkle.AssessedCustomFee;
-import com.hedera.services.state.submerkle.CustomFee;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -81,8 +81,8 @@ public class ImpliedTransfersMarshal {
 		}
 
 		final List<BalanceChange> changes = new ArrayList<>();
-		final List<Pair<Id, List<CustomFee>>> tokenFeeSchedules = new ArrayList<>();
-		final List<AssessedCustomFee> assessedCustomFees = new ArrayList<>();
+		final List<Pair<Id, List<FcCustomFee>>> tokenFeeSchedules = new ArrayList<>();
+		final List<FcAssessedCustomFee> assessedCustomFees = new ArrayList<>();
 		final Map<Pair<Id, Id>, BalanceChange> existingBalanceChanges = new HashMap<>();
 
 		for (var aa : op.getTransfers().getAccountAmountsList()) {
@@ -106,7 +106,7 @@ public class ImpliedTransfersMarshal {
 						return ImpliedTransfers.invalid(validationProps, CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE);
 					}
 				}
-                        }
+			}
 			for (var oc : scopedTransfers.getNftTransfersList()) {
 				changes.add(changingNftOwnership(scopingToken, grpcTokenId, oc));
 			}
@@ -135,21 +135,21 @@ public class ImpliedTransfersMarshal {
 	private List<BalanceChange> computeBalanceChangeForCustomFee(
 			Id scopingToken,
 			Id payerId,
-			long totalAmount, 
-                        List<CustomFee> feeSchedule,
+			long totalAmount,
+			List<FcCustomFee> feeSchedule,
 			Map<Pair<Id, Id>, BalanceChange> existingBalanceChanges,
-			List<AssessedCustomFee> assessedCustomFees
+			List<FcAssessedCustomFee> assessedCustomFees
 	) {
 		List<BalanceChange> customFeeChanges = new ArrayList<>();
-		for (CustomFee fees : feeSchedule) {
-			if (fees.getFeeType() == CustomFee.FeeType.FIXED_FEE) {
+		for (FcCustomFee fees : feeSchedule) {
+			if (fees.getFeeType() == FcCustomFee.FeeType.FIXED_FEE) {
 				addFixedFeeBalanceChanges(
 						fees,
 						payerId,
 						customFeeChanges,
 						existingBalanceChanges,
 						assessedCustomFees);
-			} else if (fees.getFeeType() == CustomFee.FeeType.FRACTIONAL_FEE) {
+			} else if (fees.getFeeType() == FcCustomFee.FeeType.FRACTIONAL_FEE) {
 				addFractionalFeeBalanceChanges(
 						fees,
 						payerId,
@@ -167,13 +167,13 @@ public class ImpliedTransfersMarshal {
 	 * Calculate fractional fee balance changes for the custom fees
 	 */
 	private void addFractionalFeeBalanceChanges(
-			CustomFee fees,
+			FcCustomFee fees,
 			Id payerId,
 			long totalAmount,
 			Id scopingToken,
 			List<BalanceChange> customFeeChanges,
 			Map<Pair<Id, Id>, BalanceChange> existingBalanceChanges,
-			List<AssessedCustomFee> assessedCustomFees
+			List<FcAssessedCustomFee> assessedCustomFees
 	) {
 		final var spec = fees.getFractionalFeeSpec();
 		final var nominalFee = safeFractionMultiply(spec.getNumerator(), spec.getDenominator(), totalAmount);
@@ -199,7 +199,7 @@ public class ImpliedTransfersMarshal {
 				true);
 
 		assessedCustomFees.add(
-				new AssessedCustomFee(fees.getFeeCollectorAccountId(), scopingToken.asEntityId(), effectiveFee));
+				new FcAssessedCustomFee(fees.getFeeCollectorAccountId(), scopingToken.asEntityId(), effectiveFee));
 	}
 
 	long safeFractionMultiply(long n, long d, long v) {
@@ -214,11 +214,11 @@ public class ImpliedTransfersMarshal {
 	 * Calculate Fixed fee balance changes for the custom fees
 	 */
 	private void addFixedFeeBalanceChanges(
-			CustomFee fees,
+			FcCustomFee fees,
 			Id payerId,
 			List<BalanceChange> customFeeChanges,
 			Map<Pair<Id, Id>, BalanceChange> existingBalanceChanges,
-			List<AssessedCustomFee> assessedCustomFees
+			List<FcAssessedCustomFee> assessedCustomFees
 	) {
 		final var spec = fees.getFixedFeeSpec();
 		final var unitsToCollect = spec.getUnitsToCollect();
@@ -238,7 +238,7 @@ public class ImpliedTransfersMarshal {
 					hbarAdjust(payerId, -unitsToCollect),
 					true);
 			assessedCustomFees.add(
-					new AssessedCustomFee(fees.getFeeCollectorAccountId(), null, unitsToCollect));
+					new FcAssessedCustomFee(fees.getFeeCollectorAccountId(), null, unitsToCollect));
 		} else {
 			modifyBalanceChange(
 					Pair.of(fees.getFeeCollectorAsId(), spec.getTokenDenomination().asId()),
@@ -255,7 +255,8 @@ public class ImpliedTransfersMarshal {
 					tokenAdjust(payerId, spec.getTokenDenomination().asId(), -unitsToCollect),
 					true);
 			assessedCustomFees.add(
-					new AssessedCustomFee(fees.getFeeCollectorAccountId(), spec.getTokenDenomination(), unitsToCollect));
+					new FcAssessedCustomFee(fees.getFeeCollectorAccountId(), spec.getTokenDenomination(),
+							unitsToCollect));
 		}
 	}
 

@@ -65,7 +65,7 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.doThrow;
 
 class TokenWipeTransitionLogicTest {
-    private AccountID account = IdUtils.asAccount("1.2.4");
+    private AccountID accountID = IdUtils.asAccount("1.2.4");
     private TokenID id = IdUtils.asToken("1.2.3");
     private long wipeAmount = 100;
     private long totalAmount = 1000L;
@@ -80,12 +80,14 @@ class TokenWipeTransitionLogicTest {
 	private TypedTokenStore typedTokenStore;
 	private AccountStore accountStore;
 	private OptionValidator validator;
+	private Account account;
 
     @BeforeEach
     private void setup() {
         accessor = mock(PlatformTxnAccessor.class);
         merkleToken = mock(MerkleToken.class);
 		token = mock(Token.class);
+		account = mock(Account.class);
 
         txnCtx = mock(TransactionContext.class);
 
@@ -96,7 +98,7 @@ class TokenWipeTransitionLogicTest {
     }
 
     @Test
-    public void capturesInvalidWipe() {
+    void capturesInvalidWipe() {
         givenValidCommonTxnCtx();
         // and:
 		doThrow(new InvalidTransactionException(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)).when(token).wipe(any(), anyLong());
@@ -105,13 +107,13 @@ class TokenWipeTransitionLogicTest {
 			subject.doStateTransition();
 		}catch (InvalidTransactionException e){
 			// then:
-			assertEquals(e.getResponseCode(), TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+			assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, e.getResponseCode());
 		}
 
     }
 
     @Test
-    public void followsHappyPathForCommon() {
+    void followsHappyPathForCommon() {
         givenValidCommonTxnCtx();
 
         // when:
@@ -123,7 +125,7 @@ class TokenWipeTransitionLogicTest {
 
 
 	@Test
-	public void followsHappyPathForUnique() {
+	void followsHappyPathForUnique() {
 		givenValidUniqueTxnCtx();
 		// needed only in the context of this test
 		Account acc = mock(Account.class);
@@ -143,7 +145,7 @@ class TokenWipeTransitionLogicTest {
 	}
 
     @Test
-    public void hasCorrectApplicability() {
+    void hasCorrectApplicability() {
         givenValidCommonTxnCtx();
 
         // expect:
@@ -152,7 +154,7 @@ class TokenWipeTransitionLogicTest {
     }
 
     @Test
-    public void setsFailInvalidIfUnhandledException() {
+    void setsFailInvalidIfUnhandledException() {
         givenValidCommonTxnCtx();
         // and:
         doThrow(InvalidTransactionException.class).when(token).wipe(any(), anyLong());
@@ -162,7 +164,7 @@ class TokenWipeTransitionLogicTest {
     }
 
     @Test
-    public void acceptsValidCommonTxn() {
+    void acceptsValidCommonTxn() {
         givenValidCommonTxnCtx();
 
         // expect:
@@ -170,7 +172,7 @@ class TokenWipeTransitionLogicTest {
     }
 
     @Test
-	public void acceptsValidUniqueTxn(){
+	void acceptsValidUniqueTxn(){
     	givenValidUniqueTxnCtx();
 
     	// expect:
@@ -178,7 +180,7 @@ class TokenWipeTransitionLogicTest {
 	}
 
     @Test
-    public void rejectsMissingToken() {
+    void rejectsMissingToken() {
         givenMissingToken();
 
         // expect:
@@ -186,7 +188,7 @@ class TokenWipeTransitionLogicTest {
     }
 
     @Test
-    public void rejectsMissingAccount() {
+    void rejectsMissingAccount() {
         givenMissingAccount();
 
         // expect:
@@ -194,7 +196,7 @@ class TokenWipeTransitionLogicTest {
     }
 
     @Test
-    public void rejectsInvalidZeroAmount() {
+    void rejectsInvalidZeroAmount() {
         givenInvalidZeroWipeAmount();
 
         // expect:
@@ -202,7 +204,7 @@ class TokenWipeTransitionLogicTest {
     }
 
     @Test
-    public void rejectsInvalidNegativeAmount() {
+    void rejectsInvalidNegativeAmount() {
         givenInvalidNegativeWipeAmount();
 
         // expect:
@@ -214,7 +216,7 @@ class TokenWipeTransitionLogicTest {
     	tokenWipeTxn = TransactionBody.newBuilder()
 				.setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
 				.setToken(id)
-				.setAccount(account)
+				.setAccount(accountID)
 				.setAmount(10)
 				.addAllSerialNumbers(List.of(1L, 2L)))
 				.build();
@@ -227,7 +229,7 @@ class TokenWipeTransitionLogicTest {
 		tokenWipeTxn = TransactionBody.newBuilder()
 				.setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
 						.setToken(id)
-						.setAccount(account)
+						.setAccount(accountID)
 						.addAllSerialNumbers(List.of(-1L)))
 				.build();
 		given(validator.maxBatchSizeWipeCheck(anyInt())).willReturn(OK);
@@ -248,7 +250,7 @@ class TokenWipeTransitionLogicTest {
         tokenWipeTxn = TransactionBody.newBuilder()
                 .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
                         .setToken(id)
-                        .setAccount(account)
+                        .setAccount(accountID)
                         .setAmount(wipeAmount))
                 .build();
         given(accessor.getTxn()).willReturn(tokenWipeTxn);
@@ -257,13 +259,15 @@ class TokenWipeTransitionLogicTest {
         given(merkleToken.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
 		given(typedTokenStore.loadToken(any())).willReturn(token);
 		given(token.getType()).willReturn(TokenType.FUNGIBLE_COMMON);
+		given(accountStore.loadAccount(any())).willReturn(account);
+		given(typedTokenStore.loadTokenRelationship(token, account)).willReturn(new TokenRelationship(token, account));
     }
 
 	private void givenValidUniqueTxnCtx() {
 		tokenWipeTxn = TransactionBody.newBuilder()
 				.setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
 						.setToken(id)
-						.setAccount(account)
+						.setAccount(accountID)
 						.addAllSerialNumbers(List.of(1L, 2L, 3L)))
 				.build();
 		given(accessor.getTxn()).willReturn(tokenWipeTxn);
@@ -293,7 +297,7 @@ class TokenWipeTransitionLogicTest {
         tokenWipeTxn = TransactionBody.newBuilder()
                 .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
                         .setToken(id)
-                        .setAccount(account)
+                        .setAccount(accountID)
                         .setAmount(0))
                 .build();
     }
@@ -302,7 +306,7 @@ class TokenWipeTransitionLogicTest {
         tokenWipeTxn = TransactionBody.newBuilder()
                 .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
                         .setToken(id)
-                        .setAccount(account)
+                        .setAccount(accountID)
                         .setAmount(-1))
                 .build();
     }

@@ -129,10 +129,21 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						/* HIP-18 */
 						onlyValidCustomFeeScheduleCanBeCreated(),
 						feeCollectorSigningReqsWorkForTokenCreate(),
+						createsFungibleInfiniteByDefault(),
 				}
 		);
 	}
 
+	private HapiApiSpec createsFungibleInfiniteByDefault() {
+		return defaultHapiSpec("CreatesFungibleInfiniteByDefault")
+				.given().when(
+						tokenCreate("DefaultFungible")
+				).then(
+						getTokenInfo("DefaultFungible")
+								.hasTokenType(TokenType.FUNGIBLE_COMMON)
+								.hasSupplyType(TokenSupplyType.INFINITE)
+				);
+	}
 
 	private HapiApiSpec worksAsExpectedWithDefaultTokenId() {
 		return defaultHapiSpec("WorksAsExpectedWithDefaultTokenId")
@@ -250,7 +261,8 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						newKeyNamed("freezeKey"),
 						newKeyNamed("kycKey"),
 						newKeyNamed("supplyKey"),
-						newKeyNamed("wipeKey")
+						newKeyNamed("wipeKey"),
+						newKeyNamed("feeScheduleKey")
 				).when(
 						tokenCreate("primary")
 								.supplyType(TokenSupplyType.FINITE)
@@ -267,6 +279,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.kycKey("kycKey")
 								.supplyKey("supplyKey")
 								.wipeKey("wipeKey")
+								.feeScheduleKey("feeScheduleKey")
 								.via("createTxn"),
 						tokenCreate("non-fungible-unique-finite")
 								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
@@ -283,7 +296,6 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						}),
 						getTokenInfo("primary")
 								.logged()
-								.hasCustomFeesMutable(false)
 								.hasRegisteredId("primary")
 								.hasTokenType(TokenType.FUNGIBLE_COMMON)
 								.hasSupplyType(TokenSupplyType.FINITE)
@@ -298,6 +310,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.hasKycKey("primary")
 								.hasSupplyKey("primary")
 								.hasWipeKey("primary")
+								.hasFeeScheduleKey("primary")
 								.hasMaxSupply(1000)
 								.hasTotalSupply(500)
 								.hasAutoRenewAccount("autoRenewAccount"),
@@ -522,7 +535,6 @@ public class TokenCreateSpecs extends HapiApiSuite {
 										tokenCollector))
 				).then(
 						getTokenInfo(token)
-								.hasCustomFeesMutable(false)
 								.hasCustom(fixedHbarFeeInSchedule(hbarAmount, hbarCollector))
 								.hasCustom(fixedHtsFeeInSchedule(htsAmount, feeDenom, htsCollector))
 								.hasCustom(fractionalFeeInSchedule(
@@ -571,7 +583,6 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.signedBy(DEFAULT_PAYER, TOKEN_TREASURY, htsCollector, tokenCollector)
 				).then(
 						getTokenInfo(token)
-								.hasCustomFeesMutable(false)
 								.hasCustom(fixedHbarFeeInSchedule(hbarAmount, hbarCollector))
 								.hasCustom(fixedHtsFeeInSchedule(htsAmount, feeDenom, htsCollector))
 								.hasCustom(fractionalFeeInSchedule(

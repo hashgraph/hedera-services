@@ -9,9 +9,9 @@ package com.hedera.services.usage.token;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -47,21 +48,22 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-public class TokenMintUsageTest {
-	long now = 1_234_567L;
-	int numSigs = 3, sigSize = 100, numPayerKeys = 1;
-	SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
-	TokenID id = IdUtils.asToken("0.0.75231");
+class TokenMintUsageTest {
+	private long now = 1_234_567L;
+	private long lifetime = 7776000L;
+	private int numSigs = 3, sigSize = 100, numPayerKeys = 1;
+	private SigUsage sigUsage = new SigUsage(numSigs, sigSize, numPayerKeys);
+	private TokenID id = IdUtils.asToken("0.0.75231");
 
-	TokenMintTransactionBody op;
-	TransactionBody txn;
+	private TokenMintTransactionBody op;
+	private TransactionBody txn;
 
-	EstimatorFactory factory;
-	TxnUsageEstimator base;
-	TokenMintUsage subject;
+	private EstimatorFactory factory;
+	private TxnUsageEstimator base;
+	private TokenMintUsage subject;
 
 	@BeforeEach
-	public void setUp() throws Exception {
+	void setUp() throws Exception {
 		base = mock(TxnUsageEstimator.class);
 		given(base.get()).willReturn(A_USAGES_MATRIX);
 		given(base.get(SubType.TOKEN_FUNGIBLE_COMMON)).willReturn(A_USAGES_MATRIX);
@@ -72,8 +74,13 @@ public class TokenMintUsageTest {
 		TxnUsage.estimatorFactory = factory;
 	}
 
+	@AfterEach
+	void cleanup() {
+		TxnUsage.estimatorFactory = TxnUsageEstimator::new;
+	}
+
 	@Test
-	public void createsExpectedDelta() {
+	void createsExpectedDelta() {
 		givenOp();
 		// and:
 		subject = TokenMintUsage.newEstimate(txn, sigUsage);
@@ -92,24 +99,23 @@ public class TokenMintUsageTest {
 	}
 
 	@Test
-	 void createsExpectedDeltaForUnique() {
-		op = TokenMintTransactionBody.newBuilder()
-				.setToken(id)
-				.addAllMetadata(List.of(ByteString.copyFromUtf8("memo")))
-				.build();
+	void createsExpectedDeltaForUnique() {
+		// setup:
+		givenUniqueTokenMintOp();
+		final var totalBytesOfMetadata = op.getMetadataList().stream().mapToInt(ByteString::size).sum();
 		setTxn();
 		// and:
 		subject = TokenMintUsage.newEstimate(txn, sigUsage);
 		subject.givenSubType(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
 		given(base.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE)).willReturn(A_USAGES_MATRIX);
 		// when:
-		var actual = subject.get();
+		var actual = subject.givenExpectedLifetime(lifetime).get();
 
 		// then:
 		assertEquals(A_USAGES_MATRIX, actual);
 		// and:
-		verify(base).addRbs(TOKEN_ENTITY_SIZES.bytesUsedForUniqueTokenTransfers(op.getMetadataCount()));
-		verify(base).addBpt(4L);
+		verify(base).addRbs(totalBytesOfMetadata * lifetime);
+		verify(base).addBpt(totalBytesOfMetadata);
 	}
 
 	@Test
@@ -122,6 +128,16 @@ public class TokenMintUsageTest {
 		op = TokenMintTransactionBody.newBuilder()
 				.setToken(id)
 				.build();
+		setTxn();
+	}
+
+	private void givenUniqueTokenMintOp() {
+		op = TokenMintTransactionBody.newBuilder()
+				.setToken(id)
+				.addAllMetadata(List.of(
+						ByteString.copyFromUtf8("This is fine"),
+						ByteString.copyFromUtf8("This is terrible")
+				)).build();
 		setTxn();
 	}
 

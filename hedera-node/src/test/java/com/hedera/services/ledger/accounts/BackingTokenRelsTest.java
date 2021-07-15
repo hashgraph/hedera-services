@@ -91,7 +91,19 @@ class BackingTokenRelsTest {
 		subject.addToExistingRels(aNewPair);
 
 		// then:
-		subject.contains(aNewPair);
+		assertTrue(subject.contains(aNewPair));
+	}
+
+	@Test
+	void manualRemoveFromExistingWorks() {
+		// given:
+		final var destroyedPair = Pair.of(a, at);
+
+		// when:
+		subject.removeFromExistingRels(destroyedPair);
+
+		// then:
+		assertFalse(subject.contains(destroyedPair));
 	}
 
 	@Test

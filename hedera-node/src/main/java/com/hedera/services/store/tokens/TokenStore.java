@@ -26,9 +26,9 @@ import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.Store;
 import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 
@@ -48,19 +48,21 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
  */
 public interface TokenStore extends Store<TokenID, MerkleToken> {
 	TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
-	NftID MISSING_NFT = NftID.getDefaultInstance();
 	Consumer<MerkleToken> DELETION = token -> token.setDeleted(true);
 
 	boolean isKnownTreasury(AccountID id);
-	boolean associationExists(AccountID aId, TokenID tId);
-	boolean isTreasuryForToken(AccountID aId, TokenID tId);
-	List<TokenID> listOfTokensServed(AccountID treasury);
 
-	ResponseCodeEnum wipe(AccountID aId, TokenID tId, long wipingAmount, boolean skipKeyCheck);
+	boolean associationExists(AccountID aId, TokenID tId);
+
+	boolean isTreasuryForToken(AccountID aId, TokenID tId);
+
+	List<TokenID> listOfTokensServed(AccountID treasury);
 
 	ResponseCodeEnum freeze(AccountID aId, TokenID tId);
 
 	ResponseCodeEnum update(TokenUpdateTransactionBody changes, long now);
+
+	ResponseCodeEnum updateFeeSchedule(TokenFeeScheduleUpdateTransactionBody changes);
 
 	ResponseCodeEnum unfreeze(AccountID aId, TokenID tId);
 
@@ -69,8 +71,6 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 	ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId);
 
 	ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens);
-
-	ResponseCodeEnum dissociate(AccountID aId, List<TokenID> tokens);
 
 	ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment);
 

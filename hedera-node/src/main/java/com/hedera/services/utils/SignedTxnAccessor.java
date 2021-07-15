@@ -24,14 +24,18 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
+import com.hedera.services.usage.token.TokenOpsUsage;
+import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -49,6 +53,7 @@ import static com.hedera.services.utils.MiscUtils.functionOf;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 
 /**
  * Encapsulates access to several commonly referenced parts of a gRPC {@link Transaction}.
@@ -57,6 +62,9 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
  */
 public class SignedTxnAccessor implements TxnAccessor {
 	private static final Logger log = LogManager.getLogger(SignedTxnAccessor.class);
+
+	private static final TokenOpsUsage TOKEN_OPS_USAGE = new TokenOpsUsage();
+	private static final ExpandHandleSpanMapAccessor SPAN_MAP_ACCESSOR = new ExpandHandleSpanMapAccessor();
 
 	private final Map<String, Object> spanMap = new HashMap<>();
 
@@ -121,12 +129,8 @@ public class SignedTxnAccessor implements TxnAccessor {
 		memoHasZeroByte = Arrays.contains(utf8MemoBytes, (byte) 0);
 
 		getFunction();
-		setTxnUsageMeta();
-		if (function == CryptoTransfer) {
-			setXferUsageMeta();
-		} else if (function == ConsensusSubmitMessage) {
-			setSubmitUsageMeta();
-		}
+		setBaseUsageMeta();
+		setOpUsageMeta();
 	}
 
 	public SignedTxnAccessor(Transaction signedTxnWrapper) throws InvalidProtocolBufferException {
@@ -144,6 +148,14 @@ public class SignedTxnAccessor implements TxnAccessor {
 			function = functionExtractor.apply(getTxn());
 		}
 		return function;
+	}
+
+	@Override
+	public SubType getSubType() {
+		if(getFunction() == CryptoTransfer) {
+			return xferUsageMeta.getSubType();
+		}
+		return SubType.DEFAULT;
 	}
 
 	@Override
@@ -252,7 +264,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 		return pubKeyToSigBytes;
 	}
 
-	private void setTxnUsageMeta() {
+	private void setBaseUsageMeta() {
 		if (function == CryptoTransfer) {
 			txnUsageMeta = new BaseTransactionMeta(
 					utf8MemoBytes.length,
@@ -267,18 +279,40 @@ public class SignedTxnAccessor implements TxnAccessor {
 		return spanMap;
 	}
 
+	private void setOpUsageMeta() {
+		if (function == CryptoTransfer) {
+			setXferUsageMeta();
+		} else if (function == ConsensusSubmitMessage) {
+			setSubmitUsageMeta();
+		} else if (function == TokenFeeScheduleUpdate) {
+			setFeeScheduleUpdateMeta();
+		}
+	}
+
 	private void setXferUsageMeta() {
 		var totalTokensInvolved = 0;
 		var totalTokenTransfers = 0;
+		var numNftOwnershipChanges = 0;
 		final var op = txn.getCryptoTransfer();
 		for (var tokenTransfers : op.getTokenTransfersList()) {
 			totalTokensInvolved++;
 			totalTokenTransfers += tokenTransfers.getTransfersCount();
+			numNftOwnershipChanges += tokenTransfers.getNftTransfersCount();
 		}
-		xferUsageMeta = new CryptoTransferMeta(1, totalTokensInvolved, totalTokenTransfers);
+		xferUsageMeta = new CryptoTransferMeta(1, totalTokensInvolved, totalTokenTransfers, numNftOwnershipChanges);
 	}
 
 	private void setSubmitUsageMeta() {
 		submitMessageMeta = new SubmitMessageMeta(txn.getConsensusSubmitMessage().getMessage().size());
+	}
+
+	private void setFeeScheduleUpdateMeta() {
+		final var effConsTime = getTxnId().getTransactionValidStart().getSeconds();
+		final var op = getTxn().getTokenFeeScheduleUpdate();
+		final var reprBytes = TOKEN_OPS_USAGE.bytesNeededToRepr(op.getCustomFeesList());
+		final var grpcReprBytes = op.getSerializedSize() - op.getTokenId().getSerializedSize();
+
+		final var meta = new FeeScheduleUpdateMeta(effConsTime, reprBytes, grpcReprBytes);
+		SPAN_MAP_ACCESSOR.setFeeScheduleUpdateMeta(this, meta);
 	}
 }

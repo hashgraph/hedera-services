@@ -98,6 +98,7 @@ import com.hedera.services.bdd.suites.perf.schedule.ReadyToRunScheduledXfersLoad
 import com.hedera.services.bdd.suites.perf.token.TokenRelStatusChanges;
 import com.hedera.services.bdd.suites.perf.token.TokenTransferBasicLoadTest;
 import com.hedera.services.bdd.suites.perf.token.TokenTransfersLoadProvider;
+import com.hedera.services.bdd.suites.perf.token.UniqueTokenStateSetup;
 import com.hedera.services.bdd.suites.perf.topic.CreateTopicPerfSuite;
 import com.hedera.services.bdd.suites.perf.topic.HCSChunkingRealisticPerfSuite;
 import com.hedera.services.bdd.suites.perf.topic.SubmitMessageLoadTest;
@@ -161,6 +162,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -189,212 +191,211 @@ public class SuiteRunner {
 	private static final int EXPECTED_CI_NETWORK_SIZE = 4;
 	private static final String DEFAULT_PAYER_ID = "0.0.2";
 
-	public static int expectedNetworkSize = EXPECTED_DEV_NETWORK_SIZE;
+	private static int expectedNetworkSize = EXPECTED_DEV_NETWORK_SIZE;
 
-	static final Map<String, HapiApiSuite[]> CATEGORY_MAP = new HashMap<>() {{
+	private static final Map<String, Supplier<HapiApiSuite[]>> CATEGORY_MAP = new HashMap<>() {{
 		/* Convenience entries, uncomment locally to run CI jobs */
 //		put("CiConsensusAndCryptoJob", aof(
-//				new SignedTransactionBytesRecordsSuite(),
-//				new DuplicateManagementTest(),
-//				new TopicCreateSuite(),
-//				new TopicUpdateSuite(),
-//				new TopicDeleteSuite(),
-//				new SubmitMessageSuite(),
-//				new ChunkingSuite(),
-//				new TopicGetInfoSuite(),
-//				new BucketThrottlingSpec(),
-//				new SpecialAccountsAreExempted(),
-//				new CryptoTransferSuite(),
-//				new CryptoUpdateSuite(),
-//				new CryptoRecordsSanityCheckSuite(),
-//				new PrivilegedOpsSuite(),
-//				new CannotDeleteSystemEntitiesSuite()));
+//				SignedTransactionBytesRecordsSuite::new,
+//				DuplicateManagementTest::new,
+//				TopicCreateSuite::new,
+//				TopicUpdateSuite::new,
+//				TopicDeleteSuite::new,
+//				SubmitMessageSuite::new,
+//				ChunkingSuite::new,
+//				TopicGetInfoSuite::new,
+//				SpecialAccountsAreExempted::new,
+//				CryptoTransferSuite::new,
+//				CryptoUpdateSuite::new,
+//				CryptoRecordsSanityCheckSuite::new,
+//				PrivilegedOpsSuite::new,
+//				CannotDeleteSystemEntitiesSuite::new));
 //		put("CiScheduleJob", aof(
-//				new ScheduleDeleteSpecs(),
-//				new ScheduleExecutionSpecs(),
-//				new ScheduleCreateSpecs(),
-//				new ScheduleSignSpecs(),
-//				new ScheduleRecordSpecs()));
+//				ScheduleDeleteSpecs::new,
+//				ScheduleExecutionSpecs::new,
+//				ScheduleCreateSpecs::new,
+//				ScheduleSignSpecs::new,
+//				ScheduleRecordSpecs::new));
 //		put("CiTokenJob", aof(
-//				new TokenAssociationSpecs(),
-//				new TokenUpdateSpecs(),
-//				new TokenCreateSpecs(),
-//				new TokenDeleteSpecs(),
-//				new TokenManagementSpecs(),
-//				new TokenTransactSpecs()));
+//				TokenAssociationSpecs::new,
+//				TokenUpdateSpecs::new,
+//				TokenCreateSpecs::new,
+//				TokenDeleteSpecs::new,
+//				TokenManagementSpecs::new,
+//				TokenTransactSpecs::new));
 //		put("CiFileJob", aof(
-//				new FileRecordsSanityCheckSuite(),
-//				new VersionInfoSpec(),
-//				new ProtectedFilesUpdateSuite(),
-//				new PermissionSemanticsSpec(),
-//				new SysDelSysUndelSpec()));
+//				FileRecordsSanityCheckSuite::new,
+//				VersionInfoSpec::new,
+//				ProtectedFilesUpdateSuite::new,
+//				PermissionSemanticsSpec::new,
+//				SysDelSysUndelSpec::new));
 //		put("CiSmartContractJob", aof(
-//				new NewOpInConstructorSuite(),
-//				new IssueXXXXSpec(),
-//				new ContractCallSuite(),
-//				new ContractCallLocalSuite(),
-//				new ContractUpdateSuite(),
-//				new ContractDeleteSuite(),
-//				new ChildStorageSpec(),
-//				new BigArraySpec(),
-//				new CharacterizationSuite(),
-//				new SmartContractFailFirstSpec(),
-//				new SmartContractSelfDestructSpec(),
-//				new DeprecatedContractKeySuite(),
-//				new ContractRecordsSanityCheckSuite(),
-//				new ContractGetBytecodeSuite(),
-//				new SmartContractInlineAssemblySpec(),
-//				new OCTokenSpec(),
-//				new RecordCreationSuite()));
+//				NewOpInConstructorSuite::new,
+//				ContractCallSuite::new,
+//				ContractCallLocalSuite::new,
+//				ContractUpdateSuite::new,
+//				ContractDeleteSuite::new,
+//				ChildStorageSpec::new,
+//				BigArraySpec::new,
+//				CharacterizationSuite::new,
+//				SmartContractFailFirstSpec::new,
+//				SmartContractSelfDestructSpec::new,
+//				DeprecatedContractKeySuite::new,
+//				ContractRecordsSanityCheckSuite::new,
+//				ContractGetBytecodeSuite::new,
+//				SmartContractInlineAssemblySpec::new,
+//				OCTokenSpec::new,
+//				RecordCreationSuite::new));
 		/* Adjust fee schedules */
-		put("AdjustFeeSchedule", aof(new AdjustFeeScheduleSuite()));
+		put("AdjustFeeSchedule", aof(AdjustFeeScheduleSuite::new));
 		/* Umbrella Redux */
-		put("UmbrellaRedux", aof(new UmbrellaRedux()));
+		put("UmbrellaRedux", aof(UmbrellaRedux::new));
 		/* Regression saved state management helpers */
-		put("AddWellKnownEntities", aof(new AddWellKnownEntities()));
+		put("AddWellKnownEntities", aof(AddWellKnownEntities::new));
 		/* JRS restart tests */
-		put("RestartWithScheduledEntities", aof(new JrsRestartTestTemplate()));
+		put("RestartWithScheduledEntities", aof(JrsRestartTestTemplate::new));
 		/* Load tests. */
-		put("QueryOnlyLoadTest", aof(new QueryOnlyLoadTest()));
-		put("TokenTransfersBasicLoadTest", aof(new TokenTransferBasicLoadTest()));
-		put("AccountBalancesLoadTest", aof(new AccountBalancesClientSaveLoadTest()));
-		put("TokenTransfersLoad", aof(new TokenTransfersLoadProvider()));
-		put("ReadyToRunScheduledXfersLoad", aof(new ReadyToRunScheduledXfersLoad()));
-		put("TokenRelChangesLoad", aof(new TokenRelStatusChanges()));
-		put("FileUpdateLoadTest", aof(new FileUpdateLoadTest()));
-		put("ContractCallLoadTest", aof(new ContractCallLoadTest()));
-		put("SubmitMessageLoadTest", aof(new SubmitMessageLoadTest()));
-		put("CryptoTransferLoadTest", aof(new CryptoTransferLoadTest()));
-		put("MixedTransferAndSubmitLoadTest", aof(new MixedTransferAndSubmitLoadTest()));
-		put("MixedTransferCallAndSubmitLoadTest", aof(new MixedTransferCallAndSubmitLoadTest()));
-		put("HCSChunkingRealisticPerfSuite", aof(new HCSChunkingRealisticPerfSuite()));
-		put("CryptoCreatePerfSuite", aof(new CryptoCreatePerfSuite()));
-		put("CreateTopicPerfSuite", aof(new CreateTopicPerfSuite()));
-		put("MixedOpsMemoPerfSuite", aof(new MixedOpsMemoPerfSuite()));
-		put("FileContractMemoPerfSuite", aof(new FileContractMemoPerfSuite()));
-		put("MixedSmartContractOpsLoadTest", aof(new MixedSmartContractOpsLoadTest()));
-		put("MixedFileOpsLoadTest", aof(new MixedFileOpsLoadTest()));
+		put("QueryOnlyLoadTest", aof(QueryOnlyLoadTest::new));
+		put("TokenTransfersBasicLoadTest", aof(TokenTransferBasicLoadTest::new));
+		put("AccountBalancesLoadTest", aof(AccountBalancesClientSaveLoadTest::new));
+		put("TokenTransfersLoad", aof(TokenTransfersLoadProvider::new));
+		put("ReadyToRunScheduledXfersLoad", aof(ReadyToRunScheduledXfersLoad::new));
+		put("TokenRelChangesLoad", aof(TokenRelStatusChanges::new));
+		put("FileUpdateLoadTest", aof(FileUpdateLoadTest::new));
+		put("ContractCallLoadTest", aof(ContractCallLoadTest::new));
+		put("SubmitMessageLoadTest", aof(SubmitMessageLoadTest::new));
+		put("CryptoTransferLoadTest", aof(CryptoTransferLoadTest::new));
+		put("MixedTransferAndSubmitLoadTest", aof(MixedTransferAndSubmitLoadTest::new));
+		put("MixedTransferCallAndSubmitLoadTest", aof(MixedTransferCallAndSubmitLoadTest::new));
+		put("HCSChunkingRealisticPerfSuite", aof(HCSChunkingRealisticPerfSuite::new));
+		put("CryptoCreatePerfSuite", aof(CryptoCreatePerfSuite::new));
+		put("CreateTopicPerfSuite", aof(CreateTopicPerfSuite::new));
+		put("MixedOpsMemoPerfSuite", aof(MixedOpsMemoPerfSuite::new));
+		put("FileContractMemoPerfSuite", aof(FileContractMemoPerfSuite::new));
+		put("MixedSmartContractOpsLoadTest", aof(MixedSmartContractOpsLoadTest::new));
+		put("MixedFileOpsLoadTest", aof(MixedFileOpsLoadTest::new));
+		put("UniqueTokenStateSetup", aof(UniqueTokenStateSetup::new));
 		/* Functional tests - RECONNECT */
-		put("CreateAccountsBeforeReconnect", aof(new CreateAccountsBeforeReconnect()));
-		put("CreateTopicsBeforeReconnect", aof(new CreateTopicsBeforeReconnect()));
-		put("SubmitMessagesForReconnect", aof(new SubmitMessagesForReconnect()));
-		put("CreateFilesBeforeReconnect", aof(new CreateFilesBeforeReconnect()));
-		put("CreateTokensBeforeReconnect", aof(new CreateTokensBeforeReconnect()));
-		put("CreateSchedulesBeforeReconnect", aof(new CreateSchedulesBeforeReconnect()));
-		put("CheckUnavailableNode", aof(new CheckUnavailableNode()));
-		put("MixedValidationsAfterReconnect", aof(new MixedValidationsAfterReconnect()));
-		put("UpdateApiPermissionsDuringReconnect", aof(new UpdateApiPermissionsDuringReconnect()));
-		put("ValidateDuplicateTransactionAfterReconnect", aof(new ValidateDuplicateTransactionAfterReconnect()));
-		put("ValidateApiPermissionStateAfterReconnect", aof(new ValidateApiPermissionStateAfterReconnect()));
-		put("ValidateAppPropertiesStateAfterReconnect", aof(new ValidateAppPropertiesStateAfterReconnect()));
-		put("ValidateFeeScheduleStateAfterReconnect", aof(new ValidateFeeScheduleStateAfterReconnect()));
-		put("ValidateExchangeRateStateAfterReconnect", aof(new ValidateExchangeRateStateAfterReconnect()));
-		put("UpdateAllProtectedFilesDuringReconnect", aof(new UpdateAllProtectedFilesDuringReconnect()));
-		put("AutoRenewEntitiesForReconnect", aof( new AutoRenewEntitiesForReconnect()));
-		put("SchedulesExpiryDuringReconnect", aof(new SchedulesExpiryDuringReconnect()));
-		put("ValidateTokensStateAfterReconnect", aof(new ValidateTokensStateAfterReconnect()));
-		put("ValidateCongestionPricingAfterReconnect", aof(new ValidateCongestionPricingAfterReconnect()));
+		put("CreateAccountsBeforeReconnect", aof(CreateAccountsBeforeReconnect::new));
+		put("CreateTopicsBeforeReconnect", aof(CreateTopicsBeforeReconnect::new));
+		put("SubmitMessagesForReconnect", aof(SubmitMessagesForReconnect::new));
+		put("CreateFilesBeforeReconnect", aof(CreateFilesBeforeReconnect::new));
+		put("CreateTokensBeforeReconnect", aof(CreateTokensBeforeReconnect::new));
+		put("CreateSchedulesBeforeReconnect", aof(CreateSchedulesBeforeReconnect::new));
+		put("CheckUnavailableNode", aof(CheckUnavailableNode::new));
+		put("MixedValidationsAfterReconnect", aof(MixedValidationsAfterReconnect::new));
+		put("UpdateApiPermissionsDuringReconnect", aof(UpdateApiPermissionsDuringReconnect::new));
+		put("ValidateDuplicateTransactionAfterReconnect", aof(ValidateDuplicateTransactionAfterReconnect::new));
+		put("ValidateApiPermissionStateAfterReconnect", aof(ValidateApiPermissionStateAfterReconnect::new));
+		put("ValidateAppPropertiesStateAfterReconnect", aof(ValidateAppPropertiesStateAfterReconnect::new));
+		put("ValidateFeeScheduleStateAfterReconnect", aof(ValidateFeeScheduleStateAfterReconnect::new));
+		put("ValidateExchangeRateStateAfterReconnect", aof(ValidateExchangeRateStateAfterReconnect::new));
+		put("UpdateAllProtectedFilesDuringReconnect", aof(UpdateAllProtectedFilesDuringReconnect::new));
+		put("AutoRenewEntitiesForReconnect", aof(AutoRenewEntitiesForReconnect::new));
+		put("SchedulesExpiryDuringReconnect", aof(SchedulesExpiryDuringReconnect::new));
+		put("ValidateTokensStateAfterReconnect", aof(ValidateTokensStateAfterReconnect::new));
+		put("ValidateCongestionPricingAfterReconnect", aof(ValidateCongestionPricingAfterReconnect::new));
 		/* Functional tests - AUTORENEW */
-		put("AutoRemovalCasesSuite", aof(new AutoRemovalCasesSuite()));
-		put("AccountAutoRenewalSuite", aof(new AccountAutoRenewalSuite()));
-		put("GracePeriodRestrictionsSuite", aof(new GracePeriodRestrictionsSuite()));
-		put("MacroFeesChargedSanityCheckSuite", aof(new MacroFeesChargedSanityCheckSuite()));
-		put("NoGprIfNoAutoRenewSuite", aof(new NoGprIfNoAutoRenewSuite()));
+		put("AutoRemovalCasesSuite", aof(AutoRemovalCasesSuite::new));
+		put("AccountAutoRenewalSuite", aof(AccountAutoRenewalSuite::new));
+		put("GracePeriodRestrictionsSuite", aof(GracePeriodRestrictionsSuite::new));
+		put("MacroFeesChargedSanityCheckSuite", aof(MacroFeesChargedSanityCheckSuite::new));
+		put("NoGprIfNoAutoRenewSuite", aof(NoGprIfNoAutoRenewSuite::new));
 		/* Functional tests - CONSENSUS */
-		put("TopicCreateSpecs", aof(new TopicCreateSuite()));
-		put("TopicDeleteSpecs", aof(new TopicDeleteSuite()));
-		put("TopicUpdateSpecs", aof(new TopicUpdateSuite()));
-		put("SubmitMessageSpecs", aof(new SubmitMessageSuite()));
-		put("HCSTopicFragmentationSuite", aof(new ChunkingSuite()));
-		put("TopicGetInfoSpecs", aof(new TopicGetInfoSuite()));
-		put("ConsensusQueriesStressTests", aof(new ConsensusQueriesStressTests()));
+		put("TopicCreateSpecs", aof(TopicCreateSuite::new));
+		put("TopicDeleteSpecs", aof(TopicDeleteSuite::new));
+		put("TopicUpdateSpecs", aof(TopicUpdateSuite::new));
+		put("SubmitMessageSpecs", aof(SubmitMessageSuite::new));
+		put("HCSTopicFragmentationSuite", aof(ChunkingSuite::new));
+		put("TopicGetInfoSpecs", aof(TopicGetInfoSuite::new));
+		put("ConsensusQueriesStressTests", aof(ConsensusQueriesStressTests::new));
 		/* Functional tests - FILE */
-		put("FileCreateSuite", aof(new FileCreateSuite()));
-		put("FileAppendSuite", aof(new FileAppendSuite()));
-		put("FileUpdateSuite", aof(new FileUpdateSuite()));
-		put("FileDeleteSuite", aof(new FileDeleteSuite()));
-		put("UpdateFailuresSpec", aof(new UpdateFailuresSpec()));
-		put("ExchangeRateControlSuite", aof(new ExchangeRateControlSuite()));
-		put("PermissionSemanticsSpec", aof(new PermissionSemanticsSpec()));
-		put("FileQueriesStressTests", aof(new FileQueriesStressTests()));
+		put("FileCreateSuite", aof(FileCreateSuite::new));
+		put("FileAppendSuite", aof(FileAppendSuite::new));
+		put("FileUpdateSuite", aof(FileUpdateSuite::new));
+		put("FileDeleteSuite", aof(FileDeleteSuite::new));
+		put("UpdateFailuresSpec", aof(UpdateFailuresSpec::new));
+		put("ExchangeRateControlSuite", aof(ExchangeRateControlSuite::new));
+		put("PermissionSemanticsSpec", aof(PermissionSemanticsSpec::new));
+		put("FileQueriesStressTests", aof(FileQueriesStressTests::new));
 		/* Functional tests - SCHEDULE */
-		put("ScheduleCreateSpecs", aof(new ScheduleCreateSpecs()));
-		put("ScheduleSignSpecs", aof(new ScheduleSignSpecs()));
-		put("ScheduleRecordSpecs", aof(new ScheduleRecordSpecs()));
-		put("ScheduleDeleteSpecs", aof(new ScheduleDeleteSpecs()));
-		put("ScheduleExecutionSpecs", aof(new ScheduleExecutionSpecs()));
+		put("ScheduleCreateSpecs", aof(ScheduleCreateSpecs::new));
+		put("ScheduleSignSpecs", aof(ScheduleSignSpecs::new));
+		put("ScheduleRecordSpecs", aof(ScheduleRecordSpecs::new));
+		put("ScheduleDeleteSpecs", aof(ScheduleDeleteSpecs::new));
+		put("ScheduleExecutionSpecs", aof(ScheduleExecutionSpecs::new));
 		/* Functional tests - TOKEN */
-		put("TokenCreateSpecs", aof(new TokenCreateSpecs()));
-		put("TokenUpdateSpecs", aof(new TokenUpdateSpecs()));
-		put("TokenDeleteSpecs", aof(new TokenDeleteSpecs()));
-		put("TokenTransactSpecs", aof(new TokenTransactSpecs()));
-		put("TokenManagementSpecs", aof(new TokenManagementSpecs()));
-		put("TokenAssociationSpecs", aof(new TokenAssociationSpecs()));
+		put("TokenCreateSpecs", aof(TokenCreateSpecs::new));
+		put("TokenUpdateSpecs", aof(TokenUpdateSpecs::new));
+		put("TokenDeleteSpecs", aof(TokenDeleteSpecs::new));
+		put("TokenTransactSpecs", aof(TokenTransactSpecs::new));
+		put("TokenManagementSpecs", aof(TokenManagementSpecs::new));
+		put("TokenAssociationSpecs", aof(TokenAssociationSpecs::new));
 		/* Functional tests - CRYPTO */
-		put("CryptoTransferSuite", aof(new CryptoTransferSuite()));
-		put("CryptoDeleteSuite", aof(new CryptoDeleteSuite()));
-		put("CryptoCreateSuite", aof(new CryptoCreateSuite()));
-		put("CryptoUpdateSuite", aof(new CryptoUpdateSuite()));
-		put("CryptoQueriesStressTests", aof(new CryptoQueriesStressTests()));
-		put("CryptoCornerCasesSuite", aof(new CryptoCornerCasesSuite()));
-		put("CryptoGetInfoRegression", aof(new CryptoGetInfoRegression()));
+		put("CryptoTransferSuite", aof(CryptoTransferSuite::new));
+		put("CryptoDeleteSuite", aof(CryptoDeleteSuite::new));
+		put("CryptoCreateSuite", aof(CryptoCreateSuite::new));
+		put("CryptoUpdateSuite", aof(CryptoUpdateSuite::new));
+		put("CryptoQueriesStressTests", aof(CryptoQueriesStressTests::new));
+		put("CryptoCornerCasesSuite", aof(CryptoCornerCasesSuite::new));
+		put("CryptoGetInfoRegression", aof(CryptoGetInfoRegression::new));
 		/* Functional tests - CONTRACTS */
-		put("NewOpInConstructorSpecs", aof(new NewOpInConstructorSuite()));
-		put("DeprecatedContractKeySpecs", aof(new DeprecatedContractKeySuite()));
-		put("ContractQueriesStressTests", aof(new ContractQueriesStressTests()));
-		put("ChildStorageSpecs", aof(new ChildStorageSpec()));
-		put("ContractCallLocalSuite", aof(new ContractCallLocalSuite()));
-		put("ContractCreateSuite", aof(new ContractCreateSuite()));
-		put("BigArraySpec", aof(new BigArraySpec()));
-		put("SmartContractFailFirstSpec", aof(new SmartContractFailFirstSpec()));
-		put("OCTokenSpec", aof(new OCTokenSpec()));
-		put("SmartContractInlineAssemblyCheck", aof(new SmartContractInlineAssemblySpec()));
-		put("SmartContractSelfDestructSpec", aof(new SmartContractSelfDestructSpec()));
-		put("SmartContractPaySpec", aof(new SmartContractPaySpec()));
+		put("NewOpInConstructorSpecs", aof(NewOpInConstructorSuite::new));
+		put("DeprecatedContractKeySpecs", aof(DeprecatedContractKeySuite::new));
+		put("ContractQueriesStressTests", aof(ContractQueriesStressTests::new));
+		put("ChildStorageSpecs", aof(ChildStorageSpec::new));
+		put("ContractCallLocalSuite", aof(ContractCallLocalSuite::new));
+		put("ContractCreateSuite", aof(ContractCreateSuite::new));
+		put("BigArraySpec", aof(BigArraySpec::new));
+		put("SmartContractFailFirstSpec", aof(SmartContractFailFirstSpec::new));
+		put("OCTokenSpec", aof(OCTokenSpec::new));
+		put("SmartContractInlineAssemblyCheck", aof(SmartContractInlineAssemblySpec::new));
+		put("SmartContractSelfDestructSpec", aof(SmartContractSelfDestructSpec::new));
+		put("SmartContractPaySpec", aof(SmartContractPaySpec::new));
 		/* Functional tests - AUTORENEW */
-		put("AccountAutoRenewalSuite", aof(new AccountAutoRenewalSuite()));
+		put("AccountAutoRenewalSuite", aof(AccountAutoRenewalSuite::new));
 		/* Functional tests - MIXED (record emphasis) */
-		put("ThresholdRecordCreationSpecs", aof(new RecordCreationSuite()));
-		put("SignedTransactionBytesRecordsSuite", aof(new SignedTransactionBytesRecordsSuite()));
-		put("CryptoRecordSanityChecks", aof(new CryptoRecordsSanityCheckSuite()));
-		put("FileRecordSanityChecks", aof(new FileRecordsSanityCheckSuite()));
-		put("ContractRecordSanityChecks", aof(new ContractRecordsSanityCheckSuite()));
-		put("ContractCallSuite", aof(new ContractCallSuite()));
-		put("ProtectedFilesUpdateSuite", aof(new ProtectedFilesUpdateSuite()));
-		put("DuplicateManagementTest", aof(new DuplicateManagementTest()));
+		put("ThresholdRecordCreationSpecs", aof(RecordCreationSuite::new));
+		put("SignedTransactionBytesRecordsSuite", aof(SignedTransactionBytesRecordsSuite::new));
+		put("CryptoRecordSanityChecks", aof(CryptoRecordsSanityCheckSuite::new));
+		put("FileRecordSanityChecks", aof(FileRecordsSanityCheckSuite::new));
+		put("ContractRecordSanityChecks", aof(ContractRecordsSanityCheckSuite::new));
+		put("ContractCallSuite", aof(ContractCallSuite::new));
+		put("ProtectedFilesUpdateSuite", aof(ProtectedFilesUpdateSuite::new));
+		put("DuplicateManagementTest", aof(DuplicateManagementTest::new));
 		/* Record validation. */
-		put("RecordStreamValidation", aof(new RecordStreamValidation()));
+		put("RecordStreamValidation", aof(RecordStreamValidation::new));
 		/* Fee characterization. */
-		put("ControlAccountsExemptForUpdates", aof(new SpecialAccountsAreExempted()));
+		put("ControlAccountsExemptForUpdates", aof(SpecialAccountsAreExempted::new));
 		/* System files. */
-		put("FetchSystemFiles", aof(new FetchSystemFiles()));
-		put("CannotDeleteSystemEntitiesSuite", aof(new CannotDeleteSystemEntitiesSuite()));
+		put("FetchSystemFiles", aof(FetchSystemFiles::new));
+		put("CannotDeleteSystemEntitiesSuite", aof(CannotDeleteSystemEntitiesSuite::new));
 		/* Throttling */
-		put("ThrottleDefValidationSuite", aof(new ThrottleDefValidationSuite()));
-		put("CongestionPricingSuite", aof(new CongestionPricingSuite()));
-		put("SteadyStateThrottlingCheck", aof(new SteadyStateThrottlingCheck()));
+		put("ThrottleDefValidationSuite", aof(ThrottleDefValidationSuite::new));
+		put("CongestionPricingSuite", aof(CongestionPricingSuite::new));
+		put("SteadyStateThrottlingCheck", aof(SteadyStateThrottlingCheck::new));
 		/* Network metadata. */
-		put("VersionInfoSpec", aof(new VersionInfoSpec()));
-		put("FreezeSuite", aof(new FreezeSuite()));
+		put("VersionInfoSpec", aof(VersionInfoSpec::new));
+		put("FreezeSuite", aof(FreezeSuite::new));
 		/* Authorization. */
-		put("PrivilegedOpsSuite", aof(new PrivilegedOpsSuite()));
-		put("SysDelSysUndelSpec", aof(new SysDelSysUndelSpec()));
+		put("PrivilegedOpsSuite", aof(PrivilegedOpsSuite::new));
+		put("SysDelSysUndelSpec", aof(SysDelSysUndelSpec::new));
 		/* Freeze and update */
-		put("UpdateServerFiles", aof(new UpdateServerFiles()));
-		put("OneOfEveryTxn", aof(new OneOfEveryTransaction()));
+		put("UpdateServerFiles", aof(UpdateServerFiles::new));
+		put("OneOfEveryTxn", aof(OneOfEveryTransaction::new));
 		/* Zero Stake behaviour */
-		put("ZeroStakeTest", aof(new ZeroStakeNodeTest()));
+		put("ZeroStakeTest", aof(ZeroStakeNodeTest::new));
 		/* Query payment validation */
-		put("QueryPaymentSuite", aof(new QueryPaymentSuite()));
-		put("SimpleFreezeOnly", aof(new SimpleFreezeOnly()));
+		put("QueryPaymentSuite", aof(QueryPaymentSuite::new));
+		put("SimpleFreezeOnly", aof(SimpleFreezeOnly::new));
 		/* Transfer then freeze */
-		put("CryptoTransferThenFreezeTest", aof(new CryptoTransferThenFreezeTest()));
-		put("MixedOpsTransactionsSuite", aof(new MixedOpsTransactionsSuite()));
-		put("MixedOpsLoadTest", aof(new MixedOpsLoadTest()));
+		put("CryptoTransferThenFreezeTest", aof(CryptoTransferThenFreezeTest::new));
+		put("MixedOpsTransactionsSuite", aof(MixedOpsTransactionsSuite::new));
+		put("MixedOpsLoadTest", aof(MixedOpsLoadTest::new));
 		/* Validate new AddressBook */
-		put("ValidateNewAddressBook", aof(new ValidateNewAddressBook()));
-		put("CryptoTransferPerfSuiteWOpProvider", aof(new CryptoTransferPerfSuiteWOpProvider()));
-		put("ValidateTokensDeleteAfterReconnect", aof(new ValidateTokensDeleteAfterReconnect()));
+		put("ValidateNewAddressBook", aof(ValidateNewAddressBook::new));
+		put("CryptoTransferPerfSuiteWOpProvider", aof(CryptoTransferPerfSuiteWOpProvider::new));
+		put("ValidateTokensDeleteAfterReconnect", aof(ValidateTokensDeleteAfterReconnect::new));
 	}};
 
 	static boolean runAsync;
@@ -452,7 +453,8 @@ public class SuiteRunner {
 		Map<Boolean, List<String>> statefulCategories = Stream
 				.of(effArgs)
 				.filter(CATEGORY_MAP::containsKey)
-				.collect(groupingBy(cat -> prohibitAsync || SuiteRunner.categoryLeaksState(CATEGORY_MAP.get(cat))));
+				.collect(groupingBy(cat -> prohibitAsync ||
+						SuiteRunner.categoryLeaksState(CATEGORY_MAP.get(cat).get())));
 
 		Map<String, List<CategoryResult>> byRunType = new HashMap<>();
 		if (statefulCategories.get(Boolean.FALSE) != null) {
@@ -510,7 +512,7 @@ public class SuiteRunner {
 		return StringUtils.isNotEmpty(ciArgs)
 				? Stream.of(args, new Object[] { "-CI" }, getEffectiveDSLSuiteRunnerArgs(ciArgs))
 				.flatMap(Stream::of)
-				.toArray(n -> new String[n])
+				.toArray(String[]::new)
 				: args;
 	}
 
@@ -563,7 +565,7 @@ public class SuiteRunner {
 	}
 
 	private static boolean categoryLeaksState(HapiApiSuite[] suites) {
-		return Stream.of(suites).filter(HapiApiSuite::leaksState).findAny().isPresent();
+		return Stream.of(suites).anyMatch(HapiApiSuite::leaksState);
 	}
 
 	private static List<CategoryResult> runTargetCategories() {
@@ -580,7 +582,7 @@ public class SuiteRunner {
 		targetCategories = args
 				.stream()
 				.filter(k -> null != CATEGORY_MAP.get(k))
-				.map(k -> new CategorySuites(rightPadded(k, SUITE_NAME_WIDTH), CATEGORY_MAP.get(k)))
+				.map(k -> new CategorySuites(rightPadded(k, SUITE_NAME_WIDTH), CATEGORY_MAP.get(k).get()))
 				.collect(toList());
 	}
 
@@ -629,7 +631,7 @@ public class SuiteRunner {
 		final String summary;
 		final List<HapiApiSuite> failedSuites;
 
-		public CategoryResult(String summary, List<HapiApiSuite> failedSuites) {
+		CategoryResult(String summary, List<HapiApiSuite> failedSuites) {
 			this.summary = summary;
 			this.failedSuites = failedSuites;
 		}
@@ -639,7 +641,7 @@ public class SuiteRunner {
 		final String category;
 		final HapiApiSuite[] suites;
 
-		public CategorySuites(String category, HapiApiSuite[] suites) {
+		CategorySuites(String category, HapiApiSuite[] suites) {
 			this.category = category;
 			this.suites = suites;
 		}
@@ -656,9 +658,22 @@ public class SuiteRunner {
 		}
 	}
 
-	@SafeVarargs
-	public static <T> T[] aof(T... items) {
-		return items;
+//	@SafeVarargs
+//	public static <T> Supplier<T[]> aof(Supplier<T>... items) {
+//		return () -> (T[]) List.of(items)
+//				.stream()
+//				.map(Supplier::get)
+//				.toArray();
+//	}
+
+	public static Supplier<HapiApiSuite[]> aof(Supplier<HapiApiSuite>... items) {
+		return () -> {
+			HapiApiSuite[] suites = new HapiApiSuite[items.length];
+			for(int i = 0; i < items.length; i++) {
+				suites[i] = items[i].get();
+			};
+			return suites;
+		};
 	}
 
 	public static void setPayerId(String payerId) {

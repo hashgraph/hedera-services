@@ -131,6 +131,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(22L, subject.defaultContractLifetime());
 		assertEquals(33L, subject.autoRenewGracePeriod());
 		assertEquals(34L, subject.ratesMidnightCheckInterval());
+		assertEquals(43L, subject.maxNftMints());
 	}
 
 	@Test
@@ -208,6 +209,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(23L, subject.defaultContractLifetime());
 		assertEquals(34L, subject.autoRenewGracePeriod());
 		assertEquals(35L, subject.ratesMidnightCheckInterval());
+		assertEquals(44L, subject.maxNftMints());
 	}
 
 	@Test
@@ -273,6 +275,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("tokens.nfts.maxQueryRange")).willReturn(i + 39L);
 		given(properties.getIntProperty("tokens.nfts.maxMetadataBytes")).willReturn(i + 40);
 		given(properties.getIntProperty("tokens.maxTokenNameUtf8Bytes")).willReturn(i + 41);
+		given(properties.getLongProperty("tokens.nfts.maxAllowedMints")).willReturn(i + 42L);
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {

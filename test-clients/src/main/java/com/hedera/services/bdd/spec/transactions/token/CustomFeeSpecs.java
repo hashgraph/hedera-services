@@ -21,8 +21,10 @@ package com.hedera.services.bdd.spec.transactions.token;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.Fraction;
-import proto.CustomFeesOuterClass;
+import com.hederahashgraph.api.proto.java.FractionalFee;
 
 import java.util.OptionalLong;
 import java.util.function.Function;
@@ -32,11 +34,11 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.isIdLiteral;
 
 public class CustomFeeSpecs {
-	public static Function<HapiApiSpec, CustomFeesOuterClass.CustomFee> fixedHbarFee(long amount, String collector) {
+	public static Function<HapiApiSpec, CustomFee> fixedHbarFee(long amount, String collector) {
 		return spec -> builtFixedHbar(amount, collector, spec);
 	}
 
-	public static Function<HapiApiSpec, CustomFeesOuterClass.CustomFee> fixedHtsFee(
+	public static Function<HapiApiSpec, CustomFee> fixedHtsFee(
 			long amount,
 			String denom,
 			String collector
@@ -44,7 +46,7 @@ public class CustomFeeSpecs {
 		return spec -> builtFixedHts(amount, denom, collector, spec);
 	}
 
-	public static Function<HapiApiSpec, CustomFeesOuterClass.CustomFee> fractionalFee(
+	public static Function<HapiApiSpec, CustomFee> fractionalFee(
 			long numerator,
 			long denominator,
 			long min,
@@ -54,17 +56,17 @@ public class CustomFeeSpecs {
 		return spec -> builtFractional(numerator, denominator, min, max, collector, spec);
 	}
 
-	public static Function<HapiApiSpec, CustomFeesOuterClass.CustomFee> incompleteCustomFee(String collector) {
+	public static Function<HapiApiSpec, CustomFee> incompleteCustomFee(String collector) {
 		return spec -> buildIncompleteCustomFee(collector, spec);
 	}
 
-	static CustomFeesOuterClass.CustomFee buildIncompleteCustomFee(final String collector,
+	static CustomFee buildIncompleteCustomFee(final String collector,
 			final HapiApiSpec spec) {
 		final var collectorId = isIdLiteral(collector) ? asAccount(collector) : spec.registry().getAccountID(collector);
-		return CustomFeesOuterClass.CustomFee.newBuilder().setFeeCollectorAccountId(collectorId).build();
+		return CustomFee.newBuilder().setFeeCollectorAccountId(collectorId).build();
 	}
 
-	static CustomFeesOuterClass.CustomFee builtFixedHbar(
+	static CustomFee builtFixedHbar(
 			long amount,
 			String collector,
 			HapiApiSpec spec
@@ -72,7 +74,7 @@ public class CustomFeeSpecs {
 		return baseFixedBuilder(amount, collector, spec).build();
 	}
 
-	static CustomFeesOuterClass.CustomFee builtFixedHts(
+	static CustomFee builtFixedHts(
 			long amount,
 			String denom,
 			String collector,
@@ -84,7 +86,7 @@ public class CustomFeeSpecs {
 		return builder.build();
 	}
 
-	static CustomFeesOuterClass.CustomFee builtFractional(
+	static CustomFee builtFractional(
 			long numerator,
 			long denominator,
 			long min,
@@ -93,27 +95,27 @@ public class CustomFeeSpecs {
 			HapiApiSpec spec
 	) {
 		final var collectorId = isIdLiteral(collector) ? asAccount(collector) : spec.registry().getAccountID(collector);
-		final var fractionalBuilder = CustomFeesOuterClass.FractionalFee.newBuilder()
+		final var fractionalBuilder = FractionalFee.newBuilder()
 				.setFractionalAmount(Fraction.newBuilder()
 						.setNumerator(numerator)
 						.setDenominator(denominator))
 				.setMinimumAmount(min);
 		max.ifPresent(fractionalBuilder::setMaximumAmount);
-		return  CustomFeesOuterClass.CustomFee.newBuilder()
+		return  CustomFee.newBuilder()
 				.setFractionalFee(fractionalBuilder)
 				.setFeeCollectorAccountId(collectorId)
 				.build();
 	}
 
-	static CustomFeesOuterClass.CustomFee.Builder baseFixedBuilder(
+	static CustomFee.Builder baseFixedBuilder(
 			long amount,
 			String collector,
 			HapiApiSpec spec
 	) {
 		final var collectorId = isIdLiteral(collector) ? asAccount(collector) : spec.registry().getAccountID(collector);
-		final var fixedBuilder = CustomFeesOuterClass.FixedFee.newBuilder()
+		final var fixedBuilder = FixedFee.newBuilder()
 				.setAmount(amount);
-		final var builder = CustomFeesOuterClass.CustomFee.newBuilder()
+		final var builder = CustomFee.newBuilder()
 				.setFixedFee(fixedBuilder)
 				.setFeeCollectorAccountId(collectorId);
 		return builder;

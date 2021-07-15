@@ -222,21 +222,21 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	) {
 		final var function = accessor.getFunction();
 		if (pricedUsageCalculator.supports(function)) {
-			// TODO this will not work for NonFungible Mints/Burn/Wipes
+			final var applicablePrices = prices.get(accessor.getSubType());
 			return inHandle
-					? pricedUsageCalculator.inHandleFees(accessor, prices.get(SubType.DEFAULT), rate, payerKey)
-					: pricedUsageCalculator.extraHandleFees(accessor, prices.get(SubType.DEFAULT), rate, payerKey);
+					? pricedUsageCalculator.inHandleFees(accessor, applicablePrices, rate, payerKey)
+					: pricedUsageCalculator.extraHandleFees(accessor, applicablePrices, rate, payerKey);
 		} else {
 			var sigUsage = getSigUsage(accessor, payerKey);
 			var usageEstimator = getTxnUsageEstimator(accessor);
 			try {
-				FeeData metrics = usageEstimator.usageGiven(accessor.getTxn(), sigUsage, view);
-				return getFeeObject(prices.get(metrics.getSubType()), metrics, rate, feeMultiplierSource.currentMultiplier());
+				final var usage = usageEstimator.usageGiven(accessor.getTxn(), sigUsage, view);
+				final var applicablePrices = prices.get(usage.getSubType());
+				return getFeeObject(applicablePrices, usage, rate, feeMultiplierSource.currentMultiplier());
 			} catch (InvalidTxBodyException e) {
 				log.warn(
 						"Argument accessor={} malformed for implied estimator {}!",
-					        accessor.getSignedTxnWrapper(),
-						usageEstimator);
+						accessor.getSignedTxnWrapper(), usageEstimator);
 				throw new IllegalArgumentException(e);
 			}
 		}

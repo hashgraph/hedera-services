@@ -113,8 +113,8 @@ class TokenAssociateTransitionLogicTest {
 		// then:
 		inOrder.verify(modelAccount).associateWith(tokens, 123);
 		inOrder.verify(accountStore).persistAccount(modelAccount);
-		inOrder.verify(tokenStore).persistTokenRelationship(firstModelTokenRel);
-		inOrder.verify(tokenStore).persistTokenRelationship(secondModelTokenRel);
+		inOrder.verify(tokenStore).persistTokenRelationships(List.of(firstModelTokenRel));
+		inOrder.verify(tokenStore).persistTokenRelationships(List.of(secondModelTokenRel));
 	}
 
 	@Test

@@ -27,6 +27,7 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.OwnershipTracker;
+import com.hedera.services.store.models.Token;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -35,13 +36,17 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
@@ -76,10 +81,11 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 		/* --- Translate from gRPC types --- */
 		final var op = txnCtx.accessor().getTxn().getTokenMint();
 		final var grpcId = op.getToken();
-		final var targetId = new Id(grpcId.getShardNum(), grpcId.getRealmNum(), grpcId.getTokenNum());
+		final var targetId = Id.fromGrpcToken(grpcId);
 
 		/* --- Load the model objects --- */
 		final var token = tokenStore.loadToken(targetId);
+		validateMinting(token, op);
 		final var treasuryRel = tokenStore.loadTokenRelationship(token, token.getTreasury());
 
 		/* --- Instantiate change trackers --- */
@@ -94,9 +100,16 @@ public class TokenMintTransitionLogic implements TransitionLogic {
 
 		/* --- Persist the updated models --- */
 		tokenStore.persistToken(token);
-		tokenStore.persistTokenRelationship(treasuryRel);
+		tokenStore.persistTokenRelationships(List.of(treasuryRel));
 		tokenStore.persistTrackers(ownershipTracker);
 		accountStore.persistAccount(token.getTreasury());
+	}
+
+	private void validateMinting(Token token, TokenMintTransactionBody op) {
+		if (token.getType() == NON_FUNGIBLE_UNIQUE) {
+			final var proposedTotal = tokenStore.currentMintedNfts() + op.getMetadataCount();
+			validateTrue(validator.isPermissibleTotalNfts(proposedTotal), MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);
+		}
 	}
 
 	@Override

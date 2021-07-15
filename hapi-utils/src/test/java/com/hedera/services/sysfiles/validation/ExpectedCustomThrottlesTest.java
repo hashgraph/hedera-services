@@ -59,6 +59,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetAccountNftInfos;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
@@ -80,7 +81,7 @@ class ExpectedCustomThrottlesTest {
 	void release0160HasExpected() {
 		assertDoesNotThrow(ExpectedCustomThrottles::new);
 
-		assertEquals(49, OPS_FOR_RELEASE_0160.size());
+		assertEquals(50, OPS_FOR_RELEASE_0160.size());
 		// and:
 		assertTrue(OPS_FOR_RELEASE_0160.contains(CryptoCreate), "Missing CryptoCreate!");
 		assertTrue(OPS_FOR_RELEASE_0160.contains(CryptoTransfer), "Missing CryptoTransfer!");
@@ -113,6 +114,7 @@ class ExpectedCustomThrottlesTest {
 		assertTrue(OPS_FOR_RELEASE_0160.contains(TokenUpdate), "Missing TokenUpdate!");
 		assertTrue(OPS_FOR_RELEASE_0160.contains(TokenAssociateToAccount), "Missing TokenAssociateToAccount!");
 		assertTrue(OPS_FOR_RELEASE_0160.contains(TokenDissociateFromAccount), "Missing TokenDissociateFromAccount!");
+		assertTrue(OPS_FOR_RELEASE_0160.contains(TokenFeeScheduleUpdate), "Missing TokenFeeScheduleUpdate!");
 		assertTrue(OPS_FOR_RELEASE_0160.contains(ScheduleCreate), "Missing ScheduleCreate!");
 		assertTrue(OPS_FOR_RELEASE_0160.contains(ScheduleSign), "Missing ScheduleSign!");
 		assertTrue(OPS_FOR_RELEASE_0160.contains(ScheduleDelete), "Missing ScheduleDelete!");

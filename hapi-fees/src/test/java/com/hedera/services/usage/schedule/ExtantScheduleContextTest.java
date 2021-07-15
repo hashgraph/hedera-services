@@ -9,9 +9,9 @@ package com.hedera.services.usage.schedule;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,13 +40,14 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ExtantScheduleContextTest {
-	int numSigners = 2;
-	boolean resolved = true;
-	Key adminKey = KeyUtils.A_THRESHOLD_KEY;
-	String memo = "Not since life began";
-	SchedulableTransactionBody scheduledTxn = SchedulableTransactionBody.newBuilder().setTransactionFee(123).build();
+	private int numSigners = 2;
+	private boolean resolved = true;
+	private Key adminKey = KeyUtils.A_THRESHOLD_KEY;
+	private String memo = "Not since life began";
+	private SchedulableTransactionBody scheduledTxn = SchedulableTransactionBody.newBuilder().setTransactionFee(
+			123).build();
 
-	enum SettableField { NUM_SIGNERS, NO_ADMIN_KEY, ADMIN_KEY, MEMO, SCHEDULED_TXN, IS_RESOLVED }
+	enum SettableField {NUM_SIGNERS, NO_ADMIN_KEY, ADMIN_KEY, MEMO, SCHEDULED_TXN, IS_RESOLVED}
 
 	@Test
 	void buildsAsExpectedWithAllPresent() {

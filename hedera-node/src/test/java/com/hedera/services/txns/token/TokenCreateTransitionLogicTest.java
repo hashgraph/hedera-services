@@ -31,7 +31,10 @@ import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.Fraction;
+import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
@@ -40,7 +43,6 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import proto.CustomFeesOuterClass;
 
 import java.time.Instant;
 import java.util.List;
@@ -48,6 +50,7 @@ import java.util.Optional;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_KYC_KEY;
@@ -67,9 +70,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyList;
 import static org.mockito.BDDMockito.given;
@@ -247,6 +252,30 @@ class TokenCreateTransitionLogicTest {
 		verify(store, never()).commitCreation();
 		verify(store).rollbackCreation();
 		verify(ledger).dropPendingTokenChanges();
+	}
+
+	@Test
+	void skipsTokenBalanceAdjustmentForNft() {
+		givenValidTxnCtx();
+		tokenCreateTxn = TransactionBody.newBuilder()
+				.setTokenCreation(tokenCreateTxn.getTokenCreation().toBuilder().setTokenType(NON_FUNGIBLE_UNIQUE))
+				.build();
+		given(accessor.getTxn()).willReturn(tokenCreateTxn);
+		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
+				.willReturn(CreationResult.success(created));
+		given(store.associate(treasury, List.of(created))).willReturn(OK);
+
+		subject.doStateTransition();
+
+		verify(store).associate(treasury, List.of(created));
+		verify(ledger, never()).unfreeze(any(), any());
+		verify(ledger, never()).grantKyc(any(), any());
+
+		verify(ledger, never()).adjustTokenBalance(any(AccountID.class), any(TokenID.class), anyLong());
+
+		verify(store).commitCreation();
+		verify(txnCtx).setCreated(created);
+		verify(txnCtx).setStatus(SUCCESS);
 	}
 
 	@Test
@@ -451,6 +480,14 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	@Test
+	void rejectsInvalidFeeSchedule() {
+		givenInvalidFeeScheduleKey();
+
+		// expect:
+		assertEquals(INVALID_CUSTOM_FEE_SCHEDULE_KEY, subject.semanticCheck().apply(tokenCreateTxn));
+	}
+
+	@Test
 	void rejectsInvalidAdminKey() {
 		givenInvalidAdminKey();
 
@@ -595,7 +632,7 @@ class TokenCreateTransitionLogicTest {
 						.setAutoRenewAccount(renewAccount)
 						.setExpiry(expiry));
 		if (withCustomFees) {
-			builder.getTokenCreationBuilder().setCustomFees(grpcCustomFees);
+			builder.getTokenCreationBuilder().addAllCustomFees(grpcCustomFees);
 		}
 		if (withFreeze) {
 			builder.getTokenCreationBuilder().setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asKey());
@@ -659,6 +696,16 @@ class TokenCreateTransitionLogicTest {
 						.setDecimals(decimals)
 						.setTreasury(treasury)
 						.setAdminKey(Key.getDefaultInstance()))
+				.build();
+	}
+
+	private void givenInvalidFeeScheduleKey() {
+		tokenCreateTxn = TransactionBody.newBuilder()
+				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
+						.setInitialSupply(initialSupply)
+						.setDecimals(decimals)
+						.setTreasury(treasury)
+						.setFeeScheduleKey(Key.getDefaultInstance()))
 				.build();
 	}
 
@@ -732,45 +779,45 @@ class TokenCreateTransitionLogicTest {
 
 	private TokenID misc = IdUtils.asToken("3.2.1");
 	private Fraction fraction = Fraction.newBuilder().setNumerator(15).setDenominator(100).build();
-	private CustomFeesOuterClass.FractionalFee firstFractionalFee = CustomFeesOuterClass.FractionalFee.newBuilder()
+	private FractionalFee firstFractionalFee = FractionalFee.newBuilder()
 			.setFractionalAmount(fraction)
 			.setMaximumAmount(50)
 			.setMinimumAmount(10)
 			.build();
-	private CustomFeesOuterClass.FractionalFee secondFractionalFee = CustomFeesOuterClass.FractionalFee.newBuilder()
+	private FractionalFee secondFractionalFee = FractionalFee.newBuilder()
 			.setFractionalAmount(fraction)
 			.setMaximumAmount(15)
 			.setMinimumAmount(5)
 			.build();
-	private CustomFeesOuterClass.FixedFee fixedFeeInTokenUnits = CustomFeesOuterClass.FixedFee.newBuilder()
+	private FixedFee fixedFeeInTokenUnits = FixedFee.newBuilder()
 			.setDenominatingTokenId(misc)
 			.setAmount(100)
 			.build();
-	private CustomFeesOuterClass.FixedFee fixedFeeInHbar = CustomFeesOuterClass.FixedFee.newBuilder()
+	private FixedFee fixedFeeInHbar = FixedFee.newBuilder()
 			.setAmount(100)
 			.build();
 	private AccountID feeCollector = IdUtils.asAccount("6.6.6");
 	private AccountID anotherFeeCollector = IdUtils.asAccount("1.2.777");
-	private CustomFeesOuterClass.CustomFee customFixedFeeInHbar = CustomFeesOuterClass.CustomFee.newBuilder()
+	private CustomFee customFixedFeeInHbar = CustomFee.newBuilder()
 			.setFeeCollectorAccountId(feeCollector)
 			.setFixedFee(fixedFeeInHbar)
 			.build();
-	private CustomFeesOuterClass.CustomFee customFixedFeeInHts = CustomFeesOuterClass.CustomFee.newBuilder()
+	private CustomFee customFixedFeeInHts = CustomFee.newBuilder()
 			.setFeeCollectorAccountId(anotherFeeCollector)
 			.setFixedFee(fixedFeeInTokenUnits)
 			.build();
-	private CustomFeesOuterClass.CustomFee customFractionalFeeA = CustomFeesOuterClass.CustomFee.newBuilder()
+	private CustomFee customFractionalFeeA = CustomFee.newBuilder()
 			.setFeeCollectorAccountId(feeCollector)
 			.setFractionalFee(firstFractionalFee)
 			.build();
-	private CustomFeesOuterClass.CustomFee customFractionalFeeB = CustomFeesOuterClass.CustomFee.newBuilder()
+	private CustomFee customFractionalFeeB = CustomFee.newBuilder()
 			.setFeeCollectorAccountId(feeCollector)
 			.setFractionalFee(secondFractionalFee)
 			.build();
-	private CustomFeesOuterClass.CustomFees grpcCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
-			.addCustomFees(customFixedFeeInHbar)
-			.addCustomFees(customFixedFeeInHts)
-			.addCustomFees(customFractionalFeeA)
-			.addCustomFees(customFractionalFeeB)
-			.build();
+	private List<CustomFee> grpcCustomFees = List.of(
+			customFixedFeeInHbar,
+			customFixedFeeInHts,
+			customFractionalFeeA,
+			customFractionalFeeB
+	);
 }

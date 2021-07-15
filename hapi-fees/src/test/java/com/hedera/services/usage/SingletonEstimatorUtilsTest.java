@@ -9,9 +9,9 @@ package com.hedera.services.usage;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -100,7 +100,7 @@ class SingletonEstimatorUtilsTest {
 	@Test
 	void hasExpectedBaseNetworkRbs() {
 		// expect:
-		assertEquals( BASIC_RECEIPT_SIZE * RECEIPT_STORAGE_TIME_SEC, ESTIMATOR_UTILS.baseNetworkRbs());
+		assertEquals(BASIC_RECEIPT_SIZE * RECEIPT_STORAGE_TIME_SEC, ESTIMATOR_UTILS.baseNetworkRbs());
 	}
 
 	@Test
@@ -108,7 +108,8 @@ class SingletonEstimatorUtilsTest {
 		// expect:
 		assertEquals(
 				A_USAGES_MATRIX,
-				ESTIMATOR_UTILS.withDefaultTxnPartitioning(A_USAGE_VECTOR, SubType.DEFAULT, NETWORK_RBH, NUM_PAYER_KEYS));
+				ESTIMATOR_UTILS.withDefaultTxnPartitioning(A_USAGE_VECTOR, SubType.DEFAULT, NETWORK_RBH,
+						NUM_PAYER_KEYS));
 	}
 
 	@Test

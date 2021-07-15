@@ -28,7 +28,7 @@ import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
-import com.hedera.services.state.submerkle.AssessedCustomFee;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.NftAdjustments;
@@ -101,7 +101,7 @@ public class ExpiringCreations implements EntityCreator {
 			TxnReceipt receipt,
 			List<TokenTransferList> explicitTokenTransfers,
 			ServicesContext ctx,
-			List<AssessedCustomFee> customFeesCharged
+			List<FcAssessedCustomFee> customFeesCharged
 	) {
 		final long amount = ctx.narratedCharging().totalFeesChargedToPayer() + otherNonThresholdFees;
 		final TransferList transfersList = ctx.ledger().netTransfersInTxn();

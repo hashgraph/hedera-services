@@ -9,9 +9,9 @@ package com.hedera.services.bdd.spec.queries.token;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,6 +25,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -38,7 +39,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
-import proto.CustomFeesOuterClass;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -75,14 +75,14 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 	private Optional<String> expectedFreezeKey = Optional.empty();
 	private Optional<String> expectedSupplyKey = Optional.empty();
 	private Optional<String> expectedWipeKey = Optional.empty();
+	private Optional<String> expectedFeeScheduleKey = Optional.empty();
 	private Optional<Boolean> expectedDeletion = Optional.empty();
 	private Optional<TokenKycStatus> expectedKycDefault = Optional.empty();
 	private Optional<TokenFreezeStatus> expectedFreezeDefault = Optional.empty();
 	private Optional<String> expectedAutoRenewAccount = Optional.empty();
 	private OptionalLong expectedAutoRenewPeriod = OptionalLong.empty();
 	private Optional<Boolean> expectedExpiry = Optional.empty();
-	private List<BiConsumer<HapiApiSpec, CustomFeesOuterClass.CustomFees>> expectedFees = new ArrayList<>();
-	private Optional<Boolean> expectedCustomFeesMutable = Optional.empty();
+	private List<BiConsumer<HapiApiSpec, List<CustomFee>>> expectedFees = new ArrayList<>();
 
 	@Override
 	public HederaFunctionality type() {
@@ -194,6 +194,11 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		return this;
 	}
 
+	public HapiGetTokenInfo hasFeeScheduleKey(String name) {
+		expectedFeeScheduleKey = Optional.of(name);
+		return this;
+	}
+
 	public HapiGetTokenInfo isDeleted() {
 		expectedDeletion = Optional.of(Boolean.TRUE);
 		return this;
@@ -204,17 +209,13 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 		return this;
 	}
 
-	public HapiGetTokenInfo hasCustom(BiConsumer<HapiApiSpec, CustomFeesOuterClass.CustomFees> feeAssertion) {
+	public HapiGetTokenInfo hasCustom(BiConsumer<HapiApiSpec, List<CustomFee>> feeAssertion) {
 		expectedFees.add(feeAssertion);
-		return this;
-	}
-	public HapiGetTokenInfo hasCustomFeesMutable(boolean customFeesMutable) {
-		expectedCustomFeesMutable = Optional.of(customFeesMutable);
 		return this;
 	}
 
 	@Override
-	protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
+	protected void assertExpectationsGiven(HapiApiSpec spec) {
 		var actualInfo = response.getTokenGetInfo().getTokenInfo();
 
 		expectedTokenType.ifPresent(tokenType -> Assert.assertEquals(
@@ -288,15 +289,10 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 					actualInfo.getTreasury());
 		}
 
-		final var actualFees = actualInfo.getCustomFees();
+		final var actualFees = actualInfo.getCustomFeesList();
 		for (var expectedFee : expectedFees) {
 			expectedFee.accept(spec, actualFees);
 		}
-
-		expectedCustomFeesMutable.ifPresent(b -> Assert.assertEquals(
-				"Wrong custom fees mutability!",
-				b,
-				actualInfo.getCustomFees().getCanUpdateWithAdminKey()));
 
 		expectedMemo.ifPresent(s -> Assert.assertEquals(
 				"Wrong memo!",
@@ -348,6 +344,13 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 				expectedSupplyKey,
 				(n, r) -> r.getSupplyKey(n),
 				"Wrong token supply key!",
+				registry);
+
+		assertFor(
+				actualInfo.getFeeScheduleKey(),
+				expectedFeeScheduleKey,
+				(n, r) -> r.getFeeScheduleKey(n),
+				"Wrong token fee schedule key!",
 				registry);
 	}
 

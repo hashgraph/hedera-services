@@ -30,6 +30,7 @@ import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 
@@ -60,11 +61,6 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public ResponseCodeEnum dissociate(AccountID aId, List<TokenID> tokens) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public ResponseCodeEnum freeze(AccountID aId, TokenID tId) {
 		throw new UnsupportedOperationException();
 	}
@@ -85,17 +81,17 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public ResponseCodeEnum wipe(final AccountID aId, final TokenID tId, final long wipingAmount, final boolean skipKeyCheck) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public boolean associationExists(AccountID aId, TokenID tId) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public ResponseCodeEnum update(TokenUpdateTransactionBody changes, long now) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public ResponseCodeEnum updateFeeSchedule(TokenFeeScheduleUpdateTransactionBody changes) {
 		throw new UnsupportedOperationException();
 	}
 

@@ -27,10 +27,8 @@ import com.hedera.services.state.submerkle.RichInstant;
  *
  * Operations are validated, and throw a {@link com.hedera.services.exceptions.InvalidTransactionException}
  * with response code capturing the failure when one occurs.
- *
  */
 public class UniqueToken {
-
 	private Id tokenId;
 	private long serialNumber;
 	private RichInstant creationTime;

@@ -34,6 +34,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -50,18 +51,18 @@ public class TokenBurnTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(TokenBurnTransitionLogic.class);
 	private final OptionValidator validator;
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
-	private final TypedTokenStore store;
+	private final TypedTokenStore tokenStore;
 	private final TransactionContext txnCtx;
 	private final AccountStore accountStore;
 
 	public TokenBurnTransitionLogic(
 			final OptionValidator validator,
 			final AccountStore accountStore,
-			TypedTokenStore store,
+			TypedTokenStore tokenStore,
 			TransactionContext txnCtx
 	) {
 		this.validator = validator;
-		this.store = store;
+		this.tokenStore = tokenStore;
 		this.txnCtx = txnCtx;
 		this.accountStore = accountStore;
 	}
@@ -71,24 +72,26 @@ public class TokenBurnTransitionLogic implements TransitionLogic {
 		/* --- Translate from gRPC types --- */
 		final var op = txnCtx.accessor().getTxn().getTokenBurn();
 		final var grpcId = op.getToken();
-		final var targetId = new Id(grpcId.getShardNum(), grpcId.getRealmNum(), grpcId.getTokenNum());
+		final var targetId = Id.fromGrpcToken(grpcId);
 
 		/* --- Load the model objects --- */
-		final var token = store.loadToken(targetId);
-		final var treasuryRel = store.loadTokenRelationship(token, token.getTreasury());
+		final var token = tokenStore.loadToken(targetId);
+		final var treasuryRel = tokenStore.loadTokenRelationship(token, token.getTreasury());
 		final var ownershipTracker = new OwnershipTracker();
 
 		/* --- Do the business logic --- */
 		if (token.getType().equals(TokenType.FUNGIBLE_COMMON)) {
 			token.burn(treasuryRel, op.getAmount());
 		} else {
-			token.burn(ownershipTracker, treasuryRel, op.getSerialNumbersList());
+			final var burnList = op.getSerialNumbersList();
+			tokenStore.loadUniqueTokens(token, burnList);
+			token.burn(ownershipTracker, treasuryRel, burnList);
 		}
 
 		/* --- Persist the updated models --- */
-		store.persistToken(token);
-		store.persistTokenRelationship(treasuryRel);
-		store.persistTrackers(ownershipTracker);
+		tokenStore.persistToken(token);
+		tokenStore.persistTokenRelationships(List.of(treasuryRel));
+		tokenStore.persistTrackers(ownershipTracker);
 		accountStore.persistAccount(token.getTreasury());
 	}
 

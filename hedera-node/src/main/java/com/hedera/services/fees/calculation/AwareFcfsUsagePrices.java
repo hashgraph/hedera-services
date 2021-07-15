@@ -117,7 +117,8 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 			var accessor = txnCtx.accessor();
 			return defaultPricesGiven(accessor.getFunction(), accessor.getTxnId().getTransactionValidStart());
 		} catch (Exception e) {
-			log.warn("Using default usage prices to calculate fees for {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
+			log.warn("Using default usage prices to calculate fees for {}!", txnCtx.accessor().getSignedTxnWrapper(),
+					e);
 		}
 		return DEFAULT_USAGE_PRICES.get(SubType.DEFAULT);
 	}
@@ -128,7 +129,8 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 			var accessor = txnCtx.accessor();
 			return pricesGiven(accessor.getFunction(), accessor.getTxnId().getTransactionValidStart());
 		} catch (Exception e) {
-			log.warn("Using default usage prices to calculate fees for {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
+			log.warn("Using default usage prices to calculate fees for {}!", txnCtx.accessor().getSignedTxnWrapper(),
+					e);
 		}
 		return DEFAULT_USAGE_PRICES;
 	}
@@ -154,7 +156,8 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 	}
 
 	@Override
-	public Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> activePricingSequence(HederaFunctionality function) {
+	public Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> activePricingSequence(
+			HederaFunctionality function) {
 		return Triple.of(
 				currFunctionUsagePrices.get(function),
 				Instant.ofEpochSecond(
@@ -206,9 +209,6 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 				if (FUNCTIONS_WITH_TOKEN_TYPE_SPECIALIZATIONS.contains(function)) {
 					map.put(SubType.TOKEN_FUNGIBLE_COMMON, untypedPrices);
 					map.put(SubType.TOKEN_NON_FUNGIBLE_UNIQUE, untypedPrices);
-					if (function == TokenAccountWipe) {
-						map.put(SubType.DEFAULT, untypedPrices);
-					}
 				} else {
 					map.put(SubType.DEFAULT, untypedPrices);
 				}

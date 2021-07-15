@@ -1,23 +1,23 @@
 package com.hedera.services.queries.token;
 
-/*
- * -
- *
+/*-
+ * ‌
  * Hedera Services Node
- *
+ * ​
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- *
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
 
 import com.google.protobuf.ByteString;
@@ -62,20 +62,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-public class GetTokenNftInfosAnswerTest {
+class GetTokenNftInfosAnswerTest {
 
-	GetTokenNftInfosAnswer subject;
-	Transaction paymentTxn;
-	StateView view;
+	private GetTokenNftInfosAnswer subject;
+	private Transaction paymentTxn;
+	private StateView view;
 	private long fee = 1_234L;
-	TokenID tokenId = asToken("0.0.2");
-	TokenID invalidTokenId = asToken("0.0.4");
+	private TokenID tokenId = asToken("0.0.2");
+	private TokenID invalidTokenId = asToken("0.0.4");
 	private List<TokenNftInfo> tokenNftInfos;
-	long start = 0, end = 2;
-	OptionValidator optionValidator;
+	private long start = 0, end = 2;
+	private OptionValidator optionValidator;
 
 	@BeforeEach
-	public void setup() {
+	void setup() {
 		view = mock(StateView.class);
 		optionValidator = mock(OptionValidator.class);
 		subject = new GetTokenNftInfosAnswer(optionValidator);
@@ -94,21 +94,21 @@ public class GetTokenNftInfosAnswerTest {
 	}
 
 	@Test
-	public void requiresAnswerOnlyPayment() throws Throwable {
+	void requiresAnswerOnlyPayment() throws Throwable {
 		// expect:
 		assertFalse(subject.requiresNodePayment(validQuery(COST_ANSWER, 0, tokenId, start, end)));
 		assertTrue(subject.requiresNodePayment(validQuery(ANSWER_ONLY, 0, tokenId, start, end)));
 	}
 
 	@Test
-	public void requiresAnswerOnlyCostAsExpected() throws Throwable {
+	void requiresAnswerOnlyCostAsExpected() throws Throwable {
 		// expect:
 		assertTrue(subject.needsAnswerOnlyCost(validQuery(COST_ANSWER, 0, tokenId, start, end)));
 		assertFalse(subject.needsAnswerOnlyCost(validQuery(ANSWER_ONLY, 0, tokenId, start, end)));
 	}
 
 	@Test
-	public void checksValidityProperly() throws Throwable {
+	void checksValidityProperly() throws Throwable {
 		// given:
 		var merkleToken = new MerkleToken();
 		merkleToken.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE);
@@ -124,7 +124,7 @@ public class GetTokenNftInfosAnswerTest {
 	}
 
 	@Test
-	public void checksExceededQueryRangeProperly() throws Throwable {
+	void checksExceededQueryRangeProperly() throws Throwable {
 		// given:
 		given(optionValidator.nftMaxQueryRangeCheck(start, end)).willReturn(INVALID_QUERY_RANGE);
 
@@ -136,7 +136,7 @@ public class GetTokenNftInfosAnswerTest {
 	}
 
 	@Test
-	public void checksQueryRangeLargerThanNftCount() throws Throwable {
+	void checksQueryRangeLargerThanNftCount() throws Throwable {
 		// given:
 		var merkleToken = new MerkleToken();
 		merkleToken.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE);
@@ -151,7 +151,7 @@ public class GetTokenNftInfosAnswerTest {
 	}
 
 	@Test
-	public void checksQueryTokenInvalid() throws Throwable {
+	void checksQueryTokenInvalid() throws Throwable {
 		// given:
 		given(optionValidator.nftMaxQueryRangeCheck(start, end)).willReturn(OK);
 		given(view.tokenWith(tokenId)).willReturn(Optional.empty());
@@ -164,7 +164,7 @@ public class GetTokenNftInfosAnswerTest {
 	}
 
 	@Test
-	public void checksQueryTokenWasDeleted() throws Throwable {
+	void checksQueryTokenWasDeleted() throws Throwable {
 		// given:
 		var merkleToken = new MerkleToken();
 		merkleToken.setDeleted(true);
@@ -179,7 +179,7 @@ public class GetTokenNftInfosAnswerTest {
 	}
 
 	@Test
-	public void checksQueryNotSupported() throws Throwable {
+	void checksQueryNotSupported() throws Throwable {
 		// given:
 		var merkleToken = new MerkleToken();
 		merkleToken.setTokenType(TokenType.FUNGIBLE_COMMON);
@@ -194,12 +194,12 @@ public class GetTokenNftInfosAnswerTest {
 	}
 
 	@Test
-	public void properCanonicalFunction() {
+	void properCanonicalFunction() {
 		assertEquals(HederaFunctionality.TokenGetNftInfos, subject.canonicalFunction());
 	}
 
 	@Test
-	public void getsValidity() {
+	void getsValidity() {
 		// given:
 		Response response = Response.newBuilder().setTokenGetNftInfos(
 				TokenGetNftInfosResponse.newBuilder()
@@ -210,7 +210,7 @@ public class GetTokenNftInfosAnswerTest {
 	}
 
 	@Test
-	public void getsExpectedPayment() throws Throwable {
+	void getsExpectedPayment() throws Throwable {
 		// given:
 		Query query = validQuery(COST_ANSWER, fee, tokenId, start, end);
 
@@ -219,7 +219,7 @@ public class GetTokenNftInfosAnswerTest {
 	}
 
 	@Test
-	public void checksInvalidRangesProperly() throws Throwable {
+	void checksInvalidRangesProperly() throws Throwable {
 		// when:
 		var validity = subject.checkValidity(validQuery(ANSWER_ONLY, 0, tokenId, end, start), view);
 
@@ -228,7 +228,7 @@ public class GetTokenNftInfosAnswerTest {
 	}
 
 	@Test
-	public void getsTokenNftInfos() throws Throwable {
+	void getsTokenNftInfos() throws Throwable {
 		// setup:
 		Query query = validQuery(ANSWER_ONLY, fee, tokenId, start, end);
 		given(view.infosForTokenNfts(tokenId, start, end)).willReturn(Optional.of(tokenNftInfos));
@@ -248,7 +248,7 @@ public class GetTokenNftInfosAnswerTest {
 	}
 
 	@Test
-	public void getsInfoFromCtxWhenAvailable() throws Throwable {
+	void getsInfoFromCtxWhenAvailable() throws Throwable {
 		// setup:
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, tokenId, start, end);
 		Map<String, Object> ctx = new HashMap<>();
@@ -267,7 +267,7 @@ public class GetTokenNftInfosAnswerTest {
 	}
 
 	@Test
-	public void validatesQueryContext() throws Throwable {
+	void validatesQueryContext() throws Throwable {
 		// setup:
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, tokenId, start, end);
 		Map<String, Object> ctx = new HashMap<>();
@@ -284,7 +284,7 @@ public class GetTokenNftInfosAnswerTest {
 	}
 
 	@Test
-	public void getsCostAnswerResponse() throws Throwable {
+	void getsCostAnswerResponse() throws Throwable {
 		// setup:
 		Query query = validQuery(COST_ANSWER, fee, tokenId, start, end);
 
@@ -299,7 +299,7 @@ public class GetTokenNftInfosAnswerTest {
 	}
 
 	@Test
-	public void setsCorrectHeaderOnFailedValidity() throws Throwable {
+	void setsCorrectHeaderOnFailedValidity() throws Throwable {
 		// setup:
 		Query query = validQuery(COST_ANSWER, fee, tokenId, start, end);
 
@@ -314,7 +314,7 @@ public class GetTokenNftInfosAnswerTest {
 	}
 
 	@Test
-	public void failsToGetTheInfo() throws Throwable {
+	void failsToGetTheInfo() throws Throwable {
 		// setup:
 		Query query = validQuery(ANSWER_ONLY, fee, invalidTokenId, start, end);
 
