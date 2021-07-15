@@ -936,8 +936,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.withCustom(fixedHtsFee(10L, A_TOKEN, TOKEN_TREASURY))
 								.withCustom(fixedHtsFee(1L, "0.0.0", feeCollector)),
 						tokenAssociate(FIRST_USER, A_TOKEN, B_TOKEN),
-						tokenAssociate(SECOND_USER, A_TOKEN, B_TOKEN),
-						tokenAssociate(feeCollector, B_TOKEN)
+						tokenAssociate(SECOND_USER, A_TOKEN, B_TOKEN)
 				).when(
 						cryptoTransfer(
 								moving(100, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER)
