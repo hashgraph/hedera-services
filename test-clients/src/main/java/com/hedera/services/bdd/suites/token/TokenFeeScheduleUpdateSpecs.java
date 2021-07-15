@@ -244,6 +244,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
 						tokenFeeScheduleUpdate(token)
 								.withCustom(fixedHbarFee(newHbarAmount, newHbarCollector))
 								.withCustom(fixedHtsFee(newHtsAmount, newFeeDenom, newHtsCollector))
+								.withCustom(fixedHtsFee(newHtsAmount, "0.0.0", newTokenCollector))
 								.withCustom(fractionalFee(
 										newNumerator, newDenominator,
 										newMinimumToCollect, OptionalLong.of(newMaximumToCollect),
@@ -252,6 +253,7 @@ public class TokenFeeScheduleUpdateSpecs extends HapiApiSuite {
 						getTokenInfo(token)
 								.hasCustom(fixedHbarFeeInSchedule(newHbarAmount, newHbarCollector))
 								.hasCustom(fixedHtsFeeInSchedule(newHtsAmount, newFeeDenom, newHtsCollector))
+								.hasCustom(fixedHtsFeeInSchedule(newHtsAmount, "0.0.0", newTokenCollector))
 								.hasCustom(fractionalFeeInSchedule(
 										newNumerator, newDenominator,
 										newMinimumToCollect, OptionalLong.of(newMaximumToCollect),

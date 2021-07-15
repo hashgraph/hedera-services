@@ -406,7 +406,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 		if (request.getCustomFeesCount() > 0) {
 			final var customFees = request.getCustomFeesList();
-			validity = validateFeeSchedule(customFees, false, null, null);
+			validity = validateFeeSchedule(customFees, false, pendingId, pendingCreation);
 			if (validity != OK) {
 				return failure(validity);
 			}
@@ -435,7 +435,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			}
 			ResponseCodeEnum responseCode;
 			if (customFee.hasFixedFee()) {
-				responseCode = validateFixedFee(customFee, feeCollector);
+				responseCode = validateFixedFee(customFee, feeCollector, targetTokenId);
 				if (responseCode != OK) {
 					return responseCode;
 				}
@@ -489,13 +489,17 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 
 	private ResponseCodeEnum validateFixedFee(CustomFee customFee,
-			AccountID feeCollector) {
+			AccountID feeCollector,
+			TokenID targetTokenId) {
 		final var fixedFee = customFee.getFixedFee();
 		if (fixedFee.getAmount() <= 0) {
 			return CUSTOM_FEE_MUST_BE_POSITIVE;
 		}
 		if (fixedFee.hasDenominatingTokenId()) {
-			final var denom = fixedFee.getDenominatingTokenId();
+			var denom = fixedFee.getDenominatingTokenId();
+			if (0 == denom.getTokenNum()) {
+				denom = targetTokenId;
+			}
 			if (resolve(denom) == MISSING_TOKEN) {
 				return INVALID_TOKEN_ID_IN_CUSTOM_FEES;
 			}
@@ -503,7 +507,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			if (merkleToken.tokenType() == NON_FUNGIBLE_UNIQUE) {
 				return CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
 			}
-			if (!associationExists(feeCollector, denom)) {
+			if (!pendingId.equals(denom) && !associationExists(feeCollector, denom)) {
 				return TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 			}
 		}
