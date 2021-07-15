@@ -44,7 +44,6 @@ public class CreateTopicPerfSuite extends HapiApiSuite {
 
 	public static void main(String... args) {
 		CreateTopicPerfSuite suite = new CreateTopicPerfSuite();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 

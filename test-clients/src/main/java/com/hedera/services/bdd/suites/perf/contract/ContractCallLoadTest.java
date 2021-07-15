@@ -52,7 +52,6 @@ public class ContractCallLoadTest extends LoadTest {
 		new org.ethereum.crypto.HashUtil();
 
 		ContractCallLoadTest suite = new ContractCallLoadTest();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 

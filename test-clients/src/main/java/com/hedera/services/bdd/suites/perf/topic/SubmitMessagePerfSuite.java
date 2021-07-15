@@ -42,7 +42,6 @@ public class SubmitMessagePerfSuite extends HapiApiSuite {
 
 	public static void main(String... args) {
 		SubmitMessagePerfSuite suite = new SubmitMessagePerfSuite();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 

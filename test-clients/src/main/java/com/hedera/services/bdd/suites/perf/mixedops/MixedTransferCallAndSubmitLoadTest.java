@@ -57,7 +57,6 @@ public class MixedTransferCallAndSubmitLoadTest extends HapiApiSuite {
 
 	public static void main(String... args) {
 		MixedTransferCallAndSubmitLoadTest suite = new MixedTransferCallAndSubmitLoadTest();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 

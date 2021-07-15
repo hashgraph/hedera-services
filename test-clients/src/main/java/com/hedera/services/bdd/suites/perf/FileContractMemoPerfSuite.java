@@ -65,7 +65,6 @@ public class FileContractMemoPerfSuite  extends LoadTest {
 		parseArgs(args);
 
 		FileContractMemoPerfSuite suite = new FileContractMemoPerfSuite();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 

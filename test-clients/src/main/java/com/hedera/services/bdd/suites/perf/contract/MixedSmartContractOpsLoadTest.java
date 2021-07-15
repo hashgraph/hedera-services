@@ -56,7 +56,6 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
 		parseArgs(args);
 
 		MixedSmartContractOpsLoadTest suite = new MixedSmartContractOpsLoadTest();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 

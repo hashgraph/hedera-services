@@ -39,7 +39,6 @@ public class TokenCreatePerfSuite extends LoadTest {
 	public static void main(String... args) {
 		parseArgs(args);
 		TokenCreatePerfSuite suite = new TokenCreatePerfSuite();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 

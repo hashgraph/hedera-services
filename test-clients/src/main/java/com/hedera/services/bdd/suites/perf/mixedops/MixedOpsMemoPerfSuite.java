@@ -76,7 +76,6 @@ public class MixedOpsMemoPerfSuite extends LoadTest {
 		parseArgs(args);
 
 		MixedOpsMemoPerfSuite suite = new MixedOpsMemoPerfSuite();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 

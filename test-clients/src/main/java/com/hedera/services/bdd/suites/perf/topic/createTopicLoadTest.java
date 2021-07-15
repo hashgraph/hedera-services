@@ -51,7 +51,6 @@ public class createTopicLoadTest extends LoadTest {
 		parseArgs(args);
 
 		createTopicLoadTest suite = new createTopicLoadTest();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 

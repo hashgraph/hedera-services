@@ -60,7 +60,6 @@ public class HCSChunkingRealisticPerfSuite extends LoadTest {
 
 	public static void main(String... args) {
 		HCSChunkingRealisticPerfSuite suite = new HCSChunkingRealisticPerfSuite();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 

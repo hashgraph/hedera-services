@@ -107,7 +107,6 @@ public class SubmitMessageLoadTest extends LoadTest {
 		}
 
 		SubmitMessageLoadTest suite = new SubmitMessageLoadTest();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 

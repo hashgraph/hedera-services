@@ -43,7 +43,6 @@ public class CryptoTransferPerfSuite extends HapiApiSuite {
 
 	public static void main(String... args) {
 		CryptoTransferPerfSuite suite = new CryptoTransferPerfSuite();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 

@@ -53,7 +53,6 @@ public class MixedFileOpsLoadTest extends LoadTest {
 		parseArgs(args);
 
 		MixedFileOpsLoadTest suite = new MixedFileOpsLoadTest();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 

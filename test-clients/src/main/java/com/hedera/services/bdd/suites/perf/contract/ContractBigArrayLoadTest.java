@@ -63,7 +63,6 @@ public class ContractBigArrayLoadTest extends LoadTest {
 		new org.ethereum.crypto.HashUtil();
 
 		ContractBigArrayLoadTest suite = new ContractBigArrayLoadTest();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 

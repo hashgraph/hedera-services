@@ -37,7 +37,6 @@ public class CryptoCreatePerfSuite extends LoadTest {
 
 	public static void main(String... args) {
 		CryptoCreatePerfSuite suite = new CryptoCreatePerfSuite();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 

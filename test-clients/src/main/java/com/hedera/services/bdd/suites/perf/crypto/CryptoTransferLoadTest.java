@@ -48,7 +48,6 @@ public class CryptoTransferLoadTest extends LoadTest {
 		parseArgs(args);
 
 		CryptoTransferLoadTest suite = new CryptoTransferLoadTest();
-		suite.setReportStats(false);
 		suite.runSuiteSync();
 	}
 

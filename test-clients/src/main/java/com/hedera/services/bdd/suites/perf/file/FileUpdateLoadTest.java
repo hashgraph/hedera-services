@@ -51,7 +51,6 @@ public class FileUpdateLoadTest extends HapiApiSuite {
 
 	public static void main(String... args) {
 		FileUpdateLoadTest suite = new FileUpdateLoadTest();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 
