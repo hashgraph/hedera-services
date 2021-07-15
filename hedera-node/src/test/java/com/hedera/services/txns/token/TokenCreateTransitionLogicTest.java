@@ -27,14 +27,12 @@ import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.test.factories.fees.CustomFeeBuilder;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
-import com.hederahashgraph.api.proto.java.FixedFee;
-import com.hederahashgraph.api.proto.java.Fraction;
-import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
@@ -48,6 +46,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
+import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHbar;
+import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
+import static com.hedera.test.factories.fees.CustomFeeBuilder.fractional;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
@@ -81,10 +82,11 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.times;
 
 class TokenCreateTransitionLogicTest {
 	final private Key key = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
-	long thisSecond = 1_234_567L;
+	private long thisSecond = 1_234_567L;
 	private Instant now = Instant.ofEpochSecond(thisSecond);
 	private int decimals = 2;
 	private long initialSupply = 1_000_000L;
@@ -93,6 +95,7 @@ class TokenCreateTransitionLogicTest {
 	private AccountID treasury = IdUtils.asAccount("1.2.4");
 	private AccountID renewAccount = IdUtils.asAccount("1.2.5");
 	private TokenID created = IdUtils.asToken("1.2.666");
+	private List<TokenID> createdList = List.of(created);
 	private TransactionBody tokenCreateTxn;
 
 	private OptionValidator validator;
@@ -116,6 +119,13 @@ class TokenCreateTransitionLogicTest {
 		withAlwaysValidValidator();
 
 		subject = new TokenCreateTransitionLogic(validator, store, ledger, txnCtx);
+
+		verify(store, never()).associate(nonAutoEnabledFeeCollector, createdList);
+		verify(ledger, never()).unfreeze(nonAutoEnabledFeeCollector, created);
+		verify(ledger, never()).grantKyc(nonAutoEnabledFeeCollector, created);
+		verify(store, never()).associate(hbarFeeCollector, createdList);
+		verify(ledger, never()).unfreeze(hbarFeeCollector, created);
+		verify(ledger, never()).grantKyc(hbarFeeCollector, created);
 	}
 
 	@Test
@@ -263,11 +273,11 @@ class TokenCreateTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(tokenCreateTxn);
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willReturn(CreationResult.success(created));
-		given(store.associate(treasury, List.of(created))).willReturn(OK);
+		given(store.associate(treasury, createdList)).willReturn(OK);
 
 		subject.doStateTransition();
 
-		verify(store).associate(treasury, List.of(created));
+		verify(store).associate(treasury, createdList);
 		verify(ledger, never()).unfreeze(any(), any());
 		verify(ledger, never()).grantKyc(any(), any());
 
@@ -281,32 +291,40 @@ class TokenCreateTransitionLogicTest {
 	@Test
 	void followsHappyPathWithAllKeys() {
 		givenValidTxnCtx(true, true, true);
-		// and:
 		given(store.createProvisionally(tokenCreateTxn.getTokenCreation(), payer, thisSecond))
 				.willReturn(CreationResult.success(created));
+		given(store.associate(treasury, createdList)).willReturn(OK);
+		given(store.associate(feeCollector, createdList)).willReturn(OK);
+		given(store.associate(fixedFeeCollector, createdList)).willReturn(OK);
+		given(store.associate(fractionalFeeCollector, createdList)).willReturn(OK);
 		given(ledger.unfreeze(treasury, created)).willReturn(OK);
-		given(ledger.grantKyc(treasury, created)).willReturn(OK);
 		given(ledger.unfreeze(feeCollector, created)).willReturn(OK);
+		given(ledger.unfreeze(fixedFeeCollector, created)).willReturn(OK);
+		given(ledger.unfreeze(fractionalFeeCollector, created)).willReturn(OK);
+		given(ledger.grantKyc(treasury, created)).willReturn(OK);
 		given(ledger.grantKyc(feeCollector, created)).willReturn(OK);
+		given(ledger.grantKyc(fixedFeeCollector, created)).willReturn(OK);
+		given(ledger.grantKyc(fractionalFeeCollector, created)).willReturn(OK);
 		given(ledger.adjustTokenBalance(treasury, created, initialSupply))
 				.willReturn(OK);
-		given(store.associate(treasury, List.of(created))).willReturn(OK);
-		given(store.associate(feeCollector, List.of(created))).willReturn(OK);
 
-		// when:
 		subject.doStateTransition();
 
-		// then:
-		verify(store).associate(treasury, List.of(created));
-		verify(ledger).unfreeze(treasury, created);
-		verify(ledger).grantKyc(treasury, created);
-		verify(store).associate(feeCollector, List.of(created));
-		verify(ledger).unfreeze(feeCollector, created);
-		verify(ledger).grantKyc(feeCollector, created);
-		// and:
+		verify(store, times(1)).associate(treasury, createdList);
+		verify(ledger, times(1)).unfreeze(treasury, created);
+		verify(ledger, times(1)).grantKyc(treasury, created);
+		verify(store, times(1)).associate(feeCollector, createdList);
+		verify(ledger, times(1)).unfreeze(feeCollector, created);
+		verify(ledger, times(1)).grantKyc(feeCollector, created);
+		verify(store, times(1)).associate(fixedFeeCollector, createdList);
+		verify(ledger, times(1)).unfreeze(fixedFeeCollector, created);
+		verify(ledger, times(1)).grantKyc(fixedFeeCollector, created);
+		verify(store, times(1)).associate(fractionalFeeCollector, createdList);
+		verify(ledger, times(1)).unfreeze(fractionalFeeCollector, created);
+		verify(ledger, times(1)).grantKyc(fractionalFeeCollector, created);
+
 		verify(txnCtx).setCreated(created);
 		verify(txnCtx).setStatus(SUCCESS);
-		// and:
 		verify(store).commitCreation();
 	}
 
@@ -322,8 +340,8 @@ class TokenCreateTransitionLogicTest {
 		given(ledger.grantKyc(feeCollector, created)).willReturn(OK);
 		given(ledger.adjustTokenBalance(treasury, created, initialSupply))
 				.willReturn(OK);
-		given(store.associate(treasury, List.of(created))).willReturn(OK);
-		given(store.associate(feeCollector, List.of(created))).willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+		given(store.associate(treasury, createdList)).willReturn(OK);
+		given(store.associate(feeCollector, createdList)).willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 
 		// when:
 		subject.doStateTransition();
@@ -778,45 +796,32 @@ class TokenCreateTransitionLogicTest {
 	}
 
 	private TokenID misc = IdUtils.asToken("3.2.1");
-	private Fraction fraction = Fraction.newBuilder().setNumerator(15).setDenominator(100).build();
-	private FractionalFee firstFractionalFee = FractionalFee.newBuilder()
-			.setFractionalAmount(fraction)
-			.setMaximumAmount(50)
-			.setMinimumAmount(10)
-			.build();
-	private FractionalFee secondFractionalFee = FractionalFee.newBuilder()
-			.setFractionalAmount(fraction)
-			.setMaximumAmount(15)
-			.setMinimumAmount(5)
-			.build();
-	private FixedFee fixedFeeInTokenUnits = FixedFee.newBuilder()
-			.setDenominatingTokenId(misc)
-			.setAmount(100)
-			.build();
-	private FixedFee fixedFeeInHbar = FixedFee.newBuilder()
-			.setAmount(100)
-			.build();
 	private AccountID feeCollector = IdUtils.asAccount("6.6.6");
-	private AccountID anotherFeeCollector = IdUtils.asAccount("1.2.777");
-	private CustomFee customFixedFeeInHbar = CustomFee.newBuilder()
-			.setFeeCollectorAccountId(feeCollector)
-			.setFixedFee(fixedFeeInHbar)
-			.build();
-	private CustomFee customFixedFeeInHts = CustomFee.newBuilder()
-			.setFeeCollectorAccountId(anotherFeeCollector)
-			.setFixedFee(fixedFeeInTokenUnits)
-			.build();
-	private CustomFee customFractionalFeeA = CustomFee.newBuilder()
-			.setFeeCollectorAccountId(feeCollector)
-			.setFractionalFee(firstFractionalFee)
-			.build();
-	private CustomFee customFractionalFeeB = CustomFee.newBuilder()
-			.setFeeCollectorAccountId(feeCollector)
-			.setFractionalFee(secondFractionalFee)
-			.build();
+	private AccountID hbarFeeCollector = IdUtils.asAccount("7.7.7");
+	private AccountID fixedFeeCollector = IdUtils.asAccount("8.8.8");
+	private AccountID fractionalFeeCollector = IdUtils.asAccount("9.9.9");
+	private AccountID nonAutoEnabledFeeCollector = IdUtils.asAccount("1.2.777");
+	private CustomFeeBuilder builder = new CustomFeeBuilder(feeCollector);
+	private CustomFee customFixedFeeInHbar = new CustomFeeBuilder(hbarFeeCollector).fromFixedFee(fixedHbar(100));
+	private CustomFee customFixedFeeInHts = new CustomFeeBuilder(nonAutoEnabledFeeCollector).fromFixedFee(
+			fixedHts(misc, 100));
+	private CustomFee customFixedFeeA = builder.fromFixedFee(
+			fixedHts(200));
+	private CustomFee customFixedFeeB = new CustomFeeBuilder(fixedFeeCollector).fromFixedFee(
+			fixedHts(300));
+	private CustomFee customFractionalFeeA = builder.fromFractionalFee(
+			fractional(15, 100)
+					.setMinimumAmount(10)
+					.setMaximumAmount(50));
+	private CustomFee customFractionalFeeB = new CustomFeeBuilder(fractionalFeeCollector).fromFractionalFee(
+			fractional(15, 100)
+					.setMinimumAmount(5)
+					.setMaximumAmount(15));
 	private List<CustomFee> grpcCustomFees = List.of(
 			customFixedFeeInHbar,
 			customFixedFeeInHts,
+			customFixedFeeA,
+			customFixedFeeB,
 			customFractionalFeeA,
 			customFractionalFeeB
 	);

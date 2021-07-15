@@ -20,11 +20,8 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
+import com.hedera.test.factories.fees.CustomFeeBuilder;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CustomFee;
-import com.hederahashgraph.api.proto.java.FixedFee;
-import com.hederahashgraph.api.proto.java.Fraction;
-import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -39,6 +36,9 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
+import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHbar;
+import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
+import static com.hedera.test.factories.fees.CustomFeeBuilder.fractional;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -59,6 +59,7 @@ class FcCustomFeeTest {
 	private final TokenID grpcDenom = denom.toGrpcTokenId();
 	private final EntityId feeCollector = new EntityId(4, 5, 6);
 	private final AccountID grpcFeeCollector = feeCollector.toGrpcAccountId();
+	private final CustomFeeBuilder builder = new CustomFeeBuilder(grpcFeeCollector);
 
 	@Mock
 	private SerializableDataInputStream din;
@@ -71,9 +72,9 @@ class FcCustomFeeTest {
 		final var expectedHtsSubject = FcCustomFee.fixedFee(fixedUnitsToCollect, denom, feeCollector);
 		final var expectedHtsSameTokenSubject = FcCustomFee.fixedFee(fixedUnitsToCollect, targetId, feeCollector);
 		final var expectedHbarSubject = FcCustomFee.fixedFee(fixedUnitsToCollect, null, feeCollector);
-		final var htsGrpc = fromFixedFee(fixedHts(grpcDenom, fixedUnitsToCollect));
-		final var htsSameTokenGrpc = fromFixedFee(fixedHts(fixedUnitsToCollect));
-		final var hbarGrpc = fromFixedFee(fixedHbar(fixedUnitsToCollect));
+		final var htsGrpc = builder.fromFixedFee(fixedHts(grpcDenom, fixedUnitsToCollect));
+		final var htsSameTokenGrpc = builder.fromFixedFee(fixedHts(fixedUnitsToCollect));
+		final var hbarGrpc = builder.fromFixedFee(fixedHbar(fixedUnitsToCollect));
 
 		final var htsSubject = FcCustomFee.fromGrpc(htsGrpc, null);
 		final var htsSameTokenSubject = FcCustomFee.fromGrpc(htsSameTokenGrpc, targetId);
@@ -86,7 +87,7 @@ class FcCustomFeeTest {
 
 	@Test
 	void grpcReprWorksForFixedHbar() {
-		final var expected = fromFixedFee(fixedHbar(fixedUnitsToCollect));
+		final var expected = builder.fromFixedFee(fixedHbar(fixedUnitsToCollect));
 		final var hbarFee = FcCustomFee.fixedFee(fixedUnitsToCollect, null, feeCollector);
 
 		final var actual = hbarFee.asGrpc();
@@ -96,7 +97,7 @@ class FcCustomFeeTest {
 
 	@Test
 	void grpcReprWorksForFixedHts() {
-		final var expected = fromFixedFee(fixedHts(grpcDenom, fixedUnitsToCollect));
+		final var expected = builder.fromFixedFee(fixedHts(grpcDenom, fixedUnitsToCollect));
 		final var htsFee = FcCustomFee.fixedFee(fixedUnitsToCollect, EntityId.fromGrpcTokenId(grpcDenom), feeCollector);
 
 		final var actual = htsFee.asGrpc();
@@ -106,7 +107,7 @@ class FcCustomFeeTest {
 
 	@Test
 	void grpcReprWorksForFractional() {
-		final var expected = fromFractionalFee(
+		final var expected = builder.fromFractionalFee(
 				fractional(validNumerator, validDenominator)
 						.setMinimumAmount(minimumUnitsToCollect)
 						.setMaximumAmount(maximumUnitsToCollect));
@@ -124,7 +125,7 @@ class FcCustomFeeTest {
 
 	@Test
 	void grpcReprWorksForFractionalNoMax() {
-		final var expected = fromFractionalFee(
+		final var expected = builder.fromFractionalFee(
 				fractional(validNumerator, validDenominator)
 						.setMinimumAmount(minimumUnitsToCollect));
 		final var fractionalFee = FcCustomFee.fractionalFee(
@@ -153,11 +154,11 @@ class FcCustomFeeTest {
 				minimumUnitsToCollect,
 				Long.MAX_VALUE,
 				feeCollector);
-		final var grpcWithExplicitMax = fromFractionalFee(
+		final var grpcWithExplicitMax = builder.fromFractionalFee(
 				fractional(validNumerator, validDenominator)
 						.setMinimumAmount(minimumUnitsToCollect)
 						.setMaximumAmount(maximumUnitsToCollect));
-		final var grpcWithoutExplicitMax = fromFractionalFee(
+		final var grpcWithoutExplicitMax = builder.fromFractionalFee(
 				fractional(validNumerator, validDenominator)
 						.setMinimumAmount(minimumUnitsToCollect));
 
@@ -514,38 +515,5 @@ class FcCustomFeeTest {
 		assertEquals(expectedFractional, fractionalFee.toString());
 		assertEquals(expectedFixedHts, fixedHtsFee.toString());
 		assertEquals(expectedFixedHbar, fixedHbarFee.toString());
-	}
-
-	private CustomFee.Builder customFeeBuilder() {
-		return CustomFee.newBuilder()
-				.setFeeCollectorAccountId(grpcFeeCollector);
-	}
-
-	private CustomFee fromFixedFee(final FixedFee.Builder fee) {
-		return customFeeBuilder().setFixedFee(fee).build();
-	}
-
-	private CustomFee fromFractionalFee(final FractionalFee.Builder fee) {
-		return customFeeBuilder().setFractionalFee(fee).build();
-	}
-
-	private FixedFee.Builder fixedHbar(final long units) {
-		return FixedFee.newBuilder()
-				.setAmount(units);
-	}
-
-	private FixedFee.Builder fixedHts(final TokenID denom, final long units) {
-		return fixedHbar(units).setDenominatingTokenId(denom);
-	}
-
-	private FixedFee.Builder fixedHts(final long units) {
-		return fixedHts(TokenID.getDefaultInstance(), units);
-	}
-
-	private FractionalFee.Builder fractional(final long numerator, final long denominator) {
-		return FractionalFee.newBuilder()
-				.setFractionalAmount(Fraction.newBuilder()
-						.setNumerator(numerator)
-						.setDenominator(denominator));
 	}
 }
