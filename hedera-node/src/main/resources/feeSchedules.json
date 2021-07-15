@@ -218,6 +218,45 @@
 			  }
 			},
 			{
+			  "subType" : "TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES",
+			  "nodedata" : {
+				"constant" : 15953355,
+				"bpt" : 25505,
+				"vpt" : 63761583,
+				"rbh" : 17,
+				"sbh" : 1,
+				"gas" : 170,
+				"bpr" : 25505,
+				"sbpr" : 638,
+				"min" : 0,
+				"max" : 1000000000000000
+			  },
+			  "networkdata" : {
+				"constant" : 319067091,
+				"bpt" : 510093,
+				"vpt" : 1275231662,
+				"rbh" : 340,
+				"sbh" : 26,
+				"gas" : 3401,
+				"bpr" : 510093,
+				"sbpr" : 12752,
+				"min" : 0,
+				"max" : 1000000000000000
+			  },
+			  "servicedata" : {
+				"constant" : 319067091,
+				"bpt" : 510093,
+				"vpt" : 1275231662,
+				"rbh" : 340,
+				"sbh" : 26,
+				"gas" : 3401,
+				"bpr" : 510093,
+				"sbpr" : 12752,
+				"min" : 0,
+				"max" : 1000000000000000
+			  }
+			},
+			{
 			  "subType" : "TOKEN_NON_FUNGIBLE_UNIQUE",
 			  "nodedata" : {
 				"constant" : 22833842,
@@ -252,6 +291,45 @@
 				"gas" : 4867,
 				"bpr" : 730089,
 				"sbpr" : 18252,
+				"min" : 0,
+				"max" : 1000000000000000
+			  }
+			},
+			{
+			  "subType" : "TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES",
+			  "nodedata" : {
+				"constant" : 23634976,
+				"bpt" : 37785,
+				"vpt" : 94463111,
+				"rbh" : 25,
+				"sbh" : 2,
+				"gas" : 252,
+				"bpr" : 37785,
+				"sbpr" : 945,
+				"min" : 0,
+				"max" : 1000000000000000
+			  },
+			  "networkdata" : {
+				"constant" : 472699523,
+				"bpt" : 755705,
+				"vpt" : 1889262211,
+				"rbh" : 504,
+				"sbh" : 38,
+				"gas" : 5038,
+				"bpr" : 755705,
+				"sbpr" : 18893,
+				"min" : 0,
+				"max" : 1000000000000000
+			  },
+			  "servicedata" : {
+				"constant" : 472699523,
+				"bpt" : 755705,
+				"vpt" : 1889262211,
+				"rbh" : 504,
+				"sbh" : 38,
+				"gas" : 5038,
+				"bpr" : 755705,
+				"sbpr" : 18893,
 				"min" : 0,
 				"max" : 1000000000000000
 			  }
@@ -2988,6 +3066,45 @@
 			  }
 			},
 			{
+			  "subType" : "TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES",
+			  "nodedata" : {
+				"constant" : 15953355,
+				"bpt" : 25505,
+				"vpt" : 63761583,
+				"rbh" : 17,
+				"sbh" : 1,
+				"gas" : 170,
+				"bpr" : 25505,
+				"sbpr" : 638,
+				"min" : 0,
+				"max" : 1000000000000000
+			  },
+			  "networkdata" : {
+				"constant" : 319067091,
+				"bpt" : 510093,
+				"vpt" : 1275231662,
+				"rbh" : 340,
+				"sbh" : 26,
+				"gas" : 3401,
+				"bpr" : 510093,
+				"sbpr" : 12752,
+				"min" : 0,
+				"max" : 1000000000000000
+			  },
+			  "servicedata" : {
+				"constant" : 319067091,
+				"bpt" : 510093,
+				"vpt" : 1275231662,
+				"rbh" : 340,
+				"sbh" : 26,
+				"gas" : 3401,
+				"bpr" : 510093,
+				"sbpr" : 12752,
+				"min" : 0,
+				"max" : 1000000000000000
+			  }
+			},
+			{
 			  "subType" : "TOKEN_NON_FUNGIBLE_UNIQUE",
 			  "nodedata" : {
 				"constant" : 22833842,
@@ -3022,6 +3139,45 @@
 				"gas" : 4867,
 				"bpr" : 730089,
 				"sbpr" : 18252,
+				"min" : 0,
+				"max" : 1000000000000000
+			  }
+			},
+			{
+			  "subType" : "TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES",
+			  "nodedata" : {
+				"constant" : 23634976,
+				"bpt" : 37785,
+				"vpt" : 94463111,
+				"rbh" : 25,
+				"sbh" : 2,
+				"gas" : 252,
+				"bpr" : 37785,
+				"sbpr" : 945,
+				"min" : 0,
+				"max" : 1000000000000000
+			  },
+			  "networkdata" : {
+				"constant" : 472699523,
+				"bpt" : 755705,
+				"vpt" : 1889262211,
+				"rbh" : 504,
+				"sbh" : 38,
+				"gas" : 5038,
+				"bpr" : 755705,
+				"sbpr" : 18893,
+				"min" : 0,
+				"max" : 1000000000000000
+			  },
+			  "servicedata" : {
+				"constant" : 472699523,
+				"bpt" : 755705,
+				"vpt" : 1889262211,
+				"rbh" : 504,
+				"sbh" : 38,
+				"gas" : 5038,
+				"bpr" : 755705,
+				"sbpr" : 18893,
 				"min" : 0,
 				"max" : 1000000000000000
 			  }

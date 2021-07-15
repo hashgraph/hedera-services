@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -301,13 +302,18 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 			numTokenTransfers += tokenTransfers.getTransfersCount();
 			numNftOwnershipChanges += tokenTransfers.getNftTransfersCount();
 		}
-		final var xferMeta = new CryptoTransferMeta(multiplier, numTokensInvolved, numTokenTransfers, numNftOwnershipChanges);
+		final var xferUsageMeta = new CryptoTransferMeta(multiplier, numTokensInvolved, numTokenTransfers, numNftOwnershipChanges);
 
 		final var accumulator = new UsageAccumulator();
-		cryptoOpsUsage.cryptoTransferUsage(suFrom(svo), xferMeta, baseMeta, accumulator);
+		cryptoOpsUsage.cryptoTransferUsage(suFrom(svo), xferUsageMeta, baseMeta, accumulator);
+
+		var subTypeName = xferUsageMeta.getSubType().name();
+		if (xferUsageMeta.getCustomFeeHbarTransfers() > 0 || xferUsageMeta.getCustomFeeTokenTransfers() > 0) {
+			subTypeName += "_WITH_CUSTOM_FEES";
+		}
 
 		final var feeData = AdapterUtils.feeDataFrom(accumulator);
-		return feeData.toBuilder().setSubType(xferMeta.getSubType()).build();
+		return feeData.toBuilder().setSubType(SubType.valueOf(subTypeName)).build();
 	}
 
 	@Override
