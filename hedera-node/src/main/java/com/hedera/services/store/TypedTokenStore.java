@@ -119,6 +119,8 @@ public class TypedTokenStore {
 	 * Returns the number of NFTs currently in the ledger state. (That is, the
 	 * number of entries in the {@code uniqueTokens} map---NFTs are not marked
 	 * deleted but actually removed from state when they are burned.)
+	 *
+	 * @return the current number of NFTs in the system
 	 */
 	public long currentMintedNfts() {
 		return uniqueTokens.get().size();
