@@ -110,7 +110,7 @@ class AccessorBasedUsagesTest {
 	void worksAsExpectedForCryptoTransfer() {
 		// setup:
 		final var baseMeta = new BaseTransactionMeta(100, 2);
-		final var xferMeta = new CryptoTransferMeta(1, 3, 7);
+		final var xferMeta = new CryptoTransferMeta(1, 3, 7, 4);
 		final var usageAccumulator = new UsageAccumulator();
 
 		given(dynamicProperties.feesTokenTransferUsageMultiplier()).willReturn(multiplier);
