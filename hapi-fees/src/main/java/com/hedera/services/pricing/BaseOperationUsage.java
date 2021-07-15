@@ -241,7 +241,7 @@ class BaseOperationUsage {
 	private UsageAccumulator htsCryptoTransferWithCustomFee() {
 		final var xferUsageMeta = new CryptoTransferMeta(380, 1,
 				2, 0);
-		xferUsageMeta.setCustomFeeHbarTransfers(1);
+		xferUsageMeta.setCustomFeeHbarTransfers(2);
 		final var into = new UsageAccumulator();
 		CRYPTO_OPS_USAGE.cryptoTransferUsage(SINGLE_SIG_USAGE, xferUsageMeta, NO_MEMO_AND_NO_EXPLICIT_XFERS, into);
 
@@ -260,7 +260,7 @@ class BaseOperationUsage {
 	private UsageAccumulator nftCryptoTransferWithCustomFee() {
 		final var xferUsageMeta = new CryptoTransferMeta(380, 1,
 				0, 1);
-		xferUsageMeta.setCustomFeeTokenTransfers(1);
+		xferUsageMeta.setCustomFeeHbarTransfers(2);
 		final var into = new UsageAccumulator();
 		CRYPTO_OPS_USAGE.cryptoTransferUsage(SINGLE_SIG_USAGE, xferUsageMeta, NO_MEMO_AND_NO_EXPLICIT_XFERS, into);
 

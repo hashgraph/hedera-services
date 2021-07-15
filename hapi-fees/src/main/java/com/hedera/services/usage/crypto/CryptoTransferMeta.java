@@ -86,15 +86,15 @@ public class CryptoTransferMeta {
 
 	public SubType getSubType() {
 		if (numNftOwnershipChanges != 0) {
-//			if (customFeeHbarTransfers > 0 || customFeeTokenTransfers > 0) {
-//				return SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
-//			}
+			if (customFeeHbarTransfers > 0 || customFeeTokenTransfers > 0) {
+				return SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
+			}
 			return SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 		}
 		if (numFungibleTokenTransfers != 0) {
-//			if (customFeeHbarTransfers > 0 || customFeeTokenTransfers > 0) {
-//				return SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
-//			}
+			if (customFeeHbarTransfers > 0 || customFeeTokenTransfers > 0) {
+				return SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
+			}
 			return SubType.TOKEN_FUNGIBLE_COMMON;
 		}
 		return SubType.DEFAULT;

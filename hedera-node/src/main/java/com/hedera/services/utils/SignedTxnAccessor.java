@@ -153,11 +153,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 	@Override
 	public SubType getSubType() {
 		if(getFunction() == CryptoTransfer) {
-			var subTypeName = xferUsageMeta.getSubType().name();
-			if (xferUsageMeta.getCustomFeeHbarTransfers() > 0 || xferUsageMeta.getCustomFeeTokenTransfers() > 0) {
-				subTypeName += "_WITH_CUSTOM_FEES";
-			}
-			return SubType.valueOf(subTypeName);
+			return xferUsageMeta.getSubType();
 		}
 		return SubType.DEFAULT;
 	}

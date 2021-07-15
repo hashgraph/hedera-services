@@ -53,6 +53,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -91,32 +92,53 @@ public class CryptoTransferSuite extends HapiApiSuite {
 		final var expectedHbarXferPriceUsd = 0.0001;
 		final var expectedHtsXferPriceUsd = 0.001;
 		final var expectedNftXferPriceUsd = 0.001;
+		final var expectedHtsXferWithCustomFeePriceUsd = 0.002;
+		final var expectedNftXferWithCustomFeePriceUsd = 0.002;
+		final var transferAmount = 1L;
+		final var customFeeCollector = "customFeeCollector";
 		final var sender = "sender";
 		final var receiver = "receiver";
 		final var hbarXferTxn = "hbarXferTxn";
 		final var fungibleToken = "fungibleToken";
+		final var fungibleTokenWithCustomFee = "fungibleTokenWithCustomFee";
 		final var htsXferTxn = "htsXferTxn";
+		final var htsXferTxnWithCustomFee = "htsXferTxnWithCustomFee";
 		final var nonFungibleToken = "nonFungibleToken";
+		final var nonFungibleTokenWithCustomFee = "nonFungibleTokenWithCustomFee";
 		final var nftXferTxn = "nftXferTxn";
+		final var nftXferTxnWithCustomFee = "nftXferTxnWithCustomFee";
 		final var supplyKey = "supplyKey";
 
 		return defaultHapiSpec("BaseCryptoTransferIsChargedAsExpected")
 				.given(
 						cryptoCreate(sender).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(receiver),
+						cryptoCreate(customFeeCollector),
 						tokenCreate(fungibleToken)
 								.treasury(sender)
 								.tokenType(FUNGIBLE_COMMON)
 								.initialSupply(100L),
-						tokenAssociate(receiver, fungibleToken),
+						tokenCreate(fungibleTokenWithCustomFee)
+								.treasury(sender)
+								.tokenType(FUNGIBLE_COMMON)
+								.withCustom(fixedHbarFee(transferAmount, customFeeCollector))
+								.initialSupply(100L),
+						tokenAssociate(receiver, fungibleToken, fungibleTokenWithCustomFee),
 						newKeyNamed(supplyKey),
 						tokenCreate(nonFungibleToken)
 								.initialSupply(0)
 								.supplyKey(supplyKey)
 								.tokenType(NON_FUNGIBLE_UNIQUE)
 								.treasury(sender),
-						mintToken(nonFungibleToken, List.of(ByteString.copyFromUtf8("memo"))),
-						tokenAssociate(receiver, nonFungibleToken)
+						tokenCreate(nonFungibleTokenWithCustomFee)
+								.initialSupply(0)
+								.supplyKey(supplyKey)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.withCustom(fixedHbarFee(transferAmount, customFeeCollector))
+								.treasury(sender),
+						mintToken(nonFungibleToken, List.of(ByteString.copyFromUtf8("memo1"))),
+						mintToken(nonFungibleTokenWithCustomFee, List.of(ByteString.copyFromUtf8("memo2"))),
+						tokenAssociate(receiver, nonFungibleToken, nonFungibleTokenWithCustomFee)
 				)
 				.when(
 						cryptoTransfer(tinyBarsFromTo(sender, receiver, 100L))
@@ -130,12 +152,24 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						cryptoTransfer(movingUnique(1, nonFungibleToken).between(sender, receiver))
 								.blankMemo()
 								.payingWith(sender)
-								.via(nftXferTxn)
+								.via(nftXferTxn),
+						cryptoTransfer(moving(1, fungibleTokenWithCustomFee).between(sender, receiver))
+								.blankMemo()
+								.fee(ONE_HBAR)
+								.payingWith(sender)
+								.via(htsXferTxnWithCustomFee),
+						cryptoTransfer(movingUnique(1, nonFungibleTokenWithCustomFee).between(sender, receiver))
+								.blankMemo()
+								.fee(ONE_HBAR)
+								.payingWith(sender)
+								.via(nftXferTxnWithCustomFee)
 				)
 				.then(
 						validateChargedUsdWithin(hbarXferTxn, expectedHbarXferPriceUsd, 0.01),
 						validateChargedUsdWithin(htsXferTxn, expectedHtsXferPriceUsd, 0.01),
-						validateChargedUsdWithin(nftXferTxn, expectedNftXferPriceUsd, 0.01)
+						validateChargedUsdWithin(nftXferTxn, expectedNftXferPriceUsd, 0.01),
+						validateChargedUsdWithin(htsXferTxnWithCustomFee, expectedHtsXferWithCustomFeePriceUsd, 0.1),
+						validateChargedUsdWithin(nftXferTxnWithCustomFee, expectedNftXferWithCustomFeePriceUsd, 0.3)
 				);
 	}
 
