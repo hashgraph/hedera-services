@@ -84,9 +84,10 @@ public class MerkleUniqueTokenId extends AbstractMerkleLeaf {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(
-				tokenId,
-				serialNumber);
+		int result = Long.hashCode(tokenId.shard());
+		result = 31 * result + Long.hashCode(tokenId.realm());
+		result = 31 * result + Long.hashCode(tokenId.num());
+		return 31 * result + Long.hashCode(serialNumber);
 	}
 
 	/* --- Bean --- */

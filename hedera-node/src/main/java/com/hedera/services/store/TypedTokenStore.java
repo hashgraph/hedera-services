@@ -21,7 +21,6 @@ package com.hedera.services.store;
  */
 
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.accounts.BackingNfts;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
@@ -93,7 +92,6 @@ public class TypedTokenStore {
 	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueOwnershipAssociations;
 
 	/* Only needed for interoperability with legacy HTS during refactor */
-	private final BackingNfts backingNfts;
 	private final BackingTokenRels backingTokenRels;
 
 	public TypedTokenStore(
@@ -104,8 +102,7 @@ public class TypedTokenStore {
 			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueOwnershipAssociations,
 			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations,
 			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels,
-			BackingTokenRels backingTokenRels,
-			BackingNfts backingNfts
+			BackingTokenRels backingTokenRels
 	) {
 		this.tokens = tokens;
 		this.uniqueTokenAssociations = uniqueTokenAssociations;
@@ -115,8 +112,18 @@ public class TypedTokenStore {
 		this.accountStore = accountStore;
 		this.transactionRecordService = transactionRecordService;
 
-		this.backingNfts = backingNfts;
 		this.backingTokenRels = backingTokenRels;
+	}
+
+	/**
+	 * Returns the number of NFTs currently in the ledger state. (That is, the
+	 * number of entries in the {@code uniqueTokens} map---NFTs are not marked
+	 * deleted but actually removed from state when they are burned.)
+	 *
+	 * @return the current number of NFTs in the system
+	 */
+	public long currentMintedNfts() {
+		return uniqueTokens.get().size();
 	}
 
 	/**

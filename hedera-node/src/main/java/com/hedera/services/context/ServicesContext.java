@@ -1037,8 +1037,7 @@ public class ServicesContext {
 					this::uniqueOwnershipAssociations,
 					this::uniqueTokenAssociations,
 					this::tokenAssociations,
-					(BackingTokenRels) backingTokenRels(),
-					backingNfts());
+					(BackingTokenRels) backingTokenRels());
 		}
 		return typedTokenStore;
 	}
