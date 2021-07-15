@@ -1606,7 +1606,7 @@ workflows:
   GCP-Create-Large-Volume-NFTs-SavedState:
     triggers:
       - schedule:
-          cron: "53 18 * * *"
+          cron: "56 22 * * *"
           filters:
             branches:
               only:
@@ -1616,7 +1616,7 @@ workflows:
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
-          result_path: results/5N-5C/LargeVolumeNFTs
+          result_path: results/1N-3C/LargeVolumeNFTs
           config_type: "daily"
           workflow-name: "GCP-Create-Large-Volume-NFTs-SavedState"
           requires:

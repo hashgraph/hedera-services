@@ -51,6 +51,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import static com.hederahashgraph.api.proto.java.TokenSupplyType.INFINITE;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -88,7 +89,7 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 	private static final long SECS_TO_RUN = 3600;
 
 	private static final int MINT_TPS = 200;
-	private static final int NUM_UNIQ_TOKENS = 1_100;
+	private static final int NUM_UNIQ_TOKENS = 1_800;
 	private static final int UNIQ_TOKENS_BURST_SIZE = 1000;
 	private static final int UNIQ_TOKENS_POST_BURST_PAUSE_MS = 2500;
 	private static final int NFTS_PER_UNIQ_TOKEN = 1000;
@@ -149,7 +150,7 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 										.noLogging()
 										.key(GENESIS)
 										.hasPrecheckFrom(OK, DUPLICATE_TRANSACTION)
-										.hasKnownStatusFrom(SUCCESS,UNKNOWN)
+										.hasKnownStatusFrom(SUCCESS,UNKNOWN, TRANSACTION_EXPIRED)
 										.deferStatusResolution())
 								.toArray(HapiSpecOperation[]::new)));
 				inits.add(sleepFor(5_000L));
@@ -177,7 +178,7 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 							.deferStatusResolution()
 							.fee(ONE_HBAR)
 							.hasPrecheckFrom(OK, DUPLICATE_TRANSACTION)
-							.hasKnownStatusFrom(SUCCESS,UNKNOWN, OK)
+							.hasKnownStatusFrom(SUCCESS,UNKNOWN, OK, TRANSACTION_EXPIRED)
 							.noLogging();
 					return Optional.of(op);
 				} else {
@@ -211,7 +212,7 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 							.initialSupply(0)
 							.supplyKey(GENESIS)
 							.hasPrecheckFrom(OK, DUPLICATE_TRANSACTION)
-							.hasKnownStatusFrom(SUCCESS,UNKNOWN)
+							.hasKnownStatusFrom(SUCCESS,UNKNOWN, TRANSACTION_EXPIRED)
 							.treasury(treasuryNameFn.apply((i + createdSoFar.get()) % numTreasuries))
 							.exposingCreatedIdTo(newId -> {
 								final var newN = numFrom(newId);
