@@ -25,6 +25,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -47,6 +48,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import static com.hederahashgraph.api.proto.java.TokenSupplyType.INFINITE;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -80,10 +85,10 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class UniqueTokenStateSetup extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(UniqueTokenStateSetup.class);
 
-	private static final long SECS_TO_RUN = 3600;
+	private static final long SECS_TO_RUN = 500;
 
-	private static final int MINT_TPS = 250;
-	private static final int NUM_UNIQ_TOKENS = 1_000_000;
+	private static final int MINT_TPS = 200;
+	private static final int NUM_UNIQ_TOKENS = 1_100;
 	private static final int UNIQ_TOKENS_BURST_SIZE = 1000;
 	private static final int UNIQ_TOKENS_POST_BURST_PAUSE_MS = 2500;
 	private static final int NFTS_PER_UNIQ_TOKEN = 1000;
@@ -141,7 +146,10 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 								.mapToObj(i -> cryptoCreate(treasuryNameFn.apply(i))
 										.payingWith(GENESIS)
 										.balance(0L)
+										.noLogging()
 										.key(GENESIS)
+										.hasPrecheckFrom(OK, DUPLICATE_TRANSACTION)
+										.hasKnownStatusFrom(SUCCESS,UNKNOWN)
 										.deferStatusResolution())
 								.toArray(HapiSpecOperation[]::new)));
 				inits.add(sleepFor(5_000L));
@@ -168,6 +176,8 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 							.payingWith(GENESIS)
 							.deferStatusResolution()
 							.fee(ONE_HBAR)
+							.hasPrecheckFrom(OK, DUPLICATE_TRANSACTION)
+							.hasKnownStatusFrom(SUCCESS,UNKNOWN, OK)
 							.noLogging();
 					return Optional.of(op);
 				} else {
@@ -200,6 +210,8 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 							.supplyType(INFINITE)
 							.initialSupply(0)
 							.supplyKey(GENESIS)
+							.hasPrecheckFrom(OK, DUPLICATE_TRANSACTION)
+							.hasKnownStatusFrom(SUCCESS,UNKNOWN)
 							.treasury(treasuryNameFn.apply((i + createdSoFar.get()) % numTreasuries))
 							.exposingCreatedIdTo(newId -> {
 								final var newN = numFrom(newId);
@@ -208,7 +220,7 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 								} else if (lastCreatedId.get() == null || newN > numFrom(lastCreatedId.get())) {
 									lastCreatedId.set(newId);
 								}
-								if (newN % 1000 == 0) {
+								if (newN % 100 == 0) {
 									System.out.println("Resolved creation for " + newId);
 								}
 							}))
