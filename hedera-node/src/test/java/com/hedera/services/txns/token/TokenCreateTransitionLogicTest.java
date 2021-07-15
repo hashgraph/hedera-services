@@ -802,21 +802,19 @@ class TokenCreateTransitionLogicTest {
 	private AccountID fractionalFeeCollector = IdUtils.asAccount("9.9.9");
 	private AccountID nonAutoEnabledFeeCollector = IdUtils.asAccount("1.2.777");
 	private CustomFeeBuilder builder = new CustomFeeBuilder(feeCollector);
-	private CustomFee customFixedFeeInHbar = new CustomFeeBuilder(hbarFeeCollector).fromFixedFee(fixedHbar(100));
-	private CustomFee customFixedFeeInHts = new CustomFeeBuilder(nonAutoEnabledFeeCollector).fromFixedFee(
-			fixedHts(misc, 100));
-	private CustomFee customFixedFeeA = builder.fromFixedFee(
-			fixedHts(200));
-	private CustomFee customFixedFeeB = new CustomFeeBuilder(fixedFeeCollector).fromFixedFee(
-			fixedHts(300));
-	private CustomFee customFractionalFeeA = builder.fromFractionalFee(
-			fractional(15, 100)
-					.setMinimumAmount(10)
-					.setMaximumAmount(50));
-	private CustomFee customFractionalFeeB = new CustomFeeBuilder(fractionalFeeCollector).fromFractionalFee(
-			fractional(15, 100)
-					.setMinimumAmount(5)
-					.setMaximumAmount(15));
+	private CustomFee customFixedFeeInHbar = new CustomFeeBuilder(hbarFeeCollector).withFixedFee(fixedHbar(100L));
+	private CustomFee customFixedFeeInHts = new CustomFeeBuilder(nonAutoEnabledFeeCollector).withFixedFee(
+			fixedHts(misc, 100L));
+	private CustomFee customFixedFeeA = builder.withFixedFee(fixedHts(200L));
+	private CustomFee customFixedFeeB = new CustomFeeBuilder(fixedFeeCollector).withFixedFee(fixedHts(300L));
+	private CustomFee customFractionalFeeA = builder.withFractionalFee(
+			fractional(15L, 100L)
+					.setMinimumAmount(10L)
+					.setMaximumAmount(50L));
+	private CustomFee customFractionalFeeB = new CustomFeeBuilder(fractionalFeeCollector).withFractionalFee(
+			fractional(15L, 100L)
+					.setMinimumAmount(5L)
+					.setMaximumAmount(15L));
 	private List<CustomFee> grpcCustomFees = List.of(
 			customFixedFeeInHbar,
 			customFixedFeeInHts,

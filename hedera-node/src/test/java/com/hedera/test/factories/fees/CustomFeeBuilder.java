@@ -43,11 +43,15 @@ public class CustomFeeBuilder {
 				.setFeeCollectorAccountId(feeCollector);
 	}
 
-	public CustomFee fromFixedFee(final FixedFee.Builder fee) {
+	public CustomFee withOnlyFeeCollector() {
+		return builder().build();
+	}
+
+	public CustomFee withFixedFee(final FixedFee.Builder fee) {
 		return builder().setFixedFee(fee).build();
 	}
 
-	public CustomFee fromFractionalFee(final FractionalFee.Builder fee) {
+	public CustomFee withFractionalFee(final FractionalFee.Builder fee) {
 		return builder().setFractionalFee(fee).build();
 	}
 

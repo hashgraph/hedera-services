@@ -72,9 +72,9 @@ class FcCustomFeeTest {
 		final var expectedHtsSubject = FcCustomFee.fixedFee(fixedUnitsToCollect, denom, feeCollector);
 		final var expectedHtsSameTokenSubject = FcCustomFee.fixedFee(fixedUnitsToCollect, targetId, feeCollector);
 		final var expectedHbarSubject = FcCustomFee.fixedFee(fixedUnitsToCollect, null, feeCollector);
-		final var htsGrpc = builder.fromFixedFee(fixedHts(grpcDenom, fixedUnitsToCollect));
-		final var htsSameTokenGrpc = builder.fromFixedFee(fixedHts(fixedUnitsToCollect));
-		final var hbarGrpc = builder.fromFixedFee(fixedHbar(fixedUnitsToCollect));
+		final var htsGrpc = builder.withFixedFee(fixedHts(grpcDenom, fixedUnitsToCollect));
+		final var htsSameTokenGrpc = builder.withFixedFee(fixedHts(fixedUnitsToCollect));
+		final var hbarGrpc = builder.withFixedFee(fixedHbar(fixedUnitsToCollect));
 
 		final var htsSubject = FcCustomFee.fromGrpc(htsGrpc, null);
 		final var htsSameTokenSubject = FcCustomFee.fromGrpc(htsSameTokenGrpc, targetId);
@@ -87,7 +87,7 @@ class FcCustomFeeTest {
 
 	@Test
 	void grpcReprWorksForFixedHbar() {
-		final var expected = builder.fromFixedFee(fixedHbar(fixedUnitsToCollect));
+		final var expected = builder.withFixedFee(fixedHbar(fixedUnitsToCollect));
 		final var hbarFee = FcCustomFee.fixedFee(fixedUnitsToCollect, null, feeCollector);
 
 		final var actual = hbarFee.asGrpc();
@@ -97,7 +97,7 @@ class FcCustomFeeTest {
 
 	@Test
 	void grpcReprWorksForFixedHts() {
-		final var expected = builder.fromFixedFee(fixedHts(grpcDenom, fixedUnitsToCollect));
+		final var expected = builder.withFixedFee(fixedHts(grpcDenom, fixedUnitsToCollect));
 		final var htsFee = FcCustomFee.fixedFee(fixedUnitsToCollect, EntityId.fromGrpcTokenId(grpcDenom), feeCollector);
 
 		final var actual = htsFee.asGrpc();
@@ -107,7 +107,7 @@ class FcCustomFeeTest {
 
 	@Test
 	void grpcReprWorksForFractional() {
-		final var expected = builder.fromFractionalFee(
+		final var expected = builder.withFractionalFee(
 				fractional(validNumerator, validDenominator)
 						.setMinimumAmount(minimumUnitsToCollect)
 						.setMaximumAmount(maximumUnitsToCollect));
@@ -125,7 +125,7 @@ class FcCustomFeeTest {
 
 	@Test
 	void grpcReprWorksForFractionalNoMax() {
-		final var expected = builder.fromFractionalFee(
+		final var expected = builder.withFractionalFee(
 				fractional(validNumerator, validDenominator)
 						.setMinimumAmount(minimumUnitsToCollect));
 		final var fractionalFee = FcCustomFee.fractionalFee(
@@ -154,11 +154,11 @@ class FcCustomFeeTest {
 				minimumUnitsToCollect,
 				Long.MAX_VALUE,
 				feeCollector);
-		final var grpcWithExplicitMax = builder.fromFractionalFee(
+		final var grpcWithExplicitMax = builder.withFractionalFee(
 				fractional(validNumerator, validDenominator)
 						.setMinimumAmount(minimumUnitsToCollect)
 						.setMaximumAmount(maximumUnitsToCollect));
-		final var grpcWithoutExplicitMax = builder.fromFractionalFee(
+		final var grpcWithoutExplicitMax = builder.withFractionalFee(
 				fractional(validNumerator, validDenominator)
 						.setMinimumAmount(minimumUnitsToCollect));
 
