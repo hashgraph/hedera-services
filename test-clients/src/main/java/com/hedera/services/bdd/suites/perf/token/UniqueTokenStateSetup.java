@@ -85,7 +85,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class UniqueTokenStateSetup extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(UniqueTokenStateSetup.class);
 
-	private static final long SECS_TO_RUN = 500;
+	private static final long SECS_TO_RUN = 3600;
 
 	private static final int MINT_TPS = 200;
 	private static final int NUM_UNIQ_TOKENS = 1_100;
