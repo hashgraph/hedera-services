@@ -32,26 +32,61 @@ public class BalanceChangeManager {
 	private final List<BalanceChange> changesSoFar;
 	private final Map<Pair<Id, Id>, BalanceChange> indexedChanges = new HashMap<>();
 
-	private int i;
+	private int nextCandidateChange;
 
 	public BalanceChangeManager(List<BalanceChange> changesSoFar, int numHbar) {
-		i = numHbar;
+		nextCandidateChange = numHbar;
 		this.changesSoFar = changesSoFar;
+		changesSoFar.forEach(this::index);
 	}
 
 	public void includeChange(BalanceChange change) {
-		throw new AssertionError("Not implemented!");
+		changesSoFar.add(change);
+		index(change);
 	}
 
-	public BalanceChange nextAssessableChange() {
-		throw new AssertionError("Not implemented!");
+	public BalanceChange nextTriggerCandidate() {
+		final var numChanges = changesSoFar.size();
+		if (nextCandidateChange == numChanges) {
+			return null;
+		}
+		while (nextCandidateChange < numChanges) {
+			final var candidate = changesSoFar.get(nextCandidateChange);
+			nextCandidateChange++;
+			if (couldTriggerCustomFees(candidate)) {
+				return candidate;
+			}
+		}
+		return null;
+	}
+
+	private boolean couldTriggerCustomFees(BalanceChange candidate) {
+		return candidate.isForNft() || (!candidate.isForHbar()  && candidate.units() < 0);
 	}
 
 	public int changesSoFar() {
-		throw new AssertionError("Not implemented!");
+		return changesSoFar.size();
 	}
 
-	public BalanceChange changeFor(Id account, Id denomination) {
-		throw new AssertionError("Not implemented!");
+	public BalanceChange changeFor(Id account, Id denom) {
+		return indexedChanges.get(Pair.of(account, denom));
+	}
+
+	List<BalanceChange> getChangesSoFar() {
+		return changesSoFar;
+	}
+
+	private void index(BalanceChange change) {
+		if (!change.isForNft()) {
+			if (change.isForHbar()) {
+				if (indexedChanges.put(Pair.of(change.getAccount(), Id.MISSING_ID), change) != null) {
+					throw new IllegalArgumentException("Duplicate balance change :: " + change);
+				}
+			} else {
+				if (indexedChanges.put(Pair.of(change.getAccount(), change.getToken()), change) != null) {
+					throw new IllegalArgumentException("Duplicate balance change :: " + change);
+				}
+			}
+		}
 	}
 }

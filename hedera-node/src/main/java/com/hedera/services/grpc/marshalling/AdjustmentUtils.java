@@ -32,7 +32,7 @@ public class AdjustmentUtils {
 		adjustedChange(collector, denom, +amount, changeManager);
 	}
 
-	private static BalanceChange adjustedChange(Id account, Id denom, long amount, BalanceChangeManager changeManager) {
+	static BalanceChange adjustedChange(Id account, Id denom, long amount, BalanceChangeManager changeManager) {
 		final var extantChange = changeManager.changeFor(account, denom);
 		if (extantChange == null) {
 			if (denom == Id.MISSING_ID) {

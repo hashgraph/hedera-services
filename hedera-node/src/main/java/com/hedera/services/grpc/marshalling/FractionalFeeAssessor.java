@@ -24,12 +24,32 @@ import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
+import java.math.BigInteger;
+import java.util.List;
+
 public class FractionalFeeAssessor {
-	public ResponseCodeEnum assess(
+	public ResponseCodeEnum assessAllFractional(
 			BalanceChange change,
-			FcCustomFee fractionalFee,
+			List<FcCustomFee> feesWithFractional,
 			BalanceChangeManager balanceChangeManager
 	) {
 		throw new AssertionError("Not implemented!");
+	}
+
+	long computedFee(long totalAmount, FcCustomFee.FractionalFeeSpec spec) {
+		final var nominalFee = safeFractionMultiply(spec.getNumerator(), spec.getDenominator(), totalAmount);
+		long effectiveFee = Math.max(nominalFee, spec.getMinimumAmount());
+		if (spec.getMaximumUnitsToCollect() > 0) {
+			effectiveFee = Math.min(effectiveFee, spec.getMaximumUnitsToCollect());
+		}
+		return effectiveFee;
+	}
+
+	long safeFractionMultiply(long n, long d, long v) {
+		if (v != 0 && n > Long.MAX_VALUE / v) {
+			return BigInteger.valueOf(v).multiply(BigInteger.valueOf(n)).divide(BigInteger.valueOf(d)).longValueExact();
+		} else {
+			return n * v / d;
+		}
 	}
 }

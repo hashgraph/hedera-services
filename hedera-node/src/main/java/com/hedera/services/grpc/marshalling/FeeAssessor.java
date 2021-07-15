@@ -50,16 +50,17 @@ public class FeeAssessor {
 	public ResponseCodeEnum assess(
 			int level,
 			BalanceChange change,
-			FeeSchedulesManager feeSchedulesManager,
+			CustomSchedulesManager customSchedulesManager,
 			BalanceChangeManager balanceChangeManager
 	) {
 		if (level > dynamicProperties.maxCustomFeeDepth()) {
 			return CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 		}
-		final var fees = feeSchedulesManager.managedSchedulesFor(change.getToken().asEntityId());
+		final var fees = customSchedulesManager.managedSchedulesFor(change.getToken().asEntityId());
 		if (fees.isEmpty()) {
 			return OK;
 		}
+		var numFractionalFees = 0;
 		final var payer = change.getAccount();
 		final var maxBalanceChanges = dynamicProperties.maxXferBalanceChanges();
 		for (var fee : fees) {
@@ -70,13 +71,17 @@ public class FeeAssessor {
 				} else {
 					htsFeeAssessor.assess(payer, fee, balanceChangeManager);
 				}
+				if (balanceChangeManager.changesSoFar() > maxBalanceChanges) {
+					return CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
+				}
 			} else {
-				fractionalFeeAssessor.assess(change, fee, balanceChangeManager);
-			}
-			if (balanceChangeManager.changesSoFar() > maxBalanceChanges) {
-				return CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
+				numFractionalFees++;
 			}
 		}
-		return OK;
+		if (numFractionalFees > 0) {
+			fractionalFeeAssessor.assessAllFractional(change, fees, balanceChangeManager);
+		}
+		return (balanceChangeManager.changesSoFar() > maxBalanceChanges)
+				? CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS : OK;
 	}
 }

@@ -54,7 +54,7 @@ class FeeAssessorTest {
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
-	private FeeSchedulesManager feeSchedulesManager;
+	private CustomSchedulesManager customSchedulesManager;
 	@Mock
 	private BalanceChangeManager balanceChangeManager;
 
@@ -71,7 +71,7 @@ class FeeAssessorTest {
 
 		assertEquals(
 				CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH,
-				subject.assess(2, fungibleTrigger, feeSchedulesManager, balanceChangeManager));
+				subject.assess(2, fungibleTrigger, customSchedulesManager, balanceChangeManager));
 	}
 
 	@Test
@@ -79,7 +79,7 @@ class FeeAssessorTest {
 		givenFees(fungibleTokenId.asEntityId(), List.of());
 
 		// when:
-		final var result = subject.assess(0, fungibleTrigger, feeSchedulesManager, balanceChangeManager);
+		final var result = subject.assess(0, fungibleTrigger, customSchedulesManager, balanceChangeManager);
 
 		// then:
 		verifyNoInteractions(hbarFeeAssessor, htsFeeAssessor, fractionalFeeAssessor);
@@ -91,7 +91,7 @@ class FeeAssessorTest {
 		givenFees(fungibleTokenId.asEntityId(), List.of(hbarFee));
 
 		// when:
-		final var result = subject.assess(0, fungibleTrigger, feeSchedulesManager, balanceChangeManager);
+		final var result = subject.assess(0, fungibleTrigger, customSchedulesManager, balanceChangeManager);
 
 		// then:
 		verify(hbarFeeAssessor).assess(payer, hbarFee, balanceChangeManager);
@@ -100,13 +100,29 @@ class FeeAssessorTest {
 
 	@Test
 	void useFractionalAccessorAppropriately() {
-		givenFees(fungibleTokenId.asEntityId(), List.of(fractionalFee));
+		// setup:
+		final var fees = List.of(fractionalFee);
+		givenFees(fungibleTokenId.asEntityId(), fees);
 
 		// when:
-		final var result = subject.assess(0, fungibleTrigger, feeSchedulesManager, balanceChangeManager);
+		final var result = subject.assess(0, fungibleTrigger, customSchedulesManager, balanceChangeManager);
 
 		// then:
-		verify(fractionalFeeAssessor).assess(fungibleTrigger, fractionalFee, balanceChangeManager);
+		verify(fractionalFeeAssessor).assessAllFractional(fungibleTrigger, fees, balanceChangeManager);
+		assertEquals(OK, result);
+	}
+
+	@Test
+	void doesntUseFractionalAccessorIfAllFeesAreFixed() {
+		// setup:
+		final var fees = List.of(hbarFee, htsFee);
+		givenFees(fungibleTokenId.asEntityId(), fees);
+
+		// when:
+		final var result = subject.assess(0, fungibleTrigger, customSchedulesManager, balanceChangeManager);
+
+		// then:
+		verify(fractionalFeeAssessor, never()).assessAllFractional(fungibleTrigger, fees, balanceChangeManager);
 		assertEquals(OK, result);
 	}
 
@@ -115,7 +131,7 @@ class FeeAssessorTest {
 		givenFees(fungibleTokenId.asEntityId(), List.of(htsFee));
 
 		// when:
-		final var result = subject.assess(0, fungibleTrigger, feeSchedulesManager, balanceChangeManager);
+		final var result = subject.assess(0, fungibleTrigger, customSchedulesManager, balanceChangeManager);
 
 		// then:
 		verify(htsFeeAssessor).assess(payer, htsFee, balanceChangeManager);
@@ -123,26 +139,49 @@ class FeeAssessorTest {
 	}
 
 	@Test
-	void abortsOnExcessiveChanges() {
+	void abortsOnExcessiveNonFractionalChanges() {
+		// setup:
+		final var fees = List.of(hbarFee, htsFee, fractionalFee);
 		given(dynamicProperties.maxXferBalanceChanges()).willReturn(1);
-		givenFees(fungibleTokenId.asEntityId(), List.of(hbarFee, htsFee, fractionalFee));
+		givenFees(fungibleTokenId.asEntityId(), fees);
 		given(balanceChangeManager.changesSoFar())
 				.willReturn(1)
 				.willReturn(2);
 
 		// when:
-		final var result = subject.assess(0, fungibleTrigger, feeSchedulesManager, balanceChangeManager);
+		final var result = subject.assess(0, fungibleTrigger, customSchedulesManager, balanceChangeManager);
 
 		// then:
 		verify(hbarFeeAssessor).assess(payer, hbarFee, balanceChangeManager);
 		verify(htsFeeAssessor).assess(payer, htsFee, balanceChangeManager);
-		verify(fractionalFeeAssessor, never()).assess(
-				fungibleTrigger, fractionalFee, balanceChangeManager);
+		verify(fractionalFeeAssessor, never()).assessAllFractional(
+				fungibleTrigger, fees, balanceChangeManager);
+		assertEquals(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS, result);
+	}
+
+	@Test
+	void abortsOnExcessiveFractionalChanges() {
+		// setup:
+		final var fees = List.of(hbarFee, htsFee, fractionalFee);
+		given(dynamicProperties.maxXferBalanceChanges()).willReturn(1);
+		givenFees(fungibleTokenId.asEntityId(), fees);
+		given(balanceChangeManager.changesSoFar())
+				.willReturn(0)
+				.willReturn(1)
+				.willReturn(2);
+
+		// when:
+		final var result = subject.assess(0, fungibleTrigger, customSchedulesManager, balanceChangeManager);
+
+		// then:
+		verify(hbarFeeAssessor).assess(payer, hbarFee, balanceChangeManager);
+		verify(htsFeeAssessor).assess(payer, htsFee, balanceChangeManager);
+		verify(fractionalFeeAssessor).assessAllFractional(fungibleTrigger, fees, balanceChangeManager);
 		assertEquals(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS, result);
 	}
 
 	private void givenFees(EntityId token, List<FcCustomFee> customFees) {
-		given(feeSchedulesManager.managedSchedulesFor(token)).willReturn(customFees);
+		given(customSchedulesManager.managedSchedulesFor(token)).willReturn(customFees);
 	}
 
 	private final long amountOfFungibleDebit = 1_000L;
@@ -174,5 +213,4 @@ class FeeAssessorTest {
 			minAmountOfFractionalFee,
 			maxAmountOfFractionalFee,
 			fractionalFeeCollector);
-
 }
