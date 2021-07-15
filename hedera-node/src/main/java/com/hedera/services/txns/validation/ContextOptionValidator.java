@@ -80,6 +80,11 @@ public class ContextOptionValidator implements OptionValidator {
 	}
 
 	@Override
+	public boolean isPermissibleTotalNfts(long proposedTotal) {
+		return proposedTotal <= dynamicProperties.maxNftMints();
+	}
+
+	@Override
 	public boolean isThisNodeAccount(AccountID id) {
 		return nodeAccount.equals(id);
 	}

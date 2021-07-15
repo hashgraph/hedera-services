@@ -75,6 +75,7 @@ public class GlobalDynamicProperties {
 	private CongestionMultipliers congestionMultipliers;
 	private int feesMinCongestionPeriod;
 	private long ratesMidnightCheckInterval;
+	private long maxNftMints;
 
 	public GlobalDynamicProperties(
 			HederaNumbers hederaNums,
@@ -136,6 +137,7 @@ public class GlobalDynamicProperties {
 		feesMinCongestionPeriod = properties.getIntProperty("fees.minCongestionPeriod");
 		ratesMidnightCheckInterval = properties.getLongProperty("rates.midnightCheckInterval");
 		maxCustomFeesAllowed = properties.getIntProperty("tokens.maxCustomFeesAllowed");
+		maxNftMints = properties.getLongProperty("tokens.nfts.maxAllowedMints");
 	}
 
 	public int maxTokensPerAccount() {
@@ -300,5 +302,9 @@ public class GlobalDynamicProperties {
 
 	public long ratesMidnightCheckInterval() {
 		return ratesMidnightCheckInterval;
+	}
+
+	public long maxNftMints() {
+		return maxNftMints;
 	}
 }

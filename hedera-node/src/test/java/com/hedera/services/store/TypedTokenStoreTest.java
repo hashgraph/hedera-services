@@ -21,7 +21,6 @@ package com.hedera.services.store;
  */
 
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.accounts.BackingNfts;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.TransactionRecordService;
@@ -83,8 +82,6 @@ class TypedTokenStoreTest {
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenRels;
 	@Mock
 	private BackingTokenRels backingTokenRels;
-	@Mock
-	private BackingNfts backingNfts;
 
 	private TypedTokenStore subject;
 
@@ -101,8 +98,7 @@ class TypedTokenStoreTest {
 				() -> uniqueTokenOwnerships,
 				() -> uniqueTokenAssociations,
 				() -> tokenRels,
-				backingTokenRels,
-				backingNfts);
+				backingTokenRels);
 	}
 
 	/* --- Token relationship loading --- */
@@ -191,6 +187,14 @@ class TypedTokenStoreTest {
 	}
 
 	/* --- Token loading --- */
+	@Test
+	void reportsExpectedNftsMinted() {
+		given(uniqueTokens.size()).willReturn(123);
+
+		// expect:
+		assertEquals(123L, subject.currentMintedNfts());
+	}
+
 	@Test
 	void loadsExpectedToken() {
 		given(accountStore.loadAccount(autoRenewId)).willReturn(autoRenewAccount);
