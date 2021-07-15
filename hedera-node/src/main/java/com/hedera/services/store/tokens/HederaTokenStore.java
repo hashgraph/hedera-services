@@ -410,7 +410,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			if (validity != OK) {
 				return failure(validity);
 			}
-			pendingCreation.setFeeScheduleFrom(customFees);
+			pendingCreation.setFeeScheduleFrom(customFees, EntityId.fromGrpcTokenId(pendingId));
 		}
 
 		return success(pendingId);
@@ -750,7 +750,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		if (validity != OK) {
 			return validity;
 		}
-		token.setFeeScheduleFrom(customFees);
+		token.setFeeScheduleFrom(customFees, EntityId.fromGrpcTokenId(tId));
 
 		return OK;
 	}

@@ -254,7 +254,7 @@ class StateViewTest {
 		token.setDeleted(true);
 		token.setTokenType(TokenType.FUNGIBLE_COMMON);
 		token.setSupplyType(TokenSupplyType.FINITE);
-		token.setFeeScheduleFrom(grpcCustomFees);
+		token.setFeeScheduleFrom(grpcCustomFees, null);
 
 		given(tokenStore.resolve(tokenId)).willReturn(tokenId);
 		given(tokenStore.resolve(missingTokenId)).willReturn(TokenStore.MISSING_TOKEN);

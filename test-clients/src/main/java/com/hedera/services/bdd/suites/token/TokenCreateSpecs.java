@@ -538,7 +538,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						getTokenInfo(token)
 								.hasCustom(fixedHbarFeeInSchedule(hbarAmount, hbarCollector))
 								.hasCustom(fixedHtsFeeInSchedule(htsAmount, feeDenom, htsCollector))
-								.hasCustom(fixedHtsFeeInSchedule(htsAmount, "0.0.0", htsCollector))
+								.hasCustom(fixedHtsFeeInSchedule(htsAmount, token, htsCollector))
 								.hasCustom(fractionalFeeInSchedule(
 										numerator, denominator,
 										minimumToCollect, OptionalLong.of(maximumToCollect),

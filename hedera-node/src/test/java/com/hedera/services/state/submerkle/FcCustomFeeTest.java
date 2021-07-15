@@ -83,8 +83,8 @@ class FcCustomFeeTest {
 				).build();
 
 		// when:
-		final var htsSubject = FcCustomFee.fromGrpc(htsGrpc);
-		final var hbarSubject = FcCustomFee.fromGrpc(hbarGrpc);
+		final var htsSubject = FcCustomFee.fromGrpc(htsGrpc, null);
+		final var hbarSubject = FcCustomFee.fromGrpc(hbarGrpc, null);
 
 		// then:
 		assertEquals(expectedHtsSubject, htsSubject);
@@ -225,8 +225,8 @@ class FcCustomFeeTest {
 				).build();
 
 		// when:
-		final var explicitMaxSubject = FcCustomFee.fromGrpc(grpcWithExplicitMax);
-		final var noExplicitMaxSubject = FcCustomFee.fromGrpc(grpcWithoutExplicitMax);
+		final var explicitMaxSubject = FcCustomFee.fromGrpc(grpcWithExplicitMax, null);
+		final var noExplicitMaxSubject = FcCustomFee.fromGrpc(grpcWithoutExplicitMax, null);
 
 		// then:
 		assertEquals(expectedExplicitMaxSubject, explicitMaxSubject);

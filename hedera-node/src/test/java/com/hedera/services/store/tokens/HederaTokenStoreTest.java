@@ -1758,7 +1758,7 @@ class HederaTokenStoreTest {
 		// setup:
 
 		final var expected = buildFullyValidExpectedToken();
-		expected.setFeeScheduleFrom(Collections.emptyList());
+		expected.setFeeScheduleFrom(Collections.emptyList(), null);
 		final var req = fullyValidTokenCreateAttempt()
 				.clearCustomFees()
 				.setExpiry(Timestamp.newBuilder().setSeconds(0))
@@ -1798,7 +1798,7 @@ class HederaTokenStoreTest {
 		expected.setTokenType(TokenType.FUNGIBLE_COMMON);
 		expected.setSupplyType(TokenSupplyType.INFINITE);
 		expected.setMemo(memo);
-		expected.setFeeScheduleFrom(Collections.emptyList());
+		expected.setFeeScheduleFrom(Collections.emptyList(), null);
 
 		// given:
 		final var req = fullyValidTokenCreateAttempt().clearCustomFees().build();
@@ -1950,7 +1950,7 @@ class HederaTokenStoreTest {
 		expected.setTokenType(TokenType.FUNGIBLE_COMMON);
 		expected.setSupplyType(TokenSupplyType.INFINITE);
 		expected.setMemo(memo);
-		expected.setFeeScheduleFrom(grpcCustomFees);
+		expected.setFeeScheduleFrom(grpcCustomFees, null);
 
 		return expected;
 	}

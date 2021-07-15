@@ -96,7 +96,7 @@ class MerkleTokenTest {
 	private final long maximumUnitsToCollect = 55;
 	private final EntityId denom = new EntityId(1, 2, 3);
 	private final EntityId feeCollector = new EntityId(4, 5, 6);
-	final CustomFee fractionalFee = CustomFee.newBuilder()
+	private final CustomFee fractionalFee = CustomFee.newBuilder()
 			.setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
 			.setFractionalFee(FractionalFee.newBuilder()
 					.setFractionalAmount(Fraction.newBuilder()
@@ -106,14 +106,16 @@ class MerkleTokenTest {
 					.setMinimumAmount(minimumUnitsToCollect)
 					.setMaximumAmount(maximumUnitsToCollect)
 			).build();
-	final CustomFee fixedFee = CustomFee.newBuilder()
+	private final CustomFee fixedFee = CustomFee.newBuilder()
 			.setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
 			.setFixedFee(FixedFee.newBuilder()
 					.setDenominatingTokenId(denom.toGrpcTokenId())
 					.setAmount(fixedUnitsToCollect)
 			).build();
-	final List<CustomFee> grpcFeeSchedule = List.of(fixedFee, fractionalFee);
-	final List<FcCustomFee> feeSchedule = grpcFeeSchedule.stream().map(FcCustomFee::fromGrpc).collect(toList());
+	private final List<CustomFee> grpcFeeSchedule = List.of(fixedFee, fractionalFee);
+	private final List<FcCustomFee> feeSchedule = grpcFeeSchedule.stream()
+			.map(fee -> FcCustomFee.fromGrpc(fee, null))
+			.collect(toList());
 
 	private MerkleToken subject;
 	private MerkleToken other;
@@ -151,7 +153,7 @@ class MerkleTokenTest {
 		subject.setName(name);
 		subject.setSymbol(symbol);
 		subject.setAccountsFrozenByDefault(true);
-		subject.setFeeScheduleFrom(grpcFeeSchedule);
+		subject.setFeeScheduleFrom(grpcFeeSchedule, null);
 
 		serdes = mock(DomainSerdes.class);
 		MerkleToken.serdes = serdes;
@@ -227,7 +229,7 @@ class MerkleTokenTest {
 	void v0120DeserializeWorks() throws IOException {
 		// setup:
 		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
-		subject.setFeeScheduleFrom(Collections.emptyList());
+		subject.setFeeScheduleFrom(Collections.emptyList(), null);
 		subject.setFeeScheduleKey(MerkleToken.UNUSED_KEY);
 
 		given(serdes.readNullableSerializable(any())).willReturn(autoRenewAccount);
@@ -610,7 +612,7 @@ class MerkleTokenTest {
 		token.setAutoRenewAccount(autoRenewAccount);
 		token.setAutoRenewPeriod(autoRenewPeriod);
 		token.setMemo(memo);
-		token.setFeeScheduleFrom(grpcFeeSchedule);
+		token.setFeeScheduleFrom(grpcFeeSchedule, null);
 		token.setFeeScheduleKey(feeScheduleKey);
 		token.setTokenType(TokenType.FUNGIBLE_COMMON);
 		token.setSupplyType(TokenSupplyType.INFINITE);
@@ -742,7 +744,7 @@ class MerkleTokenTest {
 				expiry, totalSupply, decimals, symbol, name, freezeDefault, accountsKycGrantedByDefault, treasury);
 		assertEquals(Collections.emptyList(), token.grpcFeeSchedule());
 
-		token.setFeeScheduleFrom(grpcFeeSchedule);
+		token.setFeeScheduleFrom(grpcFeeSchedule, null);
 		assertEquals(grpcFeeSchedule, token.grpcFeeSchedule());
 	}
 }
