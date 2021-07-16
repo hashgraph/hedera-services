@@ -13,6 +13,7 @@ dependencies {
     jmhImplementation(files("../hapi-utils/target/classes"));
 
     jmhImplementation("org.rocksdb:rocksdbjni:6.20.3");
+    jmhImplementation("org.lmdbjava:lmdbjava:0.8.1");
 
     jmhImplementation("com.hedera.hashgraph:sdk:2.0.5")
     jmhImplementation("com.swirlds:swirlds-common:0.16.0-alpha.1_vmap")
