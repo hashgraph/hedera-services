@@ -114,6 +114,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(31, subject.autoRenewNumberOfEntitiesToScan());
 		assertEquals(32, subject.autoRenewMaxNumberOfEntitiesToRenewOrDelete());
 		assertEquals(35, subject.maxCustomFeesAllowed());
+		assertEquals(44, subject.maxXferBalanceChanges());
+		assertEquals(45, subject.maxCustomFeeDepth());
 	}
 
 	@Test
@@ -192,6 +194,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(32, subject.autoRenewNumberOfEntitiesToScan());
 		assertEquals(33, subject.autoRenewMaxNumberOfEntitiesToRenewOrDelete());
 		assertEquals(36, subject.maxCustomFeesAllowed());
+		assertEquals(45, subject.maxXferBalanceChanges());
+		assertEquals(46, subject.maxCustomFeeDepth());
 	}
 
 	@Test
@@ -267,7 +271,6 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("autorenew.gracePeriod")).willReturn(i + 32L);
 		given(properties.getLongProperty("rates.midnightCheckInterval")).willReturn(i + 33L);
 		given(properties.getIntProperty("tokens.maxCustomFeesAllowed")).willReturn(i + 34);
-
 		given(properties.getIntProperty("ledger.nftTransfers.maxLen")).willReturn(i + 35);
 		given(properties.getIntProperty("tokens.nfts.maxBatchSizeBurn")).willReturn(i + 36);
 		given(properties.getIntProperty("tokens.nfts.maxBatchSizeWipe")).willReturn(i + 37);
@@ -276,6 +279,8 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("tokens.nfts.maxMetadataBytes")).willReturn(i + 40);
 		given(properties.getIntProperty("tokens.maxTokenNameUtf8Bytes")).willReturn(i + 41);
 		given(properties.getLongProperty("tokens.nfts.maxAllowedMints")).willReturn(i + 42L);
+		given(properties.getIntProperty("ledger.xferBalanceChanges.maxLen")).willReturn(i + 43);
+		given(properties.getIntProperty("tokens.maxCustomFeeDepth")).willReturn(i + 44);
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {
