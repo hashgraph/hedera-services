@@ -35,6 +35,7 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
+import static com.hederahashgraph.api.proto.java.SubType.UNRECOGNIZED;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class BaseOperationUsageTest {
@@ -75,5 +76,13 @@ class BaseOperationUsageTest {
 
 		assertThrows(IllegalArgumentException.class,
 				() -> mock.baseUsageFor(CryptoUpdate, DEFAULT));
+		assertThrows(IllegalArgumentException.class,
+				() -> mock.baseUsageFor(CryptoTransfer, UNRECOGNIZED));
+		assertThrows(IllegalArgumentException.class,
+				() -> mock.baseUsageFor(TokenMint, TOKEN_FUNGIBLE_COMMON));
+		assertThrows(IllegalArgumentException.class,
+				() -> mock.baseUsageFor(TokenAccountWipe, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));
+		assertThrows(IllegalArgumentException.class,
+				() -> mock.baseUsageFor(TokenBurn, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES));
 	}
 }
