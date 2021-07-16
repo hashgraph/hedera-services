@@ -18,6 +18,7 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
+import rockdb.VFCDataSourceRocksDb;
 
 import java.math.BigInteger;
 import java.nio.file.Files;
@@ -126,32 +127,12 @@ public class VFCMapBench {
         final var sizeOfBin = (Integer.BYTES+(keysPerBin*(Integer.BYTES+Long.BYTES+keySize)));
         final var numFilesForIndex = (numBinsAsPowerOf2 * sizeOfBin) / (1024*1024*1024);
         final var numFilesAsPowerOf2 = Math.max(2, Long.highestOneBit(numFilesForIndex * 2));
-        final var ds = new VFCDataSourceImpl<>(
+        final var ds = new VFCDataSourceRocksDb<>(
                 ContractUint256.SERIALIZED_SIZE,
                 ContractUint256::new,
                 ContractUint256.SERIALIZED_SIZE,
                 ContractUint256::new,
-                new SlotStoreMemMap(
-                        false,
-                        VFCDataSourceImpl.NODE_STORE_SLOTS_SIZE,
-                        FILE_SIZE,
-                        Path.of("data"),
-                        "nodes",
-                        "dat", true),
-                new SlotStoreMemMap(
-                        true,
-                        Integer.BYTES + ContractUint256.SERIALIZED_SIZE + Integer.BYTES + ContractUint256.SERIALIZED_SIZE,
-                        FILE_SIZE,
-                        Path.of("data"),
-                        "data",
-                        "dat", true),
-                new LongIndexMemMap<>(
-                        Path.of("data"),
-                        "index",
-                        (int) numBinsAsPowerOf2,
-                        (int) numFilesAsPowerOf2,
-                        ContractUint256.SERIALIZED_SIZE,
-                        keysPerBin));
+                Path.of("data"));
         contractMap = new VFCMap<>(ds);
 
         System.out.println("\nUsing inMemoryIndex = " + inMemoryIndex+"  -- inMemoryStore = " + inMemoryStore);
@@ -196,7 +177,7 @@ public class VFCMapBench {
      * @throws Exception Any exception should be treated as fatal.
      */
     @Benchmark
-    public void update() throws BrokenBarrierException, InterruptedException {
+    public void update() {
         // Start modifying the new fast copy
         final var iterationsPerRound = numUpdatesPerOperation * targetOpsPerSecond;
         for (int j=0; j<iterationsPerRound; j++) {
