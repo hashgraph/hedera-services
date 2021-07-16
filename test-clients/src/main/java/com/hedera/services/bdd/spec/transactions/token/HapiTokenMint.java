@@ -143,11 +143,11 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 
 	@Override
 	public void updateStateOf(HapiApiSpec spec) throws Throwable {
-		if (actualStatus != SUCCESS) {
-			return;
-		}
-		lookupSubmissionRecord(spec);
-		spec.registry().saveCreationTime(token, recordOfSubmission.getConsensusTimestamp());
+//		if (actualStatus != SUCCESS) {
+//			return;
+//		}
+//		lookupSubmissionRecord(spec);
+//		spec.registry().saveCreationTime(token, recordOfSubmission.getConsensusTimestamp());
 	}
 
 	@Override

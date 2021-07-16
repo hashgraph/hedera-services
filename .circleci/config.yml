@@ -1607,11 +1607,11 @@ workflows:
   GCP-Create-Large-Volume-NFTs-SavedState:
     triggers:
       - schedule:
-          cron: "58 3 * * *"
+          cron: "45 22 * * *"
           filters:
             branches:
               only:
-                - <branch-name-for-test>
+                - 01828-D-create-30M-NFTs
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -2249,6 +2249,7 @@ workflows:
               branches:
                 ignore:
                   - NONE
+                  - 01828-D-create-30M-NFTs
             workflow-name: "Continuous-integration"
         - sonar-check:
             context: SonarCloud
@@ -2527,7 +2528,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression;
+            cd regression; git checkout 01373-D-create-30M-NFTs
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
@@ -2940,10 +2941,10 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "hedera-regression"
+        default: "hedera-regression-test"
       slack_summary_channel:
         type: string
-        default: "hedera-regression-test-summary"
+        default: "hedera-regression-test"
       workflow-name:
         type: string
         default: ""
