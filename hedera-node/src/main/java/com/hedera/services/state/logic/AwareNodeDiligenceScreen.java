@@ -32,17 +32,21 @@ import org.apache.logging.log4j.Logger;
 
 import static com.hedera.services.txns.diligence.DuplicateClassification.NODE_DUPLICATE;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 
 public class AwareNodeDiligenceScreen {
 	private static final Logger log = LogManager.getLogger(AwareNodeDiligenceScreen.class);
 
 	final static String WRONG_NODE_LOG_TPL = "Node {} (member #{}) submitted a txn meant for node account {} :: {}";
 	final static String MISSING_NODE_LOG_TPL = "Node {} (member #{}) submitted a txn w/ missing node account {} :: {}";
+	final static String MISSING_PAYER_ACCOUNT_LOG = "Node {} (member #{}) submitted a txn with missing payer account {} :: {}";
+	final static String DELETED_PAYER_ACCOUNT_LOG = "Node {} (member #{}) submitted a txn with deleted payer account {} :: {}";
 
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
@@ -66,13 +70,30 @@ public class AwareNodeDiligenceScreen {
 
 		boolean designatedNodeExists = backingAccounts.contains(designatedAccount);
 		if (!designatedNodeExists) {
-			warnOfMissing(submittingAccount, txnCtx.submittingSwirldsMember(), designatedAccount, accessor);
+			logAccountWarning(MISSING_NODE_LOG_TPL, submittingAccount, txnCtx.submittingSwirldsMember(), designatedAccount, accessor);
 			txnCtx.setStatus(INVALID_NODE_ACCOUNT);
 			return true;
 		}
 
+		var payerAccountId = accessor.getPayer();
+		boolean payerAccountExists = backingAccounts.contains(payerAccountId);
+
+		if (!payerAccountExists) {
+			logAccountWarning(MISSING_PAYER_ACCOUNT_LOG, submittingAccount, txnCtx.submittingSwirldsMember(), payerAccountId, accessor);
+			txnCtx.setStatus(ACCOUNT_ID_DOES_NOT_EXIST);
+			return true;
+		}
+
+		var payerAccountRef = backingAccounts.getImmutableRef(payerAccountId);
+
+		if (payerAccountRef.isDeleted()) {
+			logAccountWarning(DELETED_PAYER_ACCOUNT_LOG, submittingAccount, txnCtx.submittingSwirldsMember(), payerAccountId, accessor);
+			txnCtx.setStatus(PAYER_ACCOUNT_DELETED);
+			return true;
+		}
+
 		if (!submittingAccount.equals(designatedAccount)) {
-			warnOfMismatched(submittingAccount, txnCtx.submittingSwirldsMember(), designatedAccount, accessor);
+			logAccountWarning(WRONG_NODE_LOG_TPL, submittingAccount, txnCtx.submittingSwirldsMember(), designatedAccount, accessor);
 			txnCtx.setStatus(INVALID_NODE_ACCOUNT);
 			return true;
 		}
@@ -108,29 +129,27 @@ public class AwareNodeDiligenceScreen {
 		return false;
 	}
 
-	private void warnOfMissing(
+	/**
+	 * Logs account warnings
+	 *
+	 * @param message template for the log which includes each of the additional parameters
+	 * @param submittingNodeAccount submitting node account for the transaction
+	 * @param submittingMember submitting member
+	 * @param relatedAccount related account as to which the warning applies to
+	 * @param accessor transaction accessor
+	 */
+	private void logAccountWarning(
+			String message,
 			AccountID submittingNodeAccount,
 			long submittingMember,
-			AccountID designatedNodeAccount,
+			AccountID relatedAccount,
 			TxnAccessor accessor
 	) {
-		log.warn(MISSING_NODE_LOG_TPL,
+		log.warn(message,
 				readableId(submittingNodeAccount),
 				submittingMember,
-				readableId(designatedNodeAccount),
+				readableId(relatedAccount),
 				accessor.getSignedTxnWrapper());
 	}
 
-	private void warnOfMismatched(
-			AccountID submittingNodeAccount,
-			long submittingMember,
-			AccountID designatedNodeAccount,
-			TxnAccessor accessor
-	) {
-		log.warn(WRONG_NODE_LOG_TPL,
-				readableId(submittingNodeAccount),
-				submittingMember,
-				readableId(designatedNodeAccount),
-				accessor.getSignedTxnWrapper());
-	}
 }
