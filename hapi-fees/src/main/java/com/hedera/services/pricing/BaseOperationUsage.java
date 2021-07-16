@@ -94,36 +94,39 @@ class BaseOperationUsage {
 	 * @return the total resource usage of the base configuration
 	 */
 	UsageAccumulator baseUsageFor(HederaFunctionality function, SubType type) {
-		if (type == TOKEN_NON_FUNGIBLE_UNIQUE) {
-			switch (function) {
-				case CryptoTransfer:
-					return nftCryptoTransfer();
-				case TokenMint:
+
+		switch (function) {
+			case CryptoTransfer:
+				switch (type) {
+					case DEFAULT:
+						return hbarCryptoTransfer();
+					case TOKEN_FUNGIBLE_COMMON:
+						return htsCryptoTransfer();
+					case TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES:
+						return htsCryptoTransferWithCustomFee();
+					case TOKEN_NON_FUNGIBLE_UNIQUE:
+						return nftCryptoTransfer();
+					case TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES:
+						return nftCryptoTransferWithCustomFee();
+				}
+			case TokenMint:
+				if (type == TOKEN_NON_FUNGIBLE_UNIQUE) {
 					return uniqueTokenMint();
-				case TokenAccountWipe:
+				}
+			case TokenAccountWipe:
+				if (type == TOKEN_NON_FUNGIBLE_UNIQUE) {
 					return uniqueTokenWipe();
-				case TokenBurn:
+				}
+			case TokenBurn:
+				if (type == TOKEN_NON_FUNGIBLE_UNIQUE) {
 					return uniqueTokenBurn();
-				default:
-					break;
-			}
-		} else {
-			switch (function) {
-				case CryptoTransfer:
-					switch (type) {
-						case DEFAULT:
-							return hbarCryptoTransfer();
-						case TOKEN_FUNGIBLE_COMMON:
-							return htsCryptoTransfer();
-					}
-					break;
-				case ConsensusSubmitMessage:
-					return submitMessage();
-				case TokenFeeScheduleUpdate:
-					return feeScheduleUpdate();
-				default:
-					break;
-			}
+				}
+			case ConsensusSubmitMessage:
+				return submitMessage();
+			case TokenFeeScheduleUpdate:
+				return feeScheduleUpdate();
+			default:
+				break;
 		}
 
 		throw new IllegalArgumentException("Canonical usage unknown");
@@ -181,10 +184,9 @@ class BaseOperationUsage {
 	}
 
 	private UsageAccumulator submitMessage() {
-		final var baseMeta = new BaseTransactionMeta(0, 0);
 		final var opMeta = new SubmitMessageMeta(100);
 		final var into = new UsageAccumulator();
-		CONSENSUS_OPS_USAGE.submitMessageUsage(SINGLE_SIG_USAGE, opMeta, baseMeta, into);
+		CONSENSUS_OPS_USAGE.submitMessageUsage(SINGLE_SIG_USAGE, opMeta, NO_MEMO_AND_NO_EXPLICIT_XFERS, into);
 		return into;
 	}
 
@@ -228,21 +230,39 @@ class BaseOperationUsage {
 	}
 
 	private UsageAccumulator htsCryptoTransfer() {
-		final var txnUsageMeta = new BaseTransactionMeta(0, 0);
 		final var xferUsageMeta = new CryptoTransferMeta(380, 1,
 				2, 0);
 		final var into = new UsageAccumulator();
-		CRYPTO_OPS_USAGE.cryptoTransferUsage(SINGLE_SIG_USAGE, xferUsageMeta, txnUsageMeta, into);
+		CRYPTO_OPS_USAGE.cryptoTransferUsage(SINGLE_SIG_USAGE, xferUsageMeta, NO_MEMO_AND_NO_EXPLICIT_XFERS, into);
+
+		return into;
+	}
+
+	private UsageAccumulator htsCryptoTransferWithCustomFee() {
+		final var xferUsageMeta = new CryptoTransferMeta(380, 1,
+				2, 0);
+		xferUsageMeta.setCustomFeeHbarTransfers(2);
+		final var into = new UsageAccumulator();
+		CRYPTO_OPS_USAGE.cryptoTransferUsage(SINGLE_SIG_USAGE, xferUsageMeta, NO_MEMO_AND_NO_EXPLICIT_XFERS, into);
 
 		return into;
 	}
 
 	private UsageAccumulator nftCryptoTransfer() {
-		final var txnUsageMeta = new BaseTransactionMeta(0, 0);
 		final var xferUsageMeta = new CryptoTransferMeta(380, 1,
 				0, 1);
 		final var into = new UsageAccumulator();
-		CRYPTO_OPS_USAGE.cryptoTransferUsage(SINGLE_SIG_USAGE, xferUsageMeta, txnUsageMeta, into);
+		CRYPTO_OPS_USAGE.cryptoTransferUsage(SINGLE_SIG_USAGE, xferUsageMeta, NO_MEMO_AND_NO_EXPLICIT_XFERS, into);
+
+		return into;
+	}
+
+	private UsageAccumulator nftCryptoTransferWithCustomFee() {
+		final var xferUsageMeta = new CryptoTransferMeta(380, 1,
+				0, 1);
+		xferUsageMeta.setCustomFeeHbarTransfers(2);
+		final var into = new UsageAccumulator();
+		CRYPTO_OPS_USAGE.cryptoTransferUsage(SINGLE_SIG_USAGE, xferUsageMeta, NO_MEMO_AND_NO_EXPLICIT_XFERS, into);
 
 		return into;
 	}
