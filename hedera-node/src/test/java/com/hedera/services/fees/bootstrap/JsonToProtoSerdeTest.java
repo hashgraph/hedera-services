@@ -22,6 +22,7 @@ package com.hedera.services.fees.bootstrap;
 
 import com.google.common.io.Files;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
+import com.hederahashgraph.api.proto.java.SubType;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -29,6 +30,7 @@ import java.io.File;
 import java.nio.file.Paths;
 
 import static com.hedera.services.fees.bootstrap.JsonToProtoSerde.loadFeeScheduleFromJson;
+import static com.hedera.services.fees.bootstrap.JsonToProtoSerde.stringToSubType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -74,5 +76,23 @@ public class JsonToProtoSerdeTest {
 	public void throwIseOnFailure() {
 		// expect:
 		assertThrows(IllegalStateException.class, () -> loadFeeScheduleFromJson("no-such-resource.json"));
+	}
+
+	@Test
+	void stringToSubTypeAsExpected() {
+		var str = "TOKEN_FUNGIBLE_COMMON";
+		assertEquals(SubType.TOKEN_FUNGIBLE_COMMON, stringToSubType(str));
+
+		str = "TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES";
+		assertEquals(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES, stringToSubType(str));
+
+		str = "TOKEN_NON_FUNGIBLE_UNIQUE";
+		assertEquals(SubType.TOKEN_NON_FUNGIBLE_UNIQUE, stringToSubType(str));
+
+		str = "TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES";
+		assertEquals(SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES, stringToSubType(str));
+
+		str = "blah";
+		assertEquals(SubType.DEFAULT, stringToSubType(str));
 	}
 }

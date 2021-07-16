@@ -31,7 +31,7 @@ public class GlobalDynamicProperties {
 	private final HederaNumbers hederaNums;
 	private final PropertySource properties;
 
-	private int maxNFTMetadataBytes;
+	private int maxNftMetadataBytes;
 	private int maxBatchSizeBurn;
 	private int maxBatchSizeMint;
 	private int maxNftTransfersLen;
@@ -75,6 +75,9 @@ public class GlobalDynamicProperties {
 	private CongestionMultipliers congestionMultipliers;
 	private int feesMinCongestionPeriod;
 	private long ratesMidnightCheckInterval;
+	private long maxNftMints;
+	private int maxXferBalanceChanges;
+	private int maxCustomFeeDepth;
 
 	public GlobalDynamicProperties(
 			HederaNumbers hederaNums,
@@ -88,7 +91,7 @@ public class GlobalDynamicProperties {
 
 	public void reload() {
 		shouldKeepRecordsInState = properties.getBooleanProperty("ledger.keepRecordsInState");
-		maxNFTMetadataBytes = properties.getIntProperty("tokens.nfts.maxMetadataBytes");
+		maxNftMetadataBytes = properties.getIntProperty("tokens.nfts.maxMetadataBytes");
 		maxBatchSizeBurn = properties.getIntProperty("tokens.nfts.maxBatchSizeBurn");
 		maxBatchSizeMint = properties.getIntProperty("tokens.nfts.maxBatchSizeMint");
 		maxBatchSizeWipe = properties.getIntProperty("tokens.nfts.maxBatchSizeWipe");
@@ -136,6 +139,9 @@ public class GlobalDynamicProperties {
 		feesMinCongestionPeriod = properties.getIntProperty("fees.minCongestionPeriod");
 		ratesMidnightCheckInterval = properties.getLongProperty("rates.midnightCheckInterval");
 		maxCustomFeesAllowed = properties.getIntProperty("tokens.maxCustomFeesAllowed");
+		maxNftMints = properties.getLongProperty("tokens.nfts.maxAllowedMints");
+		maxXferBalanceChanges = properties.getIntProperty("ledger.xferBalanceChanges.maxLen");
+		maxCustomFeeDepth = properties.getIntProperty("tokens.maxCustomFeeDepth");
 	}
 
 	public int maxTokensPerAccount() {
@@ -146,7 +152,7 @@ public class GlobalDynamicProperties {
 		return maxCustomFeesAllowed;
 	}
 
-	public int maxNftMetadataBytes() { return maxNFTMetadataBytes; }
+	public int maxNftMetadataBytes() { return maxNftMetadataBytes; }
 
 	public int maxBatchSizeBurn() { return maxBatchSizeBurn; }
 
@@ -300,5 +306,17 @@ public class GlobalDynamicProperties {
 
 	public long ratesMidnightCheckInterval() {
 		return ratesMidnightCheckInterval;
+	}
+
+	public long maxNftMints() {
+		return maxNftMints;
+	}
+
+	public int maxXferBalanceChanges() {
+		return maxXferBalanceChanges;
+	}
+
+	public int maxCustomFeeDepth() {
+		return maxCustomFeeDepth;
 	}
 }

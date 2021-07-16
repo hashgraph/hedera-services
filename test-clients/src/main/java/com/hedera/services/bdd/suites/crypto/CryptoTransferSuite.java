@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.crypto;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -48,15 +49,22 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public class CryptoTransferSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoTransferSuite.class);
@@ -75,8 +83,94 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						transferToTopicReturnsInvalidAccountId(),
 						tokenTransferFeesScaleAsExpected(),
 						okToSetInvalidPaymentHeaderForCostAnswer(),
+						baseCryptoTransferFeeChargedAsExpected()
 				}
 		);
+	}
+
+	private HapiApiSpec baseCryptoTransferFeeChargedAsExpected() {
+		final var expectedHbarXferPriceUsd = 0.0001;
+		final var expectedHtsXferPriceUsd = 0.001;
+		final var expectedNftXferPriceUsd = 0.001;
+		final var expectedHtsXferWithCustomFeePriceUsd = 0.002;
+		final var expectedNftXferWithCustomFeePriceUsd = 0.002;
+		final var transferAmount = 1L;
+		final var customFeeCollector = "customFeeCollector";
+		final var sender = "sender";
+		final var receiver = "receiver";
+		final var hbarXferTxn = "hbarXferTxn";
+		final var fungibleToken = "fungibleToken";
+		final var fungibleTokenWithCustomFee = "fungibleTokenWithCustomFee";
+		final var htsXferTxn = "htsXferTxn";
+		final var htsXferTxnWithCustomFee = "htsXferTxnWithCustomFee";
+		final var nonFungibleToken = "nonFungibleToken";
+		final var nonFungibleTokenWithCustomFee = "nonFungibleTokenWithCustomFee";
+		final var nftXferTxn = "nftXferTxn";
+		final var nftXferTxnWithCustomFee = "nftXferTxnWithCustomFee";
+		final var supplyKey = "supplyKey";
+
+		return defaultHapiSpec("BaseCryptoTransferIsChargedAsExpected")
+				.given(
+						cryptoCreate(sender).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(receiver),
+						cryptoCreate(customFeeCollector),
+						tokenCreate(fungibleToken)
+								.treasury(sender)
+								.tokenType(FUNGIBLE_COMMON)
+								.initialSupply(100L),
+						tokenCreate(fungibleTokenWithCustomFee)
+								.treasury(sender)
+								.tokenType(FUNGIBLE_COMMON)
+								.withCustom(fixedHbarFee(transferAmount, customFeeCollector))
+								.initialSupply(100L),
+						tokenAssociate(receiver, fungibleToken, fungibleTokenWithCustomFee),
+						newKeyNamed(supplyKey),
+						tokenCreate(nonFungibleToken)
+								.initialSupply(0)
+								.supplyKey(supplyKey)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.treasury(sender),
+						tokenCreate(nonFungibleTokenWithCustomFee)
+								.initialSupply(0)
+								.supplyKey(supplyKey)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.withCustom(fixedHbarFee(transferAmount, customFeeCollector))
+								.treasury(sender),
+						mintToken(nonFungibleToken, List.of(ByteString.copyFromUtf8("memo1"))),
+						mintToken(nonFungibleTokenWithCustomFee, List.of(ByteString.copyFromUtf8("memo2"))),
+						tokenAssociate(receiver, nonFungibleToken, nonFungibleTokenWithCustomFee)
+				)
+				.when(
+						cryptoTransfer(tinyBarsFromTo(sender, receiver, 100L))
+								.payingWith(sender)
+								.blankMemo()
+								.via(hbarXferTxn),
+						cryptoTransfer(moving(1, fungibleToken).between(sender, receiver))
+								.blankMemo()
+								.payingWith(sender)
+								.via(htsXferTxn),
+						cryptoTransfer(movingUnique(1, nonFungibleToken).between(sender, receiver))
+								.blankMemo()
+								.payingWith(sender)
+								.via(nftXferTxn),
+						cryptoTransfer(moving(1, fungibleTokenWithCustomFee).between(sender, receiver))
+								.blankMemo()
+								.fee(ONE_HBAR)
+								.payingWith(sender)
+								.via(htsXferTxnWithCustomFee),
+						cryptoTransfer(movingUnique(1, nonFungibleTokenWithCustomFee).between(sender, receiver))
+								.blankMemo()
+								.fee(ONE_HBAR)
+								.payingWith(sender)
+								.via(nftXferTxnWithCustomFee)
+				)
+				.then(
+						validateChargedUsdWithin(hbarXferTxn, expectedHbarXferPriceUsd, 0.01),
+						validateChargedUsdWithin(htsXferTxn, expectedHtsXferPriceUsd, 0.01),
+						validateChargedUsdWithin(nftXferTxn, expectedNftXferPriceUsd, 0.01),
+						validateChargedUsdWithin(htsXferTxnWithCustomFee, expectedHtsXferWithCustomFeePriceUsd, 0.1),
+						validateChargedUsdWithin(nftXferTxnWithCustomFee, expectedNftXferWithCustomFeePriceUsd, 0.3)
+				);
 	}
 
 	private HapiApiSpec okToSetInvalidPaymentHeaderForCostAnswer() {
@@ -273,7 +367,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ComplexKeyAcctPaysForOwnTransfer")
 				.given(
-						UtilVerbs.newKeyNamed("complexKey").shape(ENOUGH_UNIQUE_SIGS),
+						newKeyNamed("complexKey").shape(ENOUGH_UNIQUE_SIGS),
 						cryptoCreate("payer").key("complexKey").balance(1_000_000_000L)
 				).when().then(
 						cryptoTransfer(
@@ -296,8 +390,8 @@ public class CryptoTransferSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("TwoComplexKeysRequired")
 				.given(
-						UtilVerbs.newKeyNamed("payerKey").shape(PAYER_SHAPE),
-						UtilVerbs.newKeyNamed("receiverKey").shape(RECEIVER_SHAPE),
+						newKeyNamed("payerKey").shape(PAYER_SHAPE),
+						newKeyNamed("receiverKey").shape(RECEIVER_SHAPE),
 						cryptoCreate("payer").key("payerKey").balance(100_000_000_000L),
 						cryptoCreate("receiver")
 								.receiverSigRequired(true)

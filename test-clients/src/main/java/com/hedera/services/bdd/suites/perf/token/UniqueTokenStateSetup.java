@@ -47,6 +47,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import static com.hederahashgraph.api.proto.java.TokenSupplyType.INFINITE;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -74,6 +79,11 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  *     EET infrastructure, so you should probably not try to create more
  *     than 10M NFTs using a single run of this client; if more NFTs are
  *     needed, then please run several instances in sequence.
+ *
+ *     Also for creating even more NFTs, it will be easier to run the JRS workflow
+ *     {@code GCP-Create-Large-Volume-NFTs-SavedState.json} scheduled with CircleCi
+ *     and modify the parameters here and the parameters in the JRS workflow
+ *     and its referenced test config as well.
  *   </li>
  * </ol>
  */
@@ -141,7 +151,10 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 								.mapToObj(i -> cryptoCreate(treasuryNameFn.apply(i))
 										.payingWith(GENESIS)
 										.balance(0L)
+										.noLogging()
 										.key(GENESIS)
+										.hasPrecheckFrom(OK, DUPLICATE_TRANSACTION)
+										.hasKnownStatusFrom(SUCCESS,UNKNOWN, TRANSACTION_EXPIRED)
 										.deferStatusResolution())
 								.toArray(HapiSpecOperation[]::new)));
 				inits.add(sleepFor(5_000L));
@@ -168,6 +181,8 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 							.payingWith(GENESIS)
 							.deferStatusResolution()
 							.fee(ONE_HBAR)
+							.hasPrecheckFrom(OK, DUPLICATE_TRANSACTION)
+							.hasKnownStatusFrom(SUCCESS,UNKNOWN, OK, TRANSACTION_EXPIRED)
 							.noLogging();
 					return Optional.of(op);
 				} else {
@@ -200,6 +215,8 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 							.supplyType(INFINITE)
 							.initialSupply(0)
 							.supplyKey(GENESIS)
+							.hasPrecheckFrom(OK, DUPLICATE_TRANSACTION)
+							.hasKnownStatusFrom(SUCCESS,UNKNOWN, TRANSACTION_EXPIRED)
 							.treasury(treasuryNameFn.apply((i + createdSoFar.get()) % numTreasuries))
 							.exposingCreatedIdTo(newId -> {
 								final var newN = numFrom(newId);

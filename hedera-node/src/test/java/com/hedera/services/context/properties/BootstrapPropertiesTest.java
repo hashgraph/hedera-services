@@ -147,6 +147,7 @@ class BootstrapPropertiesTest {
 			entry("tokens.maxSymbolUtf8Bytes", 100),
 			entry("tokens.maxTokenNameUtf8Bytes",100),
 			entry("tokens.maxCustomFeesAllowed", 10),
+			entry("tokens.maxCustomFeeDepth", 1),
 			entry("files.maxSizeKb", 1024),
 			entry("fees.tokenTransferUsageMultiplier", 380),
 			entry("cache.records.ttl", 180),
@@ -158,11 +159,13 @@ class BootstrapPropertiesTest {
 			entry("stats.speedometerHalfLifeSecs", 10.0),
 			entry("consensus.message.maxBytesAllowed", 1024),
 			entry("ledger.nftTransfers.maxLen", 10),
+			entry("ledger.xferBalanceChanges.maxLen", 20),
 			entry("tokens.nfts.maxQueryRange", 100L),
 			entry("tokens.nfts.maxBatchSizeWipe", 10),
 			entry("tokens.nfts.maxBatchSizeMint", 10),
 			entry("tokens.nfts.maxBatchSizeBurn", 10),
-			entry("tokens.nfts.maxMetadataBytes", 100)
+			entry("tokens.nfts.maxMetadataBytes", 100),
+			entry("tokens.nfts.maxAllowedMints", 5000000L)
 	);
 
 	@BeforeEach

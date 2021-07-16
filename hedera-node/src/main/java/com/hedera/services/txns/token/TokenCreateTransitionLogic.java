@@ -148,15 +148,17 @@ public class TokenCreateTransitionLogic implements TransitionLogic {
 		customCollectorsEnabled.add(alreadyEnabledTreasury);
 		ResponseCodeEnum status = OK;
 		for (var fee : op.getCustomFeesList()) {
-			if (fee.hasFractionalFee()) {
-				final var collector = fee.getFeeCollectorAccountId();
-				if (!customCollectorsEnabled.contains(collector)) {
-					status = autoEnableAccountForNewToken(collector, created, op);
-					if (status != OK) {
-						return status;
-					}
-					customCollectorsEnabled.add(collector);
+			boolean collectorEnablementNeeded = fee.hasFractionalFee();
+			if (fee.hasFixedFee() && fee.getFixedFee().hasDenominatingTokenId()) {
+				collectorEnablementNeeded |= (0 == fee.getFixedFee().getDenominatingTokenId().getTokenNum());
+			}
+			final var collector = fee.getFeeCollectorAccountId();
+			if (collectorEnablementNeeded && !customCollectorsEnabled.contains(collector)) {
+				status = autoEnableAccountForNewToken(collector, created, op);
+				if (status != OK) {
+					return status;
 				}
+				customCollectorsEnabled.add(collector);
 			}
 		}
 		return status;

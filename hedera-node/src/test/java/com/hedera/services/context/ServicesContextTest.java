@@ -161,14 +161,12 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
-
-import java.lang.reflect.Field;
-
 import org.ethereum.db.ServicesRepositoryRoot;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
+import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -637,9 +635,9 @@ class ServicesContextTest {
 		assertThat(ctx.pricedUsageCalculator(), instanceOf(PricedUsageCalculator.class));
 		assertThat(ctx.accountStore(), instanceOf(AccountStore.class));
 		assertThat(ctx.spanMapManager(), instanceOf(SpanMapManager.class));
-		assertThat(ctx.impliedTransfersMarshal(), instanceOf(ImpliedTransfersMarshal.class));
 		assertThat(ctx.transferSemanticChecks(), instanceOf(PureTransferSemanticChecks.class));
 		assertThat(ctx.backingNfts(), instanceOf(BackingNfts.class));
+		assertThat(ctx.impliedTransfersMarshal(), instanceOf(ImpliedTransfersMarshal.class));
 		// and:
 		assertEquals(ServicesNodeType.STAKED_NODE, ctx.nodeType());
 		// and expect legacy:

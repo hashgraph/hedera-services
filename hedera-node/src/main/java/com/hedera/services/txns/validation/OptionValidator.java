@@ -59,6 +59,7 @@ public interface OptionValidator {
 	ResponseCodeEnum tokenNameCheck(String name);
 	ResponseCodeEnum tokenSymbolCheck(String symbol);
 
+	boolean isPermissibleTotalNfts(long proposedTotal);
 	ResponseCodeEnum nftMetadataCheck(byte[] metadata);
 	ResponseCodeEnum maxBatchSizeMintCheck(int length);
 	ResponseCodeEnum maxBatchSizeWipeCheck(int length);

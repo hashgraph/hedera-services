@@ -9,9 +9,9 @@ package com.hedera.services.txns.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,8 +23,8 @@ package com.hedera.services.txns.crypto;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.txns.TransitionLogic;
@@ -100,7 +100,7 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 		var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
 		if (impliedTransfers == null) {
 			final var op = accessor.getTxn().getCryptoTransfer();
-			impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op, accessor.getPayer());
+			impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op);
 		}
 		return impliedTransfers;
 	}
@@ -115,15 +115,17 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 		final var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
 		if (impliedTransfers != null) {
 			/* Accessor is for a consensus transaction with a expand-handle span
-			* we've been managing in the normal way. */
+			 * we've been managing in the normal way. */
 			return impliedTransfers.getMeta().code();
 		} else {
 			/* Accessor is for either (1) a transaction in precheck or (2) a scheduled
 			transaction that reached consensus without a managed expand-handle span. */
 			final var validationProps = new ImpliedTransfersMeta.ValidationProps(
-				dynamicProperties.maxTransferListSize(),
-				dynamicProperties.maxTokenTransferListSize(),
-				dynamicProperties.maxNftTransfersLen());
+					dynamicProperties.maxTransferListSize(),
+					dynamicProperties.maxTokenTransferListSize(),
+					dynamicProperties.maxNftTransfersLen(),
+					dynamicProperties.maxCustomFeeDepth(),
+					dynamicProperties.maxXferBalanceChanges());
 			final var op = accessor.getTxn().getCryptoTransfer();
 			return transferSemanticChecks.fullPureValidation(
 					op.getTransfers(), op.getTokenTransfersList(), validationProps);
