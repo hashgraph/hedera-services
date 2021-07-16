@@ -94,7 +94,6 @@ class BaseOperationUsage {
 	 * @return the total resource usage of the base configuration
 	 */
 	UsageAccumulator baseUsageFor(HederaFunctionality function, SubType type) {
-
 		switch (function) {
 			case CryptoTransfer:
 				switch (type) {
@@ -108,19 +107,25 @@ class BaseOperationUsage {
 						return nftCryptoTransfer();
 					case TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES:
 						return nftCryptoTransferWithCustomFee();
+					default:
+						break;
 				}
+				break;
 			case TokenMint:
 				if (type == TOKEN_NON_FUNGIBLE_UNIQUE) {
 					return uniqueTokenMint();
 				}
+				break;
 			case TokenAccountWipe:
 				if (type == TOKEN_NON_FUNGIBLE_UNIQUE) {
 					return uniqueTokenWipe();
 				}
+				break;
 			case TokenBurn:
 				if (type == TOKEN_NON_FUNGIBLE_UNIQUE) {
 					return uniqueTokenBurn();
 				}
+				break;
 			case ConsensusSubmitMessage:
 				return submitMessage();
 			case TokenFeeScheduleUpdate:
@@ -132,7 +137,7 @@ class BaseOperationUsage {
 		throw new IllegalArgumentException("Canonical usage unknown");
 	}
 
-	private UsageAccumulator uniqueTokenBurn() {
+	UsageAccumulator uniqueTokenBurn() {
 		final var target = TokenID.newBuilder().setTokenNum(1_234).build();
 		final var canonicalTxn = TransactionBody.newBuilder()
 				.setTokenBurn(TokenBurnTransactionBody.newBuilder()
@@ -147,7 +152,7 @@ class BaseOperationUsage {
 		return UsageAccumulator.fromGrpc(baseUsage);
 	}
 
-	private UsageAccumulator uniqueTokenMint() {
+	UsageAccumulator uniqueTokenMint() {
 		final var target = TokenID.newBuilder().setTokenNum(1_234).build();
 		final var canonicalTxn = TransactionBody.newBuilder()
 				.setTokenMint(TokenMintTransactionBody.newBuilder()
@@ -164,7 +169,7 @@ class BaseOperationUsage {
 		return UsageAccumulator.fromGrpc(baseUsage);
 	}
 
-	private UsageAccumulator uniqueTokenWipe() {
+	UsageAccumulator uniqueTokenWipe() {
 		final var target = TokenID.newBuilder().setTokenNum(1_234).build();
 		final var targetAcct = AccountID.newBuilder().setAccountNum(5_678).build();
 		final var canonicalTxn = TransactionBody.newBuilder()
@@ -183,14 +188,14 @@ class BaseOperationUsage {
 		return UsageAccumulator.fromGrpc(baseUsage);
 	}
 
-	private UsageAccumulator submitMessage() {
+	UsageAccumulator submitMessage() {
 		final var opMeta = new SubmitMessageMeta(100);
 		final var into = new UsageAccumulator();
 		CONSENSUS_OPS_USAGE.submitMessageUsage(SINGLE_SIG_USAGE, opMeta, NO_MEMO_AND_NO_EXPLICIT_XFERS, into);
 		return into;
 	}
 
-	private UsageAccumulator feeScheduleUpdate() {
+	UsageAccumulator feeScheduleUpdate() {
 		/* A canonical op */
 		final var target = TokenID.newBuilder().setShardNum(1).setRealmNum(2).setTokenNum(3).build();
 		final List<CustomFee> theNewSchedule = List.of(
@@ -219,7 +224,7 @@ class BaseOperationUsage {
 		return into;
 	}
 
-	private UsageAccumulator hbarCryptoTransfer() {
+	UsageAccumulator hbarCryptoTransfer() {
 		final var txnUsageMeta = new BaseTransactionMeta(0, 2);
 		final var xferUsageMeta = new CryptoTransferMeta(380, 0,
 				0, 0);
@@ -229,7 +234,7 @@ class BaseOperationUsage {
 		return into;
 	}
 
-	private UsageAccumulator htsCryptoTransfer() {
+	UsageAccumulator htsCryptoTransfer() {
 		final var xferUsageMeta = new CryptoTransferMeta(380, 1,
 				2, 0);
 		final var into = new UsageAccumulator();
@@ -238,7 +243,7 @@ class BaseOperationUsage {
 		return into;
 	}
 
-	private UsageAccumulator htsCryptoTransferWithCustomFee() {
+	UsageAccumulator htsCryptoTransferWithCustomFee() {
 		final var xferUsageMeta = new CryptoTransferMeta(380, 1,
 				2, 0);
 		xferUsageMeta.setCustomFeeHbarTransfers(2);
@@ -248,7 +253,7 @@ class BaseOperationUsage {
 		return into;
 	}
 
-	private UsageAccumulator nftCryptoTransfer() {
+	UsageAccumulator nftCryptoTransfer() {
 		final var xferUsageMeta = new CryptoTransferMeta(380, 1,
 				0, 1);
 		final var into = new UsageAccumulator();
@@ -257,7 +262,7 @@ class BaseOperationUsage {
 		return into;
 	}
 
-	private UsageAccumulator nftCryptoTransferWithCustomFee() {
+	UsageAccumulator nftCryptoTransferWithCustomFee() {
 		final var xferUsageMeta = new CryptoTransferMeta(380, 1,
 				0, 1);
 		xferUsageMeta.setCustomFeeHbarTransfers(2);
