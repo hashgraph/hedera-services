@@ -4,6 +4,8 @@ import sun.misc.Unsafe;
 
 import java.io.*;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.nio.MappedByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.stream.Collectors;
@@ -47,16 +49,31 @@ public class PersistenceUtils {
         }
     }
 
+
+    public long getMappedBufferAddress(MappedByteBuffer buffer) {
+        try {
+            Class directBufferCLass = Class.forName("sun.nio.ch.DirectBuffer");
+            Method addressMethod = directBufferCLass.getMethod("address");
+            return (long)addressMethod.invoke(buffer);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+    public static final Unsafe UNSAFE;
+
     /*
      * We assume try and get the page size and us default of 4k if we fail as that is standard on linux
      */
-    private static final int PAGE_SIZE_BYTES;
+    public static final int PAGE_SIZE_BYTES;
     static {
         int pageSize = 4096; // 4k is default on linux
+        Unsafe unsafe = null;
         try {
             Field f = Unsafe.class.getDeclaredField("theUnsafe");
             f.setAccessible(true);
-            Unsafe unsafe = (Unsafe)f.get(null);
+            unsafe = (Unsafe)f.get(null);
             pageSize = unsafe.pageSize();
         } catch (NoSuchFieldException | IllegalAccessException e) {
             System.out.println("Failed to get page size via misc.unsafe");
@@ -84,6 +101,7 @@ public class PersistenceUtils {
                 }
             }
         }
+        UNSAFE = unsafe;
         System.out.println("Page size: " + pageSize);
         PAGE_SIZE_BYTES = pageSize;
     }

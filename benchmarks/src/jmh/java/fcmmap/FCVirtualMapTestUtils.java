@@ -35,6 +35,7 @@ public class FCVirtualMapTestUtils {
                         .sorted(Comparator.reverseOrder())
                         .map(Path::toFile)
                         .forEach(File::delete);
+                Files.deleteIfExists(dir);
             } catch (Exception e) {
                 System.err.println("Failed to delete test directory ["+dir.toFile().getAbsolutePath()+"]");
                 e.printStackTrace();

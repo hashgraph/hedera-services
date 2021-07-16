@@ -1,11 +1,9 @@
 package com.hedera.services.state.merkle.v2;
 
 import com.hedera.services.state.merkle.v2.persistance.*;
-import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.fcmap.VFCDataSource;
-import com.swirlds.fcmap.VFCMap;
 import com.swirlds.fcmap.VKey;
 import com.swirlds.fcmap.VValue;
 
@@ -38,6 +36,8 @@ public class VFCDataSourceImpl<K extends VKey, V extends VValue> implements VFCD
     private final SlotStore nodeStore;
     private final SlotStore leafDataStore;
     private final LongIndex<K> leafKeyIndex;
+    private final int leafSlotSize;
+    private final byte[] tempLeafSlotData;
 
     /**
      * Construct a new VFCDataSourceImpl, try the static factory methods if you want a simpler way of creating one.
@@ -59,6 +59,8 @@ public class VFCDataSourceImpl<K extends VKey, V extends VValue> implements VFCD
         this.nodeStore = nodeStore;
         this.leafDataStore = leafDataStore;
         this.leafKeyIndex = leafKeyIndex;
+        this.leafSlotSize = Long.BYTES + keySizeBytes + Long.BYTES + valueSizeBytes;
+        this.tempLeafSlotData = new byte[this.leafSlotSize];
     }
 
     //==================================================================================================================
@@ -75,22 +77,21 @@ public class VFCDataSourceImpl<K extends VKey, V extends VValue> implements VFCD
      * @param valueConstructor constructor for creating values for deserialization
      * @param <K> type for keys
      * @param <V> type for values
+     * @param reuseIfExists when true we try and reuse existing files.
      * @return new VFCDataSourceImpl configured for disk storage
      * @throws IOException If there was a problem creating files on disk
      */
     public static <K extends VKey, V extends VValue> VFCDataSourceImpl<K,V> createOnDisk(
             Path dataDirectory, long numEntities,
             int keySizeBytes, Supplier<K> keyConstructor,
-            int valueSizeBytes, Supplier<V> valueConstructor) throws IOException {
+            int valueSizeBytes, Supplier<V> valueConstructor,
+            boolean reuseIfExists) throws IOException {
         final var slotStoreFileSize = 1024 * 1024*1024; // 1Gb
         final var numBinsAsPowerOf2 = Long.highestOneBit(numEntities);
         final var keysPerBin = 4;
         final var sizeOfBin = (Long.BYTES+(keysPerBin*(Long.BYTES+Long.BYTES+keySizeBytes)));
-        System.out.println("sizeOfBin = " + sizeOfBin);
         final var numFilesForIndex = (numBinsAsPowerOf2 * sizeOfBin) / (2*1024*1024*1024L);
-        System.out.println("numFilesForIndex = " + numFilesForIndex);
         final var numFilesAsPowerOf2 = Math.max(2, Long.highestOneBit(numFilesForIndex * 2));
-        System.out.println("numFilesAsPowerOf2 = " + numFilesAsPowerOf2);
         return new VFCDataSourceImpl<K,V>(
                 keySizeBytes,
                 keyConstructor,
@@ -102,14 +103,16 @@ public class VFCDataSourceImpl<K extends VKey, V extends VValue> implements VFCD
                         slotStoreFileSize,
                         dataDirectory.resolve("nodes"),
                         "nodes",
-                        "dat"),
+                        "dat",
+                        reuseIfExists),
                 new SlotStoreMemMap(
                         true,
                         Long.BYTES + keySizeBytes + Long.BYTES + valueSizeBytes,
                         slotStoreFileSize,
                         dataDirectory.resolve("leaves"),
                         "leaves",
-                        "dat"),
+                        "dat",
+                        reuseIfExists),
                 new LongIndexMemMap<>(
                         dataDirectory.resolve("index"),
                         "index",
@@ -199,7 +202,7 @@ public class VFCDataSourceImpl<K extends VKey, V extends VValue> implements VFCD
         // skip over key
         leafDataBuf.position(basePos+keySizeBytes);
         // deserialize data
-        int valueSerializationVersion = leafDataBuf.getInt();
+        int valueSerializationVersion = (int)leafDataBuf.getLong();
         V value = valueConstructor.get();
         value.deserialize(leafDataBuf, valueSerializationVersion);
         return value;
@@ -241,7 +244,7 @@ public class VFCDataSourceImpl<K extends VKey, V extends VValue> implements VFCD
         // read
         ByteBuffer leafDataBuf = leafDataStore.accessSlot(dataIndex,false);
         // deserialize data
-        int keySerializationVersion = leafDataBuf.getInt();
+        int keySerializationVersion = (int)leafDataBuf.getLong();
         K key = keyConstructor.get();
         key.deserialize(leafDataBuf, keySerializationVersion);
         return key;
@@ -348,7 +351,7 @@ public class VFCDataSourceImpl<K extends VKey, V extends VValue> implements VFCD
         // jump over key
         leafDataBuf.position(leafBasePos+keySizeBytes);
         // serialize data
-        leafDataBuf.putInt(value.getVersion());
+        leafDataBuf.putLong(value.getVersion());
         value.serialize(leafDataBuf);
     }
 
@@ -383,12 +386,12 @@ public class VFCDataSourceImpl<K extends VKey, V extends VValue> implements VFCD
         ByteBuffer leafDataBuf = leafDataStore.accessSlot(dataIndex,true);
         int leafBasePos = leafDataBuf.position();
         // serialize key
-        leafDataBuf.putInt(key.getVersion());
+        leafDataBuf.putLong(key.getVersion());
         key.serialize(leafDataBuf);
         // jump over key size in case key did not use all its bytes
         leafDataBuf.position(leafBasePos+keySizeBytes);
         // serialize value
-        leafDataBuf.putInt(value.getVersion());
+        leafDataBuf.putLong(value.getVersion());
         value.serialize(leafDataBuf);
     }
 

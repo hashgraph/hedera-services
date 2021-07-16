@@ -137,14 +137,14 @@ public class VFCMapBench {
                         FILE_SIZE,
                         Path.of("data"),
                         "nodes",
-                        "dat"),
+                        "dat", true),
                 new SlotStoreMemMap(
                         true,
                         Integer.BYTES + ContractUint256.SERIALIZED_SIZE + Integer.BYTES + ContractUint256.SERIALIZED_SIZE,
                         FILE_SIZE,
                         Path.of("data"),
                         "data",
-                        "dat"),
+                        "dat", true),
                 new LongIndexMemMap<>(
                         Path.of("data"),
                         "index",

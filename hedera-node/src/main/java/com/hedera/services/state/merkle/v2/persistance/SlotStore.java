@@ -47,6 +47,19 @@ public abstract class SlotStore {
     public abstract ByteBuffer accessSlot(long location, boolean create) throws IOException;
 
     /**
+     * Write whole slot
+     *
+     * @param location the slot location, can be a existing slot or a new slot that we need to make available
+     * @param create if true then a new slot will be created if it did not already exist.
+     * @param slotData the data to write to the slot
+     * null if create=false and location did not exist
+     */
+    public void writeSlot(long location, boolean create, byte[] slotData) throws IOException {
+        ByteBuffer buf = accessSlot(location,create);
+        buf.put(slotData);
+    }
+
+    /**
      * Finds a new slot ready for use
      *
      * @return Index for new slot ready for use

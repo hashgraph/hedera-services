@@ -204,9 +204,10 @@ public final class LongIndexMemMap<K extends VKey> implements LongIndex<K> {
             final int fileSize = binSize * numOfBinsPerFile;
             // OPEN FILE
             // check if file existed before
-            if (Files.exists(file)) throw new IOException("File should not already exist for BinFile ["+file.toFile().getAbsolutePath()+"]");
-            // create file
-            PersistenceUtils.createFile(file,fileSize);
+            if (!Files.exists(file)) {
+                // create file
+                PersistenceUtils.createFile(file, fileSize);
+            }
             // open file
             fileChannel = FileChannel.open(file,
                     StandardOpenOption.WRITE,
