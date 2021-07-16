@@ -72,8 +72,8 @@ public class ImpliedTransfersMeta {
 				(validationProps.maxHbarAdjusts == dynamicProperties.maxTransferListSize()) &&
 						(validationProps.maxTokenAdjusts == dynamicProperties.maxTokenTransferListSize()) &&
 						(validationProps.maxOwnershipChanges == dynamicProperties.maxNftTransfersLen()) &&
-						(validationProps.maxNestedCustomFees == dynamicProperties.maxCustomFeeDepth()) &&
-						(validationProps.maxXferBalanceChanges == dynamicProperties.maxXferBalanceChanges());
+						(validationProps.maxXferBalanceChanges == dynamicProperties.maxXferBalanceChanges() &&
+						(validationProps.maxNestedCustomFees == dynamicProperties.maxCustomFeeDepth()));
 		if (!validationParamsMatch) {
 			return false;
 		}
