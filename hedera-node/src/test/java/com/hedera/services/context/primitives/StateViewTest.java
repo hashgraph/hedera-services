@@ -45,6 +45,7 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
+import com.hedera.test.factories.fees.CustomFeeBuilder;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -54,9 +55,6 @@ import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.FixedFee;
-import com.hederahashgraph.api.proto.java.Fraction;
-import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NftID;
@@ -95,6 +93,9 @@ import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddress;
 import static com.hedera.services.utils.EntityIdUtils.asSolidityAddressHex;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
+import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHbar;
+import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
+import static com.hedera.test.factories.fees.CustomFeeBuilder.fractional;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_ADMIN_KT;
@@ -254,7 +255,7 @@ class StateViewTest {
 		token.setDeleted(true);
 		token.setTokenType(TokenType.FUNGIBLE_COMMON);
 		token.setSupplyType(TokenSupplyType.FINITE);
-		token.setFeeScheduleFrom(grpcCustomFees);
+		token.setFeeScheduleFrom(grpcCustomFees, null);
 
 		given(tokenStore.resolve(tokenId)).willReturn(tokenId);
 		given(tokenStore.resolve(missingTokenId)).willReturn(TokenStore.MISSING_TOKEN);
@@ -1005,34 +1006,18 @@ class StateViewTest {
 	private final MerkleUniqueToken targetNft = new MerkleUniqueToken(EntityId.fromGrpcAccountId(nftOwnerId), nftMeta,
 			fromJava(nftCreation));
 
-	private FixedFee fixedFeeInTokenUnits = FixedFee.newBuilder()
-			.setDenominatingTokenId(tokenId)
-			.setAmount(100)
-			.build();
-	private FixedFee fixedFeeInHbar = FixedFee.newBuilder()
-			.setAmount(100)
-			.build();
-	private Fraction fraction = Fraction.newBuilder().setNumerator(15).setDenominator(100).build();
-	private FractionalFee fractionalFee = FractionalFee.newBuilder()
-			.setFractionalAmount(fraction)
-			.setMaximumAmount(50)
-			.setMinimumAmount(10)
-			.build();
-	private CustomFee customFixedFeeInHbar = CustomFee.newBuilder()
-			.setFeeCollectorAccountId(payerAccountId)
-			.setFixedFee(fixedFeeInHbar)
-			.build();
-	private CustomFee customFixedFeeInHts = CustomFee.newBuilder()
-			.setFeeCollectorAccountId(payerAccountId)
-			.setFixedFee(fixedFeeInTokenUnits)
-			.build();
-	private CustomFee customFractionalFee = CustomFee.newBuilder()
-			.setFeeCollectorAccountId(payerAccountId)
-			.setFractionalFee(fractionalFee)
-			.build();
+	private CustomFeeBuilder builder = new CustomFeeBuilder(payerAccountId);
+	private CustomFee customFixedFeeInHbar = builder.withFixedFee(fixedHbar(100L));
+	private CustomFee customFixedFeeInHts = builder.withFixedFee(fixedHts(tokenId, 100L));
+	private CustomFee customFixedFeeSameToken = builder.withFixedFee(fixedHts(50L));
+	private CustomFee customFractionalFee = builder.withFractionalFee(
+			fractional(15L, 100L)
+					.setMinimumAmount(10L)
+					.setMaximumAmount(50L));
 	private List<CustomFee> grpcCustomFees = List.of(
 			customFixedFeeInHbar,
 			customFixedFeeInHts,
+			customFixedFeeSameToken,
 			customFractionalFee
 	);
 }

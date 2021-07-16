@@ -21,11 +21,8 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -45,18 +42,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
 public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(TokenFeeScheduleUpdateTransitionLogic.class);
 	private final TokenStore store;
-	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
-	private final GlobalDynamicProperties dynamicProperties;
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
-	public TokenFeeScheduleUpdateTransitionLogic(final TokenStore tokenStore, final TransactionContext txnCtx,
-			final OptionValidator validator, final GlobalDynamicProperties dynamicProperties) {
+	public TokenFeeScheduleUpdateTransitionLogic(final TokenStore tokenStore, final TransactionContext txnCtx) {
 		this.store = tokenStore;
 		this.txnCtx = txnCtx;
-		this.validator = validator;
-		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -71,20 +63,19 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 	}
 
 	private void transitionFor(TokenFeeScheduleUpdateTransactionBody op) {
-		var id = store.resolve(op.getTokenId());
+		final var id = store.resolve(op.getTokenId());
 		if (id == MISSING_TOKEN) {
 			txnCtx.setStatus(INVALID_TOKEN_ID);
 			return;
 		}
 
-		MerkleToken token = store.get(id);
-
+		final var token = store.get(id);
 		if (token.isDeleted()) {
 			txnCtx.setStatus(TOKEN_WAS_DELETED);
 			return;
 		}
 
-		var outcome = store.updateFeeSchedule(op);
+		final var outcome = store.updateFeeSchedule(op);
 		if (outcome != OK) {
 			abortWith(outcome);
 			return;
@@ -102,9 +93,8 @@ public class TokenFeeScheduleUpdateTransitionLogic implements TransitionLogic {
 		return SEMANTIC_CHECK;
 	}
 
-	public ResponseCodeEnum validate(TransactionBody txnBody) {
-		TokenFeeScheduleUpdateTransactionBody op = txnBody.getTokenFeeScheduleUpdate();
-
+	private ResponseCodeEnum validate(TransactionBody txnBody) {
+		final var op = txnBody.getTokenFeeScheduleUpdate();
 		if (!op.hasTokenId()) {
 			return INVALID_TOKEN_ID;
 		}
