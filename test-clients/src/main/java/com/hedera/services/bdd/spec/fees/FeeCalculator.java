@@ -123,7 +123,8 @@ public class FeeCalculator {
 			int numPayerSigs
 	) throws Throwable {
 		FeeData activityMetrics = metricsFor(txn, numPayerSigs, metricsCalculator);
-		return forOp(op, activityMetrics);
+		final var subType = activityMetrics.getSubType();
+		return forOp(op, subType, activityMetrics);
 	}
 
 	public long forActivityBasedOpWithDetails(

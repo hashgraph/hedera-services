@@ -873,7 +873,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.hasTinyBars(3 * ONE_HBAR),
 						getAccountBalance(FIRST_USER)
 								.hasTokenBalance(A_TOKEN, 90)
-								.hasTinyBars(9899205334L),
+								.hasTinyBars(9899165240L),
 						getAccountBalance(SECOND_USER)
 								.hasTokenBalance(A_TOKEN, 110)
 								.hasTinyBars(ONE_HUNDRED_HBARS)
@@ -920,18 +920,21 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	}
 
 	public HapiApiSpec balancesChangeOnTokenTransferWithFixedHtsCustomFees() {
+		final var feeCollector = "feeCollector";
 		return defaultHapiSpec("BalancesChangeOnTokenTransferWithFixedHtsCustomFees")
 				.given(
 						cryptoCreate(FIRST_USER).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(SECOND_USER).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(feeCollector),
 						tokenCreate(A_TOKEN)
 								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
 						tokenCreate(B_TOKEN)
 								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY)
-								.withCustom(fixedHtsFee(10L, A_TOKEN, TOKEN_TREASURY)),
+								.withCustom(fixedHtsFee(10L, A_TOKEN, TOKEN_TREASURY))
+								.withCustom(fixedHtsFee(1L, "0.0.0", feeCollector)),
 						tokenAssociate(FIRST_USER, A_TOKEN, B_TOKEN),
 						tokenAssociate(SECOND_USER, A_TOKEN, B_TOKEN)
 				).when(
@@ -948,10 +951,10 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				).then(
 						getAccountBalance(TOKEN_TREASURY)
 								.hasTokenBalance(A_TOKEN, TOTAL_SUPPLY - 90)
-								.hasTokenBalance(B_TOKEN, TOTAL_SUPPLY - 100),
+								.hasTokenBalance(B_TOKEN, TOTAL_SUPPLY - 100 - 1),
 						getAccountBalance(FIRST_USER)
 								.hasTokenBalance(A_TOKEN, 90)
-								.hasTokenBalance(B_TOKEN, 50),
+								.hasTokenBalance(B_TOKEN, 50 - 1),
 						getAccountBalance(SECOND_USER)
 								.hasTokenBalance(B_TOKEN, 50)
 				);

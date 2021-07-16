@@ -70,7 +70,7 @@ class OpsTransferUsageTest {
 		final var accum = new UsageAccumulator();
 		subject.cryptoTransferUsage(
 				sigUsage,
-				new CryptoTransferMeta(tokenMultiplier, 3, 7),
+				new CryptoTransferMeta(tokenMultiplier, 3, 7, 0),
 				new BaseTransactionMeta(memo.getBytes().length, 3),
 				accum);
 

@@ -107,13 +107,16 @@ public class FcCustomFee implements SelfSerializable {
 		return new FcCustomFee(FIXED_FEE, feeCollector, spec, null);
 	}
 
-	public static FcCustomFee fromGrpc(CustomFee source) {
+	public static FcCustomFee fromGrpc(CustomFee source, EntityId targetId) {
 		final var feeCollector = EntityId.fromGrpcAccountId(source.getFeeCollectorAccountId());
 		if (source.hasFixedFee()) {
 			EntityId denom = null;
 			final var fixedSource = source.getFixedFee();
 			if (fixedSource.hasDenominatingTokenId()) {
 				denom = EntityId.fromGrpcTokenId(fixedSource.getDenominatingTokenId());
+				if (0 == denom.num()) {
+					denom = targetId;
+				}
 			}
 			return fixedFee(fixedSource.getAmount(), denom, feeCollector);
 		} else {
