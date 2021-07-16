@@ -83,10 +83,10 @@ Claire is associated to the `commissionPaymentToken` (and has a
 sufficient balance), so 2 units of that token are transferred from
 her account to the fee collection account of the `simpleHtsFeeToken`.
 
-In the record excerpt below, we see Claire (`0.0.1018`) paying to
-transfer 100 units of token `0.0.1022` to Debbie (`0.0.1019`); the fee 
-collection account is account `0.0.1020`. Besides paying the Hedera 
-fees, Alice pays 2 units of the custom fee token `0.0.1021` to the
+In the record excerpt below, we see Claire (`0.0.1019`) paying to
+transfer 100 units of token `0.0.1023` to Debbie (`0.0.1020`); the fee 
+collection account is account `0.0.1021`. Besides paying the Hedera 
+fees, Alice pays 2 units of the custom fee token `0.0.1022` to the
 fee collection account; that is, there are two token transfer lists
 in this case---one for the original token, one for its custom fee
 token.
