@@ -75,6 +75,15 @@ public class ImpliedTransfers {
 		return new ImpliedTransfers(meta, Collections.emptyList(), Collections.emptyList());
 	}
 
+	public static ImpliedTransfers invalid(
+			ImpliedTransfersMeta.ValidationProps validationProps,
+			List<Pair<Id, List<FcCustomFee>>> tokenFeeSchedulesUpToFailure,
+			ResponseCodeEnum code
+	) {
+		final var meta = new ImpliedTransfersMeta(validationProps, code, tokenFeeSchedulesUpToFailure);
+		return new ImpliedTransfers(meta, Collections.emptyList(), Collections.emptyList());
+	}
+
 	public ImpliedTransfersMeta getMeta() {
 		return meta;
 	}

@@ -83,7 +83,7 @@ class CustomSchedulesManagerTest {
 		subject.managedSchedulesFor(a.asEntityId());
 		subject.managedSchedulesFor(b.asEntityId());
 		// and:
-		final var all = subject.finalManagedSchedules();
+		final var all = subject.schedulesUsed();
 
 		// then:
 		assertEquals(2, all.size());

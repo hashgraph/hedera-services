@@ -53,7 +53,7 @@ public class FeeAssessor {
 			List<FcAssessedCustomFee> accumulator,
 			ImpliedTransfersMeta.ValidationProps props
 	) {
-		if (balanceChangeManager.nestingLevel() > props.getMaxNestedCustomFees()) {
+		if (balanceChangeManager.getLevelNo() > props.getMaxNestedCustomFees()) {
 			return CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 		}
 		final var fees = customSchedulesManager.managedSchedulesFor(change.getToken().asEntityId());
@@ -71,7 +71,7 @@ public class FeeAssessor {
 				} else {
 					htsFeeAssessor.assess(payer, fee, balanceChangeManager, accumulator);
 				}
-				if (balanceChangeManager.changesSoFar() > maxBalanceChanges) {
+				if (balanceChangeManager.numChangesSoFar() > maxBalanceChanges) {
 					return CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
 				}
 			} else {
@@ -85,7 +85,7 @@ public class FeeAssessor {
 				return fractionalValidity;
 			}
 		}
-		return (balanceChangeManager.changesSoFar() > maxBalanceChanges)
+		return (balanceChangeManager.numChangesSoFar() > maxBalanceChanges)
 				? CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS : OK;
 	}
 }

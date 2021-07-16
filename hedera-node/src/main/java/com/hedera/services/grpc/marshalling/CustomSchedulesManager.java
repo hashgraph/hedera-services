@@ -53,7 +53,7 @@ public class CustomSchedulesManager {
 		return extantSchedule;
 	}
 
-	public List<Pair<Id, List<FcCustomFee>>> finalManagedSchedules() {
+	public List<Pair<Id, List<FcCustomFee>>> schedulesUsed() {
 		return allManagedSchedules;
 	}
 }

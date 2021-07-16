@@ -26,27 +26,37 @@ import com.hedera.services.store.models.Id;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
 
 public class AdjustmentUtils {
-	static void adjustForAssessed(Id payer, Id collector, Id denom, long amount, BalanceChangeManager changeManager) {
-		final var payerChange = adjustedChange(payer, denom, -amount, changeManager);
+	static void adjustForAssessed(Id payer, Id collector, Id denom, long amount, BalanceChangeManager manager) {
+		final var payerChange = adjustedChange(payer, denom, -amount, manager);
 		payerChange.setCodeForInsufficientBalance(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE);
-		adjustedChange(collector, denom, +amount, changeManager);
+		adjustedChange(collector, denom, +amount, manager);
 	}
 
-	static BalanceChange adjustedChange(Id account, Id denom, long amount, BalanceChangeManager changeManager) {
-		final var extantChange = changeManager.changeFor(account, denom);
+	static BalanceChange adjustedChange(Id account, Id denom, long amount, BalanceChangeManager manager) {
+		/* Always append a new change for an HTS debit since it could trigger another assessed fee */
+		if (denom != Id.MISSING_ID && amount < 0) {
+			return includedHtsChange(account, denom, amount, manager);
+		}
+
+		/* Otherwise, just update the existing change for this account denomination if present */
+		final var extantChange = manager.changeFor(account, denom);
 		if (extantChange == null) {
 			if (denom == Id.MISSING_ID) {
 				final var newHbarChange = BalanceChange.hbarAdjust(account, amount);
-				changeManager.includeChange(newHbarChange);
+				manager.includeChange(newHbarChange);
 				return newHbarChange;
 			} else {
-				final var newHtsChange = BalanceChange.tokenAdjust(account, denom, amount);
-				changeManager.includeChange(newHtsChange);
-				return newHtsChange;
+				return includedHtsChange(account, denom, amount, manager);
 			}
 		} else {
 			extantChange.adjustUnits(amount);
 			return extantChange;
 		}
+	}
+
+	private static BalanceChange includedHtsChange(Id account, Id denom, long amount, BalanceChangeManager manager) {
+		final var newHtsChange = BalanceChange.tokenAdjust(account, denom, amount);
+		manager.includeChange(newHtsChange);
+		return newHtsChange;
 	}
 }

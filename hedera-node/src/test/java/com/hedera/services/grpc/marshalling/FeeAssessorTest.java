@@ -71,7 +71,7 @@ class FeeAssessorTest {
 
 	@Test
 	void abortsOnExcessiveNesting() {
-		given(balanceChangeManager.nestingLevel()).willReturn(2);
+		given(balanceChangeManager.getLevelNo()).willReturn(2);
 
 		assertEquals(
 				CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH,
@@ -156,7 +156,7 @@ class FeeAssessorTest {
 		// setup:
 		final var fees = List.of(hbarFee, htsFee, fractionalFee);
 		givenFees(fungibleTokenId.asEntityId(), fees);
-		given(balanceChangeManager.changesSoFar())
+		given(balanceChangeManager.numChangesSoFar())
 				.willReturn(20)
 				.willReturn(21);
 
@@ -196,7 +196,7 @@ class FeeAssessorTest {
 		// setup:
 		final var fees = List.of(hbarFee, htsFee, fractionalFee);
 		givenFees(fungibleTokenId.asEntityId(), fees);
-		given(balanceChangeManager.changesSoFar())
+		given(balanceChangeManager.numChangesSoFar())
 				.willReturn(19)
 				.willReturn(20)
 				.willReturn(21);

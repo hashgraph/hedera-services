@@ -51,6 +51,7 @@ import static com.hedera.test.utils.IdUtils.adjustFrom;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.IdUtils.nftXfer;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -146,13 +147,41 @@ class NewImpliedTransfersMarshalTest {
 		// and:
 		given(changeManagerFactory.from(nonFeeChanges, 3)).willReturn(changeManager);
 		given(customSchedulesFactory.apply(customFeeSchedules)).willReturn(schedulesManager);
-		given(changeManager.nextTriggerCandidate()).willReturn(aTrigger).willReturn(bTrigger).willReturn(null);
+		given(changeManager.nextAssessableChange()).willReturn(aTrigger).willReturn(bTrigger).willReturn(null);
 		given(feeAssessor.assess(eq(aTrigger), eq(schedulesManager), eq(changeManager), anyList(), eq(props)))
 				.willReturn(OK);
 		given(feeAssessor.assess(eq(bTrigger), eq(schedulesManager), eq(changeManager), anyList(), eq(props)))
 				.willReturn(OK);
 		// and:
-		given(schedulesManager.finalManagedSchedules()).willReturn(mockFinalSchedules);
+		given(schedulesManager.schedulesUsed()).willReturn(mockFinalSchedules);
+
+		// when:
+		final var result = subject.unmarshalFromGrpc(op);
+
+		// then:
+		assertEquals(expectedMeta, result.getMeta());
+	}
+
+	@Test
+	void getsUnhappyPath() {
+		// setup:
+		setupFullFixture();
+		setupProps();
+		// and:
+		final var nonFeeChanges = expNonFeeChanges(true);
+		// and:
+		final var expectedMeta = new ImpliedTransfersMeta(
+				props, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH, mockFinalSchedules);
+
+		givenValidity(OK);
+		// and:
+		given(changeManagerFactory.from(nonFeeChanges, 3)).willReturn(changeManager);
+		given(customSchedulesFactory.apply(customFeeSchedules)).willReturn(schedulesManager);
+		given(changeManager.nextAssessableChange()).willReturn(aTrigger).willReturn(bTrigger).willReturn(null);
+		given(feeAssessor.assess(eq(aTrigger), eq(schedulesManager), eq(changeManager), anyList(), eq(props)))
+				.willReturn(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH);
+		// and:
+		given(schedulesManager.schedulesUsed()).willReturn(mockFinalSchedules);
 
 		// when:
 		final var result = subject.unmarshalFromGrpc(op);

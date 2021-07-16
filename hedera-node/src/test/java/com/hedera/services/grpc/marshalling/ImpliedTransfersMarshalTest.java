@@ -114,7 +114,7 @@ class ImpliedTransfersMarshalTest {
 	private final int maxExplicitHbarAdjusts = 5;
 	private final int maxExplicitTokenAdjusts = 50;
 	private final int maxExplicitOwnershipChanges = 12;
-	private final int maxFeeNesting = 20;
+	private final int maxFeeNesting = 1;
 	private final int maxBalanceChanges = 20;
 	final ImpliedTransfersMeta.ValidationProps validationProps = new ImpliedTransfersMeta.ValidationProps(
 			maxExplicitHbarAdjusts,
@@ -319,18 +319,19 @@ class ImpliedTransfersMarshalTest {
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxExplicitHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxExplicitTokenAdjusts);
 		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxExplicitOwnershipChanges);
+		given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
+		given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges);
 
 		// expect:
 		assertTrue(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules));
 
-		//modify customFeeChanges to see test fails
+		// and:
 		given(newCustomFeeSchedules.lookupScheduleFor(any())).willReturn(newCustomFeeChanges.get(0).getValue());
+		// expect:
 		assertFalse(meta.wasDerivedFrom(dynamicProperties, newCustomFeeSchedules));
 
 		// and:
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxExplicitHbarAdjusts - 1);
-		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxExplicitTokenAdjusts);
-		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxExplicitOwnershipChanges);
 
 		// expect:
 		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules));
@@ -338,15 +339,27 @@ class ImpliedTransfersMarshalTest {
 		// and:
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxExplicitHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxExplicitTokenAdjusts + 1);
-		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxExplicitOwnershipChanges);
 
 		// expect:
 		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules));
 
 		// and:
-		given(dynamicProperties.maxTransferListSize()).willReturn(maxExplicitHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxExplicitTokenAdjusts);
 		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxExplicitOwnershipChanges - 1);
+
+		// expect:
+		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules));
+
+		// and:
+		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxExplicitOwnershipChanges);
+		given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting + 1);
+
+		// expect:
+		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules));
+
+		// and:
+		given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
+		given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges - 1);
 
 		// expect:
 		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules));

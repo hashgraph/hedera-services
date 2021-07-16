@@ -71,7 +71,9 @@ public class ImpliedTransfersMeta {
 		final var validationParamsMatch =
 				(validationProps.maxHbarAdjusts == dynamicProperties.maxTransferListSize()) &&
 						(validationProps.maxTokenAdjusts == dynamicProperties.maxTokenTransferListSize()) &&
-						(validationProps.maxOwnershipChanges == dynamicProperties.maxNftTransfersLen());
+						(validationProps.maxOwnershipChanges == dynamicProperties.maxNftTransfersLen()) &&
+						(validationProps.maxNestedCustomFees == dynamicProperties.maxCustomFeeDepth()) &&
+						(validationProps.maxXferBalanceChanges == dynamicProperties.maxXferBalanceChanges());
 		if (!validationParamsMatch) {
 			return false;
 		}

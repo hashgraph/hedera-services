@@ -44,18 +44,26 @@ class BalanceChangeManagerTest {
 	}
 
 	@Test
+	void initializesLevelData() {
+		// expect:
+		assertEquals(0, subject.getLevelNo());
+		assertEquals(0, subject.getLevelStart());
+		assertEquals(7, subject.getLevelEnd());
+	}
+
+	@Test
 	void understandsTriggerCandidates() {
 		// expect:
-		assertSame(firstFungibleTrigger, subject.nextTriggerCandidate());
-		assertSame(secondFungibleTrigger, subject.nextTriggerCandidate());
-		assertSame(firstNonFungibleTrigger, subject.nextTriggerCandidate());
-		assertNull(subject.nextTriggerCandidate());
+		assertSame(firstFungibleTrigger, subject.nextAssessableChange());
+		assertSame(secondFungibleTrigger, subject.nextAssessableChange());
+		assertSame(firstNonFungibleTrigger, subject.nextAssessableChange());
+		assertNull(subject.nextAssessableChange());
 	}
 
 	@Test
 	void changesSoFarAreSized() {
 		// expect:
-		assertEquals(7, subject.changesSoFar());
+		assertEquals(7, subject.numChangesSoFar());
 	}
 
 	@Test
@@ -63,7 +71,7 @@ class BalanceChangeManagerTest {
 		// when:
 		subject.includeChange(miscHbarAdjust);
 		// and:
-		final var newChanges = subject.allChanges();
+		final var newChanges = subject.getChangesSoFar();
 
 		// then:
 		assertEquals(8, newChanges.size());
@@ -72,10 +80,9 @@ class BalanceChangeManagerTest {
 	}
 
 	@Test
-	void failsHardOnRepeatedInclusion() {
+	void failsHardOnRepeatedHbarInclusion() {
 		// expect:
 		assertThrows(IllegalArgumentException.class, () -> subject.includeChange(payerHbarAdjust));
-		assertThrows(IllegalArgumentException.class, () -> subject.includeChange(firstFungibleTrigger));
 	}
 
 	@Test
@@ -90,6 +97,71 @@ class BalanceChangeManagerTest {
 		assertNull(subject.changeFor(payer, nonFungibleTokenId));
 	}
 
+	@Test
+	void understandsLevelCredits() {
+		// setup:
+		final List<BalanceChange> smallStarterList = new ArrayList<>();
+		smallStarterList.add(firstNonFungibleTrigger);
+		smallStarterList.add(firstCredit);
+		smallStarterList.add(secondCredit);
+
+		// given:
+		subject = new BalanceChangeManager(smallStarterList, 0);
+
+		// expect:
+		bothCreditsInCurrentLevel();
+
+		// and when:
+		assertSame(firstNonFungibleTrigger, subject.nextAssessableChange());
+		subject.includeChange(secondNonFungibleTrigger);
+		subject.includeChange(firstCredit);
+		subject.includeChange(secondCredit);
+		assertSame(secondNonFungibleTrigger, subject.nextAssessableChange());
+
+		// expect:
+		bothCreditsInCurrentLevel();
+	}
+
+	private void bothCreditsInCurrentLevel() {
+		final var inLevel = subject.creditsInCurrentLevel(funding, repeatedCreditsFungibleTokenId);
+		assertSame(firstCredit, inLevel.get(0));
+		assertSame(secondCredit, inLevel.get(1));
+	}
+
+	@Test
+	void levelChangesWork() {
+		// setup:
+		final List<BalanceChange> smallStarterList = new ArrayList<>();
+		smallStarterList.add(secondNonFungibleTrigger);
+
+		// given:
+		subject = new BalanceChangeManager(smallStarterList, 0);
+
+		// when:
+		assertSame(secondNonFungibleTrigger, subject.nextAssessableChange());
+		// and:
+		subject.includeChange(firstFungibleTrigger);
+		// and:
+		assertSame(firstFungibleTrigger, subject.nextAssessableChange());
+
+		// then:
+		assertEquals(1, subject.getLevelNo());
+		assertEquals(1, subject.getLevelStart());
+		assertEquals(2, subject.getLevelEnd());
+
+		// and when:
+		subject.includeChange(firstFungibleNonTrigger);
+		subject.includeChange(secondFungibleTrigger);
+		subject.includeChange(secondFungibleNonTrigger);
+		// and:
+		assertSame(secondFungibleTrigger, subject.nextAssessableChange());
+
+		// then:
+		assertEquals(2, subject.getLevelNo());
+		assertEquals(2, subject.getLevelStart());
+		assertEquals(5, subject.getLevelEnd());
+	}
+
 	private final long amountOfFirstFungibleDebit = 1_000L;
 	private final long amountOfSecondFungibleDebit = 2_000L;
 	private final Id misc = new Id(1, 1, 2);
@@ -98,6 +170,7 @@ class BalanceChangeManagerTest {
 	private final Id firstFungibleTokenId = new Id(1, 2, 3);
 	private final Id nonFungibleTokenId = new Id(7, 4, 7);
 	private final Id secondFungibleTokenId = new Id(3, 2, 1);
+	private final Id repeatedCreditsFungibleTokenId = new Id(4, 3, 2);
 	private final AccountAmount firstFungibleDebit = AccountAmount.newBuilder()
 			.setAccountID(payer.asGrpcAccount())
 			.setAmount(-amountOfFirstFungibleDebit)
@@ -122,6 +195,10 @@ class BalanceChangeManagerTest {
 			secondFungibleTokenId, secondFungibleTokenId.asGrpcToken(), secondFungibleDebit);
 	private final BalanceChange secondFungibleNonTrigger = BalanceChange.changingFtUnits(
 			secondFungibleTokenId, secondFungibleTokenId.asGrpcToken(), secondFungibleCredit);
+	private final BalanceChange firstCredit = BalanceChange.changingFtUnits(
+			repeatedCreditsFungibleTokenId, repeatedCreditsFungibleTokenId.asGrpcToken(), firstFungibleCredit);
+	private final BalanceChange secondCredit = BalanceChange.changingFtUnits(
+			repeatedCreditsFungibleTokenId, repeatedCreditsFungibleTokenId.asGrpcToken(), secondFungibleCredit);
 	private final NftTransfer firstOwnershipChange = NftTransfer.newBuilder()
 			.setSenderAccountID(payer.asGrpcAccount())
 			.setReceiverAccountID(funding.asGrpcAccount())

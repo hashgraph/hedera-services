@@ -28,6 +28,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -50,6 +51,24 @@ class AdjustmentUtilsTest {
 
 		// then:
 		Assertions.assertEquals(expectedChange, change);
+		verify(changeManager).includeChange(expectedChange);
+	}
+
+	@Test
+	void alsoIncludesAnyHtsDebit() {
+		// setup:
+		final var account = new Id(1, 2, 3);
+		final var denom = new Id(2, 3, 4);
+		final var amount = -123L;
+
+		final var expectedChange = BalanceChange.tokenAdjust(account, denom, amount);
+
+		// when:
+		final var change = AdjustmentUtils.adjustedChange(account, denom, amount, changeManager);
+
+		// then:
+		Assertions.assertEquals(expectedChange, change);
+		verify(changeManager, never()).changeFor(account, denom);
 		verify(changeManager).includeChange(expectedChange);
 	}
 }
