@@ -63,6 +63,10 @@ public class ImpliedTransfersMeta {
 		this.tokenFeeSchedules = tokenFeeSchedules;
 	}
 
+	public List<Pair<Id, List<FcCustomFee>>> getTokenFeeSchedules() {
+		return tokenFeeSchedules;
+	}
+
 	public boolean wasDerivedFrom(GlobalDynamicProperties dynamicProperties, CustomFeeSchedules customFeeSchedules) {
 		final var validationParamsMatch =
 				(validationProps.maxHbarAdjusts == dynamicProperties.maxTransferListSize()) &&
@@ -102,6 +106,8 @@ public class ImpliedTransfersMeta {
 				.add("maxExplicitHbarAdjusts", validationProps.maxHbarAdjusts)
 				.add("maxExplicitTokenAdjusts", validationProps.maxTokenAdjusts)
 				.add("maxExplicitOwnershipChanges", validationProps.maxOwnershipChanges)
+				.add("maxNestedCustomFees", validationProps.maxNestedCustomFees)
+				.add("maxXferBalanceChanges", validationProps.maxXferBalanceChanges)
 				.add("tokenFeeSchedules", tokenFeeSchedules)
 				.toString();
 	}
@@ -110,11 +116,21 @@ public class ImpliedTransfersMeta {
 		private final int maxHbarAdjusts;
 		private final int maxTokenAdjusts;
 		private final int maxOwnershipChanges;
+		private final int maxNestedCustomFees;
+		private final int maxXferBalanceChanges;
 
-		public ValidationProps(int maxHbarAdjusts, int maxTokenAdjusts, int maxOwnershipChanges) {
+		public ValidationProps(
+				int maxHbarAdjusts,
+				int maxTokenAdjusts,
+				int maxOwnershipChanges,
+				int maxNestedCustomFees,
+				int maxXferBalanceChanges
+		) {
 			this.maxHbarAdjusts = maxHbarAdjusts;
 			this.maxTokenAdjusts = maxTokenAdjusts;
 			this.maxOwnershipChanges = maxOwnershipChanges;
+			this.maxNestedCustomFees = maxNestedCustomFees;
+			this.maxXferBalanceChanges = maxXferBalanceChanges;
 		}
 
 		public int getMaxHbarAdjusts() {
@@ -127,6 +143,14 @@ public class ImpliedTransfersMeta {
 
 		public int getMaxOwnershipChanges() {
 			return maxOwnershipChanges;
+		}
+
+		public int getMaxNestedCustomFees() {
+			return maxNestedCustomFees;
+		}
+
+		public int getMaxXferBalanceChanges() {
+			return maxXferBalanceChanges;
 		}
 
 		@Override

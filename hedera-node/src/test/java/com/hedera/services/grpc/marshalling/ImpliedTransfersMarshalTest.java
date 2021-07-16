@@ -114,10 +114,14 @@ class ImpliedTransfersMarshalTest {
 	private final int maxExplicitHbarAdjusts = 5;
 	private final int maxExplicitTokenAdjusts = 50;
 	private final int maxExplicitOwnershipChanges = 12;
+	private final int maxFeeNesting = 20;
+	private final int maxBalanceChanges = 20;
 	final ImpliedTransfersMeta.ValidationProps validationProps = new ImpliedTransfersMeta.ValidationProps(
 			maxExplicitHbarAdjusts,
 			maxExplicitTokenAdjusts,
-			maxExplicitOwnershipChanges);
+			maxExplicitOwnershipChanges,
+			maxFeeNesting,
+			maxBalanceChanges);
 
 	private final EntityId customFeeToken = new EntityId(0, 0, 123);
 	private final EntityId customFeeCollector = new EntityId(0, 0, 124);
@@ -165,8 +169,7 @@ class ImpliedTransfersMarshalTest {
 		setupFixtureOp();
 		// and:
 		final List<BalanceChange> expectedChanges = List.of(new BalanceChange[] {
-						hbarChange(aModel,
-								aHbarChange + (3 * customFeeChangeToFeeCollector)),
+						hbarChange(aModel, aHbarChange + (3 * customFeeChangeToFeeCollector)),
 						hbarChange(bModel, bHbarChange),
 						hbarChange(cModel, cHbarChange),
 						tokenChange(anotherToken, aModel, aAnotherTokenChange),
@@ -199,6 +202,8 @@ class ImpliedTransfersMarshalTest {
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxExplicitHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxExplicitTokenAdjusts);
 		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxExplicitOwnershipChanges);
+		given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges);
+		given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
 		given(transferSemanticChecks.fullPureValidation(
 				op.getTransfers(),
 				op.getTokenTransfersList(),
@@ -211,7 +216,7 @@ class ImpliedTransfersMarshalTest {
 		// then:
 		assertEquals(expectedMeta, result.getMeta());
 		assertEquals(expectedChanges, result.getAllBalanceChanges());
-		assertEquals(expectedCustomFeeChanges, result.getTokenFeeSchedules());
+		assertEquals(expectedCustomFeeChanges, result.getMeta().getTokenFeeSchedules());
 		assertEquals(expectedAssessedCustomFees, result.getAssessedCustomFees());
 	}
 
@@ -433,6 +438,8 @@ class ImpliedTransfersMarshalTest {
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxExplicitHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxExplicitTokenAdjusts);
 		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxExplicitOwnershipChanges);
+		given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges);
+		given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
 		given(transferSemanticChecks.fullPureValidation(
 				op.getTransfers(),
 				op.getTokenTransfersList(),
@@ -445,7 +452,7 @@ class ImpliedTransfersMarshalTest {
 		// then:
 		assertEquals(expectedMeta, result.getMeta());
 		assertEquals(expectedChanges, result.getAllBalanceChanges());
-		assertEquals(expectedCustomFeeChanges, result.getTokenFeeSchedules());
+		assertEquals(expectedCustomFeeChanges, result.getMeta().getTokenFeeSchedules());
 		assertEquals(expectedAssessedCustomFees, result.getAssessedCustomFees());
 	}
 
@@ -491,6 +498,8 @@ class ImpliedTransfersMarshalTest {
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxExplicitHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxExplicitTokenAdjusts);
 		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxExplicitOwnershipChanges);
+		given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges);
+		given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
 		given(transferSemanticChecks.fullPureValidation(
 				op.getTransfers(),
 				op.getTokenTransfersList(),
@@ -503,7 +512,7 @@ class ImpliedTransfersMarshalTest {
 		// then:
 		assertEquals(expectedMeta, result.getMeta());
 		assertEquals(expectedChanges, result.getAllBalanceChanges());
-		assertEquals(expectedCustomFeeChanges, result.getTokenFeeSchedules());
+		assertEquals(expectedCustomFeeChanges, result.getMeta().getTokenFeeSchedules());
 		assertEquals(expectedAssessedCustomFees, result.getAssessedCustomFees());
 	}
 

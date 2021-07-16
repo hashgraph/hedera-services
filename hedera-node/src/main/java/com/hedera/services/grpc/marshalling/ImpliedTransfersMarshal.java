@@ -70,9 +70,11 @@ public class ImpliedTransfersMarshal {
 		final var maxHbarAdjusts = dynamicProperties.maxTransferListSize();
 		final var maxTokenAdjusts = dynamicProperties.maxTokenTransferListSize();
 		final var maxOwnershipChanges = dynamicProperties.maxNftTransfersLen();
+		final var maxNestedCustomFees = dynamicProperties.maxCustomFeeDepth();
+		final var maxXferBalanceChanges = dynamicProperties.maxXferBalanceChanges();
 
 		final var validationProps = new ImpliedTransfersMeta.ValidationProps(
-				maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges);
+				maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, maxNestedCustomFees, maxXferBalanceChanges);
 
 		final var validity = transferSemanticChecks.fullPureValidation(
 				op.getTransfers(), op.getTokenTransfersList(), validationProps);
@@ -199,7 +201,7 @@ public class ImpliedTransfersMarshal {
 				true);
 
 		assessedCustomFees.add(
-				new FcAssessedCustomFee(fees.getFeeCollectorAccountId(), scopingToken.asEntityId(), effectiveFee));
+				new FcAssessedCustomFee(fees.getFeeCollector(), scopingToken.asEntityId(), effectiveFee));
 	}
 
 	long safeFractionMultiply(long n, long d, long v) {
@@ -238,7 +240,7 @@ public class ImpliedTransfersMarshal {
 					hbarAdjust(payerId, -unitsToCollect),
 					true);
 			assessedCustomFees.add(
-					new FcAssessedCustomFee(fees.getFeeCollectorAccountId(), null, unitsToCollect));
+					new FcAssessedCustomFee(fees.getFeeCollector(), null, unitsToCollect));
 		} else {
 			modifyBalanceChange(
 					Pair.of(fees.getFeeCollectorAsId(), spec.getTokenDenomination().asId()),
@@ -255,7 +257,7 @@ public class ImpliedTransfersMarshal {
 					tokenAdjust(payerId, spec.getTokenDenomination().asId(), -unitsToCollect),
 					true);
 			assessedCustomFees.add(
-					new FcAssessedCustomFee(fees.getFeeCollectorAccountId(), spec.getTokenDenomination(),
+					new FcAssessedCustomFee(fees.getFeeCollector(), spec.getTokenDenomination(),
 							unitsToCollect));
 		}
 	}

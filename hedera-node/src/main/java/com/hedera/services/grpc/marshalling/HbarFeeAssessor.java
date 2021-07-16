@@ -20,22 +20,26 @@ package com.hedera.services.grpc.marshalling;
  * ‍
  */
 
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
-import static com.hedera.services.grpc.marshalling.AdjustmentUtils.adjust;
+import java.util.List;
+
+import static com.hedera.services.grpc.marshalling.AdjustmentUtils.adjustForAssessed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class HbarFeeAssessor {
 	public ResponseCodeEnum assess(
 			Id account,
 			FcCustomFee hbarFee,
-			BalanceChangeManager changeManager
+			BalanceChangeManager changeManager,
+			List<FcAssessedCustomFee> accumulator
 	) {
 		final var collector = hbarFee.getFeeCollectorAsId();
 		final var fixedSpec = hbarFee.getFixedFeeSpec();
-		adjust(account, collector, Id.MISSING_ID, fixedSpec.getUnitsToCollect(), changeManager);
+		adjustForAssessed(account, collector, Id.MISSING_ID, fixedSpec.getUnitsToCollect(), changeManager);
 		return OK;
 	}
 }

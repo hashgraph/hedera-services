@@ -22,6 +22,7 @@ package com.hedera.services.grpc.marshalling;
 
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
 import org.junit.jupiter.api.Test;
@@ -29,13 +30,19 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 
 @ExtendWith(MockitoExtension.class)
 class HtsFeeAssessorTest {
+	private final List<FcAssessedCustomFee> accumulator = new ArrayList<>();
+
 	@Mock
 	private BalanceChange payerChange;
 	@Mock
@@ -47,31 +54,43 @@ class HtsFeeAssessorTest {
 
 	@Test
 	void updatesExistingChangesIfPresent() {
+		// setup:
+		final var expectedAssess = new FcAssessedCustomFee(htsFeeCollector, feeDenom, amountOfHtsFee);
+
 		given(balanceChangeManager.changeFor(payer, denom)).willReturn(payerChange);
 		given(balanceChangeManager.changeFor(feeCollector, denom)).willReturn(collectorChange);
 
 		// when:
-		subject.assess(payer, htsFee, balanceChangeManager);
+		subject.assess(payer, htsFee, balanceChangeManager, accumulator);
 
 		// then:
 		verify(payerChange).adjustUnits(-amountOfHtsFee);
 		verify(payerChange).setCodeForInsufficientBalance(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE);
 		// and:
 		verify(collectorChange).adjustUnits(+amountOfHtsFee);
+		// and:
+		assertEquals(1, accumulator.size());
+		assertEquals(expectedAssess, accumulator.get(0));
 	}
 
 	@Test
 	void addsNewChangesIfNotPresent() {
+		// setup:
+		final var expectedAssess = new FcAssessedCustomFee(htsFeeCollector, feeDenom, amountOfHtsFee);
+
 		// given:
 		final var expectedPayerChange = BalanceChange.tokenAdjust(payer, denom, -amountOfHtsFee);
 		expectedPayerChange.setCodeForInsufficientBalance(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE);
 
 		// when:
-		subject.assess(payer, htsFee, balanceChangeManager);
+		subject.assess(payer, htsFee, balanceChangeManager, accumulator);
 
 		// then:
 		verify(balanceChangeManager).includeChange(expectedPayerChange);
 		verify(balanceChangeManager).includeChange(BalanceChange.tokenAdjust(feeCollector, denom, +amountOfHtsFee));
+		// and:
+		assertEquals(1, accumulator.size());
+		assertEquals(expectedAssess, accumulator.get(0));
 	}
 
 	private final long amountOfHtsFee = 100_000L;

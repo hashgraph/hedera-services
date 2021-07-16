@@ -20,9 +20,11 @@ package com.hedera.services.grpc.marshalling;
  * ‍
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+
+import java.util.List;
 
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FIXED_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
@@ -33,27 +35,25 @@ public class FeeAssessor {
 	private final HtsFeeAssessor htsFeeAssessor;
 	private final HbarFeeAssessor hbarFeeAssessor;
 	private final FractionalFeeAssessor fractionalFeeAssessor;
-	private final GlobalDynamicProperties dynamicProperties;
 
 	public FeeAssessor(
 			HtsFeeAssessor htsFeeAssessor,
 			HbarFeeAssessor hbarFeeAssessor,
-			FractionalFeeAssessor fractionalFeeAssessor,
-			GlobalDynamicProperties dynamicProperties
+			FractionalFeeAssessor fractionalFeeAssessor
 	) {
 		this.htsFeeAssessor = htsFeeAssessor;
 		this.hbarFeeAssessor = hbarFeeAssessor;
-		this.dynamicProperties = dynamicProperties;
 		this.fractionalFeeAssessor = fractionalFeeAssessor;
 	}
 
 	public ResponseCodeEnum assess(
-			int level,
 			BalanceChange change,
 			CustomSchedulesManager customSchedulesManager,
-			BalanceChangeManager balanceChangeManager
+			BalanceChangeManager balanceChangeManager,
+			List<FcAssessedCustomFee> accumulator,
+			ImpliedTransfersMeta.ValidationProps props
 	) {
-		if (level > dynamicProperties.maxCustomFeeDepth()) {
+		if (balanceChangeManager.nestingLevel() > props.getMaxNestedCustomFees()) {
 			return CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 		}
 		final var fees = customSchedulesManager.managedSchedulesFor(change.getToken().asEntityId());
@@ -62,14 +62,14 @@ public class FeeAssessor {
 		}
 		var numFractionalFees = 0;
 		final var payer = change.getAccount();
-		final var maxBalanceChanges = dynamicProperties.maxXferBalanceChanges();
+		final var maxBalanceChanges = props.getMaxXferBalanceChanges();
 		for (var fee : fees) {
 			if (fee.getFeeType() == FIXED_FEE) {
 				final var fixedSpec = fee.getFixedFeeSpec();
 				if (fixedSpec.getTokenDenomination() == null) {
-					hbarFeeAssessor.assess(payer, fee, balanceChangeManager);
+					hbarFeeAssessor.assess(payer, fee, balanceChangeManager, accumulator);
 				} else {
-					htsFeeAssessor.assess(payer, fee, balanceChangeManager);
+					htsFeeAssessor.assess(payer, fee, balanceChangeManager, accumulator);
 				}
 				if (balanceChangeManager.changesSoFar() > maxBalanceChanges) {
 					return CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
@@ -79,7 +79,11 @@ public class FeeAssessor {
 			}
 		}
 		if (numFractionalFees > 0) {
-			fractionalFeeAssessor.assessAllFractional(change, fees, balanceChangeManager);
+			final var fractionalValidity =
+					fractionalFeeAssessor.assessAllFractional(change, fees, balanceChangeManager, accumulator);
+			if (fractionalValidity != OK) {
+				return fractionalValidity;
+			}
 		}
 		return (balanceChangeManager.changesSoFar() > maxBalanceChanges)
 				? CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS : OK;

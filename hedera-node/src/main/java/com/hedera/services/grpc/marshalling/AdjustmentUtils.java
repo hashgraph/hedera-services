@@ -26,8 +26,8 @@ import com.hedera.services.store.models.Id;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
 
 public class AdjustmentUtils {
-	static void adjust(Id account, Id collector, Id denom, long amount, BalanceChangeManager changeManager) {
-		final var payerChange = adjustedChange(account, denom, -amount, changeManager);
+	static void adjustForAssessed(Id payer, Id collector, Id denom, long amount, BalanceChangeManager changeManager) {
+		final var payerChange = adjustedChange(payer, denom, -amount, changeManager);
 		payerChange.setCodeForInsufficientBalance(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE);
 		adjustedChange(collector, denom, +amount, changeManager);
 	}
@@ -40,7 +40,9 @@ public class AdjustmentUtils {
 				changeManager.includeChange(newHbarChange);
 				return newHbarChange;
 			} else {
-				throw new AssertionError("Not implemented!");
+				final var newHtsChange = BalanceChange.tokenAdjust(account, denom, amount);
+				changeManager.includeChange(newHtsChange);
+				return newHtsChange;
 			}
 		} else {
 			extantChange.adjustUnits(amount);

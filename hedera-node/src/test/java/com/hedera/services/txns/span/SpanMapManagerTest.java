@@ -57,10 +57,12 @@ class SpanMapManagerTest {
 	private final int maxHbarAdjusts = 1;
 	private final int maxTokenAdjusts = 2;
 	private final int maxOwnershipChanges = 3;
+	private final int maxFeeNesting = 4;
+	private final int maxBalanceChanges = 5;
 	private final ImpliedTransfersMeta.ValidationProps validationProps = new ImpliedTransfersMeta.ValidationProps(
-			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges);
+			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, maxFeeNesting, maxBalanceChanges);
 	private final ImpliedTransfersMeta.ValidationProps otherValidationProps = new ImpliedTransfersMeta.ValidationProps(
-			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges + 1);
+			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges + 1, maxFeeNesting, maxBalanceChanges);
 	private final TransactionBody pretendXferTxn = TransactionBody.getDefaultInstance();
 	private final ImpliedTransfers someImpliedXfers = ImpliedTransfers.invalid(
 			validationProps, ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);

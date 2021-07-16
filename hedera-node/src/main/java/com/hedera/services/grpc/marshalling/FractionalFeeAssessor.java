@@ -21,23 +21,59 @@ package com.hedera.services.grpc.marshalling;
  */
 
 import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import java.math.BigInteger;
 import java.util.List;
 
+import static com.hedera.services.grpc.marshalling.AdjustmentUtils.adjustedChange;
+import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FRACTIONAL_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
 public class FractionalFeeAssessor {
 	public ResponseCodeEnum assessAllFractional(
 			BalanceChange change,
 			List<FcCustomFee> feesWithFractional,
-			BalanceChangeManager balanceChangeManager
+			BalanceChangeManager changeManager,
+			List<FcAssessedCustomFee> accumulator
 	) {
-		throw new AssertionError("Not implemented!");
+		final var initialUnits = -change.units();
+		if (initialUnits < 0) {
+			throw new IllegalArgumentException("Cannot assess fees to a credit");
+		}
+
+		var unitsLeft = initialUnits;
+		final var denom = change.getToken();
+		for (var fee : feesWithFractional) {
+			if (fee.getFeeType() == FRACTIONAL_FEE) {
+				var assessedAmount = 0L;
+				try {
+					assessedAmount = amountOwedGiven(initialUnits, fee.getFractionalFeeSpec());
+				} catch (ArithmeticException ignore) {
+					return CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
+				}
+
+				unitsLeft -= assessedAmount;
+				if (unitsLeft < 0) {
+					return INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
+				}
+				change.adjustUnits(assessedAmount);
+
+				final var collector = fee.getFeeCollectorAsId();
+				adjustedChange(collector, denom, assessedAmount, changeManager);
+				final var assessed = new FcAssessedCustomFee(collector.asEntityId(), denom.asEntityId(), assessedAmount);
+				accumulator.add(assessed);
+			}
+		}
+		return OK;
 	}
 
-	long computedFee(long totalAmount, FcCustomFee.FractionalFeeSpec spec) {
-		final var nominalFee = safeFractionMultiply(spec.getNumerator(), spec.getDenominator(), totalAmount);
+	long amountOwedGiven(long initialUnits, FcCustomFee.FractionalFeeSpec spec) {
+		final var nominalFee = safeFractionMultiply(spec.getNumerator(), spec.getDenominator(), initialUnits);
 		long effectiveFee = Math.max(nominalFee, spec.getMinimumAmount());
 		if (spec.getMaximumUnitsToCollect() > 0) {
 			effectiveFee = Math.min(effectiveFee, spec.getMaximumUnitsToCollect());

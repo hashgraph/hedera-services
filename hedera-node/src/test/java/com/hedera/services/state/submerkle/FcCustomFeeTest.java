@@ -260,7 +260,7 @@ class FcCustomFeeTest {
 
 		// then:
 		assertEquals(subject.getFractionalFeeSpec(), newSubject.getFractionalFeeSpec());
-		assertEquals(subject.getFeeCollectorAccountId(), newSubject.getFeeCollectorAccountId());
+		assertEquals(subject.getFeeCollector(), newSubject.getFeeCollector());
 	}
 
 	@Test
@@ -285,7 +285,7 @@ class FcCustomFeeTest {
 
 		// then:
 		assertEquals(fixedSubject.getFixedFeeSpec(), newSubject.getFixedFeeSpec());
-		assertEquals(fixedSubject.getFeeCollectorAccountId(), newSubject.getFeeCollectorAccountId());
+		assertEquals(fixedSubject.getFeeCollector(), newSubject.getFeeCollector());
 	}
 
 	@Test
@@ -310,7 +310,7 @@ class FcCustomFeeTest {
 
 		// then:
 		assertEquals(fixedSubject.getFixedFeeSpec(), newSubject.getFixedFeeSpec());
-		assertEquals(fixedSubject.getFeeCollectorAccountId(), newSubject.getFeeCollectorAccountId());
+		assertEquals(fixedSubject.getFeeCollector(), newSubject.getFeeCollector());
 	}
 
 	@Test
@@ -332,7 +332,7 @@ class FcCustomFeeTest {
 		assertEquals(FcCustomFee.FeeType.FIXED_FEE, subject.getFeeType());
 		assertEquals(expectedFixedSpec, subject.getFixedFeeSpec());
 		assertNull(subject.getFractionalFeeSpec());
-		assertEquals(feeCollector, subject.getFeeCollectorAccountId());
+		assertEquals(feeCollector, subject.getFeeCollector());
 	}
 
 	@Test
@@ -362,7 +362,7 @@ class FcCustomFeeTest {
 		assertEquals(FcCustomFee.FeeType.FRACTIONAL_FEE, subject.getFeeType());
 		assertEquals(expectedFractionalSpec, subject.getFractionalFeeSpec());
 		assertNull(subject.getFixedFeeSpec());
-		assertEquals(feeCollector, subject.getFeeCollectorAccountId());
+		assertEquals(feeCollector, subject.getFeeCollector());
 	}
 
 	@Test
@@ -430,7 +430,7 @@ class FcCustomFeeTest {
 		assertEquals(FcCustomFee.FeeType.FIXED_FEE, fixedSubject.getFeeType());
 		assertEquals(expectedFixedSpec, fixedSubject.getFixedFeeSpec());
 		assertNull(fixedSubject.getFractionalFeeSpec());
-		assertEquals(feeCollector, fixedSubject.getFeeCollectorAccountId());
+		assertEquals(feeCollector, fixedSubject.getFeeCollector());
 	}
 
 	@Test
@@ -454,7 +454,7 @@ class FcCustomFeeTest {
 		assertEquals(FcCustomFee.FeeType.FRACTIONAL_FEE, fractionalSubject.getFeeType());
 		assertEquals(expectedFractionalSpec, fractionalSubject.getFractionalFeeSpec());
 		assertNull(fractionalSubject.getFixedFeeSpec());
-		assertEquals(feeCollector, fractionalSubject.getFeeCollectorAccountId());
+		assertEquals(feeCollector, fractionalSubject.getFeeCollector());
 	}
 
 	@Test

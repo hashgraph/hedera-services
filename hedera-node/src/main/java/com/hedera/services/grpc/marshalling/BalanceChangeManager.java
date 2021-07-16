@@ -34,10 +34,18 @@ public class BalanceChangeManager {
 
 	private int nextCandidateChange;
 
+	interface ChangeManagerFactory {
+		BalanceChangeManager from(List<BalanceChange> changesSoFar, int numHbar);
+	}
+
 	public BalanceChangeManager(List<BalanceChange> changesSoFar, int numHbar) {
 		nextCandidateChange = numHbar;
 		this.changesSoFar = changesSoFar;
 		changesSoFar.forEach(this::index);
+	}
+
+	public int nestingLevel() {
+		throw new AssertionError("Not implemented!");
 	}
 
 	public void includeChange(BalanceChange change) {
@@ -72,7 +80,7 @@ public class BalanceChangeManager {
 		return indexedChanges.get(Pair.of(account, denom));
 	}
 
-	List<BalanceChange> getChangesSoFar() {
+	List<BalanceChange> allChanges() {
 		return changesSoFar;
 	}
 

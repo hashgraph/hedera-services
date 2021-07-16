@@ -156,7 +156,7 @@ public class FcCustomFee implements SelfSerializable {
 		return builder.build();
 	}
 
-	public EntityId getFeeCollectorAccountId() {
+	public EntityId getFeeCollector() {
 		return feeCollector;
 	}
 

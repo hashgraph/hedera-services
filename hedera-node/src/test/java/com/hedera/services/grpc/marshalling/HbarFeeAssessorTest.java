@@ -22,12 +22,16 @@ package com.hedera.services.grpc.marshalling;
 
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
 import static org.mockito.BDDMockito.given;
@@ -36,6 +40,8 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class HbarFeeAssessorTest {
+	private final List<FcAssessedCustomFee> accumulator = new ArrayList<>();
+
 	@Mock
 	private BalanceChange payerChange;
 	@Mock
@@ -51,7 +57,7 @@ class HbarFeeAssessorTest {
 		given(balanceChangeManager.changeFor(feeCollector, Id.MISSING_ID)).willReturn(collectorChange);
 
 		// when:
-		subject.assess(payer, hbarFee, balanceChangeManager);
+		subject.assess(payer, hbarFee, balanceChangeManager, accumulator);
 
 		// then:
 		verify(payerChange).adjustUnits(-amountOfHbarFee);
@@ -67,7 +73,7 @@ class HbarFeeAssessorTest {
 		expectedPayerChange.setCodeForInsufficientBalance(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE);
 
 		// when:
-		subject.assess(payer, hbarFee, balanceChangeManager);
+		subject.assess(payer, hbarFee, balanceChangeManager, accumulator);
 
 		// then:
 		verify(balanceChangeManager).includeChange(expectedPayerChange);
