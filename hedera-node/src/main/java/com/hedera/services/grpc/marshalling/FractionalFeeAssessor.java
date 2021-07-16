@@ -9,9 +9,9 @@ package com.hedera.services.grpc.marshalling;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -49,27 +49,63 @@ public class FractionalFeeAssessor {
 		var unitsLeft = initialUnits;
 		final var denom = change.getToken();
 		for (var fee : feesWithFractional) {
-			if (fee.getFeeType() == FRACTIONAL_FEE) {
-				var assessedAmount = 0L;
-				try {
-					assessedAmount = amountOwedGiven(initialUnits, fee.getFractionalFeeSpec());
-				} catch (ArithmeticException ignore) {
-					return CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
-				}
-
-				unitsLeft -= assessedAmount;
-				if (unitsLeft < 0) {
-					return INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
-				}
-				change.adjustUnits(assessedAmount);
-
-				final var collector = fee.getFeeCollectorAsId();
-				adjustedChange(collector, denom, assessedAmount, changeManager);
-				final var assessed = new FcAssessedCustomFee(collector.asEntityId(), denom.asEntityId(), assessedAmount);
-				accumulator.add(assessed);
+			if (fee.getFeeType() != FRACTIONAL_FEE) {
+				continue;
 			}
+
+			var assessedAmount = 0L;
+			try {
+				assessedAmount = amountOwedGiven(initialUnits, fee.getFractionalFeeSpec());
+			} catch (ArithmeticException ignore) {
+				return CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
+			}
+
+			unitsLeft -= assessedAmount;
+			if (unitsLeft < 0) {
+				return INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
+			}
+			final var creditsToReclaimFrom = changeManager.creditsInCurrentLevel(denom);
+			try {
+				reclaim(assessedAmount, creditsToReclaimFrom);
+			} catch (ArithmeticException ignore) {
+				return CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
+			}
+
+			final var collector = fee.getFeeCollectorAsId();
+			adjustedChange(collector, denom, assessedAmount, changeManager);
+			final var assessed = new FcAssessedCustomFee(collector.asEntityId(), denom.asEntityId(), assessedAmount);
+			accumulator.add(assessed);
 		}
 		return OK;
+	}
+
+	void reclaim(long amount, List<BalanceChange> credits) {
+		var availableToReclaim = 0L;
+		for (var credit : credits) {
+			availableToReclaim += credit.units();
+			if (availableToReclaim < 0L) {
+				throw new ArithmeticException();
+			}
+		}
+
+		var amountReclaimed = 0L;
+		for (var credit : credits) {
+			var toReclaimHere = safeFractionMultiply(credit.units(), availableToReclaim, amount);
+			credit.adjustUnits(-toReclaimHere);
+			amountReclaimed += toReclaimHere;
+		}
+
+		if (amountReclaimed < amount) {
+			var leftToReclaim = amount - amountReclaimed;
+			for (var credit : credits) {
+				final var toReclaimHere = Math.min(credit.units(), leftToReclaim);
+				credit.adjustUnits(-toReclaimHere);
+				leftToReclaim -= toReclaimHere;
+				if (leftToReclaim == 0) {
+					break;
+				}
+			}
+		}
 	}
 
 	long amountOwedGiven(long initialUnits, FcCustomFee.FractionalFeeSpec spec) {

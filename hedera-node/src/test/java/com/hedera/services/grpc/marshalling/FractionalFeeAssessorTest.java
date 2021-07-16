@@ -58,12 +58,13 @@ class FractionalFeeAssessorTest {
 				firstFractionalFeeCollector.asId(), tokenWithFractionalFee, 0L);
 		final var secondCollectorChange = BalanceChange.tokenAdjust(
 				secondFractionalFeeCollector.asId(), tokenWithFractionalFee, 0L);
+		final var credits = List.of(firstVanillaReclaim, secondVanillaReclaim);
 		// and:
 		final var firstExpectedFee =
 				subject.amountOwedGiven(vanillaTriggerAmount, firstFractionalFee.getFractionalFeeSpec());
 		final var secondExpectedFee =
 				subject.amountOwedGiven(vanillaTriggerAmount, secondFractionalFee.getFractionalFeeSpec());
-		final var totalExpectedFees = firstExpectedFee + secondExpectedFee;
+		final var totalFees = firstExpectedFee + secondExpectedFee;
 		// and:
 		final var expFirstAssess = new FcAssessedCustomFee(
 				firstFractionalFeeCollector,
@@ -78,6 +79,7 @@ class FractionalFeeAssessorTest {
 				.willReturn(firstCollectorChange);
 		given(changeManager.changeFor(secondFractionalFeeCollector.asId(), tokenWithFractionalFee))
 				.willReturn(secondCollectorChange);
+		given(changeManager.creditsInCurrentLevel(tokenWithFractionalFee)).willReturn(credits);
 
 		// when:
 		final var result =
@@ -85,13 +87,35 @@ class FractionalFeeAssessorTest {
 
 		// then:
 		assertEquals(OK, result);
-		assertEquals(-vanillaTriggerAmount + totalExpectedFees, vanillaTrigger.units());
+		// and:
+		assertEquals(firstCreditAmount - (totalFees * 4 / 5), firstVanillaReclaim.units());
+		assertEquals(secondCreditAmount - (totalFees / 5), secondVanillaReclaim.units());
+		// and:
 		assertEquals(firstExpectedFee, firstCollectorChange.units());
 		assertEquals(secondExpectedFee, secondCollectorChange.units());
 		// and:
 		assertEquals(2, accumulator.size());
 		assertEquals(expFirstAssess, accumulator.get(0));
 		assertEquals(expSecondAssess, accumulator.get(1));
+	}
+
+	@Test
+	void abortsOnCreditOverflow() {
+		// setup:
+		final var fees = List.of(firstFractionalFee, secondFractionalFee);
+		final var credits = List.of(firstVanillaReclaim, secondVanillaReclaim);
+		// and:
+		firstVanillaReclaim.adjustUnits(Long.MAX_VALUE / 2);
+		secondVanillaReclaim.adjustUnits(Long.MAX_VALUE / 2);
+
+		given(changeManager.creditsInCurrentLevel(tokenWithFractionalFee)).willReturn(credits);
+
+		// when:
+		final var result =
+				subject.assessAllFractional(vanillaTrigger, fees, changeManager, accumulator);
+
+		// then:
+		assertEquals(CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE, result);
 	}
 
 	@Test
@@ -194,8 +218,50 @@ class FractionalFeeAssessorTest {
 				subject.amountOwedGiven(minApplicableTriggerAmount, firstFractionalFee.getFractionalFeeSpec()));
 	}
 
+	@Test
+	void reclaimsAsExpected() {
+		// setup:
+		final long reclaimAmount = 1000L;
+		final List<BalanceChange> credits = List.of(firstVanillaReclaim, secondVanillaReclaim);
+		// and:
+		final var expFromFirst = reclaimAmount * firstCreditAmount / vanillaTriggerAmount;
+		final var expFromSecond = reclaimAmount * secondCreditAmount / vanillaTriggerAmount;
+
+		// when:
+		subject.reclaim(1000L, credits);
+
+		// then:
+		assertEquals(firstCreditAmount - expFromFirst, firstVanillaReclaim.units());
+		assertEquals(secondCreditAmount - expFromSecond, secondVanillaReclaim.units());
+	}
+
+	@Test
+	void reclaimsRemainderAsExpected() {
+		// setup:
+		final long reclaimAmount = 1000L;
+		final List<BalanceChange> credits = List.of(firstVanillaReclaim, secondVanillaReclaim);
+		firstVanillaReclaim.adjustUnits(12_345L);
+		secondVanillaReclaim.adjustUnits(2_345L);
+		final var perturbedFirstCreditAmount = firstVanillaReclaim.units();
+		final var perturbedSecondCreditAmount = secondVanillaReclaim.units();
+		// and:
+		final var expFromFirst = 831;
+		final var expFromSecond = 169;
+
+		// when:
+		subject.reclaim(1000L, credits);
+
+		// then:
+		assertEquals(perturbedFirstCreditAmount - expFromFirst, firstVanillaReclaim.units());
+		assertEquals(perturbedSecondCreditAmount - expFromSecond, secondVanillaReclaim.units());
+	}
+
 	private final Id payer = new Id(0, 1, 2);
+	private final Id firstReclaimedAcount = new Id(6, 7, 8);
+	private final Id secondReclaimedAcount = new Id(7, 8, 9);
 	private final long vanillaTriggerAmount = 5000L;
+	private final long firstCreditAmount = 4000L;
+	private final long secondCreditAmount = 1000L;
 	private final long minApplicableTriggerAmount = 50L;
 	private final long maxApplicableTriggerAmount = 50_000L;
 	private final long firstMinAmountOfFractionalFee = 2L;
@@ -231,6 +297,10 @@ class FractionalFeeAssessorTest {
 			secondFractionalFeeCollector);
 	private final BalanceChange vanillaTrigger = BalanceChange.tokenAdjust(
 			payer, tokenWithFractionalFee, -vanillaTriggerAmount);
+	private final BalanceChange firstVanillaReclaim = BalanceChange.tokenAdjust(
+			firstReclaimedAcount, tokenWithFractionalFee, +firstCreditAmount);
+	private final BalanceChange secondVanillaReclaim = BalanceChange.tokenAdjust(
+			secondReclaimedAcount, tokenWithFractionalFee, +secondCreditAmount);
 	private final BalanceChange wildlyInsufficientChange = BalanceChange.tokenAdjust(
 			payer, tokenWithFractionalFee, -1);
 }

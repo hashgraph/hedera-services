@@ -22,8 +22,8 @@ package com.hedera.services.txns.span;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
@@ -117,7 +117,7 @@ class SpanMapManagerTest {
 		given(accessor.getSpanMap()).willReturn(span);
 		given(accessor.getFunction()).willReturn(CryptoTransfer);
 		given(accessor.availXferUsageMeta()).willReturn(xferMeta);
-		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), accessor.getPayer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer()))
 				.willReturn(someImpliedXfers);
 
 		// when:
@@ -133,7 +133,7 @@ class SpanMapManagerTest {
 		given(accessor.getSpanMap()).willReturn(span);
 		given(accessor.getFunction()).willReturn(CryptoTransfer);
 		given(accessor.availXferUsageMeta()).willReturn(xferMeta);
-		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), accessor.getPayer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer()))
 				.willReturn(mockImpliedTransfers);
 		given(mockImpliedTransfers.getAssessedCustomFees()).willReturn(assessedCustomFees);
 
@@ -153,13 +153,15 @@ class SpanMapManagerTest {
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxTokenAdjusts);
 		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxOwnershipChanges);
+		given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges);
+		given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
 		spanMapAccessor.setImpliedTransfers(accessor, someImpliedXfers);
 
 		// when:
 		subject.rationalizeSpan(accessor);
 
 		// then:
-		verify(impliedTransfersMarshal, never()).unmarshalFromGrpc(any(), any());
+		verify(impliedTransfersMarshal, never()).unmarshalFromGrpc(any());
 		assertSame(someImpliedXfers, spanMapAccessor.getImpliedTransfers(accessor));
 	}
 
@@ -172,14 +174,14 @@ class SpanMapManagerTest {
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxTokenAdjusts + 1);
 		spanMapAccessor.setImpliedTransfers(accessor, someImpliedXfers);
-		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), accessor.getPayer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer()))
 				.willReturn(someOtherImpliedXfers);
 
 		// when:
 		subject.rationalizeSpan(accessor);
 
 		// then:
-		verify(impliedTransfersMarshal).unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), accessor.getPayer());
+		verify(impliedTransfersMarshal).unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer());
 		assertSame(someOtherImpliedXfers, spanMapAccessor.getImpliedTransfers(accessor));
 	}
 
@@ -192,14 +194,14 @@ class SpanMapManagerTest {
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxTokenAdjusts + 1);
 		spanMapAccessor.setImpliedTransfers(accessor, validImpliedTransfers);
-		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), accessor.getPayer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer()))
 				.willReturn(feeChangedImpliedTransfers);
 
 		// when:
 		subject.rationalizeSpan(accessor);
 
 		// then:
-		verify(impliedTransfersMarshal).unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), accessor.getPayer());
+		verify(impliedTransfersMarshal).unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer());
 		assertSame(feeChangedImpliedTransfers, spanMapAccessor.getImpliedTransfers(accessor));
 	}
 }

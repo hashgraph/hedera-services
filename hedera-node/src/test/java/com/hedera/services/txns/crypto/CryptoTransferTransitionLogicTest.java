@@ -23,8 +23,8 @@ package com.hedera.services.txns.crypto;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
@@ -146,7 +146,7 @@ class CryptoTransferTransitionLogicTest {
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
 		// and:
-		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer(), accessor.getPayer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
 				.willReturn(impliedTransfers);
 		given(ledger.doZeroSum(impliedTransfers.getAllBalanceChanges()))
 				.willReturn(OK);
@@ -182,7 +182,7 @@ class CryptoTransferTransitionLogicTest {
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
 		// and:
-		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer(), accessor.getPayer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
 				.willReturn(impliedTransfers);
 		given(ledger.doZeroSum(impliedTransfers.getAllBalanceChanges()))
 				.willReturn(OK);
@@ -205,7 +205,7 @@ class CryptoTransferTransitionLogicTest {
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
 		// and:
-		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer(), accessor.getPayer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
 				.willReturn(impliedTransfers);
 
 		// when:
@@ -239,6 +239,8 @@ class CryptoTransferTransitionLogicTest {
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxTokenAdjusts);
 		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxOwnershipChanges);
+		given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
+		given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges);
 		given(accessor.getTxn()).willReturn(pretendXferTxn);
 		given(transferSemanticChecks.fullPureValidation(
 				pretendXferTxn.getCryptoTransfer().getTransfers(),

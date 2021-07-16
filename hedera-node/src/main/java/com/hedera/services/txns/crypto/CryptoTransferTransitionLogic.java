@@ -23,8 +23,8 @@ package com.hedera.services.txns.crypto;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.txns.TransitionLogic;
@@ -100,7 +100,7 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 		var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
 		if (impliedTransfers == null) {
 			final var op = accessor.getTxn().getCryptoTransfer();
-			impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op, accessor.getPayer());
+			impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op);
 		}
 		return impliedTransfers;
 	}

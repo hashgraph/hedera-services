@@ -123,7 +123,7 @@ class BalanceChangeManagerTest {
 	}
 
 	private void bothCreditsInCurrentLevel() {
-		final var inLevel = subject.creditsInCurrentLevel(funding, repeatedCreditsFungibleTokenId);
+		final var inLevel = subject.creditsInCurrentLevel(repeatedCreditsFungibleTokenId);
 		assertSame(firstCredit, inLevel.get(0));
 		assertSame(secondCredit, inLevel.get(1));
 	}

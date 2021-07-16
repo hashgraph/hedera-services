@@ -38,7 +38,7 @@ public class BalanceChangeManager {
 	private int levelStart = 0;
 	private int levelEnd;
 
-	interface ChangeManagerFactory {
+	public interface ChangeManagerFactory {
 		BalanceChangeManager from(List<BalanceChange> changesSoFar, int numHbar);
 	}
 
@@ -54,11 +54,11 @@ public class BalanceChangeManager {
 		index(change);
 	}
 
-	public List<BalanceChange> creditsInCurrentLevel(Id account, Id denom) {
+	public List<BalanceChange> creditsInCurrentLevel(Id denom) {
 		final List<BalanceChange> ans = new ArrayList<>();
 		for (int i = levelStart; i < levelEnd; i++) {
 			final var change = changesSoFar.get(i);
-			if (matches(change, account, denom)) {
+			if (change.units() > 0L && denom.equals(change.getToken())) {
 				ans.add(change);
 			}
 		}

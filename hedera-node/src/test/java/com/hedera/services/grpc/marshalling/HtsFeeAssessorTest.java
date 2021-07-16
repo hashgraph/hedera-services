@@ -38,7 +38,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-
 @ExtendWith(MockitoExtension.class)
 class HtsFeeAssessorTest {
 	private final List<FcAssessedCustomFee> accumulator = new ArrayList<>();
@@ -56,18 +55,18 @@ class HtsFeeAssessorTest {
 	void updatesExistingChangesIfPresent() {
 		// setup:
 		final var expectedAssess = new FcAssessedCustomFee(htsFeeCollector, feeDenom, amountOfHtsFee);
+		// and:
+		final var expectedPayerChange = BalanceChange.tokenAdjust(payer, denom, -amountOfHtsFee);
+		expectedPayerChange.setCodeForInsufficientBalance(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE);
 
-		given(balanceChangeManager.changeFor(payer, denom)).willReturn(payerChange);
 		given(balanceChangeManager.changeFor(feeCollector, denom)).willReturn(collectorChange);
 
 		// when:
 		subject.assess(payer, htsFee, balanceChangeManager, accumulator);
 
 		// then:
-		verify(payerChange).adjustUnits(-amountOfHtsFee);
-		verify(payerChange).setCodeForInsufficientBalance(INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE);
-		// and:
 		verify(collectorChange).adjustUnits(+amountOfHtsFee);
+		verify(balanceChangeManager).includeChange(expectedPayerChange);
 		// and:
 		assertEquals(1, accumulator.size());
 		assertEquals(expectedAssess, accumulator.get(0));
