@@ -1602,7 +1602,8 @@ workflows:
             - attach_workspace:
                 at: /
 
-
+  # This workflow is for generating state file with large volume of NFTs
+  # It's not intended to run on a daily basis.
   GCP-Create-Large-Volume-NFTs-SavedState:
     triggers:
       - schedule:
@@ -1610,14 +1611,14 @@ workflows:
           filters:
             branches:
               only:
-                - 01373-D-create-5M-NFTs
+                - <branch-name-for-test>
     jobs:
       - build-platform-and-services
       - jrs-regression:
           context: Slack
           regression_path: /swirlds-platform/regression
           result_path: results/1N-1C/LargeVolumeNFTs
-          config_type: "daily"
+          config_type: "ci"
           workflow-name: "GCP-Create-Large-Volume-NFTs-SavedState"
           requires:
             - build-platform-and-services
@@ -2248,7 +2249,6 @@ workflows:
               branches:
                 ignore:
                   - NONE
-                  - 01373-D-create-5M-NFTs
             workflow-name: "Continuous-integration"
         - sonar-check:
             context: SonarCloud
@@ -2527,7 +2527,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression; git checkout 01373-D-create-5M-NFTs
+            cd regression;
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
@@ -2940,10 +2940,10 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "hedera-regression-test"
+        default: "hedera-regression"
       slack_summary_channel:
         type: string
-        default: "hedera-regression-test"
+        default: "hedera-regression-test-summary"
       workflow-name:
         type: string
         default: ""

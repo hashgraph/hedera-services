@@ -25,7 +25,6 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -80,16 +79,21 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  *     EET infrastructure, so you should probably not try to create more
  *     than 10M NFTs using a single run of this client; if more NFTs are
  *     needed, then please run several instances in sequence.
+ *
+ *     Also for creating even more NFTs, it will be easier to run the JRS workflow
+ *     {@code GCP-Create-Large-Volume-NFTs-SavedState.json} scheduled with CircleCi
+ *     and modify the parameters here and the parameters in the JRS workflow
+ *     and its referenced test config as well.
  *   </li>
  * </ol>
  */
 public class UniqueTokenStateSetup extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(UniqueTokenStateSetup.class);
 
-	private static final long SECS_TO_RUN = 7200;
+	private static final long SECS_TO_RUN = 4050;
 
 	private static final int MINT_TPS = 250;
-	private static final int NUM_UNIQ_TOKENS = 26_000;
+	private static final int NUM_UNIQ_TOKENS = 10_000;
 	private static final int UNIQ_TOKENS_BURST_SIZE = 1000;
 	private static final int UNIQ_TOKENS_POST_BURST_PAUSE_MS = 2500;
 	private static final int NFTS_PER_UNIQ_TOKEN = 1000;

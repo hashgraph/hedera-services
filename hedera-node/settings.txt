@@ -10,6 +10,6 @@ reconnect.asyncInputStreamTimeoutMilliseconds, 60000
 showDbStats,                                   0
 showInternalStats,                             1
 state.roundsExpired,                           500
-state.saveStatePeriod,                         60
+state.saveStatePeriod,                         300
 useLoopbackIp,                                 false
 waitAtStartup,                                 false
