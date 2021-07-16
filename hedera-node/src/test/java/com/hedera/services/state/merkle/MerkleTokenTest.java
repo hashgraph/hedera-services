@@ -29,10 +29,8 @@ import com.hedera.services.state.serdes.IoReadingFunction;
 import com.hedera.services.state.serdes.IoWritingConsumer;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.test.factories.fees.CustomFeeBuilder;
 import com.hederahashgraph.api.proto.java.CustomFee;
-import com.hederahashgraph.api.proto.java.FixedFee;
-import com.hederahashgraph.api.proto.java.Fraction;
-import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -50,6 +48,8 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.hedera.services.state.merkle.MerkleTopic.serdes;
+import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
+import static com.hedera.test.factories.fees.CustomFeeBuilder.fractional;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -96,22 +96,12 @@ class MerkleTokenTest {
 	private final long maximumUnitsToCollect = 55;
 	private final EntityId denom = new EntityId(1, 2, 3);
 	private final EntityId feeCollector = new EntityId(4, 5, 6);
-	private final CustomFee fractionalFee = CustomFee.newBuilder()
-			.setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
-			.setFractionalFee(FractionalFee.newBuilder()
-					.setFractionalAmount(Fraction.newBuilder()
-							.setNumerator(validNumerator)
-							.setDenominator(validDenominator)
-							.build())
+	private final CustomFeeBuilder builder = new CustomFeeBuilder(feeCollector.toGrpcAccountId());
+	private final CustomFee fractionalFee = builder.withFractionalFee(
+			fractional(validNumerator, validDenominator)
 					.setMinimumAmount(minimumUnitsToCollect)
-					.setMaximumAmount(maximumUnitsToCollect)
-			).build();
-	private final CustomFee fixedFee = CustomFee.newBuilder()
-			.setFeeCollectorAccountId(feeCollector.toGrpcAccountId())
-			.setFixedFee(FixedFee.newBuilder()
-					.setDenominatingTokenId(denom.toGrpcTokenId())
-					.setAmount(fixedUnitsToCollect)
-			).build();
+					.setMaximumAmount(maximumUnitsToCollect));
+	private final CustomFee fixedFee = builder.withFixedFee(fixedHts(denom.toGrpcTokenId(), fixedUnitsToCollect));
 	private final List<CustomFee> grpcFeeSchedule = List.of(fixedFee, fractionalFee);
 	private final List<FcCustomFee> feeSchedule = grpcFeeSchedule.stream()
 			.map(fee -> FcCustomFee.fromGrpc(fee, null))
@@ -569,7 +559,7 @@ class MerkleTokenTest {
 	}
 
 	@Test
-	 void objectContractPropertiesCheck() {
+	void objectContractPropertiesCheck() {
 		assertTrue(subject.hasAdminKey());
 		assertEquals(adminKey, subject.adminKey().get());
 		assertEquals(freezeKey, subject.freezeKey().get());
@@ -657,7 +647,8 @@ class MerkleTokenTest {
 	@Test
 	void toStringWorks() {
 		// setup:
-		final var desired = "MerkleToken{tokenType=FUNGIBLE_COMMON, supplyType=INFINITE, deleted=true, expiry=1234567," +
+		final var desired = "MerkleToken{tokenType=FUNGIBLE_COMMON, supplyType=INFINITE, deleted=true, " +
+				"expiry=1234567," +
 				" " +
 				"symbol=NotAnHbar, name=NotAnHbarName, memo=NotAMemo, treasury=1.2.3, maxSupply=0, " +
 				"totalSupply=1000000," +
