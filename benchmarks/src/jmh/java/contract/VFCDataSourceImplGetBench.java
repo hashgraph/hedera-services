@@ -3,10 +3,12 @@ package contract;
 import com.hedera.services.state.merkle.virtual.ContractKey;
 import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.hedera.services.store.models.Id;
+import com.swirlds.fcmap.VFCDataSource;
 import fcmmap.FCVirtualMapTestUtils;
 import org.openjdk.jmh.annotations.*;
-import rockdb.VFCDataSourceRocksDb;
+import rockdb.VFCDataSourceLmdbConcurrent;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Random;
@@ -28,7 +30,7 @@ public class VFCDataSourceImplGetBench {
     public long numEntities;
 
     // state
-    public VFCDataSourceRocksDb<ContractKey,ContractUint256> dataSource;
+    public VFCDataSource<ContractKey,ContractUint256> dataSource;
     public Random random = new Random(1234);
     public int iteration = 0;
     private ContractKey key1 = null;
@@ -50,14 +52,16 @@ public class VFCDataSourceImplGetBench {
 //            dataSource = VFCDataSourceImpl.createOnDisk(STORE_PATH,numEntities*2,
 //                    ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
 //                    ContractUint256.SERIALIZED_SIZE, ContractUint256::new, true); //ContractKey
-            dataSource = new VFCDataSourceRocksDb(
+//            dataSource = new VFCDataSourceRocksDb(
+//                    ContractKey.SERIALIZED_SIZE, ContractKey::new,
+//                    ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
+//                    STORE_PATH);
+            dataSource = new VFCDataSourceLmdbConcurrent(
                     ContractKey.SERIALIZED_SIZE, ContractKey::new,
                     ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
                     STORE_PATH);
             // create data
             if (!storeExists) {
-                // start bulk update
-                dataSource.startBulk();
 
                 long printStep = Math.min(1_000_000, numEntities / 4);
                 long START = System.currentTimeMillis();
@@ -79,8 +83,6 @@ public class VFCDataSourceImplGetBench {
                 nextLeafIndex = numEntities;
                 // reset iteration counter
                 iteration = 0;
-                // end bulk update
-                dataSource.endBulk();
             } else {
                 System.out.println("Loaded existing data");
             }
@@ -99,11 +101,11 @@ public class VFCDataSourceImplGetBench {
 
     @TearDown(Level.Trial)
     public void tearDown() {
-//        try {
+        try {
             dataSource.close();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         FCVirtualMapTestUtils.printDirectorySize(STORE_PATH);
     }
 
