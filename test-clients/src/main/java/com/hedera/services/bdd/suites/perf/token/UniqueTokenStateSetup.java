@@ -88,8 +88,8 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 
 	private static final long SECS_TO_RUN = 3600;
 
-	private static final int MINT_TPS = 200;
-	private static final int NUM_UNIQ_TOKENS = 1_800;
+	private static final int MINT_TPS = 250;
+	private static final int NUM_UNIQ_TOKENS = 12_000;
 	private static final int UNIQ_TOKENS_BURST_SIZE = 1000;
 	private static final int UNIQ_TOKENS_POST_BURST_PAUSE_MS = 2500;
 	private static final int NFTS_PER_UNIQ_TOKEN = 1000;
