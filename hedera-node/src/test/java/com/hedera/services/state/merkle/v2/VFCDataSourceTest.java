@@ -23,9 +23,9 @@ public class VFCDataSourceTest {
 //            final var leafStore = new SlotStoreInMemory(true,Integer.BYTES + LongVKey.SIZE_BYTES + Integer.BYTES + TestLeafData.SIZE_BYTES);
 //            final var index = new LongIndexInMemory<>();
 
-            final var nodeStore = new SlotStoreMemMap(false, VFCDataSourceImpl.NODE_STORE_SLOTS_SIZE, fileSize,store,"nodes","dat");
+            final var nodeStore = new SlotStoreMemMap(false, VFCDataSourceImpl.NODE_STORE_SLOTS_SIZE, fileSize,store,"nodes","dat",false);
             final var leafStore = new SlotStoreMemMap(true,Integer.BYTES + LongVKey.SIZE_BYTES + Integer.BYTES + TestLeafData.SIZE_BYTES,
-                    fileSize,store,"leaves","dat");
+                    fileSize,store,"leaves","dat",false);
             final var index = new LongIndexMemMap<LongVKey>(store, "leaf-index",512,4,LongVKey.SIZE_BYTES,4);
             return new VFCDataSourceExceptionWrapper<>(
                     new VFCDataSourceImpl<>(

@@ -52,8 +52,10 @@ public final class SlotStoreMemMap extends SlotStore {
      * @param storageDirectory The path of the directory to store storage files
      * @param filePrefix The prefix for each storage file
      * @param fileExtension The extension for each storage file, for example "dat"
+     * @param reuseIfExists when true we try and reuse existing files.
      */
-    public SlotStoreMemMap(boolean requirePreAllocation, int slotSizeBytes, int fileSize, Path storageDirectory, String filePrefix, String fileExtension)
+    public SlotStoreMemMap(boolean requirePreAllocation, int slotSizeBytes, int fileSize, Path storageDirectory,
+                           String filePrefix, String fileExtension, boolean reuseIfExists)
             throws IOException {
         super(requirePreAllocation, slotSizeBytes);
         if (fileSize <= 0) throw new IOException("fileSize must be strictly positive");
@@ -71,6 +73,20 @@ public final class SlotStoreMemMap extends SlotStore {
         if (!Files.exists(storageDirectory)) {
             // create directory
             Files.createDirectories(storageDirectory);
+        } else if(reuseIfExists) {
+            // open all existing files, we assume they are all full so we don't have to store information on
+            // free space in files
+            Files.list(storageDirectory)
+                    .filter(filePath -> filePath.getFileName().toString().startsWith(filePrefix))
+                    .mapToInt(this::fileIndexForPath)
+                    .sorted()
+                    .forEach(fileIndex -> {
+                        try {
+                            files.add(new MemMapSlotFile(slotSizeBytes, slotsPerFile, fileForIndex(fileIndex), fileIndex));
+                        } catch (IOException e) {
+                            e.printStackTrace(); // TODO something better maybe
+                        }
+                    });
         }
         // Change state to open
         open = new AtomicBoolean(true);
@@ -123,7 +139,34 @@ public final class SlotStoreMemMap extends SlotStore {
             }
         }
         MemMapSlotFile file = files.get(fileIndex);
-        return file.accessSlot(slotIndexFromLocation(location),create);
+        return file.accessSlot(slotIndexFromLocation(location));
+    }
+
+    /**
+     * Write whole slot
+     *
+     * @param location the slot location, can be a existing slot or a new slot that we need to make available
+     * @param create   if true then a new slot will be created if it did not already exist.
+     * @param slotData the data to write to the slot
+     */
+    @Override
+    public void writeSlot(long location, boolean create, byte[] slotData) throws IOException {
+        int fileIndex = fileIndexFromLocation(location);
+        if (fileIndex >= files.size()) {
+            // file doesn't exist yet
+            if (create) {
+                // create new files till we have enough
+                synchronized (this) {
+                    for (int newFileIndex = files.size(); newFileIndex <= fileIndex; newFileIndex++) {
+                        files.add(new MemMapSlotFile(slotSizeBytes, slotsPerFile, fileForIndex(newFileIndex), newFileIndex));
+                    }
+                }
+            } else {
+                throw new IOException("Tried to write to non-existent slot ["+location+"]");
+            }
+        }
+        MemMapSlotFile file = files.get(fileIndex);
+        file.writeSlot(slotIndexFromLocation(location), slotData);
     }
 
     /**
@@ -160,7 +203,7 @@ public final class SlotStoreMemMap extends SlotStore {
             // get index for new file
             final var newIndex = files.size();
             // create new file
-            MemMapSlotFile newFile = null;
+            MemMapSlotFile newFile;
             try {
                 newFile = new MemMapSlotFile(slotSizeBytes, slotsPerFile, fileForIndex(newIndex), newIndex);
                 // add to files
@@ -197,7 +240,10 @@ public final class SlotStoreMemMap extends SlotStore {
      */
     @Override
     public void deleteSlot(long location) throws IOException {
-        // don't care I think
+        int fileIndex = fileIndexFromLocation(location);
+        if (fileIndex < files.size()) {
+            files.get(fileIndex).deleteSlot(slotIndexFromLocation(location));
+        }
     }
 
     //==================================================================================================================
@@ -211,6 +257,18 @@ public final class SlotStoreMemMap extends SlotStore {
      */
     private Path fileForIndex(int index) {
         return storageDirectory.resolve(filePrefix + index + "." + fileExtension);
+    }
+
+    /**
+     * Get the file index from the file path
+     *
+     * @param filePath the path to slot store file
+     * @return the index of the file from the file name
+     */
+    private int fileIndexForPath(Path filePath) {
+        final String fileNameStr = filePath.getFileName().toString();
+        final String fileIndexStr = fileNameStr.substring(filePrefix.length(),fileNameStr.length()-fileExtension.length()-1);
+        return Integer.parseInt(fileIndexStr);
     }
 
     /**
@@ -288,7 +346,7 @@ public final class SlotStoreMemMap extends SlotStore {
         private final AtomicInteger nextFreeSlotAtEnd = new AtomicInteger(0);
 
         /**
-         * Create MapDataFile, you need to call open() after to actually open/create file.
+         * Create MapDataFile, with a new file
          *
          * @param dataSize Data size in bytes
          * @param size     Number of key/values pairs to store in the file
@@ -300,11 +358,14 @@ public final class SlotStoreMemMap extends SlotStore {
             this.fileIndex = fileIndex;
             // calculate total file size in bytes
             int fileSize = this.slotSize * size;
-            // check file doesn't exist as we want to create it
-            if (Files.exists(file))
-                throw new IOException("File [" + file.toAbsolutePath().toFile() + "] already existed and should not have.");
-            // create file
-            PersistenceUtils.createFile(file,fileSize);
+            // check file doesn't exist and create if needed
+            if (!Files.exists(file)) {
+                // create file
+                PersistenceUtils.createFile(file, fileSize);
+            } else {
+                // mark whole file as full
+                nextFreeSlotAtEnd.set(size);
+            }
             // open file
             fileChannel = FileChannel.open(file,
                     StandardOpenOption.WRITE,
@@ -315,6 +376,7 @@ public final class SlotStoreMemMap extends SlotStore {
             // mark file as open
             fileIsOpen.set(true);
         }
+
 
         //==================================================================================================================
         // Public API methods
@@ -346,11 +408,10 @@ public final class SlotStoreMemMap extends SlotStore {
          * Access a slot for reading or writing.
          *
          * @param slotIndex the slot location, can be a existing slot or a new slot that we need to make available
-         * @param create    if true then a new slot will be created if it did not already exist.
          * @return a bytebuffer backed directly to storage, with position 0 being beginning of slot and being rewind-ed or
          * null if create=false and location did not exist
          */
-        public ByteBuffer accessSlot(int slotIndex, boolean create) throws IOException {
+        public ByteBuffer accessSlot(int slotIndex) throws IOException {
             if (slotIndex > size)
                 throw new IOException("Tried to write to slot index [" + slotIndex + "] which is greater than file size [" + size + "].");
             if (slotIndex < 0)
@@ -359,6 +420,22 @@ public final class SlotStoreMemMap extends SlotStore {
             subBuffer.position(slotIndex * slotSize);
             subBuffer.limit((slotIndex * slotSize) + slotSize);
             return subBuffer;
+        }
+
+
+        /**
+         * Access a slot for reading or writing.
+         *
+         * @param slotIndex the slot location, can be a existing slot or a new slot that we need to make available
+         * @param slotData the data to write to the slot
+         */
+        public void writeSlot(int slotIndex, byte[] slotData) throws IOException {
+            if (slotIndex > size)
+                throw new IOException("Tried to write to slot index [" + slotIndex + "] which is greater than file size [" + size + "].");
+            if (slotIndex < 0)
+                throw new IOException("Tried to write to slot index [" + slotIndex + "] which is less than zero.");
+            mappedBuffer.position(slotIndex * slotSize);
+            mappedBuffer.put(slotData,0, slotSize);
         }
 
         /**
@@ -388,10 +465,14 @@ public final class SlotStoreMemMap extends SlotStore {
         /**
          * Delete a slot, marking it as empty
          *
-         * @param location the file and slot location to delete
+         * @param slotIndex the location to delete
          */
-        public void deleteSlot(long location) throws IOException {
-            // don't care LOL
+        public void deleteSlot(int slotIndex) throws IOException {
+            if (slotIndex > size)
+                throw new IOException("Tried to delete slot index [" + slotIndex + "] which is greater than file size [" + size + "].");
+            if (slotIndex < 0)
+                throw new IOException("Tried to delete slot index [" + slotIndex + "] which is less than zero.");
+            freeSlotsForReuse.add(slotIndex);
         }
     }
 }

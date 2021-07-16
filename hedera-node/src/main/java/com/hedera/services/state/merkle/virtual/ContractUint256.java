@@ -14,6 +14,7 @@ import java.util.Objects;
 /**
  * Representation of a 256bit unsigned int, stored internally as 4 longs.
  */
+@SuppressWarnings({"PointlessBitwiseExpression", "PointlessArithmeticExpression"})
 public class ContractUint256 implements VKey, VValue {
     public static final int SERIALIZED_SIZE = Long.BYTES * 4; // 32 for BigInt of 256 bytes
     private long value_0 = 0; // low order
@@ -100,6 +101,76 @@ public class ContractUint256 implements VKey, VValue {
         value_2 = byteBuffer.getLong();
         value_1 = byteBuffer.getLong();
         value_0 = byteBuffer.getLong();
+    }
+
+    public void serialize(byte[] data, int offset) throws IOException {
+        data[offset+0] = (byte)(value_3 >>> 56);
+        data[offset+1] = (byte)(value_3 >>> 48);
+        data[offset+2] = (byte)(value_3 >>> 40);
+        data[offset+3] = (byte)(value_3 >>> 32);
+        data[offset+4] = (byte)(value_3 >>> 24);
+        data[offset+5] = (byte)(value_3 >>> 16);
+        data[offset+6] = (byte)(value_3 >>>  8);
+        data[offset+7] = (byte)(value_3 >>>  0);
+        data[offset+8] = (byte)(value_2 >>> 56);
+        data[offset+9] = (byte)(value_2 >>> 48);
+        data[offset+10] = (byte)(value_2 >>> 40);
+        data[offset+11] = (byte)(value_2 >>> 32);
+        data[offset+12] = (byte)(value_2 >>> 24);
+        data[offset+13] = (byte)(value_2 >>> 16);
+        data[offset+14] = (byte)(value_2 >>>  8);
+        data[offset+15] = (byte)(value_2 >>>  0);
+        data[offset+16] = (byte)(value_1 >>> 56);
+        data[offset+17] = (byte)(value_1 >>> 48);
+        data[offset+18] = (byte)(value_1 >>> 40);
+        data[offset+19] = (byte)(value_1 >>> 32);
+        data[offset+20] = (byte)(value_1 >>> 24);
+        data[offset+21] = (byte)(value_1 >>> 16);
+        data[offset+22] = (byte)(value_1 >>>  8);
+        data[offset+23] = (byte)(value_1 >>>  0);
+        data[offset+24] = (byte)(value_0 >>> 56);
+        data[offset+25] = (byte)(value_0 >>> 48);
+        data[offset+26] = (byte)(value_0 >>> 40);
+        data[offset+27] = (byte)(value_0 >>> 32);
+        data[offset+28] = (byte)(value_0 >>> 24);
+        data[offset+29] = (byte)(value_0 >>> 16);
+        data[offset+30] = (byte)(value_0 >>>  8);
+        data[offset+31] = (byte)(value_0 >>>  0);
+    }
+
+    public void deserialize(byte[] data, int offset) throws IOException {
+        value_3 =   (((long)data[offset+0] << 56) +
+                    ((long)(data[offset+1] & 255) << 48) +
+                    ((long)(data[offset+2] & 255) << 40) +
+                    ((long)(data[offset+3] & 255) << 32) +
+                    ((long)(data[offset+4] & 255) << 24) +
+                    ((data[offset+5] & 255) << 16) +
+                    ((data[offset+6] & 255) <<  8) +
+                    ((data[offset+7] & 255) <<  0));
+        value_2 =   (((long)data[offset+8] << 56) +
+                ((long)(data[offset+9] & 255) << 48) +
+                ((long)(data[offset+10] & 255) << 40) +
+                ((long)(data[offset+11] & 255) << 32) +
+                ((long)(data[offset+12] & 255) << 24) +
+                ((data[offset+13] & 255) << 16) +
+                ((data[offset+14] & 255) <<  8) +
+                ((data[offset+15] & 255) <<  0));
+        value_1 =   (((long)data[offset+16] << 56) +
+                ((long)(data[offset+17] & 255) << 48) +
+                ((long)(data[offset+18] & 255) << 40) +
+                ((long)(data[offset+19] & 255) << 32) +
+                ((long)(data[offset+20] & 255) << 24) +
+                ((data[offset+21] & 255) << 16) +
+                ((data[offset+22] & 255) <<  8) +
+                ((data[offset+23] & 255) <<  0));
+        value_0 =   (((long)data[offset+24] << 56) +
+                ((long)(data[offset+25] & 255) << 48) +
+                ((long)(data[offset+26] & 255) << 40) +
+                ((long)(data[offset+27] & 255) << 32) +
+                ((long)(data[offset+28] & 255) << 24) +
+                ((data[offset+29] & 255) << 16) +
+                ((data[offset+30] & 255) <<  8) +
+                ((data[offset+31] & 255) <<  0));
     }
 
     @Override

@@ -1,6 +1,5 @@
 package contract;
 
-import com.hedera.services.state.merkle.virtual.ContractKey;
 import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.hedera.services.store.models.Id;
 import fcmmap.FCVirtualMapTestUtils;
@@ -19,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 @Fork(1)
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
-public class VFCDataSourceImplGetBench {
+public class VFCDataSourceImplContractContractBench {
     private static final long MB = 1024*1024;
     public static final Path STORE_PATH = Path.of("store");
     public static final Id ID = new Id(1,2,3);
@@ -28,11 +27,11 @@ public class VFCDataSourceImplGetBench {
     public long numEntities;
 
     // state
-    public VFCDataSourceRocksDb<ContractKey,ContractUint256> dataSource;
+    public VFCDataSourceRocksDb<ContractUint256,ContractUint256> dataSource;
     public Random random = new Random(1234);
     public int iteration = 0;
-    private ContractKey key1 = null;
-    private ContractKey key2 = null;
+    private ContractUint256 key1 = null;
+    private ContractUint256 key2 = null;
     private long randomLeafIndex1;
     private long randomLeafIndex2;
     private long randomNodeIndex1;
@@ -51,7 +50,7 @@ public class VFCDataSourceImplGetBench {
 //                    ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
 //                    ContractUint256.SERIALIZED_SIZE, ContractUint256::new, true); //ContractKey
             dataSource = new VFCDataSourceRocksDb(
-                    ContractKey.SERIALIZED_SIZE, ContractKey::new,
+                    ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
                     ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
                     STORE_PATH);
             // create data
@@ -74,7 +73,7 @@ public class VFCDataSourceImplGetBench {
                         printUpdate(START, printStep, ContractUint256.SERIALIZED_SIZE, "Created " + i + " Leaves");
                         START = System.currentTimeMillis();
                     }
-                    dataSource.addLeaf(numEntities + i, new ContractKey(new Id(0,0,i),new ContractUint256(i)), new ContractUint256(i), FCVirtualMapTestUtils.hash((int) i));
+                    dataSource.addLeaf(numEntities + i, new ContractUint256(i), new ContractUint256(i), FCVirtualMapTestUtils.hash((int) i));
                 }
                 nextLeafIndex = numEntities;
                 // reset iteration counter
@@ -113,8 +112,8 @@ public class VFCDataSourceImplGetBench {
         randomNodeIndex2 = (long)(random.nextDouble()*numEntities);
         randomLeafIndex1 = numEntities + randomNodeIndex1;
         randomLeafIndex2 = numEntities + randomNodeIndex2;
-        key1 = new ContractKey(new Id(0,0,randomNodeIndex1),new ContractUint256(randomNodeIndex1));
-        key2 = new ContractKey(new Id(0,0,randomNodeIndex2),new ContractUint256(randomNodeIndex2));
+        key1 = new ContractUint256(randomNodeIndex1);
+        key2 = new ContractUint256(randomNodeIndex2);
     }
 
 
@@ -130,7 +129,7 @@ public class VFCDataSourceImplGetBench {
 
     @Benchmark
     public void w2_addLeaf() throws Exception {
-        dataSource.addLeaf(numEntities + nextLeafIndex, new ContractKey(new Id(0,0,nextLeafIndex),new ContractUint256(nextLeafIndex)), new ContractUint256(nextLeafIndex), FCVirtualMapTestUtils.hash((int) nextLeafIndex));
+        dataSource.addLeaf(numEntities + nextLeafIndex, new ContractUint256(nextLeafIndex), new ContractUint256(nextLeafIndex), FCVirtualMapTestUtils.hash((int) nextLeafIndex));
         nextLeafIndex++;
     }
 
