@@ -1,6 +1,6 @@
 # Characterization of HIP-18 fee charging
 
-In this document we give five case studies of `CryptoTransfer`s
+In this document we present five case studies of `CryptoTransfer`s
 that involve a HTS token with a custom fee schedule. We use the
 `TransactionRecord`s of these transfers to characterize how 
 Services charges custom fees as defined in HIP-18.
