@@ -1,44 +1,16 @@
 package contract;
 
-import com.hedera.services.state.merkle.v2.VFCDataSourceImpl;
-import com.hedera.services.state.merkle.v2.persistance.LongIndexInMemory;
-import com.hedera.services.state.merkle.v2.persistance.LongIndexMemMap;
-import com.hedera.services.state.merkle.v2.persistance.SlotStoreInMemory;
-import com.hedera.services.state.merkle.v2.persistance.SlotStoreMemMap;
 import com.hedera.services.state.merkle.virtual.ContractUint256;
-import com.swirlds.common.crypto.CryptoFactory;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.fcmap.VFCMap;
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.OutputTimeUnit;
-import org.openjdk.jmh.annotations.Param;
-import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.TearDown;
-import rockdb.VFCDataSourceRocksDb;
+import org.openjdk.jmh.annotations.*;
+import rockdb.VFCDataSourceRocksDbConcurrent;
 
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.Exchanger;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.*;
 
 /**
  * Microbenchmark tests for the VirtualMap. These benchmarks are just of the tree itself,
@@ -53,7 +25,8 @@ import java.util.concurrent.locks.ReentrantLock;
 public class VFCMapBench {
     private static final int FILE_SIZE = 32*1024*1024;
 
-    @Param({"5", "10", "15", "20", "25"})
+//    @Param({"5", "10", "15", "20", "25"})
+    @Param({"5"})
     public int numUpdatesPerOperation;
 
     @Param({"10000"})
@@ -67,12 +40,12 @@ public class VFCMapBench {
 
     @Param("true")
     public boolean preFill;
-
-    @Param({"true", "false"})
-    public boolean inMemoryIndex;
-
-    @Param({"true", "false"})
-    public boolean inMemoryStore;
+//
+//    @Param({"true", "false"})
+//    public boolean inMemoryIndex;
+//
+//    @Param({"true", "false"})
+//    public boolean inMemoryStore;
 
     private final Random rand = new Random(1234);
     private VFCMap<ContractUint256, ContractUint256> contractMap;
@@ -121,13 +94,13 @@ public class VFCMapBench {
                 }
             }
         });
-        final var numBinsAsPowerOf2 = Long.highestOneBit(numEntities);
-        final var keysPerBin = 4;
-        final var keySize = ContractUint256.SERIALIZED_SIZE;
-        final var sizeOfBin = (Integer.BYTES+(keysPerBin*(Integer.BYTES+Long.BYTES+keySize)));
-        final var numFilesForIndex = (numBinsAsPowerOf2 * sizeOfBin) / (1024*1024*1024);
-        final var numFilesAsPowerOf2 = Math.max(2, Long.highestOneBit(numFilesForIndex * 2));
-        final var ds = new VFCDataSourceRocksDb<>(
+//        final var numBinsAsPowerOf2 = Long.highestOneBit(numEntities);
+//        final var keysPerBin = 4;
+//        final var keySize = ContractUint256.SERIALIZED_SIZE;
+//        final var sizeOfBin = (Integer.BYTES+(keysPerBin*(Integer.BYTES+Long.BYTES+keySize)));
+//        final var numFilesForIndex = (numBinsAsPowerOf2 * sizeOfBin) / (1024*1024*1024);
+//        final var numFilesAsPowerOf2 = Math.max(2, Long.highestOneBit(numFilesForIndex * 2));
+        final var ds = new VFCDataSourceRocksDbConcurrent<>(
                 ContractUint256.SERIALIZED_SIZE,
                 ContractUint256::new,
                 ContractUint256.SERIALIZED_SIZE,
@@ -135,7 +108,7 @@ public class VFCMapBench {
                 Path.of("data"));
         contractMap = new VFCMap<>(ds);
 
-        System.out.println("\nUsing inMemoryIndex = " + inMemoryIndex+"  -- inMemoryStore = " + inMemoryStore);
+//        System.out.println("\nUsing inMemoryIndex = " + inMemoryIndex+"  -- inMemoryStore = " + inMemoryStore);
 
         if (preFill) {
             for (int i = 0; i < numEntities; i++) {
