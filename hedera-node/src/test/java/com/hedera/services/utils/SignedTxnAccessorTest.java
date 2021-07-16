@@ -181,10 +181,22 @@ class SignedTxnAccessorTest {
 		assertEquals(SubType.TOKEN_NON_FUNGIBLE_UNIQUE , subject.availXferUsageMeta().getSubType());
 		assertEquals(subject.availXferUsageMeta().getSubType(), subject.getSubType());
 
+		// set customFee
+		var xferUsageMeta = subject.availXferUsageMeta();
+		xferUsageMeta.setCustomFeeHbarTransfers(1);
+		assertEquals(SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES, subject.getSubType());
+		xferUsageMeta.setCustomFeeHbarTransfers(0);
+
 		txn = buildTokenTransferTxn(fungibleTokenXfers);
 		subject = new SignedTxnAccessor(txn);
 		assertEquals(SubType.TOKEN_FUNGIBLE_COMMON , subject.availXferUsageMeta().getSubType());
 		assertEquals(subject.availXferUsageMeta().getSubType(), subject.getSubType());
+
+		// set customFee
+		xferUsageMeta = subject.availXferUsageMeta();
+		xferUsageMeta.setCustomFeeTokenTransfers(1);
+		assertEquals(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES, subject.getSubType());
+		xferUsageMeta.setCustomFeeTokenTransfers(0);
 
 		txn = buildDefaultCryptoCreateTxn();
 		subject = new SignedTxnAccessor(txn);

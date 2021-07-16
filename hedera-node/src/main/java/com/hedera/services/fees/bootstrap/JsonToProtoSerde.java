@@ -146,8 +146,12 @@ public class JsonToProtoSerde {
 		switch (subType){
 			case "TOKEN_FUNGIBLE_COMMON":
 				return SubType.TOKEN_FUNGIBLE_COMMON;
+			case "TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES":
+				return SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
 			case "TOKEN_NON_FUNGIBLE_UNIQUE":
 				return SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+			case "TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES":
+				return SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 			default:
 				return SubType.DEFAULT;
 		}
