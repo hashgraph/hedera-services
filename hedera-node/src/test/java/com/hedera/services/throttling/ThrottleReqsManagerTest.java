@@ -53,6 +53,24 @@ class ThrottleReqsManagerTest {
 	}
 
 	@Test
+	void usesExpectedCapacityWithAllReqsAndScaleFactor() {
+		// setup:
+		final var numScale = 3;
+		final var denomScale = 2;
+		final var modifiedAReq = (aReq * numScale) / denomScale;
+		final var modifiedBReq = (bReq * numScale) / denomScale;
+
+		// when:
+		var result = subject.allReqsMetAt(now, numScale, denomScale);
+
+		// then:
+		assertTrue(result);
+		// and:
+		assertEquals(modifiedAReq * BucketThrottle.capacityUnitsPerTxn(), a.usageSnapshot().used());
+		assertEquals(modifiedBReq * BucketThrottle.capacityUnitsPerTxn(), b.usageSnapshot().used());
+	}
+
+	@Test
 	void usesExpectedCapacityWithAllReqsMet() {
 		// when:
 		var result = subject.allReqsMetAt(now);

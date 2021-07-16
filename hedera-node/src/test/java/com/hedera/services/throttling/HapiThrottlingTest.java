@@ -52,7 +52,7 @@ class HapiThrottlingTest {
 		given(delegate.shouldThrottle(any(), any())).willReturn(true);
 
 		// when:
-		var ans = subject.shouldThrottle(CryptoTransfer);
+		var ans = subject.shouldThrottleQuery(CryptoTransfer);
 
 		// then:
 		assertTrue(ans);

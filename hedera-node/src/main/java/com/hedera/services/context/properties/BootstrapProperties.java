@@ -357,6 +357,7 @@ public class BootstrapProperties implements PropertySource {
 			entry("tokens.maxTokenNameUtf8Bytes", AS_INT),
 			entry("tokens.nfts.maxMetadataBytes", AS_INT),
 			entry("tokens.nfts.maxBatchSizeBurn", AS_INT),
+			entry("tokens.nfts.maxMintsPerSec", AS_INT),
 			entry("tokens.nfts.maxBatchSizeWipe", AS_INT),
 			entry("tokens.nfts.maxBatchSizeMint", AS_INT),
 			entry("tokens.nfts.maxAllowedMints", AS_LONG),

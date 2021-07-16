@@ -22,6 +22,7 @@ package com.hedera.services.throttling;
 
 import com.hedera.services.throttles.BucketThrottle;
 import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -44,6 +45,7 @@ import java.util.List;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -58,13 +60,15 @@ class DeterministicThrottlingTest {
 	private int n = 2;
 	private Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 123);
 
+	@Mock
+	private TxnAccessor accessor;
+	@Mock
+	private ThrottleReqsManager manager;
+
 	@Inject
 	private LogCaptor logCaptor;
 	@LoggingSubject
 	private DeterministicThrottling subject;
-
-	@Mock
-	ThrottleReqsManager manager;
 
 	@BeforeEach
 	void setUp() {
@@ -76,10 +80,12 @@ class DeterministicThrottlingTest {
 		// setup:
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 
+		givenFunction(ContractCall);
+
 		// when:
 		subject.rebuildFor(defs);
 		// and:
-		var ans = subject.shouldThrottle(ContractCall, consensusNow);
+		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
 		var throttlesNow = subject.activeThrottlesFor(ContractCall);
 		// and:
 		var aNow = throttlesNow.get(0);
@@ -149,8 +155,10 @@ class DeterministicThrottlingTest {
 
 	@Test
 	public void alwaysRejectsIfNoThrottle() {
+		givenFunction(ContractCall);
+
 		// expect:
-		assertTrue(subject.shouldThrottle(ContractCall, consensusNow));
+		assertTrue(subject.shouldThrottleTxn(accessor, consensusNow));
 	}
 
 	@Test
@@ -163,16 +171,22 @@ class DeterministicThrottlingTest {
 		// setup:
 		subject.setFunctionReqs(reqsManager());
 
+		givenFunction(CryptoTransfer);
 		given(manager.allReqsMetAt(consensusNow)).willReturn(true);
 
 		// then:
-		assertFalse(subject.shouldThrottle(CryptoTransfer, consensusNow));
+		assertFalse(subject.shouldThrottleTxn(accessor, consensusNow));
 	}
 
 	@Test
 	void requiresExplicitTimestamp() {
 		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottle(CryptoTransfer));
+		assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottleTxn(accessor));
+		assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottleQuery(FileGetInfo));
+	}
+
+	private void givenFunction(HederaFunctionality functionality) {
+		given(accessor.getFunction()).willReturn(functionality);
 	}
 
 	private EnumMap<HederaFunctionality, ThrottleReqsManager> reqsManager() {

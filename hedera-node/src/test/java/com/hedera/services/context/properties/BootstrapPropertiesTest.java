@@ -163,7 +163,8 @@ class BootstrapPropertiesTest {
 			entry("tokens.nfts.maxBatchSizeMint", 10),
 			entry("tokens.nfts.maxBatchSizeBurn", 10),
 			entry("tokens.nfts.maxMetadataBytes", 100),
-			entry("tokens.nfts.maxAllowedMints", 5000000L)
+			entry("tokens.nfts.maxAllowedMints", 5000000L),
+			entry("tokens.nfts.maxMintsPerSec", 1200)
 	);
 
 	@BeforeEach

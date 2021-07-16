@@ -147,7 +147,7 @@ public class NetworkCtxManager {
 	public void prepareForIncorporating(HederaFunctionality op)	 {
 		/* This is only to monitor the current network usage for automated
 		congestion pricing; we don't actually throttle consensus transactions. */
-		handleThrottling.shouldThrottle(op);
+		handleThrottling.shouldThrottleQuery(op);
 
 		feeMultiplierSource.updateMultiplier(networkCtx.get().consensusTimeOfLastHandledTxn());
 	}

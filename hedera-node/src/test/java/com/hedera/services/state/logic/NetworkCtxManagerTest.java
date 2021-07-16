@@ -143,7 +143,7 @@ class NetworkCtxManagerTest {
 		subject.prepareForIncorporating(TokenMint);
 
 		// then:
-		verify(handleThrottling).shouldThrottle(TokenMint);
+		verify(handleThrottling).shouldThrottleQuery(TokenMint);
 		verify(feeMultiplierSource).updateMultiplier(sometime);
 	}
 

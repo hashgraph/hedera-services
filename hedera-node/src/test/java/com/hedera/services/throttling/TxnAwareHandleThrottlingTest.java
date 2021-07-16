@@ -60,7 +60,7 @@ class TxnAwareHandleThrottlingTest {
 		given(delegate.shouldThrottle(HederaFunctionality.CryptoTransfer, consensusTime)).willReturn(true);
 
 		// expect:
-		assertTrue(subject.shouldThrottle(HederaFunctionality.CryptoTransfer));
+		assertTrue(subject.shouldThrottleQuery(HederaFunctionality.CryptoTransfer));
 		// and:
 		verify(delegate).shouldThrottle(HederaFunctionality.CryptoTransfer, consensusTime);
 	}

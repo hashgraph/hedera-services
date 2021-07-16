@@ -37,11 +37,23 @@ public class ThrottleReqsManager {
 		passedReq = new boolean[allReqs.size()];
 	}
 
+	public boolean allReqsMetAt(Instant now, int numScale, int denomScale) {
+		return allVerboseReqsMetAt(now, true, numScale, denomScale);
+	}
+
 	public boolean allReqsMetAt(Instant now) {
+		return allVerboseReqsMetAt(now, false, 0, 0);
+	}
+
+	private boolean allVerboseReqsMetAt(Instant now, boolean useScale, int numScale, int denomScale) {
 		var allPassed = true;
 		for (int i = 0; i < passedReq.length; i++) {
 			var req = allReqs.get(i);
-			passedReq[i] = req.getLeft().allow(req.getRight(), now);
+			var opsRequired = req.getRight();
+			if (useScale) {
+				opsRequired = (opsRequired * numScale) / denomScale;
+			}
+			passedReq[i] = req.getLeft().allow(opsRequired, now);
 			allPassed &= passedReq[i];
 		}
 

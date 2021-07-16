@@ -82,6 +82,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(40, subject.maxNftQueryRange());
 		assertEquals(41, subject.maxNftMetadataBytes());
 		assertEquals(42, subject.maxTokenNameUtf8Bytes());
+		assertEquals(44, subject.maxNftMintsPerSec());
 	}
 
 	@Test
@@ -276,6 +277,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getIntProperty("tokens.nfts.maxMetadataBytes")).willReturn(i + 40);
 		given(properties.getIntProperty("tokens.maxTokenNameUtf8Bytes")).willReturn(i + 41);
 		given(properties.getLongProperty("tokens.nfts.maxAllowedMints")).willReturn(i + 42L);
+		given(properties.getIntProperty("tokens.nfts.maxMintsPerSec")).willReturn(i + 43);
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {

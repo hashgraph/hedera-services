@@ -22,6 +22,7 @@ package com.hedera.services.throttling;
 
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
 import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -48,17 +49,28 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	}
 
 	@Override
-	public boolean shouldThrottle(HederaFunctionality function) {
+	public boolean shouldThrottleTxn(TxnAccessor accessor) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public boolean shouldThrottle(HederaFunctionality function, Instant now) {
+	public boolean shouldThrottleQuery(HederaFunctionality queryFunction) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean shouldThrottleTxn(TxnAccessor accessor, Instant now) {
+		final var function = accessor.getFunction();
 		ThrottleReqsManager manager;
 		if ((manager = functionReqs.get(function)) == null) {
 			return true;
 		}
 		return !manager.allReqsMetAt(now);
+	}
+
+	@Override
+	public boolean shouldThrottle(HederaFunctionality queryFunction, Instant now) {
+		throw new AssertionError("Not implemented!");
 	}
 
 	@Override

@@ -22,6 +22,7 @@ package com.hedera.services.throttling;
 
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
 import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -39,8 +40,13 @@ public class HapiThrottling implements FunctionalityThrottling {
 	}
 
 	@Override
-	public synchronized boolean shouldThrottle(HederaFunctionality function) {
-		return delegate.shouldThrottle(function, Instant.now());
+	public synchronized boolean shouldThrottleTxn(TxnAccessor accessor) {
+		return delegate.shouldThrottleTxn(accessor, Instant.now());
+	}
+
+	@Override
+	public boolean shouldThrottleQuery(HederaFunctionality queryFunction) {
+		throw new AssertionError("Not implemented!");
 	}
 
 	@Override
