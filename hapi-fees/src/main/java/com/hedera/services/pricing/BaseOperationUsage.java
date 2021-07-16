@@ -107,19 +107,25 @@ class BaseOperationUsage {
 						return nftCryptoTransfer();
 					case TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES:
 						return nftCryptoTransferWithCustomFee();
+					default:
+						break;
 				}
+				break;
 			case TokenMint:
 				if (type == TOKEN_NON_FUNGIBLE_UNIQUE) {
 					return uniqueTokenMint();
 				}
+				break;
 			case TokenAccountWipe:
 				if (type == TOKEN_NON_FUNGIBLE_UNIQUE) {
 					return uniqueTokenWipe();
 				}
+				break;
 			case TokenBurn:
 				if (type == TOKEN_NON_FUNGIBLE_UNIQUE) {
 					return uniqueTokenBurn();
 				}
+				break;
 			case ConsensusSubmitMessage:
 				return submitMessage();
 			case TokenFeeScheduleUpdate:
