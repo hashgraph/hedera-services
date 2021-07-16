@@ -34,42 +34,43 @@ fixed fee, the ledger charges the fixed ℏ fee to the account
 sending those units. Hence Alice is charged 1ℏ, which goes to
 the custom fee collection account of the `fixedHbarFeeToken`.
 
-In the record excerpt below, we see Alice (`0.0.1013`) paying to
-transfer the NFT with serial number 1 to Bob as (`0.0.1014`); the fee 
-collection account is account `0.0.1015`. Besides paying the Hedera 
-fees, Alice pays the 1ℏ fee to the collection account. The final 
-`assessed_custom_fees` section shows this explicitly (since no
-`token_id` is set, the denomination is ℏ).
+In the record excerpt below, we see Alice (`0.0.1015`) paying to
+transfer an NFT with serial number 1 to Bob (`0.0.1016`); the 
+unique token's id is `0.0.1018`, and its fee collection account 
+is `0.0.1017`. Besides paying the Hedera fees, Alice pays the 
+1ℏ fee to the collection account. The final `assessed_custom_fees` 
+section shows this explicitly (since no `token_id` is set, the 
+denomination is ℏ).
 ```
 transferList {
   accountAmounts {
     accountID { accountNum: 3 }
-    amount: 37977
+    amount: 75779
   }
   accountAmounts {
     accountID { accountNum: 98 }
-    amount: 797398
+    amount: 1590886
   }
   accountAmounts {
-    accountID { accountNum: 1013 }
-    amount: -100835375
+    accountID { accountNum: 1015 }
+    amount: -101666665
   }
   accountAmounts {
-    accountID { accountNum: 1015 } <<-- Fee collection account gets 1ℏ
+    accountID { accountNum: 1017 } <<-- Fee collection account gets 1ℏ
     amount: 100000000
   }
 }
 tokenTransferLists {
-  token { tokenNum: 1016 }
+  token { tokenNum: 1018 }
   nftTransfers {
-    senderAccountID { accountNum: 1013 }
-    receiverAccountID { accountNum: 1014 }
+    senderAccountID { accountNum: 1015 }
+    receiverAccountID { accountNum: 1016 }
     serialNumber: 1
   }
 }
 assessed_custom_fees {
   amount: 100000000
-  fee_collector_account_id { accountNum: 1003 }
+  fee_collector_account_id { accountNum: 1017 }
 }
 ```
 
@@ -93,43 +94,43 @@ token.
 transferList {
   accountAmounts {
     accountID { accountNum: 3 }
-    amount: 61718
+    amount: 123228
   }
   accountAmounts {
     accountID { accountNum: 98 }
-    amount: 1247646
+    amount: 2491021
   }
   accountAmounts {
-    accountID { accountNum: 1018 }
-    amount: -1309364
+    accountID { accountNum: 1019 }
+    amount: -2614249
   }
 }
 tokenTransferLists {
-  token { tokenNum: 1020 } <<-- The custom fee token
+  token { tokenNum: 1022 } <<-- The custom fee token
   transfers {
-    accountID { accountNum: 1018 }
+    accountID { accountNum: 1019 }
     amount: -2
   }
   transfers {
-    accountID { accountNum: 1020 }
+    accountID { accountNum: 1021 }
     amount: 2
   }
 }
 tokenTransferLists {
-  token { tokenNum: 1022 } <<-- The original token
+  token { tokenNum: 1023 } <<-- The original token
   transfers {
-    accountID { accountNum: 1018 }
+    accountID { accountNum: 1019 }
     amount: -100
   }
   transfers {
-    accountID { accountNum: 1019 }
+    accountID { accountNum: 1020 }
     amount: 100
   }
 }
 assessed_custom_fees {
   amount: 2
-  token_id { tokenNum: 1021 }
-  fee_collector_account_id { accountNum: 1020 }
+  token_id { tokenNum: 1022 }
+  fee_collector_account_id { accountNum: 1021 }
 }
 ```
 
