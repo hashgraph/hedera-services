@@ -4,7 +4,7 @@ import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.fcmap.VFCMap;
 import org.openjdk.jmh.annotations.*;
-import rockdb.VFCDataSourceRocksDbConcurrent;
+import rockdb.VFCDataSourceRocksDb;
 
 import java.math.BigInteger;
 import java.nio.file.Files;
@@ -100,7 +100,7 @@ public class VFCMapBench {
 //        final var sizeOfBin = (Integer.BYTES+(keysPerBin*(Integer.BYTES+Long.BYTES+keySize)));
 //        final var numFilesForIndex = (numBinsAsPowerOf2 * sizeOfBin) / (1024*1024*1024);
 //        final var numFilesAsPowerOf2 = Math.max(2, Long.highestOneBit(numFilesForIndex * 2));
-        final var ds = new VFCDataSourceRocksDbConcurrent<>(
+        final var ds = new VFCDataSourceRocksDb<>(
                 ContractUint256.SERIALIZED_SIZE,
                 ContractUint256::new,
                 ContractUint256.SERIALIZED_SIZE,

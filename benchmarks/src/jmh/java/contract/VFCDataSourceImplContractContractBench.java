@@ -55,8 +55,6 @@ public class VFCDataSourceImplContractContractBench {
                     STORE_PATH);
             // create data
             if (!storeExists) {
-                // start bulk update
-                dataSource.startBulk();
 
                 long printStep = Math.min(1_000_000, numEntities / 4);
                 long START = System.currentTimeMillis();
@@ -78,8 +76,6 @@ public class VFCDataSourceImplContractContractBench {
                 nextLeafIndex = numEntities;
                 // reset iteration counter
                 iteration = 0;
-                // end bulk update
-                dataSource.endBulk();
             } else {
                 System.out.println("Loaded existing data");
             }
