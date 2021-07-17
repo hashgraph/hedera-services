@@ -59,7 +59,7 @@ public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implement
         // Env can store many different databases (ie sorted maps).
         env = Env.create()
                 // LMDB also needs to know how large our DB might be. Over-estimating is OK.
-                .setMapSize(100_000_000*(long)(keySizeBytes+keySizeBytes+valueSizeBytes+HASH_SIZE+Long.BYTES+Long.BYTES+Long.BYTES+Long.BYTES)) // TODO just a guess so far
+                .setMapSize(1_000_000_000*(long)(keySizeBytes+keySizeBytes+valueSizeBytes+HASH_SIZE+Long.BYTES+Long.BYTES+Long.BYTES+Long.BYTES)) // TODO just a guess so far
                 // LMDB also needs to know how many DBs (Dbi) we want to store in this Env.
                 .setMaxDbs(4)
                 // Now let's open the Env. The same path can be concurrently opened and
