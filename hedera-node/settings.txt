@@ -13,3 +13,4 @@ state.roundsExpired,                           500
 state.saveStatePeriod,                         300
 useLoopbackIp,                                 false
 waitAtStartup,                                 false
+state.signedStateDisk,                         2

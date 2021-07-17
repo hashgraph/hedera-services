@@ -18,7 +18,7 @@ showDbStats,                                   0
 showInternalStats,                             1
 state.roundsExpired,                           500
 state.saveStatePeriod,                         900
-state.signedStateDisk,                         5
+state.signedStateDisk,                         2
 state.signedStateKeep,                         100
 throttle7extra,                                0.5
 useLoopbackIp,                                 false

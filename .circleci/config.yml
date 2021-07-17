@@ -1607,7 +1607,7 @@ workflows:
   GCP-Create-Large-Volume-NFTs-SavedState:
     triggers:
       - schedule:
-          cron: "45 22 * * *"
+          cron: "30 5 * * *"
           filters:
             branches:
               only:
@@ -2528,7 +2528,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression; git checkout 01373-D-create-30M-NFTs
+            cd regression; git checkout 01828-D-create-30M-NFTs
             cd ..;
             mvn --no-transfer-progress clean install -DskipTests;
 
