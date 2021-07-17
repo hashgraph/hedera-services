@@ -45,8 +45,6 @@ public class AwareNodeDiligenceScreen {
 
 	final static String WRONG_NODE_LOG_TPL = "Node {} (member #{}) submitted a txn meant for node account {} :: {}";
 	final static String MISSING_NODE_LOG_TPL = "Node {} (member #{}) submitted a txn w/ missing node account {} :: {}";
-	final static String MISSING_PAYER_ACCOUNT_LOG = "Node {} (member #{}) submitted a txn with missing payer account {} :: {}";
-	final static String DELETED_PAYER_ACCOUNT_LOG = "Node {} (member #{}) submitted a txn with deleted payer account {} :: {}";
 
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
@@ -79,7 +77,6 @@ public class AwareNodeDiligenceScreen {
 		boolean payerAccountExists = backingAccounts.contains(payerAccountId);
 
 		if (!payerAccountExists) {
-			logAccountWarning(MISSING_PAYER_ACCOUNT_LOG, submittingAccount, txnCtx.submittingSwirldsMember(), payerAccountId, accessor);
 			txnCtx.setStatus(ACCOUNT_ID_DOES_NOT_EXIST);
 			return true;
 		}
@@ -87,7 +84,6 @@ public class AwareNodeDiligenceScreen {
 		var payerAccountRef = backingAccounts.getImmutableRef(payerAccountId);
 
 		if (payerAccountRef.isDeleted()) {
-			logAccountWarning(DELETED_PAYER_ACCOUNT_LOG, submittingAccount, txnCtx.submittingSwirldsMember(), payerAccountId, accessor);
 			txnCtx.setStatus(PAYER_ACCOUNT_DELETED);
 			return true;
 		}
