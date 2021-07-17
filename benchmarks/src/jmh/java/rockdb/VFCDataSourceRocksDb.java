@@ -15,6 +15,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
+/**
+ * RocksDB implementation of VFCDataSource. It should support and actually benefit from being used from many threads.
+ *
+ * @param <K> leaf key type
+ * @param <V> leaf value type
+ */
 @SuppressWarnings("jol")
 public final class VFCDataSourceRocksDb <K extends VKey, V extends VValue> implements VFCDataSource<K, V> {
     private final static int HASH_SIZE = Long.BYTES+ DigestType.SHA_384.digestLength();
@@ -28,10 +34,10 @@ public final class VFCDataSourceRocksDb <K extends VKey, V extends VValue> imple
     private final ColumnFamilyHandle leafPathToKeyMap;
     private final ColumnFamilyHandle leafKeyToPathMap;
     private final ColumnFamilyHandle leafKeyToValueMap;
-    private final byte[] pathBytes = new byte[Long.BYTES];
-    private final byte[] hashData = new byte[HASH_SIZE];
-    private final byte[] leafKey;
-    private final byte[] leafValue;
+    private final ThreadLocal<byte[]> pathBytes = ThreadLocal.withInitial(() -> new byte[Long.BYTES]);
+    private final ThreadLocal<byte[]> hashData = ThreadLocal.withInitial(() -> new byte[HASH_SIZE]);
+    private final ThreadLocal<byte[]> leafKey;
+    private final ThreadLocal<byte[]> leafValue;
 
     /**
      * Construct a new VFCDataSourceImpl, try the static factory methods if you want a simpler way of creating one.
@@ -47,8 +53,8 @@ public final class VFCDataSourceRocksDb <K extends VKey, V extends VValue> imple
         this.keyConstructor = keyConstructor;
         this.valueSizeBytes = valueSizeBytes; // needs to include serialization version
         this.valueConstructor = valueConstructor;
-        this.leafKey = new byte[Integer.BYTES + keySizeBytes];
-        this.leafValue = new byte[Integer.BYTES + valueSizeBytes];
+        this.leafKey = ThreadLocal.withInitial(() -> new byte[Integer.BYTES + keySizeBytes]);
+        this.leafValue = ThreadLocal.withInitial(() -> new byte[Integer.BYTES + valueSizeBytes]);
         // create storage dirs
         if (!Files.exists(storageDir)) Files.createDirectories(storageDir);
         // a static method that loads the RocksDB C++ library.
@@ -94,24 +100,6 @@ public final class VFCDataSourceRocksDb <K extends VKey, V extends VValue> imple
     //==================================================================================================================
     // Public API methods
 
-    public void startBulk() {
-//        try {
-//            db.setDBOptions(new Mu);
-//        } catch (RocksDBException e) {
-//            e.printStackTrace();
-//        }
-    }
-
-    public void endBulk() {
-        try {
-            System.out.println("Compacting...");
-            db.compactRange();
-            System.out.println("Compacting Finished");
-        } catch (RocksDBException e) {
-            e.printStackTrace();
-        }
-    }
-
     /**
      * Close all data stores
      */
@@ -135,6 +123,7 @@ public final class VFCDataSourceRocksDb <K extends VKey, V extends VValue> imple
     public Hash loadHash(long path) throws IOException {
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
         try {
+            byte[] hashData = this.hashData.get();
             final int result = db.get(pathToHashMap, getPathBytes(path),hashData);
             if (result == RocksDB.NOT_FOUND) return null;
             return getHash(hashData);
@@ -154,6 +143,8 @@ public final class VFCDataSourceRocksDb <K extends VKey, V extends VValue> imple
     public V loadLeafValue(long path) throws IOException {
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
         try {
+            byte[] leafKey = this.leafKey.get();
+            byte[] leafValue = this.leafValue.get();
             // get key from path
             int result = db.get(leafPathToKeyMap, getPathBytes(path), leafKey);
             if (result == RocksDB.NOT_FOUND) return null;
@@ -177,6 +168,7 @@ public final class VFCDataSourceRocksDb <K extends VKey, V extends VValue> imple
     public V loadLeafValue(K key) throws IOException {
         if (key == null) throw new IllegalArgumentException("key can not be null");
         try {
+            byte[] leafValue = this.leafValue.get();
             // read leaf data
             int result = db.get(leafKeyToValueMap, getLeafKeyBytes(key), leafValue);
             if (result == RocksDB.NOT_FOUND) return null;
@@ -197,6 +189,7 @@ public final class VFCDataSourceRocksDb <K extends VKey, V extends VValue> imple
     public K loadLeafKey(long path) throws IOException {
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
         try {
+            byte[] leafKey = this.leafKey.get();
             // get key from path
             final int result = db.get(leafPathToKeyMap, getPathBytes(path), leafKey);
             if (result == RocksDB.NOT_FOUND) return null;
@@ -216,6 +209,7 @@ public final class VFCDataSourceRocksDb <K extends VKey, V extends VValue> imple
     @Override
     public long loadLeafPath(K key) throws IOException {
         try {
+            byte[] pathBytes = this.pathBytes.get();
             int result = db.get(leafKeyToPathMap, getLeafKeyBytes(key), pathBytes);
             if (result == RocksDB.NOT_FOUND) return INVALID_PATH;
             return getPath(pathBytes);
@@ -258,6 +252,7 @@ public final class VFCDataSourceRocksDb <K extends VKey, V extends VValue> imple
         final byte[] keyBytes = getLeafKeyBytes(key);
         try {
             // read hash
+            byte[] hashData = this.hashData.get();
             final byte[] oldPathKey = getPathBytes(newPath);
             db.get(pathToHashMap,oldPathKey,hashData);
 
@@ -293,6 +288,7 @@ public final class VFCDataSourceRocksDb <K extends VKey, V extends VValue> imple
         final byte[] pathBytes = getPathBytes(path);
         try {
             // get key from path
+            byte[] leafKey = this.leafKey.get();
             int result = db.get(leafPathToKeyMap, pathBytes, leafKey);
             if (result == RocksDB.NOT_FOUND) throw new IOException("Tried to update value for a leaf path that did not have key");
             // create batch
@@ -342,6 +338,140 @@ public final class VFCDataSourceRocksDb <K extends VKey, V extends VValue> imple
         }
     }
 
+    //==================================================================================================================
+    // Public API Transaction methods
+
+    @Override
+    public Object startTransaction() {
+        return new WriteBatch();
+    }
+
+    @Override
+    public void commitTransaction(Object handle) {
+        if (handle instanceof WriteBatch) {
+            try {
+                db.write(writeOptions,(WriteBatch) handle);
+            } catch (RocksDBException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * Save a hash for a internal node
+     *
+     * @param path the path of the node to save hash for, if nothing has been stored for this path before it will be created.
+     * @param hash a non-null hash to write
+     * @throws IOException if there was a problem writing the hash
+     */
+    @Override
+    public void saveInternal(Object handle, long path, Hash hash) throws IOException {
+        if (path < 0) throw new IllegalArgumentException("path is less than 0");
+        if (hash == null)  throw new IllegalArgumentException("Hash is null");
+        WriteBatch writeBatch = (WriteBatch) handle;
+        // write hash
+        try {
+            writeBatch.put(pathToHashMap, getPathBytes(path), getHashBytes(hash));
+        } catch (RocksDBException e) {
+            throw new IOException("Problem saving hash to db",e);
+        }
+    }
+
+    /**
+     * Update a leaf moving it from one path to another. Note! any existing node at the newPath will be overridden.
+     *
+     * @param oldPath Must be an existing valid path
+     * @param newPath Can be larger than current max path, allowing tree to grow
+     * @param key The key for the leaf so we can update key->path index
+     * @throws IOException if there was a problem saving leaf update
+     */
+    @Override
+    public void updateLeaf(Object handle, long oldPath, long newPath, K key) throws IOException {
+        if (oldPath < 0) throw new IllegalArgumentException("path is less than 0");
+        if (newPath < 0) throw new IllegalArgumentException("path is less than 0");
+        final WriteBatch writeBatch = (WriteBatch) handle;
+        final byte[] keyBytes = getLeafKeyBytes(key);
+        try {
+            // read hash
+            byte[] hashData = this.hashData.get();
+            final byte[] oldPathKey = getPathBytes(newPath);
+            db.get(pathToHashMap,oldPathKey,hashData);
+
+            // now update everything
+            final byte[] newPathKey = getPathBytes(newPath);
+            // write hash
+            writeBatch.put(pathToHashMap,newPathKey, hashData);
+            // write key -> path
+            writeBatch.put(leafKeyToPathMap, keyBytes, newPathKey);
+            // write path -> key
+            writeBatch.put(leafPathToKeyMap, newPathKey, keyBytes);
+        } catch (RocksDBException e) {
+            throw new IOException("Problem adding Leaf",e);
+        }
+    }
+
+    /**
+     * Update a leaf at given path, the leaf must exist. Writes hash and value.
+     *
+     * @param path valid path to saved leaf
+     * @param value the value for new leaf, can be null
+     * @param hash non-null hash for the leaf
+     * @throws IOException if there was a problem saving leaf update
+     */
+    @Override
+    public void updateLeaf(Object handle, long path, V value, Hash hash) throws IOException {
+        if (path < 0) throw new IllegalArgumentException("path is less than 0");
+        if (hash == null) throw new IllegalArgumentException("Can not save null hash for leaf at path ["+path+"]");
+        final WriteBatch writeBatch = (WriteBatch) handle;
+        final byte[] pathBytes = getPathBytes(path);
+        try {
+            // get key from path
+            byte[] leafKey = this.leafKey.get();
+            int result = db.get(leafPathToKeyMap, pathBytes, leafKey);
+            if (result == RocksDB.NOT_FOUND) throw new IOException("Tried to update value for a leaf path that did not have key");
+            // write hash
+            writeBatch.put(pathToHashMap, pathBytes, getHashBytes(hash));
+            // write value
+            writeBatch.put(leafKeyToValueMap, leafKey, getLeafValueBytes(value));
+        } catch (RocksDBException e) {
+            throw new IOException("Problem adding Leaf",e);
+        }
+    }
+
+    /**
+     * Add a new leaf to store
+     *
+     * @param path the path for the new leaf
+     * @param key the non-null key for the new leaf
+     * @param value the value for new leaf, can be null
+     * @param hash the non-null hash for new leaf
+     * @throws IOException if there was a problem writing leaf
+     */
+    @Override
+    public void addLeaf(Object handle, long path, K key, V value, Hash hash) throws IOException {
+        if (path < 0) throw new IllegalArgumentException("path is less than 0");
+        if (hash == null) throw new IllegalArgumentException("Can not save null hash for leaf at path ["+path+"]");
+        if (key == null) throw new IllegalArgumentException("Can not save null key for leaf at path ["+path+"]");
+        final WriteBatch writeBatch = (WriteBatch) handle;
+        final byte[] pathBytes = getPathBytes(path);
+        final byte[] keyBytes = getLeafKeyBytes(key);
+        try {
+            // write hash
+            writeBatch.put(pathToHashMap,pathBytes, getHashBytes(hash));
+            // write key -> path
+            writeBatch.put(leafKeyToPathMap, keyBytes, pathBytes);
+            // write path -> key
+            writeBatch.put(leafPathToKeyMap, pathBytes, keyBytes);
+            // write value
+            writeBatch.put(leafKeyToValueMap, keyBytes, getLeafValueBytes(value));
+        } catch (RocksDBException e) {
+            throw new IOException("Problem adding Leaf",e);
+        }
+    }
+
+    //==================================================================================================================
+    // Private Utils
+
     private K getLeafKey(byte[] leafKeyBytes) throws IOException{
         final int keySerializationVersion =  ((leafKeyBytes[0] << 24) + (leafKeyBytes[1] << 16) + (leafKeyBytes[2] << 8) + leafKeyBytes[3]);
         K key = keyConstructor.get();
@@ -350,6 +480,7 @@ public final class VFCDataSourceRocksDb <K extends VKey, V extends VValue> imple
     }
 
     private byte[] getLeafKeyBytes(K key) throws IOException {
+        byte[] leafKey = this.leafKey.get();
         final int keySerializationVersion = key.getVersion();
         leafKey[0] = (byte)(keySerializationVersion >>> 24);
         leafKey[1] = (byte)(keySerializationVersion >>> 16);
@@ -367,6 +498,7 @@ public final class VFCDataSourceRocksDb <K extends VKey, V extends VValue> imple
     }
 
     private byte[] getLeafValueBytes(V value) throws IOException {
+        byte[] leafValue = this.leafValue.get();
         final int valueSerializationVersion = value.getVersion();
         leafValue[0] = (byte)(valueSerializationVersion >>> 24);
         leafValue[1] = (byte)(valueSerializationVersion >>> 16);
@@ -388,6 +520,7 @@ public final class VFCDataSourceRocksDb <K extends VKey, V extends VValue> imple
     }
 
     private byte[] getPathBytes(long path) {
+        byte[] pathBytes = this.pathBytes.get();
         pathBytes[0] = (byte)(path >>> 56);
         pathBytes[1] = (byte)(path >>> 48);
         pathBytes[2] = (byte)(path >>> 40);
@@ -411,6 +544,7 @@ public final class VFCDataSourceRocksDb <K extends VKey, V extends VValue> imple
     }
 
     private byte[] getHashBytes(Hash hash) {
+        byte[] hashData = this.hashData.get();
         final int digestTypeId = hash.getDigestType().id();
         hashData[0] = (byte)(digestTypeId >>> 24);
         hashData[1] = (byte)(digestTypeId >>> 16);

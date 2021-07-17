@@ -3,12 +3,13 @@ package contract;
 import com.hedera.services.state.merkle.virtual.ContractKey;
 import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.hedera.services.store.models.Id;
-import com.swirlds.fcmap.VFCDataSource;
 import fcmmap.FCVirtualMapTestUtils;
+import org.lmdbjava.Txn;
 import org.openjdk.jmh.annotations.*;
 import rockdb.VFCDataSourceLmdb;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Random;
@@ -22,7 +23,7 @@ import java.util.stream.IntStream;
 @Fork(1)
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
-public class VFCDataSourceImplGetBench {
+public class VFCDataSourceLMDBGetBench {
     private static final long MB = 1024*1024;
     public static final Path STORE_PATH = Path.of("store");
     public static final Id ID = new Id(1,2,3);
@@ -31,7 +32,7 @@ public class VFCDataSourceImplGetBench {
     public long numEntities;
 
     // state
-    public VFCDataSource<ContractKey,ContractUint256> dataSource;
+    public VFCDataSourceLmdb<ContractKey,ContractUint256> dataSource;
     public Random random = new Random(1234);
     public int iteration = 0;
     private ContractKey key1 = null;
@@ -44,7 +45,7 @@ public class VFCDataSourceImplGetBench {
 
     @Setup(Level.Trial)
     public void setup() {
-        System.out.println("Clean Setup");
+        System.out.println("LMDB Benchmark");
         try {
             // delete any old store
 //            FCVirtualMapTestUtils.deleteDirectoryAndContents(STORE_PATH);
@@ -57,7 +58,7 @@ public class VFCDataSourceImplGetBench {
 //                    ContractKey.SERIALIZED_SIZE, ContractKey::new,
 //                    ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
 //                    STORE_PATH);
-            dataSource = new VFCDataSourceLmdb(
+            dataSource = new VFCDataSourceLmdb<>(
                     ContractKey.SERIALIZED_SIZE, ContractKey::new,
                     ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
                     STORE_PATH);
@@ -66,21 +67,33 @@ public class VFCDataSourceImplGetBench {
 
                 long printStep = Math.min(1_000_000, numEntities / 4);
                 long START = System.currentTimeMillis();
+                Object transaction = dataSource.startTransaction();
                 for (long i = 0; i < numEntities; i++) {
                     if (i != 0 && i % printStep == 0) {
+                        dataSource.commitTransaction(transaction);
                         printUpdate(START, printStep, ContractUint256.SERIALIZED_SIZE, "Created " + i + " Nodes");
                         START = System.currentTimeMillis();
+                        transaction = dataSource.startTransaction();
                     }
-                    dataSource.saveInternal(i, FCVirtualMapTestUtils.hash((int) i));
+                    dataSource.saveInternal(transaction, i, FCVirtualMapTestUtils.hash((int) i));
                 }
+                dataSource.commitTransaction(transaction);
+
                 START = System.currentTimeMillis();
+                transaction = dataSource.startTransaction();
                 for (long i = 0; i < numEntities; i++) {
                     if (i != 0 && i % printStep == 0) {
+                        dataSource.commitTransaction(transaction);
                         printUpdate(START, printStep, ContractUint256.SERIALIZED_SIZE, "Created " + i + " Leaves");
                         START = System.currentTimeMillis();
+                        transaction = dataSource.startTransaction();
                     }
-                    dataSource.addLeaf(numEntities + i, new ContractKey(new Id(0,0,i),new ContractUint256(i)), new ContractUint256(i), FCVirtualMapTestUtils.hash((int) i));
+                    dataSource.addLeaf(transaction,numEntities + i, new ContractKey(new Id(0,0,i),new ContractUint256(i)), new ContractUint256(i), FCVirtualMapTestUtils.hash((int) i));
                 }
+                dataSource.commitTransaction(transaction);
+                System.out.println("================================================================================");
+                dataSource.printStats();
+                System.out.println("================================================================================");
                 nextLeafIndex = numEntities;
                 // reset iteration counter
                 iteration = 0;
@@ -102,11 +115,7 @@ public class VFCDataSourceImplGetBench {
 
     @TearDown(Level.Trial)
     public void tearDown() {
-        try {
-            dataSource.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        dataSource.close();
         FCVirtualMapTestUtils.printDirectorySize(STORE_PATH);
     }
 
@@ -119,7 +128,6 @@ public class VFCDataSourceImplGetBench {
         key1 = new ContractKey(new Id(0,0,randomNodeIndex1),new ContractUint256(randomNodeIndex1));
         key2 = new ContractKey(new Id(0,0,randomNodeIndex2),new ContractUint256(randomNodeIndex2));
     }
-
 
     @Benchmark
     public void w0_updateHash() throws Exception {
@@ -138,7 +146,7 @@ public class VFCDataSourceImplGetBench {
     }
 
     @Benchmark
-    public void w3_MoveLeaf() throws Exception {
+    public void w3_moveLeaf() throws Exception {
         dataSource.updateLeaf(randomLeafIndex1,randomLeafIndex2,key1);
     }
 
@@ -186,7 +194,6 @@ public class VFCDataSourceImplGetBench {
         });
         dataSource.updateLeaf(randomLeafIndex1,randomLeafIndex2,key1);
     }
-
     @Benchmark
     public void r_loadLeafPath() throws Exception {
         dataSource.loadLeafPath(key1);
