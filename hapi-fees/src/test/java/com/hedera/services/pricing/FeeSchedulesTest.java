@@ -46,7 +46,9 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeSch
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 import static java.math.MathContext.DECIMAL128;
 import static java.math.RoundingMode.HALF_EVEN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -454,6 +456,66 @@ class FeeSchedulesTest {
 	}
 
 	@Test
+	void computedExpectedPriceForHtsTransferWithCustomFee() throws IOException {
+		final var canonicalPrices = assetsLoader.loadCanonicalPrices();
+		final var expectedBasePrice = canonicalPrices.get(CryptoTransfer).get(TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES);
+		final var desired = "{\n" +
+				"  \"transactionFeeSchedule\" : {\n" +
+				"    \"hederaFunctionality\" : \"CryptoTransfer\",\n" +
+				"    \"fees\" : [ {\n" +
+				"      \"subType\" : \"TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES\",\n" +
+				"      \"nodedata\" : {\n" +
+				"        \"constant\" : 15939695,\n" +
+				"        \"bpt\" : 25483,\n" +
+				"        \"vpt\" : 63706988,\n" +
+				"        \"rbh\" : 17,\n" +
+				"        \"sbh\" : 1,\n" +
+				"        \"gas\" : 170,\n" +
+				"        \"bpr\" : 25483,\n" +
+				"        \"sbpr\" : 637,\n" +
+				"        \"min\" : 0,\n" +
+				"        \"max\" : 1000000000000000\n" +
+				"      },\n" +
+				"      \"networkdata\" : {\n" +
+				"        \"constant\" : 318793894,\n" +
+				"        \"bpt\" : 509656,\n" +
+				"        \"vpt\" : 1274139759,\n" +
+				"        \"rbh\" : 340,\n" +
+				"        \"sbh\" : 25,\n" +
+				"        \"gas\" : 3398,\n" +
+				"        \"bpr\" : 509656,\n" +
+				"        \"sbpr\" : 12741,\n" +
+				"        \"min\" : 0,\n" +
+				"        \"max\" : 1000000000000000\n" +
+				"      },\n" +
+				"      \"servicedata\" : {\n" +
+				"        \"constant\" : 318793894,\n" +
+				"        \"bpt\" : 509656,\n" +
+				"        \"vpt\" : 1274139759,\n" +
+				"        \"rbh\" : 340,\n" +
+				"        \"sbh\" : 25,\n" +
+				"        \"gas\" : 3398,\n" +
+				"        \"bpr\" : 509656,\n" +
+				"        \"sbpr\" : 12741,\n" +
+				"        \"min\" : 0,\n" +
+				"        \"max\" : 1000000000000000\n" +
+				"      }\n" +
+				"    } ]\n" +
+				"  }\n" +
+				"}";
+
+		Map<ResourceProvider, Map<UsableResource, Long>> computedPrices =
+				subject.canonicalPricesFor(CryptoTransfer, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES);
+
+		final var canonicalUsage = baseOperationUsage.baseUsageFor(CryptoTransfer, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES);
+		final var jsonRepr = reprAsSingleFeeScheduleEntry(CryptoTransfer, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES, computedPrices);
+
+		final var actualBasePrice = feeInUsd(computedPrices, canonicalUsage);
+		assertEquals(expectedBasePrice.doubleValue(), actualBasePrice.doubleValue());
+		assertEquals(desired, jsonRepr);
+	}
+
+	@Test
 	void computedExpectedPriceForNftTransfer() throws IOException {
 		final var canonicalPrices = assetsLoader.loadCanonicalPrices();
 		final var expectedBasePrice = canonicalPrices.get(CryptoTransfer).get(TOKEN_NON_FUNGIBLE_UNIQUE);
@@ -507,6 +569,66 @@ class FeeSchedulesTest {
 
 		final var canonicalUsage = baseOperationUsage.baseUsageFor(CryptoTransfer, TOKEN_NON_FUNGIBLE_UNIQUE);
 		final var jsonRepr = reprAsSingleFeeScheduleEntry(CryptoTransfer, TOKEN_NON_FUNGIBLE_UNIQUE, computedPrices);
+
+		final var actualBasePrice = feeInUsd(computedPrices, canonicalUsage);
+		assertEquals(expectedBasePrice.doubleValue(), actualBasePrice.doubleValue());
+		assertEquals(desired, jsonRepr);
+	}
+
+	@Test
+	void computedExpectedPriceForNftTransferWithCustomFees() throws IOException {
+		final var canonicalPrices = assetsLoader.loadCanonicalPrices();
+		final var expectedBasePrice = canonicalPrices.get(CryptoTransfer).get(TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES);
+		final var desired = "{\n" +
+				"  \"transactionFeeSchedule\" : {\n" +
+				"    \"hederaFunctionality\" : \"CryptoTransfer\",\n" +
+				"    \"fees\" : [ {\n" +
+				"      \"subType\" : \"TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES\",\n" +
+				"      \"nodedata\" : {\n" +
+				"        \"constant\" : 45444717,\n" +
+				"        \"bpt\" : 72652,\n" +
+				"        \"vpt\" : 181631210,\n" +
+				"        \"rbh\" : 48,\n" +
+				"        \"sbh\" : 4,\n" +
+				"        \"gas\" : 484,\n" +
+				"        \"bpr\" : 72652,\n" +
+				"        \"sbpr\" : 1816,\n" +
+				"        \"min\" : 0,\n" +
+				"        \"max\" : 1000000000000000\n" +
+				"      },\n" +
+				"      \"networkdata\" : {\n" +
+				"        \"constant\" : 908894341,\n" +
+				"        \"bpt\" : 1453050,\n" +
+				"        \"vpt\" : 3632624210,\n" +
+				"        \"rbh\" : 969,\n" +
+				"        \"sbh\" : 73,\n" +
+				"        \"gas\" : 9687,\n" +
+				"        \"bpr\" : 1453050,\n" +
+				"        \"sbpr\" : 36326,\n" +
+				"        \"min\" : 0,\n" +
+				"        \"max\" : 1000000000000000\n" +
+				"      },\n" +
+				"      \"servicedata\" : {\n" +
+				"        \"constant\" : 908894341,\n" +
+				"        \"bpt\" : 1453050,\n" +
+				"        \"vpt\" : 3632624210,\n" +
+				"        \"rbh\" : 969,\n" +
+				"        \"sbh\" : 73,\n" +
+				"        \"gas\" : 9687,\n" +
+				"        \"bpr\" : 1453050,\n" +
+				"        \"sbpr\" : 36326,\n" +
+				"        \"min\" : 0,\n" +
+				"        \"max\" : 1000000000000000\n" +
+				"      }\n" +
+				"    } ]\n" +
+				"  }\n" +
+				"}";
+
+		Map<ResourceProvider, Map<UsableResource, Long>> computedPrices =
+				subject.canonicalPricesFor(CryptoTransfer, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES);
+
+		final var canonicalUsage = baseOperationUsage.baseUsageFor(CryptoTransfer, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES);
+		final var jsonRepr = reprAsSingleFeeScheduleEntry(CryptoTransfer, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES, computedPrices);
 
 		final var actualBasePrice = feeInUsd(computedPrices, canonicalUsage);
 		assertEquals(expectedBasePrice.doubleValue(), actualBasePrice.doubleValue());

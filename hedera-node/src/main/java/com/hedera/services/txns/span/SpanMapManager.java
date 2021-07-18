@@ -25,7 +25,6 @@ import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
-import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.utils.TxnAccessor;
 
 import java.util.HashSet;
@@ -90,7 +89,7 @@ public class SpanMapManager {
 
 	private void expandImpliedTransfers(TxnAccessor accessor) {
 		final var op = accessor.getTxn().getCryptoTransfer();
-		final var impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op, accessor.getPayer());
+		final var impliedTransfers = impliedTransfersMarshal.unmarshalFromGrpc(op);
 		reCalculateXferMeta(accessor, impliedTransfers);
 		spanMapAccessor.setImpliedTransfers(accessor, impliedTransfers);
 	}
