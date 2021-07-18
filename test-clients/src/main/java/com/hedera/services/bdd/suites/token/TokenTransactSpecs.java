@@ -121,6 +121,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						simpleHtsFeeCaseStudy(),
 						nestedHbarCaseStudy(),
 						nestedFractionalCaseStudy(),
+						nestedHtsCaseStudy(),
 				}
 		);
 	}
@@ -1068,6 +1069,64 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				).then(
 						getTxnRecord(txnFromTreasury).logged(),
 						getTxnRecord(txnFromEdgar).logged()
+						/* TODO - validate balances */
+				);
+	}
+
+	public HapiApiSpec nestedHtsCaseStudy() {
+		final var debbie = "Debbie";
+		final var edgar = "Edgar";
+		final var feeToken = "FeeToken";
+		final var tokenWithHtsFee = "TokenWithHtsFee";
+		final var tokenWithNestedFee = "TokenWithNestedFee";
+		final var treasuryForTopLevelCollection = "TokenTreasury";
+		final var treasuryForNestedCollection = "NestedTokenTreasury";
+
+		final var txnFromTreasury = "txnFromTreasury";
+		final var txnFromDebbie = "txnFromDebbie";
+
+		return defaultHapiSpec("NestedHtsCaseStudy")
+				.given(
+						cryptoCreate(debbie),
+						cryptoCreate(edgar),
+						cryptoCreate(treasuryForTopLevelCollection),
+						cryptoCreate(treasuryForNestedCollection),
+						tokenCreate(feeToken)
+								.treasury(DEFAULT_PAYER)
+								.initialSupply(Long.MAX_VALUE),
+						tokenAssociate(treasuryForNestedCollection, feeToken),
+						tokenCreate(tokenWithHtsFee)
+								.initialSupply(Long.MAX_VALUE)
+								.treasury(treasuryForNestedCollection)
+								.withCustom(fixedHtsFee(1, feeToken, treasuryForNestedCollection)),
+						tokenAssociate(treasuryForTopLevelCollection, tokenWithHtsFee),
+						tokenCreate(tokenWithNestedFee)
+								.initialSupply(Long.MAX_VALUE)
+								.treasury(treasuryForTopLevelCollection)
+								.withCustom(fixedHtsFee(1, tokenWithHtsFee, treasuryForTopLevelCollection)),
+						tokenAssociate(debbie, List.of(feeToken, tokenWithHtsFee, tokenWithNestedFee)),
+						tokenAssociate(edgar, tokenWithNestedFee),
+						cryptoTransfer(
+								moving(1_000L, feeToken)
+										.between(DEFAULT_PAYER, debbie),
+								moving(1_000L, tokenWithHtsFee)
+										.between(treasuryForNestedCollection, debbie),
+								moving(1_000L, tokenWithNestedFee)
+										.between(treasuryForTopLevelCollection, debbie)
+						)
+								.payingWith(treasuryForNestedCollection)
+								.fee(ONE_HBAR)
+								.via(txnFromTreasury)
+				).when(
+						cryptoTransfer(
+								moving(1L, tokenWithNestedFee).between(debbie, edgar)
+						)
+								.payingWith(debbie)
+								.fee(ONE_HBAR)
+								.via(txnFromDebbie)
+				).then(
+						getTxnRecord(txnFromTreasury).logged(),
+						getTxnRecord(txnFromDebbie).logged()
 						/* TODO - validate balances */
 				);
 	}
