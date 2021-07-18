@@ -91,7 +91,7 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(UniqueTokenStateSetup.class);
 
 //	private static final long SECS_TO_RUN = 15000;
-	private static final long SECS_TO_RUN = 12800;
+	private static final long SECS_TO_RUN = 12000;
 
 	private static final int MINT_TPS = 250;
 	private static final int NUM_UNIQ_TOKENS = 66_000;
