@@ -39,7 +39,7 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -53,6 +53,7 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 
 	private long amount;
 	private String token;
+	private boolean rememberingNothing = false;
 	private List<ByteString> metadata;
 	private SubType subType;
 
@@ -64,7 +65,7 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 	public HapiTokenMint(String token, long amount) {
 		this.token = token;
 		this.amount = amount;
-		this.metadata = new ArrayList<>();
+		this.metadata = Collections.emptyList();
 		this.subType = figureSubType();
 	}
 
@@ -78,6 +79,11 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 		this.token = token;
 		this.metadata = metadata;
 		this.amount = 0;
+	}
+
+	public HapiTokenMint rememberingNothing() {
+		rememberingNothing = true;
+		return this;
 	}
 
 	@Override
@@ -143,7 +149,7 @@ public class HapiTokenMint extends HapiTxnOp<HapiTokenMint> {
 
 	@Override
 	public void updateStateOf(HapiApiSpec spec) throws Throwable {
-		if (actualStatus != SUCCESS) {
+		if (rememberingNothing || actualStatus != SUCCESS) {
 			return;
 		}
 		lookupSubmissionRecord(spec);

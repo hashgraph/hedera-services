@@ -72,6 +72,6 @@ public class SystemPrecheck {
 			return OK;
 		}
 
-		return txnThrottling.shouldThrottle(accessor.getTxn()) ? BUSY : OK;
+		return txnThrottling.shouldThrottle(accessor) ? BUSY : OK;
 	}
 }

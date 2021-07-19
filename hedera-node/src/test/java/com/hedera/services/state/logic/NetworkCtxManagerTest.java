@@ -32,6 +32,8 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.throttling.FunctionalityThrottling;
+import com.hedera.services.utils.SignedTxnAccessor;
+import com.hederahashgraph.api.proto.java.Transaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -137,13 +139,16 @@ class NetworkCtxManagerTest {
 
 	@Test
 	void preparesContextAsExpected() {
+		// setup:
+		final var accessor = SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance());
+
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
 
 		// when:
-		subject.prepareForIncorporating(TokenMint);
+		subject.prepareForIncorporating(accessor);
 
 		// then:
-		verify(handleThrottling).shouldThrottle(TokenMint);
+		verify(handleThrottling).shouldThrottleTxn(accessor);
 		verify(feeMultiplierSource).updateMultiplier(sometime);
 	}
 

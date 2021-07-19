@@ -182,7 +182,7 @@ public class StakedAnswerFlow implements AnswerFlow {
 		}
 
 		if (payer == null || !isThrottleExempt.test(payer.getAccountNum())) {
-			return throttles.shouldThrottle(function) ? BUSY : OK;
+			return throttles.shouldThrottleQuery(function) ? BUSY : OK;
 		} else {
 			return OK;
 		}

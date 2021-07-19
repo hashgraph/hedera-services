@@ -20,6 +20,7 @@ package com.hedera.services.throttling;
  * ‍
  */
 
+import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hedera.services.throttles.DeterministicThrottle;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -38,10 +39,22 @@ public class ThrottleReqsManager {
 	}
 
 	public boolean allReqsMetAt(Instant now) {
+		return allVerboseReqsMetAt(now, 0, null);
+	}
+
+	public boolean allReqsMetAt(Instant now, int nTransactions, ThrottleReqOpsScaleFactor scaleFactor) {
+		return allVerboseReqsMetAt(now, nTransactions, scaleFactor);
+	}
+
+	private boolean allVerboseReqsMetAt(Instant now, int nTransactions, ThrottleReqOpsScaleFactor scaleFactor) {
 		var allPassed = true;
 		for (int i = 0; i < passedReq.length; i++) {
 			var req = allReqs.get(i);
-			passedReq[i] = req.getLeft().allow(req.getRight(), now);
+			var opsRequired = req.getRight();
+			if (scaleFactor != null) {
+				opsRequired = scaleFactor.scaling(nTransactions * opsRequired);
+			}
+			passedReq[i] = req.getLeft().allow(opsRequired, now);
 			allPassed &= passedReq[i];
 		}
 

@@ -93,7 +93,7 @@ class ZeroStakeAnswerFlowTest {
 	@Test
 	void throttlesIfAppropriate() {
 		given(service.canonicalFunction()).willReturn(function);
-		given(throttles.shouldThrottle(function)).willReturn(true);
+		given(throttles.shouldThrottleQuery(function)).willReturn(true);
 		given(service.responseGiven(query, view, BUSY)).willReturn(response);
 
 		// when:
@@ -101,7 +101,7 @@ class ZeroStakeAnswerFlowTest {
 
 		// then:
 		assertEquals(response, actual);
-		verify(throttles).shouldThrottle(function);
+		verify(throttles).shouldThrottleQuery(function);
 	}
 
 	@Test
@@ -109,7 +109,7 @@ class ZeroStakeAnswerFlowTest {
 		given(service.canonicalFunction()).willReturn(CryptoGetStakers);
 		given(queryHeaderValidity.checkHeader(query)).willReturn(OK);
 		given(service.checkValidity(query, view)).willReturn(OK);
-		given(throttles.shouldThrottle(CryptoGetStakers)).willReturn(false);
+		given(throttles.shouldThrottleQuery(CryptoGetStakers)).willReturn(false);
 		// and:
 		given(service.responseGiven(query, view, OK)).willReturn(response);
 
