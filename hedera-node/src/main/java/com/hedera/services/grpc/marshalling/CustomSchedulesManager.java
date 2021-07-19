@@ -21,39 +21,36 @@ package com.hedera.services.grpc.marshalling;
  */
 
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class CustomSchedulesManager {
 	private final CustomFeeSchedules customFeeSchedules;
-	private final List<Pair<Id, List<FcCustomFee>>> allManagedSchedules = new ArrayList<>();
+	private final List<CustomFeeMeta> allManagedMeta = new ArrayList<>();
 
 	public CustomSchedulesManager(CustomFeeSchedules customFeeSchedules) {
 		this.customFeeSchedules = customFeeSchedules;
 	}
 
-	public List<FcCustomFee> managedSchedulesFor(EntityId token) {
-		List<FcCustomFee> extantSchedule = null;
-		if (!allManagedSchedules.isEmpty()) {
-			for (var schedule : allManagedSchedules) {
-				if (token.matches(schedule.getKey())) {
-					extantSchedule = schedule.getRight();
+	public CustomFeeMeta managedSchedulesFor(EntityId token) {
+		CustomFeeMeta extantMeta = null;
+		if (!allManagedMeta.isEmpty()) {
+			for (var meta : allManagedMeta) {
+				if (token.matches(meta.getTokenId())) {
+					extantMeta = meta;
 				}
 			}
 		}
-		if (extantSchedule == null) {
-			extantSchedule = customFeeSchedules.lookupScheduleFor(token);
-			allManagedSchedules.add(Pair.of(token.asId(), extantSchedule));
+		if (extantMeta == null) {
+			extantMeta = customFeeSchedules.lookupMetaFor(token);
+			allManagedMeta.add(extantMeta);
 		}
-		return extantSchedule;
+		return extantMeta;
 	}
 
-	public List<Pair<Id, List<FcCustomFee>>> schedulesUsed() {
-		return allManagedSchedules;
+	public List<CustomFeeMeta> metaUsed() {
+		return allManagedMeta;
 	}
 }

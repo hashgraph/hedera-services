@@ -216,7 +216,8 @@ class FeeAssessorTest {
 	}
 
 	private void givenFees(EntityId token, List<FcCustomFee> customFees) {
-		given(customSchedulesManager.managedSchedulesFor(token)).willReturn(customFees);
+		final var meta = new CustomFeeMeta(token.asId(), treasury, customFees);
+		given(customSchedulesManager.managedSchedulesFor(token)).willReturn(meta);
 	}
 
 	private final long amountOfFungibleDebit = 1_000L;
@@ -227,6 +228,7 @@ class FeeAssessorTest {
 	private final long numerator = 1L;
 	private final long denominator = 100L;
 	private final Id payer = new Id(0, 1, 2);
+	private final Id treasury = new Id(6, 6, 6);
 	private final Id fungibleTokenId = new Id(1, 2, 3);
 	private final EntityId feeDenom = new EntityId(6, 6, 6);
 	private final EntityId hbarFeeCollector = new EntityId(2, 3, 4);

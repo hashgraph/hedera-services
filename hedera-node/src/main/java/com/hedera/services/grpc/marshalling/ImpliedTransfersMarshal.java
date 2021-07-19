@@ -92,12 +92,12 @@ public class ImpliedTransfersMarshal {
 		while (change != null) {
 			final var status = feeAssessor.assess(change, schedulesManager, changeManager, fees, props);
 			if (status != OK) {
-				return ImpliedTransfers.invalid(props, schedulesManager.schedulesUsed(), status);
+				return ImpliedTransfers.invalid(props, schedulesManager.metaUsed(), status);
 			}
 			change = changeManager.nextAssessableChange();
 		}
 
-		return ImpliedTransfers.valid(props, changes, schedulesManager.schedulesUsed(), fees);
+		return ImpliedTransfers.valid(props, changes, schedulesManager.metaUsed(), fees);
 	}
 
 	private void appendToken(CryptoTransferTransactionBody op, List<BalanceChange> changes) {

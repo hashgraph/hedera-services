@@ -21,14 +21,12 @@ package com.hedera.services.txns.customfees;
  * ‍
  */
 
-import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.grpc.marshalling.CustomFeeMeta;
 import com.hedera.services.state.submerkle.EntityId;
-
-import java.util.List;
 
 /**
  * Interface to look up custom fee schedules for an entity
  */
 public interface CustomFeeSchedules {
-	List<FcCustomFee> lookupScheduleFor(EntityId token);
+	CustomFeeMeta lookupMetaFor(EntityId token);
 }

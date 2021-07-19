@@ -4,10 +4,14 @@ import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
 public class CustomFeeMeta {
+	public static final CustomFeeMeta MISSING_META =
+			new CustomFeeMeta(Id.MISSING_ID, Id.MISSING_ID, Collections.emptyList());
+
 	private final Id tokenId;
 	private final Id treasuryId;
 	private final List<FcCustomFee> customFees;
