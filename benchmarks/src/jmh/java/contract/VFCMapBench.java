@@ -3,7 +3,9 @@ package contract;
 import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.fcmap.VFCMap;
+import com.swirlds.fcmap.internal.InMemoryDataSource;
 import org.openjdk.jmh.annotations.*;
+import rockdb.VFCDataSourceLmdb;
 import rockdb.VFCDataSourceRocksDb;
 
 import java.math.BigInteger;
@@ -90,7 +92,7 @@ public class VFCMapBench {
                     archiveExchanger.exchange(map);
                 } catch (Exception e) {
                     e.printStackTrace();
-                    System.exit(1);
+//                    System.exit(1);
                 }
             }
         });
@@ -100,12 +102,23 @@ public class VFCMapBench {
 //        final var sizeOfBin = (Integer.BYTES+(keysPerBin*(Integer.BYTES+Long.BYTES+keySize)));
 //        final var numFilesForIndex = (numBinsAsPowerOf2 * sizeOfBin) / (1024*1024*1024);
 //        final var numFilesAsPowerOf2 = Math.max(2, Long.highestOneBit(numFilesForIndex * 2));
+//        final var ds = new VFCDataSourceLmdb<>(
+//                ContractUint256.SERIALIZED_SIZE,
+//                ContractUint256::new,
+//                ContractUint256.SERIALIZED_SIZE,
+//                ContractUint256::new,
+//                Path.of("data"));
         final var ds = new VFCDataSourceRocksDb<>(
                 ContractUint256.SERIALIZED_SIZE,
                 ContractUint256::new,
                 ContractUint256.SERIALIZED_SIZE,
                 ContractUint256::new,
                 Path.of("data"));
+//        final var ds = new InMemoryDataSource<>(
+//                ContractUint256.SERIALIZED_SIZE,
+//                ContractUint256::new,
+//                ContractUint256.SERIALIZED_SIZE,
+//                ContractUint256::new);
         contractMap = new VFCMap<>(ds);
 
 //        System.out.println("\nUsing inMemoryIndex = " + inMemoryIndex+"  -- inMemoryStore = " + inMemoryStore);

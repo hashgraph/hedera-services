@@ -549,9 +549,9 @@ public class VFCDataSourceTestUtils {
         }
 
         @Override
-        public void updateLeaf(long oldPath, long newPath, K key) {
+        public void updateLeaf(long oldPath, long newPath, K key, Hash hash) {
             try {
-                dataSource.updateLeaf(oldPath,newPath, key);
+                dataSource.updateLeaf(oldPath,newPath, key, hash);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

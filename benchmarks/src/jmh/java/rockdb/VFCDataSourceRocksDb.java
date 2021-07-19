@@ -246,15 +246,13 @@ public final class VFCDataSourceRocksDb <K extends VKey, V extends VValue> imple
      * @throws IOException if there was a problem saving leaf update
      */
     @Override
-    public void updateLeaf(long oldPath, long newPath, K key) throws IOException {
+    public void updateLeaf(long oldPath, long newPath, K key, Hash hash) throws IOException {
         if (oldPath < 0) throw new IllegalArgumentException("path is less than 0");
         if (newPath < 0) throw new IllegalArgumentException("path is less than 0");
         final byte[] keyBytes = getLeafKeyBytes(key);
         try {
             // read hash
-            byte[] hashData = this.hashData.get();
-            final byte[] oldPathKey = getPathBytes(newPath);
-            db.get(pathToHashMap,oldPathKey,hashData);
+            byte[] hashData = hash.getValue();
 
             // now update everything
             final byte[] newPathKey = getPathBytes(newPath);
@@ -290,7 +288,9 @@ public final class VFCDataSourceRocksDb <K extends VKey, V extends VValue> imple
             // get key from path
             byte[] leafKey = this.leafKey.get();
             int result = db.get(leafPathToKeyMap, pathBytes, leafKey);
-            if (result == RocksDB.NOT_FOUND) throw new IOException("Tried to update value for a leaf path that did not have key");
+            if (result == RocksDB.NOT_FOUND) {
+                throw new IOException("Tried to update value for a leaf path that did not have key");
+            }
             // create batch
             WriteBatch writeBatch = new WriteBatch();
             // write hash
@@ -386,16 +386,14 @@ public final class VFCDataSourceRocksDb <K extends VKey, V extends VValue> imple
      * @throws IOException if there was a problem saving leaf update
      */
     @Override
-    public void updateLeaf(Object handle, long oldPath, long newPath, K key) throws IOException {
+    public void updateLeaf(Object handle, long oldPath, long newPath, K key, Hash hash) throws IOException {
         if (oldPath < 0) throw new IllegalArgumentException("path is less than 0");
         if (newPath < 0) throw new IllegalArgumentException("path is less than 0");
         final WriteBatch writeBatch = (WriteBatch) handle;
         final byte[] keyBytes = getLeafKeyBytes(key);
         try {
             // read hash
-            byte[] hashData = this.hashData.get();
-            final byte[] oldPathKey = getPathBytes(newPath);
-            db.get(pathToHashMap,oldPathKey,hashData);
+            byte[] hashData = hash.getValue();
 
             // now update everything
             final byte[] newPathKey = getPathBytes(newPath);
