@@ -59,12 +59,17 @@ public class FeeAssessor {
 		final var feeMeta = customSchedulesManager.managedSchedulesFor(change.getToken());
 		final var payer = change.getAccount();
 		final var fees = feeMeta.getCustomFees();
+		/* Token treasuries are exempt from all custom fees */
 		if (fees.isEmpty() || feeMeta.getTreasuryId().equals(payer)) {
 			return OK;
 		}
 		var hasFractionalFees = false;
 		final var maxBalanceChanges = props.getMaxXferBalanceChanges();
 		for (var fee : fees) {
+			final var collector = fee.getFeeCollectorAsId();
+			if (payer.equals(collector)) {
+				continue;
+			}
 			if (fee.getFeeType() == FIXED_FEE) {
 				final var fixedSpec = fee.getFixedFeeSpec();
 				if (fixedSpec.getTokenDenomination() == null) {

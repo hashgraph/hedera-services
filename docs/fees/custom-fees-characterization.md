@@ -24,6 +24,10 @@ where the `nestedHbarFeeToken` has a custom fee of 1 unit of the
 Fern, where the `nestedFractionalFeeToken` has a custom fee of 
 50 units of the `fractionalFeeToken`.
 
+:free:&nbsp; There are two exemptions from the charging policy. First, token 
+treasury accounts are never charged custom fees. Second, a fee collector
+account is not charged any fractional fees for which it is the collector.
+
 # Fixed fees
 
 ## Fees denominated in ℏ

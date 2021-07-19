@@ -97,10 +97,27 @@ class FeeAssessorTest {
 
 		// when:
 		final var result =
-				subject.assess(fungibleExemptTrigger, customSchedulesManager, balanceChangeManager, accumulator, props);
+				subject.assess(treasuryTrigger, customSchedulesManager, balanceChangeManager, accumulator, props);
 
 		// then:
 		verifyNoInteractions(hbarFeeAssessor, htsFeeAssessor, fractionalFeeAssessor);
+		assertEquals(OK, result);
+	}
+
+	@Test
+	void exemptsSelfPayments() {
+		// setup:
+		final var fees = List.of(hbarFee, htsFee, fractionalFee);
+		givenFees(fungibleTokenId.asEntityId(), fees);
+		given(fractionalFeeAssessor.assessAllFractional(collectorTrigger, fees, balanceChangeManager, accumulator))
+				.willReturn(OK);
+
+		// when:
+		final var result =
+				subject.assess(collectorTrigger, customSchedulesManager, balanceChangeManager, accumulator, props);
+
+		// then:
+		verifyNoInteractions(htsFeeAssessor);
 		assertEquals(OK, result);
 	}
 
@@ -255,14 +272,22 @@ class FeeAssessorTest {
 			.setAccountID(treasury.asGrpcAccount())
 			.setAmount(amountOfFungibleDebit)
 			.build();
+	private final AccountAmount fungibleCollectorDebit = AccountAmount.newBuilder()
+			.setAccountID(htsFeeCollector.asId().asGrpcAccount())
+			.setAmount(amountOfFungibleDebit)
+			.build();
 	private final BalanceChange fungibleTrigger = BalanceChange.changingFtUnits(
 			fungibleTokenId,
 			fungibleTokenId.asGrpcToken(),
 			fungibleDebit);
-	private final BalanceChange fungibleExemptTrigger = BalanceChange.changingFtUnits(
+	private final BalanceChange treasuryTrigger = BalanceChange.changingFtUnits(
 			fungibleTokenId,
 			fungibleTokenId.asGrpcToken(),
 			fungibleTreasuryDebit);
+	private final BalanceChange collectorTrigger = BalanceChange.changingFtUnits(
+			fungibleTokenId,
+			fungibleTokenId.asGrpcToken(),
+			fungibleCollectorDebit);
 	private final FcCustomFee hbarFee = FcCustomFee.fixedFee(amountOfHbarFee, null, hbarFeeCollector);
 	private final FcCustomFee htsFee = FcCustomFee.fixedFee(amountOfHtsFee, feeDenom, htsFeeCollector);
 	private final FcCustomFee fractionalFee = FcCustomFee.fractionalFee(
