@@ -207,7 +207,6 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 
 			if (txnFeeSchedule.hasFeeData()) {
 				final var untypedPrices = txnFeeSchedule.getFeeData();
-				/* Must be from a pre-0.16.0 signed state when there were no fee sub-types */
 				if (FUNCTIONS_WITH_TOKEN_TYPE_SPECIALIZATIONS.contains(function)) {
 					map.put(SubType.TOKEN_FUNGIBLE_COMMON, untypedPrices);
 					map.put(SubType.TOKEN_NON_FUNGIBLE_UNIQUE, untypedPrices);
