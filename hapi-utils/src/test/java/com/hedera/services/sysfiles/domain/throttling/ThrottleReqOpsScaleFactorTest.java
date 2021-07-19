@@ -76,6 +76,15 @@ class ThrottleReqOpsScaleFactorTest {
 	}
 
 	@Test
+	void toStringWorks() {
+		// given:
+		final var subject = ThrottleReqOpsScaleFactor.from("5:2");
+
+		// expect:
+		assertEquals("ThrottleReqOpsScaleFactor{scale=5:2}", subject.toString());
+	}
+
+	@Test
 	void objectContractWorks() {
 		// given:
 		final var subject = ThrottleReqOpsScaleFactor.from("3:2");

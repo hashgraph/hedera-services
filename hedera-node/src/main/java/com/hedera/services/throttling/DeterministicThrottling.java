@@ -38,8 +38,6 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.function.IntSupplier;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
-
 public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	private static final Logger log = LogManager.getLogger(DeterministicThrottling.class);
 
@@ -74,11 +72,12 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		if ((manager = functionReqs.get(function)) == null) {
 			return true;
 		}
-		if (function == TokenMint) {
-			return shouldThrottleMint(manager, accessor.getTxn().getTokenMint(), now);
-		} else {
-			return !manager.allReqsMetAt(now);
-		}
+		return !manager.allReqsMetAt(now);
+//		if (function == TokenMint) {
+//			return shouldThrottleMint(manager, accessor.getTxn().getTokenMint(), now);
+//		} else {
+//			return !manager.allReqsMetAt(now);
+//		}
 	}
 
 	@Override

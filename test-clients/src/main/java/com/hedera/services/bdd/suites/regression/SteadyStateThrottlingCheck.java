@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.regression;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,6 +24,7 @@ import com.google.common.base.Stopwatch;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
@@ -33,6 +34,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -67,23 +69,28 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class SteadyStateThrottlingCheck extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(SteadyStateThrottlingCheck.class);
 
+	private static final String defaultNftScaling =
+			HapiSpecSetup.getDefaultNodeProps().get("tokens.nfts.mintThrottleScaleFactor");
+
 	private static final int LOCAL_NETWORK_SIZE = 3;
 	private static final int REGRESSION_NETWORK_SIZE = 4;
 
 	private static final double THROUGHPUT_LIMITS_XFER_NETWORK_TPS = 100.0;
-	private static final double TEST_THROUGHPUT_LIMITS_FUNGIBLE_MINT_NETWORK_TPS = 30.0;
-	private static final double TEST_THROUGHPUT_LIMITS_NFT_MINT_NETWORK_TPS = 12.0;
+	private static final double THROUGHPUT_LIMITS_FUNGIBLE_MINT_NETWORK_TPS = 30.0;
+	private static final double THROUGHPUT_LIMITS_NFT_MINT_NETWORK_TPS = 15.0;
 	private static final double PRIORITY_RESERVATIONS_CONTRACT_CALL_NETWORK_TPS = 2.0;
 	private static final double CREATION_LIMITS_CRYPTO_CREATE_NETWORK_TPS = 1.0;
 	private static final double FREE_QUERY_LIMITS_GET_BALANCE_NETWORK_QPS = 100.0;
 
-//	private static final int NETWORK_SIZE = REGRESSION_NETWORK_SIZE;
+	//	private static final int NETWORK_SIZE = REGRESSION_NETWORK_SIZE;
 	private static final int NETWORK_SIZE = LOCAL_NETWORK_SIZE;
 
 	private static final double expectedXferTps = THROUGHPUT_LIMITS_XFER_NETWORK_TPS / NETWORK_SIZE;
-	private static final double expectedNftMintTps = TEST_THROUGHPUT_LIMITS_NFT_MINT_NETWORK_TPS / NETWORK_SIZE;
-	private static final double expectedFungibleMintTps = TEST_THROUGHPUT_LIMITS_FUNGIBLE_MINT_NETWORK_TPS / NETWORK_SIZE;
-	private static final double expectedContractCallTps = PRIORITY_RESERVATIONS_CONTRACT_CALL_NETWORK_TPS / NETWORK_SIZE;
+	private static final double expectedNftMintTps = THROUGHPUT_LIMITS_NFT_MINT_NETWORK_TPS / NETWORK_SIZE;
+	private static final double expectedFungibleMintTps =
+			THROUGHPUT_LIMITS_FUNGIBLE_MINT_NETWORK_TPS / NETWORK_SIZE;
+	private static final double expectedContractCallTps =
+			PRIORITY_RESERVATIONS_CONTRACT_CALL_NETWORK_TPS / NETWORK_SIZE;
 	private static final double expectedCryptoCreateTps = CREATION_LIMITS_CRYPTO_CREATE_NETWORK_TPS / NETWORK_SIZE;
 	private static final double expectedGetBalanceQps = FREE_QUERY_LIMITS_GET_BALANCE_NETWORK_QPS / NETWORK_SIZE;
 	private static final double toleratedPercentDeviation = 5;
@@ -101,12 +108,12 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 		return List.of(
 				new HapiApiSpec[] {
 						setArtificialLimits(),
-						checkTps("Xfers", expectedXferTps, xferOps()),
+//						checkTps("Xfers", expectedXferTps, xferOps()),
 						checkTps("FungibleMints", expectedFungibleMintTps, fungibleMintOps()),
 						checkTps("ContractCalls", expectedContractCallTps, scCallOps()),
-						checkTps("CryptoCreates", expectedCryptoCreateTps, cryptoCreateOps()),
-						checkTps("NftMints", expectedNftMintTps, nftMintOps()),
-						checkBalanceQps(1000, expectedGetBalanceQps),
+//						checkTps("CryptoCreates", expectedCryptoCreateTps, cryptoCreateOps()),
+//						checkTps("NftMints", expectedNftMintTps, nftMintOps()),
+//						checkBalanceQps(1000, expectedGetBalanceQps),
 						restoreDevLimits(),
 				}
 		);
@@ -129,7 +136,10 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 				.given().when().then(
 						fileUpdate(THROTTLE_DEFS)
 								.payingWith(EXCHANGE_RATE_CONTROL)
-								.contents(defaultThrottles.toByteArray())
+								.contents(defaultThrottles.toByteArray()),
+						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
+								"tokens.nfts.mintThrottleScaleFactor", defaultNftScaling
+						)).payingWith(ADDRESS_BOOK_CONTROL)
 				);
 	}
 
@@ -304,13 +314,18 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 								.tokenType(NON_FUNGIBLE_UNIQUE)
 								.initialSupply(0L)
 								.treasury(TOKEN_TREASURY)
-								.supplyKey("supply")
+								.supplyKey("supply"),
+						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
+								"tokens.nfts.mintThrottleScaleFactor", "2:1"
+						)).payingWith(ADDRESS_BOOK_CONTROL)
 				);
 			}
 
 			@Override
 			public Optional<HapiSpecOperation> get() {
-				var op = mintToken("token", List.of(ByteString.copyFromUtf8("Hmm")))
+				var op = mintToken("token", List.of(
+						ByteString.copyFromUtf8("Hmm1")
+				))
 						.noLogging()
 						.deferStatusResolution()
 						.signedBy(TOKEN_TREASURY, "supply")

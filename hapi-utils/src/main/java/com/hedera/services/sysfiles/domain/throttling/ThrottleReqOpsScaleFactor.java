@@ -20,6 +20,8 @@ package com.hedera.services.sysfiles.domain.throttling;
  * ‍
  */
 
+import com.google.common.base.MoreObjects;
+
 public class ThrottleReqOpsScaleFactor {
 	private final int numerator;
 	private final int denominator;
@@ -51,6 +53,13 @@ public class ThrottleReqOpsScaleFactor {
 			return Integer.MAX_VALUE / denominator;
 		}
 		return Math.max(1, nominalOps * numerator / denominator);
+	}
+
+	@Override
+	public String toString() {
+		return MoreObjects.toStringHelper(ThrottleReqOpsScaleFactor.class)
+				.add("scale", numerator + ":" + denominator)
+				.toString();
 	}
 
 	@Override
