@@ -2248,7 +2248,6 @@ workflows:
             filters:
               branches:
                 ignore:
-                  - 01813-M-CustomNftMintThrottle
                   - NONE
             workflow-name: "Continuous-integration"
         - sonar-check:
