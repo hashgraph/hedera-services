@@ -82,8 +82,8 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 	private static final double CREATION_LIMITS_CRYPTO_CREATE_NETWORK_TPS = 1.0;
 	private static final double FREE_QUERY_LIMITS_GET_BALANCE_NETWORK_QPS = 100.0;
 
-	//	private static final int NETWORK_SIZE = REGRESSION_NETWORK_SIZE;
-	private static final int NETWORK_SIZE = LOCAL_NETWORK_SIZE;
+	private static final int NETWORK_SIZE = REGRESSION_NETWORK_SIZE;
+//	private static final int NETWORK_SIZE = LOCAL_NETWORK_SIZE;
 
 	private static final double expectedXferTps = THROUGHPUT_LIMITS_XFER_NETWORK_TPS / NETWORK_SIZE;
 	private static final double expectedNftMintTps = THROUGHPUT_LIMITS_NFT_MINT_NETWORK_TPS / NETWORK_SIZE;
@@ -108,12 +108,12 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 		return List.of(
 				new HapiApiSpec[] {
 						setArtificialLimits(),
-//						checkTps("Xfers", expectedXferTps, xferOps()),
+						checkTps("Xfers", expectedXferTps, xferOps()),
 						checkTps("FungibleMints", expectedFungibleMintTps, fungibleMintOps()),
 						checkTps("ContractCalls", expectedContractCallTps, scCallOps()),
-//						checkTps("CryptoCreates", expectedCryptoCreateTps, cryptoCreateOps()),
+						checkTps("CryptoCreates", expectedCryptoCreateTps, cryptoCreateOps()),
 //						checkTps("NftMints", expectedNftMintTps, nftMintOps()),
-//						checkBalanceQps(1000, expectedGetBalanceQps),
+						checkBalanceQps(1000, expectedGetBalanceQps),
 						restoreDevLimits(),
 				}
 		);
@@ -326,10 +326,13 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 				var op = mintToken("token", List.of(
 						ByteString.copyFromUtf8("Hmm1")
 				))
+						.fee(ONE_HBAR)
 						.noLogging()
+						.rememberingNothing()
 						.deferStatusResolution()
 						.signedBy(TOKEN_TREASURY, "supply")
 						.payingWith(TOKEN_TREASURY)
+						.hasKnownStatusFrom(OK, SUCCESS)
 						.hasPrecheckFrom(OK, BUSY);
 				return Optional.of(op);
 			}
@@ -354,10 +357,13 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 			@Override
 			public Optional<HapiSpecOperation> get() {
 				var op = mintToken("token", 1L)
+						.fee(ONE_HBAR)
 						.noLogging()
+						.rememberingNothing()
 						.deferStatusResolution()
 						.signedBy(TOKEN_TREASURY, "supply")
 						.payingWith(TOKEN_TREASURY)
+						.hasKnownStatusFrom(OK, SUCCESS)
 						.hasPrecheckFrom(OK, BUSY);
 				return Optional.of(op);
 			}
