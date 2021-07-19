@@ -65,7 +65,7 @@ public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implement
                 // Now let's open the Env. The same path can be concurrently opened and
                 // used in different processes, but do not open the same path twice in
                 // the same process at the same time.
-                .open(storageDir.toFile(), EnvFlags.MDB_WRITEMAP);
+                .open(storageDir.toFile(), EnvFlags.MDB_WRITEMAP, EnvFlags.MDB_NOSYNC);
         // We need a Dbi for each DB. A Dbi roughly equates to a sorted map. The
         // MDB_CREATE flag causes the DB to be created if it doesn't already exist.
         pathToHashMap = env.openDbi("pathToHash", MDB_CREATE,MDB_INTEGERKEY);
