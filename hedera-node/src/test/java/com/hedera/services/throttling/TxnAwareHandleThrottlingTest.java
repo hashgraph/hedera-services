@@ -23,7 +23,9 @@ package com.hedera.services.throttling;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
 import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Transaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,21 +35,23 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.List;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class TxnAwareHandleThrottlingTest {
-	Instant consensusTime = Instant.ofEpochSecond(1_234_567L, 123);
+	private Instant consensusTime = Instant.ofEpochSecond(1_234_567L, 123);
 
 	@Mock
-	TimedFunctionalityThrottling delegate;
+	private TimedFunctionalityThrottling delegate;
 	@Mock
-	TransactionContext txnCtx;
+	private TransactionContext txnCtx;
 
-	TxnAwareHandleThrottling subject;
+	private TxnAwareHandleThrottling subject;
 
 	@BeforeEach
 	void setUp() {
@@ -55,14 +59,23 @@ class TxnAwareHandleThrottlingTest {
 	}
 
 	@Test
+	void txnHandlingDoesntSupportQueries() {
+		// expect:
+		assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottleQuery(CryptoGetAccountBalance));
+	}
+
+	@Test
 	void delegatesThrottlingDecisionsWithConsensusTime() {
+		// setup:
+		final var accessor = SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance());
+
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
-		given(delegate.shouldThrottle(HederaFunctionality.CryptoTransfer, consensusTime)).willReturn(true);
+		given(delegate.shouldThrottleTxn(accessor, consensusTime)).willReturn(true);
 
 		// expect:
-		assertTrue(subject.shouldThrottleQuery(HederaFunctionality.CryptoTransfer));
+		assertTrue(subject.shouldThrottleTxn(accessor));
 		// and:
-		verify(delegate).shouldThrottle(HederaFunctionality.CryptoTransfer, consensusTime);
+		verify(delegate).shouldThrottleTxn(accessor, consensusTime);
 	}
 
 	@Test

@@ -230,6 +230,7 @@ public class BootstrapProperties implements PropertySource {
 			"tokens.nfts.maxBatchSizeMint",
 			"tokens.nfts.maxAllowedMints",
 			"tokens.nfts.maxQueryRange",
+			"tokens.nfts.mintThrottleScaleFactor",
 			"consensus.message.maxBytesAllowed"
 	);
 
@@ -361,7 +362,7 @@ public class BootstrapProperties implements PropertySource {
 			entry("tokens.maxTokenNameUtf8Bytes", AS_INT),
 			entry("tokens.nfts.maxMetadataBytes", AS_INT),
 			entry("tokens.nfts.maxBatchSizeBurn", AS_INT),
-			entry("tokens.nfts.maxMintsPerSec", AS_INT),
+			entry("tokens.nfts.mintThrottleScaleFactor", AS_THROTTLE_SCALE_FACTOR),
 			entry("tokens.nfts.maxBatchSizeWipe", AS_INT),
 			entry("tokens.nfts.maxBatchSizeMint", AS_INT),
 			entry("tokens.nfts.maxAllowedMints", AS_LONG),

@@ -20,6 +20,7 @@ package com.hedera.services.throttling;
  * ‍
  */
 
+import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hedera.services.throttles.BucketThrottle;
 import com.hedera.services.throttles.DeterministicThrottle;
 import org.apache.commons.lang3.tuple.Pair;
@@ -46,8 +47,12 @@ class ThrottleReqsManagerTest {
 
 	@BeforeEach
 	void setUp() {
-		a = DeterministicThrottle.withTpsAndBurstPeriod(aTps, aBurstPeriod);
-		b = DeterministicThrottle.withTpsAndBurstPeriod(bTps, bBurstPeriod);
+		subjectWithTps(aTps,  bTps);
+	}
+
+	private void subjectWithTps(int tpsForA, int tpsForB) {
+		a = DeterministicThrottle.withTpsAndBurstPeriod(tpsForA, aBurstPeriod);
+		b = DeterministicThrottle.withTpsAndBurstPeriod(tpsForB, bBurstPeriod);
 
 		subject = new ThrottleReqsManager(List.of(Pair.of(a, aReq), Pair.of(b, bReq)));
 	}
@@ -55,13 +60,15 @@ class ThrottleReqsManagerTest {
 	@Test
 	void usesExpectedCapacityWithAllReqsAndScaleFactor() {
 		// setup:
-		final var numScale = 3;
-		final var denomScale = 2;
-		final var modifiedAReq = (aReq * numScale) / denomScale;
-		final var modifiedBReq = (bReq * numScale) / denomScale;
+		final var numOps = 7;
+		final var scaleFactor = ThrottleReqOpsScaleFactor.from("3:2");
+		final var modifiedAReq = (numOps * aReq * 3) / 2;
+		final var modifiedBReq = (numOps * bReq * 3) / 2;
+		// and:
+		subjectWithTps(20, 1000);
 
 		// when:
-		var result = subject.allReqsMetAt(now, numScale, denomScale);
+		var result = subject.allReqsMetAt(now, numOps, scaleFactor);
 
 		// then:
 		assertTrue(result);

@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.regression;
  */
 
 import com.google.common.base.Stopwatch;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
@@ -60,6 +61,7 @@ import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsL
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class SteadyStateThrottlingCheck extends HapiApiSuite {
@@ -69,15 +71,18 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 	private static final int REGRESSION_NETWORK_SIZE = 4;
 
 	private static final double THROUGHPUT_LIMITS_XFER_NETWORK_TPS = 100.0;
-	private static final double TEST_THROUGHPUT_LIMITS_MINT_NETWORK_TPS = 30.0;
+	private static final double TEST_THROUGHPUT_LIMITS_FUNGIBLE_MINT_NETWORK_TPS = 30.0;
+	private static final double TEST_THROUGHPUT_LIMITS_NFT_MINT_NETWORK_TPS = 12.0;
 	private static final double PRIORITY_RESERVATIONS_CONTRACT_CALL_NETWORK_TPS = 2.0;
 	private static final double CREATION_LIMITS_CRYPTO_CREATE_NETWORK_TPS = 1.0;
 	private static final double FREE_QUERY_LIMITS_GET_BALANCE_NETWORK_QPS = 100.0;
 
-	private static final int NETWORK_SIZE = REGRESSION_NETWORK_SIZE;
+//	private static final int NETWORK_SIZE = REGRESSION_NETWORK_SIZE;
+	private static final int NETWORK_SIZE = LOCAL_NETWORK_SIZE;
 
 	private static final double expectedXferTps = THROUGHPUT_LIMITS_XFER_NETWORK_TPS / NETWORK_SIZE;
-	private static final double expectedMintTps = TEST_THROUGHPUT_LIMITS_MINT_NETWORK_TPS / NETWORK_SIZE;
+	private static final double expectedNftMintTps = TEST_THROUGHPUT_LIMITS_NFT_MINT_NETWORK_TPS / NETWORK_SIZE;
+	private static final double expectedFungibleMintTps = TEST_THROUGHPUT_LIMITS_FUNGIBLE_MINT_NETWORK_TPS / NETWORK_SIZE;
 	private static final double expectedContractCallTps = PRIORITY_RESERVATIONS_CONTRACT_CALL_NETWORK_TPS / NETWORK_SIZE;
 	private static final double expectedCryptoCreateTps = CREATION_LIMITS_CRYPTO_CREATE_NETWORK_TPS / NETWORK_SIZE;
 	private static final double expectedGetBalanceQps = FREE_QUERY_LIMITS_GET_BALANCE_NETWORK_QPS / NETWORK_SIZE;
@@ -97,9 +102,10 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 				new HapiApiSpec[] {
 						setArtificialLimits(),
 						checkTps("Xfers", expectedXferTps, xferOps()),
-						checkTps("Mints", expectedMintTps, mintOps()),
+						checkTps("FungibleMints", expectedFungibleMintTps, fungibleMintOps()),
 						checkTps("ContractCalls", expectedContractCallTps, scCallOps()),
 						checkTps("CryptoCreates", expectedCryptoCreateTps, cryptoCreateOps()),
+						checkTps("NftMints", expectedNftMintTps, nftMintOps()),
 						checkBalanceQps(1000, expectedGetBalanceQps),
 						restoreDevLimits(),
 				}
@@ -285,7 +291,37 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
 		};
 	}
 
-	private Function<HapiApiSpec, OpProvider> mintOps() {
+	private Function<HapiApiSpec, OpProvider> nftMintOps() {
+		return spec -> new OpProvider() {
+			@Override
+			public List<HapiSpecOperation> suggestedInitializers() {
+				return List.of(
+						newKeyNamed("supply"),
+						cryptoCreate(TOKEN_TREASURY)
+								.payingWith(GENESIS)
+								.balance(ONE_MILLION_HBARS),
+						tokenCreate("token")
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0L)
+								.treasury(TOKEN_TREASURY)
+								.supplyKey("supply")
+				);
+			}
+
+			@Override
+			public Optional<HapiSpecOperation> get() {
+				var op = mintToken("token", List.of(ByteString.copyFromUtf8("Hmm")))
+						.noLogging()
+						.deferStatusResolution()
+						.signedBy(TOKEN_TREASURY, "supply")
+						.payingWith(TOKEN_TREASURY)
+						.hasPrecheckFrom(OK, BUSY);
+				return Optional.of(op);
+			}
+		};
+	}
+
+	private Function<HapiApiSpec, OpProvider> fungibleMintOps() {
 		return spec -> new OpProvider() {
 			@Override
 			public List<HapiSpecOperation> suggestedInitializers() {

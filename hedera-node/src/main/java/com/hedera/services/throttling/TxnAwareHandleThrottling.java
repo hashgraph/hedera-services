@@ -44,7 +44,7 @@ public class TxnAwareHandleThrottling implements FunctionalityThrottling {
 
 	@Override
 	public boolean shouldThrottleQuery(HederaFunctionality queryFunction) {
-		throw new AssertionError("Not implemented!");
+		throw new UnsupportedOperationException();
 	}
 
 	@Override

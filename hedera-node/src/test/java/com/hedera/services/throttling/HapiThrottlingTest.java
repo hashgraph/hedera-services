@@ -21,13 +21,15 @@ package com.hedera.services.throttling;
  */
 
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
+import com.hedera.services.utils.SignedTxnAccessor;
+import com.hederahashgraph.api.proto.java.Transaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCallLocal;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -48,15 +50,32 @@ class HapiThrottlingTest {
 	}
 
 	@Test
-	void delegatesWithSomeInstant() {
-		given(delegate.shouldThrottle(any(), any())).willReturn(true);
+	void delegatesQueryWithSomeInstant() {
+		given(delegate.shouldThrottleQuery(any(), any())).willReturn(true);
 
 		// when:
-		var ans = subject.shouldThrottleQuery(CryptoTransfer);
+		var ans = subject.shouldThrottleQuery(ContractCallLocal);
 
 		// then:
 		assertTrue(ans);
-		verify(delegate).shouldThrottle(eq(CryptoTransfer), any());
+		// and:
+		verify(delegate).shouldThrottleQuery(eq(ContractCallLocal), any());
+	}
+
+	@Test
+	void delegatesTxnWithSomeInstant() {
+		// setup:
+		final var accessor = SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance());
+
+		given(delegate.shouldThrottleTxn(any(), any())).willReturn(true);
+
+		// when:
+		var ans = subject.shouldThrottleTxn(accessor);
+
+		// then:
+		assertTrue(ans);
+		// and:
+		verify(delegate).shouldThrottleTxn(eq(accessor), any());
 	}
 
 	@Test

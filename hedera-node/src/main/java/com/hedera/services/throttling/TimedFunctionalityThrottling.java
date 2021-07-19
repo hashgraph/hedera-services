@@ -33,9 +33,9 @@ public interface TimedFunctionalityThrottling extends FunctionalityThrottling {
 
 	@Override
 	default boolean shouldThrottleQuery(HederaFunctionality queryFunction) {
-		return shouldThrottle(queryFunction, Instant.now());
+		return shouldThrottleQuery(queryFunction, Instant.now());
 	}
 
 	boolean shouldThrottleTxn(TxnAccessor accessor, Instant now);
-	boolean shouldThrottle(HederaFunctionality queryFunction, Instant now);
+	boolean shouldThrottleQuery(HederaFunctionality queryFunction, Instant now);
 }
