@@ -64,10 +64,6 @@ public class EntityId implements SelfSerializable {
 		this.num = num;
 	}
 
-	public EntityId(EntityId that) {
-		this(that.shard, that.realm, that.num);
-	}
-
 	/* --- SelfSerializable --- */
 
 	@Override
@@ -108,6 +104,14 @@ public class EntityId implements SelfSerializable {
 		return shard == that.shard && realm == that.realm && num == that.num;
 	}
 
+	public boolean matches(AccountID aId) {
+		return shard == aId.getShardNum() && realm == aId.getRealmNum() && num == aId.getAccountNum();
+	}
+
+	public boolean matches(Id id) {
+		return shard == id.getShard() && realm == id.getRealm() && num == id.getNum();
+	}
+
 	@Override
 	public int hashCode() {
 		return Objects.hash(shard, realm, num);
@@ -127,7 +131,7 @@ public class EntityId implements SelfSerializable {
 	}
 
 	public EntityId copy() {
-		return new EntityId(this);
+		return new EntityId(shard, realm, num);
 	}
 
 	public long shard() {

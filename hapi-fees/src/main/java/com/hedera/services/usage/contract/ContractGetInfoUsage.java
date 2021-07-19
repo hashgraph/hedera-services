@@ -34,8 +34,8 @@ import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 public class ContractGetInfoUsage extends QueryUsage {
 	private ContractGetInfoUsage(Query query) {
 		super(query.getContractGetInfo().getHeader().getResponseType());
-		updateTb(BASIC_ENTITY_ID_SIZE);
-		updateRb(CONTRACT_ENTITY_SIZES.fixedBytesInContractRepr());
+		addTb(BASIC_ENTITY_ID_SIZE);
+		addRb(CONTRACT_ENTITY_SIZES.fixedBytesInContractRepr());
 	}
 
 	public static ContractGetInfoUsage newEstimate(Query query) {
@@ -43,17 +43,17 @@ public class ContractGetInfoUsage extends QueryUsage {
 	}
 
 	public ContractGetInfoUsage givenCurrentKey(Key key) {
-		updateRb(getAccountKeyStorageSize(key));
+		addRb(getAccountKeyStorageSize(key));
 		return this;
 	}
 
 	public ContractGetInfoUsage givenCurrentMemo(String memo) {
-		updateRb(memo.getBytes(Charset.forName("UTF-8")).length);
+		addRb(memo.getBytes(Charset.forName("UTF-8")).length);
 		return this;
 	}
 
 	public ContractGetInfoUsage givenCurrentTokenAssocs(int count) {
-		updateRb(count * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr());
+		addRb(count * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr());
 		return this;
 	}
 }

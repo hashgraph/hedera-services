@@ -752,7 +752,7 @@ public class SmartContractRequestHandler {
 	}
 
 	private long rbhPriceTinyBarsGiven(HederaFunctionality function, Timestamp at) {
-		FeeData prices = usagePrices.pricesGiven(function, at);
+		FeeData prices = usagePrices.defaultPricesGiven(function, at);
 		long feeInTinyCents = prices.getServicedata().getRbh() / 1000;
 		long feeInTinyBars = FeeBuilder.getTinybarsFromTinyCents(exchange.rate(at), feeInTinyCents);
 		return Math.max(1L, feeInTinyBars);
@@ -767,7 +767,7 @@ public class SmartContractRequestHandler {
 	}
 
 	private long gasPriceTinyBarsGiven(HederaFunctionality function, Timestamp at) {
-		FeeData prices = usagePrices.pricesGiven(function, at);
+		FeeData prices = usagePrices.defaultPricesGiven(function, at);
 		long feeInTinyCents = prices.getServicedata().getGas() / 1000;
 		long feeInTinyBars = FeeBuilder.getTinybarsFromTinyCents(exchange.rate(at), feeInTinyCents);
 		return Math.max(1L, feeInTinyBars);
@@ -782,7 +782,7 @@ public class SmartContractRequestHandler {
 	}
 
 	private long sbhPriceTinyBarsGiven(HederaFunctionality function, Timestamp at) {
-		FeeData prices = usagePrices.pricesGiven(function, at);
+		FeeData prices = usagePrices.defaultPricesGiven(function, at);
 		long feeInTinyCents = prices.getServicedata().getSbh() / 1000;
 		long feeInTinyBars = FeeBuilder.getTinybarsFromTinyCents(exchange.rate(at), feeInTinyCents);
 		return Math.max(1L, feeInTinyBars);

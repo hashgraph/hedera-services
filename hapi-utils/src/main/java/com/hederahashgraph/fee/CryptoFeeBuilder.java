@@ -36,8 +36,15 @@ import java.util.List;
  */
 
 public class CryptoFeeBuilder extends FeeBuilder {
+
   /**
-   * This method returns the Fee Matrices for Crypto Create Transaction.
+   * This method returns the fee matrices for crypto create transaction
+   *
+   * @param txBody transaction body
+   * @param sigValObj signature value object
+   *
+   * @return fee data
+   * @throws InvalidTxBodyException when transaction body is invalid
    */
   public FeeData getCryptoCreateTxFeeMatrices(TransactionBody txBody, SigValueObj sigValObj)
       throws InvalidTxBodyException {
@@ -70,7 +77,13 @@ public class CryptoFeeBuilder extends FeeBuilder {
   }
 
   /**
-   * This method returns the Fee Matrices for Crypto Delete Transaction.
+   * This method returns the fee matrices for crypto delete transaction
+   *
+   * @param txBody transaction body
+   * @param sigValObj signature value object
+   *
+   * @return fee data
+   * @throws InvalidTxBodyException when transaction body is invalid
    */
   public FeeData getCryptoDeleteTxFeeMatrices(TransactionBody txBody, SigValueObj sigValObj)
       throws InvalidTxBodyException {
@@ -159,11 +172,11 @@ public class CryptoFeeBuilder extends FeeBuilder {
 
   }
 
-  // Query Fee
-
   /**
-   * This method returns the Fee Matrices for query (for getting the cost of Transaction Record
-   * Query)
+   * This method returns the fee matrices for query (for getting the cost of transaction record
+   * query)
+   *
+   * @return fee data
    */
   public FeeData getCostTransactionRecordQueryFeeMatrices() {
     // get the Fee Matrices
@@ -199,9 +212,13 @@ public class CryptoFeeBuilder extends FeeBuilder {
 
   }
 
-
   /**
-   * This method returns the Fee matrices for Transaction Record query
+   * This method returns the fee matrices for transaction record query
+   *
+   * @param transRecord transaction record
+   * @param responseType response type
+   *
+   * @return fee data
    */
   public FeeData getTransactionRecordQueryFeeMatrices(TransactionRecord transRecord,ResponseType responseType) {
 
@@ -242,9 +259,13 @@ public class CryptoFeeBuilder extends FeeBuilder {
 
   }
 
-
   /**
-   * This method returns the Fee Matrices for Account Records query
+   * This method returns the fee matrices for account records query
+   *
+   * @param transRecord transaction record
+   * @param responseType response type
+   *
+   * @return fee data
    */
   public FeeData getCryptoAccountRecordsQueryFeeMatrices(List<TransactionRecord> transRecord,ResponseType responseType) {
 
@@ -288,7 +309,9 @@ public class CryptoFeeBuilder extends FeeBuilder {
   }
 
   /**
-   * This method returns the Fee Matrices for query (for getting the cost of Account Record Query)
+   * This method returns the fee matrices for query (for getting the cost of account record query)
+   *
+   * @return fee data
    */
   public FeeData getCostCryptoAccountRecordsQueryFeeMatrices() {
 
@@ -296,7 +319,9 @@ public class CryptoFeeBuilder extends FeeBuilder {
   }
 
   /**
-   * This method returns the Fee Matrices for query (for getting the cost of Account Info Query)
+   * This method returns the fee matrices for query (for getting the cost of account info query)
+   *
+   * @return fee data
    */
   public FeeData getCostCryptoAccountInfoQueryFeeMatrices() {
 

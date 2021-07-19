@@ -9,9 +9,9 @@ package com.hedera.services.calc;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,6 +24,7 @@ import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.junit.jupiter.api.Test;
 
@@ -250,9 +251,9 @@ class OverflowCheckingCalcTest {
 			.setSbpr(sbpr)
 			.build();
 	private final FeeData mockUsage = ESTIMATOR_UTILS.withDefaultTxnPartitioning(
-			mockUsageVector, network_rbh, 3);
+			mockUsageVector, SubType.DEFAULT, network_rbh, 3);
 
-	public static void copyData(FeeData feeData, UsageAccumulator into) {
+	private static void copyData(FeeData feeData, UsageAccumulator into) {
 		into.setNumPayerKeys(feeData.getNodedata().getVpt());
 		into.addVpt(feeData.getNetworkdata().getVpt());
 		into.addBpt(feeData.getNetworkdata().getBpt());

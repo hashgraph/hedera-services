@@ -29,9 +29,12 @@ import org.junit.jupiter.api.Test;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TokenRelationshipTest {
@@ -134,6 +137,23 @@ class TokenRelationshipTest {
 
 		// then:
 		assertEquals(1, subject.getBalanceChange());
+	}
+
+	@Test
+	void givesCorrectRepresentation() {
+		subject.getToken().setType(TokenType.NON_FUNGIBLE_UNIQUE);
+		assertTrue(subject.hasUniqueRepresentation());
+
+
+		subject.getToken().setType(TokenType.FUNGIBLE_COMMON);
+		assertTrue(subject.hasCommonRepresentation());
+	}
+
+	@Test
+	void testHashCode() {
+		var rel = new TokenRelationship(token, account);
+		rel.initBalance(balance);
+		assertEquals(rel.hashCode(), subject.hashCode());
 	}
 
 	@Test

@@ -23,11 +23,12 @@ package com.hedera.services.txns.crypto;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
-import com.hedera.services.state.submerkle.AssessedCustomFee;
-import com.hedera.services.state.submerkle.CustomFee;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -71,6 +72,11 @@ import static org.mockito.Mockito.verifyNoInteractions;
 class CryptoTransferTransitionLogicTest {
 	final private int maxHbarAdjusts = 5;
 	final private int maxTokenAdjusts = 10;
+	final private int maxOwnershipChanges = 15;
+	private final int maxFeeNesting = 20;
+	private final int maxBalanceChanges = 20;
+	private final ImpliedTransfersMeta.ValidationProps validationProps = new ImpliedTransfersMeta.ValidationProps(
+			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, maxFeeNesting, maxBalanceChanges);
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private AccountID a = AccountID.newBuilder().setAccountNum(9_999L).build();
 	final private AccountID b = AccountID.newBuilder().setAccountNum(8_999L).build();
@@ -106,7 +112,7 @@ class CryptoTransferTransitionLogicTest {
 		final var a = asAccount("1.2.3");
 		final var b = asAccount("2.3.4");
 		final var impliedTransfers = ImpliedTransfers.valid(
-				maxHbarAdjusts, maxTokenAdjusts, List.of(
+				validationProps, List.of(
 						hbarChange(a, +100),
 						hbarChange(b, -100)
 				),
@@ -130,7 +136,7 @@ class CryptoTransferTransitionLogicTest {
 		final var a = asAccount("1.2.3");
 		final var b = asAccount("2.3.4");
 		final var impliedTransfers = ImpliedTransfers.valid(
-				maxHbarAdjusts, maxTokenAdjusts, List.of(
+				validationProps, List.of(
 						hbarChange(a, +100),
 						hbarChange(b, -100)
 				),
@@ -140,7 +146,7 @@ class CryptoTransferTransitionLogicTest {
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
 		// and:
-		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer(), accessor.getPayer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
 				.willReturn(impliedTransfers);
 		given(ledger.doZeroSum(impliedTransfers.getAllBalanceChanges()))
 				.willReturn(OK);
@@ -162,11 +168,11 @@ class CryptoTransferTransitionLogicTest {
 
 		// and :
 		final var customFeesBalanceChange = List.of(
-				new AssessedCustomFee(a.asEntityId(), 10L));
-		final var customFee = List.of(CustomFee.fixedFee(20L, null, a.asEntityId()));
-		final List<Pair<Id, List<CustomFee>>> customFees = List.of(Pair.of(c, customFee));
+				new FcAssessedCustomFee(a.asEntityId(), 10L));
+		final var customFee = List.of(FcCustomFee.fixedFee(20L, null, a.asEntityId()));
+		final List<Pair<Id, List<FcCustomFee>>> customFees = List.of(Pair.of(c, customFee));
 		final var impliedTransfers = ImpliedTransfers.valid(
-				maxHbarAdjusts, maxTokenAdjusts, List.of(
+				validationProps, List.of(
 						hbarChange(a.asGrpcAccount(), +100),
 						hbarChange(b.asGrpcAccount(), -100)
 				),
@@ -176,7 +182,7 @@ class CryptoTransferTransitionLogicTest {
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
 		// and:
-		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer(), accessor.getPayer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
 				.willReturn(impliedTransfers);
 		given(ledger.doZeroSum(impliedTransfers.getAllBalanceChanges()))
 				.willReturn(OK);
@@ -194,12 +200,12 @@ class CryptoTransferTransitionLogicTest {
 	@Test
 	void shortCircuitsToImpliedTransfersValidityIfNotAvailableInSpan() {
 		final var impliedTransfers = ImpliedTransfers.invalid(
-				maxHbarAdjusts, maxTokenAdjusts, TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
+				validationProps, TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
 
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
 		// and:
-		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer(), accessor.getPayer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
 				.willReturn(impliedTransfers);
 
 		// when:
@@ -214,7 +220,7 @@ class CryptoTransferTransitionLogicTest {
 	void reusesPrecomputedFailureIfImpliedTransfersInSpan() {
 		// setup:
 		final var impliedTransfers = ImpliedTransfers.invalid(
-				maxHbarAdjusts, maxTokenAdjusts, TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
+				validationProps, TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
 
 		given(spanMapAccessor.getImpliedTransfers(accessor)).willReturn(impliedTransfers);
 
@@ -232,14 +238,15 @@ class CryptoTransferTransitionLogicTest {
 
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxTokenAdjusts);
+		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxOwnershipChanges);
+		given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
+		given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges);
 		given(accessor.getTxn()).willReturn(pretendXferTxn);
 		given(transferSemanticChecks.fullPureValidation(
-				maxHbarAdjusts,
-				maxTokenAdjusts,
 				pretendXferTxn.getCryptoTransfer().getTransfers(),
-				pretendXferTxn.getCryptoTransfer().getTokenTransfersList())
-		)
-				.willReturn(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
+				pretendXferTxn.getCryptoTransfer().getTokenTransfersList(),
+				validationProps)
+		).willReturn(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
 
 		// when:
 		final var validity = subject.validateSemantics(accessor);

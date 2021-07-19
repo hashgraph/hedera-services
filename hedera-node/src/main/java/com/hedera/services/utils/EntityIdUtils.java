@@ -26,6 +26,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -53,6 +54,10 @@ public class EntityIdUtils {
 		} else if (o instanceof ScheduleID) {
 			ScheduleID id = (ScheduleID) o;
 			return String.format("%d.%d.%d", id.getShardNum(), id.getRealmNum(), id.getScheduleNum());
+		} else if (o instanceof NftID) {
+			NftID id = (NftID) o;
+			TokenID tokenID = id.getTokenID();
+			return String.format("%d.%d.%d-%d", tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(), id.getSerialNumber());
 		} else {
 			return String.valueOf(o);
 		}
@@ -61,11 +66,9 @@ public class EntityIdUtils {
 	/**
 	 * Returns the {@code AccountID} represented by a literal of the form {@code <shard>.<realm>.<num>}.
 	 *
-	 * @param literal
-	 * 		the account literal
+	 * @param literal the account literal
 	 * @return the corresponding id
-	 * @throws IllegalArgumentException
-	 * 		if the literal is not formatted correctly
+	 * @throws IllegalArgumentException if the literal is not formatted correctly
 	 */
 	public static AccountID parseAccount(String literal) {
 		try {

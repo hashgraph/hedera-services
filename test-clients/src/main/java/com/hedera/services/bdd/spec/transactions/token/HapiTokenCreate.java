@@ -23,23 +23,26 @@ package com.hedera.services.bdd.spec.transactions.token;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.usage.token.TokenCreateUsage;
+import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.fee.SigValueObj;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import proto.CustomFeesOuterClass;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -59,14 +62,18 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	private String token;
 
 	private boolean advertiseCreation = false;
+	private Optional<TokenType> tokenType = Optional.empty();
+	private Optional<TokenSupplyType> supplyType = Optional.empty();
 	private OptionalInt decimals = OptionalInt.empty();
 	private OptionalLong expiry = OptionalLong.empty();
 	private OptionalLong initialSupply = OptionalLong.empty();
+	private OptionalLong maxSupply = OptionalLong.empty();
 	private OptionalLong autoRenewPeriod = OptionalLong.empty();
 	private Optional<String> freezeKey = Optional.empty();
 	private Optional<String> kycKey = Optional.empty();
 	private Optional<String> wipeKey = Optional.empty();
 	private Optional<String> supplyKey = Optional.empty();
+	private Optional<String> feeScheduleKey = Optional.empty();
 	private Optional<String> symbol = Optional.empty();
 	private Optional<String> entityMemo = Optional.empty();
 	private Optional<String> name = Optional.empty();
@@ -74,9 +81,10 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 	private Optional<String> adminKey = Optional.empty();
 	private Optional<Boolean> freezeDefault = Optional.empty();
 	private Optional<String> autoRenewAccount = Optional.empty();
+	private Optional<Consumer<String>> createdIdObs = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> symbolFn = Optional.empty();
 	private Optional<Function<HapiApiSpec, String>> nameFn = Optional.empty();
-	private final List<Function<HapiApiSpec, CustomFeesOuterClass.CustomFee>> feeScheduleSuppliers = new ArrayList<>();
+	private final List<Function<HapiApiSpec, CustomFee>> feeScheduleSuppliers = new ArrayList<>();
 
 	@Override
 	public HederaFunctionality type() {
@@ -91,13 +99,28 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 		token = prefix + token;
 	}
 
-	public HapiTokenCreate withCustom(Function<HapiApiSpec, CustomFeesOuterClass.CustomFee> supplier) {
+	public HapiTokenCreate withCustom(Function<HapiApiSpec, CustomFee> supplier) {
 		feeScheduleSuppliers.add(supplier);
 		return this;
 	}
 
 	public HapiTokenCreate entityMemo(String memo) {
 		this.entityMemo = Optional.of(memo);
+		return this;
+	}
+
+	public HapiTokenCreate exposingCreatedIdTo(Consumer<String> obs) {
+		createdIdObs = Optional.of(obs);
+		return this;
+	}
+
+	public HapiTokenCreate tokenType(TokenType tokenType) {
+		this.tokenType = Optional.of(tokenType);
+		return this;
+	}
+
+	public HapiTokenCreate supplyType(TokenSupplyType supplyType) {
+		this.supplyType = Optional.of(supplyType);
 		return this;
 	}
 
@@ -108,6 +131,11 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 
 	public HapiTokenCreate initialSupply(long initialSupply) {
 		this.initialSupply = OptionalLong.of(initialSupply);
+		return this;
+	}
+
+	public HapiTokenCreate maxSupply(long maxSupply) {
+		this.maxSupply = OptionalLong.of(maxSupply);
 		return this;
 	}
 
@@ -143,6 +171,11 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 
 	public HapiTokenCreate supplyKey(String name) {
 		supplyKey = Optional.of(name);
+		return this;
+	}
+
+	public HapiTokenCreate feeScheduleKey(String name) {
+		feeScheduleKey = Optional.of(name);
 		return this;
 	}
 
@@ -213,15 +246,19 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 				.txns()
 				.<TokenCreateTransactionBody, TokenCreateTransactionBody.Builder>body(
 						TokenCreateTransactionBody.class, b -> {
+							tokenType.ifPresent(b::setTokenType);
+							supplyType.ifPresent(b::setSupplyType);
 							symbol.ifPresent(b::setSymbol);
 							name.ifPresent(b::setName);
 							entityMemo.ifPresent(s -> b.setMemo(s));
 							initialSupply.ifPresent(b::setInitialSupply);
+							maxSupply.ifPresent(b::setMaxSupply);
 							decimals.ifPresent(b::setDecimals);
 							freezeDefault.ifPresent(b::setFreezeDefault);
 							adminKey.ifPresent(k -> b.setAdminKey(spec.registry().getKey(k)));
 							freezeKey.ifPresent(k -> b.setFreezeKey(spec.registry().getKey(k)));
 							supplyKey.ifPresent(k -> b.setSupplyKey(spec.registry().getKey(k)));
+							feeScheduleKey.ifPresent(k -> b.setFeeScheduleKey(spec.registry().getKey(k)));
 							if (autoRenewAccount.isPresent()) {
 								var id = TxnUtils.asId(autoRenewAccount.get(), spec);
 								b.setAutoRenewAccount(id);
@@ -236,9 +273,8 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 								b.setTreasury(treasuryId);
 							});
 							if (!feeScheduleSuppliers.isEmpty()) {
-								final var fb = b.getCustomFeesBuilder();
 								for (var supplier : feeScheduleSuppliers) {
-									fb.addCustomFees(supplier.apply(spec));
+									b.addCustomFees(supplier.apply(spec));
 								}
 							}
 						});
@@ -272,6 +308,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 		registry.saveMemo(token, memo.orElse(""));
 		registry.saveTokenId(token, lastReceipt.getTokenID());
 		registry.saveTreasury(token, treasury.orElse(spec.setup().defaultPayerName()));
+		createdIdObs.ifPresent(obs -> obs.accept(HapiPropertySource.asTokenString(lastReceipt.getTokenID())));
 
 		try {
 			var submittedBody = CommonUtils.extractTransactionBody(txnSubmitted);
@@ -291,7 +328,11 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 			if (op.hasFreezeKey()) {
 				registry.saveFreezeKey(token, op.getFreezeKey());
 			}
-		} catch (InvalidProtocolBufferException impossible) { }
+			if (op.hasFeeScheduleKey()) {
+				registry.saveFeeScheduleKey(token, op.getFeeScheduleKey());
+			}
+		} catch (InvalidProtocolBufferException impossible) {
+		}
 
 		if (advertiseCreation) {
 			String banner = "\n\n" + bannerWith(

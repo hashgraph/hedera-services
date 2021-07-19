@@ -60,14 +60,17 @@ import static com.hedera.services.state.merkle.MerkleEntityId.fromContractId;
 import static com.hedera.test.utils.IdUtils.asFile;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_QUERY_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_START;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.METADATA_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_NAME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -159,6 +162,23 @@ class ContextOptionValidatorTest {
 				.setDeleted(meta.isDeleted())
 				.setKeys(JKey.mapJKey(meta.getWacl()).getKeyList())
 				.build();
+	}
+
+	@Test
+	void rejectsInappropriatelyLargeTotalNfts() {
+		// setup:
+		final long proposed = 101L;
+
+		given(dynamicProperties.maxNftMints()).willReturn(proposed - 1);
+
+		// expect:
+		assertFalse(subject.isPermissibleTotalNfts(proposed));
+
+		// and given:
+		given(dynamicProperties.maxNftMints()).willReturn(proposed);
+
+		// expect:
+		assertTrue(subject.isPermissibleTotalNfts(proposed));
 	}
 
 	@Test
@@ -598,5 +618,41 @@ class ContextOptionValidatorTest {
 		assertEquals(OK, subject.memoCheck("OK"));
 		assertEquals(MEMO_TOO_LONG, subject.memoCheck(new String(aaa)));
 		assertEquals(INVALID_ZERO_BYTE_IN_STRING, subject.memoCheck("Not s\u0000 ok!"));
+	}
+
+	@Test
+	void rejectsInvalidBurnBatchSize(){
+		given(dynamicProperties.maxBatchSizeBurn()).willReturn(10);
+		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.maxBatchSizeBurnCheck(12));
+	}
+
+	@Test
+	void rejectsInvalidNftTransfersSize() {
+		given(dynamicProperties.maxNftTransfersLen()).willReturn(10);
+		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.maxNftTransfersLenCheck(12));
+	}
+
+	@Test
+	void rejectsInvalidWipeBatchSize() {
+		given(dynamicProperties.maxBatchSizeWipe()).willReturn(10);
+		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.maxBatchSizeWipeCheck(12));
+	}
+
+	@Test
+	void rejectsInvalidMintBatchSize() {
+		given(dynamicProperties.maxBatchSizeMint()).willReturn(10);
+		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.maxBatchSizeMintCheck(12));
+	}
+
+	@Test
+	void rejectsInvalidQueryRange() {
+		given(dynamicProperties.maxNftQueryRange()).willReturn(10L);
+		assertEquals(INVALID_QUERY_RANGE, subject.nftMaxQueryRangeCheck(0, 11));
+	}
+
+	@Test
+	void rejectsInvalidMetadata() {
+		given(dynamicProperties.maxNftMetadataBytes()).willReturn(2);
+		assertEquals(METADATA_TOO_LONG, subject.nftMetadataCheck(new byte[]{1, 2, 3, 4}));
 	}
 }

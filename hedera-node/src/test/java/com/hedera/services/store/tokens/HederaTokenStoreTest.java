@@ -26,27 +26,36 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
+import com.hedera.services.state.enums.TokenSupplyType;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.submerkle.CustomFee;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.models.NftId;
+import com.hedera.test.factories.fees.CustomFeeBuilder;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.Fraction;
+import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
+import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,7 +63,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
-import proto.CustomFeesOuterClass;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -68,39 +76,50 @@ import java.util.function.Consumer;
 
 import static com.hedera.services.ledger.accounts.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.state.merkle.MerkleEntityId.fromTokenId;
+import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHbar;
+import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
+import static com.hedera.test.factories.fees.CustomFeeBuilder.fractional;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_TREASURY_KT;
 import static com.hedera.test.mocks.TestContextValidator.CONSENSUS_NOW;
 import static com.hedera.test.mocks.TestContextValidator.TEST_VALIDATOR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
@@ -109,7 +128,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -120,44 +138,44 @@ import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.longThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 
 class HederaTokenStoreTest {
 	private EntityIdSource ids;
 	private GlobalDynamicProperties properties;
 	private FCMap<MerkleEntityId, MerkleToken> tokens;
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAccountOwnerships;
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 	private HederaLedger hederaLedger;
 
 	private MerkleToken token;
-	private MerkleToken modifiableToken;
+	private MerkleToken nonfungibleToken;
 
 	private Key newKey = TxnHandlingScenario.TOKEN_REPLACE_KT.asKey();
 	private JKey newFcKey = TxnHandlingScenario.TOKEN_REPLACE_KT.asJKeyUnchecked();
-	private Key adminKey, kycKey, freezeKey, supplyKey, wipeKey;
+	private Key adminKey, kycKey, freezeKey, supplyKey, wipeKey, feeScheduleKey;
 	private String symbol = "NOTHBAR";
 	private String newSymbol = "REALLYSOM";
 	private String newMemo = "NEWMEMO";
 	private String memo = "TOKENMEMO";
 	private String name = "TOKENNAME";
 	private String newName = "NEWNAME";
-	private int maxCustomFees = 4;
+	private int maxCustomFees = 5;
 	private long expiry = CONSENSUS_NOW + 1_234_567;
 	private long newExpiry = CONSENSUS_NOW + 1_432_765;
 	private long totalSupply = 1_000_000;
-	private long adjustment = 1;
 	private int decimals = 10;
 	private long treasuryBalance = 50_000, sponsorBalance = 1_000;
 	private TokenID misc = IdUtils.asToken("3.2.1");
+	private TokenID nonfungible = IdUtils.asToken("4.3.2");
 	private TokenID anotherMisc = IdUtils.asToken("6.4.2");
 	private boolean freezeDefault = true;
 	private boolean accountsKycGrantedByDefault = false;
@@ -168,6 +186,7 @@ class HederaTokenStoreTest {
 	private AccountID treasury = IdUtils.asAccount("1.2.3");
 	private AccountID newTreasury = IdUtils.asAccount("3.2.1");
 	private AccountID sponsor = IdUtils.asAccount("1.2.666");
+	private AccountID counterparty = IdUtils.asAccount("1.2.777");
 	private AccountID feeCollector = treasury;
 	private AccountID anotherFeeCollector = IdUtils.asAccount("1.2.777");
 	private TokenID created = IdUtils.asToken("1.2.666666");
@@ -176,90 +195,26 @@ class HederaTokenStoreTest {
 	private int MAX_TOKEN_SYMBOL_UTF8_BYTES = 10;
 	private int MAX_TOKEN_NAME_UTF8_BYTES = 100;
 	private Pair<AccountID, TokenID> sponsorMisc = asTokenRel(sponsor, misc);
+	private Pair<AccountID, TokenID> sponsorNft = asTokenRel(sponsor, nonfungible);
+	private Pair<AccountID, TokenID> counterpartyNft = asTokenRel(counterparty, nonfungible);
 	private Pair<AccountID, TokenID> treasuryMisc = asTokenRel(treasury, misc);
+	private NftId aNft = new NftId(4, 3, 2, 1_234);
 	private Pair<AccountID, TokenID> anotherFeeCollectorMisc = asTokenRel(anotherFeeCollector, misc);
-	private CustomFeesOuterClass.FixedFee fixedFeeInTokenUnits = CustomFeesOuterClass.FixedFee.newBuilder()
-			.setDenominatingTokenId(misc)
-			.setAmount(100)
-			.build();
-	private CustomFeesOuterClass.FixedFee fixedFeeInHbar = CustomFeesOuterClass.FixedFee.newBuilder()
-			.setAmount(100)
-			.build();
-	private Fraction fraction = Fraction.newBuilder().setNumerator(15).setDenominator(100).build();
-	private Fraction invalidFraction = Fraction.newBuilder().setNumerator(15).setDenominator(0).build();
-	private CustomFeesOuterClass.FractionalFee fractionalFee = CustomFeesOuterClass.FractionalFee.newBuilder()
-			.setFractionalAmount(fraction)
+	private CustomFeeBuilder builder = new CustomFeeBuilder(feeCollector);
+	private FractionalFee.Builder fractionalFee = fractional(15L, 100L)
 			.setMaximumAmount(50)
-			.setMinimumAmount(10)
-			.build();
-	private CustomFeesOuterClass.CustomFee customFixedFeeInHbar = CustomFeesOuterClass.CustomFee.newBuilder()
-			.setFeeCollectorAccountId(feeCollector)
-			.setFixedFee(fixedFeeInHbar)
-			.build();
-	private CustomFeesOuterClass.CustomFee customFixedFeeInHts = CustomFeesOuterClass.CustomFee.newBuilder()
-			.setFeeCollectorAccountId(anotherFeeCollector)
-			.setFixedFee(fixedFeeInTokenUnits)
-			.build();
-	private CustomFeesOuterClass.CustomFee customFractionalFee = CustomFeesOuterClass.CustomFee.newBuilder()
-			.setFeeCollectorAccountId(feeCollector)
-			.setFractionalFee(fractionalFee)
-			.build();
-	private CustomFeesOuterClass.CustomFees grpcCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
-			.setCanUpdateWithAdminKey(true)
-			.addCustomFees(customFixedFeeInHbar)
-			.addCustomFees(customFixedFeeInHts)
-			.addCustomFees(customFractionalFee)
-			.build();
-	private CustomFeesOuterClass.CustomFees grpcUnderspecifiedCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
-			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
-					.setFeeCollectorAccountId(feeCollector))
-			.build();
-	private CustomFeesOuterClass.CustomFees grpcDivideByZeroCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
-			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
-					.setFeeCollectorAccountId(feeCollector)
-					.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
-							.setFractionalAmount(invalidFraction)
-					)).build();
-	private CustomFeesOuterClass.CustomFees grpcNegativeFractionCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
-			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
-					.setFeeCollectorAccountId(feeCollector)
-					.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
-							.setFractionalAmount(Fraction.newBuilder()
-									.setNumerator(123L).setDenominator(-1_000L)
-							)
-					)).build();
-	private CustomFeesOuterClass.CustomFees grpcNegativeMaximumCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
-			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
-					.setFeeCollectorAccountId(feeCollector)
-					.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
-							.setFractionalAmount(Fraction.newBuilder()
-									.setNumerator(123L).setDenominator(1_000L)
-							).setMaximumAmount(-1L)
-					)).build();
-	private CustomFeesOuterClass.CustomFees grpcNegativeMinimumCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
-			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
-					.setFeeCollectorAccountId(feeCollector)
-					.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
-							.setFractionalAmount(Fraction.newBuilder()
-									.setNumerator(123L).setDenominator(1_000L)
-							).setMinimumAmount(-1L)
-					)).build();
-	private CustomFeesOuterClass.CustomFees grpcZeroFractionCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
-			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
-					.setFeeCollectorAccountId(feeCollector)
-					.setFractionalFee(CustomFeesOuterClass.FractionalFee.newBuilder()
-							.setFractionalAmount(Fraction.newBuilder()
-									.setNumerator(0L).setDenominator(1_000L)
-							)
-					)).build();
-	private CustomFeesOuterClass.CustomFees grpcNegativeFixedCustomFees = CustomFeesOuterClass.CustomFees.newBuilder()
-			.addCustomFees(CustomFeesOuterClass.CustomFee.newBuilder()
-					.setFeeCollectorAccountId(feeCollector)
-					.setFixedFee(CustomFeesOuterClass.FixedFee.newBuilder()
-							.setAmount(-1_000L)
-					)).build();
-	private List<CustomFee> customFees = MerkleToken.customFeesFromGrpc(grpcCustomFees);
-
+			.setMinimumAmount(10);
+	private CustomFee customFixedFeeInHbar = builder.withFixedFee(fixedHbar(100L));
+	private CustomFee customFixedFeeInHts = new CustomFeeBuilder(anotherFeeCollector).withFixedFee(
+			fixedHts(misc, 100L));
+	private CustomFee customFixedFeeSameToken = builder.withFixedFee(fixedHts(50L));
+	private CustomFee customFractionalFee = builder.withFractionalFee(fractionalFee);
+	private List<CustomFee> grpcCustomFees = List.of(
+			customFixedFeeInHbar,
+			customFixedFeeInHts,
+			customFractionalFee,
+			customFixedFeeSameToken
+	);
 	private HederaTokenStore subject;
 
 	@BeforeEach
@@ -269,21 +224,29 @@ class HederaTokenStoreTest {
 		freezeKey = TOKEN_FREEZE_KT.asKey();
 		wipeKey = MISC_ACCOUNT_KT.asKey();
 		supplyKey = COMPLEX_KEY_ACCOUNT_KT.asKey();
+		feeScheduleKey = TOKEN_FEE_SCHEDULE_KT.asKey();
 
 		token = mock(MerkleToken.class);
-		modifiableToken = mock(MerkleToken.class);
 		given(token.expiry()).willReturn(expiry);
 		given(token.symbol()).willReturn(symbol);
 		given(token.hasAutoRenewAccount()).willReturn(true);
 		given(token.adminKey()).willReturn(Optional.of(TOKEN_ADMIN_KT.asJKeyUnchecked()));
 		given(token.name()).willReturn(name);
 		given(token.hasAdminKey()).willReturn(true);
+		given(token.hasFeeScheduleKey()).willReturn(true);
 		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
+
+		nonfungibleToken = mock(MerkleToken.class);
+		given(nonfungibleToken.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 
 		ids = mock(EntityIdSource.class);
 		given(ids.newTokenId(sponsor)).willReturn(created);
 
 		hederaLedger = mock(HederaLedger.class);
+
+		nftsLedger = (TransactionalLedger<NftId, NftProperty, MerkleUniqueToken>) mock(TransactionalLedger.class);
+		given(nftsLedger.get(aNft, NftProperty.OWNER)).willReturn(EntityId.fromGrpcAccountId(sponsor));
+		given(nftsLedger.exists(aNft)).willReturn(true);
 
 		accountsLedger = (TransactionalLedger<AccountID, AccountProperty, MerkleAccount>) mock(
 				TransactionalLedger.class);
@@ -292,12 +255,15 @@ class HederaTokenStoreTest {
 		given(accountsLedger.exists(autoRenewAccount)).willReturn(true);
 		given(accountsLedger.exists(newAutoRenewAccount)).willReturn(true);
 		given(accountsLedger.exists(sponsor)).willReturn(true);
+		given(accountsLedger.exists(counterparty)).willReturn(true);
 		given(accountsLedger.get(treasury, IS_DELETED)).willReturn(false);
 		given(accountsLedger.get(autoRenewAccount, IS_DELETED)).willReturn(false);
 		given(accountsLedger.get(newAutoRenewAccount, IS_DELETED)).willReturn(false);
 
 		tokenRelsLedger = mock(TransactionalLedger.class);
 		given(tokenRelsLedger.exists(sponsorMisc)).willReturn(true);
+		given(tokenRelsLedger.exists(sponsorNft)).willReturn(true);
+		given(tokenRelsLedger.exists(counterpartyNft)).willReturn(true);
 		given(tokenRelsLedger.get(sponsorMisc, TOKEN_BALANCE)).willReturn(sponsorBalance);
 		given(tokenRelsLedger.get(sponsorMisc, IS_FROZEN)).willReturn(false);
 		given(tokenRelsLedger.get(sponsorMisc, IS_KYC_GRANTED)).willReturn(true);
@@ -306,12 +272,23 @@ class HederaTokenStoreTest {
 		given(tokenRelsLedger.get(treasuryMisc, TOKEN_BALANCE)).willReturn(treasuryBalance);
 		given(tokenRelsLedger.get(treasuryMisc, IS_FROZEN)).willReturn(false);
 		given(tokenRelsLedger.get(treasuryMisc, IS_KYC_GRANTED)).willReturn(true);
+		given(tokenRelsLedger.get(sponsorNft, TOKEN_BALANCE)).willReturn(123L);
+		given(tokenRelsLedger.get(sponsorNft, IS_FROZEN)).willReturn(false);
+		given(tokenRelsLedger.get(sponsorNft, IS_KYC_GRANTED)).willReturn(true);
+		given(tokenRelsLedger.get(counterpartyNft, TOKEN_BALANCE)).willReturn(123L);
+		given(tokenRelsLedger.get(counterpartyNft, IS_FROZEN)).willReturn(false);
+		given(tokenRelsLedger.get(counterpartyNft, IS_KYC_GRANTED)).willReturn(true);
 
 		tokens = (FCMap<MerkleEntityId, MerkleToken>) mock(FCMap.class);
 		given(tokens.get(fromTokenId(created))).willReturn(token);
 		given(tokens.containsKey(fromTokenId(misc))).willReturn(true);
+		given(tokens.containsKey(fromTokenId(nonfungible))).willReturn(true);
 		given(tokens.get(fromTokenId(misc))).willReturn(token);
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(modifiableToken);
+		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
+		given(tokens.get(fromTokenId(nonfungible))).willReturn(nonfungibleToken);
+
+		uniqueTokenAccountOwnerships = (FCOneToManyRelation<EntityId, MerkleUniqueTokenId>) mock(
+				FCOneToManyRelation.class);
 
 		properties = mock(GlobalDynamicProperties.class);
 		given(properties.maxTokensPerAccount()).willReturn(MAX_TOKENS_PER_ACCOUNT);
@@ -319,7 +296,9 @@ class HederaTokenStoreTest {
 		given(properties.maxTokenNameUtf8Bytes()).willReturn(MAX_TOKEN_NAME_UTF8_BYTES);
 		given(properties.maxCustomFeesAllowed()).willReturn(maxCustomFees);
 
-		subject = new HederaTokenStore(ids, TEST_VALIDATOR, properties, () -> tokens, tokenRelsLedger);
+		subject = new HederaTokenStore(
+				ids, TEST_VALIDATOR, properties, () -> tokens, () -> uniqueTokenAccountOwnerships, tokenRelsLedger,
+				nftsLedger);
 		subject.setAccountsLedger(accountsLedger);
 		subject.setHederaLedger(hederaLedger);
 		subject.knownTreasuries.put(treasury, new HashSet<>() {{
@@ -329,147 +308,109 @@ class HederaTokenStoreTest {
 
 	@Test
 	void rebuildsAsExpected() {
-		// setup:
 		ArgumentCaptor<BiConsumer<MerkleEntityId, MerkleToken>> captor = forClass(BiConsumer.class);
-		// and:
 		subject.getKnownTreasuries().put(treasury, Set.of(anotherMisc));
-		// and:
 		final var deletedToken = new MerkleToken();
 		deletedToken.setDeleted(true);
 		deletedToken.setTreasury(EntityId.fromGrpcAccountId(newTreasury));
 
-		// when:
 		subject.rebuildViews();
 
-		// then:
 		verify(tokens, times(2)).forEach(captor.capture());
-		// and:
-		BiConsumer<MerkleEntityId, MerkleToken> visitor = captor.getAllValues().get(1);
 
-		// and when:
+		BiConsumer<MerkleEntityId, MerkleToken> visitor = captor.getAllValues().get(1);
 		visitor.accept(fromTokenId(misc), token);
 		visitor.accept(fromTokenId(anotherMisc), deletedToken);
 
-		// then:
-		var extant = subject.getKnownTreasuries();
+		final var extant = subject.getKnownTreasuries();
 		assertEquals(1, extant.size());
-		// and:
 		assertTrue(extant.containsKey(treasury));
 		assertEquals(extant.get(treasury), Set.of(misc));
 	}
 
 	@Test
 	void injectsTokenRelsLedger() {
-		// expect:
 		verify(hederaLedger).setTokenRelsLedger(tokenRelsLedger);
+		verify(hederaLedger).setNftsLedger(nftsLedger);
 	}
 
 	@Test
 	void applicationRejectsMissing() {
-		// setup:
-		var change = mock(Consumer.class);
+		final var change = mock(Consumer.class);
 
 		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
 
-		// expect:
 		assertThrows(IllegalArgumentException.class, () -> subject.apply(misc, change));
 	}
 
 	@Test
 	void applicationAlwaysReplacesModifiableToken() {
-		// setup:
-		var change = mock(Consumer.class);
-		var key = fromTokenId(misc);
+		final var change = mock(Consumer.class);
+		final var modifiableToken = mock(MerkleToken.class);
+		given(tokens.getForModify(fromTokenId(misc))).willReturn(modifiableToken);
+		willThrow(IllegalStateException.class).given(change).accept(modifiableToken);
 
-		given(tokens.getForModify(key)).willReturn(token);
-
-		willThrow(IllegalStateException.class).given(change).accept(any());
-
-		// then:
 		assertThrows(IllegalArgumentException.class, () -> subject.apply(misc, change));
 	}
 
 	@Test
 	void applicationWorks() {
-		// setup:
-		var change = mock(Consumer.class);
-		// and:
+		final var change = mock(Consumer.class);
 		InOrder inOrder = Mockito.inOrder(change, tokens);
 
-		// when:
 		subject.apply(misc, change);
 
-		// then:
 		inOrder.verify(tokens).getForModify(fromTokenId(misc));
-		inOrder.verify(change).accept(modifiableToken);
+		inOrder.verify(change).accept(token);
 	}
 
 	@Test
 	void deletionWorksAsExpected() {
-		// when:
 		TokenStore.DELETION.accept(token);
 
-		// then:
 		verify(token).setDeleted(true);
 	}
 
 	@Test
 	void deletesAsExpected() {
-		// given:
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
+		final var outcome = subject.delete(misc);
 
-		// when:
-		var outcome = subject.delete(misc);
-
-		// then:
 		assertEquals(OK, outcome);
-		// and:
 		assertTrue(subject.knownTreasuries.isEmpty());
 	}
 
 	@Test
 	void rejectsDeletionMissingAdminKey() {
-		// given:
 		given(token.adminKey()).willReturn(Optional.empty());
 
-		// when:
-		var outcome = subject.delete(misc);
+		final var outcome = subject.delete(misc);
 
-		// then:
 		assertEquals(TOKEN_IS_IMMUTABLE, outcome);
 	}
 
 	@Test
 	void rejectsDeletionTokenAlreadyDeleted() {
-		// given:
 		given(token.isDeleted()).willReturn(true);
 
-		// when:
-		var outcome = subject.delete(misc);
+		final var outcome = subject.delete(misc);
 
-		// then:
 		assertEquals(TOKEN_WAS_DELETED, outcome);
 	}
 
 	@Test
 	void rejectsMissingDeletion() {
-		// given:
-		var mockSubject = mock(TokenStore.class);
-
+		final var mockSubject = mock(TokenStore.class);
 		given(mockSubject.resolve(misc)).willReturn(TokenStore.MISSING_TOKEN);
 		willCallRealMethod().given(mockSubject).delete(misc);
 
-		// when:
-		var outcome = mockSubject.delete(misc);
+		final var outcome = mockSubject.delete(misc);
 
-		// then:
 		assertEquals(INVALID_TOKEN_ID, outcome);
 		verify(mockSubject, never()).apply(any(), any());
 	}
 
 	@Test
 	void getDelegates() {
-		// expect:
 		assertSame(token, subject.get(misc));
 	}
 
@@ -477,32 +418,26 @@ class HederaTokenStoreTest {
 	void getThrowsIseOnMissing() {
 		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
 
-		// expect:
 		assertThrows(IllegalArgumentException.class, () -> subject.get(misc));
 	}
 
 	@Test
 	void getCanReturnPending() {
-		// setup:
 		subject.pendingId = pending;
 		subject.pendingCreation = token;
 
-		// expect:
 		assertSame(token, subject.get(pending));
 	}
 
 	@Test
 	void existenceCheckUnderstandsPendingIdOnlyAppliesIfCreationPending() {
-		// expect:
 		assertFalse(subject.exists(HederaTokenStore.NO_PENDING_ID));
 	}
 
 	@Test
 	void existenceCheckIncludesPending() {
-		// setup:
 		subject.pendingId = pending;
 
-		// expect:
 		assertTrue(subject.exists(pending));
 	}
 
@@ -510,21 +445,17 @@ class HederaTokenStoreTest {
 	void freezingRejectsMissingAccount() {
 		given(accountsLedger.exists(sponsor)).willReturn(false);
 
-		// when:
-		var status = subject.freeze(sponsor, misc);
+		final var status = subject.freeze(sponsor, misc);
 
-		// expect:
-		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, status);
+		assertEquals(INVALID_ACCOUNT_ID, status);
 	}
 
 	@Test
 	void associatingRejectsDeletedTokens() {
 		given(token.isDeleted()).willReturn(true);
 
-		// when:
-		var status = subject.associate(sponsor, List.of(misc));
+		final var status = subject.associate(sponsor, List.of(misc));
 
-		// expect:
 		assertEquals(TOKEN_WAS_DELETED, status);
 	}
 
@@ -532,10 +463,8 @@ class HederaTokenStoreTest {
 	void associatingRejectsMissingToken() {
 		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
 
-		// when:
-		var status = subject.associate(sponsor, List.of(misc));
+		final var status = subject.associate(sponsor, List.of(misc));
 
-		// expect:
 		assertEquals(INVALID_TOKEN_ID, status);
 	}
 
@@ -543,16 +472,13 @@ class HederaTokenStoreTest {
 	void associatingRejectsMissingAccounts() {
 		given(accountsLedger.exists(sponsor)).willReturn(false);
 
-		// when:
-		var status = subject.associate(sponsor, List.of(misc));
+		final var status = subject.associate(sponsor, List.of(misc));
 
-		// expect:
-		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, status);
+		assertEquals(INVALID_ACCOUNT_ID, status);
 	}
 
 	@Test
 	void realAssociationsExist() {
-		// expect:
 		assertTrue(subject.associationExists(sponsor, misc));
 	}
 
@@ -560,106 +486,47 @@ class HederaTokenStoreTest {
 	void noAssociationsWithMissingAccounts() {
 		given(accountsLedger.exists(sponsor)).willReturn(false);
 
-		// expect:
 		assertFalse(subject.associationExists(sponsor, misc));
 	}
 
 	@Test
-	void dissociatingRejectsUnassociatedTokens() {
-		// setup:
-		var tokens = mock(MerkleAccountTokens.class);
-		given(tokens.includes(misc)).willReturn(false);
-		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
-
-		// when:
-		var status = subject.dissociate(sponsor, List.of(misc));
-
-		// expect:
-		assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, status);
-	}
-
-	@Test
-	void dissociatingRejectsTreasuryAccount() {
-		// setup:
-		var tokens = mock(MerkleAccountTokens.class);
-		given(tokens.includes(misc)).willReturn(true);
-		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
-		subject = spy(subject);
-		given(subject.isTreasuryForToken(sponsor, misc)).willReturn(true);
-
-		// when:
-		var status = subject.dissociate(sponsor, List.of(misc));
-
-		// expect:
-		assertEquals(ACCOUNT_IS_TREASURY, status);
-	}
-
-	@Test
-	void dissociatingRejectsFrozenAccount() {
-		// setup:
-		var tokens = mock(MerkleAccountTokens.class);
-		given(tokens.includes(misc)).willReturn(true);
-		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
-		given(tokenRelsLedger.get(sponsorMisc, IS_FROZEN)).willReturn(true);
-
-		// when:
-		var status = subject.dissociate(sponsor, List.of(misc));
-
-		// expect:
-		assertEquals(ACCOUNT_FROZEN_FOR_TOKEN, status);
-	}
-
-	@Test
 	void associatingRejectsAlreadyAssociatedTokens() {
-		// setup:
-		var tokens = mock(MerkleAccountTokens.class);
+		final var tokens = mock(MerkleAccountTokens.class);
 		given(tokens.includes(misc)).willReturn(true);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 
-		// when:
-		var status = subject.associate(sponsor, List.of(misc));
+		final var status = subject.associate(sponsor, List.of(misc));
 
-		// expect:
 		assertEquals(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT, status);
 	}
 
 	@Test
 	void associatingRejectsIfCappedAssociationsLimit() {
-		// setup:
-		var tokens = mock(MerkleAccountTokens.class);
+		final var tokens = mock(MerkleAccountTokens.class);
 		given(tokens.includes(misc)).willReturn(false);
 		given(tokens.numAssociations()).willReturn(MAX_TOKENS_PER_ACCOUNT);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
 
-		// when:
-		var status = subject.associate(sponsor, List.of(misc));
+		final var status = subject.associate(sponsor, List.of(misc));
 
-		// expect:
 		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
-		// and:
 		verify(tokens, never()).associateAll(any());
 		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
 	}
 
 	@Test
 	void associatingHappyPathWorks() {
-		// setup:
-		var tokens = mock(MerkleAccountTokens.class);
-		var key = asTokenRel(sponsor, misc);
-
+		final var tokens = mock(MerkleAccountTokens.class);
+		final var key = asTokenRel(sponsor, misc);
 		given(tokens.includes(misc)).willReturn(false);
 		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
-		// and:
 		given(token.hasKycKey()).willReturn(true);
 		given(token.hasFreezeKey()).willReturn(true);
 		given(token.accountsAreFrozenByDefault()).willReturn(true);
 
-		// when:
-		var status = subject.associate(sponsor, List.of(misc));
+		final var status = subject.associate(sponsor, List.of(misc));
 
-		// expect:
 		assertEquals(OK, status);
-		// and:
 		verify(tokens).associateAll(Set.of(misc));
 		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
 		verify(tokenRelsLedger).create(key);
@@ -668,151 +535,12 @@ class HederaTokenStoreTest {
 	}
 
 	@Test
-	void dissociatingWorksEvenIfTokenDoesntExistAnymore() {
-		// setup:
-		var accountTokens = mock(MerkleAccountTokens.class);
-		var key = asTokenRel(sponsor, misc);
-
-		given(accountTokens.includes(misc)).willReturn(true);
-		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(accountTokens);
-		given(tokenRelsLedger.get(key, TOKEN_BALANCE)).willReturn(0L);
-		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
-
-		// when:
-		var status = subject.dissociate(sponsor, List.of(misc));
-
-		// expect:
-		assertEquals(OK, status);
-		// and:
-		verify(accountTokens).dissociateAll(Set.of(misc));
-		verify(hederaLedger).setAssociatedTokens(sponsor, accountTokens);
-		verify(tokenRelsLedger).destroy(key);
-	}
-
-	@Test
-	void dissociatingHappyPathWorks() {
-		// setup:
-		var tokens = mock(MerkleAccountTokens.class);
-		var key = asTokenRel(sponsor, misc);
-
-		given(tokens.includes(misc)).willReturn(true);
-		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
-		given(tokenRelsLedger.get(key, TOKEN_BALANCE)).willReturn(0L);
-
-		// when:
-		var status = subject.dissociate(sponsor, List.of(misc));
-
-		// expect:
-		assertEquals(OK, status);
-		// and:
-		verify(tokens).dissociateAll(Set.of(misc));
-		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
-		verify(tokenRelsLedger).destroy(key);
-	}
-
-	@Test
-	void dissociatingFailsIfTokenBalanceIsNonzero() {
-		// setup:
-		var tokens = mock(MerkleAccountTokens.class);
-		var key = asTokenRel(sponsor, misc);
-
-		given(tokens.includes(misc)).willReturn(true);
-		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
-		// and:
-		given(tokenRelsLedger.get(key, TOKEN_BALANCE)).willReturn(1L);
-
-		// when:
-		var status = subject.dissociate(sponsor, List.of(misc));
-
-		// expect:
-		assertEquals(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES, status);
-		// and:
-		verify(tokens, never()).dissociateAll(Set.of(misc));
-		verify(hederaLedger, never()).setAssociatedTokens(sponsor, tokens);
-		verify(tokenRelsLedger, never()).destroy(key);
-	}
-
-	@Test
-	void dissociatingPermitsFrozenRelIfDeleted() {
-		// setup:
-		var tokens = mock(MerkleAccountTokens.class);
-		var key = asTokenRel(sponsor, misc);
-
-		given(tokens.includes(misc)).willReturn(true);
-		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
-		// and:
-		given(tokenRelsLedger.get(key, TOKEN_BALANCE)).willReturn(1L);
-		given(token.isDeleted()).willReturn(true);
-		given(tokenRelsLedger.get(sponsorMisc, IS_FROZEN)).willReturn(true);
-
-		// when:
-		var status = subject.dissociate(sponsor, List.of(misc));
-
-		// expect:
-		assertEquals(OK, status);
-		// and:
-		verify(tokens).dissociateAll(Set.of(misc));
-		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
-		verify(tokenRelsLedger).destroy(key);
-	}
-
-	@Test
-	void dissociatingPermitsNonzeroTokenBalanceIfDeleted() {
-		// setup:
-		var tokens = mock(MerkleAccountTokens.class);
-		var key = asTokenRel(sponsor, misc);
-
-		given(tokens.includes(misc)).willReturn(true);
-		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
-		// and:
-		given(tokenRelsLedger.get(key, TOKEN_BALANCE)).willReturn(1L);
-		given(token.isDeleted()).willReturn(true);
-
-		// when:
-		var status = subject.dissociate(sponsor, List.of(misc));
-
-		// expect:
-		assertEquals(OK, status);
-		// and:
-		verify(tokens).dissociateAll(Set.of(misc));
-		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
-		verify(tokenRelsLedger).destroy(key);
-	}
-
-	@Test
-	void dissociatingPermitsNonzeroTokenBalanceIfExpired() {
-		// setup:
-		long balance = 123L;
-		var tokens = mock(MerkleAccountTokens.class);
-		var key = asTokenRel(sponsor, misc);
-
-		given(tokens.includes(misc)).willReturn(true);
-		given(hederaLedger.getAssociatedTokens(sponsor)).willReturn(tokens);
-		// and:
-		given(tokenRelsLedger.get(key, TOKEN_BALANCE)).willReturn(balance);
-		given(token.expiry()).willReturn(CONSENSUS_NOW - 1);
-
-		// when:
-		var status = subject.dissociate(sponsor, List.of(misc));
-
-		// expect:
-		assertEquals(OK, status);
-		// and:
-		verify(tokens).dissociateAll(Set.of(misc));
-		verify(hederaLedger).setAssociatedTokens(sponsor, tokens);
-		verify(tokenRelsLedger).destroy(key);
-		verify(hederaLedger).doTokenTransfer(misc, sponsor, treasury, balance);
-	}
-
-	@Test
 	void grantingKycRejectsMissingAccount() {
 		given(accountsLedger.exists(sponsor)).willReturn(false);
 
-		// when:
-		var status = subject.grantKyc(sponsor, misc);
+		final var status = subject.grantKyc(sponsor, misc);
 
-		// expect:
-		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, status);
+		assertEquals(INVALID_ACCOUNT_ID, status);
 	}
 
 	@Test
@@ -820,10 +548,8 @@ class HederaTokenStoreTest {
 		given(accountsLedger.exists(sponsor)).willReturn(true);
 		given(hederaLedger.isDetached(sponsor)).willReturn(true);
 
-		// when:
-		var status = subject.grantKyc(sponsor, misc);
+		final var status = subject.grantKyc(sponsor, misc);
 
-		// expect:
 		assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, status);
 	}
 
@@ -832,10 +558,8 @@ class HederaTokenStoreTest {
 		given(accountsLedger.exists(sponsor)).willReturn(true);
 		given(hederaLedger.isDeleted(sponsor)).willReturn(true);
 
-		// when:
-		var status = subject.grantKyc(sponsor, misc);
+		final var status = subject.grantKyc(sponsor, misc);
 
-		// expect:
 		assertEquals(ACCOUNT_DELETED, status);
 	}
 
@@ -843,280 +567,198 @@ class HederaTokenStoreTest {
 	void revokingKycRejectsMissingAccount() {
 		given(accountsLedger.exists(sponsor)).willReturn(false);
 
-		// when:
-		var status = subject.revokeKyc(sponsor, misc);
+		final var status = subject.revokeKyc(sponsor, misc);
 
-		// expect:
-		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, status);
-	}
-
-	@Test
-	void wipingRejectsMissingAccount() {
-		given(accountsLedger.exists(sponsor)).willReturn(false);
-
-		// when:
-		var status = subject.wipe(sponsor, misc, adjustment, false);
-
-		// expect:
-		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, status);
-	}
-
-	@Test
-	void wipingRejectsTokenWithNoWipeKey() {
-		// when:
-		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
-
-		var status = subject.wipe(sponsor, misc, adjustment, false);
-
-		// expect:
-		assertEquals(TOKEN_HAS_NO_WIPE_KEY, status);
-		verify(hederaLedger, never()).updateTokenXfers(misc, sponsor, -adjustment);
-	}
-
-	@Test
-	void wipingRejectsTokenTreasury() {
-		long wiping = 3L;
-
-		given(token.hasWipeKey()).willReturn(true);
-		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(sponsor));
-
-		// when:
-		var status = subject.wipe(sponsor, misc, wiping, false);
-
-		// expect:
-		assertEquals(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT, status);
-		verify(hederaLedger, never()).updateTokenXfers(misc, sponsor, -wiping);
-	}
-
-	@Test
-	void wipingWithoutTokenRelationshipFails() {
-		// setup:
-		given(token.hasWipeKey()).willReturn(false);
-		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
-		// and:
-		given(tokenRelsLedger.exists(sponsorMisc)).willReturn(false);
-
-		// when:
-		var status = subject.wipe(sponsor, misc, adjustment, true);
-
-		// expect:
-		assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, status);
-		verify(hederaLedger, never()).updateTokenXfers(misc, sponsor, -adjustment);
-	}
-
-	@Test
-	void wipingWorksWithoutWipeKeyIfCheckSkipped() {
-		// setup:
-		given(token.hasWipeKey()).willReturn(false);
-		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
-		// and:
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
-
-		// when:
-		var status = subject.wipe(sponsor, misc, adjustment, true);
-
-		// expect:
-		assertEquals(OK, status);
-		verify(hederaLedger).updateTokenXfers(misc, sponsor, -adjustment);
-		verify(token).adjustTotalSupplyBy(-adjustment);
-		verify(tokenRelsLedger).set(
-				argThat(sponsorMisc::equals),
-				argThat(TOKEN_BALANCE::equals),
-				longThat(l -> l == (sponsorBalance - adjustment)));
-	}
-
-	@Test
-	void wipingUpdatesTokenXfersAsExpected() {
-		// setup:
-		given(token.hasWipeKey()).willReturn(true);
-		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
-		// and:
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
-
-		// when:
-		var status = subject.wipe(sponsor, misc, adjustment, false);
-
-		// expect:
-		assertEquals(OK, status);
-		// and:
-		verify(hederaLedger).updateTokenXfers(misc, sponsor, -adjustment);
-		verify(token).adjustTotalSupplyBy(-adjustment);
-		verify(tokenRelsLedger).set(
-				argThat(sponsorMisc::equals),
-				argThat(TOKEN_BALANCE::equals),
-				longThat(l -> l == (sponsorBalance - adjustment)));
-	}
-
-	@Test
-	void wipingFailsWithInvalidWipingAmount() {
-		// setup:
-		long wipe = 1_235L;
-
-		given(token.hasWipeKey()).willReturn(true);
-		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
-
-		// when:
-		var status = subject.wipe(sponsor, misc, wipe, false);
-
-		// expect:
-		assertEquals(INVALID_WIPING_AMOUNT, status);
-		verify(hederaLedger, never()).updateTokenXfers(misc, sponsor, -wipe);
+		assertEquals(INVALID_ACCOUNT_ID, status);
 	}
 
 	@Test
 	void adjustingRejectsMissingAccount() {
 		given(accountsLedger.exists(sponsor)).willReturn(false);
 
-		// when:
-		var status = subject.adjustBalance(sponsor, misc, 1);
+		final var status = subject.adjustBalance(sponsor, misc, 1);
 
-		// expect:
-		assertEquals(ResponseCodeEnum.INVALID_ACCOUNT_ID, status);
+		assertEquals(INVALID_ACCOUNT_ID, status);
+	}
+
+	@Test
+	void changingOwnerRejectsMissingSender() {
+		given(accountsLedger.exists(sponsor)).willReturn(false);
+
+		final var status = subject.changeOwner(aNft, sponsor, counterparty);
+
+		assertEquals(INVALID_ACCOUNT_ID, status);
+	}
+
+	@Test
+	void changingOwnerRejectsMissingNftInstance() {
+		given(nftsLedger.exists(aNft)).willReturn(false);
+
+		final var status = subject.changeOwner(aNft, sponsor, counterparty);
+
+		assertEquals(INVALID_NFT_ID, status);
+	}
+
+	@Test
+	void changingOwnerRejectsUnassociatedReceiver() {
+		given(tokenRelsLedger.exists(counterpartyNft)).willReturn(false);
+
+		final var status = subject.changeOwner(aNft, sponsor, counterparty);
+
+		assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, status);
+	}
+
+	@Test
+	void changingOwnerRejectsIllegitimateOwner() {
+		given(nftsLedger.get(aNft, NftProperty.OWNER)).willReturn(EntityId.fromGrpcAccountId(counterparty));
+
+		final var status = subject.changeOwner(aNft, sponsor, counterparty);
+
+		assertEquals(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, status);
+	}
+
+	@Test
+	void changingOwnerDoesTheExpected() {
+		long startSponsorNfts = 5, startCounterpartyNfts = 8;
+		long startSponsorANfts = 4, startCounterpartyANfts = 1;
+		final var sender = EntityId.fromGrpcAccountId(sponsor);
+		final var receiver = EntityId.fromGrpcAccountId(counterparty);
+		final var muti = new MerkleUniqueTokenId(EntityId.fromGrpcTokenId(aNft.tokenId()), aNft.serialNo());
+		given(accountsLedger.get(sponsor, NUM_NFTS_OWNED)).willReturn(startSponsorNfts);
+		given(accountsLedger.get(counterparty, NUM_NFTS_OWNED)).willReturn(startCounterpartyNfts);
+		given(tokenRelsLedger.get(sponsorNft, TOKEN_BALANCE)).willReturn(startSponsorANfts);
+		given(tokenRelsLedger.get(counterpartyNft, TOKEN_BALANCE)).willReturn(startCounterpartyANfts);
+
+		final var status = subject.changeOwner(aNft, sponsor, counterparty);
+
+		assertEquals(OK, status);
+		verify(nftsLedger).set(aNft, NftProperty.OWNER, receiver);
+		verify(uniqueTokenAccountOwnerships).disassociate(sender, muti);
+		verify(uniqueTokenAccountOwnerships).associate(receiver, muti);
+		verify(accountsLedger).set(sponsor, NUM_NFTS_OWNED, startSponsorNfts - 1);
+		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts + 1);
+		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts + 1);
+		verify(tokenRelsLedger).set(sponsorNft, TOKEN_BALANCE, startSponsorANfts - 1);
+		verify(tokenRelsLedger).set(counterpartyNft, TOKEN_BALANCE, startCounterpartyANfts + 1);
+		verify(hederaLedger).updateOwnershipChanges(aNft, sponsor, counterparty);
 	}
 
 	@Test
 	void updateRejectsInvalidExpiry() {
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
-		// given:
 		var op = updateWith(NO_KEYS, true, true, false);
 		op = op.toBuilder().setExpiry(Timestamp.newBuilder().setSeconds(expiry - 1)).build();
 
-		// when:
-		var outcome = subject.update(op, CONSENSUS_NOW);
+		final var outcome = subject.update(op, CONSENSUS_NOW);
 
-		// then:
 		assertEquals(INVALID_EXPIRATION_TIME, outcome);
-	}
-
-	@Test
-	void updateRejectsImmutableToken() {
-		given(token.hasAdminKey()).willReturn(false);
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
-		// given:
-		var op = updateWith(NO_KEYS, true, true, false);
-
-		// when:
-		var outcome = subject.update(op, CONSENSUS_NOW);
-
-		// then:
-		assertEquals(TOKEN_IS_IMMUTABLE, outcome);
 	}
 
 	@Test
 	void canExtendImmutableExpiry() {
 		given(token.hasAdminKey()).willReturn(false);
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
-		// given:
 		var op = updateWith(NO_KEYS, false, false, false);
 		op = op.toBuilder().setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1_234)).build();
 
-		// when:
-		var outcome = subject.update(op, CONSENSUS_NOW);
+		final var outcome = subject.update(op, CONSENSUS_NOW);
 
-		// then:
 		assertEquals(OK, outcome);
+	}
+
+	@Test
+	void cannotUpdateImmutableTokenWithNewFeeScheduleKey() {
+		given(token.hasAdminKey()).willReturn(false);
+		given(token.hasFeeScheduleKey()).willReturn(true);
+		var op = updateWith(NO_KEYS, false, false, false);
+		op = op.toBuilder()
+				.setFeeScheduleKey(feeScheduleKey)
+				.setExpiry(Timestamp.newBuilder().setSeconds(expiry + 1_234)).build();
+
+		final var outcome = subject.update(op, CONSENSUS_NOW);
+
+		assertEquals(TOKEN_IS_IMMUTABLE, outcome);
+	}
+
+	@Test
+	void ifImmutableWillStayImmutable() {
+		givenUpdateTarget(ALL_KEYS);
+		given(token.hasFeeScheduleKey()).willReturn(false);
+		var op = updateWith(ALL_KEYS, false, false, false);
+		op = op.toBuilder().setFeeScheduleKey(feeScheduleKey).build();
+
+		final var outcome = subject.update(op, CONSENSUS_NOW);
+
+		assertEquals(TOKEN_HAS_NO_FEE_SCHEDULE_KEY, outcome);
 	}
 
 	@Test
 	void updateRejectsInvalidNewAutoRenew() {
 		given(accountsLedger.exists(newAutoRenewAccount)).willReturn(false);
-		// and:
-		var op = updateWith(NO_KEYS, true, true, false, true, false);
+		final var op = updateWith(NO_KEYS, true, true, false, true, false);
 
-		// when:
-		var outcome = subject.update(op, CONSENSUS_NOW);
+		final var outcome = subject.update(op, CONSENSUS_NOW);
 
-		// then:
 		assertEquals(INVALID_AUTORENEW_ACCOUNT, outcome);
 	}
 
 	@Test
 	void updateRejectsInvalidNewAutoRenewPeriod() {
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
-		// and:
 		var op = updateWith(NO_KEYS, true, true, false, false, false);
 		op = op.toBuilder().setAutoRenewPeriod(enduring(-1L)).build();
 
-		// when:
-		var outcome = subject.update(op, CONSENSUS_NOW);
+		final var outcome = subject.update(op, CONSENSUS_NOW);
 
-		// then:
 		assertEquals(INVALID_RENEWAL_PERIOD, outcome);
 	}
 
 	@Test
 	void updateRejectsMissingToken() {
 		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
-		// and:
 		givenUpdateTarget(ALL_KEYS);
-		// and:
-		var op = updateWith(ALL_KEYS, true, true, true);
+		final var op = updateWith(ALL_KEYS, true, true, true);
 
-		// when:
-		var outcome = subject.update(op, CONSENSUS_NOW);
+		final var outcome = subject.update(op, CONSENSUS_NOW);
 
-		// then:
 		assertEquals(INVALID_TOKEN_ID, outcome);
 	}
 
 
 	@Test
 	void updateRejectsInappropriateKycKey() {
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
-		// and:
 		givenUpdateTarget(NO_KEYS);
-		// and:
-		var op = updateWith(EnumSet.of(KeyType.KYC), false, false, false);
+		final var op = updateWith(EnumSet.of(KeyType.KYC), false, false, false);
 
-		// when:
-		var outcome = subject.update(op, CONSENSUS_NOW);
+		final var outcome = subject.update(op, CONSENSUS_NOW);
 
-		// then:
 		assertEquals(TOKEN_HAS_NO_KYC_KEY, outcome);
 	}
 
 	@Test
 	void updateRejectsInappropriateFreezeKey() {
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
-		// and:
 		givenUpdateTarget(NO_KEYS);
-		// and:
-		var op = updateWith(EnumSet.of(KeyType.FREEZE), false, false, false);
+		final var op = updateWith(EnumSet.of(KeyType.FREEZE), false, false, false);
 
-		// when:
-		var outcome = subject.update(op, CONSENSUS_NOW);
+		final var outcome = subject.update(op, CONSENSUS_NOW);
 
-		// then:
 		assertEquals(TOKEN_HAS_NO_FREEZE_KEY, outcome);
 	}
 
 	@Test
 	void updateRejectsInappropriateWipeKey() {
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
-		// and:
 		givenUpdateTarget(NO_KEYS);
-		// and:
-		var op = updateWith(EnumSet.of(KeyType.WIPE), false, false, false);
+		final var op = updateWith(EnumSet.of(KeyType.WIPE), false, false, false);
 
-		// when:
-		var outcome = subject.update(op, CONSENSUS_NOW);
+		final var outcome = subject.update(op, CONSENSUS_NOW);
 
-		// then:
 		assertEquals(TOKEN_HAS_NO_WIPE_KEY, outcome);
 	}
 
 	@Test
 	void updateRejectsInappropriateSupplyKey() {
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
-		// and:
 		givenUpdateTarget(NO_KEYS);
-		// and:
-		var op = updateWith(EnumSet.of(KeyType.SUPPLY), false, false, false);
+		final var op = updateWith(EnumSet.of(KeyType.SUPPLY), false, false, false);
 
-		// when:
-		var outcome = subject.update(op, CONSENSUS_NOW);
+		final var outcome = subject.update(op, CONSENSUS_NOW);
 
-		// then:
 		assertEquals(TOKEN_HAS_NO_SUPPLY_KEY, outcome);
 	}
 
@@ -1127,7 +769,6 @@ class HederaTokenStoreTest {
 
 		subject.removeKnownTreasuryForToken(treasury, misc);
 
-		// expect:
 		assertFalse(subject.knownTreasuries.containsKey(treasury));
 		assertTrue(subject.knownTreasuries.isEmpty());
 	}
@@ -1136,7 +777,6 @@ class HederaTokenStoreTest {
 	void addKnownTreasuryWorks() {
 		subject.addKnownTreasury(treasury, misc);
 
-		// expect:
 		assertTrue(subject.knownTreasuries.containsKey(treasury));
 	}
 
@@ -1147,7 +787,6 @@ class HederaTokenStoreTest {
 
 		subject.removeKnownTreasuryForToken(treasury, misc);
 
-		// expect:
 		assertTrue(subject.knownTreasuries.containsKey(treasury));
 		assertEquals(1, subject.knownTreasuries.size());
 		assertTrue(subject.knownTreasuries.get(treasury).contains(anotherMisc));
@@ -1159,7 +798,6 @@ class HederaTokenStoreTest {
 
 		subject.knownTreasuries.put(treasury, tokenSet);
 
-		// expect:
 		assertTrue(subject.isKnownTreasury(treasury));
 	}
 
@@ -1168,14 +806,9 @@ class HederaTokenStoreTest {
 		Set<TokenID> tokenSet = new HashSet<>(List.of(anotherMisc, misc));
 
 		subject.knownTreasuries.put(treasury, tokenSet);
-
-		// expect:
 		assertEquals(List.of(misc, anotherMisc), subject.listOfTokensServed(treasury));
 
-		// and when:
 		subject.knownTreasuries.remove(treasury);
-
-		// then:
 		assertSame(Collections.emptyList(), subject.listOfTokensServed(treasury));
 	}
 
@@ -1185,99 +818,74 @@ class HederaTokenStoreTest {
 
 		subject.knownTreasuries.put(treasury, tokenSet);
 
-		// expect:
 		assertTrue(subject.isTreasuryForToken(treasury, misc));
 	}
 
 	@Test
 	void isTreasuryForTokenReturnsFalse() {
-		// setup:
 		subject.knownTreasuries.clear();
 
-		// expect:
 		assertFalse(subject.isTreasuryForToken(treasury, misc));
 	}
 
 	@Test
 	void throwsIfKnownTreasuryIsMissing() {
-		// expect:
 		assertThrows(IllegalArgumentException.class, () -> subject.removeKnownTreasuryForToken(null, misc));
 	}
 
 	@Test
 	void throwsIfInvalidTreasury() {
-		// setup:
 		subject.knownTreasuries.clear();
 
-		// expect:
 		assertThrows(IllegalArgumentException.class, () -> subject.removeKnownTreasuryForToken(treasury, misc));
 	}
 
 
 	@Test
 	void updateHappyPathIgnoresZeroExpiry() {
-		// setup:
 		subject.addKnownTreasury(treasury, misc);
 		Set<TokenID> tokenSet = new HashSet<>();
 		tokenSet.add(misc);
-
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
-		// and:
 		givenUpdateTarget(ALL_KEYS);
-		// and:
 		var op = updateWith(ALL_KEYS, true, true, true);
 		op = op.toBuilder().setExpiry(Timestamp.newBuilder().setSeconds(0)).build();
 
-		// when:
-		var outcome = subject.update(op, CONSENSUS_NOW);
+		final var outcome = subject.update(op, CONSENSUS_NOW);
 
-		// then:
 		assertEquals(OK, outcome);
 		verify(token, never()).setExpiry(anyLong());
-		// and:
 		assertFalse(subject.knownTreasuries.containsKey(treasury));
 		assertEquals(subject.knownTreasuries.get(newTreasury), tokenSet);
 	}
 
 	@Test
 	void updateRemovesAdminKeyWhenAppropos() {
-		// setup:
 		subject.addKnownTreasury(treasury, misc);
-
 		Set<TokenID> tokenSet = new HashSet<>();
 		tokenSet.add(misc);
-
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
-		// and:
 		givenUpdateTarget(EnumSet.noneOf(KeyType.class));
-		// and:
-		var op = updateWith(EnumSet.of(KeyType.EMPTY_ADMIN), false, false, false);
+		final var op = updateWith(EnumSet.of(KeyType.EMPTY_ADMIN), false, false, false);
 
-		// when:
-		var outcome = subject.update(op, CONSENSUS_NOW);
-		// then:
+		final var outcome = subject.update(op, CONSENSUS_NOW);
+
 		assertEquals(OK, outcome);
 		verify(token).setAdminKey(MerkleToken.UNUSED_KEY);
 	}
 
 	@Test
 	void updateHappyPathWorksForEverythingWithNewExpiry() {
-		// setup:
 		subject.addKnownTreasury(treasury, misc);
-
 		Set<TokenID> tokenSet = new HashSet<>();
 		tokenSet.add(misc);
-
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
-		// and:
 		givenUpdateTarget(ALL_KEYS);
-		// and:
 		var op = updateWith(ALL_KEYS, true, true, true);
-		op = op.toBuilder().setExpiry(Timestamp.newBuilder().setSeconds(newExpiry)).build();
+		op = op.toBuilder()
+				.setExpiry(Timestamp.newBuilder().setSeconds(newExpiry))
+				.setFeeScheduleKey(newKey)
+				.build();
 
-		// when:
-		var outcome = subject.update(op, CONSENSUS_NOW);
-		// then:
+		final var outcome = subject.update(op, CONSENSUS_NOW);
+
 		assertEquals(OK, outcome);
 		verify(token).setSymbol(newSymbol);
 		verify(token).setName(newName);
@@ -1288,21 +896,16 @@ class HederaTokenStoreTest {
 		verify(token).setKycKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
 		verify(token).setSupplyKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
 		verify(token).setWipeKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
-		// and:
+		verify(token).setFeeScheduleKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
 		assertFalse(subject.knownTreasuries.containsKey(treasury));
 		assertEquals(subject.knownTreasuries.get(newTreasury), tokenSet);
 	}
 
 	@Test
 	void updateHappyPathWorksWithNewMemo() {
-		// setup:
 		subject.addKnownTreasury(treasury, misc);
-
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
-		// and:
 		givenUpdateTarget(ALL_KEYS);
-		// and:
-		var op = updateWith(NO_KEYS,
+		final var op = updateWith(NO_KEYS,
 				false,
 				false,
 				false,
@@ -1311,36 +914,27 @@ class HederaTokenStoreTest {
 				false,
 				true);
 
-		// when:
-		var outcome = subject.update(op, CONSENSUS_NOW);
+		final var outcome = subject.update(op, CONSENSUS_NOW);
 
-		// then:
 		assertEquals(OK, outcome);
 		verify(token).setMemo(newMemo);
 	}
 
 	@Test
 	void updateHappyPathWorksWithNewAutoRenewAccount() {
-		// setup:
 		subject.addKnownTreasury(treasury, misc);
-
-		given(tokens.getForModify(fromTokenId(misc))).willReturn(token);
-		// and:
 		givenUpdateTarget(ALL_KEYS);
-		// and:
-		var op = updateWith(ALL_KEYS, true, true, true, true, true);
+		final var op = updateWith(ALL_KEYS, true, true, true, true, true);
 
-		// when:
-		var outcome = subject.update(op, CONSENSUS_NOW);
+		final var outcome = subject.update(op, CONSENSUS_NOW);
 
-		// then:
 		assertEquals(OK, outcome);
 		verify(token).setAutoRenewAccount(EntityId.fromGrpcAccountId(newAutoRenewAccount));
 		verify(token).setAutoRenewPeriod(newAutoRenewPeriod);
 	}
 
 	enum KeyType {
-		WIPE, FREEZE, SUPPLY, KYC, ADMIN, EMPTY_ADMIN
+		WIPE, FREEZE, SUPPLY, KYC, ADMIN, EMPTY_ADMIN, FEE_SCHEDULE
 	}
 
 	private static EnumSet<KeyType> NO_KEYS = EnumSet.noneOf(KeyType.class);
@@ -1384,8 +978,8 @@ class HederaTokenStoreTest {
 			boolean setInvalidKeys,
 			boolean useNewMemo
 	) {
-		var invalidKey = Key.getDefaultInstance();
-		var op = TokenUpdateTransactionBody.newBuilder().setToken(misc);
+		final var invalidKey = Key.getDefaultInstance();
+		final var op = TokenUpdateTransactionBody.newBuilder().setToken(misc);
 		if (useNewSymbol) {
 			op.setSymbol(newSymbol);
 		}
@@ -1442,17 +1036,16 @@ class HederaTokenStoreTest {
 		if (keys.contains(KeyType.KYC)) {
 			given(token.hasKycKey()).willReturn(true);
 		}
+		if (keys.contains(KeyType.FEE_SCHEDULE)) {
+			given(token.hasFeeScheduleKey()).willReturn(true);
+		}
 	}
 
 	@Test
 	void understandsPendingCreation() {
-		// expect:
 		assertFalse(subject.isCreationPending());
 
-		// and when:
 		subject.pendingId = misc;
-
-		// expect:
 		assertTrue(subject.isCreationPending());
 	}
 
@@ -1460,10 +1053,8 @@ class HederaTokenStoreTest {
 	void adjustingRejectsMissingToken() {
 		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
 
-		// when:
-		var status = subject.adjustBalance(sponsor, misc, 1);
+		final var status = subject.adjustBalance(sponsor, misc, 1);
 
-		// expect:
 		assertEquals(ResponseCodeEnum.INVALID_TOKEN_ID, status);
 	}
 
@@ -1471,10 +1062,8 @@ class HederaTokenStoreTest {
 	void freezingRejectsUnfreezableToken() {
 		given(token.freezeKey()).willReturn(Optional.empty());
 
-		// when:
-		var status = subject.freeze(treasury, misc);
+		final var status = subject.freeze(treasury, misc);
 
-		// then:
 		assertEquals(ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY, status);
 	}
 
@@ -1482,22 +1071,9 @@ class HederaTokenStoreTest {
 	void grantingRejectsUnknowableToken() {
 		given(token.kycKey()).willReturn(Optional.empty());
 
-		// when:
-		var status = subject.grantKyc(treasury, misc);
+		final var status = subject.grantKyc(treasury, misc);
 
-		// then:
 		assertEquals(ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY, status);
-	}
-
-	@Test
-	public void wipingRejectsDeletedToken() {
-		given(token.isDeleted()).willReturn(true);
-
-		// when:
-		var status = subject.wipe(sponsor, misc, adjustment, false);
-
-		// then:
-		assertEquals(ResponseCodeEnum.TOKEN_WAS_DELETED, status);
 	}
 
 	@Test
@@ -1505,19 +1081,15 @@ class HederaTokenStoreTest {
 		givenTokenWithFreezeKey(true);
 		given(token.isDeleted()).willReturn(true);
 
-		// when:
-		var status = subject.freeze(treasury, misc);
+		final var status = subject.freeze(treasury, misc);
 
-		// then:
 		assertEquals(ResponseCodeEnum.TOKEN_WAS_DELETED, status);
 	}
 
 	@Test
 	void unfreezingInvalidWithoutFreezeKey() {
-		// when:
-		var status = subject.unfreeze(treasury, misc);
+		final var status = subject.unfreeze(treasury, misc);
 
-		// then:
 		assertEquals(TOKEN_HAS_NO_FREEZE_KEY, status);
 	}
 
@@ -1525,10 +1097,8 @@ class HederaTokenStoreTest {
 	void performsValidFreeze() {
 		givenTokenWithFreezeKey(false);
 
-		// when:
 		subject.freeze(treasury, misc);
 
-		// then:
 		verify(tokenRelsLedger).set(treasuryMisc, TokenRelProperty.IS_FROZEN, true);
 	}
 
@@ -1541,92 +1111,81 @@ class HederaTokenStoreTest {
 	void adjustingRejectsDeletedToken() {
 		given(token.isDeleted()).willReturn(true);
 
-		// when:
-		var status = subject.adjustBalance(treasury, misc, 1);
+		final var status = subject.adjustBalance(treasury, misc, 1);
 
-		// then:
 		assertEquals(ResponseCodeEnum.TOKEN_WAS_DELETED, status);
+	}
+
+	@Test
+	void adjustingRejectsFungibleUniqueToken() {
+		given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+
+		final var status = subject.adjustBalance(treasury, misc, 1);
+
+		assertEquals(ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON, status);
 	}
 
 	@Test
 	void refusesToAdjustFrozenRelationship() {
 		given(tokenRelsLedger.get(treasuryMisc, IS_FROZEN)).willReturn(true);
-		// when:
-		var status = subject.adjustBalance(treasury, misc, -1);
 
-		// then:
+		final var status = subject.adjustBalance(treasury, misc, -1);
+
 		assertEquals(ACCOUNT_FROZEN_FOR_TOKEN, status);
 	}
 
 	@Test
 	void refusesToAdjustRevokedKycRelationship() {
 		given(tokenRelsLedger.get(treasuryMisc, IS_KYC_GRANTED)).willReturn(false);
-		// when:
-		var status = subject.adjustBalance(treasury, misc, -1);
 
-		// then:
+		final var status = subject.adjustBalance(treasury, misc, -1);
+
 		assertEquals(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN, status);
 	}
 
 	@Test
 	void refusesInvalidAdjustment() {
-		// when:
-		var status = subject.adjustBalance(treasury, misc, -treasuryBalance - 1);
+		final var status = subject.adjustBalance(treasury, misc, -treasuryBalance - 1);
 
-		// then:
 		assertEquals(INSUFFICIENT_TOKEN_BALANCE, status);
 	}
 
 	@Test
 	void performsValidAdjustment() {
-		given(tokens.get(fromTokenId(misc))).willReturn(token);
-
-		// when:
 		subject.adjustBalance(treasury, misc, -1);
 
-		// then:
 		verify(tokenRelsLedger).set(treasuryMisc, TOKEN_BALANCE, treasuryBalance - 1);
 	}
 
 	@Test
 	void rollbackReclaimsIdAndClears() {
-		// setup:
 		subject.pendingId = created;
 		subject.pendingCreation = token;
 
-		// when:
 		subject.rollbackCreation();
 
-		// then:
 		verify(tokens, never()).put(fromTokenId(created), token);
 		verify(ids).reclaimLastId();
-		// and:
 		assertSame(subject.pendingId, HederaTokenStore.NO_PENDING_ID);
 		assertNull(subject.pendingCreation);
 	}
 
 	@Test
 	void commitAndRollbackThrowIseIfNoPendingCreation() {
-		// expect:
 		assertThrows(IllegalStateException.class, subject::commitCreation);
 		assertThrows(IllegalStateException.class, subject::rollbackCreation);
 	}
 
 	@Test
 	void commitPutsToMapAndClears() {
-		// setup:
 		subject.pendingId = created;
 		subject.pendingCreation = token;
 
-		// when:
 		subject.commitCreation();
 
-		// then:
 		verify(tokens).put(fromTokenId(created), token);
-		// and:
 		assertSame(subject.pendingId, HederaTokenStore.NO_PENDING_ID);
 		assertNull(subject.pendingCreation);
-		// and:
 		assertTrue(subject.isKnownTreasury(treasury));
 		assertEquals(Set.of(created, misc), subject.knownTreasuries.get(treasury));
 	}
@@ -1634,27 +1193,21 @@ class HederaTokenStoreTest {
 	@Test
 	void rejectsTooManyFeeSchedules() {
 		given(properties.maxCustomFeesAllowed()).willReturn(1);
+		final var req = fullyValidTokenCreateAttempt().build();
 
-		// given:
-		var req = fullyValidAttempt().build();
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
 
-		// when:
-		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		// expect:
 		assertEquals(CUSTOM_FEES_LIST_TOO_LONG, result.getStatus());
 		assertTrue(result.getCreated().isEmpty());
 	}
 
 	@Test
 	void rejectsUnderspecifiedFeeSchedules() {
-		// given:
-		var req = fullyValidAttempt().setCustomFees(grpcUnderspecifiedCustomFees).build();
+		final var grpcUnderspecifiedCustomFees = List.of(builder.withOnlyFeeCollector());
+		final var req = fullyValidTokenCreateAttempt().addAllCustomFees(grpcUnderspecifiedCustomFees).build();
 
-		// when:
-		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
 
-		// expect:
 		assertEquals(CUSTOM_FEE_NOT_FULLY_SPECIFIED, result.getStatus());
 		assertTrue(result.getCreated().isEmpty());
 	}
@@ -1662,14 +1215,10 @@ class HederaTokenStoreTest {
 	@Test
 	void rejectsInvalidFeeCollector() {
 		given(accountsLedger.exists(anotherFeeCollector)).willReturn(false);
+		final var req = fullyValidTokenCreateAttempt().build();
 
-		// given:
-		var req = fullyValidAttempt().build();
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
 
-		// when:
-		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		// expect:
 		assertEquals(INVALID_CUSTOM_FEE_COLLECTOR, result.getStatus());
 		assertTrue(result.getCreated().isEmpty());
 	}
@@ -1677,150 +1226,254 @@ class HederaTokenStoreTest {
 	@Test
 	void rejectsMissingTokenDenomination() {
 		given(tokens.containsKey(fromTokenId(misc))).willReturn(false);
+		final var req = fullyValidTokenCreateAttempt().build();
 
-		// given:
-		var req = fullyValidAttempt().build();
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
 
-		// when:
-		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		// expect:
 		assertEquals(INVALID_TOKEN_ID_IN_CUSTOM_FEES, result.getStatus());
+		assertTrue(result.getCreated().isEmpty());
+	}
+
+	@Test
+	void rejectsNftAsCustomFeeDenomination() {
+		final var grpcNftAsDenominatingToken = List.of(
+				builder.withFixedFee(fixedHts(nonfungible, 100L))
+		);
+		final var req = fullyValidTokenCreateAttempt().addAllCustomFees(grpcNftAsDenominatingToken).build();
+
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		assertEquals(CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON, result.getStatus());
 		assertTrue(result.getCreated().isEmpty());
 	}
 
 	@Test
 	void rejectsUnassociatedFeeCollector() {
 		given(tokenRelsLedger.exists(anotherFeeCollectorMisc)).willReturn(false);
+		final var req = fullyValidTokenCreateAttempt().build();
 
-		// given:
-		var req = fullyValidAttempt().build();
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
 
-		// when:
-		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		// expect:
 		assertEquals(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR, result.getStatus());
 		assertTrue(result.getCreated().isEmpty());
 	}
 
 	@Test
+	void rejectsFractionalFeeInCustomFeeWhenCreatingNft() {
+		final var req = fullyValidTokenCreateAttempt()
+				.setTokenType(com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE).build();
+
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		assertEquals(CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON, result.getStatus());
+		assertTrue(result.getCreated().isEmpty());
+	}
+
+	@Test
 	void rejectsZeroFractionInFractionalFee() {
-		var req = fullyValidAttempt().setCustomFees(grpcZeroFractionCustomFees).build();
+		final var grpcZeroFractionCustomFees = List.of(
+				builder.withFractionalFee(fractional(0L, 1_000L))
+		);
+		final var req = fullyValidTokenCreateAttempt().addAllCustomFees(grpcZeroFractionCustomFees).build();
 
-		// when:
-		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
 
-		// expect:
-		assertEquals(CUSTOM_FEE_MUST_BE_POSITIVE, result.getStatus());
-		assertTrue(result.getCreated().isEmpty());
-	}
-
-	@Test
-	void rejectsNegativeMaxInFractionalFee() {
-		var req = fullyValidAttempt().setCustomFees(grpcNegativeMaximumCustomFees).build();
-
-		// when:
-		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		// expect:
-		assertEquals(CUSTOM_FEE_MUST_BE_POSITIVE, result.getStatus());
-		assertTrue(result.getCreated().isEmpty());
-	}
-
-	@Test
-	void rejectsNegativeMinInFractionalFee() {
-		var req = fullyValidAttempt().setCustomFees(grpcNegativeMinimumCustomFees).build();
-
-		// when:
-		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		// expect:
 		assertEquals(CUSTOM_FEE_MUST_BE_POSITIVE, result.getStatus());
 		assertTrue(result.getCreated().isEmpty());
 	}
 
 	@Test
 	void rejectsNegativeFractionInFractionalFee() {
-		var req = fullyValidAttempt().setCustomFees(grpcNegativeFractionCustomFees).build();
+		final var grpcNegativeFractionCustomFees = List.of(
+				builder.withFractionalFee(fractional(123L, -1_000L))
+		);
+		final var req = fullyValidTokenCreateAttempt().addAllCustomFees(grpcNegativeFractionCustomFees).build();
 
-		// when:
-		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
 
-		// expect:
+		assertEquals(CUSTOM_FEE_MUST_BE_POSITIVE, result.getStatus());
+		assertTrue(result.getCreated().isEmpty());
+	}
+
+	@Test
+	void rejectsNegativeMaxInFractionalFee() {
+		final var grpcNegativeMaximumCustomFees = List.of(
+				builder.withFractionalFee(
+						fractional(123L, 1_000L)
+								.setMaximumAmount(-1L))
+		);
+		final var req = fullyValidTokenCreateAttempt().addAllCustomFees(grpcNegativeMaximumCustomFees).build();
+
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		assertEquals(CUSTOM_FEE_MUST_BE_POSITIVE, result.getStatus());
+		assertTrue(result.getCreated().isEmpty());
+	}
+
+	@Test
+	void rejectsNegativeMinInFractionalFee() {
+		final var grpcNegativeMinimumCustomFees = List.of(
+				builder.withFractionalFee(
+						fractional(123L, 1_000L)
+								.setMinimumAmount(-1L))
+		);
+		final var req = fullyValidTokenCreateAttempt().addAllCustomFees(grpcNegativeMinimumCustomFees).build();
+
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
 		assertEquals(CUSTOM_FEE_MUST_BE_POSITIVE, result.getStatus());
 		assertTrue(result.getCreated().isEmpty());
 	}
 
 	@Test
 	void rejectsNegativeAmountInFixedFee() {
-		var req = fullyValidAttempt().setCustomFees(grpcNegativeFixedCustomFees).build();
+		final var grpcNegativeFixedCustomFees = List.of(
+				builder.withFixedFee(fixedHts(-1_000L))
+		);
+		final var req = fullyValidTokenCreateAttempt().addAllCustomFees(grpcNegativeFixedCustomFees).build();
 
-		// when:
-		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
 
-		// expect:
 		assertEquals(CUSTOM_FEE_MUST_BE_POSITIVE, result.getStatus());
 		assertTrue(result.getCreated().isEmpty());
 	}
 
 	@Test
 	void rejectsInvalidFractionInFractionalFee() {
-		var req = fullyValidAttempt().setCustomFees(grpcDivideByZeroCustomFees).build();
+		final var grpcDivideByZeroCustomFees = List.of(
+				builder.withFractionalFee(fractional(15, 0))
+		);
+		final var req = fullyValidTokenCreateAttempt().addAllCustomFees(grpcDivideByZeroCustomFees).build();
 
-		// when:
-		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
 
-		// expect:
 		assertEquals(FRACTION_DIVIDES_BY_ZERO, result.getStatus());
 		assertTrue(result.getCreated().isEmpty());
 	}
 
 	@Test
-	void happyPathWorksWithAutoRenew() {
-		// setup:
-		var expected = new MerkleToken(
-				CONSENSUS_NOW + autoRenewPeriod,
-				totalSupply,
-				decimals,
-				symbol,
-				name,
-				freezeDefault,
-				accountsKycGrantedByDefault,
-				new EntityId(treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
-		expected.setAutoRenewAccount(EntityId.fromGrpcAccountId(autoRenewAccount));
-		expected.setAutoRenewPeriod(autoRenewPeriod);
-		expected.setAdminKey(TOKEN_ADMIN_KT.asJKeyUnchecked());
-		expected.setFreezeKey(TOKEN_FREEZE_KT.asJKeyUnchecked());
-		expected.setKycKey(TOKEN_KYC_KT.asJKeyUnchecked());
-		expected.setWipeKey(MISC_ACCOUNT_KT.asJKeyUnchecked());
-		expected.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked());
-		expected.setMemo(memo);
-		expected.setFeeSchedule(customFees);
-		expected.setFeeScheduleMutable(true);
+	void rejectsFractionalFeeMaxAmountLessThanMinAmount() {
+		final var grpcMaxLessThanMinCustomFees = List.of(
+				builder.withFractionalFee(
+						fractional(123L, 1_000L)
+								.setMinimumAmount(10L)
+								.setMaximumAmount(2L))
+		);
+		final var req = fullyValidTokenCreateAttempt()
+				.addAllCustomFees(grpcMaxLessThanMinCustomFees).build();
 
-		// given:
-		var req = fullyValidAttempt()
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		assertEquals(FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT, result.getStatus());
+		assertTrue(result.getCreated().isEmpty());
+	}
+
+	@Test
+	void acceptsFractionalFeeMaxAmountEqualToMinAmount() {
+		final var grpcMaxEqualToMinCustomFees = List.of(
+				builder.withFractionalFee(
+						fractional(123L, 1_000L)
+								.setMinimumAmount(2L)
+								.setMaximumAmount(2L))
+		);
+		final var req = fullyValidTokenCreateAttempt()
+				.addAllCustomFees(grpcMaxEqualToMinCustomFees).build();
+
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		assertEquals(OK, result.getStatus());
+		assertFalse(result.getCreated().isEmpty());
+	}
+
+	@Test
+	void acceptsFractionalFeeWithZeroMaxAmountPositiveMinAmount() {
+		final var grpcZeroMaxPositiveMinCustomFees = List.of(
+				builder.withFractionalFee(
+						fractional(123L, 1_000L)
+								.setMinimumAmount(10L)
+								.setMaximumAmount(0L))
+		);
+		final var req = fullyValidTokenCreateAttempt()
+				.addAllCustomFees(grpcZeroMaxPositiveMinCustomFees).build();
+
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		assertEquals(OK, result.getStatus());
+		assertFalse(result.getCreated().isEmpty());
+	}
+
+	@Test
+	void rejectsBothNumeratorAndDenominatorNegativeInFractionalFee() {
+		final var grpcBothNegativeFractionCustomFees = List.of(
+				builder.withFractionalFee(fractional(-123L, -1_000L))
+		);
+		final var req = fullyValidTokenCreateAttempt()
+				.addAllCustomFees(grpcBothNegativeFractionCustomFees).build();
+
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		assertEquals(CUSTOM_FEE_MUST_BE_POSITIVE, result.getStatus());
+		assertTrue(result.getCreated().isEmpty());
+	}
+
+	@Test
+	void happyPathWorksWithAutoRenew() {
+		final var expected = buildFullyValidExpectedToken();
+		final var req = fullyValidTokenCreateAttempt()
 				.setExpiry(Timestamp.newBuilder().setSeconds(0))
 				.setAutoRenewAccount(autoRenewAccount)
 				.setAutoRenewPeriod(enduring(autoRenewPeriod))
 				.build();
 
-		// when:
-		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
 
-		// then:
 		assertEquals(OK, result.getStatus());
 		assertEquals(created, result.getCreated().get());
-		// and:
+		assertEquals(created, subject.pendingId);
+		assertEquals(expected, subject.pendingCreation);
+	}
+
+	@Test
+	void canCreateTokenWithImmutableFeeSchedule() {
+		final var expected = buildFullyValidExpectedToken();
+		expected.setFeeScheduleKey(MerkleToken.UNUSED_KEY);
+		final var req = fullyValidTokenCreateAttempt()
+				.setFeeScheduleKey(Key.newBuilder().getDefaultInstanceForType())
+				.setExpiry(Timestamp.newBuilder().setSeconds(0))
+				.setAutoRenewAccount(autoRenewAccount)
+				.setAutoRenewPeriod(enduring(autoRenewPeriod))
+				.build();
+
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		assertEquals(OK, result.getStatus());
+		assertEquals(created, result.getCreated().get());
+		assertEquals(created, subject.pendingId);
+		assertEquals(expected, subject.pendingCreation);
+	}
+
+	@Test
+	void canCreateTokenWithFeeScheduleKeyButNoFeeSchedules() {
+		final var expected = buildFullyValidExpectedToken();
+		expected.setFeeScheduleFrom(Collections.emptyList(), null);
+		final var req = fullyValidTokenCreateAttempt()
+				.clearCustomFees()
+				.setExpiry(Timestamp.newBuilder().setSeconds(0))
+				.setAutoRenewAccount(autoRenewAccount)
+				.setAutoRenewPeriod(enduring(autoRenewPeriod))
+				.build();
+
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+
+		assertEquals(OK, result.getStatus());
+		assertEquals(created, result.getCreated().get());
 		assertEquals(created, subject.pendingId);
 		assertEquals(expected, subject.pendingCreation);
 	}
 
 	@Test
 	void happyPathWorksWithExplicitExpiry() {
-		// setup:
-		var expected = new MerkleToken(
+		final var expected = new MerkleToken(
 				expiry,
 				totalSupply,
 				decimals,
@@ -1834,18 +1487,17 @@ class HederaTokenStoreTest {
 		expected.setKycKey(TOKEN_KYC_KT.asJKeyUnchecked());
 		expected.setWipeKey(MISC_ACCOUNT_KT.asJKeyUnchecked());
 		expected.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked());
+		expected.setFeeScheduleKey(TOKEN_FEE_SCHEDULE_KT.asJKeyUnchecked());
+		expected.setTokenType(TokenType.FUNGIBLE_COMMON);
+		expected.setSupplyType(TokenSupplyType.INFINITE);
 		expected.setMemo(memo);
+		expected.setFeeScheduleFrom(Collections.emptyList(), null);
+		final var req = fullyValidTokenCreateAttempt().clearCustomFees().build();
 
-		// given:
-		var req = fullyValidAttempt().clearCustomFees().build();
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
 
-		// when:
-		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		// then:
 		assertEquals(OK, result.getStatus());
 		assertEquals(created, result.getCreated().get());
-		// and:
 		assertEquals(created, subject.pendingId);
 		assertEquals(expected, subject.pendingCreation);
 	}
@@ -1853,98 +1505,77 @@ class HederaTokenStoreTest {
 	@Test
 	void rejectsInvalidAutoRenewAccount() {
 		given(accountsLedger.exists(autoRenewAccount)).willReturn(false);
-
-		// given:
-		var req = fullyValidAttempt()
+		final var req = fullyValidTokenCreateAttempt()
 				.setAutoRenewAccount(autoRenewAccount)
 				.setAutoRenewPeriod(enduring(1000L))
 				.build();
 
-		// when:
-		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
 
-		// then:
 		assertEquals(INVALID_AUTORENEW_ACCOUNT, result.getStatus());
 	}
 
 	@Test
 	void rejectsMissingTreasury() {
 		given(accountsLedger.exists(treasury)).willReturn(false);
-		// and:
-		var req = fullyValidAttempt()
-				.build();
+		final var req = fullyValidTokenCreateAttempt().build();
 
-		// when:
-		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
 
-		// then:
 		assertEquals(ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN, result.getStatus());
 	}
 
 	@Test
 	void rejectsDeletedTreasuryAccount() {
 		given(hederaLedger.isDeleted(treasury)).willReturn(true);
+		final var req = fullyValidTokenCreateAttempt().build();
 
-		// and:
-		var req = fullyValidAttempt()
-				.build();
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
 
-		// when:
-		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
-
-		// then:
 		assertEquals(ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN, result.getStatus());
 	}
 
 	@Test
 	void allowsZeroInitialSupplyAndDecimals() {
-		// given:
-		var req = fullyValidAttempt()
+		final var req = fullyValidTokenCreateAttempt()
 				.clearCustomFees()
 				.setInitialSupply(0L)
 				.setDecimals(0)
 				.build();
 
-		// when:
-		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
 
-		// then:
 		assertEquals(ResponseCodeEnum.OK, result.getStatus());
 	}
 
 	@Test
 	void allowsToCreateTokenWithTheBiggestAmountInLong() {
-		// given:
-		var req = fullyValidAttempt()
+		final var req = fullyValidTokenCreateAttempt()
 				.clearCustomFees()
 				.setInitialSupply(9)
 				.setDecimals(18)
 				.build();
 
-		// when:
-		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
 
-		// then:
 		assertEquals(ResponseCodeEnum.OK, result.getStatus());
 	}
 
 	@Test
 	void forcesToTrueAccountsKycGrantedByDefaultWithoutKycKey() {
-		// given:
-		var req = fullyValidAttempt()
+		final var req = fullyValidTokenCreateAttempt()
 				.clearCustomFees()
 				.clearKycKey()
 				.build();
 
-		// when:
-		var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
+		final var result = subject.createProvisionally(req, sponsor, CONSENSUS_NOW);
 
-		// then:
 		assertEquals(ResponseCodeEnum.OK, result.getStatus());
 		assertTrue(subject.pendingCreation.accountsKycGrantedByDefault());
 	}
 
-	TokenCreateTransactionBody.Builder fullyValidAttempt() {
+
+	TokenCreateTransactionBody.Builder fullyValidTokenCreateAttempt() {
 		return TokenCreateTransactionBody.newBuilder()
 				.setExpiry(Timestamp.newBuilder().setSeconds(expiry))
 				.setMemo(memo)
@@ -1953,16 +1584,156 @@ class HederaTokenStoreTest {
 				.setFreezeKey(freezeKey)
 				.setWipeKey(wipeKey)
 				.setSupplyKey(supplyKey)
+				.setFeeScheduleKey(feeScheduleKey)
 				.setSymbol(symbol)
 				.setName(name)
 				.setInitialSupply(totalSupply)
 				.setTreasury(treasury)
 				.setDecimals(decimals)
 				.setFreezeDefault(freezeDefault)
-				.setCustomFees(grpcCustomFees);
+				.addAllCustomFees(grpcCustomFees);
+	}
+
+	private MerkleToken buildFullyValidExpectedToken() {
+		final var expected = new MerkleToken(
+				CONSENSUS_NOW + autoRenewPeriod,
+				totalSupply,
+				decimals,
+				symbol,
+				name,
+				freezeDefault,
+				accountsKycGrantedByDefault,
+				new EntityId(treasury.getShardNum(), treasury.getRealmNum(), treasury.getAccountNum()));
+
+		expected.setAutoRenewAccount(EntityId.fromGrpcAccountId(autoRenewAccount));
+		expected.setAutoRenewPeriod(autoRenewPeriod);
+		expected.setAdminKey(TOKEN_ADMIN_KT.asJKeyUnchecked());
+		expected.setFreezeKey(TOKEN_FREEZE_KT.asJKeyUnchecked());
+		expected.setKycKey(TOKEN_KYC_KT.asJKeyUnchecked());
+		expected.setWipeKey(MISC_ACCOUNT_KT.asJKeyUnchecked());
+		expected.setSupplyKey(COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked());
+		expected.setFeeScheduleKey(TOKEN_FEE_SCHEDULE_KT.asJKeyUnchecked());
+		expected.setTokenType(TokenType.FUNGIBLE_COMMON);
+		expected.setSupplyType(TokenSupplyType.INFINITE);
+		expected.setMemo(memo);
+		expected.setFeeScheduleFrom(grpcCustomFees, EntityId.fromGrpcTokenId(created));
+
+		return expected;
 	}
 
 	private Duration enduring(long secs) {
 		return Duration.newBuilder().setSeconds(secs).build();
+	}
+
+	@Test
+	void rejectsMissingTokenIdCustomFeeUpdates() {
+		final var op = updateFeeScheduleWithMissingTokenId();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(INVALID_TOKEN_ID, result);
+	}
+
+	@Test
+	void rejectsTooLongCustomFeeUpdates() {
+		final var op = updateFeeScheduleWith();
+		given(properties.maxCustomFeesAllowed()).willReturn(1);
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(CUSTOM_FEES_LIST_TOO_LONG, result);
+	}
+
+	@Test
+	void rejectsFeesUpdatedWithEmptyFees() {
+		final var op = updateFeeScheduleWithEmptyFees();
+		given(token.grpcFeeSchedule()).willReturn(List.of());
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES, result);
+	}
+
+	@Test
+	void rejectsFeesUpdatedWithUnassociatedFeeCollector() {
+		final var op = updateFeeScheduleWithUnassociatedFeeCollector();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR, result);
+	}
+
+	@Test
+	void canOnlyUpdateTokensWithFeeScheduleKey() {
+		given(token.hasFeeScheduleKey()).willReturn(false);
+
+		final var op = updateFeeScheduleWith();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(TOKEN_HAS_NO_FEE_SCHEDULE_KEY, result);
+	}
+
+	@Test
+	void cannotUseFractionalFeeWithNonfungibleUpdateTarget() {
+		given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+
+		final var op = updateFeeScheduleWithOnlyFractional();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		assertEquals(CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON, result);
+	}
+
+	@Test
+	void happyPathCustomFeesUpdated() {
+		final var op = updateFeeScheduleWith();
+
+		final var result = subject.updateFeeSchedule(op);
+
+		verify(token).setFeeScheduleFrom(grpcCustomFees, EntityId.fromGrpcTokenId(misc));
+		assertEquals(OK, result);
+	}
+
+	private TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithEmptyFees() {
+		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
+				.setTokenId(misc)
+				.addAllCustomFees(List.of());
+		return op.build();
+	}
+
+
+	private TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithMissingTokenId() {
+		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
+				.addAllCustomFees(grpcCustomFees);
+		return op.build();
+	}
+
+	private TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWith() {
+		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
+				.setTokenId(misc)
+				.addAllCustomFees(grpcCustomFees);
+		return op.build();
+	}
+
+	private TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithOnlyFractional() {
+		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
+				.setTokenId(misc)
+				.addAllCustomFees(List.of(customFractionalFee));
+		return op.build();
+	}
+
+	private TokenFeeScheduleUpdateTransactionBody updateFeeScheduleWithUnassociatedFeeCollector() {
+		final var someFeeCollector = IdUtils.asAccount("1.2.778");
+		given(accountsLedger.exists(someFeeCollector)).willReturn(true);
+		final var rel = asTokenRel(someFeeCollector, misc);
+		given(tokenRelsLedger.exists(rel)).willReturn(false);
+		final var feeWithUnassociatedFeeCollector = new CustomFeeBuilder(someFeeCollector)
+				.withFractionalFee(fractionalFee);
+		final var op = TokenFeeScheduleUpdateTransactionBody.newBuilder()
+				.setTokenId(misc)
+				.addAllCustomFees(List.of(feeWithUnassociatedFeeCollector));
+
+		return op.build();
 	}
 }

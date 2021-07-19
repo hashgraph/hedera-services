@@ -21,19 +21,29 @@ package com.hedera.services.txns.span;
  */
 
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
+import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hedera.services.utils.TxnAccessor;
 
 /**
  * Minimal helper class for getting/setting entries in a span map.
  */
 public class ExpandHandleSpanMapAccessor {
-	static final String VALIDATED_TRANSFERS_KEY = "validatedTransfers";
+	private static final String IMPLIED_TRANSFERS_KEY = "impliedTransfers";
+	private static final String FEE_SCHEDULE_UPDATE_META_KEY = "feeScheduleUpdateMeta";
+
+	public void setFeeScheduleUpdateMeta(TxnAccessor accessor, FeeScheduleUpdateMeta feeScheduleUpdateMeta) {
+		accessor.getSpanMap().put(FEE_SCHEDULE_UPDATE_META_KEY, feeScheduleUpdateMeta);
+	}
+
+	public FeeScheduleUpdateMeta getFeeScheduleUpdateMeta(TxnAccessor accessor) {
+		return (FeeScheduleUpdateMeta) accessor.getSpanMap().get(FEE_SCHEDULE_UPDATE_META_KEY);
+	}
 
 	public void setImpliedTransfers(TxnAccessor accessor, ImpliedTransfers impliedTransfers) {
-		accessor.getSpanMap().put(VALIDATED_TRANSFERS_KEY, impliedTransfers);
+		accessor.getSpanMap().put(IMPLIED_TRANSFERS_KEY, impliedTransfers);
 	}
 
 	public ImpliedTransfers getImpliedTransfers(TxnAccessor accessor) {
-		return (ImpliedTransfers) accessor.getSpanMap().get(VALIDATED_TRANSFERS_KEY);
+		return (ImpliedTransfers) accessor.getSpanMap().get(IMPLIED_TRANSFERS_KEY);
 	}
 }

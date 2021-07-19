@@ -60,19 +60,23 @@ public class CryptoOpsUsage {
 	) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 
-		final int numXfers = baseMeta.getNumExplicitTransfers();
-		final int numTokenXfers = xferMeta.getNumTokenTransfers();
-		final int tokenMultiplier = xferMeta.getTokenMultiplier();
-		final int numTokensInvolved = xferMeta.getNumTokensInvolved();
-		final int weightedTokensInvolved = tokenMultiplier * numTokensInvolved;
+		final int totalXfers = baseMeta.getNumExplicitTransfers() + xferMeta.getCustomFeeHbarTransfers();
+		final int totalTokensXfers = xferMeta.getNumFungibleTokenTransfers() + xferMeta.getCustomFeeTokenTransfers();
+		final int totalTokensInvolved = xferMeta.getNumTokensInvolved() + xferMeta.getCustomFeeTokensInvolved();
 
-		final int weightedTokenXfers = tokenMultiplier * numTokenXfers;
+		final int tokenMultiplier = xferMeta.getTokenMultiplier();
+
+		final int weightedTokensInvolved = tokenMultiplier * totalTokensInvolved;
+
+		final int weightedTokenXfers = tokenMultiplier * totalTokensXfers;
 		long incBpt = weightedTokensInvolved * LONG_BASIC_ENTITY_ID_SIZE;
-		incBpt += (weightedTokenXfers + numXfers) * LONG_ACCOUNT_AMOUNT_BYTES;
+		incBpt += (weightedTokenXfers + totalXfers) * LONG_ACCOUNT_AMOUNT_BYTES;
+		incBpt += TOKEN_ENTITY_SIZES.bytesUsedForUniqueTokenTransfers(xferMeta.getNumNftOwnershipChanges());
 		accumulator.addBpt(incBpt);
 
-		long incRb = numXfers * LONG_ACCOUNT_AMOUNT_BYTES;
-		incRb += TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(weightedTokensInvolved, weightedTokenXfers);
+		long incRb = totalXfers * LONG_ACCOUNT_AMOUNT_BYTES;
+		incRb += TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(weightedTokensInvolved, weightedTokenXfers,
+				xferMeta.getNumNftOwnershipChanges());
 		accumulator.addRbs(incRb * USAGE_PROPERTIES.legacyReceiptStorageSecs());
 	}
 
@@ -80,7 +84,7 @@ public class CryptoOpsUsage {
 		var op = cryptoInfoReq.getCryptoGetInfo();
 
 		var estimate = queryEstimateFactory.apply(op.getHeader().getResponseType());
-		estimate.updateTb(BASIC_ENTITY_ID_SIZE);
+		estimate.addTb(BASIC_ENTITY_ID_SIZE);
 		long extraRb = 0;
 		extraRb += ctx.currentMemo().getBytes(StandardCharsets.UTF_8).length;
 		extraRb += getAccountKeyStorageSize(ctx.currentKey());
@@ -88,7 +92,7 @@ public class CryptoOpsUsage {
 			extraRb += BASIC_ENTITY_ID_SIZE;
 		}
 		extraRb += ctx.currentNumTokenRels() * TOKEN_ENTITY_SIZES.bytesUsedPerAccountRelationship();
-		estimate.updateRb(CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + extraRb);
+		estimate.addRb(CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + extraRb);
 
 		return estimate.get();
 	}

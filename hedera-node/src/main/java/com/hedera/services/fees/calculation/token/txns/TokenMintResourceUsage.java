@@ -22,16 +22,22 @@ package com.hedera.services.fees.calculation.token.txns;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
+import com.hedera.services.fees.calculation.utils.ResourceUsageSubtypeHelper;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.token.TokenMintUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.SubType;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.hederahashgraph.fee.SigValueObj;
 
+import java.util.Optional;
 import java.util.function.BiFunction;
 
 public class TokenMintResourceUsage implements TxnResourceUsageEstimator {
+	private static final ResourceUsageSubtypeHelper subtypeHelper = new ResourceUsageSubtypeHelper();
+
 	static BiFunction<TransactionBody, SigUsage, TokenMintUsage> factory = TokenMintUsage::newEstimate;
 
 	@Override
@@ -41,8 +47,17 @@ public class TokenMintResourceUsage implements TxnResourceUsageEstimator {
 
 	@Override
 	public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) throws InvalidTxBodyException {
+		final var target = txn.getTokenMint().getToken();
+		Optional<TokenType> tokenType = view.tokenType(target);
+		SubType subType = subtypeHelper.determineTokenType(tokenType);
 		var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
-		var estimate = factory.apply(txn, sigUsage);
+		var estimate = factory.apply(txn, sigUsage).givenSubType(subType);
+		if (subType == SubType.TOKEN_NON_FUNGIBLE_UNIQUE) {
+			final var now = txn.getTransactionID().getTransactionValidStart().getSeconds();
+			final var tokenIfPresent = view.tokenWith(target);
+			final var lifetime = tokenIfPresent.map(token -> Math.max(0L, token.expiry() - now)).orElse(0L);
+			estimate.givenExpectedLifetime(lifetime);
+		}
 		return estimate.get();
 	}
 }

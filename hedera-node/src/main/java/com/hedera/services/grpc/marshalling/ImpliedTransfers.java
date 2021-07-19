@@ -22,8 +22,8 @@ package com.hedera.services.grpc.marshalling;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.ledger.BalanceChange;
-import com.hedera.services.state.submerkle.AssessedCustomFee;
-import com.hedera.services.state.submerkle.CustomFee;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -45,39 +45,43 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 public class ImpliedTransfers {
 	private final ImpliedTransfersMeta meta;
 	private final List<BalanceChange> changes;
-	private final List<Pair<Id, List<CustomFee>>> tokenFeeSchedules;
-	private final List<AssessedCustomFee> assessedCustomFees;
+	private final List<FcAssessedCustomFee> assessedCustomFees;
 
 	private ImpliedTransfers(
 			ImpliedTransfersMeta meta,
 			List<BalanceChange> changes,
-			List<Pair<Id, List<CustomFee>>> tokenFeeSchedules,
-			List<AssessedCustomFee> assessedCustomFees
+			List<FcAssessedCustomFee> assessedCustomFees
 	) {
 		this.meta = meta;
 		this.changes = changes;
-		this.tokenFeeSchedules = tokenFeeSchedules;
 		this.assessedCustomFees = assessedCustomFees;
 	}
 
 	public static ImpliedTransfers valid(
-			int maxHbarAdjusts,
-			int maxTokenAdjusts,
+			ImpliedTransfersMeta.ValidationProps validationProps,
 			List<BalanceChange> changes,
-			List<Pair<Id, List<CustomFee>>> entityCustomFees,
-			List<AssessedCustomFee> assessedCustomFees
+			List<Pair<Id, List<FcCustomFee>>> tokenFeeSchedules,
+			List<FcAssessedCustomFee> assessedCustomFees
 	) {
-		final var meta = new ImpliedTransfersMeta(maxHbarAdjusts, maxTokenAdjusts, OK, entityCustomFees);
-		return new ImpliedTransfers(meta, changes, entityCustomFees, assessedCustomFees);
+		final var meta = new ImpliedTransfersMeta(validationProps, OK, tokenFeeSchedules);
+		return new ImpliedTransfers(meta, changes, assessedCustomFees);
 	}
 
 	public static ImpliedTransfers invalid(
-			int maxHbarAdjusts,
-			int maxTokenAdjusts,
+			ImpliedTransfersMeta.ValidationProps validationProps,
 			ResponseCodeEnum code
 	) {
-		final var meta = new ImpliedTransfersMeta(maxHbarAdjusts, maxTokenAdjusts, code, Collections.emptyList());
-		return new ImpliedTransfers(meta, Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
+		final var meta = new ImpliedTransfersMeta(validationProps, code, Collections.emptyList());
+		return new ImpliedTransfers(meta, Collections.emptyList(), Collections.emptyList());
+	}
+
+	public static ImpliedTransfers invalid(
+			ImpliedTransfersMeta.ValidationProps validationProps,
+			List<Pair<Id, List<FcCustomFee>>> tokenFeeSchedulesUpToFailure,
+			ResponseCodeEnum code
+	) {
+		final var meta = new ImpliedTransfersMeta(validationProps, code, tokenFeeSchedulesUpToFailure);
+		return new ImpliedTransfers(meta, Collections.emptyList(), Collections.emptyList());
 	}
 
 	public ImpliedTransfersMeta getMeta() {
@@ -88,11 +92,7 @@ public class ImpliedTransfers {
 		return changes;
 	}
 
-	public List<Pair<Id, List<CustomFee>>> getTokenFeeSchedules() {
-		return tokenFeeSchedules;
-	}
-
-	public List<AssessedCustomFee> getAssessedCustomFees() {
+	public List<FcAssessedCustomFee> getAssessedCustomFees() {
 		return assessedCustomFees;
 	}
 
@@ -114,7 +114,7 @@ public class ImpliedTransfers {
 		return MoreObjects.toStringHelper(ImpliedTransfers.class)
 				.add("meta", meta)
 				.add("changes", changes)
-				.add("tokenFeeSchedules", tokenFeeSchedules)
+				.add("tokenFeeSchedules", meta.getTokenFeeSchedules())
 				.add("assessedCustomFees", assessedCustomFees)
 				.toString();
 	}

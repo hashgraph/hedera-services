@@ -44,7 +44,6 @@ public class FetchSystemFiles extends HapiApiSuite {
 		new FetchSystemFiles().runSuiteSync();
 	}
 
-	final String DEFAULT_DIR = "./system-files";
 	final String TARGET_DIR = "./remote-system-files";
 
 	@Override
@@ -57,10 +56,8 @@ public class FetchSystemFiles extends HapiApiSuite {
 	private HapiApiSpec fetchFiles() {
 		return customHapiSpec("FetchFiles")
 				.withProperties(Map.of(
-						"client.feeSchedule.fromDisk", "true",
-						"client.feeSchedule.path", path(DEFAULT_DIR, "feeSchedule.bin"),
-						"client.exchangeRates.fromDisk", "true",
-						"client.exchangeRates.path", path(DEFAULT_DIR, "exchangeRates.bin")
+						"fees.useFixedOffer", "false",
+						"fees.fixedOffer", "100000000"
 				)).given().when().then(
 						getFileContents(NODE_DETAILS)
 								.saveTo(path("nodeDetails.bin"))
@@ -99,7 +96,7 @@ public class FetchSystemFiles extends HapiApiSuite {
 		Object parseFrom(byte[] bytes) throws Exception;
 	}
 
-	public static Function<byte[], String> unchecked(CheckedParser parser) {
+	static Function<byte[], String> unchecked(CheckedParser parser) {
 			return bytes -> {
 				try {
 					return parser.parseFrom(bytes).toString();
@@ -112,10 +109,6 @@ public class FetchSystemFiles extends HapiApiSuite {
 
 	private String path(String file) {
 		return Path.of(TARGET_DIR, file).toString();
-	}
-
-	private String path(String prefix, String file) {
-		return Path.of(prefix, file).toString();
 	}
 
 	@Override

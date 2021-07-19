@@ -9,9 +9,9 @@ package com.hedera.services.sysfiles.validation;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,6 +23,7 @@ package com.hedera.services.sysfiles.validation;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
 import java.util.EnumSet;
+import java.util.Set;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
@@ -61,8 +62,12 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetAccountNftInfos;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetNftInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetNftInfos;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
@@ -72,7 +77,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.Transaction
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
 
 public class ExpectedCustomThrottles {
-	public static final EnumSet<HederaFunctionality> OPS_FOR_RELEASE_0130 = EnumSet.of(
+	public static final Set<HederaFunctionality> OPS_FOR_RELEASE_0160 = EnumSet.of(
 			CryptoCreate,
 			CryptoTransfer,
 			CryptoUpdate,
@@ -90,6 +95,9 @@ public class ExpectedCustomThrottles {
 			ConsensusDeleteTopic,
 			ConsensusSubmitMessage,
 			TokenCreate,
+			TokenGetNftInfo,
+			TokenGetAccountNftInfos,
+			TokenGetNftInfos,
 			TokenFreezeAccount,
 			TokenUnfreezeAccount,
 			TokenGrantKycToAccount,
@@ -118,6 +126,7 @@ public class ExpectedCustomThrottles {
 			TransactionGetRecord,
 			GetVersionInfo,
 			TokenGetInfo,
-			ScheduleGetInfo
+			ScheduleGetInfo,
+			TokenFeeScheduleUpdate
 	);
 }

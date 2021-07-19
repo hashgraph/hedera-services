@@ -9,9 +9,9 @@ package com.hedera.services.store;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,13 +28,19 @@ import com.hedera.services.state.merkle.MerkleEntityAssociation;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.store.models.UniqueToken;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,13 +48,19 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
+
+import static com.hedera.services.store.TypedTokenStore.legacyReprOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -58,6 +70,12 @@ class TypedTokenStoreTest {
 	private AccountStore accountStore;
 	@Mock
 	private FCMap<MerkleEntityId, MerkleToken> tokens;
+	@Mock
+	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens;
+	@Mock
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenOwnerships;
+	@Mock
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations;
 	@Mock
 	private TransactionRecordService transactionRecordService;
 	@Mock
@@ -73,7 +91,14 @@ class TypedTokenStoreTest {
 		setupTokenRel();
 
 		subject = new TypedTokenStore(
-				accountStore, transactionRecordService, () -> tokens, () -> tokenRels, backingTokenRels);
+				accountStore,
+				transactionRecordService,
+				() -> tokens,
+				() -> uniqueTokens,
+				() -> uniqueTokenOwnerships,
+				() -> uniqueTokenAssociations,
+				() -> tokenRels,
+				backingTokenRels);
 	}
 
 	/* --- Token relationship loading --- */
@@ -109,13 +134,36 @@ class TypedTokenStoreTest {
 		modelTokenRel.setFrozen(!frozen);
 		modelTokenRel.setKycGranted(!kycGranted);
 		// and:
-		subject.persistTokenRelationship(modelTokenRel);
+		subject.persistTokenRelationships(List.of(modelTokenRel));
 
 		// then:
 		assertEquals(expectedReplacementTokenRel, miscTokenMerkleRel);
 		verify(tokenRels, never()).replace(miscTokenRelId, expectedReplacementTokenRel);
 		// and:
-		verify(transactionRecordService).includeChangesToTokenRel(modelTokenRel);
+		verify(transactionRecordService).includeChangesToTokenRels(List.of(modelTokenRel));
+	}
+
+	@Test
+	void removesDestroyedRel() {
+		// setup:
+		final var destroyedRel = new TokenRelationship(token, miscAccount);
+		destroyedRel.markAsPersisted();
+		destroyedRel.markAsDestroyed();
+
+		// when:
+		subject.persistTokenRelationships(List.of(destroyedRel));
+
+		// then:
+		verify(tokenRels).remove(miscTokenRelId);
+		verify(backingTokenRels).removeFromExistingRels(legacyReprOf(destroyedRel));
+		verify(transactionRecordService).includeChangesToTokenRels(List.of(destroyedRel));
+	}
+
+	@Test
+	void persistTrackers() {
+		var ot = new OwnershipTracker();
+		subject.persistTrackers(ot);
+		verify(transactionRecordService).includeOwnershipChanges(ot);
 	}
 
 	@Test
@@ -130,15 +178,23 @@ class TypedTokenStoreTest {
 		newTokenRel.setKycGranted(true);
 		newTokenRel.setBalance(balance * 2);
 		// and:
-		subject.persistTokenRelationship(newTokenRel);
+		subject.persistTokenRelationships(List.of(newTokenRel));
 
 		// then:
 		verify(tokenRels).put(miscTokenRelId, expectedNewTokenRel);
 		// and:
-		verify(transactionRecordService).includeChangesToTokenRel(newTokenRel);
+		verify(transactionRecordService).includeChangesToTokenRels(List.of(newTokenRel));
 	}
 
 	/* --- Token loading --- */
+	@Test
+	void reportsExpectedNftsMinted() {
+		given(uniqueTokens.size()).willReturn(123);
+
+		// expect:
+		assertEquals(123L, subject.currentMintedNfts());
+	}
+
 	@Test
 	void loadsExpectedToken() {
 		given(accountStore.loadAccount(autoRenewId)).willReturn(autoRenewAccount);
@@ -168,6 +224,24 @@ class TypedTokenStoreTest {
 	}
 
 	@Test
+	void canLoadAutoRemovedTokenIfAllowed() {
+		final var autoRemovedToken = subject.loadPossiblyDeletedOrAutoRemovedToken(tokenId);
+
+		assertEquals(tokenId, autoRemovedToken.getId());
+		assertTrue(autoRemovedToken.isBelievedToHaveBeenAutoRemoved());
+	}
+
+	@Test
+	void loadsActuallyDeletedTokenAsExpected() {
+		givenToken(merkleTokenId, merkleToken);
+		merkleToken.setDeleted(true);
+
+		var deletedToken = subject.loadPossiblyDeletedOrAutoRemovedToken(tokenId);
+
+		assertEquals(token.getId(), deletedToken.getId());
+	}
+
+	@Test
 	void failsLoadingDeletedToken() {
 		givenToken(merkleTokenId, merkleToken);
 		merkleToken.setDeleted(true);
@@ -175,20 +249,51 @@ class TypedTokenStoreTest {
 		assertTokenLoadFailsWith(TOKEN_WAS_DELETED);
 	}
 
+	@Test
+	void loadsUniqueTokens() {
+		final var aToken = new Token(miscId);
+		final var merkleUniqueToken = mock(MerkleUniqueToken.class);
+		final var serialNumbers = List.of(1L, 2L);
+		given(merkleUniqueToken.getOwner()).willReturn(new EntityId(Id.DEFAULT));
+		given(uniqueTokens.get(any())).willReturn(merkleUniqueToken);
+
+		subject.loadUniqueTokens(aToken, serialNumbers);
+
+		assertEquals(2, aToken.getLoadedUniqueTokens().size());
+
+		given(uniqueTokens.get(any())).willReturn(null);
+		assertThrows(InvalidTransactionException.class, () -> subject.loadUniqueTokens(aToken, serialNumbers));
+	}
+
+
 	/* --- Token saving --- */
 	@Test
 	void savesTokenAsExpected() {
 		// setup:
+		final var mintedSerialNo = 33L;
+		final var burnedSerialNo = 33L;
+		final var nftMeta = "abcdefgh".getBytes();
+		final var treasuryId = new EntityId(0, 0, treasuryAccountNum);
+		final var tokenEntityId = new EntityId(0, 0, tokenNum);
+		final var creationTime = new RichInstant(1_234_567L, 8);
+		final var modelTreasuryId = new Id(0, 0, treasuryAccountNum);
+		final var mintedToken = new UniqueToken(tokenId, mintedSerialNo, creationTime, modelTreasuryId, nftMeta);
+		final var burnedToken = new UniqueToken(tokenId, burnedSerialNo, creationTime, modelTreasuryId, nftMeta);
+		// and:
 		final var expectedReplacementToken = new MerkleToken(
 				expiry, tokenSupply * 2, 0,
 				symbol, name,
 				freezeDefault, true,
 				new EntityId(0, 0, autoRenewAccountNum));
-		expectedReplacementToken.setAutoRenewAccount(new EntityId(0, 0, treasuryAccountNum));
+		expectedReplacementToken.setAutoRenewAccount(treasuryId);
 		expectedReplacementToken.setSupplyKey(supplyKey);
 		expectedReplacementToken.setFreezeKey(freezeKey);
 		expectedReplacementToken.setKycKey(kycKey);
 		expectedReplacementToken.setAccountsFrozenByDefault(!freezeDefault);
+		// and:
+		final var expectedNewUniqTokenId = new MerkleUniqueTokenId(tokenEntityId, mintedSerialNo);
+		final var expectedNewUniqToken = new MerkleUniqueToken(treasuryId, nftMeta, creationTime);
+		final var expectedPastUniqTokenId = new MerkleUniqueTokenId(tokenEntityId, burnedSerialNo);
 
 		givenToken(merkleTokenId, merkleToken);
 		givenModifiableToken(merkleTokenId, merkleToken);
@@ -200,6 +305,10 @@ class TypedTokenStoreTest {
 		modelToken.setAutoRenewAccount(treasuryAccount);
 		modelToken.setTreasury(autoRenewAccount);
 		modelToken.setFrozenByDefault(!freezeDefault);
+		modelToken.mintedUniqueTokens().add(mintedToken);
+		modelToken.setIsDeleted(false);
+		modelToken.setExpiry(expiry);
+		modelToken.removedUniqueTokens().add(burnedToken);
 		// and:
 		subject.persistToken(modelToken);
 
@@ -208,6 +317,12 @@ class TypedTokenStoreTest {
 		verify(tokens, never()).replace(merkleTokenId, expectedReplacementToken);
 		// and:
 		verify(transactionRecordService).includeChangesToToken(modelToken);
+		verify(uniqueTokens).put(expectedNewUniqTokenId, expectedNewUniqToken);
+		verify(uniqueTokens).remove(expectedPastUniqTokenId);
+		verify(uniqueTokenAssociations).associate(new EntityId(modelToken.getId()), expectedNewUniqTokenId);
+		verify(uniqueTokenAssociations).disassociate(new EntityId(modelToken.getId()), expectedPastUniqTokenId);
+		verify(uniqueTokenOwnerships).associate(treasuryId, expectedNewUniqTokenId);
+		verify(uniqueTokenOwnerships).disassociate(treasuryId, expectedPastUniqTokenId);
 	}
 
 	private void givenRelationship(MerkleEntityAssociation anAssoc, MerkleTokenRelStatus aRelationship) {
@@ -228,6 +343,11 @@ class TypedTokenStoreTest {
 
 	private void assertTokenLoadFailsWith(ResponseCodeEnum status) {
 		var ex = assertThrows(InvalidTransactionException.class, () -> subject.loadToken(tokenId));
+		assertEquals(status, ex.getResponseCode());
+	}
+
+	private void assertloadPossiblyDeletedTokenFailsWith(ResponseCodeEnum status) {
+		var ex = assertThrows(InvalidTransactionException.class, () -> subject.loadPossiblyDeletedOrAutoRemovedToken(tokenId));
 		assertEquals(status, ex.getResponseCode());
 	}
 
@@ -255,6 +375,8 @@ class TypedTokenStoreTest {
 		token.setSupplyKey(supplyKey);
 		token.setFreezeKey(freezeKey);
 		token.setFrozenByDefault(freezeDefault);
+		token.setIsDeleted(false);
+		token.setExpiry(expiry);
 	}
 
 	private void setupTokenRel() {
@@ -262,7 +384,7 @@ class TypedTokenStoreTest {
 		miscTokenRel.initBalance(balance);
 		miscTokenRel.setFrozen(frozen);
 		miscTokenRel.setKycGranted(kycGranted);
-		miscTokenRel.setNotYetPersisted(false);
+		miscTokenRel.markAsPersisted();
 	}
 
 	private final long expiry = 1_234_567L;
@@ -295,7 +417,6 @@ class TypedTokenStoreTest {
 			0, 0, miscAccountNum,
 			0, 0, tokenNum);
 	private final TokenRelationship miscTokenRel = new TokenRelationship(token, miscAccount);
-
 	private MerkleToken merkleToken;
 	private MerkleTokenRelStatus miscTokenMerkleRel;
 }

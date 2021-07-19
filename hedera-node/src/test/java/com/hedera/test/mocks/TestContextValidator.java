@@ -86,6 +86,36 @@ public enum TestContextValidator implements OptionValidator {
 	}
 
 	@Override
+	public ResponseCodeEnum nftMetadataCheck(byte[] metadata) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public ResponseCodeEnum maxBatchSizeMintCheck(int length) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public ResponseCodeEnum maxBatchSizeWipeCheck(int length) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public ResponseCodeEnum maxBatchSizeBurnCheck(int length) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public ResponseCodeEnum maxNftTransfersLenCheck(int length) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public ResponseCodeEnum nftMaxQueryRangeCheck(long start, long end) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public ResponseCodeEnum queryableTopicStatus(TopicID id, FCMap<MerkleEntityId, MerkleTopic> topics) {
 		throw new UnsupportedOperationException();
 	}
@@ -93,6 +123,11 @@ public enum TestContextValidator implements OptionValidator {
 	@Override
 	public ResponseCodeEnum tokenSymbolCheck(String symbol) {
 		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean isPermissibleTotalNfts(long proposedTotal) {
+		return true;
 	}
 
 	@Override

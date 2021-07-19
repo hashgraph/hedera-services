@@ -42,7 +42,7 @@ public enum TokenMintScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenMint()
-							.minting(UNKNOWN_TOKEN)
+							.minting(MISSING_TOKEN)
 							.get()
 			));
 		}

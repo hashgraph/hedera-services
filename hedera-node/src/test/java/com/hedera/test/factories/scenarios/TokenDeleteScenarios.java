@@ -41,7 +41,7 @@ public enum TokenDeleteScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedTokenDelete()
-							.deleting(UNKNOWN_TOKEN)
+							.deleting(MISSING_TOKEN)
 							.get()
 			));
 		}

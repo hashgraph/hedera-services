@@ -22,8 +22,8 @@ package com.hedera.services.txns.customfees;
 
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.submerkle.CustomFee;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcCustomFee;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,14 +48,13 @@ class FcmCustomFeeSchedulesTest {
 	private final MerkleToken tokenAValue = new MerkleToken();
 	private final MerkleToken tokenBValue = new MerkleToken();
 
-	List<CustomFee> tokenAFees = List.of(CustomFee.fixedFee(20L, tokenA, feeCollector));
-	List<CustomFee> tokenBFees = List.of(CustomFee.fixedFee(40L, tokenB, feeCollector));
-	List<CustomFee> missingFees = List.of(CustomFee.fixedFee(50L, missingToken, feeCollector));
 	@BeforeEach
 	void setUp() {
 		//setup:
-		tokenAValue.setFeeSchedule(tokenAFees);
-		tokenBValue.setFeeSchedule(tokenBFees);
+		final var tokenAFees = List.of(FcCustomFee.fixedFee(20L, tokenA, feeCollector).asGrpc());
+		final var tokenBFees = List.of(FcCustomFee.fixedFee(40L, tokenB, feeCollector).asGrpc());
+		tokenAValue.setFeeScheduleFrom(tokenAFees, null);
+		tokenBValue.setFeeScheduleFrom(tokenBFees, null);
 
 		tokenFCMap.put(tokenA.asMerkle(), tokenAValue);
 		tokenFCMap.put(tokenB.asMerkle(), tokenBValue);
@@ -85,7 +84,9 @@ class FcmCustomFeeSchedulesTest {
 		// given:
 		FCMap<MerkleEntityId, MerkleToken> secondFCMap = new FCMap<>();
 		MerkleToken token = new MerkleToken();
-		token.setFeeSchedule(missingFees);
+		final var missingFees = List.of(
+				FcCustomFee.fixedFee(50L, missingToken, feeCollector).asGrpc());
+		token.setFeeScheduleFrom(missingFees, null);
 		secondFCMap.put(missingToken.asMerkle(), new MerkleToken());
 		final var fees1 = new FcmCustomFeeSchedules(() -> tokenFCMap);
 		final var fees2 = new FcmCustomFeeSchedules(() -> secondFCMap);

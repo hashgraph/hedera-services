@@ -48,6 +48,7 @@ hs_err_pid*
 !test-clients/yahcli/assets/*.sh
 !test-clients/yahcli/run/test/local/*.sh
 *.json
+!hapi-fees/src/main/resources/*.json
 !hapi-utils/src/test/resources/bootstrap/*.json
 !hedera-node/src/test/resources/fees/feeSchedules.json
 !hedera-node/src/test/resources/legacyAccounts.json
