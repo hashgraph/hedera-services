@@ -1620,6 +1620,8 @@ workflows:
           result_path: results/1N-1C/LargeVolumeNFTs
           config_type: "ci"
           workflow-name: "GCP-Create-Large-Volume-NFTs-SavedState"
+          slack_results_channel: "hedera-regression-test"
+          slack_summary_channel: "hedera-regression-test"
           requires:
             - build-platform-and-services
           pre-steps:
