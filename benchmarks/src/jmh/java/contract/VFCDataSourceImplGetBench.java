@@ -165,7 +165,7 @@ public class VFCDataSourceImplGetBench {
 
     @Benchmark
     public void w3_MoveLeaf() throws Exception {
-        dataSource.updateLeaf(randomLeafIndex1,randomLeafIndex2,key1);
+        dataSource.updateLeaf(randomLeafIndex1,randomLeafIndex2,key1, FCVirtualMapTestUtils.hash((int) randomLeafIndex1));
     }
 
     /**
