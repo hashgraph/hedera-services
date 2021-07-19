@@ -289,7 +289,7 @@ public class VFCDataSourceImpl<K extends VKey, V extends VValue> implements VFCD
      * @throws IOException if there was a problem saving leaf update
      */
     @Override
-    public void updateLeaf(long oldPath, long newPath, K key) throws IOException {
+    public void updateLeaf(long oldPath, long newPath, K key, Hash hash) throws IOException {
         if (oldPath < 0) throw new IllegalArgumentException("path is less than 0");
         if (newPath < 0) throw new IllegalArgumentException("path is less than 0");
         // get new path node buffer

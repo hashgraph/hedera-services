@@ -187,7 +187,7 @@ public class RocksConcurrentTest {
         long randomLeafPath2 = numEntities + (long)(random.nextDouble()*numEntities);
         ContractKey key1 = new ContractKey(new Id(0,0,randomNodeIndex1),new ContractUint256(randomNodeIndex1));
         try {
-            dataSource.updateLeaf(randomLeafPath1,randomLeafPath2,key1);
+            dataSource.updateLeaf(randomLeafPath1, randomLeafPath2, key1, FCVirtualMapTestUtils.hash((int) randomLeafPath1));
         } catch (IOException e) {
             e.printStackTrace();
         }

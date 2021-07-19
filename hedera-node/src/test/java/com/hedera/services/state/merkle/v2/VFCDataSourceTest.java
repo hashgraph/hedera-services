@@ -104,7 +104,7 @@ public class VFCDataSourceTest {
         assertLeaf(dataSource,250,250);
         assertLeaf(dataSource, 500,500);
         // move a leaf from 500 to 250
-        dataSource.updateLeaf(500,250,new LongVKey(500));
+        dataSource.updateLeaf(500,250, new LongVKey(500), hash(500));
         // check 250 now has 500's data
         assertLeaf(dataSource,250,500);
         // close data source

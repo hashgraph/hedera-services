@@ -207,7 +207,7 @@ public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implement
      * @throws IOException if there was a problem saving leaf update
      */
     @Override
-    public void updateLeaf(long oldPath, long newPath, K key) throws IOException {
+    public void updateLeaf(long oldPath, long newPath, K key, Hash hash) throws IOException {
         if (oldPath < 0) throw new IllegalArgumentException("path is less than 0");
         if (newPath < 0) throw new IllegalArgumentException("path is less than 0");
 
@@ -215,11 +215,10 @@ public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implement
             final ByteBuffer keyBytes = getLeafKeyBytes(key);
             // read hash
             final ByteBuffer oldPathKey = getPathBytes(newPath);
-            ByteBuffer hashBytes = pathToHashMap.get(txn,oldPathKey);
             // now update everything
             final ByteBuffer newPathKey = getPathBytes(newPath);
             // write hash
-            pathToHashMap.put(txn,newPathKey, hashBytes);
+            pathToHashMap.put(txn, newPathKey, getHashBytes(hash));
             // write key -> path
             leafKeyToPathMap.put(txn, keyBytes, newPathKey);
             // write path -> key
@@ -326,18 +325,19 @@ public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implement
      * @throws IOException if there was a problem saving leaf update
      */
     @Override
-    public void updateLeaf(Object handle, long oldPath, long newPath, K key) throws IOException {
+    public void updateLeaf(Object handle, long oldPath, long newPath, K key, Hash hash) throws IOException {
         if (oldPath < 0) throw new IllegalArgumentException("path is less than 0");
         if (newPath < 0) throw new IllegalArgumentException("path is less than 0");
         Txn<ByteBuffer> txn = (Txn<ByteBuffer>)handle;
         final ByteBuffer keyBytes = getLeafKeyBytes(key);
-        // read hash
-        final ByteBuffer oldPathKey = getPathBytes(newPath);
-        ByteBuffer hashBytes = pathToHashMap.get(txn,oldPathKey);
         // now update everything
         final ByteBuffer newPathKey = getPathBytes(newPath);
         // write hash
-        pathToHashMap.put(txn,newPathKey, hashBytes);
+        try {
+            pathToHashMap.put(txn, newPathKey, getHashBytes(hash));
+        } catch (NullPointerException npe) {
+            System.out.println("handle = " + handle + ", key=" + key);
+        }
         // write key -> path
         leafKeyToPathMap.put(txn, keyBytes, newPathKey);
         // write path -> key
