@@ -57,11 +57,6 @@ public class CreateTopicPerfSuite extends HapiApiSuite {
 		return true;
 	}
 
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
-	}
-
 	private HapiApiSpec createTopicPerf() {
 		final int NUM_TOPICS = 100000;
 

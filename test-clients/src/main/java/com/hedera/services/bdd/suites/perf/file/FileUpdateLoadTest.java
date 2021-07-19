@@ -59,11 +59,6 @@ public class FileUpdateLoadTest extends HapiApiSuite {
 		return List.of(runFileUpdates());
 	}
 
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
-	}
-
 	private HapiApiSpec runFileUpdates() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 		final AtomicInteger submittedSoFar = new AtomicInteger(0);

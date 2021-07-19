@@ -20,7 +20,6 @@ package com.hedera.services.bdd.suites.perf.crypto;
  * ‍
  */
 
-
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
@@ -29,11 +28,9 @@ import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
-
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -56,7 +53,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EX
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
-
 public class CryptoTransferPerfSuiteWOpProvider extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoTransferPerfSuiteWOpProvider.class);
 
@@ -65,18 +61,10 @@ public class CryptoTransferPerfSuiteWOpProvider extends HapiApiSuite {
 		suite.runSuiteSync();
 	}
 
-
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(runMixedTransferAndSubmits());
 	}
-
-
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
-	}
-
 
 	private HapiApiSpec runMixedTransferAndSubmits() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
@@ -91,7 +79,6 @@ public class CryptoTransferPerfSuiteWOpProvider extends HapiApiSuite {
 				);
 	}
 
-
 	private Function<HapiApiSpec, OpProvider> XfersFactory() {
 		return spec -> new OpProvider() {
 			@Override
@@ -104,7 +91,6 @@ public class CryptoTransferPerfSuiteWOpProvider extends HapiApiSuite {
 								.hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED),
 						sleepFor(10_000L));
 			}
-
 
 			@Override
 			public Optional<HapiSpecOperation> get() {
@@ -120,7 +106,6 @@ public class CryptoTransferPerfSuiteWOpProvider extends HapiApiSuite {
 			}
 		};
 	}
-
 
 	@Override
 	protected Logger getResultsLogger() {

@@ -86,11 +86,6 @@ public class MixedOpsMemoPerfSuite extends LoadTest {
 		);
 	}
 
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
-	}
-
 	// perform cryptoCreate, cryptoUpdate, TokenCreate, TokenUpdate, FileCreate, FileUpdate txs with entity memo set.
 	protected HapiApiSpec runMixedMemoOps() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();

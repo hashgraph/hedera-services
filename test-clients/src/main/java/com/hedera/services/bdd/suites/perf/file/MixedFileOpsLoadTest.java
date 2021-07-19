@@ -63,11 +63,6 @@ public class MixedFileOpsLoadTest extends LoadTest {
 		);
 	}
 
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
-	}
-
 	protected HapiApiSpec runMixedFileOps() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 		final AtomicInteger submittedSoFar = new AtomicInteger(0);

@@ -55,11 +55,6 @@ public class SubmitMessagePerfSuite extends HapiApiSuite {
 		return true;
 	}
 
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
-	}
-
 	private HapiApiSpec submitMessagePerf() {
 		final int NUM_SUBMISSIONS = 100_000;
 

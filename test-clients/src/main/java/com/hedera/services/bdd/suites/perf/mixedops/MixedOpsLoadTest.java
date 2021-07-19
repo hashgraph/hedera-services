@@ -108,11 +108,6 @@ public class MixedOpsLoadTest extends LoadTest {
 		);
 	}
 
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
-	}
-
 	protected HapiApiSpec runMixedOps() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 		Random r = new Random();

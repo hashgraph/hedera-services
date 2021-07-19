@@ -59,11 +59,6 @@ public class createTopicLoadTest extends LoadTest {
 		return List.of(runCreateTopics());
 	}
 
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
-	}
-
 	private static HapiApiSpec runCreateTopics() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 		final AtomicInteger submittedSoFar = new AtomicInteger(0);

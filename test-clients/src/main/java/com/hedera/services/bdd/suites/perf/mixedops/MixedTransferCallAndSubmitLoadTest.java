@@ -65,11 +65,6 @@ public class MixedTransferCallAndSubmitLoadTest extends HapiApiSuite {
 		return List.of(runMixedTransferCallAndSubmits());
 	}
 
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
-	}
-
 	private HapiApiSpec runMixedTransferCallAndSubmits() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 		final AtomicInteger submittedSoFar = new AtomicInteger(0);

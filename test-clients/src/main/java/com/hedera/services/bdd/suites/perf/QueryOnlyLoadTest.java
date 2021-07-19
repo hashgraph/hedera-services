@@ -79,11 +79,6 @@ public class QueryOnlyLoadTest extends LoadTest {
 		return List.of(new HapiApiSpec[] {	runQueryLoadTest() });
 	}
 
-	@Override
-	public boolean hasInterestingStats() {
-		return false;
-	}
-
 	private HapiApiSpec runQueryLoadTest() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 

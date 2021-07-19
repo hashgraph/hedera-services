@@ -47,11 +47,6 @@ public class TokenCreatePerfSuite extends LoadTest {
 		return List.of(runTokenCreates());
 	}
 
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
-	}
-
 	private HapiApiSpec runTokenCreates() {
 		final int NUM_CREATES = 100000;
 		return defaultHapiSpec("tokenCreatePerf")

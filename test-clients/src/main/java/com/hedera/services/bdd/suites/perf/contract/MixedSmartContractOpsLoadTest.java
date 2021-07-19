@@ -66,11 +66,6 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
 		);
 	}
 
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
-	}
-
 	protected HapiApiSpec RunMixedSmartContractOps() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 		final AtomicInteger createdSoFar = new AtomicInteger(0);

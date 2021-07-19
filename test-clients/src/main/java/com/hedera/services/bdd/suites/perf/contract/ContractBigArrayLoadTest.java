@@ -71,11 +71,6 @@ public class ContractBigArrayLoadTest extends LoadTest {
 		return List.of(runContractCalls());
 	}
 
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
-	}
-
 	private HapiApiSpec runContractCalls() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 		final AtomicInteger submittedSoFar = new AtomicInteger(0);

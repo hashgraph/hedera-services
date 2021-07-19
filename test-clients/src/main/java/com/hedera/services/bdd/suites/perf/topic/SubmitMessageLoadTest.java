@@ -115,11 +115,6 @@ public class SubmitMessageLoadTest extends LoadTest {
 		return List.of(runSubmitMessages());
 	}
 
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
-	}
-
 	private static HapiApiSpec runSubmitMessages() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 		final AtomicInteger submittedSoFar = new AtomicInteger(0);

@@ -68,11 +68,6 @@ public class HCSChunkingRealisticPerfSuite extends LoadTest {
 		return List.of(fragmentLongMessageIntoChunks());
 	}
 
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
-	}
-
 	private static HapiApiSpec fragmentLongMessageIntoChunks() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 

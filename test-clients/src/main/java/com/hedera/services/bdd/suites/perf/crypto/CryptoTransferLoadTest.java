@@ -70,11 +70,6 @@ public class CryptoTransferLoadTest extends LoadTest {
 		);
 	}
 
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
-	}
-
 	protected HapiApiSpec runCryptoTransfers() {
 		PerfTestLoadSettings settings = new PerfTestLoadSettings();
 

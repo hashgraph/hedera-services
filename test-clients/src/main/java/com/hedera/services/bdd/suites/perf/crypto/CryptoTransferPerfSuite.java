@@ -56,11 +56,6 @@ public class CryptoTransferPerfSuite extends HapiApiSuite {
 		return true;
 	}
 
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
-	}
-
 	private HapiApiSpec cryptoTransferPerf() {
 		final int NUM_ACCOUNTS = 10;
 		final int NUM_TRANSFERS = 10_000;

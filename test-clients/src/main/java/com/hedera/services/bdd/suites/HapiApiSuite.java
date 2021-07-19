@@ -69,9 +69,6 @@ public abstract class HapiApiSuite {
 		return finalSpecs;
 	}
 	public boolean leaksState() { return false; }
-	public boolean hasInterestingStats() {
-		return false;
-	}
 
 	public static final Key EMPTY_KEY = Key.newBuilder().setKeyList(KeyList.newBuilder().build()).build();
 	public static final String NONSENSE_KEY = "Jabberwocky!";

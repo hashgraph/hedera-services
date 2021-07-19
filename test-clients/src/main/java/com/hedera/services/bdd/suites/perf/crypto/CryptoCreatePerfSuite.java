@@ -45,11 +45,6 @@ public class CryptoCreatePerfSuite extends LoadTest {
 		return List.of(runCryptoCreates());
 	}
 
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
-	}
-
 	private HapiApiSpec runCryptoCreates() {
 		final int NUM_CREATES = 1000000;
 		return defaultHapiSpec("cryptoCreatePerf")

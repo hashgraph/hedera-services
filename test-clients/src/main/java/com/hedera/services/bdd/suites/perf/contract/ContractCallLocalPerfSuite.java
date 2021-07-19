@@ -56,11 +56,6 @@ public class ContractCallLocalPerfSuite extends HapiApiSuite {
 		return true;
 	}
 
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
-	}
-
 	HapiApiSpec contractCallLocalPerf() {
 		final int NUM_CALLS = 1_000;
 
