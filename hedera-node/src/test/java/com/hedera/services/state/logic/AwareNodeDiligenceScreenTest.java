@@ -36,6 +36,7 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,22 +49,24 @@ import java.time.Instant;
 
 import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
 import static com.hedera.services.txns.diligence.DuplicateClassification.NODE_DUPLICATE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class AwareNodeDiligenceScreenTest {
@@ -72,6 +75,7 @@ class AwareNodeDiligenceScreenTest {
 	private Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
 	private AccountID aNodeAccount = IdUtils.asAccount("0.0.3");
 	private AccountID bNodeAccount = IdUtils.asAccount("0.0.4");
+	private AccountID payerAccountId = IdUtils.asAccount("0.0.5");
 	private TxnAccessor accessor;
 	private Duration validDuration = Duration.newBuilder().setSeconds(1_234_567L).build();
 
@@ -114,6 +118,7 @@ class AwareNodeDiligenceScreenTest {
 		givenHandleCtx(bNodeAccount, aNodeAccount);
 		given(txnCtx.submittingSwirldsMember()).willReturn(submittingMember);
 		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
+		handleValidPayerAccount();
 
 		// then:
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
@@ -130,6 +135,7 @@ class AwareNodeDiligenceScreenTest {
 		givenHandleCtx(aNodeAccount, aNodeAccount);
 		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
 		given(txnCtx.isPayerSigKnownActive()).willReturn(false);
+		handleValidPayerAccount();
 
 		// then:
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
@@ -142,6 +148,7 @@ class AwareNodeDiligenceScreenTest {
 		givenHandleCtx(aNodeAccount, aNodeAccount);
 		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
 		given(txnCtx.isPayerSigKnownActive()).willReturn(true);
+		handleValidPayerAccount();
 
 		// then:
 		assertTrue(subject.nodeIgnoredDueDiligence(NODE_DUPLICATE));
@@ -155,6 +162,7 @@ class AwareNodeDiligenceScreenTest {
 		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
 		given(txnCtx.isPayerSigKnownActive()).willReturn(true);
 		given(validator.isValidTxnDuration(validDuration.getSeconds())).willReturn(false);
+		handleValidPayerAccount();
 
 		// then:
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
@@ -170,6 +178,7 @@ class AwareNodeDiligenceScreenTest {
 		given(validator.isValidTxnDuration(validDuration.getSeconds())).willReturn(true);
 		given(validator.chronologyStatus(accessor, consensusTime)).willReturn(TRANSACTION_EXPIRED);
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
+		handleValidPayerAccount();
 
 		// then:
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
@@ -187,6 +196,7 @@ class AwareNodeDiligenceScreenTest {
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		given(validator.rawMemoCheck(accessor.getMemoUtf8Bytes(), accessor.memoHasZeroByte()))
 				.willReturn(INVALID_ZERO_BYTE_IN_STRING);
+		handleValidPayerAccount();
 
 		// then:
 		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
@@ -204,11 +214,40 @@ class AwareNodeDiligenceScreenTest {
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		given(validator.rawMemoCheck(accessor.getMemoUtf8Bytes(), accessor.memoHasZeroByte()))
 				.willReturn(OK);
+		handleValidPayerAccount();
 
 		// then:
 		assertFalse(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
 		// and:
 		verify(txnCtx, never()).setStatus(any());
+	}
+
+	@Test
+	void payerAccountDoesntExist() throws InvalidProtocolBufferException {
+		givenHandleCtx(aNodeAccount, aNodeAccount);
+		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
+
+		// then:
+		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
+
+		// and:
+		verify(txnCtx).setStatus(ACCOUNT_ID_DOES_NOT_EXIST);
+	}
+
+	@Test
+	void payerAccountDeleted() throws InvalidProtocolBufferException {
+		givenHandleCtx(aNodeAccount, aNodeAccount);
+		given(backingAccounts.contains(aNodeAccount)).willReturn(true);
+		var payerAccountRef = mock(MerkleAccount.class);
+		given(payerAccountRef.isDeleted()).willReturn(true);
+		given(backingAccounts.getImmutableRef(payerAccountId)).willReturn(payerAccountRef);
+		given(backingAccounts.contains(payerAccountId)).willReturn(true);
+
+		// then:
+		assertTrue(subject.nodeIgnoredDueDiligence(BELIEVED_UNIQUE));
+
+		// and:
+		verify(txnCtx).setStatus(PAYER_ACCOUNT_DELETED);
 	}
 
 	private void givenHandleCtx(
@@ -221,10 +260,13 @@ class AwareNodeDiligenceScreenTest {
 	}
 
 	private TxnAccessor accessorWith(AccountID designatedNodeAccount) throws InvalidProtocolBufferException {
+		var transactionId = TransactionID.newBuilder().setAccountID(payerAccountId);
+
 		var bodyBytes = TransactionBody.newBuilder()
 				.setMemo(pretendMemo)
 				.setTransactionValidDuration(validDuration)
 				.setNodeAccountID(designatedNodeAccount)
+				.setTransactionID(transactionId)
 				.build()
 				.toByteString();
 		var signedTxn = Transaction.newBuilder()
@@ -234,5 +276,16 @@ class AwareNodeDiligenceScreenTest {
 						.toByteString())
 				.build();
 		return new SignedTxnAccessor(signedTxn);
+	}
+
+	/**
+	 * Handle the valid case of having a payer account that is not deleted. Also make sure that
+	 * the backing accounts recognizes that the payer account exists
+	 */
+	private void handleValidPayerAccount() {
+		var payerAccountRef = mock(MerkleAccount.class);
+		given(payerAccountRef.isDeleted()).willReturn(false);
+		given(backingAccounts.getImmutableRef(payerAccountId)).willReturn(payerAccountRef);
+		given(backingAccounts.contains(payerAccountId)).willReturn(true);
 	}
 }

@@ -23,7 +23,6 @@ package com.hedera.services.grpc.marshalling;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.PureTransferSemanticChecks;
-import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -32,7 +31,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,8 +60,7 @@ import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class ImpliedTransfersMarshalTest {
-	private final List<BalanceChange> mockFinalChanges = new ArrayList<>();
-	private final List<Pair<Id, List<FcCustomFee>>> mockFinalSchedules = new ArrayList<>();
+	private final List<CustomFeeMeta> mockFinalMeta = List.of(CustomFeeMeta.MISSING_META);
 
 	private CryptoTransferTransactionBody op;
 
@@ -141,7 +138,7 @@ class ImpliedTransfersMarshalTest {
 		// and:
 		final var nonFeeChanges = expNonFeeChanges(true);
 		// and:
-		final var expectedMeta = new ImpliedTransfersMeta(props, OK, mockFinalSchedules);
+		final var expectedMeta = new ImpliedTransfersMeta(props, OK, mockFinalMeta);
 
 		givenValidity(OK);
 		// and:
@@ -153,7 +150,7 @@ class ImpliedTransfersMarshalTest {
 		given(feeAssessor.assess(eq(bTrigger), eq(schedulesManager), eq(changeManager), anyList(), eq(props)))
 				.willReturn(OK);
 		// and:
-		given(schedulesManager.schedulesUsed()).willReturn(mockFinalSchedules);
+		given(schedulesManager.metaUsed()).willReturn(mockFinalMeta);
 
 		// when:
 		final var result = subject.unmarshalFromGrpc(op);
@@ -171,7 +168,7 @@ class ImpliedTransfersMarshalTest {
 		final var nonFeeChanges = expNonFeeChanges(true);
 		// and:
 		final var expectedMeta = new ImpliedTransfersMeta(
-				props, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH, mockFinalSchedules);
+				props, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH, mockFinalMeta);
 
 		givenValidity(OK);
 		// and:
@@ -181,7 +178,7 @@ class ImpliedTransfersMarshalTest {
 		given(feeAssessor.assess(eq(aTrigger), eq(schedulesManager), eq(changeManager), anyList(), eq(props)))
 				.willReturn(CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH);
 		// and:
-		given(schedulesManager.schedulesUsed()).willReturn(mockFinalSchedules);
+		given(schedulesManager.metaUsed()).willReturn(mockFinalMeta);
 
 		// when:
 		final var result = subject.unmarshalFromGrpc(op);
