@@ -1,5 +1,6 @@
 package contract;
 
+import com.hedera.services.state.merkle.v2.VFCDataSourceImpl;
 import com.hedera.services.state.merkle.virtual.ContractKey;
 import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.hedera.services.store.models.Id;
@@ -7,6 +8,7 @@ import com.swirlds.fcmap.VFCDataSource;
 import fcmmap.FCVirtualMapTestUtils;
 import org.openjdk.jmh.annotations.*;
 import rockdb.VFCDataSourceLmdb;
+import rockdb.VFCDataSourceRocksDb;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -15,7 +17,7 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
-@SuppressWarnings("jol")
+@SuppressWarnings({"jol", "DuplicatedCode", "DefaultAnnotationParam"})
 @State(Scope.Thread)
 @Warmup(iterations = 5, time = 3, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 5, timeUnit = TimeUnit.SECONDS)
@@ -24,13 +26,18 @@ import java.util.stream.IntStream;
 @OutputTimeUnit(TimeUnit.SECONDS)
 public class VFCDataSourceImplGetBench {
     private static final long MB = 1024*1024;
-    public static final Path STORE_PATH = Path.of("store");
-    public static final Id ID = new Id(1,2,3);
 
     @Param({"1000000"})
     public long numEntities;
+    @Param({"5"})
+    public int hashThreads;
+    @Param({"4"})
+    public int writeThreads;
+    @Param({"memmap","lmdb","rocksdb"})
+    public String impl;
 
     // state
+    public Path storePath;
     public VFCDataSource<ContractKey,ContractUint256> dataSource;
     public Random random = new Random(1234);
     public int iteration = 0;
@@ -44,43 +51,62 @@ public class VFCDataSourceImplGetBench {
 
     @Setup(Level.Trial)
     public void setup() {
+        storePath = Path.of("store-"+impl);
         System.out.println("Clean Setup");
         try {
             // delete any old store
 //            FCVirtualMapTestUtils.deleteDirectoryAndContents(STORE_PATH);
-            final boolean storeExists = Files.exists(STORE_PATH);
+            final boolean storeExists = Files.exists(storePath);
             // get slot index suppliers
-//            dataSource = VFCDataSourceImpl.createOnDisk(STORE_PATH,numEntities*2,
-//                    ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
-//                    ContractUint256.SERIALIZED_SIZE, ContractUint256::new, true); //ContractKey
-//            dataSource = new VFCDataSourceRocksDb(
-//                    ContractKey.SERIALIZED_SIZE, ContractKey::new,
-//                    ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
-//                    STORE_PATH);
-            dataSource = new VFCDataSourceLmdb(
-                    ContractKey.SERIALIZED_SIZE, ContractKey::new,
-                    ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
-                    STORE_PATH);
+            dataSource = switch (impl) {
+                case "memmap" ->
+                    VFCDataSourceImpl.createOnDisk(storePath,numEntities*2,
+                            ContractKey.SERIALIZED_SIZE, ContractKey::new,
+                            ContractUint256.SERIALIZED_SIZE, ContractUint256::new, true);
+                case "lmdb" ->
+                    new VFCDataSourceLmdb<>(
+                            ContractKey.SERIALIZED_SIZE, ContractKey::new,
+                            ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
+                            storePath);
+                case "rocksdb" ->
+                    new VFCDataSourceRocksDb<>(
+                            ContractKey.SERIALIZED_SIZE, ContractKey::new,
+                            ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
+                            storePath);
+                default ->
+                    throw new IllegalStateException("Unexpected value: " + impl);
+            };
             // create data
             if (!storeExists) {
-
-                long printStep = Math.min(1_000_000, numEntities / 4);
+                System.out.println("================================================================================");
+                System.out.println("Creating data ...");
+                long printStep = Math.min(500_000, numEntities / 4);
                 long START = System.currentTimeMillis();
+                Object transaction = dataSource.startTransaction();
                 for (long i = 0; i < numEntities; i++) {
                     if (i != 0 && i % printStep == 0) {
+                        dataSource.commitTransaction(transaction);
                         printUpdate(START, printStep, ContractUint256.SERIALIZED_SIZE, "Created " + i + " Nodes");
                         START = System.currentTimeMillis();
+                        transaction = dataSource.startTransaction();
                     }
-                    dataSource.saveInternal(i, FCVirtualMapTestUtils.hash((int) i));
+                    dataSource.saveInternal(transaction, i, FCVirtualMapTestUtils.hash((int) i));
                 }
+                dataSource.commitTransaction(transaction);
+
                 START = System.currentTimeMillis();
+                transaction = dataSource.startTransaction();
                 for (long i = 0; i < numEntities; i++) {
                     if (i != 0 && i % printStep == 0) {
+                        dataSource.commitTransaction(transaction);
                         printUpdate(START, printStep, ContractUint256.SERIALIZED_SIZE, "Created " + i + " Leaves");
                         START = System.currentTimeMillis();
+                        transaction = dataSource.startTransaction();
                     }
-                    dataSource.addLeaf(numEntities + i, new ContractKey(new Id(0,0,i),new ContractUint256(i)), new ContractUint256(i), FCVirtualMapTestUtils.hash((int) i));
+                    dataSource.addLeaf(transaction,numEntities + i, new ContractKey(new Id(0,0,i),new ContractUint256(i)), new ContractUint256(i), FCVirtualMapTestUtils.hash((int) i));
                 }
+                dataSource.commitTransaction(transaction);
+                System.out.println("================================================================================");
                 nextLeafIndex = numEntities;
                 // reset iteration counter
                 iteration = 0;
@@ -107,7 +133,7 @@ public class VFCDataSourceImplGetBench {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        FCVirtualMapTestUtils.printDirectorySize(STORE_PATH);
+        FCVirtualMapTestUtils.printDirectorySize(storePath);
     }
 
     @Setup(Level.Invocation)
@@ -146,13 +172,14 @@ public class VFCDataSourceImplGetBench {
      * This is designed to mimic our transaction round
      */
     @Benchmark
-    public void t_transaction() throws Exception {
+    public void t_transaction() {
         IntStream.range(0,3).parallel().forEach(thread -> {
             try {
                 switch (thread) {
                     case 0 -> {
+                        Thread.currentThread().setName("transaction");
                         // this is the transaction thread that reads leaf values
-                        for (int i = 0; i < 10_000; i++) {
+                        for (int i = 0; i < 20_000; i++) {
                             randomNodeIndex1 = (long) (random.nextDouble() * numEntities);
                             key2 = new ContractKey(new Id(0, 0, randomNodeIndex1), new ContractUint256(randomNodeIndex1));
                             dataSource.loadLeafValue(key2);
@@ -160,31 +187,55 @@ public class VFCDataSourceImplGetBench {
                     }
                     case 1 -> {
                         // this is the hashing thread that reads hashes
-                        for (int i = 0; i < 10_000; i++) {
-                            randomNodeIndex1 = (long) (random.nextDouble() * numEntities);
-                            dataSource.loadHash(randomNodeIndex1);
-                        }
+                        final int chunk = 20_000/hashThreads;
+                        IntStream.range(0,hashThreads).parallel().forEach(hashChunk -> {
+                            Thread.currentThread().setName("hashing "+hashChunk);
+                            for (int i = 0; i < chunk; i++) {
+                                randomNodeIndex1 = (long) (random.nextDouble() * numEntities);
+                                try {
+                                    dataSource.loadHash(randomNodeIndex1);
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        });
                     }
                     case 2 -> {
                         // this is the archive thread that writes nodes and leaves
-                        final Object transaction = dataSource.startTransaction();
-                        for (int i = 0; i < 10_000; i++) { // update 10k internal hashes
-                            randomNodeIndex1 = (long) (random.nextDouble() * numEntities);
-                            dataSource.saveInternal(transaction,randomLeafIndex1, FCVirtualMapTestUtils.hash((int) randomLeafIndex1));
-                        }
-                        for (int i = 0; i < 10_000; i++) { // update 10k leaves
-                            randomNodeIndex1 = (long) (random.nextDouble() * numEntities);
-                            randomLeafIndex1 = numEntities + randomNodeIndex1;
-                            dataSource.updateLeaf(transaction,randomLeafIndex1, new ContractUint256(randomNodeIndex1), FCVirtualMapTestUtils.hash((int) randomNodeIndex1));
-                        }
-                        dataSource.commitTransaction(transaction);
+                        final int chunk = 20_000/writeThreads;
+                        IntStream.range(0,writeThreads/2).parallel().forEach(c -> {
+                            Thread.currentThread().setName("writing internals "+c);
+                            final Object transaction = dataSource.startTransaction();
+                            for (int i = 0; i < chunk; i++) { // update 10k internal hashes
+                                randomNodeIndex1 = (long) (random.nextDouble() * numEntities);
+                                try {
+                                    dataSource.saveInternal(transaction,randomLeafIndex1, FCVirtualMapTestUtils.hash((int) randomLeafIndex1));
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                            dataSource.commitTransaction(transaction);
+                        });
+                        IntStream.range(0,writeThreads/2).parallel().forEach(c -> {
+                            Thread.currentThread().setName("writing leaves "+c);
+                            final Object transaction = dataSource.startTransaction();
+                            for (int i = 0; i < chunk; i++) { // update 10k leaves
+                                randomNodeIndex1 = (long) (random.nextDouble() * numEntities);
+                                randomLeafIndex1 = numEntities + randomNodeIndex1;
+                                try {
+                                    dataSource.updateLeaf(transaction,randomLeafIndex1, new ContractUint256(randomNodeIndex1), FCVirtualMapTestUtils.hash((int) randomNodeIndex1));
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                            dataSource.commitTransaction(transaction);
+                        });
                     }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
         });
-        dataSource.updateLeaf(randomLeafIndex1,randomLeafIndex2,key1);
     }
 
     @Benchmark
