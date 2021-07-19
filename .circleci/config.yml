@@ -2943,7 +2943,7 @@ jobs:
         default: "hedera-regression"
       slack_summary_channel:
         type: string
-        default: "hedera-regression-test-summary"
+        default: "hedera-regression-summary"
       workflow-name:
         type: string
         default: ""
