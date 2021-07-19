@@ -20,7 +20,7 @@ package com.hedera.services.grpc.marshalling;
  * ‍
  */
 
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 
 import java.util.ArrayList;
@@ -34,11 +34,11 @@ public class CustomSchedulesManager {
 		this.customFeeSchedules = customFeeSchedules;
 	}
 
-	public CustomFeeMeta managedSchedulesFor(EntityId token) {
+	public CustomFeeMeta managedSchedulesFor(Id token) {
 		CustomFeeMeta extantMeta = null;
 		if (!allManagedMeta.isEmpty()) {
 			for (var meta : allManagedMeta) {
-				if (token.matches(meta.getTokenId())) {
+				if (token.equals(meta.getTokenId())) {
 					extantMeta = meta;
 				}
 			}

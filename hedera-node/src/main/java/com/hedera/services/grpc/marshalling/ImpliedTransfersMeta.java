@@ -75,7 +75,7 @@ public class ImpliedTransfersMeta {
 			return false;
 		}
 		for (var meta : customFeeMeta) {
-			final var tokenId = meta.getTokenId().asEntityId();
+			final var tokenId = meta.getTokenId();
 			var newCustomMeta = customFeeSchedules.lookupMetaFor(tokenId);
 			if (!meta.equals(newCustomMeta)) {
 				return false;

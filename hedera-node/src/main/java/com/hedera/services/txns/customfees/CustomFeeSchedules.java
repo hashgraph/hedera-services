@@ -22,11 +22,11 @@ package com.hedera.services.txns.customfees;
  */
 
 import com.hedera.services.grpc.marshalling.CustomFeeMeta;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.models.Id;
 
 /**
  * Interface to look up custom fee schedules for an entity
  */
 public interface CustomFeeSchedules {
-	CustomFeeMeta lookupMetaFor(EntityId token);
+	CustomFeeMeta lookupMetaFor(Id token);
 }

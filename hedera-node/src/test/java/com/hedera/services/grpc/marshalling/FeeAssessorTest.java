@@ -92,6 +92,19 @@ class FeeAssessorTest {
 	}
 
 	@Test
+	void exemptForTreasury() {
+		givenFees(fungibleTokenId.asEntityId(), List.of(hbarFee, htsFee, fractionalFee));
+
+		// when:
+		final var result =
+				subject.assess(fungibleExemptTrigger, customSchedulesManager, balanceChangeManager, accumulator, props);
+
+		// then:
+		verifyNoInteractions(hbarFeeAssessor, htsFeeAssessor, fractionalFeeAssessor);
+		assertEquals(OK, result);
+	}
+
+	@Test
 	void useHbarAccessorAppropriately() {
 		givenFees(fungibleTokenId.asEntityId(), List.of(hbarFee));
 
@@ -217,7 +230,7 @@ class FeeAssessorTest {
 
 	private void givenFees(EntityId token, List<FcCustomFee> customFees) {
 		final var meta = new CustomFeeMeta(token.asId(), treasury, customFees);
-		given(customSchedulesManager.managedSchedulesFor(token)).willReturn(meta);
+		given(customSchedulesManager.managedSchedulesFor(token.asId())).willReturn(meta);
 	}
 
 	private final long amountOfFungibleDebit = 1_000L;
@@ -238,10 +251,18 @@ class FeeAssessorTest {
 			.setAccountID(payer.asGrpcAccount())
 			.setAmount(amountOfFungibleDebit)
 			.build();
+	private final AccountAmount fungibleTreasuryDebit = AccountAmount.newBuilder()
+			.setAccountID(treasury.asGrpcAccount())
+			.setAmount(amountOfFungibleDebit)
+			.build();
 	private final BalanceChange fungibleTrigger = BalanceChange.changingFtUnits(
 			fungibleTokenId,
 			fungibleTokenId.asGrpcToken(),
 			fungibleDebit);
+	private final BalanceChange fungibleExemptTrigger = BalanceChange.changingFtUnits(
+			fungibleTokenId,
+			fungibleTokenId.asGrpcToken(),
+			fungibleTreasuryDebit);
 	private final FcCustomFee hbarFee = FcCustomFee.fixedFee(amountOfHbarFee, null, hbarFeeCollector);
 	private final FcCustomFee htsFee = FcCustomFee.fixedFee(amountOfHtsFee, feeDenom, htsFeeCollector);
 	private final FcCustomFee fractionalFee = FcCustomFee.fractionalFee(

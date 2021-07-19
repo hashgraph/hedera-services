@@ -51,10 +51,10 @@ class CustomSchedulesManagerTest {
 
 	@Test
 	void usesDelegateForMissing() {
-		given(customFeeSchedules.lookupMetaFor(a.asEntityId())).willReturn(aMeta);
+		given(customFeeSchedules.lookupMetaFor(a)).willReturn(aMeta);
 
 		// when:
-		final var ans = subject.managedSchedulesFor(a.asEntityId());
+		final var ans = subject.managedSchedulesFor(a);
 
 		// then:
 		assertSame(aMeta, ans);
@@ -62,13 +62,13 @@ class CustomSchedulesManagerTest {
 
 	@Test
 	void reusesExtantScheduleIfPresent() {
-		given(customFeeSchedules.lookupMetaFor(a.asEntityId()))
+		given(customFeeSchedules.lookupMetaFor(a))
 				.willReturn(aMeta)
 				.willThrow(AssertionError.class);
 
 		// when:
-		final var firstAns = subject.managedSchedulesFor(a.asEntityId());
-		final var secondAns = subject.managedSchedulesFor(a.asEntityId());
+		final var firstAns = subject.managedSchedulesFor(a);
+		final var secondAns = subject.managedSchedulesFor(a);
 
 		// then:
 		assertSame(firstAns, secondAns);
@@ -76,12 +76,12 @@ class CustomSchedulesManagerTest {
 
 	@Test
 	void enumeratesAllManagedSchedules() {
-		given(customFeeSchedules.lookupMetaFor(a.asEntityId())).willReturn(aMeta);
-		given(customFeeSchedules.lookupMetaFor(b.asEntityId())).willReturn(bMeta);
+		given(customFeeSchedules.lookupMetaFor(a)).willReturn(aMeta);
+		given(customFeeSchedules.lookupMetaFor(b)).willReturn(bMeta);
 
 		// when:
-		subject.managedSchedulesFor(a.asEntityId());
-		subject.managedSchedulesFor(b.asEntityId());
+		subject.managedSchedulesFor(a);
+		subject.managedSchedulesFor(b);
 		// and:
 		final var all = subject.metaUsed();
 

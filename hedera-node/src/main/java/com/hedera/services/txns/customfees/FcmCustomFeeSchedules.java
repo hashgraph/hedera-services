@@ -23,7 +23,7 @@ package com.hedera.services.txns.customfees;
 import com.hedera.services.grpc.marshalling.CustomFeeMeta;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.models.Id;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -41,13 +41,13 @@ public class FcmCustomFeeSchedules implements CustomFeeSchedules {
 	}
 
 	@Override
-	public CustomFeeMeta lookupMetaFor(EntityId tokenId) {
+	public CustomFeeMeta lookupMetaFor(Id tokenId) {
 		final var currentTokens = tokens.get();
 		if (!currentTokens.containsKey(tokenId.asMerkle())) {
 			return CustomFeeMeta.MISSING_META;
 		}
 		final var merkleToken = currentTokens.get(tokenId.asMerkle());
-		return new CustomFeeMeta(tokenId.asId(), merkleToken.treasury().asId(), merkleToken.customFeeSchedule());
+		return new CustomFeeMeta(tokenId, merkleToken.treasury().asId(), merkleToken.customFeeSchedule());
 	}
 
 	public Supplier<FCMap<MerkleEntityId, MerkleToken>> getTokens() {

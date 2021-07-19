@@ -56,13 +56,13 @@ public class FeeAssessor {
 		if (balanceChangeManager.getLevelNo() > props.getMaxNestedCustomFees()) {
 			return CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 		}
-		final var feeMeta = customSchedulesManager.managedSchedulesFor(change.getToken().asEntityId());
+		final var feeMeta = customSchedulesManager.managedSchedulesFor(change.getToken());
+		final var payer = change.getAccount();
 		final var fees = feeMeta.getCustomFees();
-		if (fees.isEmpty()) {
+		if (fees.isEmpty() || feeMeta.getTreasuryId().equals(payer)) {
 			return OK;
 		}
 		var hasFractionalFees = false;
-		final var payer = change.getAccount();
 		final var maxBalanceChanges = props.getMaxXferBalanceChanges();
 		for (var fee : fees) {
 			if (fee.getFeeType() == FIXED_FEE) {

@@ -69,9 +69,9 @@ class FcmCustomFeeSchedulesTest {
 	@Test
 	void validateLookUpScheduleFor() {
 		// then:
-		final var tokenAFees = subject.lookupMetaFor(tokenA);
-		final var tokenBFees = subject.lookupMetaFor(tokenB);
-		final var missingTokenFees = subject.lookupMetaFor(missingToken);
+		final var tokenAFees = subject.lookupMetaFor(tokenA.asId());
+		final var tokenBFees = subject.lookupMetaFor(tokenB.asId());
+		final var missingTokenFees = subject.lookupMetaFor(missingToken.asId());
 
 		// expect:
 		assertEquals(aToken.customFeeSchedule(), tokenAFees.getCustomFees());
