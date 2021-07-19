@@ -52,9 +52,6 @@ public class ThrottleReqsManager {
 			var req = allReqs.get(i);
 			var opsRequired = req.getRight();
 			if (scaleFactor != null) {
-				System.out.println("Since nTransactions=" + nTransactions
-						+ " and opsRequired=" + opsRequired
-						+ ", new opsRequired=" + scaleFactor.scaling(nTransactions * opsRequired));
 				opsRequired = scaleFactor.scaling(nTransactions * opsRequired);
 			}
 			passedReq[i] = req.getLeft().allow(opsRequired, now);
