@@ -53,7 +53,7 @@ class FractionalFeeAssessorTest {
 	@Test
 	void appliesFeesAsExpected() {
 		// setup:
-		final var fees = List.of(firstFractionalFee, secondFractionalFee);
+		final var fees = List.of(firstFractionalFee, secondFractionalFee, exemptFractionalFee);
 		final var firstCollectorChange = BalanceChange.tokenAdjust(
 				firstFractionalFeeCollector.asId(), tokenWithFractionalFee, 0L);
 		final var secondCollectorChange = BalanceChange.tokenAdjust(
@@ -289,6 +289,12 @@ class FractionalFeeAssessorTest {
 			secondMinAmountOfFractionalFee,
 			secondMaxAmountOfFractionalFee,
 			secondFractionalFeeCollector);
+	private final FcCustomFee exemptFractionalFee = FcCustomFee.fractionalFee(
+			firstNumerator,
+			secondDenominator,
+			firstMinAmountOfFractionalFee,
+			secondMaxAmountOfFractionalFee,
+			payer.asEntityId());
 	private final FcCustomFee nonsenseFee = FcCustomFee.fractionalFee(
 			nonsenseNumerator,
 			nonsenseDenominator,

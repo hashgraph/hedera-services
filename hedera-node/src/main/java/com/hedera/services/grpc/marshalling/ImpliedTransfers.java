@@ -23,12 +23,9 @@ package com.hedera.services.grpc.marshalling;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Collections;
 import java.util.List;
@@ -60,10 +57,10 @@ public class ImpliedTransfers {
 	public static ImpliedTransfers valid(
 			ImpliedTransfersMeta.ValidationProps validationProps,
 			List<BalanceChange> changes,
-			List<Pair<Id, List<FcCustomFee>>> tokenFeeSchedules,
+			List<CustomFeeMeta> customFeeMeta,
 			List<FcAssessedCustomFee> assessedCustomFees
 	) {
-		final var meta = new ImpliedTransfersMeta(validationProps, OK, tokenFeeSchedules);
+		final var meta = new ImpliedTransfersMeta(validationProps, OK, customFeeMeta);
 		return new ImpliedTransfers(meta, changes, assessedCustomFees);
 	}
 
@@ -77,10 +74,10 @@ public class ImpliedTransfers {
 
 	public static ImpliedTransfers invalid(
 			ImpliedTransfersMeta.ValidationProps validationProps,
-			List<Pair<Id, List<FcCustomFee>>> tokenFeeSchedulesUpToFailure,
+			List<CustomFeeMeta> customFeeMetaTilFailure,
 			ResponseCodeEnum code
 	) {
-		final var meta = new ImpliedTransfersMeta(validationProps, code, tokenFeeSchedulesUpToFailure);
+		final var meta = new ImpliedTransfersMeta(validationProps, code, customFeeMetaTilFailure);
 		return new ImpliedTransfers(meta, Collections.emptyList(), Collections.emptyList());
 	}
 
@@ -96,9 +93,6 @@ public class ImpliedTransfers {
 		return assessedCustomFees;
 	}
 
-	/* NOTE: The object methods below are only overridden to improve
-			readability of unit tests; this model object is not used in hash-based
-			collections, so the performance of these methods doesn't matter. */
 	@Override
 	public boolean equals(Object obj) {
 		return EqualsBuilder.reflectionEquals(this, obj);
@@ -114,7 +108,7 @@ public class ImpliedTransfers {
 		return MoreObjects.toStringHelper(ImpliedTransfers.class)
 				.add("meta", meta)
 				.add("changes", changes)
-				.add("tokenFeeSchedules", meta.getTokenFeeSchedules())
+				.add("tokenFeeSchedules", meta.getCustomFeeMeta())
 				.add("assessedCustomFees", assessedCustomFees)
 				.toString();
 	}

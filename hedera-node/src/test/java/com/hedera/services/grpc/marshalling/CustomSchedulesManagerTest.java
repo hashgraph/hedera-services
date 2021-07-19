@@ -51,24 +51,24 @@ class CustomSchedulesManagerTest {
 
 	@Test
 	void usesDelegateForMissing() {
-		given(customFeeSchedules.lookupScheduleFor(a.asEntityId())).willReturn(aSchedule);
+		given(customFeeSchedules.lookupMetaFor(a)).willReturn(aMeta);
 
 		// when:
-		final var ans = subject.managedSchedulesFor(a.asEntityId());
+		final var ans = subject.managedSchedulesFor(a);
 
 		// then:
-		assertSame(aSchedule, ans);
+		assertSame(aMeta, ans);
 	}
 
 	@Test
 	void reusesExtantScheduleIfPresent() {
-		given(customFeeSchedules.lookupScheduleFor(a.asEntityId()))
-				.willReturn(aSchedule)
+		given(customFeeSchedules.lookupMetaFor(a))
+				.willReturn(aMeta)
 				.willThrow(AssertionError.class);
 
 		// when:
-		final var firstAns = subject.managedSchedulesFor(a.asEntityId());
-		final var secondAns = subject.managedSchedulesFor(a.asEntityId());
+		final var firstAns = subject.managedSchedulesFor(a);
+		final var secondAns = subject.managedSchedulesFor(a);
 
 		// then:
 		assertSame(firstAns, secondAns);
@@ -76,25 +76,23 @@ class CustomSchedulesManagerTest {
 
 	@Test
 	void enumeratesAllManagedSchedules() {
-		given(customFeeSchedules.lookupScheduleFor(a.asEntityId())).willReturn(aSchedule);
-		given(customFeeSchedules.lookupScheduleFor(b.asEntityId())).willReturn(bSchedule);
+		given(customFeeSchedules.lookupMetaFor(a)).willReturn(aMeta);
+		given(customFeeSchedules.lookupMetaFor(b)).willReturn(bMeta);
 
 		// when:
-		subject.managedSchedulesFor(a.asEntityId());
-		subject.managedSchedulesFor(b.asEntityId());
+		subject.managedSchedulesFor(a);
+		subject.managedSchedulesFor(b);
 		// and:
-		final var all = subject.schedulesUsed();
+		final var all = subject.metaUsed();
 
 		// then:
 		assertEquals(2, all.size());
 		// and:
 		final var first = all.get(0);
-		assertEquals(a, first.getLeft());
-		assertSame(aSchedule, first.getRight());
+		assertSame(aMeta, first);
 		// and:
 		final var second = all.get(1);
-		assertEquals(b, second.getLeft());
-		assertSame(bSchedule, second.getRight());
+		assertEquals(bMeta, second);
 	}
 
 	private final long amountOfHbarFee = 100_000L;
@@ -107,7 +105,11 @@ class CustomSchedulesManagerTest {
 	private final EntityId htsFeeCollector = htsFeeCollectorId.asEntityId();
 	private final FcCustomFee htsFee = FcCustomFee.fixedFee(amountOfHtsFee, feeDenom, htsFeeCollector);
 	final Id a = new Id(1, 2, 3);
+	final Id aTreasury = new Id(2, 2, 3);
 	final Id b = new Id(2, 3, 4);
+	final Id bTreasury = new Id(3, 3, 4);
 	final List<FcCustomFee> aSchedule = List.of(hbarFee);
 	final List<FcCustomFee> bSchedule = List.of(htsFee);
+	final CustomFeeMeta aMeta = new CustomFeeMeta(a, aTreasury, aSchedule);
+	final CustomFeeMeta bMeta = new CustomFeeMeta(b, bTreasury, bSchedule);
 }

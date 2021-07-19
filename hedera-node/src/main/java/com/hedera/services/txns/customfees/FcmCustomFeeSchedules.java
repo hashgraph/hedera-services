@@ -20,16 +20,14 @@ package com.hedera.services.txns.customfees;
  * ‍
  */
 
+import com.hedera.services.grpc.marshalling.CustomFeeMeta;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.models.Id;
 import com.swirlds.fcmap.FCMap;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.function.Supplier;
 
 /**
@@ -43,22 +41,19 @@ public class FcmCustomFeeSchedules implements CustomFeeSchedules {
 	}
 
 	@Override
-	public List<FcCustomFee> lookupScheduleFor(EntityId tokenId) {
+	public CustomFeeMeta lookupMetaFor(Id tokenId) {
 		final var currentTokens = tokens.get();
 		if (!currentTokens.containsKey(tokenId.asMerkle())) {
-			return Collections.emptyList();
+			return CustomFeeMeta.MISSING_META;
 		}
 		final var merkleToken = currentTokens.get(tokenId.asMerkle());
-		return merkleToken.customFeeSchedule();
+		return new CustomFeeMeta(tokenId, merkleToken.treasury().asId(), merkleToken.customFeeSchedule());
 	}
 
 	public Supplier<FCMap<MerkleEntityId, MerkleToken>> getTokens() {
 		return tokens;
 	}
 
-	/* NOTE: The object methods below are only overridden to improve
-				readability of unit tests; this model object is not used in hash-based
-				collections, so the performance of these methods doesn't matter. */
 	@Override
 	public boolean equals(Object obj) {
 		return EqualsBuilder.reflectionEquals(this, obj);
