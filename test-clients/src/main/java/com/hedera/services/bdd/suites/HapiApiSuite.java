@@ -76,10 +76,6 @@ public abstract class HapiApiSuite {
 
 	public static final String NODE = HapiSpecSetup.getDefaultInstance().defaultNodeName();
 
-
-	public static final String TRANSFER_LIST = "transferList";
-	public static final String TOKEN_TRANSFER_LIST = "tokenTransferLists";
-	public static final String ASSESSED_CUSTOM_FEES = "assessed_custom_fees";
 	public static final String HBAR_TOKEN_SENTINEL = "HBAR";
 
 	public static final String SYSTEM_ADMIN = HapiSpecSetup.getDefaultInstance().strongControlName();
