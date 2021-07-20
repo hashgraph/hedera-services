@@ -587,7 +587,6 @@ public class SuiteRunner {
 	}
 
 	private static CategoryResult runSuitesAsync(String category, HapiApiSuite[] suites) {
-		toggleStatsReporting(suites);
 		List<FinalOutcome> outcomes = accumulateAsync(suites, HapiApiSuite::runSuiteAsync);
 		List<HapiApiSuite> failed = IntStream.range(0, suites.length)
 				.filter(i -> outcomes.get(i) != FinalOutcome.SUITE_PASSED)
@@ -597,15 +596,10 @@ public class SuiteRunner {
 	}
 
 	private static CategoryResult runSuitesSync(String category, HapiApiSuite[] suites) {
-		toggleStatsReporting(suites);
 		List<HapiApiSuite> failed = Stream.of(suites)
 				.filter(suite -> suite.runSuiteSync() != FinalOutcome.SUITE_PASSED)
 				.collect(toList());
 		return summaryOf(category, suites, failed);
-	}
-
-	private static void toggleStatsReporting(HapiApiSuite[] suites) {
-		Stream.of(suites).forEach(suite -> suite.setReportStats(suite.hasInterestingStats()));
 	}
 
 	private static CategoryResult summaryOf(String category, HapiApiSuite[] suites, List<HapiApiSuite> failed) {

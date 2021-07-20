@@ -51,18 +51,12 @@ public class FileUpdateLoadTest extends HapiApiSuite {
 
 	public static void main(String... args) {
 		FileUpdateLoadTest suite = new FileUpdateLoadTest();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(runFileUpdates());
-	}
-
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
 	}
 
 	private HapiApiSpec runFileUpdates() {

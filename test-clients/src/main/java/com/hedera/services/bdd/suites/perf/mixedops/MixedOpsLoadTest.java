@@ -98,7 +98,6 @@ public class MixedOpsLoadTest extends LoadTest {
 	public static void main(String... args) {
 		parseArgs(args);
 		MixedOpsLoadTest suite = new MixedOpsLoadTest();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 
@@ -107,11 +106,6 @@ public class MixedOpsLoadTest extends LoadTest {
 		return List.of(
 				runMixedOps()
 		);
-	}
-
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
 	}
 
 	protected HapiApiSpec runMixedOps() {
