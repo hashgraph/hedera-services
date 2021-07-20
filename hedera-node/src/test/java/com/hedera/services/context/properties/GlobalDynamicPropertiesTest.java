@@ -22,6 +22,7 @@ package com.hedera.services.context.properties;
 
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,6 +47,8 @@ class GlobalDynamicPropertiesTest {
 	private HederaNumbers numbers;
 	private CongestionMultipliers oddCongestion = CongestionMultipliers.from("90,11x,95,27x,99,103x");
 	private CongestionMultipliers evenCongestion = CongestionMultipliers.from("90,10x,95,25x,99,100x");
+	private ThrottleReqOpsScaleFactor oddFactor = ThrottleReqOpsScaleFactor.from("5:2");
+	private ThrottleReqOpsScaleFactor evenFactor = ThrottleReqOpsScaleFactor.from("7:2");
 	private GlobalDynamicProperties subject;
 
 	@BeforeEach
@@ -82,6 +85,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(40, subject.maxNftQueryRange());
 		assertEquals(41, subject.maxNftMetadataBytes());
 		assertEquals(42, subject.maxTokenNameUtf8Bytes());
+		assertEquals(oddFactor, subject.nftMintScaleFactor());
 	}
 
 	@Test
@@ -114,6 +118,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(31, subject.autoRenewNumberOfEntitiesToScan());
 		assertEquals(32, subject.autoRenewMaxNumberOfEntitiesToRenewOrDelete());
 		assertEquals(35, subject.maxCustomFeesAllowed());
+		assertEquals(45, subject.maxXferBalanceChanges());
+		assertEquals(46, subject.maxCustomFeeDepth());
 	}
 
 	@Test
@@ -131,6 +137,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(22L, subject.defaultContractLifetime());
 		assertEquals(33L, subject.autoRenewGracePeriod());
 		assertEquals(34L, subject.ratesMidnightCheckInterval());
+		assertEquals(43L, subject.maxNftMints());
 	}
 
 	@Test
@@ -191,6 +198,8 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(32, subject.autoRenewNumberOfEntitiesToScan());
 		assertEquals(33, subject.autoRenewMaxNumberOfEntitiesToRenewOrDelete());
 		assertEquals(36, subject.maxCustomFeesAllowed());
+		assertEquals(46, subject.maxXferBalanceChanges());
+		assertEquals(47, subject.maxCustomFeeDepth());
 	}
 
 	@Test
@@ -208,6 +217,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(23L, subject.defaultContractLifetime());
 		assertEquals(34L, subject.autoRenewGracePeriod());
 		assertEquals(35L, subject.ratesMidnightCheckInterval());
+		assertEquals(44L, subject.maxNftMints());
 	}
 
 	@Test
@@ -222,6 +232,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(balanceExportPaths[0], subject.pathToBalancesExportDir());
 		assertEquals(Set.of(HederaFunctionality.CryptoCreate), subject.schedulingWhitelist());
 		assertEquals(evenCongestion, subject.congestionMultipliers());
+		assertEquals(evenFactor, subject.nftMintScaleFactor());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -265,7 +276,6 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("autorenew.gracePeriod")).willReturn(i + 32L);
 		given(properties.getLongProperty("rates.midnightCheckInterval")).willReturn(i + 33L);
 		given(properties.getIntProperty("tokens.maxCustomFeesAllowed")).willReturn(i + 34);
-
 		given(properties.getIntProperty("ledger.nftTransfers.maxLen")).willReturn(i + 35);
 		given(properties.getIntProperty("tokens.nfts.maxBatchSizeBurn")).willReturn(i + 36);
 		given(properties.getIntProperty("tokens.nfts.maxBatchSizeWipe")).willReturn(i + 37);
@@ -273,6 +283,12 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("tokens.nfts.maxQueryRange")).willReturn(i + 39L);
 		given(properties.getIntProperty("tokens.nfts.maxMetadataBytes")).willReturn(i + 40);
 		given(properties.getIntProperty("tokens.maxTokenNameUtf8Bytes")).willReturn(i + 41);
+		given(properties.getLongProperty("tokens.nfts.maxAllowedMints")).willReturn(i + 42L);
+		given(properties.getIntProperty("tokens.nfts.mintThrottleScaleFactor")).willReturn(i + 43);
+		given(properties.getIntProperty("ledger.xferBalanceChanges.maxLen")).willReturn(i + 44);
+		given(properties.getIntProperty("tokens.maxCustomFeeDepth")).willReturn(i + 45);
+		given(properties.getThrottleScaleFactor("tokens.nfts.mintThrottleScaleFactor"))
+				.willReturn(i % 2 == 0 ? evenFactor : oddFactor);
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {

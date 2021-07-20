@@ -20,13 +20,7 @@ package com.hedera.services.throttling;
  * ‍
  */
 
-import com.hedera.services.exceptions.UnknownHederaFunctionality;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-
-import java.util.Optional;
-
-import static com.hedera.services.utils.MiscUtils.functionOf;
+import com.hedera.services.utils.TxnAccessor;
 
 public class TransactionThrottling {
 	private final FunctionalityThrottling throttles;
@@ -35,16 +29,7 @@ public class TransactionThrottling {
 		this.throttles = throttles;
 	}
 
-	public boolean shouldThrottle(TransactionBody txn) {
-		Optional<HederaFunctionality> function = functionToThrottle(txn);
-
-		return function.map(throttles::shouldThrottle).orElse(true);
-	}
-
-	private Optional<HederaFunctionality> functionToThrottle(TransactionBody txn) {
-		try {
-			return Optional.of(functionOf(txn));
-		} catch (UnknownHederaFunctionality ignore) {}
-		return Optional.empty();
+	public boolean shouldThrottle(TxnAccessor accessor) {
+		return throttles.shouldThrottleTxn(accessor);
 	}
 }

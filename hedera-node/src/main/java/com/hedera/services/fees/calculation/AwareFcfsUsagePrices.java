@@ -44,6 +44,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import static com.hedera.services.utils.EntityIdUtils.readableId;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
@@ -58,6 +59,7 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 	private static final Logger log = LogManager.getLogger(AwareFcfsUsagePrices.class);
 
 	private static EnumSet<HederaFunctionality> FUNCTIONS_WITH_TOKEN_TYPE_SPECIALIZATIONS = EnumSet.of(
+			CryptoTransfer,
 			TokenMint,
 			TokenBurn,
 			TokenAccountWipe
@@ -209,6 +211,11 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 				if (FUNCTIONS_WITH_TOKEN_TYPE_SPECIALIZATIONS.contains(function)) {
 					map.put(SubType.TOKEN_FUNGIBLE_COMMON, untypedPrices);
 					map.put(SubType.TOKEN_NON_FUNGIBLE_UNIQUE, untypedPrices);
+					if(function == CryptoTransfer) {
+						map.put(SubType.DEFAULT, untypedPrices);
+						map.put(SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES, untypedPrices);
+						map.put(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES, untypedPrices);
+					}
 				} else {
 					map.put(SubType.DEFAULT, untypedPrices);
 				}

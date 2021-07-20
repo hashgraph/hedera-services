@@ -295,17 +295,19 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 				txn.getMemoBytes().size(),
 				op.getTransfers().getAccountAmountsCount());
 
-		int numTokensInvolved = 0, numTokenTransfers = 0;
+		int numTokensInvolved = 0, numTokenTransfers = 0, numNftOwnershipChanges = 0;
 		for (var tokenTransfers : op.getTokenTransfersList()) {
 			numTokensInvolved++;
 			numTokenTransfers += tokenTransfers.getTransfersCount();
+			numNftOwnershipChanges += tokenTransfers.getNftTransfersCount();
 		}
-		final var xferMeta = new CryptoTransferMeta(multiplier, numTokensInvolved, numTokenTransfers);
+		final var xferUsageMeta = new CryptoTransferMeta(multiplier, numTokensInvolved, numTokenTransfers, numNftOwnershipChanges);
 
 		final var accumulator = new UsageAccumulator();
-		cryptoOpsUsage.cryptoTransferUsage(suFrom(svo), xferMeta, baseMeta, accumulator);
+		cryptoOpsUsage.cryptoTransferUsage(suFrom(svo), xferUsageMeta, baseMeta, accumulator);
 
-		return AdapterUtils.feeDataFrom(accumulator);
+		final var feeData = AdapterUtils.feeDataFrom(accumulator);
+		return feeData.toBuilder().setSubType(xferUsageMeta.getSubType()).build();
 	}
 
 	@Override

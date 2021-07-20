@@ -137,6 +137,12 @@ import com.hedera.services.grpc.controllers.FreezeController;
 import com.hedera.services.grpc.controllers.NetworkController;
 import com.hedera.services.grpc.controllers.ScheduleController;
 import com.hedera.services.grpc.controllers.TokenController;
+import com.hedera.services.grpc.marshalling.BalanceChangeManager;
+import com.hedera.services.grpc.marshalling.CustomSchedulesManager;
+import com.hedera.services.grpc.marshalling.FeeAssessor;
+import com.hedera.services.grpc.marshalling.FractionalFeeAssessor;
+import com.hedera.services.grpc.marshalling.HbarFeeAssessor;
+import com.hedera.services.grpc.marshalling.HtsFeeAssessor;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.keys.CharacteristicsFactory;
 import com.hedera.services.keys.InHandleActivationHelper;
@@ -781,22 +787,31 @@ public class ServicesContext {
 
 	public FunctionalityThrottling hapiThrottling() {
 		if (hapiThrottling == null) {
-			hapiThrottling = new HapiThrottling(new DeterministicThrottling(() -> addressBook().getSize()));
+			final var delegate = new DeterministicThrottling(() -> addressBook().getSize(), globalDynamicProperties());
+			hapiThrottling = new HapiThrottling(delegate);
 		}
 		return hapiThrottling;
 	}
 
 	public FunctionalityThrottling handleThrottling() {
 		if (handleThrottling == null) {
-			handleThrottling = new TxnAwareHandleThrottling(txnCtx(), new DeterministicThrottling(() -> 1));
+			final var delegate = new DeterministicThrottling(() -> 1, globalDynamicProperties());
+			handleThrottling = new TxnAwareHandleThrottling(txnCtx(), delegate);
 		}
 		return handleThrottling;
 	}
 
 	public ImpliedTransfersMarshal impliedTransfersMarshal() {
 		if (impliedTransfersMarshal == null) {
-			impliedTransfersMarshal = new ImpliedTransfersMarshal(globalDynamicProperties(), transferSemanticChecks(),
-					customFeeSchedules());
+			final var feeAssessor =
+					new FeeAssessor(new HtsFeeAssessor(), new HbarFeeAssessor(), new FractionalFeeAssessor());
+			impliedTransfersMarshal = new ImpliedTransfersMarshal(
+					feeAssessor,
+					customFeeSchedules(),
+					globalDynamicProperties(),
+					transferSemanticChecks(),
+					BalanceChangeManager::new,
+					CustomSchedulesManager::new);
 		}
 		return impliedTransfersMarshal;
 	}
@@ -1037,8 +1052,7 @@ public class ServicesContext {
 					this::uniqueOwnershipAssociations,
 					this::uniqueTokenAssociations,
 					this::tokenAssociations,
-					(BackingTokenRels) backingTokenRels(),
-					backingNfts());
+					(BackingTokenRels) backingTokenRels());
 		}
 		return typedTokenStore;
 	}
@@ -1487,8 +1501,8 @@ public class ServicesContext {
 				entry(TokenUpdate,
 						List.of(new TokenUpdateTransitionLogic(
 								validator(), tokenStore(), ledger(), txnCtx(), HederaTokenStore::affectsExpiryAtMost))),
-				entry(TokenFeeScheduleUpdate, List.of(new TokenFeeScheduleUpdateTransitionLogic(tokenStore(), txnCtx(),
-						validator, globalDynamicProperties()))),
+				entry(TokenFeeScheduleUpdate,
+						List.of(new TokenFeeScheduleUpdateTransitionLogic(tokenStore(), txnCtx()))),
 				entry(TokenFreezeAccount,
 						List.of(new TokenFreezeTransitionLogic(txnCtx(), typedTokenStore(), accountStore()))),
 				entry(TokenUnfreezeAccount,
@@ -1849,8 +1863,8 @@ public class ServicesContext {
 
 	public SpanMapManager spanMapManager() {
 		if (spanMapManager == null) {
-			spanMapManager = new SpanMapManager(impliedTransfersMarshal(), globalDynamicProperties(),
-					customFeeSchedules());
+			spanMapManager = new SpanMapManager(
+					impliedTransfersMarshal(), globalDynamicProperties(), customFeeSchedules());
 		}
 		return spanMapManager;
 	}

@@ -87,4 +87,9 @@ class TokenEntitySizesTest {
 				3 * BASIC_ENTITY_ID_SIZE + LONG_SIZE + 2 * FeeBuilder.BOOL_SIZE,
 				subject.bytesUsedPerAccountRelationship());
 	}
+
+	@Test
+	void returnsRequiredBytesForUniqueTokenTransfers() {
+		assertEquals(3 * (2L * 24 + 8), subject.bytesUsedForUniqueTokenTransfers(3));
+	}
 }

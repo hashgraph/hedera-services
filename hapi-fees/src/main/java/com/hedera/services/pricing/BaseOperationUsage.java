@@ -26,6 +26,8 @@ import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.consensus.ConsensusOpsUsage;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
+import com.hedera.services.usage.crypto.CryptoOpsUsage;
+import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.TokenBurnUsage;
 import com.hedera.services.usage.token.TokenMintUsage;
@@ -79,7 +81,7 @@ class BaseOperationUsage {
 
 	private static final TokenOpsUsage TOKEN_OPS_USAGE = new TokenOpsUsage();
 	private static final ConsensusOpsUsage CONSENSUS_OPS_USAGE = new ConsensusOpsUsage();
-	private static final String NOT_IMPLEMENTED = "Not implemented!";
+	private static final CryptoOpsUsage CRYPTO_OPS_USAGE = new CryptoOpsUsage();
 
 	/**
 	 * Returns the total resource usage in the new {@link UsageAccumulator} process
@@ -92,42 +94,50 @@ class BaseOperationUsage {
 	 * @return the total resource usage of the base configuration
 	 */
 	UsageAccumulator baseUsageFor(HederaFunctionality function, SubType type) {
-		if (type == TOKEN_NON_FUNGIBLE_UNIQUE) {
-			switch (function) {
-				case CryptoTransfer:
-					return nftCryptoTransfer();
-				case TokenMint:
+		switch (function) {
+			case CryptoTransfer:
+				switch (type) {
+					case DEFAULT:
+						return hbarCryptoTransfer();
+					case TOKEN_FUNGIBLE_COMMON:
+						return htsCryptoTransfer();
+					case TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES:
+						return htsCryptoTransferWithCustomFee();
+					case TOKEN_NON_FUNGIBLE_UNIQUE:
+						return nftCryptoTransfer();
+					case TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES:
+						return nftCryptoTransferWithCustomFee();
+					default:
+						break;
+				}
+				break;
+			case TokenMint:
+				if (type == TOKEN_NON_FUNGIBLE_UNIQUE) {
 					return uniqueTokenMint();
-				case TokenAccountWipe:
+				}
+				break;
+			case TokenAccountWipe:
+				if (type == TOKEN_NON_FUNGIBLE_UNIQUE) {
 					return uniqueTokenWipe();
-				case TokenBurn:
+				}
+				break;
+			case TokenBurn:
+				if (type == TOKEN_NON_FUNGIBLE_UNIQUE) {
 					return uniqueTokenBurn();
-				default:
-					break;
-			}
-		} else {
-			switch (function) {
-				case CryptoTransfer:
-					switch (type) {
-						case DEFAULT:
-							return hbarCryptoTransfer();
-						case TOKEN_FUNGIBLE_COMMON:
-							return htsCryptoTransfer();
-					}
-					break;
-				case ConsensusSubmitMessage:
-					return submitMessage();
-				case TokenFeeScheduleUpdate:
-					return feeScheduleUpdate();
-				default:
-					break;
-			}
+				}
+				break;
+			case ConsensusSubmitMessage:
+				return submitMessage();
+			case TokenFeeScheduleUpdate:
+				return feeScheduleUpdate();
+			default:
+				break;
 		}
 
 		throw new IllegalArgumentException("Canonical usage unknown");
 	}
 
-	private UsageAccumulator uniqueTokenBurn() {
+	UsageAccumulator uniqueTokenBurn() {
 		final var target = TokenID.newBuilder().setTokenNum(1_234).build();
 		final var canonicalTxn = TransactionBody.newBuilder()
 				.setTokenBurn(TokenBurnTransactionBody.newBuilder()
@@ -142,7 +152,7 @@ class BaseOperationUsage {
 		return UsageAccumulator.fromGrpc(baseUsage);
 	}
 
-	private UsageAccumulator uniqueTokenMint() {
+	UsageAccumulator uniqueTokenMint() {
 		final var target = TokenID.newBuilder().setTokenNum(1_234).build();
 		final var canonicalTxn = TransactionBody.newBuilder()
 				.setTokenMint(TokenMintTransactionBody.newBuilder()
@@ -159,7 +169,7 @@ class BaseOperationUsage {
 		return UsageAccumulator.fromGrpc(baseUsage);
 	}
 
-	private UsageAccumulator uniqueTokenWipe() {
+	UsageAccumulator uniqueTokenWipe() {
 		final var target = TokenID.newBuilder().setTokenNum(1_234).build();
 		final var targetAcct = AccountID.newBuilder().setAccountNum(5_678).build();
 		final var canonicalTxn = TransactionBody.newBuilder()
@@ -178,15 +188,14 @@ class BaseOperationUsage {
 		return UsageAccumulator.fromGrpc(baseUsage);
 	}
 
-	private UsageAccumulator submitMessage() {
-		final var baseMeta = new BaseTransactionMeta(0, 0);
+	UsageAccumulator submitMessage() {
 		final var opMeta = new SubmitMessageMeta(100);
 		final var into = new UsageAccumulator();
-		CONSENSUS_OPS_USAGE.submitMessageUsage(SINGLE_SIG_USAGE, opMeta, baseMeta, into);
+		CONSENSUS_OPS_USAGE.submitMessageUsage(SINGLE_SIG_USAGE, opMeta, NO_MEMO_AND_NO_EXPLICIT_XFERS, into);
 		return into;
 	}
 
-	private UsageAccumulator feeScheduleUpdate() {
+	UsageAccumulator feeScheduleUpdate() {
 		/* A canonical op */
 		final var target = TokenID.newBuilder().setShardNum(1).setRealmNum(2).setTokenNum(3).build();
 		final List<CustomFee> theNewSchedule = List.of(
@@ -215,15 +224,51 @@ class BaseOperationUsage {
 		return into;
 	}
 
-	private UsageAccumulator hbarCryptoTransfer() {
-		throw new AssertionError(NOT_IMPLEMENTED);
+	UsageAccumulator hbarCryptoTransfer() {
+		final var txnUsageMeta = new BaseTransactionMeta(0, 2);
+		final var xferUsageMeta = new CryptoTransferMeta(380, 0,
+				0, 0);
+		final var into = new UsageAccumulator();
+		CRYPTO_OPS_USAGE.cryptoTransferUsage(SINGLE_SIG_USAGE, xferUsageMeta, txnUsageMeta, into);
+
+		return into;
 	}
 
-	private UsageAccumulator htsCryptoTransfer() {
-		throw new AssertionError(NOT_IMPLEMENTED);
+	UsageAccumulator htsCryptoTransfer() {
+		final var xferUsageMeta = new CryptoTransferMeta(380, 1,
+				2, 0);
+		final var into = new UsageAccumulator();
+		CRYPTO_OPS_USAGE.cryptoTransferUsage(SINGLE_SIG_USAGE, xferUsageMeta, NO_MEMO_AND_NO_EXPLICIT_XFERS, into);
+
+		return into;
 	}
 
-	private UsageAccumulator nftCryptoTransfer() {
-		throw new AssertionError(NOT_IMPLEMENTED);
+	UsageAccumulator htsCryptoTransferWithCustomFee() {
+		final var xferUsageMeta = new CryptoTransferMeta(380, 1,
+				2, 0);
+		xferUsageMeta.setCustomFeeHbarTransfers(2);
+		final var into = new UsageAccumulator();
+		CRYPTO_OPS_USAGE.cryptoTransferUsage(SINGLE_SIG_USAGE, xferUsageMeta, NO_MEMO_AND_NO_EXPLICIT_XFERS, into);
+
+		return into;
+	}
+
+	UsageAccumulator nftCryptoTransfer() {
+		final var xferUsageMeta = new CryptoTransferMeta(380, 1,
+				0, 1);
+		final var into = new UsageAccumulator();
+		CRYPTO_OPS_USAGE.cryptoTransferUsage(SINGLE_SIG_USAGE, xferUsageMeta, NO_MEMO_AND_NO_EXPLICIT_XFERS, into);
+
+		return into;
+	}
+
+	UsageAccumulator nftCryptoTransferWithCustomFee() {
+		final var xferUsageMeta = new CryptoTransferMeta(380, 1,
+				0, 1);
+		xferUsageMeta.setCustomFeeHbarTransfers(2);
+		final var into = new UsageAccumulator();
+		CRYPTO_OPS_USAGE.cryptoTransferUsage(SINGLE_SIG_USAGE, xferUsageMeta, NO_MEMO_AND_NO_EXPLICIT_XFERS, into);
+
+		return into;
 	}
 }

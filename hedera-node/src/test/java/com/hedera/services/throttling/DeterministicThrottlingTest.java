@@ -9,9 +9,9 @@ package com.hedera.services.throttling;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,13 +20,19 @@ package com.hedera.services.throttling;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hedera.services.throttles.BucketThrottle;
 import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.utils.SerdeUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,13 +43,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCallLocal;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -53,22 +63,99 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
-@ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
+@ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class DeterministicThrottlingTest {
-	private int n = 2;
-	private Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 123);
+	private final int n = 2;
+	private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 123);
+	private final ThrottleReqOpsScaleFactor nftScaleFactor = ThrottleReqOpsScaleFactor.from("5:2");
+
+	@Mock
+	private TxnAccessor accessor;
+	@Mock
+	private ThrottleReqsManager manager;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	@Inject
 	private LogCaptor logCaptor;
 	@LoggingSubject
 	private DeterministicThrottling subject;
 
-	@Mock
-	ThrottleReqsManager manager;
-
 	@BeforeEach
 	void setUp() {
-		subject = new DeterministicThrottling(() -> n);
+		subject = new DeterministicThrottling(() -> n, dynamicProperties);
+	}
+
+	@Test
+	void worksAsExpectedForKnownQueries() throws IOException {
+		// setup:
+		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+		// when:
+		subject.rebuildFor(defs);
+		// and:
+		var ans = subject.shouldThrottleQuery(CryptoGetAccountBalance, consensusNow);
+		var throttlesNow = subject.activeThrottlesFor(CryptoGetAccountBalance);
+		// and:
+		var dNow = throttlesNow.get(0);
+
+		// then:
+		assertFalse(ans);
+		assertEquals(BucketThrottle.capacityUnitsPerTxn(), dNow.used());
+	}
+
+	@Test
+	void worksAsExpectedForUnknownQueries() throws IOException {
+		// setup:
+		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+		// when:
+		subject.rebuildFor(defs);
+
+		// then:
+		assertTrue(subject.shouldThrottleQuery(ContractCallLocal, consensusNow));
+	}
+
+	@Test
+	void managerBehavesAsExpectedForFungibleMint() throws IOException {
+		// setup:
+		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+		givenMintWith(0);
+
+		// when:
+		subject.rebuildFor(defs);
+		// and:
+		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+		var throttlesNow = subject.activeThrottlesFor(TokenMint);
+		// and:
+		var aNow = throttlesNow.get(0);
+
+		// then:
+		assertFalse(ans);
+		assertEquals(10 * BucketThrottle.capacityUnitsPerTxn(), aNow.used());
+	}
+
+	@Test
+	void managerBehavesAsExpectedForNftMint() throws IOException {
+		// setup:
+		final var numNfts = 3;
+		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+		givenMintWith(numNfts);
+		given(dynamicProperties.nftMintScaleFactor()).willReturn(nftScaleFactor);
+
+		// when:
+		subject.rebuildFor(defs);
+		// and:
+		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+		var throttlesNow = subject.activeThrottlesFor(TokenMint);
+		// and:
+		var aNow = throttlesNow.get(0);
+
+		// then:
+		assertFalse(ans);
+		assertEquals(75 * BucketThrottle.capacityUnitsPerTxn(), aNow.used());
 	}
 
 	@Test
@@ -76,10 +163,12 @@ class DeterministicThrottlingTest {
 		// setup:
 		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
 
+		givenFunction(ContractCall);
+
 		// when:
 		subject.rebuildFor(defs);
 		// and:
-		var ans = subject.shouldThrottle(ContractCall, consensusNow);
+		var ans = subject.shouldThrottleTxn(accessor, consensusNow);
 		var throttlesNow = subject.activeThrottlesFor(ContractCall);
 		// and:
 		var aNow = throttlesNow.get(0);
@@ -87,8 +176,8 @@ class DeterministicThrottlingTest {
 
 		// then:
 		assertFalse(ans);
-		assertEquals( 2500 * BucketThrottle.capacityUnitsPerTxn(), aNow.used());
-		assertEquals( BucketThrottle.capacityUnitsPerTxn(), bNow.used());
+		assertEquals(2500 * BucketThrottle.capacityUnitsPerTxn(), aNow.used());
+		assertEquals(BucketThrottle.capacityUnitsPerTxn(), bNow.used());
 	}
 
 	@Test
@@ -149,8 +238,10 @@ class DeterministicThrottlingTest {
 
 	@Test
 	public void alwaysRejectsIfNoThrottle() {
+		givenFunction(ContractCall);
+
 		// expect:
-		assertTrue(subject.shouldThrottle(ContractCall, consensusNow));
+		assertTrue(subject.shouldThrottleTxn(accessor, consensusNow));
 	}
 
 	@Test
@@ -163,16 +254,41 @@ class DeterministicThrottlingTest {
 		// setup:
 		subject.setFunctionReqs(reqsManager());
 
+		givenFunction(CryptoTransfer);
 		given(manager.allReqsMetAt(consensusNow)).willReturn(true);
 
 		// then:
-		assertFalse(subject.shouldThrottle(CryptoTransfer, consensusNow));
+		assertFalse(subject.shouldThrottleTxn(accessor, consensusNow));
 	}
 
 	@Test
 	void requiresExplicitTimestamp() {
 		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottle(CryptoTransfer));
+		assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottleTxn(accessor));
+		assertThrows(UnsupportedOperationException.class, () -> subject.shouldThrottleQuery(FileGetInfo));
+	}
+
+	private void givenFunction(HederaFunctionality functionality) {
+		given(accessor.getFunction()).willReturn(functionality);
+	}
+
+	private void givenMintWith(int numNfts) {
+		// setup:
+		final List<ByteString> meta = new ArrayList<>();
+		final var op = TokenMintTransactionBody.newBuilder();
+		if (numNfts == 0) {
+			op.setAmount(1_234_567L);
+		} else {
+			while (numNfts-- > 0) {
+				op.addMetadata(ByteString.copyFromUtf8("metadata" + numNfts));
+			}
+		}
+		final var txn = TransactionBody.newBuilder()
+				.setTokenMint(op)
+				.build();
+
+		given(accessor.getFunction()).willReturn(TokenMint);
+		given(accessor.getTxn()).willReturn(txn);
 	}
 
 	private EnumMap<HederaFunctionality, ThrottleReqsManager> reqsManager() {

@@ -45,6 +45,7 @@ import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_RETRY_PRECHECKS;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -181,20 +182,31 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest  {
 							if(settings.getBooleanProperty("clientToExportBalances", false)) {
 								log.info("Now get all {} accounts created and save them", totalAccounts);
 								AccountID acctID = AccountID.getDefaultInstance();
-								for (int i = 1; i <= totalAccounts; i++) {
-									String acctName = ACCT_NAME_PREFIX + i;
-									// Make sure the named account was created before query its balances.
-									try {
-										acctID = spec.registry().getAccountID(acctName);
-									} catch (RegistryNotFound e) {
-										log.info(acctName + " was not created successfully.");
-										continue;
+								String lastGoodAcct = null;
+								int acctProcessed = 0;
+								int batchSize = 10000;
+								while(acctProcessed <= totalAccounts) {
+									List<HapiSpecOperation> ops = new ArrayList<>();
+									String acctName = null;
+									for (int i = acctProcessed + 1; i <= acctProcessed + batchSize && i <= totalAccounts; i++) {
+										acctName = ACCT_NAME_PREFIX + i;
+										// Make sure the named account was created before query its balances.
+										try {
+											acctID = spec.registry().getAccountID(acctName);
+										} catch (RegistryNotFound e) {
+											log.info(acctName + " was not created successfully.");
+											continue;
+										}
+										var op = getAccountBalance(HapiPropertySource.asAccountString(acctID))
+												.hasAnswerOnlyPrecheckFrom(permissiblePrechecks)
+												.persists(true)
+												.noLogging();
+										ops.add(op);
+										lastGoodAcct = acctName;
 									}
-									var op = getAccountBalance(HapiPropertySource.asAccountString(acctID))
-											.hasAnswerOnlyPrecheckFrom(permissiblePrechecks)
-											.persists(true)
-											.noLogging();
-									allRunFor(spec, op);
+									ops.add(getAccountInfo(lastGoodAcct).fee(ONE_HBAR));
+									allRunFor(spec, ops);
+									acctProcessed += batchSize;
 								}
 							}
 							else { // debug

@@ -21,6 +21,7 @@ package com.hedera.services.utils;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
@@ -35,9 +36,11 @@ import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -107,12 +110,8 @@ class SignedTxnAccessorTest {
 
 	@Test
 	void uncheckedPropagatesIaeOnNonsense() {
-		// setup:
-		final var nonsenseTxn = Transaction.newBuilder()
-				.setSignedTransactionBytes(ByteString.copyFromUtf8("NONSENSE"))
-				.build();
+		final var nonsenseTxn = buildTransactionFrom(ByteString.copyFromUtf8("NONSENSE"));
 
-		// expect:
 		Assertions.assertThrows(IllegalArgumentException.class, () -> SignedTxnAccessor.uncheckedFrom(nonsenseTxn));
 	}
 
@@ -160,59 +159,85 @@ class SignedTxnAccessorTest {
 	}
 
 	@Test
-	void understandsFullXferUsageIncTokens() {
-		// setup:
-		final var txn = Transaction.newBuilder()
-				.setBodyBytes(tokenXfers().toByteString())
+	void fetchesSubTypeAsExpected() throws InvalidProtocolBufferException {
+		final var nftTransfers = TokenTransferList.newBuilder()
+				.setToken(anId)
+				.addNftTransfers(NftTransfer.newBuilder()
+						.setSenderAccountID(a)
+						.setReceiverAccountID(b)
+						.setSerialNumber(1))
+				.build();
+		final var fungibleTokenXfers = TokenTransferList.newBuilder()
+				.setToken(anotherId)
+				.addAllTransfers(List.of(
+						adjustFrom(a, -50),
+						adjustFrom(b, 25),
+						adjustFrom(c, 25)
+				))
 				.build();
 
-		// given:
+		var txn = buildTokenTransferTxn(nftTransfers);
+		SignedTxnAccessor subject = new SignedTxnAccessor(txn);
+		assertEquals(SubType.TOKEN_NON_FUNGIBLE_UNIQUE , subject.availXferUsageMeta().getSubType());
+		assertEquals(subject.availXferUsageMeta().getSubType(), subject.getSubType());
+
+		// set customFee
+		var xferUsageMeta = subject.availXferUsageMeta();
+		xferUsageMeta.setCustomFeeHbarTransfers(1);
+		assertEquals(SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES, subject.getSubType());
+		xferUsageMeta.setCustomFeeHbarTransfers(0);
+
+		txn = buildTokenTransferTxn(fungibleTokenXfers);
+		subject = new SignedTxnAccessor(txn);
+		assertEquals(SubType.TOKEN_FUNGIBLE_COMMON , subject.availXferUsageMeta().getSubType());
+		assertEquals(subject.availXferUsageMeta().getSubType(), subject.getSubType());
+
+		// set customFee
+		xferUsageMeta = subject.availXferUsageMeta();
+		xferUsageMeta.setCustomFeeTokenTransfers(1);
+		assertEquals(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES, subject.getSubType());
+		xferUsageMeta.setCustomFeeTokenTransfers(0);
+
+		txn = buildDefaultCryptoCreateTxn();
+		subject = new SignedTxnAccessor(txn);
+		assertEquals(SubType.DEFAULT, subject.getSubType());
+	}
+
+	@Test
+	void understandsFullXferUsageIncTokens() {
+		final var txn = buildTransactionFrom(tokenXfers());
 		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
 
-		// when:
 		final var xferMeta = subject.availXferUsageMeta();
 
-		// then:
 		assertEquals(1, xferMeta.getTokenMultiplier());
 		assertEquals(3, xferMeta.getNumTokensInvolved());
-		assertEquals(7, xferMeta.getNumTokenTransfers());
+		assertEquals(7, xferMeta.getNumFungibleTokenTransfers());
 	}
 
 	@Test
 	void rejectsRequestForMetaIfNotAvail() {
-		// setup:
-		final var txn = Transaction.newBuilder()
-				.setBodyBytes(TransactionBody.newBuilder()
-						.setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance())
-						.build().toByteString())
-				.build();
+		final var txn = buildDefaultCryptoCreateTxn();
 
-		// given:
 		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
 
-		// expect:
+		assertEquals(SubType.DEFAULT, subject.getSubType());
 		assertThrows(IllegalStateException.class, subject::availXferUsageMeta);
 		assertThrows(IllegalStateException.class, subject::availSubmitUsageMeta);
 	}
 
 	@Test
 	void understandsSubmitMessageMeta() {
-		// setup:
 		final var message = "And after, arranged it in a song";
-		final var txn = Transaction.newBuilder()
-				.setBodyBytes(TransactionBody.newBuilder()
-						.setConsensusSubmitMessage(ConsensusSubmitMessageTransactionBody.newBuilder()
-								.setMessage(ByteString.copyFromUtf8(message)))
-						.build().toByteString())
+		final var txnBody = TransactionBody.newBuilder()
+				.setConsensusSubmitMessage(ConsensusSubmitMessageTransactionBody.newBuilder()
+						.setMessage(ByteString.copyFromUtf8(message)))
 				.build();
-
-		// given:
+		final var txn = buildTransactionFrom(txnBody);
 		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
 
-		// when:
 		final var submitMeta = subject.availSubmitUsageMeta();
 
-		// then:
 		assertEquals(message.length(), submitMeta.getNumMsgBytes());
 	}
 
@@ -229,13 +254,8 @@ class SignedTxnAccessorTest {
 				5678l, -70000l,
 				5679l, 70000l);
 		TransactionBody body = CommonUtils.extractTransactionBody(transaction);
-		SignedTransaction signedTransaction = SignedTransaction.newBuilder()
-				.setBodyBytes(body.toByteString())
-				.setSigMap(expectedMap)
-				.build();
-		Transaction newTransaction = Transaction.newBuilder()
-				.setSignedTransactionBytes(signedTransaction.toByteString())
-				.build();
+		SignedTransaction signedTransaction = signedTransactionFrom(body, expectedMap);
+		Transaction newTransaction = buildTransactionFrom(signedTransaction.toByteString());
 		SignedTxnAccessor accessor = SignedTxnAccessor.uncheckedFrom(newTransaction);
 
 		assertEquals(newTransaction, accessor.getSignedTxnWrapper());
@@ -313,11 +333,7 @@ class SignedTxnAccessorTest {
 	}
 
 	private Transaction signedFeeScheduleUpdateTxn() {
-		return Transaction.newBuilder()
-				.setSignedTransactionBytes(SignedTransaction.newBuilder()
-						.setBodyBytes(feeScheduleUpdateTxn().toByteString())
-						.build().toByteString())
-				.build();
+		return buildTransactionFrom(feeScheduleUpdateTxn());
 	}
 
 	private TransactionBody feeScheduleUpdateTxn() {
@@ -343,6 +359,50 @@ class SignedTxnAccessorTest {
 				fractionalFee(1, 3, 1, 2, collector),
 				fractionalFee(1, 4, 1, 2, collector)
 		).stream().map(FcCustomFee::asGrpc).collect(toList());
+	}
+
+	private Transaction buildTokenTransferTxn(final TokenTransferList tokenTransferList) {
+		var op = CryptoTransferTransactionBody.newBuilder()
+				.addTokenTransfers(tokenTransferList)
+				.build();
+		var txnBody = TransactionBody.newBuilder()
+				.setMemo(memo)
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(now)))
+				.setCryptoTransfer(op)
+				.build();
+
+		return buildTransactionFrom(txnBody);
+	}
+
+	private Transaction buildDefaultCryptoCreateTxn() {
+		final var txnBody = TransactionBody.newBuilder()
+				.setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance())
+				.build();
+
+		return buildTransactionFrom(txnBody);
+	}
+
+	private Transaction buildTransactionFrom(final TransactionBody transactionBody) {
+		return buildTransactionFrom(signedTransactionFrom(transactionBody).toByteString());
+	}
+
+	private Transaction buildTransactionFrom(ByteString signedTransactionBytes) {
+		return Transaction.newBuilder()
+				.setSignedTransactionBytes(signedTransactionBytes)
+				.build();
+	}
+
+	private SignedTransaction signedTransactionFrom(final TransactionBody txnBody) {
+		return signedTransactionFrom(txnBody, SignatureMap.getDefaultInstance());
+	}
+
+	private SignedTransaction signedTransactionFrom(final TransactionBody txnBody, final SignatureMap sigMap) {
+		return SignedTransaction.newBuilder()
+				.setBodyBytes(txnBody.toByteString())
+				.setSigMap(sigMap)
+				.build();
 	}
 
 	private TransactionBody tokenXfers() {
