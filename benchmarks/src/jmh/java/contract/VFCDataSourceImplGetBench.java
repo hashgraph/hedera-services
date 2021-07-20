@@ -7,6 +7,7 @@ import com.hedera.services.store.models.Id;
 import com.swirlds.fcmap.VFCDataSource;
 import fcmmap.FCVirtualMapTestUtils;
 import org.openjdk.jmh.annotations.*;
+import rockdb.SequentialInsertsVFCDataSource;
 import rockdb.VFCDataSourceLmdb;
 import rockdb.VFCDataSourceLmdbTwoIndexes;
 import rockdb.VFCDataSourceRocksDb;
@@ -28,7 +29,7 @@ import java.util.stream.IntStream;
 public class VFCDataSourceImplGetBench {
     private static final long MB = 1024*1024;
 
-    @Param({"1000000"})
+    @Param({"10000000"})
     public long numEntities;
     @Param({"5"})
     public int hashThreads;
@@ -84,6 +85,8 @@ public class VFCDataSourceImplGetBench {
             };
             // create data
             if (!storeExists) {
+                SequentialInsertsVFCDataSource<ContractKey,ContractUint256> sequentialDataSource = null;
+                if (dataSource instanceof SequentialInsertsVFCDataSource) sequentialDataSource = (SequentialInsertsVFCDataSource<ContractKey, ContractUint256>)dataSource;
                 System.out.println("================================================================================");
                 System.out.println("Creating data ...");
                 long printStep = Math.min(500_000, numEntities / 4);
@@ -96,7 +99,17 @@ public class VFCDataSourceImplGetBench {
                         START = System.currentTimeMillis();
                         transaction = dataSource.startTransaction();
                     }
-                    dataSource.saveInternal(transaction, i, FCVirtualMapTestUtils.hash((int) i));
+                    try {
+                        if (sequentialDataSource != null) {
+                            sequentialDataSource.saveInternalSequential(transaction, i, FCVirtualMapTestUtils.hash((int) i));
+                        } else {
+                            dataSource.saveInternal(transaction, i, FCVirtualMapTestUtils.hash((int) i));
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        System.err.println("i= "+i);
+                        throw e;
+                    }
                 }
                 dataSource.commitTransaction(transaction);
 
@@ -109,7 +122,11 @@ public class VFCDataSourceImplGetBench {
                         START = System.currentTimeMillis();
                         transaction = dataSource.startTransaction();
                     }
-                    dataSource.addLeaf(transaction,numEntities + i, new ContractKey(new Id(0,0,i),new ContractUint256(i)), new ContractUint256(i), FCVirtualMapTestUtils.hash((int) i));
+                    if (sequentialDataSource != null) {
+                        ((SequentialInsertsVFCDataSource<ContractKey, ContractUint256>) dataSource).addLeafSequential(transaction, numEntities + i, new ContractKey(new Id(0, 0, i), new ContractUint256(i)), new ContractUint256(i), FCVirtualMapTestUtils.hash((int) i));
+                    } else {
+                        dataSource.addLeaf(transaction, numEntities + i, new ContractKey(new Id(0, 0, i), new ContractUint256(i)), new ContractUint256(i), FCVirtualMapTestUtils.hash((int) i));
+                    }
                 }
                 dataSource.commitTransaction(transaction);
                 System.out.println("================================================================================");
