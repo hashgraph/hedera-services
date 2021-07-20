@@ -61,13 +61,13 @@ public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implement
         // Env can store many different databases (ie sorted maps).
         env = Env.create()
                 // LMDB also needs to know how large our DB might be. Over-estimating is OK.
-                .setMapSize(1_000_000_000*(long)(keySizeBytes+keySizeBytes+valueSizeBytes+HASH_SIZE+Long.BYTES+Long.BYTES+Long.BYTES+Long.BYTES)) // TODO just a guess so far
+                .setMapSize(2_000_000_000*(long)(keySizeBytes+keySizeBytes+valueSizeBytes+HASH_SIZE+Long.BYTES+Long.BYTES+Long.BYTES+Long.BYTES)) // TODO just a guess so far
                 // LMDB also needs to know how many DBs (Dbi) we want to store in this Env.
                 .setMaxDbs(4)
                 // Now let's open the Env. The same path can be concurrently opened and
                 // used in different processes, but do not open the same path twice in
                 // the same process at the same time.
-                .open(storageDir.toFile(), EnvFlags.MDB_WRITEMAP, EnvFlags.MDB_NOSYNC);
+                .open(storageDir.toFile(), EnvFlags.MDB_WRITEMAP, EnvFlags.MDB_NOSYNC, EnvFlags.MDB_NOMETASYNC, EnvFlags.MDB_NORDAHEAD);
         // We need a Dbi for each DB. A Dbi roughly equates to a sorted map. The
         // MDB_CREATE flag causes the DB to be created if it doesn't already exist.
         pathToHashMap = env.openDbi("pathToHash", MDB_CREATE,MDB_INTEGERKEY);
