@@ -41,7 +41,7 @@ class CustomFeeMetaTest {
 		final var identical = subject;
 
 		// expect:
-		assertNotEquals(subject, null);
+		assertNotEquals(null, subject);
 		assertNotEquals(subject, new Object());
 		assertNotEquals(subject, differentFees);
 		assertNotEquals(subject, differentToken);
