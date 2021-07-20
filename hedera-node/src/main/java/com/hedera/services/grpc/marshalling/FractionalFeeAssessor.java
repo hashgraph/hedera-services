@@ -50,34 +50,32 @@ public class FractionalFeeAssessor {
 		final var payer = change.getAccount();
 		final var denom = change.getToken();
 		for (var fee : feesWithFractional) {
-			if (fee.getFeeType() == FRACTIONAL_FEE) {
-				final var collector = fee.getFeeCollectorAsId();
-				if (payer.equals(collector)) {
-					continue;
-				}
-
-				var assessedAmount = 0L;
-				try {
-					assessedAmount = amountOwedGiven(initialUnits, fee.getFractionalFeeSpec());
-				} catch (ArithmeticException ignore) {
-					return CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
-				}
-
-				unitsLeft -= assessedAmount;
-				if (unitsLeft < 0) {
-					return INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
-				}
-				final var creditsToReclaimFrom = changeManager.creditsInCurrentLevel(denom);
-				try {
-					reclaim(assessedAmount, creditsToReclaimFrom);
-				} catch (ArithmeticException ignore) {
-					return CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
-				}
-
-				adjustedChange(collector, denom, assessedAmount, changeManager);
-				final var assessed = new FcAssessedCustomFee(collector.asEntityId(), denom.asEntityId(), assessedAmount);
-				accumulator.add(assessed);
+			final var collector = fee.getFeeCollectorAsId();
+			if (fee.getFeeType() != FRACTIONAL_FEE || payer.equals(collector)) {
+				continue;
 			}
+
+			var assessedAmount = 0L;
+			try {
+				assessedAmount = amountOwedGiven(initialUnits, fee.getFractionalFeeSpec());
+			} catch (ArithmeticException ignore) {
+				return CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
+			}
+
+			unitsLeft -= assessedAmount;
+			if (unitsLeft < 0) {
+				return INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
+			}
+			final var creditsToReclaimFrom = changeManager.creditsInCurrentLevel(denom);
+			try {
+				reclaim(assessedAmount, creditsToReclaimFrom);
+			} catch (ArithmeticException ignore) {
+				return CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
+			}
+
+			adjustedChange(collector, denom, assessedAmount, changeManager);
+			final var assessed = new FcAssessedCustomFee(collector.asEntityId(), denom.asEntityId(), assessedAmount);
+			accumulator.add(assessed);
 		}
 		return OK;
 	}
