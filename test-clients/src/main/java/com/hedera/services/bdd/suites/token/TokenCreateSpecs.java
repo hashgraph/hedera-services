@@ -781,7 +781,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 	public HapiApiSpec creationRequiresAppropriateSigs() {
 		return defaultHapiSpec("CreationRequiresAppropriateSigs")
 				.given(
-						cryptoCreate("payer"),
+						cryptoCreate("payer").balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						newKeyNamed("adminKey")
 				).when().then(
