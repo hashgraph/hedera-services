@@ -49,7 +49,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 class FeeAssessorTest {
 	private final List<FcAssessedCustomFee> accumulator = new ArrayList<>();
 	private final ImpliedTransfersMeta.ValidationProps props = new ImpliedTransfersMeta.ValidationProps(
-		0, 0, 0, 1, 20);
+		0, 0, 0, 1, 20, true);
 
 	@Mock
 	private HtsFeeAssessor htsFeeAssessor;

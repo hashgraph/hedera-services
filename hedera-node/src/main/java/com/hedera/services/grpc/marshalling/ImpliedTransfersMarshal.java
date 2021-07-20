@@ -128,6 +128,7 @@ public class ImpliedTransfersMarshal {
 				dynamicProperties.maxTokenTransferListSize(),
 				dynamicProperties.maxNftTransfersLen(),
 				dynamicProperties.maxCustomFeeDepth(),
-				dynamicProperties.maxXferBalanceChanges());
+				dynamicProperties.maxXferBalanceChanges(),
+				dynamicProperties.areNftsEnabled());
 	}
 }

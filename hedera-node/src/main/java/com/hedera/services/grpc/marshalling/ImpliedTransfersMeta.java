@@ -69,8 +69,9 @@ public class ImpliedTransfersMeta {
 				(validationProps.maxHbarAdjusts == dynamicProperties.maxTransferListSize()) &&
 						(validationProps.maxTokenAdjusts == dynamicProperties.maxTokenTransferListSize()) &&
 						(validationProps.maxOwnershipChanges == dynamicProperties.maxNftTransfersLen()) &&
-						(validationProps.maxXferBalanceChanges == dynamicProperties.maxXferBalanceChanges() &&
-						(validationProps.maxNestedCustomFees == dynamicProperties.maxCustomFeeDepth()));
+						(validationProps.maxXferBalanceChanges == dynamicProperties.maxXferBalanceChanges()) &&
+						(validationProps.maxNestedCustomFees == dynamicProperties.maxCustomFeeDepth()) &&
+						(validationProps.areNftsEnabled == dynamicProperties.areNftsEnabled());
 		if (!validationParamsMatch) {
 			return false;
 		}
@@ -107,6 +108,7 @@ public class ImpliedTransfersMeta {
 				.add("maxExplicitOwnershipChanges", validationProps.maxOwnershipChanges)
 				.add("maxNestedCustomFees", validationProps.maxNestedCustomFees)
 				.add("maxXferBalanceChanges", validationProps.maxXferBalanceChanges)
+				.add("areNftsEnabled", validationProps.areNftsEnabled)
 				.add("tokenFeeSchedules", customFeeMeta)
 				.toString();
 	}
@@ -117,19 +119,22 @@ public class ImpliedTransfersMeta {
 		private final int maxOwnershipChanges;
 		private final int maxNestedCustomFees;
 		private final int maxXferBalanceChanges;
+		private final boolean areNftsEnabled;
 
 		public ValidationProps(
 				int maxHbarAdjusts,
 				int maxTokenAdjusts,
 				int maxOwnershipChanges,
 				int maxNestedCustomFees,
-				int maxXferBalanceChanges
+				int maxXferBalanceChanges,
+				boolean areNftsEnabled
 		) {
 			this.maxHbarAdjusts = maxHbarAdjusts;
 			this.maxTokenAdjusts = maxTokenAdjusts;
 			this.maxOwnershipChanges = maxOwnershipChanges;
 			this.maxNestedCustomFees = maxNestedCustomFees;
 			this.maxXferBalanceChanges = maxXferBalanceChanges;
+			this.areNftsEnabled = areNftsEnabled;
 		}
 
 		public int getMaxHbarAdjusts() {
@@ -151,6 +156,10 @@ public class ImpliedTransfersMeta {
 		public int getMaxXferBalanceChanges() {
 			return maxXferBalanceChanges;
 		}
+
+		public boolean areNftsEnabled() {
+			return areNftsEnabled;
+                }
 
 		@Override
 		public boolean equals(Object obj) {
