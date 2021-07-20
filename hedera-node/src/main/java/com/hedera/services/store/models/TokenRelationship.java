@@ -29,6 +29,7 @@ import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 /**
@@ -103,6 +104,11 @@ public class TokenRelationship {
 
 	public void setFrozen(boolean frozen) {
 		this.frozen = frozen;
+	}
+
+	public void updateForzen(boolean value) {
+		validateTrue(token.hasFreezeKey(), TOKEN_HAS_NO_FREEZE_KEY);
+		this.frozen = value;
 	}
 
 	public boolean isKycGranted() {
