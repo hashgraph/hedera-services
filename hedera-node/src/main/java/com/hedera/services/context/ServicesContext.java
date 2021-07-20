@@ -137,6 +137,12 @@ import com.hedera.services.grpc.controllers.FreezeController;
 import com.hedera.services.grpc.controllers.NetworkController;
 import com.hedera.services.grpc.controllers.ScheduleController;
 import com.hedera.services.grpc.controllers.TokenController;
+import com.hedera.services.grpc.marshalling.BalanceChangeManager;
+import com.hedera.services.grpc.marshalling.CustomSchedulesManager;
+import com.hedera.services.grpc.marshalling.FeeAssessor;
+import com.hedera.services.grpc.marshalling.FractionalFeeAssessor;
+import com.hedera.services.grpc.marshalling.HbarFeeAssessor;
+import com.hedera.services.grpc.marshalling.HtsFeeAssessor;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.keys.CharacteristicsFactory;
 import com.hedera.services.keys.InHandleActivationHelper;
@@ -326,6 +332,7 @@ import com.hedera.services.txns.token.TokenRevokeKycTransitionLogic;
 import com.hedera.services.txns.token.TokenUnfreezeTransitionLogic;
 import com.hedera.services.txns.token.TokenUpdateTransitionLogic;
 import com.hedera.services.txns.token.TokenWipeTransitionLogic;
+import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.usage.consensus.ConsensusOpsUsage;
@@ -430,13 +437,13 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 import static java.util.Map.entry;
 
@@ -780,22 +787,31 @@ public class ServicesContext {
 
 	public FunctionalityThrottling hapiThrottling() {
 		if (hapiThrottling == null) {
-			hapiThrottling = new HapiThrottling(new DeterministicThrottling(() -> addressBook().getSize()));
+			final var delegate = new DeterministicThrottling(() -> addressBook().getSize(), globalDynamicProperties());
+			hapiThrottling = new HapiThrottling(delegate);
 		}
 		return hapiThrottling;
 	}
 
 	public FunctionalityThrottling handleThrottling() {
 		if (handleThrottling == null) {
-			handleThrottling = new TxnAwareHandleThrottling(txnCtx(), new DeterministicThrottling(() -> 1));
+			final var delegate = new DeterministicThrottling(() -> 1, globalDynamicProperties());
+			handleThrottling = new TxnAwareHandleThrottling(txnCtx(), delegate);
 		}
 		return handleThrottling;
 	}
 
 	public ImpliedTransfersMarshal impliedTransfersMarshal() {
 		if (impliedTransfersMarshal == null) {
-			impliedTransfersMarshal = new ImpliedTransfersMarshal(globalDynamicProperties(), transferSemanticChecks(),
-					customFeeSchedules());
+			final var feeAssessor =
+					new FeeAssessor(new HtsFeeAssessor(), new HbarFeeAssessor(), new FractionalFeeAssessor());
+			impliedTransfersMarshal = new ImpliedTransfersMarshal(
+					feeAssessor,
+					customFeeSchedules(),
+					globalDynamicProperties(),
+					transferSemanticChecks(),
+					BalanceChangeManager::new,
+					CustomSchedulesManager::new);
 		}
 		return impliedTransfersMarshal;
 	}
@@ -1036,8 +1052,7 @@ public class ServicesContext {
 					this::uniqueOwnershipAssociations,
 					this::uniqueTokenAssociations,
 					this::tokenAssociations,
-					(BackingTokenRels) backingTokenRels(),
-					backingNfts());
+					(BackingTokenRels) backingTokenRels());
 		}
 		return typedTokenStore;
 	}
@@ -1487,8 +1502,8 @@ public class ServicesContext {
 				entry(TokenUpdate,
 						List.of(new TokenUpdateTransitionLogic(
 								validator(), tokenStore(), ledger(), txnCtx(), HederaTokenStore::affectsExpiryAtMost))),
-				entry(TokenFeeScheduleUpdate, List.of(new TokenFeeScheduleUpdateTransitionLogic(tokenStore(), txnCtx(),
-						validator, globalDynamicProperties()))),
+				entry(TokenFeeScheduleUpdate,
+						List.of(new TokenFeeScheduleUpdateTransitionLogic(tokenStore(), txnCtx()))),
 				entry(TokenFreezeAccount,
 						List.of(new TokenFreezeTransitionLogic(tokenStore(), ledger(), txnCtx()))),
 				entry(TokenUnfreezeAccount,
@@ -1512,7 +1527,8 @@ public class ServicesContext {
 						List.of(new TokenAssociateTransitionLogic(
 								accountStore(), typedTokenStore(), txnCtx(), globalDynamicProperties()))),
 				entry(TokenDissociateFromAccount,
-						List.of(new TokenDissociateTransitionLogic(tokenStore(), txnCtx()))),
+						List.of(new TokenDissociateTransitionLogic(
+								typedTokenStore(), accountStore(), txnCtx(), validator(), Dissociation::loadFrom))),
 				/* Schedule */
 				entry(ScheduleCreate,
 						List.of(new ScheduleCreateTransitionLogic(
@@ -1848,8 +1864,8 @@ public class ServicesContext {
 
 	public SpanMapManager spanMapManager() {
 		if (spanMapManager == null) {
-			spanMapManager = new SpanMapManager(impliedTransfersMarshal(), globalDynamicProperties(),
-					customFeeSchedules());
+			spanMapManager = new SpanMapManager(
+					impliedTransfersMarshal(), globalDynamicProperties(), customFeeSchedules());
 		}
 		return spanMapManager;
 	}

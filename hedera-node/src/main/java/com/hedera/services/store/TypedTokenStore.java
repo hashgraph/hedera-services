@@ -21,7 +21,6 @@ package com.hedera.services.store;
  */
 
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.accounts.BackingNfts;
 import com.hedera.services.ledger.accounts.BackingTokenRels;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleEntityAssociation;
@@ -92,9 +91,7 @@ public class TypedTokenStore {
 	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations;
 	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueOwnershipAssociations;
 
-
 	/* Only needed for interoperability with legacy HTS during refactor */
-	private final BackingNfts backingNfts;
 	private final BackingTokenRels backingTokenRels;
 
 	public TypedTokenStore(
@@ -105,8 +102,7 @@ public class TypedTokenStore {
 			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueOwnershipAssociations,
 			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations,
 			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels,
-			BackingTokenRels backingTokenRels,
-			BackingNfts backingNfts
+			BackingTokenRels backingTokenRels
 	) {
 		this.tokens = tokens;
 		this.uniqueTokenAssociations = uniqueTokenAssociations;
@@ -116,8 +112,18 @@ public class TypedTokenStore {
 		this.accountStore = accountStore;
 		this.transactionRecordService = transactionRecordService;
 
-		this.backingNfts = backingNfts;
 		this.backingTokenRels = backingTokenRels;
+	}
+
+	/**
+	 * Returns the number of NFTs currently in the ledger state. (That is, the
+	 * number of entries in the {@code uniqueTokens} map---NFTs are not marked
+	 * deleted but actually removed from state when they are burned.)
+	 *
+	 * @return the current number of NFTs in the system
+	 */
+	public long currentMintedNfts() {
+		return uniqueTokens.get().size();
 	}
 
 	/**
@@ -131,7 +137,7 @@ public class TypedTokenStore {
 	 * been validated as usable.
 	 *
 	 * <b>IMPORTANT:</b> Changes to the returned model are not automatically persisted
-	 * to state! The altered model must be passed to {@link TypedTokenStore#persistTokenRelationship(TokenRelationship)}
+	 * to state! The altered model must be passed to {@link TypedTokenStore#persistTokenRelationships(List)}
 	 * in order for its changes to be applied to the Swirlds state, and included in the
 	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
 	 *
@@ -158,40 +164,50 @@ public class TypedTokenStore {
 		tokenRelationship.setKycGranted(merkleTokenRel.isKycGranted());
 		tokenRelationship.setFrozen(merkleTokenRel.isFrozen());
 
-		tokenRelationship.setNotYetPersisted(false);
+		tokenRelationship.markAsPersisted();
 
 		return tokenRelationship;
 	}
 
 	/**
-	 * Persists the given token relationship to the Swirlds state, inviting the injected
+	 * Persists the given token relationships to the Swirlds state, inviting the injected
 	 * {@link TransactionRecordService} to update the {@link com.hedera.services.state.submerkle.ExpirableTxnRecord}
 	 * of the active transaction with these changes.
 	 *
-	 * @param tokenRelationship
-	 * 		the token relationship to save
+	 * @param tokenRelationships
+	 * 		the token relationships to save
 	 */
-	public void persistTokenRelationship(TokenRelationship tokenRelationship) {
-		final var tokenId = tokenRelationship.getToken().getId();
-		final var accountId = tokenRelationship.getAccount().getId();
-		final var key = new MerkleEntityAssociation(
-				accountId.getShard(), accountId.getRealm(), accountId.getNum(),
-				tokenId.getShard(), tokenId.getRealm(), tokenId.getNum());
+	public void persistTokenRelationships(List<TokenRelationship> tokenRelationships) {
 		final var currentTokenRels = tokenRels.get();
 
-		final var isNewRel = tokenRelationship.isNotYetPersisted();
-		final var mutableTokenRel = isNewRel ? new MerkleTokenRelStatus() : currentTokenRels.getForModify(key);
-		mutableTokenRel.setBalance(tokenRelationship.getBalance());
-		mutableTokenRel.setFrozen(tokenRelationship.isFrozen());
-		mutableTokenRel.setKycGranted(tokenRelationship.isKycGranted());
+		for (var tokenRelationship : tokenRelationships) {
+			final var key = MerkleEntityAssociation.fromModelRel(tokenRelationship);
+			if (tokenRelationship.isDestroyed()) {
+				currentTokenRels.remove(key);
+				backingTokenRels.removeFromExistingRels(legacyReprOf(tokenRelationship));
+			} else {
+				persistNonDestroyed(tokenRelationship, key, currentTokenRels);
+			}
+		}
+		transactionRecordService.includeChangesToTokenRels(tokenRelationships);
+	}
 
+	private void persistNonDestroyed(
+			TokenRelationship modelRel,
+			MerkleEntityAssociation key,
+			FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> currentTokenRels
+	) {
+		final var isNewRel = modelRel.isNotYetPersisted();
+		final var mutableTokenRel = isNewRel
+				? new MerkleTokenRelStatus()
+				: currentTokenRels.getForModify(key);
+		mutableTokenRel.setBalance(modelRel.getBalance());
+		mutableTokenRel.setFrozen(modelRel.isFrozen());
+		mutableTokenRel.setKycGranted(modelRel.isKycGranted());
 		if (isNewRel) {
 			currentTokenRels.put(key, mutableTokenRel);
-			/* Only done for interoperability with legacy HTS code during refactor */
-			alertTokenBackingStoreOfNew(tokenRelationship);
+			alertTokenBackingStoreOfNew(modelRel);
 		}
-
-		transactionRecordService.includeChangesToTokenRel(tokenRelationship);
 	}
 
 	/**
@@ -250,16 +266,39 @@ public class TypedTokenStore {
 		final var tokenId = token.getId();
 		final var tokenAsEntityId = tokenId.asEntityId();
 		final var loadedUniqueTokens = new HashMap<Long, UniqueToken>();
+		final var curUniqueTokens = uniqueTokens.get();
 		for (long serialNumber : serialNumbers) {
 			final var uniqueTokenKey = new MerkleUniqueTokenId(tokenAsEntityId, serialNumber);
-			final var merkleUniqueToken = uniqueTokens.get().get(uniqueTokenKey);
+			final var merkleUniqueToken = curUniqueTokens.get(uniqueTokenKey);
 			validateUsable(merkleUniqueToken);
-
 			final var uniqueToken = new UniqueToken(tokenId, serialNumber);
 			initModelFields(uniqueToken, merkleUniqueToken);
 			loadedUniqueTokens.put(serialNumber, uniqueToken);
 		}
 		token.setLoadedUniqueTokens(loadedUniqueTokens);
+	}
+
+	/**
+	 * Use carefully. Returns a model of the requested token which may be marked as deleted---or
+	 * even marked as auto-removed if the Merkle state has no token with that id.
+	 *
+	 * @param id
+	 * 		the token to load
+	 * @return a usable model of the token
+	 */
+	public Token loadPossiblyDeletedOrAutoRemovedToken(Id id) {
+		final var key = new MerkleEntityId(id.getShard(), id.getRealm(), id.getNum());
+		final var merkleToken = tokens.get().get(key);
+
+		final var token = new Token(id);
+		if (merkleToken != null) {
+			initModelAccounts(token, merkleToken.treasury(), merkleToken.autoRenewAccount());
+			initModelFields(token, merkleToken);
+		} else {
+			token.markAutoRemoved();
+		}
+
+		return token;
 	}
 
 	/**
@@ -289,7 +328,6 @@ public class TypedTokenStore {
 				currentUniqueTokens.put(merkleUniqueTokenId, merkleUniqueToken);
 				currentUniqueTokenAssociations.associate(new EntityId(uniqueToken.getTokenId()), merkleUniqueTokenId);
 				currentUniqueOwnershipAssociations.associate(treasury, merkleUniqueTokenId);
-				backingNfts.addToExistingNfts(merkleUniqueTokenId.asNftId());
 			}
 		}
 		if (token.hasRemovedUniqueTokens()) {
@@ -298,9 +336,9 @@ public class TypedTokenStore {
 						new EntityId(uniqueToken.getTokenId()), uniqueToken.getSerialNumber());
 				final var accountId = new EntityId(uniqueToken.getOwner());
 				currentUniqueTokens.remove(merkleUniqueTokenId);
-				currentUniqueTokenAssociations.disassociate(new EntityId(uniqueToken.getTokenId()), merkleUniqueTokenId);
+				currentUniqueTokenAssociations.disassociate(new EntityId(uniqueToken.getTokenId()),
+						merkleUniqueTokenId);
 				currentUniqueOwnershipAssociations.disassociate(accountId, merkleUniqueTokenId);
-				backingNfts.removeFromExistingNfts(merkleUniqueTokenId.asNftId());
 			}
 		}
 		transactionRecordService.includeChangesToToken(token);
@@ -351,6 +389,8 @@ public class TypedTokenStore {
 		token.setFrozenByDefault(immutableToken.accountsAreFrozenByDefault());
 		token.setType(immutableToken.tokenType());
 		token.setLastUsedSerialNumber(immutableToken.getLastUsedSerialNumber());
+		token.setIsDeleted(immutableToken.isDeleted());
+		token.setExpiry(immutableToken.expiry());
 	}
 
 	private void initModelFields(UniqueToken uniqueToken, MerkleUniqueToken immutableUniqueToken) {
@@ -360,18 +400,12 @@ public class TypedTokenStore {
 	}
 
 	private void alertTokenBackingStoreOfNew(TokenRelationship newRel) {
-		final var tokenId = newRel.getToken().getId();
-		final var accountId = newRel.getAccount().getId();
-		backingTokenRels.addToExistingRels(Pair.of(
-				AccountID.newBuilder()
-						.setShardNum(accountId.getShard())
-						.setRealmNum(accountId.getRealm())
-						.setAccountNum(accountId.getNum())
-						.build(),
-				TokenID.newBuilder()
-						.setShardNum(tokenId.getShard())
-						.setRealmNum(tokenId.getRealm())
-						.setTokenNum(tokenId.getNum())
-						.build()));
+		backingTokenRels.addToExistingRels(legacyReprOf(newRel));
+	}
+
+	static Pair<AccountID, TokenID> legacyReprOf(TokenRelationship rel) {
+		final var tokenId = rel.getToken().getId();
+		final var accountId = rel.getAccount().getId();
+		return Pair.of(accountId.asGrpcAccount(), tokenId.asGrpcToken());
 	}
 }

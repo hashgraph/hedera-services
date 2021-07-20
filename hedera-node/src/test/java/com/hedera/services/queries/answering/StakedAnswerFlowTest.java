@@ -199,7 +199,7 @@ class StakedAnswerFlowTest {
 		givenPaymentIsRequired();
 		givenAvailFunction();
 		givenPermission();
-		given(throttles.shouldThrottle(ConsensusGetTopicInfo)).willReturn(true);
+		given(throttles.shouldThrottleQuery(ConsensusGetTopicInfo)).willReturn(true);
 
 		// when:
 		Response actual = subject.satisfyUsing(service, query);
@@ -215,7 +215,7 @@ class StakedAnswerFlowTest {
 		givenValidHeader();
 		givenNoExtractablePayment();
 		givenAvailFunction();
-		given(throttles.shouldThrottle(ConsensusGetTopicInfo)).willReturn(true);
+		given(throttles.shouldThrottleQuery(ConsensusGetTopicInfo)).willReturn(true);
 
 		// when:
 		Response actual = subject.satisfyUsing(service, query);
@@ -384,7 +384,7 @@ class StakedAnswerFlowTest {
 	}
 
 	private void givenCapacity() {
-		given(throttles.shouldThrottle(ConsensusGetTopicInfo)).willReturn(false);
+		given(throttles.shouldThrottleQuery(ConsensusGetTopicInfo)).willReturn(false);
 	}
 
 	private void givenPermission() {

@@ -222,9 +222,10 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	) {
 		final var function = accessor.getFunction();
 		if (pricedUsageCalculator.supports(function)) {
+			final var applicablePrices = prices.get(accessor.getSubType());
 			return inHandle
-					? pricedUsageCalculator.inHandleFees(accessor, prices.get(SubType.DEFAULT), rate, payerKey)
-					: pricedUsageCalculator.extraHandleFees(accessor, prices.get(SubType.DEFAULT), rate, payerKey);
+					? pricedUsageCalculator.inHandleFees(accessor, applicablePrices, rate, payerKey)
+					: pricedUsageCalculator.extraHandleFees(accessor, applicablePrices, rate, payerKey);
 		} else {
 			var sigUsage = getSigUsage(accessor, payerKey);
 			var usageEstimator = getTxnUsageEstimator(accessor);

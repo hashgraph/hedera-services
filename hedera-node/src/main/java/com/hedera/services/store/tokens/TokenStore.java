@@ -26,7 +26,6 @@ import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.Store;
 import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
@@ -59,8 +58,6 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 
 	List<TokenID> listOfTokensServed(AccountID treasury);
 
-	ResponseCodeEnum wipe(AccountID aId, TokenID tId, long wipingAmount, boolean skipKeyCheck);
-
 	ResponseCodeEnum freeze(AccountID aId, TokenID tId);
 
 	ResponseCodeEnum update(TokenUpdateTransactionBody changes, long now);
@@ -74,8 +71,6 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 	ResponseCodeEnum revokeKyc(AccountID aId, TokenID tId);
 
 	ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens);
-
-	ResponseCodeEnum dissociate(AccountID aId, List<TokenID> tokens);
 
 	ResponseCodeEnum adjustBalance(AccountID aId, TokenID tId, long adjustment);
 

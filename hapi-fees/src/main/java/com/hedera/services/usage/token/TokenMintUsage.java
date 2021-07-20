@@ -30,15 +30,21 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 
 public class TokenMintUsage extends TokenTxnUsage<TokenMintUsage> {
+	private long expectedNftLifetime = 0L;
 
 	private SubType currentSubType;
 
-	private TokenMintUsage(TransactionBody tokenMintOp, TxnUsageEstimator usageEstimator) {
+	public TokenMintUsage(TransactionBody tokenMintOp, TxnUsageEstimator usageEstimator) {
 		super(tokenMintOp, usageEstimator);
 	}
 
 	public TokenMintUsage givenSubType(SubType subType) {
 		this.currentSubType = subType;
+		return this;
+	}
+
+	public TokenMintUsage givenExpectedLifetime(long secs) {
+		expectedNftLifetime = secs;
 		return this;
 	}
 
@@ -60,7 +66,7 @@ public class TokenMintUsage extends TokenTxnUsage<TokenMintUsage> {
 				metadataBytes += o.size();
 			}
 			usageEstimator.addBpt(metadataBytes);
-			usageEstimator.addRbs(tokenEntitySizes.bytesUsedForUniqueTokenTransfers(op.getMetadataCount()));
+			usageEstimator.addRbs(expectedNftLifetime * metadataBytes);
 			addTokenTransfersRecordRb(1, 0, op.getMetadataCount());
 		} else if (currentSubType == SubType.TOKEN_FUNGIBLE_COMMON) {
 			addAmountBpt();

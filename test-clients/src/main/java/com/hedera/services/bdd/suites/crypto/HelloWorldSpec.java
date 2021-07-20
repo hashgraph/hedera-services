@@ -55,14 +55,8 @@ public class HelloWorldSpec extends HapiApiSuite {
 	}
 
 	private HapiApiSpec balancesChangeOnTransferWithOverrides() {
-		return customHapiSpec("BalancesChangeOnTransfer")
-				.withProperties(
-						Map.of(
-								"nodes", "35.182.80.176",
-								"default.payer", "0.0.50",
-								"startupAccounts.path", "src/main/resource/TestnetStartupAccount.txt"
-						)
-				).given(
+		return defaultHapiSpec("BalancesChangeOnTransfer")
+				  .given(
 						cryptoCreate("sponsor"),
 						cryptoCreate("beneficiary"),
 						balanceSnapshot("sponsorBefore", "sponsor"),

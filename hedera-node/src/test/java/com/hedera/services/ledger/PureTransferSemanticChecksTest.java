@@ -59,8 +59,10 @@ class PureTransferSemanticChecksTest {
 	final private int maxTokenAdjusts = 10;
 	final private int maxOwnershipChanges = 3;
 	private final boolean areNftsEnabled = true;
+	private final int maxFeeNesting = 20;
+	private final int maxBalanceChanges = 20;
 	final ImpliedTransfersMeta.ValidationProps validationProps = new ImpliedTransfersMeta.ValidationProps(
-			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, areNftsEnabled);
+			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, maxFeeNesting, maxBalanceChanges, areNftsEnabled);
 	final private AccountID a = AccountID.newBuilder().setAccountNum(9_999L).build();
 	final private AccountID b = AccountID.newBuilder().setAccountNum(8_999L).build();
 	final private AccountID c = AccountID.newBuilder().setAccountNum(7_999L).build();
@@ -134,7 +136,7 @@ class PureTransferSemanticChecksTest {
 		subject = mock(PureTransferSemanticChecks.class);
 
 		final var validationProps = new ImpliedTransfersMeta.ValidationProps(
-				maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, areNftsEnabled);
+				maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, maxFeeNesting, maxBalanceChanges, areNftsEnabled);
 		// and:
 		given(subject.isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList())).willReturn(true);
 		given(subject.isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts)).willReturn(true);
@@ -181,7 +183,7 @@ class PureTransferSemanticChecksTest {
 		final var tokenAdjusts = withTokenAdjustments(aTId, a, -1, bTId, b, 2, cTId, c, 3);
 		// and:
 		final var strictValProps = new ImpliedTransfersMeta.ValidationProps(
-				1, 1, 1, areNftsEnabled);
+				1, 1, 1, 1, 1, areNftsEnabled);
 
 		// expect:
 		assertEquals(

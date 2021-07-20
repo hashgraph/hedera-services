@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -93,7 +94,7 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 		}
 		/* --- Persist the updated models --- */
 		tokenStore.persistToken(token);
-		tokenStore.persistTokenRelationship(accountRel);
+		tokenStore.persistTokenRelationships(List.of(accountRel));
 		tokenStore.persistTrackers(ownershipTracker);
 		accountStore.persistAccount(account);
 	}

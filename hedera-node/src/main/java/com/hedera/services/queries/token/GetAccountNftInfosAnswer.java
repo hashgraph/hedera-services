@@ -37,10 +37,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.hedera.services.utils.EntityIdUtils.asContract;
 import static com.hedera.services.utils.SignedTxnAccessor.uncheckedFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_QUERY_RANGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
 public class GetAccountNftInfosAnswer implements AnswerService {
@@ -91,9 +92,13 @@ public class GetAccountNftInfosAnswer implements AnswerService {
             return validity;
         }
 
-        validity = validator.queryableAccountStatus(id, view.accounts());
+        final var currentAccounts = view.accounts();
+        validity = validator.queryableAccountStatus(id, currentAccounts);
         if (validity != OK) {
-            return validity;
+            final var fallback = validator.queryableContractStatus(asContract(id), currentAccounts);
+            if (fallback != OK) {
+                return validity;
+            }
         }
 
         var nftCount = view.accountNftsCount(id);

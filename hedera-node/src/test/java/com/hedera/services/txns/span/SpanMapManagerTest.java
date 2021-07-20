@@ -21,6 +21,7 @@ package com.hedera.services.txns.span;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.grpc.marshalling.CustomFeeMeta;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
@@ -31,7 +32,6 @@ import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,24 +58,28 @@ class SpanMapManagerTest {
 	private final int maxTokenAdjusts = 2;
 	private final int maxOwnershipChanges = 3;
 	private final boolean areNftsEnabled = false;
+	private final int maxFeeNesting = 4;
+	private final int maxBalanceChanges = 5;
 	private final ImpliedTransfersMeta.ValidationProps validationProps = new ImpliedTransfersMeta.ValidationProps(
-			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, areNftsEnabled);
+			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, maxFeeNesting, maxBalanceChanges, areNftsEnabled);
 	private final ImpliedTransfersMeta.ValidationProps otherValidationProps = new ImpliedTransfersMeta.ValidationProps(
-			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges + 1, areNftsEnabled);
+			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges + 1, maxFeeNesting, maxBalanceChanges, areNftsEnabled);
 	private final TransactionBody pretendXferTxn = TransactionBody.getDefaultInstance();
 	private final ImpliedTransfers someImpliedXfers = ImpliedTransfers.invalid(
 			validationProps, ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
 	private final ImpliedTransfers someOtherImpliedXfers = ImpliedTransfers.invalid(
 			otherValidationProps, ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
 
+	private final Id treasury = new Id(0 , 0, 2);
 	private final Id customFeeToken = new Id(0, 0, 123);
 	private final Id customFeeCollector = new Id(0, 0, 124);
-	final List<Pair<Id, List<FcCustomFee>>> entityCustomFees = List.of(
-			Pair.of(customFeeToken, new ArrayList<>()));
+	final List<CustomFeeMeta> entityCustomFees = List.of(
+			new CustomFeeMeta(customFeeToken, treasury, new ArrayList<>()));
 
-	final List<Pair<Id, List<FcCustomFee>>> newCustomFeeChanges = List.of(
-			Pair.of(customFeeToken, List.of(FcCustomFee.fixedFee(10L, customFeeToken.asEntityId(),
-					customFeeCollector.asEntityId()))));
+	final List<CustomFeeMeta> newCustomFeeChanges = List.of(
+			new CustomFeeMeta(
+					customFeeToken, treasury, List.of(FcCustomFee.fixedFee(
+							10L, customFeeToken.asEntityId(), customFeeCollector.asEntityId()))));
 	private final List<FcAssessedCustomFee> assessedCustomFees = List.of(
 			new FcAssessedCustomFee(customFeeCollector.asEntityId(), customFeeToken.asEntityId(), 123L),
 			new FcAssessedCustomFee(customFeeCollector.asEntityId(), 123L)
@@ -88,7 +92,7 @@ class SpanMapManagerTest {
 
 	private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
 
-	private CryptoTransferMeta xferMeta = new CryptoTransferMeta(1, 1, 1);
+	private CryptoTransferMeta xferMeta = new CryptoTransferMeta(1, 1, 1, 0);
 
 	private Map<String, Object> span = new HashMap<>();
 
@@ -116,7 +120,7 @@ class SpanMapManagerTest {
 		given(accessor.getSpanMap()).willReturn(span);
 		given(accessor.getFunction()).willReturn(CryptoTransfer);
 		given(accessor.availXferUsageMeta()).willReturn(xferMeta);
-		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), accessor.getPayer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer()))
 				.willReturn(someImpliedXfers);
 
 		// when:
@@ -132,7 +136,7 @@ class SpanMapManagerTest {
 		given(accessor.getSpanMap()).willReturn(span);
 		given(accessor.getFunction()).willReturn(CryptoTransfer);
 		given(accessor.availXferUsageMeta()).willReturn(xferMeta);
-		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), accessor.getPayer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer()))
 				.willReturn(mockImpliedTransfers);
 		given(mockImpliedTransfers.getAssessedCustomFees()).willReturn(assessedCustomFees);
 
@@ -152,13 +156,15 @@ class SpanMapManagerTest {
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxTokenAdjusts);
 		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxOwnershipChanges);
+		given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges);
+		given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
 		spanMapAccessor.setImpliedTransfers(accessor, someImpliedXfers);
 
 		// when:
 		subject.rationalizeSpan(accessor);
 
 		// then:
-		verify(impliedTransfersMarshal, never()).unmarshalFromGrpc(any(), any());
+		verify(impliedTransfersMarshal, never()).unmarshalFromGrpc(any());
 		assertSame(someImpliedXfers, spanMapAccessor.getImpliedTransfers(accessor));
 	}
 
@@ -171,14 +177,14 @@ class SpanMapManagerTest {
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxTokenAdjusts + 1);
 		spanMapAccessor.setImpliedTransfers(accessor, someImpliedXfers);
-		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), accessor.getPayer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer()))
 				.willReturn(someOtherImpliedXfers);
 
 		// when:
 		subject.rationalizeSpan(accessor);
 
 		// then:
-		verify(impliedTransfersMarshal).unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), accessor.getPayer());
+		verify(impliedTransfersMarshal).unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer());
 		assertSame(someOtherImpliedXfers, spanMapAccessor.getImpliedTransfers(accessor));
 	}
 
@@ -191,14 +197,14 @@ class SpanMapManagerTest {
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxTokenAdjusts + 1);
 		spanMapAccessor.setImpliedTransfers(accessor, validImpliedTransfers);
-		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), accessor.getPayer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer()))
 				.willReturn(feeChangedImpliedTransfers);
 
 		// when:
 		subject.rationalizeSpan(accessor);
 
 		// then:
-		verify(impliedTransfersMarshal).unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), accessor.getPayer());
+		verify(impliedTransfersMarshal).unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer());
 		assertSame(feeChangedImpliedTransfers, spanMapAccessor.getImpliedTransfers(accessor));
 	}
 }

@@ -23,6 +23,7 @@ package com.hedera.services.txns.token;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.AccountStore;
@@ -35,6 +36,7 @@ import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -51,12 +53,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIM
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.METADATA_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
@@ -113,12 +117,32 @@ class TokenMintTransitionLogicTest {
 		// then:
 		verify(token).mint(treasuryRel, amount);
 		verify(store).persistToken(token);
-		verify(store).persistTokenRelationship(treasuryRel);
+		verify(store).persistTokenRelationships(List.of(treasuryRel));
+	}
+
+	@Test
+	void validatesMintCap() {
+		// setup:
+		final long curTotal = 100L;
+		final long unacceptableTotal = 101L;
+
+		givenValidUniqueTxnCtx();
+		given(accessor.getTxn()).willReturn(tokenMintTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(store.loadToken(id)).willReturn(token);
+		given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+		given(store.currentMintedNfts()).willReturn(curTotal);
+		given(validator.isPermissibleTotalNfts(unacceptableTotal)).willReturn(false);
+
+		// expect:
+		assertFailsWith(() -> subject.doStateTransition(), MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED);
 	}
 
 	@Test
 	void followsUniqueHappyPath() {
 		// setup:
+		final long curTotal = 99L;
+		final long acceptableTotal = 100L;
 		treasuryRel = new TokenRelationship(token, treasury);
 
 		givenValidUniqueTxnCtx();
@@ -128,14 +152,16 @@ class TokenMintTransitionLogicTest {
 		given(token.getTreasury()).willReturn(treasury);
 		given(store.loadTokenRelationship(token, treasury)).willReturn(treasuryRel);
 		given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+		given(store.currentMintedNfts()).willReturn(curTotal);
 		given(txnCtx.consensusTime()).willReturn(Instant.now());
+		given(validator.isPermissibleTotalNfts(acceptableTotal)).willReturn(true);
 		// when:
 		subject.doStateTransition();
 
 		// then:
 		verify(token).mint(any(OwnershipTracker.class), eq(treasuryRel), any(List.class), any(RichInstant.class));
 		verify(store).persistToken(token);
-		verify(store).persistTokenRelationship(treasuryRel);
+		verify(store).persistTokenRelationships(List.of(treasuryRel));
 		verify(store).persistTrackers(any(OwnershipTracker.class));
 		verify(accountStore).persistAccount(any(Account.class));
 	}
@@ -191,7 +217,7 @@ class TokenMintTransitionLogicTest {
 	}
 
 	@Test
-	void rejectsInvalidTxnBody(){
+	void rejectsInvalidTxnBody() {
 		given(dynamicProperties.areNftsEnabled()).willReturn(true);
 		tokenMintTxn = TransactionBody.newBuilder()
 				.setTokenMint(TokenMintTransactionBody.newBuilder()
@@ -204,7 +230,7 @@ class TokenMintTransitionLogicTest {
 	}
 
 	@Test
-	void rejectsInvalidTxnBodyWithNoProps(){
+	void rejectsInvalidTxnBodyWithNoProps() {
 		tokenMintTxn = TransactionBody.newBuilder()
 				.setTokenMint(
 						TokenMintTransactionBody.newBuilder()
@@ -216,7 +242,7 @@ class TokenMintTransitionLogicTest {
 	}
 
 	@Test
-	void propagatesErrorOnBadMetadata(){
+	void propagatesErrorOnBadMetadata() {
 		given(dynamicProperties.areNftsEnabled()).willReturn(true);
 		tokenMintTxn = TransactionBody.newBuilder()
 				.setTokenMint(
@@ -239,7 +265,8 @@ class TokenMintTransitionLogicTest {
 								.setToken(grpcId))
 				.build();
 
-		given(validator.maxBatchSizeMintCheck(tokenMintTxn.getTokenMint().getMetadataCount())).willReturn(BATCH_SIZE_LIMIT_EXCEEDED);
+		given(validator.maxBatchSizeMintCheck(tokenMintTxn.getTokenMint().getMetadataCount())).willReturn(
+				BATCH_SIZE_LIMIT_EXCEEDED);
 		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.semanticCheck().apply(tokenMintTxn));
 	}
 
@@ -285,5 +312,10 @@ class TokenMintTransitionLogicTest {
 								.setAmount(0)
 								.build()
 				).build();
+	}
+
+	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
+		var ex = assertThrows(InvalidTransactionException.class, something::run);
+		assertEquals(status, ex.getResponseCode());
 	}
 }

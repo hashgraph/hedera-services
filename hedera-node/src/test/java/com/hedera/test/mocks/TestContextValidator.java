@@ -126,6 +126,11 @@ public enum TestContextValidator implements OptionValidator {
 	}
 
 	@Override
+	public boolean isPermissibleTotalNfts(long proposedTotal) {
+		return true;
+	}
+
+	@Override
 	public ResponseCodeEnum tokenNameCheck(String name) {
 		throw new UnsupportedOperationException();
 	}

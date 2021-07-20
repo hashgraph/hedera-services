@@ -129,10 +129,21 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						/* HIP-18 */
 						onlyValidCustomFeeScheduleCanBeCreated(),
 						feeCollectorSigningReqsWorkForTokenCreate(),
+						createsFungibleInfiniteByDefault(),
 				}
 		);
 	}
 
+	private HapiApiSpec createsFungibleInfiniteByDefault() {
+		return defaultHapiSpec("CreatesFungibleInfiniteByDefault")
+				.given().when(
+						tokenCreate("DefaultFungible")
+				).then(
+						getTokenInfo("DefaultFungible")
+								.hasTokenType(TokenType.FUNGIBLE_COMMON)
+								.hasSupplyType(TokenSupplyType.INFINITE)
+				);
+	}
 
 	private HapiApiSpec worksAsExpectedWithDefaultTokenId() {
 		return defaultHapiSpec("WorksAsExpectedWithDefaultTokenId")
@@ -518,6 +529,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 								.treasury(tokenCollector)
 								.withCustom(fixedHbarFee(hbarAmount, hbarCollector))
 								.withCustom(fixedHtsFee(htsAmount, feeDenom, htsCollector))
+								.withCustom(fixedHtsFee(htsAmount, "0.0.0", htsCollector))
 								.withCustom(fractionalFee(
 										numerator, denominator,
 										minimumToCollect, OptionalLong.of(maximumToCollect),
@@ -526,6 +538,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						getTokenInfo(token)
 								.hasCustom(fixedHbarFeeInSchedule(hbarAmount, hbarCollector))
 								.hasCustom(fixedHtsFeeInSchedule(htsAmount, feeDenom, htsCollector))
+								.hasCustom(fixedHtsFeeInSchedule(htsAmount, token, htsCollector))
 								.hasCustom(fractionalFeeInSchedule(
 										numerator, denominator,
 										minimumToCollect, OptionalLong.of(maximumToCollect),

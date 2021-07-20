@@ -25,6 +25,9 @@ import com.hedera.services.pricing.ResourceProvider;
 import com.hedera.services.pricing.UsableResource;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
+import com.hederahashgraph.api.proto.java.FeeData;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ACCOUNT_AMT_SIZE;
@@ -82,6 +85,29 @@ public class UsageAccumulator {
 	private long rbs;
 	private long sbs;
 	private long networkRbs;
+
+	public static UsageAccumulator fromGrpc(FeeData usage) {
+		final var into = new UsageAccumulator();
+
+		/* Network */
+		final var networkUsage = usage.getNetworkdata();
+		into.setUniversalBpt(networkUsage.getBpt());
+		into.setVpt(networkUsage.getVpt());
+		into.setNetworkRbs(networkUsage.getRbh() * HRS_DIVISOR);
+
+		/* Node */
+		final var nodeUsage = usage.getNodedata();
+		into.setNumPayerKeys(nodeUsage.getVpt());
+		into.setBpr(nodeUsage.getBpr());
+		into.setSbpr(nodeUsage.getSbpr());
+
+		/* Service */
+		final var serviceUsage = usage.getServicedata();
+		into.setRbs(serviceUsage.getRbh() * HRS_DIVISOR);
+		into.setSbs(serviceUsage.getSbh() * HRS_DIVISOR);
+
+		return into;
+	}
 
 	public void resetForTransaction(BaseTransactionMeta baseMeta, SigUsage sigUsage) {
 		final int memoBytes = baseMeta.getMemoUtf8Bytes();
@@ -267,5 +293,47 @@ public class UsageAccumulator {
 
 	public void setNumPayerKeys(long numPayerKeys) {
 		this.numPayerKeys = numPayerKeys;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		return EqualsBuilder.reflectionEquals(this, obj);
+	}
+
+	@Override
+	public int hashCode() {
+		return HashCodeBuilder.reflectionHashCode(this);
+	}
+
+	private void setUniversalBpt(long bpt) {
+		this.bpt = bpt;
+	}
+
+	private void setBpr(long bpr) {
+		this.bpr = bpr;
+	}
+
+	private void setSbpr(long sbpr) {
+		this.sbpr = sbpr;
+	}
+
+	private void setVpt(long vpt) {
+		this.vpt = vpt;
+	}
+
+	private void setGas(long gas) {
+		this.gas = gas;
+	}
+
+	private void setRbs(long rbs) {
+		this.rbs = rbs;
+	}
+
+	private void setSbs(long sbs) {
+		this.sbs = sbs;
+	}
+
+	private void setNetworkRbs(long networkRbs) {
+		this.networkRbs = networkRbs;
 	}
 }

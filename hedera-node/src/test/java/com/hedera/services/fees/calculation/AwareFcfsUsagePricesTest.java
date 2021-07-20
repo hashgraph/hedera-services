@@ -327,12 +327,16 @@ class AwareFcfsUsagePricesTest {
 		final var wipeTypedPricesMap = inferred.get(TokenAccountWipe);
 
 		// expect:
-		assertEquals(1, xferTypedPricesMap.size());
+		assertEquals(5, xferTypedPricesMap.size());
 		assertEquals(2, mintTypedPricesMap.size());
 		assertEquals(2, burnTypedPricesMap.size());
 		assertEquals(2, wipeTypedPricesMap.size());
 		// and:
 		assertEquals(currUsagePrices, xferTypedPricesMap.get(SubType.DEFAULT));
+		assertEquals(currUsagePrices, xferTypedPricesMap.get(SubType.TOKEN_FUNGIBLE_COMMON));
+		assertEquals(currUsagePrices, xferTypedPricesMap.get(SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES));
+		assertEquals(currUsagePrices, xferTypedPricesMap.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE));
+		assertEquals(currUsagePrices, xferTypedPricesMap.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES));
 		assertEquals(currUsagePrices, mintTypedPricesMap.get(SubType.TOKEN_FUNGIBLE_COMMON));
 		assertEquals(currUsagePrices, mintTypedPricesMap.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE));
 		assertEquals(currUsagePrices, burnTypedPricesMap.get(SubType.TOKEN_FUNGIBLE_COMMON));

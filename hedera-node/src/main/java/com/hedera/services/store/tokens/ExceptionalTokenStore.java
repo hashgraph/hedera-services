@@ -61,11 +61,6 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
-	public ResponseCodeEnum dissociate(AccountID aId, List<TokenID> tokens) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public ResponseCodeEnum freeze(AccountID aId, TokenID tId) {
 		throw new UnsupportedOperationException();
 	}
@@ -82,11 +77,6 @@ public enum ExceptionalTokenStore implements TokenStore {
 
 	@Override
 	public List<TokenID> listOfTokensServed(AccountID treasury) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public ResponseCodeEnum wipe(final AccountID aId, final TokenID tId, final long wipingAmount, final boolean skipKeyCheck) {
 		throw new UnsupportedOperationException();
 	}
 

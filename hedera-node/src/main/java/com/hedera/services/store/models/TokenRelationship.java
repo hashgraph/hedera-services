@@ -9,9 +9,9 @@ package com.hedera.services.store.models;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,20 +22,18 @@ package com.hedera.services.store.models;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.enums.TokenType;
-import javafx.util.Pair;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 /**
  * Encapsulates the state and operations of a Hedera account-token relationship.
- *
+ * <p>
  * Operations are validated, and throw a {@link com.hedera.services.exceptions.InvalidTransactionException}
  * with response code capturing the failure when one occurs.
  *
@@ -54,6 +52,7 @@ public class TokenRelationship {
 	private long balance;
 	private boolean frozen;
 	private boolean kycGranted;
+	private boolean destroyed = false;
 	private boolean notYetPersisted = true;
 
 	private long balanceChange = 0L;
@@ -72,8 +71,7 @@ public class TokenRelationship {
 	 * the account holds at the beginning of a user transaction. (In particular, does
 	 * <b>not</b> change the return value of {@link TokenRelationship#getBalanceChange()}.)
 	 *
-	 * @param balance
-	 * 		the initial balance in the relationship
+	 * @param balance the initial balance in the relationship
 	 */
 	public void initBalance(long balance) {
 		this.balance = balance;
@@ -81,11 +79,10 @@ public class TokenRelationship {
 
 	/**
 	 * Update the balance of this relationship token held by the account.
-	 *
+	 * <p>
 	 * This <b>does</b> change the return value of {@link TokenRelationship#getBalanceChange()}.
 	 *
-	 * @param balance
-	 * 		the updated balance of the relationship
+	 * @param balance the updated balance of the relationship
 	 */
 	public void setBalance(long balance) {
 		validateTrue(!token.hasFreezeKey() || !frozen, ACCOUNT_FROZEN_FOR_TOKEN);
@@ -93,6 +90,11 @@ public class TokenRelationship {
 
 		balanceChange += (balance - this.balance);
 		this.balance = balance;
+	}
+
+	void adjustBalance(long adjustment) {
+		balanceChange += adjustment;
+		this.balance += adjustment;
 	}
 
 	public boolean isFrozen() {
@@ -131,8 +133,17 @@ public class TokenRelationship {
 		return notYetPersisted;
 	}
 
-	public void setNotYetPersisted(boolean notYetPersisted) {
-		this.notYetPersisted = notYetPersisted;
+	public void markAsPersisted() {
+		notYetPersisted = false;
+	}
+
+	public boolean isDestroyed() {
+		return destroyed;
+	}
+
+	public void markAsDestroyed() {
+		validateFalse(notYetPersisted, FAIL_INVALID);
+		destroyed = true;
 	}
 
 	public boolean hasCommonRepresentation() {

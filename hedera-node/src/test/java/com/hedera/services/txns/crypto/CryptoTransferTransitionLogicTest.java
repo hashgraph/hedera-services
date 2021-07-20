@@ -22,6 +22,7 @@ package com.hedera.services.txns.crypto;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.grpc.marshalling.CustomFeeMeta;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
@@ -39,7 +40,6 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -74,8 +74,10 @@ class CryptoTransferTransitionLogicTest {
 	final private int maxTokenAdjusts = 10;
 	final private int maxOwnershipChanges = 15;
 	private final boolean areNftsEnabled = false;
+	private final int maxFeeNesting = 20;
+	private final int maxBalanceChanges = 20;
 	private final ImpliedTransfersMeta.ValidationProps validationProps = new ImpliedTransfersMeta.ValidationProps(
-			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, areNftsEnabled);
+			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, maxFeeNesting, maxBalanceChanges, areNftsEnabled);
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private AccountID a = AccountID.newBuilder().setAccountNum(9_999L).build();
 	final private AccountID b = AccountID.newBuilder().setAccountNum(8_999L).build();
@@ -145,7 +147,7 @@ class CryptoTransferTransitionLogicTest {
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
 		// and:
-		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer(), accessor.getPayer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
 				.willReturn(impliedTransfers);
 		given(ledger.doZeroSum(impliedTransfers.getAllBalanceChanges()))
 				.willReturn(OK);
@@ -164,12 +166,13 @@ class CryptoTransferTransitionLogicTest {
 		final var a = Id.fromGrpcAccount(asAccount("1.2.3"));
 		final var b = Id.fromGrpcAccount(asAccount("2.3.4"));
 		final var c = Id.fromGrpcToken(asToken("4.5.6"));
+		final var d = Id.fromGrpcToken(asToken("5.6.7"));
 
 		// and :
 		final var customFeesBalanceChange = List.of(
 				new FcAssessedCustomFee(a.asEntityId(), 10L));
 		final var customFee = List.of(FcCustomFee.fixedFee(20L, null, a.asEntityId()));
-		final List<Pair<Id, List<FcCustomFee>>> customFees = List.of(Pair.of(c, customFee));
+		final List<CustomFeeMeta> customFees = List.of(new CustomFeeMeta(c, d, customFee));
 		final var impliedTransfers = ImpliedTransfers.valid(
 				validationProps, List.of(
 						hbarChange(a.asGrpcAccount(), +100),
@@ -181,7 +184,7 @@ class CryptoTransferTransitionLogicTest {
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
 		// and:
-		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer(), accessor.getPayer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
 				.willReturn(impliedTransfers);
 		given(ledger.doZeroSum(impliedTransfers.getAllBalanceChanges()))
 				.willReturn(OK);
@@ -204,7 +207,7 @@ class CryptoTransferTransitionLogicTest {
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
 		// and:
-		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer(), accessor.getPayer()))
+		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer()))
 				.willReturn(impliedTransfers);
 
 		// when:
@@ -238,6 +241,8 @@ class CryptoTransferTransitionLogicTest {
 		given(dynamicProperties.maxTransferListSize()).willReturn(maxHbarAdjusts);
 		given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxTokenAdjusts);
 		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxOwnershipChanges);
+		given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
+		given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges);
 		given(accessor.getTxn()).willReturn(pretendXferTxn);
 		given(transferSemanticChecks.fullPureValidation(
 				pretendXferTxn.getCryptoTransfer().getTransfers(),

@@ -67,63 +67,65 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.doThrow;
 
 class TokenWipeTransitionLogicTest {
-    private AccountID account = IdUtils.asAccount("1.2.4");
-    private TokenID id = IdUtils.asToken("1.2.3");
-    private long wipeAmount = 100;
-    private long totalAmount = 1000L;
+	private AccountID accountID = IdUtils.asAccount("1.2.4");
+	private TokenID id = IdUtils.asToken("1.2.3");
+	private long wipeAmount = 100;
+	private long totalAmount = 1000L;
 
-    private TransactionContext txnCtx;
-    private PlatformTxnAccessor accessor;
-    private MerkleToken merkleToken;
+	private TransactionContext txnCtx;
+	private PlatformTxnAccessor accessor;
+	private MerkleToken merkleToken;
 	private Token token;
 
-    private TransactionBody tokenWipeTxn;
-    private TokenWipeTransitionLogic subject;
+	private TransactionBody tokenWipeTxn;
+	private TokenWipeTransitionLogic subject;
 	private TypedTokenStore typedTokenStore;
 	private AccountStore accountStore;
 	private OptionValidator validator;
 	private GlobalDynamicProperties dynamicProperties;
+	private Account account;
 
-    @BeforeEach
-    private void setup() {
-        accessor = mock(PlatformTxnAccessor.class);
-        merkleToken = mock(MerkleToken.class);
+	@BeforeEach
+	private void setup() {
+		accessor = mock(PlatformTxnAccessor.class);
+		merkleToken = mock(MerkleToken.class);
 		token = mock(Token.class);
+		account = mock(Account.class);
 
-        txnCtx = mock(TransactionContext.class);
+		txnCtx = mock(TransactionContext.class);
 
-        typedTokenStore = mock(TypedTokenStore.class);
-        accountStore = mock(AccountStore.class);
+		typedTokenStore = mock(TypedTokenStore.class);
+		accountStore = mock(AccountStore.class);
 		validator = mock(ContextOptionValidator.class);
 		dynamicProperties = mock(GlobalDynamicProperties.class);
-        subject = new TokenWipeTransitionLogic(validator, typedTokenStore, accountStore, txnCtx, dynamicProperties);
-    }
+		subject = new TokenWipeTransitionLogic(validator, typedTokenStore, accountStore, txnCtx, dynamicProperties);
+	}
 
-    @Test
-    void capturesInvalidWipe() {
-        givenValidCommonTxnCtx();
-        // and:
+	@Test
+	void capturesInvalidWipe() {
+		givenValidCommonTxnCtx();
+		// and:
 		doThrow(new InvalidTransactionException(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)).when(token).wipe(any(), anyLong());
-        // when:
+		// when:
 		try {
 			subject.doStateTransition();
-		}catch (InvalidTransactionException e){
+		} catch (InvalidTransactionException e) {
 			// then:
 			assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, e.getResponseCode());
 		}
 
-    }
+	}
 
-    @Test
-    void followsHappyPathForCommon() {
-        givenValidCommonTxnCtx();
+	@Test
+	void followsHappyPathForCommon() {
+		givenValidCommonTxnCtx();
 
-        // when:
-        subject.doStateTransition();
+		// when:
+		subject.doStateTransition();
 
-        // then:
-        verify(token).wipe( any(), anyLong());
-    }
+		// then:
+		verify(token).wipe(any(), anyLong());
+	}
 
 	@Test
 	void rejectsUniqueWhenNftsNotEnabled() {
@@ -154,96 +156,96 @@ class TokenWipeTransitionLogicTest {
 		verify(token).wipe(any(OwnershipTracker.class), any(TokenRelationship.class), anyList());
 	}
 
-    @Test
-    void hasCorrectApplicability() {
-        givenValidCommonTxnCtx();
+	@Test
+	void hasCorrectApplicability() {
+		givenValidCommonTxnCtx();
 
-        // expect:
-        assertTrue(subject.applicability().test(tokenWipeTxn));
-        assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
-    }
-
-    @Test
-    void setsFailInvalidIfUnhandledException() {
-        givenValidCommonTxnCtx();
-        // and:
-        doThrow(InvalidTransactionException.class).when(token).wipe(any(), anyLong());
-
-        // when:
-		assertThrows(InvalidTransactionException.class, ()-> subject.doStateTransition());
-    }
-
-    @Test
-    void acceptsValidCommonTxn() {
-        givenValidCommonTxnCtx();
-
-        // expect:
-        assertEquals(OK, subject.semanticCheck().apply(tokenWipeTxn));
-    }
-
-    @Test
-	void acceptsValidUniqueTxn(){
-    	givenValidUniqueTxnCtx();
-
-    	// expect:
-    	assertEquals(OK, subject.semanticCheck().apply(tokenWipeTxn));
-	}
-
-    @Test
-    void rejectsMissingToken() {
-        givenMissingToken();
-
-        // expect:
-        assertEquals(INVALID_TOKEN_ID, subject.semanticCheck().apply(tokenWipeTxn));
-    }
-
-    @Test
-    void rejectsMissingAccount() {
-        givenMissingAccount();
-
-        // expect:
-        assertEquals(INVALID_ACCOUNT_ID, subject.semanticCheck().apply(tokenWipeTxn));
-    }
-
-    @Test
-    void rejectsInvalidZeroAmount() {
-        givenInvalidZeroWipeAmount();
-
-        // expect:
-        assertEquals(INVALID_WIPING_AMOUNT, subject.semanticCheck().apply(tokenWipeTxn));
-    }
-
-    @Test
-    void rejectsInvalidNegativeAmount() {
-        givenInvalidNegativeWipeAmount();
-
-        // expect:
-        assertEquals(INVALID_WIPING_AMOUNT, subject.semanticCheck().apply(tokenWipeTxn));
-    }
-
-    @Test
-	void rejectsBothAmountAndSerialNumbers(){
-		given(dynamicProperties.areNftsEnabled()).willReturn(true);
-
-    	tokenWipeTxn = TransactionBody.newBuilder()
-				.setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
-				.setToken(id)
-				.setAccount(account)
-				.setAmount(10)
-				.addAllSerialNumbers(List.of(1L, 2L)))
-				.build();
-
-    	assertEquals(INVALID_TRANSACTION_BODY, subject.semanticCheck().apply(tokenWipeTxn));
+		// expect:
+		assertTrue(subject.applicability().test(tokenWipeTxn));
+		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
 	}
 
 	@Test
-	void rejectsInvalidNftId(){
+	void setsFailInvalidIfUnhandledException() {
+		givenValidCommonTxnCtx();
+		// and:
+		doThrow(InvalidTransactionException.class).when(token).wipe(any(), anyLong());
+
+		// when:
+		assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
+	}
+
+	@Test
+	void acceptsValidCommonTxn() {
+		givenValidCommonTxnCtx();
+
+		// expect:
+		assertEquals(OK, subject.semanticCheck().apply(tokenWipeTxn));
+	}
+
+	@Test
+	void acceptsValidUniqueTxn() {
+		givenValidUniqueTxnCtx();
+
+		// expect:
+		assertEquals(OK, subject.semanticCheck().apply(tokenWipeTxn));
+	}
+
+	@Test
+	void rejectsMissingToken() {
+		givenMissingToken();
+
+		// expect:
+		assertEquals(INVALID_TOKEN_ID, subject.semanticCheck().apply(tokenWipeTxn));
+	}
+
+	@Test
+	void rejectsMissingAccount() {
+		givenMissingAccount();
+
+		// expect:
+		assertEquals(INVALID_ACCOUNT_ID, subject.semanticCheck().apply(tokenWipeTxn));
+	}
+
+	@Test
+	void rejectsInvalidZeroAmount() {
+		givenInvalidZeroWipeAmount();
+
+		// expect:
+		assertEquals(INVALID_WIPING_AMOUNT, subject.semanticCheck().apply(tokenWipeTxn));
+	}
+
+	@Test
+	void rejectsInvalidNegativeAmount() {
+		givenInvalidNegativeWipeAmount();
+
+		// expect:
+		assertEquals(INVALID_WIPING_AMOUNT, subject.semanticCheck().apply(tokenWipeTxn));
+	}
+
+	@Test
+	void rejectsBothAmountAndSerialNumbers() {
 		given(dynamicProperties.areNftsEnabled()).willReturn(true);
 
 		tokenWipeTxn = TransactionBody.newBuilder()
 				.setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
 						.setToken(id)
-						.setAccount(account)
+						.setAccount(accountID)
+						.setAmount(10)
+						.addAllSerialNumbers(List.of(1L, 2L)))
+				.build();
+
+		assertEquals(INVALID_TRANSACTION_BODY, subject.semanticCheck().apply(tokenWipeTxn));
+	}
+
+	@Test
+	void rejectsInvalidNftId() {
+		given(dynamicProperties.areNftsEnabled()).willReturn(true);
+
+		tokenWipeTxn = TransactionBody.newBuilder()
+				.setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
+						.setToken(id)
+						.setAccount(accountID)
 						.addAllSerialNumbers(List.of(-1L)))
 				.build();
 		given(validator.maxBatchSizeWipeCheck(anyInt())).willReturn(OK);
@@ -253,33 +255,35 @@ class TokenWipeTransitionLogicTest {
 
 	@Test
 	void propagatesErrorOnInvalidBatch() {
-    	givenValidUniqueTxnCtx();
-    	given(validator.maxBatchSizeWipeCheck(anyInt())).willReturn(BATCH_SIZE_LIMIT_EXCEEDED);
+		givenValidUniqueTxnCtx();
+		given(validator.maxBatchSizeWipeCheck(anyInt())).willReturn(BATCH_SIZE_LIMIT_EXCEEDED);
 
 
 		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, subject.semanticCheck().apply(tokenWipeTxn));
 	}
 
-    private void givenValidCommonTxnCtx() {
-        tokenWipeTxn = TransactionBody.newBuilder()
-                .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
-                        .setToken(id)
-                        .setAccount(account)
-                        .setAmount(wipeAmount))
-                .build();
-        given(accessor.getTxn()).willReturn(tokenWipeTxn);
-        given(txnCtx.accessor()).willReturn(accessor);
-        given(merkleToken.totalSupply()).willReturn(totalAmount);
-        given(merkleToken.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
+	private void givenValidCommonTxnCtx() {
+		tokenWipeTxn = TransactionBody.newBuilder()
+				.setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
+						.setToken(id)
+						.setAccount(accountID)
+						.setAmount(wipeAmount))
+				.build();
+		given(accessor.getTxn()).willReturn(tokenWipeTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(merkleToken.totalSupply()).willReturn(totalAmount);
+		given(merkleToken.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
 		given(typedTokenStore.loadToken(any())).willReturn(token);
 		given(token.getType()).willReturn(TokenType.FUNGIBLE_COMMON);
-    }
+		given(accountStore.loadAccount(any())).willReturn(account);
+		given(typedTokenStore.loadTokenRelationship(token, account)).willReturn(new TokenRelationship(token, account));
+	}
 
 	private void givenValidUniqueTxnCtx() {
 		tokenWipeTxn = TransactionBody.newBuilder()
 				.setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
 						.setToken(id)
-						.setAccount(account)
+						.setAccount(accountID)
 						.addAllSerialNumbers(List.of(1L, 2L, 3L)))
 				.build();
 		given(accessor.getTxn()).willReturn(tokenWipeTxn);
@@ -293,34 +297,34 @@ class TokenWipeTransitionLogicTest {
 		given(validator.maxBatchSizeWipeCheck(anyInt())).willReturn(OK);
 	}
 
-    private void givenMissingToken() {
-        tokenWipeTxn = TransactionBody.newBuilder()
-                .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder())
-                .build();
-    }
+	private void givenMissingToken() {
+		tokenWipeTxn = TransactionBody.newBuilder()
+				.setTokenWipe(TokenWipeAccountTransactionBody.newBuilder())
+				.build();
+	}
 
-    private void givenMissingAccount() {
-        tokenWipeTxn = TransactionBody.newBuilder()
-                .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
-                        .setToken(id))
-                .build();
-    }
+	private void givenMissingAccount() {
+		tokenWipeTxn = TransactionBody.newBuilder()
+				.setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
+						.setToken(id))
+				.build();
+	}
 
-    private void givenInvalidZeroWipeAmount() {
-        tokenWipeTxn = TransactionBody.newBuilder()
-                .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
-                        .setToken(id)
-                        .setAccount(account)
-                        .setAmount(0))
-                .build();
-    }
+	private void givenInvalidZeroWipeAmount() {
+		tokenWipeTxn = TransactionBody.newBuilder()
+				.setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
+						.setToken(id)
+						.setAccount(accountID)
+						.setAmount(0))
+				.build();
+	}
 
-    private void givenInvalidNegativeWipeAmount() {
-        tokenWipeTxn = TransactionBody.newBuilder()
-                .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
-                        .setToken(id)
-                        .setAccount(account)
-                        .setAmount(-1))
-                .build();
-    }
+	private void givenInvalidNegativeWipeAmount() {
+		tokenWipeTxn = TransactionBody.newBuilder()
+				.setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
+						.setToken(id)
+						.setAccount(accountID)
+						.setAmount(-1))
+				.build();
+	}
 }
