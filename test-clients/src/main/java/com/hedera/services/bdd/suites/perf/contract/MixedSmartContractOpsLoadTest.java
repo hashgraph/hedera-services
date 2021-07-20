@@ -56,7 +56,6 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
 		parseArgs(args);
 
 		MixedSmartContractOpsLoadTest suite = new MixedSmartContractOpsLoadTest();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 
@@ -65,11 +64,6 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
 		return List.of(
 				RunMixedSmartContractOps()
 		);
-	}
-
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
 	}
 
 	protected HapiApiSpec RunMixedSmartContractOps() {

@@ -65,7 +65,6 @@ public class FileContractMemoPerfSuite  extends LoadTest {
 		parseArgs(args);
 
 		FileContractMemoPerfSuite suite = new FileContractMemoPerfSuite();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 
@@ -74,11 +73,6 @@ public class FileContractMemoPerfSuite  extends LoadTest {
 		return	List.of(
 				RunMixedFileContractMemoOps()
 		);
-	}
-
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
 	}
 
 	// perform cryptoCreate, cryptoUpdate, TokenCreate, TokenUpdate, FileCreate, FileUpdate txs with entity memo set.

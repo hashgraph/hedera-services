@@ -107,18 +107,12 @@ public class SubmitMessageLoadTest extends LoadTest {
 		}
 
 		SubmitMessageLoadTest suite = new SubmitMessageLoadTest();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(runSubmitMessages());
-	}
-
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
 	}
 
 	private static HapiApiSpec runSubmitMessages() {

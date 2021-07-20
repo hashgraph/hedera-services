@@ -39,7 +39,6 @@ import static com.hederahashgraph.api.proto.java.SubType.UNRECOGNIZED;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class BaseOperationUsageTest {
-
 	@Test
 	void picksAppropriateOperation() {
 		BaseOperationUsage mock = Mockito.spy(new BaseOperationUsage());

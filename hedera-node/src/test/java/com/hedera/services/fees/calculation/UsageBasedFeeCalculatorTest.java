@@ -57,7 +57,7 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
-import static com.hedera.services.fees.calculation.AwareFcfsUsagePrices.DEFAULT_USAGE_PRICES;
+import static com.hedera.services.fees.calculation.AwareFcfsUsagePrices.DEFAULT_RESOURCE_PRICES;
 import static com.hedera.test.factories.txns.ContractCallFactory.newSignedContractCall;
 import static com.hedera.test.factories.txns.ContractCreateFactory.newSignedContractCreate;
 import static com.hedera.test.factories.txns.CryptoCreateFactory.newSignedCryptoCreate;
@@ -530,7 +530,7 @@ public class UsageBasedFeeCalculatorTest {
 				FeeBuilder.getSignatureCount(signedTxn),
 				9,
 				FeeBuilder.getSignatureSize(signedTxn));
-		FeeObject expectedFees = FeeBuilder.getFeeObject(DEFAULT_USAGE_PRICES.get(SubType.DEFAULT), resourceUsage, currentRate);
+		FeeObject expectedFees = FeeBuilder.getFeeObject(DEFAULT_RESOURCE_PRICES.get(SubType.DEFAULT), resourceUsage, currentRate);
 
 		given(txnUsageEstimators.apply(CryptoCreate)).willReturn(List.of(correctOpEstimator));
 		given(correctOpEstimator.applicableTo(accessor.getTxn())).willReturn(true);

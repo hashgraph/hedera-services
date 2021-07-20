@@ -356,6 +356,19 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		), mutableUniqTokenAssocsIfInit, mutableOwnerAssocsIfInit, this);
 	}
 
+
+	/* --- Archivable --- */
+	@Override
+	public void archive() {
+		releaseFcotmrIfNonNull();
+	}
+
+	/* --- MerkleNode --- */
+	@Override
+	protected void onRelease() {
+		releaseFcotmrIfNonNull();
+	}
+
 	/* --------------- */
 	public AccountID getAccountFromNodeId(NodeId nodeId) {
 		var address = addressBook().getAddress(nodeId.getId());
@@ -456,5 +469,14 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	void setUniqueOwnershipAssociations(FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations) {
 		this.uniqueOwnershipAssociations = uniqueOwnershipAssociations;
+	}
+
+	private void releaseFcotmrIfNonNull() {
+		if (uniqueTokenAssociations != null) {
+			uniqueTokenAssociations.release();
+		}
+		if (uniqueOwnershipAssociations != null) {
+			uniqueOwnershipAssociations.release();
+		}
 	}
 }

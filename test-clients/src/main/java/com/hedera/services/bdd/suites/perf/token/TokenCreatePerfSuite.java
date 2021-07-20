@@ -39,18 +39,12 @@ public class TokenCreatePerfSuite extends LoadTest {
 	public static void main(String... args) {
 		parseArgs(args);
 		TokenCreatePerfSuite suite = new TokenCreatePerfSuite();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(runTokenCreates());
-	}
-
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
 	}
 
 	private HapiApiSpec runTokenCreates() {

@@ -53,7 +53,6 @@ public class MixedFileOpsLoadTest extends LoadTest {
 		parseArgs(args);
 
 		MixedFileOpsLoadTest suite = new MixedFileOpsLoadTest();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 
@@ -62,11 +61,6 @@ public class MixedFileOpsLoadTest extends LoadTest {
 		return List.of(
 				runMixedFileOps()
 		);
-	}
-
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
 	}
 
 	protected HapiApiSpec runMixedFileOps() {

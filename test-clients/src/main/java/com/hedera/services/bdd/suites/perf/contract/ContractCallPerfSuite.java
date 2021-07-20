@@ -61,11 +61,6 @@ public class ContractCallPerfSuite extends HapiApiSuite {
 		return true;
 	}
 
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
-	}
-
 	HapiApiSpec contractCallPerf() {
 		final int NUM_CALLS = 1_000;
 		final long ENDING_BALANCE = NUM_CALLS * (NUM_CALLS + 1)	 / 2;

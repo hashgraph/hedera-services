@@ -80,7 +80,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 	private HapiApiSpec apiPermissionsChangeDynamically() {
 		return defaultHapiSpec("ApiPermissionsChangeDynamically")
 				.given(
-						cryptoCreate("civilian"),
+						cryptoCreate("civilian").balance(ONE_HUNDRED_HBARS),
 						getFileContents(API_PERMISSIONS).logged(),
 						tokenCreate("poc").payingWith("civilian")
 				).when(
