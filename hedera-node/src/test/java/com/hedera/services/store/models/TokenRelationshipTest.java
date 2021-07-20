@@ -32,8 +32,8 @@ import org.junit.jupiter.api.Test;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -176,7 +176,7 @@ class TokenRelationshipTest {
 		token.setFreezeKey(freezeKey);
 
 		// when:
-		subject.updateForzen(true);
+		subject.changeFrozenState(true);
 
 		// then:
 		assertTrue(subject.isFrozen());
@@ -189,7 +189,7 @@ class TokenRelationshipTest {
 		token.setFreezeKey(null);
 
 		// verify
-		assertFailsWith(() -> subject.updateForzen(true), TOKEN_HAS_NO_FREEZE_KEY);
+		assertFailsWith(() -> subject.changeFrozenState(true), TOKEN_HAS_NO_FREEZE_KEY);
 	}
 
 

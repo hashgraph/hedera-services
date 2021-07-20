@@ -38,6 +38,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -82,7 +84,7 @@ class TokenUnfreezeTransitionLogicTest {
 
 		txnCtx = mock(TransactionContext.class);
 
-		subject = new TokenUnfreezeTransitionLogic(tokenStore, accountStore, txnCtx);
+		subject = new TokenUnfreezeTransitionLogic(txnCtx, tokenStore, accountStore);
 	}
 
 	@Test
@@ -90,11 +92,11 @@ class TokenUnfreezeTransitionLogicTest {
 		givenValidTxnCtx();
 		// and:
 		doThrow(new InvalidTransactionException(TOKEN_HAS_NO_FREEZE_KEY))
-				.when(tokenRelationship).updateForzen(false);
+				.when(tokenRelationship).changeFrozenState(false);
 
 		// verify:
 		assertFailsWith(() -> subject.doStateTransition(), TOKEN_HAS_NO_FREEZE_KEY);
-		verify(tokenStore, never()).persistTokenRelationship(tokenRelationship);
+		verify(tokenStore, never()).persistTokenRelationships(List.of(tokenRelationship));
 	}
 
 	@Test
@@ -107,8 +109,8 @@ class TokenUnfreezeTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		verify(tokenRelationship).updateForzen(false);
-		verify(tokenStore).persistTokenRelationship(tokenRelationship);
+		verify(tokenRelationship).changeFrozenState(false);
+		verify(tokenStore).persistTokenRelationships(List.of(tokenRelationship));
 	}
 
 	@Test

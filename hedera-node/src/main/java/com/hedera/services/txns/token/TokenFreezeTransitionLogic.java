@@ -31,6 +31,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -43,14 +44,14 @@ public class TokenFreezeTransitionLogic implements TransitionLogic {
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
-	private final TypedTokenStore tokenStore;
 	private final TransactionContext txnCtx;
+	private final TypedTokenStore tokenStore;
 	private final AccountStore accountStore;
 
 	public TokenFreezeTransitionLogic(
+			TransactionContext txnCtx,
 			TypedTokenStore tokenStore,
-			AccountStore accountStore,
-			TransactionContext txnCtx
+			AccountStore accountStore
 	) {
 		this.txnCtx = txnCtx;
 		this.tokenStore = tokenStore;
@@ -59,29 +60,33 @@ public class TokenFreezeTransitionLogic implements TransitionLogic {
 
 	@Override
 	public void doStateTransition() {
+
 		/* --- Translate from gRPC types --- */
+
 		final var op = txnCtx.accessor().getTxn().getTokenFreeze();
+
 		final var grpcTokenId = op.getToken();
 		final var grpcAccountId = op.getAccount();
-		final var targetTokenId = new Id(
-				grpcTokenId.getShardNum(),
-				grpcTokenId.getRealmNum(),
-				grpcTokenId.getTokenNum());
-		final var targetAccountId = new Id(
-				grpcAccountId.getShardNum(),
-				grpcAccountId.getRealmNum(),
-				grpcAccountId.getAccountNum());
+
+		/* --- Convert to model ids --- */
+
+		final var targetTokenId = Id.fromGrpcToken(grpcTokenId);
+		final var targetAccountId = Id.fromGrpcAccount(grpcAccountId);
 
 		/* --- Load the model objects --- */
-		final var token = tokenStore.loadToken(targetTokenId);
-		final var account = accountStore.loadAccount(targetAccountId);
-		final var tokenRel = tokenStore.loadTokenRelationship(token, account);
+
+		final var loadedToken = tokenStore.loadToken(targetTokenId);
+		final var loadedAccount = accountStore.loadAccount(targetAccountId);
+
+		final var tokenRelationship = tokenStore.loadTokenRelationship(loadedToken, loadedAccount);
 
 		/* --- Do the business logic --- */
-		tokenRel.updateForzen(true);
+
+		tokenRelationship.changeFrozenState(true);
 
 		/* --- Persist the updated models --- */
-		tokenStore.persistTokenRelationship(tokenRel);
+
+		tokenStore.persistTokenRelationships(List.of(tokenRelationship));
 	}
 
 	@Override

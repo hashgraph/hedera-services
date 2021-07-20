@@ -431,13 +431,13 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 import static java.util.Map.entry;
 
@@ -1490,9 +1490,9 @@ public class ServicesContext {
 				entry(TokenFeeScheduleUpdate, List.of(new TokenFeeScheduleUpdateTransitionLogic(tokenStore(), txnCtx(),
 						validator, globalDynamicProperties()))),
 				entry(TokenFreezeAccount,
-						List.of(new TokenFreezeTransitionLogic(typedTokenStore(), accountStore(), txnCtx()))),
+						List.of(new TokenFreezeTransitionLogic(txnCtx(), typedTokenStore(), accountStore()))),
 				entry(TokenUnfreezeAccount,
-						List.of(new TokenUnfreezeTransitionLogic(typedTokenStore(), accountStore(), txnCtx()))),
+						List.of(new TokenUnfreezeTransitionLogic(txnCtx(), typedTokenStore(), accountStore()))),
 				entry(TokenGrantKycToAccount,
 						List.of(new TokenGrantKycTransitionLogic(tokenStore(), ledger(), txnCtx()))),
 				entry(TokenRevokeKycFromAccount,
