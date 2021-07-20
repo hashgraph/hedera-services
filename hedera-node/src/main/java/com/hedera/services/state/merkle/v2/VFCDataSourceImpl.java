@@ -325,12 +325,13 @@ public class VFCDataSourceImpl<K extends VKey, V extends VValue> implements VFCD
      * Update a leaf at given path, the leaf must exist. Writes hash and value.
      *
      * @param path valid path to saved leaf
+     * @param key valid key for saved leaf
      * @param value the value for new leaf, can be null
      * @param hash non-null hash for the leaf
      * @throws IOException if there was a problem saving leaf update
      */
     @Override
-    public void updateLeaf(long path, V value, Hash hash) throws IOException {
+    public void updateLeaf(long path,K key, V value, Hash hash) throws IOException {
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
         if (hash == null) throw new IllegalArgumentException("Can not save null hash for leaf at path ["+path+"]");
         // get node buffer

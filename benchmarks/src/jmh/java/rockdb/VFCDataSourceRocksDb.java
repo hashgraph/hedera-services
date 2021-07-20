@@ -275,28 +275,23 @@ public final class VFCDataSourceRocksDb <K extends VKey, V extends VValue> imple
      * Update a leaf at given path, the leaf must exist. Writes hash and value.
      *
      * @param path valid path to saved leaf
+     * @param key valid key for saved leaf
      * @param value the value for new leaf, can be null
      * @param hash non-null hash for the leaf
      * @throws IOException if there was a problem saving leaf update
      */
     @Override
-    public void updateLeaf(long path, V value, Hash hash) throws IOException {
+    public void updateLeaf(long path, K key, V value, Hash hash) throws IOException {
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
         if (hash == null) throw new IllegalArgumentException("Can not save null hash for leaf at path ["+path+"]");
         final byte[] pathBytes = getPathBytes(path);
         try {
-            // get key from path
-            byte[] leafKey = this.leafKey.get();
-            int result = db.get(leafPathToKeyMap, pathBytes, leafKey);
-            if (result == RocksDB.NOT_FOUND) {
-                throw new IOException("Tried to update value for a leaf path that did not have key");
-            }
             // create batch
             WriteBatch writeBatch = new WriteBatch();
             // write hash
             writeBatch.put(pathToHashMap, pathBytes, getHashBytes(hash));
             // write value
-            writeBatch.put(leafKeyToValueMap, leafKey, getLeafValueBytes(value));
+            writeBatch.put(leafKeyToValueMap, getLeafKeyBytes(key), getLeafValueBytes(value));
             // write the batch
             db.write(writeOptions,writeBatch);
         } catch (RocksDBException e) {
@@ -412,25 +407,22 @@ public final class VFCDataSourceRocksDb <K extends VKey, V extends VValue> imple
      * Update a leaf at given path, the leaf must exist. Writes hash and value.
      *
      * @param path valid path to saved leaf
+     * @param key valid key for saved leaf
      * @param value the value for new leaf, can be null
      * @param hash non-null hash for the leaf
      * @throws IOException if there was a problem saving leaf update
      */
     @Override
-    public void updateLeaf(Object handle, long path, V value, Hash hash) throws IOException {
+    public void updateLeaf(Object handle, long path, K key, V value, Hash hash) throws IOException {
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
         if (hash == null) throw new IllegalArgumentException("Can not save null hash for leaf at path ["+path+"]");
         final WriteBatch writeBatch = (WriteBatch) handle;
         final byte[] pathBytes = getPathBytes(path);
         try {
-            // get key from path
-            byte[] leafKey = this.leafKey.get();
-            int result = db.get(leafPathToKeyMap, pathBytes, leafKey);
-            if (result == RocksDB.NOT_FOUND) throw new IOException("Tried to update value for a leaf path that did not have key");
             // write hash
             writeBatch.put(pathToHashMap, pathBytes, getHashBytes(hash));
             // write value
-            writeBatch.put(leafKeyToValueMap, leafKey, getLeafValueBytes(value));
+            writeBatch.put(leafKeyToValueMap, getLeafKeyBytes(key), getLeafValueBytes(value));
         } catch (RocksDBException e) {
             throw new IOException("Problem adding Leaf",e);
         }
