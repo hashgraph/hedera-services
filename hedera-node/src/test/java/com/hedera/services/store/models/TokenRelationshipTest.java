@@ -22,6 +22,7 @@ package com.hedera.services.store.models;
 
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,12 +30,9 @@ import org.junit.jupiter.api.Test;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TokenRelationshipTest {
@@ -61,11 +59,11 @@ class TokenRelationshipTest {
 	@Test
 	void toStringAsExpected() {
 		// given:
-		final var desired = "TokenRelationship{notYetPersisted=true, " +
-				"account=Account{id=Id{shard=1, realm=0, num=1234}, expiry=0, balance=0, deleted=false, " +
-				"tokens=<N/A>}, token=Token{id=Id{shard=0, realm=0, num=1234}, treasury=null, autoRenewAccount=null, " +
-				"kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>}, balance=1234, " +
-				"balanceChange=0, frozen=false, kycGranted=false}";
+		final var desired = "TokenRelationship{notYetPersisted=true, account=Account{id=Id{shard=1, realm=0, num=1234}, " +
+				"expiry=0, balance=0, deleted=false, tokens=<N/A>}, token=Token{id=Id{shard=0, realm=0, num=1234}, " +
+				"type=null, deleted=false, autoRemoved=false, treasury=null, autoRenewAccount=null, kycKey=<N/A>, " +
+				"freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0}, " +
+				"balance=1234, balanceChange=0, frozen=false, kycGranted=false}";
 
 		// expect:
 		assertEquals(desired, subject.toString());
@@ -163,7 +161,7 @@ class TokenRelationshipTest {
 		token.setKycKey(kycKey);
 
 		// when:
-		subject.updateKycGranted(true);
+		subject.changeKycState(true);
 
 		// then:
 		assertTrue(subject.isKycGranted());
@@ -176,7 +174,7 @@ class TokenRelationshipTest {
 		token.setKycKey(null);
 
 		// verify
-		assertFailsWith(() -> subject.updateKycGranted(true), TOKEN_HAS_NO_KYC_KEY);
+		assertFailsWith(() -> subject.changeKycState(true), TOKEN_HAS_NO_KYC_KEY);
 	}
 
 	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {

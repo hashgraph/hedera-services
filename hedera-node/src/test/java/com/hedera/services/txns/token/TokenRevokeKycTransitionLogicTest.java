@@ -38,6 +38,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -82,7 +84,7 @@ class TokenRevokeKycTransitionLogicTest {
 
 		txnCtx = mock(TransactionContext.class);
 
-		subject = new TokenRevokeKycTransitionLogic(tokenStore, accountStore, txnCtx);
+		subject = new TokenRevokeKycTransitionLogic(txnCtx, tokenStore, accountStore);
 	}
 
 	@Test
@@ -90,11 +92,11 @@ class TokenRevokeKycTransitionLogicTest {
 		givenValidTxnCtx();
 		// and:
 		doThrow(new InvalidTransactionException(TOKEN_HAS_NO_KYC_KEY))
-				.when(tokenRelationship).updateKycGranted(false);
+				.when(tokenRelationship).changeKycState(false);
 
 		// then:
 		assertFailsWith(() -> subject.doStateTransition(), TOKEN_HAS_NO_KYC_KEY);
-		verify(tokenStore, never()).persistTokenRelationship(tokenRelationship);
+		verify(tokenStore, never()).persistTokenRelationships(List.of(tokenRelationship));
 	}
 
 	@Test
@@ -107,8 +109,8 @@ class TokenRevokeKycTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		verify(tokenRelationship).updateKycGranted(false);
-		verify(tokenStore).persistTokenRelationship(tokenRelationship);
+		verify(tokenRelationship).changeKycState(false);
+		verify(tokenStore).persistTokenRelationships(List.of(tokenRelationship));
 	}
 
 	@Test
