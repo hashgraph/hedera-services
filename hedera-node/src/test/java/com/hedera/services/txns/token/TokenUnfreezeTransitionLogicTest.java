@@ -21,79 +21,96 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.Token;
+import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import java.util.List;
+
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.BDDMockito.any;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 
 class TokenUnfreezeTransitionLogicTest {
-	private TokenID tokenId = IdUtils.asToken("0.0.12345");
-	private AccountID account = IdUtils.asAccount("0.0.54321");
+	private long tokenNum = 12345L;
+	private long accountNum = 54321L;
+	private TokenID tokenID = IdUtils.asToken("0.0." + tokenNum);
+	private AccountID accountID = IdUtils.asAccount("0.0." + accountNum);
+	private Id tokenId = new Id(0,0,tokenNum);
+	private Id accountId = new Id(0,0,accountNum);
 
-	private TokenStore tokenStore;
-	private HederaLedger ledger;
+	private TypedTokenStore tokenStore;
+	private AccountStore accountStore;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
+	private TokenRelationship tokenRelationship;
+	private Token token;
+	private Account account;
 
 	private TransactionBody tokenUnfreezeTxn;
 	private TokenUnfreezeTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
-		ledger = mock(HederaLedger.class);
-		tokenStore = mock(TokenStore.class);
+		accountStore = mock(AccountStore.class);
+		tokenStore = mock(TypedTokenStore.class);
 		accessor = mock(PlatformTxnAccessor.class);
+		tokenRelationship = mock(TokenRelationship.class);
+		token = mock(Token.class);
+		account = mock(Account.class);
 
 		txnCtx = mock(TransactionContext.class);
 
-		subject = new TokenUnfreezeTransitionLogic(tokenStore, ledger, txnCtx);
+		subject = new TokenUnfreezeTransitionLogic(txnCtx, tokenStore, accountStore);
 	}
 
 	@Test
 	public void capturesInvalidUnfreeze() {
 		givenValidTxnCtx();
 		// and:
-		given(ledger.unfreeze(account, tokenId)).willReturn(TOKEN_HAS_NO_FREEZE_KEY);
+		doThrow(new InvalidTransactionException(TOKEN_HAS_NO_FREEZE_KEY))
+				.when(tokenRelationship).changeFrozenState(false);
 
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(TOKEN_HAS_NO_FREEZE_KEY);
+		// verify:
+		assertFailsWith(() -> subject.doStateTransition(), TOKEN_HAS_NO_FREEZE_KEY);
+		verify(tokenStore, never()).persistTokenRelationships(List.of(tokenRelationship));
 	}
 
 	@Test
 	public void followsHappyPath() {
 		givenValidTxnCtx();
 		// and:
-		given(ledger.unfreeze(account, tokenId)).willReturn(OK);
+		given(token.hasFreezeKey()).willReturn(true);
 
 		// when:
 		subject.doStateTransition();
 
 		// then:
-		verify(ledger).unfreeze(account, tokenId);
-		verify(txnCtx).setStatus(SUCCESS);
+		verify(tokenRelationship).changeFrozenState(false);
+		verify(tokenStore).persistTokenRelationships(List.of(tokenRelationship));
 	}
 
 	@Test
@@ -103,19 +120,6 @@ class TokenUnfreezeTransitionLogicTest {
 		// expect:
 		assertTrue(subject.applicability().test(tokenUnfreezeTxn));
 		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
-	}
-
-	@Test
-	public void setsFailInvalidIfUnhandledException() {
-		givenValidTxnCtx();
-		// and:
-		given(ledger.unfreeze(any(), any())).willThrow(IllegalArgumentException.class);
-
-		// when:
-		subject.doStateTransition();
-
-		// then:
-		verify(txnCtx).setStatus(FAIL_INVALID);
 	}
 
 	@Test
@@ -145,12 +149,14 @@ class TokenUnfreezeTransitionLogicTest {
 	private void givenValidTxnCtx() {
 		tokenUnfreezeTxn = TransactionBody.newBuilder()
 				.setTokenUnfreeze(TokenUnfreezeAccountTransactionBody.newBuilder()
-						.setAccount(account)
-						.setToken(tokenId))
+						.setAccount(accountID)
+						.setToken(tokenID))
 				.build();
 		given(accessor.getTxn()).willReturn(tokenUnfreezeTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(tokenStore.resolve(tokenId)).willReturn(tokenId);
+		given(tokenStore.loadToken(tokenId)).willReturn(token);
+		given(accountStore.loadAccount(accountId)).willReturn(account);
+		given(tokenStore.loadTokenRelationship(token, account)).willReturn(tokenRelationship);
 	}
 
 	private void givenMissingToken() {
@@ -162,7 +168,12 @@ class TokenUnfreezeTransitionLogicTest {
 	private void givenMissingAccount() {
 		tokenUnfreezeTxn = TransactionBody.newBuilder()
 				.setTokenUnfreeze(TokenUnfreezeAccountTransactionBody.newBuilder()
-						.setToken(tokenId))
+						.setToken(tokenID))
 				.build();
+	}
+
+	private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
+		var ex = assertThrows(InvalidTransactionException.class, something::run);
+		assertEquals(status, ex.getResponseCode());
 	}
 }

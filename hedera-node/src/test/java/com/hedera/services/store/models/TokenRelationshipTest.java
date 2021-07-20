@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -139,6 +140,7 @@ class TokenRelationshipTest {
 		token.setKycKey(kycKey);
 		subject.setKycGranted(false);
 
+		// verify
 		assertFailsWith(() -> subject.setBalance(balance + 1), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
 	}
 
@@ -166,6 +168,30 @@ class TokenRelationshipTest {
 		// then:
 		assertEquals(1, subject.getBalanceChange());
 	}
+
+	@Test
+	void updateFreezeWorksIfFeezeKeyIsPresent() {
+		// given:
+		subject.setFrozen(false);
+		token.setFreezeKey(freezeKey);
+
+		// when:
+		subject.changeFrozenState(true);
+
+		// then:
+		assertTrue(subject.isFrozen());
+	}
+
+	@Test
+	void updateFreezeFailsAsExpectedIfFreezeKeyIsNotPresent() {
+		// given:
+		subject.setFrozen(false);
+		token.setFreezeKey(null);
+
+		// verify
+		assertFailsWith(() -> subject.changeFrozenState(true), TOKEN_HAS_NO_FREEZE_KEY);
+	}
+
 
 	@Test
 	void givesCorrectRepresentation() {
