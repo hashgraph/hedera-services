@@ -28,21 +28,28 @@ import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.AssessedCustomFee;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -55,11 +62,13 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asDebits;
 import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.correspondingScheduledTxnId;
+import static com.hedera.services.bdd.suites.HapiApiSuite.HBAR_TOKEN_SENTINEL;
 import static com.hedera.services.bdd.suites.crypto.CryptoTransferSuite.sdec;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private static final Logger log = LogManager.getLogger(HapiGetTxnRecord.class);
@@ -76,6 +85,12 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	boolean assertNothingAboutHashes = false;
 	boolean lookupScheduledFromRegistryId = false;
 	boolean omitPaymentHeaderOnCostAnswer = false;
+	boolean validateAccountAmountsInTransferList = false;
+	boolean validateTokenAmountsInTokenTransferList = false;
+	boolean validateEntitiesInAssessedCustomFees = false;
+	List<Pair<String, Long>> accountAmountsToValidate = new ArrayList<>();
+	List<Triple<String, String, Long>> tokenAmountsToValidate = new ArrayList<>();
+	List<Triple<String, String, Long>> assessedCustomFeesToValidate = new ArrayList<>();
 	Optional<TransactionID> explicitTxnId = Optional.empty();
 	Optional<TransactionRecordAsserts> priorityExpectations = Optional.empty();
 	Optional<BiConsumer<TransactionRecord, Logger>> format = Optional.empty();
@@ -205,6 +220,24 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return this;
 	}
 
+	public HapiGetTxnRecord hasHbarAmountInTransferList(String account, long amount) {
+		validateAccountAmountsInTransferList = true;
+		accountAmountsToValidate.add(Pair.of(account, amount));
+		return this;
+	}
+
+	public HapiGetTxnRecord hasTokenAmountInTokenTransferList(String token, String account, long amount) {
+		validateTokenAmountsInTokenTransferList = true;
+		tokenAmountsToValidate.add(Triple.of(token, account, amount));
+		return this;
+	}
+
+	public HapiGetTxnRecord hasExpectedAssessedCustomFees(String token, String account, long amount) {
+		validateEntitiesInAssessedCustomFees = true;
+		assessedCustomFeesToValidate.add(Triple.of(token, account, amount));
+		return this;
+	}
+
 	public TransactionRecord getResponseRecord() {
 		return response.getTransactionGetRecord().getTransactionRecord();
 	}
@@ -288,6 +321,92 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 					0,
 					actualRecord.getTokenTransferListsCount());
 		}
+		if (validateAccountAmountsInTransferList) {
+			final var accountAmounts = actualRecord.getTransferList().getAccountAmountsList();
+			accountAmountsToValidate.forEach(pair ->
+					validateAccountAmount(spec.registry().getAccountID(pair.getLeft()), pair.getRight(), accountAmounts));
+		}
+		if (validateTokenAmountsInTokenTransferList) {
+			final var tokenTransferLists = actualRecord.getTokenTransferListsList();
+			tokenAmountsToValidate.forEach(triple ->
+					validateTokenTransferList(
+							spec.registry().getTokenID(triple.getLeft()),
+							spec.registry().getAccountID(triple.getMiddle()),
+							triple.getRight(),
+							tokenTransferLists));
+		}
+		if (validateEntitiesInAssessedCustomFees) {
+			final var actualAssessedCustomFees = actualRecord.getAssessedCustomFeesList();
+			assessedCustomFeesToValidate.forEach(triple ->
+					validateAssessedCustomFees(
+							!triple.getLeft().equals(HBAR_TOKEN_SENTINEL) ? spec.registry().getTokenID(triple.getLeft()) : null,
+							spec.registry().getAccountID(triple.getMiddle()),
+							triple.getRight(),
+							actualAssessedCustomFees
+					));
+		}
+	}
+
+	private void validateAssessedCustomFees(final TokenID tokenID, final AccountID accountID, final long amount,
+			final List<AssessedCustomFee> assessedCustomFees) {
+		boolean found = false;
+		for (var acf : assessedCustomFees) {
+			if (acf.getAmount() == amount &&
+					acf.getFeeCollectorAccountId().equals(accountID) &&
+					(!acf.hasTokenId() || acf.getTokenId().equals(tokenID))) {
+				found = true;
+				break;
+			}
+		}
+		assertTrue("Cannot find TokenID : " + tokenID +
+				" AccountID : " + accountID +
+				" and amount : " + amount + " in assessed_custom_fees of the txnRecord", found);
+	}
+
+	private void validateTokenTransferList(final TokenID tokenID, final AccountID accountID, final long amount,
+			final List<TokenTransferList> tokenTransferLists) {
+		boolean found = false;
+
+		for (final var ttl : tokenTransferLists) {
+			if (ttl.getToken().equals(tokenID)) {
+				final var accountAmounts = ttl.getTransfersList();
+				for (var aa : accountAmounts) {
+					if( aa.getAmount() == amount &&
+							aa.getAccountID().equals(accountID)) {
+						found = true;
+						break;
+					}
+				}
+				final var nftTransferList = ttl.getNftTransfersList();
+				for(var nfttl : nftTransferList) {
+					if (nfttl.getSerialNumber() == amount &&
+							nfttl.getReceiverAccountID().equals(accountID)) {
+						found = true;
+						break;
+					}
+				}
+				if (found) {
+					break;
+				}
+			}
+		}
+
+		assertTrue("Cannot find TokenID : " + tokenID +
+				" AccountID : " + accountID +
+				" and amount : " + amount + " in the tokenTransferList of the txnRecord", found);
+	}
+
+	private void validateAccountAmount(final AccountID accountID, final long amount,
+			final List<AccountAmount> accountAmountsList) {
+		boolean found = false;
+		for (var aa : accountAmountsList) {
+			if( aa.getAmount() == amount &&
+					aa.getAccountID().equals(accountID)) {
+				found = true;
+			}
+		}
+		assertTrue("Cannot find AccountID : " + accountID +
+				" and amount : " + amount + " in the transferList of the txnRecord", found);
 	}
 
 	@Override
