@@ -50,12 +50,8 @@ public class FractionalFeeAssessor {
 		final var payer = change.getAccount();
 		final var denom = change.getToken();
 		for (var fee : feesWithFractional) {
-			if (fee.getFeeType() != FRACTIONAL_FEE) {
-				continue;
-			}
-
 			final var collector = fee.getFeeCollectorAsId();
-			if (payer.equals(collector)) {
+			if (fee.getFeeType() != FRACTIONAL_FEE || payer.equals(collector)) {
 				continue;
 			}
 
