@@ -5,13 +5,11 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.fcmap.VFCDataSource;
 import com.swirlds.fcmap.VKey;
 import com.swirlds.fcmap.VValue;
-import org.lmdbjava.Dbi;
-import org.lmdbjava.Env;
-import org.lmdbjava.EnvFlags;
-import org.lmdbjava.Txn;
+import org.lmdbjava.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Supplier;
@@ -21,7 +19,7 @@ import static org.lmdbjava.DbiFlags.MDB_CREATE;
 import static org.lmdbjava.DbiFlags.MDB_INTEGERKEY;
 
 @SuppressWarnings({"unchecked", "DuplicatedCode", "unused"})
-public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implements VFCDataSource<K, V> {
+public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implements SequentialInsertsVFCDataSource<K, V> {
     private final static int HASH_SIZE = Long.BYTES+ DigestType.SHA_384.digestLength();
     private final Supplier<K> keyConstructor;
     private final Supplier<V> valueConstructor;
@@ -49,7 +47,11 @@ public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implement
         this.keyConstructor = keyConstructor;
         this.valueConstructor = valueConstructor;
         // create thread local buffers
-        pathBytes = ThreadLocal.withInitial(() -> allocateDirect(Long.BYTES));
+        pathBytes = ThreadLocal.withInitial(() -> {
+            ByteBuffer buf = allocateDirect(Long.BYTES);
+            buf.order(ByteOrder.nativeOrder()); // the byte order is important to use MDB_INTEGERKEY as LMDB needs keys to be in native byte order
+            return buf;
+        });
         hashData = ThreadLocal.withInitial(() -> allocateDirect(HASH_SIZE));
         leafKey = ThreadLocal.withInitial(() -> allocateDirect(Integer.BYTES + keySizeBytes));
         leafValue = ThreadLocal.withInitial(() -> allocateDirect(Integer.BYTES + valueSizeBytes));
@@ -389,7 +391,52 @@ public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implement
         leafPathToKeyMap.put(txn, pathBytes, keyBytes);
         // write value
         leafKeyToValueMap.put(txn, keyBytes, getLeafValueBytes(value));
-        // commit transaction
+    }
+
+
+    //==================================================================================================================
+    // Public Sequential Methods
+
+    /**
+     * Save a hash for a internal node
+     *
+     * @param path the path of the node to save hash for, if nothing has been stored for this path before it will be created.
+     * @param hash a non-null hash to write
+     */
+    @Override
+    public void saveInternalSequential(Object handle, long path, Hash hash) {
+        if (path < 0) throw new IllegalArgumentException("path is less than 0");
+        if (hash == null)  throw new IllegalArgumentException("Hash is null");
+        Txn<ByteBuffer> txn = (Txn<ByteBuffer>)handle;
+        // write hash
+        pathToHashMap.put(txn,getPathBytes(path), getHashBytes(hash), PutFlags.MDB_APPEND);
+    }
+
+    /**
+     * Add a new leaf to store
+     *
+     * @param path the path for the new leaf
+     * @param key the non-null key for the new leaf
+     * @param value the value for new leaf, can be null
+     * @param hash the non-null hash for new leaf
+     * @throws IOException if there was a problem writing leaf
+     */
+    @Override
+    public void addLeafSequential(Object handle, long path, K key, V value, Hash hash) throws IOException {
+        if (path < 0) throw new IllegalArgumentException("path is less than 0");
+        if (hash == null) throw new IllegalArgumentException("Can not save null hash for leaf at path ["+path+"]");
+        if (key == null) throw new IllegalArgumentException("Can not save null key for leaf at path ["+path+"]");
+        Txn<ByteBuffer> txn = (Txn<ByteBuffer>)handle;
+        final ByteBuffer pathBytes = getPathBytes(path);
+        final ByteBuffer keyBytes = getLeafKeyBytes(key);
+        // write hash
+        pathToHashMap.put(txn,pathBytes, getHashBytes(hash), PutFlags.MDB_APPEND);
+        // write key -> path
+        leafKeyToPathMap.put(txn, keyBytes, pathBytes, PutFlags.MDB_APPEND);
+        // write path -> key
+        leafPathToKeyMap.put(txn, pathBytes, keyBytes, PutFlags.MDB_APPEND);
+        // write value
+        leafKeyToValueMap.put(txn, keyBytes, getLeafValueBytes(value), PutFlags.MDB_APPEND);
     }
 
     //==================================================================================================================

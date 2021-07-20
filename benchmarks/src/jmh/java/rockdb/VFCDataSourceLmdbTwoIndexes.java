@@ -5,13 +5,12 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.fcmap.VFCDataSource;
 import com.swirlds.fcmap.VKey;
 import com.swirlds.fcmap.VValue;
-import org.lmdbjava.Dbi;
-import org.lmdbjava.Env;
-import org.lmdbjava.EnvFlags;
-import org.lmdbjava.Txn;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+import org.lmdbjava.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Supplier;
@@ -20,8 +19,8 @@ import static java.nio.ByteBuffer.allocateDirect;
 import static org.lmdbjava.DbiFlags.MDB_CREATE;
 import static org.lmdbjava.DbiFlags.MDB_INTEGERKEY;
 
-@SuppressWarnings({"unchecked", "unused"})
-public final class VFCDataSourceLmdbTwoIndexes<K extends VKey, V extends VValue> implements VFCDataSource<K, V> {
+@SuppressWarnings({"unchecked", "unused", "jol"})
+public final class VFCDataSourceLmdbTwoIndexes<K extends VKey, V extends VValue> implements SequentialInsertsVFCDataSource<K, V> {
     private final static int HASH_SIZE = Long.BYTES+ DigestType.SHA_384.digestLength();
     private final Supplier<K> keyConstructor;
     private final Supplier<V> valueConstructor;
@@ -56,7 +55,11 @@ public final class VFCDataSourceLmdbTwoIndexes<K extends VKey, V extends VValue>
         this.pathAndValueSizeBytes = pathSizeBytes + Integer.BYTES + valueSizeBytes;
 
         // create thread local buffers
-        pathBytes = ThreadLocal.withInitial(() -> allocateDirect(pathSizeBytes));
+        pathBytes = ThreadLocal.withInitial(() -> {
+            ByteBuffer buf = allocateDirect(pathSizeBytes);
+            buf.order(ByteOrder.nativeOrder()); // the byte order is important to use MDB_INTEGERKEY as LMDB needs keys to be in native byte order
+            return buf;
+        });
         leafKey = ThreadLocal.withInitial(() -> allocateDirect(this.keySizeBytes));
         keyAndHashBytes = ThreadLocal.withInitial(() -> allocateDirect(keyAndHashSizeBytes));
         pathAndValueBytes = ThreadLocal.withInitial(() -> allocateDirect(pathAndValueSizeBytes));
@@ -76,6 +79,7 @@ public final class VFCDataSourceLmdbTwoIndexes<K extends VKey, V extends VValue>
         // We need a Dbi for each DB. A Dbi roughly equates to a sorted map. The
         // MDB_CREATE flag causes the DB to be created if it doesn't already exist.
         pathToKeyAndHashMap = env.openDbi("pathToHash", MDB_CREATE,MDB_INTEGERKEY);
+//        pathToKeyAndHashMap = env.openDbi("pathToHash", MDB_CREATE);
         keyToPathAndValueMap = env.openDbi("leafKeyToValue", MDB_CREATE);
     }
 
@@ -301,6 +305,8 @@ public final class VFCDataSourceLmdbTwoIndexes<K extends VKey, V extends VValue>
         txn.close();
     }
 
+    private LongHashSet longHashSet = new LongHashSet(100_000_000);
+
     /**
      * Save a hash for a internal node
      *
@@ -313,6 +319,11 @@ public final class VFCDataSourceLmdbTwoIndexes<K extends VKey, V extends VValue>
         if (hash == null)  throw new IllegalArgumentException("Hash is null");
         Txn<ByteBuffer> txn = (Txn<ByteBuffer>)handle;
         // write hash
+        if (longHashSet.contains(path)) {
+            System.out.println("we have already seen path "+path);
+        } else {
+            longHashSet.add(path);
+        }
         pathToKeyAndHashMap.put(txn,getPathBytes(path), getKeyAndHashBytes(hash));
     }
 
@@ -384,6 +395,53 @@ public final class VFCDataSourceLmdbTwoIndexes<K extends VKey, V extends VValue>
         pathToKeyAndHashMap.put(txn,pathBytes, getKeyAndHashBytes(key,hash));
         // write path & value
         keyToPathAndValueMap.put(txn, keyBytes, getPathAndValueBytes(path, value));
+    }
+
+
+    //==================================================================================================================
+    // Public Sequential Methods
+
+    /**
+     * Save a hash for a internal node
+     *
+     * @param path the path of the node to save hash for, if nothing has been stored for this path before it will be created.
+     * @param hash a non-null hash to write
+     */
+    @Override
+    public void saveInternalSequential(Object handle, long path, Hash hash) {
+        if (path < 0) throw new IllegalArgumentException("path is less than 0");
+        if (hash == null)  throw new IllegalArgumentException("Hash is null");
+        Txn<ByteBuffer> txn = (Txn<ByteBuffer>)handle;
+        // write hash
+        if (longHashSet.contains(path)) {
+            System.out.println("we have already seen path "+path);
+        } else {
+            longHashSet.add(path);
+        }
+        pathToKeyAndHashMap.put(txn,getPathBytes(path), getKeyAndHashBytes(hash), PutFlags.MDB_APPEND);
+    }
+
+    /**
+     * Add a new leaf to store
+     *
+     * @param path the path for the new leaf
+     * @param key the non-null key for the new leaf
+     * @param value the value for new leaf, can be null
+     * @param hash the non-null hash for new leaf
+     * @throws IOException if there was a problem writing leaf
+     */
+    @Override
+    public void addLeafSequential(Object handle, long path, K key, V value, Hash hash) throws IOException {
+        if (path < 0) throw new IllegalArgumentException("path is less than 0");
+        if (hash == null) throw new IllegalArgumentException("Can not save null hash for leaf at path ["+path+"]");
+        if (key == null) throw new IllegalArgumentException("Can not save null key for leaf at path ["+path+"]");
+        Txn<ByteBuffer> txn = (Txn<ByteBuffer>)handle;
+        final ByteBuffer pathBytes = getPathBytes(path);
+        final ByteBuffer keyBytes = getLeafKeyBytes(key);
+        // write key & hash
+        pathToKeyAndHashMap.put(txn,pathBytes, getKeyAndHashBytes(key,hash), PutFlags.MDB_APPEND);
+        // write path & value
+        keyToPathAndValueMap.put(txn, keyBytes, getPathAndValueBytes(path, value), PutFlags.MDB_APPEND);
     }
 
     //==================================================================================================================
