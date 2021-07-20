@@ -60,14 +60,12 @@ import com.hedera.services.bdd.suites.utils.sysfiles.serdes.FeesJsonToGrpcBytes;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.AssessedCustomFee;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Setting;
-import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.junit.Assert;
 
@@ -111,13 +109,10 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.suites.HapiApiSuite.ADDRESS_BOOK_CONTROL;
 import static com.hedera.services.bdd.suites.HapiApiSuite.APP_PROPERTIES;
-import static com.hedera.services.bdd.suites.HapiApiSuite.ASSESSED_CUSTOM_FEES;
 import static com.hedera.services.bdd.suites.HapiApiSuite.EXCHANGE_RATE_CONTROL;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FEE_SCHEDULE;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HBAR;
-import static com.hedera.services.bdd.suites.HapiApiSuite.TOKEN_TRANSFER_LIST;
-import static com.hedera.services.bdd.suites.HapiApiSuite.TRANSFER_LIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
@@ -125,7 +120,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class UtilVerbs {
 	public static HapiFreeze freeze() {
@@ -717,61 +711,6 @@ public class UtilVerbs {
 
 	public static HapiSpecOperation validateTransferListForBalances(List<String> txns, List<String> accounts) {
 		return validateTransferListForBalances(txns, accounts, Collections.EMPTY_SET);
-	}
-
-	public static HapiSpecOperation validateTransactionRecordEntities(String txnRecord, String lookUpElement,
-			long amount, String denom, TokenType tokenType, String account) {
-		return assertionsHold((spec, assertLog) -> {
-			boolean verified = false;
-			final var accountID = spec.registry().getAccountID(account);
-			final var record = spec.registry().getTransactionRecord(txnRecord);
-			switch (lookUpElement) {
-				case TRANSFER_LIST:
-					verified = validateAccountAmount(accountID, amount, record.getTransferList().getAccountAmountsList());
-					break;
-				case TOKEN_TRANSFER_LIST:
-					final var tokenID = spec.registry().getTokenID(denom);
-					for (final var ttl : record.getTokenTransferListsList()) {
-						if (ttl.getToken().equals(tokenID)) {
-							if (tokenType == TokenType.FUNGIBLE_COMMON) {
-								verified = validateAccountAmount(accountID, amount, ttl.getTransfersList());
-							} else {
-								for (final var nfttl : ttl.getNftTransfersList()) {
-									if (nfttl.getSerialNumber() == amount &&
-											nfttl.getReceiverAccountID().equals(accountID)) {
-										verified = true;
-										break;
-									}
-								}
-							}
-						}
-					}
-					break;
-				case ASSESSED_CUSTOM_FEES:
-					for (AssessedCustomFee acf : record.getAssessedCustomFeesList()) {
-						if (acf.getAmount() == amount
-								&& acf.getFeeCollectorAccountId().equals(accountID)) {
-							if (!acf.hasTokenId() || acf.getTokenId().equals(spec.registry().getTokenID(denom))) {
-								verified = true;
-								break;
-							}
-						}
-					}
-					break;
-			}
-			assertTrue("TransactionRecord doesnt contain expected entries !!", verified);
-		});
-	}
-
-	private static boolean validateAccountAmount(final AccountID accountID, final long amount,
-			final List<AccountAmount> accountAmountsList) {
-		for (var aa : accountAmountsList) {
-			if( aa.getAmount() == amount &&
-					aa.getAccountID().equals(accountID)) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 	public static HapiSpecOperation validateTransferListForBalances(
