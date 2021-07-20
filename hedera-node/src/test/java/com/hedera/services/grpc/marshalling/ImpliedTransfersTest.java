@@ -65,15 +65,15 @@ class ImpliedTransfersTest {
 		final var twoImpliedXfers = ImpliedTransfers.valid(
 				props, twoChanges, entityCustomFees, assessedCustomFees);
 		// and:
-		final var oneRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=TOKEN_WAS_DELETED, " +
-				"maxExplicitHbarAdjusts=5, maxExplicitTokenAdjusts=50, maxExplicitOwnershipChanges=12, " +
-				"maxNestedCustomFees=1, maxXferBalanceChanges=20, tokenFeeSchedules=[]}, changes=[], " +
+		final var oneRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=TOKEN_WAS_DELETED, maxExplicitHbarAdjusts=5, " +
+				"maxExplicitTokenAdjusts=50, maxExplicitOwnershipChanges=12, maxNestedCustomFees=1, " +
+				"maxXferBalanceChanges=20, areNftsEnabled=true, tokenFeeSchedules=[]}, changes=[], " +
 				"tokenFeeSchedules=[], assessedCustomFees=[]}";
 		final var twoRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=OK, maxExplicitHbarAdjusts=5, " +
 				"maxExplicitTokenAdjusts=50, maxExplicitOwnershipChanges=12, maxNestedCustomFees=1, " +
-				"maxXferBalanceChanges=20, tokenFeeSchedules=[CustomFeeMeta{tokenId=Id{shard=0, realm=0, num=123}, " +
-				"treasuryId=Id{shard=2, realm=3, num=4}, customFees=[]}]}, " +
-				"changes=[BalanceChange{token=Id{shard=1, realm=2, num=3}, " +
+				"maxXferBalanceChanges=20, areNftsEnabled=true, tokenFeeSchedules=[" +
+				"CustomFeeMeta{tokenId=Id{shard=0, realm=0, num=123}, treasuryId=Id{shard=2, realm=3, num=4}, " +
+				"customFees=[]}]}, changes=[BalanceChange{token=Id{shard=1, realm=2, num=3}, " +
 				"account=Id{shard=4, realm=5, num=6}, units=7}], tokenFeeSchedules=[" +
 				"CustomFeeMeta{tokenId=Id{shard=0, realm=0, num=123}, treasuryId=Id{shard=2, realm=3, num=4}, " +
 				"customFees=[]}], assessedCustomFees=[FcAssessedCustomFee{token=EntityId{shard=0, realm=0, num=123}, " +
@@ -97,6 +97,7 @@ class ImpliedTransfersTest {
 		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxExplicitOwnershipChanges);
 		given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges);
 		given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
+		given(dynamicProperties.areNftsEnabled()).willReturn(areNftsEnabled);
 		given(customFeeSchedules.lookupMetaFor(any())).willReturn(entityCustomFees.get(0));
 
 		// expect:
@@ -141,6 +142,13 @@ class ImpliedTransfersTest {
 
 		// expect:
 		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules));
+
+		// and:
+		given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
+		given(dynamicProperties.areNftsEnabled()).willReturn(!areNftsEnabled);
+
+		// expect:
+		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules));
 	}
 
 	private final int maxExplicitHbarAdjusts = 5;
@@ -148,12 +156,14 @@ class ImpliedTransfersTest {
 	private final int maxExplicitOwnershipChanges = 12;
 	private final int maxFeeNesting = 1;
 	private final int maxBalanceChanges = 20;
+	private final boolean areNftsEnabled = true;
 	private final ImpliedTransfersMeta.ValidationProps props = new ImpliedTransfersMeta.ValidationProps(
 			maxExplicitHbarAdjusts,
 			maxExplicitTokenAdjusts,
 			maxExplicitOwnershipChanges,
 			maxFeeNesting,
-			maxBalanceChanges);
+			maxBalanceChanges,
+			areNftsEnabled);
 	private final EntityId customFeeToken = new EntityId(0, 0, 123);
 	private final EntityId customFeeCollector = new EntityId(0, 0, 124);
 	private final Id someId = new Id(1, 2, 3);

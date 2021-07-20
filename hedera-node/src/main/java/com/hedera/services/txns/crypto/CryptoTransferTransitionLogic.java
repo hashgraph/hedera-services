@@ -125,7 +125,8 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 					dynamicProperties.maxTokenTransferListSize(),
 					dynamicProperties.maxNftTransfersLen(),
 					dynamicProperties.maxCustomFeeDepth(),
-					dynamicProperties.maxXferBalanceChanges());
+					dynamicProperties.maxXferBalanceChanges(),
+                                        dynamicProperties.areNftsEnabled());
 			final var op = accessor.getTxn().getCryptoTransfer();
 			return transferSemanticChecks.fullPureValidation(
 					op.getTransfers(), op.getTokenTransfersList(), validationProps);
