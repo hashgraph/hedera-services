@@ -37,8 +37,16 @@ class BucketThrottleTest {
 	@Test
 	void factoryRejectsNeverPassableThrottle() {
 		// expect:
-		assertThrows(IllegalArgumentException.class,
-				() -> BucketThrottle.withMtpsAndBurstPeriod(499, 2));
+		final var aMsg = assertThrows(IllegalArgumentException.class,
+				() -> BucketThrottle.withMtpsAndBurstPeriod(499, 2)).getMessage();
+		final var bMsg = assertThrows(IllegalArgumentException.class,
+				() -> BucketThrottle.withMtpsAndBurstPeriod(Long.MAX_VALUE, 2)).getMessage();
+		final var cMsg = assertThrows(IllegalArgumentException.class,
+				() -> BucketThrottle.withMtpsAndBurstPeriod(184467440L, 789)).getMessage();
+		// and:
+		assertEquals("A throttle with 499 MTPS and 2000ms burst period can never allow a transaction", aMsg);
+		assertEquals("Base bucket capacity calculation outside numeric range", bMsg);
+		assertEquals("Scaled bucket capacity calculation outside numeric range", cMsg);
 	}
 
 	@Test

@@ -110,6 +110,15 @@ class DeterministicThrottleTest {
 	}
 
 	@Test
+	void capacityReqReturnsMinusOneOnOverflow() {
+		// setup:
+		final var overflowTxns = (int)(Long.MAX_VALUE / BucketThrottle.capacityUnitsPerTxn() + 1);
+
+		// expect:
+		assertEquals(-1, DeterministicThrottle.capacityRequiredFor(overflowTxns));
+	}
+
+	@Test
 	void throttlesWithinPermissibleTolerance() throws InterruptedException, IOException {
 		// setup:
 		long mtps = 123_456L;

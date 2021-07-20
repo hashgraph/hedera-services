@@ -21,6 +21,7 @@ package com.hedera.services.context.properties;
  */
 
 import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
@@ -165,7 +166,8 @@ class BootstrapPropertiesTest {
 			entry("tokens.nfts.maxBatchSizeMint", 10),
 			entry("tokens.nfts.maxBatchSizeBurn", 10),
 			entry("tokens.nfts.maxMetadataBytes", 100),
-			entry("tokens.nfts.maxAllowedMints", 5000000L)
+			entry("tokens.nfts.maxAllowedMints", 5000000L),
+			entry("tokens.nfts.mintThrottleScaleFactor", ThrottleReqOpsScaleFactor.from("5:2"))
 	);
 
 	@BeforeEach

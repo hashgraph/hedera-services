@@ -24,6 +24,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 
+import static com.hedera.services.throttles.BucketThrottle.productWouldOverflow;
+
 /**
  * A throttle with milli-TPS resolution that exists in a deterministic timeline.
  */
@@ -90,6 +92,9 @@ public class DeterministicThrottle {
 	}
 
 	public static long capacityRequiredFor(int nTransactions) {
+		if (productWouldOverflow(nTransactions, BucketThrottle.capacityUnitsPerTxn())) {
+			return -1;
+		}
 		return nTransactions * BucketThrottle.capacityUnitsPerTxn();
 	}
 

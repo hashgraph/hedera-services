@@ -40,6 +40,7 @@ public class CustomSchedulesManager {
 			for (var meta : allManagedMeta) {
 				if (token.equals(meta.getTokenId())) {
 					extantMeta = meta;
+					break;
 				}
 			}
 		}
