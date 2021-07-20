@@ -20,21 +20,24 @@ import static java.nio.ByteBuffer.allocateDirect;
 import static org.lmdbjava.DbiFlags.MDB_CREATE;
 import static org.lmdbjava.DbiFlags.MDB_INTEGERKEY;
 
-@SuppressWarnings({"unchecked", "DuplicatedCode", "unused"})
-public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implements VFCDataSource<K, V> {
+@SuppressWarnings({"unchecked", "unused"})
+public final class VFCDataSourceLmdbTwoIndexes<K extends VKey, V extends VValue> implements VFCDataSource<K, V> {
     private final static int HASH_SIZE = Long.BYTES+ DigestType.SHA_384.digestLength();
     private final Supplier<K> keyConstructor;
     private final Supplier<V> valueConstructor;
+    private final int pathSizeBytes = Long.BYTES;
+    private final int keySizeBytes;
+    private final int keyAndHashSizeBytes;
+    private final int pathAndValueSizeBytes;
+
     private final Env<ByteBuffer> env;
-    private final Dbi<ByteBuffer> pathToHashMap;
-    private final Dbi<ByteBuffer> leafPathToKeyMap;
-    private final Dbi<ByteBuffer> leafKeyToPathMap;
-    private final Dbi<ByteBuffer> leafKeyToValueMap;
+    private final Dbi<ByteBuffer> pathToKeyAndHashMap;
+    private final Dbi<ByteBuffer> keyToPathAndValueMap;
 
     private final ThreadLocal<ByteBuffer> pathBytes;
-    private final ThreadLocal<ByteBuffer> hashData;
     private final ThreadLocal<ByteBuffer> leafKey;
-    private final ThreadLocal<ByteBuffer> leafValue;
+    private final ThreadLocal<ByteBuffer> keyAndHashBytes;
+    private final ThreadLocal<ByteBuffer> pathAndValueBytes;
 
     /**
      * Construct a new VFCDataSourceImpl, try the static factory methods if you want a simpler way of creating one.
@@ -44,15 +47,19 @@ public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implement
      * @param valueSizeBytes the size of value when serialized in bytes
      * @param valueConstructor constructor for creating values for deserialization
      */
-    public VFCDataSourceLmdb(int keySizeBytes, Supplier<K> keyConstructor, int valueSizeBytes, Supplier<V> valueConstructor,
-                             Path storageDir) throws IOException {
+    public VFCDataSourceLmdbTwoIndexes(int keySizeBytes, Supplier<K> keyConstructor, int valueSizeBytes, Supplier<V> valueConstructor,
+                                       Path storageDir) throws IOException {
+        this.keySizeBytes = Integer.BYTES + keySizeBytes;
         this.keyConstructor = keyConstructor;
         this.valueConstructor = valueConstructor;
+        this.keyAndHashSizeBytes = keySizeBytes + HASH_SIZE;
+        this.pathAndValueSizeBytes = pathSizeBytes + Integer.BYTES + valueSizeBytes;
+
         // create thread local buffers
-        pathBytes = ThreadLocal.withInitial(() -> allocateDirect(Long.BYTES));
-        hashData = ThreadLocal.withInitial(() -> allocateDirect(HASH_SIZE));
-        leafKey = ThreadLocal.withInitial(() -> allocateDirect(Integer.BYTES + keySizeBytes));
-        leafValue = ThreadLocal.withInitial(() -> allocateDirect(Integer.BYTES + valueSizeBytes));
+        pathBytes = ThreadLocal.withInitial(() -> allocateDirect(pathSizeBytes));
+        leafKey = ThreadLocal.withInitial(() -> allocateDirect(this.keySizeBytes));
+        keyAndHashBytes = ThreadLocal.withInitial(() -> allocateDirect(keyAndHashSizeBytes));
+        pathAndValueBytes = ThreadLocal.withInitial(() -> allocateDirect(pathAndValueSizeBytes));
         // create storage dirs
         if (!Files.exists(storageDir)) Files.createDirectories(storageDir);
         // We always need an Env. An Env owns a physical on-disk storage file. One
@@ -68,10 +75,8 @@ public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implement
                 .open(storageDir.toFile(), EnvFlags.MDB_WRITEMAP, EnvFlags.MDB_NOSYNC);
         // We need a Dbi for each DB. A Dbi roughly equates to a sorted map. The
         // MDB_CREATE flag causes the DB to be created if it doesn't already exist.
-        pathToHashMap = env.openDbi("pathToHash", MDB_CREATE,MDB_INTEGERKEY);
-        leafPathToKeyMap = env.openDbi("leafPathToKey", MDB_CREATE,MDB_INTEGERKEY);
-        leafKeyToPathMap = env.openDbi("leafKeyToPath", MDB_CREATE);
-        leafKeyToValueMap = env.openDbi("leafKeyToValue", MDB_CREATE);
+        pathToKeyAndHashMap = env.openDbi("pathToHash", MDB_CREATE,MDB_INTEGERKEY);
+        keyToPathAndValueMap = env.openDbi("leafKeyToValue", MDB_CREATE);
     }
 
     //==================================================================================================================
@@ -79,10 +84,8 @@ public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implement
 
     public void printStats() {
         try (Txn<ByteBuffer> txn = env.txnWrite()) {
-            System.out.println("pathToHashMap.stat() = " + pathToHashMap.stat(txn));
-            System.out.println("leafKeyToPathMap.stat() = " + leafKeyToPathMap.stat(txn));
-            System.out.println("leafPathToKeyMap.stat() = " + leafPathToKeyMap.stat(txn));
-            System.out.println("leafKeyToValueMap.stat() = " + leafKeyToValueMap.stat(txn));
+            System.out.println("pathToKeyAndHashMap.stat() = " + pathToKeyAndHashMap.stat(txn));
+            System.out.println("leafKeyToPathAndValueMap.stat() = " + keyToPathAndValueMap.stat(txn));
         }
     }
 
@@ -105,9 +108,9 @@ public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implement
     public Hash loadHash(long path) throws IOException {
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
         try (Txn<ByteBuffer> txn = env.txnRead()) {
-            ByteBuffer hashBytes = pathToHashMap.get(txn,getPathBytes(path));
-            if (hashBytes == null) return null;
-            return getHash(hashBytes);
+            ByteBuffer keyHashBytes = pathToKeyAndHashMap.get(txn,getPathBytes(path));
+            if (keyHashBytes == null) return null;
+            return getHashFromKeyAndHash(keyHashBytes);
         }
     }
 
@@ -122,11 +125,13 @@ public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implement
     public V loadLeafValue(long path) throws IOException {
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
         try (Txn<ByteBuffer> txn = env.txnRead()) {
-            ByteBuffer keyBytes = leafPathToKeyMap.get(txn,getPathBytes(path));
-            if (keyBytes == null) return null;
-            ByteBuffer valueBytes = leafKeyToValueMap.get(txn,keyBytes);
-            if (valueBytes == null) return null;
-            return getLeafValue(valueBytes);
+            ByteBuffer keyHashBytes = pathToKeyAndHashMap.get(txn,getPathBytes(path));
+            if (keyHashBytes == null) return null;
+            keyHashBytes.position(0);
+            keyHashBytes.limit(keySizeBytes);
+            ByteBuffer pathValueBytes = keyToPathAndValueMap.get(txn,keyHashBytes);
+            if (pathValueBytes == null) return null;
+            return getValueFromPathAndValue(pathValueBytes);
         }
     }
 
@@ -141,9 +146,9 @@ public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implement
     public V loadLeafValue(K key) throws IOException {
         if (key == null) throw new IllegalArgumentException("key can not be null");
         try (Txn<ByteBuffer> txn = env.txnRead()) {
-            ByteBuffer valueBytes = leafKeyToValueMap.get(txn,getLeafKeyBytes(key));
-            if (valueBytes == null) return null;
-            return getLeafValue(valueBytes);
+            ByteBuffer pathValueBytes = keyToPathAndValueMap.get(txn,getLeafKeyBytes(key));
+            if (pathValueBytes == null) return null;
+            return getValueFromPathAndValue(pathValueBytes);
         }
     }
 
@@ -158,9 +163,9 @@ public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implement
     public K loadLeafKey(long path) throws IOException {
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
         try (Txn<ByteBuffer> txn = env.txnRead()) {
-            ByteBuffer keyBytes = leafPathToKeyMap.get(txn,getPathBytes(path));
-            if (keyBytes == null) return null;
-            return getLeafKey(keyBytes);
+            ByteBuffer keyHashBytes = pathToKeyAndHashMap.get(txn,getPathBytes(path));
+            if (keyHashBytes == null) return null;
+            return getKeyFromKeyAndHash(keyHashBytes);
         }
     }
 
@@ -174,9 +179,9 @@ public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implement
     @Override
     public long loadLeafPath(K key) throws IOException {
         try (Txn<ByteBuffer> txn = env.txnRead()) {
-            ByteBuffer pathBytes = leafKeyToPathMap.get(txn,getLeafKeyBytes(key));
-            if (pathBytes == null) return INVALID_PATH;
-            return getPath(pathBytes);
+            ByteBuffer pathValueBytes = keyToPathAndValueMap.get(txn,getLeafKeyBytes(key));
+            if (pathValueBytes == null) return INVALID_PATH;
+            return getPathFromPathAndValue(pathValueBytes);
         }
     }
 
@@ -192,7 +197,7 @@ public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implement
         if (hash == null)  throw new IllegalArgumentException("Hash is null");
         // write hash
         try (Txn<ByteBuffer> txn = env.txnWrite()) {
-            pathToHashMap.put(txn,getPathBytes(path), getHashBytes(hash));
+            pathToKeyAndHashMap.put(txn,getPathBytes(path), getKeyAndHashBytes(hash));
             // commit transaction
             txn.commit();
         }
@@ -213,14 +218,15 @@ public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implement
 
         try (Txn<ByteBuffer> txn = env.txnWrite()) {
             final ByteBuffer keyBytes = getLeafKeyBytes(key);
-            // now update everything
-            final ByteBuffer newPathKey = getPathBytes(newPath);
-            // write hash
-            pathToHashMap.put(txn, newPathKey, getHashBytes(hash));
-            // write key -> path
-            leafKeyToPathMap.put(txn, keyBytes, newPathKey);
-            // write path -> key
-            leafPathToKeyMap.put(txn, newPathKey, keyBytes);
+            final ByteBuffer pathBytes = getPathBytes(newPath);
+            // write key & hash
+            pathToKeyAndHashMap.put(txn, pathBytes, getKeyAndHashBytes(key, hash));
+            // read value
+            ByteBuffer pathAndValue = keyToPathAndValueMap.get(txn,keyBytes); // TODO ask Rich if we can pass value into this method
+            // add new path
+            pathAndValue.putLong(0, newPath);
+            // write path & value
+            keyToPathAndValueMap.put(txn, keyBytes, pathAndValue);
             // commit transaction
             txn.commit();
         }
@@ -230,7 +236,7 @@ public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implement
      * Update a leaf at given path, the leaf must exist. Writes hash and value.
      *
      * @param path valid path to saved leaf
-     * @param key the leaf's key
+     * @param key valid key for saved leaf
      * @param value the value for new leaf, can be null
      * @param hash non-null hash for the leaf
      * @throws IOException if there was a problem saving leaf update
@@ -240,11 +246,12 @@ public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implement
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
         if (hash == null) throw new IllegalArgumentException("Can not save null hash for leaf at path ["+path+"]");
         try (Txn<ByteBuffer> txn = env.txnWrite()) {
+            final ByteBuffer keyBytes = getLeafKeyBytes(key);
             final ByteBuffer pathBytes = getPathBytes(path);
             // write hash
-            pathToHashMap.put(txn,pathBytes, getHashBytes(hash));
+            pathToKeyAndHashMap.put(txn,pathBytes, getKeyAndHashBytes(key,hash));
             // write value
-            leafKeyToValueMap.put(txn, getLeafKeyBytes(key), getLeafValueBytes(value));
+            keyToPathAndValueMap.put(txn, keyBytes, getPathAndValueBytes(path, value));
             // commit transaction
             txn.commit();
         }
@@ -267,14 +274,10 @@ public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implement
         final ByteBuffer pathBytes = getPathBytes(path);
         final ByteBuffer keyBytes = getLeafKeyBytes(key);
         try (Txn<ByteBuffer> txn = env.txnWrite()) {
-            // write hash
-            pathToHashMap.put(txn,pathBytes, getHashBytes(hash));
-            // write key -> path
-            leafKeyToPathMap.put(txn, keyBytes, pathBytes);
-            // write path -> key
-            leafPathToKeyMap.put(txn, pathBytes, keyBytes);
-            // write value
-            leafKeyToValueMap.put(txn, keyBytes, getLeafValueBytes(value));
+            // write key & hash
+            pathToKeyAndHashMap.put(txn,pathBytes, getKeyAndHashBytes(key, hash));
+            // write path & value
+            keyToPathAndValueMap.put(txn, keyBytes, getPathAndValueBytes(path, value));
             // commit transaction
             txn.commit();
         } catch (Exception e) {
@@ -310,7 +313,7 @@ public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implement
         if (hash == null)  throw new IllegalArgumentException("Hash is null");
         Txn<ByteBuffer> txn = (Txn<ByteBuffer>)handle;
         // write hash
-        pathToHashMap.put(txn,getPathBytes(path), getHashBytes(hash));
+        pathToKeyAndHashMap.put(txn,getPathBytes(path), getKeyAndHashBytes(hash));
     }
 
     /**
@@ -327,41 +330,37 @@ public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implement
         if (newPath < 0) throw new IllegalArgumentException("path is less than 0");
         Txn<ByteBuffer> txn = (Txn<ByteBuffer>)handle;
         final ByteBuffer keyBytes = getLeafKeyBytes(key);
-        // now update everything
-        final ByteBuffer newPathKey = getPathBytes(newPath);
-        // write hash
-        try {
-            pathToHashMap.put(txn, newPathKey, getHashBytes(hash));
-        } catch (NullPointerException npe) {
-            System.out.println("handle = " + handle + ", key=" + key);
-        }
-        // write key -> path
-        leafKeyToPathMap.put(txn, keyBytes, newPathKey);
-        // write path -> key
-        leafPathToKeyMap.put(txn, newPathKey, keyBytes);
+        final ByteBuffer pathBytes = getPathBytes(newPath);
+        // write key & hash
+        pathToKeyAndHashMap.put(txn, pathBytes, getKeyAndHashBytes(key, hash));
+        // read value
+        ByteBuffer pathAndValue = keyToPathAndValueMap.get(txn,keyBytes); // TODO ask Rich if we can pass value into this method
+        // add new path
+        pathAndValue.putLong(0, newPath);
+        // write path & value
+        keyToPathAndValueMap.put(txn, keyBytes, pathAndValue);
     }
 
     /**
      * Update a leaf at given path, the leaf must exist. Writes hash and value.
      *
      * @param path valid path to saved leaf
-     * @param key the leaf's key
+     * @param key valid key for saved leaf
      * @param value the value for new leaf, can be null
      * @param hash non-null hash for the leaf
      * @throws IOException if there was a problem saving leaf update
      */
     @Override
-    public void updateLeaf(Object handle, long path, K key, V value, Hash hash) throws IOException {
+    public void updateLeaf(Object handle, long path, K key,  V value, Hash hash) throws IOException {
         if (path < 0) throw new IllegalArgumentException("path is less than 0");
         if (hash == null) throw new IllegalArgumentException("Can not save null hash for leaf at path [" + path + "]");
         Txn<ByteBuffer> txn = (Txn<ByteBuffer>)handle;
+        final ByteBuffer keyBytes = getLeafKeyBytes(key);
         final ByteBuffer pathBytes = getPathBytes(path);
-        // read key from path
-        ByteBuffer keyBytes = leafPathToKeyMap.get(txn, pathBytes);
         // write hash
-        pathToHashMap.put(txn, pathBytes, getHashBytes(hash));
+        pathToKeyAndHashMap.put(txn,pathBytes, getKeyAndHashBytes(key,hash));
         // write value
-        leafKeyToValueMap.put(txn, keyBytes, getLeafValueBytes(value));
+        keyToPathAndValueMap.put(txn, keyBytes, getPathAndValueBytes(path, value));
     }
 
     /**
@@ -381,25 +380,20 @@ public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implement
         Txn<ByteBuffer> txn = (Txn<ByteBuffer>)handle;
         final ByteBuffer pathBytes = getPathBytes(path);
         final ByteBuffer keyBytes = getLeafKeyBytes(key);
-        // write hash
-        pathToHashMap.put(txn,pathBytes, getHashBytes(hash));
-        // write key -> path
-        leafKeyToPathMap.put(txn, keyBytes, pathBytes);
-        // write path -> key
-        leafPathToKeyMap.put(txn, pathBytes, keyBytes);
-        // write value
-        leafKeyToValueMap.put(txn, keyBytes, getLeafValueBytes(value));
-        // commit transaction
+        // write key & hash
+        pathToKeyAndHashMap.put(txn,pathBytes, getKeyAndHashBytes(key,hash));
+        // write path & value
+        keyToPathAndValueMap.put(txn, keyBytes, getPathAndValueBytes(path, value));
     }
 
     //==================================================================================================================
     // Private Util Methods
 
-    private K getLeafKey(ByteBuffer leafKeyBytes) throws IOException{
-        leafKeyBytes.rewind();
-        final int keySerializationVersion =  leafKeyBytes.getInt();
+    private K getKeyFromKeyAndHash(ByteBuffer keyAndHashBytes) throws IOException{
+        keyAndHashBytes.rewind();
+        final int keySerializationVersion =  keyAndHashBytes.getInt();
         K key = keyConstructor.get();
-        key.deserialize(leafKeyBytes,keySerializationVersion);
+        key.deserialize(keyAndHashBytes,keySerializationVersion);
         return key;
     }
 
@@ -411,26 +405,6 @@ public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implement
         return leafKey.flip();
     }
 
-    private V getLeafValue(ByteBuffer leafValueBytes) throws IOException{
-        leafValueBytes.rewind();
-        final int valueSerializationVersion = leafValueBytes.getInt();
-        V value = valueConstructor.get();
-        value.deserialize(leafValueBytes,valueSerializationVersion);
-        return value;
-    }
-
-    private ByteBuffer getLeafValueBytes(V value) throws IOException {
-        final ByteBuffer leafValue = this.leafValue.get();
-        leafValue.rewind();
-        leafValue.putInt(value.getVersion());
-        value.serialize(leafValue);
-        return leafValue.flip();
-    }
-
-    private long getPath(ByteBuffer pathBytes) {
-        return pathBytes.getLong(0);
-    }
-
     private ByteBuffer getPathBytes(long path) {
         ByteBuffer pathBytes = this.pathBytes.get();
         pathBytes.rewind();
@@ -438,16 +412,49 @@ public final class VFCDataSourceLmdb<K extends VKey, V extends VValue> implement
         return pathBytes.flip();
     }
 
-    private Hash getHash(ByteBuffer hashBytes) throws IOException {
-        hashBytes.rewind();
+
+    private V getValueFromPathAndValue(ByteBuffer pathAndValueBytes) throws IOException{
+        pathAndValueBytes.position(pathSizeBytes); // jump over path
+        final int valueSerializationVersion = pathAndValueBytes.getInt();
+        V value = valueConstructor.get();
+        value.deserialize(pathAndValueBytes,valueSerializationVersion);
+        return value;
+    }
+
+    private long getPathFromPathAndValue(ByteBuffer pathAndValueBytes) {
+        return pathAndValueBytes.getLong(0);
+    }
+
+    private ByteBuffer getPathAndValueBytes(long path, V value) throws IOException {
+        final ByteBuffer pathAndValueBytes = this.pathAndValueBytes.get();
+        pathAndValueBytes.rewind();
+        pathAndValueBytes.putLong(path);
+        pathAndValueBytes.putInt(value.getVersion());
+        value.serialize(pathAndValueBytes);
+        return pathAndValueBytes.flip();
+    }
+
+
+    private Hash getHashFromKeyAndHash(ByteBuffer hashBytes) throws IOException {
+        hashBytes.position(keySizeBytes);
         return Hash.fromByteBuffer(hashBytes);
     }
 
-    private ByteBuffer getHashBytes(Hash hash) {
-        ByteBuffer hashData = this.hashData.get();
-        hashData.rewind();
-        Hash.toByteBuffer(hash,hashData);
-        return hashData.flip();
+    private ByteBuffer getKeyAndHashBytes(K key, Hash hash) throws IOException {
+        ByteBuffer keyAndHashBytes = this.keyAndHashBytes.get();
+        keyAndHashBytes.rewind();
+        keyAndHashBytes.putInt(key.getVersion());
+        key.serialize(keyAndHashBytes);
+        keyAndHashBytes.position(keySizeBytes); // jump over key
+        Hash.toByteBuffer(hash,keyAndHashBytes);
+        return keyAndHashBytes.flip();
+    }
+
+    private ByteBuffer getKeyAndHashBytes(Hash hash) {
+        ByteBuffer keyAndHashBytes = this.keyAndHashBytes.get();
+        keyAndHashBytes.position(keySizeBytes); // jump over key
+        Hash.toByteBuffer(hash,keyAndHashBytes);
+        return keyAndHashBytes.flip();
     }
 }
 

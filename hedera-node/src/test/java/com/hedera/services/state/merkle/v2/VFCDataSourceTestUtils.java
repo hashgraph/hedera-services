@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Supplier;
 
+@SuppressWarnings("unused")
 public class VFCDataSourceTestUtils {
     public static final int HASH_DATA_SIZE = DigestType.SHA_384.digestLength() + Integer.BYTES + Integer.BYTES; // int for digest type and int for byte array length
 
@@ -194,6 +195,7 @@ public class VFCDataSourceTestUtils {
         }
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     public static final class TestLeafData implements VValue {
         public static final int SIZE_BYTES = Integer.BYTES+1024;
         static final byte[] RANDOM_1K = new byte[1024];
@@ -291,6 +293,7 @@ public class VFCDataSourceTestUtils {
         }
     }
 
+    @SuppressWarnings("unused")
     public static class SerializableAccount implements VKey {
         public static final int SIZE_BYTES = Long.BYTES*3;
         private Account account;
@@ -558,9 +561,9 @@ public class VFCDataSourceTestUtils {
         }
 
         @Override
-        public void updateLeaf(long path, V value, Hash hash) {
+        public void updateLeaf(long path, K key, V value, Hash hash) {
             try {
-                dataSource.updateLeaf(path, value, hash);
+                dataSource.updateLeaf(path, key, value, hash);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

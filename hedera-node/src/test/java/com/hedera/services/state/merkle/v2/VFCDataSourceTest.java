@@ -78,7 +78,7 @@ public class VFCDataSourceTest {
         // create some leaves
         IntStream.range(0,1000).forEach(i -> dataSource.addLeaf(i,new LongVKey(i),new TestLeafData(i),hash(i)));
         // random update
-        for (int i : shuffle(RANDOM,IntStream.range(0,1000).toArray())) dataSource.updateLeaf(i,new TestLeafData(i+10000),hash(i+10000));
+        for (int i : shuffle(RANDOM,IntStream.range(0,1000).toArray())) dataSource.updateLeaf(i,new LongVKey(i),new TestLeafData(i+10000),hash(i+10000));
         // check all the leaf data
         IntStream.range(0,1000).forEach(i -> {
 

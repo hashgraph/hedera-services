@@ -8,6 +8,7 @@ import com.swirlds.fcmap.VFCDataSource;
 import fcmmap.FCVirtualMapTestUtils;
 import org.openjdk.jmh.annotations.*;
 import rockdb.VFCDataSourceLmdb;
+import rockdb.VFCDataSourceLmdbTwoIndexes;
 import rockdb.VFCDataSourceRocksDb;
 
 import java.io.IOException;
@@ -17,7 +18,7 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
-@SuppressWarnings({"jol", "DuplicatedCode", "DefaultAnnotationParam"})
+@SuppressWarnings({"jol", "DuplicatedCode", "DefaultAnnotationParam", "SameParameterValue"})
 @State(Scope.Thread)
 @Warmup(iterations = 5, time = 3, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 5, timeUnit = TimeUnit.SECONDS)
@@ -33,7 +34,7 @@ public class VFCDataSourceImplGetBench {
     public int hashThreads;
     @Param({"4"})
     public int writeThreads;
-    @Param({"memmap","lmdb","rocksdb"})
+    @Param({"memmap","lmdb","lmdb2","rocksdb"})
     public String impl;
 
     // state
@@ -65,6 +66,11 @@ public class VFCDataSourceImplGetBench {
                             ContractUint256.SERIALIZED_SIZE, ContractUint256::new, true);
                 case "lmdb" ->
                     new VFCDataSourceLmdb<>(
+                            ContractKey.SERIALIZED_SIZE, ContractKey::new,
+                            ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
+                            storePath);
+                case "lmdb2" ->
+                    new VFCDataSourceLmdbTwoIndexes<>(
                             ContractKey.SERIALIZED_SIZE, ContractKey::new,
                             ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
                             storePath);
@@ -154,7 +160,8 @@ public class VFCDataSourceImplGetBench {
 
     @Benchmark
     public void w1_updateLeafValue() throws Exception {
-        dataSource.updateLeaf(randomLeafIndex1,new ContractUint256(randomNodeIndex2), FCVirtualMapTestUtils.hash((int) randomNodeIndex2));
+        dataSource.updateLeaf(randomLeafIndex1,new ContractKey(new Id(0,0,randomLeafIndex1),new ContractUint256(randomLeafIndex1)),
+                new ContractUint256(randomNodeIndex2), FCVirtualMapTestUtils.hash((int) randomNodeIndex2));
     }
 
     @Benchmark
@@ -222,8 +229,9 @@ public class VFCDataSourceImplGetBench {
                             for (int i = 0; i < chunk; i++) { // update 10k leaves
                                 randomNodeIndex1 = (long) (random.nextDouble() * numEntities);
                                 randomLeafIndex1 = numEntities + randomNodeIndex1;
+                                key1 = new ContractKey(new Id(0, 0, randomNodeIndex1), new ContractUint256(randomNodeIndex1));
                                 try {
-                                    dataSource.updateLeaf(transaction,randomLeafIndex1, new ContractUint256(randomNodeIndex1), FCVirtualMapTestUtils.hash((int) randomNodeIndex1));
+                                    dataSource.updateLeaf(transaction,randomLeafIndex1,key1, new ContractUint256(randomNodeIndex1), FCVirtualMapTestUtils.hash((int) randomNodeIndex1));
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                 }

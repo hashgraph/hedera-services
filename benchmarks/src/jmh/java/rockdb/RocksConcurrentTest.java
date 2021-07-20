@@ -165,8 +165,9 @@ public class RocksConcurrentTest {
     public static void w1_updateLeafValue(VFCDataSourceRocksDb<ContractKey,ContractUint256> dataSource) {
         long randomNodeIndex1 = (long)(random.nextDouble()*numEntities);
         long randomLeafPath1 = numEntities + randomNodeIndex1;
+        ContractKey key1 = new ContractKey(new Id(0,0,randomNodeIndex1),new ContractUint256(randomNodeIndex1));
         try {
-            dataSource.updateLeaf(randomLeafPath1,new ContractUint256(randomNodeIndex1), FCVirtualMapTestUtils.hash((int) randomNodeIndex1));
+            dataSource.updateLeaf(randomLeafPath1,key1,new ContractUint256(randomNodeIndex1), FCVirtualMapTestUtils.hash((int) randomNodeIndex1));
         } catch (IOException e) {
             e.printStackTrace();
         }
