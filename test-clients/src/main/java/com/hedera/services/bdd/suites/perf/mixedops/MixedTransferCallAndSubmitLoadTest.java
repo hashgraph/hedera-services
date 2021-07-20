@@ -57,18 +57,12 @@ public class MixedTransferCallAndSubmitLoadTest extends HapiApiSuite {
 
 	public static void main(String... args) {
 		MixedTransferCallAndSubmitLoadTest suite = new MixedTransferCallAndSubmitLoadTest();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(runMixedTransferCallAndSubmits());
-	}
-
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
 	}
 
 	private HapiApiSpec runMixedTransferCallAndSubmits() {

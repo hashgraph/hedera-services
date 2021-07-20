@@ -52,18 +52,12 @@ public class ContractCallLoadTest extends LoadTest {
 		new org.ethereum.crypto.HashUtil();
 
 		ContractCallLoadTest suite = new ContractCallLoadTest();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(runContractCalls());
-	}
-
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
 	}
 
 	private HapiApiSpec runContractCalls() {

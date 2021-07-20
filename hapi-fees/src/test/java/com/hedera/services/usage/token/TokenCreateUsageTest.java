@@ -29,8 +29,10 @@ import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
@@ -55,6 +57,7 @@ class TokenCreateUsageTest {
 	private Key freezeKey = KeyUtils.A_KEY_LIST;
 	private Key supplyKey = KeyUtils.B_COMPLEX_KEY;
 	private Key wipeKey = KeyUtils.C_COMPLEX_KEY;
+	private Key customFeeKey = KeyUtils.A_THRESHOLD_KEY;
 	private long expiry = 2_345_678L;
 	private long autoRenewPeriod = 1_234_567L;
 	private long now = expiry - autoRenewPeriod;
@@ -75,7 +78,6 @@ class TokenCreateUsageTest {
 	@BeforeEach
 	void setUp() throws Exception {
 		base = mock(TxnUsageEstimator.class);
-		given(base.get()).willReturn(A_USAGES_MATRIX);
 
 		factory = mock(EstimatorFactory.class);
 		given(factory.get(any(), any(), any())).willReturn(base);
@@ -84,11 +86,12 @@ class TokenCreateUsageTest {
 	}
 
 	@Test
-	void createsExpectedDeltaForExpiryBased() {
+	void createsExpectedDeltaForExpiryBasedFungibleCommon() {
 		// setup:
 		var expectedBytes = baseSize();
 
-		givenExpiryBasedOp();
+		givenExpiryBasedOp(TokenType.FUNGIBLE_COMMON);
+		given(base.get(SubType.TOKEN_FUNGIBLE_COMMON)).willReturn(A_USAGES_MATRIX);
 		// and:
 		subject = TokenCreateUsage.newEstimate(txn, sigUsage);
 
@@ -104,11 +107,54 @@ class TokenCreateUsageTest {
 	}
 
 	@Test
-	void createsExpectedCappedDeltaForExpiryBased() {
+	void createsExpectedDeltaForExpiryBasedNonfungibleUnique() {
 		// setup:
 		var expectedBytes = baseSize();
 
-		givenExpiryBasedOp(expiry + 2 * maxLifetime);
+		givenExpiryBasedOp(TokenType.NON_FUNGIBLE_UNIQUE);
+		given(base.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE)).willReturn(A_USAGES_MATRIX);
+		// and:
+		subject = TokenCreateUsage.newEstimate(txn, sigUsage);
+
+		// when:
+		var actual = subject.get();
+
+		// then:
+		assertEquals(A_USAGES_MATRIX, actual);
+		// and:
+		verify(base).addBpt(expectedBytes);
+		verify(base).addRbs(expectedBytes * autoRenewPeriod);
+		verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+	}
+
+	@Test
+	void createsExpectedDeltaForExpiryBasedNonfungibleUniqueWithCustomFees() {
+		// setup:
+		var expectedBytes = baseSizeWith(true);
+
+		givenExpiryBasedOp(TokenType.NON_FUNGIBLE_UNIQUE, true);
+		given(base.get(SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES)).willReturn(A_USAGES_MATRIX);
+		// and:
+		subject = TokenCreateUsage.newEstimate(txn, sigUsage);
+
+		// when:
+		var actual = subject.get();
+
+		// then:
+		assertEquals(A_USAGES_MATRIX, actual);
+		// and:
+		verify(base).addBpt(expectedBytes);
+		verify(base).addRbs(expectedBytes * autoRenewPeriod);
+		verify(base).addNetworkRbs(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+	}
+
+	@Test
+	void createsExpectedCappedDeltaForExpiryBasedFungibleCommon() {
+		// setup:
+		var expectedBytes = baseSize();
+
+		given(base.get(SubType.TOKEN_FUNGIBLE_COMMON)).willReturn(A_USAGES_MATRIX);
+		givenExpiryBasedOp(expiry + 2 * maxLifetime, TokenType.FUNGIBLE_COMMON, false);
 		// and:
 		subject = TokenCreateUsage.newEstimate(txn, sigUsage);
 
@@ -128,6 +174,7 @@ class TokenCreateUsageTest {
 		// setup:
 		var expectedBytes = baseSize() + BASIC_ENTITY_ID_SIZE;
 
+		given(base.get(SubType.TOKEN_FUNGIBLE_COMMON)).willReturn(A_USAGES_MATRIX);
 		givenAutoRenewBasedOp();
 		// and:
 		subject = TokenCreateUsage.newEstimate(txn, sigUsage);
@@ -147,21 +194,31 @@ class TokenCreateUsageTest {
 	}
 
 	private long baseSize() {
+		return baseSizeWith(false);
+	}
+
+	private long baseSizeWith(boolean customFees) {
 		return TOKEN_ENTITY_SIZES.totalBytesInTokenReprGiven(symbol, name)
 				+ FeeBuilder.getAccountKeyStorageSize(kycKey)
 				+ FeeBuilder.getAccountKeyStorageSize(adminKey)
 				+ FeeBuilder.getAccountKeyStorageSize(wipeKey)
 				+ FeeBuilder.getAccountKeyStorageSize(freezeKey)
 				+ FeeBuilder.getAccountKeyStorageSize(supplyKey)
-				+ memo.length();
+				+ memo.length()
+				+ (customFees ? FeeBuilder.getAccountKeyStorageSize(customFeeKey) : 0);
 	}
 
-	private void givenExpiryBasedOp() {
-		givenExpiryBasedOp(expiry);
+	private void givenExpiryBasedOp(TokenType type) {
+		givenExpiryBasedOp(expiry, type, false);
 	}
 
-	private void givenExpiryBasedOp(long newExpiry) {
-		op = TokenCreateTransactionBody.newBuilder()
+	private void givenExpiryBasedOp(TokenType type, boolean withCustomFees) {
+		givenExpiryBasedOp(expiry, type, withCustomFees);
+	}
+
+	private void givenExpiryBasedOp(long newExpiry, TokenType type, boolean withCustomFees) {
+		var builder = TokenCreateTransactionBody.newBuilder()
+				.setTokenType(type)
 				.setExpiry(Timestamp.newBuilder().setSeconds(newExpiry))
 				.setSymbol(symbol)
 				.setMemo(memo)
@@ -170,8 +227,11 @@ class TokenCreateUsageTest {
 				.setAdminKey(adminKey)
 				.setFreezeKey(freezeKey)
 				.setSupplyKey(supplyKey)
-				.setWipeKey(wipeKey)
-				.build();
+				.setWipeKey(wipeKey);
+		if (withCustomFees) {
+			builder.setFeeScheduleKey(customFeeKey);
+		}
+		op = builder.build();
 		setTxn();
 	}
 

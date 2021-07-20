@@ -41,7 +41,6 @@ public class CryptoTransferThenFreezeTest extends CryptoTransferLoadTest {
 		parseArgs(args);
 
 		CryptoTransferThenFreezeTest suite = new CryptoTransferThenFreezeTest();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 

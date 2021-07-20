@@ -26,24 +26,16 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
-import com.hedera.services.bdd.spec.stats.HapiStats;
-import com.hedera.services.bdd.spec.stats.OpObs;
-import com.hedera.services.bdd.spec.stats.QueryObs;
-import com.hedera.services.bdd.spec.stats.ThroughputObs;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.ResponseType;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -53,9 +45,6 @@ import java.util.stream.StreamSupport;
 
 import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome.SUITE_FAILED;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome.SUITE_PASSED;
-import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
-import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
-import static java.util.stream.Collectors.toList;
 
 public abstract class HapiApiSuite {
 	protected abstract Logger getResultsLogger();
@@ -80,13 +69,6 @@ public abstract class HapiApiSuite {
 		return finalSpecs;
 	}
 	public boolean leaksState() { return false; }
-	private boolean reportStats = false;
-	public void setReportStats(boolean reportStats) {
-		this.reportStats = reportStats;
-	}
-	public boolean hasInterestingStats() {
-		return false;
-	}
 
 	public static final Key EMPTY_KEY = Key.newBuilder().setKeyList(KeyList.newBuilder().build()).build();
 	public static final String NONSENSE_KEY = "Jabberwocky!";
@@ -175,65 +157,6 @@ public abstract class HapiApiSuite {
 		for (HapiApiSpec spec : finalSpecs) {
 			log.info(spec);
 		}
-		if (reportStats) {
-			reportStats(log);
-		}
-	}
-
-	private void reportStats(Logger log) {
-		List<HapiApiSpec> okSpecs = finalSpecs.stream().filter(HapiApiSpec::OK).collect(toList());
-		if (okSpecs.isEmpty()) { return; }
-		List<OpObs> opStats = okSpecs
-				.stream()
-				.filter(HapiApiSpec::OK)
-				.flatMap(spec -> spec.registry().stats().stream())
-				.collect(toList());
-		boolean consensusLatenciesAvailable = okSpecs.stream().allMatch(spec -> spec.setup().measureConsensusLatency());
-		HapiStats stats = new HapiStats(consensusLatenciesAvailable, opStats);
-
-		log.info("-------------- STATS FOR SPECS IN " + name() + " SUITE --------------");
-		log.info("# of operations = " + stats.numOps()
-				+ " (" + stats.numTxns() + " txns, " + stats.numQueries() + " queries)");
-		log.info("  * " + stats.countDetails());
-
-		Stats txnResponseLatencyStats = stats.txnResponseLatencyStats();
-		log.info("Txn response latency " + asNormalApproximation(txnResponseLatencyStats));
-		for (HederaFunctionality txnType : stats.txnTypes()) {
-			Stats detailLatencyStats = stats.txnResponseLatencyStatsFor(txnType);
-			log.info("  * " + txnType + "[n=" + detailLatencyStats.count() + "] "
-					+ asNormalApproximation(detailLatencyStats));
-		}
-		if (consensusLatenciesAvailable) {
-			Stats consensusLatencyStats = stats.txnResponseLatencyStatsFor();
-			log.info("Txn consensus latency " + asNormalApproximation(consensusLatencyStats));
-		}
-		Stats queryResponseLatencyStats = stats.queryResponseLatencyStats();
-		log.info("Query response latency " + asNormalApproximation(queryResponseLatencyStats));
-		for (HederaFunctionality queryType : stats.queryTypes()) {
-			for (ResponseType type : EnumSet.of(COST_ANSWER, ANSWER_ONLY)) {
-				Stats costAnswerLatency = stats.statsProjectedFor(
-						QueryObs.class,
-						(QueryObs obs) -> obs.functionality().equals(queryType) && obs.type().equals(type),
-						QueryObs::getResponseLatency);
-				if (costAnswerLatency.count() > 0L) {
-					log.info("  * " + queryType + ":" + type + "[n=" + costAnswerLatency.count() + "] "
-							+ asNormalApproximation(costAnswerLatency));
-				}
-			}
-		}
-
-		final AtomicBoolean headerPrinted = new AtomicBoolean(false);
-		okSpecs.stream().filter(spec -> !spec.registry().throughputObs().isEmpty()).forEach(spec -> {
-			if (!headerPrinted.get()) {
-				log.info("-------------- THROUGHPUT OBS FROM SPECS IN " + name() + " SUITE --------------");
-				headerPrinted.set(true);
-			}
-			log.info("From spec '" + spec.getName() + "':");
-			List<ThroughputObs> throughputObs = spec.registry().throughputObs();
-			for (ThroughputObs obs : throughputObs) {
-				log.info("  * " + obs.getName() + " :: " + obs.summary());
-			}
-		});
 	}
 
 	private String asNormalApproximation(Stats stats) {

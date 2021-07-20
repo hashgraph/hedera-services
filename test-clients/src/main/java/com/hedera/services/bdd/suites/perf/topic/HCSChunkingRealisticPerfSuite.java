@@ -60,18 +60,12 @@ public class HCSChunkingRealisticPerfSuite extends LoadTest {
 
 	public static void main(String... args) {
 		HCSChunkingRealisticPerfSuite suite = new HCSChunkingRealisticPerfSuite();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(fragmentLongMessageIntoChunks());
-	}
-
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
 	}
 
 	private static HapiApiSpec fragmentLongMessageIntoChunks() {
