@@ -21,8 +21,9 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.store.tokens.TokenStore;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
@@ -33,42 +34,54 @@ import org.apache.logging.log4j.Logger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class TokenRevokeKycTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(TokenRevokeKycTransitionLogic.class);
 
 	private final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_CHECK = this::validate;
 
-	private final TokenStore tokenStore;
-	private final HederaLedger ledger;
+	private final TypedTokenStore tokenStore;
 	private final TransactionContext txnCtx;
+	private final AccountStore accountStore;
 
 	public TokenRevokeKycTransitionLogic(
-			TokenStore tokenStore,
-			HederaLedger ledger,
+			TypedTokenStore tokenStore,
+			AccountStore accountStore,
 			TransactionContext txnCtx
 	) {
 		this.txnCtx = txnCtx;
-		this.ledger = ledger;
 		this.tokenStore = tokenStore;
+		this.accountStore = accountStore;
 	}
 
 	@Override
 	public void doStateTransition() {
-		try {
-			var op = txnCtx.accessor().getTxn().getTokenRevokeKyc();
-			var token = tokenStore.resolve(op.getToken());
-			var outcome	= ledger.revokeKyc(op.getAccount(), token);
-			txnCtx.setStatus(outcome == OK ? SUCCESS : outcome);
-		} catch (Exception e) {
-			log.warn("Unhandled error while processing :: {}!", txnCtx.accessor().getSignedTxnWrapper(), e);
-			txnCtx.setStatus(FAIL_INVALID);
-		}
+		/* --- Translate from gRPC types --- */
+		final var op = txnCtx.accessor().getTxn().getTokenRevokeKyc();
+		final var grpcTokenId = op.getToken();
+		final var grpcAccountId = op.getAccount();
+		final var targetTokenId = new Id(
+				grpcTokenId.getShardNum(),
+				grpcTokenId.getRealmNum(),
+				grpcTokenId.getTokenNum());
+		final var targetAccountId = new Id(
+				grpcAccountId.getShardNum(),
+				grpcAccountId.getRealmNum(),
+				grpcAccountId.getAccountNum());
+
+		/* --- Load the model objects --- */
+		final var token = tokenStore.loadToken(targetTokenId);
+		final var account = accountStore.loadAccount(targetAccountId);
+		final var tokenRel = tokenStore.loadTokenRelationship(token, account);
+
+		/* --- Do the business logic --- */
+		tokenRel.updateKycGranted(false);
+
+		/* --- Persist the updated models --- */
+		tokenStore.persistTokenRelationship(tokenRel);
 	}
 
 	@Override
