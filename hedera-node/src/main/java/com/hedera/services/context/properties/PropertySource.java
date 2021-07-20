@@ -22,6 +22,7 @@ package com.hedera.services.context.properties;
 
 import com.hedera.services.exceptions.UnparseablePropertyException;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.logging.log4j.LogManager;
@@ -53,6 +54,7 @@ public interface PropertySource {
 			.map(HederaFunctionality::valueOf)
 			.collect(toSet());
 	Function<String, Object> AS_CONGESTION_MULTIPLIERS = CongestionMultipliers::from;
+	Function<String, Object> AS_THROTTLE_SCALE_FACTOR = ThrottleReqOpsScaleFactor::from;
 
 	boolean containsProperty(String name);
 	Object getProperty(String name);
@@ -73,6 +75,9 @@ public interface PropertySource {
 	}
 	default CongestionMultipliers getCongestionMultiplierProperty(String name) {
 		return getTypedProperty(CongestionMultipliers.class, name);
+	}
+	default ThrottleReqOpsScaleFactor getThrottleScaleFactor(String name) {
+		return getTypedProperty(ThrottleReqOpsScaleFactor.class, name);
 	}
 	default int getIntProperty(String name) {
 		return getTypedProperty(Integer.class, name);

@@ -1,12 +1,31 @@
 package com.hedera.services.grpc.marshalling;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -52,10 +71,12 @@ class ImpliedTransfersTest {
 				"tokenFeeSchedules=[], assessedCustomFees=[]}";
 		final var twoRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=OK, maxExplicitHbarAdjusts=5, " +
 				"maxExplicitTokenAdjusts=50, maxExplicitOwnershipChanges=12, maxNestedCustomFees=1, " +
-				"maxXferBalanceChanges=20, tokenFeeSchedules=[(Id{shard=0, realm=0, num=123},[])]}, " +
+				"maxXferBalanceChanges=20, tokenFeeSchedules=[CustomFeeMeta{tokenId=Id{shard=0, realm=0, num=123}, " +
+				"treasuryId=Id{shard=2, realm=3, num=4}, customFees=[]}]}, " +
 				"changes=[BalanceChange{token=Id{shard=1, realm=2, num=3}, " +
-				"account=Id{shard=4, realm=5, num=6}, units=7}], tokenFeeSchedules=[(Id{shard=0, realm=0, num=123},[])], " +
-				"assessedCustomFees=[FcAssessedCustomFee{token=EntityId{shard=0, realm=0, num=123}, " +
+				"account=Id{shard=4, realm=5, num=6}, units=7}], tokenFeeSchedules=[" +
+				"CustomFeeMeta{tokenId=Id{shard=0, realm=0, num=123}, treasuryId=Id{shard=2, realm=3, num=4}, " +
+				"customFees=[]}], assessedCustomFees=[FcAssessedCustomFee{token=EntityId{shard=0, realm=0, num=123}, " +
 				"account=EntityId{shard=0, realm=0, num=124}, units=123}]}";
 
 		// expect:
@@ -76,12 +97,15 @@ class ImpliedTransfersTest {
 		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxExplicitOwnershipChanges);
 		given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges);
 		given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
+		given(customFeeSchedules.lookupMetaFor(any())).willReturn(entityCustomFees.get(0));
 
 		// expect:
 		assertTrue(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules));
 
-		//modify customFeeChanges to see test fails
-		given(newCustomFeeSchedules.lookupScheduleFor(any())).willReturn(newCustomFeeChanges.get(0).getValue());
+		// and:
+		given(newCustomFeeSchedules.lookupMetaFor(any())).willReturn(newCustomFeeMeta);
+
+		// expect:
 		assertFalse(meta.wasDerivedFrom(dynamicProperties, newCustomFeeSchedules));
 
 		// and:
@@ -132,10 +156,14 @@ class ImpliedTransfersTest {
 			maxBalanceChanges);
 	private final EntityId customFeeToken = new EntityId(0, 0, 123);
 	private final EntityId customFeeCollector = new EntityId(0, 0, 124);
-	final List<Pair<Id, List<FcCustomFee>>> entityCustomFees = List.of(
-			Pair.of(customFeeToken.asId(), new ArrayList<>()));
-	final List<Pair<EntityId, List<FcCustomFee>>> newCustomFeeChanges = List.of(
-			Pair.of(customFeeToken, List.of(FcCustomFee.fixedFee(10L, customFeeToken, customFeeCollector))));
+	private final Id someId = new Id(1, 2, 3);
+	private final Id someTreasuryId = new Id(2, 3, 4);
+	private final List<CustomFeeMeta> entityCustomFees = List.of(
+			new CustomFeeMeta(customFeeToken.asId(), someTreasuryId, new ArrayList<>()));
+	private final CustomFeeMeta newCustomFeeMeta = new CustomFeeMeta(
+			someId,
+			someTreasuryId,
+			List.of(FcCustomFee.fixedFee(10L, customFeeToken, customFeeCollector)));
 	private final List<FcAssessedCustomFee> assessedCustomFees = List.of(
 			new FcAssessedCustomFee(customFeeCollector, customFeeToken, 123L));
 }

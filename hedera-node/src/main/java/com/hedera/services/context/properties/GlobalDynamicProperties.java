@@ -22,6 +22,7 @@ package com.hedera.services.context.properties;
 
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
@@ -78,6 +79,7 @@ public class GlobalDynamicProperties {
 	private long maxNftMints;
 	private int maxXferBalanceChanges;
 	private int maxCustomFeeDepth;
+	private ThrottleReqOpsScaleFactor nftMintScaleFactor;
 
 	public GlobalDynamicProperties(
 			HederaNumbers hederaNums,
@@ -142,6 +144,7 @@ public class GlobalDynamicProperties {
 		maxNftMints = properties.getLongProperty("tokens.nfts.maxAllowedMints");
 		maxXferBalanceChanges = properties.getIntProperty("ledger.xferBalanceChanges.maxLen");
 		maxCustomFeeDepth = properties.getIntProperty("tokens.maxCustomFeeDepth");
+		nftMintScaleFactor = properties.getThrottleScaleFactor("tokens.nfts.mintThrottleScaleFactor");
 	}
 
 	public int maxTokensPerAccount() {
@@ -318,5 +321,9 @@ public class GlobalDynamicProperties {
 
 	public int maxCustomFeeDepth() {
 		return maxCustomFeeDepth;
+	}
+
+	public ThrottleReqOpsScaleFactor nftMintScaleFactor() {
+		return nftMintScaleFactor;
 	}
 }

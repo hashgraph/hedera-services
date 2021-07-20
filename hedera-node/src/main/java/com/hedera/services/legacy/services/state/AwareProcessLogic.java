@@ -136,7 +136,7 @@ public class AwareProcessLogic implements ProcessLogic {
 
 	private void doTriggeredProcess(TxnAccessor accessor, Instant consensusTime) {
 		ctx.networkCtxManager().advanceConsensusClockTo(consensusTime);
-		ctx.networkCtxManager().prepareForIncorporating(accessor.getFunction());
+		ctx.networkCtxManager().prepareForIncorporating(accessor);
 
 		FeeObject fees = ctx.fees().computeFee(accessor, ctx.txnCtx().activePayerKey(), ctx.currentView());
 		var chargingOutcome = ctx.txnChargingPolicy().applyForTriggered(fees);
@@ -154,7 +154,7 @@ public class AwareProcessLogic implements ProcessLogic {
 		var sigStatus = rationalizeWithPreConsensusSigs(accessor);
 		if (hasActivePayerSig(accessor)) {
 			ctx.txnCtx().payerSigIsKnownActive();
-			ctx.networkCtxManager().prepareForIncorporating(accessor.getFunction());
+			ctx.networkCtxManager().prepareForIncorporating(accessor);
 		}
 
 		if (!ctx.chargingPolicyAgent().applyPolicyFor(accessor)) {

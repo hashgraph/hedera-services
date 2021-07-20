@@ -787,14 +787,16 @@ public class ServicesContext {
 
 	public FunctionalityThrottling hapiThrottling() {
 		if (hapiThrottling == null) {
-			hapiThrottling = new HapiThrottling(new DeterministicThrottling(() -> addressBook().getSize()));
+			final var delegate = new DeterministicThrottling(() -> addressBook().getSize(), globalDynamicProperties());
+			hapiThrottling = new HapiThrottling(delegate);
 		}
 		return hapiThrottling;
 	}
 
 	public FunctionalityThrottling handleThrottling() {
 		if (handleThrottling == null) {
-			handleThrottling = new TxnAwareHandleThrottling(txnCtx(), new DeterministicThrottling(() -> 1));
+			final var delegate = new DeterministicThrottling(() -> 1, globalDynamicProperties());
+			handleThrottling = new TxnAwareHandleThrottling(txnCtx(), delegate);
 		}
 		return handleThrottling;
 	}

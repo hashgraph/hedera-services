@@ -21,9 +21,10 @@ package com.hedera.services.txns.span;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.grpc.marshalling.CustomFeeMeta;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
@@ -31,7 +32,6 @@ import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -69,14 +69,16 @@ class SpanMapManagerTest {
 	private final ImpliedTransfers someOtherImpliedXfers = ImpliedTransfers.invalid(
 			otherValidationProps, ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);
 
+	private final Id treasury = new Id(0 , 0, 2);
 	private final Id customFeeToken = new Id(0, 0, 123);
 	private final Id customFeeCollector = new Id(0, 0, 124);
-	final List<Pair<Id, List<FcCustomFee>>> entityCustomFees = List.of(
-			Pair.of(customFeeToken, new ArrayList<>()));
+	final List<CustomFeeMeta> entityCustomFees = List.of(
+			new CustomFeeMeta(customFeeToken, treasury, new ArrayList<>()));
 
-	final List<Pair<Id, List<FcCustomFee>>> newCustomFeeChanges = List.of(
-			Pair.of(customFeeToken, List.of(FcCustomFee.fixedFee(10L, customFeeToken.asEntityId(),
-					customFeeCollector.asEntityId()))));
+	final List<CustomFeeMeta> newCustomFeeChanges = List.of(
+			new CustomFeeMeta(
+					customFeeToken, treasury, List.of(FcCustomFee.fixedFee(
+							10L, customFeeToken.asEntityId(), customFeeCollector.asEntityId()))));
 	private final List<FcAssessedCustomFee> assessedCustomFees = List.of(
 			new FcAssessedCustomFee(customFeeCollector.asEntityId(), customFeeToken.asEntityId(), 123L),
 			new FcAssessedCustomFee(customFeeCollector.asEntityId(), 123L)
