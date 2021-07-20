@@ -40,7 +40,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import static com.hedera.services.fees.calculation.AwareFcfsUsagePrices.DEFAULT_USAGE_PRICES;
+import static com.hedera.services.fees.calculation.AwareFcfsUsagePrices.DEFAULT_RESOURCE_PRICES;
 import static java.util.stream.Collectors.toMap;
 
 public enum TestUsagePricesProvider implements UsagePricesProvider {
@@ -86,7 +86,7 @@ public enum TestUsagePricesProvider implements UsagePricesProvider {
 			Objects.requireNonNull(usagePrices);
 			return usagePrices;
 		} catch (Exception ignore) { }
-		return DEFAULT_USAGE_PRICES;
+		return DEFAULT_RESOURCE_PRICES;
 	}
 
 	@Override

@@ -9,9 +9,9 @@ package com.hedera.services.usage.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,13 +29,16 @@ public class CryptoTransferMeta {
 	private final int numFungibleTokenTransfers;
 	private final int numNftOwnershipChanges;
 
-	// Short term solution to not impact existing transaction fee calculation
 	private int customFeeTokensInvolved;
 	private int customFeeHbarTransfers;
 	private int customFeeTokenTransfers;
 
-	public CryptoTransferMeta(int tokenMultiplier, int numTokensInvolved,
-			int numFungibleTokenTransfers, int numNftOwnershipChanges) {
+	public CryptoTransferMeta(
+			int tokenMultiplier,
+			int numTokensInvolved,
+			int numFungibleTokenTransfers,
+			int numNftOwnershipChanges
+	) {
 		this.tokenMultiplier = tokenMultiplier;
 		this.numTokensInvolved = numTokensInvolved;
 		this.numFungibleTokenTransfers = numFungibleTokenTransfers;
@@ -53,6 +56,7 @@ public class CryptoTransferMeta {
 	public int getNumFungibleTokenTransfers() {
 		return numFungibleTokenTransfers;
 	}
+
 	public void setTokenMultiplier(int tokenMultiplier) {
 		this.tokenMultiplier = tokenMultiplier;
 	}
@@ -72,6 +76,7 @@ public class CryptoTransferMeta {
 	public int getCustomFeeTokenTransfers() {
 		return customFeeTokenTransfers;
 	}
+
 	public void setCustomFeeHbarTransfers(final int customFeeHbarTransfers) {
 		this.customFeeHbarTransfers = customFeeHbarTransfers;
 	}
