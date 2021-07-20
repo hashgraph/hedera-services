@@ -37,18 +37,12 @@ public class CryptoCreatePerfSuite extends LoadTest {
 
 	public static void main(String... args) {
 		CryptoCreatePerfSuite suite = new CryptoCreatePerfSuite();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(runCryptoCreates());
-	}
-
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
 	}
 
 	private HapiApiSpec runCryptoCreates() {

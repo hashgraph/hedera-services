@@ -50,7 +50,7 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static com.hedera.services.fees.calculation.AwareFcfsUsagePrices.DEFAULT_USAGE_PRICES;
+import static com.hedera.services.fees.calculation.AwareFcfsUsagePrices.DEFAULT_RESOURCE_PRICES;
 import static com.hedera.services.keys.HederaKeyTraversal.numSimpleKeys;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
@@ -209,7 +209,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 		} catch (Exception e) {
 			log.warn("Using default usage prices to calculate fees for {}!", accessor.getSignedTxnWrapper(), e);
 		}
-		return DEFAULT_USAGE_PRICES;
+		return DEFAULT_RESOURCE_PRICES;
 	}
 
 	private FeeObject feeGiven(

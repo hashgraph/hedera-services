@@ -224,12 +224,14 @@ public class BootstrapProperties implements PropertySource {
 			"tokens.maxTokenNameUtf8Bytes",
 			"tokens.maxCustomFeesAllowed",
 			"tokens.maxCustomFeeDepth",
+			"tokens.nfts.areEnabled",
 			"tokens.nfts.maxMetadataBytes",
 			"tokens.nfts.maxBatchSizeBurn",
 			"tokens.nfts.maxBatchSizeWipe",
 			"tokens.nfts.maxBatchSizeMint",
 			"tokens.nfts.maxAllowedMints",
 			"tokens.nfts.maxQueryRange",
+			"tokens.nfts.mintThrottleScaleFactor",
 			"consensus.message.maxBytesAllowed"
 	);
 
@@ -361,6 +363,7 @@ public class BootstrapProperties implements PropertySource {
 			entry("tokens.maxTokenNameUtf8Bytes", AS_INT),
 			entry("tokens.nfts.maxMetadataBytes", AS_INT),
 			entry("tokens.nfts.maxBatchSizeBurn", AS_INT),
+			entry("tokens.nfts.mintThrottleScaleFactor", AS_THROTTLE_SCALE_FACTOR),
 			entry("tokens.nfts.maxBatchSizeWipe", AS_INT),
 			entry("tokens.nfts.maxBatchSizeMint", AS_INT),
 			entry("tokens.nfts.maxAllowedMints", AS_LONG),
@@ -375,6 +378,7 @@ public class BootstrapProperties implements PropertySource {
 			entry("stats.hapiOps.speedometerUpdateIntervalMs", AS_LONG),
 			entry("stats.runningAvgHalfLifeSecs", AS_DOUBLE),
 			entry("stats.speedometerHalfLifeSecs", AS_DOUBLE),
-			entry("consensus.message.maxBytesAllowed", AS_INT)
+			entry("consensus.message.maxBytesAllowed", AS_INT),
+			entry("tokens.nfts.areEnabled", AS_BOOLEAN)
 	);
 }

@@ -787,14 +787,16 @@ public class ServicesContext {
 
 	public FunctionalityThrottling hapiThrottling() {
 		if (hapiThrottling == null) {
-			hapiThrottling = new HapiThrottling(new DeterministicThrottling(() -> addressBook().getSize()));
+			final var delegate = new DeterministicThrottling(() -> addressBook().getSize(), globalDynamicProperties());
+			hapiThrottling = new HapiThrottling(delegate);
 		}
 		return hapiThrottling;
 	}
 
 	public FunctionalityThrottling handleThrottling() {
 		if (handleThrottling == null) {
-			handleThrottling = new TxnAwareHandleThrottling(txnCtx(), new DeterministicThrottling(() -> 1));
+			final var delegate = new DeterministicThrottling(() -> 1, globalDynamicProperties());
+			handleThrottling = new TxnAwareHandleThrottling(txnCtx(), delegate);
 		}
 		return handleThrottling;
 	}
@@ -1495,7 +1497,8 @@ public class ServicesContext {
 								this::topics, validator(), txnCtx(), globalDynamicProperties()))),
 				/* Token */
 				entry(TokenCreate,
-						List.of(new TokenCreateTransitionLogic(validator(), tokenStore(), ledger(), txnCtx()))),
+						List.of(new TokenCreateTransitionLogic(validator(), tokenStore(), ledger(),
+								txnCtx(), globalDynamicProperties()))),
 				entry(TokenUpdate,
 						List.of(new TokenUpdateTransitionLogic(
 								validator(), tokenStore(), ledger(), txnCtx(), HederaTokenStore::affectsExpiryAtMost))),
@@ -1513,13 +1516,13 @@ public class ServicesContext {
 						List.of(new TokenDeleteTransitionLogic(tokenStore(), txnCtx()))),
 				entry(TokenMint,
 						List.of(new TokenMintTransitionLogic(validator(), accountStore(), typedTokenStore(),
-								txnCtx()))),
+								txnCtx(), globalDynamicProperties()))),
 				entry(TokenBurn,
 						List.of(new TokenBurnTransitionLogic(validator(), accountStore(), typedTokenStore(),
-								txnCtx()))),
+								txnCtx(), globalDynamicProperties()))),
 				entry(TokenAccountWipe,
 						List.of(new TokenWipeTransitionLogic(validator(), typedTokenStore(), accountStore(),
-								txnCtx()))),
+								txnCtx(), globalDynamicProperties()))),
 				entry(TokenAssociateToAccount,
 						List.of(new TokenAssociateTransitionLogic(
 								accountStore(), typedTokenStore(), txnCtx(), globalDynamicProperties()))),

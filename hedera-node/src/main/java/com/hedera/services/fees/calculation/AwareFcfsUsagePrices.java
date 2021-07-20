@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
+import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -39,41 +40,55 @@ import org.apache.logging.log4j.Logger;
 import java.time.Instant;
 import java.util.EnumMap;
 import java.util.EnumSet;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 import static com.hedera.services.utils.EntityIdUtils.readableId;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 
 /**
- * Implements a {@link UsagePricesProvider} by loading the required
- * fee schedules from the Hedera FileSystem.
- *
- * @author Michael Tinker
+ * Implements a {@link UsagePricesProvider} by loading the required fee schedules from the Hedera "file system".
  */
 public class AwareFcfsUsagePrices implements UsagePricesProvider {
 	private static final Logger log = LogManager.getLogger(AwareFcfsUsagePrices.class);
 
-	private static EnumSet<HederaFunctionality> FUNCTIONS_WITH_TOKEN_TYPE_SPECIALIZATIONS = EnumSet.of(
-			TokenMint,
-			TokenBurn,
-			TokenAccountWipe
-	);
+	private static final EnumSet<SubType> ONLY_DEFAULT = EnumSet.of(DEFAULT);
+	static final Map<HederaFunctionality, EnumSet<SubType>> FUNCTIONS_WITH_REQUIRED_SUBTYPES;
+	static {
+		FUNCTIONS_WITH_REQUIRED_SUBTYPES = new EnumMap<>(HederaFunctionality.class);
+		/* The functions with non-DEFAULT prices in hapi-fees/src/main/resources/canonical-prices.json */
+		List.of(TokenMint, TokenBurn, TokenAccountWipe).forEach(function ->
+				FUNCTIONS_WITH_REQUIRED_SUBTYPES.put(function, EnumSet.of(
+						TOKEN_FUNGIBLE_COMMON, TOKEN_NON_FUNGIBLE_UNIQUE)));
+		FUNCTIONS_WITH_REQUIRED_SUBTYPES.put(TokenCreate, EnumSet.of(
+				TOKEN_FUNGIBLE_COMMON, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
+				TOKEN_NON_FUNGIBLE_UNIQUE, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES));
+		FUNCTIONS_WITH_REQUIRED_SUBTYPES.put(CryptoTransfer, EnumSet.of(
+				DEFAULT,
+				TOKEN_FUNGIBLE_COMMON, TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES,
+				TOKEN_NON_FUNGIBLE_UNIQUE, TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES));
+	}
 
 	public static long DEFAULT_FEE = 100_000L;
-
-	public static final FeeComponents DEFAULT_RESOURCE_USAGE_PRICES = FeeComponents.newBuilder()
+	public static final FeeComponents DEFAULT_PROVIDER_RESOURCE_PRICES = FeeComponents.newBuilder()
 			.setMin(DEFAULT_FEE)
 			.setMax(DEFAULT_FEE)
 			.setConstant(0).setBpt(0).setVpt(0).setRbh(0).setSbh(0).setGas(0).setTv(0).setBpr(0).setSbpr(0)
 			.build();
-	public static final Map<SubType, FeeData> DEFAULT_USAGE_PRICES = Map.of(SubType.DEFAULT, FeeData.newBuilder()
-			.setNetworkdata(DEFAULT_RESOURCE_USAGE_PRICES)
-			.setNodedata(DEFAULT_RESOURCE_USAGE_PRICES)
-			.setServicedata(DEFAULT_RESOURCE_USAGE_PRICES)
+	public static final Map<SubType, FeeData> DEFAULT_RESOURCE_PRICES = Map.of(DEFAULT, FeeData.newBuilder()
+			.setNetworkdata(DEFAULT_PROVIDER_RESOURCE_PRICES)
+			.setNodedata(DEFAULT_PROVIDER_RESOURCE_PRICES)
+			.setServicedata(DEFAULT_PROVIDER_RESOURCE_PRICES)
 			.build());
 
 	private final HederaFs hfs;
@@ -120,7 +135,7 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 			log.warn("Using default usage prices to calculate fees for {}!", txnCtx.accessor().getSignedTxnWrapper(),
 					e);
 		}
-		return DEFAULT_USAGE_PRICES.get(SubType.DEFAULT);
+		return DEFAULT_RESOURCE_PRICES.get(DEFAULT);
 	}
 
 	@Override
@@ -132,7 +147,7 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 			log.warn("Using default usage prices to calculate fees for {}!", txnCtx.accessor().getSignedTxnWrapper(),
 					e);
 		}
-		return DEFAULT_USAGE_PRICES;
+		return DEFAULT_RESOURCE_PRICES;
 	}
 
 	@Override
@@ -147,12 +162,12 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 					"Default usage price will be used, no specific usage prices available for function {} @ {}!",
 					function, Instant.ofEpochSecond(at.getSeconds(), at.getNanos()));
 		}
-		return DEFAULT_USAGE_PRICES;
+		return DEFAULT_RESOURCE_PRICES;
 	}
 
 	@Override
 	public FeeData defaultPricesGiven(HederaFunctionality function, Timestamp at) {
-		return pricesGiven(function, at).get(SubType.DEFAULT);
+		return pricesGiven(function, at).get(DEFAULT);
 	}
 
 	@Override
@@ -194,31 +209,46 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 	}
 
 	EnumMap<HederaFunctionality, Map<SubType, FeeData>> functionUsagePricesFrom(FeeSchedule feeSchedule) {
-		EnumMap<HederaFunctionality, Map<SubType, FeeData>> feeScheduleMap = new EnumMap<>(HederaFunctionality.class);
-		for (var txnFeeSchedule : feeSchedule.getTransactionFeeScheduleList()) {
-			final var function = txnFeeSchedule.getHederaFunctionality();
-
-			Map<SubType, FeeData> map = feeScheduleMap.get(function);
-			if (map == null) {
-				map = new HashMap<>();
+		final EnumMap<HederaFunctionality, Map<SubType, FeeData>> allPrices = new EnumMap<>(HederaFunctionality.class);
+		for (var pricingData : feeSchedule.getTransactionFeeScheduleList()) {
+			final var function = pricingData.getHederaFunctionality();
+			Map<SubType, FeeData> pricesMap = allPrices.get(function);
+			if (pricesMap == null) {
+				pricesMap = new EnumMap<>(SubType.class);
 			}
+			final EnumSet<SubType> requiredTypes = FUNCTIONS_WITH_REQUIRED_SUBTYPES.getOrDefault(function, ONLY_DEFAULT);
+			ensurePricesMapHasRequiredTypes(pricingData, pricesMap, requiredTypes);
+			System.out.println(function + " -> " + pricesMap);
+			allPrices.put(pricingData.getHederaFunctionality(), pricesMap);
+		}
+		return allPrices;
+	}
 
-			if (txnFeeSchedule.hasFeeData()) {
-				final var untypedPrices = txnFeeSchedule.getFeeData();
-				/* Must be from a pre-0.16.0 signed state when there were no fee sub-types */
-				if (FUNCTIONS_WITH_TOKEN_TYPE_SPECIALIZATIONS.contains(function)) {
-					map.put(SubType.TOKEN_FUNGIBLE_COMMON, untypedPrices);
-					map.put(SubType.TOKEN_NON_FUNGIBLE_UNIQUE, untypedPrices);
+	void ensurePricesMapHasRequiredTypes(
+			TransactionFeeSchedule tfs,
+			Map<SubType, FeeData> pricesMap,
+			EnumSet<SubType> requiredTypes
+	) {
+		/* The deprecated prices are the final fallback; if even they are not set, the function will be free */
+		final var oldDefaultPrices = tfs.getFeeData();
+		FeeData newDefaultPrices = null;
+		for (var typedPrices : tfs.getFeesList()) {
+			final var type = typedPrices.getSubType();
+			if (requiredTypes.contains(type)) {
+				pricesMap.put(type, typedPrices);
+			}
+			if (type == DEFAULT) {
+				newDefaultPrices = typedPrices;
+			}
+		}
+		for (var type : requiredTypes) {
+			if (!pricesMap.containsKey(type)) {
+				if (newDefaultPrices != null) {
+					pricesMap.put(type, newDefaultPrices.toBuilder().setSubType(type).build());
 				} else {
-					map.put(SubType.DEFAULT, untypedPrices);
+					pricesMap.put(type, oldDefaultPrices.toBuilder().setSubType(type).build());
 				}
 			}
-
-			for (var feeData : txnFeeSchedule.getFeesList()) {
-				map.put(feeData.getSubType(), feeData);
-			}
-			feeScheduleMap.put(txnFeeSchedule.getHederaFunctionality(), map);
 		}
-		return feeScheduleMap;
 	}
 }

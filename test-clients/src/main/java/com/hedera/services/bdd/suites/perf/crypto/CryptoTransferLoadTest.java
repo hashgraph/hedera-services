@@ -39,9 +39,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
@@ -62,7 +60,6 @@ public class CryptoTransferLoadTest extends LoadTest {
 		parseArgs(args);
 
 		CryptoTransferLoadTest suite = new CryptoTransferLoadTest();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 
@@ -71,11 +68,6 @@ public class CryptoTransferLoadTest extends LoadTest {
 		return	List.of(
 				runCryptoTransfers()
 		);
-	}
-
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
 	}
 
 	protected HapiApiSpec runCryptoTransfers() {

@@ -20,9 +20,12 @@ package com.hedera.services.throttling;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
 import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,27 +38,53 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.function.IntSupplier;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+
 public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	private static final Logger log = LogManager.getLogger(DeterministicThrottling.class);
 
 	private final IntSupplier capacitySplitSource;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	private List<DeterministicThrottle> activeThrottles = Collections.emptyList();
 	private EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs = new EnumMap<>(HederaFunctionality.class);
 
-	public DeterministicThrottling(IntSupplier capacitySplitSource) {
+	public DeterministicThrottling(
+			IntSupplier capacitySplitSource,
+			GlobalDynamicProperties dynamicProperties
+	) {
 		this.capacitySplitSource = capacitySplitSource;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
-	public boolean shouldThrottle(HederaFunctionality function) {
+	public boolean shouldThrottleTxn(TxnAccessor accessor) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public boolean shouldThrottle(HederaFunctionality function, Instant now) {
+	public boolean shouldThrottleQuery(HederaFunctionality queryFunction) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean shouldThrottleTxn(TxnAccessor accessor, Instant now) {
+		final var function = accessor.getFunction();
 		ThrottleReqsManager manager;
 		if ((manager = functionReqs.get(function)) == null) {
+			return true;
+		}
+		if (function == TokenMint) {
+			return shouldThrottleMint(manager, accessor.getTxn().getTokenMint(), now);
+		} else {
+			return !manager.allReqsMetAt(now);
+		}
+	}
+
+	@Override
+	public boolean shouldThrottleQuery(HederaFunctionality queryFunction, Instant now) {
+		ThrottleReqsManager manager;
+		if ((manager = functionReqs.get(queryFunction)) == null) {
 			return true;
 		}
 		return !manager.allReqsMetAt(now);
@@ -122,5 +151,14 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
 	void setFunctionReqs(EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs) {
 		this.functionReqs = functionReqs;
+	}
+
+	private boolean shouldThrottleMint(ThrottleReqsManager manager, TokenMintTransactionBody op, Instant now) {
+		final var numNfts = op.getMetadataCount();
+		if (numNfts == 0) {
+			return !manager.allReqsMetAt(now);
+		} else {
+			return !manager.allReqsMetAt(now, numNfts, dynamicProperties.nftMintScaleFactor());
+		}
 	}
 }

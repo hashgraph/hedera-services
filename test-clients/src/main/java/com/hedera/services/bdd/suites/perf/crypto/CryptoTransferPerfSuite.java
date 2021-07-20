@@ -43,7 +43,6 @@ public class CryptoTransferPerfSuite extends HapiApiSuite {
 
 	public static void main(String... args) {
 		CryptoTransferPerfSuite suite = new CryptoTransferPerfSuite();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 
@@ -54,11 +53,6 @@ public class CryptoTransferPerfSuite extends HapiApiSuite {
 
 	@Override
 	public boolean leaksState() {
-		return true;
-	}
-
-	@Override
-	public boolean hasInterestingStats() {
 		return true;
 	}
 

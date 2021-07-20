@@ -56,14 +56,20 @@ public class FeeAssessor {
 		if (balanceChangeManager.getLevelNo() > props.getMaxNestedCustomFees()) {
 			return CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 		}
-		final var fees = customSchedulesManager.managedSchedulesFor(change.getToken().asEntityId());
-		if (fees.isEmpty()) {
+		final var feeMeta = customSchedulesManager.managedSchedulesFor(change.getToken());
+		final var payer = change.getAccount();
+		final var fees = feeMeta.getCustomFees();
+		/* Token treasuries are exempt from all custom fees */
+		if (fees.isEmpty() || feeMeta.getTreasuryId().equals(payer)) {
 			return OK;
 		}
-		var numFractionalFees = 0;
-		final var payer = change.getAccount();
+		var hasFractionalFees = false;
 		final var maxBalanceChanges = props.getMaxXferBalanceChanges();
 		for (var fee : fees) {
+			final var collector = fee.getFeeCollectorAsId();
+			if (payer.equals(collector)) {
+				continue;
+			}
 			if (fee.getFeeType() == FIXED_FEE) {
 				final var fixedSpec = fee.getFixedFeeSpec();
 				if (fixedSpec.getTokenDenomination() == null) {
@@ -75,10 +81,10 @@ public class FeeAssessor {
 					return CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
 				}
 			} else {
-				numFractionalFees++;
+				hasFractionalFees = true;
 			}
 		}
-		if (numFractionalFees > 0) {
+		if (hasFractionalFees) {
 			final var fractionalValidity =
 					fractionalFeeAssessor.assessAllFractional(change, fees, balanceChangeManager, accumulator);
 			if (fractionalValidity != OK) {

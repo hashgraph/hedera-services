@@ -107,7 +107,7 @@ class SystemPrecheckTest {
 	void throttlesCivilianIfBusy() {
 		givenPermissible(civilianPayer);
 		givenPriviliged();
-		given(txnThrottling.shouldThrottle(civilianXferAccessor.getTxn())).willReturn(true);
+		given(txnThrottling.shouldThrottle(civilianXferAccessor)).willReturn(true);
 
 		// when:
 		var actual = subject.screen(civilianXferAccessor);
@@ -142,7 +142,7 @@ class SystemPrecheckTest {
 	}
 
 	private void givenCapacity() {
-		given(txnThrottling.shouldThrottle(civilianXferAccessor.getTxn())).willReturn(false);
+		given(txnThrottling.shouldThrottle(civilianXferAccessor)).willReturn(false);
 	}
 
 	private void givenPermissible(AccountID payer) {

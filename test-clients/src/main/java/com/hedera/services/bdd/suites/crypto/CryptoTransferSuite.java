@@ -97,6 +97,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 		final var transferAmount = 1L;
 		final var customFeeCollector = "customFeeCollector";
 		final var sender = "sender";
+		final var nonTreasurySender = "nonTreasurySender";
 		final var receiver = "receiver";
 		final var hbarXferTxn = "hbarXferTxn";
 		final var fungibleToken = "fungibleToken";
@@ -111,6 +112,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("BaseCryptoTransferIsChargedAsExpected")
 				.given(
+						cryptoCreate(nonTreasurySender).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(sender).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(receiver),
 						cryptoCreate(customFeeCollector),
@@ -136,9 +138,16 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.tokenType(NON_FUNGIBLE_UNIQUE)
 								.withCustom(fixedHbarFee(transferAmount, customFeeCollector))
 								.treasury(sender),
+						tokenAssociate(nonTreasurySender,
+								List.of(fungibleTokenWithCustomFee, nonFungibleTokenWithCustomFee)),
 						mintToken(nonFungibleToken, List.of(ByteString.copyFromUtf8("memo1"))),
 						mintToken(nonFungibleTokenWithCustomFee, List.of(ByteString.copyFromUtf8("memo2"))),
-						tokenAssociate(receiver, nonFungibleToken, nonFungibleTokenWithCustomFee)
+						tokenAssociate(receiver, nonFungibleToken, nonFungibleTokenWithCustomFee),
+						cryptoTransfer(movingUnique(1, nonFungibleTokenWithCustomFee)
+								.between(sender, nonTreasurySender))
+								.payingWith(sender),
+						cryptoTransfer(moving(1, fungibleTokenWithCustomFee).between(sender, nonTreasurySender))
+								.payingWith(sender)
 				)
 				.when(
 						cryptoTransfer(tinyBarsFromTo(sender, receiver, 100L))
@@ -153,15 +162,19 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.blankMemo()
 								.payingWith(sender)
 								.via(nftXferTxn),
-						cryptoTransfer(moving(1, fungibleTokenWithCustomFee).between(sender, receiver))
+						cryptoTransfer(moving(1, fungibleTokenWithCustomFee)
+								.between(nonTreasurySender, receiver)
+						)
 								.blankMemo()
 								.fee(ONE_HBAR)
-								.payingWith(sender)
+								.payingWith(nonTreasurySender)
 								.via(htsXferTxnWithCustomFee),
-						cryptoTransfer(movingUnique(1, nonFungibleTokenWithCustomFee).between(sender, receiver))
+						cryptoTransfer(movingUnique(1, nonFungibleTokenWithCustomFee)
+								.between(nonTreasurySender, receiver)
+						)
 								.blankMemo()
 								.fee(ONE_HBAR)
-								.payingWith(sender)
+								.payingWith(nonTreasurySender)
 								.via(nftXferTxnWithCustomFee)
 				)
 				.then(
@@ -178,7 +191,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 				.given(
 						cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L))
 								.via("misc")
-				).when( ).then(
+				).when().then(
 						getTxnRecord("misc").useEmptyTxnAsCostPayment(),
 						getTxnRecord("misc").omittingAnyPaymentForCostAnswer()
 				);
@@ -404,7 +417,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								forKey("payer", payerSigs),
 								forKey("receiver", receiverSigs)
 						).hasKnownStatus(SUCCESS)
-						.fee(ONE_HUNDRED_HBARS)
+								.fee(ONE_HUNDRED_HBARS)
 				);
 	}
 

@@ -30,6 +30,7 @@ import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.TokenBurnUsage;
+import com.hedera.services.usage.token.TokenCreateUsage;
 import com.hedera.services.usage.token.TokenMintUsage;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.TokenWipeUsage;
@@ -37,15 +38,19 @@ import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -74,10 +79,39 @@ class BaseOperationUsage {
 					.setPubKeyPrefix(ByteString.copyFromUtf8("a"))
 					.setEd25519(CANONICAL_SIG))
 			.build();
+	private static final SignatureMap TWO_PAIR_SIG_MAP = SignatureMap.newBuilder()
+			.addSigPair(SignaturePair.newBuilder()
+					.setPubKeyPrefix(ByteString.copyFromUtf8("a"))
+					.setEd25519(CANONICAL_SIG))
+			.addSigPair(SignaturePair.newBuilder()
+					.setPubKeyPrefix(ByteString.copyFromUtf8("b"))
+					.setEd25519(CANONICAL_SIG))
+			.build();
+	private static final SignatureMap FOUR_PAIR_SIG_MAP = SignatureMap.newBuilder()
+			.addSigPair(SignaturePair.newBuilder()
+					.setPubKeyPrefix(ByteString.copyFromUtf8("a"))
+					.setEd25519(CANONICAL_SIG))
+			.addSigPair(SignaturePair.newBuilder()
+					.setPubKeyPrefix(ByteString.copyFromUtf8("b"))
+					.setEd25519(CANONICAL_SIG))
+			.addSigPair(SignaturePair.newBuilder()
+					.setPubKeyPrefix(ByteString.copyFromUtf8("c"))
+					.setEd25519(CANONICAL_SIG))
+			.addSigPair(SignaturePair.newBuilder()
+					.setPubKeyPrefix(ByteString.copyFromUtf8("d"))
+					.setEd25519(CANONICAL_SIG))
+			.build();
 	private static final SigUsage SINGLE_SIG_USAGE = new SigUsage(
 			1, ONE_PAIR_SIG_MAP.getSerializedSize(), 1
 	);
+	private static final SigUsage QUAD_SIG_USAGE = new SigUsage(
+			4, FOUR_PAIR_SIG_MAP.getSerializedSize(), 1
+	);
 	private static final BaseTransactionMeta NO_MEMO_AND_NO_EXPLICIT_XFERS = new BaseTransactionMeta(0, 0);
+	private static final Key A_KEY = Key.newBuilder()
+			.setEd25519(ByteString.copyFromUtf8("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+			.build();
+	private static final AccountID AN_ACCOUNT = AccountID.newBuilder().setAccountNum(1_234L).build();
 
 	private static final TokenOpsUsage TOKEN_OPS_USAGE = new TokenOpsUsage();
 	private static final ConsensusOpsUsage CONSENSUS_OPS_USAGE = new ConsensusOpsUsage();
@@ -94,7 +128,6 @@ class BaseOperationUsage {
 	 * @return the total resource usage of the base configuration
 	 */
 	UsageAccumulator baseUsageFor(HederaFunctionality function, SubType type) {
-
 		switch (function) {
 			case CryptoTransfer:
 				switch (type) {
@@ -108,19 +141,38 @@ class BaseOperationUsage {
 						return nftCryptoTransfer();
 					case TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES:
 						return nftCryptoTransferWithCustomFee();
+					default:
+						break;
+				}
+				break;
+			case TokenCreate:
+				switch (type) {
+					case TOKEN_FUNGIBLE_COMMON:
+						return fungibleTokenCreate();
+					case TOKEN_NON_FUNGIBLE_UNIQUE:
+						return uniqueTokenCreate();
+					case TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES:
+						return fungibleTokenCreateWithCustomFees();
+					case TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES:
+						return uniqueTokenCreateWithCustomFees();
+					default:
+						break;
 				}
 			case TokenMint:
 				if (type == TOKEN_NON_FUNGIBLE_UNIQUE) {
 					return uniqueTokenMint();
 				}
+				break;
 			case TokenAccountWipe:
 				if (type == TOKEN_NON_FUNGIBLE_UNIQUE) {
 					return uniqueTokenWipe();
 				}
+				break;
 			case TokenBurn:
 				if (type == TOKEN_NON_FUNGIBLE_UNIQUE) {
 					return uniqueTokenBurn();
 				}
+				break;
 			case ConsensusSubmitMessage:
 				return submitMessage();
 			case TokenFeeScheduleUpdate:
@@ -132,7 +184,7 @@ class BaseOperationUsage {
 		throw new IllegalArgumentException("Canonical usage unknown");
 	}
 
-	private UsageAccumulator uniqueTokenBurn() {
+	UsageAccumulator uniqueTokenBurn() {
 		final var target = TokenID.newBuilder().setTokenNum(1_234).build();
 		final var canonicalTxn = TransactionBody.newBuilder()
 				.setTokenBurn(TokenBurnTransactionBody.newBuilder()
@@ -147,7 +199,7 @@ class BaseOperationUsage {
 		return UsageAccumulator.fromGrpc(baseUsage);
 	}
 
-	private UsageAccumulator uniqueTokenMint() {
+	UsageAccumulator uniqueTokenMint() {
 		final var target = TokenID.newBuilder().setTokenNum(1_234).build();
 		final var canonicalTxn = TransactionBody.newBuilder()
 				.setTokenMint(TokenMintTransactionBody.newBuilder()
@@ -164,7 +216,7 @@ class BaseOperationUsage {
 		return UsageAccumulator.fromGrpc(baseUsage);
 	}
 
-	private UsageAccumulator uniqueTokenWipe() {
+	UsageAccumulator uniqueTokenWipe() {
 		final var target = TokenID.newBuilder().setTokenNum(1_234).build();
 		final var targetAcct = AccountID.newBuilder().setAccountNum(5_678).build();
 		final var canonicalTxn = TransactionBody.newBuilder()
@@ -183,14 +235,107 @@ class BaseOperationUsage {
 		return UsageAccumulator.fromGrpc(baseUsage);
 	}
 
-	private UsageAccumulator submitMessage() {
+	UsageAccumulator fungibleTokenCreateWithCustomFees() {
+		final var canonicalTxn = TransactionBody.newBuilder()
+				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
+						.setAutoRenewAccount(AN_ACCOUNT)
+						.setTreasury(AN_ACCOUNT)
+						.setName("012345678912")
+						.setSymbol("ABCD")
+						.setAdminKey(A_KEY)
+						.setFeeScheduleKey(A_KEY)
+						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))
+						.setTokenType(TokenType.FUNGIBLE_COMMON)
+						.addCustomFees(CustomFee.newBuilder()
+								.setFeeCollectorAccountId(AN_ACCOUNT)
+								.setFixedFee(FixedFee.newBuilder()
+										.setAmount(100_000_000)
+										.build())))
+						.build();
+
+		final var helper = new TxnUsageEstimator(QUAD_SIG_USAGE, canonicalTxn, ESTIMATOR_UTILS);
+		final var estimator = new TokenCreateUsage(canonicalTxn, helper);
+		final var baseUsage = estimator.get();
+
+		return UsageAccumulator.fromGrpc(baseUsage);
+	}
+
+	UsageAccumulator fungibleTokenCreate() {
+		final var canonicalTxn = TransactionBody.newBuilder()
+				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
+						.setTreasury(AN_ACCOUNT)
+						.setAutoRenewAccount(AN_ACCOUNT)
+						.setName("012345678912")
+						.setSymbol("ABCD")
+						.setAdminKey(A_KEY)
+						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))
+						.setTokenType(TokenType.FUNGIBLE_COMMON))
+				.build();
+
+		final var helper = new TxnUsageEstimator(QUAD_SIG_USAGE, canonicalTxn, ESTIMATOR_UTILS);
+		final var estimator = new TokenCreateUsage(canonicalTxn, helper);
+		final var baseUsage = estimator.get();
+
+		return UsageAccumulator.fromGrpc(baseUsage);
+	}
+
+	UsageAccumulator uniqueTokenCreate() {
+		final var canonicalTxn = TransactionBody.newBuilder()
+				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
+						.setTreasury(AN_ACCOUNT)
+						.setAutoRenewAccount(AN_ACCOUNT)
+						.setInitialSupply(0L)
+						.setName("012345678912")
+						.setSymbol("ABCD")
+						.setAdminKey(A_KEY)
+						.setSupplyKey(A_KEY)
+						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))
+						.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE))
+				.build();
+
+		final var helper = new TxnUsageEstimator(QUAD_SIG_USAGE, canonicalTxn, ESTIMATOR_UTILS);
+		final var estimator = new TokenCreateUsage(canonicalTxn, helper);
+		final var baseUsage = estimator.get();
+
+		return UsageAccumulator.fromGrpc(baseUsage);
+	}
+
+	UsageAccumulator uniqueTokenCreateWithCustomFees() {
+		final var canonicalTxn = TransactionBody.newBuilder()
+				.setTokenCreation(TokenCreateTransactionBody.newBuilder()
+						.setAutoRenewAccount(AN_ACCOUNT)
+						.setTreasury(AN_ACCOUNT)
+						.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+						.setInitialSupply(0L)
+						.setName("012345678912")
+						.setSymbol("ABCD")
+						.setAdminKey(A_KEY)
+						.setSupplyKey(A_KEY)
+						.setFeeScheduleKey(A_KEY)
+						.setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS))
+						.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+						.addCustomFees(CustomFee.newBuilder()
+								.setFeeCollectorAccountId(AN_ACCOUNT)
+								.setFixedFee(FixedFee.newBuilder()
+										.setAmount(100_000_000)
+										.build())))
+				.build();
+
+		final var helper = new TxnUsageEstimator(QUAD_SIG_USAGE, canonicalTxn, ESTIMATOR_UTILS);
+		final var estimator = new TokenCreateUsage(canonicalTxn, helper);
+		final var baseUsage = estimator.get();
+
+		return UsageAccumulator.fromGrpc(baseUsage);
+	}
+
+	UsageAccumulator submitMessage() {
 		final var opMeta = new SubmitMessageMeta(100);
 		final var into = new UsageAccumulator();
 		CONSENSUS_OPS_USAGE.submitMessageUsage(SINGLE_SIG_USAGE, opMeta, NO_MEMO_AND_NO_EXPLICIT_XFERS, into);
 		return into;
 	}
 
-	private UsageAccumulator feeScheduleUpdate() {
+	UsageAccumulator feeScheduleUpdate() {
 		/* A canonical op */
 		final var target = TokenID.newBuilder().setShardNum(1).setRealmNum(2).setTokenNum(3).build();
 		final List<CustomFee> theNewSchedule = List.of(
@@ -219,7 +364,7 @@ class BaseOperationUsage {
 		return into;
 	}
 
-	private UsageAccumulator hbarCryptoTransfer() {
+	UsageAccumulator hbarCryptoTransfer() {
 		final var txnUsageMeta = new BaseTransactionMeta(0, 2);
 		final var xferUsageMeta = new CryptoTransferMeta(380, 0,
 				0, 0);
@@ -229,7 +374,7 @@ class BaseOperationUsage {
 		return into;
 	}
 
-	private UsageAccumulator htsCryptoTransfer() {
+	UsageAccumulator htsCryptoTransfer() {
 		final var xferUsageMeta = new CryptoTransferMeta(380, 1,
 				2, 0);
 		final var into = new UsageAccumulator();
@@ -238,7 +383,7 @@ class BaseOperationUsage {
 		return into;
 	}
 
-	private UsageAccumulator htsCryptoTransferWithCustomFee() {
+	UsageAccumulator htsCryptoTransferWithCustomFee() {
 		final var xferUsageMeta = new CryptoTransferMeta(380, 1,
 				2, 0);
 		xferUsageMeta.setCustomFeeHbarTransfers(2);
@@ -248,7 +393,7 @@ class BaseOperationUsage {
 		return into;
 	}
 
-	private UsageAccumulator nftCryptoTransfer() {
+	UsageAccumulator nftCryptoTransfer() {
 		final var xferUsageMeta = new CryptoTransferMeta(380, 1,
 				0, 1);
 		final var into = new UsageAccumulator();
@@ -257,7 +402,7 @@ class BaseOperationUsage {
 		return into;
 	}
 
-	private UsageAccumulator nftCryptoTransferWithCustomFee() {
+	UsageAccumulator nftCryptoTransferWithCustomFee() {
 		final var xferUsageMeta = new CryptoTransferMeta(380, 1,
 				0, 1);
 		xferUsageMeta.setCustomFeeHbarTransfers(2);

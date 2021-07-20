@@ -30,8 +30,10 @@ import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.approxChangeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.including;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -41,8 +43,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT;
@@ -68,9 +72,40 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 				cannotDeleteAlreadyDeletedAccount(),
 				cannotDeleteAccountWithSameBeneficiary(),
 				cannotDeleteTreasuryAccount(),
+				deletedAccountCannotBePayer()
 		});
 	}
 
+	private HapiApiSpec deletedAccountCannotBePayer() {
+		// Account Names
+		String SUBMITTING_NODE_ACCOUNT = "0.0.3";
+		String ACCOUNT_TO_BE_DELETED = "toBeDeleted";
+		String BENEFICIARY_ACCOUNT = "beneficiaryAccountForDeletedAccount";
+
+		// Snapshot Names
+		String SUBMITTING_NODE_PRE_TRANSFER = "submittingNodePreTransfer";
+		String SUBMITTING_NODE_AFTER_BALANCE_LOAD = "submittingNodeAfterBalanceLoad";
+
+		return defaultHapiSpec("DeletedAccountCannotBePayer")
+				.given(
+						cryptoCreate(ACCOUNT_TO_BE_DELETED),
+						cryptoCreate(BENEFICIARY_ACCOUNT).balance(0L)
+				).when(
+				).then(
+						balanceSnapshot(SUBMITTING_NODE_PRE_TRANSFER, SUBMITTING_NODE_ACCOUNT),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, SUBMITTING_NODE_ACCOUNT, 1000000000)),
+						balanceSnapshot(SUBMITTING_NODE_AFTER_BALANCE_LOAD, SUBMITTING_NODE_ACCOUNT),
+						cryptoDelete(ACCOUNT_TO_BE_DELETED)
+								.transfer(BENEFICIARY_ACCOUNT)
+								.deferStatusResolution(),
+						cryptoTransfer(tinyBarsFromTo(BENEFICIARY_ACCOUNT, GENESIS, 1))
+								.payingWith(ACCOUNT_TO_BE_DELETED)
+								.hasKnownStatus(PAYER_ACCOUNT_DELETED),
+						getAccountBalance(SUBMITTING_NODE_ACCOUNT)
+								.hasTinyBars(approxChangeFromSnapshot(SUBMITTING_NODE_AFTER_BALANCE_LOAD, -100000, 50000))
+								.logged()
+				);
+	}
 
 	private HapiApiSpec fundsTransferOnDelete() {
 		long B = HapiSpecSetup.getDefaultInstance().defaultBalance();

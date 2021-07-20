@@ -22,15 +22,12 @@ package com.hedera.services.grpc.marshalling;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.SwirldDualState;
 import com.swirlds.common.SwirldTransaction;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.time.Instant;
 import java.util.List;
@@ -51,20 +48,20 @@ import java.util.List;
 public class ImpliedTransfersMeta {
 	private final ResponseCodeEnum code;
 	private final ValidationProps validationProps;
-	private final List<Pair<Id, List<FcCustomFee>>> tokenFeeSchedules;
+	private final List<CustomFeeMeta> customFeeMeta;
 
 	public ImpliedTransfersMeta(
 			ValidationProps validationProps,
 			ResponseCodeEnum code,
-			List<Pair<Id, List<FcCustomFee>>> tokenFeeSchedules
+			List<CustomFeeMeta> customFeeMeta
 	) {
 		this.code = code;
 		this.validationProps = validationProps;
-		this.tokenFeeSchedules = tokenFeeSchedules;
+		this.customFeeMeta = customFeeMeta;
 	}
 
-	public List<Pair<Id, List<FcCustomFee>>> getTokenFeeSchedules() {
-		return tokenFeeSchedules;
+	public List<CustomFeeMeta> getCustomFeeMeta() {
+		return customFeeMeta;
 	}
 
 	public boolean wasDerivedFrom(GlobalDynamicProperties dynamicProperties, CustomFeeSchedules customFeeSchedules) {
@@ -72,15 +69,16 @@ public class ImpliedTransfersMeta {
 				(validationProps.maxHbarAdjusts == dynamicProperties.maxTransferListSize()) &&
 						(validationProps.maxTokenAdjusts == dynamicProperties.maxTokenTransferListSize()) &&
 						(validationProps.maxOwnershipChanges == dynamicProperties.maxNftTransfersLen()) &&
-						(validationProps.maxXferBalanceChanges == dynamicProperties.maxXferBalanceChanges() &&
-						(validationProps.maxNestedCustomFees == dynamicProperties.maxCustomFeeDepth()));
+						(validationProps.maxXferBalanceChanges == dynamicProperties.maxXferBalanceChanges()) &&
+						(validationProps.maxNestedCustomFees == dynamicProperties.maxCustomFeeDepth()) &&
+						(validationProps.areNftsEnabled == dynamicProperties.areNftsEnabled());
 		if (!validationParamsMatch) {
 			return false;
 		}
-		for (var pair : tokenFeeSchedules) {
-			var customFees = pair.getValue();
-			var newCustomFees = customFeeSchedules.lookupScheduleFor(pair.getKey().asEntityId());
-			if (!customFees.equals(newCustomFees)) {
+		for (var meta : customFeeMeta) {
+			final var tokenId = meta.getTokenId();
+			var newCustomMeta = customFeeSchedules.lookupMetaFor(tokenId);
+			if (!meta.equals(newCustomMeta)) {
 				return false;
 			}
 		}
@@ -110,7 +108,8 @@ public class ImpliedTransfersMeta {
 				.add("maxExplicitOwnershipChanges", validationProps.maxOwnershipChanges)
 				.add("maxNestedCustomFees", validationProps.maxNestedCustomFees)
 				.add("maxXferBalanceChanges", validationProps.maxXferBalanceChanges)
-				.add("tokenFeeSchedules", tokenFeeSchedules)
+				.add("areNftsEnabled", validationProps.areNftsEnabled)
+				.add("tokenFeeSchedules", customFeeMeta)
 				.toString();
 	}
 
@@ -120,19 +119,22 @@ public class ImpliedTransfersMeta {
 		private final int maxOwnershipChanges;
 		private final int maxNestedCustomFees;
 		private final int maxXferBalanceChanges;
+		private final boolean areNftsEnabled;
 
 		public ValidationProps(
 				int maxHbarAdjusts,
 				int maxTokenAdjusts,
 				int maxOwnershipChanges,
 				int maxNestedCustomFees,
-				int maxXferBalanceChanges
+				int maxXferBalanceChanges,
+				boolean areNftsEnabled
 		) {
 			this.maxHbarAdjusts = maxHbarAdjusts;
 			this.maxTokenAdjusts = maxTokenAdjusts;
 			this.maxOwnershipChanges = maxOwnershipChanges;
 			this.maxNestedCustomFees = maxNestedCustomFees;
 			this.maxXferBalanceChanges = maxXferBalanceChanges;
+			this.areNftsEnabled = areNftsEnabled;
 		}
 
 		public int getMaxHbarAdjusts() {
@@ -154,6 +156,10 @@ public class ImpliedTransfersMeta {
 		public int getMaxXferBalanceChanges() {
 			return maxXferBalanceChanges;
 		}
+
+		public boolean areNftsEnabled() {
+			return areNftsEnabled;
+                }
 
 		@Override
 		public boolean equals(Object obj) {

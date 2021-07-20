@@ -51,18 +51,12 @@ public class createTopicLoadTest extends LoadTest {
 		parseArgs(args);
 
 		createTopicLoadTest suite = new createTopicLoadTest();
-		suite.setReportStats(true);
 		suite.runSuiteSync();
 	}
 
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(runCreateTopics());
-	}
-
-	@Override
-	public boolean hasInterestingStats() {
-		return true;
 	}
 
 	private static HapiApiSpec runCreateTopics() {

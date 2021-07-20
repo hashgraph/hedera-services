@@ -867,6 +867,40 @@ class ServicesStateTest {
 	}
 
 	@Test
+	void archivingReleaseFcotmrAsExpected() {
+		// expect:
+		assertDoesNotThrow(subject::archive);
+
+		// and given:
+		subject.setUniqueTokenAssociations(uniqueTokenAssociations);
+		subject.setUniqueOwnershipAssociations(uniqueOwnershipAssociations);
+
+		// when:
+		subject.archive();
+
+		// then:
+		verify(uniqueTokenAssociations).release();
+		verify(uniqueOwnershipAssociations).release();
+	}
+
+	@Test
+	void onReleaseDoesReleaseFcotmrAsExpected() {
+		// expect:
+		assertDoesNotThrow(subject::onRelease);
+
+		// and given:
+		subject.setUniqueTokenAssociations(uniqueTokenAssociations);
+		subject.setUniqueOwnershipAssociations(uniqueOwnershipAssociations);
+
+		// when:
+		subject.onRelease();
+
+		// then:
+		verify(uniqueTokenAssociations).release();
+		verify(uniqueOwnershipAssociations).release();
+	}
+
+	@Test
 	void expandsSigsWithSignedTransactionBytes() throws InvalidProtocolBufferException {
 		// setup:
 		ByteString mockPk = ByteString.copyFrom("not-a-real-pkPrefix".getBytes());

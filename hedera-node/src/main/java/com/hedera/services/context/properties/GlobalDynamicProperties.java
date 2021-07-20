@@ -22,6 +22,7 @@ package com.hedera.services.context.properties;
 
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
@@ -75,9 +76,11 @@ public class GlobalDynamicProperties {
 	private CongestionMultipliers congestionMultipliers;
 	private int feesMinCongestionPeriod;
 	private long ratesMidnightCheckInterval;
+	private boolean areNftsEnabled;
 	private long maxNftMints;
 	private int maxXferBalanceChanges;
 	private int maxCustomFeeDepth;
+	private ThrottleReqOpsScaleFactor nftMintScaleFactor;
 
 	public GlobalDynamicProperties(
 			HederaNumbers hederaNums,
@@ -139,9 +142,11 @@ public class GlobalDynamicProperties {
 		feesMinCongestionPeriod = properties.getIntProperty("fees.minCongestionPeriod");
 		ratesMidnightCheckInterval = properties.getLongProperty("rates.midnightCheckInterval");
 		maxCustomFeesAllowed = properties.getIntProperty("tokens.maxCustomFeesAllowed");
+		areNftsEnabled = properties.getBooleanProperty("tokens.nfts.areEnabled");
 		maxNftMints = properties.getLongProperty("tokens.nfts.maxAllowedMints");
 		maxXferBalanceChanges = properties.getIntProperty("ledger.xferBalanceChanges.maxLen");
 		maxCustomFeeDepth = properties.getIntProperty("tokens.maxCustomFeeDepth");
+		nftMintScaleFactor = properties.getThrottleScaleFactor("tokens.nfts.mintThrottleScaleFactor");
 	}
 
 	public int maxTokensPerAccount() {
@@ -308,6 +313,10 @@ public class GlobalDynamicProperties {
 		return ratesMidnightCheckInterval;
 	}
 
+	public boolean areNftsEnabled() {
+		return areNftsEnabled;
+        }
+
 	public long maxNftMints() {
 		return maxNftMints;
 	}
@@ -318,5 +327,9 @@ public class GlobalDynamicProperties {
 
 	public int maxCustomFeeDepth() {
 		return maxCustomFeeDepth;
+	}
+
+	public ThrottleReqOpsScaleFactor nftMintScaleFactor() {
+		return nftMintScaleFactor;
 	}
 }

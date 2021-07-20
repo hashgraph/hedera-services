@@ -47,9 +47,11 @@ public class FractionalFeeAssessor {
 		}
 
 		var unitsLeft = initialUnits;
+		final var payer = change.getAccount();
 		final var denom = change.getToken();
 		for (var fee : feesWithFractional) {
-			if (fee.getFeeType() != FRACTIONAL_FEE) {
+			final var collector = fee.getFeeCollectorAsId();
+			if (fee.getFeeType() != FRACTIONAL_FEE || payer.equals(collector)) {
 				continue;
 			}
 
@@ -71,7 +73,6 @@ public class FractionalFeeAssessor {
 				return CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE;
 			}
 
-			final var collector = fee.getFeeCollectorAsId();
 			adjustedChange(collector, denom, assessedAmount, changeManager);
 			final var assessed = new FcAssessedCustomFee(collector.asEntityId(), denom.asEntityId(), assessedAmount);
 			accumulator.add(assessed);
