@@ -198,6 +198,7 @@ class ImpliedTransfersMarshalTest {
 		given(dynamicProperties.maxNftTransfersLen()).willReturn(maxExplicitOwnershipChanges);
 		given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges);
 		given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
+		given(dynamicProperties.areNftsEnabled()).willReturn(areNftsEnabled);
 	}
 
 	private void setupFullFixture() {
@@ -263,12 +264,14 @@ class ImpliedTransfersMarshalTest {
 	private final int maxExplicitOwnershipChanges = 12;
 	private final int maxFeeNesting = 1;
 	private final int maxBalanceChanges = 20;
+	private final boolean areNftsEnabled = true;
 	private final ImpliedTransfersMeta.ValidationProps props = new ImpliedTransfersMeta.ValidationProps(
 			maxExplicitHbarAdjusts,
 			maxExplicitTokenAdjusts,
 			maxExplicitOwnershipChanges,
 			maxFeeNesting,
-			maxBalanceChanges);
+			maxBalanceChanges,
+			areNftsEnabled);
 
 	private final AccountID aModel = asAccount("1.2.3");
 	private final AccountID bModel = asAccount("2.3.4");

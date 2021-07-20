@@ -152,7 +152,6 @@ class TokenBurnTransitionLogicTest {
 	@Test
 	void acceptsValidTxn() {
 		givenValidTxnCtx();
-		given(dynamicProperties.areNftsEnabled()).willReturn(false);
 
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(tokenBurnTxn));
@@ -186,7 +185,6 @@ class TokenBurnTransitionLogicTest {
 	@Test
 	void rejectsInvalidZeroAmount() {
 		givenInvalidZeroAmount();
-		given(dynamicProperties.areNftsEnabled()).willReturn(true);
 
 		// expect:
 		assertEquals(INVALID_TOKEN_BURN_AMOUNT, subject.semanticCheck().apply(tokenBurnTxn));
@@ -210,8 +208,6 @@ class TokenBurnTransitionLogicTest {
 
 	@Test
 	void rejectsInvalidTxnBodyWithNoProps() {
-		given(dynamicProperties.areNftsEnabled()).willReturn(true);
-
 		tokenBurnTxn = TransactionBody.newBuilder()
 				.setTokenBurn(
 						TokenBurnTransactionBody.newBuilder()

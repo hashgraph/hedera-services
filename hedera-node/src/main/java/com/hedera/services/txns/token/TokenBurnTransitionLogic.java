@@ -59,7 +59,7 @@ public class TokenBurnTransitionLogic implements TransitionLogic {
 	public TokenBurnTransitionLogic(
 			OptionValidator validator,
 			AccountStore accountStore,
-			TypedTokenStore store,
+			TypedTokenStore tokenStore,
 			TransactionContext txnCtx,
 			GlobalDynamicProperties dynamicProperties
 	) {

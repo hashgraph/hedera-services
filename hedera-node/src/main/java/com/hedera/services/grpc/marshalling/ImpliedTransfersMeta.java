@@ -126,7 +126,7 @@ public class ImpliedTransfersMeta {
 				int maxTokenAdjusts,
 				int maxOwnershipChanges,
 				int maxNestedCustomFees,
-				int maxXferBalanceChanges
+				int maxXferBalanceChanges,
 				boolean areNftsEnabled
 		) {
 			this.maxHbarAdjusts = maxHbarAdjusts;
