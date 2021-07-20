@@ -21,9 +21,9 @@ package com.hedera.services.bdd.spec.keys;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.core.HexUtils;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
+import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
@@ -95,7 +95,7 @@ public class TrieSigMapGenerator implements SigMapGenerator {
 					prefix = trie.randomPrefix(key.length);
 					break;
 			}
-			log.debug(HexUtils.bytes2Hex(key) + " gets prefix " + HexUtils.bytes2Hex(prefix));
+			log.debug(CommonUtils.hex(key) + " gets prefix " + CommonUtils.hex(prefix));
 			return prefix;
 		};
 	}

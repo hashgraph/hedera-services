@@ -25,7 +25,6 @@ import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.CommonUtils;
 import com.hedera.services.legacy.core.FeeClient;
-import com.hedera.services.legacy.core.HexUtils;
 import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.legacy.core.TestHelper;
 import com.hedera.services.legacy.file.LargeFileUploadIT;
@@ -340,7 +339,7 @@ public class SmartContractTestBitcarbon extends LegacySmartContractTest {
 		CallTransaction.Function function = getMintersOwnerFunction();
 		Object[] retResults = function.decodeResult(value);
 		if (retResults != null && retResults.length > 0) {
-			decodedReturnedValue = HexUtils.bytes2Hex((byte[]) retResults[0]);
+			decodedReturnedValue = com.swirlds.common.CommonUtils.hex((byte[]) retResults[0]);
 		}
 		return decodedReturnedValue;
 	}

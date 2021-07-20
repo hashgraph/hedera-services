@@ -51,6 +51,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.fee.SigValueObj;
+import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.util.ByteUtil;
@@ -271,7 +272,7 @@ public class TxnUtils {
 	}
 
 	public static String solidityIdFrom(ContractID contract) {
-		return ByteUtil.toHexString(ByteUtil.merge(
+		return CommonUtils.hex(ByteUtil.merge(
 				ByteUtil.intToBytes((int) contract.getShardNum()),
 				ByteUtil.longToBytes(contract.getRealmNum()),
 				ByteUtil.longToBytes(contract.getContractNum())));

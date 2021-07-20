@@ -23,7 +23,7 @@ package com.hedera.services.bdd.spec.utilops.inventory;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
-import org.apache.commons.codec.binary.Hex;
+import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -50,7 +50,7 @@ public class SpecKeyFromLiteral extends UtilOp {
 
 	@Override
 	protected boolean submitOp(HapiApiSpec spec) throws Throwable {
-		byte[] privateKey = Hex.decodeHex(hexEncodedPrivateKey);
+		byte[] privateKey = CommonUtils.unhex(hexEncodedPrivateKey);
 		createAndLinkSimpleKey(spec, privateKey, name, linkedId, log);
 		return false;
 	}

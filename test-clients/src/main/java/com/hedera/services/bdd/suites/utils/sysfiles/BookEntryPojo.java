@@ -27,7 +27,6 @@ import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.yahcli.commands.files.SysFileUploadCommand;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
-import org.apache.commons.codec.binary.Hex;
 import org.junit.Assert;
 
 import java.io.File;
@@ -114,7 +113,8 @@ public class BookEntryPojo {
 				entry.nodeAccount = null;
 			}
 		}
-		entry.certHash = address.getNodeCertHash().isEmpty() ? MISSING_CERT_HASH : address.getNodeCertHash().toStringUtf8();
+		entry.certHash = address.getNodeCertHash().isEmpty() ? MISSING_CERT_HASH :
+				address.getNodeCertHash().toStringUtf8();
 		mapEndpoints(address, entry);
 
 		entry.description = address.getDescription().isEmpty() ? null : address.getDescription();
@@ -244,7 +244,7 @@ public class BookEntryPojo {
 		try {
 			var crtBytes = Files.readAllBytes(Paths.get(baseDir, String.format("node%d.crt", nodeId)));
 			var crtHash = CommonUtils.noThrowSha384HashOf(crtBytes);
-			return Hex.encodeHexString(crtHash);
+			return com.swirlds.common.CommonUtils.hex(crtHash);
 		} catch (Exception e) {
 			throw new IllegalStateException(e);
 		}
@@ -253,7 +253,7 @@ public class BookEntryPojo {
 	static String asHexEncodedDerPubKey(String baseDir, long nodeId) {
 		try {
 			var pubKeyBytes = Files.readAllBytes(Paths.get(baseDir, String.format("node%d.der", nodeId)));
-			return Hex.encodeHexString(pubKeyBytes);
+			return com.swirlds.common.CommonUtils.hex(pubKeyBytes);
 		} catch (Exception e) {
 			throw new IllegalStateException(e);
 		}

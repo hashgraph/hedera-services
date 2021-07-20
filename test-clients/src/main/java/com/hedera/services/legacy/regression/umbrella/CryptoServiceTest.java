@@ -21,7 +21,6 @@ package com.hedera.services.legacy.regression.umbrella;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.client.test.ClientBaseThread;
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.CommonUtils;
 import com.hedera.services.legacy.core.CustomProperties;
@@ -565,7 +564,7 @@ public class CryptoServiceTest extends TestHelperComplex {
 		if (KeyExpansion.USE_HEX_ENCODED_KEY) {
 			akey = Key.newBuilder().setEd25519(ByteString.copyFromUtf8(pubKeyHex)).build();
 		} else {
-			akey = Key.newBuilder().setEd25519(ByteString.copyFrom(ClientBaseThread.hexToBytes(pubKeyHex)))
+			akey = Key.newBuilder().setEd25519(ByteString.copyFrom(com.swirlds.common.CommonUtils.unhex(pubKeyHex)))
 					.build();
 		}
 		genesisPrivateKey = genesisKeyPair.getPrivateKey();

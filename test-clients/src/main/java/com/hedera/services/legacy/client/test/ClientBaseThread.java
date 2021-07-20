@@ -21,8 +21,6 @@ package com.hedera.services.legacy.client.test;
  */
 
 import com.hedera.services.legacy.client.core.GrpcStub;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -31,25 +29,10 @@ import org.apache.logging.log4j.Logger;
  */
 public class ClientBaseThread extends Thread {
 	private static final Logger log = LogManager.getLogger(ClientBaseThread.class);
-
 	GrpcStub grpcStub;
 
 	public ClientBaseThread(String host, int port) {
 		grpcStub = new GrpcStub(host, port);
-	}
-
-	/**
-	 * Convert hex string to bytes.
-	 *
-	 * @param data
-	 * 		hex string to be converted
-	 * @return converted byte array
-	 * @throws DecoderException
-	 * 		if there is a failure in conversion due to illegal characters provided in the input
-	 */
-	public static byte[] hexToBytes(String data) throws DecoderException {
-		byte[] rv = Hex.decodeHex(data);
-		return rv;
 	}
 
 	@Override

@@ -20,13 +20,13 @@ package com.hedera.services.bdd.suites.utils.keypairs;
  * ‍
  */
 
+import com.swirlds.common.CommonUtils;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
 import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
-import org.bouncycastle.util.encoders.Hex;
 
 import java.io.IOException;
 import java.security.PublicKey;
@@ -81,7 +81,7 @@ public final class Ed25519PublicKey {
 			throw new RuntimeException(e);
 		}
 
-		return Hex.toHexString(encoded);
+		return CommonUtils.hex(encoded);
 	}
 
 }

@@ -43,7 +43,6 @@ import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -303,7 +302,8 @@ public class SysFilesUpdate extends HapiApiSuite {
 									KeyFactory.PEM_PASSPHRASE);
 							var sysFileKey = Key.newBuilder()
 									.setEd25519(
-											ByteString.copyFrom(Hex.decodeHex(sysFileOcKeystore.getPublicKeyAbyteStr())))
+											ByteString.copyFrom(com.swirlds.common.CommonUtils.unhex(
+													sysFileOcKeystore.getPublicKeyAbyteStr())))
 									.build();
 							opLog.info("Will ensure default public key :: " + sysFileKey
 									+ " (hex = " + sysFileOcKeystore.getPublicKeyAbyteStr() + ")");
@@ -479,7 +479,8 @@ public class SysFilesUpdate extends HapiApiSuite {
 							if (args.length != 5) {
 								System.out.println(
 										String.format(
-												"Args (%s) don't include a path to the fee schedule JSON for the update!",
+												"Args (%s) don't include a path to the fee schedule JSON for the " +
+														"update!",
 												Arrays.toString(args)));
 								System.exit(1);
 							}
@@ -519,8 +520,8 @@ public class SysFilesUpdate extends HapiApiSuite {
 	}
 
 	private static void writeB64EncodedKeyPair(File file, KeyPair keyPair) throws Exception {
-		var hexPublicKey = Hex.encodeHexString(keyPair.getPublic().getEncoded());
-		var hexPrivateKey = Hex.encodeHexString(keyPair.getPrivate().getEncoded());
+		var hexPublicKey = com.swirlds.common.CommonUtils.hex(keyPair.getPublic().getEncoded());
+		var hexPrivateKey = com.swirlds.common.CommonUtils.hex(keyPair.getPrivate().getEncoded());
 		var keyPairObj = new KeyPairObj(hexPublicKey, hexPrivateKey);
 		var keys = new AccountKeyListObj(asAccount(defaultPayerOverride), List.of(keyPairObj));
 

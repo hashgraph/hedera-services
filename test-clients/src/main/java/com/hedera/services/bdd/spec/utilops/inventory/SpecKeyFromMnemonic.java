@@ -27,10 +27,10 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.deterministic.Bip0032;
 import com.hedera.services.bdd.spec.keys.deterministic.Ed25519Factory;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
+import com.swirlds.common.CommonUtils;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
 import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -70,7 +70,7 @@ public class SpecKeyFromMnemonic extends UtilOp {
 		var params = EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.ED_25519);
 		var privateKeySpec = new EdDSAPrivateKeySpec(privateKey, params);
 		var pk = new EdDSAPrivateKey(privateKeySpec);
-		var pubKeyHex = Hex.encodeHexString(pk.getAbyte());
+		var pubKeyHex = CommonUtils.hex(pk.getAbyte());
 		logToUse.info("Hex-encoded public key: " + pubKeyHex);
 		var key = Ed25519Factory.populatedFrom(pk.getAbyte());
 		spec.registry().saveKey(name, key);
