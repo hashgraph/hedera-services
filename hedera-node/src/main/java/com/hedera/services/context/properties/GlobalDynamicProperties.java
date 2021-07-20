@@ -76,6 +76,7 @@ public class GlobalDynamicProperties {
 	private CongestionMultipliers congestionMultipliers;
 	private int feesMinCongestionPeriod;
 	private long ratesMidnightCheckInterval;
+	private boolean areNftsEnabled;
 	private long maxNftMints;
 	private int maxXferBalanceChanges;
 	private int maxCustomFeeDepth;
@@ -141,6 +142,7 @@ public class GlobalDynamicProperties {
 		feesMinCongestionPeriod = properties.getIntProperty("fees.minCongestionPeriod");
 		ratesMidnightCheckInterval = properties.getLongProperty("rates.midnightCheckInterval");
 		maxCustomFeesAllowed = properties.getIntProperty("tokens.maxCustomFeesAllowed");
+		areNftsEnabled = properties.getBooleanProperty("tokens.nfts.areEnabled");
 		maxNftMints = properties.getLongProperty("tokens.nfts.maxAllowedMints");
 		maxXferBalanceChanges = properties.getIntProperty("ledger.xferBalanceChanges.maxLen");
 		maxCustomFeeDepth = properties.getIntProperty("tokens.maxCustomFeeDepth");
@@ -310,6 +312,10 @@ public class GlobalDynamicProperties {
 	public long ratesMidnightCheckInterval() {
 		return ratesMidnightCheckInterval;
 	}
+
+	public boolean areNftsEnabled() {
+		return areNftsEnabled;
+        }
 
 	public long maxNftMints() {
 		return maxNftMints;

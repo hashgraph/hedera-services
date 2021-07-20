@@ -39,6 +39,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_TR
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
@@ -63,6 +64,7 @@ public class PureTransferSemanticChecks {
 		final var maxHbarAdjusts = validationProps.getMaxHbarAdjusts();
 		final var maxTokenAdjusts = validationProps.getMaxTokenAdjusts();
 		final var maxOwnershipChanges = validationProps.getMaxOwnershipChanges();
+		final var areNftsEnabled = validationProps.areNftsEnabled();
 
 		final var hbarAdjusts = hbarAdjustsWrapper.getAccountAmountsList();
 
@@ -76,7 +78,8 @@ public class PureTransferSemanticChecks {
 			return TRANSFER_LIST_SIZE_LIMIT_EXCEEDED;
 		}
 
-		final var tokenValidity = validateTokenTransferSizes(tokenAdjustsList, maxTokenAdjusts, maxOwnershipChanges);
+		final var tokenValidity = validateTokenTransferSizes(
+				tokenAdjustsList, maxTokenAdjusts, maxOwnershipChanges, areNftsEnabled);
 		if (tokenValidity != OK) {
 			return tokenValidity;
 		}
@@ -86,7 +89,8 @@ public class PureTransferSemanticChecks {
 	ResponseCodeEnum validateTokenTransferSizes(
 			List<TokenTransferList> tokenTransfersList,
 			int maxListLen,
-			int maxOwnershipChanges
+			int maxOwnershipChanges,
+			boolean areNftsEnabled
 	) {
 		final int numScopedTransfers = tokenTransfersList.size();
 		if (numScopedTransfers == 0) {
@@ -98,6 +102,9 @@ public class PureTransferSemanticChecks {
 		for (var scopedTransfers : tokenTransfersList) {
 			final var ownershipChangesHere = scopedTransfers.getNftTransfersCount();
 			if (ownershipChangesHere > 0) {
+				if (!areNftsEnabled) {
+					return NOT_SUPPORTED;
+				}
 				numOwnershipChanges += ownershipChangesHere;
 				if (numOwnershipChanges > maxOwnershipChanges) {
 					return BATCH_SIZE_LIMIT_EXCEEDED;

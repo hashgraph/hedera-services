@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.records;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -29,6 +30,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeObject;
 import org.apache.logging.log4j.LogManager;
@@ -48,6 +50,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractRecords;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
@@ -55,17 +58,24 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static org.junit.Assert.assertEquals;
 
 public class RecordCreationSuite extends HapiApiSuite {
@@ -82,6 +92,7 @@ public class RecordCreationSuite extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
+						confirmNftToggleIsOffByDefaultThenEnable(),
 						payerRecordCreationSanityChecks(),
 						newlyCreatedContractNoLongerGetsRecord(),
 						accountsGetPayerRecordsIfSoConfigured(),
@@ -102,6 +113,71 @@ public class RecordCreationSuite extends HapiApiSuite {
 //						recordsTtlChangesAsExpected(),
 				}
 		);
+	}
+
+	private HapiApiSpec confirmNftToggleIsOffByDefaultThenEnable() {
+		final var acceptedTokenAttempt = "someSuch";
+		final var blockedTokenAttempt = "neverToBe";
+		final var supplyKey = "supplyKey";
+		final var wipeKey = "wipeKey";
+		final var miscAccount = "civilian";
+
+		return defaultHapiSpec("ConfirmNftToggleIsOffByDefaultThenEnable")
+				.given(
+						tokenCreate(blockedTokenAttempt)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0L)
+								.hasPrecheck(NOT_SUPPORTED),
+						mintToken("1.2.3", List.of(ByteString.copyFromUtf8("NOPE")))
+								.signedBy(DEFAULT_PAYER)
+								.fee(ONE_HBAR)
+								.hasPrecheck(NOT_SUPPORTED),
+						burnToken("1.2.3", List.of(1L, 2L, 3L))
+								.signedBy(DEFAULT_PAYER)
+								.fee(ONE_HBAR)
+								.hasPrecheck(NOT_SUPPORTED),
+						wipeTokenAccount("1.2.3", "2.3.4", List.of(1L, 2L, 3L))
+								.signedBy(DEFAULT_PAYER)
+								.fee(ONE_HBAR)
+								.hasPrecheck(NOT_SUPPORTED),
+						cryptoTransfer(movingUnique(1L, "1.2.3")
+								.between("2.3.4", "3.4.5")
+						)
+								.signedBy(DEFAULT_PAYER)
+								.fee(ONE_HBAR)
+								.hasPrecheck(NOT_SUPPORTED)
+				).when(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+										"tokens.nfts.areEnabled", "true"
+								))
+				).then(
+						newKeyNamed(supplyKey),
+						newKeyNamed(wipeKey),
+						cryptoCreate(miscAccount),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(acceptedTokenAttempt)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0L)
+								.wipeKey(wipeKey)
+								.supplyKey(supplyKey)
+								.treasury(TOKEN_TREASURY),
+						mintToken(
+								acceptedTokenAttempt,
+								List.of(
+										ByteString.copyFromUtf8("A"),
+										ByteString.copyFromUtf8("B"),
+										ByteString.copyFromUtf8("C"))),
+						burnToken(acceptedTokenAttempt, List.of(2L)),
+						tokenAssociate(miscAccount, acceptedTokenAttempt),
+						cryptoTransfer(movingUnique(1L, acceptedTokenAttempt)
+								.between(TOKEN_TREASURY, miscAccount)
+						),
+						wipeTokenAccount(acceptedTokenAttempt, miscAccount, List.of(1L)),
+						getAccountBalance(miscAccount).hasTokenBalance(acceptedTokenAttempt, 0L),
+						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(acceptedTokenAttempt, 1L)
+				);
 	}
 
 	private HapiApiSpec submittingNodeStillPaidIfServiceFeesOmitted() {
