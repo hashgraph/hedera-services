@@ -63,6 +63,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordSystemProperty;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
@@ -130,6 +131,7 @@ public class TokenCreateSpecs extends HapiApiSuite {
 						onlyValidCustomFeeScheduleCanBeCreated(),
 						feeCollectorSigningReqsWorkForTokenCreate(),
 						createsFungibleInfiniteByDefault(),
+						baseCreationsHaveExpectedPrices(),
 				}
 		);
 	}
@@ -248,6 +250,99 @@ public class TokenCreateSpecs extends HapiApiSuite {
 												.kyc(TokenKycStatus.KycNotApplicable)
 								)
 				);
+	}
+
+	public HapiApiSpec baseCreationsHaveExpectedPrices() {
+		final var civilian = "NonExemptPayer";
+
+		final var expectedCommonNoCustomFeesPriceUsd = 1.00;
+		final var expectedUniqueNoCustomFeesPriceUsd = 1.00;
+		final var expectedCommonWithCustomFeesPriceUsd = 2.00;
+		final var expectedUniqueWithCustomFeesPriceUsd = 2.00;
+
+		final var commonNoFees = "commonNoFees";
+		final var commonWithFees = "commonWithFees";
+		final var uniqueNoFees = "uniqueNoFees";
+		final var uniqueWithFees = "uniqueWithFees";
+
+		final var autoRenew = "autoRenewAccount";
+		final var adminKey = "adminKey";
+		final var supplyKey = "supplyKey";
+		final var customFeeKey = "customFeeKey";
+
+		return defaultHapiSpec("BaseCreationsHaveExpectedPrices")
+				.given(
+						cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY).balance(0L),
+						cryptoCreate(autoRenew).balance(0L),
+						newKeyNamed(adminKey),
+						newKeyNamed(supplyKey),
+						newKeyNamed(customFeeKey)
+				).when(
+						tokenCreate(commonNoFees)
+								.blankMemo()
+								.name("012345678912")
+								.symbol("ABCD")
+								.payingWith(civilian)
+								.treasury(TOKEN_TREASURY)
+								.autoRenewAccount(autoRenew)
+								.autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+								.adminKey(adminKey)
+								.via(txnFor(commonNoFees)),
+						tokenCreate(commonWithFees)
+								.blankMemo()
+								.name("012345678912")
+								.symbol("ABCD")
+								.payingWith(civilian)
+								.treasury(TOKEN_TREASURY)
+								.autoRenewAccount(autoRenew)
+								.autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+								.adminKey(adminKey)
+								.withCustom(fixedHbarFee(ONE_HBAR, TOKEN_TREASURY))
+								.feeScheduleKey(customFeeKey)
+								.via(txnFor(commonWithFees)),
+						tokenCreate(uniqueNoFees)
+								.payingWith(civilian)
+								.blankMemo()
+								.name("012345678912")
+								.symbol("ABCD")
+								.initialSupply(0L)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.treasury(TOKEN_TREASURY)
+								.autoRenewAccount(autoRenew)
+								.autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+								.adminKey(adminKey)
+								.supplyKey(supplyKey)
+								.via(txnFor(uniqueNoFees)),
+						tokenCreate(uniqueWithFees)
+								.payingWith(civilian)
+								.blankMemo()
+								.name("012345678912")
+								.symbol("ABCD")
+								.initialSupply(0L)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.treasury(TOKEN_TREASURY)
+								.autoRenewAccount(autoRenew)
+								.autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+								.adminKey(adminKey)
+								.withCustom(fixedHbarFee(ONE_HBAR, TOKEN_TREASURY))
+								.supplyKey(supplyKey)
+								.feeScheduleKey(customFeeKey)
+								.via(txnFor(uniqueWithFees))
+				).then(
+						validateChargedUsdWithin(
+								txnFor(commonNoFees), expectedCommonNoCustomFeesPriceUsd, 0.01),
+						validateChargedUsdWithin(
+								txnFor(commonWithFees), expectedCommonWithCustomFeesPriceUsd, 0.01),
+						validateChargedUsdWithin(
+								txnFor(uniqueNoFees), expectedUniqueNoCustomFeesPriceUsd, 0.01),
+						validateChargedUsdWithin(
+								txnFor(uniqueWithFees), expectedUniqueWithCustomFeesPriceUsd, 0.01)
+				);
+	}
+
+	private String txnFor(String tokenSubType) {
+		return tokenSubType + "Txn";
 	}
 
 	public HapiApiSpec creationHappyPath() {

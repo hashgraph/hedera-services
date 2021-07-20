@@ -277,6 +277,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 									b.addCustomFees(supplier.apply(spec));
 								}
 							}
+							System.out.println(b.build());
 						});
 		return b -> b.setTokenCreation(opBody);
 	}

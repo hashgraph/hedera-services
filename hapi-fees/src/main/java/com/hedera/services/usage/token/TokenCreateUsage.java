@@ -37,7 +37,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 
 public class TokenCreateUsage extends TokenTxnUsage<TokenCreateUsage> {
-	private TokenCreateUsage(TransactionBody tokenCreationOp, TxnUsageEstimator usageEstimator) {
+	public TokenCreateUsage(TransactionBody tokenCreationOp, TxnUsageEstimator usageEstimator) {
 		super(tokenCreationOp, usageEstimator);
 	}
 
