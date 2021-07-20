@@ -59,6 +59,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateTransactionRecordEntities;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
@@ -93,37 +94,37 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						balancesChangeOnTokenTransfer(),
-						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
-						senderSigsAreValid(),
-						balancesAreChecked(),
-						duplicateAccountsInTokenTransferRejected(),
-						tokenOnlyTxnsAreAtomic(),
-						tokenPlusHbarTxnsAreAtomic(),
-						nonZeroTransfersRejected(),
-						prechecksWork(),
-						missingEntitiesRejected(),
-						allRequiredSigsAreChecked(),
-						uniqueTokenTxnAccountBalance(),
-						uniqueTokenTxnWithNoAssociation(),
-						uniqueTokenTxnWithFrozenAccount(),
-						uniqueTokenTxnWithSenderNotSigned(),
-						uniqueTokenTxnWithReceiverNotSigned(),
-						uniqueTokenTxnsAreAtomic(),
-						uniqueTokenDeletedTxn(),
-						cannotSendFungibleToDissociatedContractsOrAccounts(),
-						cannotGiveNftsToDissociatedContractsOrAccounts(),
-						recordsIncludeBothFungibleTokenChangesAndOwnershipChange(),
-						transferListsEnforceTokenTypeRestrictions(),
+//						balancesChangeOnTokenTransfer(),
+//						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
+//						senderSigsAreValid(),
+//						balancesAreChecked(),
+//						duplicateAccountsInTokenTransferRejected(),
+//						tokenOnlyTxnsAreAtomic(),
+//						tokenPlusHbarTxnsAreAtomic(),
+//						nonZeroTransfersRejected(),
+//						prechecksWork(),
+//						missingEntitiesRejected(),
+//						allRequiredSigsAreChecked(),
+//						uniqueTokenTxnAccountBalance(),
+//						uniqueTokenTxnWithNoAssociation(),
+//						uniqueTokenTxnWithFrozenAccount(),
+//						uniqueTokenTxnWithSenderNotSigned(),
+//						uniqueTokenTxnWithReceiverNotSigned(),
+//						uniqueTokenTxnsAreAtomic(),
+//						uniqueTokenDeletedTxn(),
+//						cannotSendFungibleToDissociatedContractsOrAccounts(),
+//						cannotGiveNftsToDissociatedContractsOrAccounts(),
+//						recordsIncludeBothFungibleTokenChangesAndOwnershipChange(),
+//						transferListsEnforceTokenTypeRestrictions(),
 						/* HIP-18 charging case studies */
-						fixedHbarCaseStudy(),
-						fractionalCaseStudy(),
+//						fixedHbarCaseStudy(),
+//						fractionalCaseStudy(),
 						simpleHtsFeeCaseStudy(),
 						nestedHbarCaseStudy(),
-						nestedFractionalCaseStudy(),
-						nestedHtsCaseStudy(),
-						treasuriesAreExemptFromAllFees(),
-						collectorsAreExemptFromTheirOwnFeesButNotOthers(),
+//						nestedFractionalCaseStudy(),
+//						nestedHtsCaseStudy(),
+//						treasuriesAreExemptFromAllFees(),
+//						collectorsAreExemptFromTheirOwnFeesButNotOthers(),
 				}
 		);
 	}
@@ -883,8 +884,16 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.fee(ONE_HBAR)
 								.via(txnFromAlice)
 				).then(
-						getTxnRecord(txnFromTreasury).logged(),
-						getTxnRecord(txnFromAlice).logged(),
+						getTxnRecord(txnFromTreasury)
+								.saveTxnRecordToRegistry("transferFromTreasuryRecord")
+								.logged(),
+						getTxnRecord(txnFromAlice)
+								.saveTxnRecordToRegistry("txnFromAliceRecord")
+								.logged(),
+						validateTransactionRecordEntities("txnFromAliceRecord", ASSESSED_CUSTOM_FEES,
+								ONE_HBAR, HBAR_TOKEN_SENTINEL, TokenType.FUNGIBLE_COMMON,  treasuryForToken),
+						validateTransactionRecordEntities("txnFromAliceRecord", TOKEN_TRANSFER_LIST,
+								1, tokenWithHbarFee, TokenType.NON_FUNGIBLE_UNIQUE, bob),
 						getAccountBalance(bob)
 								.hasTokenBalance(tokenWithHbarFee, 1L),
 						getAccountBalance(alice)
@@ -928,8 +937,24 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.fee(ONE_HBAR)
 								.via(txnFromBob)
 				).then(
-						getTxnRecord(txnFromTreasury).logged(),
-						getTxnRecord(txnFromBob).logged(),
+						getTxnRecord(txnFromTreasury)
+								.saveTxnRecordToRegistry("transferFromTreasuryRecord")
+								.logged(),
+						validateTransactionRecordEntities("transferFromTreasuryRecord", TOKEN_TRANSFER_LIST,
+								1_000_000L, tokenWithFractionalFee, TokenType.FUNGIBLE_COMMON, bob),
+						validateTransactionRecordEntities("transferFromTreasuryRecord", TOKEN_TRANSFER_LIST,
+								-1_000_000L, tokenWithFractionalFee, TokenType.FUNGIBLE_COMMON, treasuryForToken),
+						getTxnRecord(txnFromBob)
+								.saveTxnRecordToRegistry("transferFromBob")
+								.logged(),
+						validateTransactionRecordEntities("transferFromBob", TOKEN_TRANSFER_LIST,
+								-1_000L, tokenWithFractionalFee, TokenType.FUNGIBLE_COMMON, bob),
+						validateTransactionRecordEntities("transferFromBob", TOKEN_TRANSFER_LIST,
+								995L, tokenWithFractionalFee, TokenType.FUNGIBLE_COMMON, alice),
+						validateTransactionRecordEntities("transferFromBob", TOKEN_TRANSFER_LIST,
+								5L, tokenWithFractionalFee, TokenType.FUNGIBLE_COMMON, treasuryForToken),
+						validateTransactionRecordEntities("transferFromBob", ASSESSED_CUSTOM_FEES,
+								5L, tokenWithFractionalFee, TokenType.FUNGIBLE_COMMON, treasuryForToken),
 						getAccountBalance(alice)
 								.hasTokenBalance(tokenWithFractionalFee, 995L),
 						getAccountBalance(bob)
@@ -978,8 +1003,30 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.fee(ONE_HBAR)
 								.via(txnFromClaire)
 				).then(
-						getTxnRecord(txnFromTreasury).logged(),
-						getTxnRecord(txnFromClaire).logged(),
+						getTxnRecord(txnFromTreasury)
+								.saveTxnRecordToRegistry("txnFromTreasuryRecord")
+								.logged(),
+						validateTransactionRecordEntities("txnFromTreasuryRecord", TOKEN_TRANSFER_LIST, 1000L,
+								commissionPaymentToken, TokenType.FUNGIBLE_COMMON, claire),
+						validateTransactionRecordEntities("txnFromTreasuryRecord", TOKEN_TRANSFER_LIST, 1000L,
+								simpleHtsFeeToken, TokenType.FUNGIBLE_COMMON, claire),
+						validateTransactionRecordEntities("txnFromTreasuryRecord", TOKEN_TRANSFER_LIST, -1000L,
+								commissionPaymentToken, TokenType.FUNGIBLE_COMMON, treasuryForToken),
+						validateTransactionRecordEntities("txnFromTreasuryRecord", TOKEN_TRANSFER_LIST, -1000L,
+								simpleHtsFeeToken, TokenType.FUNGIBLE_COMMON, treasuryForToken),
+						getTxnRecord(txnFromClaire)
+								.saveTxnRecordToRegistry("txnFromClaireRecord")
+								.logged(),
+						validateTransactionRecordEntities("txnFromClaireRecord", TOKEN_TRANSFER_LIST, 100L,
+								simpleHtsFeeToken, TokenType.FUNGIBLE_COMMON, debbie),
+						validateTransactionRecordEntities("txnFromClaireRecord", TOKEN_TRANSFER_LIST, -100L,
+								simpleHtsFeeToken, TokenType.FUNGIBLE_COMMON, claire),
+						validateTransactionRecordEntities("txnFromClaireRecord", TOKEN_TRANSFER_LIST, 2L,
+								commissionPaymentToken, TokenType.FUNGIBLE_COMMON, treasuryForToken),
+						validateTransactionRecordEntities("txnFromClaireRecord", TOKEN_TRANSFER_LIST, -2L,
+								simpleHtsFeeToken, TokenType.FUNGIBLE_COMMON, claire),
+						validateTransactionRecordEntities("txnFromClaireRecord", ASSESSED_CUSTOM_FEES, 2L,
+								commissionPaymentToken, TokenType.FUNGIBLE_COMMON, treasuryForToken),
 						getAccountBalance(debbie)
 								.hasTokenBalance(simpleHtsFeeToken, 100L),
 						getAccountBalance(claire)
