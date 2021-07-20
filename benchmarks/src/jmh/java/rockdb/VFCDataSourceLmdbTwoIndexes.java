@@ -2,10 +2,8 @@ package rockdb;
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.fcmap.VFCDataSource;
 import com.swirlds.fcmap.VKey;
 import com.swirlds.fcmap.VValue;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.lmdbjava.*;
 
 import java.io.IOException;
@@ -19,7 +17,7 @@ import static java.nio.ByteBuffer.allocateDirect;
 import static org.lmdbjava.DbiFlags.MDB_CREATE;
 import static org.lmdbjava.DbiFlags.MDB_INTEGERKEY;
 
-@SuppressWarnings({"unchecked", "unused", "jol"})
+@SuppressWarnings({"unchecked", "unused"})
 public final class VFCDataSourceLmdbTwoIndexes<K extends VKey, V extends VValue> implements SequentialInsertsVFCDataSource<K, V> {
     private final static int HASH_SIZE = Long.BYTES+ DigestType.SHA_384.digestLength();
     private final Supplier<K> keyConstructor;
@@ -69,13 +67,13 @@ public final class VFCDataSourceLmdbTwoIndexes<K extends VKey, V extends VValue>
         // Env can store many different databases (ie sorted maps).
         env = Env.create()
                 // LMDB also needs to know how large our DB might be. Over-estimating is OK.
-                .setMapSize(1_000_000_000*(long)(keySizeBytes+keySizeBytes+valueSizeBytes+HASH_SIZE+Long.BYTES+Long.BYTES+Long.BYTES+Long.BYTES)) // TODO just a guess so far
+                .setMapSize(2_000_000_000*(long)(keySizeBytes+keySizeBytes+valueSizeBytes+HASH_SIZE+Long.BYTES+Long.BYTES+Long.BYTES+Long.BYTES)) // TODO just a guess so far
                 // LMDB also needs to know how many DBs (Dbi) we want to store in this Env.
                 .setMaxDbs(4)
                 // Now let's open the Env. The same path can be concurrently opened and
                 // used in different processes, but do not open the same path twice in
                 // the same process at the same time.
-                .open(storageDir.toFile(), EnvFlags.MDB_WRITEMAP, EnvFlags.MDB_NOSYNC);
+                .open(storageDir.toFile(), EnvFlags.MDB_WRITEMAP, EnvFlags.MDB_NOSYNC, EnvFlags.MDB_NOMETASYNC, EnvFlags.MDB_NORDAHEAD);
         // We need a Dbi for each DB. A Dbi roughly equates to a sorted map. The
         // MDB_CREATE flag causes the DB to be created if it doesn't already exist.
         pathToKeyAndHashMap = env.openDbi("pathToHash", MDB_CREATE,MDB_INTEGERKEY);
@@ -305,8 +303,6 @@ public final class VFCDataSourceLmdbTwoIndexes<K extends VKey, V extends VValue>
         txn.close();
     }
 
-    private LongHashSet longHashSet = new LongHashSet(100_000_000);
-
     /**
      * Save a hash for a internal node
      *
@@ -319,11 +315,6 @@ public final class VFCDataSourceLmdbTwoIndexes<K extends VKey, V extends VValue>
         if (hash == null)  throw new IllegalArgumentException("Hash is null");
         Txn<ByteBuffer> txn = (Txn<ByteBuffer>)handle;
         // write hash
-        if (longHashSet.contains(path)) {
-            System.out.println("we have already seen path "+path);
-        } else {
-            longHashSet.add(path);
-        }
         pathToKeyAndHashMap.put(txn,getPathBytes(path), getKeyAndHashBytes(hash));
     }
 
@@ -413,11 +404,6 @@ public final class VFCDataSourceLmdbTwoIndexes<K extends VKey, V extends VValue>
         if (hash == null)  throw new IllegalArgumentException("Hash is null");
         Txn<ByteBuffer> txn = (Txn<ByteBuffer>)handle;
         // write hash
-        if (longHashSet.contains(path)) {
-            System.out.println("we have already seen path "+path);
-        } else {
-            longHashSet.add(path);
-        }
         pathToKeyAndHashMap.put(txn,getPathBytes(path), getKeyAndHashBytes(hash), PutFlags.MDB_APPEND);
     }
 
