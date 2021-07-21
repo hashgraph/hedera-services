@@ -33,7 +33,7 @@ public class SignatureGenerator {
 	 *
 	 * @param msgBytes
 	 * 		to be signed
-	 * @param priv
+	 * @param privateKey
 	 * 		private key
 	 * @return signature in hex format
 	 * @throws InvalidKeyException
@@ -41,18 +41,16 @@ public class SignatureGenerator {
 	 * @throws SignatureException
 	 * 		if there is an error in the signature
 	 */
-	public static String signBytes(byte[] msgBytes, PrivateKey priv) throws InvalidKeyException, SignatureException {
-		byte[] sigBytes = null;
-		if (priv instanceof EdDSAPrivateKey) {
-			EdDSAEngine engine = new EdDSAEngine();
-			engine.initSign(priv);
-			sigBytes = engine.signOneShot(msgBytes);
-		} else {
+	public static String signBytes(final byte[] msgBytes, final PrivateKey privateKey
+	) throws InvalidKeyException, SignatureException {
+		if (!(privateKey instanceof EdDSAPrivateKey)) {
 			throw new IllegalArgumentException("Only Ed25519 signatures are supported at this time!");
 		}
+		final var engine = new EdDSAEngine();
+		engine.initSign(privateKey);
+		final var sigBytes = engine.signOneShot(msgBytes);
 
-		String sigHex = com.swirlds.common.CommonUtils.hex(sigBytes);
-		return sigHex;
+		return com.swirlds.common.CommonUtils.hex(sigBytes);
 	}
 
 }
