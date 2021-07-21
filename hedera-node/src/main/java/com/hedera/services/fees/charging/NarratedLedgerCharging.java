@@ -9,9 +9,9 @@ package com.hedera.services.fees.charging;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -184,9 +184,7 @@ public class NarratedLedgerCharging implements NarratedCharging {
 
 	@Override
 	public void chargeSubmittingNodeUpToNetworkFee() {
-		if (effPayerStartingBalance == UNKNOWN_ACCOUNT_BALANCE) {
-			initEffPayerBalance(nodeId);
-		}
+		initEffPayerBalance(nodeId);
 		long chargeableNetworkFee = Math.min(networkFee, effPayerStartingBalance);
 		ledger.adjustBalance(grpcNodeId, -chargeableNetworkFee);
 		ledger.adjustBalance(dynamicProperties.fundingAccount(), +chargeableNetworkFee);
