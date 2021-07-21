@@ -5,8 +5,8 @@ import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.hedera.services.store.models.Id;
 import fcmmap.FCVirtualMapTestUtils;
 import org.openjdk.jmh.annotations.*;
-import rockdb.SequentialInsertsVFCDataSource;
-import rockdb.VFCDataSourceLmdb;
+import lmdb.SequentialInsertsVFCDataSource;
+import lmdb.VFCDataSourceLmdb;
 
 import java.io.IOException;
 import java.nio.file.Files;

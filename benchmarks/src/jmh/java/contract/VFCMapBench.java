@@ -3,9 +3,7 @@ package contract;
 import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.fcmap.VFCMap;
-import com.swirlds.fcmap.internal.InMemoryDataSource;
 import org.openjdk.jmh.annotations.*;
-import rockdb.VFCDataSourceLmdb;
 import rockdb.VFCDataSourceRocksDb;
 
 import java.math.BigInteger;
