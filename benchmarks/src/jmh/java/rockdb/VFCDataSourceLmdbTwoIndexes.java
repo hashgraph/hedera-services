@@ -70,6 +70,8 @@ public final class VFCDataSourceLmdbTwoIndexes<K extends VKey, V extends VValue>
                 .setMapSize(2_000_000_000*(long)(keySizeBytes+keySizeBytes+valueSizeBytes+HASH_SIZE+Long.BYTES+Long.BYTES+Long.BYTES+Long.BYTES)) // TODO just a guess so far
                 // LMDB also needs to know how many DBs (Dbi) we want to store in this Env.
                 .setMaxDbs(4)
+                // assume max readers is max number of cores
+                .setMaxReaders(Runtime.getRuntime().availableProcessors())
                 // Now let's open the Env. The same path can be concurrently opened and
                 // used in different processes, but do not open the same path twice in
                 // the same process at the same time.
