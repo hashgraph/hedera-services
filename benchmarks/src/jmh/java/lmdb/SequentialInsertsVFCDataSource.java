@@ -1,4 +1,4 @@
-package rockdb;
+package lmdb;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.fcmap.VFCDataSource;

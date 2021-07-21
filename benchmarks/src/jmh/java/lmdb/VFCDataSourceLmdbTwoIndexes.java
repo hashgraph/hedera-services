@@ -1,4 +1,4 @@
-package rockdb;
+package lmdb;
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;

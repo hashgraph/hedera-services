@@ -10,9 +10,9 @@ import com.swirlds.fcmap.VFCDataSource;
 import com.swirlds.fcmap.VValue;
 import fcmmap.FCVirtualMapTestUtils;
 import org.openjdk.jmh.annotations.*;
-import rockdb.SequentialInsertsVFCDataSource;
-import rockdb.VFCDataSourceLmdb;
-import rockdb.VFCDataSourceLmdbTwoIndexes;
+import lmdb.SequentialInsertsVFCDataSource;
+import lmdb.VFCDataSourceLmdb;
+import lmdb.VFCDataSourceLmdbTwoIndexes;
 import rockdb.VFCDataSourceRocksDb;
 
 import java.io.IOException;
