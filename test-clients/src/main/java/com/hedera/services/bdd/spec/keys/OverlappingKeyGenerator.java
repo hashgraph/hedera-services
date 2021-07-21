@@ -54,7 +54,7 @@ public class OverlappingKeyGenerator implements KeyGenerator {
 		Set<ByteString> usedPrefixes = new HashSet<>();
 		Map<ByteString, Key> byPrefix = new HashMap<>();
 		while (precomputed.size() < n) {
-			Key candidate = KeyExpansion.genSingleEd25519KeyByteEncodePubKey(pkMap);
+			Key candidate = KeyExpansion.genSingleEd25519Key(pkMap);
 			ByteString prefix = pubKeyPrefixOf(candidate, minOverlapLen);
 			if (byPrefix.containsKey(prefix)) {
 				if (!usedPrefixes.contains(prefix)) {

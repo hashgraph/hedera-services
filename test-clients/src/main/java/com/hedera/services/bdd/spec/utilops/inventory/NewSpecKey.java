@@ -77,7 +77,7 @@ public class NewSpecKey extends UtilOp {
 
 	@Override
 	protected boolean submitOp(HapiApiSpec spec) throws Throwable {
-		KeyGenerator keyGen = generator.orElse(KeyExpansion::genSingleEd25519KeyByteEncodePubKey);
+		final var keyGen = generator.orElse(KeyExpansion::genSingleEd25519Key);
 		Key key;
 		if (shape.isPresent()) {
 			if (labels.isPresent()) {

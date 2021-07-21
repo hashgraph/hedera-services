@@ -20,11 +20,8 @@ package com.hedera.services.legacy.client.util;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
-import com.hedera.services.legacy.client.util.KeyExpansion;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -39,10 +36,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static com.hedera.services.legacy.client.util.KeyExpansion.keyFromBytes;
+
 /**
  * Transaction Signing utility.
- *
- * @author hua
  */
 public class TransactionSigner {
 	/**
@@ -54,19 +51,20 @@ public class TransactionSigner {
 	 * 		private key list
 	 * @return signed transaction
 	 */
-	public static Transaction signTransaction(Transaction transaction, List<PrivateKey> privKeyList) {
+	public static Transaction signTransaction(final Transaction transaction, final List<PrivateKey> privKeyList) {
 		return signTransaction(transaction, privKeyList, false);
 	}
 
-	public static Transaction signTransaction(Transaction transaction, List<PrivateKey> privKeyList,
-			boolean appendSigMap) {
-		List<Key> keyList = new ArrayList<>();
-		HashMap<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();
+	public static Transaction signTransaction(final Transaction transaction,
+			final List<PrivateKey> privKeyList,
+			final boolean appendSigMap
+	) {
+		final List<Key> keyList = new ArrayList<>();
+		final HashMap<String, PrivateKey> pubKey2privKeyMap = new HashMap<>();
 		for (PrivateKey pk : privKeyList) {
-			byte[] pubKey = ((EdDSAPrivateKey) pk).getAbyte();
-			Key key = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
-			keyList.add(key);
-			String pubKeyHex = com.swirlds.common.CommonUtils.hex(pubKey);
+			final var pubKey = ((EdDSAPrivateKey) pk).getAbyte();
+			keyList.add(keyFromBytes(pubKey));
+			final var pubKeyHex = com.swirlds.common.CommonUtils.hex(pubKey);
 			pubKey2privKeyMap.put(pubKeyHex, pk);
 		}
 		try {
@@ -91,21 +89,26 @@ public class TransactionSigner {
 	 * @throws Exception
 	 * 		when transaction sign fails
 	 */
-	public static Transaction signTransactionComplexWithSigMap(TransactionOrBuilder transaction, List<Key> keys,
-			Map<String, PrivateKey> pubKey2privKeyMap) throws Exception {
+	public static Transaction signTransactionComplexWithSigMap(final TransactionOrBuilder transaction,
+			final List<Key> keys,
+			final Map<String, PrivateKey> pubKey2privKeyMap
+	) throws Exception {
 		return signTransactionComplexWithSigMap(transaction, keys, pubKey2privKeyMap, false);
 	}
 
-	public static Transaction signTransactionComplexWithSigMap(TransactionOrBuilder transaction, List<Key> keys,
-			Map<String, PrivateKey> pubKey2privKeyMap, boolean appendSigMap) throws Exception {
-		byte[] bodyBytes = CommonUtils.extractTransactionBodyBytes(transaction);
-		SignatureMap sigsMap = signAsSignatureMap(bodyBytes, keys, pubKey2privKeyMap);
+	public static Transaction signTransactionComplexWithSigMap(final TransactionOrBuilder transaction,
+			final List<Key> keys,
+			final Map<String, PrivateKey> pubKey2privKeyMap,
+			final boolean appendSigMap
+	) throws Exception {
+		final var bodyBytes = CommonUtils.extractTransactionBodyBytes(transaction);
+		final var sigsMap = signAsSignatureMap(bodyBytes, keys, pubKey2privKeyMap);
 
-		Transaction.Builder builder = CommonUtils.toTransactionBuilder(transaction);
+		final var builder = CommonUtils.toTransactionBuilder(transaction);
 
 		if (appendSigMap) {
-			SignatureMap currentSigMap = CommonUtils.extractSignatureMapOrUseDefault(transaction);
-			SignatureMap sigMapToSet = currentSigMap.toBuilder().addAllSigPair(sigsMap.getSigPairList()).build();
+			final var currentSigMap = CommonUtils.extractSignatureMapOrUseDefault(transaction);
+			final var sigMapToSet = currentSigMap.toBuilder().addAllSigPair(sigsMap.getSigPairList()).build();
 			return builder.setSigMap(sigMapToSet).build();
 		}
 
@@ -126,26 +129,28 @@ public class TransactionSigner {
 	 * @throws Exception
 	 * 		when sign fails
 	 */
-	public static SignatureMap signAsSignatureMap(byte[] messageBytes, List<Key> keys,
-			Map<String, PrivateKey> pubKey2privKeyMap) throws Exception {
-		List<Key> expandedKeys = new ArrayList<>();
-		Key aKey = Key.newBuilder().setKeyList(KeyList.newBuilder().addAllKeys(keys).build()).build();
+	public static SignatureMap signAsSignatureMap(final byte[] messageBytes,
+			final List<Key> keys,
+			final Map<String, PrivateKey> pubKey2privKeyMap
+	) throws Exception {
+		final List<Key> expandedKeys = new ArrayList<>();
+		final var aKey = KeyExpansion.genKeyList(keys);
 		KeyExpansion.expandKeyMinimum4Signing(aKey, 1, expandedKeys);
-		Set<Key> uniqueKeys = new HashSet<>(expandedKeys);
-		int len = findMinPrefixLength(uniqueKeys);
+		final Set<Key> uniqueKeys = new HashSet<>(expandedKeys);
+		final int len = findMinPrefixLength(uniqueKeys);
 
-		List<SignaturePair> pairs = new ArrayList<>();
+		final List<SignaturePair> pairs = new ArrayList<>();
 		for (Key key : uniqueKeys) {
 			if (key.hasContractID()) {
 				// according to Leemon, "for Hedera transactions, we treat this key as never having signatures."
 				continue;
 			}
 
-			SignaturePair sig = KeyExpansion.signBasicAsSignaturePair(key, len, pubKey2privKeyMap, messageBytes);
+			final var sig = KeyExpansion.signBasicAsSignaturePair(key, len, pubKey2privKeyMap, messageBytes);
 			pairs.add(sig);
 		}
-		SignatureMap sigsMap = SignatureMap.newBuilder().addAllSigPair(pairs).build();
-		return sigsMap;
+
+		return SignatureMap.newBuilder().addAllSigPair(pairs).build();
 	}
 
 	/**
@@ -155,37 +160,34 @@ public class TransactionSigner {
 	 * 		set of keys to process
 	 * @return found minimum prefix length
 	 */
-	private static int findMinPrefixLength(Set<Key> keys) {
+	private static int findMinPrefixLength(final Set<Key> keys) {
 		if (keys.size() == 1) {
 			return 3;
 		}
 
-		int rv = 0;
-		int numKeys = keys.size();
 		//convert set to list of key hex strings
 		//find max string length
-		List<String> keyHexes = new ArrayList<>();
+		final List<String> keyHexes = new ArrayList<>();
 		int maxBytes = 0;
 		for (Key key : keys) {
-			byte[] bytes = key.getEd25519().toByteArray();
+			final var bytes = key.getEd25519().toByteArray();
 			if (bytes.length > maxBytes) {
 				maxBytes = bytes.length;
 			}
-			String hex = com.swirlds.common.CommonUtils.hex(bytes);
-			keyHexes.add(hex);
+			keyHexes.add(com.swirlds.common.CommonUtils.hex(bytes));
 		}
 
-		rv = maxBytes;
+		int rv = maxBytes;
 
 		//starting from first byte (each byte is 2 hex chars) to max/2 and loop with step of 2
 		for (int i = 1; i <= maxBytes; i++) {
 			// get all the prefixes and form a set (unique ones), check if size of the set is reduced.
-			Set<String> prefixSet = new HashSet<>();
+			final Set<String> prefixSet = new HashSet<>();
 			for (String khex : keyHexes) {
 				prefixSet.add(khex.substring(0, i * 2));
 			}
 			// if not reduced, the current prefix size is the answer, stop
-			if (prefixSet.size() == numKeys) {
+			if (prefixSet.size() == keys.size()) {
 				rv = i;
 				break;
 			}

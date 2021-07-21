@@ -414,7 +414,7 @@ public class KeyFactory implements Serializable {
 	}
 
 	public Key generate(KeyType type) {
-		return generate(type, KeyExpansion::genSingleEd25519KeyByteEncodePubKey);
+		return generate(type, KeyExpansion::genSingleEd25519Key);
 	}
 
 	public Key generate(KeyType type, KeyGenerator keyGen) {
