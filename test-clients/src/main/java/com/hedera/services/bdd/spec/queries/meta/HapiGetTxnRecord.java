@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.AssessedCustomFee;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Response;
@@ -373,24 +374,12 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		for (final var ttl : tokenTransferLists) {
 			if (ttl.getToken().equals(tokenID)) {
 				final var accountAmounts = ttl.getTransfersList();
-				for (var aa : accountAmounts) {
-					if( aa.getAmount() == amount &&
-							aa.getAccountID().equals(accountID)) {
-						found = true;
-						break;
-					}
+				if (!accountAmounts.isEmpty()) {
+					found = findInAccountAmountsList(accountID, amount, accountAmounts);
+				} else {
+					found = findInNftTransferList(accountID, amount, ttl.getNftTransfersList());
 				}
-				final var nftTransferList = ttl.getNftTransfersList();
-				for(var nfttl : nftTransferList) {
-					if (nfttl.getSerialNumber() == amount &&
-							nfttl.getReceiverAccountID().equals(accountID)) {
-						found = true;
-						break;
-					}
-				}
-				if (found) {
-					break;
-				}
+				break;
 			}
 		}
 
@@ -399,17 +388,37 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 				" and amount : " + amount + " in the tokenTransferList of the txnRecord", found);
 	}
 
+	private boolean findInNftTransferList(final AccountID accountID, final long amount,
+			final List<NftTransfer> nftTransferList) {
+		boolean found = false;
+		for(var nfttl : nftTransferList) {
+			if (nfttl.getSerialNumber() == amount &&
+					nfttl.getReceiverAccountID().equals(accountID)) {
+				found = true;
+				break;
+			}
+		}
+		return found;
+	}
+
 	private void validateAccountAmount(final AccountID accountID, final long amount,
+			final List<AccountAmount> accountAmountsList) {
+		final var found = findInAccountAmountsList(accountID, amount, accountAmountsList);
+		assertTrue("Cannot find AccountID : " + accountID +
+				" and amount : " + amount + " in the transferList of the txnRecord", found);
+	}
+
+	private boolean findInAccountAmountsList(final AccountID accountID, final long amount,
 			final List<AccountAmount> accountAmountsList) {
 		boolean found = false;
 		for (var aa : accountAmountsList) {
 			if( aa.getAmount() == amount &&
 					aa.getAccountID().equals(accountID)) {
 				found = true;
+				break;
 			}
 		}
-		assertTrue("Cannot find AccountID : " + accountID +
-				" and amount : " + amount + " in the transferList of the txnRecord", found);
+		return found;
 	}
 
 	@Override
