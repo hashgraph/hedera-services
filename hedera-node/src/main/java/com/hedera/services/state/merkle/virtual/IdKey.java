@@ -10,7 +10,7 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public class IdKey implements VKey {
-    public static final int SERIALIZED_SIZE = Long.BYTES;
+    public static final int SERIALIZED_SIZE = Long.BYTES*3;
     private static final long CLASS_ID = 0x2f48ba357c95f343L;
     private static final int CLASS_VERSION = 1;
     

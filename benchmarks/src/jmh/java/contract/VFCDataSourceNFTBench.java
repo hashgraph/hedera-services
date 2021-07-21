@@ -1,10 +1,13 @@
 package contract;
 
 import com.hedera.services.state.merkle.v2.VFCDataSourceImpl;
-import com.hedera.services.state.merkle.virtual.ContractKey;
+import com.hedera.services.state.merkle.virtual.IdKey;
 import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.hedera.services.store.models.Id;
+import com.swirlds.common.io.SerializableDataInputStream;
+import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.fcmap.VFCDataSource;
+import com.swirlds.fcmap.VValue;
 import fcmmap.FCVirtualMapTestUtils;
 import org.openjdk.jmh.annotations.*;
 import rockdb.SequentialInsertsVFCDataSource;
@@ -13,6 +16,7 @@ import rockdb.VFCDataSourceLmdbTwoIndexes;
 import rockdb.VFCDataSourceRocksDb;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Random;
@@ -27,30 +31,33 @@ import java.util.stream.IntStream;
 @Fork(1)
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
-public class VFCDataSourceImplGetBench {
+public class VFCDataSourceNFTBench {
     private static final long MB = 1024*1024;
 
-    @Param({"10000000"})
+    @Param({"1000000"})
     public long numEntities;
     @Param({"5"})
     public int hashThreads;
-    @Param({"4"})
+    @Param({"1"})
     public int writeThreads;
+    @Param({"2048"})
+    public int nftSize;
     @Param({"memmap","lmdb","lmdb2","lmdb-ns","lmdb2-ns","rocksdb"})
     public String impl;
 
     // state
     public Path storePath;
-    public VFCDataSource<ContractKey,ContractUint256> dataSource;
+    public VFCDataSource<IdKey,NFTData> dataSource;
     public Random random = new Random(1234);
     public int iteration = 0;
-    private ContractKey key1 = null;
-    private ContractKey key2 = null;
+    private IdKey key1 = null;
+    private IdKey key2 = null;
     private long randomLeafIndex1;
     private long randomLeafIndex2;
     private long randomNodeIndex1;
     private long randomNodeIndex2;
     private long nextLeafIndex;
+    private NFTData aNFT;
 
     @Setup(Level.Trial)
     public void setup() {
@@ -64,31 +71,32 @@ public class VFCDataSourceImplGetBench {
             dataSource = switch (impl) {
                 case "memmap" ->
                     VFCDataSourceImpl.createOnDisk(storePath,numEntities*2,
-                            ContractKey.SERIALIZED_SIZE, ContractKey::new,
-                            ContractUint256.SERIALIZED_SIZE, ContractUint256::new, true);
+                            IdKey.SERIALIZED_SIZE, IdKey::new,
+                            nftSize, NFTData::new, true);
                 case "lmdb","lmdb-ns" ->
                     new VFCDataSourceLmdb<>(
-                            ContractKey.SERIALIZED_SIZE, ContractKey::new,
-                            ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
+                            IdKey.SERIALIZED_SIZE, IdKey::new,
+                            nftSize, NFTData::new,
                             storePath);
                 case "lmdb2","lmdb2-ns" ->
                     new VFCDataSourceLmdbTwoIndexes<>(
-                            ContractKey.SERIALIZED_SIZE, ContractKey::new,
-                            ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
+                            IdKey.SERIALIZED_SIZE, IdKey::new,
+                            nftSize, NFTData::new,
                             storePath);
                 case "rocksdb" ->
                     new VFCDataSourceRocksDb<>(
-                            ContractKey.SERIALIZED_SIZE, ContractKey::new,
-                            ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
+                            IdKey.SERIALIZED_SIZE, IdKey::new,
+                            nftSize, NFTData::new,
                             storePath);
                 default ->
                     throw new IllegalStateException("Unexpected value: " + impl);
             };
             // create data
+            aNFT = new NFTData(nftSize);
             if (!storeExists) {
-                final SequentialInsertsVFCDataSource<ContractKey,ContractUint256> sequentialDataSource =
+                final SequentialInsertsVFCDataSource<IdKey,NFTData> sequentialDataSource =
                     (dataSource instanceof SequentialInsertsVFCDataSource && (impl.equals("lmdb") || impl.equals("lmdb2")))
-                            ? (SequentialInsertsVFCDataSource<ContractKey, ContractUint256>)dataSource : null;
+                            ? (SequentialInsertsVFCDataSource<IdKey,NFTData>)dataSource : null;
                 System.out.println("================================================================================");
                 System.out.println("Creating data ...");
                 long printStep = Math.min(500_000, numEntities / 4);
@@ -141,9 +149,9 @@ public class VFCDataSourceImplGetBench {
                         }
                         try {
                             if (sequentialDataSource != null) {
-                                ((SequentialInsertsVFCDataSource<ContractKey, ContractUint256>) dataSource).addLeafSequential(transaction, numEntities + i, new ContractKey(new Id(0, 0, i), new ContractUint256(i)), new ContractUint256(i), FCVirtualMapTestUtils.hash((int) i));
+                                ((SequentialInsertsVFCDataSource<IdKey,NFTData>) dataSource).addLeafSequential(transaction, numEntities + i, new IdKey(new Id(0, 0, i)), aNFT, FCVirtualMapTestUtils.hash((int) i));
                             } else {
-                                dataSource.addLeaf(transaction, numEntities + i, new ContractKey(new Id(0, 0, i), new ContractUint256(i)), new ContractUint256(i), FCVirtualMapTestUtils.hash((int) i));
+                                dataSource.addLeaf(transaction, numEntities + i, new IdKey(new Id(0, 0, i)), aNFT, FCVirtualMapTestUtils.hash((int) i));
                             }
                         } catch (Exception e) {
                             System.err.println("Error i= "+i);
@@ -190,8 +198,8 @@ public class VFCDataSourceImplGetBench {
         randomNodeIndex2 = (long)(random.nextDouble()*numEntities);
         randomLeafIndex1 = numEntities + randomNodeIndex1;
         randomLeafIndex2 = numEntities + randomNodeIndex2;
-        key1 = new ContractKey(new Id(0,0,randomNodeIndex1),new ContractUint256(randomNodeIndex1));
-        key2 = new ContractKey(new Id(0,0,randomNodeIndex2),new ContractUint256(randomNodeIndex2));
+        key1 = new IdKey(new Id(0,0,randomNodeIndex1));
+        key2 = new IdKey(new Id(0,0,randomNodeIndex2));
     }
 
 
@@ -202,13 +210,13 @@ public class VFCDataSourceImplGetBench {
 
     @Benchmark
     public void w1_updateLeafValue() throws Exception {
-        dataSource.updateLeaf(randomLeafIndex1,new ContractKey(new Id(0,0,randomLeafIndex1),new ContractUint256(randomLeafIndex1)),
-                new ContractUint256(randomNodeIndex2), FCVirtualMapTestUtils.hash((int) randomNodeIndex2));
+        dataSource.updateLeaf(randomLeafIndex1,new IdKey(new Id(0,0,randomLeafIndex1)),
+                aNFT, FCVirtualMapTestUtils.hash((int) randomNodeIndex2));
     }
 
     @Benchmark
     public void w2_addLeaf() throws Exception {
-        dataSource.addLeaf(numEntities + nextLeafIndex, new ContractKey(new Id(0,0,nextLeafIndex),new ContractUint256(nextLeafIndex)), new ContractUint256(nextLeafIndex), FCVirtualMapTestUtils.hash((int) nextLeafIndex));
+        dataSource.addLeaf(numEntities + nextLeafIndex, new IdKey(new Id(0,0,nextLeafIndex)), aNFT, FCVirtualMapTestUtils.hash((int) nextLeafIndex));
         nextLeafIndex++;
     }
 
@@ -230,7 +238,7 @@ public class VFCDataSourceImplGetBench {
                         // this is the transaction thread that reads leaf values
                         for (int i = 0; i < 20_000; i++) {
                             randomNodeIndex1 = (long) (random.nextDouble() * numEntities);
-                            key2 = new ContractKey(new Id(0, 0, randomNodeIndex1), new ContractUint256(randomNodeIndex1));
+                            key2 = new IdKey(new Id(0, 0, randomNodeIndex1));
                             dataSource.loadLeafValue(key2);
                         }
                     }
@@ -272,9 +280,9 @@ public class VFCDataSourceImplGetBench {
                             for (int i = 0; i < chunk; i++) { // update 10k leaves
                                 randomNodeIndex1 = (long) (random.nextDouble() * numEntities);
                                 randomLeafIndex1 = numEntities + randomNodeIndex1;
-                                key1 = new ContractKey(new Id(0, 0, randomNodeIndex1), new ContractUint256(randomNodeIndex1));
+                                key1 = new IdKey(new Id(0, 0, randomNodeIndex1));
                                 try {
-                                    dataSource.updateLeaf(transaction,randomLeafIndex1,key1, new ContractUint256(randomNodeIndex1), FCVirtualMapTestUtils.hash((int) randomNodeIndex1));
+                                    dataSource.updateLeaf(transaction,randomLeafIndex1,key1, aNFT, FCVirtualMapTestUtils.hash((int) randomNodeIndex1));
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                 }
@@ -314,4 +322,76 @@ public class VFCDataSourceImplGetBench {
         dataSource.loadHash(randomNodeIndex1);
     }
 
+    public static class NFTData implements VValue {
+        private static Random RANDOM = new Random();
+        
+        ByteBuffer randomData;
+
+        public NFTData() {}
+        
+        public NFTData(int size) {
+            randomData = ByteBuffer.allocate(size-Integer.BYTES);
+            RANDOM.nextBytes(randomData.array());
+        }
+
+        public NFTData(NFTData toCopy) {
+            this.randomData = toCopy.randomData;
+        }
+
+        @Override
+        public void serialize(ByteBuffer byteBuffer) throws IOException {
+            randomData.rewind();
+            byteBuffer.putInt(randomData.limit());
+            byteBuffer.put(randomData);
+        }
+
+        @Override
+        public void deserialize(ByteBuffer byteBuffer, int i) throws IOException {
+            int size = byteBuffer.getInt();
+            randomData = ByteBuffer.allocate(size);
+            randomData.put(byteBuffer);
+        }
+
+        @Override
+        public void update(ByteBuffer byteBuffer) throws IOException {
+            randomData.rewind();
+            byteBuffer.putInt(randomData.limit());
+            byteBuffer.put(randomData);
+        }
+
+        @Override
+        public NFTData copy() {
+            return new NFTData(this);
+        }
+
+        @Override
+        public NFTData asReadOnly() {
+            return this;
+        }
+
+        @Override
+        public void release() {
+            randomData = null;
+        }
+
+        @Override
+        public void deserialize(SerializableDataInputStream serializableDataInputStream, int i) throws IOException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long getClassId() {
+            return 35468187315L;
+        }
+
+        @Override
+        public void serialize(SerializableDataOutputStream serializableDataOutputStream) throws IOException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int getVersion() {
+            return 1;
+        }
+    }
 }
