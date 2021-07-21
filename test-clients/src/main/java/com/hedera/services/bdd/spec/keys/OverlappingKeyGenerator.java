@@ -21,7 +21,7 @@ package com.hedera.services.bdd.spec.keys;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.proto.utils.KeyExpansion;
+import com.hedera.services.legacy.client.util.KeyExpansion;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;

@@ -1,8 +1,8 @@
-package com.hederahashgraph.builder;
+package com.hedera.services.legacy.client.util;
 
 /*-
  * ‌
- * Hedera Services API
+ * Hedera Services Test Clients
  * ​
  * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
  * ​
@@ -22,7 +22,7 @@ package com.hederahashgraph.builder;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
-import com.hedera.services.legacy.proto.utils.KeyExpansion;
+import com.hedera.services.legacy.client.util.KeyExpansion;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.SignatureMap;
