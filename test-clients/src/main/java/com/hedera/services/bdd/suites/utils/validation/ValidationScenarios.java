@@ -59,7 +59,7 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.TopicID;
-import org.apache.commons.codec.binary.Hex;
+import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
@@ -1015,7 +1015,7 @@ public class ValidationScenarios extends HapiApiSuite {
 				var info = check.getResponse().getCryptoGetInfo().getAccountInfo();
 				var ocKeystore = SpecUtils.asOcKeystore(new File(pemLoc), KeyFactory.PEM_PASSPHRASE);
 				var expectedKey = Key.newBuilder()
-						.setEd25519(ByteString.copyFrom(Hex.decodeHex(ocKeystore.getPublicKeyAbyteStr())))
+						.setEd25519(ByteString.copyFrom(CommonUtils.unhex(ocKeystore.getPublicKeyAbyteStr())))
 						.build();
 				Assert.assertEquals(
 						String.format("Account 0.0.%d had a different key than expected!", accountNo),
@@ -1152,7 +1152,8 @@ public class ValidationScenarios extends HapiApiSuite {
 						.setKeyList(KeyList.newBuilder()
 								.addKeys(Key.newBuilder()
 										.setEd25519(
-												ByteString.copyFrom(Hex.decodeHex(ocKeystore.getPublicKeyAbyteStr())))))
+												ByteString.copyFrom(
+														CommonUtils.unhex(ocKeystore.getPublicKeyAbyteStr())))))
 						.build();
 				Assert.assertEquals(
 						String.format("File 0.0.%d had a different key than expected!", fileNo),
@@ -1235,7 +1236,8 @@ public class ValidationScenarios extends HapiApiSuite {
 									.payingWith(SCENARIO_PAYER_NAME)
 									.setNodeFrom(ValidationScenarios::nextNode)
 									.sending(1L),
-							contractCall(PERSISTENT_CONTRACT_NAME, ContractResources.CONSPICUOUS_DONATION_ABI, donationArgs)
+							contractCall(PERSISTENT_CONTRACT_NAME, ContractResources.CONSPICUOUS_DONATION_ABI,
+									donationArgs)
 									.payingWith(SCENARIO_PAYER_NAME)
 									.setNodeFrom(ValidationScenarios::nextNode)
 									.via("donation"),
@@ -1306,7 +1308,7 @@ public class ValidationScenarios extends HapiApiSuite {
 				var info = infoCheck.getResponse().getContractGetInfo().getContractInfo();
 				var ocKeystore = SpecUtils.asOcKeystore(new File(pemLoc), KeyFactory.PEM_PASSPHRASE);
 				var expectedKey = Key.newBuilder()
-						.setEd25519(ByteString.copyFrom(Hex.decodeHex(ocKeystore.getPublicKeyAbyteStr())))
+						.setEd25519(ByteString.copyFrom(CommonUtils.unhex(ocKeystore.getPublicKeyAbyteStr())))
 						.build();
 				Assert.assertEquals(
 						String.format("Contract 0.0.%d had a different key than expected!", contractNo),
@@ -1490,7 +1492,7 @@ public class ValidationScenarios extends HapiApiSuite {
 				var info = check.getResponse().getConsensusGetTopicInfo().getTopicInfo();
 				var ocKeystore = SpecUtils.asOcKeystore(new File(pemLoc), KeyFactory.PEM_PASSPHRASE);
 				var expectedKey = Key.newBuilder()
-						.setEd25519(ByteString.copyFrom(Hex.decodeHex(ocKeystore.getPublicKeyAbyteStr())))
+						.setEd25519(ByteString.copyFrom(CommonUtils.unhex(ocKeystore.getPublicKeyAbyteStr())))
 						.build();
 				Assert.assertEquals(
 						String.format("Topic 0.0.%d had a different key than expected!", topicNo),

@@ -20,13 +20,13 @@ package com.hedera.services.bdd.suites.utils.keypairs;
  * ‍
  */
 
+import com.swirlds.common.CommonUtils;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
 import net.i2p.crypto.eddsa.spec.EdDSAParameterSpec;
 import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
 import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
-import org.bouncycastle.util.encoders.Hex;
 
 import java.security.KeyPair;
 import java.security.spec.InvalidKeySpecException;
@@ -52,7 +52,7 @@ public class EncryptionUtils {
 	 * @return a key pair built from the given encoded hex string
 	 */
 	private static KeyPair buildKeyPairFromMainnetPriKeyEncHex(final String priKeyEncHex) {
-		byte[] privateKeyBytes = Hex.decode(priKeyEncHex);
+		byte[] privateKeyBytes = CommonUtils.unhex(priKeyEncHex);
 		EdDSAPrivateKey privateKey;
 		EdDSAPublicKey publicKey;
 		try {

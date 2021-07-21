@@ -34,10 +34,10 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.core.CallTransaction;
-import org.spongycastle.util.encoders.Hex;
 
 import java.util.Arrays;
 import java.util.List;
@@ -118,7 +118,7 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 		if (expectations.isPresent()) {
 			ContractFunctionResult actual = response.getContractCallLocal().getFunctionResult();
 			if (!loggingOff) {
-				log.info(Hex.toHexString(actual.getContractCallResult().toByteArray()));
+				log.info(CommonUtils.hex(actual.getContractCallResult().toByteArray()));
 			}
 			ErroringAsserts<ContractFunctionResult> asserts = expectations.get().assertsFor(spec);
 			List<Throwable> errors = asserts.errorsIn(actual);

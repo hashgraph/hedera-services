@@ -31,7 +31,6 @@ import com.hedera.services.bdd.spec.infrastructure.meta.SupportedContract;
 import com.hedera.services.bdd.spec.stats.OpObs;
 import com.hedera.services.bdd.spec.stats.ThroughputObs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.legacy.core.HexUtils;
 import com.hedera.services.legacy.core.KeyPairObj;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
@@ -50,6 +49,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -160,7 +160,7 @@ public class HapiSpecRegistry {
 
 	private Key asPublicKey(String pubKeyHex) throws Exception {
 		return Key.newBuilder()
-				.setEd25519(ByteString.copyFrom(HexUtils.hexToBytes(pubKeyHex)))
+				.setEd25519(ByteString.copyFrom(CommonUtils.unhex(pubKeyHex)))
 				.build();
 	}
 

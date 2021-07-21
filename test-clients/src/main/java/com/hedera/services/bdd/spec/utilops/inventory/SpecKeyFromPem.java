@@ -31,8 +31,7 @@ import com.hedera.services.bdd.suites.utils.keypairs.SpecUtils;
 import com.hedera.services.legacy.core.KeyPairObj;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
+import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -70,10 +69,12 @@ public class SpecKeyFromPem extends UtilOp {
 		this.control = SIMPLE_WACL;
 		return this;
 	}
+
 	public SpecKeyFromPem passphrase(String secret) {
 		passphrase = secret;
 		return this;
 	}
+
 	public SpecKeyFromPem name(String custom) {
 		name = Optional.of(custom);
 		return this;
@@ -118,17 +119,17 @@ public class SpecKeyFromPem extends UtilOp {
 		return false;
 	}
 
-	private Key populatedFrom(KeyPairObj ocKeystore) throws InvalidKeySpecException, DecoderException {
+	private Key populatedFrom(KeyPairObj ocKeystore) throws InvalidKeySpecException, IllegalArgumentException {
 		if (control == SIMPLE) {
 			return Key.newBuilder()
-					.setEd25519(ByteString.copyFrom(Hex.decodeHex(ocKeystore.getPublicKeyAbyteStr())))
+					.setEd25519(ByteString.copyFrom(CommonUtils.unhex(ocKeystore.getPublicKeyAbyteStr())))
 					.build();
 		} else if (control == SIMPLE_WACL) {
 			return Key.newBuilder()
 					.setKeyList(KeyList.newBuilder()
 							.addKeys(Key.newBuilder()
 									.setEd25519(
-											ByteString.copyFrom(Hex.decodeHex(ocKeystore.getPublicKeyAbyteStr())))))
+											ByteString.copyFrom(CommonUtils.unhex(ocKeystore.getPublicKeyAbyteStr())))))
 					.build();
 		} else {
 			throw new IllegalStateException("Cannot populate key shape " + control);

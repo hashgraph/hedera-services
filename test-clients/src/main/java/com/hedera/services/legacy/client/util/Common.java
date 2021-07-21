@@ -9,9 +9,9 @@ package com.hedera.services.legacy.client.util;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,10 +37,10 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.builder.TransactionSigner;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
+import com.swirlds.common.CommonUtils;
 import io.grpc.StatusRuntimeException;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
@@ -62,13 +62,14 @@ public class Common {
 	 * If response is BUSY or PLATFORM_TRANSACTION_NOT_CREATED then try build transaction again and resubmit,
 	 * otherwise assert as unexpected error (insufficient fee, invalid signature, etc)
 	 *
-	 * @param builder the function call to create transaction to be submitted
-	 * @param stubFunc the stub function entry to submit the request
+	 * @param builder
+	 * 		the function call to create transaction to be submitted
+	 * @param stubFunc
+	 * 		the stub function entry to submit the request
 	 * @return return the successfully submitted transactions.
 	 */
 	public static Transaction tranSubmit(BuildTransaction builder, Function<Transaction, TransactionResponse> stubFunc)
-			throws StatusRuntimeException
-	{
+			throws StatusRuntimeException {
 		Transaction transaction;
 		while (true) {
 			try {
@@ -87,10 +88,10 @@ public class Common {
 					log.error("Unexpected response {}", response);
 					break;
 				}
-			}catch (InterruptedException e){
+			} catch (InterruptedException e) {
 				log.error("Exception ", e);
 				return null;
-			} catch (io.grpc.StatusRuntimeException e){
+			} catch (io.grpc.StatusRuntimeException e) {
 				throw e;
 			}
 		}
@@ -99,11 +100,11 @@ public class Common {
 
 	public static void addKeyMap(KeyPair pair, Map<String, PrivateKey> pubKey2privKeyMap) {
 		byte[] pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
-		String pubKeyHex = bytes2Hex(pubKey);
+		String pubKeyHex = CommonUtils.hex(pubKey);
 		pubKey2privKeyMap.put(pubKeyHex, pair.getPrivate());
 	}
 
-	public static Key PrivateKeyToKey(PrivateKey privateKey){
+	public static Key PrivateKeyToKey(PrivateKey privateKey) {
 		byte[] pubKey = ((EdDSAPrivateKey) privateKey).getAbyte();
 		Key key = Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
 		return key;
@@ -112,14 +113,14 @@ public class Common {
 	public static Transaction buildCryptoDelete(AccountID payer, Key payerKey,
 			AccountID deleteAccount, Key accKey,
 			AccountID transferAccount,
-			AccountID nodeAccount, Map<String, PrivateKey> pubKey2privKeyMap){
+			AccountID nodeAccount, Map<String, PrivateKey> pubKey2privKeyMap) {
 		Duration transactionValidDuration = RequestBuilder.getDuration(100);
 		CryptoDeleteTransactionBody cryptoDeleteTransactionBody = CryptoDeleteTransactionBody
 				.newBuilder().setDeleteAccountID(deleteAccount).setTransferAccountID(transferAccount)
 				.build();
 		Timestamp timestamp = RequestBuilder
 				.getTimestamp(Instant.now(Clock.systemUTC()));
-		TransactionID  transactionID = TransactionID.newBuilder().setAccountID(payer)
+		TransactionID transactionID = TransactionID.newBuilder().setAccountID(payer)
 				.setTransactionValidStart(timestamp).build();
 		TransactionBody transactionBody = TransactionBody.newBuilder()
 				.setTransactionID(transactionID)
@@ -155,16 +156,5 @@ public class Common {
 
 		Assert.assertNotNull(accountInfoResponse.getCryptogetAccountBalance());
 		return accountInfoResponse.getCryptogetAccountBalance().getBalance();
-	}
-
-	/**
-	 * Encodes bytes to a hex string.
-	 *
-	 * @param bytes data to be encoded
-	 * @return hex string
-	 */
-	public static String bytes2Hex(byte[] bytes) {
-	  String str = Hex.encodeHexString(bytes);
-	  return str;
 	}
 }

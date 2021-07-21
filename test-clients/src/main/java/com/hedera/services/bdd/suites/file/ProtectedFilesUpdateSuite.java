@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,7 +34,7 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.AddressBookPojo;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
-import org.apache.commons.codec.binary.Hex;
+import com.swirlds.common.CommonUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -158,6 +158,7 @@ public class ProtectedFilesUpdateSuite extends HapiApiSuite {
 			Assert.assertEquals(expected, actual);
 		});
 	}
+
 	private HapiApiSpec specialAccountCanUpdateSpecialFile(
 			final String specialAccount,
 			final String specialFile,
@@ -179,8 +180,8 @@ public class ProtectedFilesUpdateSuite extends HapiApiSuite {
 				specialFile,
 				isFree,
 				contents ->
-					target.equals("ignore")
-							? contents : (new String(contents).replace(target, replacement)).getBytes());
+						target.equals("ignore")
+								? contents : (new String(contents).replace(target, replacement)).getBytes());
 	}
 
 	private HapiApiSpec specialAccountCanUpdateSpecialFile(
@@ -402,7 +403,7 @@ public class ProtectedFilesUpdateSuite extends HapiApiSuite {
 			for (NodeAddress.Builder node : builder.getNodeAddressBuilderList()) {
 				node.setNodeId(nodeId++);
 				r.nextBytes(randPubKey);
-				node.setRSAPubKey(Hex.encodeHexString(randPubKey));
+				node.setRSAPubKey(CommonUtils.hex(randPubKey));
 				if (new String(node.getMemo().toByteArray()).equals(targetMemo)) {
 					node.setMemo(ByteString.copyFrom(replaceMemo.getBytes()));
 				}

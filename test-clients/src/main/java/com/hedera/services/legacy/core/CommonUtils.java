@@ -242,7 +242,7 @@ public class CommonUtils {
 		copyArray(4, solidityByteArray, realmNumBytes);
 		byte[] accountNumBytes = ByteUtil.longToBytes(accountNum);
 		copyArray(12, solidityByteArray, accountNumBytes);
-		return ByteUtil.toHexString(solidityByteArray);
+		return com.swirlds.common.CommonUtils.hex(solidityByteArray);
 	}
 
 	private static void copyArray(int startInToArray, byte[] toArray, byte[] fromArray) {

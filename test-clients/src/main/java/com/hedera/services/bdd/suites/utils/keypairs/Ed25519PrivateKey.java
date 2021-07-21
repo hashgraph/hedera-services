@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.utils.keypairs;
  * ‍
  */
 
+import com.swirlds.common.CommonUtils;
 import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.edec.EdECObjectIdentifiers;
@@ -28,7 +29,6 @@ import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
 import org.bouncycastle.math.ec.rfc8032.Ed25519;
-import org.bouncycastle.util.encoders.Hex;
 
 import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
@@ -151,6 +151,6 @@ public final class Ed25519PrivateKey {
 			throw new RuntimeException(e);
 		}
 
-		return Hex.toHexString(encoded);
+		return CommonUtils.hex(encoded);
 	}
 }
