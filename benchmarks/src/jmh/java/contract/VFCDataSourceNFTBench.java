@@ -1,6 +1,7 @@
 package contract;
 
 import com.hedera.services.state.merkle.v2.VFCDataSourceImpl;
+import com.hedera.services.state.merkle.virtual.ContractKey;
 import com.hedera.services.state.merkle.virtual.IdKey;
 import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.hedera.services.store.models.Id;
@@ -9,6 +10,7 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.fcmap.VFCDataSource;
 import com.swirlds.fcmap.VValue;
 import fcmmap.FCVirtualMapTestUtils;
+import lmdb.VFCDataSourceLmdbHashesRam;
 import org.openjdk.jmh.annotations.*;
 import lmdb.SequentialInsertsVFCDataSource;
 import lmdb.VFCDataSourceLmdb;
@@ -42,7 +44,7 @@ public class VFCDataSourceNFTBench {
     public int writeThreads;
     @Param({"2048"})
     public int nftSize;
-    @Param({"memmap","lmdb","lmdb2","lmdb-ns","lmdb2-ns","rocksdb"})
+    @Param({"memmap","lmdb","lmdb2","lmdb-ns","lmdb2-ns","rocksdb","lmdb-ram"})
     public String impl;
 
     // state
@@ -83,6 +85,11 @@ public class VFCDataSourceNFTBench {
                             IdKey.SERIALIZED_SIZE, IdKey::new,
                             nftSize, NFTData::new,
                             storePath);
+                case "lmdb-ram" ->
+                        new VFCDataSourceLmdbHashesRam<>(
+                                IdKey.SERIALIZED_SIZE, IdKey::new,
+                                nftSize, NFTData::new,
+                                storePath);
                 case "rocksdb" ->
                     new VFCDataSourceRocksDb<>(
                             IdKey.SERIALIZED_SIZE, IdKey::new,
@@ -95,7 +102,7 @@ public class VFCDataSourceNFTBench {
             aNFT = new NFTData(nftSize);
             if (!storeExists) {
                 final SequentialInsertsVFCDataSource<IdKey,NFTData> sequentialDataSource =
-                    (dataSource instanceof SequentialInsertsVFCDataSource && (impl.equals("lmdb") || impl.equals("lmdb2")))
+                    (dataSource instanceof SequentialInsertsVFCDataSource && (impl.equals("lmdb") || impl.equals("lmdb2") || impl.equals("lmdb-ram")))
                             ? (SequentialInsertsVFCDataSource<IdKey,NFTData>)dataSource : null;
                 System.out.println("================================================================================");
                 System.out.println("Creating data ...");

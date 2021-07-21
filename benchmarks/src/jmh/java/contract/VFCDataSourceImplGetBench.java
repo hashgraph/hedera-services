@@ -6,6 +6,7 @@ import com.hedera.services.state.merkle.virtual.ContractUint256;
 import com.hedera.services.store.models.Id;
 import com.swirlds.fcmap.VFCDataSource;
 import fcmmap.FCVirtualMapTestUtils;
+import lmdb.VFCDataSourceLmdbHashesRam;
 import org.openjdk.jmh.annotations.*;
 import lmdb.SequentialInsertsVFCDataSource;
 import lmdb.VFCDataSourceLmdb;
@@ -36,7 +37,7 @@ public class VFCDataSourceImplGetBench {
     public int hashThreads;
     @Param({"4"})
     public int writeThreads;
-    @Param({"memmap","lmdb","lmdb2","lmdb-ns","lmdb2-ns","rocksdb"})
+    @Param({"memmap","lmdb","lmdb2","lmdb-ns","lmdb2-ns","rocksdb","lmdb-ram"})
     public String impl;
 
     // state
@@ -73,6 +74,11 @@ public class VFCDataSourceImplGetBench {
                             storePath);
                 case "lmdb2","lmdb2-ns" ->
                     new VFCDataSourceLmdbTwoIndexes<>(
+                            ContractKey.SERIALIZED_SIZE, ContractKey::new,
+                            ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
+                            storePath);
+                case "lmdb-ram" ->
+                    new VFCDataSourceLmdbHashesRam<>(
                             ContractKey.SERIALIZED_SIZE, ContractKey::new,
                             ContractUint256.SERIALIZED_SIZE, ContractUint256::new,
                             storePath);
