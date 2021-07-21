@@ -218,7 +218,6 @@ public class AwareFcfsUsagePrices implements UsagePricesProvider {
 			}
 			final EnumSet<SubType> requiredTypes = FUNCTIONS_WITH_REQUIRED_SUBTYPES.getOrDefault(function, ONLY_DEFAULT);
 			ensurePricesMapHasRequiredTypes(pricingData, pricesMap, requiredTypes);
-			System.out.println(function + " -> " + pricesMap);
 			allPrices.put(pricingData.getHederaFunctionality(), pricesMap);
 		}
 		return allPrices;
