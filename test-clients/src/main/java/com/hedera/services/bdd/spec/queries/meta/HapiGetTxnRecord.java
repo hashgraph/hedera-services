@@ -86,9 +86,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	boolean assertNothingAboutHashes = false;
 	boolean lookupScheduledFromRegistryId = false;
 	boolean omitPaymentHeaderOnCostAnswer = false;
-	Optional<List<Pair<String, Long>>> accountAmountsToValidate = Optional.empty();
-	Optional<List<Triple<String, String, Long>>> tokenAmountsToValidate = Optional.empty();
-	Optional<List<Triple<String, String, Long>>> assessedCustomFeesToValidate = Optional.empty();
+	List<Pair<String, Long>> accountAmountsToValidate = new ArrayList<>();
+	List<Triple<String, String, Long>> tokenAmountsToValidate = new ArrayList<>();
+	List<Triple<String, String, Long>> assessedCustomFeesToValidate = new ArrayList<>();
 	Optional<TransactionID> explicitTxnId = Optional.empty();
 	Optional<TransactionRecordAsserts> priorityExpectations = Optional.empty();
 	Optional<BiConsumer<TransactionRecord, Logger>> format = Optional.empty();
@@ -219,26 +219,17 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	}
 
 	public HapiGetTxnRecord hasHbarAmountInTransferList(String account, long amount) {
-		if (accountAmountsToValidate.isEmpty()) {
-			accountAmountsToValidate = Optional.of(new ArrayList<>());
-		}
-		accountAmountsToValidate.get().add(Pair.of(account, amount));
+		accountAmountsToValidate.add(Pair.of(account, amount));
 		return this;
 	}
 
 	public HapiGetTxnRecord hasTokenAmountInTokenTransferList(String token, String account, long amount) {
-		if (tokenAmountsToValidate.isEmpty()) {
-			tokenAmountsToValidate = Optional.of(new ArrayList<>());
-		}
-		tokenAmountsToValidate.get().add(Triple.of(token, account, amount));
+		tokenAmountsToValidate.add(Triple.of(token, account, amount));
 		return this;
 	}
 
 	public HapiGetTxnRecord hasExpectedAssessedCustomFees(String token, String account, long amount) {
-		if (assessedCustomFeesToValidate.isEmpty()) {
-			assessedCustomFeesToValidate = Optional.of(new ArrayList<>());
-		}
-		assessedCustomFeesToValidate.get().add(Triple.of(token, account, amount));
+		assessedCustomFeesToValidate.add(Triple.of(token, account, amount));
 		return this;
 	}
 
@@ -309,7 +300,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		if (assertNothing) {
 			return;
 		}
-		TransactionRecord actualRecord = response.getTransactionGetRecord().getTransactionRecord();
+		final var actualRecord = response.getTransactionGetRecord().getTransactionRecord();
 		assertPriority(spec, actualRecord);
 		if (scheduled || assertOnlyPriority) {
 			return;
@@ -325,23 +316,23 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 					0,
 					actualRecord.getTokenTransferListsCount());
 		}
-		if (accountAmountsToValidate.isPresent()) {
+		if (!accountAmountsToValidate.isEmpty()) {
 			final var accountAmounts = actualRecord.getTransferList().getAccountAmountsList();
-			accountAmountsToValidate.get().forEach(pair ->
+			accountAmountsToValidate.forEach(pair ->
 					validateAccountAmount(spec.registry().getAccountID(pair.getLeft()), pair.getRight(), accountAmounts));
 		}
-		if (tokenAmountsToValidate.isPresent()) {
+		if (!tokenAmountsToValidate.isEmpty()) {
 			final var tokenTransferLists = actualRecord.getTokenTransferListsList();
-			tokenAmountsToValidate.get().forEach(triple ->
+			tokenAmountsToValidate.forEach(triple ->
 					validateTokenTransferList(
 							spec.registry().getTokenID(triple.getLeft()),
 							spec.registry().getAccountID(triple.getMiddle()),
 							triple.getRight(),
 							tokenTransferLists));
 		}
-		if (assessedCustomFeesToValidate.isPresent()) {
+		if (!assessedCustomFeesToValidate.isEmpty()) {
 			final var actualAssessedCustomFees = actualRecord.getAssessedCustomFeesList();
-			assessedCustomFeesToValidate.get().forEach(triple ->
+			assessedCustomFeesToValidate.forEach(triple ->
 					validateAssessedCustomFees(
 							!triple.getLeft().equals(HBAR_TOKEN_SENTINEL) ? spec.registry().getTokenID(triple.getLeft()) : null,
 							spec.registry().getAccountID(triple.getMiddle()),
