@@ -651,6 +651,7 @@ public class ServicesContext {
 		newQueryableStateChildren.setUniqueTokens(state.uniqueTokens());
 		newQueryableStateChildren.setUniqueTokenAssociations(state.uniqueTokenAssociations());
 		newQueryableStateChildren.setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
+		newQueryableStateChildren.setUniqueOwnershipTreasuryAssociations(state.uniqueTreasuryOwnershipAssociations());
 
 		queryableState.set(newQueryableStateChildren);
 	}
@@ -674,6 +675,7 @@ public class ServicesContext {
 		workingState.setUniqueTokens(state.uniqueTokens());
 		workingState.setUniqueTokenAssociations(state.uniqueTokenAssociations());
 		workingState.setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
+		workingState.setUniqueOwnershipTreasuryAssociations(state.uniqueTreasuryOwnershipAssociations());
 	}
 
 	public SwirldDualState getDualState() {
@@ -923,6 +925,7 @@ public class ServicesContext {
 					() -> queryableState.get().getTokenAssociations(),
 					() -> queryableState.get().getUniqueTokenAssociations(),
 					() -> queryableState.get().getUniqueOwnershipAssociations(),
+					() -> queryableState.get().getUniqueOwnershipTreasuryAssociations(),
 					this::diskFs,
 					nodeLocalProperties());
 		}
@@ -941,6 +944,7 @@ public class ServicesContext {
 					this::tokenAssociations,
 					this::uniqueTokenAssociations,
 					this::uniqueOwnershipAssociations,
+					this::uniqueOwnershipTreasuryAssociations,
 					this::diskFs,
 					nodeLocalProperties());
 		}
@@ -1050,6 +1054,7 @@ public class ServicesContext {
 					this::tokens,
 					this::uniqueTokens,
 					this::uniqueOwnershipAssociations,
+					this::uniqueOwnershipTreasuryAssociations,
 					this::uniqueTokenAssociations,
 					this::tokenAssociations,
 					(BackingTokenRels) backingTokenRels());
@@ -1673,6 +1678,7 @@ public class ServicesContext {
 					globalDynamicProperties(),
 					this::tokens,
 					this::uniqueOwnershipAssociations,
+					this::uniqueOwnershipTreasuryAssociations,
 					tokenRelsLedger,
 					nftsLedger);
 		}
@@ -2307,6 +2313,10 @@ public class ServicesContext {
 
 	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations() {
 		return state.uniqueOwnershipAssociations();
+	}
+
+	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipTreasuryAssociations() {
+		return state.uniqueTreasuryOwnershipAssociations();
 	}
 
 	/**

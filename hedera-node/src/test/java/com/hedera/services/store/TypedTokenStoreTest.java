@@ -75,6 +75,8 @@ class TypedTokenStoreTest {
 	@Mock
 	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenOwnerships;
 	@Mock
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTreasuryOwnerships;
+	@Mock
 	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations;
 	@Mock
 	private TransactionRecordService transactionRecordService;
@@ -96,6 +98,7 @@ class TypedTokenStoreTest {
 				() -> tokens,
 				() -> uniqueTokens,
 				() -> uniqueTokenOwnerships,
+				() -> uniqueTreasuryOwnerships,
 				() -> uniqueTokenAssociations,
 				() -> tokenRels,
 				backingTokenRels);
@@ -321,7 +324,6 @@ class TypedTokenStoreTest {
 		verify(uniqueTokens).remove(expectedPastUniqTokenId);
 		verify(uniqueTokenAssociations).associate(new EntityId(modelToken.getId()), expectedNewUniqTokenId);
 		verify(uniqueTokenAssociations).disassociate(new EntityId(modelToken.getId()), expectedPastUniqTokenId);
-		verify(uniqueTokenOwnerships).associate(treasuryId, expectedNewUniqTokenId);
 		verify(uniqueTokenOwnerships).disassociate(treasuryId, expectedPastUniqTokenId);
 	}
 

@@ -23,18 +23,34 @@ package com.hedera.services.state.initialization;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.tokens.TokenStore;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 
 public class ViewBuilder {
+	/**
+	 * call first ctx.rebuildStoreViewsIfPresent() before rebuilding the unique token views
+	 *
+	 * @param tokenStore
+	 * @param uniqueTokens
+	 * @param uniqueTokenAssociations
+	 * @param uniqueOwnershipAssociations
+	 * @param treasuryOwnedUniqueTokens
+	 */
 	public static void rebuildUniqueTokenViews(
+			TokenStore tokenStore,
 			FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens,
 			FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations,
-			FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations
+			FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations,
+			FCOneToManyRelation<EntityId, MerkleUniqueTokenId> treasuryOwnedUniqueTokens
 	) {
 		uniqueTokens.forEach((id, uniq) -> {
 			uniqueTokenAssociations.associate(id.tokenId(), id);
-			uniqueOwnershipAssociations.associate(uniq.getOwner(), id);
+			if (tokenStore.isTreasuryForToken(uniq.getOwner().toGrpcAccountId(), id.tokenId().toGrpcTokenId())) {
+				treasuryOwnedUniqueTokens.associate(id.tokenId(), id);
+			} else {
+				uniqueOwnershipAssociations.associate(uniq.getOwner(), id);
+			}
 		});
 	}
 }

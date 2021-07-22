@@ -38,7 +38,6 @@ import com.swirlds.common.AddressBook;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Manages the state of the services. This gets updated by {@link ServicesContext} on a regular interval. The
@@ -55,31 +54,54 @@ public class StateChildren {
 	/** State of tokens */
 	private FCMap<MerkleEntityId, MerkleToken> tokens;
 
-	/** State of unique tokens */
+	/**
+	 * State of unique tokens
+	 */
 	private FCMap<MerkleUniqueTokenId, MerkleUniqueToken> uniqueTokens;
 
-	/** State of schedules */
+	/**
+	 * State of schedules
+	 */
 	private FCMap<MerkleEntityId, MerkleSchedule> schedules;
 
-	/** State of storage */
+	/**
+	 * State of storage
+	 */
 	private FCMap<MerkleBlobMeta, MerkleOptionalBlob> storage;
 
-	/** State of token associations */
+	/**
+	 * State of token associations
+	 */
 	private FCMap<MerkleEntityAssociation, MerkleTokenRelStatus> tokenAssociations;
 
-	/** State of unique token associations */
+	/**
+	 * State of unique token associations
+	 */
 	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations;
 
-	/** State of unique ownership associations */
+	/**
+	 * State of unique ownership associations
+	 */
 	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations;
 
-	/** State of network context */
+	/**
+	 * State of treasury unique ownership associations
+	 */
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipTreasuryAssociations;
+
+	/**
+	 * State of network context
+	 */
 	private MerkleNetworkContext networkCtx;
 
-	/** State of address book */
+	/**
+	 * State of address book
+	 */
 	private AddressBook addressBook;
 
-	/** State of disk fs */
+	/**
+	 * State of disk fs
+	 */
 	private MerkleDiskFs diskFs;
 
 	public FCMap<MerkleEntityId, MerkleAccount> getAccounts() {
@@ -196,6 +218,15 @@ public class StateChildren {
 		this.uniqueOwnershipAssociations = uniqueOwnershipAssociations;
 	}
 
+	public FCOneToManyRelation<EntityId, MerkleUniqueTokenId> getUniqueOwnershipTreasuryAssociations() {
+		Objects.requireNonNull(uniqueOwnershipTreasuryAssociations, "A state with null unique treasury ownership associations is never valid");
+		return uniqueOwnershipTreasuryAssociations;
+	}
+
+	public void setUniqueOwnershipTreasuryAssociations(
+			FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipTreasuryAssociations) {
+		this.uniqueOwnershipTreasuryAssociations = uniqueOwnershipTreasuryAssociations;
+	}
 }
 
 

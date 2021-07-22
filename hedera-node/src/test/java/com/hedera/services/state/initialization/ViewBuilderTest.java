@@ -24,6 +24,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.store.tokens.TokenStore;
 import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.fcmap.FCMap;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,9 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
 
 public class ViewBuilderTest {
 	private static final EntityId tokenId = new EntityId(0, 0, 54321);
@@ -63,18 +67,31 @@ public class ViewBuilderTest {
 		expected.getKeySet().forEach(key -> assertEquals(expected.getList(key), actual.getList(key)));
 	}
 
+	public static void assertIsTheExpectedTUtao(FCOneToManyRelation<EntityId, MerkleUniqueTokenId> actual) {
+		final var uniqId = new MerkleUniqueTokenId(tokenId, 2);
+		final var expected = new FCOneToManyRelation<EntityId, MerkleUniqueTokenId>();
+		expected.associate(tokenId, uniqId);
+		assertEquals(actual.getKeySet(), actual.getKeySet());
+		expected.getKeySet().forEach(key -> assertEquals(expected.getList(key), actual.getList(key)));
+	}
+
 	@Test
 	void rebuildOwnershipsAndAssociationsWorks() {
 		// given:
 		final var actualUta = new FCOneToManyRelation<EntityId, MerkleUniqueTokenId>();
 		final var actualUtao = new FCOneToManyRelation<EntityId, MerkleUniqueTokenId>();
+		final var actualTUtao = new FCOneToManyRelation<EntityId, MerkleUniqueTokenId>();
+
+		final var tokenStore = mock(TokenStore.class);
+		given(tokenStore.isTreasuryForToken(any(), any())).willReturn(false);
 
 		// when:
-		ViewBuilder.rebuildUniqueTokenViews(someUniqueTokens(), actualUta, actualUtao);
+		ViewBuilder.rebuildUniqueTokenViews(tokenStore, someUniqueTokens(), actualUta, actualUtao, actualTUtao);
 
 		// then:
 		assertIsTheExpectedUta(actualUta);
 		assertIsTheExpectedUtao(actualUtao);
+//		assertIsTheExpectedTUtao(actualTUtao); TODO case with ownership treasury
 	}
 
 }

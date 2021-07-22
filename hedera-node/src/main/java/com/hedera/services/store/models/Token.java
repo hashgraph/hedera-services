@@ -128,8 +128,8 @@ public class Token {
 
 		for (ByteString m : metadata) {
 			lastUsedSerialNumber++;
-			final var uniqueToken = new UniqueToken(id, lastUsedSerialNumber, creationTime, treasury.getId(),
-					m.toByteArray());
+			// The default sentinel account is used (0.0.0) to represent unique tokens owned by the Treasury
+			final var uniqueToken = new UniqueToken(id, lastUsedSerialNumber, creationTime, Id.DEFAULT, m.toByteArray());
 			mintedUniqueTokens.add(uniqueToken);
 			ownershipTracker.add(id, OwnershipTracker.forMinting(treasury.getId(), lastUsedSerialNumber));
 		}
@@ -163,7 +163,7 @@ public class Token {
 			final var uniqueToken = loadedUniqueTokens.get(serialNum);
 			validateTrue(uniqueToken != null, FAIL_INVALID);
 
-			final var treasuryIsOwner = uniqueToken.getOwner().equals(treasuryId);
+			final var treasuryIsOwner = uniqueToken.getOwner().equals(Id.DEFAULT);
 			validateTrue(treasuryIsOwner, TREASURY_MUST_OWN_BURNED_NFT);
 			ownershipTracker.add(id, OwnershipTracker.forRemoving(treasuryId, serialNum));
 			removedUniqueTokens.add(new UniqueToken(id, serialNum, treasuryId));

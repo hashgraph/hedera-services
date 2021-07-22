@@ -78,6 +78,7 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 				new ChangeSummaryManager<>());
 		FCMap<MerkleEntityId, MerkleToken> tokens = new FCMap<>();
 		FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAccountOwnerships = new FCOneToManyRelation<>();
+		FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenTreasuryOwnerships = new FCOneToManyRelation<>();
 
 		nftsLedger = new TransactionalLedger<>(
 				NftProperty.class,
@@ -96,6 +97,7 @@ public class HederaLedgerLiveTest extends BaseHederaLedgerTest {
 				new MockGlobalDynamicProps(),
 				() -> tokens,
 				() -> uniqueTokenAccountOwnerships,
+				() -> uniqueTokenTreasuryOwnerships,
 				tokenRelsLedger,
 				nftsLedger);
 		subject = new HederaLedger(tokenStore, ids, creator, validator, historian, dynamicProps, accountsLedger);

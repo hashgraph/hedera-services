@@ -190,6 +190,7 @@ class GetAccountInfoAnswerTest {
 				() -> tokenRels,
 				StateView.EMPTY_UNIQUE_TOKEN_ASSOCS_SUPPLIER,
 				StateView.EMPTY_UNIQUE_TOKEN_ACCOUNT_OWNERSHIPS_SUPPLIER,
+				StateView.EMPTY_UNIQUE_TOKEN_TREASURY_OWNERSHIP_SUPPLIER,
 				null,
 				nodeProps);
 		optionValidator = mock(OptionValidator.class);

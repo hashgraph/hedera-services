@@ -151,6 +151,7 @@ class HederaTokenStoreTest {
 	private GlobalDynamicProperties properties;
 	private FCMap<MerkleEntityId, MerkleToken> tokens;
 	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAccountOwnerships;
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenTreasuryOwnerships;
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
@@ -235,6 +236,7 @@ class HederaTokenStoreTest {
 		given(token.hasAdminKey()).willReturn(true);
 		given(token.hasFeeScheduleKey()).willReturn(true);
 		given(token.treasury()).willReturn(EntityId.fromGrpcAccountId(treasury));
+		given(token.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
 
 		nonfungibleToken = mock(MerkleToken.class);
 		given(nonfungibleToken.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
@@ -289,6 +291,7 @@ class HederaTokenStoreTest {
 
 		uniqueTokenAccountOwnerships = (FCOneToManyRelation<EntityId, MerkleUniqueTokenId>) mock(
 				FCOneToManyRelation.class);
+		uniqueTokenTreasuryOwnerships = mock(FCOneToManyRelation.class);
 
 		properties = mock(GlobalDynamicProperties.class);
 		given(properties.maxTokensPerAccount()).willReturn(MAX_TOKENS_PER_ACCOUNT);
@@ -297,8 +300,8 @@ class HederaTokenStoreTest {
 		given(properties.maxCustomFeesAllowed()).willReturn(maxCustomFees);
 
 		subject = new HederaTokenStore(
-				ids, TEST_VALIDATOR, properties, () -> tokens, () -> uniqueTokenAccountOwnerships, tokenRelsLedger,
-				nftsLedger);
+				ids, TEST_VALIDATOR, properties, () -> tokens, () -> uniqueTokenAccountOwnerships,
+				() -> uniqueTokenTreasuryOwnerships, tokenRelsLedger, nftsLedger);
 		subject.setAccountsLedger(accountsLedger);
 		subject.setHederaLedger(hederaLedger);
 		subject.knownTreasuries.put(treasury, new HashSet<>() {{

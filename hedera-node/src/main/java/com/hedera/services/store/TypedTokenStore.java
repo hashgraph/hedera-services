@@ -90,6 +90,7 @@ public class TypedTokenStore {
 	private final Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens;
 	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations;
 	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueOwnershipAssociations;
+	private final Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueOwnershipTreasuryAssociations;
 
 	/* Only needed for interoperability with legacy HTS during refactor */
 	private final BackingTokenRels backingTokenRels;
@@ -100,6 +101,7 @@ public class TypedTokenStore {
 			Supplier<FCMap<MerkleEntityId, MerkleToken>> tokens,
 			Supplier<FCMap<MerkleUniqueTokenId, MerkleUniqueToken>> uniqueTokens,
 			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueOwnershipAssociations,
+			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueOwnershipTreasuryAssociations,
 			Supplier<FCOneToManyRelation<EntityId, MerkleUniqueTokenId>> uniqueTokenAssociations,
 			Supplier<FCMap<MerkleEntityAssociation, MerkleTokenRelStatus>> tokenRels,
 			BackingTokenRels backingTokenRels
@@ -107,6 +109,7 @@ public class TypedTokenStore {
 		this.tokens = tokens;
 		this.uniqueTokenAssociations = uniqueTokenAssociations;
 		this.uniqueOwnershipAssociations = uniqueOwnershipAssociations;
+		this.uniqueOwnershipTreasuryAssociations = uniqueOwnershipTreasuryAssociations;
 		this.tokenRels = tokenRels;
 		this.uniqueTokens = uniqueTokens;
 		this.accountStore = accountStore;
@@ -318,6 +321,7 @@ public class TypedTokenStore {
 		final var currentUniqueTokens = uniqueTokens.get();
 		final var currentUniqueTokenAssociations = uniqueTokenAssociations.get();
 		final var currentUniqueOwnershipAssociations = uniqueOwnershipAssociations.get();
+		final var currentUniqueOwnershipTreasuryAssociations = uniqueOwnershipTreasuryAssociations.get();
 
 		if (token.hasMintedUniqueTokens()) {
 			for (var uniqueToken : token.mintedUniqueTokens()) {
@@ -327,18 +331,24 @@ public class TypedTokenStore {
 						new EntityId(uniqueToken.getOwner()), uniqueToken.getMetadata(), uniqueToken.getCreationTime());
 				currentUniqueTokens.put(merkleUniqueTokenId, merkleUniqueToken);
 				currentUniqueTokenAssociations.associate(new EntityId(uniqueToken.getTokenId()), merkleUniqueTokenId);
-				currentUniqueOwnershipAssociations.associate(treasury, merkleUniqueTokenId);
+				currentUniqueOwnershipTreasuryAssociations.associate(new EntityId(token.getId()), merkleUniqueTokenId);
 			}
 		}
+		/* UniqueTokens are removed both from Wipe and Burn */
 		if (token.hasRemovedUniqueTokens()) {
 			for (var uniqueToken : token.removedUniqueTokens()) {
 				final var merkleUniqueTokenId = new MerkleUniqueTokenId(
 						new EntityId(uniqueToken.getTokenId()), uniqueToken.getSerialNumber());
 				final var accountId = new EntityId(uniqueToken.getOwner());
 				currentUniqueTokens.remove(merkleUniqueTokenId);
-				currentUniqueTokenAssociations.disassociate(new EntityId(uniqueToken.getTokenId()),
-						merkleUniqueTokenId);
-				currentUniqueOwnershipAssociations.disassociate(accountId, merkleUniqueTokenId);
+				currentUniqueTokenAssociations.disassociate(new EntityId(uniqueToken.getTokenId()), merkleUniqueTokenId);
+				if (uniqueToken.getOwner().equals(token.getTreasury().getId())) {
+					/* Disassociate the treasury owned token on Burn */
+					currentUniqueOwnershipTreasuryAssociations.disassociate(new EntityId(token.getId()), merkleUniqueTokenId);
+				} else {
+					/* Disassociate the account owned token on Wipe */
+					currentUniqueOwnershipAssociations.disassociate(accountId, merkleUniqueTokenId);
+				}
 			}
 		}
 		transactionRecordService.includeChangesToToken(token);

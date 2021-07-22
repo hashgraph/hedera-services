@@ -62,6 +62,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -128,6 +129,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 				serialNumbersOnlyOnFungibleBurnFails(),
 				amountOnlyOnNonFungibleBurnFails(),
 
+				getAccountNftInfosWorksWithMixedOwnerships(),
 				failsWithAccountWithoutNfts(),
 				validatesQueryOutOfRange(),
 				getAccountNftInfosFailsWithInvalidQueryBoundaries(),
@@ -185,7 +187,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 						tokenAssociate(civilian, uniqueToken),
 						mintToken(uniqueToken,
 								List.of(ByteString.copyFromUtf8("token_to_wipe"))),
-						cryptoTransfer(movingUnique(1L, uniqueToken)
+						cryptoTransfer(movingUnique(uniqueToken, 1L)
 								.between(TOKEN_TREASURY, civilian))
 				)
 				.when(
@@ -402,6 +404,85 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 				);
 	}
 
+	private HapiApiSpec getAccountNftInfosWorksWithMixedOwnerships() {
+		final var specialKey = "special";
+
+		return defaultHapiSpec("GetAccountNftInfosWorksWithMixedOwnerships")
+				.given(
+						newKeyNamed(specialKey),
+						cryptoCreate("oldTreasury").balance(0L),
+						cryptoCreate("newTreasury").balance(0L),
+						tokenCreate("tbu")
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0L)
+								.adminKey(specialKey)
+								.supplyKey(specialKey)
+								.treasury("oldTreasury"),
+						tokenCreate("treasury-token-2")
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0L)
+								.adminKey(specialKey)
+								.supplyKey(specialKey)
+								.treasury("newTreasury"),
+						tokenCreate("non-fungible-2")
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0L)
+								.adminKey(specialKey)
+								.supplyKey(specialKey)
+								.treasury("oldTreasury"),
+						tokenCreate("non-fungible-3")
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0L)
+								.adminKey(specialKey)
+								.supplyKey(specialKey)
+								.treasury("oldTreasury")
+				).when(
+						mintToken("tbu", List.of(metadata("BLAMMO"))),
+						mintToken("treasury-token-2", List.of(metadata("treasury-meta"))),
+						mintToken("non-fungible-2", List.of(metadata("nft2-1"), metadata("nft2-2"), metadata("nft2-3"))),
+						mintToken("non-fungible-3", List.of(metadata("nft3-1"), metadata("nft3-2"), metadata("nft3-3"))),
+						getAccountInfo("oldTreasury").logged(),
+						getAccountInfo("newTreasury").logged(),
+						tokenAssociate("newTreasury", "tbu", "non-fungible-2", "non-fungible-3"),
+						tokenUpdate("tbu")
+								.treasury("newTreasury")
+								.hasKnownStatus(SUCCESS),
+						getTokenInfo("tbu").hasTreasury("newTreasury"),
+						cryptoTransfer(
+								movingUnique("non-fungible-2", 1, 2).between("oldTreasury", "newTreasury"),
+								movingUnique("non-fungible-3", 1).between("oldTreasury", "newTreasury")).logged(),
+						getAccountInfo("newTreasury").logged()
+				).then(
+						getAccountInfo("oldTreasury").logged(),
+						getAccountInfo("newTreasury").logged(),
+						getAccountNftInfos("newTreasury", 0, 5)
+								.hasNfts(
+										newTokenNftInfo("non-fungible-2", 1, "newTreasury", metadata("nft2-1")),
+										newTokenNftInfo("non-fungible-2", 2, "newTreasury", metadata("nft2-2")),
+										newTokenNftInfo("non-fungible-3", 1, "newTreasury", metadata("nft3-1")),
+										newTokenNftInfo("tbu", 1, "newTreasury", metadata("BLAMMO")),
+										newTokenNftInfo("treasury-token-2", 1, "newTreasury", metadata("treasury-meta"))
+								)
+								.logged(),
+						getAccountNftInfos("newTreasury", 0, 4)
+								.hasNfts(
+										newTokenNftInfo("non-fungible-2", 1, "newTreasury", metadata("nft2-1")),
+										newTokenNftInfo("non-fungible-2", 2, "newTreasury", metadata("nft2-2")),
+										newTokenNftInfo("non-fungible-3", 1, "newTreasury", metadata("nft3-1")),
+										newTokenNftInfo("tbu", 1, "newTreasury", metadata("BLAMMO"))
+								)
+								.logged(),
+						getAccountNftInfos("newTreasury", 1, 4)
+								.hasNfts(
+										newTokenNftInfo("non-fungible-2", 2, "newTreasury", metadata("nft2-2")),
+										newTokenNftInfo("non-fungible-3", 1, "newTreasury", metadata("nft3-1")),
+										newTokenNftInfo("tbu", 1, "newTreasury", metadata("BLAMMO"))
+								)
+								.logged(),
+						getTokenInfo("tbu").hasTreasury("newTreasury")
+				);
+	}
+
 	private HapiApiSpec getAccountNftInfosFailsWithDeletedAccount() {
 		return defaultHapiSpec("GetAccountNftInfosFailsWithDeletedAccount")
 				.given(
@@ -505,7 +586,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec burnHappyPath() {
-		return defaultHapiSpec("BurnHappyEnd")
+		return defaultHapiSpec("BurnHappyPath")
 				.given(
 						newKeyNamed(SUPPLY_KEY),
 						cryptoCreate(TOKEN_TREASURY),
@@ -547,7 +628,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 								metadata("1"),
 								metadata("2"))),
 						tokenAssociate(nonTreasury, NFT),
-						cryptoTransfer(movingUnique(2L, NFT).between(TOKEN_TREASURY, nonTreasury))
+						cryptoTransfer(movingUnique(NFT, 2L).between(TOKEN_TREASURY, nonTreasury))
 				).when(
 						burnToken(NFT, List.of(1L, 2L))
 								.via("burnTxn")
@@ -985,7 +1066,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 						tokenAssociate("account", NFT),
 						mintToken(NFT, List.of(ByteString.copyFromUtf8("memo"), ByteString.copyFromUtf8("memo2"))),
 						cryptoTransfer(
-								movingUnique(2L, NFT).between(TOKEN_TREASURY, "account")
+								movingUnique(NFT, 2L).between(TOKEN_TREASURY, "account")
 						)
 				)
 				.when(
@@ -1021,8 +1102,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 						metadata("memo2")))
 						.via("mintTxn"),
 				cryptoTransfer(
-						movingUnique(1, NFT).between(TOKEN_TREASURY, "account"),
-						movingUnique(2, NFT).between(TOKEN_TREASURY, "account")
+						movingUnique(NFT, 1, 2).between(TOKEN_TREASURY, "account")
 				)
 		).when(
 				wipeTokenAccount(NFT, "account", LongStream.range(0, 1000).boxed().collect(Collectors.toList()))
@@ -1051,7 +1131,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 						tokenAssociate("account", NFT),
 						mintToken(NFT, List.of(metadata("memo"))),
 						cryptoTransfer(
-								movingUnique(1, NFT).between(TOKEN_TREASURY, "account")
+								movingUnique(NFT, 1).between(TOKEN_TREASURY, "account")
 						)
 				).when()
 				.then(
@@ -1339,8 +1419,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
 						tokenAssociate("acc", NFT),
 						mintToken(NFT, List.of(metadata("memo1"), metadata("memo2")))
 				).then(
-						cryptoTransfer(TokenMovement.movingUnique(1L, NFT).between(TOKEN_TREASURY, "acc")),
-						cryptoTransfer(TokenMovement.movingUnique(2L, NFT).between(TOKEN_TREASURY, "acc")),
+						cryptoTransfer(TokenMovement.movingUnique(NFT, 1, 2).between(TOKEN_TREASURY, "acc")),
 						tokenDissociate("acc", NFT).hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)
 				);
 	}

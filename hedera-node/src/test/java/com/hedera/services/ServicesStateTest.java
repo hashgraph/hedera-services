@@ -51,6 +51,7 @@ import com.hedera.services.state.merkle.MerkleUniqueTokenId;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttling.FunctionalityThrottling;
@@ -168,7 +169,9 @@ class ServicesStateTest {
 	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociations;
 	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueTokenAssociationsCopy;
 	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociations;
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipTreasuryAssociations;
 	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipAssociationsCopy;
+	private FCOneToManyRelation<EntityId, MerkleUniqueTokenId> uniqueOwnershipTreasuryAssociationsCopy;
 	private MerkleDiskFs diskFs;
 	private MerkleDiskFs diskFsCopy;
 	private RecordsRunningHashLeaf runningHashLeaf;
@@ -249,7 +252,9 @@ class ServicesStateTest {
 		uniqueTokenAssociations = mock(FCOneToManyRelation.class);
 		uniqueTokenAssociationsCopy = mock(FCOneToManyRelation.class);
 		uniqueOwnershipAssociations = mock(FCOneToManyRelation.class);
+		uniqueOwnershipTreasuryAssociations = mock(FCOneToManyRelation.class);
 		uniqueOwnershipAssociationsCopy = mock(FCOneToManyRelation.class);
+		uniqueOwnershipTreasuryAssociationsCopy = mock(FCOneToManyRelation.class);
 
 		given(topics.copy()).willReturn(topicsCopy);
 		given(storage.copy()).willReturn(storageCopy);
@@ -261,6 +266,7 @@ class ServicesStateTest {
 		given(runningHashLeaf.copy()).willReturn(runningHashLeafCopy);
 		given(uniqueTokenAssociations.copy()).willReturn(uniqueTokenAssociationsCopy);
 		given(uniqueOwnershipAssociations.copy()).willReturn(uniqueOwnershipAssociationsCopy);
+		given(uniqueOwnershipTreasuryAssociations.copy()).willReturn(uniqueOwnershipTreasuryAssociationsCopy);
 
 		seqNo = mock(SequenceNumber.class);
 		midnightRates = mock(ExchangeRates.class);
@@ -326,6 +332,7 @@ class ServicesStateTest {
 				Collections.emptyList(),
 				uniqueTokenAssociations,
 				uniqueOwnershipAssociations,
+				uniqueOwnershipTreasuryAssociations,
 				new ServicesState());
 
 		// then:
@@ -516,6 +523,8 @@ class ServicesStateTest {
 		// setup:
 		var nodeInfo = mock(NodeInfo.class);
 		given(ctx.nodeInfo()).willReturn(nodeInfo);
+		TokenStore tokenStore = mock(TokenStore.class);
+		given(ctx.tokenStore()).willReturn(tokenStore);
 		given(nodeInfo.selfAccount()).willReturn(nodeAccount);
 		CONTEXTS.store(ctx);
 
@@ -537,6 +546,7 @@ class ServicesStateTest {
 		// then:
 		ViewBuilderTest.assertIsTheExpectedUta(subject.uniqueTokenAssociations());
 		ViewBuilderTest.assertIsTheExpectedUtao(subject.uniqueOwnershipAssociations());
+//		ViewBuilderTest.assertIsTheExpectedTUtao(subject.uniqueOwnershipTreasuryAssociations());  TODO case with ownership treasury
 	}
 
 	@Test
@@ -714,6 +724,7 @@ class ServicesStateTest {
 		assertSame(uniqueTokensCopy, copy.uniqueTokens());
 		assertNull(copy.uniqueTokenAssociations());
 		assertNull(copy.uniqueOwnershipAssociations());
+		assertNull(copy.uniqueTreasuryOwnershipAssociations());
 	}
 
 	@Test
@@ -732,6 +743,7 @@ class ServicesStateTest {
 		subject.setChild(ServicesState.ChildIndices.UNIQUE_TOKENS, uniqueTokens);
 		subject.setUniqueTokenAssociations(uniqueTokenAssociations);
 		subject.setUniqueOwnershipAssociations(uniqueOwnershipAssociations);
+		subject.setUniqueTreasuryOwnershipAssociations(uniqueOwnershipTreasuryAssociations);
 		subject.nodeId = self;
 		subject.ctx = ctx;
 
@@ -755,6 +767,7 @@ class ServicesStateTest {
 		assertSame(uniqueTokensCopy, copy.uniqueTokens());
 		assertSame(uniqueTokenAssociationsCopy, copy.uniqueTokenAssociations());
 		assertSame(uniqueOwnershipAssociationsCopy, copy.uniqueOwnershipAssociations());
+		assertSame(uniqueOwnershipTreasuryAssociationsCopy, copy.uniqueTreasuryOwnershipAssociations());
 	}
 
 	@Test

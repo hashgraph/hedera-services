@@ -106,6 +106,11 @@ public enum ExceptionalTokenStore implements TokenStore {
 	}
 
 	@Override
+	public ResponseCodeEnum changeOwnerWildCard(NftId nftId, AccountID from, AccountID to) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public CreationResult<TokenID> createProvisionally(TokenCreateTransactionBody request, AccountID sponsor, long now) {
 		throw new UnsupportedOperationException();
 	}
