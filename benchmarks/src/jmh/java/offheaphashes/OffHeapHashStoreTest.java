@@ -23,6 +23,14 @@ public class OffHeapHashStoreTest {
                     System.err.println("Hashes don't match for " + i + " got [" + toLongsString(readHash) + "] should be [" + toLongsString(answerHash) + "]");
                 }
             }
+
+            // test off end
+            Hash bigHash = hash(3_000_123);
+            hashStore.saveHash(3_000_123, bigHash);
+            if (!bigHash.equals(hashStore.loadHash(3_000_123))) {
+                System.err.println("Failed to save and get 3_000_123");
+            }
+
             hashStore.printStats();
         } catch (Exception e) {
             e.printStackTrace();
