@@ -90,6 +90,14 @@ public class FCVirtualMapTestUtils {
         return Arrays.toString(array);
     }
 
+    public static String toLongsString(ByteBuffer buf) {
+        buf.rewind();
+        LongBuffer longBuf = buf.asLongBuffer();
+        long[] array = new long[longBuf.remaining()];
+        longBuf.get(array);
+        return Arrays.toString(array);
+    }
+
     /** Helper function to create a suppler for a classes default constructor */
     public static <S> Supplier<S> supplerFromClass(String className) throws Exception {
         @SuppressWarnings("unchecked") Class<S> slotIndexClass = (Class<S>) Class.forName(className);

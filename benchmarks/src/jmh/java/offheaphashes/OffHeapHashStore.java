@@ -9,6 +9,9 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * An off-heap in memory store of hashes, it stores them in 46Mb direct buffers and adds buffers as needed
+ */
 public final class OffHeapHashStore {
     private static final int HASH_SIZE =  Integer.BYTES+ DigestType.SHA_384.digestLength();
     private static final int NUM_HASHES_PER_CHUNK = 1_000_000;
@@ -45,16 +48,22 @@ public final class OffHeapHashStore {
     public void saveHash(long path, Hash hash) {
         // expand data if needed
         maxPathThatCanBeStored.updateAndGet(currentValue -> {
-            if (path > currentValue) { // need to expand
+            while (path > currentValue) { // need to expand
                 data.add(ByteBuffer.allocateDirect(MEMORY_CHUNK_SIZE));
-                return currentValue + NUM_HASHES_PER_CHUNK;
+                currentValue += NUM_HASHES_PER_CHUNK;
             }
-            return currentValue; // no need to change
+            return currentValue;
         });
         // get the right buffer
         Hash.toByteBuffer(hash,getBuffer(path));
     }
 
+    /**
+     * Get the ByteBuffer for a given key, assumes the buffer is already created.
+     *
+     * @param path the path to buffer
+     * @return The ByteBuffer contain that path
+     */
     private ByteBuffer getBuffer(long path) {
         int bufferIndex = (int) (path / (long) NUM_HASHES_PER_CHUNK);
         ByteBuffer buffer = data.get(bufferIndex).slice();
