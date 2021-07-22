@@ -50,6 +50,10 @@ public class FeesJsonToProtoSerde {
 	private static final String[] RESOURCE_KEYS =
 			{ "constant", "bpt", "vpt", "rbh", "sbh", "gas", "bpr", "sbpr", "min", "max" };
 
+	private FeesJsonToProtoSerde() {
+		throw new UnsupportedOperationException("Static utilities class, should not be instantiated");
+	}
+
 	public static CurrentAndNextFeeSchedule loadFeeScheduleFromJson(String jsonResource) throws Exception {
 		final var feeSchedules = CurrentAndNextFeeSchedule.newBuilder();
 
