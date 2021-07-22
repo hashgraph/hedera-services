@@ -1,4 +1,4 @@
-package com.hedera.services.fees.bootstrap;
+package com.hedera.services.sysfiles.serdes;
 
 /*-
  * ‌
@@ -29,44 +29,65 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.nio.file.Paths;
 
-import static com.hedera.services.fees.bootstrap.JsonToProtoSerde.loadFeeScheduleFromJson;
-import static com.hedera.services.fees.bootstrap.JsonToProtoSerde.stringToSubType;
+import static com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde.loadFeeScheduleFromJson;
+import static com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde.parseFeeScheduleFromJson;
+import static com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde.stringToSubType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class JsonToProtoSerdeTest {
-	public final static String R4_FEE_SCHEDULE_REPR_PATH = "src/test/resources/testfiles/r4FeeSchedule.bin";
+public class FeesJsonToProtoSerdeTest {
+	private static final String UNTYPED_FEE_SCHEDULE_REPR_PATH = "src/test/resources/sysfiles/r4FeeSchedule.bin";
+	private static final String TYPED_FEE_SCHEDULE_JSON_PATH = "src/test/resources/sysfiles/2020-04-22-FeeSchedule.json";
+	private static final String TYPED_FEE_SCHEDULE_JSON_RESOURCE = "sysfiles/2020-04-22-FeeSchedule.json";
 
 	@Test
-	public void serializeR5FeeSchedule() throws Exception {
+	public void serializesTypedFeeScheduleFromLoadedJsonResource() throws Exception {
+		// setup:
+		final var tmpSerializedLoc = "2020-04-22-FeeSchedule.bin";
+
 		// given:
-		var r5SchedulesResource = "testfiles/2020-04-22-FeeSchedule.json";
-
-		// when:
-		var r5Schedules = loadFeeScheduleFromJson(r5SchedulesResource);
+		final var typedSchedules = loadFeeScheduleFromJson(TYPED_FEE_SCHEDULE_JSON_RESOURCE);
 		// and:
-		var tmpFile = new File("2020-04-22-FeeSchedule.bin");
+		final var tmpFile = new File(tmpSerializedLoc);
+		Files.write(typedSchedules.toByteArray(), tmpFile);
 
-		// then:
-		Files.write(r5Schedules.toByteArray(), tmpFile);
 		// and sanity check:
 		Assertions.assertDoesNotThrow(() ->
-				CurrentAndNextFeeSchedule.parseFrom(
-						java.nio.file.Files.readAllBytes(Paths.get("2020-04-22-FeeSchedule.bin"))));
+				CurrentAndNextFeeSchedule.parseFrom(java.nio.file.Files.readAllBytes(Paths.get(tmpSerializedLoc))));
 
 		// cleanup:
 		tmpFile.delete();
 	}
 
+	@Test
+	void serializesTypedFeeScheduleFromParsedJsonLiteral() throws Exception {
+		// setup:
+		final var tmpSerializedLoc = "2020-04-22-FeeSchedule.bin";
+		// and:
+		final var jsonLiteral = new String(java.nio.file.Files.readAllBytes(Paths.get(TYPED_FEE_SCHEDULE_JSON_PATH)));
+
+		// given:
+		final var typedSchedules = parseFeeScheduleFromJson(jsonLiteral);
+		final var tmpFile = new File(tmpSerializedLoc);
+		// and:
+		Files.write(typedSchedules.toByteArray(), tmpFile);
+
+		// and sanity check:
+		Assertions.assertDoesNotThrow(() ->
+				CurrentAndNextFeeSchedule.parseFrom(java.nio.file.Files.readAllBytes(Paths.get(tmpSerializedLoc))));
+
+		// cleanup:
+		tmpFile.delete();
+	}
 
 	@Test
 	public void preservesR4Behavior() throws Exception {
 		// given:
 		CurrentAndNextFeeSchedule expectedR4 =
-				CurrentAndNextFeeSchedule.parseFrom(Files.toByteArray(new File(R4_FEE_SCHEDULE_REPR_PATH)));
+				CurrentAndNextFeeSchedule.parseFrom(Files.toByteArray(new File(UNTYPED_FEE_SCHEDULE_REPR_PATH)));
 
 		// when:
-		CurrentAndNextFeeSchedule actual = loadFeeScheduleFromJson("testfiles/R4FeeSchedule.json");
+		CurrentAndNextFeeSchedule actual = loadFeeScheduleFromJson("sysfiles/R4FeeSchedule.json");
 
 		// then:
 		assertEquals(expectedR4, actual);

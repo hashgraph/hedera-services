@@ -21,7 +21,6 @@ package com.hedera.test.mocks;
  */
 
 import com.google.common.io.Files;
-import com.hedera.services.fees.bootstrap.JsonToProtoSerdeTest;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
@@ -41,10 +40,11 @@ import java.util.Map;
 import java.util.Objects;
 
 import static com.hedera.services.fees.calculation.AwareFcfsUsagePrices.DEFAULT_RESOURCE_PRICES;
-import static java.util.stream.Collectors.toMap;
 
 public enum TestUsagePricesProvider implements UsagePricesProvider {
 	TEST_USAGE_PRICES;
+
+	public final static String R4_FEE_SCHEDULE_REPR_PATH = "src/test/resources/testfiles/r4FeeSchedule.bin";
 
 	CurrentAndNextFeeSchedule feeSchedules;
 
@@ -61,7 +61,7 @@ public enum TestUsagePricesProvider implements UsagePricesProvider {
 	@Override
 	public void loadPriceSchedules() {
 		try {
-			byte[] bytes = Files.toByteArray(new File(JsonToProtoSerdeTest.R4_FEE_SCHEDULE_REPR_PATH));
+			byte[] bytes = Files.toByteArray(new File(R4_FEE_SCHEDULE_REPR_PATH));
 			setFeeSchedules(CurrentAndNextFeeSchedule.parseFrom(bytes));
 		} catch (Exception impossible) {
 			throw new IllegalStateException(impossible);

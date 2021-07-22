@@ -30,7 +30,6 @@ import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
@@ -60,7 +59,7 @@ import java.util.function.Supplier;
 import java.util.stream.LongStream;
 
 import static com.google.protobuf.TextFormat.escapeBytes;
-import static com.hedera.services.fees.bootstrap.JsonToProtoSerde.loadFeeScheduleFromJson;
+import static com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde.loadFeeScheduleFromJson;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static com.swirlds.common.Address.ipString;
 
